@@ -225,3 +225,7 @@ spec.
     Checked with `devbox services up`:
     https://local.tabscan.nu01.com:2443/app/ answers with a trusted
     certificate.
+30. **Hide status messages after a while.** The "Saved … (Open)" message
+    after a capture stayed until dismissed, since Flutter keeps a message
+    with a button by default; it now goes after 6 seconds, like the
+    others, which already went after 4 ([navigation](navigation.md#capture)).
