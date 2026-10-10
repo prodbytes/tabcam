@@ -3,8 +3,8 @@
 One scan, opened from the [library](library.md).
 
 - **App bar**: the title (and the artist under it, if set); tapping it, or
-  **Rename** (pencil), asks for the song and artist (an empty song keeps
-  the title). **Text tab** (once read) opens the text tab editor
+  **Rename** (pencil), renames the scan (see
+  [library](library.md#scans)). **Text tab** (once read) opens the text tab editor
   ([tab recognition](tab-recognition.md)). **Share** opens the
   [share sheet](sharing.md).
 - **Pages**: swiped left and right. Images are pinch-zoomable (up to 5×)
