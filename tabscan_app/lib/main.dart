@@ -18,6 +18,10 @@ import 'maintenance/maintenance.dart';
 import 'screens/library_screen.dart';
 
 void main() {
+  // The maintenance check watches the app's lifecycle (WidgetsBinding)
+  // before runApp, which would otherwise make the binding: without this,
+  // the app crashes at launch.
+  WidgetsFlutterBinding.ensureInitialized();
   final maintenance = MaintenanceCheck(url: MaintenanceCheck.defaultUrl())
     ..start();
   // Nothing starts (library, sign-in, sync) until the status says the

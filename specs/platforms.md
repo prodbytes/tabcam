@@ -26,6 +26,17 @@ trusting its certificate (Settings → General → VPN & Device Management),
 and must be reinstalled every 7 days. `bash scripts/flutter-run.sh -d
 <iPhone id> --release` builds, signs and installs it.
 
+**iOS dependencies** come two ways: Google sign-in (`google_sign_in`)
+through Swift Package Manager, its versions pinned in the committed
+`Package.resolved` files (`ios/Runner.xcworkspace/xcshareddata/swiftpm/`
+and the same under `Runner.xcodeproj/project.xcworkspace/`), so every
+build resolves the same ones; ML Kit (text recognition, the document
+scanner) through CocoaPods, which doesn't support Swift Package Manager
+yet. Both bring Google's `GoogleUtilities` and `FBLPromises`, so the app
+holds two copies, and iOS warns at launch ("Class … is implemented in
+both … may cause spurious casting failures and mysterious crashes"). No
+failure has been traced to it so far.
+
 App IDs: `com.nu01.tabscan` (Android application ID and iOS bundle ID).
 Google's Android OAuth client matches the app by that ID and the SHA-1 of
 its signing key (release builds are signed with the debug key for now).
