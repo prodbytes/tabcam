@@ -303,3 +303,10 @@ spec.
     ([tab recognition](tab-recognition.md)). The text tab screen became
     the Text view.
 
+38. **404s for `/status.json` on the local site.** The local stack had no
+    status file, so every [maintenance](maintenance-mode.md) check of the
+    local web app logged a 404 (harmless: the app reads a missing file as
+    "not in maintenance"). The index now serves
+    `tabscan_index/site/status.json` (`{"maintenance": false}`); flip it to
+    `true` to try maintenance mode locally. Deploys still upload only the
+    index page, so the live sites' status files are untouched.
