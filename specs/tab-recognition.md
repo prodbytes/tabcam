@@ -1,22 +1,46 @@
 # Tab recognition
 
-**Read tab** on the [event screen](event-screen.md) turns an event's pages into
-plain-text tab, on the device, with Google ML Kit text recognition (Latin
-script). Android and iOS only; on the web it says reading tabs needs the
-app, or TabScan Premium. Signed out, it asks to sign in first
-([signed out](cloud-sync.md#signed-out)).
+Every capture's tab is read **by itself** into its text tab, shown in the
+[event screen](event-screen.md)'s **Text** view. With [TabScan
+Premium](cloud-ocr.md) the cloud transcribes it as the pages sync;
+otherwise ML Kit text recognition (Latin script) reads it on the device,
+Android and iOS only (below).
 
-With [TabScan Premium](cloud-ocr.md) the text tab comes from the cloud
-instead, by itself, as the pages sync, and Read tab asks for it; the rest
-of this page is the on-device reading everyone else has.
+## Reading by itself
+
+`AutoReader` ([lib/recognition/auto_reader.dart](../tabscan_app/lib/recognition/auto_reader.dart))
+watches the library: whenever the user adds or changes an event's image
+pages (a new capture, pages added, rotated or deleted), that event is
+read, one event at a time. Other changes (the title, the view, the text)
+don't read again, nor do events another device changed (that device reads
+them), nor the events there were at launch.
+
+- **A text the user edited is never replaced.** A read fills an empty
+  text tab, or replaces one an earlier read left (`tabTextAuto`, synced:
+  set by a read on the device or in the cloud, cleared by an edit).
+- **Signed out** (in a build with sign-in): it waits, and reads when the
+  user signs in ([signed out](cloud-sync.md#signed-out)).
+- **Premium**: the pages go to the cloud transcription; the text comes
+  with sync.
+- **Neither** (the web without Premium): it says it can't read here.
+
+The Text view says how it stands when there's no text yet: "Reading the
+tab…" (with a spinner); "Transcribing in the cloud. The text appears here
+when it's done."; "No tab found in the pages. Try rescanning closer and
+flatter." or "Reading the tab failed.", with **Read again**; "Reading
+tabs needs you signed in.", with **Sign in**; "Reading tabs needs the
+Android or iOS app, or TabScan Premium."; "Nothing to read: add a scan or
+a photo."; or, for an event never read (from before), "Not read yet."
+with **Read**. Its log lines start with `TabScan: read tab:`.
+
+## On the device
 
 Each page (as scanned, not filtered) is turned upright, scaled to at most
 2400 px and made grayscale. Staff lines are found in that image, and OCR
 runs on the same image (through a temporary file, deleted after), so their
 coordinates agree. Pages with tab are joined with a blank line. With
-nothing found, a message suggests the Tab filter, or rescanning closer and
-flatter. With a result, it's saved on the event and the text tab editor
-opens.
+nothing found, the Text view says so; with a result, it's saved on the
+event (and shows in the Text view, if it's open).
 
 ## Text tabs
 
@@ -66,7 +90,7 @@ Text tabs are tried first; typeset layout runs when no text tab is found.
 
 ## Troubleshooting log
 
-Read tab logs each step, in lines starting `TabScan: read tab:` (on
+Reading logs each step, in lines starting `TabScan: read tab:` (on
 Android: `devbox run android-log`; on the web: the browser's console):
 the event's pages and whether the user is signed in; which reading it
 takes (cloud for Premium, with the premium status, else on the device and
@@ -76,9 +100,21 @@ first five lines) and whether it read a text tab, a typeset tab or
 neither, with the time taken. A failure is logged with its stack trace as
 well as shown. Tokens are never logged.
 
-## Text tab editor
+## Text view
 
-The read tab, monospaced and unwrapped (long lines scroll sideways),
-editable to fix what OCR got wrong. A **Copy** button at the top, above
-the text, puts it on the clipboard; **Share** (in the app bar) shares it
-as text. Edits are saved on the event when leaving.
+The event screen's Text view ([lib/screens/tab_text_view.dart](../tabscan_app/lib/screens/tab_text_view.dart)):
+the read tab, monospaced and unwrapped (long lines scroll sideways),
+editable to fix what OCR got wrong, with **Copy** (to the clipboard) and
+**Share text** above it. Edits are saved a second after the last one,
+and on leaving, and make the text the user's (no read replaces it). A
+read that ends while the view shows fills it in, unless the user has
+started editing. Read only for an event shared read only.
+
+**Mark correct**, next to Copy, marks the reading correct once the user
+has checked it (it then reads **Correct**, ticked; tapping it again
+unmarks it), saved at once. The mark is kept on the event and syncs with
+it (`tabTextCorrect`), and a clone keeps it. An event marked correct
+opens on its Text view (the view tool goes on to its pages); one that
+isn't opens on its pages. No read, on the device or in the
+[cloud](cloud-ocr.md), replaces a text tab marked correct. On an event
+shared read only the mark is shown (when set) but can't be changed.

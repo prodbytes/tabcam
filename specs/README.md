@@ -25,18 +25,21 @@ the cloud as they sync.
   with Home (the events), Capture (Scan with the camera; Add photos &
   videos, files or a link) and Profile (the account, About).
 - [Library](library.md): the Home tab, a grid of events (newest first),
-  with Rename, Share, Clone and Delete; how events are stored.
+  in My captures and Shared with me sections once something is shared, with Rename, Share, Clone and Delete; how events are stored.
 - [Scanning](scanning.md): the system document scanner (edge detection,
   straightening, several pages), and adding pages, photos, videos, files
   and links.
 - [Event screen](event-screen.md): one event's pages (images, videos and
   links, with Open and Copy) to swipe and zoom, with
-  Add page, Filter, Rotate, Read tab and Delete, plus Rename and Share.
+  the view (Original, Scan or Text), Add, Rotate and Delete, plus Rename
+  and Share.
 - [Page filters](page-filters.md): Original, and Tab (black ink on white,
   by adaptive thresholding), the default.
-- [Tab recognition](tab-recognition.md): Read tab, from on-device OCR to
-  plain-text tab, for text tabs and typeset tab staves; the text tab
-  editor.
+- [Tab recognition](tab-recognition.md): every capture read by itself
+  into plain-text tab (on-device OCR, or Premium's cloud), for text tabs
+  and typeset tab staves, never over the user's edits or a reading marked
+  correct; the Text view, where a reading is marked correct (the event
+  then opens on it).
 - [Sharing](sharing.md): a link to the capture (the default), PDF,
   text (the text tab and links), or a zip of everything, through the
   system share sheet; opening a capture's link.
