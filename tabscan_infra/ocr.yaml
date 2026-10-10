@@ -18,6 +18,14 @@ Parameters:
     Description: >
       The web OAuth client the app's Google ID tokens are issued for (as in
       tabscan-identity). Empty: the function URL refuses every request.
+  GoogleLocalWebClientId:
+    Type: String
+    Default: ''
+    Description: >
+      The "local - web" OAuth client ID, which local web builds sign in with
+      (TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID); its tokens are trusted like the
+      web client's. Empty: only the web client.
+    AllowedPattern: '([0-9]+-[0-9a-z]+\.apps\.googleusercontent\.com)?'
   IdentityPoolId:
     Type: String
     Default: ''
@@ -43,8 +51,11 @@ Parameters:
     Default: dev
   AllowedOrigins:
     Type: CommaDelimitedList
-    Default: https://tabscan.nu01.com,https://rc.tabscan.nu01.com,http://localhost:2012
+    Default: https://tabscan.nu01.com,https://rc.tabscan.nu01.com,http://localhost:2012,https://local.tabscan.nu01.com:2443
     Description: Web origins the app runs on (the function URL's CORS)
+
+Conditions:
+  HasLocalClient: !Not [!Equals [!Ref GoogleLocalWebClientId, '']]
 
 Resources:
   # Cognito identity ID -> verified e-mail address. S3 events carry only the
@@ -198,7 +209,11 @@ Resources:
           USER_DATA_BUCKET: !ImportValue tabscan-user-data-bucket
           OCR_FUNCTION: !Ref OcrFunction
           ACCOUNTS_TABLE: !Ref Accounts
-          GOOGLE_WEB_CLIENT_ID: !Ref GoogleWebClientId
+          # The clients whose tokens it takes, separated by commas.
+          GOOGLE_WEB_CLIENT_ID: !If
+            - HasLocalClient
+            - !Join [',', [!Ref GoogleWebClientId, !Ref GoogleLocalWebClientId]]
+            - !Ref GoogleWebClientId
           COGNITO_IDENTITY_POOL_ID: !Ref IdentityPoolId
           RBACR_URL: !Ref RbacrUrl
           RBACR_TOKEN_SECRET: !Ref RbacrTokenSecretArn

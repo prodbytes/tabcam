@@ -64,6 +64,18 @@ OCR finds only the numbers.
 
 Text tabs are tried first; typeset layout runs when no text tab is found.
 
+## Troubleshooting log
+
+Read tab logs each step, in lines starting `TabScan: read tab:` (on
+Android: `devbox run android-log`; on the web: the browser's console):
+the event's pages and whether the user is signed in; which reading it
+takes (cloud for Premium, with the premium status, else on the device and
+whether the platform can); per page, the bytes, the prepared image's size
+and the drawn staves found, what OCR found (blocks, lines, frets, the
+first five lines) and whether it read a text tab, a typeset tab or
+neither, with the time taken. A failure is logged with its stack trace as
+well as shown. Tokens are never logged.
+
 ## Text tab editor
 
 The read tab, monospaced and unwrapped (long lines scroll sideways),
