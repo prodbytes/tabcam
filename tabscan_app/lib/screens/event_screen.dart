@@ -13,6 +13,7 @@ import 'page_image.dart';
 import 'people_sheet.dart';
 import 'rename_dialog.dart';
 import 'share_sheet.dart';
+import 'sign_in_gate.dart';
 import 'tab_text_screen.dart';
 import 'video_page.dart';
 
@@ -69,6 +70,14 @@ class _EventScreenState extends State<EventScreen> {
 
   Future<void> _rename(CaptureEvent event) =>
       renameEvent(context, _library, event);
+
+  /// Opens the share sheet, once the user is signed in.
+  Future<void> _share(CaptureEvent event) async {
+    if (await requireSignIn(context, widget.sync?.auth, Gated.share) &&
+        mounted) {
+      await showShareSheet(context, _library, event);
+    }
+  }
 
   /// Clones the event and opens the copy in this one's place.
   Future<void> _clone(CaptureEvent event) async {
@@ -150,7 +159,15 @@ class _EventScreenState extends State<EventScreen> {
     );
   }
 
-  Future<void> _readTab(CaptureEvent event) =>
+  /// Reads the tab, once the user is signed in (reading needs it).
+  Future<void> _readTab(CaptureEvent event) async {
+    if (await requireSignIn(context, widget.sync?.auth, Gated.readTab) &&
+        mounted) {
+      await _readTabNow(event);
+    }
+  }
+
+  Future<void> _readTabNow(CaptureEvent event) =>
       _run('Couldn\'t read the tab', () async {
         if (!TabReader.supported) {
           _snack('Reading tabs needs the Android or iOS app.');
@@ -177,7 +194,11 @@ class _EventScreenState extends State<EventScreen> {
 
   Future<void> _openText(CaptureEvent event) => Navigator.of(context).push(
     MaterialPageRoute<void>(
-      builder: (_) => TabTextScreen(library: _library, eventId: event.id),
+      builder: (_) => TabTextScreen(
+        library: _library,
+        eventId: event.id,
+        auth: widget.sync?.auth,
+      ),
     ),
   );
 
@@ -248,9 +269,7 @@ class _EventScreenState extends State<EventScreen> {
               IconButton(
                 tooltip: 'Share',
                 icon: const Icon(Icons.ios_share),
-                onPressed: _busy
-                    ? null
-                    : () => showShareSheet(context, _library, event),
+                onPressed: _busy ? null : () => _share(event),
               ),
             ],
             bottom: _busy

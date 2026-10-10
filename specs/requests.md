@@ -137,3 +137,11 @@ spec.
     became `TABSCANNER_*`. `AWS_REGION` is unchanged
     ([dev environment](dev-environment.md)), and so is the share
     function's own environment (set by its stack, not by people).
+18. **Let anonymous users capture, stored only locally; require sign-in
+    for processing and sharing.** Signed out, capturing works and stays on
+    the device; **Read tab** and **Share** open a
+    "Sign in to read tabs" / "Sign in to share" sheet first, which goes
+    on with the action once signed in
+    ([signed out](cloud-sync.md#signed-out)); Share with people already
+    showed only signed in. Builds without sign-in set up don't ask. A
+    sync pass ending after the app closed no longer notifies.

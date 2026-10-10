@@ -1,17 +1,37 @@
 # Sign-in and cloud sync
 
-Signing in is optional. Signed in, a user's events **sync with S3**, both
+Signing in is needed only to read tabs and to share; anyone can capture.
+Signed in, a user's events **sync with S3**, both
 ways, so every device they sign in on has the same events, and a new
 device, or the web app after a reload, gets them back. Signed out,
 nothing leaves the device. It works as Presence's first cloud sync did:
 Google sign-in, a Cognito identity pool that turns the Google ID token
 into temporary AWS credentials for the user's own folder, and signed S3
 requests made by the app itself ([lib/cloud/](../tabscan_app/lib/cloud)).
-There's no TabScan server.
+Sync needs no TabScan server (only [sharing](shared-captures.md) has an
+API).
 
 A build has sign-in only when it has all of `TABSCANNER_GOOGLE_WEB_CLIENT_ID`,
 `TABSCANNER_COGNITO_IDENTITY_POOL_ID` and `TABSCANNER_USER_DATA_BUCKET` (below). Without them
 it's as before: no account button, events only on the device.
+
+## Signed out
+
+Signed out (anonymous), the user can **capture**: scan, import photos,
+and add pages, photos, videos, files and links to their events, and
+rename, filter, rotate, clone and delete them. All of it is stored on the
+device only. **Read tab** (the processing) and **sharing** need signing
+in. **Share with people** only shows signed in. **Share** (as a PDF, text
+or files, from a card, the event screen or the text tab editor) and
+**Read tab**, tapped signed out, open a
+sheet, "Sign in to read tabs" or "Sign in to share", saying why, that
+capturing still works and stays on the device, and the sign-in button.
+Signing in there closes it and goes on with what was tapped; closing it
+does nothing. What was captured signed out goes up at the first sign-in,
+as the user's own.
+
+In a build without sign-in set up, nothing asks to sign in: Read tab and
+sharing work as before (there'd be no way to sign in).
 
 ## Signing in
 
