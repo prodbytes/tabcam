@@ -76,7 +76,7 @@ Resources:
 
 Outputs:
   UserDataBucketName:
-    Description: The app's USER_DATA_BUCKET
+    Description: The app's TABSCANNER_USER_DATA_BUCKET
     Value: !Ref UserDataBucket
     Export:
       Name: tabscan-user-data-bucket

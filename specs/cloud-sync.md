@@ -11,8 +11,8 @@ requests made by the app itself ([lib/cloud/](../tabscan_app/lib/cloud)).
 Sync needs no TabScan server (only [sharing](shared-captures.md) has an
 API).
 
-A build has sign-in only when it has all of `GOOGLE_WEB_CLIENT_ID`,
-`COGNITO_IDENTITY_POOL_ID` and `USER_DATA_BUCKET` (below). Without them
+A build has sign-in only when it has all of `TABSCANNER_GOOGLE_WEB_CLIENT_ID`,
+`TABSCANNER_COGNITO_IDENTITY_POOL_ID` and `TABSCANNER_USER_DATA_BUCKET` (below). Without them
 it's as before: no account button, events only on the device.
 
 ## Signed out
@@ -148,9 +148,9 @@ never uploading a read-only one); see
   trigger.
 - **Settings** (`CloudConfig`, `GoogleConfig`; dart-defines from `.env`,
   or repository variables for the deploys and releases):
-  `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, `AWS_REGION` (default
-  `us-east-1`), `COGNITO_IDENTITY_POOL_ID`, `USER_DATA_BUCKET`, and for
-  [sharing](shared-captures.md) `SHARE_API_URL`. All are public
+  `TABSCANNER_GOOGLE_WEB_CLIENT_ID`, `TABSCANNER_GOOGLE_IOS_CLIENT_ID`, `AWS_REGION` (default
+  `us-east-1`), `TABSCANNER_COGNITO_IDENTITY_POOL_ID`, `TABSCANNER_USER_DATA_BUCKET`, and for
+  [sharing](shared-captures.md) `TABSCANNER_SHARE_API_URL`. All are public
   identifiers, not secrets.
 
 ## Infrastructure

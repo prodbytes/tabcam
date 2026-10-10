@@ -75,7 +75,7 @@ Resources:
 
 Outputs:
   IdentityPoolId:
-    Description: The app's COGNITO_IDENTITY_POOL_ID
+    Description: The app's TABSCANNER_COGNITO_IDENTITY_POOL_ID
     Value: !Ref IdentityPool
     Export:
       Name: tabscan-identity-pool-id

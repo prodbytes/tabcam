@@ -128,11 +128,20 @@ spec.
     in the app and never upload; **Remove** leaves a share. The API is
     to be deployed by an administrator (`scripts/deploy-share-api.sh`)
     once the OAuth clients exist.
-17. **Let anonymous users capture, stored only locally; require sign-in
+17. **Prefix all variables with `TABSCANNER_`.** Every setting now has
+    the prefix, with one name everywhere: `.env`, the scripts, the app's
+    dart-defines and the repository variables and secrets
+    (`TABSCANNER_GOOGLE_WEB_CLIENT_ID`, `TABSCANNER_HOSTED_ZONE_ID`,
+    `TABSCANNER_AWS_DEPLOY_ROLE_ARN`, …); `TABSCAN_STAGE`,
+    `TABSCAN_VERSION`, `TABSCAN_BIND_HOST` and `TABSCAN_HEALTH_EMAILS`
+    became `TABSCANNER_*`. `AWS_REGION` is unchanged
+    ([dev environment](dev-environment.md)), and so is the share
+    function's own environment (set by its stack, not by people).
+18. **Let anonymous users capture, stored only locally; require sign-in
     for processing and sharing.** Signed out, capturing works and stays on
     the device; **Read tab** and **Share** open a
     "Sign in to read tabs" / "Sign in to share" sheet first, which goes
     on with the action once signed in
     ([signed out](cloud-sync.md#signed-out)); Share with people already
-    showed only signed in. Builds without sign-in set up don't ask. A sync pass ending after the app closed no longer
-    notifies.
+    showed only signed in. Builds without sign-in set up don't ask. A
+    sync pass ending after the app closed no longer notifies.

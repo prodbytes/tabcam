@@ -22,7 +22,7 @@
     one line for the whole check: the time, then each dependency as its
     icon, a short label and ✅ or ❌, e.g.
     `2026-10-10 14:02:10  🏠 index ✅  🎸 web ✅`.
-  - Servers bind to 127.0.0.1; `TABSCAN_BIND_HOST=0.0.0.0` serves other
+  - Servers bind to 127.0.0.1; `TABSCANNER_BIND_HOST=0.0.0.0` serves other
     devices (a phone's browser).
 - **Android** (USB, debugging on; `ANDROID_SERIAL` picks one of several):
   `devbox run android` runs a debug build attached
@@ -35,11 +35,17 @@
 - **Settings**: `.env` (git-ignored; see [.env.example](../.env.example)),
   linked from the private `prodbytes/setec-astronomy` repo
   (`tabscan.nu01/`) by `scripts/link-private.sh`. Only names listed in
-  `scripts/dart-defines.sh` reach the app (`TABSCAN_STAGE`, and for
-  [sign-in and cloud sync](cloud-sync.md) `GOOGLE_WEB_CLIENT_ID`,
-  `GOOGLE_IOS_CLIENT_ID`, `AWS_REGION`, `COGNITO_IDENTITY_POOL_ID`,
-  `USER_DATA_BUCKET` and `SHARE_API_URL`, all public identifiers); the version is passed as
-  `TABSCAN_VERSION`. The environment wins over `.env`.
+  `scripts/dart-defines.sh` reach the app (`TABSCANNER_STAGE`, and for
+  [sign-in and cloud sync](cloud-sync.md)
+  `TABSCANNER_GOOGLE_WEB_CLIENT_ID`, `TABSCANNER_GOOGLE_IOS_CLIENT_ID`,
+  `AWS_REGION`, `TABSCANNER_COGNITO_IDENTITY_POOL_ID`,
+  `TABSCANNER_USER_DATA_BUCKET` and `TABSCANNER_SHARE_API_URL`, all public
+  identifiers); the version is passed as `TABSCANNER_VERSION`. The
+  environment wins over `.env`.
+- **Setting names**: every TabScan setting is prefixed `TABSCANNER_`, and
+  keeps the same name in `.env`, the scripts, the app's dart-defines and
+  the GitHub repository variables and secrets. `AWS_REGION` keeps its
+  standard name, as the AWS CLI reads it.
 - **Checks**: `flutter analyze` and `flutter test` in `tabscan_app/`;
   the share API's tests with `python3 -m unittest discover -s
   tabscan_api/shares`.
