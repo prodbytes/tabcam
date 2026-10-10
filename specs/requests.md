@@ -191,3 +191,8 @@ spec.
     [platforms](platforms.md) says where iOS dependencies come from and
     notes the two copies of Google's utilities (ML Kit's CocoaPods and
     sign-in's Swift packages) that iOS warns about.
+26. **Create the DNS record for https://local.tabscan.nu01.com, pointing
+    to localhost.** Added `local.tabscan.nu01.com` to the
+    `tabscan.nu01.com` zone: A `127.0.0.1` and AAAA `::1`, TTL 300, made
+    by hand with the AWS CLI (no stack owns it)
+    ([deploy](deploy.md), [dev environment](dev-environment.md)).

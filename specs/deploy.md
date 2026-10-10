@@ -5,6 +5,10 @@ https://rc.tabscan.nu01.com/app/ (release candidate), from a private S3
 bucket behind CloudFront ([tabscan_infra/site.yaml](../tabscan_infra/site.yaml)).
 Both names live in the `tabscan.nu01.com` Route 53 zone
 (`Z10277161AEN9OU2H73PJ`), delegated from `nu01.com`.
+The zone also holds `local.tabscan.nu01.com`, A `127.0.0.1` and AAAA
+`::1` (TTL 300), so a name under the real domain reaches the
+[local dev servers](dev-environment.md). It was made by hand with the AWS
+CLI; no stack owns it.
 `/` is the [index page](../tabscan_index), which redirects to `/app/`.
 
 ## Production
