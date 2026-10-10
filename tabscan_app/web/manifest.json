@@ -3,7 +3,7 @@
     "short_name": "TabScan",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#E0A030",
+    "background_color": "#1E1A15",
     "theme_color": "#E0A030",
     "description": "Scan and share guitar tabs.",
     "orientation": "portrait-primary",
