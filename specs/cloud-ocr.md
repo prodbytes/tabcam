@@ -60,8 +60,8 @@ blank line.
 - **Status**: at sign-in, and each time the Profile tab (or the account
   sheet, from an event's Upgrade) opens, the app
   calls `POST /account` with the user's Google ID token. The service checks
-  the token (signed by Google, issued for TabScan's web client, verified
-  address), asks the identity pool for its identity ID, records identity →
+  the token (signed by Google, issued for TabScan's web client or the
+  local web client, verified address), asks the identity pool for its identity ID, records identity →
   address, and answers `{email, premium, expiresAt, checked, upgradeUrl,
   voucherUrl}`.
 - **Results**: after each sync pass, a premium user's app lists
@@ -108,7 +108,7 @@ blank line.
     the rbacr secret, invoke `tabscan-ocr`, list the bucket and delete
     results;
   - its function URL (no IAM auth: each request carries a Google ID token;
-    CORS for the web app's origins);
+    CORS for the web app's origins, the local HTTPS one included);
   - the EventBridge rule `tabscan-ocr-pages` (page images created or
     deleted in the user-data bucket).
 - **`user-data.yaml`** sends the bucket's events to EventBridge.
