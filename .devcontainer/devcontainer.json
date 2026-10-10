@@ -10,6 +10,12 @@
     "cpus": 4,
     "memory": "8gb"
   },
+  // Floci runs in docker-in-docker, where host-gateway is the bridge
+  // address, not loopback: the dev servers must listen on every interface
+  // for its CloudFront to reach them (only the container sees them).
+  "containerEnv": {
+    "TABSCANNER_BIND_HOST": "0.0.0.0"
+  },
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
@@ -27,10 +33,12 @@
       ]
     }
   },
-  "forwardPorts": [2012, 2013],
+  "forwardPorts": [2012, 2013, 2014, 2443],
   "portsAttributes": {
     "2012": { "label": "Flutter web" },
-    "2013": { "label": "Index (redirect to /app/)" }
+    "2013": { "label": "Index (redirect to /app/)" },
+    "2014": { "label": "Floci (CloudFront)" },
+    "2443": { "label": "Floci HTTPS" }
   },
   "postCreateCommand": "bash -lc 'bash .devcontainer/post-create.sh'"
 }

@@ -196,3 +196,12 @@ spec.
     `tabscan.nu01.com` zone: A `127.0.0.1` and AAAA `::1`, TTL 300, made
     by hand with the AWS CLI (no stack owns it)
     ([deploy](deploy.md), [dev environment](dev-environment.md)).
+27. **Local HTTPS through Floci, merged as it was, when asked to merge
+    everything.** The dev stack gets Floci as a local CloudFront (HTTP on
+    2014, HTTPS on 2443, both on 127.0.0.1) in front of the dev servers,
+    with an mkcert certificate for `local.tabscan.nu01.com` and the
+    `*.localhost` names (`scripts/local-certs.sh`; the key stays in the
+    git-ignored `tabscan_floci/certs`); the health monitor checks the CDN
+    and HTTPS too. Still to write: `tabscan_floci/README.md` (with the
+    one-time `mkcert -install`) and the [dev environment](dev-environment.md)
+    spec for it.
