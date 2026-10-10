@@ -7,6 +7,8 @@
 # the template or the code changes. Settings, from the environment or .env:
 #   TABSCANNER_GOOGLE_WEB_CLIENT_ID
 #                the web OAuth client (the tokens' audience)
+#   TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID
+#                optional: the local web builds' client, trusted too
 #   AWS_REGION   default us-east-1
 set -euo pipefail
 
@@ -16,6 +18,11 @@ export AWS_DEFAULT_REGION="$AWS_REGION"
 if [[ -z "${TABSCANNER_GOOGLE_WEB_CLIENT_ID:-}" && -f .env ]]; then
   TABSCANNER_GOOGLE_WEB_CLIENT_ID="$(sed -n 's/^TABSCANNER_GOOGLE_WEB_CLIENT_ID=//p' .env | tail -1)"
 fi
+if [[ -z "${TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID:-}" && -f .env ]]; then
+  TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID="$(sed -n 's/^TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID=//p' .env | tail -1)"
+fi
+# Passed every time: deploy would keep the stack's old origins otherwise.
+origins="https://tabscan.nu01.com,https://rc.tabscan.nu01.com,http://localhost:2012,https://local.tabscan.nu01.com:2443"
 if [[ ! "${TABSCANNER_GOOGLE_WEB_CLIENT_ID:-}" =~ ^[0-9]+-[0-9a-z]+\.apps\.googleusercontent\.com$ ]]; then
   echo "error: TABSCANNER_GOOGLE_WEB_CLIENT_ID isn't a Google web client ID (environment or .env)" >&2
   exit 1
@@ -31,6 +38,8 @@ aws cloudformation deploy --stack-name tabscan-share-api \
   --template-file tabscan_infra/share-api.yaml \
   --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
   --parameter-overrides "GoogleWebClientId=$TABSCANNER_GOOGLE_WEB_CLIENT_ID" \
+    "GoogleLocalWebClientId=${TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID:-}" \
+    "AllowedOrigins=$origins" \
   --no-fail-on-empty-changeset
 
 echo "==> uploading the code"

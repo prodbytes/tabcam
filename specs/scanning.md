@@ -65,3 +65,28 @@ Picked files are recognized by extension, or else MIME type: images `jpg`,
 `jpeg`, `png`, `heic`, `heif`, `webp`, `gif`; videos `mp4`, `mov`, `m4v`,
 `webm`, `3gp`. Anything else is left out, and a message says how many.
 Photos get the Tab filter, as scanned pages do.
+
+### Cropping photos to the page
+
+A photo added by hand (Photos & videos, Files; from Capture or an
+event's Add) isn't straightened by a scanner, so TabScan crops it to the
+page itself, when one stands out, so what's under the page (a table, a
+lap) doesn't show ([lib/processing/page_crop.dart](../tabscan_app/lib/processing/page_crop.dart),
+off the UI isolate where there are isolates):
+
+1. at 400 px (the longest side), in gray, the photo is split into bright
+   and dark (Otsu's threshold), and closed a little so text and staff
+   lines don't split the paper;
+2. the largest bright region is the page. It must cover 20% to 92% of the
+   photo, and not reach from one edge of the photo to the opposite one;
+3. its corners are its extreme points along the diagonals; they must make
+   a convex four-sided shape, every corner between 50° and 130°, that the
+   region fills (85% to 115%);
+4. the photo (turned as its EXIF says) is rectified to those corners,
+   1.5% inside them so no edge of the table shows, at most 3000 px, and
+   kept as a JPEG (quality 90).
+
+When any of that fails (no clear page, the page already fills the photo,
+a format the decoder can't read such as HEIC, or an error), the photo is
+kept exactly as picked. Videos are never touched, nor are scanned pages
+(the document scanner crops them already).
