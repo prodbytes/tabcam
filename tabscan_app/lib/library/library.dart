@@ -81,6 +81,45 @@ class Library extends ChangeNotifier {
     return event;
   }
 
+  /// A copy of [event], as a new event of the user's own: "<title>
+  /// (copy)", the same artist, text tab and pages (each a new page, its
+  /// file copied), created now. It's never synced or shared, so it can be
+  /// shared with other people than the original.
+  Future<CaptureEvent> clone(CaptureEvent event) async {
+    final now = _now();
+    final id = newId();
+    final pages = <EventPage>[];
+    for (final page in event.pages) {
+      if (page.isLink) {
+        pages.add(
+          EventPage.link(id: newId(), url: page.url!, title: page.title),
+        );
+        continue;
+      }
+      final copy = EventPage(
+        id: newId(),
+        filter: page.filter,
+        kind: page.kind,
+        extension: page.extension,
+      );
+      final (bytes, _) = await _store.pageStream(event.id, page);
+      await _store.putPageStream(id, copy, bytes);
+      pages.add(copy);
+    }
+    final copy = CaptureEvent(
+      id: id,
+      title: '${event.title} (copy)',
+      artist: event.artist,
+      created: now,
+      pages: pages,
+      tabText: event.tabText,
+    );
+    await _store.save(copy);
+    _set([copy, ..._all]);
+    _changed();
+    return copy;
+  }
+
   Future<CaptureEvent> addPages(
     CaptureEvent event,
     List<Uint8List> pages,

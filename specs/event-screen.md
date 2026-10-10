@@ -5,7 +5,8 @@ One event, opened from the [library](library.md).
 - **App bar**: the title (and the artist under it, if set); tapping it, or
   **Rename** (pencil), renames the event (see
   [library](library.md#events)). **Text tab** (once read) opens the text tab editor
-  ([tab recognition](tab-recognition.md)). **Share** opens the
+  ([tab recognition](tab-recognition.md)). **Clone** copies the event
+  and opens the copy ([library](library.md#events)). **Share** opens the
   [share sheet](sharing.md).
 - **Pages**: swiped left and right. Images are pinch-zoomable (up to 5×)
   and shown with their [filter](page-filters.md). Videos show a play

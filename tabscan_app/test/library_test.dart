@@ -196,4 +196,38 @@ void main() {
       throwsFormatException,
     );
   });
+
+  test('a clone is a new event of its own, with copies of the pages', () async {
+    final library = Library(PlatformEventStore(root));
+    await library.load();
+    var event = await library.create([_jpeg(40, 60)]);
+    event = await library.addLink(event, Uri.parse('https://example.com/a'));
+    event = await library.update(
+      event.copyWith(title: 'My riff', artist: 'Me', tabText: 'e|--0--|'),
+    );
+    await library.setOwner(event, 'us-east-1:me');
+
+    final copy = await library.clone(library.byId(event.id)!);
+    expect(copy.id, isNot(event.id));
+    expect(copy.title, 'My riff (copy)');
+    expect(copy.artist, 'Me');
+    expect(copy.tabText, 'e|--0--|');
+    expect(copy.owner, isNull);
+    expect(copy.pages.map((p) => p.kind), [PageKind.image, PageKind.link]);
+    expect(copy.pages.first.id, isNot(event.pages.first.id));
+    expect(copy.pages.last.url.toString(), 'https://example.com/a');
+    expect(
+      await library.original(copy, copy.pages.first),
+      await library.original(event, event.pages.first),
+    );
+    expect(library.events.first.id, copy.id);
+
+    // The original goes; the copy keeps its pages.
+    await library.delete(library.byId(event.id)!);
+    final reopened = Library(PlatformEventStore(root));
+    await reopened.load();
+    final kept = reopened.events.single;
+    expect(kept.id, copy.id);
+    expect(await reopened.hasPage(kept.id, kept.pages.first), isTrue);
+  });
 }

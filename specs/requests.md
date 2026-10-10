@@ -111,3 +111,9 @@ spec.
     card counts links; Text and the PDF share them, Files leaves them out
     ([sharing](sharing.md)); they sync inside `event.json`
     ([cloud sync](cloud-sync.md)).
+15. **Add a clone button, so captures can be cloned and shared with
+    different people.** **Clone**, in a library card's menu and the event
+    screen's app bar, copies an event as a new one of the user's own
+    ("<title> (copy)", the pages' files copied, links as they are, never
+    synced or shared); the event screen opens the copy
+    ([library](library.md#events)).

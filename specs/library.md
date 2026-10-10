@@ -8,7 +8,7 @@ The home screen, titled **TabScan**.
   set), the page count, the video and link counts (if any), and "text"
   once the tab has been read. Tapping a
   card opens the [event screen](event-screen.md); its ⋮ menu has **Rename**,
-  **Share** ([sharing](sharing.md)) and **Delete** (after a confirmation,
+  **Share** ([sharing](sharing.md)), **Clone** (below) and **Delete** (after a confirmation,
   which says the pages and text tab go too). Long-pressing a card renames
   it.
 - **Empty**: a music icon, "No tabs yet", and a line saying what Scan does.
@@ -43,6 +43,14 @@ pencil) asks for the **Song** and **Artist**, prefilled, with the song's
 text selected so typing replaces it. Saving with an empty song keeps the
 title; an empty artist clears it. Exports are named from the new title
 ([sharing](sharing.md)).
+
+**Clone** (a card's menu, or the event screen's app bar, which then opens
+the copy) makes a copy that is a new event of the user's own: titled
+"<title> (copy)", with the same artist, text tab and pages, each page a
+new page with its file copied (links copied as they are), created now,
+and never synced or shared yet. So it can be changed, or shared with
+other people, apart from the original. A message says "Cloned as
+"<title> (copy)"".
 
 **Delete** removes an event and its pages. One that has synced leaves a
 **tombstone** (its ID, `updated` and `deleted` times, no pages), hidden
