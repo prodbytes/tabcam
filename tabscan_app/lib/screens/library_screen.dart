@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
@@ -15,10 +16,17 @@ import 'video_page.dart';
 /// ([fresh]) is scrolled to and outlined for a moment. Tapping a card opens
 /// its [EventScreen].
 class LibraryView extends StatefulWidget {
-  const LibraryView({super.key, required this.library, this.sync, this.fresh});
+  const LibraryView({
+    super.key,
+    required this.library,
+    this.sync,
+    this.ocr,
+    this.fresh,
+  });
 
   final Library library;
   final CloudSync? sync;
+  final CloudOcr? ocr;
 
   /// The event just added: outlined, and the list scrolls up to it.
   final String? fresh;
@@ -79,7 +87,8 @@ class _LibraryViewState extends State<LibraryView> {
             library: library,
             event: event,
             fresh: event.id == widget.fresh,
-            onOpen: () => openEvent(context, library, event, widget.sync),
+            onOpen: () =>
+                openEvent(context, library, event, widget.sync, widget.ocr),
             sync: widget.sync,
           );
         },
@@ -93,11 +102,12 @@ void openEvent(
   BuildContext context,
   Library library,
   CaptureEvent event,
-  CloudSync? sync,
-) => Navigator.of(context).push(
+  CloudSync? sync, [
+  CloudOcr? ocr,
+]) => Navigator.of(context).push(
   MaterialPageRoute<void>(
     builder: (_) =>
-        EventScreen(library: library, eventId: event.id, sync: sync),
+        EventScreen(library: library, eventId: event.id, sync: sync, ocr: ocr),
   ),
 );
 

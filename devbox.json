@@ -5,14 +5,17 @@
     "python": "latest",
     "awscli2": "latest",
     "gnumake": "latest",
-    "curl": "latest"
+    "curl": "latest",
+    "mkcert": "latest",
+    "openssl": "latest"
   },
   "shell": {
     "scripts": {
       "web": "bash scripts/flutter-web.sh",
       "android": "bash scripts/flutter-android.sh",
       "android-release": "bash scripts/android-install.sh",
-      "android-log": "bash scripts/android-log.sh"
+      "android-log": "bash scripts/android-log.sh",
+      "maintenance": "bash scripts/maintenance.sh"
     }
   }
 }

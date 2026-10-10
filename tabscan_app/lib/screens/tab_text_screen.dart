@@ -62,11 +62,6 @@ class _TabTextScreenState extends State<TabTextScreen> {
         title: const Text('Text tab'),
         actions: [
           IconButton(
-            tooltip: 'Copy',
-            icon: const Icon(Icons.copy),
-            onPressed: _copy,
-          ),
-          IconButton(
             tooltip: 'Share',
             icon: const Icon(Icons.ios_share),
             onPressed: () async {
@@ -79,29 +74,50 @@ class _TabTextScreenState extends State<TabTextScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minWidth: MediaQuery.sizeOf(context).width,
-            maxWidth: 1600,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FilledButton.tonalIcon(
+                onPressed: _copy,
+                icon: const Icon(Icons.copy),
+                label: const Text('Copy'),
+              ),
+            ),
           ),
-          child: TextField(
-            controller: _text,
-            readOnly: widget.library.byId(widget.eventId)?.readOnly ?? false,
-            maxLines: null,
-            expands: false,
-            keyboardType: TextInputType.multiline,
-            style: const TextStyle(
-              fontFamily: 'monospace',
-              fontFamilyFallback: ['Menlo', 'Courier New', 'Courier'],
-              fontSize: 13,
-              height: 1.25,
-            ),
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.all(16),
-            ),
+          Expanded(child: _editor(context)),
+        ],
+      ),
+    );
+  }
+
+  /// The tab text, unwrapped: long lines scroll sideways.
+  Widget _editor(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minWidth: MediaQuery.sizeOf(context).width,
+          maxWidth: 1600,
+        ),
+        child: TextField(
+          controller: _text,
+          readOnly: widget.library.byId(widget.eventId)?.readOnly ?? false,
+          maxLines: null,
+          expands: false,
+          keyboardType: TextInputType.multiline,
+          style: const TextStyle(
+            fontFamily: 'monospace',
+            fontFamilyFallback: ['Menlo', 'Courier New', 'Courier'],
+            fontSize: 13,
+            height: 1.25,
+          ),
+          decoration: const InputDecoration(
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.all(16),
           ),
         ),
       ),

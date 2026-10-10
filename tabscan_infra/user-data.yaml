@@ -48,6 +48,11 @@ Resources:
             Status: Enabled
             AbortIncompleteMultipartUpload:
               DaysAfterInitiation: 1
+      # Object events go to EventBridge, where tabscan-ocr (ocr.yaml) picks
+      # up page uploads to transcribe for premium users.
+      NotificationConfiguration:
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
       CorsConfiguration:
         CorsRules:
           - AllowedOrigins: !Ref AllowedOrigins

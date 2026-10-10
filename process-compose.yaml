@@ -7,10 +7,16 @@ processes:
       - HEALTH_CHECK_INTERVAL=${HEALTH_CHECK_INTERVAL:-15}
       - INDEX_PORT=${INDEX_PORT:-2013}
       - FLUTTER_WEB_PORT=${FLUTTER_WEB_PORT:-2012}
+      - FLOCI_PORT=${FLOCI_PORT:-2014}
+      - FLOCI_HTTPS_PORT=${FLOCI_HTTPS_PORT:-2443}
+      - TABSCANNER_CDN_ALIAS=${TABSCANNER_CDN_ALIAS:-tabscan.localhost}
+      - TABSCANNER_PUBLIC_HOST=${TABSCANNER_PUBLIC_HOST:-local.tabscan.nu01.com}
     # Start logging once every service passes its readiness probe, so the
     # first status line reflects a fully started stack.
     depends_on:
       2-flutter-web:
+        condition: process_healthy
+      4-floci:
         condition: process_healthy
       5-index:
         condition: process_healthy
@@ -41,8 +47,34 @@ processes:
       restart: on_failure
       backoff_seconds: 5
 
+  4-floci:
+    # Floci as the local CloudFront, over HTTP and HTTPS (tabscan_floci/).
+    # The mkcert certificate is generated first, when missing or stale.
+    command: bash scripts/local-certs.sh && docker compose -f tabscan_floci/compose.yaml up floci
+    environment:
+      - FLOCI_PORT=${FLOCI_PORT:-2014}
+      - FLOCI_HTTPS_PORT=${FLOCI_HTTPS_PORT:-2443}
+    shutdown:
+      command: docker compose -f tabscan_floci/compose.yaml down; true
+      timeout_seconds: 30
+    readiness_probe:
+      exec:
+        command: curl -fs http://localhost:${FLOCI_PORT:-2014}/_floci/init | grep -q '"ready":true'
+      initial_delay_seconds: 1
+      period_seconds: 2
+      timeout_seconds: 5
+      # Up to 6 minutes: the first run pulls the image.
+      failure_threshold: 180
+    availability:
+      # Always, not on_failure: when the container is stopped from outside
+      # (a `docker compose down`), `compose up` exits 0, and the CDN and
+      # HTTPS would stay down until a manual restart.
+      restart: always
+      backoff_seconds: 5
+
   5-index:
-    # The site root (tabscan_index/site), which redirects to /app/.
+    # The site root (tabscan_index/site), which redirects to /app/. Floci's
+    # distribution uses it as the default origin.
     # TABSCANNER_BIND_HOST: see scripts/flutter-web.sh.
     command: python3 -m http.server ${INDEX_PORT:-2013} --bind ${TABSCANNER_BIND_HOST:-127.0.0.1} --directory tabscan_index/site
     readiness_probe:

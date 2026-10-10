@@ -46,7 +46,11 @@ saying how many.
 
 The account, up to 560 dp wide: signed out, **Sign in** with what it's
 for and the sign-in button; signed in, who, the sync status, **Sync now**
-and **Sign out** ([sign-in and cloud sync](cloud-sync.md#signing-in)). In
+and **Sign out** ([sign-in and cloud sync](cloud-sync.md#signing-in)),
+and with Premium set up the **TabScan Premium** card
+([cloud OCR](cloud-ocr.md)); opening the tab checks again whether the
+user is premium. The same panel opens in a sheet from an event's Premium
+**Upgrade**. In
 a build without sign-in, a line says so. Then **About**: the app's name
 and version (X.Y.Z, or "(development build)"), what it does, and
 **Licenses**.

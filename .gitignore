@@ -91,3 +91,8 @@ Thumbs.db
 
 # --- Private build settings (from .env, see scripts/dart-defines.sh) ---
 tabscan_app/ios/Flutter/Private.xcconfig
+
+# --- Local HTTPS (mkcert, see scripts/local-certs.sh) ---
+# No trailing slash: a worktree may link the main folder's certs (a symlink,
+# not a folder), and its private key must never be committed either.
+tabscan_floci/certs

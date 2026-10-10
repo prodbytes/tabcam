@@ -145,7 +145,67 @@ spec.
     ([signed out](cloud-sync.md#signed-out)); Share with people already
     showed only signed in. Builds without sign-in set up don't ask. A
     sync pass ending after the app closed no longer notifies.
-19. **Make the navigation like Presence's: a bottom navigation bar with
+19. **Let admins put the system in maintenance mode; while it's on, no UI
+    is shown at all, just a sorry message.** New
+    [maintenance mode](maintenance-mode.md): `scripts/maintenance.sh
+    on|off|status` (STAGE=prod or rc) writes the site's `/status.json`
+    and invalidates it. The apps check it before showing anything, every
+    2 minutes and on resume; in maintenance mode they show only the sorry
+    message (the admin's, or a default) and stop syncing. Unreadable
+    status fails open, so offline capture keeps working.
+20. **Add a copy button to the top of the transcription view.** The text
+    tab screen's **Copy** moved from an app-bar icon to a labeled button
+    above the text ([text tab editor](tab-recognition.md#text-tab-editor)).
+21. **Transcribe a photographed tab with several OCR kits, compare with the
+    real tab, and say which combination comes closest.** A local bench
+    (`test_data/ocr_bench/`, kept out of git: it holds a published tab):
+    Tesseract, EasyOCR, RapidOCR, PaddleOCR, docTR (TensorFlow), Apple
+    Vision, AWS Rekognition and Textract, on the photo raw, cleaned and
+    binarized, whole-page and cut into string lines. Whole-page OCR loses
+    the dash runs; reading line by line with a vote of Tesseract,
+    PaddleOCR and RapidOCR came closest. No change to the app.
+22. **Could the best one run in AWS Lambda?** Yes, as a container image;
+    no change.
+23. **Add `tabscan_locr`, a Lambda that transcribes tabs as they're
+    scanned, for premium users only (premium from rbacr), offering the
+    upgrade to free users.** New [TabScan Premium: cloud OCR](cloud-ocr.md):
+    the service in [tabscan_locr/](../tabscan_locr/README.md), triggered by
+    page uploads to the user-data bucket (now sending its events to
+    EventBridge), checking rbacr's `tabscan/premium` role with a root token
+    in Secrets Manager, and writing transcriptions beside the user's events;
+    new stacks `tabscan-ocr-repo` and `tabscan-ocr`. The app fills in text
+    tabs from them, asks for pages from before upgrading, and offers
+    Premium in the account sheet and on the event screen
+    ([cloud sync](cloud-sync.md), [tab recognition](tab-recognition.md));
+    new setting `TABSCANNER_OCR_URL` ([deploy](deploy.md),
+    [dev environment](dev-environment.md)).
+24. **TabScan doesn't work on the iPhone: relaunch and verify.** It
+    crashed at launch ("Null check operator used on a null value" in
+    `MaintenanceCheck.start`): the maintenance check, started before
+    `runApp`, used `WidgetsBinding.instance` before there was one. `main`
+    now initializes the binding first. Verified on the iPhone (a profile
+    build: it launches, with no errors in its log).
+25. **Commit all changes, by intention.** The Swift packages Google
+    sign-in's iOS build resolves (Xcode's `Package.resolved`, both copies)
+    are committed, so every build uses the same versions;
+    [platforms](platforms.md) says where iOS dependencies come from and
+    notes the two copies of Google's utilities (ML Kit's CocoaPods and
+    sign-in's Swift packages) that iOS warns about.
+26. **Create the DNS record for https://local.tabscan.nu01.com, pointing
+    to localhost.** Added `local.tabscan.nu01.com` to the
+    `tabscan.nu01.com` zone: A `127.0.0.1` and AAAA `::1`, TTL 300, made
+    by hand with the AWS CLI (no stack owns it)
+    ([deploy](deploy.md), [dev environment](dev-environment.md)).
+27. **Local HTTPS through Floci, merged as it was, when asked to merge
+    everything.** The dev stack gets Floci as a local CloudFront (HTTP on
+    2014, HTTPS on 2443, both on 127.0.0.1) in front of the dev servers,
+    with an mkcert certificate for `local.tabscan.nu01.com` and the
+    `*.localhost` names (`scripts/local-certs.sh`; the key stays in the
+    git-ignored `tabscan_floci/certs`); the health monitor checks the CDN
+    and HTTPS too. Still to write: `tabscan_floci/README.md` (with the
+    one-time `mkcert -install`) and the [dev environment](dev-environment.md)
+    spec for it.
+28. **Make the navigation like Presence's: a bottom navigation bar with
     Home (the list), Capture and Profile; Capture with Scan for the camera
     and Add buttons for uploads.** New [navigation](navigation.md): the
     bar (flat, the open tab by color only, the Profile icon the user's

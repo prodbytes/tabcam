@@ -43,7 +43,8 @@ The [Profile](navigation.md#profile) tab shows the account:
 - **Signed in**: the account's photo, name and email; the sync status
   ("Syncing…", "Synced at 14:05 (2 uploaded, 1 downloaded)", or why it
   failed, such as "Sign in again to sync"); **Sync now**; **Sign out**,
-  which keeps the events on the device.
+  which keeps the events on the device; and, where it's set up, the
+  [TabScan Premium](cloud-ocr.md#in-the-app) card.
 
 Google sign-in (`google_sign_in`,
 [lib/auth/](../tabscan_app/lib/auth)) per platform:
@@ -76,6 +77,11 @@ the user-data bucket:
 | `<identity>/events/<event id>/<page id>.<extension>` | each page's file, as stored on the device, with its MIME type (`image/jpeg` for scanned pages, the video's type for videos) |
 
 Links are in `event.json` only: they have no file.
+Beside `events/`, the user's folder has `ocr/`: the transcriptions the
+[cloud OCR](cloud-ocr.md) service writes for premium users
+(`<identity>/ocr/<event id>/<page id>.json`). Sync doesn't touch them;
+`CloudOcr` reads them.
+
 Page files never change once written: a rotated page is a new page (see
 [library](library.md#events)), so an event's pages are known by their names.
 Uploads use S3 Intelligent-Tiering.
@@ -161,7 +167,8 @@ either):
 - **`user-data.yaml`**, stack `tabscan-user-data`: the bucket
   `nu01-user-events-<account>` (not `tabscan-*`, so the deploy roles,
   which manage `tabscan-*` buckets, can't reach users' events). Private,
-  SSE-S3, TLS only, versioned (old and deleted versions are kept 30 days,
+  SSE-S3, TLS only, its object events sent to EventBridge (for
+  [cloud OCR](cloud-ocr.md)), versioned (old and deleted versions are kept 30 days,
   so a deletion can be undone), incomplete uploads cleared after a day.
   CORS allows `GET`, `PUT`, `HEAD` and `DELETE` from
   `https://tabscan.nu01.com`, `https://rc.tabscan.nu01.com` and

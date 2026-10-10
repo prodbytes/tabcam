@@ -5,6 +5,10 @@ https://rc.tabscan.nu01.com/app/ (release candidate), from a private S3
 bucket behind CloudFront ([tabscan_infra/site.yaml](../tabscan_infra/site.yaml)).
 Both names live in the `tabscan.nu01.com` Route 53 zone
 (`Z10277161AEN9OU2H73PJ`), delegated from `nu01.com`.
+The zone also holds `local.tabscan.nu01.com`, A `127.0.0.1` and AAAA
+`::1` (TTL 300), so a name under the real domain reaches the
+[local dev servers](dev-environment.md). It was made by hand with the AWS
+CLI; no stack owns it.
 `/` is the [index page](../tabscan_index), which redirects to `/app/`.
 
 ## Production
@@ -19,6 +23,8 @@ which runs `scripts/deploy.sh` for that tag:
    name `tabscan_app`) whose alarm emails `TABSCANNER_HEALTH_EMAILS`;
 3. uploads `index.html` and the web build (`Cache-Control: no-cache`,
    Flutter's files aren't content-hashed) and invalidates `/*`;
+   `/status.json` ([maintenance mode](maintenance-mode.md)) is left as
+   it is;
 4. checks, for up to 10 minutes, that `/app/version.json` reports the
    version and `/` is the index page.
 
@@ -43,9 +49,11 @@ Repository variables: `TABSCANNER_AWS_DEPLOY_ROLE_ARN`, `TABSCANNER_AWS_DEPLOY_R
 `TABSCANNER_HOSTED_ZONE_ID`, and for [sign-in and cloud sync](cloud-sync.md)
 `TABSCANNER_GOOGLE_WEB_CLIENT_ID`, `TABSCANNER_GOOGLE_IOS_CLIENT_ID` (releases only),
 `TABSCANNER_COGNITO_IDENTITY_POOL_ID`, `TABSCANNER_USER_DATA_BUCKET` and (for
-[shared captures](shared-captures.md)) `TABSCANNER_SHARE_API_URL`, compiled into
-the builds (empty: no sign-in, or no sharing). Their stacks,
-`tabscan-user-data`, `tabscan-identity` and `tabscan-share-api`, are
+[shared captures](shared-captures.md)) `TABSCANNER_SHARE_API_URL` and (for
+[TabScan Premium](cloud-ocr.md)) `TABSCANNER_OCR_URL`, compiled into
+the builds (empty: no sign-in, no sharing, or no Premium). Their stacks,
+`tabscan-user-data`, `tabscan-identity`, `tabscan-share-api`,
+`tabscan-ocr-repo` and `tabscan-ocr`, are
 deployed by an administrator, not by the workflows; repository secret: `TABSCANNER_HEALTH_EMAILS` (a secret
 because the repository is public and run logs show variables). One-time setup:
 [tabscan_infra/README.md](../tabscan_infra/README.md).

@@ -3,8 +3,12 @@
 **Read tab** on the [event screen](event-screen.md) turns an event's pages into
 plain-text tab, on the device, with Google ML Kit text recognition (Latin
 script). Android and iOS only; on the web it says reading tabs needs the
-app. Signed out, it asks to sign in first
+app, or TabScan Premium. Signed out, it asks to sign in first
 ([signed out](cloud-sync.md#signed-out)).
+
+With [TabScan Premium](cloud-ocr.md) the text tab comes from the cloud
+instead, by itself, as the pages sync, and Read tab asks for it; the rest
+of this page is the on-device reading everyone else has.
 
 Each page (as scanned, not filtered) is turned upright, scaled to at most
 2400 px and made grayscale. Staff lines are found in that image, and OCR
@@ -63,5 +67,6 @@ Text tabs are tried first; typeset layout runs when no text tab is found.
 ## Text tab editor
 
 The read tab, monospaced and unwrapped (long lines scroll sideways),
-editable to fix what OCR got wrong. **Copy** puts it on the clipboard;
-**Share** shares it as text. Edits are saved on the event when leaving.
+editable to fix what OCR got wrong. A **Copy** button at the top, above
+the text, puts it on the clipboard; **Share** (in the app bar) shares it
+as text. Edits are saved on the event when leaving.

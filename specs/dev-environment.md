@@ -24,6 +24,9 @@
     `2026-10-10 14:02:10  🏠 index ✅  🎸 web ✅`.
   - Servers bind to 127.0.0.1; `TABSCANNER_BIND_HOST=0.0.0.0` serves other
     devices (a phone's browser).
+  - `local.tabscan.nu01.com` resolves to localhost (`127.0.0.1`, `::1`),
+    so http://local.tabscan.nu01.com:2012/app/ reaches the local app
+    under the real domain. Nothing serves HTTPS locally yet.
 - **Android** (USB, debugging on; `ANDROID_SERIAL` picks one of several):
   `devbox run android` runs a debug build attached
   (`scripts/flutter-android.sh`); `devbox run android-release` installs a
@@ -39,7 +42,9 @@
   [sign-in and cloud sync](cloud-sync.md)
   `TABSCANNER_GOOGLE_WEB_CLIENT_ID`, `TABSCANNER_GOOGLE_IOS_CLIENT_ID`,
   `AWS_REGION`, `TABSCANNER_COGNITO_IDENTITY_POOL_ID`,
-  `TABSCANNER_USER_DATA_BUCKET` and `TABSCANNER_SHARE_API_URL`, all public
+  `TABSCANNER_USER_DATA_BUCKET`, `TABSCANNER_SHARE_API_URL`, for
+  [TabScan Premium](cloud-ocr.md) `TABSCANNER_OCR_URL`, and
+  [maintenance mode](maintenance-mode.md)'s `TABSCANNER_STATUS_URL`, all public
   identifiers); the version is passed as `TABSCANNER_VERSION`. The
   environment wins over `.env`.
 - **Setting names**: every TabScan setting is prefixed `TABSCANNER_`, and
@@ -48,5 +53,6 @@
   standard name, as the AWS CLI reads it.
 - **Checks**: `flutter analyze` and `flutter test` in `tabscan_app/`;
   the share API's tests with `python3 -m unittest discover -s
-  tabscan_api/shares`.
+  tabscan_api/shares`; the cloud OCR service's `pytest` and image build
+  ([tabscan_locr/](../tabscan_locr/README.md#test)).
   Tests use made-up riffs, never tabs of published songs.

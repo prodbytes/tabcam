@@ -6,6 +6,7 @@ import '../app_version.dart';
 import '../auth/auth_service.dart';
 import '../capture/media.dart';
 import '../capture/page_source.dart';
+import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
 import '../library/capture_event.dart';
 import '../library/library.dart';
@@ -34,13 +35,22 @@ enum HomeTab {
 /// on Home, at the top of the list, outlined, with Open in the message
 /// that confirms it.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.library, this.auth, this.sync});
+  const HomeScreen({
+    super.key,
+    required this.library,
+    this.auth,
+    this.sync,
+    this.ocr,
+  });
 
   final Library library;
 
   /// Sign-in and sync, in a build that has them; null otherwise.
   final AuthService? auth;
   final CloudSync? sync;
+
+  /// TabScan Premium's cloud transcription, in a build that has it.
+  final CloudOcr? ocr;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -83,7 +93,8 @@ class _HomeScreenState extends State<HomeScreen> {
           content: Text('Saved "${event.title}" (${contentsOf(event)})'),
           action: SnackBarAction(
             label: 'Open',
-            onPressed: () => openEvent(context, library, event!, widget.sync),
+            onPressed: () =>
+                openEvent(context, library, event!, widget.sync, widget.ocr),
           ),
         ),
       );
@@ -140,14 +151,19 @@ class _HomeScreenState extends State<HomeScreen> {
       body: IndexedStack(
         index: _tab.index,
         children: [
-          LibraryView(library: library, sync: widget.sync, fresh: _fresh),
+          LibraryView(
+            library: library,
+            sync: widget.sync,
+            ocr: widget.ocr,
+            fresh: _fresh,
+          ),
           CaptureView(
             onScan: _scan,
             onPhotos: () => _addMedia(files: false),
             onFiles: () => _addMedia(files: true),
             onLink: _addLink,
           ),
-          ProfileView(auth: widget.auth, sync: widget.sync),
+          ProfileView(auth: widget.auth, sync: widget.sync, ocr: widget.ocr),
         ],
       ),
       bottomNavigationBar: DecoratedBox(
@@ -160,7 +176,14 @@ class _HomeScreenState extends State<HomeScreen> {
         child: _NavigationBar(
           tab: _tab,
           auth: widget.auth,
-          onSelected: (tab) => setState(() => _tab = tab),
+          onSelected: (tab) {
+            // Opening Profile checks again whether the user is premium
+            // (they may have just upgraded).
+            if (tab == HomeTab.profile && widget.auth?.user != null) {
+              widget.ocr?.refresh();
+            }
+            setState(() => _tab = tab);
+          },
         ),
       ),
     );
@@ -356,10 +379,11 @@ class _AddTile extends StatelessWidget {
 
 /// The Profile tab: the account (in a build with sign-in), then About.
 class ProfileView extends StatelessWidget {
-  const ProfileView({super.key, this.auth, this.sync});
+  const ProfileView({super.key, this.auth, this.sync, this.ocr});
 
   final AuthService? auth;
   final CloudSync? sync;
+  final CloudOcr? ocr;
 
   @override
   Widget build(BuildContext context) {
@@ -374,7 +398,7 @@ class ProfileView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if ((auth, sync) case (final auth?, final sync?))
-                  AccountPanel(auth: auth, sync: sync)
+                  AccountPanel(auth: auth, sync: sync, ocr: ocr)
                 else
                   Text(
                     'Sign-in isn\'t set up in this build: your events stay '

@@ -1,15 +1,47 @@
 import 'package:flutter/material.dart';
 
 import '../auth/auth_service.dart';
+import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
+import 'premium_card.dart';
+
+/// The [AccountPanel] in a bottom sheet, for places away from the Profile
+/// tab (an event's Premium Upgrade); with Premium set up ([ocr]), it checks
+/// again whether the user is premium (they may have just upgraded).
+Future<void> showAccountSheet(
+  BuildContext context,
+  AuthService auth,
+  CloudSync sync,
+  CloudOcr? ocr,
+) {
+  if (auth.user != null) ocr?.refresh();
+  return showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    isScrollControlled: true,
+    builder: (_) => SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        child: AccountPanel(auth: auth, sync: sync, ocr: ocr),
+      ),
+    ),
+  );
+}
 
 /// The Profile tab's account: signing in, and once signed in, who it is,
-/// how sync stands, Sync now and Sign out.
+/// how sync stands, Sync now and Sign out; with Premium set up ([ocr]),
+/// the Premium card too.
 class AccountPanel extends StatelessWidget {
-  const AccountPanel({super.key, required this.auth, required this.sync});
+  const AccountPanel({
+    super.key,
+    required this.auth,
+    required this.sync,
+    this.ocr,
+  });
 
   final AuthService auth;
   final CloudSync sync;
+  final CloudOcr? ocr;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -31,6 +63,13 @@ class AccountPanel extends StatelessWidget {
           'every device you sign in on. Signed out, you can still capture; '
           'it stays on this device.',
         ),
+        if (ocr != null) ...[
+          const SizedBox(height: 8),
+          const Text(
+            'Signed in, TabScan Premium transcribes your scans in the cloud '
+            'as they sync.',
+          ),
+        ],
         const SizedBox(height: 16),
         auth.buildSignInButton() ??
             FilledButton.icon(
@@ -86,6 +125,10 @@ class AccountPanel extends StatelessWidget {
           'Signing out keeps your events on this device.',
           style: theme.textTheme.bodySmall,
         ),
+        if (ocr case final ocr?) ...[
+          const SizedBox(height: 16),
+          PremiumCard(ocr: ocr, email: user.email),
+        ],
       ],
     );
   }
