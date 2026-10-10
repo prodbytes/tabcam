@@ -56,6 +56,9 @@ under the app bar.
   the user's devices at the next pass. A role change applies at the next
   pass too.
 
+If the owner [hid its images](hidden-images.md), it shows that way for
+the user too, who can't show them.
+
 Who shared it and the role are kept on the device only (`sharedBy`,
 `readOnly`), never in the capture's cloud copy.
 

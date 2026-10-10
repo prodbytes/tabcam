@@ -122,6 +122,7 @@ class Library extends ChangeNotifier {
       created: now,
       pages: pages,
       tabText: event.tabText,
+      hideImages: event.hideImages,
     );
     await _store.save(copy);
     _set([copy, ..._all]);

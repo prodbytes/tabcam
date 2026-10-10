@@ -307,3 +307,12 @@ spec.
     Android app links are a follow-up. The text tab and links go in the
     PDF and the zip. (There are no PDF pages: pages are images, videos and
     links, so PDF combines the images.)
+38. **Let the owner hide the original image and show only the text and
+    attachments.** A capture's owner can now **Hide images** (and **Show
+    images**) from the event screen's app bar. This is a synced setting
+    (`hideImages` in `event.json`), so it applies to everyone: the owner's
+    devices and the people it's shared with, who can't change it. Hidden,
+    the event screen shows the text tab as the first page, then the videos
+    and links. Library cards show no image, and PDF and Files exports
+    leave the images out. The images are kept, Read tab still reads them,
+    and grantees still sync them ([hidden images](hidden-images.md)).

@@ -9,7 +9,9 @@ One event, opened from the [library](library.md).
   and opens the copy ([library](library.md#events)). **Share** opens the
   [share sheet](sharing.md). **Share with people** (the user's own
   events, signed in, in a build with sharing) shares it by email
-  ([shared captures](shared-captures.md)).
+  ([shared captures](shared-captures.md)). **Hide images** / **Show
+  images** (the owner only) hides the photos and scans, for everyone
+  ([hidden images](hidden-images.md)).
 - **Shared with the user**: a line under the app bar, "Shared by <email>
   · Can edit" or "· Read only". Read only, Rename, Add, Filter, Rotate,
   Read tab, Delete and editing the text tab are off.
@@ -20,7 +22,9 @@ One event, opened from the [library](library.md).
   Links show as a card with a link icon, the title (or the address's
   host), the address (selectable), **Open** (in the browser, or the app
   that handles it, such as YouTube; a link that can't open says so) and
-  **Copy** (to the clipboard). Under the pages, "2 / 5".
+  **Copy** (to the clipboard). Under the pages, "2 / 5". With the
+  images [hidden](hidden-images.md), the pages are the text tab, then the
+  videos and links.
 - **Tools** along the bottom, for the page shown:
   - **Add**: more pages, [scanned or picked](scanning.md#adding-to-an-event):
     Scan pages, Photos & videos, Files, or a **Link**.

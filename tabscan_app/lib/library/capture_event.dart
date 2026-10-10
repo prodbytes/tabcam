@@ -124,6 +124,7 @@ class CaptureEvent {
     this.artist = '',
     this.pages = const [],
     this.tabText,
+    this.hideImages = false,
     this.deleted,
     this.owner,
     this.shares = const [],
@@ -156,6 +157,21 @@ class CaptureEvent {
 
   /// The tab as plain text, from Read tab, as the user last edited it.
   final String? tabText;
+
+  /// Whether its owner hid the photos and scans: it then shows only the
+  /// text tab and the other pages (videos and links), to everyone it's
+  /// shared with too, and exports leave the images out. The images are
+  /// kept (Read tab still reads them) and come back when shown again.
+  final bool hideImages;
+
+  /// The pages it shows and exports: all of them, or, with [hideImages],
+  /// the videos and links.
+  List<EventPage> get visiblePages => hideImages
+      ? [
+          for (final p in pages)
+            if (!p.isImage) p,
+        ]
+      : pages;
 
   /// When it was deleted, for a tombstone: not shown, no pages.
   final DateTime? deleted;
@@ -192,6 +208,7 @@ class CaptureEvent {
     String? artist,
     List<EventPage>? pages,
     String? tabText,
+    bool? hideImages,
     DateTime? updated,
     String? owner,
     List<EventShare>? shares,
@@ -205,6 +222,7 @@ class CaptureEvent {
     updated: updated ?? this.updated,
     pages: pages ?? this.pages,
     tabText: tabText ?? this.tabText,
+    hideImages: hideImages ?? this.hideImages,
     deleted: deleted,
     owner: owner ?? this.owner,
     shares: shares ?? this.shares,
@@ -223,6 +241,7 @@ class CaptureEvent {
     'updated': updated.toUtc().toIso8601String(),
     'pages': [for (final p in pages) p.toJson()],
     if (tabText != null) 'tabText': tabText,
+    if (hideImages) 'hideImages': true,
     if (deleted != null) 'deleted': deleted!.toUtc().toIso8601String(),
     if (owner != null) 'owner': owner,
     if (shares.isNotEmpty) 'shares': [for (final s in shares) s.toJson()],
@@ -246,6 +265,7 @@ class CaptureEvent {
           EventPage.fromJson((p as Map).cast<String, Object?>()),
       ],
       tabText: json['tabText'] as String?,
+      hideImages: json['hideImages'] == true,
       deleted: time('deleted'),
       owner: json['owner'] as String?,
       shares: [
