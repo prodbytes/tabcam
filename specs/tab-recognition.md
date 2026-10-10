@@ -15,8 +15,8 @@ Each page (as scanned, not filtered) is turned upright, scaled to at most
 runs on the same image (through a temporary file, deleted after), so their
 coordinates agree. Pages with tab are joined with a blank line. With
 nothing found, a message suggests the Tab filter, or rescanning closer and
-flatter. With a result, it's saved on the event and the text tab editor
-opens.
+flatter. With a result, it's saved on the event (not marked correct, even
+if the reading it replaces was) and the text tab editor opens.
 
 ## Text tabs
 
@@ -67,6 +67,16 @@ Text tabs are tried first; typeset layout runs when no text tab is found.
 ## Text tab editor
 
 The read tab, monospaced and unwrapped (long lines scroll sideways),
-editable to fix what OCR got wrong. A **Copy** button at the top, above
-the text, puts it on the clipboard; **Share** (in the app bar) shares it
-as text. Edits are saved on the event when leaving.
+editable to fix what OCR got wrong. At the top, above the text: a **Copy**
+button puts it on the clipboard, and **Mark correct** marks the reading
+correct once the user has checked it (it then reads **Correct**, ticked;
+tapping it again unmarks it). **Share** (in the app bar) shares it as
+text. Edits are saved on the event when leaving; the mark is saved at
+once.
+
+The mark is kept on the event and syncs with it (`tabTextCorrect`), and a
+clone keeps it. An event marked correct opens on its text tab, with its
+pages one step back; one that isn't opens on its pages, as before. A new
+on-device reading clears the mark, and [cloud OCR](cloud-ocr.md) never
+replaces a text tab marked correct. On an event shared read only the mark
+is shown (when set) but can't be changed.

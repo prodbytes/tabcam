@@ -36,7 +36,8 @@ the cloud as they sync.
   by adaptive thresholding), the default.
 - [Tab recognition](tab-recognition.md): Read tab, from on-device OCR to
   plain-text tab, for text tabs and typeset tab staves; the text tab
-  editor.
+  editor, where a reading is marked correct (the event then opens on
+  it).
 - [Sharing](sharing.md): PDF, text (the text tab and links), or files
   (images and videos), through the system share sheet.
 - [Sign-in and cloud sync](cloud-sync.md): optional Google sign-in from

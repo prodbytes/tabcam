@@ -100,6 +100,7 @@ class CaptureEvent {
     this.artist = '',
     this.pages = const [],
     this.tabText,
+    this.tabTextCorrect = false,
     this.deleted,
     this.owner,
     this.sharedBy,
@@ -132,6 +133,10 @@ class CaptureEvent {
   /// The tab as plain text, from Read tab, as the user last edited it.
   final String? tabText;
 
+  /// The user marked [tabText] as a correct reading: the event then opens
+  /// on its text tab instead of its pages.
+  final bool tabTextCorrect;
+
   /// When it was deleted, for a tombstone: not shown, no pages.
   final DateTime? deleted;
   bool get isDeleted => deleted != null;
@@ -163,6 +168,7 @@ class CaptureEvent {
     String? artist,
     List<EventPage>? pages,
     String? tabText,
+    bool? tabTextCorrect,
     DateTime? updated,
     String? owner,
     String? sharedBy,
@@ -175,6 +181,7 @@ class CaptureEvent {
     updated: updated ?? this.updated,
     pages: pages ?? this.pages,
     tabText: tabText ?? this.tabText,
+    tabTextCorrect: tabTextCorrect ?? this.tabTextCorrect,
     deleted: deleted,
     owner: owner ?? this.owner,
     sharedBy: sharedBy ?? this.sharedBy,
@@ -191,6 +198,7 @@ class CaptureEvent {
     'updated': updated.toUtc().toIso8601String(),
     'pages': [for (final p in pages) p.toJson()],
     if (tabText != null) 'tabText': tabText,
+    if (tabTextCorrect) 'tabTextCorrect': true,
     if (deleted != null) 'deleted': deleted!.toUtc().toIso8601String(),
     if (local && owner != null) 'owner': owner,
     if (local && sharedBy != null) 'sharedBy': sharedBy,
@@ -213,6 +221,7 @@ class CaptureEvent {
           EventPage.fromJson((p as Map).cast<String, Object?>()),
       ],
       tabText: json['tabText'] as String?,
+      tabTextCorrect: json['tabTextCorrect'] == true,
       deleted: time('deleted'),
       owner: json['owner'] as String?,
       sharedBy: json['sharedBy'] as String?,

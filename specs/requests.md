@@ -225,3 +225,12 @@ spec.
     Checked with `devbox services up`:
     https://local.tabscan.nu01.com:2443/app/ answers with a trusted
     certificate.
+30. **Let a user mark an OCR reading as correct; once marked, show the
+    text tab by default instead of the image, and the image while it
+    isn't.** The text tab editor has **Mark correct** next to Copy (then
+    **Correct**, tapped again to unmark), saved on the event as
+    `tabTextCorrect` and synced. An event marked correct opens on its text
+    tab, its pages one step back; otherwise on its pages, as before. A new
+    on-device reading clears the mark; cloud OCR never replaces a marked
+    text tab. Specs: [tab recognition](tab-recognition.md#text-tab-editor),
+    [event screen](event-screen.md), [cloud OCR](cloud-ocr.md).

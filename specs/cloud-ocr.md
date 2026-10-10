@@ -69,8 +69,8 @@ blank line.
   has a result, the `ok` texts, in page order and separated by a blank
   line, become the event's text tab, which then syncs like any change. It
   writes the text tab only while it's empty or still the text it wrote
-  (kept in `cloudocr.json`), so it never replaces the user's edits or an
-  on-device reading. New pages update it the same way.
+  (kept in `cloudocr.json`), and not marked correct, so it never replaces
+  the user's edits, an on-device reading or a checked text tab. New pages update it the same way.
 - **Pages from before upgrading**: an event whose pages still lack results
   two minutes after its last change is sent to `POST /transcribe
   {eventId}` (once per event per session), which queues its untranscribed
@@ -127,7 +127,8 @@ blank line.
 - The image's build reads back a made-up riff (at least 80% of its notes,
   90% at the time of writing).
 - App tests: a premium event gets its text tab once every page is read;
-  pages without tab are left out; the user's edits stay; a free user gets
+  pages without tab are left out; the user's edits stay; a text tab
+  marked correct stays; a free user gets
   nothing; late pages are asked for once; the Premium card's upgrade offer
   and premium state.
 - On a real photographed tab page (the OCR bench, kept out of git), the

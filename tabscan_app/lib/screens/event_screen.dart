@@ -55,6 +55,19 @@ class _EventScreenState extends State<EventScreen> {
   Library get _library => widget.library;
 
   @override
+  void initState() {
+    super.initState();
+    // A text tab marked correct is what the user wants to see; the pages
+    // are one step back.
+    final event = _library.byId(widget.eventId);
+    if (event != null && event.tabText != null && event.tabTextCorrect) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _openText(event);
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _pages.dispose();
     super.dispose();
@@ -201,7 +214,12 @@ class _EventScreenState extends State<EventScreen> {
       _snack('No tab found. Try the Tab filter, or rescan closer and flatter.');
       return;
     }
-    await _openText(await _library.update(event.copyWith(tabText: text)));
+    // A new reading hasn't been checked yet.
+    await _openText(
+      await _library.update(
+        event.copyWith(tabText: text, tabTextCorrect: false),
+      ),
+    );
   });
 
   /// Premium: the cloud transcribes the event's synced pages; the text tab

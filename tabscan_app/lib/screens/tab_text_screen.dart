@@ -8,6 +8,7 @@ import 'sign_in_gate.dart';
 
 /// The text tab read from an event, to check against the pages and fix:
 /// monospaced, unwrapped (long lines scroll sideways), saved on leaving.
+/// Once checked, the user marks it correct, and the event then opens here.
 /// Read only for an event shared read only.
 class TabTextScreen extends StatefulWidget {
   const TabTextScreen({
@@ -46,6 +47,17 @@ class _TabTextScreenState extends State<TabTextScreen> {
     }
   }
 
+  /// Marks the text tab correct, or no longer correct; saved right away.
+  Future<void> _toggleCorrect() async {
+    _save();
+    final event = widget.library.byId(widget.eventId);
+    if (event == null || event.readOnly) return;
+    await widget.library.update(
+      event.copyWith(tabTextCorrect: !event.tabTextCorrect),
+    );
+    if (mounted) setState(() {});
+  }
+
   Future<void> _copy() async {
     await Clipboard.setData(ClipboardData(text: _text.text));
     if (mounted) {
@@ -56,7 +68,10 @@ class _TabTextScreenState extends State<TabTextScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final title = widget.library.byId(widget.eventId)?.title ?? 'Tab';
+    final event = widget.library.byId(widget.eventId);
+    final title = event?.title ?? 'Tab';
+    final correct = event?.tabTextCorrect ?? false;
+    final editable = !(event?.readOnly ?? false);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Text tab'),
@@ -79,13 +94,29 @@ class _TabTextScreenState extends State<TabTextScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: FilledButton.tonalIcon(
-                onPressed: _copy,
-                icon: const Icon(Icons.copy),
-                label: const Text('Copy'),
-              ),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                FilledButton.tonalIcon(
+                  onPressed: _copy,
+                  icon: const Icon(Icons.copy),
+                  label: const Text('Copy'),
+                ),
+                if (editable || correct)
+                  FilterChip(
+                    tooltip: correct
+                        ? 'Marked correct: the event opens on its text tab'
+                        : 'Mark the reading correct',
+                    avatar: Icon(
+                      correct ? Icons.check_circle : Icons.check_circle_outline,
+                    ),
+                    showCheckmark: false,
+                    label: Text(correct ? 'Correct' : 'Mark correct'),
+                    selected: correct,
+                    onSelected: editable ? (_) => _toggleCorrect() : null,
+                  ),
+              ],
             ),
           ),
           Expanded(child: _editor(context)),

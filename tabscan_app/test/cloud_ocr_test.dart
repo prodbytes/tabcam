@@ -156,6 +156,27 @@ void main() {
     s.dispose();
   });
 
+  test('a text tab marked correct is never replaced', () async {
+    final s = _Setup(premium: true);
+    await s.start();
+    var event = await _twoPages(s.library);
+    await s.signIn();
+    event = s.library.byId(event.id)!;
+    s.result(event, event.pages[0], 'ok', _riffA);
+    s.result(event, event.pages[1], 'ok', _riffB);
+    await s.ocr.collect();
+    event = s.library.byId(event.id)!;
+    final read = event.tabText;
+    await s.library.update(event.copyWith(tabTextCorrect: true));
+
+    // A page added later would change the text tab, but it's checked.
+    event = await s.library.addPages(s.library.byId(event.id)!, [Uint8List(4)]);
+    s.result(event, event.pages[2], 'ok', _riffA);
+    await s.ocr.collect();
+    expect(s.library.byId(event.id)!.tabText, read);
+    s.dispose();
+  });
+
   test('a free user gets nothing from the cloud', () async {
     final s = _Setup();
     await s.start();
