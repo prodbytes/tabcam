@@ -46,6 +46,8 @@ the user signs in on.
 - [App icon](app-icon.md): a scanned tab page with a staff and fret
   numbers, in scanner corners; how the platform icons are generated.
 - [Platforms](platforms.md): Android, iOS and the web, and what each can do.
+- [Maintenance mode](maintenance-mode.md): administrators switch it on
+  with `scripts/maintenance.sh`; the apps then show only a sorry message.
 
 **Development and operations**
 
