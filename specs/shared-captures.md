@@ -27,6 +27,13 @@ in the app bar of the user's own events while signed in) opens a sheet:
 Addresses are compared in lower case. One's own address, and more than
 50 people per capture, are refused, with the API's message.
 
+The owner's app records the people and roles on the event (`shares`:
+`[{email, role}]`, `role` `edit` or `read`) each time it lists, adds,
+changes or removes them, so they sync with the capture
+([event.json](cloud-sync.md#whats-synced-and-where)). The grants in the
+share API are what count: `shares` only says who they were when last
+recorded (and an editor could change it in their copy).
+
 ## Shared with me
 
 A capture shared with the user comes down at the next

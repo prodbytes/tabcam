@@ -1,28 +1,50 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../cloud/cloud_sync.dart';
 import '../export/exporter.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
 
-/// Asks what to share the event as, then opens the system's share sheet.
-/// Text is offered once the tab has been read or there are links.
+/// Asks what to share the event as, then opens the system's share sheet:
+/// its link (the default, with cloud sync), a PDF, the text, or a zip of
+/// its files. Text is offered once the tab has been read or there are
+/// links.
 Future<void> showShareSheet(
   BuildContext context,
   Library library,
-  CaptureEvent event,
-) async {
+  CaptureEvent event, {
+  CloudSync? sync,
+}) async {
+  final hasText = Exporter.shareText(event) != null;
   final format = await showModalBottomSheet<ShareFormat>(
     context: context,
     showDragHandle: true,
     builder: (context) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: ListView(
+        shrinkWrap: true,
         children: [
+          ListTile(
+            leading: const Icon(Icons.link),
+            title: const Text('Link'),
+            subtitle: Text(
+              sync == null
+                  ? 'Needs sign-in and cloud sync'
+                  : 'Opens this capture in TabScan, for you and the people '
+                        'it\'s shared with',
+            ),
+            enabled: sync != null,
+            // The default: first, and marked.
+            selected: sync != null,
+            autofocus: sync != null,
+            onTap: () => Navigator.pop(context, ShareFormat.link),
+          ),
           ListTile(
             leading: const Icon(Icons.picture_as_pdf_outlined),
             title: const Text('PDF'),
             subtitle: const Text(
-              'Every photo and scan, plus the text tab and links',
+              'Every photo and scan in one PDF, plus the text tab and links',
             ),
             onTap: () => Navigator.pop(context, ShareFormat.pdf),
           ),
@@ -30,17 +52,20 @@ Future<void> showShareSheet(
             leading: const Icon(Icons.notes),
             title: const Text('Text'),
             subtitle: Text(
-              Exporter.shareText(event) == null
-                  ? 'Read the tab first (Read tab on the event)'
-                  : 'The text tab and links, as plain text',
+              hasText
+                  ? 'The text tab and links, as plain text'
+                  : 'Read the tab first (Read tab on the event)',
             ),
-            enabled: Exporter.shareText(event) != null,
+            enabled: hasText,
             onTap: () => Navigator.pop(context, ShareFormat.text),
           ),
           ListTile(
-            leading: const Icon(Icons.perm_media_outlined),
+            leading: const Icon(Icons.folder_zip_outlined),
             title: const Text('Files'),
-            subtitle: const Text('Each page as a picture, videos included'),
+            subtitle: const Text(
+              'A zip of everything: photos, scans, videos, the text tab and '
+              'links',
+            ),
             onTap: () => Navigator.pop(context, ShareFormat.files),
           ),
         ],
@@ -48,6 +73,8 @@ Future<void> showShareSheet(
     ),
   );
   if (format == null) return;
+  // A link opens the capture from the cloud: make sure it gets there.
+  if (format == ShareFormat.link) unawaited(sync?.syncNow());
   try {
     await Exporter.share(
       event,

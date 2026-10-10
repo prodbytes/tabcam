@@ -326,3 +326,18 @@ spec.
     on-device reading clears the mark; cloud OCR never replaces a marked
     text tab. Specs: [tab recognition](tab-recognition.md#text-tab-editor),
     [event screen](event-screen.md), [cloud OCR](cloud-ocr.md).
+41. **The Share button should offer only Link (the default: a link to this
+    capture), PDF (every PDF and image combined) or Files (a zip of
+    everything); then: keep the text-only share too. The link holds only
+    the capture ID; save the owner and the shares in the capture event.
+    Web link first, then Android links.** [Sharing](sharing.md) offers
+    Link (default), PDF, Text and Files; Files is now one zip with the
+    pages, `tab.txt` and `links.txt`. The link is
+    `https://tabscan.nu01.com/app/?c=<capture id>`; the web app opens it
+    from the user's events (own or shared), after signing in and a sync
+    pass if needed. `event.json` in the cloud now has `owner` and
+    `shares`, which the owner's app records from the share API
+    ([cloud sync](cloud-sync.md), [shared captures](shared-captures.md)).
+    Android app links are a follow-up. The text tab and links go in the
+    PDF and the zip. (There are no PDF pages: pages are images, videos and
+    links, so PDF combines the images.)

@@ -59,26 +59,29 @@ void main() {
 
   const folder = 'us-east-1:me/events';
 
-  test("an event goes up: its pages, then event.json, without owner", () async {
-    final phone = Device(bucket);
-    await phone.start();
-    final event = await phone.library.create([
-      bytes([1, 2, 3]),
-    ]);
-    await phone.sync.syncNow();
+  test(
+    "an event goes up: its pages, then event.json, naming its owner",
+    () async {
+      final phone = Device(bucket);
+      await phone.start();
+      final event = await phone.library.create([
+        bytes([1, 2, 3]),
+      ]);
+      await phone.sync.syncNow();
 
-    final page = event.pages.single;
-    expect(bucket.objects['$folder/${event.id}/${page.fileName}'], [1, 2, 3]);
-    final json = bucket.json('$folder/${event.id}/event.json');
-    expect(json['title'], event.title);
-    expect(json.containsKey('owner'), isFalse);
-    expect(
-      bucket.requests.indexWhere((r) => r.endsWith(page.fileName)),
-      lessThan(bucket.requests.indexWhere((r) => r.endsWith('event.json'))),
-    );
-    expect(phone.library.all.single.owner, 'us-east-1:me');
-    expect(phone.sync.state, SyncState.synced);
-  });
+      final page = event.pages.single;
+      expect(bucket.objects['$folder/${event.id}/${page.fileName}'], [1, 2, 3]);
+      final json = bucket.json('$folder/${event.id}/event.json');
+      expect(json['title'], event.title);
+      expect(json['owner'], 'us-east-1:me');
+      expect(
+        bucket.requests.indexWhere((r) => r.endsWith(page.fileName)),
+        lessThan(bucket.requests.indexWhere((r) => r.endsWith('event.json'))),
+      );
+      expect(phone.library.all.single.owner, 'us-east-1:me');
+      expect(phone.sync.state, SyncState.synced);
+    },
+  );
 
   test('nothing changed: a pass is one listing', () async {
     final phone = Device(bucket);
@@ -334,6 +337,37 @@ void main() {
       await anaPhone.sync.syncNow();
       return julio.library.byId(event.id)!;
     }
+
+    test('the owner records the shares on the event, which syncs', () async {
+      final created = await julio.library.create([
+        bytes([1, 2]),
+      ]);
+      await julio.sync.syncNow();
+      julio.now = julio.now.add(const Duration(minutes: 1));
+      await julio.sync.grant(
+        julio.library.byId(created.id)!,
+        'ana@example.com',
+        ShareRole.read,
+      );
+      // grant started the pass that sends the shares.
+      while (julio.sync.state == SyncState.syncing) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      final event = julio.library.byId(created.id)!;
+      expect(event.shares, [
+        const EventShare('ana@example.com', readOnly: true),
+      ]);
+      final json = bucket.json('$owner/events/${event.id}/event.json');
+      expect(json['owner'], owner);
+      expect(json['shares'], [
+        {'email': 'ana@example.com', 'role': 'read'},
+      ]);
+      await anaPhone.sync.syncNow();
+      expect(anaPhone.library.byId(event.id)!.shares, event.shares);
+
+      await julio.sync.revoke(event, 'ana@example.com');
+      expect(julio.library.byId(event.id)!.shares, isEmpty);
+    });
 
     test('a capture shared to edit comes down, and edits go back', () async {
       final event = await shareOne(ShareRole.edit);

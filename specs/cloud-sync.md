@@ -23,9 +23,9 @@ device only. **Reading tabs** (the processing) and **sharing** need
 signing in. **Share with people** only shows signed in. Captures made
 signed out are read once the user signs in
 ([tab recognition](tab-recognition.md#reading-by-itself)); the Text view
-says so, with **Sign in**. **Share** (as a PDF, text or files, from a
-card, the event screen or the Text view) and the Text view's **Sign in**,
-tapped signed out, open a sheet, "Sign in to read tabs" or "Sign in to share", saying why, that
+says so, with **Sign in**. **Share** (as a link, a PDF, text or files,
+from a card, the event screen or the Text view) and the Text view's
+**Sign in**, tapped signed out, open a sheet, "Sign in to read tabs" or "Sign in to share", saying why, that
 capturing still works and stays on the device, and the sign-in button.
 Signing in there closes it and goes on with what was tapped; closing it
 does nothing. What was captured signed out goes up at the first sign-in,
@@ -81,7 +81,7 @@ the user-data bucket:
 
 | Object | Content |
 |---|---|
-| `<identity>/events/<event id>/event.json` | the event's details, as on the device but without `owner`; or its tombstone once deleted |
+| `<identity>/events/<event id>/event.json` | the event's details, as on the device, with the folder's identity as `owner` and the people it's shared with (`shares`), but without how it's shared with the user (`sharedBy`, `readOnly`); or its tombstone once deleted. Coming down, the folder it's in, not `owner`, says whose it is |
 | `<identity>/events/<event id>/<page id>.<extension>` | each page's file, as stored on the device, with its MIME type (`image/jpeg` for scanned pages, the video's type for videos) |
 
 Links are in `event.json` only: they have no file.
@@ -195,7 +195,7 @@ Setting it up (the Google OAuth clients, the stacks, the variables):
 ## Verified
 
 - Unit tests with an in-memory bucket and two simulated devices: an event
-  goes up pages first and without `owner`; an unchanged pass is one
+  goes up pages first, naming its `owner`; an unchanged pass is one
   listing; another device's events come down with their pages and don't go
   back up; changes reach the other device; the later change wins; removed
   and rotated pages leave the folder; a deletion reaches other devices and
