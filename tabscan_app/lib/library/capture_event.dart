@@ -100,6 +100,7 @@ class CaptureEvent {
     this.artist = '',
     this.pages = const [],
     this.tabText,
+    this.tabTextAuto = false,
     this.deleted,
     this.owner,
     this.sharedBy,
@@ -129,8 +130,14 @@ class CaptureEvent {
   final DateTime updated;
   final List<EventPage> pages;
 
-  /// The tab as plain text, from Read tab, as the user last edited it.
+  /// The tab as plain text, read from the pages, as the user last edited
+  /// it.
   final String? tabText;
+
+  /// Whether [tabText] is as an automatic read left it (on the device, or
+  /// in the cloud), not edited since: a new read may replace it then, and
+  /// never text the user edited.
+  final bool tabTextAuto;
 
   /// When it was deleted, for a tombstone: not shown, no pages.
   final DateTime? deleted;
@@ -163,6 +170,7 @@ class CaptureEvent {
     String? artist,
     List<EventPage>? pages,
     String? tabText,
+    bool? tabTextAuto,
     DateTime? updated,
     String? owner,
     String? sharedBy,
@@ -175,6 +183,7 @@ class CaptureEvent {
     updated: updated ?? this.updated,
     pages: pages ?? this.pages,
     tabText: tabText ?? this.tabText,
+    tabTextAuto: tabTextAuto ?? this.tabTextAuto,
     deleted: deleted,
     owner: owner ?? this.owner,
     sharedBy: sharedBy ?? this.sharedBy,
@@ -191,6 +200,7 @@ class CaptureEvent {
     'updated': updated.toUtc().toIso8601String(),
     'pages': [for (final p in pages) p.toJson()],
     if (tabText != null) 'tabText': tabText,
+    if (tabTextAuto) 'tabTextAuto': true,
     if (deleted != null) 'deleted': deleted!.toUtc().toIso8601String(),
     if (local && owner != null) 'owner': owner,
     if (local && sharedBy != null) 'sharedBy': sharedBy,
@@ -213,6 +223,7 @@ class CaptureEvent {
           EventPage.fromJson((p as Map).cast<String, Object?>()),
       ],
       tabText: json['tabText'] as String?,
+      tabTextAuto: json['tabTextAuto'] == true,
       deleted: time('deleted'),
       owner: json['owner'] as String?,
       sharedBy: json['sharedBy'] as String?,

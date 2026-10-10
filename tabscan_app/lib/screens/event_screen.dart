@@ -7,7 +7,7 @@ import '../capture/page_source.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
 import '../processing/page_filter.dart';
-import '../recognition/tab_reader.dart';
+import '../recognition/auto_reader.dart';
 import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
 import 'account_panel.dart';
@@ -18,12 +18,15 @@ import 'people_sheet.dart';
 import 'rename_dialog.dart';
 import 'share_sheet.dart';
 import 'sign_in_gate.dart';
-import 'tab_text_screen.dart';
+import 'tab_text_view.dart';
 import 'video_page.dart';
 
 /// One event: its pages (images, videos and links) to swipe through, and
-/// the tools along the bottom: Add (scan, photos and videos, files, a
-/// link), Filter, Rotate, Read tab and Delete. Share and rename are in the app bar.
+/// the tools along the bottom: the view (Original, Scan or Text: the
+/// photos as taken, processed, or the tab read from them), Add (scan,
+/// photos and videos, files, a link), Rotate and Delete. Share and rename
+/// are in the app bar. The tab is read by itself ([AutoReader]): there's
+/// no Read tab button.
 class EventScreen extends StatefulWidget {
   const EventScreen({
     super.key,
@@ -155,112 +158,6 @@ class _EventScreenState extends State<EventScreen> {
     });
   }
 
-  Future<void> _toggleFilter(CaptureEvent event, EventPage page) {
-    final next = page.filter == PageFilter.tab
-        ? PageFilter.original
-        : PageFilter.tab;
-    return _library.update(
-      event.copyWith(
-        pages: [
-          for (final p in event.pages)
-            p.id == page.id ? p.copyWith(filter: next) : p,
-        ],
-      ),
-    );
-  }
-
-  /// Reads the tab, once the user is signed in (reading needs it).
-  Future<void> _readTab(CaptureEvent event) async {
-    final auth = widget.sync?.auth;
-    _log(
-      'event ${event.id}, ${event.pages.length} pages '
-      '(${event.pages.map((p) => '${p.kind.name}/${p.extension}').join(', ')}), '
-      'auth ${auth == null
-          ? 'not set up'
-          : auth.user == null
-          ? 'signed out'
-          : 'signed in'}',
-    );
-    if (await requireSignIn(context, auth, Gated.readTab) && mounted) {
-      await _readTabNow(event);
-    } else {
-      _log('not signed in, stopped');
-    }
-  }
-
-  /// Read tab's troubleshooting log (`devbox run android-log`, or the
-  /// browser's console).
-  static void _log(String message) => debugPrint('TabScan: read tab: $message');
-
-  Future<void> _readTabNow(
-    CaptureEvent event,
-  ) => _run('Couldn\'t read the tab', () async {
-    final ocr = widget.ocr;
-    _log(
-      ocr == null
-          ? 'cloud OCR not set up'
-          : 'cloud OCR: premium ${ocr.premium}, status '
-                '${ocr.status == null ? 'unknown' : 'checked ${ocr.status!.checked}'}'
-                '${ocr.error == null ? '' : ', error ${ocr.error}'}',
-    );
-    if (ocr != null && ocr.premium) {
-      await _readInCloud(ocr, event);
-      return;
-    }
-    _log('on the device: supported ${TabReader.supported}');
-    if (!TabReader.supported) {
-      _snack('Reading tabs needs the Android or iOS app, or TabScan Premium.');
-      return;
-    }
-    final pages = [
-      for (final p in event.pages)
-        if (p.isImage) await _library.original(event, p),
-    ];
-    _log(
-      '${pages.length} image pages (${pages.map((p) => p.length).join(', ')} bytes)',
-    );
-    if (pages.isEmpty) {
-      _snack('Read tab reads photos and scans, and this event has none.');
-      return;
-    }
-    final text = await TabReader.read(pages);
-    _log(text == null ? 'no tab found' : 'read ${text.length} characters');
-    if (!mounted) return;
-    if (text == null) {
-      _snack('No tab found. Try the Tab filter, or rescan closer and flatter.');
-      return;
-    }
-    await _openText(await _library.update(event.copyWith(tabText: text)));
-  });
-
-  /// Premium: the cloud transcribes the event's synced pages; the text tab
-  /// shows on the event when it's done.
-  Future<void> _readInCloud(CloudOcr ocr, CaptureEvent event) async {
-    final images = event.pages.where(CloudOcr.isImage).length;
-    _log(
-      'in the cloud: $images image pages the service reads, '
-      'synced ${event.owner != null}, text tab ${event.tabText != null}',
-    );
-    if (images == 0) {
-      _snack('Read tab reads photos and scans, and this event has none.');
-      return;
-    }
-    final queued = await ocr.transcribe(event);
-    _log('$queued pages queued');
-    if (!mounted) return;
-    if (queued > 0) {
-      _snack('Transcribing in the cloud. The text tab appears here when done.');
-    } else if (event.tabText != null) {
-      await _openText(event);
-    } else {
-      _snack(
-        'The text tab appears here once the pages have synced and been '
-        'transcribed.',
-      );
-      unawaited(widget.sync?.syncNow());
-    }
-  }
-
   bool _hintClosed = false;
 
   /// The upgrade hint, for users without Premium where it's set up.
@@ -294,15 +191,107 @@ class _EventScreenState extends State<EventScreen> {
     );
   }
 
-  Future<void> _openText(CaptureEvent event) => Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) => TabTextScreen(
+  /// What the pages show: [_View.text] here, or else the image pages'
+  /// filter (Original or Scan).
+  _View? _shown;
+
+  _View _viewOf(CaptureEvent event) {
+    if (_shown case final shown?) return shown;
+    final first = event.pages.where((p) => p.isImage).firstOrNull;
+    return first?.filter == PageFilter.original ? _View.original : _View.scan;
+  }
+
+  /// Original → Scan → Text → Original. Original and Scan set the filter of
+  /// every image page (saved, so thumbnails and exports follow), but only
+  /// what shows for an event shared read only.
+  Future<void> _nextView(CaptureEvent event) async {
+    final next = _View.values[(_viewOf(event).index + 1) % _View.values.length];
+    setState(() => _shown = next);
+    final filter = switch (next) {
+      _View.original => PageFilter.original,
+      _View.scan => PageFilter.tab,
+      _View.text => null,
+    };
+    if (filter == null || event.readOnly) return;
+    if (event.pages.every((p) => !p.isImage || p.filter == filter)) return;
+    await _library.update(
+      event.copyWith(
+        pages: [
+          for (final p in event.pages)
+            p.isImage ? p.copyWith(filter: filter) : p,
+        ],
+      ),
+    );
+  }
+
+  /// The Text view: the tab, or why there's none yet.
+  Widget _textView(CaptureEvent event) {
+    if (event.tabText != null) {
+      return TabTextView(
+        key: ValueKey('text-${event.id}'),
         library: _library,
         eventId: event.id,
         auth: widget.sync?.auth,
+      );
+    }
+    final reader = AutoReaderScope.of(context);
+    final images = event.pages.any((p) => p.isImage);
+    void again() => reader?.readSoon(event.id);
+    final (message, action) = switch (reader?.stateOf(event.id)) {
+      _ when !images => ('Nothing to read: add a scan or a photo.', null),
+      ReadState.reading => ('Reading the tab…', null),
+      ReadState.inCloud => (
+        'Transcribing in the cloud. The text appears here when it\'s done.',
+        null,
       ),
-    ),
-  );
+      ReadState.noTab => (
+        'No tab found in the pages. Try rescanning closer and flatter.',
+        ('Read again', again),
+      ),
+      ReadState.failed => ('Reading the tab failed.', ('Read again', again)),
+      ReadState.unsupported => (
+        'Reading tabs needs the Android or iOS app, or TabScan Premium.',
+        null,
+      ),
+      ReadState.needsSignIn => (
+        'Reading tabs needs you signed in.',
+        (
+          'Sign in',
+          () async {
+            if (await requireSignIn(
+                  context,
+                  widget.sync?.auth,
+                  Gated.readTab,
+                ) &&
+                mounted) {
+              again();
+            }
+          },
+        ),
+      ),
+      null when reader == null => ('No text yet.', null),
+      null => ('Not read yet.', ('Read', again)),
+    };
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (reader?.stateOf(event.id) == ReadState.reading) ...[
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+            ],
+            Text(message, textAlign: TextAlign.center),
+            if (action case (final label, final onPressed)) ...[
+              const SizedBox(height: 16),
+              FilledButton.tonal(onPressed: onPressed, child: Text(label)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 
   Future<void> _deletePage(CaptureEvent event, EventPage page) async {
     if (event.pages.length == 1) {
@@ -325,9 +314,17 @@ class _EventScreenState extends State<EventScreen> {
         // Shared read only: everything that changes it is off.
         final editable = !event.readOnly;
         final enabled = !_busy && page != null && editable;
-        // Filter and Rotate are for images, not videos or links.
-        final image = enabled && page.isImage;
+        final view = _viewOf(event);
+        final text = view == _View.text;
+        // Rotate is for images, not videos or links; nor in the Text view.
+        final image = enabled && page.isImage && !text;
         final sync = widget.sync;
+        // What the image pages show: Original or Scan.
+        final filter = view == _View.original
+            ? PageFilter.original
+            : PageFilter.tab;
+        EventPage shownPage(EventPage p) =>
+            p.isImage && !text ? p.copyWith(filter: filter) : p;
         return Scaffold(
           appBar: AppBar(
             title: InkWell(
@@ -345,12 +342,6 @@ class _EventScreenState extends State<EventScreen> {
               ),
             ),
             actions: [
-              if (event.tabText != null)
-                IconButton(
-                  tooltip: 'Text tab',
-                  icon: const Icon(Icons.notes),
-                  onPressed: () => _openText(event),
-                ),
               if (editable)
                 IconButton(
                   tooltip: 'Rename',
@@ -386,41 +377,45 @@ class _EventScreenState extends State<EventScreen> {
               if (event.sharedBy case final owner?)
                 _SharedBanner(owner: owner, readOnly: event.readOnly),
               ?_premiumHint(event),
-              Expanded(
-                child: PageView.builder(
-                  controller: _pages,
-                  itemCount: event.pages.length,
-                  onPageChanged: (i) => setState(() => _index = i),
-                  itemBuilder: (context, i) => Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: event.pages[i].isLink
-                        ? LinkPage(
-                            key: ValueKey(event.pages[i].id),
-                            page: event.pages[i],
-                          )
-                        : event.pages[i].isVideo
-                        ? VideoPage(
-                            key: ValueKey(event.pages[i].id),
-                            library: _library,
-                            event: event,
-                            page: event.pages[i],
-                          )
-                        : InteractiveViewer(
-                            maxScale: 5,
-                            child: PageImage(
+              if (text)
+                Expanded(child: _textView(event))
+              else ...[
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pages,
+                    itemCount: event.pages.length,
+                    onPageChanged: (i) => setState(() => _index = i),
+                    itemBuilder: (context, i) => Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: event.pages[i].isLink
+                          ? LinkPage(
+                              key: ValueKey(event.pages[i].id),
+                              page: event.pages[i],
+                            )
+                          : event.pages[i].isVideo
+                          ? VideoPage(
+                              key: ValueKey(event.pages[i].id),
                               library: _library,
                               event: event,
                               page: event.pages[i],
+                            )
+                          : InteractiveViewer(
+                              maxScale: 5,
+                              child: PageImage(
+                                library: _library,
+                                event: event,
+                                page: shownPage(event.pages[i]),
+                              ),
                             ),
-                          ),
+                    ),
                   ),
                 ),
-              ),
-              Text(
-                '${index + 1} / ${event.pages.length}',
-                style: Theme.of(context).textTheme.labelMedium,
-              ),
-              const SizedBox(height: 8),
+                Text(
+                  '${index + 1} / ${event.pages.length}',
+                  style: Theme.of(context).textTheme.labelMedium,
+                ),
+                const SizedBox(height: 8),
+              ],
             ],
           ),
           bottomNavigationBar: SafeArea(
@@ -430,16 +425,15 @@ class _EventScreenState extends State<EventScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   _Tool(
+                    key: const Key('view'),
+                    icon: view.icon,
+                    label: view.label,
+                    onPressed: _busy ? null : () => _nextView(event),
+                  ),
+                  _Tool(
                     icon: Icons.add_circle_outline,
                     label: 'Add',
                     onPressed: _busy || !editable ? null : () => _add(event),
-                  ),
-                  _Tool(
-                    icon: page?.filter == PageFilter.tab
-                        ? Icons.contrast
-                        : Icons.photo_outlined,
-                    label: page?.filter.label ?? 'Filter',
-                    onPressed: image ? () => _toggleFilter(event, page) : null,
                   ),
                   _Tool(
                     icon: Icons.rotate_90_degrees_cw_outlined,
@@ -452,14 +446,11 @@ class _EventScreenState extends State<EventScreen> {
                         : null,
                   ),
                   _Tool(
-                    icon: Icons.text_snippet_outlined,
-                    label: 'Read tab',
-                    onPressed: enabled ? () => _readTab(event) : null,
-                  ),
-                  _Tool(
                     icon: Icons.delete_outline,
                     label: 'Delete',
-                    onPressed: enabled ? () => _deletePage(event, page) : null,
+                    onPressed: enabled && !text
+                        ? () => _deletePage(event, page)
+                        : null,
                   ),
                 ],
               ),
@@ -469,6 +460,17 @@ class _EventScreenState extends State<EventScreen> {
       },
     );
   }
+}
+
+/// What the event screen shows, chosen with its first tool.
+enum _View {
+  original('Original', Icons.photo_outlined),
+  scan('Scan', Icons.contrast),
+  text('Text', Icons.notes);
+
+  const _View(this.label, this.icon);
+  final String label;
+  final IconData icon;
 }
 
 /// Where Add gets new pages.
@@ -529,7 +531,12 @@ class _SharedBanner extends StatelessWidget {
 }
 
 class _Tool extends StatelessWidget {
-  const _Tool({required this.icon, required this.label, this.onPressed});
+  const _Tool({
+    super.key,
+    required this.icon,
+    required this.label,
+    this.onPressed,
+  });
 
   final IconData icon;
   final String label;
