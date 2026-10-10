@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" fill="#1E1A15"/>
+  <rect x="302" y="232" width="440" height="596" rx="30" fill="#000" opacity="0.35"/>
+  <rect x="292" y="214" width="440" height="596" rx="30" fill="#FBF7EF"/>
+  <rect x="344" y="276" width="230" height="26" rx="13" fill="#1E1A15" opacity="0.85"/>
+  <rect x="344" y="320" width="150" height="18" rx="9" fill="#1E1A15" opacity="0.35"/>
+  <line x1="344" y1="440" x2="680" y2="440" stroke="#1E1A15" stroke-width="9" stroke-linecap="round" opacity="0.8"/>
+  <line x1="344" y1="492" x2="680" y2="492" stroke="#1E1A15" stroke-width="9" stroke-linecap="round" opacity="0.8"/>
+  <line x1="344" y1="544" x2="680" y2="544" stroke="#1E1A15" stroke-width="9" stroke-linecap="round" opacity="0.8"/>
+  <line x1="344" y1="596" x2="680" y2="596" stroke="#1E1A15" stroke-width="9" stroke-linecap="round" opacity="0.8"/>
+  <line x1="344" y1="648" x2="680" y2="648" stroke="#1E1A15" stroke-width="9" stroke-linecap="round" opacity="0.8"/>
+  <line x1="344" y1="700" x2="680" y2="700" stroke="#1E1A15" stroke-width="9" stroke-linecap="round" opacity="0.8"/>
+  <line x1="344" y1="440" x2="344" y2="700" stroke="#1E1A15" stroke-width="12" stroke-linecap="round"/>
+  <line x1="680" y1="440" x2="680" y2="700" stroke="#1E1A15" stroke-width="9" stroke-linecap="round" opacity="0.8"/>
+  <rect x="394" y="614" width="60" height="68" fill="#FBF7EF"/>
+  <text x="424" y="673" font-family="Helvetica Neue, Helvetica, Arial" font-weight="bold" font-size="72" text-anchor="middle" fill="#E0A030">3</text>
+  <rect x="489" y="510" width="60" height="68" fill="#FBF7EF"/>
+  <text x="519" y="569" font-family="Helvetica Neue, Helvetica, Arial" font-weight="bold" font-size="72" text-anchor="middle" fill="#E0A030">5</text>
+  <rect x="584" y="406" width="60" height="68" fill="#FBF7EF"/>
+  <text x="614" y="465" font-family="Helvetica Neue, Helvetica, Arial" font-weight="bold" font-size="72" text-anchor="middle" fill="#E0A030">7</text>
+  <path d="M244,286 V166 H364 M660,166 H780 V286 M780,738 V858 H660 M364,858 H244 V738" fill="none" stroke="#E0A030" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

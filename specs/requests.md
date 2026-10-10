@@ -58,3 +58,6 @@ spec.
    `.env` (`IOS_DEVELOPMENT_TEAM`), through a git-ignored xcconfig; see
    [platforms](platforms.md). Installed and launched on the iPhone after
    trusting the developer certificate.
+8. **Make a better icon for the app, then relaunch on the iPhone.** New
+   [app icon](app-icon.md): a scanned tab page in amber scanner corners,
+   generated for Android, iOS and web. Relaunched on the iPhone with it.

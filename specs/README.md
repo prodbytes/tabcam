@@ -31,6 +31,8 @@ or uploads.
   editor.
 - [Sharing](sharing.md): PDF, text tab, or images, through the system
   share sheet.
+- [App icon](app-icon.md): a scanned tab page with a staff and fret
+  numbers, in scanner corners; how the platform icons are generated.
 - [Platforms](platforms.md): Android, iOS and the web, and what each can do.
 
 **Development and operations**
