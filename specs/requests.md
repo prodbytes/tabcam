@@ -215,3 +215,13 @@ spec.
     the app bar's cloud button and its sheet) and About (was an app bar
     button). Import photos through the scanner is gone: photos are added
     as they are.
+29. **Make https://local.tabscan.nu01.com work over HTTPS using Floci, as
+    presence does.** Finished the local HTTPS from 27. Floci no longer gets
+    `FLOCI_PORT` in its environment: it read that as its own listen port,
+    so its setup hook couldn't reach it and the container restarted in a
+    loop. Wrote [tabscan_floci/README.md](../tabscan_floci/README.md), and
+    described `4-floci` and the `cdn` and `https` checks in the
+    [dev environment](dev-environment.md) spec, the README and AGENTS.md.
+    Checked with `devbox services up`:
+    https://local.tabscan.nu01.com:2443/app/ answers with a trusted
+    certificate.

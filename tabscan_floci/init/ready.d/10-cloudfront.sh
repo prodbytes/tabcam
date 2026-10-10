@@ -73,4 +73,4 @@ distribution=$(aws cloudfront create-distribution \
     ]}
   }")
 
-echo "tabscan: CloudFront distribution $distribution serves http://$ALIAS:${FLOCI_PORT:-2014}/ and https://$PUBLIC_HOST:${FLOCI_HTTPS_PORT:-2443}/ (index, /app/)"
+echo "tabscan: CloudFront distribution $distribution serves $ALIAS and $PUBLIC_HOST (index, /app/)"
