@@ -124,6 +124,8 @@ class CaptureEvent {
     this.artist = '',
     this.pages = const [],
     this.tabText,
+    this.tabTextAuto = false,
+    this.tabTextCorrect = false,
     this.hideImages = false,
     this.deleted,
     this.owner,
@@ -155,13 +157,23 @@ class CaptureEvent {
   final DateTime updated;
   final List<EventPage> pages;
 
-  /// The tab as plain text, from Read tab, as the user last edited it.
+  /// The tab as plain text, read from the pages, as the user last edited
+  /// it.
   final String? tabText;
+
+  /// Whether [tabText] is as an automatic read left it (on the device, or
+  /// in the cloud), not edited since: a new read may replace it then, and
+  /// never text the user edited.
+  final bool tabTextAuto;
+
+  /// The user marked [tabText] as a correct reading: the event then opens
+  /// on its Text view, and no read replaces it.
+  final bool tabTextCorrect;
 
   /// Whether its owner hid the photos and scans: it then shows only the
   /// text tab and the other pages (videos and links), to everyone it's
   /// shared with too, and exports leave the images out. The images are
-  /// kept (Read tab still reads them) and come back when shown again.
+  /// kept (they're still read) and come back when shown again.
   final bool hideImages;
 
   /// The pages it shows and exports: all of them, or, with [hideImages],
@@ -208,6 +220,8 @@ class CaptureEvent {
     String? artist,
     List<EventPage>? pages,
     String? tabText,
+    bool? tabTextAuto,
+    bool? tabTextCorrect,
     bool? hideImages,
     DateTime? updated,
     String? owner,
@@ -222,6 +236,8 @@ class CaptureEvent {
     updated: updated ?? this.updated,
     pages: pages ?? this.pages,
     tabText: tabText ?? this.tabText,
+    tabTextAuto: tabTextAuto ?? this.tabTextAuto,
+    tabTextCorrect: tabTextCorrect ?? this.tabTextCorrect,
     hideImages: hideImages ?? this.hideImages,
     deleted: deleted,
     owner: owner ?? this.owner,
@@ -241,6 +257,8 @@ class CaptureEvent {
     'updated': updated.toUtc().toIso8601String(),
     'pages': [for (final p in pages) p.toJson()],
     if (tabText != null) 'tabText': tabText,
+    if (tabTextAuto) 'tabTextAuto': true,
+    if (tabTextCorrect) 'tabTextCorrect': true,
     if (hideImages) 'hideImages': true,
     if (deleted != null) 'deleted': deleted!.toUtc().toIso8601String(),
     if (owner != null) 'owner': owner,
@@ -265,6 +283,8 @@ class CaptureEvent {
           EventPage.fromJson((p as Map).cast<String, Object?>()),
       ],
       tabText: json['tabText'] as String?,
+      tabTextAuto: json['tabTextAuto'] == true,
+      tabTextCorrect: json['tabTextCorrect'] == true,
       hideImages: json['hideImages'] == true,
       deleted: time('deleted'),
       owner: json['owner'] as String?,

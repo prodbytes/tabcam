@@ -30,7 +30,7 @@ class TextPage extends StatelessWidget {
             Text(
               event.readOnly
                   ? 'The images are hidden, and the tab hasn\'t been read.'
-                  : 'The images are hidden. Read tab still reads them.',
+                  : 'The images are hidden. They\'re still read: the text appears here.',
               textAlign: TextAlign.center,
             ),
           ],

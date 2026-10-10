@@ -17,7 +17,9 @@
     `scripts/flutter-web.sh` (also `devbox run web`). Ready when `/app/`
     answers. Stopping it also stops whatever listens on the port.
   - `5-index`: [tabscan_index/site](../tabscan_index) on
-    http://localhost:2013/.
+    http://localhost:2013/: the index page and the local
+    [maintenance](maintenance-mode.md) switch, `/status.json`
+    (`{"maintenance": false}`).
   - `4-floci`: [Floci](https://floci.io/), a local AWS emulator, as the
     CloudFront distribution in front of both, as deployed: `/app*` goes to
     the app and everything else to the index

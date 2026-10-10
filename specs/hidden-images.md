@@ -15,10 +15,11 @@ the owner, on every device, and the people it's
 - **Hidden**, the event screen's pages are first the **text tab**,
   then the videos and links in their order ("1 / 3"). The text tab page
   shows the tab, monospaced, with long lines scaled down to fit (so that
-  a sideways swipe still goes to the next page), and **Open**, for the
-  [text tab editor](tab-recognition.md). Before the tab has been read, it
-  says "No text tab yet". Filter, Rotate and Delete are off on the text
-  tab page. **Read tab** still reads the hidden images. Adding photos or
+  a sideways swipe still goes to the next page), and **Open**, which goes
+  to the [Text view](tab-recognition.md#text-view). Before the tab has
+  been read, it says "No text tab yet". Rotate and Delete are off on the
+  text tab page. The hidden images are still read
+  ([by itself](tab-recognition.md#reading-by-itself)). Adding photos or
   scans adds them hidden, and says so ("Added. Images are hidden on this
   capture.").
 - The images are kept, not deleted, and syncing goes on as before.

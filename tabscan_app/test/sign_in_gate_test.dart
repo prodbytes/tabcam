@@ -1,3 +1,7 @@
+import 'package:flutter/material.dart';
+import 'package:image/image.dart' as img;
+import 'package:tabscan_app/recognition/auto_reader.dart';
+import 'package:tabscan_app/screens/event_screen.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tabscan_app/cloud/cloud_sync.dart';
 import 'package:tabscan_app/library/event_store_memory.dart';
@@ -80,25 +84,71 @@ void main() {
     expect(find.text('PDF'), findsOneWidget);
   });
 
-  testWidgets('signed out, Read tab asks to sign in first', (tester) async {
-    final library = await libraryWithOne();
+  testWidgets('signed out, a capture waits to be read; Sign in reads it', (
+    tester,
+  ) async {
     final auth = FakeAuth();
-    final sync = CloudSync(
-      library: library,
-      auth: auth,
-      bucket: FakeBucket(),
-      credentials: FakeCredentials(),
-      period: const Duration(days: 1),
-    )..start();
-    addTearDown(sync.dispose);
+    late Library library;
+    late AutoReader reader;
+    late String id;
+    // All made in the real zone: their futures complete there.
+    await tester.runAsync(() async {
+      library = Library(PlatformEventStore(), null, (_) async => null);
+      await library.load();
+      reader = AutoReader(
+        library: library,
+        auth: auth,
+        supported: true,
+        read: (pages) async => 'e|--0--3--|',
+      );
+      await reader.start();
+      id = (await library.create([
+        img.encodeJpg(img.Image(width: 8, height: 8)),
+      ])).id;
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    });
+    addTearDown(reader.dispose);
+    expect(reader.stateOf(id), ReadState.needsSignIn);
     await tester.pumpWidget(
-      TabScanApp(library: library, auth: auth, sync: sync),
+      AutoReaderScope(
+        notifier: reader,
+        child: MaterialApp(
+          home: EventScreen(
+            library: library,
+            eventId: id,
+            sync: CloudSync(
+              library: library,
+              auth: auth,
+              bucket: FakeBucket(),
+              credentials: FakeCredentials(),
+              period: const Duration(days: 1),
+            ),
+          ),
+        ),
+      ),
     );
-    await tester.tap(find.text(library.events.single.title));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Read tab'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    // Scan → Text.
+    await tester.tap(find.byKey(const Key('view')));
+    await tester.pump();
+    expect(find.text('Reading tabs needs you signed in.'), findsOneWidget);
+    await tester.tap(find.text('Sign in'));
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
     expect(find.text('Sign in to read tabs'), findsOneWidget);
     expect(find.textContaining('they stay on this device'), findsOneWidget);
+
+    // Signed in: it's read, and the text shows.
+    await tester.runAsync(() async {
+      auth.signInAs('ana');
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    });
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(library.byId(id)!.tabText, 'e|--0--3--|');
+    final field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.controller!.text, 'e|--0--3--|');
   });
 }

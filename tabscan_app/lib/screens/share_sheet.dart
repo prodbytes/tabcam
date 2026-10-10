@@ -61,7 +61,7 @@ Future<void> showShareSheet(
             subtitle: Text(
               hasText
                   ? 'The text tab and links, as plain text'
-                  : 'Read the tab first (Read tab on the event)',
+                  : 'No text tab yet: it\'s read after each capture',
             ),
             enabled: hasText,
             onTap: () => Navigator.pop(context, ShareFormat.text),
