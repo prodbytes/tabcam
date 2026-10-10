@@ -179,3 +179,9 @@ spec.
     ([cloud sync](cloud-sync.md), [tab recognition](tab-recognition.md));
     new setting `TABSCANNER_OCR_URL` ([deploy](deploy.md),
     [dev environment](dev-environment.md)).
+24. **TabScan doesn't work on the iPhone: relaunch and verify.** It
+    crashed at launch ("Null check operator used on a null value" in
+    `MaintenanceCheck.start`): the maintenance check, started before
+    `runApp`, used `WidgetsBinding.instance` before there was one. `main`
+    now initializes the binding first. Verified on the iPhone (a profile
+    build: it launches, with no errors in its log).
