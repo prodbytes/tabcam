@@ -225,3 +225,19 @@ spec.
     Checked with `devbox services up`:
     https://local.tabscan.nu01.com:2443/app/ answers with a trusted
     certificate.
+32. **The Cognito role is failing to assume; create the identity pool in
+    infrastructure as code so that authenticated users can write to S3 and
+    invoke Lambda functions.** The pool and its role were already in
+    `tabscan_infra/identity.yaml` (deployed), with S3 writes to the user's
+    own folder. What failed: the pool trusted only the production web
+    client, so local builds' tokens (the local web client) were refused
+    before any role was assumed. The pool, the OCR service and the share
+    API now also trust `GoogleLocalWebClientId`, and the bucket, the OCR
+    function URL and the share API allow the origin
+    `https://local.tabscan.nu01.com:2443`
+    ([cloud sync](cloud-sync.md), [cloud OCR](cloud-ocr.md),
+    [shared captures](shared-captures.md)). No `lambda:InvokeFunction` was
+    granted to users: the app reaches its functions through the OCR function
+    URL and the share API with the Google token, and invoking
+    `tabscan-ocr-api` or `tabscan-ocr` directly would let a user forge S3
+    events for other users' pages.
