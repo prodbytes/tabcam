@@ -225,3 +225,12 @@ spec.
     Checked with `devbox services up`:
     https://local.tabscan.nu01.com:2443/app/ answers with a trusted
     certificate.
+30. **The local Google OIDC client ID should be
+    `1061413485511-2ndd6lqkmi61j17vpk5f2ntjb91tt38r`; verify and fix.**
+    Local builds used the production web client, whose only origin is
+    https://tabscan.nu01.com. New setting
+    `TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID` (the "local - web" client),
+    which the dev web server uses in its place
+    ([dev environment](dev-environment.md)). That client needs
+    `https://local.tabscan.nu01.com:2443` among its JavaScript origins, and
+    no redirect URI.

@@ -15,6 +15,11 @@ PORT="${FLUTTER_WEB_PORT:-2012}"
 HOST="${TABSCANNER_BIND_HOST:-127.0.0.1}"
 
 cd "$(dirname "$0")/../tabscan_app"
+# Local web sign-in uses the "local - web" OAuth client, whose JavaScript
+# origins are the local URLs (TABSCANNER_GOOGLE_WEB_CLIENT_ID is the
+# production client, which manual deploys read from .env too).
+_local_client="${TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID:-$(sed -n 's/^TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID=//p' ../.env 2>/dev/null | tail -1)}"
+[[ -n "$_local_client" ]] && export TABSCANNER_GOOGLE_WEB_CLIENT_ID="$_local_client"
 source ../scripts/dart-defines.sh
 source ../scripts/version.sh
 flutter pub get

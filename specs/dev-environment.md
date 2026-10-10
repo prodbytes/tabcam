@@ -63,6 +63,16 @@
   [maintenance mode](maintenance-mode.md)'s `TABSCANNER_STATUS_URL`, all public
   identifiers); the version is passed as `TABSCANNER_VERSION`. The
   environment wins over `.env`.
+- **Local web sign-in**: the dev web server (`scripts/flutter-web.sh`)
+  passes `TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID`, when set, as
+  `TABSCANNER_GOOGLE_WEB_CLIENT_ID`. That is the "local - web" OAuth client,
+  `1061413485511-2ndd6lqkmi61j17vpk5f2ntjb91tt38r`. Its authorized
+  JavaScript origins must list each local URL with its port:
+  `https://local.tabscan.nu01.com:2443` and `http://localhost:2012`. The web
+  button needs no redirect URI. `TABSCANNER_GOOGLE_WEB_CLIENT_ID` stays the
+  production client, because manual deploys read it from `.env`. The
+  identity pool and the share API trust only the production client, so
+  local sign-in alone doesn't get AWS credentials or sharing.
 - **Setting names**: every TabScan setting is prefixed `TABSCANNER_`, and
   keeps the same name in `.env`, the scripts, the app's dart-defines and
   the GitHub repository variables and secrets. `AWS_REGION` keeps its
