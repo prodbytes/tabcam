@@ -28,7 +28,9 @@ tabs, and a compact **app bar** on top names the open one
 
 - **Scan**, a large button: the camera, through the
   [document scanner](scanning.md) (it finds, straightens and cleans the
-  page, several in a row), with a line saying so.
+  page, several in a row; on the web, TabScan's camera screen), with a
+  line saying so. Photos & videos opens the photo album, Files the file
+  chooser, Link the link dialog.
 - **Add**, for uploads, each a card:
   - **Photos & videos**: from the photo library;
   - **Files**: image and video files;

@@ -225,3 +225,11 @@ spec.
     Checked with `devbox services up`:
     https://local.tabscan.nu01.com:2443/app/ answers with a trusted
     certificate.
+30. **In the Capture view, Scan should open the camera, Photos the album,
+    Files the upload.** Photos & videos and Files already did; on the
+    web, Scan was a file input with a camera hint, which desktop browsers
+    show as a file chooser. It now opens TabScan's own camera screen (the
+    browser's camera: a preview, a shutter, several pages, Flip, Done;
+    photos instead when there's no camera)
+    ([scanning](scanning.md#web)). Android and iOS keep the system
+    document scanner.

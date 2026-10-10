@@ -130,7 +130,7 @@ class _EventScreenState extends State<EventScreen> {
       if (link != null) {
         await _library.addLink(event, link.$1, title: link.$2);
       } else if (source == _AddSource.scan) {
-        final pages = await PageSource.scan();
+        final pages = await PageSource.scan(context);
         if (pages.isEmpty) return;
         await _library.addPages(event, pages);
       } else {
