@@ -4,7 +4,8 @@ Description: >
   app exchanges the signed-in user's Google ID token for temporary AWS
   credentials of the authenticated role, which may only read, write and
   delete that user's own folder in the user-data bucket (tabscan-user-data
-  stack). Guests (unauthenticated identities) aren't allowed.
+  stack). Guests (unauthenticated identities) aren't allowed. It trusts
+  tokens of the web client and, if given, of the local web client.
 
 Parameters:
   GoogleWebClientId:
@@ -13,6 +14,17 @@ Parameters:
       The Google "Web application" OAuth client ID. Every platform's ID token
       is issued for it (web directly; Android and iOS as their server client).
     AllowedPattern: '[0-9]+-[0-9a-z]+\.apps\.googleusercontent\.com'
+  GoogleLocalWebClientId:
+    Type: String
+    Default: ''
+    Description: >
+      The "local - web" OAuth client ID, which local web builds sign in with
+      (TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID); its tokens are trusted like the
+      web client's. Empty: only the web client.
+    AllowedPattern: '([0-9]+-[0-9a-z]+\.apps\.googleusercontent\.com)?'
+
+Conditions:
+  HasLocalClient: !Not [!Equals [!Ref GoogleLocalWebClientId, '']]
 
 Resources:
   IdentityPool:
@@ -22,7 +34,11 @@ Resources:
       AllowUnauthenticatedIdentities: false
       AllowClassicFlow: false
       SupportedLoginProviders:
-        accounts.google.com: !Ref GoogleWebClientId
+        # Google's provider takes several client IDs, separated by commas.
+        accounts.google.com: !If
+          - HasLocalClient
+          - !Join [',', [!Ref GoogleWebClientId, !Ref GoogleLocalWebClientId]]
+          - !Ref GoogleWebClientId
 
   AuthenticatedRole:
     Type: AWS::IAM::Role

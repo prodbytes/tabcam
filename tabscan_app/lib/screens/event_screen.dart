@@ -66,7 +66,8 @@ class _EventScreenState extends State<EventScreen> {
     setState(() => _busy = true);
     try {
       await task();
-    } on Object catch (e) {
+    } on Object catch (e, stack) {
+      debugPrint('TabScan: $failure: $e\n$stack');
       if (mounted) _snack('$failure: $e');
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -130,7 +131,7 @@ class _EventScreenState extends State<EventScreen> {
       if (link != null) {
         await _library.addLink(event, link.$1, title: link.$2);
       } else if (source == _AddSource.scan) {
-        final pages = await PageSource.scan();
+        final pages = await PageSource.scan(context);
         if (pages.isEmpty) return;
         await _library.addPages(event, pages);
       } else {
@@ -170,19 +171,43 @@ class _EventScreenState extends State<EventScreen> {
 
   /// Reads the tab, once the user is signed in (reading needs it).
   Future<void> _readTab(CaptureEvent event) async {
-    if (await requireSignIn(context, widget.sync?.auth, Gated.readTab) &&
-        mounted) {
+    final auth = widget.sync?.auth;
+    _log(
+      'event ${event.id}, ${event.pages.length} pages '
+      '(${event.pages.map((p) => '${p.kind.name}/${p.extension}').join(', ')}), '
+      'auth ${auth == null
+          ? 'not set up'
+          : auth.user == null
+          ? 'signed out'
+          : 'signed in'}',
+    );
+    if (await requireSignIn(context, auth, Gated.readTab) && mounted) {
       await _readTabNow(event);
+    } else {
+      _log('not signed in, stopped');
     }
   }
+
+  /// Read tab's troubleshooting log (`devbox run android-log`, or the
+  /// browser's console).
+  static void _log(String message) => debugPrint('TabScan: read tab: $message');
 
   Future<void> _readTabNow(
     CaptureEvent event,
   ) => _run('Couldn\'t read the tab', () async {
-    if (widget.ocr case final ocr? when ocr.premium) {
+    final ocr = widget.ocr;
+    _log(
+      ocr == null
+          ? 'cloud OCR not set up'
+          : 'cloud OCR: premium ${ocr.premium}, status '
+                '${ocr.status == null ? 'unknown' : 'checked ${ocr.status!.checked}'}'
+                '${ocr.error == null ? '' : ', error ${ocr.error}'}',
+    );
+    if (ocr != null && ocr.premium) {
       await _readInCloud(ocr, event);
       return;
     }
+    _log('on the device: supported ${TabReader.supported}');
     if (!TabReader.supported) {
       _snack('Reading tabs needs the Android or iOS app, or TabScan Premium.');
       return;
@@ -191,11 +216,15 @@ class _EventScreenState extends State<EventScreen> {
       for (final p in event.pages)
         if (p.isImage) await _library.original(event, p),
     ];
+    _log(
+      '${pages.length} image pages (${pages.map((p) => p.length).join(', ')} bytes)',
+    );
     if (pages.isEmpty) {
       _snack('Read tab reads photos and scans, and this event has none.');
       return;
     }
     final text = await TabReader.read(pages);
+    _log(text == null ? 'no tab found' : 'read ${text.length} characters');
     if (!mounted) return;
     if (text == null) {
       _snack('No tab found. Try the Tab filter, or rescan closer and flatter.');
@@ -207,11 +236,17 @@ class _EventScreenState extends State<EventScreen> {
   /// Premium: the cloud transcribes the event's synced pages; the text tab
   /// shows on the event when it's done.
   Future<void> _readInCloud(CloudOcr ocr, CaptureEvent event) async {
-    if (!event.pages.any(CloudOcr.isImage)) {
+    final images = event.pages.where(CloudOcr.isImage).length;
+    _log(
+      'in the cloud: $images image pages the service reads, '
+      'synced ${event.owner != null}, text tab ${event.tabText != null}',
+    );
+    if (images == 0) {
       _snack('Read tab reads photos and scans, and this event has none.');
       return;
     }
     final queued = await ocr.transcribe(event);
+    _log('$queued pages queued');
     if (!mounted) return;
     if (queued > 0) {
       _snack('Transcribing in the cloud. The text tab appears here when done.');

@@ -12,10 +12,21 @@ Parameters:
     Type: String
     Description: The Google "Web application" OAuth client ID (the tokens' audience)
     AllowedPattern: '[0-9]+-[0-9a-z]+\.apps\.googleusercontent\.com'
+  GoogleLocalWebClientId:
+    Type: String
+    Default: ''
+    Description: >
+      The "local - web" OAuth client ID, which local web builds sign in with
+      (TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID); its tokens are trusted like the
+      web client's. Empty: only the web client.
+    AllowedPattern: '([0-9]+-[0-9a-z]+\.apps\.googleusercontent\.com)?'
   AllowedOrigins:
     Type: CommaDelimitedList
-    Default: https://tabscan.nu01.com,https://rc.tabscan.nu01.com,http://localhost:2012
+    Default: https://tabscan.nu01.com,https://rc.tabscan.nu01.com,http://localhost:2012,https://local.tabscan.nu01.com:2443
     Description: Web origins the app runs on (CORS)
+
+Conditions:
+  HasLocalClient: !Not [!Equals [!Ref GoogleLocalWebClientId, '']]
 
 Resources:
   SharesTable:
@@ -170,7 +181,10 @@ Resources:
       IdentitySource: [$request.header.Authorization]
       JwtConfiguration:
         Issuer: https://accounts.google.com
-        Audience: [!Ref GoogleWebClientId]
+        Audience: !If
+          - HasLocalClient
+          - [!Ref GoogleWebClientId, !Ref GoogleLocalWebClientId]
+          - [!Ref GoogleWebClientId]
 
   Integration:
     Type: AWS::ApiGatewayV2::Integration

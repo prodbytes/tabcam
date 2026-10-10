@@ -61,7 +61,10 @@ Google sign-in (`google_sign_in`,
   `Info.plist` filled from `Private.xcconfig` ([platforms](platforms.md)).
 
 Every platform's ID token is issued for the **web client** (the server
-client ID on Android and iOS), the one client the identity pool trusts.
+client ID on Android and iOS), which the identity pool trusts. Local web
+builds sign in with the **local web client** instead
+(`TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID`, the one with the local origins),
+which the pool, the OCR service and the share API trust too.
 Tokens last an hour; five minutes before one expires the app asks Google
 quietly for a new one.
 
@@ -171,11 +174,12 @@ either):
   [cloud OCR](cloud-ocr.md)), versioned (old and deleted versions are kept 30 days,
   so a deletion can be undone), incomplete uploads cleared after a day.
   CORS allows `GET`, `PUT`, `HEAD` and `DELETE` from
-  `https://tabscan.nu01.com`, `https://rc.tabscan.nu01.com` and
-  `http://localhost:2012`.
+  `https://tabscan.nu01.com`, `https://rc.tabscan.nu01.com`,
+  `http://localhost:2012` and `https://local.tabscan.nu01.com:2443`.
 - **`identity.yaml`**, stack `tabscan-identity`: the identity pool
-  `tabscan`, trusting Google (`accounts.google.com` = the web client ID);
-  no guests, no classic flow. Its authenticated role may only get, put and
+  `tabscan`, trusting Google (`accounts.google.com` = the web client ID
+  and, when `GoogleLocalWebClientId` is given, the local web client's,
+  separated by a comma); no guests, no classic flow. Its authenticated role may only get, put and
   delete objects in `<bucket>/${cognito-identity.amazonaws.com:sub}/*`,
   and list that prefix.
 

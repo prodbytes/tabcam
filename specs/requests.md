@@ -234,3 +234,47 @@ spec.
     ([dev environment](dev-environment.md)). That client needs
     `https://local.tabscan.nu01.com:2443` among its JavaScript origins, and
     no redirect URI.
+31. **Read tab is not working; add the logging needed to troubleshoot it,
+    in the client and the server.** The app logs each step of Read tab
+    (sign-in, the path taken, per-page preparation, OCR and layout
+    results, failures with stack traces), every OCR API call and the cloud
+    results it collects. The OCR service logs JSON lines per request, S3
+    event, rbacr check and page read, including unexpected failures with
+    tracebacks. See the troubleshooting logs in
+    [tab recognition](tab-recognition.md#troubleshooting-log) and
+    [cloud OCR](cloud-ocr.md#troubleshooting-log).
+32. **The Cognito role is failing to assume; create the identity pool in
+    infrastructure as code so that authenticated users can write to S3 and
+    invoke Lambda functions.** The pool and its role were already in
+    `tabscan_infra/identity.yaml` (deployed), with S3 writes to the user's
+    own folder. What failed: the pool trusted only the production web
+    client, so local builds' tokens (the local web client) were refused
+    before any role was assumed. The pool, the OCR service and the share
+    API now also trust `GoogleLocalWebClientId`, and the bucket, the OCR
+    function URL and the share API allow the origin
+    `https://local.tabscan.nu01.com:2443`
+    ([cloud sync](cloud-sync.md), [cloud OCR](cloud-ocr.md),
+    [shared captures](shared-captures.md)). No `lambda:InvokeFunction` was
+    granted to users: the app reaches its functions through the OCR function
+    URL and the share API with the Google token, and invoking
+    `tabscan-ocr-api` or `tabscan-ocr` directly would let a user forge S3
+    events for other users' pages.
+33. **When a photo is added by hand, crop it to the page, without what's
+    under it.** Photos added with Photos & videos or Files are cropped and
+    straightened to the page when one stands out (the largest bright
+    region, its four corners, a perspective correction), as a JPEG; when
+    no page stands out, they're kept as picked
+    ([scanning](scanning.md#cropping-photos-to-the-page)).
+34. **Hide status messages after a while.** The "Saved … (Open)" message
+    after a capture stayed until dismissed, since Flutter keeps a message
+    with a button by default; it now goes after 6 seconds, like the
+    others, which already went after 4 ([navigation](navigation.md#capture)).
+35. **In the Capture view, Scan should open the camera, Photos the album,
+    Files the upload.** Photos & videos and Files already did; on the
+    web, Scan was a file input with a camera hint, which desktop browsers
+    show as a file chooser. It now opens TabScan's own camera screen (the
+    browser's camera: a preview, a shutter, several pages, Flip, Done;
+    photos instead when there's no camera)
+    ([scanning](scanning.md#web)). Android and iOS keep the system
+    document scanner. Its pages are cropped to the page, as photos added
+    by hand are.

@@ -28,7 +28,9 @@ tabs, and a compact **app bar** on top names the open one
 
 - **Scan**, a large button: the camera, through the
   [document scanner](scanning.md) (it finds, straightens and cleans the
-  page, several in a row), with a line saying so.
+  page, several in a row; on the web, TabScan's camera screen), with a
+  line saying so. Photos & videos opens the photo album, Files the file
+  chooser, Link the link dialog.
 - **Add**, for uploads, each a card:
   - **Photos & videos**: from the photo library;
   - **Files**: image and video files;
@@ -38,7 +40,9 @@ tabs, and a compact **app bar** on top names the open one
 Each makes a new event (titled `Tab YYYY-MM-DD HH:MM`, or a link's
 title) and goes to **Home**, where it's first in the list, scrolled to
 and outlined for 3 seconds, with a message, "Saved "<title>" (2 pages)"
-(or "1 video, 1 link", ...), and **Open**. Cancelling does nothing;
+(or "1 video, 1 link", ...), and **Open**, which goes by itself after 6
+seconds, as every message does (Flutter would otherwise keep a message
+with a button until it's dismissed). Cancelling does nothing;
 picked files that aren't photos or videos are left out, with a message
 saying how many.
 
