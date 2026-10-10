@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:tabscan_app/library/library.dart';
-import 'package:tabscan_app/library/scan_store_memory.dart';
+import 'package:tabscan_app/library/event_store_memory.dart';
 import 'package:tabscan_app/main.dart';
 
 /// Lets animations (menus, dialogs) finish. Not pumpAndSettle: the card's
@@ -14,8 +14,8 @@ Future<void> _frames(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('a scan is renamed from its card in the list', (tester) async {
-    final library = Library(PlatformScanStore());
+  testWidgets('an event is renamed from its card in the list', (tester) async {
+    final library = Library(PlatformEventStore());
     late String id;
     await tester.runAsync(() async {
       await library.load();

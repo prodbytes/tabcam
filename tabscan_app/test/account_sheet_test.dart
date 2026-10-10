@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tabscan_app/cloud/cloud_sync.dart';
 import 'package:tabscan_app/library/library.dart';
-import 'package:tabscan_app/library/scan_store_memory.dart';
+import 'package:tabscan_app/library/event_store_memory.dart';
 import 'package:tabscan_app/main.dart';
 
 import 'fakes.dart';
@@ -10,7 +10,7 @@ void main() {
   testWidgets('the account button signs in, and then shows the sync', (
     tester,
   ) async {
-    final library = Library(PlatformScanStore());
+    final library = Library(PlatformEventStore());
     await library.load();
     final auth = FakeAuth();
     final sync = CloudSync(
@@ -49,7 +49,7 @@ void main() {
   testWidgets('without sign-in set up, there is no account button', (
     tester,
   ) async {
-    final library = Library(PlatformScanStore());
+    final library = Library(PlatformEventStore());
     await library.load();
     await tester.pumpWidget(TabScanApp(library: library));
     expect(find.byTooltip('Sign in'), findsNothing);

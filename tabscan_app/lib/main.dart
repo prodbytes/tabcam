@@ -15,7 +15,7 @@ import 'screens/library_screen.dart';
 void main() {
   final library = Library()..load();
   // Sign-in and sync only in a build that has both set up (.env, or the
-  // deploys' repository variables); otherwise scans stay on the device.
+  // deploys' repository variables); otherwise events stay on the device.
   AuthService? auth;
   CloudSync? sync;
   if (CloudConfig.enabled && GoogleConfig.webClientId.isNotEmpty) {

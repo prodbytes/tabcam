@@ -5,15 +5,16 @@ import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
-import 'scan.dart';
-import 'scan_store.dart';
+import 'capture_event.dart';
+import 'event_store.dart';
 
-/// Scans kept as files, one folder per scan in the app's documents folder:
-/// `scans/<scan id>/scan.json` and a `<page id>.<extension>` per page (the
+/// Events kept as files, one folder per event in the app's documents folder:
+/// `scans/<event id>/scan.json` (the folder and file names from before
+/// scans were called events, so existing libraries still load) and a `<page id>.<extension>` per page (the
 /// image as scanned, or the video as picked).
-class PlatformScanStore implements ScanStore {
+class PlatformEventStore implements EventStore {
   /// [_root] defaults to `scans/` in the app's documents folder.
-  PlatformScanStore([this._root]);
+  PlatformEventStore([this._root]);
 
   Directory? _root;
 
@@ -24,92 +25,94 @@ class PlatformScanStore implements ScanStore {
     return _root!.create(recursive: true);
   }
 
-  Future<Directory> _dir(String scanId) async =>
-      Directory('${(await _scans()).path}/${checkId(scanId)}');
+  Future<Directory> _dir(String eventId) async =>
+      Directory('${(await _scans()).path}/${checkId(eventId)}');
 
   @override
-  Future<List<Scan>> list() async {
-    final scans = <Scan>[];
+  Future<List<CaptureEvent>> list() async {
+    final events = <CaptureEvent>[];
     await for (final entry in (await _scans()).list()) {
       final file = File('${entry.path}/scan.json');
       if (entry is! Directory || !await file.exists()) continue;
       try {
-        scans.add(Scan.fromJson(jsonDecode(await file.readAsString())));
+        events.add(
+          CaptureEvent.fromJson(jsonDecode(await file.readAsString())),
+        );
       } on Object catch (e) {
-        // One broken scan shouldn't hide the others.
+        // One broken event shouldn't hide the others.
         debugPrint('Skipping ${entry.path}: $e');
       }
     }
-    return scans..sort((a, b) => b.created.compareTo(a.created));
+    return events..sort((a, b) => b.created.compareTo(a.created));
   }
 
   @override
-  Future<void> save(Scan scan) async {
-    final dir = await (await _dir(scan.id)).create();
+  Future<void> save(CaptureEvent event) async {
+    final dir = await (await _dir(event.id)).create();
     // Written beside, then renamed over, so a crash never leaves half a file.
     final temp = File('${dir.path}/scan.json.tmp');
-    await temp.writeAsString(jsonEncode(scan.toJson()), flush: true);
+    await temp.writeAsString(jsonEncode(event.toJson()), flush: true);
     await temp.rename('${dir.path}/scan.json');
   }
 
   @override
-  Future<void> delete(String scanId) async {
-    final dir = await _dir(scanId);
+  Future<void> delete(String eventId) async {
+    final dir = await _dir(eventId);
     if (await dir.exists()) await dir.delete(recursive: true);
   }
 
-  Future<File> _page(String scanId, ScanPage page) async => File(
-    '${(await _dir(scanId)).path}/${checkId(page.id)}.'
+  Future<File> _page(String eventId, EventPage page) async => File(
+    '${(await _dir(eventId)).path}/${checkId(page.id)}.'
     '${checkExtension(page.extension)}',
   );
 
   @override
-  Future<void> putPage(String scanId, ScanPage page, Uint8List bytes) async {
-    await (await _dir(scanId)).create();
-    await (await _page(scanId, page)).writeAsBytes(bytes, flush: true);
+  Future<void> putPage(String eventId, EventPage page, Uint8List bytes) async {
+    await (await _dir(eventId)).create();
+    await (await _page(eventId, page)).writeAsBytes(bytes, flush: true);
   }
 
   @override
-  Future<void> putPageFile(String scanId, ScanPage page, XFile file) async {
-    await (await _dir(scanId)).create();
-    await file.saveTo((await _page(scanId, page)).path);
+  Future<void> putPageFile(String eventId, EventPage page, XFile file) async {
+    await (await _dir(eventId)).create();
+    await file.saveTo((await _page(eventId, page)).path);
   }
 
   @override
-  Future<Uint8List> page(String scanId, ScanPage page) async =>
-      (await _page(scanId, page)).readAsBytes();
+  Future<Uint8List> page(String eventId, EventPage page) async =>
+      (await _page(eventId, page)).readAsBytes();
 
   @override
-  Future<String?> pagePath(String scanId, ScanPage page) async =>
-      (await _page(scanId, page)).path;
+  Future<String?> pagePath(String eventId, EventPage page) async =>
+      (await _page(eventId, page)).path;
 
   @override
-  Future<void> deletePage(String scanId, ScanPage page) async {
-    final file = await _page(scanId, page);
+  Future<void> deletePage(String eventId, EventPage page) async {
+    final file = await _page(eventId, page);
     if (await file.exists()) await file.delete();
   }
 
   @override
-  Future<bool> hasPage(String scanId, ScanPage page) async =>
-      (await _page(scanId, page)).exists();
+  Future<bool> hasPage(String eventId, EventPage page) async =>
+      (await _page(eventId, page)).exists();
 
   @override
   Future<(Stream<List<int>>, int)> pageStream(
-    String scanId,
-    ScanPage page,
+    String eventId,
+    EventPage page,
   ) async {
-    final file = await _page(scanId, page);
+    final file = await _page(eventId, page);
     return (file.openRead(), await file.length());
   }
 
   @override
   Future<void> putPageStream(
-    String scanId,
-    ScanPage page,
+    String eventId,
+    EventPage page,
     Stream<List<int>> bytes,
   ) async {
-    await (await _dir(scanId)).create();
-    final file = await _page(scanId, page);
+    await (await _dir(eventId)).create();
+    final file = await _page(eventId, page);
     // Written beside, then renamed over: a broken download leaves nothing.
     final temp = File('${file.path}.part');
     try {
@@ -127,7 +130,7 @@ class PlatformScanStore implements ScanStore {
     }
   }
 
-  // Beside scans/, not in it: list() reads only scan folders.
+  // Beside scans/, not in it: list() reads only event folders.
   Future<File> _meta(String name) async =>
       File('${(await _scans()).parent.path}/${checkId(name)}.json');
 

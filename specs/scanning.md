@@ -14,7 +14,7 @@ to where they were, with nothing added.
 straightening too.
 
 The scanner's files are copied into the [library](library.md), then its
-cache is emptied. The new scan shows at the top of the list (see
+cache is emptied. The new event shows at the top of the list (see
 [library](library.md)); it isn't opened.
 
 Needs Android 7.0 (API 24) or later; iOS 15.5 or later (ML Kit text
@@ -28,9 +28,9 @@ No document scanner: **Scan** takes one photo with the browser's camera
 input (`image_picker`; on a desktop, a file picker), and **Import photos**
 picks several. Pages are kept as taken, uncropped.
 
-## Adding to a scan
+## Adding to an event
 
-The [scan screen](scan-screen.md)'s **Add** asks where from, and adds the
+The [event screen](event-screen.md)'s **Add** asks where from, and adds the
 new pages at the end, moving the view to the first one:
 
 - **Scan pages**: more tab pages with the document scanner (as above).

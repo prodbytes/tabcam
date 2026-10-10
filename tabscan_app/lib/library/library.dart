@@ -4,44 +4,44 @@ import 'package:flutter/foundation.dart';
 
 import '../capture/media.dart';
 import '../processing/page_filter.dart';
-import 'scan.dart';
-import 'scan_store.dart';
+import 'capture_event.dart';
+import 'event_store.dart';
 
-/// The user's scans, kept in a [ScanStore]; screens listen to it, and so
+/// The user's events, kept in a [EventStore]; screens listen to it, and so
 /// does cloud sync ([localChanges]).
 class Library extends ChangeNotifier {
-  Library([ScanStore? store, DateTime Function()? now])
-    : _store = store ?? ScanStore(),
+  Library([EventStore? store, DateTime Function()? now])
+    : _store = store ?? EventStore(),
       _now = now ?? DateTime.now;
 
-  final ScanStore _store;
+  final EventStore _store;
   final DateTime Function() _now;
 
-  /// Every scan, newest first, tombstones included.
-  List<Scan> _all = const [];
-  List<Scan> _scans = const [];
+  /// Every event, newest first, tombstones included.
+  List<CaptureEvent> _all = const [];
+  List<CaptureEvent> _scans = const [];
   bool _loaded = false;
 
   /// Filtered pages already rendered, by page ID and filter.
   final Map<String, Uint8List> _filtered = {};
 
-  /// The scans to show, newest first (not the deleted ones).
-  List<Scan> get scans => _scans;
+  /// The events to show, newest first (not the deleted ones).
+  List<CaptureEvent> get events => _scans;
 
-  /// Every scan, deleted ones' tombstones included, for cloud sync.
-  List<Scan> get all => _all;
+  /// Every event, deleted ones' tombstones included, for cloud sync.
+  List<CaptureEvent> get all => _all;
   bool get loaded => _loaded;
 
   /// Changes when a page's image changes (a rotation), so images reload.
   int get revision => _revision;
   int _revision = 0;
 
-  /// Changes each time the user changes a scan (not when cloud sync
+  /// Changes each time the user changes an event (not when cloud sync
   /// brings one), so sync knows when there's something to upload.
   ValueListenable<int> get localChanges => _localChanges;
   final ValueNotifier<int> _localChanges = ValueNotifier(0);
 
-  Scan? byId(String id) {
+  CaptureEvent? byId(String id) {
     for (final s in _scans) {
       if (s.id == id) return s;
     }
@@ -55,11 +55,11 @@ class Library extends ChangeNotifier {
     if (!_ready.isCompleted) _ready.complete();
   }
 
-  /// Done once the scans have loaded: cloud sync waits for it.
+  /// Done once the events have loaded: cloud sync waits for it.
   Future<void> get ready => _ready.future;
   final Completer<void> _ready = Completer();
 
-  void _set(List<Scan> all) {
+  void _set(List<CaptureEvent> all) {
     _all = all..sort((a, b) => b.created.compareTo(a.created));
     _scans = [
       for (final s in _all)
@@ -67,59 +67,68 @@ class Library extends ChangeNotifier {
     ];
   }
 
-  /// A new scan of [pages], titled with its date and time.
-  Future<Scan> create(List<Uint8List> pages) async {
+  /// A new event of [pages], titled with its date and time.
+  Future<CaptureEvent> create(List<Uint8List> pages) async {
     final now = _now();
-    var scan = Scan(id: newId(), title: defaultTitle(now), created: now);
-    scan = await _addPages(scan, pages);
-    _set([scan, ..._all]);
+    var event = CaptureEvent(
+      id: newId(),
+      title: defaultTitle(now),
+      created: now,
+    );
+    event = await _addPages(event, pages);
+    _set([event, ..._all]);
     _changed();
-    return scan;
+    return event;
   }
 
-  Future<Scan> addPages(Scan scan, List<Uint8List> pages) async =>
-      _update(await _addPages(scan, pages));
+  Future<CaptureEvent> addPages(
+    CaptureEvent event,
+    List<Uint8List> pages,
+  ) async => _update(await _addPages(event, pages));
 
-  /// Adds picked photos and videos to the end of [scan]. Photos get the
+  /// Adds picked photos and videos to the end of [event]. Photos get the
   /// Tab filter, as scanned pages do.
-  Future<Scan> addMedia(Scan scan, List<Media> media) async {
-    final added = <ScanPage>[];
+  Future<CaptureEvent> addMedia(CaptureEvent event, List<Media> media) async {
+    final added = <EventPage>[];
     for (final m in media) {
-      final page = ScanPage(id: newId(), kind: m.kind, extension: m.extension);
-      await _store.putPageFile(scan.id, page, m.file);
+      final page = EventPage(id: newId(), kind: m.kind, extension: m.extension);
+      await _store.putPageFile(event.id, page, m.file);
       added.add(page);
     }
-    return _save(scan.copyWith(pages: [...scan.pages, ...added]));
+    return _save(event.copyWith(pages: [...event.pages, ...added]));
   }
 
-  Future<Scan> _addPages(Scan scan, List<Uint8List> pages) async {
-    final added = <ScanPage>[];
+  Future<CaptureEvent> _addPages(
+    CaptureEvent event,
+    List<Uint8List> pages,
+  ) async {
+    final added = <EventPage>[];
     for (final bytes in pages) {
-      final page = ScanPage(id: newId());
-      await _store.putPage(scan.id, page, bytes);
+      final page = EventPage(id: newId());
+      await _store.putPage(event.id, page, bytes);
       added.add(page);
     }
-    final updated = scan.copyWith(
-      pages: [...scan.pages, ...added],
+    final updated = event.copyWith(
+      pages: [...event.pages, ...added],
       updated: _now(),
     );
     await _store.save(updated);
     return updated;
   }
 
-  Future<Scan> update(Scan scan) => _save(scan);
+  Future<CaptureEvent> update(CaptureEvent event) => _save(event);
 
-  /// Saves the user's change to [scan], as changed now.
-  Future<Scan> _save(Scan scan) async {
-    final updated = scan.copyWith(updated: _now());
+  /// Saves the user's change to [event], as changed now.
+  Future<CaptureEvent> _save(CaptureEvent event) async {
+    final updated = event.copyWith(updated: _now());
     await _store.save(updated);
     return _update(updated);
   }
 
-  Scan _update(Scan scan) {
-    _set([for (final s in _all) s.id == scan.id ? scan : s]);
+  CaptureEvent _update(CaptureEvent event) {
+    _set([for (final s in _all) s.id == event.id ? event : s]);
     _changed();
-    return scan;
+    return event;
   }
 
   void _changed() {
@@ -129,126 +138,126 @@ class Library extends ChangeNotifier {
 
   /// Turns the page a quarter turn. The turned image is a new page (a new
   /// ID): page files never change once written, so cloud sync only has to
-  /// look at which pages a scan has.
-  Future<Scan> rotatePage(Scan scan, ScanPage page) async {
-    final rotated = await rotatedPage(await _store.page(scan.id, page));
-    final turned = ScanPage(
+  /// look at which pages an event has.
+  Future<CaptureEvent> rotatePage(CaptureEvent event, EventPage page) async {
+    final rotated = await rotatedPage(await _store.page(event.id, page));
+    final turned = EventPage(
       id: newId(),
       filter: page.filter,
       kind: page.kind,
       extension: page.extension,
     );
-    await _store.putPage(scan.id, turned, rotated);
+    await _store.putPage(event.id, turned, rotated);
     final updated = await _save(
-      scan.copyWith(
-        pages: [for (final p in scan.pages) p.id == page.id ? turned : p],
+      event.copyWith(
+        pages: [for (final p in event.pages) p.id == page.id ? turned : p],
       ),
     );
-    await _store.deletePage(scan.id, page);
+    await _store.deletePage(event.id, page);
     _forget(page);
     _revision++;
     notifyListeners();
     return updated;
   }
 
-  Future<Scan> deletePage(Scan scan, ScanPage page) async {
+  Future<CaptureEvent> deletePage(CaptureEvent event, EventPage page) async {
     final updated = await _save(
-      scan.copyWith(
+      event.copyWith(
         pages: [
-          for (final p in scan.pages)
+          for (final p in event.pages)
             if (p.id != page.id) p,
         ],
       ),
     );
-    await _store.deletePage(scan.id, page);
+    await _store.deletePage(event.id, page);
     _forget(page);
     return updated;
   }
 
-  /// Deletes [scan] and its pages. One that has synced leaves a tombstone,
+  /// Deletes [event] and its pages. One that has synced leaves a tombstone,
   /// so the deletion reaches the user's other devices.
-  Future<void> delete(Scan scan) async {
-    await _removePages(scan);
-    if (scan.owner == null) {
-      await _store.delete(scan.id);
+  Future<void> delete(CaptureEvent event) async {
+    await _removePages(event);
+    if (event.owner == null) {
+      await _store.delete(event.id);
       _set([
         for (final s in _all)
-          if (s.id != scan.id) s,
+          if (s.id != event.id) s,
       ]);
       _changed();
     } else {
-      final tombstone = Scan.tombstone(scan, _now());
+      final tombstone = CaptureEvent.tombstone(event, _now());
       await _store.save(tombstone);
       _update(tombstone);
     }
   }
 
-  Future<void> _removePages(Scan scan) async {
-    for (final p in scan.pages) {
-      await _store.deletePage(scan.id, p);
+  Future<void> _removePages(CaptureEvent event) async {
+    for (final p in event.pages) {
+      await _store.deletePage(event.id, p);
       _forget(p);
     }
   }
 
-  void _forget(ScanPage page) =>
+  void _forget(EventPage page) =>
       _filtered.removeWhere((key, _) => key.startsWith('${page.id}/'));
 
   // Cloud sync's side: what it brings isn't a local change.
 
-  /// Takes [scan] as cloud sync brought it (its pages already stored with
+  /// Takes [event] as cloud sync brought it (its pages already stored with
   /// [putPageStream]): saved and shown, and the local pages it no longer
-  /// has deleted. Skipped, returning false, when the scan changed here
+  /// has deleted. Skipped, returning false, when the event changed here
   /// since it was [seen] (that change wins, and goes up next).
-  Future<bool> applyRemote(Scan scan, {Scan? seen}) async {
-    final local = _byIdAll(scan.id);
+  Future<bool> applyRemote(CaptureEvent event, {CaptureEvent? seen}) async {
+    final local = _byIdAll(event.id);
     if (local != null && seen != null && local.updated != seen.updated) {
       return false;
     }
-    await _store.save(scan);
-    final kept = {for (final p in scan.pages) p.fileName};
-    for (final p in local?.pages ?? const <ScanPage>[]) {
+    await _store.save(event);
+    final kept = {for (final p in event.pages) p.fileName};
+    for (final p in local?.pages ?? const <EventPage>[]) {
       if (!kept.contains(p.fileName)) {
-        await _store.deletePage(scan.id, p);
+        await _store.deletePage(event.id, p);
         _forget(p);
       }
     }
     _set([
       for (final s in _all)
-        if (s.id != scan.id) s,
-      scan,
+        if (s.id != event.id) s,
+      event,
     ]);
     if (local != null) _revision++;
     notifyListeners();
     return true;
   }
 
-  /// Records that [scan] syncs with [owner], without counting as a change.
-  Future<void> setOwner(Scan scan, String owner) async {
-    final local = _byIdAll(scan.id);
+  /// Records that [event] syncs with [owner], without counting as a change.
+  Future<void> setOwner(CaptureEvent event, String owner) async {
+    final local = _byIdAll(event.id);
     if (local == null || local.owner == owner) return;
     final owned = local.copyWith(owner: owner);
     await _store.save(owned);
-    _set([for (final s in _all) s.id == scan.id ? owned : s]);
+    _set([for (final s in _all) s.id == event.id ? owned : s]);
   }
 
-  Scan? _byIdAll(String id) {
+  CaptureEvent? _byIdAll(String id) {
     for (final s in _all) {
       if (s.id == id) return s;
     }
     return null;
   }
 
-  Future<bool> hasPage(String scanId, ScanPage page) =>
-      _store.hasPage(scanId, page);
+  Future<bool> hasPage(String eventId, EventPage page) =>
+      _store.hasPage(eventId, page);
 
-  Future<(Stream<List<int>>, int)> pageStream(String scanId, ScanPage page) =>
-      _store.pageStream(scanId, page);
+  Future<(Stream<List<int>>, int)> pageStream(String eventId, EventPage page) =>
+      _store.pageStream(eventId, page);
 
   Future<void> putPageStream(
-    String scanId,
-    ScanPage page,
+    String eventId,
+    EventPage page,
     Stream<List<int>> bytes,
-  ) => _store.putPageStream(scanId, page, bytes);
+  ) => _store.putPageStream(eventId, page, bytes);
 
   Future<String?> readMeta(String name) => _store.readMeta(name);
 
@@ -256,19 +265,19 @@ class Library extends ChangeNotifier {
       _store.writeMeta(name, json);
 
   /// The page's file as scanned or picked.
-  Future<Uint8List> original(Scan scan, ScanPage page) =>
-      _store.page(scan.id, page);
+  Future<Uint8List> original(CaptureEvent event, EventPage page) =>
+      _store.page(event.id, page);
 
   /// The page's file on disk (videos play from it); null on the web.
-  Future<String?> path(Scan scan, ScanPage page) =>
-      _store.pagePath(scan.id, page);
+  Future<String?> path(CaptureEvent event, EventPage page) =>
+      _store.pagePath(event.id, page);
 
   /// An image page with its filter applied (cached); a video as it is.
-  Future<Uint8List> filtered(Scan scan, ScanPage page) async {
-    if (page.isVideo) return original(scan, page);
+  Future<Uint8List> filtered(CaptureEvent event, EventPage page) async {
+    if (page.isVideo) return original(event, page);
     final key = '${page.id}/${page.filter.name}';
     return _filtered[key] ??= await applyFilter(
-      await original(scan, page),
+      await original(event, page),
       page.filter,
     );
   }
@@ -280,7 +289,7 @@ class Library extends ChangeNotifier {
   }
 }
 
-/// A new scan's title: "Tab" and when it was scanned, e.g. "Tab 2026-10-10 14:05".
+/// A new event's title: "Tab" and when it was scanned, e.g. "Tab 2026-10-10 14:05".
 String defaultTitle(DateTime t) {
   String two(int n) => n.toString().padLeft(2, '0');
   return 'Tab ${t.year}-${two(t.month)}-${two(t.day)} ${two(t.hour)}:${two(t.minute)}';

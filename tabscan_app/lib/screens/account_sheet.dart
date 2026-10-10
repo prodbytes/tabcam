@@ -34,7 +34,7 @@ class AccountButton extends StatelessWidget {
   );
 }
 
-/// Signing in to sync scans, and once signed in, who it is, how sync
+/// Signing in to sync events, and once signed in, who it is, how sync
 /// stands, Sync now and Sign out.
 class AccountSheet extends StatelessWidget {
   const AccountSheet({super.key, required this.auth, required this.sync});
@@ -62,7 +62,7 @@ class AccountSheet extends StatelessWidget {
         Text('Sync your tabs', style: theme.textTheme.titleLarge),
         const SizedBox(height: 8),
         const Text(
-          'Sign in to back up your scans and have them on every device '
+          'Sign in to back up your events and have them on every device '
           'you sign in on. Without signing in, they stay on this device.',
         ),
         const SizedBox(height: 16),
@@ -117,7 +117,7 @@ class AccountSheet extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Signing out keeps your scans on this device.',
+          'Signing out keeps your events on this device.',
           style: theme.textTheme.bodySmall,
         ),
       ],

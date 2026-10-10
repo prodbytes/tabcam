@@ -6,7 +6,7 @@
 #
 # It builds with the settings from the repo's .env (scripts/dart-defines.sh)
 # and the version (scripts/version.sh), installs over the current app
-# (keeping its scans), then starts it with its task cleared, so it opens on
+# (keeping its events), then starts it with its task cleared, so it opens on
 # the library. Finally it checks the app runs.
 # ANDROID_SERIAL=<serial> picks a phone when several are attached.
 set -euo pipefail

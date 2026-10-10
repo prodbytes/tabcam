@@ -3,10 +3,10 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 
-import '../library/scan.dart';
+import '../library/capture_event.dart';
 import '../processing/page_filter.dart';
 
-/// What a scan can be shared as.
+/// What an event can be shared as.
 enum ShareFormat {
   /// Every image page (filtered) in one PDF, then the text tab if it was
   /// read. Videos are left out.
@@ -23,12 +23,15 @@ enum ShareFormat {
 }
 
 abstract final class Exporter {
-  /// The scan as a PDF: a page per scanned page, fitted to A4, then the
+  /// The event as a PDF: a page per scanned page, fitted to A4, then the
   /// text tab in Courier.
-  static Future<Uint8List> pdf(Scan scan, List<Uint8List> filteredPages) {
+  static Future<Uint8List> pdf(
+    CaptureEvent event,
+    List<Uint8List> filteredPages,
+  ) {
     final doc = pw.Document(
-      title: scan.title,
-      author: scan.artist.isEmpty ? null : scan.artist,
+      title: event.title,
+      author: event.artist.isEmpty ? null : event.artist,
       creator: 'TabScan',
     );
     for (final bytes in filteredPages) {
@@ -42,14 +45,14 @@ abstract final class Exporter {
         ),
       );
     }
-    final text = scan.tabText;
+    final text = event.tabText;
     if (text != null && text.trim().isNotEmpty) {
       doc.addPage(
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
           margin: const pw.EdgeInsets.all(36),
           build: (_) => [
-            pw.Header(level: 1, text: scan.title),
+            pw.Header(level: 1, text: event.title),
             for (final line in text.split('\n'))
               pw.Text(
                 line.isEmpty ? ' ' : line,
@@ -62,27 +65,27 @@ abstract final class Exporter {
     return doc.save();
   }
 
-  /// Opens the system's share sheet with the scan in [format].
+  /// Opens the system's share sheet with the event in [format].
   static Future<void> share(
-    Scan scan,
+    CaptureEvent event,
     ShareFormat format,
-    Future<Uint8List> Function(ScanPage page) filteredPage,
+    Future<Uint8List> Function(EventPage page) filteredPage,
   ) async {
-    final name = scan.fileName;
+    final name = event.fileName;
     switch (format) {
       case ShareFormat.text:
         await SharePlus.instance.share(
-          ShareParams(text: scan.tabText ?? '', subject: scan.title),
+          ShareParams(text: event.tabText ?? '', subject: event.title),
         );
       case ShareFormat.pdf:
         final pages = [
-          for (final p in scan.pages)
+          for (final p in event.pages)
             if (!p.isVideo) await filteredPage(p),
         ];
-        final bytes = await pdf(scan, pages);
+        final bytes = await pdf(event, pages);
         await SharePlus.instance.share(
           ShareParams(
-            subject: scan.title,
+            subject: event.title,
             files: [XFile.fromData(bytes, mimeType: 'application/pdf')],
             fileNameOverrides: ['$name.pdf'],
           ),
@@ -90,25 +93,25 @@ abstract final class Exporter {
       case ShareFormat.files:
         final files = <XFile>[];
         final names = <String>[];
-        for (final (i, page) in scan.pages.indexed) {
+        for (final (i, page) in event.pages.indexed) {
           final (extension, mime) = _type(page);
           files.add(XFile.fromData(await filteredPage(page), mimeType: mime));
           names.add('$name ${i + 1}.$extension');
         }
         await SharePlus.instance.share(
           ShareParams(
-            subject: scan.title,
+            subject: event.title,
             files: files,
             fileNameOverrides: names,
           ),
         );
     }
-    debugPrint('Shared ${scan.id} as ${format.name}');
+    debugPrint('Shared ${event.id} as ${format.name}');
   }
 
   /// A shared page's extension and MIME type: PNG for an image with the
   /// Tab filter, otherwise the page's own.
-  static (String, String) _type(ScanPage page) {
+  static (String, String) _type(EventPage page) {
     if (!page.isVideo && page.filter != PageFilter.original) {
       return ('png', 'image/png');
     }

@@ -1,8 +1,8 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  tabscan-user-data: the bucket for signed-in users' scans. The app syncs
-  each user's scans here, under their Cognito identity ID
-  (<identityId>/scans/<scan id>/scan.json and the pages' files), straight
+  tabscan-user-data: the bucket for signed-in users' events. The app syncs
+  each user's events here, under their Cognito identity ID
+  (<identityId>/events/<event id>/event.json and the pages' files), straight
   from the device with the temporary credentials from identity.yaml. Shared
   by production and the release candidate.
 
@@ -19,8 +19,8 @@ Resources:
     UpdateReplacePolicy: Retain
     Properties:
       # Not tabscan-*: the GitHub deploy roles may manage tabscan-* buckets,
-      # and must never reach users' scans.
-      BucketName: !Sub nu01-user-scans-${AWS::AccountId}
+      # and must never reach users' events.
+      BucketName: !Sub nu01-user-events-${AWS::AccountId}
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -33,7 +33,7 @@ Resources:
       OwnershipControls:
         Rules:
           - ObjectOwnership: BucketOwnerEnforced
-      # A deletion or an app bug can't destroy a scan for good: old versions
+      # A deletion or an app bug can't destroy an event for good: old versions
       # stay for 30 days.
       VersioningConfiguration:
         Status: Enabled

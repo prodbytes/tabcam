@@ -4,9 +4,9 @@ import '../processing/page_filter.dart';
 /// a lesson).
 enum PageKind { image, video }
 
-/// One page of a scan: its file is kept by the store as `<id>.<extension>`.
-class ScanPage {
-  const ScanPage({
+/// One page of an event: its file is kept by the store as `<id>.<extension>`.
+class EventPage {
+  const EventPage({
     required this.id,
     this.filter = PageFilter.tab,
     this.kind = PageKind.image,
@@ -25,10 +25,10 @@ class ScanPage {
 
   bool get isVideo => kind == PageKind.video;
 
-  /// The page's file name in its scan's folder.
+  /// The page's file name in its event's folder.
   String get fileName => '$id.$extension';
 
-  ScanPage copyWith({PageFilter? filter}) => ScanPage(
+  EventPage copyWith({PageFilter? filter}) => EventPage(
     id: id,
     filter: filter ?? this.filter,
     kind: kind,
@@ -42,7 +42,7 @@ class ScanPage {
     'extension': extension,
   };
 
-  factory ScanPage.fromJson(Map<String, Object?> json) => ScanPage(
+  factory EventPage.fromJson(Map<String, Object?> json) => EventPage(
     id: checkId(json['id'] as String),
     filter: PageFilter.byName(json['filter'] as String?),
     kind: json['kind'] == 'video' ? PageKind.video : PageKind.image,
@@ -52,8 +52,8 @@ class ScanPage {
 
 /// A scanned tab: its pages, what it's called, and the text tab read from
 /// it (if it was read).
-class Scan {
-  Scan({
+class CaptureEvent {
+  CaptureEvent({
     required this.id,
     required this.title,
     required this.created,
@@ -65,16 +65,16 @@ class Scan {
     this.owner,
   }) : updated = updated ?? created;
 
-  /// What's left of [scan] once deleted: a tombstone, so the deletion
+  /// What's left of [event] once deleted: a tombstone, so the deletion
   /// reaches the user's other devices through cloud sync.
-  Scan.tombstone(Scan scan, DateTime when)
+  CaptureEvent.tombstone(CaptureEvent event, DateTime when)
     : this(
-        id: scan.id,
+        id: event.id,
         title: '',
-        created: scan.created,
+        created: event.created,
         updated: when,
         deleted: when,
-        owner: scan.owner,
+        owner: event.owner,
       );
 
   final String id;
@@ -84,7 +84,7 @@ class Scan {
 
   /// When it last changed on any device (cloud sync keeps the latest).
   final DateTime updated;
-  final List<ScanPage> pages;
+  final List<EventPage> pages;
 
   /// The tab as plain text, from Read tab, as the user last edited it.
   final String? tabText;
@@ -94,7 +94,7 @@ class Scan {
   bool get isDeleted => deleted != null;
 
   /// The Cognito identity ID it syncs with, once it has synced (null
-  /// before). Kept on the device only: other users' scans never sync.
+  /// before). Kept on the device only: other users' events never sync.
   final String? owner;
 
   /// A file name for exports: the title, safe for any file system.
@@ -106,14 +106,14 @@ class Scan {
     return name.isEmpty ? 'tab' : name;
   }
 
-  Scan copyWith({
+  CaptureEvent copyWith({
     String? title,
     String? artist,
-    List<ScanPage>? pages,
+    List<EventPage>? pages,
     String? tabText,
     DateTime? updated,
     String? owner,
-  }) => Scan(
+  }) => CaptureEvent(
     id: id,
     title: title ?? this.title,
     artist: artist ?? this.artist,
@@ -125,7 +125,7 @@ class Scan {
     owner: owner ?? this.owner,
   );
 
-  /// The scan as saved: on the device with its [owner], in the cloud
+  /// The event as saved: on the device with its [owner], in the cloud
   /// ([local] false) without.
   Map<String, Object?> toJson({bool local = true}) => {
     'id': id,
@@ -139,12 +139,12 @@ class Scan {
     if (local && owner != null) 'owner': owner,
   };
 
-  factory Scan.fromJson(Map<String, Object?> json) {
+  factory CaptureEvent.fromJson(Map<String, Object?> json) {
     DateTime? time(String key) => switch (json[key]) {
       final String t => DateTime.parse(t).toLocal(),
       _ => null,
     };
-    return Scan(
+    return CaptureEvent(
       id: checkId(json['id'] as String),
       title: json['title'] as String? ?? '',
       artist: json['artist'] as String? ?? '',
@@ -152,7 +152,7 @@ class Scan {
       updated: time('updated'),
       pages: [
         for (final p in json['pages'] as List? ?? const [])
-          ScanPage.fromJson((p as Map).cast<String, Object?>()),
+          EventPage.fromJson((p as Map).cast<String, Object?>()),
       ],
       tabText: json['tabText'] as String?,
       deleted: time('deleted'),
@@ -163,7 +163,7 @@ class Scan {
 
 final RegExp _id = RegExp(r'^[a-z0-9]{1,32}$');
 
-/// [id] if it's a valid scan or page ID; IDs name files, so anything else
+/// [id] if it's a valid event or page ID; IDs name files, so anything else
 /// (a path, say) is refused.
 String checkId(String id) {
   if (!_id.hasMatch(id)) throw FormatException('Bad ID', id);

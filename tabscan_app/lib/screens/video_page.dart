@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
 import '../library/library.dart';
-import '../library/scan.dart';
+import '../library/capture_event.dart';
 
 /// A video page: a play button until tapped, then the video, with tap to
 /// pause and resume. It plays from the page's file (from memory on the
@@ -13,13 +13,13 @@ class VideoPage extends StatefulWidget {
   const VideoPage({
     super.key,
     required this.library,
-    required this.scan,
+    required this.event,
     required this.page,
   });
 
   final Library library;
-  final Scan scan;
-  final ScanPage page;
+  final CaptureEvent event;
+  final EventPage page;
 
   @override
   State<VideoPage> createState() => _VideoPageState();
@@ -39,12 +39,12 @@ class _VideoPageState extends State<VideoPage> {
   Future<void> _start() async {
     setState(() => _loading = true);
     try {
-      final path = await widget.library.path(widget.scan, widget.page);
+      final path = await widget.library.path(widget.event, widget.page);
       final controller = path != null
           ? VideoPlayerController.file(File(path))
           : VideoPlayerController.networkUrl(
               Uri.dataFromBytes(
-                await widget.library.original(widget.scan, widget.page),
+                await widget.library.original(widget.event, widget.page),
                 mimeType: _mime(widget.page.extension),
               ),
             );

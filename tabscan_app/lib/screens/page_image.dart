@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 
 import '../library/library.dart';
-import '../library/scan.dart';
+import '../library/capture_event.dart';
 
 /// A page's image with its filter applied, loaded from the library.
 class PageImage extends StatelessWidget {
   const PageImage({
     super.key,
     required this.library,
-    required this.scan,
+    required this.event,
     required this.page,
     this.fit = BoxFit.contain,
     this.cacheWidth,
   });
 
   final Library library;
-  final Scan scan;
-  final ScanPage page;
+  final CaptureEvent event;
+  final EventPage page;
   final BoxFit fit;
 
   /// Decodes the image at this width, for thumbnails.
@@ -26,7 +26,7 @@ class PageImage extends StatelessWidget {
   Widget build(BuildContext context) {
     return FutureBuilder(
       key: ValueKey('${page.id}/${page.filter.name}/${library.revision}'),
-      future: library.filtered(scan, page),
+      future: library.filtered(event, page),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return const Center(child: Icon(Icons.broken_image_outlined));

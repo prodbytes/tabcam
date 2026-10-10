@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tabscan_app/cloud/cloud_sync.dart';
 import 'package:tabscan_app/cloud/cognito.dart';
 import 'package:tabscan_app/library/library.dart';
-import 'package:tabscan_app/library/scan.dart';
-import 'package:tabscan_app/library/scan_store_memory.dart';
+import 'package:tabscan_app/library/capture_event.dart';
+import 'package:tabscan_app/library/event_store_memory.dart';
 
 import 'fakes.dart';
 
@@ -13,7 +13,7 @@ import 'fakes.dart';
 class Device {
   Device(this.bucket, {String identity = 'us-east-1:me'})
     : credentials = FakeCredentials(identity) {
-    library = Library(PlatformScanStore(), () => now);
+    library = Library(PlatformEventStore(), () => now);
     sync = CloudSync(
       library: library,
       auth: auth,
@@ -55,24 +55,24 @@ void main() {
   late FakeBucket bucket;
   setUp(() => bucket = FakeBucket());
 
-  const folder = 'us-east-1:me/scans';
+  const folder = 'us-east-1:me/events';
 
-  test("a scan goes up: its pages, then scan.json, without owner", () async {
+  test("an event goes up: its pages, then event.json, without owner", () async {
     final phone = Device(bucket);
     await phone.start();
-    final scan = await phone.library.create([
+    final event = await phone.library.create([
       bytes([1, 2, 3]),
     ]);
     await phone.sync.syncNow();
 
-    final page = scan.pages.single;
-    expect(bucket.objects['$folder/${scan.id}/${page.fileName}'], [1, 2, 3]);
-    final json = bucket.json('$folder/${scan.id}/scan.json');
-    expect(json['title'], scan.title);
+    final page = event.pages.single;
+    expect(bucket.objects['$folder/${event.id}/${page.fileName}'], [1, 2, 3]);
+    final json = bucket.json('$folder/${event.id}/event.json');
+    expect(json['title'], event.title);
     expect(json.containsKey('owner'), isFalse);
     expect(
       bucket.requests.indexWhere((r) => r.endsWith(page.fileName)),
-      lessThan(bucket.requests.indexWhere((r) => r.endsWith('scan.json'))),
+      lessThan(bucket.requests.indexWhere((r) => r.endsWith('event.json'))),
     );
     expect(phone.library.all.single.owner, 'us-east-1:me');
     expect(phone.sync.state, SyncState.synced);
@@ -90,19 +90,19 @@ void main() {
     expect(bucket.requests, ['LIST $folder/']);
   });
 
-  test("another device's scans come down, pages and all", () async {
+  test("another device's events come down, pages and all", () async {
     final phone = Device(bucket);
     await phone.start();
-    final scan = await phone.library.create([
+    final event = await phone.library.create([
       bytes([1, 2]),
     ]);
-    await phone.library.update(scan.copyWith(tabText: 'e|--0--|'));
+    await phone.library.update(event.copyWith(tabText: 'e|--0--|'));
     await phone.sync.syncNow();
 
     final tablet = Device(bucket);
     await tablet.start();
-    final copy = tablet.library.scans.single;
-    expect(copy.id, scan.id);
+    final copy = tablet.library.events.single;
+    expect(copy.id, event.id);
     expect(copy.tabText, 'e|--0--|');
     expect(copy.owner, 'us-east-1:me');
     expect(await tablet.library.original(copy, copy.pages.single), [1, 2]);
@@ -116,7 +116,7 @@ void main() {
     final phone = Device(bucket);
     final tablet = Device(bucket);
     await phone.start();
-    final scan = await phone.library.create([
+    final event = await phone.library.create([
       bytes([1]),
     ]);
     await phone.sync.syncNow();
@@ -124,18 +124,18 @@ void main() {
 
     phone.later();
     await phone.library.update(
-      phone.library.byId(scan.id)!.copyWith(title: 'Riff in A'),
+      phone.library.byId(event.id)!.copyWith(title: 'Riff in A'),
     );
     await phone.sync.syncNow();
     await tablet.sync.syncNow();
-    expect(tablet.library.byId(scan.id)!.title, 'Riff in A');
+    expect(tablet.library.byId(event.id)!.title, 'Riff in A');
   });
 
   test('changed on both: the later change wins', () async {
     final phone = Device(bucket);
     final tablet = Device(bucket);
     await phone.start();
-    final scan = await phone.library.create([
+    final event = await phone.library.create([
       bytes([1]),
     ]);
     await phone.sync.syncNow();
@@ -143,72 +143,72 @@ void main() {
 
     phone.later();
     await phone.library.update(
-      phone.library.byId(scan.id)!.copyWith(title: 'Phone'),
+      phone.library.byId(event.id)!.copyWith(title: 'Phone'),
     );
     tablet.now = phone.now.add(const Duration(minutes: 1));
     await tablet.library.update(
-      tablet.library.byId(scan.id)!.copyWith(title: 'Tablet'),
+      tablet.library.byId(event.id)!.copyWith(title: 'Tablet'),
     );
     await phone.sync.syncNow();
     await tablet.sync.syncNow(); // newer: goes up over the phone's
     await phone.sync.syncNow();
-    expect(phone.library.byId(scan.id)!.title, 'Tablet');
-    expect(tablet.library.byId(scan.id)!.title, 'Tablet');
+    expect(phone.library.byId(event.id)!.title, 'Tablet');
+    expect(tablet.library.byId(event.id)!.title, 'Tablet');
   });
 
   test('pages removed or rotated are removed from the folder too', () async {
     final phone = Device(bucket);
     final tablet = Device(bucket);
     await phone.start();
-    var scan = await phone.library.create([
+    var event = await phone.library.create([
       bytes([1]),
       bytes([2]),
     ]);
     await phone.sync.syncNow();
     await tablet.start();
-    final gone = scan.pages.first;
+    final gone = event.pages.first;
     phone.later();
-    scan = await phone.library.deletePage(phone.library.byId(scan.id)!, gone);
+    event = await phone.library.deletePage(phone.library.byId(event.id)!, gone);
     await phone.sync.syncNow();
     expect(
-      bucket.objects.containsKey('$folder/${scan.id}/${gone.fileName}'),
+      bucket.objects.containsKey('$folder/${event.id}/${gone.fileName}'),
       isFalse,
     );
     await tablet.sync.syncNow();
-    final copy = tablet.library.byId(scan.id)!;
-    expect(copy.pages.map((p) => p.id), [scan.pages.single.id]);
-    expect(await tablet.library.hasPage(scan.id, gone), isFalse);
+    final copy = tablet.library.byId(event.id)!;
+    expect(copy.pages.map((p) => p.id), [event.pages.single.id]);
+    expect(await tablet.library.hasPage(event.id, gone), isFalse);
   });
 
   test('a deletion reaches the other devices', () async {
     final phone = Device(bucket);
     final tablet = Device(bucket);
     await phone.start();
-    final scan = await phone.library.create([
+    final event = await phone.library.create([
       bytes([1]),
     ]);
     await phone.sync.syncNow();
     await tablet.start();
-    expect(tablet.library.scans, hasLength(1));
+    expect(tablet.library.events, hasLength(1));
 
     phone.later();
-    await phone.library.delete(phone.library.byId(scan.id)!);
+    await phone.library.delete(phone.library.byId(event.id)!);
     await phone.sync.syncNow();
     final keys = bucket.objects.keys.toList();
-    expect(keys, ['$folder/${scan.id}/scan.json']);
+    expect(keys, ['$folder/${event.id}/event.json']);
     expect(bucket.json(keys.single)['deleted'], isNotNull);
 
     await tablet.sync.syncNow();
-    expect(tablet.library.scans, isEmpty);
-    expect(await tablet.library.hasPage(scan.id, scan.pages.single), isFalse);
+    expect(tablet.library.events, isEmpty);
+    expect(await tablet.library.hasPage(event.id, event.pages.single), isFalse);
 
-    // A new device doesn't get the deleted scan at all.
+    // A new device doesn't get the deleted event at all.
     final laptop = Device(bucket);
     await laptop.start();
     expect(laptop.library.all, isEmpty);
   });
 
-  test("another account's scans stay on the device, unsynced", () async {
+  test("another account's events stay on the device, unsynced", () async {
     final phone = Device(bucket);
     await phone.start();
     await phone.library.create([
@@ -260,10 +260,10 @@ void main() {
   });
 
   test('pages are uploaded with their type', () {
-    expect(CloudSync.contentTypeOf(const ScanPage(id: 'a')), 'image/jpeg');
+    expect(CloudSync.contentTypeOf(const EventPage(id: 'a')), 'image/jpeg');
     expect(
       CloudSync.contentTypeOf(
-        const ScanPage(id: 'a', kind: PageKind.video, extension: 'mp4'),
+        const EventPage(id: 'a', kind: PageKind.video, extension: 'mp4'),
       ),
       'video/mp4',
     );

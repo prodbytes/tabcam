@@ -1,7 +1,7 @@
 # Sign-in and cloud sync
 
-Signing in is optional. Signed in, a user's scans **sync with S3**, both
-ways, so every device they sign in on has the same scans, and a new
+Signing in is optional. Signed in, a user's events **sync with S3**, both
+ways, so every device they sign in on has the same events, and a new
 device, or the web app after a reload, gets them back. Signed out,
 nothing leaves the device. It works as Presence's first cloud sync did:
 Google sign-in, a Cognito identity pool that turns the Google ID token
@@ -11,7 +11,7 @@ There's no TabScan server.
 
 A build has sign-in only when it has all of `GOOGLE_WEB_CLIENT_ID`,
 `COGNITO_IDENTITY_POOL_ID` and `USER_DATA_BUCKET` (below). Without them
-it's as before: no account button, scans only on the device.
+it's as before: no account button, events only on the device.
 
 ## Signing in
 
@@ -25,7 +25,7 @@ failed) or done. It opens the account sheet:
 - **Signed in**: the account's photo, name and email; the sync status
   ("Syncing…", "Synced at 14:05 (2 uploaded, 1 downloaded)", or why it
   failed, such as "Sign in again to sync"); **Sync now**; **Sign out**,
-  which keeps the scans on the device.
+  which keeps the events on the device.
 
 Google sign-in (`google_sign_in`,
 [lib/auth/](../tabscan_app/lib/auth)) per platform:
@@ -54,16 +54,16 @@ the user-data bucket:
 
 | Object | Content |
 |---|---|
-| `<identity>/scans/<scan id>/scan.json` | the scan's details, as on the device but without `owner`; or its tombstone once deleted |
-| `<identity>/scans/<scan id>/<page id>.<extension>` | each page's file, as stored on the device, with its MIME type (`image/jpeg` for scanned pages, the video's type for videos) |
+| `<identity>/events/<event id>/event.json` | the event's details, as on the device but without `owner`; or its tombstone once deleted |
+| `<identity>/events/<event id>/<page id>.<extension>` | each page's file, as stored on the device, with its MIME type (`image/jpeg` for scanned pages, the video's type for videos) |
 
 Page files never change once written: a rotated page is a new page (see
-[library](library.md#scans)), so a scan's pages are known by their names.
+[library](library.md#events)), so an event's pages are known by their names.
 Uploads use S3 Intelligent-Tiering.
 
 ## When, and how
 
-A **pass** runs at sign-in, 2 seconds after the user changes a scan (a
+A **pass** runs at sign-in, 2 seconds after the user changes an event (a
 burst of changes is one pass), every minute while signed in (to bring
 other devices' changes), and on **Sync now**. One pass runs at a time; a
 request during one runs another right after. Passes wait for the library
@@ -71,9 +71,9 @@ to load.
 
 A pass lists the user's folder (with nothing new anywhere, that one
 request is the whole pass) and compares it with what last synced, kept
-per scan in `cloudsync.json` beside the scans (the `scan.json` ETag last
-sent or taken, and the scan's `updated` then; for one identity: another
-starts over). For each scan on the device that's this user's (or no
+per event in `cloudsync.json` beside the events (the `event.json` ETag last
+sent or taken, and the event's `updated` then; for one identity: another
+starts over). For each event on the device that's this user's (or no
 one's yet):
 
 - **Changed only here** (its `updated` differs from the last sync, or it
@@ -83,20 +83,20 @@ one's yet):
   It then belongs to this user (`owner`).
 - **Changed only in the folder** (its `scan.json` ETag differs): it
   **comes down**: the pages the device lacks (streamed to a file, renamed
-  into place when complete), then the scan, so it never shows without
+  into place when complete), then the event, so it never shows without
   them; local pages it no longer has are deleted.
-- **Changed in both**: the later `updated` wins. A scan the user changes
+- **Changed in both**: the later `updated` wins. An event the user changes
   while it's coming down keeps that change, which goes up next.
 
-Scans only in the folder come down too; another device's tombstone of a
-scan never here is just remembered. **Deleting** a scan that has synced
+Events only in the folder come down too; another device's tombstone of an
+event never here is just remembered. **Deleting** an event that has synced
 leaves a tombstone, which goes up (its page files are deleted from the
-folder) and deletes it on the other devices. A scan that never synced is
+folder) and deletes it on the other devices. An event that never synced is
 simply deleted.
 
-**Another account's scans**: scans that synced with one account stay on
+**Another account's events**: events that synced with one account stay on
 the device when another signs in, shown but never uploaded to the new
-account. Scans made signed out go up to whoever signs in next.
+account. Events made signed out go up to whoever signs in next.
 
 ## Credentials and errors
 
@@ -133,8 +133,8 @@ identity stack makes an IAM role; the GitHub deploy roles don't manage
 either):
 
 - **`user-data.yaml`**, stack `tabscan-user-data`: the bucket
-  `nu01-user-scans-<account>` (not `tabscan-*`, so the deploy roles,
-  which manage `tabscan-*` buckets, can't reach users' scans). Private,
+  `nu01-user-events-<account>` (not `tabscan-*`, so the deploy roles,
+  which manage `tabscan-*` buckets, can't reach users' events). Private,
   SSE-S3, TLS only, versioned (old and deleted versions are kept 30 days,
   so a deletion can be undone), incomplete uploads cleared after a day.
   CORS allows `GET`, `PUT`, `HEAD` and `DELETE` from
@@ -151,12 +151,12 @@ Setting it up (the Google OAuth clients, the stacks, the variables):
 
 ## Verified
 
-- Unit tests with an in-memory bucket and two simulated devices: a scan
+- Unit tests with an in-memory bucket and two simulated devices: an event
   goes up pages first and without `owner`; an unchanged pass is one
-  listing; another device's scans come down with their pages and don't go
+  listing; another device's events come down with their pages and don't go
   back up; changes reach the other device; the later change wins; removed
   and rotated pages leave the folder; a deletion reaches other devices and
-  new ones never get the scan; another account's scans aren't uploaded;
+  new ones never get the event; another account's events aren't uploaded;
   expired credentials are renewed; a rejected token asks to sign in
   again; signed out, nothing syncs. The Cognito client's calls and its
   reuse of credentials, and the SigV4 and S3 tests ported from Presence.
@@ -172,12 +172,12 @@ Setting it up (the Google OAuth clients, the stacks, the variables):
   doesn't match the Android OAuth client and Google sign-in fails there.
   Local builds (`scripts/android-install.sh`) use the developer's debug
   key, which the client can list.
-- **Web** keeps scans in memory, so each visit downloads all of a user's
-  scans again, videos included.
+- **Web** keeps events in memory, so each visit downloads all of a user's
+  events again, videos included.
 - An ID token that can't be refreshed quietly (Google wants the user to
   choose an account again) stops sync after an hour, with "Sign in again
   to sync".
-- Two devices changing the same scan between passes: the later change
+- Two devices changing the same event between passes: the later change
   wins whole; the other is lost (S3 keeps it as an old version for 30
   days).
 - Tombstones stay forever, on the device and in the folder.

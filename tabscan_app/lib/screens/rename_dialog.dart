@@ -1,44 +1,44 @@
 import 'package:flutter/material.dart';
 
 import '../library/library.dart';
-import '../library/scan.dart';
+import '../library/capture_event.dart';
 
-/// Asks for a scan's song and artist, and saves them. An empty song keeps
+/// Asks for an event's song and artist, and saves them. An empty song keeps
 /// the title it had; an empty artist clears it.
-Future<void> renameScan(
+Future<void> renameEvent(
   BuildContext context,
   Library library,
-  Scan scan,
+  CaptureEvent event,
 ) async {
   final result = await showDialog<(String, String)>(
     context: context,
-    builder: (_) => RenameDialog(scan: scan),
+    builder: (_) => RenameDialog(event: event),
   );
   if (result == null) return;
   final (title, artist) = result;
   await library.update(
-    scan.copyWith(title: title.isEmpty ? scan.title : title, artist: artist),
+    event.copyWith(title: title.isEmpty ? event.title : title, artist: artist),
   );
 }
 
 /// The rename dialog: Song and Artist fields, prefilled, with the song's
 /// text selected so typing replaces it.
 class RenameDialog extends StatefulWidget {
-  const RenameDialog({super.key, required this.scan});
+  const RenameDialog({super.key, required this.event});
 
-  final Scan scan;
+  final CaptureEvent event;
 
   @override
   State<RenameDialog> createState() => _RenameDialogState();
 }
 
 class _RenameDialogState extends State<RenameDialog> {
-  late final _title = TextEditingController(text: widget.scan.title)
+  late final _title = TextEditingController(text: widget.event.title)
     ..selection = TextSelection(
       baseOffset: 0,
-      extentOffset: widget.scan.title.length,
+      extentOffset: widget.event.title.length,
     );
-  late final _artist = TextEditingController(text: widget.scan.artist);
+  late final _artist = TextEditingController(text: widget.event.artist);
 
   @override
   void dispose() {
