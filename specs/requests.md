@@ -310,3 +310,10 @@ spec.
     `tabscan_index/site/status.json` (`{"maintenance": false}`); flip it to
     `true` to try maintenance mode locally. Deploys still upload only the
     index page, so the live sites' status files are untouched.
+39. **On the home screen, show both the captures I created and the
+    captures shared with me.** Shared captures were already on Home, mixed
+    in with the user's own. Home now splits them into two headed sections
+    once something is shared: **My captures** above, **Shared with me**
+    below, each newest first ([library](library.md),
+    [shared captures](shared-captures.md)). With nothing shared, the grid
+    has no headings.

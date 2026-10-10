@@ -31,7 +31,8 @@ Addresses are compared in lower case. One's own address, and more than
 
 A capture shared with the user comes down at the next
 [sync pass](cloud-sync.md#when-and-how) (within a minute) and shows in
-the [library](library.md) with "shared by <their email>" on its card. Its
+the [library](library.md)'s **Shared with me** section, below the user's
+own (**My captures**), with "shared by <their email>" on its card. Its
 event screen says **"Shared by <email> · Can edit"** or **"· Read only"**
 under the app bar.
 
