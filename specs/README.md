@@ -14,7 +14,8 @@ read the tab into editable plain text and share it as a PDF, text or
 images. Anyone can capture, signed out, and what they capture stays on
 the device. Reading tabs and sharing need signing in (with Google), which
 also syncs the user's events with the cloud, so they're on every device
-the user signs in on.
+the user signs in on. With TabScan Premium, scans are also transcribed in
+the cloud as they sync.
 
 ## Features
 
@@ -43,6 +44,11 @@ the user signs in on.
   find it when they sign in. A share API (Lambda, DynamoDB, an HTTP API
   with a Google JWT authorizer) keeps the grants and hands out
   credentials for just that capture's folder.
+- [TabScan Premium: cloud OCR](cloud-ocr.md): premium users' pages
+  transcribed in AWS Lambda as they sync (Tesseract, PaddleOCR and
+  RapidOCR per string line, voted), the text tab filled in by itself;
+  premium is rbacr's `tabscan/premium` role (Substack subscription or
+  voucher); the upgrade offer for everyone else.
 - [App icon](app-icon.md): a scanned tab page with a staff and fret
   numbers, in scanner corners; how the platform icons are generated.
 - [Platforms](platforms.md): Android, iOS and the web, and what each can do.

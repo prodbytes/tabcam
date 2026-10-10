@@ -39,8 +39,8 @@ what it wrote.
   only once the status says the system is up.
 - **While running** it checks again every 2 minutes and whenever the app
   comes back to the foreground. If maintenance mode starts, the app is
-  replaced by the sorry message and sync stops; when it ends, the app
-  comes back and sync starts again.
+  replaced by the sorry message and sync (and Premium's cloud OCR)
+  stops; when it ends, the app comes back and they start again.
 - **Where it looks**: the web app reads its own site's `/status.json`;
   Android and iOS builds read their stage's site (the RC's for
   `TABSCANNER_STAGE=rc`, otherwise production's).

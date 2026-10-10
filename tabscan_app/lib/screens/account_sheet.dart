@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
 
 import '../auth/auth_service.dart';
+import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
+import 'premium_card.dart';
 
 /// The library's account button: the cloud, as sync stands, opening the
 /// [AccountSheet].
 class AccountButton extends StatelessWidget {
-  const AccountButton({super.key, required this.auth, required this.sync});
+  const AccountButton({
+    super.key,
+    required this.auth,
+    required this.sync,
+    this.ocr,
+  });
 
   final AuthService auth;
   final CloudSync sync;
+  final CloudOcr? ocr;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -24,11 +32,7 @@ class AccountButton extends StatelessWidget {
       return IconButton(
         tooltip: tooltip,
         icon: Icon(icon),
-        onPressed: () => showModalBottomSheet<void>(
-          context: context,
-          showDragHandle: true,
-          builder: (_) => AccountSheet(auth: auth, sync: sync),
-        ),
+        onPressed: () => showAccountSheet(context, auth, sync, ocr),
       );
     },
   );
@@ -36,11 +40,34 @@ class AccountButton extends StatelessWidget {
 
 /// Signing in to sync events, and once signed in, who it is, how sync
 /// stands, Sync now and Sign out.
+/// Opens the [AccountSheet]; with Premium set up ([ocr]), it checks again
+/// whether the user is premium (they may have just upgraded).
+Future<void> showAccountSheet(
+  BuildContext context,
+  AuthService auth,
+  CloudSync sync,
+  CloudOcr? ocr,
+) {
+  if (auth.user != null) ocr?.refresh();
+  return showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    isScrollControlled: true,
+    builder: (_) => AccountSheet(auth: auth, sync: sync, ocr: ocr),
+  );
+}
+
 class AccountSheet extends StatelessWidget {
-  const AccountSheet({super.key, required this.auth, required this.sync});
+  const AccountSheet({
+    super.key,
+    required this.auth,
+    required this.sync,
+    this.ocr,
+  });
 
   final AuthService auth;
   final CloudSync sync;
+  final CloudOcr? ocr;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -65,6 +92,13 @@ class AccountSheet extends StatelessWidget {
           'Sign in to back up your events and have them on every device '
           'you sign in on. Without signing in, they stay on this device.',
         ),
+        if (ocr != null) ...[
+          const SizedBox(height: 8),
+          const Text(
+            'Signed in, TabScan Premium transcribes your scans in the cloud '
+            'as they sync.',
+          ),
+        ],
         const SizedBox(height: 16),
         auth.buildSignInButton() ??
             FilledButton.icon(
@@ -120,6 +154,10 @@ class AccountSheet extends StatelessWidget {
           'Signing out keeps your events on this device.',
           style: theme.textTheme.bodySmall,
         ),
+        if (ocr case final ocr?) ...[
+          const SizedBox(height: 16),
+          PremiumCard(ocr: ocr, email: user.email),
+        ],
       ],
     );
   }

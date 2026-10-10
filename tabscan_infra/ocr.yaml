@@ -1,0 +1,281 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  tabscan-ocr: cloud transcription of scanned tabs, for premium users
+  (tabscan_locr/). When the app syncs a page image to the user-data bucket,
+  S3 tells EventBridge, which calls tabscan-ocr-api; if the page's owner is
+  premium (rbacr's tabscan/premium role), it invokes tabscan-ocr, which reads
+  the page and writes <identity>/ocr/<event id>/<page id>.json beside the
+  user's events. tabscan-ocr-api's function URL also tells the app whether
+  its user is premium, and transcribes pages from before they upgraded.
+
+Parameters:
+  ImageUri:
+    Type: String
+    Description: The image, by digest (<repository URI>@sha256:...), from tabscan_locr/scripts/deploy.sh
+  GoogleWebClientId:
+    Type: String
+    Default: ''
+    Description: >
+      The web OAuth client the app's Google ID tokens are issued for (as in
+      tabscan-identity). Empty: the function URL refuses every request.
+  IdentityPoolId:
+    Type: String
+    Default: ''
+    Description: The tabscan identity pool (tabscan-identity's IdentityPoolId); empty as above
+  RbacrUrl:
+    Type: String
+    Default: https://rbacr.nu01.com
+  RbacrTokenSecretArn:
+    Type: String
+    Description: >
+      The Secrets Manager secret (tabscan/rbacr-token) holding a root-owned
+      rbacr API token, which may ask about any address's roles
+  UpgradeUrl:
+    Type: String
+    Default: https://prodbytes.substack.com/subscribe
+    Description: Where free users upgrade (paid subscribers get premium from rbacr's Stripe sync)
+  VoucherUrl:
+    Type: String
+    Default: https://rbacr.nu01.com/me
+    Description: Where users redeem a voucher for premium
+  Version:
+    Type: String
+    Default: dev
+  AllowedOrigins:
+    Type: CommaDelimitedList
+    Default: https://tabscan.nu01.com,https://rc.tabscan.nu01.com,http://localhost:2012
+    Description: Web origins the app runs on (the function URL's CORS)
+
+Resources:
+  # Cognito identity ID -> verified e-mail address. S3 events carry only the
+  # identity ID; rbacr knows people by address.
+  Accounts:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: tabscan-accounts
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: identityId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: identityId
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+
+  OcrLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/tabscan-ocr
+      RetentionInDays: 30
+
+  ApiLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/tabscan-ocr-api
+      RetentionInDays: 30
+
+  OcrRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: {Service: lambda.amazonaws.com}
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: read-pages-write-results
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub
+                  - ${BucketArn}/*/events/*
+                  - BucketArn: !ImportValue tabscan-user-data-bucket-arn
+              - Effect: Allow
+                Action: s3:PutObject
+                Resource: !Sub
+                  - ${BucketArn}/*/ocr/*
+                  - BucketArn: !ImportValue tabscan-user-data-bucket-arn
+              - Effect: Allow
+                Action: [logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !Sub ${OcrLogs.Arn}:*
+
+  ApiRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: {Service: lambda.amazonaws.com}
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: gatekeeper
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [dynamodb:GetItem, dynamodb:PutItem]
+                Resource: !GetAtt Accounts.Arn
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: !Ref RbacrTokenSecretArn
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !GetAtt OcrFunction.Arn
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource: !ImportValue tabscan-user-data-bucket-arn
+              - Effect: Allow
+                Action: s3:DeleteObject
+                Resource: !Sub
+                  - ${BucketArn}/*/ocr/*
+                  - BucketArn: !ImportValue tabscan-user-data-bucket-arn
+              - Effect: Allow
+                Action: [logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !Sub ${ApiLogs.Arn}:*
+
+  OcrFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: tabscan-ocr
+      Description: Transcribes one tab page (Tesseract, PaddleOCR, RapidOCR, per string line, vote)
+      PackageType: Image
+      Code:
+        ImageUri: !Ref ImageUri
+      ImageConfig:
+        Command: [locr.handler.ocr]
+      Architectures: [x86_64]
+      # The account's Lambda memory cap is 3008 MB (new accounts); more
+      # memory brings more vCPUs, so raise it once the quota allows.
+      MemorySize: 3008
+      Timeout: 900
+      EphemeralStorage:
+        Size: 1024
+      Role: !GetAtt OcrRole.Arn
+      LoggingConfig:
+        LogGroup: !Ref OcrLogs
+      Environment:
+        Variables:
+          USER_DATA_BUCKET: !ImportValue tabscan-user-data-bucket
+          LOCR_VERSION: !Ref Version
+
+  # One try more for a failed page, then it's dropped; the app can ask
+  # again (/transcribe).
+  OcrInvokeConfig:
+    Type: AWS::Lambda::EventInvokeConfig
+    Properties:
+      FunctionName: !Ref OcrFunction
+      Qualifier: $LATEST
+      MaximumRetryAttempts: 1
+      MaximumEventAgeInSeconds: 3600
+
+  ApiFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: tabscan-ocr-api
+      Description: Premium check (rbacr) for page uploads, and the app's /account and /transcribe
+      PackageType: Image
+      Code:
+        ImageUri: !Ref ImageUri
+      ImageConfig:
+        Command: [locr.handler.api]
+      Architectures: [x86_64]
+      MemorySize: 512
+      Timeout: 30
+      Role: !GetAtt ApiRole.Arn
+      LoggingConfig:
+        LogGroup: !Ref ApiLogs
+      Environment:
+        Variables:
+          USER_DATA_BUCKET: !ImportValue tabscan-user-data-bucket
+          OCR_FUNCTION: !Ref OcrFunction
+          ACCOUNTS_TABLE: !Ref Accounts
+          GOOGLE_WEB_CLIENT_ID: !Ref GoogleWebClientId
+          COGNITO_IDENTITY_POOL_ID: !Ref IdentityPoolId
+          RBACR_URL: !Ref RbacrUrl
+          RBACR_TOKEN_SECRET: !Ref RbacrTokenSecretArn
+          RBACR_SYSTEM: tabscan
+          RBACR_ROLE: premium
+          UPGRADE_URL: !Ref UpgradeUrl
+          VOUCHER_URL: !Ref VoucherUrl
+          LOCR_VERSION: !Ref Version
+
+  ApiUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      TargetFunctionArn: !GetAtt ApiFunction.Arn
+      AuthType: NONE  # each request carries a Google ID token, checked by the function
+      Cors:
+        AllowOrigins: !Ref AllowedOrigins
+        AllowMethods: [POST]
+        AllowHeaders: [authorization, content-type]
+        MaxAge: 3600
+
+  ApiUrlPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ApiFunction
+      Action: lambda:InvokeFunctionUrl
+      Principal: '*'
+      FunctionUrlAuthType: NONE
+
+  ApiUrlInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ApiFunction
+      Action: lambda:InvokeFunction
+      Principal: '*'
+      InvokedViaFunctionUrl: true
+
+  # Page images created or deleted in users' event folders (user-data.yaml
+  # sends the bucket's events to EventBridge).
+  PagesRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: tabscan-ocr-pages
+      Description: Page images in the user-data bucket, to tabscan-ocr-api
+      EventPattern:
+        source: [aws.s3]
+        detail-type: [Object Created, Object Deleted]
+        detail:
+          bucket:
+            name: [!ImportValue tabscan-user-data-bucket]
+          # By extension only (EventBridge refuses path wildcards this
+          # complex); the function parses each key and ignores anything but
+          # a page in a user's events folder.
+          object:
+            key:
+              - suffix: .img
+              - suffix: .jpg
+              - suffix: .jpeg
+              - suffix: .png
+              - suffix: .webp
+      Targets:
+        - Id: api
+          Arn: !GetAtt ApiFunction.Arn
+          RetryPolicy:
+            MaximumRetryAttempts: 4
+            MaximumEventAgeInSeconds: 3600
+
+  PagesRulePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ApiFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt PagesRule.Arn
+
+Outputs:
+  ApiUrl:
+    Description: The app's TABSCANNER_OCR_URL
+    Value: !GetAtt ApiUrl.FunctionUrl
+  AccountsTable:
+    Value: !Ref Accounts

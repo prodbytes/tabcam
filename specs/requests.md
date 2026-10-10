@@ -156,3 +156,26 @@ spec.
 20. **Add a copy button to the top of the transcription view.** The text
     tab screen's **Copy** moved from an app-bar icon to a labeled button
     above the text ([text tab editor](tab-recognition.md#text-tab-editor)).
+21. **Transcribe a photographed tab with several OCR kits, compare with the
+    real tab, and say which combination comes closest.** A local bench
+    (`test_data/ocr_bench/`, kept out of git: it holds a published tab):
+    Tesseract, EasyOCR, RapidOCR, PaddleOCR, docTR (TensorFlow), Apple
+    Vision, AWS Rekognition and Textract, on the photo raw, cleaned and
+    binarized, whole-page and cut into string lines. Whole-page OCR loses
+    the dash runs; reading line by line with a vote of Tesseract,
+    PaddleOCR and RapidOCR came closest. No change to the app.
+22. **Could the best one run in AWS Lambda?** Yes, as a container image;
+    no change.
+23. **Add `tabscan_locr`, a Lambda that transcribes tabs as they're
+    scanned, for premium users only (premium from rbacr), offering the
+    upgrade to free users.** New [TabScan Premium: cloud OCR](cloud-ocr.md):
+    the service in [tabscan_locr/](../tabscan_locr/README.md), triggered by
+    page uploads to the user-data bucket (now sending its events to
+    EventBridge), checking rbacr's `tabscan/premium` role with a root token
+    in Secrets Manager, and writing transcriptions beside the user's events;
+    new stacks `tabscan-ocr-repo` and `tabscan-ocr`. The app fills in text
+    tabs from them, asks for pages from before upgrading, and offers
+    Premium in the account sheet and on the event screen
+    ([cloud sync](cloud-sync.md), [tab recognition](tab-recognition.md));
+    new setting `TABSCANNER_OCR_URL` ([deploy](deploy.md),
+    [dev environment](dev-environment.md)).
