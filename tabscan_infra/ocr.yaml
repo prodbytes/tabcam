@@ -153,7 +153,9 @@ Resources:
       ImageConfig:
         Command: [locr.handler.ocr]
       Architectures: [x86_64]
-      MemorySize: 6144
+      # The account's Lambda memory cap is 3008 MB (new accounts); more
+      # memory brings more vCPUs, so raise it once the quota allows.
+      MemorySize: 3008
       Timeout: 300
       EphemeralStorage:
         Size: 1024

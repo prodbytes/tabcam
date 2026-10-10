@@ -101,7 +101,7 @@ blank line.
 - **`ocr.yaml`**, stack `tabscan-ocr`:
   - the table `tabscan-accounts` (identity ID → address; on demand,
     point-in-time recovery);
-  - `tabscan-ocr` (6 GB, 5 min, one retry): it may get page images and put
+  - `tabscan-ocr` (3008 MB, the account's current cap; 5 min, one retry): it may get page images and put
     results;
   - `tabscan-ocr-api` (512 MB, 30 s): it may read and write the table, read
     the rbacr secret, invoke `tabscan-ocr`, list the bucket and delete

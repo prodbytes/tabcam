@@ -33,7 +33,7 @@ app syncs a page ──► user-data bucket ──S3 event──► EventBridge 
     `{email, premium, expiresAt, checked, upgradeUrl, voucherUrl}`.
   - `POST /transcribe {"eventId"}` queues the event's synced pages that have
     no transcription yet (pages from before upgrading). Premium only (402).
-- **tabscan-ocr** (6 GB, 5 min) reads one page and writes
+- **tabscan-ocr** (3008 MB, the account's cap; 5 min) reads one page and writes
   `{page, status: ok|no-tab|error, text, staves, lines, seconds, engines,
   version, created}`.
 - **Premium** comes from rbacr, asked with a root-owned API token kept in
