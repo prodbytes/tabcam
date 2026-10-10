@@ -307,3 +307,11 @@ spec.
     Android app links are a follow-up. The text tab and links go in the
     PDF and the zip. (There are no PDF pages: pages are images, videos and
     links, so PDF combines the images.)
+38. **(Continuing 37) Android links.** Android App Links: the app opens
+    `https://tabscan.nu01.com/app…` and the RC's (verified intent filter),
+    and opens the capture a link names, launched or running
+    (`IncomingLinks`). Deploys upload `/.well-known/assetlinks.json`, which
+    lists the maintainer's debug key; Release-workflow APKs, signed with a
+    new debug key each run, aren't verified until there's a release key
+    ([sharing](sharing.md#android-app-links), [platforms](platforms.md),
+    [release](release.md), [deploy](deploy.md)).

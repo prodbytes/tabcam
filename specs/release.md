@@ -22,7 +22,8 @@ app binaries with `make` and publishes them as a GitHub release.
 - **Release** `tabscan-<tag>`, with generated notes and:
   - `tabscan-<tag>-web.zip`: the web build;
   - `tabscan-<tag>-android.apk`: the release APK (signed with the debug
-    key until a release key is set up);
+    key until a release key is set up; that key is new each run, so its
+    [App Links](sharing.md#android-app-links) aren't verified);
   - `tabscan-<tag>-ios-unsigned.zip`: the unsigned `Runner.app`.
 - **Security**: actions are pinned to commit SHAs; the token is read-only
   except in the release job (`contents: write`); checkout doesn't keep

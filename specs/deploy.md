@@ -21,8 +21,10 @@ which runs `scripts/deploy.sh` for that tag:
 2. deploys the `tabscan-web` stack: certificate, bucket, CloudFront, DNS
    records, and a Route 53 health check of `/app/version.json` (it must
    name `tabscan_app`) whose alarm emails `TABSCANNER_HEALTH_EMAILS`;
-3. uploads `index.html` and the web build (`Cache-Control: no-cache`,
-   Flutter's files aren't content-hashed) and invalidates `/*`;
+3. uploads `index.html`, the web build (`Cache-Control: no-cache`,
+   Flutter's files aren't content-hashed) and
+   `/.well-known/assetlinks.json` ([App Links](sharing.md#android-app-links)),
+   and invalidates `/*`;
    `/status.json` ([maintenance mode](maintenance-mode.md)) is left as
    it is;
 4. checks, for up to 10 minutes, that `/app/version.json` reports the
