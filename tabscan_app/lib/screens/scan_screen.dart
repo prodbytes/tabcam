@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../capture/media.dart';
 import '../capture/page_source.dart';
 import '../library/library.dart';
 import '../library/scan.dart';
@@ -8,10 +9,11 @@ import '../recognition/tab_reader.dart';
 import 'page_image.dart';
 import 'share_sheet.dart';
 import 'tab_text_screen.dart';
+import 'video_page.dart';
 
-/// One scan: its pages to swipe through, and the tools along the bottom:
-/// Add page, Filter, Rotate, Read tab and Delete page. Share and rename are
-/// in the app bar.
+/// One scan: its pages (images and videos) to swipe through, and the tools
+/// along the bottom: Add (scan, photos and videos, files), Filter, Rotate,
+/// Read tab and Delete. Share and rename are in the app bar.
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key, required this.library, required this.scanId});
 
@@ -64,12 +66,52 @@ class _ScanScreenState extends State<ScanScreen> {
     );
   }
 
-  Future<void> _addPages(Scan scan) => _run('Couldn\'t scan', () async {
-    final pages = await PageSource.scan();
-    if (pages.isEmpty) return;
-    await _library.addPages(scan, pages);
-    if (mounted) _pages.jumpToPage(scan.pages.length);
-  });
+  Future<void> _add(Scan scan) async {
+    final source = await showModalBottomSheet<_AddSource>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final source in _AddSource.values)
+              ListTile(
+                leading: Icon(source.icon),
+                title: Text(source.label),
+                subtitle: Text(source.detail),
+                onTap: () => Navigator.pop(context, source),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (source == null) return;
+    await _run('Couldn\'t add', () async {
+      final first = scan.pages.length;
+      if (source == _AddSource.scan) {
+        final pages = await PageSource.scan();
+        if (pages.isEmpty) return;
+        await _library.addPages(scan, pages);
+      } else {
+        final pick = source == _AddSource.library
+            ? await MediaSource.library()
+            : await MediaSource.files();
+        if (pick.skipped > 0) {
+          _snack(
+            '${pick.skipped} ${pick.skipped == 1 ? 'file isn\'t' : 'files aren\'t'} '
+            'a photo or video, so not added.',
+          );
+        }
+        if (pick.media.isEmpty) return;
+        await _library.addMedia(scan, pick.media);
+      }
+      // Show the first page added.
+      if (mounted) {
+        setState(() => _index = first);
+        _pages.jumpToPage(first);
+      }
+    });
+  }
 
   Future<void> _toggleFilter(Scan scan, ScanPage page) {
     final next = page.filter == PageFilter.tab
@@ -91,8 +133,13 @@ class _ScanScreenState extends State<ScanScreen> {
       return;
     }
     final pages = [
-      for (final p in scan.pages) await _library.original(scan, p),
+      for (final p in scan.pages)
+        if (!p.isVideo) await _library.original(scan, p),
     ];
+    if (pages.isEmpty) {
+      _snack('Read tab reads photos and scans, and this has only videos.');
+      return;
+    }
     final text = await TabReader.read(pages);
     if (!mounted) return;
     if (text == null) {
@@ -127,6 +174,8 @@ class _ScanScreenState extends State<ScanScreen> {
         final index = _index.clamp(0, scan.pages.length - 1);
         final page = scan.pages.isEmpty ? null : scan.pages[index];
         final enabled = !_busy && page != null;
+        // Filter and Rotate are for images, not videos.
+        final image = enabled && !page.isVideo;
         return Scaffold(
           appBar: AppBar(
             title: InkWell(
@@ -179,14 +228,21 @@ class _ScanScreenState extends State<ScanScreen> {
                   onPageChanged: (i) => setState(() => _index = i),
                   itemBuilder: (context, i) => Padding(
                     padding: const EdgeInsets.all(16),
-                    child: InteractiveViewer(
-                      maxScale: 5,
-                      child: PageImage(
-                        library: _library,
-                        scan: scan,
-                        page: scan.pages[i],
-                      ),
-                    ),
+                    child: scan.pages[i].isVideo
+                        ? VideoPage(
+                            key: ValueKey(scan.pages[i].id),
+                            library: _library,
+                            scan: scan,
+                            page: scan.pages[i],
+                          )
+                        : InteractiveViewer(
+                            maxScale: 5,
+                            child: PageImage(
+                              library: _library,
+                              scan: scan,
+                              page: scan.pages[i],
+                            ),
+                          ),
                   ),
                 ),
               ),
@@ -204,21 +260,21 @@ class _ScanScreenState extends State<ScanScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   _Tool(
-                    icon: Icons.add_a_photo_outlined,
-                    label: 'Add page',
-                    onPressed: _busy ? null : () => _addPages(scan),
+                    icon: Icons.add_circle_outline,
+                    label: 'Add',
+                    onPressed: _busy ? null : () => _add(scan),
                   ),
                   _Tool(
                     icon: page?.filter == PageFilter.tab
                         ? Icons.contrast
                         : Icons.photo_outlined,
                     label: page?.filter.label ?? 'Filter',
-                    onPressed: enabled ? () => _toggleFilter(scan, page) : null,
+                    onPressed: image ? () => _toggleFilter(scan, page) : null,
                   ),
                   _Tool(
                     icon: Icons.rotate_90_degrees_cw_outlined,
                     label: 'Rotate',
-                    onPressed: enabled
+                    onPressed: image
                         ? () => _run(
                             'Couldn\'t rotate',
                             () => _library.rotatePage(scan, page),
@@ -243,6 +299,26 @@ class _ScanScreenState extends State<ScanScreen> {
       },
     );
   }
+}
+
+/// Where Add gets new pages.
+enum _AddSource {
+  scan(
+    Icons.document_scanner_outlined,
+    'Scan pages',
+    'More tab pages, with the camera',
+  ),
+  library(
+    Icons.photo_library_outlined,
+    'Photos & videos',
+    'From your photo library',
+  ),
+  files(Icons.folder_open_outlined, 'Files', 'Image and video files');
+
+  const _AddSource(this.icon, this.label, this.detail);
+  final IconData icon;
+  final String label;
+  final String detail;
 }
 
 class _Tool extends StatelessWidget {

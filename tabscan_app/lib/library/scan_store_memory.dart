@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:cross_file/cross_file.dart';
+
 import 'scan.dart';
 import 'scan_store.dart';
 
@@ -7,6 +9,8 @@ import 'scan_store.dart';
 class PlatformScanStore implements ScanStore {
   final Map<String, Scan> _scans = {};
   final Map<String, Uint8List> _pages = {};
+
+  String _key(String scanId, ScanPage page) => '$scanId/${page.fileName}';
 
   @override
   Future<List<Scan>> list() async =>
@@ -22,14 +26,21 @@ class PlatformScanStore implements ScanStore {
   }
 
   @override
-  Future<void> putPage(String scanId, String pageId, Uint8List bytes) async =>
-      _pages['$scanId/$pageId'] = bytes;
+  Future<void> putPage(String scanId, ScanPage page, Uint8List bytes) async =>
+      _pages[_key(scanId, page)] = bytes;
 
   @override
-  Future<Uint8List> page(String scanId, String pageId) async =>
-      _pages['$scanId/$pageId'] ?? (throw StateError('No page $pageId'));
+  Future<void> putPageFile(String scanId, ScanPage page, XFile file) async =>
+      _pages[_key(scanId, page)] = await file.readAsBytes();
 
   @override
-  Future<void> deletePage(String scanId, String pageId) async =>
-      _pages.remove('$scanId/$pageId');
+  Future<Uint8List> page(String scanId, ScanPage page) async =>
+      _pages[_key(scanId, page)] ?? (throw StateError('No page ${page.id}'));
+
+  @override
+  Future<String?> pagePath(String scanId, ScanPage page) async => null;
+
+  @override
+  Future<void> deletePage(String scanId, ScanPage page) async =>
+      _pages.remove(_key(scanId, page));
 }

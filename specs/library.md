@@ -2,34 +2,42 @@
 
 The home screen, titled **TabScan**.
 
-- **Scans** show as a grid of cards, newest first: the first page's
-  thumbnail (with its filter), the title, and a line with the artist (if
-  set), the page count, and "text" once the tab has been read. Tapping a
+- **Scans** show as a grid of cards, newest first: the first image page's
+  thumbnail (with its filter; a play badge for a scan of only videos), the
+  title, and a line with the artist (if set), the page count, the video
+  count (if any), and "text" once the tab has been read. Tapping a
   card opens the [scan screen](scan-screen.md); its ⋮ menu has **Share**
   ([sharing](sharing.md)) and **Delete** (after a confirmation, which says
   the pages and text tab go too).
 - **Empty**: a music icon, "No tabs yet", and a line saying what Scan does.
 - **Scan** (floating button, bottom right) opens the
-  [document scanner](scanning.md); the new scan then opens. **Import
-  photos** (app bar) does the same from photos on the device. **About**
+  [document scanner](scanning.md). The new scan lands at the top of the
+  list, which scrolls up to it, outlined in the theme's primary color for
+  3 seconds, and a message confirms it ("Saved "Tab 2026-10-10 14:05" (2
+  pages)") with **Open**. **Import photos** (app bar) does the same from
+  photos on the device. **About**
   (app bar) shows the version (X.Y.Z, or "development build").
 - **Theme**: Material 3, dark, from an amber seed color (`#E0A030`).
 
 ## Scans
 
 A scan has an ID, a title, an artist (optional), when it was created, its
-pages (each with an ID and a [filter](page-filters.md)), and the text tab
-once read. A new scan is titled `Tab YYYY-MM-DD HH:MM` (its local time);
+pages, and the text tab once read. A page has an ID, a kind (**image** or
+**video**), its file's extension, and a [filter](page-filters.md) (used
+for images only). A new scan is titled `Tab YYYY-MM-DD HH:MM` (its local time);
 the scan screen's Rename changes it.
 
-IDs are the creation time in microseconds, base 36. They name files, so
-anything else (a path, say) is refused when loading.
+IDs are the creation time in microseconds, base 36. IDs and extensions
+(1–5 lower-case letters or digits) name files, so anything else (a path,
+say) is refused when loading. Scans saved before videos were added load as
+image pages with the extension `img`.
 
 ## Storage
 
 - **Android and iOS**: files in the app's documents folder, one folder per
-  scan: `scans/<scan id>/scan.json` (the details) and `<page id>.img` per
-  page, the image as scanned. `scan.json` is written beside and renamed
+  scan: `scans/<scan id>/scan.json` (the details) and
+  `<page id>.<extension>` per page: the image as scanned, or the photo or
+  video as picked (copied file to file, never read whole into memory). `scan.json` is written beside and renamed
   over, so a crash never leaves half a file. A scan whose `scan.json`
   can't be read is skipped, not fatal.
 - **Web**: in memory; scans last until the tab is closed.

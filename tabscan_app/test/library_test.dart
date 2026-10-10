@@ -1,8 +1,10 @@
 import 'dart:io';
 
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
+import 'package:tabscan_app/capture/media.dart';
 import 'package:tabscan_app/library/library.dart';
 import 'package:tabscan_app/library/scan.dart';
 import 'package:tabscan_app/library/scan_store_io.dart';
@@ -96,5 +98,56 @@ void main() {
     )!;
     expect(out.getPixel(60, 40).r, 0);
     expect(out.getPixel(60, 10).r, 255);
+  });
+
+  test('photos and videos are added as pages, videos as they are', () async {
+    final library = Library(PlatformScanStore(root));
+    await library.load();
+    var scan = await library.create([_jpeg(10, 10)]);
+    final video = Uint8List.fromList(List.generate(64, (i) => i));
+    final pick = MediaPick.of([
+      XFile.fromData(_jpeg(20, 10), path: 'chord.JPG'),
+      XFile.fromData(video, path: 'lesson.mov'),
+      XFile.fromData(Uint8List(4), path: 'notes.txt'),
+    ]);
+    expect(pick.skipped, 1);
+    scan = await library.addMedia(scan, pick.media);
+
+    expect(scan.pages.map((p) => (p.kind, p.extension)), [
+      (PageKind.image, 'img'),
+      (PageKind.image, 'jpg'),
+      (PageKind.video, 'mov'),
+    ]);
+    final saved = scan.pages.last;
+    expect(await library.original(scan, saved), video);
+    expect(await library.filtered(scan, saved), video);
+    expect(await library.path(scan, saved), endsWith('/${saved.fileName}'));
+
+    // They survive a restart.
+    final reopened = Library(PlatformScanStore(root));
+    await reopened.load();
+    expect(reopened.byId(scan.id)!.pages.last.isVideo, isTrue);
+  });
+
+  test('media is recognized by extension, then by MIME type', () {
+    expect(Media.of(XFile('a/clip.MP4'))!.kind, PageKind.video);
+    expect(Media.of(XFile('a/page.heic'))!.extension, 'heic');
+    expect(
+      Media.of(XFile('a/upload', mimeType: 'video/quicktime'))!.extension,
+      'mov',
+    );
+    expect(Media.of(XFile('a/song.mp3')), isNull);
+  });
+
+  test('scans saved before videos load as image pages', () {
+    final page = ScanPage.fromJson({'id': 'abc', 'filter': 'original'});
+    expect((page.kind, page.extension), (PageKind.image, 'img'));
+  });
+
+  test('extensions that could name other files are refused', () {
+    expect(
+      () => ScanPage.fromJson({'id': 'abc', 'extension': '../x'}),
+      throwsFormatException,
+    );
   });
 }

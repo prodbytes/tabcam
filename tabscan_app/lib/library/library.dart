@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../capture/media.dart';
 import '../processing/page_filter.dart';
 import 'scan.dart';
 import 'scan_store.dart';
@@ -48,11 +49,25 @@ class Library extends ChangeNotifier {
   Future<Scan> addPages(Scan scan, List<Uint8List> pages) async =>
       _update(await _addPages(scan, pages));
 
+  /// Adds picked photos and videos to the end of [scan]. Photos get the
+  /// Tab filter, as scanned pages do.
+  Future<Scan> addMedia(Scan scan, List<Media> media) async {
+    final added = <ScanPage>[];
+    for (final m in media) {
+      final page = ScanPage(id: newId(), kind: m.kind, extension: m.extension);
+      await _store.putPageFile(scan.id, page, m.file);
+      added.add(page);
+    }
+    final updated = scan.copyWith(pages: [...scan.pages, ...added]);
+    await _store.save(updated);
+    return _update(updated);
+  }
+
   Future<Scan> _addPages(Scan scan, List<Uint8List> pages) async {
     final added = <ScanPage>[];
     for (final bytes in pages) {
       final page = ScanPage(id: newId());
-      await _store.putPage(scan.id, page.id, bytes);
+      await _store.putPage(scan.id, page, bytes);
       added.add(page);
     }
     final updated = scan.copyWith(pages: [...scan.pages, ...added]);
@@ -72,8 +87,8 @@ class Library extends ChangeNotifier {
   }
 
   Future<Scan> rotatePage(Scan scan, ScanPage page) async {
-    final rotated = await rotatedPage(await _store.page(scan.id, page.id));
-    await _store.putPage(scan.id, page.id, rotated);
+    final rotated = await rotatedPage(await _store.page(scan.id, page));
+    await _store.putPage(scan.id, page, rotated);
     _filtered.removeWhere((key, _) => key.startsWith('${page.id}/'));
     _revision++;
     return _update(scan);
@@ -87,7 +102,7 @@ class Library extends ChangeNotifier {
       ],
     );
     await _store.save(updated);
-    await _store.deletePage(scan.id, page.id);
+    await _store.deletePage(scan.id, page);
     _filtered.removeWhere((key, _) => key.startsWith('${page.id}/'));
     return _update(updated);
   }
@@ -104,12 +119,17 @@ class Library extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// The page's image as scanned.
+  /// The page's file as scanned or picked.
   Future<Uint8List> original(Scan scan, ScanPage page) =>
-      _store.page(scan.id, page.id);
+      _store.page(scan.id, page);
 
-  /// The page's image with its filter applied (cached).
+  /// The page's file on disk (videos play from it); null on the web.
+  Future<String?> path(Scan scan, ScanPage page) =>
+      _store.pagePath(scan.id, page);
+
+  /// An image page with its filter applied (cached); a video as it is.
   Future<Uint8List> filtered(Scan scan, ScanPage page) async {
+    if (page.isVideo) return original(scan, page);
     final key = '${page.id}/${page.filter.name}';
     return _filtered[key] ??= await applyFilter(
       await original(scan, page),

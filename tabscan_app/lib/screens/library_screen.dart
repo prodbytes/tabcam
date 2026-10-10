@@ -8,24 +8,70 @@ import '../library/scan.dart';
 import 'page_image.dart';
 import 'scan_screen.dart';
 import 'share_sheet.dart';
+import 'video_page.dart';
 
 /// The home screen: every scan as a card, newest first, and the Scan button.
-class LibraryScreen extends StatelessWidget {
+/// A new scan lands at the top of the list, highlighted, with Open in the
+/// message that confirms it.
+class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key, required this.library});
 
   final Library library;
 
-  Future<void> _newScan(BuildContext context, {bool import = false}) async {
+  @override
+  State<LibraryScreen> createState() => _LibraryScreenState();
+}
+
+class _LibraryScreenState extends State<LibraryScreen> {
+  final _grid = ScrollController();
+
+  /// The scan just added, highlighted for a moment.
+  String? _fresh;
+
+  Library get library => widget.library;
+
+  @override
+  void dispose() {
+    _grid.dispose();
+    super.dispose();
+  }
+
+  Future<void> _newScan({bool import = false}) async {
     final List<Uint8List> pages;
     try {
       pages = import ? await PageSource.import() : await PageSource.scan();
     } on Object catch (e) {
-      if (context.mounted) _snack(context, 'Couldn\'t scan: $e');
+      if (mounted) _snack(context, 'Couldn\'t scan: $e');
       return;
     }
-    if (pages.isEmpty || !context.mounted) return;
+    if (pages.isEmpty || !mounted) return;
     final scan = await library.create(pages);
-    if (context.mounted) _open(context, scan);
+    if (!mounted) return;
+    setState(() => _fresh = scan.id);
+    if (_grid.hasClients) {
+      _grid.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+    final count = scan.pages.length;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            'Saved "${scan.title}" ($count ${count == 1 ? 'page' : 'pages'})',
+          ),
+          action: SnackBarAction(
+            label: 'Open',
+            onPressed: () => _open(context, scan),
+          ),
+        ),
+      );
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted && _fresh == scan.id) setState(() => _fresh = null);
+    });
   }
 
   void _open(BuildContext context, Scan scan) => Navigator.of(context).push(
@@ -43,7 +89,7 @@ class LibraryScreen extends StatelessWidget {
           IconButton(
             tooltip: 'Import photos',
             icon: const Icon(Icons.photo_library_outlined),
-            onPressed: () => _newScan(context, import: true),
+            onPressed: () => _newScan(import: true),
           ),
           IconButton(
             tooltip: 'About',
@@ -61,7 +107,7 @@ class LibraryScreen extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _newScan(context),
+        onPressed: () => _newScan(),
         icon: const Icon(Icons.document_scanner_outlined),
         label: const Text('Scan'),
       ),
@@ -73,6 +119,7 @@ class LibraryScreen extends StatelessWidget {
           }
           if (library.scans.isEmpty) return const _Empty();
           return GridView.builder(
+            controller: _grid,
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
             gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
               maxCrossAxisExtent: 220,
@@ -86,6 +133,7 @@ class LibraryScreen extends StatelessWidget {
               return _ScanCard(
                 library: library,
                 scan: scan,
+                fresh: scan.id == _fresh,
                 onOpen: () => _open(context, scan),
               );
             },
@@ -135,11 +183,15 @@ class _ScanCard extends StatelessWidget {
   const _ScanCard({
     required this.library,
     required this.scan,
+    required this.fresh,
     required this.onOpen,
   });
 
   final Library library;
   final Scan scan;
+
+  /// Just added: outlined in the theme's primary color.
+  final bool fresh;
   final VoidCallback onOpen;
 
   Future<void> _action(BuildContext context, _CardAction action) async {
@@ -171,9 +223,18 @@ class _ScanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final pages = scan.pages.length;
+    final videos = scan.pages.where((p) => p.isVideo).length;
+    final pages = scan.pages.length - videos;
+    // The first image is the thumbnail; a scan of only videos shows a badge.
+    final cover = scan.pages.where((p) => !p.isVideo).firstOrNull;
     return Card(
       clipBehavior: Clip.antiAlias,
+      shape: fresh
+          ? RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: theme.colorScheme.primary, width: 3),
+            )
+          : null,
       child: InkWell(
         onTap: onOpen,
         child: Column(
@@ -182,15 +243,17 @@ class _ScanCard extends StatelessWidget {
             Expanded(
               child: ColoredBox(
                 color: Colors.white,
-                child: scan.pages.isEmpty
-                    ? const Icon(Icons.description_outlined)
-                    : PageImage(
+                child: cover != null
+                    ? PageImage(
                         library: library,
                         scan: scan,
-                        page: scan.pages.first,
+                        page: cover,
                         fit: BoxFit.cover,
                         cacheWidth: 400,
-                      ),
+                      )
+                    : videos > 0
+                    ? const VideoThumbnail()
+                    : const Icon(Icons.description_outlined),
               ),
             ),
             Padding(
@@ -210,7 +273,10 @@ class _ScanCard extends StatelessWidget {
                         Text(
                           [
                             if (scan.artist.isNotEmpty) scan.artist,
-                            '$pages ${pages == 1 ? 'page' : 'pages'}',
+                            if (pages > 0 || videos == 0)
+                              '$pages ${pages == 1 ? 'page' : 'pages'}',
+                            if (videos > 0)
+                              '$videos ${videos == 1 ? 'video' : 'videos'}',
                             if (scan.tabText != null) 'text',
                           ].join(' · '),
                           maxLines: 1,

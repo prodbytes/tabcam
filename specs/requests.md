@@ -61,3 +61,11 @@ spec.
 8. **Make a better icon for the app, then relaunch on the iPhone.** New
    [app icon](app-icon.md): a scanned tab page in amber scanner corners,
    generated for Android, iOS and web. Relaunched on the iPhone with it.
+9. **Show a scanned tab in the list; let an opened scan add more tabs,
+   photos, and image or video files.** A finished scan now stays on the
+   [library](library.md) list (scrolled to, highlighted, with Open in the
+   confirmation) instead of opening. Pages can be videos: the scan
+   screen's **Add** offers Scan pages, Photos & videos, and Files
+   ([scanning](scanning.md#adding-to-a-scan)); videos play in place, are
+   skipped by Filter, Rotate, Read tab and the PDF, and are shared as
+   they are under the new **Files** format ([sharing](sharing.md)).

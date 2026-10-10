@@ -8,14 +8,15 @@ import '../processing/page_filter.dart';
 
 /// What a scan can be shared as.
 enum ShareFormat {
-  /// Every page (filtered) in one PDF, then the text tab if it was read.
+  /// Every image page (filtered) in one PDF, then the text tab if it was
+  /// read. Videos are left out.
   pdf('PDF'),
 
   /// The text tab, as plain text: pastes anywhere, monospaced.
   text('Text tab'),
 
-  /// Each page (filtered) as an image.
-  images('Images');
+  /// Each page as a file: images filtered, videos as they are.
+  files('Files');
 
   const ShareFormat(this.label);
   final String label;
@@ -74,7 +75,10 @@ abstract final class Exporter {
           ShareParams(text: scan.tabText ?? '', subject: scan.title),
         );
       case ShareFormat.pdf:
-        final pages = [for (final p in scan.pages) await filteredPage(p)];
+        final pages = [
+          for (final p in scan.pages)
+            if (!p.isVideo) await filteredPage(p),
+        ];
         final bytes = await pdf(scan, pages);
         await SharePlus.instance.share(
           ShareParams(
@@ -83,18 +87,13 @@ abstract final class Exporter {
             fileNameOverrides: ['$name.pdf'],
           ),
         );
-      case ShareFormat.images:
+      case ShareFormat.files:
         final files = <XFile>[];
         final names = <String>[];
         for (final (i, page) in scan.pages.indexed) {
-          final png = page.filter != PageFilter.original;
-          files.add(
-            XFile.fromData(
-              await filteredPage(page),
-              mimeType: png ? 'image/png' : 'image/jpeg',
-            ),
-          );
-          names.add('$name ${i + 1}.${png ? 'png' : 'jpg'}');
+          final (extension, mime) = _type(page);
+          files.add(XFile.fromData(await filteredPage(page), mimeType: mime));
+          names.add('$name ${i + 1}.$extension');
         }
         await SharePlus.instance.share(
           ShareParams(
@@ -105,5 +104,28 @@ abstract final class Exporter {
         );
     }
     debugPrint('Shared ${scan.id} as ${format.name}');
+  }
+
+  /// A shared page's extension and MIME type: PNG for an image with the
+  /// Tab filter, otherwise the page's own.
+  static (String, String) _type(ScanPage page) {
+    if (!page.isVideo && page.filter != PageFilter.original) {
+      return ('png', 'image/png');
+    }
+    final extension = page.extension == 'img' ? 'jpg' : page.extension;
+    return (
+      extension,
+      switch (extension) {
+        'png' => 'image/png',
+        'heic' || 'heif' => 'image/heic',
+        'webp' => 'image/webp',
+        'gif' => 'image/gif',
+        'mov' => 'video/quicktime',
+        'webm' => 'video/webm',
+        '3gp' => 'video/3gpp',
+        'mp4' || 'm4v' => 'video/mp4',
+        _ => 'image/jpeg',
+      },
+    );
   }
 }

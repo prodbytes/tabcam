@@ -1,20 +1,52 @@
 import '../processing/page_filter.dart';
 
-/// One page of a scan: its image is kept by the store under [id].
+/// What a page is: a picture of the tab, or a video (someone playing it,
+/// a lesson).
+enum PageKind { image, video }
+
+/// One page of a scan: its file is kept by the store as `<id>.<extension>`.
 class ScanPage {
-  const ScanPage({required this.id, this.filter = PageFilter.tab});
+  const ScanPage({
+    required this.id,
+    this.filter = PageFilter.tab,
+    this.kind = PageKind.image,
+    this.extension = 'img',
+  });
 
   final String id;
+
+  /// How an image page is shown; videos are always shown as they are.
   final PageFilter filter;
+  final PageKind kind;
 
-  ScanPage copyWith({PageFilter? filter}) =>
-      ScanPage(id: id, filter: filter ?? this.filter);
+  /// The file's extension, lower case (`jpg`, `mp4`, ...). Scanned pages
+  /// from before videos were added are `img`.
+  final String extension;
 
-  Map<String, Object?> toJson() => {'id': id, 'filter': filter.name};
+  bool get isVideo => kind == PageKind.video;
+
+  /// The page's file name in its scan's folder.
+  String get fileName => '$id.$extension';
+
+  ScanPage copyWith({PageFilter? filter}) => ScanPage(
+    id: id,
+    filter: filter ?? this.filter,
+    kind: kind,
+    extension: extension,
+  );
+
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'filter': filter.name,
+    'kind': kind.name,
+    'extension': extension,
+  };
 
   factory ScanPage.fromJson(Map<String, Object?> json) => ScanPage(
     id: checkId(json['id'] as String),
     filter: PageFilter.byName(json['filter'] as String?),
+    kind: json['kind'] == 'video' ? PageKind.video : PageKind.image,
+    extension: checkExtension(json['extension'] as String? ?? 'img'),
   );
 }
 
@@ -91,6 +123,17 @@ final RegExp _id = RegExp(r'^[a-z0-9]{1,32}$');
 String checkId(String id) {
   if (!_id.hasMatch(id)) throw FormatException('Bad ID', id);
   return id;
+}
+
+final RegExp _extension = RegExp(r'^[a-z0-9]{1,5}$');
+
+/// [extension] if it's a plain file extension; it names files, so anything
+/// else is refused.
+String checkExtension(String extension) {
+  if (!_extension.hasMatch(extension)) {
+    throw FormatException('Bad extension', extension);
+  }
+  return extension;
 }
 
 var _lastId = 0;

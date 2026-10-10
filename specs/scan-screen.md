@@ -7,16 +7,21 @@ One scan, opened from the [library](library.md).
   the title). **Text tab** (once read) opens the text tab editor
   ([tab recognition](tab-recognition.md)). **Share** opens the
   [share sheet](sharing.md).
-- **Pages**: swiped left and right, each pinch-zoomable (up to 5×), shown
-  with its [filter](page-filters.md). Under them, "2 / 5".
+- **Pages**: swiped left and right. Images are pinch-zoomable (up to 5×)
+  and shown with their [filter](page-filters.md). Videos show a play
+  button; tapped, they play in place, looping, with a scrubbable progress
+  bar, and a tap pauses and resumes. A video that can't play says so.
+  Under the pages, "2 / 5".
 - **Tools** along the bottom, for the page shown:
-  - **Add page**: [scans](scanning.md) more pages onto the end.
-  - **Filter**: toggles the page between Tab and Original; its icon and
-    label say which it is.
-  - **Rotate**: turns the page a quarter turn clockwise (the stored image
-    is replaced).
-  - **Read tab**: reads every page of the scan
-    ([tab recognition](tab-recognition.md)).
+  - **Add**: more pages, [scanned or picked](scanning.md#adding-to-a-scan):
+    Scan pages, Photos & videos, or Files.
+  - **Filter**: toggles an image between Tab and Original; its icon and
+    label say which it is. Off on videos.
+  - **Rotate**: turns an image a quarter turn clockwise (the stored image
+    is replaced). Off on videos.
+  - **Read tab**: reads every image page of the scan
+    ([tab recognition](tab-recognition.md)); videos are skipped, and a
+    scan of only videos says there's nothing to read.
   - **Delete**: deletes the page; the last page can't be deleted (the
     message says to delete the scan instead).
 - While a tool works, a progress bar shows under the app bar and the tools
