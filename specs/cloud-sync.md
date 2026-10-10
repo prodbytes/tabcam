@@ -72,9 +72,10 @@ to load.
 
 A pass lists the user's folder (with nothing new anywhere, that one
 request is the whole pass) and compares it with what last synced, kept
-per event in `cloudsync.json` beside the events (the `event.json` ETag last
-sent or taken, and the event's `updated` then; for one identity: another
-starts over). For each event on the device that's this user's (or no
+per event in `cloudsync.json` beside the events (by `<folder's
+identity>/<event id>`: the `event.json` ETag last sent or taken, and the
+event's `updated` then; for one signed-in identity: another starts
+over). For each event on the device that's this user's (or no
 one's yet):
 
 - **Changed only here** (its `updated` differs from the last sync, or it
@@ -98,6 +99,11 @@ simply deleted.
 **Another account's events**: events that synced with one account stay on
 the device when another signs in, shown but never uploaded to the new
 account. Events made signed out go up to whoever signs in next.
+
+**Shared captures**: after the user's own folder, each pass syncs the
+captures shared with them, each in its owner's folder, the same way (but
+never uploading a read-only one); see
+[shared captures](shared-captures.md#how-it-works).
 
 ## Credentials and errors
 
@@ -123,8 +129,9 @@ account. Events made signed out go up to whoever signs in next.
 - **Settings** (`CloudConfig`, `GoogleConfig`; dart-defines from `.env`,
   or repository variables for the deploys and releases):
   `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, `AWS_REGION` (default
-  `us-east-1`), `COGNITO_IDENTITY_POOL_ID`, `USER_DATA_BUCKET`. All are
-  public identifiers, not secrets.
+  `us-east-1`), `COGNITO_IDENTITY_POOL_ID`, `USER_DATA_BUCKET`, and for
+  [sharing](shared-captures.md) `SHARE_API_URL`. All are public
+  identifiers, not secrets.
 
 ## Infrastructure
 

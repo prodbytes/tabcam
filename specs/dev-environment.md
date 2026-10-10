@@ -37,8 +37,10 @@
   (`tabscan.nu01/`) by `scripts/link-private.sh`. Only names listed in
   `scripts/dart-defines.sh` reach the app (`TABSCAN_STAGE`, and for
   [sign-in and cloud sync](cloud-sync.md) `GOOGLE_WEB_CLIENT_ID`,
-  `GOOGLE_IOS_CLIENT_ID`, `AWS_REGION`, `COGNITO_IDENTITY_POOL_ID` and
-  `USER_DATA_BUCKET`, all public identifiers); the version is passed as
+  `GOOGLE_IOS_CLIENT_ID`, `AWS_REGION`, `COGNITO_IDENTITY_POOL_ID`,
+  `USER_DATA_BUCKET` and `SHARE_API_URL`, all public identifiers); the version is passed as
   `TABSCAN_VERSION`. The environment wins over `.env`.
-- **Checks**: `flutter analyze` and `flutter test` in `tabscan_app/`.
+- **Checks**: `flutter analyze` and `flutter test` in `tabscan_app/`;
+  the share API's tests with `python3 -m unittest discover -s
+  tabscan_api/shares`.
   Tests use made-up riffs, never tabs of published songs.

@@ -137,6 +137,7 @@ jobs:
       GOOGLE_IOS_CLIENT_ID: ${{ vars.GOOGLE_IOS_CLIENT_ID }}
       COGNITO_IDENTITY_POOL_ID: ${{ vars.COGNITO_IDENTITY_POOL_ID }}
       USER_DATA_BUCKET: ${{ vars.USER_DATA_BUCKET }}
+      SHARE_API_URL: ${{ vars.SHARE_API_URL }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

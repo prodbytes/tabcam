@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tabscan_app/auth/auth_service.dart';
 import 'package:tabscan_app/cloud/cognito.dart';
 import 'package:tabscan_app/cloud/s3.dart';
+import 'package:tabscan_app/cloud/share_api.dart';
 import 'package:tabscan_app/cloud/sigv4.dart';
 
 /// The bucket, in memory: ETags are MD5s, as S3's are for single PUTs.
@@ -148,4 +149,89 @@ class FakeAuth extends AuthService {
 
   @override
   Widget? buildSignInButton() => null;
+}
+
+/// The share API, in memory: grants by `<owner>/<capture>`, then email.
+/// Each device has its own, for its user ([email], [identity]).
+class FakeShareApi extends ShareApi {
+  FakeShareApi(this.grantsBy, {required this.email, this.identity = ''})
+    : super(baseUrl: Uri.parse('https://share.example'));
+
+  /// Shared by every device: `<owner>/<capture>` → email → role.
+  final Map<String, Map<String, ShareRole>> grantsBy;
+
+  /// Whose requests: their email, and their identity (as an owner).
+  final String email;
+  final String identity;
+
+  /// Owners' emails, by identity.
+  static final Map<String, String> emails = {};
+
+  int credentialRequests = 0;
+
+  List<Grant> _of(String key) => [
+    for (final MapEntry(:key, :value) in (grantsBy[key] ?? {}).entries)
+      Grant(key, value),
+  ];
+
+  @override
+  Future<List<Grant>> grants(String token, String captureId) async =>
+      _of('$identity/$captureId');
+
+  @override
+  Future<List<Grant>> grant(
+    String token,
+    String captureId,
+    String email, {
+    ShareRole role = ShareRole.edit,
+  }) async {
+    emails[identity] = this.email;
+    (grantsBy['$identity/$captureId'] ??= {})[email] = role;
+    return _of('$identity/$captureId');
+  }
+
+  @override
+  Future<List<Grant>> revoke(
+    String token,
+    String captureId,
+    String email,
+  ) async {
+    grantsBy['$identity/$captureId']?.remove(email);
+    return _of('$identity/$captureId');
+  }
+
+  @override
+  Future<List<SharedCapture>> shared(String token) async => [
+    for (final MapEntry(:key, :value) in grantsBy.entries)
+      if (value[email] case final role?)
+        SharedCapture(
+          owner: key.split('/').first,
+          captureId: key.split('/').last,
+          ownerEmail: emails[key.split('/').first] ?? '?',
+          role: role,
+        ),
+  ];
+
+  @override
+  Future<void> leave(String token, String owner, String captureId) async =>
+      grantsBy['$owner/$captureId']?.remove(email);
+
+  @override
+  Future<ShareCredentials> credentials(
+    String token,
+    String owner,
+    String captureId,
+  ) async {
+    credentialRequests++;
+    final role = grantsBy['$owner/$captureId']?[email];
+    if (role == null) throw ShareApiException(404, 'Not shared with you');
+    return ShareCredentials(
+      AwsCredentials(
+        accessKeyId: 'ASIA',
+        secretAccessKey: 'secret',
+        expiration: DateTime.now().toUtc().add(const Duration(hours: 1)),
+      ),
+      role,
+    );
+  }
 }

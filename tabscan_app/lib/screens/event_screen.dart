@@ -6,9 +6,11 @@ import '../library/library.dart';
 import '../library/capture_event.dart';
 import '../processing/page_filter.dart';
 import '../recognition/tab_reader.dart';
+import '../cloud/cloud_sync.dart';
 import 'clone.dart';
 import 'link_page.dart';
 import 'page_image.dart';
+import 'people_sheet.dart';
 import 'rename_dialog.dart';
 import 'share_sheet.dart';
 import 'tab_text_screen.dart';
@@ -18,10 +20,18 @@ import 'video_page.dart';
 /// the tools along the bottom: Add (scan, photos and videos, files, a
 /// link), Filter, Rotate, Read tab and Delete. Share and rename are in the app bar.
 class EventScreen extends StatefulWidget {
-  const EventScreen({super.key, required this.library, required this.eventId});
+  const EventScreen({
+    super.key,
+    required this.library,
+    required this.eventId,
+    this.sync,
+  });
 
   final Library library;
   final String eventId;
+
+  /// Cloud sync, for sharing the event with people (null: no sharing).
+  final CloudSync? sync;
 
   @override
   State<EventScreen> createState() => _EventScreenState();
@@ -69,7 +79,8 @@ class _EventScreenState extends State<EventScreen> {
     if (copy == null) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
-        builder: (_) => EventScreen(library: _library, eventId: copy.id),
+        builder: (_) =>
+            EventScreen(library: _library, eventId: copy.id, sync: widget.sync),
       ),
     );
   }
@@ -188,13 +199,16 @@ class _EventScreenState extends State<EventScreen> {
         if (event == null) return const Scaffold();
         final index = _index.clamp(0, event.pages.length - 1);
         final page = event.pages.isEmpty ? null : event.pages[index];
-        final enabled = !_busy && page != null;
+        // Shared read only: everything that changes it is off.
+        final editable = !event.readOnly;
+        final enabled = !_busy && page != null && editable;
         // Filter and Rotate are for images, not videos or links.
         final image = enabled && page.isImage;
+        final sync = widget.sync;
         return Scaffold(
           appBar: AppBar(
             title: InkWell(
-              onTap: () => _rename(event),
+              onTap: editable ? () => _rename(event) : null,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -214,11 +228,18 @@ class _EventScreenState extends State<EventScreen> {
                   icon: const Icon(Icons.notes),
                   onPressed: () => _openText(event),
                 ),
-              IconButton(
-                tooltip: 'Rename',
-                icon: const Icon(Icons.edit_outlined),
-                onPressed: () => _rename(event),
-              ),
+              if (editable)
+                IconButton(
+                  tooltip: 'Rename',
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: () => _rename(event),
+                ),
+              if (sync != null && sync.canShare && !event.isShared)
+                IconButton(
+                  tooltip: 'Share with people',
+                  icon: const Icon(Icons.group_add_outlined),
+                  onPressed: () => showPeopleSheet(context, sync, event),
+                ),
               IconButton(
                 tooltip: 'Clone',
                 icon: const Icon(Icons.copy_all_outlined),
@@ -241,6 +262,8 @@ class _EventScreenState extends State<EventScreen> {
           ),
           body: Column(
             children: [
+              if (event.sharedBy case final owner?)
+                _SharedBanner(owner: owner, readOnly: event.readOnly),
               Expanded(
                 child: PageView.builder(
                   controller: _pages,
@@ -287,7 +310,7 @@ class _EventScreenState extends State<EventScreen> {
                   _Tool(
                     icon: Icons.add_circle_outline,
                     label: 'Add',
-                    onPressed: _busy ? null : () => _add(event),
+                    onPressed: _busy || !editable ? null : () => _add(event),
                   ),
                   _Tool(
                     icon: page?.filter == PageFilter.tab
@@ -345,6 +368,42 @@ enum _AddSource {
   final IconData icon;
   final String label;
   final String detail;
+}
+
+/// Who shared the event with the user, and whether they can change it.
+class _SharedBanner extends StatelessWidget {
+  const _SharedBanner({required this.owner, required this.readOnly});
+
+  final String owner;
+  final bool readOnly;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ColoredBox(
+      color: theme.colorScheme.secondaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Icon(
+              readOnly ? Icons.visibility_outlined : Icons.group_outlined,
+              size: 18,
+              color: theme.colorScheme.onSecondaryContainer,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Shared by $owner · ${readOnly ? 'Read only' : 'Can edit'}',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _Tool extends StatelessWidget {

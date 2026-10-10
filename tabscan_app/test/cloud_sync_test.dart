@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tabscan_app/cloud/cloud_sync.dart';
 import 'package:tabscan_app/cloud/cognito.dart';
+import 'package:tabscan_app/cloud/share_api.dart';
 import 'package:tabscan_app/library/library.dart';
 import 'package:tabscan_app/library/capture_event.dart';
 import 'package:tabscan_app/library/event_store_memory.dart';
@@ -11,7 +12,7 @@ import 'fakes.dart';
 
 /// One device: its library, signed in, syncing with [bucket].
 class Device {
-  Device(this.bucket, {String identity = 'us-east-1:me'})
+  Device(this.bucket, {String identity = 'us-east-1:me', ShareApi? shares})
     : credentials = FakeCredentials(identity) {
     library = Library(PlatformEventStore(), () => now);
     sync = CloudSync(
@@ -19,6 +20,7 @@ class Device {
       auth: auth,
       bucket: bucket,
       credentials: credentials,
+      shares: shares,
       period: const Duration(days: 1),
       debounce: const Duration(days: 1),
     );
@@ -289,5 +291,163 @@ void main() {
       ),
       'video/mp4',
     );
+  });
+
+  group('shared captures', () {
+    const owner = 'us-east-1:owner';
+    const ana = 'us-east-1:ana';
+    late Map<String, Map<String, ShareRole>> grants;
+    late Device julio;
+    late Device anaPhone;
+
+    setUp(() async {
+      grants = {};
+      julio = Device(
+        bucket,
+        identity: owner,
+        shares: FakeShareApi(
+          grants,
+          email: 'julio@example.com',
+          identity: owner,
+        ),
+      );
+      anaPhone = Device(
+        bucket,
+        identity: ana,
+        shares: FakeShareApi(grants, email: 'ana@example.com', identity: ana),
+      );
+      await julio.start();
+      await anaPhone.start();
+    });
+
+    Future<CaptureEvent> shareOne(ShareRole role) async {
+      final event = await julio.library.create([
+        bytes([1, 2]),
+      ]);
+      await julio.sync.syncNow();
+      await julio.sync.grant(
+        julio.library.byId(event.id)!,
+        'ana@example.com',
+        role,
+      );
+      await julio.sync.syncNow();
+      await anaPhone.sync.syncNow();
+      return julio.library.byId(event.id)!;
+    }
+
+    test('a capture shared to edit comes down, and edits go back', () async {
+      final event = await shareOne(ShareRole.edit);
+      final copy = anaPhone.library.byId(event.id)!;
+      expect(copy.sharedBy, 'julio@example.com');
+      expect(copy.readOnly, isFalse);
+      expect(copy.owner, owner);
+      expect(await anaPhone.library.original(copy, copy.pages.single), [1, 2]);
+
+      anaPhone.now = julio.now.add(const Duration(minutes: 5));
+      await anaPhone.library.update(copy.copyWith(title: 'Riff, by Ana'));
+      await anaPhone.sync.syncNow();
+      expect(
+        bucket.json('$owner/events/${event.id}/event.json')['title'],
+        'Riff, by Ana',
+      );
+      // Sharing stays on Ana's device: the cloud copy doesn't say.
+      expect(
+        bucket.json('$owner/events/${event.id}/event.json'),
+        isNot(contains('sharedBy')),
+      );
+      await julio.sync.syncNow();
+      expect(julio.library.byId(event.id)!.title, 'Riff, by Ana');
+      expect(julio.library.byId(event.id)!.isShared, isFalse);
+    });
+
+    test('read only: it comes down, and nothing goes up', () async {
+      final event = await shareOne(ShareRole.read);
+      final copy = anaPhone.library.byId(event.id)!;
+      expect(copy.readOnly, isTrue);
+      final before = Map.of(bucket.objects);
+      anaPhone.later();
+      await anaPhone.library.update(copy.copyWith(title: 'Mine now'));
+      bucket.requests.clear();
+      await anaPhone.sync.syncNow();
+      expect(bucket.requests.where((r) => r.startsWith('PUT')), isEmpty);
+      expect(bucket.objects.keys, before.keys);
+    });
+
+    test("Ana's own events don't go to Julio's folder", () async {
+      await shareOne(ShareRole.edit);
+      await anaPhone.library.create([
+        bytes([9]),
+      ]);
+      await anaPhone.sync.syncNow();
+      expect(
+        bucket.objects.keys.where((k) => k.startsWith('$ana/')),
+        hasLength(2),
+      );
+      expect(
+        bucket.objects.keys.where((k) => k.startsWith('$owner/')),
+        hasLength(2),
+      );
+    });
+
+    test(
+      'revoked, it goes from her device; shared again, it comes back',
+      () async {
+        final event = await shareOne(ShareRole.edit);
+        await julio.sync.revoke(event, 'ana@example.com');
+        await anaPhone.sync.syncNow();
+        expect(anaPhone.library.byIdAll(event.id), isNull);
+        // Julio's stays.
+        expect(julio.library.byId(event.id), isNotNull);
+        expect(
+          bucket.objects.containsKey('$owner/events/${event.id}/event.json'),
+          isTrue,
+        );
+
+        await julio.sync.grant(event, 'ana@example.com', ShareRole.read);
+        await anaPhone.sync.syncNow();
+        expect(anaPhone.library.byId(event.id)!.readOnly, isTrue);
+      },
+    );
+
+    test('Ana removes it: she leaves the share', () async {
+      final event = await shareOne(ShareRole.edit);
+      await anaPhone.sync.leave(anaPhone.library.byId(event.id)!);
+      expect(anaPhone.library.byIdAll(event.id), isNull);
+      expect(grants['$owner/${event.id}'], isEmpty);
+      await anaPhone.sync.syncNow();
+      expect(anaPhone.library.byIdAll(event.id), isNull);
+      expect(julio.library.byId(event.id), isNotNull);
+    });
+
+    test('the owner deletes it: it goes from her device too', () async {
+      final event = await shareOne(ShareRole.edit);
+      julio.later();
+      await julio.library.delete(event);
+      await julio.sync.syncNow();
+      await anaPhone.sync.syncNow();
+      expect(anaPhone.library.events, isEmpty);
+      expect(grants['$owner/${event.id}'], isEmpty);
+    });
+
+    test('a role change reaches her copy', () async {
+      final event = await shareOne(ShareRole.edit);
+      await julio.sync.grant(event, 'ana@example.com', ShareRole.read);
+      await anaPhone.sync.syncNow();
+      expect(anaPhone.library.byId(event.id)!.readOnly, isTrue);
+    });
+
+    test('a clone of a shared capture is her own, to share apart', () async {
+      final event = await shareOne(ShareRole.read);
+      final copy = await anaPhone.library.clone(
+        anaPhone.library.byId(event.id)!,
+      );
+      expect(copy.isShared, isFalse);
+      expect(copy.readOnly, isFalse);
+      await anaPhone.sync.syncNow();
+      expect(
+        bucket.objects.containsKey('$ana/events/${copy.id}/event.json'),
+        isTrue,
+      );
+    });
   });
 }

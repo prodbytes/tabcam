@@ -37,6 +37,11 @@ device the user signs in on; signed out, nothing leaves the device.
   the library's cloud button; signed-in users' events sync both ways with
   their own folder in S3 (Cognito identity pool credentials, no server),
   deletions included.
+- [Shared captures](shared-captures.md): share a capture of one's own
+  by email, to edit (the default) or read only; no email is sent, people
+  find it when they sign in. A share API (Lambda, DynamoDB, an HTTP API
+  with a Google JWT authorizer) keeps the grants and hands out
+  credentials for just that capture's folder.
 - [App icon](app-icon.md): a scanned tab page with a staff and fret
   numbers, in scanner corners; how the platform icons are generated.
 - [Platforms](platforms.md): Android, iOS and the web, and what each can do.

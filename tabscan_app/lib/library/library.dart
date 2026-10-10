@@ -290,6 +290,41 @@ class Library extends ChangeNotifier {
     _set([for (final s in _all) s.id == event.id ? owned : s]);
   }
 
+  /// Records who shared [event] with the user and whether it's read only,
+  /// without counting as a change (the grant changed, not the event).
+  Future<void> setSharing(
+    CaptureEvent event,
+    String sharedBy, {
+    required bool readOnly,
+  }) async {
+    final local = _byIdAll(event.id);
+    if (local == null ||
+        (local.sharedBy == sharedBy && local.readOnly == readOnly)) {
+      return;
+    }
+    final updated = local.copyWith(sharedBy: sharedBy, readOnly: readOnly);
+    await _store.save(updated);
+    _set([for (final s in _all) s.id == event.id ? updated : s]);
+    notifyListeners();
+  }
+
+  /// Removes [event] from this device only: no tombstone, nothing to sync
+  /// (a capture no longer shared with the user).
+  Future<void> removeLocal(CaptureEvent event) async {
+    final local = _byIdAll(event.id);
+    if (local == null) return;
+    await _removePages(local);
+    await _store.delete(local.id);
+    _set([
+      for (final s in _all)
+        if (s.id != local.id) s,
+    ]);
+    notifyListeners();
+  }
+
+  /// Any event on the device by [id], tombstones included.
+  CaptureEvent? byIdAll(String id) => _byIdAll(id);
+
   CaptureEvent? _byIdAll(String id) {
     for (final s in _all) {
       if (s.id == id) return s;

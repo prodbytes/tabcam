@@ -5,7 +5,7 @@
 # Only the names below are passed: anything given to Flutter is compiled
 # into the app (readable in the web bundle), so secrets in .env must never
 # be listed here. Add public identifiers only.
-_allowed=(TABSCAN_STAGE GOOGLE_WEB_CLIENT_ID GOOGLE_IOS_CLIENT_ID AWS_REGION COGNITO_IDENTITY_POOL_ID USER_DATA_BUCKET)
+_allowed=(TABSCAN_STAGE GOOGLE_WEB_CLIENT_ID GOOGLE_IOS_CLIENT_ID AWS_REGION COGNITO_IDENTITY_POOL_ID USER_DATA_BUCKET SHARE_API_URL)
 _env="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/.env"
 DART_DEFINES=()
 for _name in "${_allowed[@]}"; do
