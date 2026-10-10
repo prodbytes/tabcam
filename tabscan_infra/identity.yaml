@@ -42,12 +42,12 @@ Resources:
               ForAnyValue:StringLike:
                 cognito-identity.amazonaws.com:amr: authenticated
       Policies:
-        - PolicyName: own-scans
+        - PolicyName: own-events
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
               # Each user reaches only <bucket>/<their identity ID>/...
-              # Deleting is allowed (removed pages, deleted scans): the bucket
+              # Deleting is allowed (removed pages, deleted events): the bucket
               # is versioned, so a deletion can be undone for 30 days.
               - Effect: Allow
                 Action:

@@ -2,9 +2,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../library/scan.dart';
+import '../library/capture_event.dart';
 
-/// A picked photo or video, to add to a scan as a page.
+/// A picked photo or video, to add to an event as a page.
 class Media {
   const Media(this.file, this.kind, this.extension);
 
@@ -53,7 +53,7 @@ class Media {
   };
 }
 
-/// Pickers for photos and videos to add to a scan. Files that are neither
+/// Pickers for photos and videos to add to an event. Files that are neither
 /// images nor videos are left out, and counted in [MediaPick.skipped].
 abstract final class MediaSource {
   /// Photos and videos from the device's photo library.

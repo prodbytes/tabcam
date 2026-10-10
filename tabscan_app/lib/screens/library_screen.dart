@@ -6,16 +6,16 @@ import '../auth/auth_service.dart';
 import '../capture/page_source.dart';
 import '../cloud/cloud_sync.dart';
 import '../library/library.dart';
-import '../library/scan.dart';
+import '../library/capture_event.dart';
 import 'account_sheet.dart';
 import 'page_image.dart';
 import 'rename_dialog.dart';
-import 'scan_screen.dart';
+import 'event_screen.dart';
 import 'share_sheet.dart';
 import 'video_page.dart';
 
-/// The home screen: every scan as a card, newest first, and the Scan button.
-/// A new scan lands at the top of the list, highlighted, with Open in the
+/// The home screen: every event as a card, newest first, and the Scan button.
+/// A new event lands at the top of the list, highlighted, with Open in the
 /// message that confirms it. With [auth] and [sync] (a build with sign-in
 /// and cloud sync set up), the app bar has the account button.
 class LibraryScreen extends StatefulWidget {
@@ -32,7 +32,7 @@ class LibraryScreen extends StatefulWidget {
 class _LibraryScreenState extends State<LibraryScreen> {
   final _grid = ScrollController();
 
-  /// The scan just added, highlighted for a moment.
+  /// The event just added, highlighted for a moment.
   String? _fresh;
 
   Library get library => widget.library;
@@ -52,9 +52,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
       return;
     }
     if (pages.isEmpty || !mounted) return;
-    final scan = await library.create(pages);
+    final event = await library.create(pages);
     if (!mounted) return;
-    setState(() => _fresh = scan.id);
+    setState(() => _fresh = event.id);
     if (_grid.hasClients) {
       _grid.animateTo(
         0,
@@ -62,30 +62,31 @@ class _LibraryScreenState extends State<LibraryScreen> {
         curve: Curves.easeOut,
       );
     }
-    final count = scan.pages.length;
+    final count = event.pages.length;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
           content: Text(
-            'Saved "${scan.title}" ($count ${count == 1 ? 'page' : 'pages'})',
+            'Saved "${event.title}" ($count ${count == 1 ? 'page' : 'pages'})',
           ),
           action: SnackBarAction(
             label: 'Open',
-            onPressed: () => _open(context, scan),
+            onPressed: () => _open(context, event),
           ),
         ),
       );
     Future.delayed(const Duration(seconds: 3), () {
-      if (mounted && _fresh == scan.id) setState(() => _fresh = null);
+      if (mounted && _fresh == event.id) setState(() => _fresh = null);
     });
   }
 
-  void _open(BuildContext context, Scan scan) => Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) => ScanScreen(library: library, scanId: scan.id),
-    ),
-  );
+  void _open(BuildContext context, CaptureEvent event) =>
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => EventScreen(library: library, eventId: event.id),
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -126,7 +127,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
           if (!library.loaded) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (library.scans.isEmpty) return const _Empty();
+          if (library.events.isEmpty) return const _Empty();
           return GridView.builder(
             controller: _grid,
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
@@ -136,14 +137,14 @@ class _LibraryScreenState extends State<LibraryScreen> {
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
             ),
-            itemCount: library.scans.length,
+            itemCount: library.events.length,
             itemBuilder: (context, i) {
-              final scan = library.scans[i];
-              return _ScanCard(
+              final event = library.events[i];
+              return _EventCard(
                 library: library,
-                scan: scan,
-                fresh: scan.id == _fresh,
-                onOpen: () => _open(context, scan),
+                event: event,
+                fresh: event.id == _fresh,
+                onOpen: () => _open(context, event),
               );
             },
           );
@@ -188,16 +189,16 @@ class _Empty extends StatelessWidget {
 
 enum _CardAction { rename, share, delete }
 
-class _ScanCard extends StatelessWidget {
-  const _ScanCard({
+class _EventCard extends StatelessWidget {
+  const _EventCard({
     required this.library,
-    required this.scan,
+    required this.event,
     required this.fresh,
     required this.onOpen,
   });
 
   final Library library;
-  final Scan scan;
+  final CaptureEvent event;
 
   /// Just added: outlined in the theme's primary color.
   final bool fresh;
@@ -206,14 +207,14 @@ class _ScanCard extends StatelessWidget {
   Future<void> _action(BuildContext context, _CardAction action) async {
     switch (action) {
       case _CardAction.rename:
-        await renameScan(context, library, scan);
+        await renameEvent(context, library, event);
       case _CardAction.share:
-        await showShareSheet(context, library, scan);
+        await showShareSheet(context, library, event);
       case _CardAction.delete:
         final ok = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text('Delete "${scan.title}"?'),
+            title: Text('Delete "${event.title}"?'),
             content: const Text('Its pages and text tab are deleted too.'),
             actions: [
               TextButton(
@@ -227,17 +228,17 @@ class _ScanCard extends StatelessWidget {
             ],
           ),
         );
-        if (ok == true) await library.delete(scan);
+        if (ok == true) await library.delete(event);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final videos = scan.pages.where((p) => p.isVideo).length;
-    final pages = scan.pages.length - videos;
-    // The first image is the thumbnail; a scan of only videos shows a badge.
-    final cover = scan.pages.where((p) => !p.isVideo).firstOrNull;
+    final videos = event.pages.where((p) => p.isVideo).length;
+    final pages = event.pages.length - videos;
+    // The first image is the thumbnail; an event of only videos shows a badge.
+    final cover = event.pages.where((p) => !p.isVideo).firstOrNull;
     return Card(
       clipBehavior: Clip.antiAlias,
       shape: fresh
@@ -259,7 +260,7 @@ class _ScanCard extends StatelessWidget {
                 child: cover != null
                     ? PageImage(
                         library: library,
-                        scan: scan,
+                        event: event,
                         page: cover,
                         fit: BoxFit.cover,
                         cacheWidth: 400,
@@ -278,19 +279,19 @@ class _ScanCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          scan.title,
+                          event.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.titleSmall,
                         ),
                         Text(
                           [
-                            if (scan.artist.isNotEmpty) scan.artist,
+                            if (event.artist.isNotEmpty) event.artist,
                             if (pages > 0 || videos == 0)
                               '$pages ${pages == 1 ? 'page' : 'pages'}',
                             if (videos > 0)
                               '$videos ${videos == 1 ? 'video' : 'videos'}',
-                            if (scan.tabText != null) 'text',
+                            if (event.tabText != null) 'text',
                           ].join(' · '),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

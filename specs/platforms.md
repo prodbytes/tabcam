@@ -11,7 +11,7 @@
 | Library | Files in the app's documents | Files in the app's documents | Memory, until the tab closes |
 | Share | System share sheet | System share sheet | Web Share, or downloads |
 | Sign-in ([cloud sync](cloud-sync.md)) | Credential Manager | Google Sign-In SDK | Google's button (FedCM); the session kept in `localStorage` |
-| Synced scans | Kept in the app's documents | Kept in the app's documents | Downloaded again on each visit |
+| Synced events | Kept in the app's documents | Kept in the app's documents | Downloaded again on each visit |
 
 **iOS signing**: automatic, with each developer's own team:
 `IOS_DEVELOPMENT_TEAM` in `.env` (a free Personal Team works) is written by

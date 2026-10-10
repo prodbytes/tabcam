@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 
 import '../auth/auth_service.dart';
 import '../library/library.dart';
-import '../library/scan.dart';
+import '../library/capture_event.dart';
 import 'cognito.dart';
 import 's3.dart';
 import 'sigv4.dart';
@@ -26,20 +26,20 @@ enum SyncState {
   failed,
 }
 
-/// Syncs a signed-in user's scans with their folder in the user-data
-/// bucket, both ways, so every device they sign in on has the same scans.
+/// Syncs a signed-in user's events with their folder in the user-data
+/// bucket, both ways, so every device they sign in on has the same events.
 ///
 /// The folder is the user's Cognito identity ID:
 ///
-/// - `<identity>/scans/<scan id>/scan.json`: the scan's details (no
+/// - `<identity>/events/<event id>/event.json`: the event's details (no
 ///   `owner`), or its tombstone once deleted;
-/// - `<identity>/scans/<scan id>/<page id>.<extension>`: each page's file,
+/// - `<identity>/events/<event id>/<page id>.<extension>`: each page's file,
 ///   written once (a rotated page is a new page).
 ///
 /// A pass lists the folder (one request when nothing changed), then for
-/// each scan: one changed only here goes up, one changed only in the
-/// folder (its `scan.json`'s ETag differs from the last one seen) comes
-/// down, and one changed in both keeps the later `updated`. Scans that
+/// each event: one changed only here goes up, one changed only in the
+/// folder (its `event.json`'s ETag differs from the last one seen) comes
+/// down, and one changed in both keeps the later `updated`. Events that
 /// synced with another account stay on the device, untouched.
 ///
 /// Passes run at sign-in, a moment after each change, every
@@ -65,7 +65,7 @@ class CloudSync extends ChangeNotifier {
   /// How long after a change its pass starts, so a burst is one pass.
   final Duration debounce;
 
-  /// The state file's name in the store (beside the scans).
+  /// The state file's name in the store (beside the events).
   static const String stateName = 'cloudsync';
 
   SyncState _state = SyncState.signedOut;
@@ -199,24 +199,24 @@ class CloudSync extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// One pass for [token]'s user: how many scans went up and came down.
+  /// One pass for [token]'s user: how many events went up and came down.
   Future<(int, int)> _run(String token) async {
     await library.ready;
     final session = await credentials.session(token);
     _check(token);
     final identity = session.identityId;
     final creds = session.credentials;
-    final prefix = '$identity/scans/';
+    final prefix = '$identity/events/';
     final listing = await bucket.listETags(prefix, credentials: creds);
     _check(token);
 
-    // What the folder has: each scan's scan.json ETag, and its files.
+    // What the folder has: each event's event.json ETag, and its files.
     final remote = <String, String>{};
     final files = <String, Set<String>>{};
     for (final MapEntry(:key, :value) in listing.entries) {
       final parts = key.substring(prefix.length).split('/');
       if (parts.length != 2 || !_isId(parts[0])) continue;
-      if (parts[1] == 'scan.json') {
+      if (parts[1] == 'event.json') {
         remote[parts[0]] = value;
       } else {
         (files[parts[0]] ??= {}).add(parts[1]);
@@ -228,43 +228,43 @@ class CloudSync extends ChangeNotifier {
     var down = 0;
     final seen = <String>{};
 
-    for (final scan in [...library.all]) {
-      if (scan.owner != null && scan.owner != identity) continue;
-      seen.add(scan.id);
-      final last = state.scans[scan.id];
-      final etag = remote[scan.id];
-      final changedHere = last == null || last.updated != scan.updated;
+    for (final event in [...library.all]) {
+      if (event.owner != null && event.owner != identity) continue;
+      seen.add(event.id);
+      final last = state.events[event.id];
+      final etag = remote[event.id];
+      final changedHere = last == null || last.updated != event.updated;
       final changedThere = etag != null && last?.etag != etag;
       if (changedThere) {
-        final theirs = await _fetch(identity, scan.id, creds);
+        final theirs = await _fetch(identity, event.id, creds);
         _check(token);
         if (theirs != null &&
-            (!changedHere || !theirs.updated.isBefore(scan.updated))) {
-          if (await _take(identity, theirs, files, creds, token, seen: scan)) {
-            state.scans[scan.id] = _Synced(etag, theirs.updated);
+            (!changedHere || !theirs.updated.isBefore(event.updated))) {
+          if (await _take(identity, theirs, files, creds, token, seen: event)) {
+            state.events[event.id] = _Synced(etag, theirs.updated);
             down++;
           }
           continue;
         }
       }
       if (changedHere || etag == null) {
-        final sent = await _send(identity, scan, files, creds, token);
-        state.scans[scan.id] = _Synced(sent, scan.updated);
-        if (scan.owner == null) await library.setOwner(scan, identity);
+        final sent = await _send(identity, event, files, creds, token);
+        state.events[event.id] = _Synced(sent, event.updated);
+        if (event.owner == null) await library.setOwner(event, identity);
         up++;
       }
     }
 
-    // Scans only in the folder: new from another device.
+    // Events only in the folder: new from another device.
     for (final MapEntry(key: id, value: etag) in remote.entries) {
-      if (seen.contains(id) || state.scans[id]?.etag == etag) continue;
+      if (seen.contains(id) || state.events[id]?.etag == etag) continue;
       final theirs = await _fetch(identity, id, creds);
       _check(token);
       if (theirs == null) continue;
-      // Another device's tombstone of a scan never here: nothing to take.
+      // Another device's tombstone of an event never here: nothing to take.
       if (theirs.isDeleted ||
           await _take(identity, theirs, files, creds, token)) {
-        state.scans[id] = _Synced(etag, theirs.updated);
+        state.events[id] = _Synced(etag, theirs.updated);
         if (!theirs.isDeleted) down++;
       }
     }
@@ -273,29 +273,33 @@ class CloudSync extends ChangeNotifier {
     return (up, down);
   }
 
-  /// The scan in the folder, or null when its scan.json isn't one.
-  Future<Scan?> _fetch(String identity, String id, AwsCredentials creds) async {
+  /// The event in the folder, or null when its event.json isn't one.
+  Future<CaptureEvent?> _fetch(
+    String identity,
+    String id,
+    AwsCredentials creds,
+  ) async {
     final bytes = await bucket.get(_key(identity, id), credentials: creds);
     try {
-      final scan = Scan.fromJson(
+      final event = CaptureEvent.fromJson(
         (jsonDecode(utf8.decode(bytes)) as Map).cast<String, Object?>(),
       );
-      return scan.id == id ? scan : null;
+      return event.id == id ? event : null;
     } on Object catch (e) {
       debugPrint('TabScan: skipping the cloud copy of $id: $e');
       return null;
     }
   }
 
-  /// Brings [theirs] here: its pages first, then the scan, so it never
+  /// Brings [theirs] here: its pages first, then the event, so it never
   /// shows without them. False when it changed here meanwhile ([seen]).
   Future<bool> _take(
     String identity,
-    Scan theirs,
+    CaptureEvent theirs,
     Map<String, Set<String>> files,
     AwsCredentials creds,
     String token, {
-    Scan? seen,
+    CaptureEvent? seen,
   }) async {
     for (final page in theirs.pages) {
       if (await library.hasPage(theirs.id, page)) continue;
@@ -310,21 +314,21 @@ class CloudSync extends ChangeNotifier {
     return library.applyRemote(theirs.copyWith(owner: identity), seen: seen);
   }
 
-  /// Sends [scan] to the folder: the pages it lacks, then scan.json, then
-  /// removes the files the scan no longer has. Returns scan.json's ETag.
+  /// Sends [event] to the folder: the pages it lacks, then event.json, then
+  /// removes the files the event no longer has. Returns event.json's ETag.
   Future<String> _send(
     String identity,
-    Scan scan,
+    CaptureEvent event,
     Map<String, Set<String>> files,
     AwsCredentials creds,
     String token,
   ) async {
-    final there = files[scan.id] ?? const <String>{};
-    for (final page in scan.pages) {
+    final there = files[event.id] ?? const <String>{};
+    for (final page in event.pages) {
       if (there.contains(page.fileName)) continue;
-      final (body, length) = await library.pageStream(scan.id, page);
+      final (body, length) = await library.pageStream(event.id, page);
       await bucket.putStream(
-        _key(identity, scan.id, page.fileName),
+        _key(identity, event.id, page.fileName),
         body,
         length,
         contentType: contentTypeOf(page),
@@ -332,17 +336,17 @@ class CloudSync extends ChangeNotifier {
       );
       _check(token);
     }
-    final json = utf8.encode(jsonEncode(scan.toJson(local: false)));
+    final json = utf8.encode(jsonEncode(event.toJson(local: false)));
     await bucket.put(
-      _key(identity, scan.id),
+      _key(identity, event.id),
       json,
       contentType: 'application/json',
       credentials: creds,
     );
-    final kept = {for (final p in scan.pages) p.fileName};
+    final kept = {for (final p in event.pages) p.fileName};
     for (final name in there) {
       if (kept.contains(name)) continue;
-      await bucket.delete(_key(identity, scan.id, name), credentials: creds);
+      await bucket.delete(_key(identity, event.id, name), credentials: creds);
     }
     // A single PUT's ETag (SSE-S3) is the MD5 of its bytes.
     return md5.convert(json).toString();
@@ -352,15 +356,18 @@ class CloudSync extends ChangeNotifier {
     if (_token != token) throw const _SignedOut();
   }
 
-  static String _key(String identity, String id, [String file = 'scan.json']) =>
-      '$identity/scans/$id/$file';
+  static String _key(
+    String identity,
+    String id, [
+    String file = 'event.json',
+  ]) => '$identity/events/$id/$file';
 
   static final RegExp _idPattern = RegExp(r'^[a-z0-9]{1,32}$');
   static bool _isId(String s) => _idPattern.hasMatch(s);
 
   /// The MIME type a page's file is uploaded with.
   @visibleForTesting
-  static String contentTypeOf(ScanPage page) => switch (page.extension) {
+  static String contentTypeOf(EventPage page) => switch (page.extension) {
     'img' || 'jpg' || 'jpeg' => 'image/jpeg',
     'png' => 'image/png',
     'webp' => 'image/webp',
@@ -389,7 +396,7 @@ class _SignedOut implements Exception {
   const _SignedOut();
 }
 
-/// What a scan was when it last synced: its scan.json's ETag, and its
+/// What an event was when it last synced: its event.json's ETag, and its
 /// `updated`.
 class _Synced {
   const _Synced(this.etag, this.updated);
@@ -398,13 +405,13 @@ class _Synced {
   final DateTime updated;
 }
 
-/// What has synced, per scan, for one identity: kept beside the scans
+/// What has synced, per event, for one identity: kept beside the events
 /// ([CloudSync.stateName]). Another identity's state starts over.
 class _SyncState {
-  _SyncState(this.identity, this.scans);
+  _SyncState(this.identity, this.events);
 
   final String identity;
-  final Map<String, _Synced> scans;
+  final Map<String, _Synced> events;
 
   static Future<_SyncState> load(Library library, String identity) async {
     try {
@@ -414,7 +421,7 @@ class _SyncState {
         if (m['identity'] == identity) {
           return _SyncState(identity, {
             for (final MapEntry(:key, :value)
-                in (m['scans'] as Map).cast<String, Object?>().entries)
+                in (m['events'] as Map).cast<String, Object?>().entries)
               key: _Synced(
                 (value as Map)['etag'] as String,
                 DateTime.parse(value['updated'] as String).toLocal(),
@@ -432,8 +439,8 @@ class _SyncState {
     CloudSync.stateName,
     jsonEncode({
       'identity': identity,
-      'scans': {
-        for (final MapEntry(:key, :value) in scans.entries)
+      'events': {
+        for (final MapEntry(:key, :value) in events.entries)
           key: {
             'etag': value.etag,
             'updated': value.updated.toUtc().toIso8601String(),

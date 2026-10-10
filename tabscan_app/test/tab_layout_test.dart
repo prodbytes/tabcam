@@ -39,7 +39,7 @@ void main() {
       );
     });
 
-    test('names the strings when the scan has no names', () {
+    test('names the strings when the event has no names', () {
       final tab = asciiTab([
         '|---3---5---|',
         '|-----------|',

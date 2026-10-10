@@ -92,3 +92,14 @@ spec.
     come from `.env` or repository variables
     ([deploy](deploy.md), [platforms](platforms.md)). The Google OAuth
     clients are still to be created.
+13. **Call a scan an "event" from now on, since it can hold more than
+    scans; in the code, `CaptureEvent`.** The app and the specs say
+    "event" for what was a scan ([library](library.md#events), the
+    [event screen](event-screen.md), sharing, sync); scanning pages is
+    still **Scan**. In the code `Scan` is `CaptureEvent`, `ScanPage` is
+    `EventPage`, `ScanStore` is `EventStore` and `ScanScreen` is
+    `EventScreen`. Files on the device keep their names
+    (`scans/<id>/scan.json`), so existing libraries load; the cloud
+    layout, not yet deployed, becomes `<identity>/events/<id>/event.json`
+    in the `nu01-user-events-<account>` bucket
+    ([cloud sync](cloud-sync.md)).

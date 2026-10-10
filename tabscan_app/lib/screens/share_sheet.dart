@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../export/exporter.dart';
 import '../library/library.dart';
-import '../library/scan.dart';
+import '../library/capture_event.dart';
 
-/// Asks what to share the scan as, then opens the system's share sheet.
+/// Asks what to share the event as, then opens the system's share sheet.
 /// Text tab is offered once the tab has been read.
 Future<void> showShareSheet(
   BuildContext context,
   Library library,
-  Scan scan,
+  CaptureEvent event,
 ) async {
   final format = await showModalBottomSheet<ShareFormat>(
     context: context,
@@ -28,11 +28,11 @@ Future<void> showShareSheet(
             leading: const Icon(Icons.notes),
             title: const Text('Text tab'),
             subtitle: Text(
-              scan.tabText == null
-                  ? 'Read the tab first (Read tab on the scan)'
+              event.tabText == null
+                  ? 'Read the tab first (Read tab on the event)'
                   : 'Plain text, pastes into any chat or editor',
             ),
-            enabled: scan.tabText != null,
+            enabled: event.tabText != null,
             onTap: () => Navigator.pop(context, ShareFormat.text),
           ),
           ListTile(
@@ -47,7 +47,11 @@ Future<void> showShareSheet(
   );
   if (format == null) return;
   try {
-    await Exporter.share(scan, format, (page) => library.filtered(scan, page));
+    await Exporter.share(
+      event,
+      format,
+      (page) => library.filtered(event, page),
+    );
   } on Object catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context)

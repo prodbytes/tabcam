@@ -1,4 +1,4 @@
-/// Where signed-in users' scans are synced: the Cognito identity pool and
+/// Where signed-in users' events are synced: the Cognito identity pool and
 /// the S3 bucket from `tabscan_infra/` (stacks `tabscan-identity` and
 /// `tabscan-user-data`).
 ///

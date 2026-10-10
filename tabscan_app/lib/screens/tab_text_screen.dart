@@ -4,13 +4,17 @@ import 'package:share_plus/share_plus.dart';
 
 import '../library/library.dart';
 
-/// The text tab read from a scan, to check against the pages and fix:
+/// The text tab read from an event, to check against the pages and fix:
 /// monospaced, unwrapped (long lines scroll sideways), saved on leaving.
 class TabTextScreen extends StatefulWidget {
-  const TabTextScreen({super.key, required this.library, required this.scanId});
+  const TabTextScreen({
+    super.key,
+    required this.library,
+    required this.eventId,
+  });
 
   final Library library;
-  final String scanId;
+  final String eventId;
 
   @override
   State<TabTextScreen> createState() => _TabTextScreenState();
@@ -18,7 +22,7 @@ class TabTextScreen extends StatefulWidget {
 
 class _TabTextScreenState extends State<TabTextScreen> {
   late final _text = TextEditingController(
-    text: widget.library.byId(widget.scanId)?.tabText ?? '',
+    text: widget.library.byId(widget.eventId)?.tabText ?? '',
   );
 
   @override
@@ -29,9 +33,9 @@ class _TabTextScreenState extends State<TabTextScreen> {
   }
 
   void _save() {
-    final scan = widget.library.byId(widget.scanId);
-    if (scan != null && scan.tabText != _text.text) {
-      widget.library.update(scan.copyWith(tabText: _text.text));
+    final event = widget.library.byId(widget.eventId);
+    if (event != null && event.tabText != _text.text) {
+      widget.library.update(event.copyWith(tabText: _text.text));
     }
   }
 
@@ -45,7 +49,7 @@ class _TabTextScreenState extends State<TabTextScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final title = widget.library.byId(widget.scanId)?.title ?? 'Tab';
+    final title = widget.library.byId(widget.eventId)?.title ?? 'Tab';
     return Scaffold(
       appBar: AppBar(
         title: const Text('Text tab'),

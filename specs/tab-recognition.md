@@ -1,6 +1,6 @@
 # Tab recognition
 
-**Read tab** on the [scan screen](scan-screen.md) turns a scan's pages into
+**Read tab** on the [event screen](event-screen.md) turns an event's pages into
 plain-text tab, on the device, with Google ML Kit text recognition (Latin
 script). Android and iOS only; on the web it says reading tabs needs the
 app.
@@ -10,7 +10,7 @@ Each page (as scanned, not filtered) is turned upright, scaled to at most
 runs on the same image (through a temporary file, deleted after), so their
 coordinates agree. Pages with tab are joined with a blank line. With
 nothing found, a message suggests the Tab filter, or rescanning closer and
-flatter. With a result, it's saved on the scan and the text tab editor
+flatter. With a result, it's saved on the event and the text tab editor
 opens.
 
 ## Text tabs
@@ -63,4 +63,4 @@ Text tabs are tried first; typeset layout runs when no text tab is found.
 
 The read tab, monospaced and unwrapped (long lines scroll sideways),
 editable to fix what OCR got wrong. **Copy** puts it on the clipboard;
-**Share** shares it as text. Edits are saved on the scan when leaving.
+**Share** shares it as text. Edits are saved on the event when leaving.
