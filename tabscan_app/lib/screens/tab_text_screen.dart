@@ -6,6 +6,7 @@ import '../library/library.dart';
 
 /// The text tab read from an event, to check against the pages and fix:
 /// monospaced, unwrapped (long lines scroll sideways), saved on leaving.
+/// Read only for an event shared read only.
 class TabTextScreen extends StatefulWidget {
   const TabTextScreen({
     super.key,
@@ -34,7 +35,7 @@ class _TabTextScreenState extends State<TabTextScreen> {
 
   void _save() {
     final event = widget.library.byId(widget.eventId);
-    if (event != null && event.tabText != _text.text) {
+    if (event != null && !event.readOnly && event.tabText != _text.text) {
       widget.library.update(event.copyWith(tabText: _text.text));
     }
   }
@@ -77,6 +78,7 @@ class _TabTextScreenState extends State<TabTextScreen> {
           ),
           child: TextField(
             controller: _text,
+            readOnly: widget.library.byId(widget.eventId)?.readOnly ?? false,
             maxLines: null,
             expands: false,
             keyboardType: TextInputType.multiline,

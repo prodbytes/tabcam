@@ -8,6 +8,8 @@ import 'cloud/cloud_config.dart';
 import 'cloud/cloud_sync.dart';
 import 'cloud/cognito.dart';
 import 'cloud/s3.dart';
+import 'cloud/share_api.dart';
+import 'cloud/share_config.dart';
 import 'cloud/sigv4.dart';
 import 'library/library.dart';
 import 'screens/library_screen.dart';
@@ -32,6 +34,9 @@ void main() {
         identityPoolId: CloudConfig.identityPoolId,
         now: AwsClock.shared.now,
       ),
+      shares: ShareConfig.apiUrl.isEmpty
+          ? null
+          : ShareApi(baseUrl: Uri.parse(ShareConfig.apiUrl)),
     )..start();
   }
   runApp(TabScanApp(library: library, auth: auth, sync: sync));

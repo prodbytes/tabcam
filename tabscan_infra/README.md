@@ -8,6 +8,7 @@ templates.
 | [site.yaml](site.yaml) | `tabscan-web` | https://tabscan.nu01.com: the ACM certificate (DNS-validated in the `tabscan.nu01.com` zone), a private S3 bucket, a CloudFront distribution, the Route 53 A/AAAA aliases, and a Route 53 health check of `/app/version.json` that emails `TABSCAN_HEALTH_EMAILS` when it fails |
 | [user-data.yaml](user-data.yaml) | `tabscan-user-data` | The bucket of signed-in users' events, `nu01-user-events-<account>` (private, SSE-S3, TLS only, versioned: old versions kept 30 days; CORS for the web app's origins). Not `tabscan-*`, so the deploy roles can't reach it. Shared by production and the RC |
 | [identity.yaml](identity.yaml) | `tabscan-identity` | The Cognito identity pool `tabscan` (Google sign-in only, no guests, enhanced flow) and its authenticated role: get, put and delete in `<bucket>/<identity ID>/*`, and list that prefix. Shared by production and the RC |
+| [share-api.yaml](share-api.yaml) | `tabscan-share-api` | Sharing captures by email: the `tabscan-share-api` HTTP API (Google JWT authorizer, throttled), its Python function ([tabscan_api/shares/](../tabscan_api/shares)), the grants table (PITR on) and the `tabscan-share-access` role, which the function assumes with a session policy narrowed to one capture's folder (and to reading, for read-only grants) |
 | [github-deploy.yaml](github-deploy.yaml) | `tabscan-github-deploy` | The `tabscan-github-deploy` role (Deploy workflow, `*GA` tags) and the `tabscan-github-deploy-rc` role (Deploy RC workflow: `*RC*` tags and manual runs from `main`, limited to `tabscan-rc-*` resources and the `rc.tabscan.nu01.com` records), trusting GitHub's OIDC provider |
 
 `scripts/deploy.sh` deploys `tabscan-web`. With `STAGE=rc` it deploys the
@@ -105,7 +106,8 @@ ACM validation names.
         android` for local builds, which are signed with the debug key).
       - **iOS**: bundle ID `com.nu01.tabscan`. Its ID is
         `GOOGLE_IOS_CLIENT_ID`.
-   2. Deploy the stacks:
+   2. Deploy the stacks (`identity.yaml` exports the pool's ID for the
+      share API):
 
       ```bash
       aws cloudformation deploy --region us-east-1 \
@@ -133,3 +135,19 @@ ACM validation names.
 
    They're public identifiers (compiled into the app), not secrets. While
    they're empty, builds have no sign-in and events stay on the device.
+
+4. Sharing captures by email (after step 3; again when
+   `share-api.yaml` or `tabscan_api/shares/index.py` changes). An
+   administrator runs, with `GOOGLE_WEB_CLIENT_ID` in `.env`:
+
+   ```bash
+   bash scripts/deploy-share-api.sh
+   ```
+
+   It runs the function's tests, deploys the stack, uploads the code and
+   checks the API refuses requests without a token. Put the URL it prints
+   in `.env` and the repository variables as `SHARE_API_URL`:
+
+   ```bash
+   gh variable set SHARE_API_URL --body "<ApiUrl>"
+   ```

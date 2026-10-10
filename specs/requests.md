@@ -117,3 +117,14 @@ spec.
     ("<title> (copy)", the pages' files copied, links as they are, never
     synced or shared); the event screen opens the copy
     ([library](library.md#events)).
+16. **Share captures by email, without sending email: add the granted
+    address so they can access it; edit (collaborate) by default, or read
+    only.** New [shared captures](shared-captures.md): the event screen's
+    **Share with people** grants addresses, to edit or read only. A share
+    API (`tabscan_api/shares/`, stack `tabscan-share-api`: Lambda,
+    DynamoDB, an HTTP API with a Google JWT authorizer) keeps the grants
+    and hands out credentials for one capture's folder. Each sync pass
+    then syncs what's shared with the user; read-only copies are locked
+    in the app and never upload; **Remove** leaves a share. The API is
+    to be deployed by an administrator (`scripts/deploy-share-api.sh`)
+    once the OAuth clients exist.

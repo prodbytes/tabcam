@@ -102,6 +102,8 @@ class CaptureEvent {
     this.tabText,
     this.deleted,
     this.owner,
+    this.sharedBy,
+    this.readOnly = false,
   }) : updated = updated ?? created;
 
   /// What's left of [event] once deleted: a tombstone, so the deletion
@@ -114,6 +116,8 @@ class CaptureEvent {
         updated: when,
         deleted: when,
         owner: event.owner,
+        sharedBy: event.sharedBy,
+        readOnly: event.readOnly,
       );
 
   final String id;
@@ -136,6 +140,15 @@ class CaptureEvent {
   /// before). Kept on the device only: other users' events never sync.
   final String? owner;
 
+  /// For an event someone shared with the user: their email (its [owner]
+  /// is then their identity). Null for the user's own. Kept on the device
+  /// only, like [readOnly].
+  final String? sharedBy;
+  bool get isShared => sharedBy != null;
+
+  /// Shared read only: the user can see it, not change it.
+  final bool readOnly;
+
   /// A file name for exports: the title, safe for any file system.
   String get fileName {
     final name = [
@@ -152,6 +165,8 @@ class CaptureEvent {
     String? tabText,
     DateTime? updated,
     String? owner,
+    String? sharedBy,
+    bool? readOnly,
   }) => CaptureEvent(
     id: id,
     title: title ?? this.title,
@@ -162,10 +177,12 @@ class CaptureEvent {
     tabText: tabText ?? this.tabText,
     deleted: deleted,
     owner: owner ?? this.owner,
+    sharedBy: sharedBy ?? this.sharedBy,
+    readOnly: readOnly ?? this.readOnly,
   );
 
-  /// The event as saved: on the device with its [owner], in the cloud
-  /// ([local] false) without.
+  /// The event as saved: on the device with its [owner] (and sharing),
+  /// in the cloud ([local] false) without.
   Map<String, Object?> toJson({bool local = true}) => {
     'id': id,
     'title': title,
@@ -176,6 +193,8 @@ class CaptureEvent {
     if (tabText != null) 'tabText': tabText,
     if (deleted != null) 'deleted': deleted!.toUtc().toIso8601String(),
     if (local && owner != null) 'owner': owner,
+    if (local && sharedBy != null) 'sharedBy': sharedBy,
+    if (local && readOnly) 'readOnly': true,
   };
 
   factory CaptureEvent.fromJson(Map<String, Object?> json) {
@@ -196,6 +215,8 @@ class CaptureEvent {
       tabText: json['tabText'] as String?,
       deleted: time('deleted'),
       owner: json['owner'] as String?,
+      sharedBy: json['sharedBy'] as String?,
+      readOnly: json['readOnly'] == true,
     );
   }
 }

@@ -82,10 +82,14 @@ class _LibraryScreenState extends State<LibraryScreen> {
     });
   }
 
-  void _open(BuildContext context, CaptureEvent event) =>
-      Navigator.of(context).push(
+  void _open(BuildContext context, CaptureEvent event) => Navigator.of(context)
+      .push(
         MaterialPageRoute<void>(
-          builder: (_) => EventScreen(library: library, eventId: event.id),
+          builder: (_) => EventScreen(
+            library: library,
+            eventId: event.id,
+            sync: widget.sync,
+          ),
         ),
       );
 
@@ -146,6 +150,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 event: event,
                 fresh: event.id == _fresh,
                 onOpen: () => _open(context, event),
+                sync: widget.sync,
               );
             },
           );
@@ -196,7 +201,11 @@ class _EventCard extends StatelessWidget {
     required this.event,
     required this.fresh,
     required this.onOpen,
+    this.sync,
   });
+
+  /// For removing an event shared with the user (leaving the share).
+  final CloudSync? sync;
 
   final Library library;
   final CaptureEvent event;
@@ -213,6 +222,33 @@ class _EventCard extends StatelessWidget {
         await cloneEvent(context, library, event);
       case _CardAction.share:
         await showShareSheet(context, library, event);
+      case _CardAction.delete when event.isShared:
+        final ok = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Remove "${event.title}"?'),
+            content: Text(
+              'It goes from your library. ${event.sharedBy} keeps it, and '
+              'can share it with you again.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Remove'),
+              ),
+            ],
+          ),
+        );
+        if (ok != true || !context.mounted) return;
+        try {
+          await sync?.leave(event);
+        } on Object catch (e) {
+          if (context.mounted) _snack(context, 'Couldn\'t remove: $e');
+        }
       case _CardAction.delete:
         final ok = await showDialog<bool>(
           context: context,
@@ -255,7 +291,9 @@ class _EventCard extends StatelessWidget {
       child: InkWell(
         onTap: onOpen,
         // Long-press is a shortcut to Rename.
-        onLongPress: () => _action(context, _CardAction.rename),
+        onLongPress: event.readOnly
+            ? null
+            : () => _action(context, _CardAction.rename),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -301,6 +339,8 @@ class _EventCard extends StatelessWidget {
                             if (links > 0)
                               '$links ${links == 1 ? 'link' : 'links'}',
                             if (event.tabText != null) 'text',
+                            if (event.sharedBy case final owner?)
+                              'shared by $owner',
                           ].join(' · '),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -312,22 +352,23 @@ class _EventCard extends StatelessWidget {
                   PopupMenuButton<_CardAction>(
                     tooltip: 'More',
                     onSelected: (a) => _action(context, a),
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(
-                        value: _CardAction.rename,
-                        child: Text('Rename'),
-                      ),
-                      PopupMenuItem(
+                    itemBuilder: (_) => [
+                      if (!event.readOnly)
+                        const PopupMenuItem(
+                          value: _CardAction.rename,
+                          child: Text('Rename'),
+                        ),
+                      const PopupMenuItem(
                         value: _CardAction.share,
                         child: Text('Share'),
                       ),
-                      PopupMenuItem(
+                      const PopupMenuItem(
                         value: _CardAction.clone,
                         child: Text('Clone'),
                       ),
                       PopupMenuItem(
                         value: _CardAction.delete,
-                        child: Text('Delete'),
+                        child: Text(event.isShared ? 'Remove' : 'Delete'),
                       ),
                     ],
                   ),

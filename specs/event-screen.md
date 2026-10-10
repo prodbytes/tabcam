@@ -7,7 +7,12 @@ One event, opened from the [library](library.md).
   [library](library.md#events)). **Text tab** (once read) opens the text tab editor
   ([tab recognition](tab-recognition.md)). **Clone** copies the event
   and opens the copy ([library](library.md#events)). **Share** opens the
-  [share sheet](sharing.md).
+  [share sheet](sharing.md). **Share with people** (the user's own
+  events, signed in, in a build with sharing) shares it by email
+  ([shared captures](shared-captures.md)).
+- **Shared with the user**: a line under the app bar, "Shared by <email>
+  · Can edit" or "· Read only". Read only, Rename, Add, Filter, Rotate,
+  Read tab, Delete and editing the text tab are off.
 - **Pages**: swiped left and right. Images are pinch-zoomable (up to 5×)
   and shown with their [filter](page-filters.md). Videos show a play
   button; tapped, they play in place, looping, with a scrubbable progress

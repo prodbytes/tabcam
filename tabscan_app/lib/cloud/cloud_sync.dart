@@ -9,6 +9,7 @@ import '../library/library.dart';
 import '../library/capture_event.dart';
 import 'cognito.dart';
 import 's3.dart';
+import 'share_api.dart';
 import 'sigv4.dart';
 
 /// Where cloud sync stands, for the account sheet.
@@ -50,6 +51,7 @@ class CloudSync extends ChangeNotifier {
     required this.auth,
     required this.bucket,
     required this.credentials,
+    this.shares,
     this.period = const Duration(minutes: 1),
     this.debounce = const Duration(seconds: 2),
   });
@@ -58,6 +60,10 @@ class CloudSync extends ChangeNotifier {
   final AuthService auth;
   final ObjectStore bucket;
   final CredentialSource credentials;
+
+  /// The share API, for captures shared with the user and their own
+  /// grants; null in a build without sharing.
+  final ShareApi? shares;
 
   /// How often a signed-in device looks for other devices' changes.
   final Duration period;
@@ -199,23 +205,60 @@ class CloudSync extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// One pass for [token]'s user: how many events went up and came down.
+  /// One pass for [token]'s user: their own folder, then each capture
+  /// shared with them. How many events went up and came down.
   Future<(int, int)> _run(String token) async {
     await library.ready;
     final session = await credentials.session(token);
     _check(token);
     final identity = session.identityId;
-    final creds = session.credentials;
-    final prefix = '$identity/events/';
+    final state = await _SyncState.load(library, identity);
+    // Captures the user left since: what synced of them is forgotten, so
+    // shared again, they come down again.
+    final forgotten = {..._forgotten};
+    forgotten.forEach(state.events.remove);
+    var (up, down) = await _folder(
+      _Folder(owner: identity, credentials: session.credentials, own: true),
+      state,
+      token,
+    );
+    if (shares != null) {
+      final (u, d) = await _shared(token, state);
+      up += u;
+      down += d;
+    }
+    await state.save(library);
+    _forgotten.removeAll(forgotten);
+    return (up, down);
+  }
+
+  /// Keys (`<owner>/<capture id>`) of captures the user left, for the
+  /// next pass to forget.
+  final Set<String> _forgotten = {};
+
+  /// Syncs the events of [folder]: all of the user's own, or the one
+  /// capture shared with them.
+  Future<(int, int)> _folder(
+    _Folder folder,
+    _SyncState state,
+    String token,
+  ) async {
+    final owner = folder.owner;
+    final creds = folder.credentials;
+    final prefix = folder.only == null
+        ? '$owner/events/'
+        : '$owner/events/${folder.only}/';
     final listing = await bucket.listETags(prefix, credentials: creds);
     _check(token);
 
     // What the folder has: each event's event.json ETag, and its files.
+    final base = '$owner/events/';
     final remote = <String, String>{};
     final files = <String, Set<String>>{};
     for (final MapEntry(:key, :value) in listing.entries) {
-      final parts = key.substring(prefix.length).split('/');
+      final parts = key.substring(base.length).split('/');
       if (parts.length != 2 || !_isId(parts[0])) continue;
+      if (folder.only != null && parts[0] != folder.only) continue;
       if (parts[1] == 'event.json') {
         remote[parts[0]] = value;
       } else {
@@ -223,55 +266,172 @@ class CloudSync extends ChangeNotifier {
       }
     }
 
-    final state = await _SyncState.load(library, identity);
     var up = 0;
     var down = 0;
     final seen = <String>{};
+    String key(String id) => '$owner/$id';
 
     for (final event in [...library.all]) {
-      if (event.owner != null && event.owner != identity) continue;
+      if (!folder.holds(event)) continue;
       seen.add(event.id);
-      final last = state.events[event.id];
+      final last = state.events[key(event.id)];
       final etag = remote[event.id];
       final changedHere = last == null || last.updated != event.updated;
       final changedThere = etag != null && last?.etag != etag;
       if (changedThere) {
-        final theirs = await _fetch(identity, event.id, creds);
+        final theirs = await _fetch(owner, event.id, creds);
         _check(token);
         if (theirs != null &&
-            (!changedHere || !theirs.updated.isBefore(event.updated))) {
-          if (await _take(identity, theirs, files, creds, token, seen: event)) {
-            state.events[event.id] = _Synced(etag, theirs.updated);
+            (!changedHere ||
+                !folder.canWrite ||
+                !theirs.updated.isBefore(event.updated))) {
+          if (await _take(folder, theirs, files, token, seen: event)) {
+            state.events[key(event.id)] = _Synced(etag, theirs.updated);
             down++;
           }
           continue;
         }
       }
-      if (changedHere || etag == null) {
-        final sent = await _send(identity, event, files, creds, token);
-        state.events[event.id] = _Synced(sent, event.updated);
-        if (event.owner == null) await library.setOwner(event, identity);
+      if (folder.canWrite && (changedHere || etag == null)) {
+        final sent = await _send(owner, event, files, creds, token);
+        state.events[key(event.id)] = _Synced(sent, event.updated);
+        if (event.owner == null) await library.setOwner(event, owner);
         up++;
       }
     }
 
-    // Events only in the folder: new from another device.
+    // Events only in the folder: new from another device, or just shared.
     for (final MapEntry(key: id, value: etag) in remote.entries) {
-      if (seen.contains(id) || state.events[id]?.etag == etag) continue;
-      final theirs = await _fetch(identity, id, creds);
+      if (seen.contains(id) || state.events[key(id)]?.etag == etag) continue;
+      if (library.byIdAll(id) != null) continue; // someone else's ID
+      final theirs = await _fetch(owner, id, creds);
       _check(token);
       if (theirs == null) continue;
       // Another device's tombstone of an event never here: nothing to take.
-      if (theirs.isDeleted ||
-          await _take(identity, theirs, files, creds, token)) {
-        state.events[id] = _Synced(etag, theirs.updated);
+      if (theirs.isDeleted || await _take(folder, theirs, files, token)) {
+        state.events[key(id)] = _Synced(etag, theirs.updated);
         if (!theirs.isDeleted) down++;
       }
     }
-
-    await state.save(library);
     return (up, down);
   }
+
+  /// Syncs each capture shared with the user, with credentials for its
+  /// folder alone; drops the copies of captures no longer shared.
+  Future<(int, int)> _shared(String token, _SyncState state) async {
+    final api = shares!;
+    final grants = await api.shared(token);
+    _check(token);
+    final keys = {for (final g in grants) '${g.owner}/${g.captureId}'};
+    for (final event in [...library.all]) {
+      final key = '${event.owner}/${event.id}';
+      if (event.isShared && !keys.contains(key)) {
+        await library.removeLocal(event);
+        state.events.remove(key);
+        _shareCredentials.remove(key);
+      }
+    }
+    var up = 0;
+    var down = 0;
+    for (final g in grants) {
+      final key = '${g.owner}/${g.captureId}';
+      final local = library.byIdAll(g.captureId);
+      if (local != null && !(local.isShared && local.owner == g.owner)) {
+        continue; // the same ID as one of the user's own: left alone
+      }
+      try {
+        var access = _shareCredentials[key];
+        // New ones when they expire soon, or the role changed.
+        if (access == null ||
+            access.role != g.role ||
+            access.credentials.expiresSoon(AwsClock.shared.now())) {
+          access = await api.credentials(token, g.owner, g.captureId);
+          _shareCredentials[key] = access;
+        }
+        _check(token);
+        final readOnly = access.role == ShareRole.read;
+        if (local != null) {
+          await library.setSharing(local, g.ownerEmail, readOnly: readOnly);
+        }
+        final (u, d) = await _folder(
+          _Folder(
+            owner: g.owner,
+            credentials: access.credentials,
+            only: g.captureId,
+            sharedBy: g.ownerEmail,
+            readOnly: readOnly,
+          ),
+          state,
+          token,
+        );
+        up += u;
+        down += d;
+        // The owner deleted it: gone here, and no longer shared.
+        if (library.byIdAll(g.captureId)?.isDeleted ?? false) {
+          await _leave(token, library.byIdAll(g.captureId)!, state);
+        }
+      } on _SignedOut {
+        rethrow;
+      } on Object catch (e) {
+        // One share failing doesn't stop the others; new credentials next.
+        _shareCredentials.remove(key);
+        debugPrint('TabScan: syncing ${g.captureId} of ${g.owner} failed: $e');
+      }
+    }
+    return (up, down);
+  }
+
+  /// Credentials of shared captures, by `<owner>/<capture id>`.
+  final Map<String, ShareCredentials> _shareCredentials = {};
+
+  Future<void> _leave(
+    String token,
+    CaptureEvent event,
+    _SyncState state,
+  ) async {
+    await shares!.leave(token, event.owner!, event.id);
+    await library.removeLocal(event);
+    state.events.remove('${event.owner}/${event.id}');
+  }
+
+  /// Whether the user can share their events (signed in, with a share
+  /// API).
+  bool get canShare => shares != null && _token != null;
+
+  /// Stops [event], shared with the user, being shared with them: it goes
+  /// from this device, and stays its owner's.
+  Future<void> leave(CaptureEvent event) async {
+    if (!event.isShared) return;
+    await shares!.leave(_signedIn(), event.owner!, event.id);
+    await library.removeLocal(event);
+    _forgotten.add('${event.owner}/${event.id}');
+  }
+
+  /// Who [event] is shared with.
+  Future<List<Grant>> grants(CaptureEvent event) =>
+      shares!.grants(_signedIn(), event.id);
+
+  /// Shares [event] with [email] as [role], and syncs it, so they find it.
+  Future<List<Grant>> grant(
+    CaptureEvent event,
+    String email,
+    ShareRole role,
+  ) async {
+    final grants = await shares!.grant(
+      _signedIn(),
+      event.id,
+      email,
+      role: role,
+    );
+    unawaited(syncNow());
+    return grants;
+  }
+
+  Future<List<Grant>> revoke(CaptureEvent event, String email) =>
+      shares!.revoke(_signedIn(), event.id, email);
+
+  String _signedIn() =>
+      _token ?? (throw ShareApiException(401, 'Sign in to share'));
 
   /// The event in the folder, or null when its event.json isn't one.
   Future<CaptureEvent?> _fetch(
@@ -294,13 +454,14 @@ class CloudSync extends ChangeNotifier {
   /// Brings [theirs] here: its pages first, then the event, so it never
   /// shows without them. False when it changed here meanwhile ([seen]).
   Future<bool> _take(
-    String identity,
+    _Folder folder,
     CaptureEvent theirs,
     Map<String, Set<String>> files,
-    AwsCredentials creds,
     String token, {
     CaptureEvent? seen,
   }) async {
+    final identity = folder.owner;
+    final creds = folder.credentials;
     for (final page in theirs.pages) {
       if (!page.hasFile || await library.hasPage(theirs.id, page)) continue;
       final key = _key(identity, theirs.id, page.fileName);
@@ -311,7 +472,14 @@ class CloudSync extends ChangeNotifier {
       );
       _check(token);
     }
-    return library.applyRemote(theirs.copyWith(owner: identity), seen: seen);
+    return library.applyRemote(
+      theirs.copyWith(
+        owner: identity,
+        sharedBy: folder.sharedBy,
+        readOnly: folder.readOnly,
+      ),
+      seen: seen,
+    );
   }
 
   /// Sends [event] to the folder: the pages it lacks, then event.json, then
@@ -389,6 +557,34 @@ class CloudSync extends ChangeNotifier {
     _soon?.cancel();
     super.dispose();
   }
+}
+
+/// A folder a pass syncs: the user's own ([own]: every event of theirs),
+/// or one capture shared with them ([only]), read only or not.
+class _Folder {
+  const _Folder({
+    required this.owner,
+    required this.credentials,
+    this.own = false,
+    this.only,
+    this.sharedBy,
+    this.readOnly = false,
+  });
+
+  /// The identity whose folder it is.
+  final String owner;
+  final AwsCredentials credentials;
+  final bool own;
+  final String? only;
+  final String? sharedBy;
+  final bool readOnly;
+
+  bool get canWrite => !readOnly;
+
+  /// Whether [event], on the device, is this folder's.
+  bool holds(CaptureEvent event) => own
+      ? !event.isShared && (event.owner == null || event.owner == owner)
+      : event.id == only && event.isShared && event.owner == owner;
 }
 
 /// Signed out (or another account signed in) during a pass: it stops.
