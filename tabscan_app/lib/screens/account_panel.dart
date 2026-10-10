@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import '../auth/auth_service.dart';
 import '../cloud/cloud_sync.dart';
 
-/// The library's account button: the cloud, as sync stands, opening the
-/// [AccountSheet].
-class AccountButton extends StatelessWidget {
-  const AccountButton({super.key, required this.auth, required this.sync});
+/// The Profile tab's account: signing in, and once signed in, who it is,
+/// how sync stands, Sync now and Sign out.
+class AccountPanel extends StatelessWidget {
+  const AccountPanel({super.key, required this.auth, required this.sync});
 
   final AuthService auth;
   final CloudSync sync;
@@ -14,43 +14,8 @@ class AccountButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: Listenable.merge([auth, sync]),
-    builder: (context, _) {
-      final (icon, tooltip) = switch (sync.state) {
-        _ when auth.user == null => (Icons.cloud_off_outlined, 'Sign in'),
-        SyncState.syncing => (Icons.cloud_sync_outlined, 'Syncing…'),
-        SyncState.failed => (Icons.sync_problem_outlined, 'Sync failed'),
-        _ => (Icons.cloud_done_outlined, 'Synced'),
-      };
-      return IconButton(
-        tooltip: tooltip,
-        icon: Icon(icon),
-        onPressed: () => showModalBottomSheet<void>(
-          context: context,
-          showDragHandle: true,
-          builder: (_) => AccountSheet(auth: auth, sync: sync),
-        ),
-      );
-    },
-  );
-}
-
-/// Signing in to sync events, and once signed in, who it is, how sync
-/// stands, Sync now and Sign out.
-class AccountSheet extends StatelessWidget {
-  const AccountSheet({super.key, required this.auth, required this.sync});
-
-  final AuthService auth;
-  final CloudSync sync;
-
-  @override
-  Widget build(BuildContext context) => ListenableBuilder(
-    listenable: Listenable.merge([auth, sync]),
-    builder: (context, _) => SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-        child: auth.user == null ? _signedOut(context) : _signedIn(context),
-      ),
-    ),
+    builder: (context, _) =>
+        auth.user == null ? _signedOut(context) : _signedIn(context),
   );
 
   Widget _signedOut(BuildContext context) {
@@ -59,11 +24,12 @@ class AccountSheet extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Sync your tabs', style: theme.textTheme.titleLarge),
+        Text('Sign in', style: theme.textTheme.titleLarge),
         const SizedBox(height: 8),
         const Text(
-          'Sign in to back up your events and have them on every device '
-          'you sign in on. Without signing in, they stay on this device.',
+          'Sign in to read tabs, share, and have your events backed up on '
+          'every device you sign in on. Signed out, you can still capture; '
+          'it stays on this device.',
         ),
         const SizedBox(height: 16),
         auth.buildSignInButton() ??

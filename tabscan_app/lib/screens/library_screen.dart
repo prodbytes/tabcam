@@ -1,13 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import '../app_version.dart';
-import '../auth/auth_service.dart';
-import '../capture/page_source.dart';
 import '../cloud/cloud_sync.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
-import 'account_sheet.dart';
 import 'clone.dart';
 import 'page_image.dart';
 import 'rename_dialog.dart';
@@ -16,28 +11,43 @@ import 'share_sheet.dart';
 import 'sign_in_gate.dart';
 import 'video_page.dart';
 
-/// The home screen: every event as a card, newest first, and the Scan button.
-/// A new event lands at the top of the list, highlighted, with Open in the
-/// message that confirms it. With [auth] and [sync] (a build with sign-in
-/// and cloud sync set up), the app bar has the account button.
-class LibraryScreen extends StatefulWidget {
-  const LibraryScreen({super.key, required this.library, this.auth, this.sync});
+/// The Home tab: every event as a card, newest first. A new event
+/// ([fresh]) is scrolled to and outlined for a moment. Tapping a card opens
+/// its [EventScreen].
+class LibraryView extends StatefulWidget {
+  const LibraryView({super.key, required this.library, this.sync, this.fresh});
 
   final Library library;
-  final AuthService? auth;
   final CloudSync? sync;
 
+  /// The event just added: outlined, and the list scrolls up to it.
+  final String? fresh;
+
   @override
-  State<LibraryScreen> createState() => _LibraryScreenState();
+  State<LibraryView> createState() => _LibraryViewState();
 }
 
-class _LibraryScreenState extends State<LibraryScreen> {
+class _LibraryViewState extends State<LibraryView> {
   final _grid = ScrollController();
 
-  /// The event just added, highlighted for a moment.
-  String? _fresh;
-
   Library get library => widget.library;
+
+  @override
+  void didUpdateWidget(LibraryView old) {
+    super.didUpdateWidget(old);
+    if (widget.fresh != null && widget.fresh != old.fresh) {
+      // New events are first: after this frame, the list scrolls up.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_grid.hasClients) {
+          _grid.animateTo(
+            0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -45,121 +55,51 @@ class _LibraryScreenState extends State<LibraryScreen> {
     super.dispose();
   }
 
-  Future<void> _newScan({bool import = false}) async {
-    final List<Uint8List> pages;
-    try {
-      pages = import ? await PageSource.import() : await PageSource.scan();
-    } on Object catch (e) {
-      if (mounted) _snack(context, 'Couldn\'t scan: $e');
-      return;
-    }
-    if (pages.isEmpty || !mounted) return;
-    final event = await library.create(pages);
-    if (!mounted) return;
-    setState(() => _fresh = event.id);
-    if (_grid.hasClients) {
-      _grid.animateTo(
-        0,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    }
-    final count = event.pages.length;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(
-            'Saved "${event.title}" ($count ${count == 1 ? 'page' : 'pages'})',
-          ),
-          action: SnackBarAction(
-            label: 'Open',
-            onPressed: () => _open(context, event),
-          ),
-        ),
-      );
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted && _fresh == event.id) setState(() => _fresh = null);
-    });
-  }
-
-  void _open(BuildContext context, CaptureEvent event) => Navigator.of(context)
-      .push(
-        MaterialPageRoute<void>(
-          builder: (_) => EventScreen(
-            library: library,
-            eventId: event.id,
-            sync: widget.sync,
-          ),
-        ),
-      );
-
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('TabScan'),
-        actions: [
-          if ((widget.auth, widget.sync) case (final auth?, final sync?))
-            AccountButton(auth: auth, sync: sync),
-          IconButton(
-            tooltip: 'Import photos',
-            icon: const Icon(Icons.photo_library_outlined),
-            onPressed: () => _newScan(import: true),
-          ),
-          IconButton(
-            tooltip: 'About',
-            icon: const Icon(Icons.info_outline),
-            onPressed: () => showAboutDialog(
-              context: context,
-              applicationName: AppVersion.title,
-              applicationVersion: AppVersion.version.isEmpty
-                  ? 'development build'
-                  : AppVersion.version,
-              applicationLegalese:
-                  'Scan guitar tabs, read them as text, and share them.',
-            ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _newScan(),
-        icon: const Icon(Icons.document_scanner_outlined),
-        label: const Text('Scan'),
-      ),
-      body: ListenableBuilder(
-        listenable: library,
-        builder: (context, _) {
-          if (!library.loaded) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (library.events.isEmpty) return const _Empty();
-          return GridView.builder(
-            controller: _grid,
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
-            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 220,
-              childAspectRatio: 0.62,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: library.events.length,
-            itemBuilder: (context, i) {
-              final event = library.events[i];
-              return _EventCard(
-                library: library,
-                event: event,
-                fresh: event.id == _fresh,
-                onOpen: () => _open(context, event),
-                sync: widget.sync,
-              );
-            },
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: library,
+    builder: (context, _) {
+      if (!library.loaded) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (library.events.isEmpty) return const _Empty();
+      return GridView.builder(
+        controller: _grid,
+        padding: const EdgeInsets.all(12),
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 220,
+          childAspectRatio: 0.62,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+        ),
+        itemCount: library.events.length,
+        itemBuilder: (context, i) {
+          final event = library.events[i];
+          return _EventCard(
+            library: library,
+            event: event,
+            fresh: event.id == widget.fresh,
+            onOpen: () => openEvent(context, library, event, widget.sync),
+            sync: widget.sync,
           );
         },
-      ),
-    );
-  }
+      );
+    },
+  );
 }
+
+/// Opens [event]'s [EventScreen].
+void openEvent(
+  BuildContext context,
+  Library library,
+  CaptureEvent event,
+  CloudSync? sync,
+) => Navigator.of(context).push(
+  MaterialPageRoute<void>(
+    builder: (_) =>
+        EventScreen(library: library, eventId: event.id, sync: sync),
+  ),
+);
 
 class _Empty extends StatelessWidget {
   const _Empty();
@@ -182,8 +122,9 @@ class _Empty extends StatelessWidget {
             Text('No tabs yet', style: theme.textTheme.titleLarge),
             const SizedBox(height: 8),
             Text(
-              'Tap Scan and point the camera at a tab: the page is found, '
-              'straightened and cleaned up for you.',
+              'Go to Capture to scan a tab with the camera (the page is '
+              'found, straightened and cleaned up for you), or to add '
+              'photos, videos, files and links.',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium,
             ),

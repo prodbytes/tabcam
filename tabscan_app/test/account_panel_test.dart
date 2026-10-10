@@ -7,7 +7,7 @@ import 'package:tabscan_app/main.dart';
 import 'fakes.dart';
 
 void main() {
-  testWidgets('the account button signs in, and then shows the sync', (
+  testWidgets('the Profile tab signs in, and then shows the sync', (
     tester,
   ) async {
     final library = Library(PlatformEventStore());
@@ -24,9 +24,9 @@ void main() {
       TabScanApp(library: library, auth: auth, sync: sync),
     );
 
-    await tester.tap(find.byTooltip('Sign in'));
+    await tester.tap(find.text('Profile'));
     await tester.pumpAndSettle();
-    expect(find.text('Sync your tabs'), findsOneWidget);
+    expect(find.text('Sign in'), findsOneWidget);
     expect(find.text('Sign in with Google'), findsOneWidget);
 
     await tester.runAsync(() async {
@@ -42,16 +42,17 @@ void main() {
 
     await tester.tap(find.text('Sign out'));
     await tester.pumpAndSettle();
-    expect(find.text('Sync your tabs'), findsOneWidget);
+    expect(find.text('Sign in'), findsOneWidget);
     sync.dispose();
   });
 
-  testWidgets('without sign-in set up, there is no account button', (
-    tester,
-  ) async {
+  testWidgets('without sign-in set up, Profile says so', (tester) async {
     final library = Library(PlatformEventStore());
     await library.load();
     await tester.pumpWidget(TabScanApp(library: library));
-    expect(find.byTooltip('Sign in'), findsNothing);
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sign in with Google'), findsNothing);
+    expect(find.textContaining("Sign-in isn't set up"), findsOneWidget);
   });
 }

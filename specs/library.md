@@ -1,6 +1,6 @@
 # Library
 
-The home screen, titled **TabScan**.
+The **Home** tab ([navigation](navigation.md)), titled **TabScan**.
 
 - **Events** show as a grid of cards, newest first: the first image page's
   thumbnail (with its filter; without images, a play badge if it has
@@ -13,17 +13,13 @@ The home screen, titled **TabScan**.
   **Share** ([sharing](sharing.md)), **Clone** (below) and **Delete** (after a confirmation,
   which says the pages and text tab go too). Long-pressing a card renames
   it.
-- **Empty**: a music icon, "No tabs yet", and a line saying what Scan does.
-- **Scan** (floating button, bottom right) opens the
-  [document scanner](scanning.md). The new event lands at the top of the
-  list, which scrolls up to it, outlined in the theme's primary color for
-  3 seconds, and a message confirms it ("Saved "Tab 2026-10-10 14:05" (2
-  pages)") with **Open**. **Import photos** (app bar) does the same from
-  photos on the device. **About**
-  (app bar) shows the version (X.Y.Z, or "development build"). In a
-  build with sign-in, the app bar's cloud button opens the account sheet
-  ([sign-in and cloud sync](cloud-sync.md)); events synced from other
-  devices appear in the list as they come down.
+- **Empty**: a music icon, "No tabs yet", and a line pointing to
+  Capture (to scan, or add photos, videos, files and links).
+- New events come from the [Capture](navigation.md#capture) tab: each
+  lands at the top of the list, which scrolls up to it, outlined in the
+  theme's primary color for 3 seconds, and a message confirms it
+  ("Saved "Tab 2026-10-10 14:05" (2 pages)") with **Open**. Events
+  synced from other devices appear in the list as they come down.
 - **Theme**: Material 3, dark, from an amber seed color (`#E0A030`).
 
 ## Events

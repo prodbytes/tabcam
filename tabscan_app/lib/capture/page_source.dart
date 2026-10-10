@@ -24,21 +24,6 @@ abstract final class PageSource {
     return _readAndClean(paths);
   }
 
-  /// Imports pages from photos already on the device. Empty when the user
-  /// cancels.
-  static Future<List<Uint8List>> import() async {
-    if (!_nativeScanner) {
-      final files = await ImagePicker().pickMultiImage();
-      return [for (final f in files) await f.readAsBytes()];
-    }
-    // Through the scanner, so imported photos get edge detection and
-    // straightening too.
-    final paths = await CunningDocumentScanner.getPictures(
-      scannerSource: ScannerSource.gallery,
-    );
-    return _readAndClean(paths);
-  }
-
   static Future<List<Uint8List>> _pick(ImageSource source) async {
     final file = await ImagePicker().pickImage(source: source);
     return file == null ? const [] : [await file.readAsBytes()];
