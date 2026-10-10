@@ -43,9 +43,10 @@ Repository variables: `AWS_DEPLOY_ROLE_ARN`, `AWS_DEPLOY_RC_ROLE_ARN`,
 `HOSTED_ZONE_ID`, and for [sign-in and cloud sync](cloud-sync.md)
 `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID` (releases only),
 `COGNITO_IDENTITY_POOL_ID` and `USER_DATA_BUCKET`, compiled into the
-builds (empty: no sign-in). Their stacks, `tabscan-user-data` and
-`tabscan-identity`, are deployed once by an administrator, not by the
-workflows; repository secret: `TABSCAN_HEALTH_EMAILS` (a secret
+builds (empty: no sign-in), and `TABSCAN_OCR_URL` for
+[TabScan Premium](cloud-ocr.md) (empty: none). Their stacks,
+`tabscan-user-data`, `tabscan-identity`, `tabscan-ocr-repo` and
+`tabscan-ocr`, are deployed by an administrator, not by the workflows; repository secret: `TABSCAN_HEALTH_EMAILS` (a secret
 because the repository is public and run logs show variables). One-time setup:
 [tabscan_infra/README.md](../tabscan_infra/README.md).
 

@@ -30,6 +30,8 @@
 #                builds an app without sign-in. Their stacks
 #                (tabscan-identity, tabscan-user-data) are deployed once by
 #                an administrator, not here: see tabscan_infra/README.md.
+#   TABSCAN_OCR_URL  TabScan Premium's cloud OCR (tabscan-ocr's ApiUrl,
+#                deployed by tabscan_locr/scripts/deploy.sh); empty: none
 # Needs the AWS CLI, Python 3 and Flutter (all in devbox).
 set -euo pipefail
 

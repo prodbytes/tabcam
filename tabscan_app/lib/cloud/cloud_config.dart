@@ -19,6 +19,10 @@ abstract final class CloudConfig {
     'USER_DATA_BUCKET',
   );
 
+  /// The cloud OCR service's function URL (stack `tabscan-ocr`, output
+  /// `ApiUrl`): TabScan Premium's transcription. Empty: no Premium.
+  static const String ocrUrl = String.fromEnvironment('TABSCAN_OCR_URL');
+
   static bool get enabled =>
       identityPoolId.isNotEmpty && userDataBucket.isNotEmpty;
 }

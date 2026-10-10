@@ -99,4 +99,5 @@ jobs:
           GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
           COGNITO_IDENTITY_POOL_ID: ${{ vars.COGNITO_IDENTITY_POOL_ID }}
           USER_DATA_BUCKET: ${{ vars.USER_DATA_BUCKET }}
+          TABSCAN_OCR_URL: ${{ vars.TABSCAN_OCR_URL }}
         run: bash scripts/deploy.sh

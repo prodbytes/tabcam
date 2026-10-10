@@ -3,7 +3,11 @@
 **Read tab** on the [event screen](event-screen.md) turns an event's pages into
 plain-text tab, on the device, with Google ML Kit text recognition (Latin
 script). Android and iOS only; on the web it says reading tabs needs the
-app.
+app, or TabScan Premium.
+
+With [TabScan Premium](cloud-ocr.md) the text tab comes from the cloud
+instead, by itself, as the pages sync, and Read tab asks for it; the rest
+of this page is the on-device reading everyone else has.
 
 Each page (as scanned, not filtered) is turned upright, scaled to at most
 2400 px and made grayscale. Staff lines are found in that image, and OCR

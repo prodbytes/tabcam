@@ -1,11 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../auth/auth_service.dart';
 import '../capture/media.dart';
 import '../capture/page_source.dart';
+import '../cloud/cloud_ocr.dart';
+import '../cloud/cloud_sync.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
 import '../processing/page_filter.dart';
 import '../recognition/tab_reader.dart';
+import 'account_sheet.dart';
 import 'page_image.dart';
 import 'rename_dialog.dart';
 import 'share_sheet.dart';
@@ -15,11 +21,24 @@ import 'video_page.dart';
 /// One event: its pages (images and videos) to swipe through, and the tools
 /// along the bottom: Add (scan, photos and videos, files), Filter, Rotate,
 /// Read tab and Delete. Share and rename are in the app bar.
+///
+/// With TabScan Premium ([ocr]) the text tab comes from the cloud by itself;
+/// without it, a hint offers it, and Read tab reads on the device.
 class EventScreen extends StatefulWidget {
-  const EventScreen({super.key, required this.library, required this.eventId});
+  const EventScreen({
+    super.key,
+    required this.library,
+    required this.eventId,
+    this.auth,
+    this.sync,
+    this.ocr,
+  });
 
   final Library library;
   final String eventId;
+  final AuthService? auth;
+  final CloudSync? sync;
+  final CloudOcr? ocr;
 
   @override
   State<EventScreen> createState() => _EventScreenState();
@@ -119,30 +138,91 @@ class _EventScreenState extends State<EventScreen> {
     );
   }
 
-  Future<void> _readTab(CaptureEvent event) =>
-      _run('Couldn\'t read the tab', () async {
-        if (!TabReader.supported) {
-          _snack('Reading tabs needs the Android or iOS app.');
-          return;
-        }
-        final pages = [
-          for (final p in event.pages)
-            if (!p.isVideo) await _library.original(event, p),
-        ];
-        if (pages.isEmpty) {
-          _snack('Read tab reads photos and scans, and this has only videos.');
-          return;
-        }
-        final text = await TabReader.read(pages);
-        if (!mounted) return;
-        if (text == null) {
-          _snack(
-            'No tab found. Try the Tab filter, or rescan closer and flatter.',
-          );
-          return;
-        }
-        await _openText(await _library.update(event.copyWith(tabText: text)));
-      });
+  Future<void> _readTab(
+    CaptureEvent event,
+  ) => _run('Couldn\'t read the tab', () async {
+    if (widget.ocr case final ocr? when ocr.premium) {
+      await _readInCloud(ocr, event);
+      return;
+    }
+    if (!TabReader.supported) {
+      _snack('Reading tabs needs the Android or iOS app, or TabScan Premium.');
+      return;
+    }
+    final pages = [
+      for (final p in event.pages)
+        if (!p.isVideo) await _library.original(event, p),
+    ];
+    if (pages.isEmpty) {
+      _snack('Read tab reads photos and scans, and this has only videos.');
+      return;
+    }
+    final text = await TabReader.read(pages);
+    if (!mounted) return;
+    if (text == null) {
+      _snack('No tab found. Try the Tab filter, or rescan closer and flatter.');
+      return;
+    }
+    await _openText(await _library.update(event.copyWith(tabText: text)));
+  });
+
+  /// Premium: the cloud transcribes the event's synced pages; the text tab
+  /// shows on the event when it's done.
+  Future<void> _readInCloud(CloudOcr ocr, CaptureEvent event) async {
+    if (!event.pages.any(CloudOcr.isImage)) {
+      _snack('Read tab reads photos and scans, and this has only videos.');
+      return;
+    }
+    final queued = await ocr.transcribe(event);
+    if (!mounted) return;
+    if (queued > 0) {
+      _snack('Transcribing in the cloud. The text tab appears here when done.');
+    } else if (event.tabText != null) {
+      await _openText(event);
+    } else {
+      _snack(
+        'The text tab appears here once the pages have synced and been '
+        'transcribed.',
+      );
+      unawaited(widget.sync?.syncNow());
+    }
+  }
+
+  /// The upgrade hint, for users without Premium where it's set up.
+  Widget? _premiumHint(CaptureEvent event) {
+    final ocr = widget.ocr;
+    final (auth, sync) = (widget.auth, widget.sync);
+    if (ocr == null || auth == null || sync == null || ocr.premium) {
+      return null;
+    }
+    if (event.tabText != null || _hintClosed) return null;
+    return Material(
+      color: Theme.of(context).colorScheme.secondaryContainer,
+      child: ListTile(
+        dense: true,
+        leading: const Icon(Icons.auto_awesome),
+        title: const Text(
+          'TabScan Premium transcribes your scans automatically.',
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextButton(
+              onPressed: () => showAccountSheet(context, auth, sync, ocr),
+              child: const Text('Upgrade'),
+            ),
+            IconButton(
+              tooltip: 'Not now',
+              icon: const Icon(Icons.close),
+              onPressed: () => setState(() => _hintClosed = true),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  bool _hintClosed = false;
 
   Future<void> _openText(CaptureEvent event) => Navigator.of(context).push(
     MaterialPageRoute<void>(
@@ -216,6 +296,7 @@ class _EventScreenState extends State<EventScreen> {
           ),
           body: Column(
             children: [
+              ?_premiumHint(event),
               Expanded(
                 child: PageView.builder(
                   controller: _pages,

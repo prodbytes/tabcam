@@ -38,7 +38,10 @@
   `scripts/dart-defines.sh` reach the app (`TABSCAN_STAGE`, and for
   [sign-in and cloud sync](cloud-sync.md) `GOOGLE_WEB_CLIENT_ID`,
   `GOOGLE_IOS_CLIENT_ID`, `AWS_REGION`, `COGNITO_IDENTITY_POOL_ID` and
-  `USER_DATA_BUCKET`, all public identifiers); the version is passed as
+  `USER_DATA_BUCKET`, and `TABSCAN_OCR_URL` for
+  [TabScan Premium](cloud-ocr.md), all public identifiers); the version is passed as
   `TABSCAN_VERSION`. The environment wins over `.env`.
-- **Checks**: `flutter analyze` and `flutter test` in `tabscan_app/`.
+- **Checks**: `flutter analyze` and `flutter test` in `tabscan_app/`; for
+  the cloud OCR service, `pytest` and the image build in
+  [tabscan_locr/](../tabscan_locr/README.md#test).
   Tests use made-up riffs, never tabs of published songs.

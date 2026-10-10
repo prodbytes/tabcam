@@ -11,9 +11,11 @@ TabScan is a camera app for guitar tabs, in the style of document scanner
 apps (Adobe Scan, CamScanner), made for tablature. Point the phone at a tab
 and it finds the page, straightens it and cleans it up. TabScan can then
 read the tab into editable plain text and share it as a PDF, text or
-images. Everything happens on the device. Signing in (with Google) is
+images. Reading happens on the device. Signing in (with Google) is
 optional: it syncs the user's events with the cloud, so they're on every
 device the user signs in on; signed out, nothing leaves the device.
+Signed-in users with TabScan Premium also have their scans transcribed in
+the cloud as they sync.
 
 ## Features
 
@@ -36,6 +38,11 @@ device the user signs in on; signed out, nothing leaves the device.
   the library's cloud button; signed-in users' events sync both ways with
   their own folder in S3 (Cognito identity pool credentials, no server),
   deletions included.
+- [TabScan Premium: cloud OCR](cloud-ocr.md): premium users' pages
+  transcribed in AWS Lambda as they sync (Tesseract, PaddleOCR and
+  RapidOCR per string line, voted), the text tab filled in by itself;
+  premium is rbacr's `tabscan/premium` role (Substack subscription or
+  voucher); the upgrade offer for everyone else.
 - [App icon](app-icon.md): a scanned tab page with a staff and fret
   numbers, in scanner corners; how the platform icons are generated.
 - [Platforms](platforms.md): Android, iOS and the web, and what each can do.
