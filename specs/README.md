@@ -25,7 +25,7 @@ the cloud as they sync.
   with Home (the events), Capture (Scan with the camera; Add photos &
   videos, files or a link) and Profile (the account, About).
 - [Library](library.md): the Home tab, a grid of events (newest first),
-  with Rename, Share, Clone and Delete; how events are stored.
+  in My captures and Shared with me sections once something is shared, with Rename, Share, Clone and Delete; how events are stored.
 - [Scanning](scanning.md): the system document scanner (edge detection,
   straightening, several pages), and adding pages, photos, videos, files
   and links.

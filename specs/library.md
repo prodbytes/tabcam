@@ -13,6 +13,12 @@ The **Home** tab ([navigation](navigation.md)), titled **TabScan**.
   **Share** ([sharing](sharing.md)), **Clone** (below) and **Delete** (after a confirmation,
   which says the pages and text tab go too). Long-pressing a card renames
   it.
+- **Sections**: once something is shared with the user, Home has two
+  headed sections, **My captures** (the user's own, or "Nothing of your
+  own yet: go to Capture to add some." when there are none) and below it
+  **Shared with me** (captures [shared](shared-captures.md) with the
+  user), each newest first. With nothing shared, the grid has no
+  headings.
 - **Empty**: a music icon, "No tabs yet", and a line pointing to
   Capture (to scan, or add photos, videos, files and links).
 - New events come from the [Capture](navigation.md#capture) tab: each

@@ -215,3 +215,10 @@ spec.
     the app bar's cloud button and its sheet) and About (was an app bar
     button). Import photos through the scanner is gone: photos are added
     as they are.
+29. **On the home screen, show both the captures I created and the
+    captures shared with me.** Shared captures were already on Home, mixed
+    in with the user's own. Home now splits them into two headed sections
+    once something is shared: **My captures** above, **Shared with me**
+    below, each newest first ([library](library.md),
+    [shared captures](shared-captures.md)). With nothing shared, the grid
+    has no headings.
