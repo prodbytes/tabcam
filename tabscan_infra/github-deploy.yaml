@@ -1,0 +1,290 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  tabscan-github-deploy: lets GitHub Actions deploy TabScan. A production
+  role that only *GA tag runs can assume, and a release-candidate role for
+  *RC* tag runs and manual runs from main, limited to the tabscan-rc-*
+  resources and the rc.tabscan.nu01.com records. Both trust GitHub's OIDC
+  identity provider, created here unless the account has it already.
+  Deployed once, by hand (see tabscan_infra/README.md).
+
+Parameters:
+  GitHubRepository:
+    Type: String
+    Default: prodbytes/tabscan
+    Description: owner/name of the repository whose tag runs may deploy
+  GitHubImmutableRepository:
+    Type: String
+    Default: prodbytes@288014477/tabscan@1412941487
+    Description: >
+      The same repository in GitHub's immutable subject form,
+      owner@<owner id>/name@<repository id>. The repository uses immutable
+      OIDC subject claims (gh api repos/<owner>/<name>/actions/oidc/customization/sub
+      shows use_immutable_subject and the sub_claim_prefix), so tokens say
+      repo:<this>:ref:... rather than repo:owner/name:ref:...
+  HostedZoneId:
+    Type: AWS::Route53::HostedZone::Id
+    Description: The site's zone, where its records and certificate validation live (HOSTED_ZONE_ID in the private .env)
+  CreateOidcProvider:
+    Type: String
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+    Description: >
+      true when the account doesn't have the GitHub OIDC provider yet
+      (the presence-github-deploy stack already created it in the shared
+      account)
+
+Conditions:
+  CreateProvider: !Equals [!Ref CreateOidcProvider, 'true']
+
+Resources:
+  GitHubOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Condition: CreateProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+
+  DeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: tabscan-github-deploy
+      Description: Assumed by GitHub Actions on *GA tags to deploy TabScan
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              StringLike:
+                # Only tag pushes whose name ends in GA (X.Y.Z-GA), in either
+                # subject form (immutable IDs, or owner/name).
+                token.actions.githubusercontent.com:sub:
+                  - !Sub repo:${GitHubImmutableRepository}:ref:refs/tags/*GA
+                  - !Sub repo:${GitHubRepository}:ref:refs/tags/*GA
+      Policies:
+        - PolicyName: deploy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # CloudFormation: the TabScan stacks
+              - Effect: Allow
+                Action: cloudformation:*
+                Resource:
+                  - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/tabscan-*/*
+              - Effect: Allow
+                Action:
+                  - cloudformation:ValidateTemplate
+                  - cloudformation:GetTemplateSummary
+                  - cloudformation:ListStacks
+                Resource: '*'
+              # S3: the site bucket
+              - Effect: Allow
+                Action: s3:*
+                Resource:
+                  - arn:aws:s3:::tabscan-*
+                  - arn:aws:s3:::tabscan-*/*
+              # The site's health check (site.yaml): its Fn::ForEach transform,
+              # the Route 53 health check, its alarm and the email topic.
+              # Health checks have no names to scope by, so any in the account.
+              - Effect: Allow
+                Action: cloudformation:CreateChangeSet
+                Resource: !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:aws:transform/LanguageExtensions
+              - Effect: Allow
+                Action: route53:CreateHealthCheck
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - route53:GetHealthCheck
+                  - route53:UpdateHealthCheck
+                  - route53:DeleteHealthCheck
+                  - route53:ChangeTagsForResource
+                  - route53:ListTagsForResource
+                Resource: !Sub arn:${AWS::Partition}:route53:::healthcheck/*
+              - Effect: Allow
+                Action:
+                  - cloudwatch:PutMetricAlarm
+                  - cloudwatch:DeleteAlarms
+                  - cloudwatch:DescribeAlarms
+                  - cloudwatch:TagResource
+                  - cloudwatch:UntagResource
+                  - cloudwatch:ListTagsForResource
+                Resource: !Sub arn:${AWS::Partition}:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:tabscan-*
+              - Effect: Allow
+                Action:
+                  - sns:CreateTopic
+                  - sns:DeleteTopic
+                  - sns:GetTopicAttributes
+                  - sns:SetTopicAttributes
+                  - sns:Subscribe
+                  - sns:Unsubscribe
+                  - sns:GetSubscriptionAttributes
+                  - sns:ListSubscriptionsByTopic
+                  - sns:TagResource
+                  - sns:UntagResource
+                  - sns:ListTagsForResource
+                Resource: !Sub arn:${AWS::Partition}:sns:${AWS::Region}:${AWS::AccountId}:tabscan-*
+              # The site: CloudFront, its certificate and DNS records
+              - Effect: Allow
+                Action: cloudfront:*
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - acm:RequestCertificate
+                  - acm:DescribeCertificate
+                  - acm:DeleteCertificate
+                  - acm:ListCertificates
+                  - acm:AddTagsToCertificate
+                  - acm:ListTagsForCertificate
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - route53:ListResourceRecordSets
+                  - route53:GetHostedZone
+                Resource: !Sub arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}
+              # Records may change only for tabscan.nu01.com and the names
+              # under it (ACM validation, the RC): never the zone's other sites.
+              - Effect: Allow
+                Action: route53:ChangeResourceRecordSets
+                Resource: !Sub arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}
+                Condition:
+                  ForAllValues:StringLike:
+                    route53:ChangeResourceRecordSetsNormalizedRecordNames:
+                      - tabscan.nu01.com
+                      - '*.tabscan.nu01.com'
+              - Effect: Allow
+                Action:
+                  - route53:GetChange
+                  - route53:ListHostedZones
+                Resource: '*'
+
+  RcDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: tabscan-github-deploy-rc
+      Description: Assumed by GitHub Actions on *RC* tags and manual runs from main, to deploy the TabScan release candidate (rc.tabscan.nu01.com)
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              StringLike:
+                # *RC* tag pushes (X.Y.Z-RC1), and manual runs from main, in
+                # either subject form (immutable IDs, or owner/name).
+                token.actions.githubusercontent.com:sub:
+                  - !Sub repo:${GitHubImmutableRepository}:ref:refs/tags/*RC*
+                  - !Sub repo:${GitHubImmutableRepository}:ref:refs/heads/main
+                  - !Sub repo:${GitHubRepository}:ref:refs/tags/*RC*
+                  - !Sub repo:${GitHubRepository}:ref:refs/heads/main
+      Policies:
+        - PolicyName: deploy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # CloudFormation: the RC stacks
+              - Effect: Allow
+                Action: cloudformation:*
+                Resource:
+                  - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/tabscan-rc-*/*
+              - Effect: Allow
+                Action:
+                  - cloudformation:ValidateTemplate
+                  - cloudformation:GetTemplateSummary
+                  - cloudformation:ListStacks
+                Resource: '*'
+              # S3: the RC site bucket
+              - Effect: Allow
+                Action: s3:*
+                Resource:
+                  - arn:aws:s3:::tabscan-rc-*
+                  - arn:aws:s3:::tabscan-rc-*/*
+              # The site's health check (site.yaml), as for production.
+              - Effect: Allow
+                Action: cloudformation:CreateChangeSet
+                Resource: !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:aws:transform/LanguageExtensions
+              - Effect: Allow
+                Action: route53:CreateHealthCheck
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - route53:GetHealthCheck
+                  - route53:UpdateHealthCheck
+                  - route53:DeleteHealthCheck
+                  - route53:ChangeTagsForResource
+                  - route53:ListTagsForResource
+                Resource: !Sub arn:${AWS::Partition}:route53:::healthcheck/*
+              - Effect: Allow
+                Action:
+                  - cloudwatch:PutMetricAlarm
+                  - cloudwatch:DeleteAlarms
+                  - cloudwatch:DescribeAlarms
+                  - cloudwatch:TagResource
+                  - cloudwatch:UntagResource
+                  - cloudwatch:ListTagsForResource
+                Resource: !Sub arn:${AWS::Partition}:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:tabscan-rc-*
+              - Effect: Allow
+                Action:
+                  - sns:CreateTopic
+                  - sns:DeleteTopic
+                  - sns:GetTopicAttributes
+                  - sns:SetTopicAttributes
+                  - sns:Subscribe
+                  - sns:Unsubscribe
+                  - sns:GetSubscriptionAttributes
+                  - sns:ListSubscriptionsByTopic
+                  - sns:TagResource
+                  - sns:UntagResource
+                  - sns:ListTagsForResource
+                Resource: !Sub arn:${AWS::Partition}:sns:${AWS::Region}:${AWS::AccountId}:tabscan-rc-*
+              # The site: CloudFront, its certificate and DNS records
+              - Effect: Allow
+                Action: cloudfront:*
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - acm:RequestCertificate
+                  - acm:DescribeCertificate
+                  - acm:DeleteCertificate
+                  - acm:ListCertificates
+                  - acm:AddTagsToCertificate
+                  - acm:ListTagsForCertificate
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - route53:ListResourceRecordSets
+                  - route53:GetHostedZone
+                Resource: !Sub arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}
+              # Records may change only for rc.tabscan.nu01.com and its ACM
+              # validation name (_<token>.rc.tabscan.nu01.com): never prod's.
+              - Effect: Allow
+                Action: route53:ChangeResourceRecordSets
+                Resource: !Sub arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}
+                Condition:
+                  ForAllValues:StringLike:
+                    route53:ChangeResourceRecordSetsNormalizedRecordNames:
+                      - rc.tabscan.nu01.com
+                      - '*.rc.tabscan.nu01.com'
+              - Effect: Allow
+                Action:
+                  - route53:GetChange
+                  - route53:ListHostedZones
+                Resource: '*'
+
+Outputs:
+  DeployRoleArn:
+    Description: Set as the repository variable AWS_DEPLOY_ROLE_ARN
+    Value: !GetAtt DeployRole.Arn
+  RcDeployRoleArn:
+    Description: Set as the repository variable AWS_DEPLOY_RC_ROLE_ARN
+    Value: !GetAtt RcDeployRole.Arn

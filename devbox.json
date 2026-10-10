@@ -1,13 +1,18 @@
 {
   "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.17.5/.schema/devbox.schema.json",
   "packages": {
-    "graalvmPackages.graalvm-ce-musl": "latest",
+    "flutter": "latest",
     "python": "latest",
-    "nodejs": "latest",
-    "go": "latest",
-    "postgresql": {
-      "version": "latest",
-      "disable_plugin": true
+    "awscli2": "latest",
+    "gnumake": "latest",
+    "curl": "latest"
+  },
+  "shell": {
+    "scripts": {
+      "web": "bash scripts/flutter-web.sh",
+      "android": "bash scripts/flutter-android.sh",
+      "android-release": "bash scripts/android-install.sh",
+      "android-log": "bash scripts/android-log.sh"
     }
   }
 }

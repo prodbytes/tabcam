@@ -1,0 +1,260 @@
+AWSTemplateFormatVersion: '2010-09-09'
+# Fn::ForEach: one email subscription per HealthNotificationEmails entry
+# (deploy with CAPABILITY_AUTO_EXPAND).
+Transform: AWS::LanguageExtensions
+Description: >
+  tabscan-web: the site at https://tabscan.nu01.com (and, as
+  tabscan-rc-web, https://rc.tabscan.nu01.com). One CloudFront
+  distribution in front of the index page (/) and the Flutter web app
+  (/app/), both from a private S3 bucket. A Route 53 health check polls
+  https://DomainName/app/version.json; when it fails, an alarm emails
+  HealthNotificationEmails.
+  Deploy in us-east-1 (CloudFront certificates must live there).
+
+Parameters:
+  DomainName:
+    Type: String
+    Default: tabscan.nu01.com
+  HostedZoneId:
+    Type: AWS::Route53::HostedZone::Id
+    Description: The public zone of DomainName, tabscan.nu01.com's own (HOSTED_ZONE_ID)
+  HealthNotificationEmails:
+    Type: CommaDelimitedList
+    Description: >
+      Who is emailed when the health check fails and recovers, comma-separated.
+      Each address must confirm AWS's subscription email first.
+
+Resources:
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref DomainName
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !Ref DomainName
+          HostedZoneId: !Ref HostedZoneId
+
+  SiteBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+
+  SiteOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub ${AWS::StackName}-site
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  SiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SiteBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # Only this distribution may read the bucket.
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub ${SiteBucket.Arn}/*
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${Distribution}
+          # S3 answers 403 for a missing key unless ListBucket is allowed;
+          # this lets unknown paths return 404 instead.
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:ListBucket
+            Resource: !GetAtt SiteBucket.Arn
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${Distribution}
+
+  # /app -> /app/ (a redirect), and any directory URI -> its index.html, so
+  # /app/ serves app/index.html from S3.
+  AppIndexFunction:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: !Sub ${AWS::StackName}-app-index
+      AutoPublish: true
+      FunctionConfig:
+        Comment: Directory URIs to index.html; /app to /app/
+        Runtime: cloudfront-js-2.0
+      FunctionCode: |
+        function handler(event) {
+          var request = event.request;
+          var uri = request.uri;
+          if (uri === '/app') {
+            return {
+              statusCode: 301,
+              statusDescription: 'Moved Permanently',
+              headers: { location: { value: '/app/' } }
+            };
+          }
+          if (uri.endsWith('/')) {
+            request.uri = uri + 'index.html';
+          }
+          return request;
+        }
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: TabScan (tabscan.nu01.com)
+        Enabled: true
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        PriceClass: PriceClass_100
+        Aliases:
+          - !Ref DomainName
+        ViewerCertificate:
+          AcmCertificateArn: !Ref Certificate
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+        DefaultRootObject: index.html
+        Origins:
+          - Id: site
+            DomainName: !GetAtt SiteBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt SiteOriginAccessControl.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+        # The index page at / (redirects to /app/)
+        DefaultCacheBehavior:
+          TargetOriginId: site
+          ViewerProtocolPolicy: redirect-to-https
+          Compress: true
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD]
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 # Managed-CachingOptimized
+          ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03 # Managed-SecurityHeadersPolicy
+        CacheBehaviors:
+          # The Flutter web app, built with --base-href /app/
+          - PathPattern: /app*
+            TargetOriginId: site
+            ViewerProtocolPolicy: redirect-to-https
+            Compress: true
+            AllowedMethods: [GET, HEAD, OPTIONS]
+            CachedMethods: [GET, HEAD]
+            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 # Managed-CachingOptimized
+            ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03 # Managed-SecurityHeadersPolicy
+            FunctionAssociations:
+              - EventType: viewer-request
+                FunctionARN: !GetAtt AppIndexFunction.FunctionMetadata.FunctionARN
+
+  DnsRecordA:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DomainName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt Distribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2 # CloudFront's alias zone
+        EvaluateTargetHealth: false
+
+  DnsRecordAAAA:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DomainName
+      Type: AAAA
+      AliasTarget:
+        DNSName: !GetAtt Distribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2
+        EvaluateTargetHealth: false
+
+  # Polls https://DomainName/app/version.json through CloudFront: the
+  # edge, the bucket and the web build. Healthy only on a 2xx/3xx whose
+  # body names the app (Flutter writes app_name into version.json).
+  HealthCheck:
+    Type: AWS::Route53::HealthCheck
+    Properties:
+      HealthCheckConfig:
+        Type: HTTPS_STR_MATCH
+        FullyQualifiedDomainName: !Ref DomainName
+        Port: 443
+        ResourcePath: /app/version.json
+        SearchString: '"app_name":"tabscan_app"'
+        EnableSNI: true
+        RequestInterval: 30
+        FailureThreshold: 3
+        # Three regions (the fewest allowed) keep the checkers' calls down.
+        Regions: [us-east-1, us-west-2, eu-west-1]
+      HealthCheckTags:
+        - Key: Name
+          Value: !Sub ${DomainName}/app/version.json
+
+  HealthTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${AWS::StackName}-health
+      DisplayName: TabScan health
+
+  # The default topic policy lets this account's CloudWatch alarms publish.
+  Fn::ForEach::HealthEmails:
+    - Email
+    - !Ref HealthNotificationEmails
+    - HealthEmail&{Email}:
+        Type: AWS::SNS::Subscription
+        Properties:
+          TopicArn: !Ref HealthTopic
+          Protocol: email
+          Endpoint: !Ref Email
+
+  # Route 53 publishes health check metrics in us-east-1, where this stack
+  # lives. Missing data (the check gone) counts as failing.
+  HealthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-health
+      AlarmDescription: !Sub https://${DomainName}/app/version.json is failing (Route 53 health check)
+      Namespace: AWS/Route53
+      MetricName: HealthCheckStatus
+      Dimensions:
+        - Name: HealthCheckId
+          Value: !GetAtt HealthCheck.HealthCheckId
+      Statistic: Minimum
+      Period: 60
+      EvaluationPeriods: 2
+      DatapointsToAlarm: 2
+      Threshold: 1
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: breaching
+      AlarmActions: [!Ref HealthTopic]
+      OKActions: [!Ref HealthTopic]
+
+Outputs:
+  SiteUrl:
+    Value: !Sub https://${DomainName}/
+  SiteBucketName:
+    Description: Upload index.html at the root and the web build under app/
+    Value: !Ref SiteBucket
+  DistributionId:
+    Value: !Ref Distribution
+  DistributionDomainName:
+    Value: !GetAtt Distribution.DomainName
+  HealthCheckId:
+    Description: The Route 53 health check of https://DomainName/app/version.json
+    Value: !GetAtt HealthCheck.HealthCheckId
+  HealthTopicArn:
+    Description: Where health alarms go (HealthNotificationEmails subscribe to it)
+    Value: !Ref HealthTopic

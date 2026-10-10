@@ -1,9 +1,15 @@
 {
+  "name": "TabScan",
   "build": {
     "dockerfile": "Containerfile",
     "context": ".."
   },
   "remoteUser": "vscode",
+  // Flutter's web builds want more than the smallest machine.
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "8gb"
+  },
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
@@ -13,18 +19,18 @@
         "terminal.integrated.defaultProfile.linux": "bash"
       },
       "extensions": [
-        "vscjava.vscode-java-pack",
         "ms-python.python",
-        "ms-python.vscode-pylance",
-        "charliermarsh.ruff",
-        "dbaeumer.vscode-eslint",
-        "esbenp.prettier-vscode",
-        "ms-vscode.vscode-typescript-next",
-        "golang.go",
         "ms-azuretools.vscode-docker",
-        "redhat.vscode-xml"
+        "redhat.vscode-yaml",
+        "Dart-Code.dart-code",
+        "Dart-Code.flutter"
       ]
     }
   },
-  "postCreateCommand": "bash -lc 'devbox install'"
+  "forwardPorts": [2012, 2013],
+  "portsAttributes": {
+    "2012": { "label": "Flutter web" },
+    "2013": { "label": "Index (redirect to /app/)" }
+  },
+  "postCreateCommand": "bash -lc 'bash .devcontainer/post-create.sh'"
 }
