@@ -225,3 +225,12 @@ spec.
     Checked with `devbox services up`:
     https://local.tabscan.nu01.com:2443/app/ answers with a trusted
     certificate.
+31. **Read tab is not working; add the logging needed to troubleshoot it,
+    in the client and the server.** The app logs each step of Read tab
+    (sign-in, the path taken, per-page preparation, OCR and layout
+    results, failures with stack traces), every OCR API call and the cloud
+    results it collects. The OCR service logs JSON lines per request, S3
+    event, rbacr check and page read, including unexpected failures with
+    tracebacks. See the troubleshooting logs in
+    [tab recognition](tab-recognition.md#troubleshooting-log) and
+    [cloud OCR](cloud-ocr.md#troubleshooting-log).
