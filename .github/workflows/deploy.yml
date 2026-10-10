@@ -1,0 +1,67 @@
+# Deploys a *GA tag to production, https://tabscan.nu01.com: the Flutter
+# web app (/app/) and the index page (/), through scripts/deploy.sh. It
+# ends by checking that the live site serves this tag's version.
+#
+# AWS access is keyless: GitHub's OIDC token is exchanged for the
+# tabscan-github-deploy role (tabscan_infra/github-deploy.yaml), which
+# only trusts *GA tag runs of this repository. Its ARN is the repository
+# variable AWS_DEPLOY_ROLE_ARN.
+#
+# The Release workflow runs on the same tags and publishes the binaries.
+name: Deploy
+
+on:
+  push:
+    tags:
+      - "*GA"
+
+permissions:
+  contents: read
+  id-token: write
+
+# One production deploy at a time; a newer tag waits for the running one.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: "3.47.5"
+  AWS_REGION: us-east-1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # No `environment:` here: it would change the OIDC subject from the tag
+    # (repo:…:ref:refs/tags/X.Y.Z-GA), which the deploy role trusts, to the
+    # environment name.
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Flutter ${{ env.FLUTTER_VERSION }}
+        run: |
+          git clone --quiet --depth 1 --branch "$FLUTTER_VERSION" \
+            https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+
+      - name: Show the toolchain
+        run: |
+          flutter --version
+          aws --version
+
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          role-session-name: tabscan-deploy-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy ${{ github.ref_name }}
+        env:
+          TAG: ${{ github.ref_name }}
+          HOSTED_ZONE_ID: ${{ vars.HOSTED_ZONE_ID }}
+          # Who is emailed when the site's health check fails or recovers:
+          # a secret, not a variable, so the public run logs never show it.
+          TABSCAN_HEALTH_EMAILS: ${{ secrets.TABSCAN_HEALTH_EMAILS }}
+        run: bash scripts/deploy.sh
+

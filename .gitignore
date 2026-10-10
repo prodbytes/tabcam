@@ -2,6 +2,11 @@
 .devbox/
 .envrc.local
 
+# --- Local settings (see .env.example) ---
+.env
+.env.*
+!.env.example
+
 # --- Java ---
 *.class
 *.ctxt
@@ -80,3 +85,6 @@ Thumbs.db
 !.vscode/settings.json
 !.vscode/extensions.json
 !.vscode/launch.json
+
+
+*.local*
