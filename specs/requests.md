@@ -225,3 +225,9 @@ spec.
     Checked with `devbox services up`:
     https://local.tabscan.nu01.com:2443/app/ answers with a trusted
     certificate.
+30. **When a photo is added by hand, crop it to the page, without what's
+    under it.** Photos added with Photos & videos or Files are cropped and
+    straightened to the page when one stands out (the largest bright
+    region, its four corners, a perspective correction), as a JPEG; when
+    no page stands out, they're kept as picked
+    ([scanning](scanning.md#cropping-photos-to-the-page)).

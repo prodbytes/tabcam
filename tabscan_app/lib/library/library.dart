@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../capture/media.dart';
+import '../processing/page_crop.dart';
 import '../processing/page_filter.dart';
 import 'capture_event.dart';
 import 'event_store.dart';
@@ -10,12 +11,20 @@ import 'event_store.dart';
 /// The user's events, kept in a [EventStore]; screens listen to it, and so
 /// does cloud sync ([localChanges]).
 class Library extends ChangeNotifier {
-  Library([EventStore? store, DateTime Function()? now])
-    : _store = store ?? EventStore(),
-      _now = now ?? DateTime.now;
+  Library([
+    EventStore? store,
+    DateTime Function()? now,
+    Future<Uint8List?> Function(Uint8List photo)? crop,
+  ]) : _store = store ?? EventStore(),
+       _now = now ?? DateTime.now,
+       _crop = crop ?? cropToPage;
 
   final EventStore _store;
   final DateTime Function() _now;
+
+  /// Crops a photo added by hand to the page in it ([cropToPage]); null
+  /// leaves it as it is.
+  final Future<Uint8List?> Function(Uint8List photo) _crop;
 
   /// Every event, newest first, tombstones included.
   List<CaptureEvent> _all = const [];
@@ -126,12 +135,15 @@ class Library extends ChangeNotifier {
   ) async => _update(await _addPages(event, pages));
 
   /// Adds picked photos and videos to the end of [event]. Photos get the
-  /// Tab filter, as scanned pages do.
+  /// Tab filter, as scanned pages do, and are cropped and straightened to
+  /// the page in them when one stands out ([cropToPage]: a JPEG then);
+  /// otherwise, and videos always, they're kept as picked.
   Future<CaptureEvent> addMedia(CaptureEvent event, List<Media> media) async {
     final added = <EventPage>[];
     for (final m in media) {
-      final page = EventPage(id: newId(), kind: m.kind, extension: m.extension);
-      await _store.putPageFile(event.id, page, m.file);
+      final page = m.kind == PageKind.image
+          ? await _addPhoto(event, m)
+          : await _addFile(event, m);
       added.add(page);
     }
     return _save(event.copyWith(pages: [...event.pages, ...added]));
@@ -147,6 +159,25 @@ class Library extends ChangeNotifier {
           ],
         ),
       );
+
+  Future<EventPage> _addFile(CaptureEvent event, Media m) async {
+    final page = EventPage(id: newId(), kind: m.kind, extension: m.extension);
+    await _store.putPageFile(event.id, page, m.file);
+    return page;
+  }
+
+  Future<EventPage> _addPhoto(CaptureEvent event, Media m) async {
+    Uint8List? cropped;
+    try {
+      cropped = await _crop(await m.file.readAsBytes());
+    } on Object catch (e) {
+      debugPrint('TabScan: photo not cropped: $e');
+    }
+    if (cropped == null) return _addFile(event, m);
+    final page = EventPage(id: newId(), extension: 'jpg');
+    await _store.putPage(event.id, page, cropped);
+    return page;
+  }
 
   Future<CaptureEvent> _addPages(
     CaptureEvent event,
