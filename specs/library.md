@@ -24,7 +24,8 @@ The **Home** tab ([navigation](navigation.md)), titled **TabScan**.
 - New events come from the [Capture](navigation.md#capture) tab: each
   lands at the top of the list, which scrolls up to it, outlined in the
   theme's primary color for 3 seconds, and a message confirms it
-  ("Saved "Tab 2026-10-10 14:05" (2 pages)") with **Open**. Events
+  ("Saved "Tab 2026-10-10 14:05" (2 pages)") with **Open**, for 6
+  seconds. Events
   synced from other devices appear in the list as they come down.
 - **Theme**: Material 3, dark, from an amber seed color (`#E0A030`).
 

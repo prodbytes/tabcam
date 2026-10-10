@@ -64,6 +64,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Library get library => widget.library;
 
+  /// How long "Saved … (Open)" shows after a capture.
+  static const Duration savedMessageFor = Duration(seconds: 6);
+
   void _snack(String message) => ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(message)));
@@ -91,6 +94,10 @@ class _HomeScreenState extends State<HomeScreen> {
       ..showSnackBar(
         SnackBar(
           content: Text('Saved "${event.title}" (${contentsOf(event)})'),
+          // Gone after a while, like the others: with an action, Flutter
+          // would keep it until it's dismissed.
+          persist: false,
+          duration: savedMessageFor,
           action: SnackBarAction(
             label: 'Open',
             onPressed: () =>
@@ -104,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _scan() => _capture('Couldn\'t scan', () async {
-    final pages = await PageSource.scan();
+    final pages = await PageSource.scan(context);
     return pages.isEmpty ? null : library.create(pages);
   });
 

@@ -58,9 +58,13 @@ void main() {
     expect(find.text('No tabs yet'), findsNothing);
     expect(find.text('Saved "Lesson one" (1 link)'), findsOneWidget);
     expect(find.text('Open'), findsOneWidget);
-    // The new card's outline goes after 3 s.
+    // The new card's outline goes after 3 s; the message, with its Open,
+    // after 6 s, by itself.
     await tester.pump(const Duration(seconds: 4));
+    expect(find.text('Saved "Lesson one" (1 link)'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
+    expect(find.text('Saved "Lesson one" (1 link)'), findsNothing);
   });
 
   testWidgets('Home shows my captures and those shared with me', (

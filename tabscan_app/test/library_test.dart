@@ -175,6 +175,52 @@ void main() {
     expect(reopened.byId(event.id)!.pages.last.isVideo, isTrue);
   });
 
+  test('an added photo is cropped to its page; videos and photos without '
+      'one are kept as picked', () async {
+    final cropped = Uint8List.fromList([9, 9, 9]);
+    final seen = <int>[];
+    final library = Library(PlatformEventStore(root), null, (photo) async {
+      seen.add(photo.length);
+      // The first photo has a page to crop to, the second hasn't.
+      return seen.length == 1 ? cropped : null;
+    });
+    await library.load();
+    var event = await library.create(const []);
+    final second = _jpeg(30, 20);
+    final video = Uint8List.fromList(List.generate(16, (i) => i));
+    event = await library.addMedia(
+      event,
+      MediaPick.of([
+        XFile.fromData(_jpeg(20, 10), path: 'riff.png'),
+        XFile.fromData(second, path: 'chord.jpeg'),
+        XFile.fromData(video, path: 'lesson.mov'),
+      ]).media,
+    );
+    // Photos only go to the cropper, not videos.
+    expect(seen, hasLength(2));
+    final [first, kept, clip] = event.pages;
+    expect((first.kind, first.extension), (PageKind.image, 'jpg'));
+    expect(await library.original(event, first), cropped);
+    expect((kept.kind, kept.extension), (PageKind.image, 'jpeg'));
+    expect(await library.original(event, kept), second);
+    expect(await library.original(event, clip), video);
+  });
+
+  test('a crop that fails keeps the photo as picked', () async {
+    final library = Library(
+      PlatformEventStore(root),
+      null,
+      (_) async => throw StateError('no'),
+    );
+    await library.load();
+    final photo = _jpeg(20, 10);
+    final event = await library.addMedia(
+      await library.create(const []),
+      MediaPick.of([XFile.fromData(photo, path: 'riff.jpg')]).media,
+    );
+    expect(await library.original(event, event.pages.single), photo);
+  });
+
   test('media is recognized by extension, then by MIME type', () {
     expect(Media.of(XFile('a/clip.MP4'))!.kind, PageKind.video);
     expect(Media.of(XFile('a/page.heic'))!.extension, 'heic');

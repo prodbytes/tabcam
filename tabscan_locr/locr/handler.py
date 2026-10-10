@@ -19,6 +19,7 @@ import base64
 import json
 import os
 import time
+import traceback
 from datetime import datetime, timezone
 
 from . import keys
@@ -30,6 +31,11 @@ VERSION = os.environ.get("LOCR_VERSION", "dev")
 
 def _now():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def log(msg, **fields):
+    """One JSON line in CloudWatch: what happened, and why. Never tokens."""
+    print(json.dumps({"msg": msg, **fields}, default=str))
 
 
 class Services:
@@ -102,11 +108,19 @@ def api(event, context=None):
         return on_s3(event)
     if "requestContext" in event and "http" in event["requestContext"]:
         return on_http(event)
-    print("ignored event")
+    log("ignored event", keys=sorted(event))
     return None
 
 
 def on_s3(event):
+    outcome = _on_s3(event)
+    detail = event.get("detail", {})
+    log("s3 event", type=event.get("detail-type"), key=detail.get("object", {}).get("key"),
+        outcome=outcome)
+    return outcome
+
+
+def _on_s3(event):
     detail = event.get("detail", {})
     if detail.get("bucket", {}).get("name") != services.bucket:
         return "other bucket"
@@ -119,7 +133,10 @@ def on_s3(event):
     if detail.get("object", {}).get("size", 0) > MAX_BYTES:
         return "too large"
     email = services.accounts.email(page.identity)
-    if not email or not services.rbacr.check(email).premium:
+    if not email:
+        log("unknown identity: the app hasn't called /account", identity=page.identity)
+        return "not premium"
+    if not services.rbacr.check(email).premium:
         return "not premium"
     _queue(page)
     return "queued"
@@ -137,9 +154,25 @@ def _reply(status, body):
 
 
 def on_http(event):
-    from .auth import Unauthorized
+    start = time.monotonic()
     method = event["requestContext"]["http"]["method"]
     path = event.get("rawPath", "")
+    request = {"method": method, "path": path}
+    try:
+        reply = _on_http(event, method, path, request)
+    except Exception as e:
+        log("http failed", **request, error=f"{type(e).__name__}: {e}",
+            trace=traceback.format_exc())
+        raise
+    body = json.loads(reply["body"])
+    body.pop("email", None)
+    log("http", **request, status=reply["statusCode"],
+        ms=round((time.monotonic() - start) * 1000), reply=body)
+    return reply
+
+
+def _on_http(event, method, path, request):
+    from .auth import Unauthorized
     if method != "POST" or path not in ("/account", "/transcribe"):
         return _reply(404, {"error": "not found"})
     auth = {k.lower(): v for k, v in (event.get("headers") or {}).items()}.get("authorization", "")
@@ -150,10 +183,11 @@ def on_http(event):
         email = services.google.email(token)
         identity = services.cognito.identity(token)
     except Unauthorized as e:
-        print(f"unauthorized: {e}")
+        request["unauthorized"] = str(e)
         return _reply(401, {"error": "sign in again"})
     services.accounts.put(identity, email)
     answer = services.rbacr.check(email)
+    request.update(identity=identity, premium=answer.premium, checked=answer.checked)
     if path == "/account":
         return _reply(200, {
             "email": email,
@@ -170,8 +204,10 @@ def on_http(event):
         if event.get("isBase64Encoded"):
             body = base64.b64decode(body)
         event_id = keys.check_id(json.loads(body).get("eventId"))
-    except (ValueError, AttributeError):
+    except (ValueError, AttributeError) as e:
+        request["bad_body"] = f"{type(e).__name__}: {e}"
         return _reply(400, {"error": "eventId needed"})
+    request["event"] = event_id
     return _reply(200, {"queued": _transcribe_missing(identity, event_id)})
 
 
@@ -190,12 +226,19 @@ def _list(prefix):
 
 def _transcribe_missing(identity, event_id):
     done = {k.rsplit("/", 1)[-1].removesuffix(".json") for k in _list(f"{identity}/ocr/{event_id}/")}
-    queued = 0
-    for key in _list(f"{identity}/events/{event_id}/"):
+    files = _list(f"{identity}/events/{event_id}/")
+    queued, skipped = 0, []
+    for key in files:
         page = keys.parse_page(key)
-        if page and page.page_id not in done and queued < MAX_PAGES:
+        if page is None:
+            skipped.append(key.rsplit("/", 1)[-1])  # not a page image (event.json, a video)
+        elif page.page_id in done:
+            continue
+        elif queued < MAX_PAGES:
             _queue(page)
             queued += 1
+    log("transcribe", identity=identity, event=event_id, files=len(files), done=len(done),
+        queued=queued, not_pages=skipped)
     return queued
 
 
@@ -208,8 +251,9 @@ def ocr(event, context=None):
     global _engines
     page = keys.parse_page(event.get("key", ""))
     if page is None:
-        print("bad key")
+        log("ocr bad key", key=event.get("key"))
         return None
+    log("ocr start", key=page.key, engines_loaded=_engines is not None)
     from . import engines, pipeline
     if _engines is None:
         _engines = engines.default()
@@ -223,12 +267,19 @@ def ocr(event, context=None):
         result.update(status="ok" if r.text else "no-tab", text=r.text,
                       staves=r.staves, lines=r.lines, timings=r.timings)
     except services.s3.exceptions.NoSuchKey:
+        log("ocr page gone", key=page.key)
         return "gone"  # deleted meanwhile
     except (ValueError, pipeline.TooLarge) as e:
         result.update(status="error", text="", error=str(e))
+    except Exception as e:  # logged, then retried by Lambda
+        log("ocr failed", key=page.key, error=f"{type(e).__name__}: {e}",
+            seconds=round(time.monotonic() - start, 2), trace=traceback.format_exc())
+        raise
     result.update(seconds=round(time.monotonic() - start, 2), created=_now(),
                   engines=list(_engines))
     services.s3.put_object(Bucket=services.bucket, Key=page.result_key,
                            Body=json.dumps(result).encode(), ContentType="application/json")
-    print(json.dumps({"page": page.page_id, "status": result["status"], "seconds": result["seconds"]}))
+    log("ocr done", key=page.key, status=result["status"], error=result.get("error"),
+        staves=result.get("staves"), lines=result.get("lines"), timings=result.get("timings"),
+        seconds=result["seconds"])
     return result["status"]

@@ -7,7 +7,8 @@ templates.
 |---|---|---|
 | [site.yaml](site.yaml) | `tabscan-web` | https://tabscan.nu01.com: the ACM certificate (DNS-validated in the `tabscan.nu01.com` zone), a private S3 bucket, a CloudFront distribution, the Route 53 A/AAAA aliases, and a Route 53 health check of `/app/version.json` that emails `TABSCANNER_HEALTH_EMAILS` when it fails |
 | [user-data.yaml](user-data.yaml) | `tabscan-user-data` | The bucket of signed-in users' events, `nu01-user-events-<account>` (private, SSE-S3, TLS only, object events to EventBridge, versioned: old versions kept 30 days; CORS for the web app's origins). Not `tabscan-*`, so the deploy roles can't reach it. Shared by production and the RC |
-| [identity.yaml](identity.yaml) | `tabscan-identity` | The Cognito identity pool `tabscan` (Google sign-in only, no guests, enhanced flow) and its authenticated role: get, put and delete in `<bucket>/<identity ID>/*`, and list that prefix. Shared by production and the RC |
+| [identity.yaml](identity.yaml) | `tabscan-identity` | The Cognito identity pool `tabscan` (Google sign-in only, for the web client; no guests, enhanced flow) and its authenticated role: get, put and delete in `<bucket>/<identity ID>/*`, and list that prefix. Shared by production and the RC |
+| [identity.yaml](identity.yaml) | `tabscan-identity-local` | The same for local web builds: the pool `tabscan-local`, trusting the "local - web" client (a pool can trust only one Google client), and its own authenticated role on the same bucket |
 | [share-api.yaml](share-api.yaml) | `tabscan-share-api` | Sharing captures by email: the `tabscan-share-api` HTTP API (Google JWT authorizer, throttled), its Python function ([tabscan_api/shares/](../tabscan_api/shares)), the grants table (PITR on) and the `tabscan-share-access` role, which the function assumes with a session policy narrowed to one capture's folder (and to reading, for read-only grants) |
 | [ocr-repo.yaml](ocr-repo.yaml) | `tabscan-ocr-repo` | The ECR repository `tabscan-ocr` of the cloud OCR image ([tabscan_locr/](../tabscan_locr/README.md)) |
 | [ocr.yaml](ocr.yaml) | `tabscan-ocr` | TabScan Premium's cloud OCR: the `tabscan-accounts` table, the `tabscan-ocr` and `tabscan-ocr-api` functions, the API's function URL (the app's `TABSCANNER_OCR_URL`) and the EventBridge rule for page uploads. Deployed by `tabscan_locr/scripts/deploy.sh` |
@@ -102,6 +103,10 @@ ACM validation names.
       - **Web application**: authorized JavaScript origins
         `https://tabscan.nu01.com`, `https://rc.tabscan.nu01.com` and
         `http://localhost:2012`. Its ID is `TABSCANNER_GOOGLE_WEB_CLIENT_ID`.
+      - **Web application** "local - web", for local web builds: JavaScript
+        origin `https://local.tabscan.nu01.com:2443`, no redirect URI. Its
+        ID is `TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID` (only in the private
+        `.env`).
       - **Android**: package `com.nu01.tabscan` and the SHA-1 of the key
         that signs the APK (`keytool -list -v -keystore
         ~/.android/debug.keystore -alias androiddebugkey -storepass
@@ -112,15 +117,31 @@ ACM validation names.
       share API):
 
       ```bash
+      origins=https://tabscan.nu01.com,https://rc.tabscan.nu01.com,http://localhost:2012,https://local.tabscan.nu01.com:2443
       aws cloudformation deploy --region us-east-1 \
         --stack-name tabscan-user-data \
-        --template-file tabscan_infra/user-data.yaml
+        --template-file tabscan_infra/user-data.yaml \
+        --parameter-overrides "AllowedOrigins=$origins"
       aws cloudformation deploy --region us-east-1 \
         --stack-name tabscan-identity \
         --template-file tabscan_infra/identity.yaml \
         --capabilities CAPABILITY_IAM \
-        --parameter-overrides "GoogleWebClientId=$TABSCANNER_GOOGLE_WEB_CLIENT_ID"
+        --parameter-overrides "GoogleWebClientId=$TABSCANNER_GOOGLE_WEB_CLIENT_ID" \
+          PoolName=tabscan
+      # Local web builds' pool; its IdentityPoolId is
+      # TABSCANNER_COGNITO_LOCAL_IDENTITY_POOL_ID (private .env only).
+      aws cloudformation deploy --region us-east-1 \
+        --stack-name tabscan-identity-local \
+        --template-file tabscan_infra/identity.yaml \
+        --capabilities CAPABILITY_IAM \
+        --parameter-overrides "GoogleWebClientId=$TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID" \
+          PoolName=tabscan-local
       ```
+
+      Pass every parameter each time: `deploy` keeps a stack's previous
+      value for a parameter left out, not the template's new default.
+      `tabscan_locr/scripts/deploy.sh` and `scripts/deploy-share-api.sh`
+      pass the local client and the origins to their stacks the same way.
 
    3. Put the IDs in the private `.env` (`TABSCANNER_GOOGLE_WEB_CLIENT_ID`,
       `TABSCANNER_GOOGLE_IOS_CLIENT_ID`, `TABSCANNER_COGNITO_IDENTITY_POOL_ID` from
