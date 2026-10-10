@@ -256,3 +256,7 @@ spec.
     region, its four corners, a perspective correction), as a JPEG; when
     no page stands out, they're kept as picked
     ([scanning](scanning.md#cropping-photos-to-the-page)).
+34. **Hide status messages after a while.** The "Saved … (Open)" message
+    after a capture stayed until dismissed, since Flutter keeps a message
+    with a button by default; it now goes after 6 seconds, like the
+    others, which already went after 4 ([navigation](navigation.md#capture)).

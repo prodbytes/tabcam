@@ -38,7 +38,9 @@ tabs, and a compact **app bar** on top names the open one
 Each makes a new event (titled `Tab YYYY-MM-DD HH:MM`, or a link's
 title) and goes to **Home**, where it's first in the list, scrolled to
 and outlined for 3 seconds, with a message, "Saved "<title>" (2 pages)"
-(or "1 video, 1 link", ...), and **Open**. Cancelling does nothing;
+(or "1 video, 1 link", ...), and **Open**, which goes by itself after 6
+seconds, as every message does (Flutter would otherwise keep a message
+with a button until it's dismissed). Cancelling does nothing;
 picked files that aren't photos or videos are left out, with a message
 saying how many.
 
