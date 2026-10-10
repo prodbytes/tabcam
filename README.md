@@ -57,12 +57,14 @@ Private settings (deploy targets) live in the private
 
 - `2-flutter-web`: the app in web mode ([scripts/flutter-web.sh](scripts/flutter-web.sh));
 - `5-index`: the site root ([tabscan_index/](tabscan_index));
-- `0-health-check`: once both are ready, one status line per service every
-  15 s (`HEALTH_CHECK_INTERVAL`):
+- `0-health-check`: once both are ready, prints the local URLs once, then
+  one line per check every 15 s (`HEALTH_CHECK_INTERVAL`), each dependency
+  with its icon, label and status:
 
 ```
-2026-10-10 14:02:10 🏠 index ✅     localhost:2013/
-2026-10-10 14:02:10 🎸 web   ✅     localhost:2012/app/
+🎸 TabScan: http://localhost:2012/app/
+🏠 index:   http://localhost:2013/ (redirects to the app)
+2026-10-10 14:02:10  🏠 index ✅  🎸 web ✅
 ```
 
 Stop everything with `devbox services stop`.

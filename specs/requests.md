@@ -44,3 +44,8 @@ spec.
    variables. Pending: deploying the `tabscan-github-deploy` roles stack,
    then the `AWS_DEPLOY_ROLE_ARN` / `AWS_DEPLOY_RC_ROLE_ARN` variables and
    the `TABSCAN_HEALTH_EMAILS` secret.
+5. **One health check line per run, with an icon, short label and status
+   for each dependency; print the local URL once at startup.** The
+   monitor now prints the app's and the index's URLs when it starts, then
+   one line per check (`🏠 index ✅  🎸 web ✅`) instead of a line per
+   service. See [development environment](dev-environment.md).
