@@ -49,3 +49,12 @@ spec.
    monitor now prints the app's and the index's URLs when it starts, then
    one line per check (`🏠 index ✅  🎸 web ✅`) instead of a line per
    service. See [development environment](dev-environment.md).
+6. **Merge all pending changes and rebuild.** Merged #1 and the health
+   check change (as #3: GitHub closed #2 when #1's branch was deleted).
+   Rebuilt web, Android and iOS from `main`; the dev stack restarted
+   healthy.
+7. **Run on the attached iPhone, with the personal team of
+   julio@nu01.com.** iOS now signs with the developer's own team from
+   `.env` (`IOS_DEVELOPMENT_TEAM`), through a git-ignored xcconfig; see
+   [platforms](platforms.md). Installed and launched on the iPhone after
+   trusting the developer certificate.

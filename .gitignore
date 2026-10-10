@@ -88,3 +88,6 @@ Thumbs.db
 
 
 *.local*
+
+# --- Private build settings (from .env, see scripts/dart-defines.sh) ---
+tabscan_app/ios/Flutter/Private.xcconfig
