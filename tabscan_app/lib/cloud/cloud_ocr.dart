@@ -246,7 +246,9 @@ class CloudOcr extends ChangeNotifier {
       if (current == null) continue;
       final ours = current.tabText == null || current.tabText == last?.text;
       if (text != null && ours && current.tabText != text) {
-        await library.update(current.copyWith(tabText: text));
+        await library.update(
+          current.copyWith(tabText: text, tabTextAuto: true),
+        );
       }
       debugPrint(
         'TabScan: cloud OCR: ${event.id}: '
