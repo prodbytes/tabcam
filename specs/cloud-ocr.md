@@ -60,8 +60,8 @@ blank line.
 - **Status**: at sign-in, and each time the Profile tab (or the account
   sheet, from an event's Upgrade) opens, the app
   calls `POST /account` with the user's Google ID token. The service checks
-  the token (signed by Google, issued for TabScan's web client, verified
-  address), asks the identity pool for its identity ID, records identity →
+  the token (signed by Google, issued for TabScan's web client or the
+  local web client, verified address), asks the identity pool for its identity ID, records identity →
   address, and answers `{email, premium, expiresAt, checked, upgradeUrl,
   voucherUrl}`.
 - **Results**: after each sync pass, a premium user's app lists
@@ -94,6 +94,25 @@ blank line.
 - On the web, Read tab without Premium says reading tabs needs the Android
   or iOS app, or TabScan Premium.
 
+## Troubleshooting log
+
+- **App**: every call to the service is logged
+  (`TabScan: OCR API: POST <url>`, then its status, time and answer, or
+  the error); `TabScan: cloud OCR:` lines say when Read tab can't ask (no
+  ID token, not premium), and, per sync pass, how many results were found,
+  which events wait for which pages, each result's status, and whether the
+  text tab was filled or kept.
+- **Service** (CloudWatch, `aws logs tail /aws/lambda/tabscan-ocr-api
+  --follow`, and `.../tabscan-ocr`): one JSON line per event. `http`: the
+  path, status, time, identity, premium and the answer (the address left
+  out), why a token was refused or a body was bad. `transcribe`: the
+  event's files, those already transcribed, how many were queued and which
+  files aren't page images. `s3 event`: the key and the outcome (an
+  identity that never called `/account` is logged as such). `rbacr`: the
+  answer and its ttl, or why the check failed (HTTP status). `ocr start`,
+  `ocr done` (status, staves, lines, engine timings, seconds) and
+  `ocr failed` (the exception and traceback, before Lambda retries).
+
 ## Infrastructure
 
 - **`ocr-repo.yaml`**, stack `tabscan-ocr-repo`: the ECR repository
@@ -108,7 +127,7 @@ blank line.
     the rbacr secret, invoke `tabscan-ocr`, list the bucket and delete
     results;
   - its function URL (no IAM auth: each request carries a Google ID token;
-    CORS for the web app's origins);
+    CORS for the web app's origins, the local HTTPS one included);
   - the EventBridge rule `tabscan-ocr-pages` (page images created or
     deleted in the user-data bucket).
 - **`user-data.yaml`** sends the bucket's events to EventBridge.
