@@ -8,7 +8,8 @@
 # tabscan-user-data (with EventBridge on) and, for the app's requests,
 # tabscan-identity. Settings (environment or .env): TABSCANNER_GOOGLE_WEB_CLIENT_ID and
 # TABSCANNER_COGNITO_IDENTITY_POOL_ID (both may be empty: page OCR still works, the
-# function URL refuses requests), RBACR_TOKEN_SECRET (default
+# function URL refuses requests), TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID (optional:
+# local web builds' client, trusted too), RBACR_TOKEN_SECRET (default
 # tabscan/rbacr-token).
 set -euo pipefail
 
@@ -21,6 +22,8 @@ if [[ -f .env ]]; then
 fi
 
 region="${AWS_REGION:-us-east-1}"
+# Passed every time: deploy would keep the stack's old origins otherwise.
+TABSCANNER_WEB_ORIGINS="https://tabscan.nu01.com,https://rc.tabscan.nu01.com,http://localhost:2012,https://local.tabscan.nu01.com:2443"
 secret_name="${RBACR_TOKEN_SECRET:-tabscan/rbacr-token}"
 version="$(git rev-parse --short=12 HEAD)$(git diff --quiet HEAD -- tabscan_locr || echo -dirty)"
 tag="${version}-$(date -u +%Y%m%d%H%M%S)"
@@ -50,6 +53,8 @@ aws cloudformation deploy --region "$region" --stack-name tabscan-ocr \
   --parameter-overrides \
     "ImageUri=$repo@$digest" \
     "GoogleWebClientId=${TABSCANNER_GOOGLE_WEB_CLIENT_ID:-}" \
+    "GoogleLocalWebClientId=${TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID:-}" \
+    "AllowedOrigins=$TABSCANNER_WEB_ORIGINS" \
     "IdentityPoolId=${TABSCANNER_COGNITO_IDENTITY_POOL_ID:-}" \
     "RbacrTokenSecretArn=$secret_arn" \
     "Version=$version"
