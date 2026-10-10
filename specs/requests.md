@@ -225,6 +225,15 @@ spec.
     Checked with `devbox services up`:
     https://local.tabscan.nu01.com:2443/app/ answers with a trusted
     certificate.
+30. **The local Google OIDC client ID should be
+    `1061413485511-2ndd6lqkmi61j17vpk5f2ntjb91tt38r`; verify and fix.**
+    Local builds used the production web client, whose only origin is
+    https://tabscan.nu01.com. New setting
+    `TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID` (the "local - web" client),
+    which the dev web server uses in its place
+    ([dev environment](dev-environment.md)). That client needs
+    `https://local.tabscan.nu01.com:2443` among its JavaScript origins, and
+    no redirect URI.
 31. **Read tab is not working; add the logging needed to troubleshoot it,
     in the client and the server.** The app logs each step of Read tab
     (sign-in, the path taken, per-page preparation, OCR and layout
@@ -249,7 +258,9 @@ spec.
     granted to users: the app reaches its functions through the OCR function
     URL and the share API with the Google token, and invoking
     `tabscan-ocr-api` or `tabscan-ocr` directly would let a user forge S3
-    events for other users' pages.
+    events for other users' pages. Deploying the pool change failed:
+    Cognito takes one Google client ID of at most 128 characters, so a pool
+    can't trust two clients (rolled back, the pool unchanged; see 36).
 33. **When a photo is added by hand, crop it to the page, without what's
     under it.** Photos added with Photos & videos or Files are cropped and
     straightened to the page when one stands out (the largest bright
@@ -269,3 +280,15 @@ spec.
     ([scanning](scanning.md#web)). Android and iOS keep the system
     document scanner. Its pages are cropped to the page, as photos added
     by hand are.
+36. **Merge, run and deploy (the local client in AWS); then: a separate
+    identity pool for local builds.** Merged the logging and local-client
+    PRs and deployed the bucket's CORS, the OCR service (with the
+    logging) and the share API. As a Cognito pool can trust only one
+    Google client, `identity.yaml` now makes one pool per stack (parameter
+    `PoolName`; export `<stack>-pool-id`): `tabscan-identity` (unchanged)
+    and the new `tabscan-identity-local`, pool `tabscan-local`, trusting the
+    local web client, with its own role on the bucket. The dev web server
+    uses `TABSCANNER_COGNITO_LOCAL_IDENTITY_POOL_ID` with the local client
+    ([dev environment](dev-environment.md), [cloud sync](cloud-sync.md)).
+    Premium and sharing still don't work in local web builds (the OCR
+    service and share API look identities up in the main pool).
