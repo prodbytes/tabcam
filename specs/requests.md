@@ -145,3 +145,6 @@ spec.
     ([signed out](cloud-sync.md#signed-out)); Share with people already
     showed only signed in. Builds without sign-in set up don't ask. A
     sync pass ending after the app closed no longer notifies.
+19. **Add a copy button to the top of the transcription view.** The text
+    tab screen's **Copy** moved from an app-bar icon to a labeled button
+    above the text ([text tab editor](tab-recognition.md#text-tab-editor)).
