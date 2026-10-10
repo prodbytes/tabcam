@@ -17,9 +17,11 @@
     answers. Stopping it also stops whatever listens on the port.
   - `5-index`: [tabscan_index/site](../tabscan_index) on
     http://localhost:2013/.
-  - `0-health-check`: once both are ready, every 15 s
-    (`HEALTH_CHECK_INTERVAL`), a line per service: 🏠 index and 🎸 web,
-    ✅ or ❌.
+  - `0-health-check`: once both are ready, it prints the local URLs once
+    (🎸 the app, 🏠 the index), then every 15 s (`HEALTH_CHECK_INTERVAL`)
+    one line for the whole check: the time, then each dependency as its
+    icon, a short label and ✅ or ❌, e.g.
+    `2026-10-10 14:02:10  🏠 index ✅  🎸 web ✅`.
   - Servers bind to 127.0.0.1; `TABSCAN_BIND_HOST=0.0.0.0` serves other
     devices (a phone's browser).
 - **Android** (USB, debugging on; `ANDROID_SERIAL` picks one of several):
