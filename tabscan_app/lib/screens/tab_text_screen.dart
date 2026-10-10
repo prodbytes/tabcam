@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../auth/auth_service.dart';
 import '../library/library.dart';
+import 'sign_in_gate.dart';
 
 /// The text tab read from an event, to check against the pages and fix:
 /// monospaced, unwrapped (long lines scroll sideways), saved on leaving.
@@ -12,10 +14,14 @@ class TabTextScreen extends StatefulWidget {
     super.key,
     required this.library,
     required this.eventId,
+    this.auth,
   });
 
   final Library library;
   final String eventId;
+
+  /// Sharing needs the user signed in (null: a build without sign-in).
+  final AuthService? auth;
 
   @override
   State<TabTextScreen> createState() => _TabTextScreenState();
@@ -63,9 +69,13 @@ class _TabTextScreenState extends State<TabTextScreen> {
           IconButton(
             tooltip: 'Share',
             icon: const Icon(Icons.ios_share),
-            onPressed: () => SharePlus.instance.share(
-              ShareParams(text: _text.text, subject: title),
-            ),
+            onPressed: () async {
+              if (await requireSignIn(context, widget.auth, Gated.share)) {
+                await SharePlus.instance.share(
+                  ShareParams(text: _text.text, subject: title),
+                );
+              }
+            },
           ),
         ],
       ),

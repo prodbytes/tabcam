@@ -1,7 +1,8 @@
 # Sharing
 
 **Share** (event screen app bar, or a library card's menu) asks what to share
-the event as, then opens the system share sheet (`share_plus`):
+the event as, then opens the system share sheet (`share_plus`). Signed
+out, it asks to sign in first ([signed out](cloud-sync.md#signed-out)):
 
 - **PDF**: every image page, with its filter, fitted to an A4 page (18 pt
   margins; videos are left out); then the links, if any, under "Links",

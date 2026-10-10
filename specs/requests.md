@@ -128,3 +128,11 @@ spec.
     in the app and never upload; **Remove** leaves a share. The API is
     to be deployed by an administrator (`scripts/deploy-share-api.sh`)
     once the OAuth clients exist.
+17. **Let anonymous users capture, stored only locally; require sign-in
+    for processing and sharing.** Signed out, capturing works and stays on
+    the device; **Read tab** and **Share** open a
+    "Sign in to read tabs" / "Sign in to share" sheet first, which goes
+    on with the action once signed in
+    ([signed out](cloud-sync.md#signed-out)); Share with people already
+    showed only signed in. Builds without sign-in set up don't ask. A sync pass ending after the app closed no longer
+    notifies.

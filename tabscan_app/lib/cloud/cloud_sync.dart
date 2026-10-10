@@ -200,6 +200,8 @@ class CloudSync extends ChangeNotifier {
   }
 
   void _set(SyncState state, String? message) {
+    // A pass that ends after dispose (the app closing) has no one to tell.
+    if (_disposed) return;
     _state = state;
     _message = message;
     notifyListeners();
@@ -547,8 +549,11 @@ class CloudSync extends ChangeNotifier {
     _ => 'application/octet-stream',
   };
 
+  bool _disposed = false;
+
   @override
   void dispose() {
+    _disposed = true;
     if (_started) {
       auth.removeListener(_onAuth);
       library.localChanges.removeListener(_onLocalChange);
