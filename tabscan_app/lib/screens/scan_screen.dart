@@ -7,6 +7,7 @@ import '../library/scan.dart';
 import '../processing/page_filter.dart';
 import '../recognition/tab_reader.dart';
 import 'page_image.dart';
+import 'rename_dialog.dart';
 import 'share_sheet.dart';
 import 'tab_text_screen.dart';
 import 'video_page.dart';
@@ -54,17 +55,7 @@ class _ScanScreenState extends State<ScanScreen> {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(message)));
 
-  Future<void> _rename(Scan scan) async {
-    final result = await showDialog<(String, String)>(
-      context: context,
-      builder: (_) => _RenameDialog(scan: scan),
-    );
-    if (result == null) return;
-    final (title, artist) = result;
-    await _library.update(
-      scan.copyWith(title: title.isEmpty ? scan.title : title, artist: artist),
-    );
-  }
+  Future<void> _rename(Scan scan) => renameScan(context, _library, scan);
 
   Future<void> _add(Scan scan) async {
     final source = await showModalBottomSheet<_AddSource>(
@@ -335,60 +326,6 @@ class _Tool extends StatelessWidget {
       children: [
         IconButton(tooltip: label, icon: Icon(icon), onPressed: onPressed),
         Text(label, style: Theme.of(context).textTheme.labelSmall),
-      ],
-    );
-  }
-}
-
-class _RenameDialog extends StatefulWidget {
-  const _RenameDialog({required this.scan});
-
-  final Scan scan;
-
-  @override
-  State<_RenameDialog> createState() => _RenameDialogState();
-}
-
-class _RenameDialogState extends State<_RenameDialog> {
-  late final _title = TextEditingController(text: widget.scan.title);
-  late final _artist = TextEditingController(text: widget.scan.artist);
-
-  @override
-  void dispose() {
-    _title.dispose();
-    _artist.dispose();
-    super.dispose();
-  }
-
-  void _done() =>
-      Navigator.pop(context, (_title.text.trim(), _artist.text.trim()));
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Rename'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _title,
-            autofocus: true,
-            decoration: const InputDecoration(labelText: 'Song'),
-            textInputAction: TextInputAction.next,
-          ),
-          TextField(
-            controller: _artist,
-            decoration: const InputDecoration(labelText: 'Artist'),
-            onSubmitted: (_) => _done(),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(onPressed: _done, child: const Text('Save')),
       ],
     );
   }

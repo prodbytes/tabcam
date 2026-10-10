@@ -6,9 +6,10 @@ The home screen, titled **TabScan**.
   thumbnail (with its filter; a play badge for a scan of only videos), the
   title, and a line with the artist (if set), the page count, the video
   count (if any), and "text" once the tab has been read. Tapping a
-  card opens the [scan screen](scan-screen.md); its ⋮ menu has **Share**
-  ([sharing](sharing.md)) and **Delete** (after a confirmation, which says
-  the pages and text tab go too).
+  card opens the [scan screen](scan-screen.md); its ⋮ menu has **Rename**,
+  **Share** ([sharing](sharing.md)) and **Delete** (after a confirmation,
+  which says the pages and text tab go too). Long-pressing a card renames
+  it.
 - **Empty**: a music icon, "No tabs yet", and a line saying what Scan does.
 - **Scan** (floating button, bottom right) opens the
   [document scanner](scanning.md). The new scan lands at the top of the
@@ -24,8 +25,13 @@ The home screen, titled **TabScan**.
 A scan has an ID, a title, an artist (optional), when it was created, its
 pages, and the text tab once read. A page has an ID, a kind (**image** or
 **video**), its file's extension, and a [filter](page-filters.md) (used
-for images only). A new scan is titled `Tab YYYY-MM-DD HH:MM` (its local time);
-the scan screen's Rename changes it.
+for images only). A new scan is titled `Tab YYYY-MM-DD HH:MM` (its local time).
+
+**Rename** (a card's menu or long-press, or the scan screen's title or
+pencil) asks for the **Song** and **Artist**, prefilled, with the song's
+text selected so typing replaces it. Saving with an empty song keeps the
+title; an empty artist clears it. Exports are named from the new title
+([sharing](sharing.md)).
 
 IDs are the creation time in microseconds, base 36. IDs and extensions
 (1–5 lower-case letters or digits) name files, so anything else (a path,

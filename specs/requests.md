@@ -69,3 +69,7 @@ spec.
    ([scanning](scanning.md#adding-to-a-scan)); videos play in place, are
    skipped by Filter, Rotate, Read tab and the PDF, and are shared as
    they are under the new **Files** format ([sharing](sharing.md)).
+10. **Let users rename the scans.** Rename was only inside an opened scan;
+    it's now also in each card's menu in the [library](library.md), and a
+    long-press on a card. The dialog selects the current title, so typing
+    replaces it.

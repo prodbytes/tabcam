@@ -6,6 +6,7 @@ import '../capture/page_source.dart';
 import '../library/library.dart';
 import '../library/scan.dart';
 import 'page_image.dart';
+import 'rename_dialog.dart';
 import 'scan_screen.dart';
 import 'share_sheet.dart';
 import 'video_page.dart';
@@ -177,7 +178,7 @@ class _Empty extends StatelessWidget {
   }
 }
 
-enum _CardAction { share, delete }
+enum _CardAction { rename, share, delete }
 
 class _ScanCard extends StatelessWidget {
   const _ScanCard({
@@ -196,6 +197,8 @@ class _ScanCard extends StatelessWidget {
 
   Future<void> _action(BuildContext context, _CardAction action) async {
     switch (action) {
+      case _CardAction.rename:
+        await renameScan(context, library, scan);
       case _CardAction.share:
         await showShareSheet(context, library, scan);
       case _CardAction.delete:
@@ -237,6 +240,8 @@ class _ScanCard extends StatelessWidget {
           : null,
       child: InkWell(
         onTap: onOpen,
+        // Long-press is a shortcut to Rename.
+        onLongPress: () => _action(context, _CardAction.rename),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -290,6 +295,10 @@ class _ScanCard extends StatelessWidget {
                     tooltip: 'More',
                     onSelected: (a) => _action(context, a),
                     itemBuilder: (_) => const [
+                      PopupMenuItem(
+                        value: _CardAction.rename,
+                        child: Text('Rename'),
+                      ),
                       PopupMenuItem(
                         value: _CardAction.share,
                         child: Text('Share'),
