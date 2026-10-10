@@ -302,7 +302,7 @@ class CloudSync extends ChangeNotifier {
     CaptureEvent? seen,
   }) async {
     for (final page in theirs.pages) {
-      if (await library.hasPage(theirs.id, page)) continue;
+      if (!page.hasFile || await library.hasPage(theirs.id, page)) continue;
       final key = _key(identity, theirs.id, page.fileName);
       await library.putPageStream(
         theirs.id,
@@ -325,7 +325,7 @@ class CloudSync extends ChangeNotifier {
   ) async {
     final there = files[event.id] ?? const <String>{};
     for (final page in event.pages) {
-      if (there.contains(page.fileName)) continue;
+      if (!page.hasFile || there.contains(page.fileName)) continue;
       final (body, length) = await library.pageStream(event.id, page);
       await bucket.putStream(
         _key(identity, event.id, page.fileName),

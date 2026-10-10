@@ -38,6 +38,13 @@ new pages at the end, moving the view to the first one:
   (`image_picker`'s multiple media picker).
 - **Files**: image and video files (`file_picker`, media files): the Files
   app on iOS, the system picker on Android, the browser's on the web.
+- **Link**: asks for the **Link** and an optional **Title** ("Lesson,
+  recording…"). The address is trimmed and gets `https://` when it has no
+  scheme (`youtu.be/abc` is `https://youtu.be/abc`); only `http` and
+  `https` addresses with a host that has a dot (or `localhost`) are
+  taken, anything else (`javascript:`, `file:`, `mailto:`, plain words)
+  says "Enter a web address (https://…)". The title is trimmed; empty
+  means none.
 
 Picked files are recognized by extension, or else MIME type: images `jpg`,
 `jpeg`, `png`, `heic`, `heif`, `webp`, `gif`; videos `mp4`, `mov`, `m4v`,

@@ -9,13 +9,14 @@ import '../processing/page_filter.dart';
 /// What an event can be shared as.
 enum ShareFormat {
   /// Every image page (filtered) in one PDF, then the text tab if it was
-  /// read. Videos are left out.
+  /// read, then the links. Videos are left out.
   pdf('PDF'),
 
-  /// The text tab, as plain text: pastes anywhere, monospaced.
-  text('Text tab'),
+  /// The text tab and the links, as plain text: pastes anywhere.
+  text('Text'),
 
-  /// Each page as a file: images filtered, videos as they are.
+  /// Each image and video as a file: images filtered, videos as they are.
+  /// Links are left out.
   files('Files');
 
   const ShareFormat(this.label);
@@ -46,6 +47,29 @@ abstract final class Exporter {
       );
     }
     final text = event.tabText;
+    final links = event.pages.where((p) => p.isLink).toList();
+    if (links.isNotEmpty) {
+      doc.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(36),
+          build: (_) => [
+            pw.Header(level: 1, text: 'Links'),
+            for (final link in links)
+              pw.Padding(
+                padding: const pw.EdgeInsets.only(bottom: 8),
+                child: pw.UrlLink(
+                  destination: link.url.toString(),
+                  child: pw.Text(
+                    linkLine(link),
+                    style: const pw.TextStyle(color: PdfColors.blue800),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+    }
     if (text != null && text.trim().isNotEmpty) {
       doc.addPage(
         pw.MultiPage(
@@ -75,12 +99,12 @@ abstract final class Exporter {
     switch (format) {
       case ShareFormat.text:
         await SharePlus.instance.share(
-          ShareParams(text: event.tabText ?? '', subject: event.title),
+          ShareParams(text: shareText(event), subject: event.title),
         );
       case ShareFormat.pdf:
         final pages = [
           for (final p in event.pages)
-            if (!p.isVideo) await filteredPage(p),
+            if (p.isImage) await filteredPage(p),
         ];
         final bytes = await pdf(event, pages);
         await SharePlus.instance.share(
@@ -93,7 +117,7 @@ abstract final class Exporter {
       case ShareFormat.files:
         final files = <XFile>[];
         final names = <String>[];
-        for (final (i, page) in event.pages.indexed) {
+        for (final (i, page) in event.pages.where((p) => p.hasFile).indexed) {
           final (extension, mime) = _type(page);
           files.add(XFile.fromData(await filteredPage(page), mimeType: mime));
           names.add('$name ${i + 1}.$extension');
@@ -109,10 +133,29 @@ abstract final class Exporter {
     debugPrint('Shared ${event.id} as ${format.name}');
   }
 
+  /// What Text shares: the text tab, then each link on a line; null when
+  /// there's neither.
+  static String? shareText(CaptureEvent event) {
+    final links = [
+      for (final p in event.pages)
+        if (p.isLink) linkLine(p),
+    ];
+    final tab = event.tabText?.trimRight();
+    final parts = [
+      if (tab != null && tab.isNotEmpty) tab,
+      if (links.isNotEmpty) links.join('\n'),
+    ];
+    return parts.isEmpty ? null : parts.join('\n\n');
+  }
+
+  /// A link as a line of text: "Lesson: https://…", or the address.
+  static String linkLine(EventPage link) =>
+      link.title == null ? '${link.url}' : '${link.title}: ${link.url}';
+
   /// A shared page's extension and MIME type: PNG for an image with the
   /// Tab filter, otherwise the page's own.
   static (String, String) _type(EventPage page) {
-    if (!page.isVideo && page.filter != PageFilter.original) {
+    if (page.isImage && page.filter != PageFilter.original) {
       return ('png', 'image/png');
     }
     final extension = page.extension == 'img' ? 'jpg' : page.extension;

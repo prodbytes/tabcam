@@ -98,6 +98,17 @@ class Library extends ChangeNotifier {
     return _save(event.copyWith(pages: [...event.pages, ...added]));
   }
 
+  /// Adds a link to the end of [event] (see [parseLink]).
+  Future<CaptureEvent> addLink(CaptureEvent event, Uri url, {String? title}) =>
+      _save(
+        event.copyWith(
+          pages: [
+            ...event.pages,
+            EventPage.link(id: newId(), url: url, title: title),
+          ],
+        ),
+      );
+
   Future<CaptureEvent> _addPages(
     CaptureEvent event,
     List<Uint8List> pages,
@@ -274,7 +285,7 @@ class Library extends ChangeNotifier {
 
   /// An image page with its filter applied (cached); a video as it is.
   Future<Uint8List> filtered(CaptureEvent event, EventPage page) async {
-    if (page.isVideo) return original(event, page);
+    if (!page.isImage) return original(event, page);
     final key = '${page.id}/${page.filter.name}';
     return _filtered[key] ??= await applyFilter(
       await original(event, page),

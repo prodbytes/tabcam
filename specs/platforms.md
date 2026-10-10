@@ -7,6 +7,7 @@
 | Import photos | Through the scanner | Through the scanner | Photo picker, several |
 | Add photos & videos, files | Photo picker; system file picker | Photo library; Files app | Browser file picker (both) |
 | Play videos | From the file | From the file | From memory |
+| Open links (`url_launcher`) | Browser, or the app for the link | Safari, or the app for the link | A new tab |
 | Read tab | ✅ ML Kit on the device | ✅ ML Kit on the device | ❌ (says it needs the app) |
 | Library | Files in the app's documents | Files in the app's documents | Memory, until the tab closes |
 | Share | System share sheet | System share sheet | Web Share, or downloads |

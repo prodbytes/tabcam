@@ -103,3 +103,11 @@ spec.
     layout, not yet deployed, becomes `<identity>/events/<id>/event.json`
     in the `nu01-user-events-<account>` bucket
     ([cloud sync](cloud-sync.md)).
+14. **Let users add links to events as well.** The event screen's **Add**
+    has **Link**: an address (http or https; `https://` added when
+    missing) and an optional title, kept as a link page with no file
+    ([scanning](scanning.md#adding-to-an-event)). It shows as a card with
+    **Open** and **Copy** ([event screen](event-screen.md)); the library
+    card counts links; Text and the PDF share them, Files leaves them out
+    ([sharing](sharing.md)); they sync inside `event.json`
+    ([cloud sync](cloud-sync.md)).

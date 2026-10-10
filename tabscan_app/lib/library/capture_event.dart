@@ -1,17 +1,29 @@
 import '../processing/page_filter.dart';
 
-/// What a page is: a picture of the tab, or a video (someone playing it,
-/// a lesson).
-enum PageKind { image, video }
+/// What a page is: a picture of the tab, a video (someone playing it, a
+/// lesson), or a link (a lesson online, a recording, the song's page).
+enum PageKind { image, video, link }
 
-/// One page of an event: its file is kept by the store as `<id>.<extension>`.
+/// One page of an event: an image's or video's file is kept by the store as
+/// `<id>.<extension>`; a link has no file, only its [url].
 class EventPage {
   const EventPage({
     required this.id,
     this.filter = PageFilter.tab,
     this.kind = PageKind.image,
     this.extension = 'img',
+    this.url,
+    this.title,
   });
+
+  /// A link page to [url] (checked with [checkUrl]), with an optional
+  /// [title].
+  EventPage.link({required this.id, required Uri url, String? title})
+    : filter = PageFilter.original,
+      kind = PageKind.link,
+      extension = 'url',
+      url = checkUrl(url),
+      title = (title?.trim().isEmpty ?? true) ? null : title!.trim();
 
   final String id;
 
@@ -23,7 +35,18 @@ class EventPage {
   /// from before videos were added are `img`.
   final String extension;
 
+  /// A link's address: http or https only.
+  final Uri? url;
+
+  /// A link's name, as the user gave it; null shows the address.
+  final String? title;
+
   bool get isVideo => kind == PageKind.video;
+  bool get isImage => kind == PageKind.image;
+  bool get isLink => kind == PageKind.link;
+
+  /// Whether the store keeps a file for it (images and videos, not links).
+  bool get hasFile => !isLink;
 
   /// The page's file name in its event's folder.
   String get fileName => '$id.$extension';
@@ -33,6 +56,8 @@ class EventPage {
     filter: filter ?? this.filter,
     kind: kind,
     extension: extension,
+    url: url,
+    title: title,
   );
 
   Map<String, Object?> toJson() => {
@@ -40,18 +65,32 @@ class EventPage {
     'filter': filter.name,
     'kind': kind.name,
     'extension': extension,
+    if (url != null) 'url': url.toString(),
+    if (title != null) 'title': title,
   };
 
-  factory EventPage.fromJson(Map<String, Object?> json) => EventPage(
-    id: checkId(json['id'] as String),
-    filter: PageFilter.byName(json['filter'] as String?),
-    kind: json['kind'] == 'video' ? PageKind.video : PageKind.image,
-    extension: checkExtension(json['extension'] as String? ?? 'img'),
-  );
+  factory EventPage.fromJson(Map<String, Object?> json) {
+    final id = checkId(json['id'] as String);
+    // Events also come from the cloud: a link is checked again here.
+    if (json['kind'] == 'link') {
+      return EventPage.link(
+        id: id,
+        url: Uri.parse(json['url'] as String),
+        title: json['title'] as String?,
+      );
+    }
+    return EventPage(
+      id: id,
+      filter: PageFilter.byName(json['filter'] as String?),
+      kind: json['kind'] == 'video' ? PageKind.video : PageKind.image,
+      extension: checkExtension(json['extension'] as String? ?? 'img'),
+    );
+  }
 }
 
-/// A scanned tab: its pages, what it's called, and the text tab read from
-/// it (if it was read).
+/// An event: what the user captured of a tab (scanned pages, photos,
+/// videos, links), what it's called, and the text tab read from it (if it
+/// was read).
 class CaptureEvent {
   CaptureEvent({
     required this.id,
@@ -168,6 +207,35 @@ final RegExp _id = RegExp(r'^[a-z0-9]{1,32}$');
 String checkId(String id) {
   if (!_id.hasMatch(id)) throw FormatException('Bad ID', id);
   return id;
+}
+
+/// [url] if it's an http or https address with a host; anything else
+/// (`javascript:`, `file:`, `intent:`...) is refused, since links open in
+/// the browser.
+Uri checkUrl(Uri url) {
+  if (!(url.isScheme('http') || url.isScheme('https')) || url.host.isEmpty) {
+    throw FormatException('Not a web link', url.toString());
+  }
+  return url;
+}
+
+/// The link the user typed or pasted, or null if it isn't one: trimmed,
+/// `https://` added when there's no scheme (`youtu.be/abc`).
+Uri? parseLink(String text) {
+  final trimmed = text.trim();
+  if (trimmed.isEmpty || trimmed.contains(RegExp(r'\s'))) return null;
+  final withScheme = RegExp(r'^[a-zA-Z][a-zA-Z0-9+.-]*:').hasMatch(trimmed)
+      ? trimmed
+      : 'https://$trimmed';
+  final url = Uri.tryParse(withScheme);
+  if (url == null) return null;
+  try {
+    checkUrl(url);
+  } on FormatException {
+    return null;
+  }
+  // A host needs a dot (example.com), or it's a typo.
+  return url.host.contains('.') || url.host == 'localhost' ? url : null;
 }
 
 final RegExp _extension = RegExp(r'^[a-z0-9]{1,5}$');
