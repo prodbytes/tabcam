@@ -205,3 +205,13 @@ spec.
     and HTTPS too. Still to write: `tabscan_floci/README.md` (with the
     one-time `mkcert -install`) and the [dev environment](dev-environment.md)
     spec for it.
+28. **Make the navigation like Presence's: a bottom navigation bar with
+    Home (the list), Capture and Profile; Capture with Scan for the camera
+    and Add buttons for uploads.** New [navigation](navigation.md): the
+    bar (flat, the open tab by color only, the Profile icon the user's
+    photo), the tab's name in the app bar. **Capture** has Scan and Add
+    (Photos & videos, Files, Link; a link's title names its event), each
+    making a new event shown on Home. **Profile** has the account (was
+    the app bar's cloud button and its sheet) and About (was an app bar
+    button). Import photos through the scanner is gone: photos are added
+    as they are.

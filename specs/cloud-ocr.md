@@ -57,7 +57,8 @@ blank line.
 
 `CloudOcr` ([lib/cloud/cloud_ocr.dart](../tabscan_app/lib/cloud/cloud_ocr.dart)):
 
-- **Status**: at sign-in, and each time the account sheet opens, the app
+- **Status**: at sign-in, and each time the Profile tab (or the account
+  sheet, from an event's Upgrade) opens, the app
   calls `POST /account` with the user's Google ID token. The service checks
   the token (signed by Google, issued for TabScan's web client, verified
   address), asks the identity pool for its identity ID, records identity →
@@ -80,15 +81,15 @@ blank line.
 
 **Upgrade offer**:
 
-- The [account sheet](cloud-sync.md#signing-in) has a **TabScan Premium**
-  card. For premium users: transcription is automatic, and until when.
+- The account, on the [Profile](navigation.md#profile) tab, has a
+  **TabScan Premium** card. For premium users: transcription is automatic, and until when.
   For others: what Premium does, "Subscribe with <their address>",
   **Upgrade** (the Substack subscribe page), **Redeem a voucher** (rbacr's
-  page) and **Check again**. Signed out, the sheet says Premium comes with
+  page) and **Check again**. Signed out, it says Premium comes with
   signing in.
 - The [event screen](event-screen.md) shows a dismissible hint, "TabScan
   Premium transcribes your scans automatically", with **Upgrade** (it opens
-  the account sheet), on events without a text tab, for users without
+  the account, the Profile tab's panel, in a sheet), on events without a text tab, for users without
   Premium (signed out included).
 - On the web, Read tab without Premium says reading tabs needs the Android
   or iOS app, or TabScan Premium.

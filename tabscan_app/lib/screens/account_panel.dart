@@ -5,43 +5,9 @@ import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
 import 'premium_card.dart';
 
-/// The library's account button: the cloud, as sync stands, opening the
-/// [AccountSheet].
-class AccountButton extends StatelessWidget {
-  const AccountButton({
-    super.key,
-    required this.auth,
-    required this.sync,
-    this.ocr,
-  });
-
-  final AuthService auth;
-  final CloudSync sync;
-  final CloudOcr? ocr;
-
-  @override
-  Widget build(BuildContext context) => ListenableBuilder(
-    listenable: Listenable.merge([auth, sync]),
-    builder: (context, _) {
-      final (icon, tooltip) = switch (sync.state) {
-        _ when auth.user == null => (Icons.cloud_off_outlined, 'Sign in'),
-        SyncState.syncing => (Icons.cloud_sync_outlined, 'Syncing…'),
-        SyncState.failed => (Icons.sync_problem_outlined, 'Sync failed'),
-        _ => (Icons.cloud_done_outlined, 'Synced'),
-      };
-      return IconButton(
-        tooltip: tooltip,
-        icon: Icon(icon),
-        onPressed: () => showAccountSheet(context, auth, sync, ocr),
-      );
-    },
-  );
-}
-
-/// Signing in to sync events, and once signed in, who it is, how sync
-/// stands, Sync now and Sign out.
-/// Opens the [AccountSheet]; with Premium set up ([ocr]), it checks again
-/// whether the user is premium (they may have just upgraded).
+/// The [AccountPanel] in a bottom sheet, for places away from the Profile
+/// tab (an event's Premium Upgrade); with Premium set up ([ocr]), it checks
+/// again whether the user is premium (they may have just upgraded).
 Future<void> showAccountSheet(
   BuildContext context,
   AuthService auth,
@@ -53,12 +19,20 @@ Future<void> showAccountSheet(
     context: context,
     showDragHandle: true,
     isScrollControlled: true,
-    builder: (_) => AccountSheet(auth: auth, sync: sync, ocr: ocr),
+    builder: (_) => SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        child: AccountPanel(auth: auth, sync: sync, ocr: ocr),
+      ),
+    ),
   );
 }
 
-class AccountSheet extends StatelessWidget {
-  const AccountSheet({
+/// The Profile tab's account: signing in, and once signed in, who it is,
+/// how sync stands, Sync now and Sign out; with Premium set up ([ocr]),
+/// the Premium card too.
+class AccountPanel extends StatelessWidget {
+  const AccountPanel({
     super.key,
     required this.auth,
     required this.sync,
@@ -72,12 +46,8 @@ class AccountSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: Listenable.merge([auth, sync]),
-    builder: (context, _) => SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-        child: auth.user == null ? _signedOut(context) : _signedIn(context),
-      ),
-    ),
+    builder: (context, _) =>
+        auth.user == null ? _signedOut(context) : _signedIn(context),
   );
 
   Widget _signedOut(BuildContext context) {
@@ -86,11 +56,12 @@ class AccountSheet extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Sync your tabs', style: theme.textTheme.titleLarge),
+        Text('Sign in', style: theme.textTheme.titleLarge),
         const SizedBox(height: 8),
         const Text(
-          'Sign in to back up your events and have them on every device '
-          'you sign in on. Without signing in, they stay on this device.',
+          'Sign in to read tabs, share, and have your events backed up on '
+          'every device you sign in on. Signed out, you can still capture; '
+          'it stays on this device.',
         ),
         if (ocr != null) ...[
           const SizedBox(height: 8),

@@ -10,7 +10,7 @@ import '../processing/page_filter.dart';
 import '../recognition/tab_reader.dart';
 import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
-import 'account_sheet.dart';
+import 'account_panel.dart';
 import 'clone.dart';
 import 'link_page.dart';
 import 'page_image.dart';

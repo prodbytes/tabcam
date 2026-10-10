@@ -21,10 +21,14 @@ the cloud as they sync.
 
 **App**
 
-- [Library](library.md): the home screen, a grid of events (newest first),
-  with Scan, Import, Share and Delete; how events are stored.
+- [Navigation](navigation.md): as Presence's, a bottom navigation bar
+  with Home (the events), Capture (Scan with the camera; Add photos &
+  videos, files or a link) and Profile (the account, About).
+- [Library](library.md): the Home tab, a grid of events (newest first),
+  with Rename, Share, Clone and Delete; how events are stored.
 - [Scanning](scanning.md): the system document scanner (edge detection,
-  straightening, several pages), importing photos, and adding pages.
+  straightening, several pages), and adding pages, photos, videos, files
+  and links.
 - [Event screen](event-screen.md): one event's pages (images, videos and
   links, with Open and Copy) to swipe and zoom, with
   Add page, Filter, Rotate, Read tab and Delete, plus Rename and Share.
@@ -36,7 +40,7 @@ the cloud as they sync.
 - [Sharing](sharing.md): PDF, text (the text tab and links), or files
   (images and videos), through the system share sheet.
 - [Sign-in and cloud sync](cloud-sync.md): optional Google sign-in from
-  the library's cloud button; signed-in users' events sync both ways with
+  the Profile tab; signed-in users' events sync both ways with
   their own folder in S3 (Cognito identity pool credentials, no server),
   deletions included.
 - [Shared captures](shared-captures.md): share a capture of one's own

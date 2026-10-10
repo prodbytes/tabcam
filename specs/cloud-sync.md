@@ -17,8 +17,7 @@ it's as before: no account button, events only on the device.
 
 ## Signed out
 
-Signed out (anonymous), the user can **capture**: scan, import photos,
-and add pages, photos, videos, files and links to their events, and
+Signed out (anonymous), the user can **capture**: scan, and add pages, photos, videos, files and links to their events, and
 rename, filter, rotate, clone and delete them. All of it is stored on the
 device only. **Read tab** (the processing) and **sharing** need signing
 in. **Share with people** only shows signed in. **Share** (as a PDF, text
@@ -35,13 +34,12 @@ sharing work as before (there'd be no way to sign in).
 
 ## Signing in
 
-The [library](library.md)'s app bar has a cloud button, whose icon is the
-sync's state: crossed out (signed out), syncing, a warning (the last pass
-failed) or done. It opens the account sheet:
+The [Profile](navigation.md#profile) tab shows the account:
 
-- **Signed out**: "Sync your tabs", what signing in does, and **Sign in
-  with Google** (on the web, Google's own button), with the last sign-in
-  error under it.
+- **Signed out**: "Sign in", what it's for (reading tabs, sharing, and
+  backing up to every device; signed out, capturing stays on this
+  device), and **Sign in with Google** (on the web, Google's own button),
+  with the last sign-in error under it.
 - **Signed in**: the account's photo, name and email; the sync status
   ("Syncing…", "Synced at 14:05 (2 uploaded, 1 downloaded)", or why it
   failed, such as "Sign in again to sync"); **Sync now**; **Sign out**,

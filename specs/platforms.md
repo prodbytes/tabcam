@@ -4,7 +4,6 @@
 |---|---|---|---|
 | Minimum | 7.0 (API 24) | 15.5 | A current browser |
 | Scan | System document scanner (ML Kit): edges, straightening, several pages | System document scanner (VisionKit) | One photo, uncropped |
-| Import photos | Through the scanner | Through the scanner | Photo picker, several |
 | Add photos & videos, files | Photo picker; system file picker | Photo library; Files app | Browser file picker (both) |
 | Play videos | From the file | From the file | From memory |
 | Open links (`url_launcher`) | Browser, or the app for the link | Safari, or the app for the link | A new tab |
