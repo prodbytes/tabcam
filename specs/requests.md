@@ -153,3 +153,6 @@ spec.
     2 minutes and on resume; in maintenance mode they show only the sorry
     message (the admin's, or a default) and stop syncing. Unreadable
     status fails open, so offline capture keeps working.
+20. **Add a copy button to the top of the transcription view.** The text
+    tab screen's **Copy** moved from an app-bar icon to a labeled button
+    above the text ([text tab editor](tab-recognition.md#text-tab-editor)).
