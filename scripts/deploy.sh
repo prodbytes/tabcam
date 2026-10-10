@@ -34,6 +34,9 @@
 #                (tabscan-identity, tabscan-user-data, tabscan-share-api)
 #                are deployed by an administrator, not here: see
 #                tabscan_infra/README.md.
+#   TABSCANNER_OCR_URL
+#                TabScan Premium's cloud OCR (tabscan-ocr's ApiUrl,
+#                from tabscan_locr/scripts/deploy.sh); empty: no Premium
 # Needs the AWS CLI, Python 3 and Flutter (all in devbox).
 set -euo pipefail
 

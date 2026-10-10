@@ -1,0 +1,4 @@
+*
+!requirements.txt
+!locr/
+locr/__pycache__/

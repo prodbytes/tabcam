@@ -43,9 +43,11 @@ Repository variables: `TABSCANNER_AWS_DEPLOY_ROLE_ARN`, `TABSCANNER_AWS_DEPLOY_R
 `TABSCANNER_HOSTED_ZONE_ID`, and for [sign-in and cloud sync](cloud-sync.md)
 `TABSCANNER_GOOGLE_WEB_CLIENT_ID`, `TABSCANNER_GOOGLE_IOS_CLIENT_ID` (releases only),
 `TABSCANNER_COGNITO_IDENTITY_POOL_ID`, `TABSCANNER_USER_DATA_BUCKET` and (for
-[shared captures](shared-captures.md)) `TABSCANNER_SHARE_API_URL`, compiled into
-the builds (empty: no sign-in, or no sharing). Their stacks,
-`tabscan-user-data`, `tabscan-identity` and `tabscan-share-api`, are
+[shared captures](shared-captures.md)) `TABSCANNER_SHARE_API_URL` and (for
+[TabScan Premium](cloud-ocr.md)) `TABSCANNER_OCR_URL`, compiled into
+the builds (empty: no sign-in, no sharing, or no Premium). Their stacks,
+`tabscan-user-data`, `tabscan-identity`, `tabscan-share-api`,
+`tabscan-ocr-repo` and `tabscan-ocr`, are
 deployed by an administrator, not by the workflows; repository secret: `TABSCANNER_HEALTH_EMAILS` (a secret
 because the repository is public and run logs show variables). One-time setup:
 [tabscan_infra/README.md](../tabscan_infra/README.md).

@@ -1,0 +1,17 @@
+# The Lambda image's Python packages, pinned (tested together in the OCR
+# bench: test_data/ocr_bench, kept out of git).
+numpy==1.26.4
+# PaddleX requires this exact OpenCV build (its dependency check names it).
+opencv-contrib-python==4.10.0.84
+pillow==12.3.0
+pytesseract==0.3.13
+rapidocr-onnxruntime==1.4.4
+onnxruntime==1.31.0
+paddlepaddle==3.3.1
+paddleocr==3.7.0
+paddlex==3.7.2
+rapidfuzz==3.14.6
+boto3==1.43.111
+pyjwt[crypto]==2.15.1
+cryptography==50.0.2
+awslambdaric==4.2.0

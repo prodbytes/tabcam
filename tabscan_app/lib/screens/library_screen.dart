@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../app_version.dart';
 import '../auth/auth_service.dart';
 import '../capture/page_source.dart';
+import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
@@ -21,11 +22,18 @@ import 'video_page.dart';
 /// message that confirms it. With [auth] and [sync] (a build with sign-in
 /// and cloud sync set up), the app bar has the account button.
 class LibraryScreen extends StatefulWidget {
-  const LibraryScreen({super.key, required this.library, this.auth, this.sync});
+  const LibraryScreen({
+    super.key,
+    required this.library,
+    this.auth,
+    this.sync,
+    this.ocr,
+  });
 
   final Library library;
   final AuthService? auth;
   final CloudSync? sync;
+  final CloudOcr? ocr;
 
   @override
   State<LibraryScreen> createState() => _LibraryScreenState();
@@ -83,13 +91,14 @@ class _LibraryScreenState extends State<LibraryScreen> {
     });
   }
 
-  void _open(BuildContext context, CaptureEvent event) => Navigator.of(context)
-      .push(
+  void _open(BuildContext context, CaptureEvent event) =>
+      Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => EventScreen(
             library: library,
             eventId: event.id,
             sync: widget.sync,
+            ocr: widget.ocr,
           ),
         ),
       );
@@ -101,7 +110,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         title: const Text('TabScan'),
         actions: [
           if ((widget.auth, widget.sync) case (final auth?, final sync?))
-            AccountButton(auth: auth, sync: sync),
+            AccountButton(auth: auth, sync: sync, ocr: widget.ocr),
           IconButton(
             tooltip: 'Import photos',
             icon: const Icon(Icons.photo_library_outlined),
