@@ -6,6 +6,7 @@ import '../library/library.dart';
 import '../library/capture_event.dart';
 import '../processing/page_filter.dart';
 import '../recognition/tab_reader.dart';
+import 'clone.dart';
 import 'link_page.dart';
 import 'page_image.dart';
 import 'rename_dialog.dart';
@@ -58,6 +59,20 @@ class _EventScreenState extends State<EventScreen> {
 
   Future<void> _rename(CaptureEvent event) =>
       renameEvent(context, _library, event);
+
+  /// Clones the event and opens the copy in this one's place.
+  Future<void> _clone(CaptureEvent event) async {
+    setState(() => _busy = true);
+    final copy = await cloneEvent(context, _library, event);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (copy == null) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => EventScreen(library: _library, eventId: copy.id),
+      ),
+    );
+  }
 
   Future<void> _add(CaptureEvent event) async {
     final source = await showModalBottomSheet<_AddSource>(
@@ -203,6 +218,11 @@ class _EventScreenState extends State<EventScreen> {
                 tooltip: 'Rename',
                 icon: const Icon(Icons.edit_outlined),
                 onPressed: () => _rename(event),
+              ),
+              IconButton(
+                tooltip: 'Clone',
+                icon: const Icon(Icons.copy_all_outlined),
+                onPressed: _busy ? null : () => _clone(event),
               ),
               IconButton(
                 tooltip: 'Share',

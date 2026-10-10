@@ -8,6 +8,7 @@ import '../cloud/cloud_sync.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
 import 'account_sheet.dart';
+import 'clone.dart';
 import 'page_image.dart';
 import 'rename_dialog.dart';
 import 'event_screen.dart';
@@ -187,7 +188,7 @@ class _Empty extends StatelessWidget {
   }
 }
 
-enum _CardAction { rename, share, delete }
+enum _CardAction { rename, share, clone, delete }
 
 class _EventCard extends StatelessWidget {
   const _EventCard({
@@ -208,6 +209,8 @@ class _EventCard extends StatelessWidget {
     switch (action) {
       case _CardAction.rename:
         await renameEvent(context, library, event);
+      case _CardAction.clone:
+        await cloneEvent(context, library, event);
       case _CardAction.share:
         await showShareSheet(context, library, event);
       case _CardAction.delete:
@@ -317,6 +320,10 @@ class _EventCard extends StatelessWidget {
                       PopupMenuItem(
                         value: _CardAction.share,
                         child: Text('Share'),
+                      ),
+                      PopupMenuItem(
+                        value: _CardAction.clone,
+                        child: Text('Clone'),
                       ),
                       PopupMenuItem(
                         value: _CardAction.delete,
