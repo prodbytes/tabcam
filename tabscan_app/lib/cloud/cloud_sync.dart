@@ -32,8 +32,9 @@ enum SyncState {
 ///
 /// The folder is the user's Cognito identity ID:
 ///
-/// - `<identity>/events/<event id>/event.json`: the event's details (no
-///   `owner`), or its tombstone once deleted;
+/// - `<identity>/events/<event id>/event.json`: the event's details (with
+///   the folder's identity as `owner`, and its `shares`), or its tombstone
+///   once deleted;
 /// - `<identity>/events/<event id>/<page id>.<extension>`: each page's file,
 ///   written once (a rotated page is a new page).
 ///
@@ -410,8 +411,8 @@ class CloudSync extends ChangeNotifier {
   }
 
   /// Who [event] is shared with.
-  Future<List<Grant>> grants(CaptureEvent event) =>
-      shares!.grants(_signedIn(), event.id);
+  Future<List<Grant>> grants(CaptureEvent event) async =>
+      _record(event, await shares!.grants(_signedIn(), event.id));
 
   /// Shares [event] with [email] as [role], and syncs it, so they find it.
   Future<List<Grant>> grant(
@@ -425,12 +426,28 @@ class CloudSync extends ChangeNotifier {
       email,
       role: role,
     );
+    await _record(event, grants);
     unawaited(syncNow());
     return grants;
   }
 
-  Future<List<Grant>> revoke(CaptureEvent event, String email) =>
-      shares!.revoke(_signedIn(), event.id, email);
+  Future<List<Grant>> revoke(CaptureEvent event, String email) async =>
+      _record(event, await shares!.revoke(_signedIn(), event.id, email));
+
+  /// Keeps [grants] on the event (its `shares`), so they sync with it.
+  Future<List<Grant>> _record(CaptureEvent event, List<Grant> grants) async {
+    final current = library.byId(event.id);
+    final recorded = [
+      for (final g in grants)
+        EventShare(g.email, readOnly: g.role == ShareRole.read),
+    ];
+    if (current != null &&
+        !current.isShared &&
+        !listEquals(current.shares, recorded)) {
+      await library.update(current.copyWith(shares: recorded));
+    }
+    return grants;
+  }
 
   String _signedIn() =>
       _token ?? (throw ShareApiException(401, 'Sign in to share'));
@@ -506,7 +523,9 @@ class CloudSync extends ChangeNotifier {
       );
       _check(token);
     }
-    final json = utf8.encode(jsonEncode(event.toJson(local: false)));
+    final json = utf8.encode(
+      jsonEncode(event.copyWith(owner: identity).toJson(local: false)),
+    );
     await bucket.put(
       _key(identity, event.id),
       json,

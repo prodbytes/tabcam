@@ -85,7 +85,7 @@ class _EventScreenState extends State<EventScreen> {
   Future<void> _share(CaptureEvent event) async {
     if (await requireSignIn(context, widget.sync?.auth, Gated.share) &&
         mounted) {
-      await showShareSheet(context, _library, event);
+      await showShareSheet(context, _library, event, sync: widget.sync);
     }
   }
 

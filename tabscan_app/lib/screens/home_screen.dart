@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../app_version.dart';
@@ -8,6 +9,7 @@ import '../capture/media.dart';
 import '../capture/page_source.dart';
 import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
+import '../export/capture_link.dart';
 import '../library/capture_event.dart';
 import '../library/library.dart';
 import 'account_panel.dart';
@@ -70,6 +72,84 @@ class _HomeScreenState extends State<HomeScreen> {
   void _snack(String message) => ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(message)));
+
+  @override
+  void initState() {
+    super.initState();
+    // The web app opened from a capture's link (…/app/?c=<id>).
+    if (kIsWeb) openLink(Uri.base);
+  }
+
+  @override
+  void dispose() {
+    _stopLink();
+    super.dispose();
+  }
+
+  /// The capture a link named, until it's opened (or found missing).
+  String? _linked;
+  bool _askedToSignIn = false;
+  bool _passSinceLink = false;
+
+  /// Opens the capture [link] names ([CaptureLink]), found by its ID among
+  /// the user's own and those shared with them: right away if it's here,
+  /// else once signed in and a sync pass has brought it.
+  void openLink(Uri link) {
+    final id = CaptureLink.idIn(link);
+    if (id == null) return;
+    _stopLink();
+    _linked = id;
+    _askedToSignIn = false;
+    _passSinceLink = false;
+    library.addListener(_tryLink);
+    widget.sync?.addListener(_tryLink);
+    widget.auth?.addListener(_tryLink);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _tryLink());
+  }
+
+  void _stopLink() {
+    _linked = null;
+    library.removeListener(_tryLink);
+    widget.sync?.removeListener(_tryLink);
+    widget.auth?.removeListener(_tryLink);
+  }
+
+  void _tryLink() {
+    final id = _linked;
+    if (id == null || !mounted || !library.loaded) return;
+    if (library.byId(id) case final event?) {
+      _stopLink();
+      openEvent(context, library, event, widget.sync, widget.ocr);
+      return;
+    }
+    final sync = widget.sync;
+    if (sync == null) {
+      _stopLink();
+      _snack('That capture isn\'t on this device.');
+      return;
+    }
+    if (widget.auth?.user == null) {
+      if (!_askedToSignIn) {
+        _askedToSignIn = true;
+        _snack('Sign in (Profile) to open the capture in this link.');
+      }
+      return;
+    }
+    switch (sync.state) {
+      case SyncState.syncing:
+        _passSinceLink = true;
+      case SyncState.synced || SyncState.failed when _passSinceLink:
+        _stopLink();
+        _snack(
+          'That capture isn\'t shared with you. Ask its owner to share it '
+          'with your email address.',
+        );
+      case SyncState.synced || SyncState.failed:
+        unawaited(sync.syncNow());
+      case SyncState.signedOut:
+        break; // the first pass hasn't started yet
+    }
+  }
 
   /// Runs [capture], which makes a new event (or null when cancelled), and
   /// shows it on Home.
