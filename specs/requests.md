@@ -292,3 +292,14 @@ spec.
     ([dev environment](dev-environment.md), [cloud sync](cloud-sync.md)).
     Premium and sharing still don't work in local web builds (the OCR
     service and share API look identities up in the main pool).
+37. **In the capture view, let the first button cycle Original, Scan and
+    Text (the original, processed and OCR views); no Read tab button: read
+    every tab submitted by itself.** The event screen's first tool is the
+    view, Original → Scan → Text, which sets the image pages' filter or
+    shows the text in place of the pages ([event screen](event-screen.md)).
+    Read tab is gone: `AutoReader` reads each capture whenever its image
+    pages change (on the device, or Premium's cloud), never replacing a
+    text the user edited (`tabTextAuto`), and waits for sign-in signed out
+    ([tab recognition](tab-recognition.md)). The text tab screen became
+    the Text view.
+

@@ -39,8 +39,9 @@ under the app bar.
   people (only the owner shares). Changes go up to the owner's folder,
   and the owner's changes come down; the later one wins, as between one's
   own devices.
-- **Read only**: Rename, Add, Filter, Rotate, Read tab, Delete (a page)
-  and editing the text tab are off; Share (export) and Clone work. A clone
+- **Read only**: Rename, Add, Rotate, Delete (a page) and editing the
+  text tab are off (the view changes only what shows), and nothing
+  reads it here; Share (export) and Clone work. A clone
   is the user's own.
 - **Remove** (a card's menu, instead of Delete, after a confirmation that
   the owner keeps it) takes it off the user's devices and leaves the
