@@ -140,7 +140,13 @@ class CloudOcr extends ChangeNotifier {
   /// its synced pages that have no transcription yet. How many were queued.
   Future<int> transcribe(CaptureEvent event) async {
     final token = _token;
-    if (token == null || !premium) return 0;
+    if (token == null || !premium) {
+      debugPrint(
+        'TabScan: cloud OCR: not transcribing ${event.id}: '
+        '${token == null ? 'no ID token' : 'not premium'}',
+      );
+      return 0;
+    }
     _requested.add(event.id);
     return api.transcribe(token, event.id);
   }
@@ -177,6 +183,10 @@ class CloudOcr extends ChangeNotifier {
       if (parts.length != 2 || !parts[1].endsWith('.json')) continue;
       (done[parts[0]] ??= {}).add(parts[1].substring(0, parts[1].length - 5));
     }
+    debugPrint(
+      'TabScan: cloud OCR: results for ${done.length} events '
+      '(${done.values.fold(0, (n, pages) => n + pages.length)} pages)',
+    );
     final state = await _OcrState.load(library, identity);
     var changed = false;
     for (final event in [...library.events]) {
@@ -194,6 +204,10 @@ class CloudOcr extends ChangeNotifier {
       ];
       if (missing.isNotEmpty) {
         final waited = _now().difference(event.updated) > backfillAfter;
+        debugPrint(
+          'TabScan: cloud OCR: ${event.id} waits for ${missing.length} of '
+          '${pages.length} pages${waited ? ', asking for them' : ''}',
+        );
         if (waited && _requested.add(event.id)) {
           try {
             await api.transcribe(token, event.id);
@@ -214,6 +228,12 @@ class CloudOcr extends ChangeNotifier {
         );
         final result = (jsonDecode(utf8.decode(bytes)) as Map)
             .cast<String, Object?>();
+        debugPrint(
+          'TabScan: cloud OCR: ${event.id}/${p.id}: ${result['status']}'
+          '${result['error'] == null ? '' : ' (${result['error']})'}, '
+          '${result['staves']} staves, ${result['lines']} lines, '
+          'version ${result['version']}',
+        );
         if (result['status'] == 'ok' && result['text'] is String) {
           final text = (result['text'] as String).trimRight();
           if (text.isNotEmpty) texts.add(text);
@@ -228,8 +248,18 @@ class CloudOcr extends ChangeNotifier {
           !current.tabTextCorrect &&
           (current.tabText == null || current.tabText == last?.text);
       if (text != null && ours && current.tabText != text) {
-        await library.update(current.copyWith(tabText: text));
+        await library.update(
+          current.copyWith(tabText: text, tabTextAuto: true),
+        );
       }
+      debugPrint(
+        'TabScan: cloud OCR: ${event.id}: '
+        '${text == null
+            ? 'no tab on any page'
+            : !ours
+            ? 'text tab edited, kept'
+            : 'text tab filled'}',
+      );
       state.events[event.id] = _Filled(signature, ours ? text : last?.text);
       changed = true;
     }

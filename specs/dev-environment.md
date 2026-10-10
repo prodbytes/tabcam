@@ -17,7 +17,9 @@
     `scripts/flutter-web.sh` (also `devbox run web`). Ready when `/app/`
     answers. Stopping it also stops whatever listens on the port.
   - `5-index`: [tabscan_index/site](../tabscan_index) on
-    http://localhost:2013/.
+    http://localhost:2013/: the index page and the local
+    [maintenance](maintenance-mode.md) switch, `/status.json`
+    (`{"maintenance": false}`).
   - `4-floci`: [Floci](https://floci.io/), a local AWS emulator, as the
     CloudFront distribution in front of both, as deployed: `/app*` goes to
     the app and everything else to the index
@@ -63,6 +65,21 @@
   [maintenance mode](maintenance-mode.md)'s `TABSCANNER_STATUS_URL`, all public
   identifiers); the version is passed as `TABSCANNER_VERSION`. The
   environment wins over `.env`.
+- **Local web sign-in**: the dev web server (`scripts/flutter-web.sh`)
+  passes `TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID`, when set, as
+  `TABSCANNER_GOOGLE_WEB_CLIENT_ID`. That is the "local - web" OAuth client,
+  `1061413485511-2ndd6lqkmi61j17vpk5f2ntjb91tt38r`. Its authorized
+  JavaScript origins must list each local URL with its port:
+  `https://local.tabscan.nu01.com:2443` and `http://localhost:2012`. The web
+  button needs no redirect URI. `TABSCANNER_GOOGLE_WEB_CLIENT_ID` stays the
+  production client, because manual deploys read it from `.env`. A
+  Cognito pool trusts one Google client, so the local client has its own
+  pool, `tabscan-local` (stack `tabscan-identity-local`): with
+  `TABSCANNER_COGNITO_LOCAL_IDENTITY_POOL_ID` set, the dev web server
+  passes it as `TABSCANNER_COGNITO_IDENTITY_POOL_ID` along with the local
+  client (without it, it warns that the pool will refuse the local
+  client's tokens). Local identities are not the production ones, so a
+  local build syncs to its own folder in the bucket. Premium and sharing don't work in local web builds: the OCR service and the share API accept the local client's tokens but look the identity up in the main pool, which refuses them.
 - **Setting names**: every TabScan setting is prefixed `TABSCANNER_`, and
   keeps the same name in `.env`, the scripts, the app's dart-defines and
   the GitHub repository variables and secrets. `AWS_REGION` keeps its

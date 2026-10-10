@@ -2,7 +2,8 @@
 
 The app sends the signed-in user's Google ID token (the one it gives
 Cognito). It must be signed by Google, for TabScan's web client (every
-platform's token is issued for it), unexpired, with a verified e-mail. The
+platform's token is issued for it) or the local web client (local web
+builds), unexpired, with a verified e-mail. The
 identity pool then says which identity ID that token is, the same folder the
 app syncs to, so nobody can ask about another user's folder.
 """
@@ -20,16 +21,18 @@ class Unauthorized(Exception):
 
 class GoogleVerifier:
     def __init__(self, client_id=None, jwks=None):
-        self.client_id = client_id if client_id is not None else os.environ.get("GOOGLE_WEB_CLIENT_ID", "")
+        # One client ID, or several separated by commas.
+        raw = client_id if client_id is not None else os.environ.get("GOOGLE_WEB_CLIENT_ID", "")
+        self.client_ids = [c.strip() for c in raw.split(",") if c.strip()]
         self._jwks = jwks or jwt.PyJWKClient(GOOGLE_CERTS, cache_keys=True, lifespan=3600)
 
     def email(self, token):
         """The token's verified e-mail address, lower case."""
-        if not self.client_id:
+        if not self.client_ids:
             raise Unauthorized("sign-in isn't set up")
         try:
             key = self._jwks.get_signing_key_from_jwt(token).key
-            claims = jwt.decode(token, key, algorithms=["RS256"], audience=self.client_id,
+            claims = jwt.decode(token, key, algorithms=["RS256"], audience=self.client_ids,
                                 issuer=ISSUERS, options={"require": ["exp", "iss", "aud", "email"]})
         except jwt.PyJWTError as e:
             raise Unauthorized(f"bad token: {type(e).__name__}") from e
@@ -52,4 +55,4 @@ class CognitoIdentities:
         try:
             return self._client.get_id(IdentityPoolId=self.pool_id, Logins={"accounts.google.com": token})["IdentityId"]
         except self._client.exceptions.NotAuthorizedException as e:
-            raise Unauthorized("token refused by the identity pool") from e
+            raise Unauthorized(f"token refused by the identity pool: {e}") from e

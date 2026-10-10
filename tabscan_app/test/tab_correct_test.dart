@@ -5,7 +5,7 @@ import 'package:tabscan_app/library/capture_event.dart';
 import 'package:tabscan_app/library/event_store_memory.dart';
 import 'package:tabscan_app/library/library.dart';
 import 'package:tabscan_app/screens/event_screen.dart';
-import 'package:tabscan_app/screens/tab_text_screen.dart';
+import 'package:tabscan_app/screens/tab_text_view.dart';
 
 const _riff = 'e|--3--5--|\nB|-5------|';
 
@@ -48,7 +48,9 @@ void main() {
     final (library, event) = await _event(tester);
     await tester.pumpWidget(
       MaterialApp(
-        home: TabTextScreen(library: library, eventId: event.id),
+        home: Scaffold(
+          body: TabTextView(library: library, eventId: event.id),
+        ),
       ),
     );
 
@@ -67,7 +69,9 @@ void main() {
     var (library, event) = await _event(tester, readOnly: true);
     await tester.pumpWidget(
       MaterialApp(
-        home: TabTextScreen(library: library, eventId: event.id),
+        home: Scaffold(
+          body: TabTextView(library: library, eventId: event.id),
+        ),
       ),
     );
     expect(find.text('Mark correct'), findsNothing);
@@ -76,7 +80,9 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         key: UniqueKey(),
-        home: TabTextScreen(library: library, eventId: event.id),
+        home: Scaffold(
+          body: TabTextView(library: library, eventId: event.id),
+        ),
       ),
     );
     await tester.tap(find.text('Correct'));
@@ -93,13 +99,13 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
-    expect(find.byType(TabTextScreen), findsOneWidget);
+    expect(find.byType(TabTextView), findsOneWidget);
 
-    // The pages are one step back.
-    await tester.pageBack();
+    // The pages are the view tool away (Text → Original).
+    await tester.tap(find.byKey(const Key('view')));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
-    expect(find.byType(TabTextScreen), findsNothing);
+    expect(find.byType(TabTextView), findsNothing);
     expect(find.text('1 / 1'), findsOneWidget);
   });
 
@@ -112,7 +118,7 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
-    expect(find.byType(TabTextScreen), findsNothing);
+    expect(find.byType(TabTextView), findsNothing);
     expect(find.text('1 / 1'), findsOneWidget);
   });
 }

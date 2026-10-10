@@ -60,8 +60,9 @@ blank line.
 - **Status**: at sign-in, and each time the Profile tab (or the account
   sheet, from an event's Upgrade) opens, the app
   calls `POST /account` with the user's Google ID token. The service checks
-  the token (signed by Google, issued for TabScan's web client, verified
-  address), asks the identity pool for its identity ID, records identity →
+  the token (signed by Google, issued for TabScan's web client or the
+  local web client, verified address), asks the main identity pool for its identity ID
+  (so local web builds, whose identities are in the local pool, get 401), records identity →
   address, and answers `{email, premium, expiresAt, checked, upgradeUrl,
   voucherUrl}`.
 - **Results**: after each sync pass, a premium user's app lists
@@ -75,9 +76,11 @@ blank line.
   two minutes after its last change is sent to `POST /transcribe
   {eventId}` (once per event per session), which queues its untranscribed
   pages.
-- **Read tab**, for premium users, asks for the event's transcription
-  (`/transcribe`) and says it's on its way, or opens the text tab if it's
-  there.
+- **Reading by itself** ([tab recognition](tab-recognition.md#reading-by-itself)),
+  for premium users, asks for the event's transcription (`/transcribe`)
+  as soon as its image pages change; the Text view says it's on its way
+  until the text comes. What the cloud writes counts as an automatic
+  read (`tabTextAuto`): a text the user edited is never replaced.
 
 **Upgrade offer**:
 
@@ -91,8 +94,27 @@ blank line.
   Premium transcribes your scans automatically", with **Upgrade** (it opens
   the account, the Profile tab's panel, in a sheet), on events without a text tab, for users without
   Premium (signed out included).
-- On the web, Read tab without Premium says reading tabs needs the Android
-  or iOS app, or TabScan Premium.
+- On the web without Premium, the Text view says reading tabs needs the
+  Android or iOS app, or TabScan Premium.
+
+## Troubleshooting log
+
+- **App**: every call to the service is logged
+  (`TabScan: OCR API: POST <url>`, then its status, time and answer, or
+  the error); `TabScan: cloud OCR:` lines say when a read can't ask (no
+  ID token, not premium), and, per sync pass, how many results were found,
+  which events wait for which pages, each result's status, and whether the
+  text tab was filled or kept.
+- **Service** (CloudWatch, `aws logs tail /aws/lambda/tabscan-ocr-api
+  --follow`, and `.../tabscan-ocr`): one JSON line per event. `http`: the
+  path, status, time, identity, premium and the answer (the address left
+  out), why a token was refused or a body was bad. `transcribe`: the
+  event's files, those already transcribed, how many were queued and which
+  files aren't page images. `s3 event`: the key and the outcome (an
+  identity that never called `/account` is logged as such). `rbacr`: the
+  answer and its ttl, or why the check failed (HTTP status). `ocr start`,
+  `ocr done` (status, staves, lines, engine timings, seconds) and
+  `ocr failed` (the exception and traceback, before Lambda retries).
 
 ## Infrastructure
 
@@ -108,7 +130,7 @@ blank line.
     the rbacr secret, invoke `tabscan-ocr`, list the bucket and delete
     results;
   - its function URL (no IAM auth: each request carries a Google ID token;
-    CORS for the web app's origins);
+    CORS for the web app's origins, the local HTTPS one included);
   - the EventBridge rule `tabscan-ocr-pages` (page images created or
     deleted in the user-data bucket).
 - **`user-data.yaml`** sends the bucket's events to EventBridge.

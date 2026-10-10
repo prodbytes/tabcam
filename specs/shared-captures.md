@@ -31,7 +31,8 @@ Addresses are compared in lower case. One's own address, and more than
 
 A capture shared with the user comes down at the next
 [sync pass](cloud-sync.md#when-and-how) (within a minute) and shows in
-the [library](library.md) with "shared by <their email>" on its card. Its
+the [library](library.md)'s **Shared with me** section, below the user's
+own (**My captures**), with "shared by <their email>" on its card. Its
 event screen says **"Shared by <email> · Can edit"** or **"· Read only"**
 under the app bar.
 
@@ -39,8 +40,9 @@ under the app bar.
   people (only the owner shares). Changes go up to the owner's folder,
   and the owner's changes come down; the later one wins, as between one's
   own devices.
-- **Read only**: Rename, Add, Filter, Rotate, Read tab, Delete (a page)
-  and editing the text tab are off; Share (export) and Clone work. A clone
+- **Read only**: Rename, Add, Rotate, Delete (a page) and editing the
+  text tab are off (the view changes only what shows), and nothing
+  reads it here; Share (export) and Clone work. A clone
   is the user's own.
 - **Remove** (a card's menu, instead of Delete, after a confirmation that
   the owner keeps it) takes it off the user's devices and leaves the
@@ -71,7 +73,8 @@ credentials:
 
 - Every request carries the user's Google ID token, checked by the HTTP
   API's JWT authorizer (issuer `https://accounts.google.com`, audience the
-  web client). Only verified addresses (`email_verified`) are used. The
+  web client, and the local web client where it's set, though the main
+  pool then refuses local tokens: no sharing in local web builds). Only verified addresses (`email_verified`) are used. The
   owner's folder is their Cognito identity, found from the same token
   (`GetId`), so a user can only grant their own captures.
 - Grants are in a DynamoDB table: key `<owner>#<capture id>` and the

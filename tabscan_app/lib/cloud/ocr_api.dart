@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 /// Whether the signed-in user has TabScan Premium, as the cloud OCR service
@@ -76,16 +77,32 @@ class HttpOcrApi implements OcrApi {
     String idToken, [
     Map<String, Object?>? body,
   ]) async {
-    final r = await _client
-        .post(
-          baseUrl.resolve(path),
-          headers: {
-            'Authorization': 'Bearer $idToken',
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode(body ?? const {}),
-        )
-        .timeout(const Duration(seconds: 30));
+    final watch = Stopwatch()..start();
+    final url = baseUrl.resolve(path);
+    debugPrint('TabScan: OCR API: POST $url ${jsonEncode(body ?? const {})}');
+    final http.Response r;
+    try {
+      r = await _client
+          .post(
+            url,
+            headers: {
+              'Authorization': 'Bearer $idToken',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode(body ?? const {}),
+          )
+          .timeout(const Duration(seconds: 30));
+    } on Object catch (e) {
+      debugPrint(
+        'TabScan: OCR API: POST $path failed after '
+        '${watch.elapsedMilliseconds} ms: $e',
+      );
+      rethrow;
+    }
+    debugPrint(
+      'TabScan: OCR API: POST $path -> ${r.statusCode} in '
+      '${watch.elapsedMilliseconds} ms: ${r.body}',
+    );
     Map<String, Object?> json;
     try {
       json = (jsonDecode(r.body) as Map).cast();

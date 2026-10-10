@@ -58,9 +58,11 @@ class Rbacr:
         try:
             answer, ttl = self._ask(email)
         except Exception as e:  # fail closed, never cached
-            print(f"rbacr check failed: {type(e).__name__}")
+            detail = f" {e.code}" if isinstance(e, urllib.error.HTTPError) else f": {e}"
+            print(json.dumps({"msg": "rbacr check failed", "error": f"{type(e).__name__}{detail}"}))
             return Answer(False, checked=False)
         self._cache[email] = (self._clock() + ttl, answer)
+        print(json.dumps({"msg": "rbacr", "premium": answer.premium, "ttl": ttl}))
         return answer
 
     def _ask(self, email):

@@ -225,7 +225,99 @@ spec.
     Checked with `devbox services up`:
     https://local.tabscan.nu01.com:2443/app/ answers with a trusted
     certificate.
-30. **Let a user mark an OCR reading as correct; once marked, show the
+30. **The local Google OIDC client ID should be
+    `1061413485511-2ndd6lqkmi61j17vpk5f2ntjb91tt38r`; verify and fix.**
+    Local builds used the production web client, whose only origin is
+    https://tabscan.nu01.com. New setting
+    `TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID` (the "local - web" client),
+    which the dev web server uses in its place
+    ([dev environment](dev-environment.md)). That client needs
+    `https://local.tabscan.nu01.com:2443` among its JavaScript origins, and
+    no redirect URI.
+31. **Read tab is not working; add the logging needed to troubleshoot it,
+    in the client and the server.** The app logs each step of Read tab
+    (sign-in, the path taken, per-page preparation, OCR and layout
+    results, failures with stack traces), every OCR API call and the cloud
+    results it collects. The OCR service logs JSON lines per request, S3
+    event, rbacr check and page read, including unexpected failures with
+    tracebacks. See the troubleshooting logs in
+    [tab recognition](tab-recognition.md#troubleshooting-log) and
+    [cloud OCR](cloud-ocr.md#troubleshooting-log).
+32. **The Cognito role is failing to assume; create the identity pool in
+    infrastructure as code so that authenticated users can write to S3 and
+    invoke Lambda functions.** The pool and its role were already in
+    `tabscan_infra/identity.yaml` (deployed), with S3 writes to the user's
+    own folder. What failed: the pool trusted only the production web
+    client, so local builds' tokens (the local web client) were refused
+    before any role was assumed. The pool, the OCR service and the share
+    API now also trust `GoogleLocalWebClientId`, and the bucket, the OCR
+    function URL and the share API allow the origin
+    `https://local.tabscan.nu01.com:2443`
+    ([cloud sync](cloud-sync.md), [cloud OCR](cloud-ocr.md),
+    [shared captures](shared-captures.md)). No `lambda:InvokeFunction` was
+    granted to users: the app reaches its functions through the OCR function
+    URL and the share API with the Google token, and invoking
+    `tabscan-ocr-api` or `tabscan-ocr` directly would let a user forge S3
+    events for other users' pages. Deploying the pool change failed:
+    Cognito takes one Google client ID of at most 128 characters, so a pool
+    can't trust two clients (rolled back, the pool unchanged; see 36).
+33. **When a photo is added by hand, crop it to the page, without what's
+    under it.** Photos added with Photos & videos or Files are cropped and
+    straightened to the page when one stands out (the largest bright
+    region, its four corners, a perspective correction), as a JPEG; when
+    no page stands out, they're kept as picked
+    ([scanning](scanning.md#cropping-photos-to-the-page)).
+34. **Hide status messages after a while.** The "Saved … (Open)" message
+    after a capture stayed until dismissed, since Flutter keeps a message
+    with a button by default; it now goes after 6 seconds, like the
+    others, which already went after 4 ([navigation](navigation.md#capture)).
+35. **In the Capture view, Scan should open the camera, Photos the album,
+    Files the upload.** Photos & videos and Files already did; on the
+    web, Scan was a file input with a camera hint, which desktop browsers
+    show as a file chooser. It now opens TabScan's own camera screen (the
+    browser's camera: a preview, a shutter, several pages, Flip, Done;
+    photos instead when there's no camera)
+    ([scanning](scanning.md#web)). Android and iOS keep the system
+    document scanner. Its pages are cropped to the page, as photos added
+    by hand are.
+36. **Merge, run and deploy (the local client in AWS); then: a separate
+    identity pool for local builds.** Merged the logging and local-client
+    PRs and deployed the bucket's CORS, the OCR service (with the
+    logging) and the share API. As a Cognito pool can trust only one
+    Google client, `identity.yaml` now makes one pool per stack (parameter
+    `PoolName`; export `<stack>-pool-id`): `tabscan-identity` (unchanged)
+    and the new `tabscan-identity-local`, pool `tabscan-local`, trusting the
+    local web client, with its own role on the bucket. The dev web server
+    uses `TABSCANNER_COGNITO_LOCAL_IDENTITY_POOL_ID` with the local client
+    ([dev environment](dev-environment.md), [cloud sync](cloud-sync.md)).
+    Premium and sharing still don't work in local web builds (the OCR
+    service and share API look identities up in the main pool).
+37. **In the capture view, let the first button cycle Original, Scan and
+    Text (the original, processed and OCR views); no Read tab button: read
+    every tab submitted by itself.** The event screen's first tool is the
+    view, Original → Scan → Text, which sets the image pages' filter or
+    shows the text in place of the pages ([event screen](event-screen.md)).
+    Read tab is gone: `AutoReader` reads each capture whenever its image
+    pages change (on the device, or Premium's cloud), never replacing a
+    text the user edited (`tabTextAuto`), and waits for sign-in signed out
+    ([tab recognition](tab-recognition.md)). The text tab screen became
+    the Text view.
+
+38. **404s for `/status.json` on the local site.** The local stack had no
+    status file, so every [maintenance](maintenance-mode.md) check of the
+    local web app logged a 404 (harmless: the app reads a missing file as
+    "not in maintenance"). The index now serves
+    `tabscan_index/site/status.json` (`{"maintenance": false}`); flip it to
+    `true` to try maintenance mode locally. Deploys still upload only the
+    index page, so the live sites' status files are untouched.
+39. **On the home screen, show both the captures I created and the
+    captures shared with me.** Shared captures were already on Home, mixed
+    in with the user's own. Home now splits them into two headed sections
+    once something is shared: **My captures** above, **Shared with me**
+    below, each newest first ([library](library.md),
+    [shared captures](shared-captures.md)). With nothing shared, the grid
+    has no headings.
+40. **Let a user mark an OCR reading as correct; once marked, show the
     text tab by default instead of the image, and the image while it
     isn't.** The text tab editor has **Mark correct** next to Copy (then
     **Correct**, tapped again to unmark), saved on the event as

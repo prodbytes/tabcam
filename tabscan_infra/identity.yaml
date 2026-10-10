@@ -1,24 +1,35 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  tabscan-identity: a Cognito identity pool that trusts Google sign-in. The
-  app exchanges the signed-in user's Google ID token for temporary AWS
+  A Cognito identity pool that trusts one Google OAuth client. The app
+  exchanges the signed-in user's Google ID token for temporary AWS
   credentials of the authenticated role, which may only read, write and
   delete that user's own folder in the user-data bucket (tabscan-user-data
-  stack). Guests (unauthenticated identities) aren't allowed.
+  stack). Guests (unauthenticated identities) aren't allowed. Deployed
+  twice: tabscan-identity (pool tabscan, the web client: every build but
+  local web ones) and tabscan-identity-local (pool tabscan-local, the local
+  web client). A pool can't trust two Google clients (Cognito takes one ID
+  of at most 128 characters).
 
 Parameters:
   GoogleWebClientId:
     Type: String
     Description: >
-      The Google "Web application" OAuth client ID. Every platform's ID token
-      is issued for it (web directly; Android and iOS as their server client).
+      The Google "Web application" OAuth client ID the pool trusts: the web
+      client (every platform's ID token is issued for it: web directly,
+      Android and iOS as their server client), or for the local pool the
+      "local - web" client (TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID).
     AllowedPattern: '[0-9]+-[0-9a-z]+\.apps\.googleusercontent\.com'
+  PoolName:
+    Type: String
+    Default: tabscan
+    Description: The identity pool's name (tabscan-local for the local pool)
+    AllowedPattern: '[a-z-]+'
 
 Resources:
   IdentityPool:
     Type: AWS::Cognito::IdentityPool
     Properties:
-      IdentityPoolName: tabscan
+      IdentityPoolName: !Ref PoolName
       AllowUnauthenticatedIdentities: false
       AllowClassicFlow: false
       SupportedLoginProviders:
@@ -75,9 +86,12 @@ Resources:
 
 Outputs:
   IdentityPoolId:
-    Description: The app's TABSCANNER_COGNITO_IDENTITY_POOL_ID
+    Description: >
+      The app's TABSCANNER_COGNITO_IDENTITY_POOL_ID (the local pool's:
+      TABSCANNER_COGNITO_LOCAL_IDENTITY_POOL_ID)
     Value: !Ref IdentityPool
     Export:
-      Name: tabscan-identity-pool-id
+      # tabscan-identity-pool-id for the main pool, which the share API imports.
+      Name: !Sub ${AWS::StackName}-pool-id
   AuthenticatedRoleArn:
     Value: !GetAtt AuthenticatedRole.Arn

@@ -9,7 +9,7 @@ Description: >
 Parameters:
   AllowedOrigins:
     Type: CommaDelimitedList
-    Default: https://tabscan.nu01.com,https://rc.tabscan.nu01.com,http://localhost:2012
+    Default: https://tabscan.nu01.com,https://rc.tabscan.nu01.com,http://localhost:2012,https://local.tabscan.nu01.com:2443
     Description: Web origins the app runs on (browser requests need CORS)
 
 Resources:

@@ -58,8 +58,50 @@ void main() {
     expect(find.text('No tabs yet'), findsNothing);
     expect(find.text('Saved "Lesson one" (1 link)'), findsOneWidget);
     expect(find.text('Open'), findsOneWidget);
-    // The new card's outline goes after 3 s.
+    // The new card's outline goes after 3 s; the message, with its Open,
+    // after 6 s, by itself.
     await tester.pump(const Duration(seconds: 4));
+    expect(find.text('Saved "Lesson one" (1 link)'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
+    expect(find.text('Saved "Lesson one" (1 link)'), findsNothing);
+  });
+
+  testWidgets('Home shows my captures and those shared with me', (
+    tester,
+  ) async {
+    final library = await empty();
+    Future<void> add(String title, {String? sharedBy}) async {
+      var event = await library.create(const []);
+      event = await library.update(event.copyWith(title: title));
+      if (sharedBy != null) {
+        await library.setSharing(event, sharedBy, readOnly: true);
+      }
+    }
+
+    await add('My riff');
+    await tester.pumpWidget(TabScanApp(library: library));
+    await tester.pumpAndSettle();
+    // Nothing shared yet: just the grid, without headings.
+    expect(find.text('My riff'), findsOneWidget);
+    expect(find.text('My captures'), findsNothing);
+    expect(find.text('Shared with me'), findsNothing);
+
+    await add('Their riff', sharedBy: 'friend@example.com');
+    await tester.pumpAndSettle();
+    expect(find.text('My captures'), findsOneWidget);
+    expect(find.text('Shared with me'), findsOneWidget);
+    expect(find.text('My riff'), findsOneWidget);
+    expect(find.text('Their riff'), findsOneWidget);
+    expect(find.textContaining('shared by friend@example.com'), findsOne);
+    // Mine above, shared below.
+    expect(
+      tester.getTopLeft(find.text('My riff')).dy,
+      lessThan(tester.getTopLeft(find.text('Shared with me')).dy),
+    );
+    expect(
+      tester.getTopLeft(find.text('Shared with me')).dy,
+      lessThan(tester.getTopLeft(find.text('Their riff')).dy),
+    );
   });
 }
