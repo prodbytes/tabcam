@@ -23,7 +23,7 @@ Parameters:
       repo:<this>:ref:... rather than repo:owner/name:ref:...
   HostedZoneId:
     Type: AWS::Route53::HostedZone::Id
-    Description: The site's zone, where its records and certificate validation live (HOSTED_ZONE_ID in the private .env)
+    Description: The site's zone, where its records and certificate validation live (TABSCANNER_HOSTED_ZONE_ID in the private .env)
   CreateOidcProvider:
     Type: String
     AllowedValues: ['true', 'false']
@@ -283,8 +283,8 @@ Resources:
 
 Outputs:
   DeployRoleArn:
-    Description: Set as the repository variable AWS_DEPLOY_ROLE_ARN
+    Description: Set as the repository variable TABSCANNER_AWS_DEPLOY_ROLE_ARN
     Value: !GetAtt DeployRole.Arn
   RcDeployRoleArn:
-    Description: Set as the repository variable AWS_DEPLOY_RC_ROLE_ARN
+    Description: Set as the repository variable TABSCANNER_AWS_DEPLOY_RC_ROLE_ARN
     Value: !GetAtt RcDeployRole.Arn

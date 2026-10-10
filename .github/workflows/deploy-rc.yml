@@ -8,7 +8,7 @@
 # tabscan-github-deploy-rc role (tabscan_infra/github-deploy.yaml). That
 # role trusts only *RC* tag runs and manual runs from main, and may only
 # manage tabscan-rc-* resources and the rc.tabscan.nu01.com records. Its
-# ARN is the repository variable AWS_DEPLOY_RC_ROLE_ARN.
+# ARN is the repository variable TABSCANNER_AWS_DEPLOY_RC_ROLE_ARN.
 #
 # The Release workflow runs on the same tags and publishes the binaries as
 # a prerelease.
@@ -83,7 +83,7 @@ jobs:
 
       - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
-          role-to-assume: ${{ vars.AWS_DEPLOY_RC_ROLE_ARN }}
+          role-to-assume: ${{ vars.TABSCANNER_AWS_DEPLOY_RC_ROLE_ARN }}
           role-session-name: tabscan-deploy-rc-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
 
@@ -91,13 +91,13 @@ jobs:
         env:
           STAGE: rc
           TAG: ${{ steps.tag.outputs.tag }}
-          HOSTED_ZONE_ID: ${{ vars.HOSTED_ZONE_ID }}
+          TABSCANNER_HOSTED_ZONE_ID: ${{ vars.TABSCANNER_HOSTED_ZONE_ID }}
           # Who is emailed when the site's health check fails or recovers:
           # a secret, not a variable, so the public run logs never show it.
-          TABSCAN_HEALTH_EMAILS: ${{ secrets.TABSCAN_HEALTH_EMAILS }}
+          TABSCANNER_HEALTH_EMAILS: ${{ secrets.TABSCANNER_HEALTH_EMAILS }}
           # Sign-in and cloud sync (public identifiers; empty turns them off).
-          GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
-          COGNITO_IDENTITY_POOL_ID: ${{ vars.COGNITO_IDENTITY_POOL_ID }}
-          USER_DATA_BUCKET: ${{ vars.USER_DATA_BUCKET }}
-          SHARE_API_URL: ${{ vars.SHARE_API_URL }}
+          TABSCANNER_GOOGLE_WEB_CLIENT_ID: ${{ vars.TABSCANNER_GOOGLE_WEB_CLIENT_ID }}
+          TABSCANNER_COGNITO_IDENTITY_POOL_ID: ${{ vars.TABSCANNER_COGNITO_IDENTITY_POOL_ID }}
+          TABSCANNER_USER_DATA_BUCKET: ${{ vars.TABSCANNER_USER_DATA_BUCKET }}
+          TABSCANNER_SHARE_API_URL: ${{ vars.TABSCANNER_SHARE_API_URL }}
         run: bash scripts/deploy.sh

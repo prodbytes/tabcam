@@ -2,11 +2,11 @@
 /// (scripts/make.sh, and the dev servers' scripts/flutter-web.sh and
 /// flutter-run.sh). Empty for a bare `flutter run` or a test.
 abstract final class AppVersion {
-  static const String version = String.fromEnvironment('TABSCAN_VERSION');
+  static const String version = String.fromEnvironment('TABSCANNER_VERSION');
 
   /// The site the build is deployed to, from scripts/deploy.sh: `rc` for
   /// rc.tabscan.nu01.com, `prod`, or empty (any other build).
-  static const String stage = String.fromEnvironment('TABSCAN_STAGE');
+  static const String stage = String.fromEnvironment('TABSCANNER_STAGE');
 
   /// The app's title (the browser tab's): marked on the RC site, so its
   /// tabs never pass for production's.

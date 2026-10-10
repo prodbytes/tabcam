@@ -9,7 +9,7 @@ with that address. To share a capture with other people than the
 original's, [clone](library.md#events) it and share the copy.
 
 A build has sharing only with [sign-in and cloud sync](cloud-sync.md) and
-`SHARE_API_URL` set.
+`TABSCANNER_SHARE_API_URL` set.
 
 ## Sharing
 
@@ -102,7 +102,7 @@ never upload. A failing share is logged and skipped; the others go on.
 (CORS for the web app's origins) and its log group (30 days). An
 administrator deploys it, after `tabscan-user-data` and
 `tabscan-identity`: see [tabscan_infra/README.md](../tabscan_infra/README.md).
-The script prints `SHARE_API_URL`.
+The script prints `TABSCANNER_SHARE_API_URL`.
 
 ## Verified
 

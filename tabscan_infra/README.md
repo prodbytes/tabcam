@@ -5,7 +5,7 @@ templates.
 
 | Template | Stack | Holds |
 |---|---|---|
-| [site.yaml](site.yaml) | `tabscan-web` | https://tabscan.nu01.com: the ACM certificate (DNS-validated in the `tabscan.nu01.com` zone), a private S3 bucket, a CloudFront distribution, the Route 53 A/AAAA aliases, and a Route 53 health check of `/app/version.json` that emails `TABSCAN_HEALTH_EMAILS` when it fails |
+| [site.yaml](site.yaml) | `tabscan-web` | https://tabscan.nu01.com: the ACM certificate (DNS-validated in the `tabscan.nu01.com` zone), a private S3 bucket, a CloudFront distribution, the Route 53 A/AAAA aliases, and a Route 53 health check of `/app/version.json` that emails `TABSCANNER_HEALTH_EMAILS` when it fails |
 | [user-data.yaml](user-data.yaml) | `tabscan-user-data` | The bucket of signed-in users' events, `nu01-user-events-<account>` (private, SSE-S3, TLS only, versioned: old versions kept 30 days; CORS for the web app's origins). Not `tabscan-*`, so the deploy roles can't reach it. Shared by production and the RC |
 | [identity.yaml](identity.yaml) | `tabscan-identity` | The Cognito identity pool `tabscan` (Google sign-in only, no guests, enhanced flow) and its authenticated role: get, put and delete in `<bucket>/<identity ID>/*`, and list that prefix. Shared by production and the RC |
 | [share-api.yaml](share-api.yaml) | `tabscan-share-api` | Sharing captures by email: the `tabscan-share-api` HTTP API (Google JWT authorizer, throttled), its Python function ([tabscan_api/shares/](../tabscan_api/shares)), the grants table (PITR on) and the `tabscan-share-access` role, which the function assumes with a session policy narrowed to one capture's folder (and to reading, for read-only grants) |
@@ -44,7 +44,7 @@ devbox): `TAG=0.1.<Z>-GA bash scripts/deploy.sh`.
 ## DNS
 
 `tabscan.nu01.com` has its own public Route 53 zone,
-`Z10277161AEN9OU2H73PJ` (`HOSTED_ZONE_ID`), delegated from the `nu01.com`
+`Z10277161AEN9OU2H73PJ` (`TABSCANNER_HOSTED_ZONE_ID`), delegated from the `nu01.com`
 zone by an NS record (TTL 3600), like `rbacr` and `uplink`. Both stages'
 records live in it: `tabscan.nu01.com`, `rc.tabscan.nu01.com`, and their
 ACM validation names.
@@ -69,7 +69,7 @@ ACM validation names.
      --stack-name tabscan-github-deploy \
      --template-file tabscan_infra/github-deploy.yaml \
      --capabilities CAPABILITY_NAMED_IAM \
-     --parameter-overrides "HostedZoneId=$HOSTED_ZONE_ID"   # from the private .env
+     --parameter-overrides "HostedZoneId=$TABSCANNER_HOSTED_ZONE_ID"   # from the private .env
    ```
 
    The production role trusts only tokens for `*GA` tags of
@@ -82,12 +82,12 @@ ACM validation names.
 2. Set the repository variables:
 
    ```bash
-   gh variable set AWS_DEPLOY_ROLE_ARN --body "<DeployRoleArn>"
-   gh variable set AWS_DEPLOY_RC_ROLE_ARN --body "<RcDeployRoleArn>"
-   gh variable set HOSTED_ZONE_ID --body Z10277161AEN9OU2H73PJ
+   gh variable set TABSCANNER_AWS_DEPLOY_ROLE_ARN --body "<DeployRoleArn>"
+   gh variable set TABSCANNER_AWS_DEPLOY_RC_ROLE_ARN --body "<RcDeployRoleArn>"
+   gh variable set TABSCANNER_HOSTED_ZONE_ID --body Z10277161AEN9OU2H73PJ
    # A secret, not a variable: the repository is public, and run logs
    # show variables.
-   gh secret set TABSCAN_HEALTH_EMAILS --body "<who gets health alarms>"
+   gh secret set TABSCANNER_HEALTH_EMAILS --body "<who gets health alarms>"
    ```
 
 3. Sign-in and cloud sync (once; again when the templates change). An
@@ -99,13 +99,13 @@ ACM validation names.
       Services > Credentials):
       - **Web application**: authorized JavaScript origins
         `https://tabscan.nu01.com`, `https://rc.tabscan.nu01.com` and
-        `http://localhost:2012`. Its ID is `GOOGLE_WEB_CLIENT_ID`.
+        `http://localhost:2012`. Its ID is `TABSCANNER_GOOGLE_WEB_CLIENT_ID`.
       - **Android**: package `com.nu01.tabscan` and the SHA-1 of the key
         that signs the APK (`keytool -list -v -keystore
         ~/.android/debug.keystore -alias androiddebugkey -storepass
         android` for local builds, which are signed with the debug key).
       - **iOS**: bundle ID `com.nu01.tabscan`. Its ID is
-        `GOOGLE_IOS_CLIENT_ID`.
+        `TABSCANNER_GOOGLE_IOS_CLIENT_ID`.
    2. Deploy the stacks (`identity.yaml` exports the pool's ID for the
       share API):
 
@@ -117,20 +117,20 @@ ACM validation names.
         --stack-name tabscan-identity \
         --template-file tabscan_infra/identity.yaml \
         --capabilities CAPABILITY_IAM \
-        --parameter-overrides "GoogleWebClientId=$GOOGLE_WEB_CLIENT_ID"
+        --parameter-overrides "GoogleWebClientId=$TABSCANNER_GOOGLE_WEB_CLIENT_ID"
       ```
 
-   3. Put the IDs in the private `.env` (`GOOGLE_WEB_CLIENT_ID`,
-      `GOOGLE_IOS_CLIENT_ID`, `COGNITO_IDENTITY_POOL_ID` from
-      `tabscan-identity`'s `IdentityPoolId`, `USER_DATA_BUCKET` from
+   3. Put the IDs in the private `.env` (`TABSCANNER_GOOGLE_WEB_CLIENT_ID`,
+      `TABSCANNER_GOOGLE_IOS_CLIENT_ID`, `TABSCANNER_COGNITO_IDENTITY_POOL_ID` from
+      `tabscan-identity`'s `IdentityPoolId`, `TABSCANNER_USER_DATA_BUCKET` from
       `tabscan-user-data`'s `UserDataBucketName`) and in the repository
       variables, for the deploys and releases:
 
       ```bash
-      gh variable set GOOGLE_WEB_CLIENT_ID --body "<web client ID>"
-      gh variable set GOOGLE_IOS_CLIENT_ID --body "<iOS client ID>"
-      gh variable set COGNITO_IDENTITY_POOL_ID --body "<IdentityPoolId>"
-      gh variable set USER_DATA_BUCKET --body "<UserDataBucketName>"
+      gh variable set TABSCANNER_GOOGLE_WEB_CLIENT_ID --body "<web client ID>"
+      gh variable set TABSCANNER_GOOGLE_IOS_CLIENT_ID --body "<iOS client ID>"
+      gh variable set TABSCANNER_COGNITO_IDENTITY_POOL_ID --body "<IdentityPoolId>"
+      gh variable set TABSCANNER_USER_DATA_BUCKET --body "<UserDataBucketName>"
       ```
 
    They're public identifiers (compiled into the app), not secrets. While
@@ -138,7 +138,7 @@ ACM validation names.
 
 4. Sharing captures by email (after step 3; again when
    `share-api.yaml` or `tabscan_api/shares/index.py` changes). An
-   administrator runs, with `GOOGLE_WEB_CLIENT_ID` in `.env`:
+   administrator runs, with `TABSCANNER_GOOGLE_WEB_CLIENT_ID` in `.env`:
 
    ```bash
    bash scripts/deploy-share-api.sh
@@ -146,8 +146,8 @@ ACM validation names.
 
    It runs the function's tests, deploys the stack, uploads the code and
    checks the API refuses requests without a token. Put the URL it prints
-   in `.env` and the repository variables as `SHARE_API_URL`:
+   in `.env` and the repository variables as `TABSCANNER_SHARE_API_URL`:
 
    ```bash
-   gh variable set SHARE_API_URL --body "<ApiUrl>"
+   gh variable set TABSCANNER_SHARE_API_URL --body "<ApiUrl>"
    ```

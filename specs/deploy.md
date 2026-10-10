@@ -13,10 +13,10 @@ A pushed `*GA` tag runs the [Deploy workflow](../.github/workflows/deploy.yml),
 which runs `scripts/deploy.sh` for that tag:
 
 1. builds the web app for `/app/` with the tag's version
-   (`TABSCAN_STAGE=prod`);
+   (`TABSCANNER_STAGE=prod`);
 2. deploys the `tabscan-web` stack: certificate, bucket, CloudFront, DNS
    records, and a Route 53 health check of `/app/version.json` (it must
-   name `tabscan_app`) whose alarm emails `TABSCAN_HEALTH_EMAILS`;
+   name `tabscan_app`) whose alarm emails `TABSCANNER_HEALTH_EMAILS`;
 3. uploads `index.html` and the web build (`Cache-Control: no-cache`,
    Flutter's files aren't content-hashed) and invalidates `/*`;
 4. checks, for up to 10 minutes, that `/app/version.json` reports the
@@ -39,14 +39,14 @@ AWS access is keyless: GitHub's OIDC token is exchanged for
 `tabscan-github-deploy` (only `*GA` tags) or `tabscan-github-deploy-rc`
 (`*RC*` tags and manual runs from `main`, only `tabscan-rc-*` resources and
 `rc.tabscan.nu01.com` records) ([tabscan_infra/github-deploy.yaml](../tabscan_infra/github-deploy.yaml)).
-Repository variables: `AWS_DEPLOY_ROLE_ARN`, `AWS_DEPLOY_RC_ROLE_ARN`,
-`HOSTED_ZONE_ID`, and for [sign-in and cloud sync](cloud-sync.md)
-`GOOGLE_WEB_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID` (releases only),
-`COGNITO_IDENTITY_POOL_ID`, `USER_DATA_BUCKET` and (for
-[shared captures](shared-captures.md)) `SHARE_API_URL`, compiled into
+Repository variables: `TABSCANNER_AWS_DEPLOY_ROLE_ARN`, `TABSCANNER_AWS_DEPLOY_RC_ROLE_ARN`,
+`TABSCANNER_HOSTED_ZONE_ID`, and for [sign-in and cloud sync](cloud-sync.md)
+`TABSCANNER_GOOGLE_WEB_CLIENT_ID`, `TABSCANNER_GOOGLE_IOS_CLIENT_ID` (releases only),
+`TABSCANNER_COGNITO_IDENTITY_POOL_ID`, `TABSCANNER_USER_DATA_BUCKET` and (for
+[shared captures](shared-captures.md)) `TABSCANNER_SHARE_API_URL`, compiled into
 the builds (empty: no sign-in, or no sharing). Their stacks,
 `tabscan-user-data`, `tabscan-identity` and `tabscan-share-api`, are
-deployed by an administrator, not by the workflows; repository secret: `TABSCAN_HEALTH_EMAILS` (a secret
+deployed by an administrator, not by the workflows; repository secret: `TABSCANNER_HEALTH_EMAILS` (a secret
 because the repository is public and run logs show variables). One-time setup:
 [tabscan_infra/README.md](../tabscan_infra/README.md).
 

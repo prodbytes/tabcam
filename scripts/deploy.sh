@@ -19,18 +19,21 @@
 #   STAGE        prod (default) or rc
 #   AWS_REGION   default us-east-1 (CloudFront certificates live there)
 #   SKIP_BUILD   1 to deploy an existing tabscan_app/build/web
-#   HOSTED_ZONE_ID        the Route 53 zone of tabscan.nu01.com (default:
-#                the repo's .env, from the private repo)
-#   TABSCAN_HEALTH_EMAILS who is emailed when the health check fails or
-#                recovers, comma-separated (also from .env). Each must
-#                confirm AWS's subscription email.
-#   GOOGLE_WEB_CLIENT_ID, COGNITO_IDENTITY_POOL_ID, USER_DATA_BUCKET,
-#   SHARE_API_URL sign-in, cloud sync and sharing, compiled into the build
+#   TABSCANNER_HOSTED_ZONE_ID
+#                the Route 53 zone of tabscan.nu01.com (default: the
+#                repo's .env, from the private repo)
+#   TABSCANNER_HEALTH_EMAILS
+#                who is emailed when the health check fails or recovers,
+#                comma-separated (also from .env). Each must confirm
+#                AWS's subscription email.
+#   TABSCANNER_GOOGLE_WEB_CLIENT_ID, TABSCANNER_COGNITO_IDENTITY_POOL_ID,
+#   TABSCANNER_USER_DATA_BUCKET, TABSCANNER_SHARE_API_URL
+#                sign-in, cloud sync and sharing, compiled into the build
 #                (scripts/dart-defines.sh; environment over .env). Empty
 #                builds an app without sign-in. Their stacks
 #                (tabscan-identity, tabscan-user-data, tabscan-share-api)
-#                are deployed by
-#                an administrator, not here: see tabscan_infra/README.md.
+#                are deployed by an administrator, not here: see
+#                tabscan_infra/README.md.
 # Needs the AWS CLI, Python 3 and Flutter (all in devbox).
 set -euo pipefail
 
@@ -73,7 +76,7 @@ stack_output() { # stack_output <stack> <output key>
 }
 
 # Private settings: from the environment, else the private .env.
-for name in HOSTED_ZONE_ID TABSCAN_HEALTH_EMAILS; do
+for name in TABSCANNER_HOSTED_ZONE_ID TABSCANNER_HEALTH_EMAILS; do
   if [[ -z "${!name:-}" && -f .env ]]; then
     printf -v "$name" '%s' "$(sed -n "s/^$name=//p" .env | tail -1)"
   fi
@@ -82,21 +85,21 @@ for name in HOSTED_ZONE_ID TABSCAN_HEALTH_EMAILS; do
     exit 1
   fi
 done
-if [[ ! "$HOSTED_ZONE_ID" =~ ^Z[A-Z0-9]+$ ]]; then
-  echo "error: HOSTED_ZONE_ID must be a Route 53 zone ID" >&2
+if [[ ! "$TABSCANNER_HOSTED_ZONE_ID" =~ ^Z[A-Z0-9]+$ ]]; then
+  echo "error: TABSCANNER_HOSTED_ZONE_ID must be a Route 53 zone ID" >&2
   exit 1
 fi
-if [[ ! "$TABSCAN_HEALTH_EMAILS" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+(,[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+)*$ ]]; then
-  echo "error: TABSCAN_HEALTH_EMAILS must be comma-separated emails" >&2
+if [[ ! "$TABSCANNER_HEALTH_EMAILS" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+(,[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+)*$ ]]; then
+  echo "error: TABSCANNER_HEALTH_EMAILS must be comma-separated emails" >&2
   exit 1
 fi
 # Emails are people's: logged only as a count.
-echo "    health alarm emails: $(tr ',' '\n' <<<"$TABSCAN_HEALTH_EMAILS" | grep -c .)"
+echo "    health alarm emails: $(tr ',' '\n' <<<"$TABSCANNER_HEALTH_EMAILS" | grep -c .)"
 
 # 1. The web app
 if [[ "${SKIP_BUILD:-}" != 1 ]]; then
   echo "==> building the web app for /app/"
-  WEB_BASE_HREF=/app/ TABSCAN_STAGE="$STAGE" bash scripts/make.sh web
+  WEB_BASE_HREF=/app/ TABSCANNER_STAGE="$STAGE" bash scripts/make.sh web
 fi
 # The RC's own title, so its tabs never pass for production's.
 if [[ "$STAGE" == rc ]]; then
@@ -130,8 +133,8 @@ echo "==> deploying $SITE_STACK"
 # AUTO_EXPAND: the template's Fn::ForEach (AWS::LanguageExtensions).
 aws cloudformation deploy --stack-name "$SITE_STACK" \
   --template-file tabscan_infra/site.yaml --capabilities CAPABILITY_AUTO_EXPAND \
-  --parameter-overrides "DomainName=$DOMAIN" "HostedZoneId=$HOSTED_ZONE_ID" \
-    "HealthNotificationEmails=$TABSCAN_HEALTH_EMAILS" \
+  --parameter-overrides "DomainName=$DOMAIN" "HostedZoneId=$TABSCANNER_HOSTED_ZONE_ID" \
+    "HealthNotificationEmails=$TABSCANNER_HEALTH_EMAILS" \
   --no-fail-on-empty-changeset
 bucket="$(stack_output "$SITE_STACK" SiteBucketName)"
 distribution="$(stack_output "$SITE_STACK" DistributionId)"

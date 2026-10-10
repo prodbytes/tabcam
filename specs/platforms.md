@@ -15,11 +15,11 @@
 | Synced events | Kept in the app's documents | Kept in the app's documents | Downloaded again on each visit |
 
 **iOS signing**: automatic, with each developer's own team:
-`IOS_DEVELOPMENT_TEAM` in `.env` (a free Personal Team works) is written by
+`TABSCANNER_IOS_DEVELOPMENT_TEAM` in `.env` (a free Personal Team works) is written by
 `scripts/dart-defines.sh` to the git-ignored
 `tabscan_app/ios/Flutter/Private.xcconfig`, which `Debug.xcconfig` and
 `Release.xcconfig` include; no team is committed. The same file gets
-`GOOGLE_REVERSED_CLIENT_ID`, from `GOOGLE_IOS_CLIENT_ID`: the URL scheme
+`GOOGLE_REVERSED_CLIENT_ID`, from `TABSCANNER_GOOGLE_IOS_CLIENT_ID`: the URL scheme
 in `Info.plist` that Google sign-in returns to. Without it, iOS builds
 are unsigned (CI's are). On a phone, a free team's app opens only after
 trusting its certificate (Settings → General → VPN & Device Management),

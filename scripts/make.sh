@@ -27,9 +27,9 @@ esac
 cd "$(dirname "$0")/../tabscan_app"
 source ../scripts/dart-defines.sh
 source ../scripts/version.sh
-# TABSCAN_VERSION: X.Y.Z, shown in the About dialog.
+# TABSCANNER_VERSION: X.Y.Z, shown in the About dialog.
 BUILD_ARGS=(--build-name "$VERSION" --build-number "$BUILD_NUMBER" ${DART_DEFINES[@]+"${DART_DEFINES[@]}"}
-  --dart-define="TABSCAN_VERSION=$VERSION")
+  --dart-define="TABSCANNER_VERSION=$VERSION")
 
 # can_build <target>: whether this host's OS can build the target.
 can_build() {
