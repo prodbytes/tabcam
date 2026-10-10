@@ -20,7 +20,7 @@ source ../scripts/dart-defines.sh
 source ../scripts/version.sh
 # The version code stays the pubspec's, as `flutter run` builds it, so
 # either can install over the other without uninstalling (losing data).
-flutter build apk --release "${DART_DEFINES[@]}" \
+flutter build apk --release ${DART_DEFINES[@]+"${DART_DEFINES[@]}"} \
   --dart-define="TABSCAN_VERSION=$VERSION"
 
 echo "Installing $VERSION on $serial" >&2

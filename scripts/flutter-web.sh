@@ -21,4 +21,4 @@ flutter pub get
 # The About dialog shows X.Y.Z, Z being when this server started.
 exec flutter run -d web-server --web-hostname "$HOST" --web-port "$PORT" \
   --base-href /app/ \
-  "${DART_DEFINES[@]}" --dart-define="TABSCAN_VERSION=$VERSION"
+  ${DART_DEFINES[@]+"${DART_DEFINES[@]}"} --dart-define="TABSCAN_VERSION=$VERSION"
