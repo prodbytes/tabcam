@@ -250,3 +250,9 @@ spec.
     URL and the share API with the Google token, and invoking
     `tabscan-ocr-api` or `tabscan-ocr` directly would let a user forge S3
     events for other users' pages.
+33. **When a photo is added by hand, crop it to the page, without what's
+    under it.** Photos added with Photos & videos or Files are cropped and
+    straightened to the page when one stands out (the largest bright
+    region, its four corners, a perspective correction), as a JPEG; when
+    no page stands out, they're kept as picked
+    ([scanning](scanning.md#cropping-photos-to-the-page)).
