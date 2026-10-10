@@ -23,15 +23,16 @@ device the user signs in on; signed out, nothing leaves the device.
   with Scan, Import, Share and Delete; how events are stored.
 - [Scanning](scanning.md): the system document scanner (edge detection,
   straightening, several pages), importing photos, and adding pages.
-- [Event screen](event-screen.md): one event's pages to swipe and zoom, with
+- [Event screen](event-screen.md): one event's pages (images, videos and
+  links, with Open and Copy) to swipe and zoom, with
   Add page, Filter, Rotate, Read tab and Delete, plus Rename and Share.
 - [Page filters](page-filters.md): Original, and Tab (black ink on white,
   by adaptive thresholding), the default.
 - [Tab recognition](tab-recognition.md): Read tab, from on-device OCR to
   plain-text tab, for text tabs and typeset tab staves; the text tab
   editor.
-- [Sharing](sharing.md): PDF, text tab, or images, through the system
-  share sheet.
+- [Sharing](sharing.md): PDF, text (the text tab and links), or files
+  (images and videos), through the system share sheet.
 - [Sign-in and cloud sync](cloud-sync.md): optional Google sign-in from
   the library's cloud button; signed-in users' events sync both ways with
   their own folder in S3 (Cognito identity pool credentials, no server),

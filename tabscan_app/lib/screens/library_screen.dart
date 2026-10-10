@@ -236,9 +236,11 @@ class _EventCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final videos = event.pages.where((p) => p.isVideo).length;
-    final pages = event.pages.length - videos;
-    // The first image is the thumbnail; an event of only videos shows a badge.
-    final cover = event.pages.where((p) => !p.isVideo).firstOrNull;
+    final links = event.pages.where((p) => p.isLink).length;
+    final pages = event.pages.length - videos - links;
+    // The first image is the thumbnail; without images, a video's badge,
+    // or else a link's.
+    final cover = event.pages.where((p) => p.isImage).firstOrNull;
     return Card(
       clipBehavior: Clip.antiAlias,
       shape: fresh
@@ -267,6 +269,8 @@ class _EventCard extends StatelessWidget {
                       )
                     : videos > 0
                     ? const VideoThumbnail()
+                    : links > 0
+                    ? const Icon(Icons.link, size: 48, color: Colors.black54)
                     : const Icon(Icons.description_outlined),
               ),
             ),
@@ -287,10 +291,12 @@ class _EventCard extends StatelessWidget {
                         Text(
                           [
                             if (event.artist.isNotEmpty) event.artist,
-                            if (pages > 0 || videos == 0)
+                            if (pages > 0 || videos + links == 0)
                               '$pages ${pages == 1 ? 'page' : 'pages'}',
                             if (videos > 0)
                               '$videos ${videos == 1 ? 'video' : 'videos'}',
+                            if (links > 0)
+                              '$links ${links == 1 ? 'link' : 'links'}',
                             if (event.tabText != null) 'text',
                           ].join(' · '),
                           maxLines: 1,

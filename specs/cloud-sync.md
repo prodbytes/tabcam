@@ -57,6 +57,7 @@ the user-data bucket:
 | `<identity>/events/<event id>/event.json` | the event's details, as on the device but without `owner`; or its tombstone once deleted |
 | `<identity>/events/<event id>/<page id>.<extension>` | each page's file, as stored on the device, with its MIME type (`image/jpeg` for scanned pages, the video's type for videos) |
 
+Links are in `event.json` only: they have no file.
 Page files never change once written: a rotated page is a new page (see
 [library](library.md#events)), so an event's pages are known by their names.
 Uploads use S3 Intelligent-Tiering.

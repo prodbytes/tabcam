@@ -6,15 +6,16 @@ import '../library/library.dart';
 import '../library/capture_event.dart';
 import '../processing/page_filter.dart';
 import '../recognition/tab_reader.dart';
+import 'link_page.dart';
 import 'page_image.dart';
 import 'rename_dialog.dart';
 import 'share_sheet.dart';
 import 'tab_text_screen.dart';
 import 'video_page.dart';
 
-/// One event: its pages (images and videos) to swipe through, and the tools
-/// along the bottom: Add (scan, photos and videos, files), Filter, Rotate,
-/// Read tab and Delete. Share and rename are in the app bar.
+/// One event: its pages (images, videos and links) to swipe through, and
+/// the tools along the bottom: Add (scan, photos and videos, files, a
+/// link), Filter, Rotate, Read tab and Delete. Share and rename are in the app bar.
 class EventScreen extends StatefulWidget {
   const EventScreen({super.key, required this.library, required this.eventId});
 
@@ -77,10 +78,14 @@ class _EventScreenState extends State<EventScreen> {
         ),
       ),
     );
-    if (source == null) return;
+    if (source == null || !mounted) return;
+    final link = source == _AddSource.link ? await askForLink(context) : null;
+    if (source == _AddSource.link && link == null) return;
     await _run('Couldn\'t add', () async {
       final first = event.pages.length;
-      if (source == _AddSource.scan) {
+      if (link != null) {
+        await _library.addLink(event, link.$1, title: link.$2);
+      } else if (source == _AddSource.scan) {
         final pages = await PageSource.scan();
         if (pages.isEmpty) return;
         await _library.addPages(event, pages);
@@ -127,10 +132,10 @@ class _EventScreenState extends State<EventScreen> {
         }
         final pages = [
           for (final p in event.pages)
-            if (!p.isVideo) await _library.original(event, p),
+            if (p.isImage) await _library.original(event, p),
         ];
         if (pages.isEmpty) {
-          _snack('Read tab reads photos and scans, and this has only videos.');
+          _snack('Read tab reads photos and scans, and this event has none.');
           return;
         }
         final text = await TabReader.read(pages);
@@ -169,8 +174,8 @@ class _EventScreenState extends State<EventScreen> {
         final index = _index.clamp(0, event.pages.length - 1);
         final page = event.pages.isEmpty ? null : event.pages[index];
         final enabled = !_busy && page != null;
-        // Filter and Rotate are for images, not videos.
-        final image = enabled && !page.isVideo;
+        // Filter and Rotate are for images, not videos or links.
+        final image = enabled && page.isImage;
         return Scaffold(
           appBar: AppBar(
             title: InkWell(
@@ -223,7 +228,12 @@ class _EventScreenState extends State<EventScreen> {
                   onPageChanged: (i) => setState(() => _index = i),
                   itemBuilder: (context, i) => Padding(
                     padding: const EdgeInsets.all(16),
-                    child: event.pages[i].isVideo
+                    child: event.pages[i].isLink
+                        ? LinkPage(
+                            key: ValueKey(event.pages[i].id),
+                            page: event.pages[i],
+                          )
+                        : event.pages[i].isVideo
                         ? VideoPage(
                             key: ValueKey(event.pages[i].id),
                             library: _library,
@@ -308,7 +318,8 @@ enum _AddSource {
     'Photos & videos',
     'From your photo library',
   ),
-  files(Icons.folder_open_outlined, 'Files', 'Image and video files');
+  files(Icons.folder_open_outlined, 'Files', 'Image and video files'),
+  link(Icons.link, 'Link', 'A lesson, a recording, the song online');
 
   const _AddSource(this.icon, this.label, this.detail);
   final IconData icon;

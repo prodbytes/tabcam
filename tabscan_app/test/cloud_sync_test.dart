@@ -259,6 +259,28 @@ void main() {
     expect(phone.sync.state, SyncState.signedOut);
   });
 
+  test('links sync as part of event.json, with no file', () async {
+    final phone = Device(bucket);
+    final tablet = Device(bucket);
+    await phone.start();
+    var event = await phone.library.create([
+      bytes([1]),
+    ]);
+    event = await phone.library.addLink(
+      event,
+      Uri.parse('https://example.com/lesson'),
+      title: 'Lesson',
+    );
+    await phone.sync.syncNow();
+    // The page's file and event.json: nothing for the link.
+    expect(bucket.objects, hasLength(2));
+    await tablet.start();
+    final link = tablet.library.events.single.pages.last;
+    expect(link.isLink, isTrue);
+    expect(link.title, 'Lesson');
+    expect(link.url.toString(), 'https://example.com/lesson');
+  });
+
   test('pages are uploaded with their type', () {
     expect(CloudSync.contentTypeOf(const EventPage(id: 'a')), 'image/jpeg');
     expect(

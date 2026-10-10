@@ -3,9 +3,10 @@
 The home screen, titled **TabScan**.
 
 - **Events** show as a grid of cards, newest first: the first image page's
-  thumbnail (with its filter; a play badge for an event of only videos), the
-  title, and a line with the artist (if set), the page count, the video
-  count (if any), and "text" once the tab has been read. Tapping a
+  thumbnail (with its filter; without images, a play badge if it has
+  videos, or else a link icon), the title, and a line with the artist (if
+  set), the page count, the video and link counts (if any), and "text"
+  once the tab has been read. Tapping a
   card opens the [event screen](event-screen.md); its ⋮ menu has **Rename**,
   **Share** ([sharing](sharing.md)) and **Delete** (after a confirmation,
   which says the pages and text tab go too). Long-pressing a card renames
@@ -30,9 +31,12 @@ hold more than scanned pages) has an ID, a title, an artist (optional), when it 
 when it last changed (`updated`: every change the user makes sets it;
 older events count their creation), its pages, and the text tab once read.
 Once it has synced it also has an `owner`, the Cognito identity it syncs
-with (kept on the device only). A page has an ID, a kind (**image** or
-**video**), its file's extension, and a [filter](page-filters.md) (used
-for images only). A new event is titled `Tab YYYY-MM-DD HH:MM` (its local time).
+with (kept on the device only). A page has an ID, a kind (**image**,
+**video** or **link**), its file's extension, and a
+[filter](page-filters.md) (used for images only). A link has no file
+(its extension is `url`): it has its address (`url`, `http` or `https`
+only, checked again whenever an event is loaded, since events also come
+from the cloud) and an optional `title`. A new event is titled `Tab YYYY-MM-DD HH:MM` (its local time).
 
 **Rename** (a card's menu or long-press, or the event screen's title or
 pencil) asks for the **Song** and **Artist**, prefilled, with the song's
