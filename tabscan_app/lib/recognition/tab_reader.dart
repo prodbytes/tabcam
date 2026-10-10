@@ -22,8 +22,14 @@ class TabReader {
     final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
     try {
       final found = <String>[];
-      for (final page in pages) {
+      for (final (i, page) in pages.indexed) {
+        final watch = Stopwatch()..start();
         final tab = await _readPage(recognizer, page);
+        _log(
+          'page ${i + 1}/${pages.length}: '
+          '${tab == null ? 'no tab' : '${tab.split('\n').length} lines of tab'}'
+          ' in ${watch.elapsedMilliseconds} ms',
+        );
         if (tab != null) found.add(tab);
       }
       return found.isEmpty ? null : found.join('\n\n');
@@ -39,6 +45,10 @@ class TabReader {
     // OCR and line detection see the same image, so their coordinates
     // agree: the page upright and scaled, in grayscale.
     final prepared = await compute(_prepare, page);
+    _log(
+      '${page.length} bytes -> ${prepared.width}x${prepared.height}, '
+      '${prepared.staves.length} drawn staves',
+    );
     final dir = await getTemporaryDirectory();
     final file = File(
       '${dir.path}/tabscan-ocr-${DateTime.now().microsecondsSinceEpoch}.png',
@@ -52,11 +62,30 @@ class TabReader {
         for (final block in text.blocks)
           for (final line in block.lines) line.text,
       ];
-      return asciiTab(lines) ?? typesetTab(prepared.staves, _glyphs(text));
+      final glyphs = _glyphs(text);
+      _log(
+        'OCR: ${text.blocks.length} blocks, ${lines.length} lines, '
+        '${glyphs.length} frets; first lines: '
+        '${lines.take(5).map((l) => '"$l"').join(' ')}',
+      );
+      final ascii = asciiTab(lines);
+      if (ascii != null) {
+        _log('read as a text tab');
+        return ascii;
+      }
+      final typeset = typesetTab(prepared.staves, glyphs);
+      _log(
+        typeset == null
+            ? 'neither a text nor a typeset tab'
+            : 'read as a typeset tab',
+      );
+      return typeset;
     } finally {
       await file.delete().catchError((_) => file);
     }
   }
+
+  static void _log(String message) => debugPrint('TabScan: read tab: $message');
 
   /// Fret numbers, one per word: ML Kit reads digits on different staff
   /// lines as different words, and a two-digit fret as one.
@@ -75,13 +104,15 @@ class TabReader {
 }
 
 class _Prepared {
-  const _Prepared(this.png, this.staves);
+  const _Prepared(this.png, this.width, this.height, this.staves);
   final Uint8List png;
+  final int width;
+  final int height;
   final List<List<double>> staves;
 }
 
 _Prepared _prepare(Uint8List bytes) {
   final page = img.grayscale(decodePage(bytes));
   final staves = findStaves(darkPixels(page), page.width, page.height);
-  return _Prepared(img.encodePng(page), staves);
+  return _Prepared(img.encodePng(page), page.width, page.height, staves);
 }

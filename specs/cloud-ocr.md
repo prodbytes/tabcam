@@ -94,6 +94,25 @@ blank line.
 - On the web, Read tab without Premium says reading tabs needs the Android
   or iOS app, or TabScan Premium.
 
+## Troubleshooting log
+
+- **App**: every call to the service is logged
+  (`TabScan: OCR API: POST <url>`, then its status, time and answer, or
+  the error); `TabScan: cloud OCR:` lines say when Read tab can't ask (no
+  ID token, not premium), and, per sync pass, how many results were found,
+  which events wait for which pages, each result's status, and whether the
+  text tab was filled or kept.
+- **Service** (CloudWatch, `aws logs tail /aws/lambda/tabscan-ocr-api
+  --follow`, and `.../tabscan-ocr`): one JSON line per event. `http`: the
+  path, status, time, identity, premium and the answer (the address left
+  out), why a token was refused or a body was bad. `transcribe`: the
+  event's files, those already transcribed, how many were queued and which
+  files aren't page images. `s3 event`: the key and the outcome (an
+  identity that never called `/account` is logged as such). `rbacr`: the
+  answer and its ttl, or why the check failed (HTTP status). `ocr start`,
+  `ocr done` (status, staves, lines, engine timings, seconds) and
+  `ocr failed` (the exception and traceback, before Lambda retries).
+
 ## Infrastructure
 
 - **`ocr-repo.yaml`**, stack `tabscan-ocr-repo`: the ECR repository

@@ -55,4 +55,4 @@ class CognitoIdentities:
         try:
             return self._client.get_id(IdentityPoolId=self.pool_id, Logins={"accounts.google.com": token})["IdentityId"]
         except self._client.exceptions.NotAuthorizedException as e:
-            raise Unauthorized("token refused by the identity pool") from e
+            raise Unauthorized(f"token refused by the identity pool: {e}") from e
