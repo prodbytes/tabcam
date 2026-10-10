@@ -267,4 +267,5 @@ spec.
     browser's camera: a preview, a shutter, several pages, Flip, Done;
     photos instead when there's no camera)
     ([scanning](scanning.md#web)). Android and iOS keep the system
-    document scanner.
+    document scanner. Its pages are cropped to the page, as photos added
+    by hand are.

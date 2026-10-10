@@ -36,7 +36,9 @@ browser asks for it the first time), the back camera first:
   isn't allowed: let TabScan use it in the browser's site settings."), it
   says so and offers **Choose photos instead** (the photo picker).
 
-Pages are kept as taken, uncropped. Before, Scan on the web was a file
+Pages are then cropped to the page in them, as photos added by hand are
+([Cropping photos to the page](#cropping-photos-to-the-page)); when no
+page stands out, they're kept as taken. Before, Scan on the web was a file
 input with a camera hint, which desktop browsers show as a file chooser.
 
 Photos already on the device are added as they are, with Capture's or an
@@ -69,7 +71,8 @@ Photos get the Tab filter, as scanned pages do.
 ### Cropping photos to the page
 
 A photo added by hand (Photos & videos, Files; from Capture or an
-event's Add) isn't straightened by a scanner, so TabScan crops it to the
+event's Add), or taken with the web's camera screen, isn't straightened
+by a scanner, so TabScan crops it to the
 page itself, when one stands out, so what's under the page (a table, a
 lap) doesn't show ([lib/processing/page_crop.dart](../tabscan_app/lib/processing/page_crop.dart),
 off the UI isolate where there are isolates):

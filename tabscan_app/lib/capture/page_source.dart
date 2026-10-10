@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../processing/page_crop.dart';
+
 import 'camera_capture_screen.dart';
 
 /// Where new pages come from.
@@ -29,9 +31,15 @@ abstract final class PageSource {
         ),
       );
       if (result == null) return const [];
-      if (!result.chooseInstead) return result.pages;
-      final files = await ImagePicker().pickMultiImage();
-      return [for (final f in files) await f.readAsBytes()];
+      final pages = result.chooseInstead
+          ? [
+              for (final f in await ImagePicker().pickMultiImage())
+                await f.readAsBytes(),
+            ]
+          : result.pages;
+      // No scanner straightened them: cropped to the page here, when one
+      // stands out, as photos added by hand are.
+      return [for (final p in pages) await cropToPage(p) ?? p];
     }
     final paths = await CunningDocumentScanner.getPictures(
       scannerSource: ScannerSource.camera,
