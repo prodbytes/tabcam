@@ -221,7 +221,7 @@ def ocr(event, context=None):
             raise pipeline.TooLarge("image too large")
         r = pipeline.transcribe(obj["Body"].read(), _engines)
         result.update(status="ok" if r.text else "no-tab", text=r.text,
-                      staves=r.staves, lines=r.lines)
+                      staves=r.staves, lines=r.lines, timings=r.timings)
     except services.s3.exceptions.NoSuchKey:
         return "gone"  # deleted meanwhile
     except (ValueError, pipeline.TooLarge) as e:

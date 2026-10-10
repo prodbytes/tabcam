@@ -156,7 +156,7 @@ Resources:
       # The account's Lambda memory cap is 3008 MB (new accounts); more
       # memory brings more vCPUs, so raise it once the quota allows.
       MemorySize: 3008
-      Timeout: 300
+      Timeout: 900
       EphemeralStorage:
         Size: 1024
       Role: !GetAtt OcrRole.Arn

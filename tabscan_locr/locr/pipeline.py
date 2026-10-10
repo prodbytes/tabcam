@@ -46,6 +46,7 @@ class Result:
     lines: int = 0
     seconds: float = 0.0
     readings: dict = field(default_factory=dict)  # engine -> its lines
+    timings: dict = field(default_factory=dict)  # engine -> seconds
 
 
 class TooLarge(ValueError):
@@ -196,10 +197,14 @@ def transcribe(data, engines):
         return Result("", seconds=time.monotonic() - start)
 
     def run(read):
-        return [read(strip, line) for line, strip in jobs]
+        t = time.monotonic()
+        out = [read(strip, line) for line, strip in jobs]
+        return out, round(time.monotonic() - t, 2)
 
     with ThreadPoolExecutor(max_workers=len(engines)) as pool:
-        raw = dict(zip(engines, pool.map(run, engines.values())))
+        ran = dict(zip(engines, pool.map(run, engines.values())))
+    raw = {name: out for name, (out, _) in ran.items()}
+    timings = {name: t for name, (_, t) in ran.items()}
 
     blocks, readings, i = [], {name: [] for name in engines}, 0
     for g in groups:
@@ -215,4 +220,5 @@ def transcribe(data, engines):
             i += 1
         blocks.append("\n".join(block))
     return Result("\n\n".join(blocks) + "\n", staves=len(groups), lines=len(jobs),
-                  seconds=round(time.monotonic() - start, 2), readings=readings)
+                  seconds=round(time.monotonic() - start, 2), readings=readings,
+                  timings=timings)

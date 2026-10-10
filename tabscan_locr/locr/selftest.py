@@ -75,7 +75,7 @@ def main():
     r = pipeline.transcribe(page_photo(), engines.default())
     s = score(RIFF, r.text)
     print(r.text)
-    print(f"staves={r.staves} lines={r.lines} seconds={r.seconds} notes={s:.1%}")
+    print(f"staves={r.staves} lines={r.lines} seconds={r.seconds} notes={s:.1%} timings={r.timings}")
     for name, lines in r.readings.items():
         print(f"  {name}: notes={score(RIFF, chr(10).join(lines)):.1%}")
     sys.exit(0 if s >= args.min else 1)
