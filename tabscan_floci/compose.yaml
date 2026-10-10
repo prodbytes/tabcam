@@ -36,9 +36,8 @@ services:
       TABSCANNER_PUBLIC_HOST: ${TABSCANNER_PUBLIC_HOST:-local.tabscan.nu01.com}
       FLUTTER_WEB_PORT: ${FLUTTER_WEB_PORT:-2012}
       INDEX_PORT: ${INDEX_PORT:-2013}
-      # Only for the hook's log line: the host ports.
-      FLOCI_PORT: ${FLOCI_PORT:-2014}
-      FLOCI_HTTPS_PORT: ${FLOCI_HTTPS_PORT:-2443}
+      # Not FLOCI_PORT or FLOCI_HTTPS_PORT: Floci reads FLOCI_PORT as its own
+      # listen port. The host ports are only in the port mappings above.
     volumes:
       - ./init/ready.d:/etc/floci/init/ready.d:ro
       - ./certs:/etc/tabscan-certs:ro

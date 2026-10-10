@@ -39,7 +39,8 @@ Inside the container (or any machine with [Devbox](https://www.jetify.com/devbox
 
 ```bash
 devbox shell              # enter the environment
-devbox services up        # web app on http://localhost:2012/app/, index on :2013
+devbox services up        # web app on http://localhost:2012/app/, index on :2013,
+                          # HTTPS on https://local.tabscan.nu01.com:2443/app/
 devbox run android        # run on the Android phone attached by USB
 make                      # build every platform this host can (see the Makefile)
 ```
@@ -56,18 +57,26 @@ Private settings (deploy targets) live in the private
 `devbox services up` starts, through [process-compose.yaml](process-compose.yaml):
 
 - `2-flutter-web`: the app in web mode ([scripts/flutter-web.sh](scripts/flutter-web.sh));
+- `4-floci`: [Floci](https://floci.io/), a local AWS emulator, as the
+  CloudFront distribution in front of both, over HTTP and HTTPS
+  ([tabscan_floci/](tabscan_floci/README.md));
 - `5-index`: the site root ([tabscan_index/](tabscan_index));
-- `0-health-check`: once both are ready, prints the local URLs once, then
+- `0-health-check`: once all are ready, prints the local URLs once, then
   one line per check every 15 s (`HEALTH_CHECK_INTERVAL`), each dependency
   with its icon, label and status:
 
 ```
 🎸 TabScan: http://localhost:2012/app/
 🏠 index:   http://localhost:2013/ (redirects to the app)
-2026-10-10 14:02:10  🏠 index ✅  🎸 web ✅
+🔒 HTTPS:   https://local.tabscan.nu01.com:2443/app/ (through Floci's CloudFront)
+2026-10-10 14:02:10  🏠 index ✅  🎸 web ✅  🚚 cdn ✅  🔒 https ✅
 ```
 
 Stop everything with `devbox services stop`.
+
+`local.tabscan.nu01.com` resolves to 127.0.0.1. The certificate is signed by
+mkcert's local CA. To have browsers trust it, run this once:
+`devbox run mkcert -install`. It asks for your password.
 
 ## Releases
 

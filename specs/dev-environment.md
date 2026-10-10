@@ -2,14 +2,15 @@
 
 - **Toolchain**: [devbox.json](../devbox.json), locked in `devbox.lock`:
   Flutter, Python (the index server, the deploy script), the AWS CLI, GNU
-  make and curl. `devbox shell` enters it.
+  make, curl, and mkcert and openssl (the local HTTPS certificate). `devbox shell` enters it.
 - **Dev container** ([.devcontainer/](../.devcontainer)): Ubuntu 24.04 with
   Devbox 0.18.1 and Nix 2.35.0 (single-user, installer hash-checked);
   `post-create.sh` fetches the locked Nix store paths from
   `cache.nixos.org`, then runs `devbox install`, handing Codespaces'
   `GITHUB_TOKEN` to Nix against GitHub API rate limits. Docker-in-Docker,
-  the Dart, Flutter, Python, Docker and YAML extensions, and ports 2012 and
-  2013 forwarded. Codespaces ask for 4 CPUs and 8 GB.
+  the Dart, Flutter, Python, Docker and YAML extensions, and ports 2012,
+  2013, 2014 and 2443 forwarded. It sets `TABSCANNER_BIND_HOST=0.0.0.0`, so
+  that Floci, inside docker-in-docker, can reach the dev servers. Codespaces ask for 4 CPUs and 8 GB.
 - **Services** (`devbox services up`, [process-compose.yaml](../process-compose.yaml)):
   - `2-flutter-web`: the app on http://localhost:2012/app/ (the `/app/`
     base href production uses), on Flutter's `web-server` device, through
@@ -17,16 +18,31 @@
     answers. Stopping it also stops whatever listens on the port.
   - `5-index`: [tabscan_index/site](../tabscan_index) on
     http://localhost:2013/.
-  - `0-health-check`: once both are ready, it prints the local URLs once
-    (🎸 the app, 🏠 the index), then every 15 s (`HEALTH_CHECK_INTERVAL`)
-    one line for the whole check: the time, then each dependency as its
-    icon, a short label and ✅ or ❌, e.g.
-    `2026-10-10 14:02:10  🏠 index ✅  🎸 web ✅`.
+  - `4-floci`: [Floci](https://floci.io/), a local AWS emulator, as the
+    CloudFront distribution in front of both, as deployed: `/app*` goes to
+    the app and everything else to the index
+    ([tabscan_floci/](../tabscan_floci/README.md)). It serves HTTP on
+    http://tabscan.localhost:2014/ (`FLOCI_PORT`) and HTTPS on
+    https://local.tabscan.nu01.com:2443/ (`FLOCI_HTTPS_PORT`). The
+    certificate comes from mkcert (`scripts/local-certs.sh`, run before
+    Floci starts) and covers `local.tabscan.nu01.com`, `tabscan.localhost`,
+    `*.tabscan.localhost`, `localhost`, `127.0.0.1` and `::1`. It is kept
+    in the git-ignored `tabscan_floci/certs/`. Browsers trust it after a
+    one-time `devbox run mkcert -install`. Floci keeps nothing between
+    starts, and hot reload works through it.
+  - `0-health-check`: once all are ready, it prints the local URLs once
+    (🎸 the app, 🏠 the index, 🔒 HTTPS), then every 15 s
+    (`HEALTH_CHECK_INTERVAL`) one line for the whole check: the time, then
+    each dependency as its icon, a short label and ✅ or ❌, e.g.
+    `2026-10-10 14:02:10  🏠 index ✅  🎸 web ✅  🚚 cdn ✅  🔒 https ✅`.
+    `cdn` asks Floci for `/app/` by its alias. `https` fetches
+    https://local.tabscan.nu01.com:2443/app/ and validates the certificate
+    against mkcert's CA.
   - Servers bind to 127.0.0.1; `TABSCANNER_BIND_HOST=0.0.0.0` serves other
     devices (a phone's browser).
   - `local.tabscan.nu01.com` resolves to localhost (`127.0.0.1`, `::1`),
-    so http://local.tabscan.nu01.com:2012/app/ reaches the local app
-    under the real domain. Nothing serves HTTPS locally yet.
+    so the local app is reachable under the real domain, over HTTPS through
+    Floci: https://local.tabscan.nu01.com:2443/app/.
 - **Android** (USB, debugging on; `ANDROID_SERIAL` picks one of several):
   `devbox run android` runs a debug build attached
   (`scripts/flutter-android.sh`); `devbox run android-release` installs a
