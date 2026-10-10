@@ -64,7 +64,10 @@ Every platform's ID token is issued for the **web client** (the server
 client ID on Android and iOS), which the identity pool trusts. Local web
 builds sign in with the **local web client** instead
 (`TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID`, the one with the local origins),
-which the pool, the OCR service and the share API trust too.
+and get their credentials from the **local pool**, `tabscan-local`, which
+trusts only that client (a pool can't trust two Google clients). The same
+Google account has another identity ID there, so local builds sync to
+another folder ([dev environment](dev-environment.md)).
 Tokens last an hour; five minutes before one expires the app asks Google
 quietly for a new one.
 
@@ -177,9 +180,10 @@ either):
   `https://tabscan.nu01.com`, `https://rc.tabscan.nu01.com`,
   `http://localhost:2012` and `https://local.tabscan.nu01.com:2443`.
 - **`identity.yaml`**, stack `tabscan-identity`: the identity pool
-  `tabscan`, trusting Google (`accounts.google.com` = the web client ID
-  and, when `GoogleLocalWebClientId` is given, the local web client's,
-  separated by a comma); no guests, no classic flow. Its authenticated role may only get, put and
+  `tabscan`, trusting Google (`accounts.google.com` = the web client ID);
+  no guests, no classic flow. The same template, as stack
+  `tabscan-identity-local`, makes the local pool `tabscan-local`, trusting
+  the local web client. Each pool's authenticated role may only get, put and
   delete objects in `<bucket>/${cognito-identity.amazonaws.com:sub}/*`,
   and list that prefix.
 
