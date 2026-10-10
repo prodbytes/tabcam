@@ -38,7 +38,8 @@ Files are named from the title and artist (`My riff - Me.pdf`,
 
 ## Opening a link
 
-The web app opened with `?c=<capture id>` opens that capture's event
+The web app opened with `?c=<capture id>`, or the Android app opened by
+the link ([App Links](#android-app-links)), opens that capture's event
 screen, found by its ID among the events on the device: the user's own and
 those [shared with them](shared-captures.md). If it isn't there yet:
 
@@ -52,3 +53,25 @@ those [shared with them](shared-captures.md). If it isn't there yet:
 
 The link gives no access by itself: who can open it is who the owner
 shared it with ([Share with people](shared-captures.md)).
+
+## Android App Links
+
+On Android, `https://tabscan.nu01.com/app…` and
+`https://rc.tabscan.nu01.com/app…` open in the TabScan app instead of
+the browser (an `autoVerify` intent filter; every web app address, not
+only capture links: without `?c=` the app just opens). A link that
+launches the app, or reaches it while it runs, goes to `IncomingLinks`
+([lib/export/incoming_links.dart](../tabscan_app/lib/export/incoming_links.dart)),
+a binding observer added before `runApp`, so the Navigator never takes
+the link for a named route; Home then opens the capture as above. The
+app's initial route is always `/`.
+
+Android opens them in the app only when the site vouches for the app's
+signing key: `https://<site>/.well-known/assetlinks.json` (from
+[tabscan_index/site/.well-known/](../tabscan_index/site/.well-known/assetlinks.json),
+uploaded by every deploy, both sites) lists the SHA-256 fingerprints of
+the keys allowed. It lists the maintainer's debug key, which signs the
+release builds installed with `scripts/android-install.sh`. APKs built by
+the Release workflow are signed with a fresh debug key each run, so their
+links open in the browser until a release key is set up and its
+fingerprint added there.

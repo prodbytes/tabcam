@@ -15,6 +15,7 @@ import 'cloud/share_config.dart';
 import 'cloud/sigv4.dart';
 import 'library/library.dart';
 import 'maintenance/maintenance.dart';
+import 'export/incoming_links.dart';
 import 'recognition/auto_reader.dart';
 import 'screens/home_screen.dart';
 
@@ -23,6 +24,8 @@ void main() {
   // before runApp, which would otherwise make the binding: without this,
   // the app crashes at launch.
   WidgetsFlutterBinding.ensureInitialized();
+  // Before runApp, so capture links reach it before the Navigator.
+  IncomingLinks.instance.start();
   final maintenance = MaintenanceCheck(url: MaintenanceCheck.defaultUrl())
     ..start();
   // Nothing starts (library, sign-in, sync) until the status says the
@@ -175,6 +178,9 @@ class TabScanApp extends StatelessWidget {
       theme: theme(Brightness.light),
       darkTheme: theme(Brightness.dark),
       themeMode: ThemeMode.dark,
+      // Not the launch link's path (an App Link's /app/?c=…): there are no
+      // named routes. IncomingLinks opens the capture.
+      initialRoute: '/',
       home: HomeScreen(library: library, auth: auth, sync: sync, ocr: ocr),
     );
     final reader = this.reader;

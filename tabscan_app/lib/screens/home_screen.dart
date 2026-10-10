@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../app_version.dart';
@@ -10,6 +9,7 @@ import '../capture/page_source.dart';
 import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
 import '../export/capture_link.dart';
+import '../export/incoming_links.dart';
 import '../library/capture_event.dart';
 import '../library/library.dart';
 import 'account_panel.dart';
@@ -76,14 +76,20 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // The web app opened from a capture's link (…/app/?c=<id>).
-    if (kIsWeb) openLink(Uri.base);
+    // Opened from a capture's link (…/app/?c=<id>), now or later.
+    IncomingLinks.instance.addListener(_incoming);
+    _incoming();
   }
 
   @override
   void dispose() {
+    IncomingLinks.instance.removeListener(_incoming);
     _stopLink();
     super.dispose();
+  }
+
+  void _incoming() {
+    if (IncomingLinks.instance.take() case final link?) openLink(link);
   }
 
   /// The capture a link named, until it's opened (or found missing).

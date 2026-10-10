@@ -149,6 +149,9 @@ echo "==> uploading"
 aws s3 cp tabscan_index/site/index.html "s3://$bucket/index.html" \
   --cache-control no-cache --content-type "text/html; charset=utf-8" --only-show-errors
 aws s3 sync tabscan_app/build/web/ "s3://$bucket/app/" --delete --cache-control no-cache --only-show-errors
+# Android App Links: which signing keys' apps may open the site's links.
+aws s3 cp tabscan_index/site/.well-known/assetlinks.json "s3://$bucket/.well-known/assetlinks.json" \
+  --cache-control no-cache --content-type application/json --only-show-errors
 invalidation="$(aws cloudfront create-invalidation --distribution-id "$distribution" \
   --paths '/*' --query Invalidation.Id --output text)"
 echo "    waiting for invalidation $invalidation"

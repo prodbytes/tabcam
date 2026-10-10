@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.nu01.tabscan",
+      "sha256_cert_fingerprints": [
+        "93:B9:8C:18:EC:A2:6E:45:0F:A9:E3:16:81:44:28:1A:7E:48:70:FA:3E:39:25:A1:DB:7F:D1:2E:AC:9F:72:4D"
+      ]
+    }
+  }
+]

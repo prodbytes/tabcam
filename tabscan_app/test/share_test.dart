@@ -5,6 +5,8 @@ import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tabscan_app/export/capture_link.dart';
 import 'package:tabscan_app/export/exporter.dart';
+import 'package:tabscan_app/export/incoming_links.dart';
+import 'package:flutter/widgets.dart';
 import 'package:tabscan_app/library/capture_event.dart';
 import 'package:tabscan_app/processing/page_filter.dart';
 
@@ -43,6 +45,33 @@ void main() {
         isNull,
       );
     });
+  });
+
+  testWidgets('a capture link pushed to the app is kept for Home', (
+    tester,
+  ) async {
+    final links = IncomingLinks.instance;
+    links.take();
+    var told = 0;
+    void tell() => told++;
+    links.addListener(tell);
+    addTearDown(() => links.removeListener(tell));
+
+    final link = Uri.parse('https://tabscan.nu01.com/app/?c=abc123');
+    expect(
+      await links.didPushRouteInformation(RouteInformation(uri: link)),
+      isTrue,
+    );
+    expect(told, 1);
+    expect(links.take(), link);
+    expect(links.take(), isNull);
+    // Other routes are left to the app.
+    expect(
+      await links.didPushRouteInformation(
+        RouteInformation(uri: Uri.parse('/settings')),
+      ),
+      isFalse,
+    );
   });
 
   test('Files is a zip of every file, the text tab and the links', () async {
