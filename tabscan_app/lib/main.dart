@@ -16,6 +16,7 @@ import 'cloud/sigv4.dart';
 import 'library/library.dart';
 import 'maintenance/maintenance.dart';
 import 'export/incoming_links.dart';
+import 'recognition/auto_reader.dart';
 import 'screens/home_screen.dart';
 
 void main() {
@@ -41,6 +42,7 @@ void main() {
           auth: s.auth,
           sync: s.sync,
           ocr: s.ocr,
+          reader: s.reader,
         );
       },
       onEnter: () => services?.stopSync(),
@@ -54,7 +56,11 @@ class AppServices {
     // Sign-in and sync only in a build that has both set up (.env, or the
     // deploys' repository variables); otherwise events stay on the device.
     if (_cloud) auth = GoogleAuthService()..init();
+    reader = AutoReader(library: library, auth: auth, ocr: () => ocr)..start();
   }
+
+  /// Reads every capture's tab by itself.
+  late final AutoReader reader;
 
   static bool get _cloud =>
       CloudConfig.enabled && GoogleConfig.webClientId.isNotEmpty;
@@ -115,12 +121,16 @@ class TabScanApp extends StatelessWidget {
     this.auth,
     this.sync,
     this.ocr,
+    this.reader,
   });
 
   final Library library;
   final AuthService? auth;
   final CloudSync? sync;
   final CloudOcr? ocr;
+
+  /// Reads every capture's tab by itself (null in tests: no reading).
+  final AutoReader? reader;
 
   @override
   Widget build(BuildContext context) {
@@ -162,7 +172,7 @@ class TabScanApp extends StatelessWidget {
       );
     }
 
-    return MaterialApp(
+    final app = MaterialApp(
       title: AppVersion.title,
       debugShowCheckedModeBanner: false,
       theme: theme(Brightness.light),
@@ -173,5 +183,7 @@ class TabScanApp extends StatelessWidget {
       initialRoute: '/',
       home: HomeScreen(library: library, auth: auth, sync: sync, ocr: ocr),
     );
+    final reader = this.reader;
+    return reader == null ? app : AutoReaderScope(notifier: reader, child: app);
   }
 }

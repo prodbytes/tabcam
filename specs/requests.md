@@ -292,7 +292,41 @@ spec.
     ([dev environment](dev-environment.md), [cloud sync](cloud-sync.md)).
     Premium and sharing still don't work in local web builds (the OCR
     service and share API look identities up in the main pool).
-37. **The Share button should offer only Link (the default: a link to this
+37. **In the capture view, let the first button cycle Original, Scan and
+    Text (the original, processed and OCR views); no Read tab button: read
+    every tab submitted by itself.** The event screen's first tool is the
+    view, Original → Scan → Text, which sets the image pages' filter or
+    shows the text in place of the pages ([event screen](event-screen.md)).
+    Read tab is gone: `AutoReader` reads each capture whenever its image
+    pages change (on the device, or Premium's cloud), never replacing a
+    text the user edited (`tabTextAuto`), and waits for sign-in signed out
+    ([tab recognition](tab-recognition.md)). The text tab screen became
+    the Text view.
+
+38. **404s for `/status.json` on the local site.** The local stack had no
+    status file, so every [maintenance](maintenance-mode.md) check of the
+    local web app logged a 404 (harmless: the app reads a missing file as
+    "not in maintenance"). The index now serves
+    `tabscan_index/site/status.json` (`{"maintenance": false}`); flip it to
+    `true` to try maintenance mode locally. Deploys still upload only the
+    index page, so the live sites' status files are untouched.
+39. **On the home screen, show both the captures I created and the
+    captures shared with me.** Shared captures were already on Home, mixed
+    in with the user's own. Home now splits them into two headed sections
+    once something is shared: **My captures** above, **Shared with me**
+    below, each newest first ([library](library.md),
+    [shared captures](shared-captures.md)). With nothing shared, the grid
+    has no headings.
+40. **Let a user mark an OCR reading as correct; once marked, show the
+    text tab by default instead of the image, and the image while it
+    isn't.** The text tab editor has **Mark correct** next to Copy (then
+    **Correct**, tapped again to unmark), saved on the event as
+    `tabTextCorrect` and synced. An event marked correct opens on its text
+    tab, its pages one step back; otherwise on its pages, as before. A new
+    on-device reading clears the mark; cloud OCR never replaces a marked
+    text tab. Specs: [tab recognition](tab-recognition.md#text-tab-editor),
+    [event screen](event-screen.md), [cloud OCR](cloud-ocr.md).
+41. **The Share button should offer only Link (the default: a link to this
     capture), PDF (every PDF and image combined) or Files (a zip of
     everything); then: keep the text-only share too. The link holds only
     the capture ID; save the owner and the shares in the capture event.
@@ -307,7 +341,16 @@ spec.
     Android app links are a follow-up. The text tab and links go in the
     PDF and the zip. (There are no PDF pages: pages are images, videos and
     links, so PDF combines the images.)
-38. **(Continuing 37) Android links.** Android App Links: the app opens
+38. **Let the owner hide the original image and show only the text and
+    attachments.** A capture's owner can now **Hide images** (and **Show
+    images**) from the event screen's app bar. This is a synced setting
+    (`hideImages` in `event.json`), so it applies to everyone: the owner's
+    devices and the people it's shared with, who can't change it. Hidden,
+    the event screen shows the text tab as the first page, then the videos
+    and links. Library cards show no image, and PDF and Files exports
+    leave the images out. The images are kept, Read tab still reads them,
+    and grantees still sync them ([hidden images](hidden-images.md)).
+42. **(Continuing 37) Android links.** Android App Links: the app opens
     `https://tabscan.nu01.com/app…` and the RC's (verified intent filter),
     and opens the capture a link names, launched or running
     (`IncomingLinks`). Deploys upload `/.well-known/assetlinks.json`, which

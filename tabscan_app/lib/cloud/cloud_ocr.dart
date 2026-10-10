@@ -136,7 +136,8 @@ class CloudOcr extends ChangeNotifier {
     if (premium && sync.state == SyncState.synced) await collect();
   }
 
-  /// Transcribes [event] in the cloud now (Read tab, for premium users):
+  /// Transcribes [event] in the cloud now (reading by itself, for premium
+  /// users):
   /// its synced pages that have no transcription yet. How many were queued.
   Future<int> transcribe(CaptureEvent event) async {
     final token = _token;
@@ -240,13 +241,17 @@ class CloudOcr extends ChangeNotifier {
         }
       }
       final text = texts.isEmpty ? null : '${texts.join('\n\n')}\n';
-      // Only while the text tab is still ours: never over the user's edits
-      // or an on-device reading.
+      // Only while the text tab is still ours: never over the user's edits,
+      // an on-device reading, or a text tab the user marked correct.
       final current = library.byId(event.id);
       if (current == null) continue;
-      final ours = current.tabText == null || current.tabText == last?.text;
+      final ours =
+          !current.tabTextCorrect &&
+          (current.tabText == null || current.tabText == last?.text);
       if (text != null && ours && current.tabText != text) {
-        await library.update(current.copyWith(tabText: text));
+        await library.update(
+          current.copyWith(tabText: text, tabTextAuto: true),
+        );
       }
       debugPrint(
         'TabScan: cloud OCR: ${event.id}: '

@@ -70,15 +70,17 @@ blank line.
   has a result, the `ok` texts, in page order and separated by a blank
   line, become the event's text tab, which then syncs like any change. It
   writes the text tab only while it's empty or still the text it wrote
-  (kept in `cloudocr.json`), so it never replaces the user's edits or an
-  on-device reading. New pages update it the same way.
+  (kept in `cloudocr.json`), and not marked correct, so it never replaces
+  the user's edits, an on-device reading or a checked text tab. New pages update it the same way.
 - **Pages from before upgrading**: an event whose pages still lack results
   two minutes after its last change is sent to `POST /transcribe
   {eventId}` (once per event per session), which queues its untranscribed
   pages.
-- **Read tab**, for premium users, asks for the event's transcription
-  (`/transcribe`) and says it's on its way, or opens the text tab if it's
-  there.
+- **Reading by itself** ([tab recognition](tab-recognition.md#reading-by-itself)),
+  for premium users, asks for the event's transcription (`/transcribe`)
+  as soon as its image pages change; the Text view says it's on its way
+  until the text comes. What the cloud writes counts as an automatic
+  read (`tabTextAuto`): a text the user edited is never replaced.
 
 **Upgrade offer**:
 
@@ -92,14 +94,14 @@ blank line.
   Premium transcribes your scans automatically", with **Upgrade** (it opens
   the account, the Profile tab's panel, in a sheet), on events without a text tab, for users without
   Premium (signed out included).
-- On the web, Read tab without Premium says reading tabs needs the Android
-  or iOS app, or TabScan Premium.
+- On the web without Premium, the Text view says reading tabs needs the
+  Android or iOS app, or TabScan Premium.
 
 ## Troubleshooting log
 
 - **App**: every call to the service is logged
   (`TabScan: OCR API: POST <url>`, then its status, time and answer, or
-  the error); `TabScan: cloud OCR:` lines say when Read tab can't ask (no
+  the error); `TabScan: cloud OCR:` lines say when a read can't ask (no
   ID token, not premium), and, per sync pass, how many results were found,
   which events wait for which pages, each result's status, and whether the
   text tab was filled or kept.
@@ -147,7 +149,8 @@ blank line.
 - The image's build reads back a made-up riff (at least 80% of its notes,
   90% at the time of writing).
 - App tests: a premium event gets its text tab once every page is read;
-  pages without tab are left out; the user's edits stay; a free user gets
+  pages without tab are left out; the user's edits stay; a text tab
+  marked correct stays; a free user gets
   nothing; late pages are asked for once; the Premium card's upgrade offer
   and premium state.
 - On a real photographed tab page (the OCR bench, kept out of git), the

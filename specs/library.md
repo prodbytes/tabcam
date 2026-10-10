@@ -4,8 +4,10 @@ The **Home** tab ([navigation](navigation.md)), titled **TabScan**.
 
 - **Events** show as a grid of cards, newest first: the first image page's
   thumbnail (with its filter; without images, a play badge if it has
-  videos, or else a link icon), the title, and a line with the artist (if
-  set), the page count, the video and link counts (if any), "text"
+  videos, or else a link icon; with them [hidden](hidden-images.md), a
+  text icon once the tab is read, or else those badges), the title, and a
+  line with the artist (if set), the page count ("images hidden" when
+  they are), the video and link counts (if any), "text"
   once the tab has been read, and "shared by <email>" for a capture
   someone [shared](shared-captures.md) with the user (whose menu has
   **Remove** instead of Delete, and no Rename when read only). Tapping a
@@ -13,6 +15,12 @@ The **Home** tab ([navigation](navigation.md)), titled **TabScan**.
   **Share** ([sharing](sharing.md)), **Clone** (below) and **Delete** (after a confirmation,
   which says the pages and text tab go too). Long-pressing a card renames
   it.
+- **Sections**: once something is shared with the user, Home has two
+  headed sections, **My captures** (the user's own, or "Nothing of your
+  own yet: go to Capture to add some." when there are none) and below it
+  **Shared with me** (captures [shared](shared-captures.md) with the
+  user), each newest first. With nothing shared, the grid has no
+  headings.
 - **Empty**: a music icon, "No tabs yet", and a line pointing to
   Capture (to scan, or add photos, videos, files and links).
 - New events come from the [Capture](navigation.md#capture) tab: each

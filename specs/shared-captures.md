@@ -38,7 +38,8 @@ recorded (and an editor could change it in their copy).
 
 A capture shared with the user comes down at the next
 [sync pass](cloud-sync.md#when-and-how) (within a minute) and shows in
-the [library](library.md) with "shared by <their email>" on its card. Its
+the [library](library.md)'s **Shared with me** section, below the user's
+own (**My captures**), with "shared by <their email>" on its card. Its
 event screen says **"Shared by <email> · Can edit"** or **"· Read only"**
 under the app bar.
 
@@ -46,8 +47,9 @@ under the app bar.
   people (only the owner shares). Changes go up to the owner's folder,
   and the owner's changes come down; the later one wins, as between one's
   own devices.
-- **Read only**: Rename, Add, Filter, Rotate, Read tab, Delete (a page)
-  and editing the text tab are off; Share (export) and Clone work. A clone
+- **Read only**: Rename, Add, Rotate, Delete (a page) and editing the
+  text tab are off (the view changes only what shows), and nothing
+  reads it here; Share (export) and Clone work. A clone
   is the user's own.
 - **Remove** (a card's menu, instead of Delete, after a confirmation that
   the owner keeps it) takes it off the user's devices and leaves the
@@ -55,6 +57,9 @@ under the app bar.
 - A share the owner removed, or a capture the owner deleted, goes from
   the user's devices at the next pass. A role change applies at the next
   pass too.
+
+If the owner [hid its images](hidden-images.md), it shows that way for
+the user too, who can't show them.
 
 Who shared it and the role are kept on the device only (`sharedBy`,
 `readOnly`), never in the capture's cloud copy.

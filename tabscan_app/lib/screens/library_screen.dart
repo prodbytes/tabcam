@@ -12,7 +12,8 @@ import 'share_sheet.dart';
 import 'sign_in_gate.dart';
 import 'video_page.dart';
 
-/// The Home tab: every event as a card, newest first. A new event
+/// The Home tab: every event as a card, newest first; once something is
+/// shared with the user, in two sections, My captures and Shared with me. A new event
 /// ([fresh]) is scrolled to and outlined for a moment. Tapping a card opens
 /// its [EventScreen].
 class LibraryView extends StatefulWidget {
@@ -71,29 +72,81 @@ class _LibraryViewState extends State<LibraryView> {
         return const Center(child: CircularProgressIndicator());
       }
       if (library.events.isEmpty) return const _Empty();
-      return GridView.builder(
+      final mine = library.events.where((e) => !e.isShared).toList();
+      final shared = library.events.where((e) => e.isShared).toList();
+      // Headed sections only once something is shared with the user.
+      final plain = shared.isEmpty;
+      return CustomScrollView(
         controller: _grid,
-        padding: const EdgeInsets.all(12),
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 220,
-          childAspectRatio: 0.62,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-        ),
-        itemCount: library.events.length,
-        itemBuilder: (context, i) {
-          final event = library.events[i];
-          return _EventCard(
-            library: library,
-            event: event,
-            fresh: event.id == widget.fresh,
-            onOpen: () =>
-                openEvent(context, library, event, widget.sync, widget.ocr),
-            sync: widget.sync,
-          );
-        },
+        slivers: [
+          if (plain)
+            _section(mine)
+          else ...[
+            const _Heading('My captures'),
+            if (mine.isEmpty)
+              const _None('Nothing of your own yet: go to Capture to add some.')
+            else
+              _section(mine),
+            const _Heading('Shared with me'),
+            _section(shared),
+          ],
+        ],
       );
     },
+  );
+
+  Widget _section(List<CaptureEvent> events) => SliverPadding(
+    padding: const EdgeInsets.all(12),
+    sliver: SliverGrid.builder(
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 220,
+        childAspectRatio: 0.62,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemCount: events.length,
+      itemBuilder: (context, i) {
+        final event = events[i];
+        return _EventCard(
+          library: library,
+          event: event,
+          fresh: event.id == widget.fresh,
+          onOpen: () =>
+              openEvent(context, library, event, widget.sync, widget.ocr),
+          sync: widget.sync,
+        );
+      },
+    ),
+  );
+}
+
+/// A section's title on Home.
+class _Heading extends StatelessWidget {
+  const _Heading(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => SliverPadding(
+    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+    sliver: SliverToBoxAdapter(
+      child: Text(text, style: Theme.of(context).textTheme.titleMedium),
+    ),
+  );
+}
+
+/// What an empty section says.
+class _None extends StatelessWidget {
+  const _None(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => SliverPadding(
+    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+    sliver: SliverToBoxAdapter(
+      child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
+    ),
   );
 }
 
@@ -232,9 +285,9 @@ class _EventCard extends StatelessWidget {
     final videos = event.pages.where((p) => p.isVideo).length;
     final links = event.pages.where((p) => p.isLink).length;
     final pages = event.pages.length - videos - links;
-    // The first image is the thumbnail; without images, a video's badge,
-    // or else a link's.
-    final cover = event.pages.where((p) => p.isImage).firstOrNull;
+    // The first image is the thumbnail; without images (or with them
+    // hidden), the text tab's badge, a video's, or else a link's.
+    final cover = event.visiblePages.where((p) => p.isImage).firstOrNull;
     return Card(
       clipBehavior: Clip.antiAlias,
       shape: fresh
@@ -263,6 +316,8 @@ class _EventCard extends StatelessWidget {
                         fit: BoxFit.cover,
                         cacheWidth: 400,
                       )
+                    : event.hideImages && event.tabText != null
+                    ? const Icon(Icons.notes, size: 48, color: Colors.black54)
                     : videos > 0
                     ? const VideoThumbnail()
                     : links > 0
@@ -287,7 +342,9 @@ class _EventCard extends StatelessWidget {
                         Text(
                           [
                             if (event.artist.isNotEmpty) event.artist,
-                            if (pages > 0 || videos + links == 0)
+                            if (event.hideImages)
+                              'images hidden'
+                            else if (pages > 0 || videos + links == 0)
                               '$pages ${pages == 1 ? 'page' : 'pages'}',
                             if (videos > 0)
                               '$videos ${videos == 1 ? 'video' : 'videos'}',

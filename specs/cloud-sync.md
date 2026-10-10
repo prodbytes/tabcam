@@ -19,17 +19,19 @@ it's as before: no account button, events only on the device.
 
 Signed out (anonymous), the user can **capture**: scan, and add pages, photos, videos, files and links to their events, and
 rename, filter, rotate, clone and delete them. All of it is stored on the
-device only. **Read tab** (the processing) and **sharing** need signing
-in. **Share with people** only shows signed in. **Share** (as a link, a PDF, text
-or files, from a card, the event screen or the text tab editor) and
-**Read tab**, tapped signed out, open a
-sheet, "Sign in to read tabs" or "Sign in to share", saying why, that
+device only. **Reading tabs** (the processing) and **sharing** need
+signing in. **Share with people** only shows signed in. Captures made
+signed out are read once the user signs in
+([tab recognition](tab-recognition.md#reading-by-itself)); the Text view
+says so, with **Sign in**. **Share** (as a link, a PDF, text or files,
+from a card, the event screen or the Text view) and the Text view's
+**Sign in**, tapped signed out, open a sheet, "Sign in to read tabs" or "Sign in to share", saying why, that
 capturing still works and stays on the device, and the sign-in button.
 Signing in there closes it and goes on with what was tapped; closing it
 does nothing. What was captured signed out goes up at the first sign-in,
 as the user's own.
 
-In a build without sign-in set up, nothing asks to sign in: Read tab and
+In a build without sign-in set up, nothing asks to sign in: reading and
 sharing work as before (there'd be no way to sign in).
 
 ## Signing in
@@ -79,7 +81,8 @@ the user-data bucket:
 
 | Object | Content |
 |---|---|
-| `<identity>/events/<event id>/event.json` | the event's details, as on the device, with the folder's identity as `owner` and the people it's shared with (`shares`), but without how it's shared with the user (`sharedBy`, `readOnly`); or its tombstone once deleted. Coming down, the folder it's in, not `owner`, says whose it is |
+| `<identity>/events/<event id>/event.json` | the event's details, as on the device, with the folder's identity as `owner` and the people it's shared with (`shares`), whether the owner
+[hid the images](hidden-images.md) (`hideImages`), but without how it's shared with the user (`sharedBy`, `readOnly`); or its tombstone once deleted. Coming down, the folder it's in, not `owner`, says whose it is |
 | `<identity>/events/<event id>/<page id>.<extension>` | each page's file, as stored on the device, with its MIME type (`image/jpeg` for scanned pages, the video's type for videos) |
 
 Links are in `event.json` only: they have no file.
