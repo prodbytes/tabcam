@@ -18,6 +18,9 @@ Future<void> showShareSheet(
   CloudSync? sync,
 }) async {
   final hasText = Exporter.shareText(event) != null;
+  // With the images hidden, a PDF or zip needs something else to hold.
+  final hidden = event.hideImages;
+  final hasVideos = event.pages.any((p) => p.isVideo);
   final format = await showModalBottomSheet<ShareFormat>(
     context: context,
     showDragHandle: true,
@@ -43,9 +46,13 @@ Future<void> showShareSheet(
           ListTile(
             leading: const Icon(Icons.picture_as_pdf_outlined),
             title: const Text('PDF'),
-            subtitle: const Text(
-              'Every photo and scan in one PDF, plus the text tab and links',
+            subtitle: Text(
+              hidden
+                  ? 'The text tab and links (the photos and scans are hidden)'
+                  : 'Every photo and scan in one PDF, plus the text tab and '
+                        'links',
             ),
+            enabled: !hidden || hasText,
             onTap: () => Navigator.pop(context, ShareFormat.pdf),
           ),
           ListTile(
@@ -54,7 +61,7 @@ Future<void> showShareSheet(
             subtitle: Text(
               hasText
                   ? 'The text tab and links, as plain text'
-                  : 'Read the tab first (Read tab on the event)',
+                  : 'No text tab yet: it\'s read after each capture',
             ),
             enabled: hasText,
             onTap: () => Navigator.pop(context, ShareFormat.text),
@@ -62,10 +69,14 @@ Future<void> showShareSheet(
           ListTile(
             leading: const Icon(Icons.folder_zip_outlined),
             title: const Text('Files'),
-            subtitle: const Text(
-              'A zip of everything: photos, scans, videos, the text tab and '
-              'links',
+            subtitle: Text(
+              hidden
+                  ? 'A zip of the videos, the text tab and links (the photos '
+                        'and scans are hidden)'
+                  : 'A zip of everything: photos, scans, videos, the text tab '
+                        'and links',
             ),
+            enabled: !hidden || hasText || hasVideos,
             onTap: () => Navigator.pop(context, ShareFormat.files),
           ),
         ],

@@ -15,14 +15,16 @@ enum ShareFormat {
   link('Link'),
 
   /// Every image page (filtered) in one PDF, then the text tab if it was
-  /// read, then the links. Videos are left out.
+  /// read, then the links. Videos, and images the owner hid
+  /// ([CaptureEvent.hideImages]), are left out.
   pdf('PDF'),
 
   /// The text tab and the links, as plain text: pastes anywhere.
   text('Text'),
 
   /// One zip of everything: each image (filtered) and video, the text tab
-  /// (`tab.txt`) and the links (`links.txt`).
+  /// (`tab.txt`) and the links (`links.txt`); images the owner hid are
+  /// left out.
   files('Files');
 
   const ShareFormat(this.label);
@@ -116,7 +118,7 @@ abstract final class Exporter {
         );
       case ShareFormat.pdf:
         final pages = [
-          for (final p in event.pages)
+          for (final p in event.visiblePages)
             if (p.isImage) await filteredPage(p),
         ];
         final bytes = await pdf(event, pages);
@@ -129,7 +131,7 @@ abstract final class Exporter {
         );
       case ShareFormat.files:
         final bytes = await zip(event, [
-          for (final p in event.pages)
+          for (final p in event.visiblePages)
             if (p.hasFile) await filteredPage(p),
         ]);
         await SharePlus.instance.share(
@@ -143,8 +145,9 @@ abstract final class Exporter {
     debugPrint('Shared ${event.id} as ${format.name}');
   }
 
-  /// Files: a zip of [files], the event's image and video pages'
-  /// bytes in page order (images filtered), named as `<name> <n>.<extension>`; then
+  /// Files: a zip of [files], the event's visible image and video pages'
+  /// bytes in page order (images filtered), named as
+  /// `<name> <n>.<extension>`; then
   /// `tab.txt` (the text tab) and `links.txt` (a link per line), when
   /// there are any. Pictures and videos are stored as they are: they're
   /// compressed already.
@@ -155,7 +158,8 @@ abstract final class Exporter {
     final (event, files) = args;
     final name = event.fileName;
     final archive = Archive();
-    for (final (i, page) in event.pages.where((p) => p.hasFile).indexed) {
+    for (final (i, page)
+        in event.visiblePages.where((p) => p.hasFile).indexed) {
       final (extension, _) = _type(page);
       final bytes = files[i];
       archive.add(

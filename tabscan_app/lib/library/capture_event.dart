@@ -126,6 +126,7 @@ class CaptureEvent {
     this.tabText,
     this.tabTextAuto = false,
     this.tabTextCorrect = false,
+    this.hideImages = false,
     this.deleted,
     this.owner,
     this.shares = const [],
@@ -169,6 +170,21 @@ class CaptureEvent {
   /// on its Text view, and no read replaces it.
   final bool tabTextCorrect;
 
+  /// Whether its owner hid the photos and scans: it then shows only the
+  /// text tab and the other pages (videos and links), to everyone it's
+  /// shared with too, and exports leave the images out. The images are
+  /// kept (they're still read) and come back when shown again.
+  final bool hideImages;
+
+  /// The pages it shows and exports: all of them, or, with [hideImages],
+  /// the videos and links.
+  List<EventPage> get visiblePages => hideImages
+      ? [
+          for (final p in pages)
+            if (!p.isImage) p,
+        ]
+      : pages;
+
   /// When it was deleted, for a tombstone: not shown, no pages.
   final DateTime? deleted;
   bool get isDeleted => deleted != null;
@@ -206,6 +222,7 @@ class CaptureEvent {
     String? tabText,
     bool? tabTextAuto,
     bool? tabTextCorrect,
+    bool? hideImages,
     DateTime? updated,
     String? owner,
     List<EventShare>? shares,
@@ -221,6 +238,7 @@ class CaptureEvent {
     tabText: tabText ?? this.tabText,
     tabTextAuto: tabTextAuto ?? this.tabTextAuto,
     tabTextCorrect: tabTextCorrect ?? this.tabTextCorrect,
+    hideImages: hideImages ?? this.hideImages,
     deleted: deleted,
     owner: owner ?? this.owner,
     shares: shares ?? this.shares,
@@ -241,6 +259,7 @@ class CaptureEvent {
     if (tabText != null) 'tabText': tabText,
     if (tabTextAuto) 'tabTextAuto': true,
     if (tabTextCorrect) 'tabTextCorrect': true,
+    if (hideImages) 'hideImages': true,
     if (deleted != null) 'deleted': deleted!.toUtc().toIso8601String(),
     if (owner != null) 'owner': owner,
     if (shares.isNotEmpty) 'shares': [for (final s in shares) s.toJson()],
@@ -266,6 +285,7 @@ class CaptureEvent {
       tabText: json['tabText'] as String?,
       tabTextAuto: json['tabTextAuto'] == true,
       tabTextCorrect: json['tabTextCorrect'] == true,
+      hideImages: json['hideImages'] == true,
       deleted: time('deleted'),
       owner: json['owner'] as String?,
       shares: [

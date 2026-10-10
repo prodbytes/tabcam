@@ -33,6 +33,9 @@ the cloud as they sync.
   links, with Open and Copy) to swipe and zoom, with
   the view (Original, Scan or Text), Add, Rotate and Delete, plus Rename
   and Share.
+- [Hidden images](hidden-images.md): the owner hides a capture's photos
+  and scans, for everyone; it then shows only the text tab, videos and
+  links, and exports leave the images out.
 - [Page filters](page-filters.md): Original, and Tab (black ink on white,
   by adaptive thresholding), the default.
 - [Tab recognition](tab-recognition.md): every capture read by itself

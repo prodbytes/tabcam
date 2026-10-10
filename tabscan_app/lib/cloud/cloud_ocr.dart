@@ -136,7 +136,8 @@ class CloudOcr extends ChangeNotifier {
     if (premium && sync.state == SyncState.synced) await collect();
   }
 
-  /// Transcribes [event] in the cloud now (Read tab, for premium users):
+  /// Transcribes [event] in the cloud now (reading by itself, for premium
+  /// users):
   /// its synced pages that have no transcription yet. How many were queued.
   Future<int> transcribe(CaptureEvent event) async {
     final token = _token;

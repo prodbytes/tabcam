@@ -4,8 +4,10 @@ The **Home** tab ([navigation](navigation.md)), titled **TabScan**.
 
 - **Events** show as a grid of cards, newest first: the first image page's
   thumbnail (with its filter; without images, a play badge if it has
-  videos, or else a link icon), the title, and a line with the artist (if
-  set), the page count, the video and link counts (if any), "text"
+  videos, or else a link icon; with them [hidden](hidden-images.md), a
+  text icon once the tab is read, or else those badges), the title, and a
+  line with the artist (if set), the page count ("images hidden" when
+  they are), the video and link counts (if any), "text"
   once the tab has been read, and "shared by <email>" for a capture
   someone [shared](shared-captures.md) with the user (whose menu has
   **Remove** instead of Delete, and no Rename when read only). Tapping a

@@ -19,6 +19,7 @@ import 'rename_dialog.dart';
 import 'share_sheet.dart';
 import 'sign_in_gate.dart';
 import 'tab_text_view.dart';
+import 'text_page.dart';
 import 'video_page.dart';
 
 /// One event: its pages (images, videos and links) to swipe through, and
@@ -26,7 +27,8 @@ import 'video_page.dart';
 /// photos as taken, processed, or the tab read from them), Add (scan,
 /// photos and videos, files, a link), Rotate and Delete. Share and rename
 /// are in the app bar. The tab is read by itself ([AutoReader]): there's
-/// no Read tab button.
+/// no Read tab button. With its images hidden, the pages are the text tab,
+/// then the videos and links.
 class EventScreen extends StatefulWidget {
   const EventScreen({
     super.key,
@@ -141,7 +143,7 @@ class _EventScreenState extends State<EventScreen> {
     final link = source == _AddSource.link ? await askForLink(context) : null;
     if (source == _AddSource.link && link == null) return;
     await _run('Couldn\'t add', () async {
-      final first = event.pages.length;
+      final first = _pagesOf(event).length;
       if (link != null) {
         await _library.addLink(event, link.$1, title: link.$2);
       } else if (source == _AddSource.scan) {
@@ -160,6 +162,9 @@ class _EventScreenState extends State<EventScreen> {
         }
         if (pick.media.isEmpty) return;
         await _library.addMedia(event, pick.media);
+      }
+      if (event.hideImages && link == null) {
+        _snack('Added. Images are hidden on this capture.');
       }
       // Show the first page added.
       if (mounted) {
@@ -310,7 +315,20 @@ class _EventScreenState extends State<EventScreen> {
       return;
     }
     await _library.deletePage(event, page);
-    setState(() => _index = _index.clamp(0, event.pages.length - 2));
+    setState(() => _index = _index.clamp(0, _pagesOf(event).length - 2));
+  }
+
+  /// What the pager shows: the pages, or with the images hidden, the text
+  /// tab (null) and then the videos and links.
+  List<EventPage?> _pagesOf(CaptureEvent event) =>
+      event.hideImages ? [null, ...event.visiblePages] : event.pages;
+
+  /// The owner hides the images, or shows them again, for everyone.
+  Future<void> _toggleImages(CaptureEvent event) async {
+    await _library.update(event.copyWith(hideImages: !event.hideImages));
+    if (!mounted) return;
+    setState(() => _index = 0);
+    if (_pages.hasClients) _pages.jumpToPage(0);
   }
 
   @override
@@ -320,8 +338,9 @@ class _EventScreenState extends State<EventScreen> {
       builder: (context, _) {
         final event = _library.byId(widget.eventId);
         if (event == null) return const Scaffold();
-        final index = _index.clamp(0, event.pages.length - 1);
-        final page = event.pages.isEmpty ? null : event.pages[index];
+        final shown = _pagesOf(event);
+        final index = _index.clamp(0, shown.length - 1);
+        final page = shown.isEmpty ? null : shown[index];
         // Shared read only: everything that changes it is off.
         final editable = !event.readOnly;
         final enabled = !_busy && page != null && editable;
@@ -359,6 +378,17 @@ class _EventScreenState extends State<EventScreen> {
                   icon: const Icon(Icons.edit_outlined),
                   onPressed: () => _rename(event),
                 ),
+              // Only the owner hides the images, for everyone.
+              if (!event.isShared)
+                IconButton(
+                  tooltip: event.hideImages ? 'Show images' : 'Hide images',
+                  icon: Icon(
+                    event.hideImages
+                        ? Icons.image_outlined
+                        : Icons.hide_image_outlined,
+                  ),
+                  onPressed: _busy ? null : () => _toggleImages(event),
+                ),
               if (sync != null && sync.canShare && !event.isShared)
                 IconButton(
                   tooltip: 'Share with people',
@@ -394,35 +424,39 @@ class _EventScreenState extends State<EventScreen> {
                 Expanded(
                   child: PageView.builder(
                     controller: _pages,
-                    itemCount: event.pages.length,
+                    itemCount: shown.length,
                     onPageChanged: (i) => setState(() => _index = i),
                     itemBuilder: (context, i) => Padding(
                       padding: const EdgeInsets.all(16),
-                      child: event.pages[i].isLink
-                          ? LinkPage(
-                              key: ValueKey(event.pages[i].id),
-                              page: event.pages[i],
-                            )
-                          : event.pages[i].isVideo
-                          ? VideoPage(
-                              key: ValueKey(event.pages[i].id),
-                              library: _library,
-                              event: event,
-                              page: event.pages[i],
-                            )
-                          : InteractiveViewer(
-                              maxScale: 5,
-                              child: PageImage(
-                                library: _library,
-                                event: event,
-                                page: shownPage(event.pages[i]),
-                              ),
-                            ),
+                      child: switch (shown[i]) {
+                        null => TextPage(
+                          event: event,
+                          onOpen: () => setState(() => _shown = _View.text),
+                        ),
+                        final p when p.isLink => LinkPage(
+                          key: ValueKey(p.id),
+                          page: p,
+                        ),
+                        final p when p.isVideo => VideoPage(
+                          key: ValueKey(p.id),
+                          library: _library,
+                          event: event,
+                          page: p,
+                        ),
+                        final p => InteractiveViewer(
+                          maxScale: 5,
+                          child: PageImage(
+                            library: _library,
+                            event: event,
+                            page: shownPage(p),
+                          ),
+                        ),
+                      },
                     ),
                   ),
                 ),
                 Text(
-                  '${index + 1} / ${event.pages.length}',
+                  '${index + 1} / ${shown.length}',
                   style: Theme.of(context).textTheme.labelMedium,
                 ),
                 const SizedBox(height: 8),

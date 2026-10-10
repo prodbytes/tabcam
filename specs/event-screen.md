@@ -11,7 +11,9 @@ it opens on the pages.
   and opens the copy ([library](library.md#events)). **Share** opens the
   [share sheet](sharing.md). **Share with people** (the user's own
   events, signed in, in a build with sharing) shares it by email
-  ([shared captures](shared-captures.md)).
+  ([shared captures](shared-captures.md)). **Hide images** / **Show
+  images** (the owner only) hides the photos and scans, for everyone
+  ([hidden images](hidden-images.md)).
 - **Shared with the user**: a line under the app bar, "Shared by <email>
   · Can edit" or "· Read only". Read only, Rename, Add, Rotate, Delete
   and editing the text tab are off; the view still changes what shows,
@@ -23,7 +25,9 @@ it opens on the pages.
   Links show as a card with a link icon, the title (or the address's
   host), the address (selectable), **Open** (in the browser, or the app
   that handles it, such as YouTube; a link that can't open says so) and
-  **Copy** (to the clipboard). Under the pages, "2 / 5".
+  **Copy** (to the clipboard). Under the pages, "2 / 5". With the
+  images [hidden](hidden-images.md), the pages are the text tab (its
+  **Open** goes to the Text view), then the videos and links.
 - **Tools** along the bottom:
   - **The view**, first: a tap cycles **Original → Scan → Text →
     Original**, its icon and label saying which shows.
