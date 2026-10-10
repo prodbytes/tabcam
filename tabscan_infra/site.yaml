@@ -17,7 +17,7 @@ Parameters:
     Default: tabscan.nu01.com
   HostedZoneId:
     Type: AWS::Route53::HostedZone::Id
-    Description: The public zone of DomainName, tabscan.nu01.com's own (HOSTED_ZONE_ID)
+    Description: The public zone of DomainName, tabscan.nu01.com's own (TABSCANNER_HOSTED_ZONE_ID)
   HealthNotificationEmails:
     Type: CommaDelimitedList
     Description: >

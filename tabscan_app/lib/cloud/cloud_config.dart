@@ -12,11 +12,11 @@ abstract final class CloudConfig {
   );
 
   static const String identityPoolId = String.fromEnvironment(
-    'COGNITO_IDENTITY_POOL_ID',
+    'TABSCANNER_COGNITO_IDENTITY_POOL_ID',
   );
 
   static const String userDataBucket = String.fromEnvironment(
-    'USER_DATA_BUCKET',
+    'TABSCANNER_USER_DATA_BUCKET',
   );
 
   static bool get enabled =>

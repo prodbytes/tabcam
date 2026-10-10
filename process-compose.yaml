@@ -43,8 +43,8 @@ processes:
 
   5-index:
     # The site root (tabscan_index/site), which redirects to /app/.
-    # TABSCAN_BIND_HOST: see scripts/flutter-web.sh.
-    command: python3 -m http.server ${INDEX_PORT:-2013} --bind ${TABSCAN_BIND_HOST:-127.0.0.1} --directory tabscan_index/site
+    # TABSCANNER_BIND_HOST: see scripts/flutter-web.sh.
+    command: python3 -m http.server ${INDEX_PORT:-2013} --bind ${TABSCANNER_BIND_HOST:-127.0.0.1} --directory tabscan_index/site
     readiness_probe:
       http_get:
         host: localhost

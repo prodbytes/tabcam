@@ -10,11 +10,11 @@ abstract final class GoogleConfig {
   /// server client ID (Android's own client is matched by package name and
   /// signing-key fingerprint, so it has no ID in the app).
   static const String webClientId = String.fromEnvironment(
-    'GOOGLE_WEB_CLIENT_ID',
+    'TABSCANNER_GOOGLE_WEB_CLIENT_ID',
   );
 
   /// The "iOS" client (bundle ID `com.nu01.tabscan`).
   static const String iosClientId = String.fromEnvironment(
-    'GOOGLE_IOS_CLIENT_ID',
+    'TABSCANNER_GOOGLE_IOS_CLIENT_ID',
   );
 }

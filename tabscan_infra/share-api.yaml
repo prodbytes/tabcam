@@ -223,7 +223,7 @@ Transform: AWS::LanguageExtensions
 
 Outputs:
   ApiUrl:
-    Description: The app's SHARE_API_URL
+    Description: The app's TABSCANNER_SHARE_API_URL
     Value: !Sub https://${Api}.execute-api.${AWS::Region}.amazonaws.com
   FunctionName:
     Value: !Ref Function

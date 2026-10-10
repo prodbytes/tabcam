@@ -10,9 +10,9 @@ set -euo pipefail
 
 PORT="${FLUTTER_WEB_PORT:-2012}"
 # 127.0.0.1, not localhost: Dart binds "localhost" to IPv6 [::1] only.
-# TABSCAN_BIND_HOST=0.0.0.0 serves other devices on the network (a phone's
+# TABSCANNER_BIND_HOST=0.0.0.0 serves other devices on the network (a phone's
 # browser, say).
-HOST="${TABSCAN_BIND_HOST:-127.0.0.1}"
+HOST="${TABSCANNER_BIND_HOST:-127.0.0.1}"
 
 cd "$(dirname "$0")/../tabscan_app"
 source ../scripts/dart-defines.sh
@@ -21,4 +21,4 @@ flutter pub get
 # The About dialog shows X.Y.Z, Z being when this server started.
 exec flutter run -d web-server --web-hostname "$HOST" --web-port "$PORT" \
   --base-href /app/ \
-  ${DART_DEFINES[@]+"${DART_DEFINES[@]}"} --dart-define="TABSCAN_VERSION=$VERSION"
+  ${DART_DEFINES[@]+"${DART_DEFINES[@]}"} --dart-define="TABSCANNER_VERSION=$VERSION"
