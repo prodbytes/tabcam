@@ -145,7 +145,18 @@ spec.
     ([signed out](cloud-sync.md#signed-out)); Share with people already
     showed only signed in. Builds without sign-in set up don't ask. A
     sync pass ending after the app closed no longer notifies.
-19. **Transcribe a photographed tab with several OCR kits, compare with the
+19. **Let admins put the system in maintenance mode; while it's on, no UI
+    is shown at all, just a sorry message.** New
+    [maintenance mode](maintenance-mode.md): `scripts/maintenance.sh
+    on|off|status` (STAGE=prod or rc) writes the site's `/status.json`
+    and invalidates it. The apps check it before showing anything, every
+    2 minutes and on resume; in maintenance mode they show only the sorry
+    message (the admin's, or a default) and stop syncing. Unreadable
+    status fails open, so offline capture keeps working.
+20. **Add a copy button to the top of the transcription view.** The text
+    tab screen's **Copy** moved from an app-bar icon to a labeled button
+    above the text ([text tab editor](tab-recognition.md#text-tab-editor)).
+21. **Transcribe a photographed tab with several OCR kits, compare with the
     real tab, and say which combination comes closest.** A local bench
     (`test_data/ocr_bench/`, kept out of git: it holds a published tab):
     Tesseract, EasyOCR, RapidOCR, PaddleOCR, docTR (TensorFlow), Apple
@@ -153,9 +164,9 @@ spec.
     binarized, whole-page and cut into string lines. Whole-page OCR loses
     the dash runs; reading line by line with a vote of Tesseract,
     PaddleOCR and RapidOCR came closest. No change to the app.
-20. **Could the best one run in AWS Lambda?** Yes, as a container image;
+22. **Could the best one run in AWS Lambda?** Yes, as a container image;
     no change.
-21. **Add `tabscan_locr`, a Lambda that transcribes tabs as they're
+23. **Add `tabscan_locr`, a Lambda that transcribes tabs as they're
     scanned, for premium users only (premium from rbacr), offering the
     upgrade to free users.** New [TabScan Premium: cloud OCR](cloud-ocr.md):
     the service in [tabscan_locr/](../tabscan_locr/README.md), triggered by

@@ -67,5 +67,6 @@ Text tabs are tried first; typeset layout runs when no text tab is found.
 ## Text tab editor
 
 The read tab, monospaced and unwrapped (long lines scroll sideways),
-editable to fix what OCR got wrong. **Copy** puts it on the clipboard;
-**Share** shares it as text. Edits are saved on the event when leaving.
+editable to fix what OCR got wrong. A **Copy** button at the top, above
+the text, puts it on the clipboard; **Share** (in the app bar) shares it
+as text. Edits are saved on the event when leaving.
