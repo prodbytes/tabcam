@@ -21,7 +21,7 @@ Future<void> showShareSheet(
           ListTile(
             leading: const Icon(Icons.picture_as_pdf_outlined),
             title: const Text('PDF'),
-            subtitle: const Text('Every page, plus the text tab if read'),
+            subtitle: const Text('Every photo and scan, plus the text tab'),
             onTap: () => Navigator.pop(context, ShareFormat.pdf),
           ),
           ListTile(
@@ -36,10 +36,10 @@ Future<void> showShareSheet(
             onTap: () => Navigator.pop(context, ShareFormat.text),
           ),
           ListTile(
-            leading: const Icon(Icons.image_outlined),
-            title: const Text('Images'),
-            subtitle: const Text('Each page as a picture'),
-            onTap: () => Navigator.pop(context, ShareFormat.images),
+            leading: const Icon(Icons.perm_media_outlined),
+            title: const Text('Files'),
+            subtitle: const Text('Each page as a picture, videos included'),
+            onTap: () => Navigator.pop(context, ShareFormat.files),
           ),
         ],
       ),

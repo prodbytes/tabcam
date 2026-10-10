@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -8,8 +9,8 @@ import 'scan.dart';
 import 'scan_store.dart';
 
 /// Scans kept as files, one folder per scan in the app's documents folder:
-/// `scans/<scan id>/scan.json` and a `<page id>.img` per page (the image as
-/// scanned, JPEG or PNG).
+/// `scans/<scan id>/scan.json` and a `<page id>.<extension>` per page (the
+/// image as scanned, or the video as picked).
 class PlatformScanStore implements ScanStore {
   /// [_root] defaults to `scans/` in the app's documents folder.
   PlatformScanStore([this._root]);
@@ -57,22 +58,34 @@ class PlatformScanStore implements ScanStore {
     if (await dir.exists()) await dir.delete(recursive: true);
   }
 
-  Future<File> _page(String scanId, String pageId) async =>
-      File('${(await _dir(scanId)).path}/${checkId(pageId)}.img');
+  Future<File> _page(String scanId, ScanPage page) async => File(
+    '${(await _dir(scanId)).path}/${checkId(page.id)}.'
+    '${checkExtension(page.extension)}',
+  );
 
   @override
-  Future<void> putPage(String scanId, String pageId, Uint8List bytes) async {
+  Future<void> putPage(String scanId, ScanPage page, Uint8List bytes) async {
     await (await _dir(scanId)).create();
-    await (await _page(scanId, pageId)).writeAsBytes(bytes, flush: true);
+    await (await _page(scanId, page)).writeAsBytes(bytes, flush: true);
   }
 
   @override
-  Future<Uint8List> page(String scanId, String pageId) async =>
-      (await _page(scanId, pageId)).readAsBytes();
+  Future<void> putPageFile(String scanId, ScanPage page, XFile file) async {
+    await (await _dir(scanId)).create();
+    await file.saveTo((await _page(scanId, page)).path);
+  }
 
   @override
-  Future<void> deletePage(String scanId, String pageId) async {
-    final file = await _page(scanId, pageId);
+  Future<Uint8List> page(String scanId, ScanPage page) async =>
+      (await _page(scanId, page)).readAsBytes();
+
+  @override
+  Future<String?> pagePath(String scanId, ScanPage page) async =>
+      (await _page(scanId, page)).path;
+
+  @override
+  Future<void> deletePage(String scanId, ScanPage page) async {
+    final file = await _page(scanId, page);
     if (await file.exists()) await file.delete();
   }
 }

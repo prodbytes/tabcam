@@ -5,6 +5,8 @@
 | Minimum | 7.0 (API 24) | 15.5 | A current browser |
 | Scan | System document scanner (ML Kit): edges, straightening, several pages | System document scanner (VisionKit) | One photo, uncropped |
 | Import photos | Through the scanner | Through the scanner | Photo picker, several |
+| Add photos & videos, files | Photo picker; system file picker | Photo library; Files app | Browser file picker (both) |
+| Play videos | From the file | From the file | From memory |
 | Read tab | ✅ ML Kit on the device | ✅ ML Kit on the device | ❌ (says it needs the app) |
 | Library | Files in the app's documents | Files in the app's documents | Memory, until the tab closes |
 | Share | System share sheet | System share sheet | Web Share, or downloads |
