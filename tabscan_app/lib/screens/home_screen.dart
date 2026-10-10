@@ -111,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _scan() => _capture('Couldn\'t scan', () async {
-    final pages = await PageSource.scan();
+    final pages = await PageSource.scan(context);
     return pages.isEmpty ? null : library.create(pages);
   });
 

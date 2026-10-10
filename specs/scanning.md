@@ -21,9 +21,25 @@ tabs.") the first time the scanner opens it.
 
 ## Web
 
-No document scanner: **Scan** takes one photo with the browser's camera
-input (`image_picker`; on a desktop, a file picker). Pages are kept as
-taken, uncropped.
+No document scanner: **Scan** opens TabScan's own camera screen
+([lib/capture/camera_capture_screen.dart](../tabscan_app/lib/capture/camera_capture_screen.dart)),
+the device's camera through the browser (`camera`, getUserMedia; the
+browser asks for it the first time), the back camera first:
+
+- a live preview, a round shutter (**Take a picture**), and the pages
+  taken so far as a strip of thumbnails, several in a row, with the
+  count in the title ("2 pages");
+- **Flip camera** when there's more than one; **Done** (once there's a
+  page) adds them; **Cancel** (×, or back) asks "Discard N pages?" first
+  when there are any;
+- without a camera ("No camera found.") or with it refused ("The camera
+  isn't allowed: let TabScan use it in the browser's site settings."), it
+  says so and offers **Choose photos instead** (the photo picker).
+
+Pages are then cropped to the page in them, as photos added by hand are
+([Cropping photos to the page](#cropping-photos-to-the-page)); when no
+page stands out, they're kept as taken. Before, Scan on the web was a file
+input with a camera hint, which desktop browsers show as a file chooser.
 
 Photos already on the device are added as they are, with Capture's or an
 event's **Photos & videos** or **Files** (below), not through the
@@ -55,7 +71,8 @@ Photos get the Tab filter, as scanned pages do.
 ### Cropping photos to the page
 
 A photo added by hand (Photos & videos, Files; from Capture or an
-event's Add) isn't straightened by a scanner, so TabScan crops it to the
+event's Add), or taken with the web's camera screen, isn't straightened
+by a scanner, so TabScan crops it to the
 page itself, when one stands out, so what's under the page (a table, a
 lap) doesn't show ([lib/processing/page_crop.dart](../tabscan_app/lib/processing/page_crop.dart),
 off the UI isolate where there are isolates):

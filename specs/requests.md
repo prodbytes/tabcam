@@ -260,3 +260,12 @@ spec.
     after a capture stayed until dismissed, since Flutter keeps a message
     with a button by default; it now goes after 6 seconds, like the
     others, which already went after 4 ([navigation](navigation.md#capture)).
+35. **In the Capture view, Scan should open the camera, Photos the album,
+    Files the upload.** Photos & videos and Files already did; on the
+    web, Scan was a file input with a camera hint, which desktop browsers
+    show as a file chooser. It now opens TabScan's own camera screen (the
+    browser's camera: a preview, a shutter, several pages, Flip, Done;
+    photos instead when there's no camera)
+    ([scanning](scanning.md#web)). Android and iOS keep the system
+    document scanner. Its pages are cropped to the page, as photos added
+    by hand are.
