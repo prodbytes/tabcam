@@ -16,7 +16,10 @@ The site's `/status.json`, at the root of the site bucket (outside
 `message` is optional; without it the apps say "Sorry, TabScan is down
 for maintenance. Please try again later." Production
 (https://tabscan.nu01.com/status.json) and the release candidate
-(https://rc.tabscan.nu01.com/status.json) each have their own.
+(https://rc.tabscan.nu01.com/status.json) each have their own. The local
+stack's is [tabscan_index/site/status.json](../tabscan_index/site/status.json),
+off; edit it to try maintenance mode locally (deploys upload only the
+index page, never this file).
 
 An administrator flips it with `scripts/maintenance.sh` (also
 `devbox run maintenance`), which needs AWS credentials that may write the
