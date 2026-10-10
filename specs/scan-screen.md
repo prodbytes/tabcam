@@ -17,8 +17,8 @@ One scan, opened from the [library](library.md).
     Scan pages, Photos & videos, or Files.
   - **Filter**: toggles an image between Tab and Original; its icon and
     label say which it is. Off on videos.
-  - **Rotate**: turns an image a quarter turn clockwise (the stored image
-    is replaced). Off on videos.
+  - **Rotate**: turns an image a quarter turn clockwise (stored as a new
+    page in its place; see [library](library.md#scans)). Off on videos.
   - **Read tab**: reads every image page of the scan
     ([tab recognition](tab-recognition.md)); videos are skipped, and a
     scan of only videos says there's nothing to read.

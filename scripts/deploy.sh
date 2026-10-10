@@ -24,6 +24,12 @@
 #   TABSCAN_HEALTH_EMAILS who is emailed when the health check fails or
 #                recovers, comma-separated (also from .env). Each must
 #                confirm AWS's subscription email.
+#   GOOGLE_WEB_CLIENT_ID, COGNITO_IDENTITY_POOL_ID, USER_DATA_BUCKET
+#                sign-in and cloud sync, compiled into the build
+#                (scripts/dart-defines.sh; environment over .env). Empty
+#                builds an app without sign-in. Their stacks
+#                (tabscan-identity, tabscan-user-data) are deployed once by
+#                an administrator, not here: see tabscan_infra/README.md.
 # Needs the AWS CLI, Python 3 and Flutter (all in devbox).
 set -euo pipefail
 

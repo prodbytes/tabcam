@@ -1,0 +1,57 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:tabscan_app/cloud/cloud_sync.dart';
+import 'package:tabscan_app/library/library.dart';
+import 'package:tabscan_app/library/scan_store_memory.dart';
+import 'package:tabscan_app/main.dart';
+
+import 'fakes.dart';
+
+void main() {
+  testWidgets('the account button signs in, and then shows the sync', (
+    tester,
+  ) async {
+    final library = Library(PlatformScanStore());
+    await library.load();
+    final auth = FakeAuth();
+    final sync = CloudSync(
+      library: library,
+      auth: auth,
+      bucket: FakeBucket(),
+      credentials: FakeCredentials(),
+      period: const Duration(days: 1),
+    )..start();
+    await tester.pumpWidget(
+      TabScanApp(library: library, auth: auth, sync: sync),
+    );
+
+    await tester.tap(find.byTooltip('Sign in'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sync your tabs'), findsOneWidget);
+    expect(find.text('Sign in with Google'), findsOneWidget);
+
+    await tester.runAsync(() async {
+      auth.signInAs('ana');
+      while (sync.state != SyncState.synced) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+    });
+    await tester.pumpAndSettle();
+    expect(find.text('ana@example.com'), findsOneWidget);
+    expect(find.textContaining('Synced'), findsOneWidget);
+    expect(find.text('Sync now'), findsOneWidget);
+
+    await tester.tap(find.text('Sign out'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sync your tabs'), findsOneWidget);
+    sync.dispose();
+  });
+
+  testWidgets('without sign-in set up, there is no account button', (
+    tester,
+  ) async {
+    final library = Library(PlatformScanStore());
+    await library.load();
+    await tester.pumpWidget(TabScanApp(library: library));
+    expect(find.byTooltip('Sign in'), findsNothing);
+  });
+}

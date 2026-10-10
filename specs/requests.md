@@ -73,3 +73,22 @@ spec.
     it's now also in each card's menu in the [library](library.md), and a
     long-press on a card. The dialog selects the current title, so typing
     replaces it.
+11. **Is there a library or service that reliably transcribes tabs from
+    images? Test real services with an uploaded tab.** None does it
+    reliably end to end: Soundslice's scanner (paid, no API) and
+    PhotoScore read typeset tab; vision LLMs are the only option with an
+    API; open-source tools cover ASCII tab or other steps. Proposed a
+    benchmark against a made-up riff with a known answer; waiting for the
+    sample tab. No change to the app.
+12. **Let users sign in, as Presence does, get S3 access through Cognito,
+    and sync files with S3.** New [sign-in and cloud sync](cloud-sync.md):
+    optional Google sign-in from the library's cloud button; the ID token
+    goes to a Cognito identity pool (enhanced flow, no server) for
+    credentials limited to the user's own folder in a new user-data
+    bucket; scans and their pages sync both ways, deletions as tombstones.
+    Scans now have `updated`, and `owner` once synced; Rotate stores a new
+    page ([library](library.md)). New stacks `tabscan-user-data` and
+    `tabscan-identity` (deployed once by an administrator); the settings
+    come from `.env` or repository variables
+    ([deploy](deploy.md), [platforms](platforms.md)). The Google OAuth
+    clients are still to be created.

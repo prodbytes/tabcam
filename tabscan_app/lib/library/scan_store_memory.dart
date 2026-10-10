@@ -9,6 +9,7 @@ import 'scan_store.dart';
 class PlatformScanStore implements ScanStore {
   final Map<String, Scan> _scans = {};
   final Map<String, Uint8List> _pages = {};
+  final Map<String, String> _meta = {};
 
   String _key(String scanId, ScanPage page) => '$scanId/${page.fileName}';
 
@@ -43,4 +44,34 @@ class PlatformScanStore implements ScanStore {
   @override
   Future<void> deletePage(String scanId, ScanPage page) async =>
       _pages.remove(_key(scanId, page));
+
+  @override
+  Future<bool> hasPage(String scanId, ScanPage page) async =>
+      _pages.containsKey(_key(scanId, page));
+
+  @override
+  Future<(Stream<List<int>>, int)> pageStream(
+    String scanId,
+    ScanPage page,
+  ) async {
+    final bytes = await this.page(scanId, page);
+    return (Stream.value(bytes as List<int>), bytes.length);
+  }
+
+  @override
+  Future<void> putPageStream(
+    String scanId,
+    ScanPage page,
+    Stream<List<int>> bytes,
+  ) async {
+    final builder = BytesBuilder(copy: false);
+    await bytes.forEach(builder.add);
+    _pages[_key(scanId, page)] = builder.takeBytes();
+  }
+
+  @override
+  Future<String?> readMeta(String name) async => _meta[name];
+
+  @override
+  Future<void> writeMeta(String name, String json) async => _meta[name] = json;
 }

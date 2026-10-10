@@ -2,9 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../app_version.dart';
+import '../auth/auth_service.dart';
 import '../capture/page_source.dart';
+import '../cloud/cloud_sync.dart';
 import '../library/library.dart';
 import '../library/scan.dart';
+import 'account_sheet.dart';
 import 'page_image.dart';
 import 'rename_dialog.dart';
 import 'scan_screen.dart';
@@ -13,11 +16,14 @@ import 'video_page.dart';
 
 /// The home screen: every scan as a card, newest first, and the Scan button.
 /// A new scan lands at the top of the list, highlighted, with Open in the
-/// message that confirms it.
+/// message that confirms it. With [auth] and [sync] (a build with sign-in
+/// and cloud sync set up), the app bar has the account button.
 class LibraryScreen extends StatefulWidget {
-  const LibraryScreen({super.key, required this.library});
+  const LibraryScreen({super.key, required this.library, this.auth, this.sync});
 
   final Library library;
+  final AuthService? auth;
+  final CloudSync? sync;
 
   @override
   State<LibraryScreen> createState() => _LibraryScreenState();
@@ -87,6 +93,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
       appBar: AppBar(
         title: const Text('TabScan'),
         actions: [
+          if ((widget.auth, widget.sync) case (final auth?, final sync?))
+            AccountButton(auth: auth, sync: sync),
           IconButton(
             tooltip: 'Import photos',
             icon: const Icon(Icons.photo_library_outlined),

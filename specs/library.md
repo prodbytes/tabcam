@@ -17,13 +17,19 @@ The home screen, titled **TabScan**.
   3 seconds, and a message confirms it ("Saved "Tab 2026-10-10 14:05" (2
   pages)") with **Open**. **Import photos** (app bar) does the same from
   photos on the device. **About**
-  (app bar) shows the version (X.Y.Z, or "development build").
+  (app bar) shows the version (X.Y.Z, or "development build"). In a
+  build with sign-in, the app bar's cloud button opens the account sheet
+  ([sign-in and cloud sync](cloud-sync.md)); scans synced from other
+  devices appear in the list as they come down.
 - **Theme**: Material 3, dark, from an amber seed color (`#E0A030`).
 
 ## Scans
 
-A scan has an ID, a title, an artist (optional), when it was created, its
-pages, and the text tab once read. A page has an ID, a kind (**image** or
+A scan has an ID, a title, an artist (optional), when it was created,
+when it last changed (`updated`: every change the user makes sets it;
+older scans count their creation), its pages, and the text tab once read.
+Once it has synced it also has an `owner`, the Cognito identity it syncs
+with (kept on the device only). A page has an ID, a kind (**image** or
 **video**), its file's extension, and a [filter](page-filters.md) (used
 for images only). A new scan is titled `Tab YYYY-MM-DD HH:MM` (its local time).
 
@@ -32,6 +38,15 @@ pencil) asks for the **Song** and **Artist**, prefilled, with the song's
 text selected so typing replaces it. Saving with an empty song keeps the
 title; an empty artist clears it. Exports are named from the new title
 ([sharing](sharing.md)).
+
+**Delete** removes a scan and its pages. One that has synced leaves a
+**tombstone** (its ID, `updated` and `deleted` times, no pages), hidden
+from the list, so the deletion reaches the user's other devices; one that
+never synced is gone at once.
+
+**Rotate** stores the turned image as a new page (a new ID, same filter)
+in the old one's place, and deletes the old file: page files never change
+once written, which is what lets cloud sync compare pages by name.
 
 IDs are the creation time in microseconds, base 36. IDs and extensions
 (1–5 lower-case letters or digits) name files, so anything else (a path,
@@ -43,7 +58,9 @@ image pages with the extension `img`.
 - **Android and iOS**: files in the app's documents folder, one folder per
   scan: `scans/<scan id>/scan.json` (the details) and
   `<page id>.<extension>` per page: the image as scanned, or the photo or
-  video as picked (copied file to file, never read whole into memory). `scan.json` is written beside and renamed
+  video as picked (copied file to file, never read whole into memory).
+  Cloud sync's state is `cloudsync.json`, beside `scans/`; pages it
+  downloads are written to `<page>.part` and renamed when complete. `scan.json` is written beside and renamed
   over, so a crash never leaves half a file. A scan whose `scan.json`
   can't be read is skipped, not fatal.
 - **Web**: in memory; scans last until the tab is closed.

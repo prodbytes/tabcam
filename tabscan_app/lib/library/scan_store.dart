@@ -12,7 +12,7 @@ import 'scan_store_memory.dart'
 abstract class ScanStore {
   factory ScanStore() = platform.PlatformScanStore;
 
-  /// Every scan, newest first.
+  /// Every scan, newest first, tombstones included.
   Future<List<Scan>> list();
 
   /// Saves the scan's details (not its pages' files).
@@ -35,4 +35,24 @@ abstract class ScanStore {
   Future<String?> pagePath(String scanId, ScanPage page);
 
   Future<void> deletePage(String scanId, ScanPage page);
+
+  Future<bool> hasPage(String scanId, ScanPage page);
+
+  /// The page's file as a stream, and its length in bytes, for uploads
+  /// that don't read videos into memory.
+  Future<(Stream<List<int>>, int)> pageStream(String scanId, ScanPage page);
+
+  /// Stores [bytes], as they arrive, as the page's file (downloads). A
+  /// failed download leaves no page behind.
+  Future<void> putPageStream(
+    String scanId,
+    ScanPage page,
+    Stream<List<int>> bytes,
+  );
+
+  /// A small JSON document of the app's own, such as cloud sync's state;
+  /// null if there's none.
+  Future<String?> readMeta(String name);
+
+  Future<void> writeMeta(String name, String json);
 }
