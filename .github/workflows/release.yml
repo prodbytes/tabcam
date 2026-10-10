@@ -132,6 +132,11 @@ jobs:
       TARGET: ${{ matrix.target }}
       VERSION_Z: ${{ needs.prepare.outputs.version_z }}
       BUILD_NUMBER: ${{ needs.prepare.outputs.build_number }}
+      # Sign-in and cloud sync (public identifiers; empty turns them off).
+      GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
+      GOOGLE_IOS_CLIENT_ID: ${{ vars.GOOGLE_IOS_CLIENT_ID }}
+      COGNITO_IDENTITY_POOL_ID: ${{ vars.COGNITO_IDENTITY_POOL_ID }}
+      USER_DATA_BUCKET: ${{ vars.USER_DATA_BUCKET }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

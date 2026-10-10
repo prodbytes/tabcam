@@ -63,5 +63,9 @@ jobs:
           # Who is emailed when the site's health check fails or recovers:
           # a secret, not a variable, so the public run logs never show it.
           TABSCAN_HEALTH_EMAILS: ${{ secrets.TABSCAN_HEALTH_EMAILS }}
+          # Sign-in and cloud sync (public identifiers; empty turns them off).
+          GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
+          COGNITO_IDENTITY_POOL_ID: ${{ vars.COGNITO_IDENTITY_POOL_ID }}
+          USER_DATA_BUCKET: ${{ vars.USER_DATA_BUCKET }}
         run: bash scripts/deploy.sh
 

@@ -40,7 +40,12 @@ AWS access is keyless: GitHub's OIDC token is exchanged for
 (`*RC*` tags and manual runs from `main`, only `tabscan-rc-*` resources and
 `rc.tabscan.nu01.com` records) ([tabscan_infra/github-deploy.yaml](../tabscan_infra/github-deploy.yaml)).
 Repository variables: `AWS_DEPLOY_ROLE_ARN`, `AWS_DEPLOY_RC_ROLE_ARN`,
-`HOSTED_ZONE_ID`; repository secret: `TABSCAN_HEALTH_EMAILS` (a secret
+`HOSTED_ZONE_ID`, and for [sign-in and cloud sync](cloud-sync.md)
+`GOOGLE_WEB_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID` (releases only),
+`COGNITO_IDENTITY_POOL_ID` and `USER_DATA_BUCKET`, compiled into the
+builds (empty: no sign-in). Their stacks, `tabscan-user-data` and
+`tabscan-identity`, are deployed once by an administrator, not by the
+workflows; repository secret: `TABSCAN_HEALTH_EMAILS` (a secret
 because the repository is public and run logs show variables). One-time setup:
 [tabscan_infra/README.md](../tabscan_infra/README.md).
 

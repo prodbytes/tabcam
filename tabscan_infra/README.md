@@ -6,6 +6,8 @@ templates.
 | Template | Stack | Holds |
 |---|---|---|
 | [site.yaml](site.yaml) | `tabscan-web` | https://tabscan.nu01.com: the ACM certificate (DNS-validated in the `tabscan.nu01.com` zone), a private S3 bucket, a CloudFront distribution, the Route 53 A/AAAA aliases, and a Route 53 health check of `/app/version.json` that emails `TABSCAN_HEALTH_EMAILS` when it fails |
+| [user-data.yaml](user-data.yaml) | `tabscan-user-data` | The bucket of signed-in users' scans, `nu01-user-scans-<account>` (private, SSE-S3, TLS only, versioned: old versions kept 30 days; CORS for the web app's origins). Not `tabscan-*`, so the deploy roles can't reach it. Shared by production and the RC |
+| [identity.yaml](identity.yaml) | `tabscan-identity` | The Cognito identity pool `tabscan` (Google sign-in only, no guests, enhanced flow) and its authenticated role: get, put and delete in `<bucket>/<identity ID>/*`, and list that prefix. Shared by production and the RC |
 | [github-deploy.yaml](github-deploy.yaml) | `tabscan-github-deploy` | The `tabscan-github-deploy` role (Deploy workflow, `*GA` tags) and the `tabscan-github-deploy-rc` role (Deploy RC workflow: `*RC*` tags and manual runs from `main`, limited to `tabscan-rc-*` resources and the `rc.tabscan.nu01.com` records), trusting GitHub's OIDC provider |
 
 `scripts/deploy.sh` deploys `tabscan-web`. With `STAGE=rc` it deploys the
@@ -86,3 +88,48 @@ ACM validation names.
    # show variables.
    gh secret set TABSCAN_HEALTH_EMAILS --body "<who gets health alarms>"
    ```
+
+3. Sign-in and cloud sync (once; again when the templates change). An
+   administrator deploys both stacks, since `identity.yaml` makes an IAM
+   role; the deploy roles only read their outputs from repository
+   variables.
+
+   1. In the Google Cloud project, create the OAuth clients (APIs &
+      Services > Credentials):
+      - **Web application**: authorized JavaScript origins
+        `https://tabscan.nu01.com`, `https://rc.tabscan.nu01.com` and
+        `http://localhost:2012`. Its ID is `GOOGLE_WEB_CLIENT_ID`.
+      - **Android**: package `com.nu01.tabscan` and the SHA-1 of the key
+        that signs the APK (`keytool -list -v -keystore
+        ~/.android/debug.keystore -alias androiddebugkey -storepass
+        android` for local builds, which are signed with the debug key).
+      - **iOS**: bundle ID `com.nu01.tabscan`. Its ID is
+        `GOOGLE_IOS_CLIENT_ID`.
+   2. Deploy the stacks:
+
+      ```bash
+      aws cloudformation deploy --region us-east-1 \
+        --stack-name tabscan-user-data \
+        --template-file tabscan_infra/user-data.yaml
+      aws cloudformation deploy --region us-east-1 \
+        --stack-name tabscan-identity \
+        --template-file tabscan_infra/identity.yaml \
+        --capabilities CAPABILITY_IAM \
+        --parameter-overrides "GoogleWebClientId=$GOOGLE_WEB_CLIENT_ID"
+      ```
+
+   3. Put the IDs in the private `.env` (`GOOGLE_WEB_CLIENT_ID`,
+      `GOOGLE_IOS_CLIENT_ID`, `COGNITO_IDENTITY_POOL_ID` from
+      `tabscan-identity`'s `IdentityPoolId`, `USER_DATA_BUCKET` from
+      `tabscan-user-data`'s `UserDataBucketName`) and in the repository
+      variables, for the deploys and releases:
+
+      ```bash
+      gh variable set GOOGLE_WEB_CLIENT_ID --body "<web client ID>"
+      gh variable set GOOGLE_IOS_CLIENT_ID --body "<iOS client ID>"
+      gh variable set COGNITO_IDENTITY_POOL_ID --body "<IdentityPoolId>"
+      gh variable set USER_DATA_BUCKET --body "<UserDataBucketName>"
+      ```
+
+   They're public identifiers (compiled into the app), not secrets. While
+   they're empty, builds have no sign-in and scans stay on the device.

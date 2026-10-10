@@ -11,8 +11,9 @@ TabScan is a camera app for guitar tabs, in the style of document scanner
 apps (Adobe Scan, CamScanner), made for tablature. Point the phone at a tab
 and it finds the page, straightens it and cleans it up. TabScan can then
 read the tab into editable plain text and share it as a PDF, text or
-images. Everything happens on the device: there are no accounts, servers
-or uploads.
+images. Everything happens on the device. Signing in (with Google) is
+optional: it syncs the user's scans with the cloud, so they're on every
+device the user signs in on; signed out, nothing leaves the device.
 
 ## Features
 
@@ -31,6 +32,10 @@ or uploads.
   editor.
 - [Sharing](sharing.md): PDF, text tab, or images, through the system
   share sheet.
+- [Sign-in and cloud sync](cloud-sync.md): optional Google sign-in from
+  the library's cloud button; signed-in users' scans sync both ways with
+  their own folder in S3 (Cognito identity pool credentials, no server),
+  deletions included.
 - [App icon](app-icon.md): a scanned tab page with a staff and fret
   numbers, in scanner corners; how the platform icons are generated.
 - [Platforms](platforms.md): Android, iOS and the web, and what each can do.

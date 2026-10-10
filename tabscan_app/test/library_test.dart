@@ -62,15 +62,58 @@ void main() {
     expect(Directory('${root.path}/${scan.id}').existsSync(), isFalse);
   });
 
-  test('rotating a page turns it a quarter turn', () async {
+  test('rotating a page turns it a quarter turn, as a new page', () async {
     final library = Library(PlatformScanStore(root));
     await library.load();
     final scan = await library.create([_jpeg(40, 60)]);
-    await library.rotatePage(scan, scan.pages.single);
-    final page = img.decodeImage(
-      await library.original(scan, scan.pages.single),
-    )!;
+    final before = scan.pages.single;
+    final rotated = await library.rotatePage(scan, before);
+    final after = rotated.pages.single;
+    // Page files never change once written (cloud sync relies on it).
+    expect(after.id, isNot(before.id));
+    expect(after.filter, before.filter);
+    expect(await library.hasPage(scan.id, before), isFalse);
+    final page = img.decodeImage(await library.original(rotated, after))!;
     expect((page.width, page.height), (60, 40));
+  });
+
+  test('a scan that never synced is deleted outright', () async {
+    final library = Library(PlatformScanStore(root));
+    await library.load();
+    final scan = await library.create([_jpeg(40, 60)]);
+    await library.delete(scan);
+    expect(library.all, isEmpty);
+    final reopened = Library(PlatformScanStore(root));
+    await reopened.load();
+    expect(reopened.all, isEmpty);
+  });
+
+  test('a synced scan leaves a tombstone, without its pages', () async {
+    final library = Library(PlatformScanStore(root));
+    await library.load();
+    final scan = await library.create([_jpeg(40, 60)]);
+    await library.setOwner(scan, 'us-east-1:me');
+    await library.delete(library.all.single);
+    expect(library.scans, isEmpty);
+    final reopened = Library(PlatformScanStore(root));
+    await reopened.load();
+    expect(reopened.scans, isEmpty);
+    final tombstone = reopened.all.single;
+    expect(tombstone.isDeleted, isTrue);
+    expect(tombstone.owner, 'us-east-1:me');
+    expect(await reopened.hasPage(scan.id, scan.pages.single), isFalse);
+  });
+
+  test('changes bump updated and count as local changes', () async {
+    var now = DateTime(2026, 10, 10, 12);
+    final library = Library(PlatformScanStore(root), () => now);
+    await library.load();
+    final scan = await library.create([_jpeg(40, 60)]);
+    final changes = library.localChanges.value;
+    now = now.add(const Duration(minutes: 1));
+    final renamed = await library.update(scan.copyWith(title: 'Riff'));
+    expect(renamed.updated, now);
+    expect(library.localChanges.value, changes + 1);
   });
 
   test('IDs that could name other files are refused', () {

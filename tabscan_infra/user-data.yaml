@@ -1,0 +1,86 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  tabscan-user-data: the bucket for signed-in users' scans. The app syncs
+  each user's scans here, under their Cognito identity ID
+  (<identityId>/scans/<scan id>/scan.json and the pages' files), straight
+  from the device with the temporary credentials from identity.yaml. Shared
+  by production and the release candidate.
+
+Parameters:
+  AllowedOrigins:
+    Type: CommaDelimitedList
+    Default: https://tabscan.nu01.com,https://rc.tabscan.nu01.com,http://localhost:2012
+    Description: Web origins the app runs on (browser requests need CORS)
+
+Resources:
+  UserDataBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      # Not tabscan-*: the GitHub deploy roles may manage tabscan-* buckets,
+      # and must never reach users' scans.
+      BucketName: !Sub nu01-user-scans-${AWS::AccountId}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      # A deletion or an app bug can't destroy a scan for good: old versions
+      # stay for 30 days.
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: expire-old-versions
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+            ExpiredObjectDeleteMarker: true
+          - Id: abort-incomplete-uploads
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins: !Ref AllowedOrigins
+            AllowedMethods: [GET, PUT, HEAD, DELETE]
+            AllowedHeaders: ['*']
+            ExposedHeaders: [ETag]
+            MaxAge: 3600
+
+  UserDataBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref UserDataBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: '*'
+            Action: s3:*
+            Resource:
+              - !GetAtt UserDataBucket.Arn
+              - !Sub ${UserDataBucket.Arn}/*
+            Condition:
+              Bool:
+                aws:SecureTransport: 'false'
+
+Outputs:
+  UserDataBucketName:
+    Description: The app's USER_DATA_BUCKET
+    Value: !Ref UserDataBucket
+    Export:
+      Name: tabscan-user-data-bucket
+  UserDataBucketArn:
+    Value: !GetAtt UserDataBucket.Arn
+    Export:
+      Name: tabscan-user-data-bucket-arn

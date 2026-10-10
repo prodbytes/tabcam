@@ -88,4 +88,60 @@ class PlatformScanStore implements ScanStore {
     final file = await _page(scanId, page);
     if (await file.exists()) await file.delete();
   }
+
+  @override
+  Future<bool> hasPage(String scanId, ScanPage page) async =>
+      (await _page(scanId, page)).exists();
+
+  @override
+  Future<(Stream<List<int>>, int)> pageStream(
+    String scanId,
+    ScanPage page,
+  ) async {
+    final file = await _page(scanId, page);
+    return (file.openRead(), await file.length());
+  }
+
+  @override
+  Future<void> putPageStream(
+    String scanId,
+    ScanPage page,
+    Stream<List<int>> bytes,
+  ) async {
+    await (await _dir(scanId)).create();
+    final file = await _page(scanId, page);
+    // Written beside, then renamed over: a broken download leaves nothing.
+    final temp = File('${file.path}.part');
+    try {
+      final sink = temp.openWrite();
+      try {
+        await sink.addStream(bytes);
+        await sink.flush();
+      } finally {
+        await sink.close();
+      }
+      await temp.rename(file.path);
+    } on Object {
+      if (await temp.exists()) await temp.delete();
+      rethrow;
+    }
+  }
+
+  // Beside scans/, not in it: list() reads only scan folders.
+  Future<File> _meta(String name) async =>
+      File('${(await _scans()).parent.path}/${checkId(name)}.json');
+
+  @override
+  Future<String?> readMeta(String name) async {
+    final file = await _meta(name);
+    return await file.exists() ? file.readAsString() : null;
+  }
+
+  @override
+  Future<void> writeMeta(String name, String json) async {
+    final file = await _meta(name);
+    final temp = File('${file.path}.tmp');
+    await temp.writeAsString(json, flush: true);
+    await temp.rename(file.path);
+  }
 }
