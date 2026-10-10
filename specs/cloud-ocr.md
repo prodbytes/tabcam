@@ -61,7 +61,8 @@ blank line.
   sheet, from an event's Upgrade) opens, the app
   calls `POST /account` with the user's Google ID token. The service checks
   the token (signed by Google, issued for TabScan's web client or the
-  local web client, verified address), asks the identity pool for its identity ID, records identity →
+  local web client, verified address), asks the main identity pool for its identity ID
+  (so local web builds, whose identities are in the local pool, get 401), records identity →
   address, and answers `{email, premium, expiresAt, checked, upgradeUrl,
   voucherUrl}`.
 - **Results**: after each sync pass, a premium user's app lists

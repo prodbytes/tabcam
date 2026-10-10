@@ -71,7 +71,8 @@ credentials:
 
 - Every request carries the user's Google ID token, checked by the HTTP
   API's JWT authorizer (issuer `https://accounts.google.com`, audience the
-  web client, and the local web client where it's set). Only verified addresses (`email_verified`) are used. The
+  web client, and the local web client where it's set, though the main
+  pool then refuses local tokens: no sharing in local web builds). Only verified addresses (`email_verified`) are used. The
   owner's folder is their Cognito identity, found from the same token
   (`GetId`), so a user can only grant their own captures.
 - Grants are in a DynamoDB table: key `<owner>#<capture id>` and the

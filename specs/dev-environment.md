@@ -70,9 +70,14 @@
   JavaScript origins must list each local URL with its port:
   `https://local.tabscan.nu01.com:2443` and `http://localhost:2012`. The web
   button needs no redirect URI. `TABSCANNER_GOOGLE_WEB_CLIENT_ID` stays the
-  production client, because manual deploys read it from `.env`. The
-  identity pool and the share API trust only the production client, so
-  local sign-in alone doesn't get AWS credentials or sharing.
+  production client, because manual deploys read it from `.env`. A
+  Cognito pool trusts one Google client, so the local client has its own
+  pool, `tabscan-local` (stack `tabscan-identity-local`): with
+  `TABSCANNER_COGNITO_LOCAL_IDENTITY_POOL_ID` set, the dev web server
+  passes it as `TABSCANNER_COGNITO_IDENTITY_POOL_ID` along with the local
+  client (without it, it warns that the pool will refuse the local
+  client's tokens). Local identities are not the production ones, so a
+  local build syncs to its own folder in the bucket. Premium and sharing don't work in local web builds: the OCR service and the share API accept the local client's tokens but look the identity up in the main pool, which refuses them.
 - **Setting names**: every TabScan setting is prefixed `TABSCANNER_`, and
   keeps the same name in `.env`, the scripts, the app's dart-defines and
   the GitHub repository variables and secrets. `AWS_REGION` keeps its
