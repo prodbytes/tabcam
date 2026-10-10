@@ -185,3 +185,9 @@ spec.
     `runApp`, used `WidgetsBinding.instance` before there was one. `main`
     now initializes the binding first. Verified on the iPhone (a profile
     build: it launches, with no errors in its log).
+25. **Commit all changes, by intention.** The Swift packages Google
+    sign-in's iOS build resolves (Xcode's `Package.resolved`, both copies)
+    are committed, so every build uses the same versions;
+    [platforms](platforms.md) says where iOS dependencies come from and
+    notes the two copies of Google's utilities (ML Kit's CocoaPods and
+    sign-in's Swift packages) that iOS warns about.
