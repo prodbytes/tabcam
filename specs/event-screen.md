@@ -1,6 +1,9 @@
 # Event screen
 
-One event, opened from the [library](library.md).
+One event, opened from the [library](library.md). If its text tab is
+marked correct ([tab recognition](tab-recognition.md#text-view)), it
+opens on the Text view (the view tool goes on to the pages); otherwise
+it opens on the pages.
 
 - **App bar**: the title (and the artist under it, if set); tapping it, or
   **Rename** (pencil), renames the event (see

@@ -58,6 +58,17 @@ class _EventScreenState extends State<EventScreen> {
   Library get _library => widget.library;
 
   @override
+  void initState() {
+    super.initState();
+    // A text tab marked correct is what the user wants to see: it opens on
+    // the Text view (the view tool goes back to the pages).
+    final event = _library.byId(widget.eventId);
+    if (event != null && event.tabText != null && event.tabTextCorrect) {
+      _shown = _View.text;
+    }
+  }
+
+  @override
   void dispose() {
     _pages.dispose();
     super.dispose();

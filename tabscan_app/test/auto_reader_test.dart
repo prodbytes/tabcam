@@ -76,6 +76,20 @@ void main() {
     expect(library.byId(event.id)!.tabText, 'mine');
   });
 
+  test('a text marked correct is never replaced', () async {
+    reader();
+    await settle();
+    final event = await library.create([page()]);
+    await settle();
+    await library.update(
+      library.byId(event.id)!.copyWith(tabTextCorrect: true),
+    );
+    await library.addPages(library.byId(event.id)!, [page()]);
+    await settle();
+    expect(reads, [1, 2]);
+    expect(library.byId(event.id)!.tabText, riff(1));
+  });
+
   test('changes that aren\'t to the image pages don\'t read again', () async {
     reader();
     await settle();

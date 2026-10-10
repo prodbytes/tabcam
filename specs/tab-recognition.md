@@ -109,3 +109,12 @@ editable to fix what OCR got wrong, with **Copy** (to the clipboard) and
 and on leaving, and make the text the user's (no read replaces it). A
 read that ends while the view shows fills it in, unless the user has
 started editing. Read only for an event shared read only.
+
+**Mark correct**, next to Copy, marks the reading correct once the user
+has checked it (it then reads **Correct**, ticked; tapping it again
+unmarks it), saved at once. The mark is kept on the event and syncs with
+it (`tabTextCorrect`), and a clone keeps it. An event marked correct
+opens on its Text view (the view tool goes on to its pages); one that
+isn't opens on its pages. No read, on the device or in the
+[cloud](cloud-ocr.md), replaces a text tab marked correct. On an event
+shared read only the mark is shown (when set) but can't be changed.

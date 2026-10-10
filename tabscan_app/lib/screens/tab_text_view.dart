@@ -13,8 +13,9 @@ import 'sign_in_gate.dart';
 /// sideways), with Copy and Share. Edits are saved as they're made (after
 /// a second's pause) and on leaving, and make the text the user's: no
 /// later read replaces it. A read that ends while it shows fills it in,
-/// unless the user has started editing. Read only for an event shared
-/// read only.
+/// unless the user has started editing. Once checked, the user marks it
+/// correct (**Mark correct**): the event then opens on its Text view, and
+/// no read replaces it. Read only for an event shared read only.
 class TabTextView extends StatefulWidget {
   const TabTextView({
     super.key,
@@ -86,6 +87,17 @@ class _TabTextViewState extends State<TabTextView> {
     );
   }
 
+  /// Marks the text tab correct, or no longer correct; saved right away.
+  Future<void> _toggleCorrect() async {
+    _save();
+    final event = widget.library.byId(widget.eventId);
+    if (event == null || event.readOnly) return;
+    await widget.library.update(
+      event.copyWith(tabTextCorrect: !event.tabTextCorrect),
+    );
+    if (mounted) setState(() {});
+  }
+
   Future<void> _copy() async {
     await Clipboard.setData(ClipboardData(text: _text.text));
     if (mounted) {
@@ -105,19 +117,37 @@ class _TabTextViewState extends State<TabTextView> {
 
   @override
   Widget build(BuildContext context) {
+    final event = widget.library.byId(widget.eventId);
+    final correct = event?.tabTextCorrect ?? false;
+    final editable = !(event?.readOnly ?? false);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: Row(
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               FilledButton.tonalIcon(
                 onPressed: _copy,
                 icon: const Icon(Icons.copy),
                 label: const Text('Copy'),
               ),
-              const SizedBox(width: 8),
+              if (editable || correct)
+                FilterChip(
+                  tooltip: correct
+                      ? 'Marked correct: the event opens on its text'
+                      : 'Mark the reading correct',
+                  avatar: Icon(
+                    correct ? Icons.check_circle : Icons.check_circle_outline,
+                  ),
+                  showCheckmark: false,
+                  label: Text(correct ? 'Correct' : 'Mark correct'),
+                  selected: correct,
+                  onSelected: editable ? (_) => _toggleCorrect() : null,
+                ),
               TextButton.icon(
                 onPressed: _share,
                 icon: const Icon(Icons.ios_share),

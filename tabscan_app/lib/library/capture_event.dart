@@ -101,6 +101,7 @@ class CaptureEvent {
     this.pages = const [],
     this.tabText,
     this.tabTextAuto = false,
+    this.tabTextCorrect = false,
     this.deleted,
     this.owner,
     this.sharedBy,
@@ -139,6 +140,10 @@ class CaptureEvent {
   /// never text the user edited.
   final bool tabTextAuto;
 
+  /// The user marked [tabText] as a correct reading: the event then opens
+  /// on its Text view, and no read replaces it.
+  final bool tabTextCorrect;
+
   /// When it was deleted, for a tombstone: not shown, no pages.
   final DateTime? deleted;
   bool get isDeleted => deleted != null;
@@ -171,6 +176,7 @@ class CaptureEvent {
     List<EventPage>? pages,
     String? tabText,
     bool? tabTextAuto,
+    bool? tabTextCorrect,
     DateTime? updated,
     String? owner,
     String? sharedBy,
@@ -184,6 +190,7 @@ class CaptureEvent {
     pages: pages ?? this.pages,
     tabText: tabText ?? this.tabText,
     tabTextAuto: tabTextAuto ?? this.tabTextAuto,
+    tabTextCorrect: tabTextCorrect ?? this.tabTextCorrect,
     deleted: deleted,
     owner: owner ?? this.owner,
     sharedBy: sharedBy ?? this.sharedBy,
@@ -201,6 +208,7 @@ class CaptureEvent {
     'pages': [for (final p in pages) p.toJson()],
     if (tabText != null) 'tabText': tabText,
     if (tabTextAuto) 'tabTextAuto': true,
+    if (tabTextCorrect) 'tabTextCorrect': true,
     if (deleted != null) 'deleted': deleted!.toUtc().toIso8601String(),
     if (local && owner != null) 'owner': owner,
     if (local && sharedBy != null) 'sharedBy': sharedBy,
@@ -224,6 +232,7 @@ class CaptureEvent {
       ],
       tabText: json['tabText'] as String?,
       tabTextAuto: json['tabTextAuto'] == true,
+      tabTextCorrect: json['tabTextCorrect'] == true,
       deleted: time('deleted'),
       owner: json['owner'] as String?,
       sharedBy: json['sharedBy'] as String?,

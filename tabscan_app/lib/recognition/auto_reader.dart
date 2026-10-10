@@ -35,9 +35,9 @@ enum ReadState {
 /// event's image pages (a new capture, pages added, rotated or deleted),
 /// its pages are read into its text tab, one event at a time. With TabScan
 /// Premium the cloud transcribes them ([CloudOcr]); otherwise ML Kit on
-/// the device ([TabReader]). A text the user edited is never replaced: a
-/// read only fills an empty text tab, or one an earlier read left
-/// ([CaptureEvent.tabTextAuto]).
+/// the device ([TabReader]). A text the user edited or marked correct is
+/// never replaced: a read only fills an empty text tab, or one an earlier
+/// read left ([CaptureEvent.tabTextAuto], [CaptureEvent.tabTextCorrect]).
 ///
 /// Reading needs signing in, in a build with sign-in: signed out, it waits
 /// ([ReadState.needsSignIn]) and reads once the user signs in. Events
@@ -168,8 +168,9 @@ class AutoReader extends ChangeNotifier {
     // As it is now: the user may have edited the text meanwhile.
     final current = library.byId(id);
     if (current == null) return null;
-    if (current.tabText != null && !current.tabTextAuto) {
-      _log('event $id: kept the edited text');
+    if (current.tabText != null &&
+        (!current.tabTextAuto || current.tabTextCorrect)) {
+      _log('event $id: kept the text (edited, or marked correct)');
       return null;
     }
     if (current.tabText != text) {
