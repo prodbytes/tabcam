@@ -24,6 +24,9 @@
     `2026-10-10 14:02:10  🏠 index ✅  🎸 web ✅`.
   - Servers bind to 127.0.0.1; `TABSCANNER_BIND_HOST=0.0.0.0` serves other
     devices (a phone's browser).
+  - `local.tabscan.nu01.com` resolves to localhost (`127.0.0.1`, `::1`),
+    so http://local.tabscan.nu01.com:2012/app/ reaches the local app
+    under the real domain. Nothing serves HTTPS locally yet.
 - **Android** (USB, debugging on; `ANDROID_SERIAL` picks one of several):
   `devbox run android` runs a debug build attached
   (`scripts/flutter-android.sh`); `devbox run android-release` installs a
