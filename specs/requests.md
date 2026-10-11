@@ -394,3 +394,11 @@ spec.
     explains a signing key mismatch ([release](release.md),
     [platforms](platforms.md), [sharing](sharing.md#android-app-links),
     [cloud sync](cloud-sync.md), [dev environment](dev-environment.md)).
+
+## 2026-10-11
+
+47. **On the Text view, remove the Share text button (the event's Share
+    in the app bar is enough), make Copy and Mark correct look alike, and
+    make Mark correct a toggle.** Share text is gone. Mark correct is now
+    a button like Copy, a toggle: tonal while off, filled and reading
+    **Correct** while on ([tab recognition](tab-recognition.md#text-view)).

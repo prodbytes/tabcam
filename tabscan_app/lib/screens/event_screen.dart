@@ -246,7 +246,6 @@ class _EventScreenState extends State<EventScreen> {
         key: ValueKey('text-${event.id}'),
         library: _library,
         eventId: event.id,
-        auth: widget.sync?.auth,
       );
     }
     final reader = AutoReaderScope.of(context);

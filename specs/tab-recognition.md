@@ -104,15 +104,16 @@ well as shown. Tokens are never logged.
 
 The event screen's Text view ([lib/screens/tab_text_view.dart](../tabscan_app/lib/screens/tab_text_view.dart)):
 the read tab, monospaced and unwrapped (long lines scroll sideways),
-editable to fix what OCR got wrong, with **Copy** (to the clipboard) and
-**Share text** above it. Edits are saved a second after the last one,
+editable to fix what OCR got wrong, with **Copy** (to the clipboard)
+above it; sharing is the event screen's **Share** in the app bar. Edits are saved a second after the last one,
 and on leaving, and make the text the user's (no read replaces it). A
 read that ends while the view shows fills it in, unless the user has
 started editing. Read only for an event shared read only.
 
-**Mark correct**, next to Copy, marks the reading correct once the user
-has checked it (it then reads **Correct**, ticked; tapping it again
-unmarks it), saved at once. The mark is kept on the event and syncs with
+**Mark correct**, next to Copy and the same kind of button, is a toggle
+that marks the reading correct once the user has checked it: tonal like
+Copy while off, filled and reading **Correct**, ticked, while on; tapping
+it again unmarks it. Saved at once. The mark is kept on the event and syncs with
 it (`tabTextCorrect`), and a clone keeps it. An event marked correct
 opens on its Text view (the Text tool goes back to its pages); one that
 isn't opens on its pages. No read, on the device or in the
