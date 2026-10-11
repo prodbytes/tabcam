@@ -358,6 +358,14 @@ spec.
     new debug key each run, aren't verified until there's a release key
     ([sharing](sharing.md#android-app-links), [platforms](platforms.md),
     [release](release.md), [deploy](deploy.md)).
+43. **In the camera screen, make auto shutter off the default and remove
+    filters.** On the phone, Scan is the system document scanner, which
+    lets the app set neither the shutter mode nor (on iOS) the filters.
+    Android's scanner now runs in ML Kit's base mode, so it has no filters
+    (and no ML clean-up). Auto capture stays the scanners' default, and iOS
+    keeps VisionKit's filters ([scanning](scanning.md),
+    [platforms](platforms.md)). TabScan's own camera screen (the web) has
+    neither auto shutter nor filters.
 46. **Help me publish the app to the Apple and Google stores, step by
     step; with personal (individual) accounts.** A new
     [app stores](app-stores.md) spec tracks the steps. First, Android
