@@ -1,9 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'app_version.dart';
+import 'auth/apple_auth_service.dart';
+import 'auth/apple_config.dart';
 import 'auth/auth_service.dart';
 import 'auth/google_auth_service.dart';
 import 'auth/google_config.dart';
+import 'auth/multi_auth_service.dart';
 import 'cloud/cloud_config.dart';
 import 'cloud/cloud_ocr.dart';
 import 'cloud/cloud_sync.dart';
@@ -55,12 +59,21 @@ class AppServices {
   AppServices() : library = Library()..load() {
     // Sign-in and sync only in a build that has both set up (.env, or the
     // deploys' repository variables); otherwise events stay on the device.
-    if (_cloud) auth = GoogleAuthService()..init();
+    if (_cloud) auth = _signIn()..init();
     reader = AutoReader(library: library, auth: auth, ocr: () => ocr)..start();
   }
 
   /// Reads every capture's tab by itself.
   late final AutoReader reader;
+
+  /// Google everywhere; on iOS, in a build with the capability
+  /// (`TABSCANNER_APPLE_SIGN_IN`), Sign in with Apple too.
+  static AuthService _signIn() =>
+      !kIsWeb &&
+          defaultTargetPlatform == TargetPlatform.iOS &&
+          AppleConfig.enabled
+      ? MultiAuthService([AppleAuthService(), GoogleAuthService()])
+      : GoogleAuthService();
 
   static bool get _cloud =>
       CloudConfig.enabled && GoogleConfig.webClientId.isNotEmpty;

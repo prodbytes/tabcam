@@ -43,12 +43,22 @@ class Table:
         return {"Items": [i for i in self.items.values() if i[name] == value]}
 
 
+APPLE_OWNER = "us-east-1:22222222-2222-2222-2222-222222222222"
+
+
 class Cognito:
     def __init__(self):
-        self.identities = {"owner-token": OWNER}
+        # By provider: each sign-in is its own identity.
+        self.identities = {
+            ("accounts.google.com", "owner-token"): OWNER,
+            ("appleid.apple.com", "apple-owner-token"): APPLE_OWNER,
+        }
+        self.logins = []
 
     def get_id(self, IdentityPoolId, Logins):
-        return {"IdentityId": self.identities[Logins["accounts.google.com"]]}
+        self.logins.append(Logins)
+        ((provider, token),) = Logins.items()
+        return {"IdentityId": self.identities[(provider, token)]}
 
 
 class Sts:
@@ -72,12 +82,18 @@ class ShareApiTest(unittest.TestCase):
         self.clients = {"table": Table(), "cognito": Cognito(), "sts": Sts()}
 
     def call(self, route, email, token="owner-token", path=None, query=None,
-             body=None, verified="true"):
+             body=None, verified="true", iss=None):
+        # The issuer the route's authorizer takes, unless the test says.
+        if iss is None:
+            apple = route.split(" ", 1)[1].startswith("/apple/")
+            iss = "https://appleid.apple.com" if apple else "https://accounts.google.com"
+        claims = {"iss": iss, "email_verified": verified}
+        if email is not None:
+            claims["email"] = email
         event = {
             "routeKey": route,
             "headers": {"authorization": f"Bearer {token}"},
-            "requestContext": {"authorizer": {"jwt": {"claims": {
-                "email": email, "email_verified": verified}}}},
+            "requestContext": {"authorizer": {"jwt": {"claims": claims}}},
             "pathParameters": path,
             "queryStringParameters": query,
             "body": json.dumps(body) if body is not None else None,
@@ -155,6 +171,64 @@ class ShareApiTest(unittest.TestCase):
                                  path={"captureId": "abc"},
                                  query={"email": "ana@example.com"})
         self.assertEqual(body["grants"], [])
+
+
+    # Sign in with Apple: the same routes under /apple, with Apple's claims
+    # (made up here, as the authorizer would pass them).
+
+    def test_apple_routes_take_apple_tokens_and_their_own_identity(self):
+        status, body = self.call("PUT /apple/shares/{captureId}", "riff@example.com",
+                                 token="apple-owner-token", path={"captureId": "abc"},
+                                 body={"email": "ana@example.com"})
+        self.assertEqual(status, 200)
+        self.assertEqual(self.clients["cognito"].logins[-1],
+                         {"appleid.apple.com": "apple-owner-token"})
+        item = self.clients["table"].items[(f"{APPLE_OWNER}#abc", "ana@example.com")]
+        self.assertEqual(item["owner"], APPLE_OWNER)
+        self.assertEqual(item["ownerEmail"], "riff@example.com")
+
+    def test_apple_users_get_what_is_shared_with_their_address(self):
+        self.grant("x7k2@privaterelay.appleid.com", "read")
+        status, body = self.call("GET /apple/shared", "X7K2@privaterelay.appleid.com",
+                                 token="apple-ana")
+        self.assertEqual(status, 200)
+        self.assertEqual(body["shared"][0]["role"], "read")
+        path = {"owner": OWNER, "captureId": "abc"}
+        status, creds = self.call("POST /apple/shared/{owner}/{captureId}/credentials",
+                                  "x7k2@privaterelay.appleid.com", token="apple-ana",
+                                  path=path)
+        self.assertEqual(status, 200)
+        self.assertEqual(creds["role"], "read")
+
+    def test_apple_email_verified_may_be_a_boolean_or_a_string(self):
+        for verified in (True, "true", "TRUE"):
+            status, _ = self.call("GET /apple/shared", "riff@example.com",
+                                  token="apple-ana", verified=verified)
+            self.assertEqual(status, 200, verified)
+        for verified in (False, "false", None):
+            status, _ = self.call("GET /apple/shared", "riff@example.com",
+                                  token="apple-ana", verified=verified)
+            self.assertEqual(status, 403, verified)
+
+    def test_a_token_must_be_its_paths_issuer(self):
+        # A Google token on an Apple path, an Apple token on a Google path,
+        # anyone else's anywhere: refused before anything is read.
+        for route, iss in (("GET /apple/shared", "https://accounts.google.com"),
+                           ("GET /shared", "https://appleid.apple.com"),
+                           ("GET /shared", "https://evil.example"),
+                           ("GET /apple/shared", "")):
+            status, _ = self.call(route, "riff@example.com", iss=iss)
+            self.assertEqual(status, 401, (route, iss))
+        self.assertEqual(self.clients["cognito"].logins, [])
+
+    def test_an_apple_token_without_an_email_is_refused(self):
+        status, body = self.call("GET /apple/shared", None, token="apple-ana")
+        self.assertEqual(status, 403)
+        self.assertIn("email", body["message"])
+
+    def test_unknown_apple_routes_are_not_found(self):
+        status, _ = self.call("GET /apple/other", "riff@example.com", token="apple-ana")
+        self.assertEqual(status, 404)
 
 
 if __name__ == "__main__":

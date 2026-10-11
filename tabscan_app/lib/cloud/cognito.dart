@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../auth/auth_service.dart';
 import 'sigv4.dart';
 
 /// A Cognito identity (its ID is the user's folder in the bucket) with its
@@ -13,14 +14,14 @@ class CognitoSession {
   final AwsCredentials credentials;
 }
 
-/// Why Cognito refused (for example, an expired Google ID token).
+/// Why Cognito refused (for example, an expired ID token).
 class CognitoException implements Exception {
   CognitoException(this.type, this.message);
 
   final String type;
   final String message;
 
-  /// The Google token was rejected: signing in again gets a fresh one.
+  /// The ID token was rejected: signing in again gets a fresh one.
   bool get needsSignIn => type.endsWith('NotAuthorizedException');
 
   @override
@@ -36,10 +37,12 @@ abstract interface class CredentialSource {
   void clear();
 }
 
-/// Exchanges a Google ID token for temporary AWS credentials through a
-/// Cognito identity pool (the enhanced flow: GetId, then
-/// GetCredentialsForIdentity). Neither call is signed; the Google token is
-/// the proof.
+/// Exchanges an ID token (Google's, or Apple's) for temporary AWS
+/// credentials through a Cognito identity pool (the enhanced flow: GetId,
+/// then GetCredentialsForIdentity). Neither call is signed; the token is
+/// the proof. It goes in `Logins` under its issuer's key
+/// ([AuthProvider.loginsKey]): each provider is its own identity, so the
+/// same person signed in with Google and with Apple has two folders.
 class CognitoCredentials implements CredentialSource {
   CognitoCredentials({
     required this.region,
@@ -49,8 +52,6 @@ class CognitoCredentials implements CredentialSource {
   }) : _client = client ?? http.Client(),
        _now = now ?? DateTime.now;
 
-  static const String googleProvider = 'accounts.google.com';
-
   final String region;
   final String identityPoolId;
   final http.Client _client;
@@ -58,6 +59,7 @@ class CognitoCredentials implements CredentialSource {
 
   CognitoSession? _session;
   String? _sessionToken;
+  AuthProvider? _sessionProvider;
 
   /// A session for [idToken], reused until its credentials expire soon or
   /// the token changes.
@@ -69,9 +71,12 @@ class CognitoCredentials implements CredentialSource {
         !current.credentials.expiresSoon(_now())) {
       return current;
     }
-    final logins = {googleProvider: idToken};
-    // The identity ID is stable per user and pool, so keep it across tokens.
-    final identityId = current != null && _sessionToken != null
+    final provider = AuthProvider.ofToken(idToken);
+    final logins = {provider.loginsKey: idToken};
+    // The identity ID is stable per user, provider and pool, so keep it
+    // across tokens of the same provider.
+    final identityId =
+        current != null && _sessionToken != null && _sessionProvider == provider
         ? current.identityId
         : (await _call('GetId', {
                 'IdentityPoolId': identityPoolId,
@@ -100,6 +105,7 @@ class CognitoCredentials implements CredentialSource {
     );
     _session = session;
     _sessionToken = idToken;
+    _sessionProvider = provider;
     return session;
   }
 
@@ -108,6 +114,7 @@ class CognitoCredentials implements CredentialSource {
   void clear() {
     _session = null;
     _sessionToken = null;
+    _sessionProvider = null;
   }
 
   Future<Map<String, Object?>> _call(

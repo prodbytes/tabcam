@@ -5,6 +5,7 @@ import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
 import '../cloud/ocr_api.dart';
 import 'premium_card.dart';
+import 'sign_in_buttons.dart';
 
 /// The [AccountPanel] in a bottom sheet, for places away from the Profile
 /// tab (an event's Premium Upgrade, on the web); with Premium set up
@@ -78,12 +79,7 @@ class AccountPanel extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 16),
-        auth.buildSignInButton() ??
-            FilledButton.icon(
-              onPressed: auth.checking ? null : auth.signIn,
-              icon: const Icon(Icons.login),
-              label: const Text('Sign in with Google'),
-            ),
+        SignInButtons(auth: auth),
         if (auth.error case final error?) ...[
           const SizedBox(height: 12),
           Text(error, style: TextStyle(color: theme.colorScheme.error)),
@@ -107,7 +103,14 @@ class AccountPanel extends StatelessWidget {
             child: photo == null ? const Icon(Icons.person_outline) : null,
           ),
           title: Text(user.label),
-          subtitle: user.label == user.email ? null : Text(user.email),
+          subtitle: switch ([
+            if (user.label != user.email) user.email,
+            if (user.provider != AuthProvider.google)
+              'Signed in with ${user.provider.label}',
+          ]) {
+            [] => null,
+            final lines => Text(lines.join('\n')),
+          },
         ),
         if (ocr case final ocr?)
           if (roleLabel(ocr) case final role?)
@@ -140,7 +143,12 @@ class AccountPanel extends StatelessWidget {
         ),
         if (ocr case final ocr?) ...[
           const SizedBox(height: 16),
-          PremiumCard(ocr: ocr, email: user.email, store: store),
+          PremiumCard(
+            ocr: ocr,
+            email: user.email,
+            privateEmail: user.privateEmail,
+            store: store,
+          ),
         ],
       ],
     );

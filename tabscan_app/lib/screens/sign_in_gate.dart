@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../auth/auth_service.dart';
+import 'sign_in_buttons.dart';
 
 /// What needs signing in: reading tabs and sharing. Signed out, the user
 /// can still capture (scan, import, add photos, videos and links), kept on
@@ -85,12 +86,7 @@ class _SignInSheetState extends State<_SignInSheet> {
               'to your captures; they stay on this device.',
             ),
             const SizedBox(height: 16),
-            auth.buildSignInButton() ??
-                FilledButton.icon(
-                  onPressed: auth.checking ? null : auth.signIn,
-                  icon: const Icon(Icons.login),
-                  label: const Text('Sign in with Google'),
-                ),
+            SignInButtons(auth: auth),
             if (auth.error case final error?) ...[
               const SizedBox(height: 12),
               Text(error, style: TextStyle(color: theme.colorScheme.error)),

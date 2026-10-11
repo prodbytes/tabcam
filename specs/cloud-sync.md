@@ -5,15 +5,17 @@ Signed in, a user's events **sync with S3**, both
 ways, so every device they sign in on has the same events, and a new
 device, or the web app after a reload, gets them back. Signed out,
 nothing leaves the device. It works as Presence's first cloud sync did:
-Google sign-in, a Cognito identity pool that turns the Google ID token
-into temporary AWS credentials for the user's own folder, and signed S3
+Google sign-in (and, on iOS, Sign in with Apple), a Cognito identity pool
+that turns the ID token into temporary AWS credentials for the user's own folder, and signed S3
 requests made by the app itself ([lib/cloud/](../tabscan_app/lib/cloud)).
 Sync needs no TabScan server (only [sharing](shared-captures.md) has an
 API).
 
 A build has sign-in only when it has all of `TABSCANNER_GOOGLE_WEB_CLIENT_ID`,
 `TABSCANNER_COGNITO_IDENTITY_POOL_ID` and `TABSCANNER_USER_DATA_BUCKET` (below). Without them
-it's as before: no account button, events only on the device.
+it's as before: no account button, events only on the device. **Sign in
+with Apple** is offered on iOS only, in builds with
+`TABSCANNER_APPLE_SIGN_IN=1` (below); elsewhere Google is the only sign-in.
 
 ## Signed out
 
@@ -26,7 +28,8 @@ signed out are read once the user signs in
 says so, with **Sign in**. **Share** (as a link, a PDF, text or files,
 from a card, the event screen or the Text view) and the Text view's
 **Sign in**, tapped signed out, open a sheet, "Sign in to read tabs" or "Sign in to share", saying why, that
-capturing still works and stays on the device, and the sign-in button.
+capturing still works and stays on the device, and the sign-in buttons
+(as on the Profile tab).
 Signing in there closes it and goes on with what was tapped; closing it
 does nothing. What was captured signed out goes up at the first sign-in,
 as the user's own.
@@ -41,8 +44,15 @@ The [Profile](navigation.md#profile) tab shows the account:
 - **Signed out**: "Sign in", what it's for (reading tabs, sharing, and
   backing up to every device; signed out, capturing stays on this
   device), and **Sign in with Google** (on the web, Google's own button),
-  with the last sign-in error under it.
-- **Signed in**: the account's photo, name and email; where Premium is
+  with the last sign-in error under it. On iOS with Sign in with Apple set
+  up, **Sign in with Apple** comes first, above Google's: Apple's button
+  (`SignInWithAppleButton`), black on the light theme and white on the
+  dark one, as Apple's Human Interface Guidelines ask, the same size as
+  Google's (both 44 points high, at most 320 wide).
+- **Signed in**: the account's photo, name and email (signed in with
+  Apple, "Signed in with Apple" under the email too; a private relay
+  address with no name shows as "Apple ID (private email)", the address
+  under it); where Premium is
   set up, the user's role ([cloud OCR](cloud-ocr.md#in-the-app)); the sync status
   ("Syncing…", "Synced at 14:05 (2 uploaded, 1 downloaded)", or why it
   failed, such as "Sign in again to sync"); **Sync now**; **Sign out**,
@@ -63,6 +73,53 @@ Google sign-in (`google_sign_in`,
   returns to the app through the reversed iOS client ID, a URL scheme in
   `Info.plist` filled from `Private.xcconfig` ([platforms](platforms.md)).
 
+### Sign in with Apple (iOS)
+
+The App Store asks apps that offer Google sign-in to offer an equally
+private one too (guideline 4.8), so iOS has **Sign in with Apple**
+(`sign_in_with_apple`, pinned, AuthenticationServices;
+[apple_auth_service.dart](../tabscan_app/lib/auth/apple_auth_service.dart)),
+beside Google, through `MultiAuthService`: one session at a time, with
+either provider; signing in with one signs the other out. The session
+keeps who, the provider and the ID token.
+
+- **The sheet** asks for the name and email. Each sign-in sends Apple the
+  SHA-256 of a fresh random nonce (32 bytes from a secure random), and the
+  ID token must carry it back, with Apple's issuer and the same user, or
+  the sign-in is refused ("Apple's sign-in reply doesn't match the
+  request"). Canceling is no error.
+- **Name and email**: Apple sends them only on the first sign-in to the
+  app, so they're kept by Apple's user ID for later sign-ins (and kept
+  after signing out); the email is in every ID token too. The user may
+  hide their email: then it's Apple's private relay address
+  (`…@privaterelay.appleid.com`, the token's `is_private_email`), shown as
+  above. That address is what sharing and Premium go by: people share
+  with it, and it has no Premium ([cloud OCR](cloud-ocr.md#who-is-premium)).
+- **The session**: Apple keeps none, and can't renew the ID token without
+  a server of TabScan's own, so the app keeps the user and token in a file
+  in its private Application Support folder (`apple_sign_in.json`) and
+  restores it at launch while the token has more than a minute left. When
+  the token expires the user is signed out, "Your Apple sign-in expired:
+  sign in again." At launch, a user who stopped using Apple ID with
+  TabScan (Settings → Apple ID → Sign in with Apple) is signed out. Sign
+  out forgets the session (Apple has no sign-out of its own).
+- **Its ID token** is issued for the bundle ID, `com.nu01.tabscan`, which
+  the identity pool and the share API trust when set up (below). Each
+  provider is its own Cognito identity: the same person signed in with
+  Google and with Apple has two folders, and sees only that sign-in's
+  events (no account linking).
+- **The build**: `TABSCANNER_APPLE_SIGN_IN=1` (`.env`, a dart-define) shows
+  the button, and `scripts/dart-defines.sh` then writes
+  `CODE_SIGN_ENTITLEMENTS=Runner/Runner.entitlements` (the
+  `com.apple.developer.applesignin` entitlement) to the git-ignored
+  `Private.xcconfig`. Only a paid Apple Developer Program team can sign
+  that entitlement, so without the flag (free Personal Team builds, CI's
+  unsigned builds) there are no entitlements and no Apple button
+  ([platforms](platforms.md)).
+- Not on Android or the web, where Google is the only sign-in.
+
+### Google's token
+
 Every platform's ID token is issued for the **web client** (the server
 client ID on Android and iOS), which the identity pool trusts. Local web
 builds sign in with the **local web client** instead
@@ -77,8 +134,8 @@ quietly for a new one.
 ## What's synced, and where
 
 Everything is under the user's **Cognito identity ID**
-(`us-east-1:<uuid>`), the same on every device for a Google account, in
-the user-data bucket:
+(`us-east-1:<uuid>`), the same on every device for an account (a Google
+account, or an Apple ID: each its own identity), in the user-data bucket:
 
 | Object | Content |
 |---|---|
@@ -143,10 +200,12 @@ never uploading a read-only one); see
 
 - **Credentials** (`CognitoCredentials`): the enhanced flow, `GetId` then
   `GetCredentialsForIdentity`, with `Logins: {"accounts.google.com":
-  <ID token>}`. Neither call is signed: the token is the proof. They're
-  reused until five minutes before they expire; a refreshed token keeps
-  the identity ID and gets new credentials. Signing out, or another
-  account signing in, forgets them.
+  <ID token>}`, or `{"appleid.apple.com": <ID token>}` for Apple's (the
+  key follows the token's issuer). Neither call is signed: the token is
+  the proof. They're reused until five minutes before they expire; a
+  refreshed token of the same provider keeps the identity ID and gets new
+  credentials, another provider's gets its own identity. Signing out, or
+  another account signing in, forgets them.
 - **Requests** (`S3Bucket`, `SigV4Signer`, ported from Presence): `GET`,
   `PUT`, `DELETE` and `ListObjectsV2` to
   `https://<bucket>.s3.<region>.amazonaws.com/`, signed with AWS
@@ -163,9 +222,10 @@ never uploading a read-only one); see
 - **Settings** (`CloudConfig`, `GoogleConfig`; dart-defines from `.env`,
   or repository variables for the deploys and releases):
   `TABSCANNER_GOOGLE_WEB_CLIENT_ID`, `TABSCANNER_GOOGLE_IOS_CLIENT_ID`, `AWS_REGION` (default
-  `us-east-1`), `TABSCANNER_COGNITO_IDENTITY_POOL_ID`, `TABSCANNER_USER_DATA_BUCKET`, and for
-  [sharing](shared-captures.md) `TABSCANNER_SHARE_API_URL`. All are public
-  identifiers, not secrets.
+  `us-east-1`), `TABSCANNER_COGNITO_IDENTITY_POOL_ID`, `TABSCANNER_USER_DATA_BUCKET`, for
+  [sharing](shared-captures.md) `TABSCANNER_SHARE_API_URL`, and
+  `TABSCANNER_APPLE_SIGN_IN` (`1`: Sign in with Apple on iOS; `AppleConfig`).
+  All are public, not secrets.
 
 ## Infrastructure
 
@@ -184,8 +244,9 @@ either):
   `https://tabscan.nu01.com`, `https://rc.tabscan.nu01.com`,
   `http://localhost:2012` and `https://local.tabscan.nu01.com:2443`.
 - **`identity.yaml`**, stack `tabscan-identity`: the identity pool
-  `tabscan`, trusting Google (`accounts.google.com` = the web client ID);
-  no guests, no classic flow. The same template, as stack
+  `tabscan`, trusting Google (`accounts.google.com` = the web client ID)
+  and, with `AppleClientId` set, Apple (`appleid.apple.com` = the bundle ID
+  `com.nu01.tabscan`); no guests, no classic flow. The same template, as stack
   `tabscan-identity-local`, makes the local pool `tabscan-local`, trusting
   the local web client. Each pool's authenticated role may only get, put and
   delete objects in `<bucket>/${cognito-identity.amazonaws.com:sub}/*`,
@@ -205,10 +266,26 @@ Setting it up (the Google OAuth clients, the stacks, the variables):
   expired credentials are renewed; a rejected token asks to sign in
   again; signed out, nothing syncs. The Cognito client's calls and its
   reuse of credentials, and the SigV4 and S3 tests ported from Presence.
+- Sign in with Apple's tests, with a fake Apple sheet and made-up tokens:
+  the nonce is a SHA-256 and must come back in the token (another
+  nonce, or another user's token, is refused); the name Apple sends once
+  is kept for the next sign-in; a hidden email is a private relay address,
+  labelled by the provider; the session is restored at launch, not once
+  expired, and not for a user who stopped using Apple ID with the app;
+  canceling is no error; Apple's token goes to Cognito under
+  `appleid.apple.com`, with its own identity, and to the share API under
+  `/apple`; both providers' buttons, Apple's first and the same width,
+  each signing in with its own; one session at a time.
+- `flutter build ios --no-codesign --release` builds with and without
+  `TABSCANNER_APPLE_SIGN_IN` (with it, the build has
+  `CODE_SIGN_ENTITLEMENTS`; without it, none).
 - Both templates pass `aws cloudformation validate-template`; the web and
   Android builds compile with sync set up.
 - Not yet verified: a real sign-in and sync, which needs the Google OAuth
-  clients and the deployed stacks.
+  clients and the deployed stacks; a real Sign in with Apple, which also
+  needs the paid Apple Developer Program, the App ID's capability and the
+  stacks deployed with `AppleClientId`
+  ([app stores](app-stores.md#status)).
 
 ## Known limitations
 
@@ -223,6 +300,12 @@ Setting it up (the Google OAuth clients, the stacks, the variables):
 - An ID token that can't be refreshed quietly (Google wants the user to
   choose an account again) stops sync after an hour, with "Sign in again
   to sync".
+- **Sign in with Apple lasts as long as Apple's ID token** (Apple sets its
+  lifetime): the app can't renew it without a server exchanging Apple's
+  authorization code for a refresh token (which needs a Sign in with Apple
+  private key), so the user signs in again when it expires.
+- Sign in with Apple and Google are separate identities: no linking, so
+  events synced under one don't show under the other.
 - Two devices changing the same event between passes: the later change
   wins whole; the other is lost (S3 keeps it as an old version for 30
   days).

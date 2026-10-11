@@ -124,7 +124,11 @@ class CloudOcr extends ChangeNotifier {
       _status = status;
       _error = status.checked ? null : 'Couldn\'t check Premium right now';
     } on OcrApiException catch (e) {
-      _error = e.needsSignIn ? 'Sign in again' : 'Couldn\'t check Premium';
+      _error = e.needsSignIn
+          ? 'Sign in again'
+          : e.needsGoogle
+          ? 'Premium needs Google sign-in'
+          : 'Couldn\'t check Premium';
       debugPrint('TabScan: premium check failed: $e');
     } on Object catch (e) {
       _error = 'Couldn\'t check Premium';

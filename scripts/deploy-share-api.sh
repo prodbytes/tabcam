@@ -9,6 +9,9 @@
 #                the web OAuth client (the tokens' audience)
 #   TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID
 #                optional: the local web builds' client, trusted too
+#   TABSCANNER_APPLE_SIGN_IN
+#                optional: 1 to take Sign in with Apple's tokens too (for
+#                the bundle ID com.nu01.tabscan), under /apple
 #   AWS_REGION   default us-east-1
 set -euo pipefail
 
@@ -20,6 +23,13 @@ if [[ -z "${TABSCANNER_GOOGLE_WEB_CLIENT_ID:-}" && -f .env ]]; then
 fi
 if [[ -z "${TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID:-}" && -f .env ]]; then
   TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID="$(sed -n 's/^TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID=//p' .env | tail -1)"
+fi
+if [[ -z "${TABSCANNER_APPLE_SIGN_IN:-}" && -f .env ]]; then
+  TABSCANNER_APPLE_SIGN_IN="$(sed -n 's/^TABSCANNER_APPLE_SIGN_IN=//p' .env | tail -1)"
+fi
+apple_client=""
+if [[ "${TABSCANNER_APPLE_SIGN_IN:-}" == 1 || "${TABSCANNER_APPLE_SIGN_IN:-}" == true ]]; then
+  apple_client=com.nu01.tabscan
 fi
 # Passed every time: deploy would keep the stack's old origins otherwise.
 origins="https://tabscan.nu01.com,https://rc.tabscan.nu01.com,http://localhost:2012,https://local.tabscan.nu01.com:2443"
@@ -39,6 +49,7 @@ aws cloudformation deploy --stack-name tabscan-share-api \
   --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
   --parameter-overrides "GoogleWebClientId=$TABSCANNER_GOOGLE_WEB_CLIENT_ID" \
     "GoogleLocalWebClientId=${TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID:-}" \
+    "AppleClientId=$apple_client" \
     "AllowedOrigins=$origins" \
   --no-fail-on-empty-changeset
 
@@ -58,3 +69,8 @@ echo "==> TABSCANNER_SHARE_API_URL=$url"
 status="$(curl -s -o /dev/null -w '%{http_code}' "$url/shared")"
 [[ "$status" == 401 ]] || { echo "error: $url/shared answered $status, not 401" >&2; exit 1; }
 echo "    $url/shared refuses requests without a token (401), as it should"
+if [[ -n "$apple_client" ]]; then
+  status="$(curl -s -o /dev/null -w '%{http_code}' "$url/apple/shared")"
+  [[ "$status" == 401 ]] || { echo "error: $url/apple/shared answered $status, not 401" >&2; exit 1; }
+  echo "    $url/apple/shared too (Sign in with Apple)"
+fi

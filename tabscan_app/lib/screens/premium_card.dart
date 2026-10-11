@@ -20,6 +20,7 @@ class PremiumCard extends StatelessWidget {
     super.key,
     required this.ocr,
     required this.email,
+    this.privateEmail = false,
     this.store,
   });
 
@@ -28,6 +29,10 @@ class PremiumCard extends StatelessWidget {
   /// The signed-in address: Premium follows it, so it's the one to
   /// subscribe with.
   final String email;
+
+  /// [email] is Apple's private relay address: no subscription is under
+  /// it, so the card says how to use Premium.
+  final bool privateEmail;
 
   /// Whether to leave out the upgrade offer (null: [storeApp]).
   final bool? store;
@@ -74,6 +79,16 @@ class PremiumCard extends StatelessWidget {
                       'more accurately than on the phone, and read tabs on '
                       'the web too. Subscribe with $email.',
           ),
+          if (privateEmail) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'Premium goes by email address, and you signed in with '
+              'Apple\'s private relay address, which has none. If your '
+              'Premium is under your own address, sign in with Google, or '
+              'with Apple sharing that address.',
+              key: Key('private-email'),
+            ),
+          ],
           if (ocr.error case final e?) ...[
             const SizedBox(height: 8),
             Text(e, style: TextStyle(color: theme.colorScheme.error)),

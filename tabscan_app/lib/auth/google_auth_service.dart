@@ -159,7 +159,7 @@ class GoogleAuthService extends AuthService {
   }
 
   @override
-  Future<void> signIn() async {
+  Future<void> signIn([AuthProvider provider = AuthProvider.google]) async {
     _error = null;
     notifyListeners();
     try {
@@ -215,7 +215,8 @@ class GoogleAuthService extends AuthService {
   }
 
   @override
-  Widget? buildSignInButton() => GoogleSignIn.instance.supportsAuthenticate()
+  Widget? buildSignInButton([AuthProvider provider = AuthProvider.google]) =>
+      GoogleSignIn.instance.supportsAuthenticate()
       ? null
       : googleSignInButton();
 

@@ -13,8 +13,8 @@ publish to production.
 | Developer accounts | Apple: the maintainer has one; Google Play Console: to do (maintainer) |
 | Android upload key and signed App Bundle | Done (below); the upload key's OAuth client is to do |
 | Store builds: hide the Premium purchase links | Done ([cloud OCR](cloud-ocr.md#in-the-app)) |
-| Store builds: in-app account deletion | To do |
-| Sign in with Apple (App Store guideline 4.8) | To do |
+| Store builds: in-app account deletion | To do (with Sign in with Apple, deleting the account must also revoke the user's Apple tokens through Apple's REST API, which needs a Sign in with Apple key on a server) |
+| Sign in with Apple (App Store guideline 4.8) | Code done ([cloud sync](cloud-sync.md#sign-in-with-apple-ios)), off by default. To do (maintainer): join the paid Apple Developer Program (a free Personal Team can't sign the capability); enable Sign in with Apple on the App ID `com.nu01.tabscan`; deploy `tabscan-identity`, `tabscan-share-api` and `tabscan-ocr` with Apple (`AppleClientId=com.nu01.tabscan`, [tabscan_infra](../tabscan_infra/README.md)); set `TABSCANNER_APPLE_SIGN_IN=1` and the paid team in `.env`; try it on a phone |
 | Privacy policy page; iOS privacy manifest and encryption declaration | To do |
 | Play internal testing, then the 14-day closed test | To do |
 | App Store Connect record, TestFlight | To do |

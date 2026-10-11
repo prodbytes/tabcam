@@ -1,9 +1,11 @@
 import 'dart:convert';
 
 import 'auth_service.dart';
+import 'jwt.dart';
 
-/// A signed-in session as remembered across reloads: who, and their Google
-/// ID token. Only restored while the token is still valid.
+/// A signed-in session as remembered across reloads: who, with which
+/// provider, and their ID token. Only restored while the token is still
+/// valid.
 class SavedSession {
   const SavedSession({required this.user, required this.idToken});
 
@@ -15,6 +17,8 @@ class SavedSession {
     'email': user.email,
     'name': user.name,
     'photoUrl': user.photoUrl,
+    'provider': user.provider.name,
+    if (user.privateEmail) 'privateEmail': true,
     'idToken': idToken,
   });
 
@@ -40,6 +44,9 @@ class SavedSession {
           email: email,
           name: m['name'] as String?,
           photoUrl: m['photoUrl'] as String?,
+          // Sessions saved before Sign in with Apple are Google's.
+          provider: AuthProvider.byName(m['provider'] as String?),
+          privateEmail: m['privateEmail'] == true,
         ),
         idToken: token,
       );
@@ -65,21 +72,9 @@ class SavedSession {
   /// used to decide whether a saved session is still worth restoring:
   /// Cognito verifies the token itself.
   static DateTime? tokenExpiry(String jwt) {
-    final parts = jwt.split('.');
-    if (parts.length != 3) return null;
-    try {
-      final payload = utf8.decode(
-        base64Url.decode(base64Url.normalize(parts[1])),
-      );
-      final exp = (jsonDecode(payload) as Map)['exp'];
-      return exp is num
-          ? DateTime.fromMillisecondsSinceEpoch(
-              (exp * 1000).round(),
-              isUtc: true,
-            )
-          : null;
-    } catch (_) {
-      return null;
-    }
+    final exp = jwtClaims(jwt)?['exp'];
+    return exp is num
+        ? DateTime.fromMillisecondsSinceEpoch((exp * 1000).round(), isUtc: true)
+        : null;
   }
 }

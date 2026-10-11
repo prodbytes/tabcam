@@ -50,12 +50,17 @@ class OcrApiException implements Exception {
 
   bool get needsSignIn => statusCode == 401;
 
+  /// The service doesn't take this provider's tokens (Apple's, before it's
+  /// set up for them): Premium needs Google sign-in.
+  bool get needsGoogle =>
+      statusCode == 403 && message == 'google sign-in needed';
+
   @override
   String toString() => 'Cloud OCR HTTP $statusCode: $message';
 }
 
 /// The cloud OCR service's requests (tabscan_locr), each with the user's
-/// Google ID token: [HttpOcrApi], or a fake in tests.
+/// ID token (Google's or Apple's): [HttpOcrApi], or a fake in tests.
 abstract interface class OcrApi {
   /// Records who this is for the service, and says whether they're premium.
   Future<PremiumStatus> account(String idToken);

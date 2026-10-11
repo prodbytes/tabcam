@@ -7,11 +7,16 @@ granted address lists what's shared with them, and gets temporary
 credentials for just that capture's folder: get and list, plus put and
 delete to edit. No email is sent.
 
-Behind an HTTP API with a Google JWT authorizer (the TabScan web client),
-so every request carries a verified Google ID token. The caller's Cognito
-identity (their folder) comes from that token too (GetId).
+Behind an HTTP API with JWT authorizers, so every request carries a
+verified ID token: Google's (for the TabScan web client) at the routes
+below, or Apple's (Sign in with Apple, for the app's bundle ID) at the same
+routes under /apple. Each path has the authorizer of its issuer, and the
+function checks the token's issuer matches the path. The caller's Cognito
+identity (their folder) comes from that token too (GetId, with the token
+under its issuer's Logins key: Google and Apple sign-ins are different
+identities).
 
-Routes:
+Routes (each also under /apple, for Apple's tokens):
   GET    /shares/{captureId}                      the capture's grants (owner)
   PUT    /shares/{captureId}                      grant {email, role} (owner)
   DELETE /shares/{captureId}?email=               revoke (owner)
@@ -30,6 +35,13 @@ MAX_GRANTS = int(os.environ.get("MAX_GRANTS", "50"))
 ID = re.compile(r"^[a-z0-9]{1,32}$")
 IDENTITY = re.compile(r"^[a-z]{2}(-[a-z]+)+-\d:[0-9a-f-]{36}$")
 EMAIL = re.compile(r"^[^@\s]{1,64}@[A-Za-z0-9.-]{1,189}\.[A-Za-z]{2,}$")
+
+# The issuers whose tokens the API takes: the path prefix of their routes,
+# and the token's key in Cognito's Logins.
+GOOGLE = "https://accounts.google.com"
+APPLE = "https://appleid.apple.com"
+PREFIXES = {GOOGLE: "", APPLE: "/apple"}
+LOGINS = {GOOGLE: "accounts.google.com", APPLE: "appleid.apple.com"}
 
 
 class ApiError(Exception):
@@ -108,15 +120,30 @@ class Api:
             .get("jwt", {})
             .get("claims", {})
         )
-        # Only a verified address can be granted, or use a grant.
+        # The route's own key, without the issuer's prefix. API Gateway has
+        # checked the token with that path's authorizer; this makes sure the
+        # issuer is the path's too, so a token is never taken as another
+        # provider's.
+        method, _, path = (event.get("routeKey") or "").partition(" ")
+        issuer = APPLE if path.startswith("/apple/") else GOOGLE
+        if claims.get("iss") != issuer:
+            raise ApiError(401, "Sign in again")
+        self.login = LOGINS[issuer]
+        self.route_key = f"{method} {path[len(PREFIXES[issuer]):]}"
+        # Only a verified address can be granted, or use a grant. Apple sends
+        # email_verified as a string ("true"), Google as a boolean. Apple's
+        # private relay addresses are verified too: each is the user's, for
+        # this app.
         if str(claims.get("email_verified")).lower() != "true":
             raise ApiError(403, "Sign in with a verified email address")
+        if not claims.get("email"):
+            raise ApiError(403, "Sign in with an email address")
         self.email = _email(claims.get("email"))
         self.params = event.get("pathParameters") or {}
         self.query = event.get("queryStringParameters") or {}
 
     def route(self):
-        route = self.event.get("routeKey")
+        route = self.route_key
         handlers = {
             "GET /shares/{captureId}": self.grants,
             "PUT /shares/{captureId}": self.grant,
@@ -144,7 +171,7 @@ class Api:
         token = header[7:] if header.lower().startswith("bearer ") else ""
         result = self.cognito.get_id(
             IdentityPoolId=os.environ["IDENTITY_POOL_ID"],
-            Logins={"accounts.google.com": token},
+            Logins={self.login: token},
         )
         return result["IdentityId"]
 

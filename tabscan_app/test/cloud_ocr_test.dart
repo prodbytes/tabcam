@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tabscan_app/auth/auth_service.dart';
 import 'package:tabscan_app/cloud/cloud_ocr.dart';
 import 'package:tabscan_app/cloud/cloud_sync.dart';
 import 'package:tabscan_app/cloud/ocr_api.dart';
@@ -26,9 +27,13 @@ class FakeOcrApi implements OcrApi {
   final List<String> transcribed = [];
   int accountCalls = 0;
 
+  /// Thrown by [account] instead of answering.
+  Object? error;
+
   @override
   Future<PremiumStatus> account(String idToken) async {
     accountCalls++;
+    if (error case final e?) throw e;
     return PremiumStatus(
       premium: premium,
       expiresAt: premium ? DateTime(2027, 3, 1) : null,
@@ -253,6 +258,58 @@ void main() {
     expect(find.textContaining('transcribed in the cloud'), findsOneWidget);
     s.dispose();
   });
+
+  testWidgets('an Apple user with a private relay address is labelled by '
+      'Apple, and told how Premium goes by address', (tester) async {
+    final s = _Setup();
+    await tester.runAsync(() async {
+      await s.start(syncing: false);
+      s.auth.signInWith(
+        const AuthUser(
+          id: 'apple.user.1',
+          email: 'x7k2@privaterelay.appleid.com',
+          provider: AuthProvider.apple,
+          privateEmail: true,
+        ),
+      );
+      await _until(() => s.ocr.status != null);
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: AccountPanel(
+              auth: s.auth,
+              sync: s.sync,
+              ocr: s.ocr,
+              store: true,
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Apple ID (private email)'), findsOneWidget);
+    expect(
+      find.text('x7k2@privaterelay.appleid.com\nSigned in with Apple'),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('private-email')), findsOneWidget);
+    s.dispose();
+  });
+
+  test(
+    'a service that takes no Apple tokens says Premium needs Google',
+    () async {
+      final s = _Setup();
+      s.api.error = OcrApiException(403, 'google sign-in needed');
+      await s.start(syncing: false);
+      s.auth.signInAs('ana');
+      await _until(() => !s.ocr.checking && s.ocr.error != null);
+      expect(s.ocr.error, 'Premium needs Google sign-in');
+      expect(s.ocr.premium, isFalse);
+      s.dispose();
+    },
+  );
 
   testWidgets('the profile shows the user\'s role', (tester) async {
     final s = _Setup();

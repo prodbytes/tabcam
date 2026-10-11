@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../auth/auth_service.dart';
 import 'sigv4.dart';
 
 /// What a person may do with a capture shared with them.
@@ -65,7 +66,8 @@ class ShareApiException implements Exception {
 
 /// The share API (tabscan_api/shares): grants of the user's own captures,
 /// what's shared with them, and credentials for it. Every request carries
-/// the user's Google ID token.
+/// the user's ID token: Google's at the API's root, Apple's under `/apple`
+/// (each path has its own authorizer, for its issuer).
 class ShareApi {
   ShareApi({required this.baseUrl, http.Client? client})
     : _client = client ?? http.Client();
@@ -165,6 +167,7 @@ class ShareApi {
     final uri = baseUrl.replace(
       pathSegments: [
         ...baseUrl.pathSegments.where((s) => s.isNotEmpty),
+        if (AuthProvider.ofToken(token) == AuthProvider.apple) 'apple',
         ...path,
       ],
       queryParameters: query,
