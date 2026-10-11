@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../library/capture_event.dart';
+import '../l10n/language.dart';
 
 /// The text tab as a page of an event whose images are hidden
 /// ([CaptureEvent.hideImages]): monospaced and unwrapped (a long line
@@ -25,12 +26,15 @@ class TextPage extends StatelessWidget {
           children: [
             const Icon(Icons.notes, size: 48),
             const SizedBox(height: 12),
-            Text('No text tab yet', style: theme.textTheme.titleMedium),
+            Text(
+              context.l10n.textViewNoTextTab,
+              style: theme.textTheme.titleMedium,
+            ),
             const SizedBox(height: 4),
             Text(
               event.readOnly
-                  ? 'The images are hidden, and the tab hasn\'t been read.'
-                  : 'The images are hidden. They\'re still read: the text appears here.',
+                  ? context.l10n.textViewHiddenNotRead
+                  : context.l10n.textViewHiddenStillRead,
               textAlign: TextAlign.center,
             ),
           ],
@@ -44,10 +48,10 @@ class TextPage extends StatelessWidget {
         children: [
           ListTile(
             leading: const Icon(Icons.notes),
-            title: const Text('Text tab'),
+            title: Text(context.l10n.textViewTextTab),
             trailing: FilledButton.tonal(
               onPressed: onOpen,
-              child: const Text('Open'),
+              child: Text(context.l10n.textViewOpen),
             ),
           ),
           Expanded(

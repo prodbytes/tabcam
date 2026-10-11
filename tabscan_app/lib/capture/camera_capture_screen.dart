@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
+import '../l10n/language.dart';
+
 /// What [CameraCaptureScreen] returns: the pages taken (empty when
 /// cancelled), or [chooseInstead] when there's no camera and the user
 /// asked for photos instead.
@@ -46,7 +48,7 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen> {
       final cameras = await widget.cameras();
       if (!mounted) return;
       if (cameras.isEmpty) {
-        setState(() => _error = 'No camera found.');
+        setState(() => _error = appL10n.eventNoCamera);
         return;
       }
       // The back camera first, as for a document.
@@ -90,10 +92,11 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen> {
   static String _describe(Object e) => switch (e) {
     CameraException(:final code)
         when code.contains('ermission') || code.contains('ccess') =>
-      'The camera isn\'t allowed: let TabScan use it in the browser\'s '
-          'site settings.',
-    CameraException(:final description?) => 'The camera failed: $description',
-    _ => 'The camera failed: $e',
+      appL10n.eventCameraNotAllowed,
+    CameraException(:final description?) => appL10n.eventCameraFailed(
+      description,
+    ),
+    _ => appL10n.eventCameraFailed('$e'),
   };
 
   Future<void> _shoot() async {
@@ -107,7 +110,7 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen> {
     } on Object catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t take the picture: $e')),
+          SnackBar(content: Text(context.l10n.eventCouldntTakePicture('$e'))),
         );
       }
     } finally {
@@ -120,18 +123,15 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen> {
       final discard = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text(
-            'Discard ${_pages.length} '
-            '${_pages.length == 1 ? 'page' : 'pages'}?',
-          ),
+          title: Text(context.l10n.eventDiscardPages(_pages.length)),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Keep scanning'),
+              child: Text(context.l10n.eventKeepScanning),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Discard'),
+              child: Text(context.l10n.eventDiscard),
             ),
           ],
         ),
@@ -151,6 +151,7 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen> {
   Widget build(BuildContext context) {
     final controller = _controller;
     final count = _pages.length;
+    final l10n = context.l10n;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -162,17 +163,17 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen> {
           backgroundColor: Colors.black,
           foregroundColor: Colors.white,
           leading: IconButton(
-            tooltip: 'Cancel',
+            tooltip: l10n.eventCancel,
             icon: const Icon(Icons.close),
             onPressed: _close,
           ),
           title: Text(
-            count == 0 ? 'Scan' : '$count ${count == 1 ? 'page' : 'pages'}',
+            count == 0 ? l10n.eventScanTitle : l10n.eventPageCount(count),
           ),
           actions: [
             if (_cameras.length > 1 && controller != null)
               IconButton(
-                tooltip: 'Flip camera',
+                tooltip: l10n.eventFlipCamera,
                 icon: const Icon(Icons.cameraswitch),
                 onPressed: () => _open((_camera + 1) % _cameras.length),
               ),
@@ -180,7 +181,7 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen> {
               onPressed: count == 0
                   ? null
                   : () => Navigator.pop(context, CameraCaptureResult(_pages)),
-              child: const Text('Done'),
+              child: Text(l10n.eventDone),
             ),
           ],
         ),
@@ -253,9 +254,9 @@ class _Shutter extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Semantics(
     button: true,
-    label: 'Take a picture',
+    label: context.l10n.eventTakePicture,
     child: Tooltip(
-      message: 'Take a picture',
+      message: context.l10n.eventTakePicture,
       child: GestureDetector(
         onTap: onPressed,
         child: Container(
@@ -306,7 +307,7 @@ class _NoCamera extends StatelessWidget {
         FilledButton.icon(
           onPressed: onChoose,
           icon: const Icon(Icons.photo_library_outlined),
-          label: const Text('Choose photos instead'),
+          label: Text(context.l10n.eventChoosePhotos),
         ),
       ],
     ),

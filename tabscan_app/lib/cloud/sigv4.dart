@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 
+import '../l10n/language.dart';
+
 /// Temporary AWS credentials (from Cognito).
 class AwsCredentials {
   const AwsCredentials({
@@ -54,8 +56,7 @@ class AwsClock {
   /// [offset] for people: "This device's clock is off by 17 min".
   static String describe(Duration offset) {
     final minutes = (offset.inSeconds.abs() / 60).ceil();
-    return "This device's clock is off by $minutes min: "
-        'set it to the right time to sync';
+    return appL10n.accountSyncClockOff(minutes);
   }
 }
 

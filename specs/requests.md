@@ -464,3 +464,11 @@ spec.
     cloud, which now also reads the page off the staves with RapidOCR
     ([tab recognition](tab-recognition.md#notations-around-the-tab),
     [cloud OCR](cloud-ocr.md#transcription)).
+58. **In the profile panel, add a language setting, for now English,
+    Spanish and Portuguese; extract all the texts, translate them, make
+    it work, verify and redeploy.** The app's texts moved to ARB files
+    (Flutter's gen-l10n), translated to Spanish (neutral Latin American)
+    and Portuguese (Brazilian). Profile has **Language**: the device's
+    language by default, or one of the three, kept on the device and
+    applied at once. iOS lists the three languages
+    ([localization](localization.md), [navigation](navigation.md#profile)).

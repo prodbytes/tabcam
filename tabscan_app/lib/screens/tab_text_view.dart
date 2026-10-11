@@ -9,6 +9,7 @@ import '../cloud/cloud_ocr.dart';
 import '../cloud/ocr_api.dart';
 import '../library/library.dart';
 import 'tab_editing.dart';
+import '../l10n/language.dart';
 
 /// The event screen's Text view: the tab read from the event's pages, to
 /// check against them and fix, monospaced and unwrapped (long lines scroll
@@ -135,13 +136,14 @@ class _TabTextViewState extends State<TabTextView> {
 
   Future<void> _copy() async {
     await Clipboard.setData(ClipboardData(text: _text.text));
-    _say('Tab copied');
+    if (!mounted) return;
+    _say(context.l10n.textViewTabCopied);
   }
 
   void _bump(int delta) {
     final value = bumpNumber(_text.value, delta);
     if (value == null) {
-      _say('Put the cursor on a fret number');
+      _say(context.l10n.textViewPutCursorOnFret);
       return;
     }
     _text.value = value;
@@ -155,10 +157,13 @@ class _TabTextViewState extends State<TabTextView> {
     if (ocr == null || event == null) return;
     if (!ocr.premium) {
       _say(
-        'Fix is part of TabScan Premium',
+        context.l10n.textViewFixPremium,
         action: widget.onUpgrade == null
             ? null
-            : SnackBarAction(label: 'Upgrade', onPressed: widget.onUpgrade!),
+            : SnackBarAction(
+                label: context.l10n.textViewUpgrade,
+                onPressed: widget.onUpgrade!,
+              ),
       );
       return;
     }
@@ -169,35 +174,35 @@ class _TabTextViewState extends State<TabTextView> {
     final sent = _text.text;
     setState(() => _checking = true);
     AutocorrectResult? result;
+    String Function(AppLocalizations l10n)? failed;
     try {
       result = await ocr.autocorrect(event, song: song, text: sent);
     } on OcrApiException catch (e) {
       debugPrint('TabScan: auto-correct failed: $e');
-      if (e.needsPremium) {
-        _say('Fix is part of TabScan Premium');
-      } else if (e.needsSignIn) {
-        _say('Sign in again to use Fix');
-      } else if (e.statusCode == 503) {
-        _say('Fix isn\'t available yet');
-      } else {
-        _say('Couldn\'t check online right now. Try again later.');
-      }
+      failed = e.needsPremium
+          ? (l) => l.textViewFixPremium
+          : e.needsSignIn
+          ? (l) => l.textViewFixSignIn
+          : e.statusCode == 503
+          ? (l) => l.textViewFixUnavailable
+          : (l) => l.textViewCheckFailed;
     } on Object catch (e) {
       debugPrint('TabScan: auto-correct failed: $e');
-      _say('Couldn\'t check online right now. Try again later.');
+      failed = (l) => l.textViewCheckFailed;
     }
     if (!mounted) return;
     setState(() => _checking = false);
+    if (failed != null) _say(failed(context.l10n));
     if (result == null) return;
     if (_text.text != sent) {
-      _say('The text changed meanwhile: tap Fix again');
+      _say(context.l10n.textViewTextChanged);
     } else if (result.corrections.isEmpty) {
       _say(
         result.summary.isNotEmpty
             ? result.summary
             : result.found
-            ? 'The tab matches the one found online'
-            : 'Couldn\'t find this song\'s tab online',
+            ? context.l10n.textViewTabMatches
+            : context.l10n.textViewTabNotFound,
       );
     } else {
       setState(() => _review = _Review(sent, result!));
@@ -219,10 +224,7 @@ class _TabTextViewState extends State<TabTextView> {
     if (accepted.isEmpty) return;
     _text.text = applyCorrections(review.text, accepted);
     _save();
-    _say(
-      '${accepted.length} correction${accepted.length == 1 ? '' : 's'} '
-      'applied',
-    );
+    _say(context.l10n.textViewApplied(accepted.length));
   }
 
   @override
@@ -244,7 +246,7 @@ class _TabTextViewState extends State<TabTextView> {
               FilledButton.tonalIcon(
                 onPressed: _copy,
                 icon: const Icon(Icons.copy),
-                label: const Text('Copy'),
+                label: Text(context.l10n.textViewCopy),
               ),
               if (editable || correct)
                 _correctToggle(correct, editable && review == null),
@@ -254,7 +256,7 @@ class _TabTextViewState extends State<TabTextView> {
                 FilledButton.tonalIcon(
                   onPressed: _checking || review != null ? null : _autocorrect,
                   icon: const Icon(Icons.auto_fix_high),
-                  label: const Text('Fix'),
+                  label: Text(context.l10n.textViewFix),
                 ),
             ],
           ),
@@ -263,9 +265,9 @@ class _TabTextViewState extends State<TabTextView> {
         if (_checking) ...[
           const SizedBox(height: 8),
           const LinearProgressIndicator(),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Text('Looking for the song\'s tab online…'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Text(context.l10n.textViewLookingOnline),
           ),
         ],
         Expanded(
@@ -284,7 +286,7 @@ class _TabTextViewState extends State<TabTextView> {
   /// Correct, a toggle shaped like Copy: tonal while off, filled while on.
   Widget _correctToggle(bool correct, bool enabled) {
     final onPressed = enabled ? _toggleCorrect : null;
-    const label = Text('Correct');
+    final label = Text(context.l10n.textViewCorrect);
     final button = correct
         ? FilledButton.icon(
             onPressed: onPressed,
@@ -298,8 +300,8 @@ class _TabTextViewState extends State<TabTextView> {
           );
     return Tooltip(
       message: correct
-          ? 'Marked correct: the event opens on its text'
-          : 'Mark the reading correct',
+          ? context.l10n.textViewMarkedCorrect
+          : context.l10n.textViewMarkCorrect,
       child: Semantics(toggled: correct, child: button),
     );
   }
@@ -312,20 +314,20 @@ class _TabTextViewState extends State<TabTextView> {
       child: Row(
         children: [
           IconButton(
-            tooltip: 'Fret down (the number under the cursor)',
+            tooltip: context.l10n.textViewFretDown,
             onPressed: enabled ? () => _bump(-1) : null,
             icon: const Icon(Icons.remove),
           ),
           IconButton(
-            tooltip: 'Fret up (the number under the cursor)',
+            tooltip: context.l10n.textViewFretUp,
             onPressed: enabled ? () => _bump(1) : null,
             icon: const Icon(Icons.add),
           ),
           const SizedBox(width: 8),
           Tooltip(
             message: _overtype
-                ? 'Overtype: typing replaces characters, columns stay put'
-                : 'Insert: typing pushes the line right',
+                ? context.l10n.textViewOvertypeOn
+                : context.l10n.textViewOvertypeOff,
             child: Semantics(
               toggled: _overtype,
               child: TextButton.icon(
@@ -335,7 +337,7 @@ class _TabTextViewState extends State<TabTextView> {
                 icon: Icon(
                   _overtype ? Icons.check_box : Icons.check_box_outline_blank,
                 ),
-                label: const Text('Overtype'),
+                label: Text(context.l10n.textViewOvertype),
               ),
             ),
           ),
@@ -391,24 +393,24 @@ class _SongDialogState extends State<_SongDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Fix from the song\'s tab'),
+      title: Text(context.l10n.textViewSongDialogTitle),
       content: TextField(
         controller: _song,
         autofocus: true,
-        decoration: const InputDecoration(
-          labelText: 'Song and artist',
-          helperText: 'Looked up on tab sites to correct the reading',
+        decoration: InputDecoration(
+          labelText: context.l10n.textViewSongLabel,
+          helperText: context.l10n.textViewSongHelper,
         ),
         onSubmitted: (s) => Navigator.pop(context, s.trim()),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.textViewCancel),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(context, _song.text.trim()),
-          child: const Text('Check'),
+          child: Text(context.l10n.textViewCheck),
         ),
       ],
     );
@@ -613,7 +615,8 @@ class _ReviewView extends StatelessWidget {
     final i = review.corrections.indexOf(c) + 1;
     final n = review.corrections.length;
     final old = c.old.isEmpty ? '–' : c.old;
-    final now = c.replacement.isEmpty ? 'removed' : c.replacement;
+    final l10n = context.l10n;
+    final now = c.replacement.isEmpty ? l10n.textViewRemoved : c.replacement;
     return Material(
       color: scheme.surfaceContainerHigh,
       child: SafeArea(
@@ -626,16 +629,16 @@ class _ReviewView extends StatelessWidget {
               Row(
                 children: [
                   IconButton(
-                    tooltip: 'Previous',
+                    tooltip: l10n.textViewPrevious,
                     onPressed: () {
                       review.move(-1);
                       onChanged();
                     },
                     icon: const Icon(Icons.chevron_left),
                   ),
-                  Text('$i of $n'),
+                  Text(l10n.textViewPosition(i, n)),
                   IconButton(
-                    tooltip: 'Next',
+                    tooltip: l10n.textViewNext,
                     onPressed: () {
                       review.move(1);
                       onChanged();
@@ -675,8 +678,13 @@ class _ReviewView extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Text(
                   [
-                    'Line ${c.line + 1}${label == null ? '' : ' ($label)'}, '
-                        'column ${c.column + 1}',
+                    label == null
+                        ? l10n.textViewLineColumn(c.line + 1, c.column + 1)
+                        : l10n.textViewLineStringColumn(
+                            c.line + 1,
+                            label,
+                            c.column + 1,
+                          ),
                     if (c.reason.isNotEmpty) c.reason,
                   ].join(' · '),
                   style: Theme.of(context).textTheme.bodySmall,
@@ -693,39 +701,53 @@ class _ReviewView extends StatelessWidget {
                       review.decide(false);
                       onChanged();
                     },
-                    child: Text(decision == false ? 'Rejected' : 'Reject'),
+                    child: Text(
+                      decision == false
+                          ? l10n.textViewRejected
+                          : l10n.textViewReject,
+                    ),
                   ),
                   FilledButton(
                     onPressed: () {
                       review.decide(true);
                       onChanged();
                     },
-                    child: Text(decision == true ? 'Accepted' : 'Accept'),
+                    child: Text(
+                      decision == true
+                          ? l10n.textViewAccepted
+                          : l10n.textViewAccept,
+                    ),
                   ),
                   PopupMenuButton<bool>(
-                    tooltip: 'All',
+                    tooltip: l10n.textViewAll,
                     onSelected: (accept) {
                       review.setAll(accept);
                       onChanged();
                     },
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: true, child: Text('Accept all')),
-                      PopupMenuItem(value: false, child: Text('Reject all')),
+                    itemBuilder: (_) => [
+                      PopupMenuItem(
+                        value: true,
+                        child: Text(l10n.textViewAcceptAll),
+                      ),
+                      PopupMenuItem(
+                        value: false,
+                        child: Text(l10n.textViewRejectAll),
+                      ),
                     ],
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: 8,
                         vertical: 10,
                       ),
-                      child: Text('All…'),
+                      child: Text(l10n.textViewAllMenu),
                     ),
                   ),
                   FilledButton.tonal(
                     onPressed: onDone,
                     child: Text(
                       review.decided < n
-                          ? 'Done (${review.decided}/$n)'
-                          : 'Done',
+                          ? l10n.textViewDoneCount(review.decided, n)
+                          : l10n.textViewDone,
                     ),
                   ),
                 ],

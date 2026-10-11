@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../app_version.dart';
+import '../l10n/language.dart';
 
 /// Whether an admin has put the system in maintenance mode: the site's
 /// `/status.json` (`{"maintenance": true, "message": "…"}`), which
@@ -192,10 +193,11 @@ class MaintenanceScreen extends StatelessWidget {
 
   static const background = Color(0xFF121212);
 
-  static const defaultMessage =
-      'Sorry, TabScan is down for maintenance. Please try again later.';
+  /// The message when the admin gave none, in the app's language (English
+  /// until the app has shown one); the screen shows it in the device's.
+  static String get defaultMessage => appL10n.homeMaintenanceDefault;
 
-  /// The admin's message; [defaultMessage] when null.
+  /// The admin's message; the default one ([defaultMessage]) when null.
   final String? message;
 
   @override
@@ -203,6 +205,9 @@ class MaintenanceScreen extends StatelessWidget {
     return MaterialApp(
       title: AppVersion.title,
       debugShowCheckedModeBanner: false,
+      // Its own app, outside the app's: in the device's language.
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFFE0A030),
@@ -215,10 +220,12 @@ class MaintenanceScreen extends StatelessWidget {
           child: Center(
             child: Padding(
               padding: const EdgeInsets.all(32),
-              child: Text(
-                message ?? defaultMessage,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 20, height: 1.4),
+              child: Builder(
+                builder: (context) => Text(
+                  message ?? context.l10n.homeMaintenanceDefault,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 20, height: 1.4),
+                ),
               ),
             ),
           ),
