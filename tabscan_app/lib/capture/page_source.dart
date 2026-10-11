@@ -43,6 +43,8 @@ abstract final class PageSource {
     }
     final paths = await CunningDocumentScanner.getPictures(
       scannerSource: ScannerSource.camera,
+      // No filters: TabScan applies its own (the Tab filter).
+      androidScannerMode: AndroidScannerMode.base,
     );
     return _readAndClean(paths);
   }
