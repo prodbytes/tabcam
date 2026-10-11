@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 import '../auth/auth_service.dart';
+import '../l10n/language.dart';
 import '../library/capture_event.dart';
 import '../library/library.dart';
 import 'cloud_sync.dart';
@@ -122,12 +123,14 @@ class CloudOcr extends ChangeNotifier {
       final status = await api.account(token);
       if (_token != token) return;
       _status = status;
-      _error = status.checked ? null : 'Couldn\'t check Premium right now';
+      _error = status.checked ? null : appL10n.accountPremiumCheckFailedNow;
     } on OcrApiException catch (e) {
-      _error = e.needsSignIn ? 'Sign in again' : 'Couldn\'t check Premium';
+      _error = e.needsSignIn
+          ? appL10n.accountSignInAgain
+          : appL10n.accountPremiumCheckFailed;
       debugPrint('TabScan: premium check failed: $e');
     } on Object catch (e) {
-      _error = 'Couldn\'t check Premium';
+      _error = appL10n.accountPremiumCheckFailed;
       debugPrint('TabScan: premium check failed: $e');
     } finally {
       _checking = false;

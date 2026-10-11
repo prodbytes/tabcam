@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../library/capture_event.dart';
+import '../l10n/language.dart';
 
 /// A link page on the event screen: its title and address, with Open (in
 /// the browser, or the app that handles it, such as YouTube) and Copy.
@@ -17,16 +18,20 @@ class LinkPage extends StatelessWidget {
       mode: LaunchMode.externalApplication,
     ).catchError((_) => false);
     if (!ok && context.mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Couldn\'t open ${page.url}')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.textViewCouldNotOpen('${page.url}')),
+        ),
+      );
     }
   }
 
   Future<void> _copy(BuildContext context) async {
     await Clipboard.setData(ClipboardData(text: page.url.toString()));
     if (context.mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Link copied')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.textViewLinkCopied)));
     }
   }
 
@@ -63,12 +68,12 @@ class LinkPage extends StatelessWidget {
                   FilledButton.icon(
                     onPressed: () => _open(context),
                     icon: const Icon(Icons.open_in_new),
-                    label: const Text('Open'),
+                    label: Text(context.l10n.textViewOpen),
                   ),
                   OutlinedButton.icon(
                     onPressed: () => _copy(context),
                     icon: const Icon(Icons.copy),
-                    label: const Text('Copy'),
+                    label: Text(context.l10n.textViewCopy),
                   ),
                 ],
               ),
@@ -117,7 +122,7 @@ class _LinkDialogState extends State<_LinkDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Add a link'),
+    title: Text(context.l10n.textViewAddLink),
     content: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -127,10 +132,10 @@ class _LinkDialogState extends State<_LinkDialog> {
           keyboardType: TextInputType.url,
           autocorrect: false,
           decoration: InputDecoration(
-            labelText: 'Link',
+            labelText: context.l10n.textViewLink,
             hintText: 'https://…',
             errorText: _tried && parseLink(_url.text) == null
-                ? 'Enter a web address (https://…)'
+                ? context.l10n.textViewEnterAddress
                 : null,
           ),
           onChanged: (_) {
@@ -141,9 +146,9 @@ class _LinkDialogState extends State<_LinkDialog> {
         TextField(
           controller: _title,
           textCapitalization: TextCapitalization.sentences,
-          decoration: const InputDecoration(
-            labelText: 'Title (optional)',
-            hintText: 'Lesson, recording…',
+          decoration: InputDecoration(
+            labelText: context.l10n.textViewTitleOptional,
+            hintText: context.l10n.textViewTitleHint,
           ),
           onSubmitted: (_) => _add(),
         ),
@@ -152,9 +157,9 @@ class _LinkDialogState extends State<_LinkDialog> {
     actions: [
       TextButton(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Cancel'),
+        child: Text(context.l10n.textViewCancel),
       ),
-      FilledButton(onPressed: _add, child: const Text('Add')),
+      FilledButton(onPressed: _add, child: Text(context.l10n.textViewAdd)),
     ],
   );
 }

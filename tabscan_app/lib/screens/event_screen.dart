@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../capture/media.dart';
 import '../capture/page_source.dart';
+import '../l10n/language.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
 import '../processing/page_filter.dart';
@@ -124,6 +125,7 @@ class _EventScreenState extends State<EventScreen> {
   }
 
   Future<void> _add(CaptureEvent event) async {
+    final l10n = context.l10n;
     final source = await showModalBottomSheet<_AddSource>(
       context: context,
       showDragHandle: true,
@@ -134,8 +136,8 @@ class _EventScreenState extends State<EventScreen> {
             for (final source in _AddSource.values)
               ListTile(
                 leading: Icon(source.icon),
-                title: Text(source.label),
-                subtitle: Text(source.detail),
+                title: Text(source.label(context.l10n)),
+                subtitle: Text(source.detail(context.l10n)),
                 onTap: () => Navigator.pop(context, source),
               ),
           ],
@@ -145,7 +147,7 @@ class _EventScreenState extends State<EventScreen> {
     if (source == null || !mounted) return;
     final link = source == _AddSource.link ? await askForLink(context) : null;
     if (source == _AddSource.link && link == null) return;
-    await _run('Couldn\'t add', () async {
+    await _run(l10n.eventCouldntAdd, () async {
       final first = _pagesOf(event).length;
       if (link != null) {
         await _library.addLink(event, link.$1, title: link.$2);
@@ -158,16 +160,13 @@ class _EventScreenState extends State<EventScreen> {
             ? await MediaSource.library()
             : await MediaSource.files();
         if (pick.skipped > 0) {
-          _snack(
-            '${pick.skipped} ${pick.skipped == 1 ? 'file isn\'t' : 'files aren\'t'} '
-            'a photo or video, so not added.',
-          );
+          _snack(l10n.eventSkippedFiles(pick.skipped));
         }
         if (pick.media.isEmpty) return;
         await _library.addMedia(event, pick.media);
       }
       if (event.hideImages && link == null) {
-        _snack('Added. Images are hidden on this capture.');
+        _snack(l10n.eventAddedHidden);
       }
       // Show the first page added.
       if (mounted) {
@@ -186,23 +185,22 @@ class _EventScreenState extends State<EventScreen> {
     if (ocr == null || sync == null || ocr.premium) return null;
     if (widget.store ?? storeApp) return null;
     if (event.tabText != null || event.readOnly || _hintClosed) return null;
+    final l10n = context.l10n;
     return Material(
       color: Theme.of(context).colorScheme.secondaryContainer,
       child: ListTile(
         dense: true,
         leading: const Icon(Icons.auto_awesome),
-        title: const Text(
-          'TabScan Premium transcribes your scans automatically.',
-        ),
+        title: Text(l10n.eventPremiumHint),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextButton(
               onPressed: () => showAccountSheet(context, sync.auth, sync, ocr),
-              child: const Text('Upgrade'),
+              child: Text(l10n.eventUpgrade),
             ),
             IconButton(
-              tooltip: 'Not now',
+              tooltip: l10n.eventNotNow,
               icon: const Icon(Icons.close),
               onPressed: () => setState(() => _hintClosed = true),
             ),
@@ -271,28 +269,20 @@ class _EventScreenState extends State<EventScreen> {
       );
     }
     final reader = AutoReaderScope.of(context);
+    final l10n = context.l10n;
     final images = event.pages.any((p) => p.isImage);
     void again() => reader?.readSoon(event.id);
     final (message, action) = switch (reader?.stateOf(event.id)) {
-      _ when !images => ('Nothing to read: add a scan or a photo.', null),
-      ReadState.reading => ('Reading the tab…', null),
-      ReadState.inCloud => (
-        'Transcribing in the cloud. The text appears here when it\'s done.',
-        null,
-      ),
-      ReadState.noTab => (
-        'No tab found in the pages. Try rescanning closer and flatter.',
-        ('Read again', again),
-      ),
-      ReadState.failed => ('Reading the tab failed.', ('Read again', again)),
-      ReadState.unsupported => (
-        'Reading tabs needs the Android or iOS app, or TabScan Premium.',
-        null,
-      ),
+      _ when !images => (l10n.eventNothingToRead, null),
+      ReadState.reading => (l10n.eventReadingTab, null),
+      ReadState.inCloud => (l10n.eventInCloud, null),
+      ReadState.noTab => (l10n.eventNoTab, (l10n.eventReadAgain, again)),
+      ReadState.failed => (l10n.eventReadFailed, (l10n.eventReadAgain, again)),
+      ReadState.unsupported => (l10n.eventReadUnsupported, null),
       ReadState.needsSignIn => (
-        'Reading tabs needs you signed in.',
+        l10n.eventReadNeedsSignIn,
         (
-          'Sign in',
+          l10n.eventSignIn,
           () async {
             if (await requireSignIn(
                   context,
@@ -305,8 +295,8 @@ class _EventScreenState extends State<EventScreen> {
           },
         ),
       ),
-      null when reader == null => ('No text yet.', null),
-      null => ('Not read yet.', ('Read', again)),
+      null when reader == null => (l10n.eventNoTextYet, null),
+      null => (l10n.eventNotReadYet, (l10n.eventRead, again)),
     };
     return Center(
       child: Padding(
@@ -331,7 +321,7 @@ class _EventScreenState extends State<EventScreen> {
 
   Future<void> _deletePage(CaptureEvent event, EventPage page) async {
     if (event.pages.length == 1) {
-      _snack('An event keeps at least one page; delete the event instead.');
+      _snack(context.l10n.eventKeepOnePage);
       return;
     }
     await _library.deletePage(event, page);
@@ -362,6 +352,7 @@ class _EventScreenState extends State<EventScreen> {
         // Rotate is for images, not videos or links; nor in the Text view.
         final image = enabled && page.isImage && !text;
         final sync = widget.sync;
+        final l10n = context.l10n;
         // What the image pages show: Original or Scan.
         final filter = view == _View.original
             ? PageFilter.original
@@ -387,23 +378,23 @@ class _EventScreenState extends State<EventScreen> {
             actions: [
               if (editable)
                 IconButton(
-                  tooltip: 'Rename',
+                  tooltip: l10n.eventRename,
                   icon: const Icon(Icons.edit_outlined),
                   onPressed: () => _rename(event),
                 ),
               if (sync != null && sync.canShare && !event.isShared)
                 IconButton(
-                  tooltip: 'Share with people',
+                  tooltip: l10n.eventShareWithPeople,
                   icon: const Icon(Icons.group_add_outlined),
                   onPressed: () => showPeopleSheet(context, sync, event),
                 ),
               IconButton(
-                tooltip: 'Clone',
+                tooltip: l10n.eventClone,
                 icon: const Icon(Icons.copy_all_outlined),
                 onPressed: _busy ? null : () => _clone(event),
               ),
               IconButton(
-                tooltip: 'Share',
+                tooltip: l10n.eventShare,
                 icon: const Icon(Icons.ios_share),
                 onPressed: _busy ? null : () => _share(event),
               ),
@@ -474,35 +465,35 @@ class _EventScreenState extends State<EventScreen> {
                   _Tool(
                     key: const Key('view'),
                     icon: view.icon,
-                    label: view.label,
+                    label: view.label(l10n),
                     onPressed: _busy || text ? null : () => _nextView(event),
                   ),
                   _Tool(
                     key: const Key('text'),
                     icon: text ? Icons.photo_library_outlined : Icons.notes,
-                    label: text ? 'Pages' : 'Text',
+                    label: text ? l10n.eventPages : l10n.eventText,
                     onPressed: _busy
                         ? null
                         : () => setState(() => _text = !_text),
                   ),
                   _Tool(
                     icon: Icons.add_circle_outline,
-                    label: 'Add',
+                    label: l10n.eventAdd,
                     onPressed: _busy || !editable ? null : () => _add(event),
                   ),
                   _Tool(
                     icon: Icons.rotate_90_degrees_cw_outlined,
-                    label: 'Rotate',
+                    label: l10n.eventRotate,
                     onPressed: image
                         ? () => _run(
-                            'Couldn\'t rotate',
+                            l10n.eventCouldntRotate,
                             () => _library.rotatePage(event, page),
                           )
                         : null,
                   ),
                   _Tool(
                     icon: Icons.delete_outline,
-                    label: 'Delete',
+                    label: l10n.eventDelete,
                     onPressed: enabled && !text
                         ? () => _deletePage(event, page)
                         : null,
@@ -519,33 +510,41 @@ class _EventScreenState extends State<EventScreen> {
 
 /// How the event screen shows the image pages, chosen with its first tool.
 enum _View {
-  original('Original', Icons.photo_outlined),
-  scan('Scan', Icons.contrast);
+  original(Icons.photo_outlined),
+  scan(Icons.contrast);
 
-  const _View(this.label, this.icon);
-  final String label;
+  const _View(this.icon);
   final IconData icon;
+
+  String label(AppLocalizations l10n) => switch (this) {
+    original => l10n.eventViewOriginal,
+    scan => l10n.eventViewScan,
+  };
 }
 
 /// Where Add gets new pages.
 enum _AddSource {
-  scan(
-    Icons.document_scanner_outlined,
-    'Scan pages',
-    'More tab pages, with the camera',
-  ),
-  library(
-    Icons.photo_library_outlined,
-    'Photos & videos',
-    'From your photo library',
-  ),
-  files(Icons.folder_open_outlined, 'Files', 'Image and video files'),
-  link(Icons.link, 'Link', 'A lesson, a recording, the song online');
+  scan(Icons.document_scanner_outlined),
+  library(Icons.photo_library_outlined),
+  files(Icons.folder_open_outlined),
+  link(Icons.link);
 
-  const _AddSource(this.icon, this.label, this.detail);
+  const _AddSource(this.icon);
   final IconData icon;
-  final String label;
-  final String detail;
+
+  String label(AppLocalizations l10n) => switch (this) {
+    scan => l10n.eventAddScan,
+    library => l10n.eventAddLibrary,
+    files => l10n.eventAddFiles,
+    link => l10n.eventAddLink,
+  };
+
+  String detail(AppLocalizations l10n) => switch (this) {
+    scan => l10n.eventAddScanDetail,
+    library => l10n.eventAddLibraryDetail,
+    files => l10n.eventAddFilesDetail,
+    link => l10n.eventAddLinkDetail,
+  };
 }
 
 /// Who shared the event with the user, and whether they can change it.
@@ -558,6 +557,7 @@ class _SharedBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     return ColoredBox(
       color: theme.colorScheme.secondaryContainer,
       child: Padding(
@@ -572,7 +572,10 @@ class _SharedBanner extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Shared by $owner · ${readOnly ? 'Read only' : 'Can edit'}',
+                l10n.eventSharedBy(
+                  owner,
+                  readOnly ? l10n.eventReadOnly : l10n.eventCanEdit,
+                ),
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
               ),
@@ -598,12 +601,23 @@ class _Tool extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton(tooltip: label, icon: Icon(icon), onPressed: onPressed),
-        Text(label, style: Theme.of(context).textTheme.labelSmall),
-      ],
+    // An equal share of the bar; a label longer than it (some languages')
+    // shrinks to fit.
+    return Expanded(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(tooltip: label, icon: Icon(icon), onPressed: onPressed),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              maxLines: 1,
+              style: Theme.of(context).textTheme.labelSmall,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -65,6 +65,9 @@ the cloud as they sync.
   premium is rbacr's `tabscan/premium` role (Substack subscription or
   voucher); the upgrade offer for everyone else, on the web only (the
   store apps show no purchase links).
+- [Localization](localization.md): the app in English, Spanish and
+  Portuguese, the device's language by default or one picked on the
+  Profile tab.
 - [App icon](app-icon.md): a scanned tab page with a staff and fret
   numbers, in scanner corners; how the platform icons are generated.
 - [Platforms](platforms.md): Android, iOS and the web, and what each can do.

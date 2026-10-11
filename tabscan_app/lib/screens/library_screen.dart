@@ -4,6 +4,7 @@ import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
+import '../l10n/language.dart';
 import 'clone.dart';
 import 'page_image.dart';
 import 'rename_dialog.dart';
@@ -82,12 +83,12 @@ class _LibraryViewState extends State<LibraryView> {
           if (plain)
             _section(mine)
           else ...[
-            const _Heading('My captures'),
+            _Heading(context.l10n.homeLibraryMine),
             if (mine.isEmpty)
-              const _None('Nothing of your own yet: go to Capture to add some.')
+              _None(context.l10n.homeLibraryMineEmpty)
             else
               _section(mine),
-            const _Heading('Shared with me'),
+            _Heading(context.l10n.homeLibraryShared),
             _section(shared),
           ],
         ],
@@ -170,6 +171,7 @@ class _Empty extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -182,12 +184,10 @@ class _Empty extends StatelessWidget {
               color: theme.colorScheme.primary,
             ),
             const SizedBox(height: 16),
-            Text('No tabs yet', style: theme.textTheme.titleLarge),
+            Text(l10n.homeLibraryEmpty, style: theme.textTheme.titleLarge),
             const SizedBox(height: 8),
             Text(
-              'Go to Capture to scan a tab with the camera (the page is '
-              'found, straightened and cleaned up for you), or to add '
-              'photos, videos, files and links.',
+              l10n.homeLibraryEmptyDetail,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium,
             ),
@@ -220,6 +220,7 @@ class _EventCard extends StatelessWidget {
   final VoidCallback onOpen;
 
   Future<void> _action(BuildContext context, _CardAction action) async {
+    final l10n = context.l10n;
     switch (action) {
       case _CardAction.rename:
         await renameEvent(context, library, event);
@@ -234,19 +235,16 @@ class _EventCard extends StatelessWidget {
         final ok = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text('Remove "${event.title}"?'),
-            content: Text(
-              'It goes from your library. ${event.sharedBy} keeps it, and '
-              'can share it with you again.',
-            ),
+            title: Text(l10n.homeLibraryRemoveTitle(event.title)),
+            content: Text(l10n.homeLibraryRemoveBody('${event.sharedBy}')),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
+                child: Text(l10n.homeLibraryCancel),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('Remove'),
+                child: Text(l10n.homeLibraryRemove),
               ),
             ],
           ),
@@ -255,22 +253,24 @@ class _EventCard extends StatelessWidget {
         try {
           await sync?.leave(event);
         } on Object catch (e) {
-          if (context.mounted) _snack(context, 'Couldn\'t remove: $e');
+          if (context.mounted) {
+            _snack(context, l10n.homeLibraryRemoveFailed('$e'));
+          }
         }
       case _CardAction.delete:
         final ok = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text('Delete "${event.title}"?'),
-            content: const Text('Its pages and text tab are deleted too.'),
+            title: Text(l10n.homeLibraryDeleteTitle(event.title)),
+            content: Text(l10n.homeLibraryDeleteBody),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
+                child: Text(l10n.homeLibraryCancel),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('Delete'),
+                child: Text(l10n.homeLibraryDelete),
               ),
             ],
           ),
@@ -282,6 +282,7 @@ class _EventCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final videos = event.pages.where((p) => p.isVideo).length;
     final links = event.pages.where((p) => p.isLink).length;
     final pages = event.pages.length - videos - links;
@@ -343,16 +344,14 @@ class _EventCard extends StatelessWidget {
                           [
                             if (event.artist.isNotEmpty) event.artist,
                             if (event.hideImages)
-                              'images hidden'
+                              l10n.homeLibraryImagesHidden
                             else if (pages > 0 || videos + links == 0)
-                              '$pages ${pages == 1 ? 'page' : 'pages'}',
-                            if (videos > 0)
-                              '$videos ${videos == 1 ? 'video' : 'videos'}',
-                            if (links > 0)
-                              '$links ${links == 1 ? 'link' : 'links'}',
-                            if (event.tabText != null) 'text',
+                              l10n.homePages(pages),
+                            if (videos > 0) l10n.homeVideos(videos),
+                            if (links > 0) l10n.homeLinks(links),
+                            if (event.tabText != null) l10n.homeLibraryText,
                             if (event.sharedBy case final owner?)
-                              'shared by $owner',
+                              l10n.homeLibrarySharedBy(owner),
                           ].join(' · '),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -362,25 +361,29 @@ class _EventCard extends StatelessWidget {
                     ),
                   ),
                   PopupMenuButton<_CardAction>(
-                    tooltip: 'More',
+                    tooltip: l10n.homeLibraryMore,
                     onSelected: (a) => _action(context, a),
                     itemBuilder: (_) => [
                       if (!event.readOnly)
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: _CardAction.rename,
-                          child: Text('Rename'),
+                          child: Text(l10n.homeLibraryRename),
                         ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: _CardAction.share,
-                        child: Text('Share'),
+                        child: Text(l10n.homeLibraryShare),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: _CardAction.clone,
-                        child: Text('Clone'),
+                        child: Text(l10n.homeLibraryClone),
                       ),
                       PopupMenuItem(
                         value: _CardAction.delete,
-                        child: Text(event.isShared ? 'Remove' : 'Delete'),
+                        child: Text(
+                          event.isShared
+                              ? l10n.homeLibraryRemove
+                              : l10n.homeLibraryDelete,
+                        ),
                       ),
                     ],
                   ),

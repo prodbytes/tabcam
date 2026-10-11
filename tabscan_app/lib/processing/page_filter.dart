@@ -3,18 +3,23 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 
+import '../l10n/language.dart';
+
 /// How a page is shown, shared and read. The original photo is always
 /// kept; a filter is applied on the way out.
 enum PageFilter {
   /// The page as scanned.
-  original('Original'),
+  original,
 
   /// Black ink on white paper: shadows and paper tint removed, so thin tab
   /// lines and small fret numbers stay sharp in a PDF or on a print.
-  tab('Tab');
+  tab;
 
-  const PageFilter(this.label);
-  final String label;
+  /// The filter's name, as shown.
+  String label(AppLocalizations l10n) => switch (this) {
+    original => l10n.eventViewOriginal,
+    tab => l10n.eventFilterTab,
+  };
 
   static PageFilter byName(String? name) =>
       values.firstWhere((f) => f.name == name, orElse: () => tab);
