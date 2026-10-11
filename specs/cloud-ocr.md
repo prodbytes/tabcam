@@ -84,7 +84,13 @@ blank line.
 
 **Upgrade offer**:
 
-- The account, on the [Profile](navigation.md#profile) tab, has a
+- The account, on the [Profile](navigation.md#profile) tab, shows the
+  user's role in the `tabscan` system under their name: **Role: Premium**,
+  or **Role: Free** (everyone signed in; `premium` implies `free`), "Free
+  (couldn't check)" when rbacr didn't answer, and "Checking…" before the
+  first answer. It comes from the same status check as the card; builds
+  without the service show no role.
+- It also has a
   **TabScan Premium** card. For premium users: transcription is automatic, and until when.
   For others: what Premium does, "Subscribe with <their address>",
   **Upgrade** (the Substack subscribe page), **Redeem a voucher** (rbacr's

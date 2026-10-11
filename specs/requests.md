@@ -366,6 +366,22 @@ spec.
     keeps VisionKit's filters ([scanning](scanning.md),
     [platforms](platforms.md)). TabScan's own camera screen (the web) has
     neither auto shutter nor filters.
+44. **Bring back the "Text" button in the capture view to flip from scan
+    to text; remove the flip button from the top and leave flipping to
+    the bottom bar.** The event screen's tools are the view (**Original ↔
+    Scan**), then **Text**, which shows the text view in place of the
+    pages and reads **Pages** to go back; then Add, Rotate, Delete. The
+    app bar's Hide images / Show images button is gone. `hideImages` is
+    still honoured, so a capture already hidden stays hidden
+    ([event screen](event-screen.md), [hidden images](hidden-images.md),
+    [tab recognition](tab-recognition.md#text-view)).
+45. **Show the user's role on the profile screen.** The signed-in account
+    on Profile has a "Role: Premium" or "Role: Free" line under the name,
+    from the premium status the cloud OCR service gets from rbacr ("Free
+    (couldn't check)" when rbacr doesn't answer, "Checking…" until the
+    first answer). Builds without the service show no role
+    ([cloud OCR](cloud-ocr.md#in-the-app), [navigation](navigation.md#profile),
+    [cloud sync](cloud-sync.md#signing-in)).
 46. **Help me publish the app to the Apple and Google stores, step by
     step; with personal (individual) accounts.** A new
     [app stores](app-stores.md) spec tracks the steps. First, Android

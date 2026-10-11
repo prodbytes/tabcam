@@ -6,12 +6,11 @@ This is a setting on the capture, and everyone sees the capture this way:
 the owner, on every device, and the people it's
 [shared with](shared-captures.md).
 
-- **Hide images** (crossed-out image icon), in the [event
-  screen](event-screen.md)'s app bar, hides them; it then reads **Show
-  images** (image icon) and shows them again. Only the owner has it: a
-  capture shared with the user doesn't, whether it's shared to edit or
-  read only. Signed out, or in builds without sync, every capture is the
-  user's own, so it's always there.
+- **No control in the app.** The [event screen](event-screen.md)'s
+  app bar had a **Hide images** / **Show images** button for the owner;
+  it was removed (request 44), since the bottom bar's **Text** tool
+  switches between the pages and the text. A capture already hidden
+  stays hidden, and the app can't show its images again.
 - **Hidden**, the event screen's pages are first the **text tab**,
   then the videos and links in their order ("1 / 3"). The text tab page
   shows the tab, monospaced, with long lines scaled down to fit (so that
