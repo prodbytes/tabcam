@@ -37,6 +37,21 @@ app binaries with `make` and publishes them as a GitHub release.
   credentials; the only secrets are the Android upload key's, given to
   the Android build step that needs them, never on pull requests.
 
+## Installing a release
+
+The [README](../README.md#installing-a-release-on-a-phone) says how
+testers install a release on a phone until the app is in the stores:
+
+- **Android**: the release's APK, opened on the phone or installed with
+  `adb install -r`. It installs over earlier releases, but over a build
+  signed with another key only after uninstalling that build. Google
+  sign-in in it waits for the upload key's OAuth client
+  ([app stores](app-stores.md#android-signing)).
+- **iOS**: the release's app is unsigned, so the release's tag is built
+  and installed with the tester's own team (`scripts/flutter-run.sh
+  --release --no-resident`, [platforms](platforms.md)). A free team's
+  build lasts 7 days.
+
 ## Versioning
 
 The version is `X.Y.Z`: X and Y from [version.X.txt](../version.X.txt) and

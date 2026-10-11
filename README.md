@@ -88,6 +88,75 @@ time). Tags start the [Release](.github/workflows/release.yml) workflow
 https://rc.tabscan.nu01.com, GA tags to https://tabscan.nu01.com. See
 [specs/release.md](specs/release.md) and [specs/deploy.md](specs/deploy.md).
 
+## Installing a release on a phone
+
+Each release on the
+[Releases page](https://github.com/prodbytes/tabscan/releases) has the
+app files: **Latest** is the GA release and **Pre-release** is an RC.
+Until the app is in the stores, install it like this.
+
+### Android
+
+The release's `tabscan-<tag>-android.apk` is signed with the upload key.
+It installs over an earlier release and keeps your events.
+
+- **On the phone:** download the APK from the release in the phone's
+  browser and open it. The first time, Android asks you to allow
+  installing apps from that browser (Settings → Apps → Special app access
+  → Install unknown apps). Then tap **Install**, or **Update** if TabScan
+  is already installed.
+- **From a computer**, with the phone connected by USB and USB debugging
+  on (Settings → Developer options):
+
+  ```bash
+  gh release download <tag> --repo prodbytes/tabscan --pattern '*-android.apk'
+  adb install -r tabscan-<tag>-android.apk
+  ```
+
+  Leave out `<tag>` to download the latest release.
+
+If Android says the app conflicts with an installed one
+(`INSTALL_FAILED_UPDATE_INCOMPATIBLE` from `adb`), the installed TabScan
+was signed with another key, for example a `flutter run` debug build.
+Sign in and let it sync first, then uninstall it and install the
+release. Uninstalling deletes the events that are only on the phone.
+
+Google sign-in in a release APK needs the upload key's OAuth client,
+which isn't set up yet ([specs/app-stores.md](specs/app-stores.md)).
+Until it is, release builds can capture but not sign in.
+
+### iOS
+
+An iPhone only installs signed apps, and the release's
+`tabscan-<tag>-ios-unsigned.zip` isn't signed. Instead, build that
+release's commit on a Mac and install it with your own Apple team. A
+free Personal Team works.
+
+1. Once: set `TABSCANNER_IOS_DEVELOPMENT_TEAM` in `.env` to your team ID
+   (Xcode → Settings → Accounts). Connect the iPhone by USB, trust the
+   Mac, and turn on Developer Mode on the iPhone (Settings → Privacy &
+   Security → Developer Mode). The iPhone restarts.
+2. Build and install the release:
+
+   ```bash
+   git fetch --tags && git checkout <tag>     # e.g. 0.1.202610111144-GA
+   flutter devices                            # the iPhone's ID
+   TABSCANNER_OCR_URL="$(gh variable get TABSCANNER_OCR_URL)" \
+     bash scripts/flutter-run.sh -d <iPhone ID> --release --no-resident
+   ```
+
+   This builds a release build, signs it with your team, installs it over
+   the current app (keeping your events) and starts it.
+   `TABSCANNER_OCR_URL` gives the build the Premium service that the
+   published builds use (Premium and Fix). Your `.env` has the rest.
+3. The first time, iOS won't open an app from a new developer. Trust it
+   in Settings → General → VPN & Device Management.
+
+With a free Personal Team, the app stops opening after 7 days: install it
+again. A paid team's builds last a year. Once the app is on TestFlight,
+testers install it from there instead
+([specs/app-stores.md](specs/app-stores.md)).
+
 ## How the container is built
 
 The [Containerfile](.devcontainer/Containerfile) keeps the Microsoft
