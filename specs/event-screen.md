@@ -19,16 +19,31 @@ it opens on the pages.
   · Can edit" or "· Read only". Read only, Rename, Add, Rotate, Delete
   and editing the text tab are off; the view still changes what shows,
   without saving it.
-- **Pages**: swiped left and right. Images are pinch-zoomable (up to 5×)
-  and shown as the view says (Original or Scan, below). Videos show a play
-  button; tapped, they play in place, looping, with a scrubbable progress
-  bar, and a tap pauses and resumes. A video that can't play says so.
-  Links show as a card with a link icon, the title (or the address's
-  host), the address (selectable), **Open** (in the browser, or the app
-  that handles it, such as YouTube; a link that can't open says so) and
-  **Copy** (to the clipboard). Under the pages, "2 / 5". With the
-  images [hidden](hidden-images.md), the pages are the text tab (its
-  **Open** goes to the Text view), then the videos and links.
+- **Pages**: swiped left and right, each previewed as what it is:
+  - **Images** are pinch-zoomable (up to 5×) and shown as the view says
+    (Original or Scan, below).
+  - **PDFs** show the document itself (`pdfrx`, PDFium; WASM on the web,
+    loaded when a PDF is first shown), its pages scrolling down,
+    zoomable. A PDF that can't be read says so.
+  - **Videos** show a play button; tapped, they play in place, looping,
+    with a bar at the bottom: a **play / pause** button and a scrubbable
+    progress bar. A tap on the video also pauses and resumes. A video
+    that can't play says so.
+  - **Recordings** (audio) show as a card with a music note,
+    "Recording" and a **play** button; tapped, it loads and plays, with
+    **play / pause**, a scrubbable progress bar and the time
+    ("0:12 / 3:04"). At the end, play starts it over. A recording that
+    can't play says so. They play through `video_player`, as videos do.
+  - **Links** show as a card with a link icon, the title (or the
+    address's host), the address (selectable), **Open** and **Copy** (to
+    the clipboard). **Open** shows the page in a browser inside the app
+    on Android and iOS (Custom Tabs, Safari View Controller), or where
+    there's none, the browser or the app that handles it (such as
+    YouTube); on the web, in a new tab. A link that can't open says so.
+
+  Under the pages, "2 / 5". With the images [hidden](hidden-images.md),
+  the pages are the text tab (its **Open** goes to the Text view), then
+  the other pages.
 - **Tools** along the bottom:
   - **The view**, first: a tap flips **Original ↔ Scan**, its icon and
     label saying which shows. **Original**: the photos as taken;
@@ -44,8 +59,8 @@ it opens on the pages.
   - **Add**: more pages, [scanned or picked](scanning.md#adding-to-an-event):
     Scan pages, Photos & videos, Files, or a **Link**.
   - **Rotate**: turns an image a quarter turn clockwise (stored as a new
-    page in its place; see [library](library.md#events)). Off on videos,
-    links, and in the Text view.
+    page in its place; see [library](library.md#events)). Off on the
+    other pages, and in the Text view.
   - **Delete**: deletes the page; the last page can't be deleted (the
     message says to delete the event instead). Off in the Text view.
 - While a tool works, a progress bar shows under the app bar and the tools

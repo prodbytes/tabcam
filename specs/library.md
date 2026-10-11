@@ -4,10 +4,11 @@ The **Home** tab ([navigation](navigation.md)), titled **TabScan**.
 
 - **Events** show as a grid of cards, newest first: the first image page's
   thumbnail (with its filter; without images, a play badge if it has
-  videos, or else a link icon; with them [hidden](hidden-images.md), a
-  text icon once the tab is read, or else those badges), the title, and a
-  line with the artist (if set), the page count ("images hidden" when
-  they are), the video and link counts (if any), "text"
+  videos, or else a PDF icon, a music note for recordings, or a link
+  icon; with them [hidden](hidden-images.md), a text icon once the tab
+  is read, or else those badges), the title, and a line with the artist
+  (if set), the page count ("images hidden" when they are), the video,
+  recording, PDF and link counts (if any), "text"
   once the tab has been read, and "shared by <email>" for a capture
   someone [shared](shared-captures.md) with the user (whose menu has
   **Remove** instead of Delete, and no Rename when read only). Tapping a
@@ -40,7 +41,7 @@ older events count their creation), its pages, and the text tab once read.
 Once it has synced it also has an `owner`, the Cognito identity it syncs
 with, and one shared with the user has `sharedBy` (the owner's email) and
 `readOnly` (all kept on the device only). A page has an ID, a kind (**image**,
-**video** or **link**), its file's extension, and a
+**video**, **audio**, **pdf** or **link**), its file's extension, and a
 [filter](page-filters.md) (used for images only). A link has no file
 (its extension is `url`): it has its address (`url`, `http` or `https`
 only, checked again whenever an event is loaded, since events also come
@@ -72,7 +73,8 @@ once written, which is what lets cloud sync compare pages by name.
 IDs are the creation time in microseconds, base 36. IDs and extensions
 (1–5 lower-case letters or digits) name files, so anything else (a path,
 say) is refused when loading. Events saved before videos were added load as
-image pages with the extension `img`.
+image pages with the extension `img`. A kind this version doesn't know (from a newer app,
+through the cloud) loads as an image page.
 
 ## Storage
 

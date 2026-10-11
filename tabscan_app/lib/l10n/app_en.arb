@@ -310,11 +310,11 @@
   "@accountShareFiles": {
     "description": "Share sheet: files option"
   },
-  "accountShareFilesHidden": "A zip of the videos, the text tab and links (the photos and scans are hidden)",
+  "accountShareFilesHidden": "A zip of the videos, recordings, PDFs, the text tab and links (the photos and scans are hidden)",
   "@accountShareFilesHidden": {
     "description": "Share sheet: files with images hidden"
   },
-  "accountShareFilesDetail": "A zip of everything: photos, scans, videos, the text tab and links",
+  "accountShareFilesDetail": "A zip of everything: photos, scans, videos, recordings, PDFs, the text tab and links",
   "@accountShareFilesDetail": {
     "description": "Share sheet: files option description"
   },
@@ -497,7 +497,7 @@
   "@eventAddFiles": {
     "description": "Add sheet: from files"
   },
-  "eventAddFilesDetail": "Image and video files",
+  "eventAddFilesDetail": "Image, video, audio and PDF files",
   "@eventAddFilesDetail": {
     "description": "Add sheet: files detail"
   },
@@ -752,6 +752,24 @@
   "homeVideos": "{count, plural, =1{1 video} other{{count} videos}}",
   "@homeVideos": {
     "description": "An event's video count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeAudio": "{count, plural, =1{1 recording} other{{count} recordings}}",
+  "@homeAudio": {
+    "description": "An event's audio recording count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homePdfs": "{count, plural, =1{1 PDF} other{{count} PDFs}}",
+  "@homePdfs": {
+    "description": "An event's PDF count",
     "placeholders": {
       "count": {
         "type": "int"
@@ -1208,6 +1226,26 @@
   "textViewVideo": "Video",
   "@textViewVideo": {
     "description": "Video page label before playing"
+  },
+  "textViewAudio": "Recording",
+  "@textViewAudio": {
+    "description": "Audio page label"
+  },
+  "textViewCantPlayAudio": "This recording can't be played here",
+  "@textViewCantPlayAudio": {
+    "description": "Audio page when the recording can't play"
+  },
+  "textViewPlay": "Play",
+  "@textViewPlay": {
+    "description": "Video and audio pages: play button"
+  },
+  "textViewPause": "Pause",
+  "@textViewPause": {
+    "description": "Video and audio pages: pause button"
+  },
+  "textViewCantShowPdf": "This PDF can't be shown here",
+  "@textViewCantShowPdf": {
+    "description": "PDF page when the PDF can't be shown"
   },
   "homePrivacyPolicy": "Privacy policy",
   "@homePrivacyPolicy": {

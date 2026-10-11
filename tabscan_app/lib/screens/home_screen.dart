@@ -290,12 +290,17 @@ class _HomeScreenState extends State<HomeScreen> {
 /// [l10n]'s language (the app's when null).
 String contentsOf(CaptureEvent event, [AppLocalizations? l10n]) {
   final texts = l10n ?? appL10n;
-  final videos = event.pages.where((p) => p.isVideo).length;
-  final links = event.pages.where((p) => p.isLink).length;
-  final pages = event.pages.length - videos - links;
+  int count(bool Function(EventPage) test) => event.pages.where(test).length;
+  final videos = count((p) => p.isVideo);
+  final audio = count((p) => p.isAudio);
+  final pdfs = count((p) => p.isPdf);
+  final links = count((p) => p.isLink);
+  final pages = count((p) => p.isImage);
   return [
-    if (pages > 0 || videos + links == 0) texts.homePages(pages),
+    if (pages > 0 || pages == event.pages.length) texts.homePages(pages),
     if (videos > 0) texts.homeVideos(videos),
+    if (audio > 0) texts.homeAudio(audio),
+    if (pdfs > 0) texts.homePdfs(pdfs),
     if (links > 0) texts.homeLinks(links),
   ].join(', ');
 }

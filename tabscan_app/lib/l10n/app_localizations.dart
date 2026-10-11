@@ -463,13 +463,13 @@ abstract class AppLocalizations {
   /// Share sheet: files with images hidden
   ///
   /// In en, this message translates to:
-  /// **'A zip of the videos, the text tab and links (the photos and scans are hidden)'**
+  /// **'A zip of the videos, recordings, PDFs, the text tab and links (the photos and scans are hidden)'**
   String get accountShareFilesHidden;
 
   /// Share sheet: files option description
   ///
   /// In en, this message translates to:
-  /// **'A zip of everything: photos, scans, videos, the text tab and links'**
+  /// **'A zip of everything: photos, scans, videos, recordings, PDFs, the text tab and links'**
   String get accountShareFilesDetail;
 
   /// Snackbar: sharing failed
@@ -721,7 +721,7 @@ abstract class AppLocalizations {
   /// Add sheet: files detail
   ///
   /// In en, this message translates to:
-  /// **'Image and video files'**
+  /// **'Image, video, audio and PDF files'**
   String get eventAddFilesDetail;
 
   /// Add sheet: a link
@@ -987,6 +987,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 video} other{{count} videos}}'**
   String homeVideos(int count);
+
+  /// An event's audio recording count
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 recording} other{{count} recordings}}'**
+  String homeAudio(int count);
+
+  /// An event's PDF count
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 PDF} other{{count} PDFs}}'**
+  String homePdfs(int count);
 
   /// An event's link count
   ///
@@ -1551,6 +1563,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Video'**
   String get textViewVideo;
+
+  /// Audio page label
+  ///
+  /// In en, this message translates to:
+  /// **'Recording'**
+  String get textViewAudio;
+
+  /// Audio page when the recording can't play
+  ///
+  /// In en, this message translates to:
+  /// **'This recording can\'t be played here'**
+  String get textViewCantPlayAudio;
+
+  /// Video and audio pages: play button
+  ///
+  /// In en, this message translates to:
+  /// **'Play'**
+  String get textViewPlay;
+
+  /// Video and audio pages: pause button
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get textViewPause;
+
+  /// PDF page when the PDF can't be shown
+  ///
+  /// In en, this message translates to:
+  /// **'This PDF can\'t be shown here'**
+  String get textViewCantShowPdf;
 
   /// Profile, About: opens the privacy policy
   ///

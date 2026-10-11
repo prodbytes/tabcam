@@ -243,11 +243,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get accountShareFilesHidden =>
-      'Un zip con los videos, la tablatura en texto y los enlaces (las fotos y escaneos están ocultos)';
+      'Un zip con los videos, grabaciones, PDF, la tablatura en texto y los enlaces (las fotos y escaneos están ocultos)';
 
   @override
   String get accountShareFilesDetail =>
-      'Un zip con todo: fotos, escaneos, videos, la tablatura en texto y los enlaces';
+      'Un zip con todo: fotos, escaneos, videos, grabaciones, PDF, la tablatura en texto y los enlaces';
 
   @override
   String accountShareFailed(String error) {
@@ -394,7 +394,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventAddFiles => 'Archivos';
 
   @override
-  String get eventAddFilesDetail => 'Archivos de imagen y video';
+  String get eventAddFilesDetail => 'Archivos de imagen, video, audio y PDF';
 
   @override
   String get eventAddLink => 'Enlace';
@@ -590,6 +590,28 @@ class AppLocalizationsEs extends AppLocalizations {
       locale: localeName,
       other: '$count videos',
       one: '1 video',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeAudio(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count grabaciones',
+      one: '1 grabación',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homePdfs(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count PDF',
+      one: '1 PDF',
     );
     return '$_temp0';
   }
@@ -932,6 +954,22 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get textViewVideo => 'Video';
+
+  @override
+  String get textViewAudio => 'Grabación';
+
+  @override
+  String get textViewCantPlayAudio =>
+      'Esta grabación no se puede reproducir aquí';
+
+  @override
+  String get textViewPlay => 'Reproducir';
+
+  @override
+  String get textViewPause => 'Pausar';
+
+  @override
+  String get textViewCantShowPdf => 'Este PDF no se puede mostrar aquí';
 
   @override
   String get homePrivacyPolicy => 'Política de privacidad';

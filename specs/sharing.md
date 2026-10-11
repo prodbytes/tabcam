@@ -15,7 +15,8 @@ The sheet scrolls when the screen is short.
   Off ("Needs sign-in and cloud sync") in builds without cloud sync. See
   [opening a link](#opening-a-link).
 - **PDF**: every image page, with its filter, fitted to an A4 page (18 pt
-  margins; videos, and [hidden images](hidden-images.md), are left out);
+  margins; videos, recordings, PDF pages and
+  [hidden images](hidden-images.md) are left out);
   then the links, if any, under "Links",
   one per line ("Title: address", or the address), each a clickable link;
   then, if the tab has been read, the text tab under the title in 9 pt
@@ -24,13 +25,14 @@ The sheet scrolls when the screen is short.
 - **Text**: the text tab, then a blank line and the links, one per line
   ("Title: address", or the address), as plain text; off (greyed, saying
   to read the tab first) while there's neither.
-- **Files**: one zip of everything (`My riff - Me.zip`): each image and
-  video, in page order (images with their filter: PNG for Tab, their own
-  format for Original; videos as they are), stored without recompressing;
+- **Files**: one zip of everything (`My riff - Me.zip`): each image,
+  video, recording and PDF, in page order (images with their filter: PNG
+  for Tab, their own format for Original; the others as they are), stored
+  without recompressing;
   then `tab.txt` (the text tab) and `links.txt` (a link per line), when
   there are any. [Hidden images](hidden-images.md) are left out.
 - With the images hidden, PDF is off when there's neither a text tab nor
-  a link, and Files when there's no video either: they'd be empty.
+  a link, and Files when there's no other file either: they'd be empty.
 
 Files are named from the title and artist (`My riff - Me.pdf`,
 `My riff - Me 1.png`, `My riff - Me 2.mov`), keeping only letters, digits, spaces, `.`, `_` and

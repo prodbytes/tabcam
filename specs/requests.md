@@ -543,3 +543,24 @@ spec.
     unsigned, so the tag is built and installed with the tester's own
     team, with Developer Mode and trusting the developer, and a free
     team's 7 days ([release](release.md#installing-a-release)).
+61. **In the capture's pages, let every file type have a preview: a PDF or
+    image as shown, a video or audio with a play / pause button, a link
+    with a button to open it in a browser inside the app (mobile) or a new
+    tab (web).** Events take two more kinds of page, **audio** (`mp3`,
+    `m4a`, `aac`, `wav`, `ogg`, `oga`, `opus`, `flac`) and **pdf**, added
+    with Add → Files (now offering those extensions too). On the event
+    screen a PDF shows the document itself, scrolling and zoomable
+    (`pdfrx`; its PDFium WASM, about 5 MB, loads on the web only when a
+    PDF is shown); a recording shows a card with play / pause, a
+    scrubbable progress bar and the time (played through `video_player`);
+    a video has a play / pause button by its progress bar; a link's Open
+    shows it in a browser inside the app on Android and iOS (falling back
+    to the browser or the app that handles it), and in a new tab on the
+    web. The library card has a PDF icon and a music note for events
+    without images, and counts recordings and PDFs; Files (zip) holds
+    them too; page MIME types come from one table. An unknown page kind
+    from a newer app loads as an image. New texts in English, Spanish and
+    Portuguese ([event screen](event-screen.md),
+    [scanning](scanning.md#adding-to-an-event),
+    [library](library.md), [sharing](sharing.md),
+    [cloud sync](cloud-sync.md)).

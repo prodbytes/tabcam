@@ -581,17 +581,7 @@ class CloudSync extends ChangeNotifier {
 
   /// The MIME type a page's file is uploaded with.
   @visibleForTesting
-  static String contentTypeOf(EventPage page) => switch (page.extension) {
-    'img' || 'jpg' || 'jpeg' => 'image/jpeg',
-    'png' => 'image/png',
-    'webp' => 'image/webp',
-    'heic' => 'image/heic',
-    'gif' => 'image/gif',
-    'mp4' || 'm4v' => 'video/mp4',
-    'mov' => 'video/quicktime',
-    'webm' => 'video/webm',
-    _ => 'application/octet-stream',
-  };
+  static String contentTypeOf(EventPage page) => page.mimeType;
 
   bool _disposed = false;
 

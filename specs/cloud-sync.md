@@ -143,7 +143,7 @@ account, or an Apple ID: each its own identity), in the user-data bucket:
 |---|---|
 | `<identity>/events/<event id>/event.json` | the event's details, as on the device, with the folder's identity as `owner` and the people it's shared with (`shares`), whether the owner
 [hid the images](hidden-images.md) (`hideImages`), but without how it's shared with the user (`sharedBy`, `readOnly`); or its tombstone once deleted. Coming down, the folder it's in, not `owner`, says whose it is |
-| `<identity>/events/<event id>/<page id>.<extension>` | each page's file, as stored on the device, with its MIME type (`image/jpeg` for scanned pages, the video's type for videos) |
+| `<identity>/events/<event id>/<page id>.<extension>` | each page's file, as stored on the device, with its MIME type by extension (`image/jpeg` for scanned pages, `video/mp4`, `audio/mpeg`, `application/pdf`, ...) |
 
 Links are in `event.json` only: they have no file.
 Beside `events/`, the user's folder has `ocr/`: the transcriptions the

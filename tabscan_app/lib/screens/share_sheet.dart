@@ -21,7 +21,7 @@ Future<void> showShareSheet(
   final hasText = Exporter.shareText(event) != null;
   // With the images hidden, a PDF or zip needs something else to hold.
   final hidden = event.hideImages;
-  final hasVideos = event.pages.any((p) => p.isVideo);
+  final hasFiles = event.visiblePages.any((p) => p.hasFile);
   final format = await showModalBottomSheet<ShareFormat>(
     context: context,
     showDragHandle: true,
@@ -75,7 +75,7 @@ Future<void> showShareSheet(
                     ? l10n.accountShareFilesHidden
                     : l10n.accountShareFilesDetail,
               ),
-              enabled: !hidden || hasText || hasVideos,
+              enabled: !hidden || hasText || hasFiles,
               onTap: () => Navigator.pop(context, ShareFormat.files),
             ),
           ],

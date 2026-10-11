@@ -56,6 +56,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: ^0.20.3
+  pdfrx: ^2.6.5
 
 dev_dependencies:
   flutter_test:
