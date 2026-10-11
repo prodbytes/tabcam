@@ -456,3 +456,11 @@ spec.
     − and + under the Text view's buttons change the fret under the
     cursor by one, 0 to 99, keeping the columns
     ([tab recognition](tab-recognition.md#text-view)).
+57. **If the document has other notations, such as lyrics and chords, add
+    them to the text as well.** Reading keeps the page's notations with
+    the tab, in their place: titles, section names, chord names (at the
+    tab's columns) and lyrics, without web addresses, page numbers or
+    stray marks. On the device for text and typeset tabs, and in the
+    cloud, which now also reads the page off the staves with RapidOCR
+    ([tab recognition](tab-recognition.md#notations-around-the-tab),
+    [cloud OCR](cloud-ocr.md#transcription)).

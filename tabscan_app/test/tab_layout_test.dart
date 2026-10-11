@@ -2,9 +2,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tabscan_app/recognition/tab_layout.dart';
 
 // The riffs below are made up for these tests.
+
+String? _ascii(List<String> lines) =>
+    asciiTab([for (final l in lines) OcrLine(l)]);
+
 void main() {
   group('asciiTab', () {
-    test('keeps a clean text tab as it is', () {
+    test('keeps a clean text tab as it is, its title too', () {
       const lines = [
         'Verse riff',
         'e|-------0-----|',
@@ -14,7 +18,7 @@ void main() {
         'A|-------------|',
         'E|-------------|',
       ];
-      expect(asciiTab(lines), lines.skip(1).join('\n'));
+      expect(_ascii(lines), lines.join('\n'));
     });
 
     test('fixes OCR misreadings and pads lines to one length', () {
@@ -27,7 +31,7 @@ void main() {
         'E|---------|',
       ];
       expect(
-        asciiTab(lines),
+        _ascii(lines),
         [
           'e|-----0---|',
           'B|---1-----|',
@@ -40,7 +44,7 @@ void main() {
     });
 
     test('names the strings when the event has no names', () {
-      final tab = asciiTab([
+      final tab = _ascii([
         '|---3---5---|',
         '|-----------|',
         '|-----------|',
@@ -49,17 +53,64 @@ void main() {
       expect(tab.split('\n').map((l) => l[0]).join(), 'GDAE');
     });
 
-    test('separates staves and ignores text between them', () {
-      final tab = asciiTab([
-        for (var i = 0; i < 6; i++) '|--$i-----|',
-        'Chorus (play twice)',
-        for (var i = 0; i < 6; i++) '|-----$i--|',
+    test('separates staves and keeps the text between them', () {
+      final first = [for (var i = 0; i < 6; i++) '|--$i-----|'];
+      final second = [for (var i = 0; i < 6; i++) '|-----$i--|'];
+      final tab = _ascii([...first, 'Chorus (play twice)', ...second])!;
+      final blocks = tab.split('\n\n');
+      expect(blocks, hasLength(2));
+      expect(blocks[1].split('\n').first, 'Chorus (play twice)');
+      expect(blocks[1].split('\n'), hasLength(7));
+    });
+
+    test('drops web addresses, page numbers and stray marks', () {
+      final tab = _ascii([
+        'https://tabs.example.com/made-up-riff',
+        'e|---0---|',
+        'B|-1-----|',
+        'G|-------|',
+        'D|-------|',
+        'A|-------|',
+        'E|-------|',
+        'Page 1/2',
+        '%% ~~ ^^',
+        'la la la',
       ])!;
-      expect(tab.split('\n\n'), hasLength(2));
+      expect(tab.split('\n').first, 'e|---0---|');
+      expect(tab.split('\n').last, 'la la la');
+      expect(tab, isNot(contains('Page')));
+    });
+
+    test('puts chord names at the tab\'s columns', () {
+      // Letters 10 px wide; the tab lines start at x = 100 with `e|`.
+      OcrLine tabLine(String text, double top) => OcrLine(
+        text,
+        left: 100,
+        right: 100 + text.length * 10.0,
+        top: top,
+        bottom: top + 10,
+      );
+      final tab = asciiTab([
+        const OcrLine(
+          'Am G',
+          words: [OcrWord('Am', 120), OcrWord('G', 180)],
+          left: 120,
+          right: 190,
+          top: 0,
+          bottom: 10,
+        ),
+        tabLine('e|-0-----3-|', 20),
+        tabLine('B|-1-----0-|', 30),
+        tabLine('G|-2-----0-|', 40),
+        tabLine('D|-2-----0-|', 50),
+        tabLine('A|-0-----2-|', 60),
+        tabLine('E|-------3-|', 70),
+      ])!;
+      expect(tab.split('\n').take(2), ['  Am    G', 'e|-0-----3-|']);
     });
 
     test('is null when there is no tab', () {
-      expect(asciiTab(['Intro', 'Play it slowly', '1, 2, 3, 4']), isNull);
+      expect(_ascii(['Intro', 'Play it slowly', '1, 2, 3, 4']), isNull);
     });
   });
 
@@ -133,6 +184,36 @@ void main() {
 
     test('is null when nothing is on a staff', () {
       expect(typesetTab([staff], const [Glyph('5', 50, 400, 8)]), isNull);
+      expect(
+        typesetTab(
+          [staff],
+          const [],
+          text: const [OcrLine('la la la', top: 200, bottom: 210)],
+        ),
+        isNull,
+      );
+    });
+
+    test('keeps the chords and lyrics off the staff, in their place', () {
+      final tab = typesetTab(
+        [staff],
+        const [Glyph('3', 50, 100, 8)],
+        text: const [
+          OcrLine('la la la', top: 170, bottom: 180),
+          OcrLine('T', top: 105, bottom: 115), // TAB, on the staff
+          OcrLine(
+            '5 7',
+            words: [OcrWord('5', 0), OcrWord('7', 20)],
+            top: 160,
+            bottom: 168,
+          ), // frets just off it
+          OcrLine('Verse', top: 60, bottom: 70),
+          OcrLine('Am', top: 80, bottom: 90),
+        ],
+      )!;
+      final rows = tab.split('\n');
+      expect(rows.take(3), ['Verse', 'Am', 'e|--3--|']);
+      expect(rows.skip(8), ['', 'la la la']);
     });
   });
 

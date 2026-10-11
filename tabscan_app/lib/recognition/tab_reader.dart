@@ -58,22 +58,34 @@ class TabReader {
       final text = await recognizer.processImage(
         InputImage.fromFilePath(file.path),
       );
+      // Top to bottom: chords and lyrics go where they are on the page.
       final lines = [
         for (final block in text.blocks)
-          for (final line in block.lines) line.text,
-      ];
+          for (final line in block.lines)
+            OcrLine(
+              line.text,
+              words: [
+                for (final e in line.elements)
+                  OcrWord(e.text, e.boundingBox.left),
+              ],
+              left: line.boundingBox.left,
+              right: line.boundingBox.right,
+              top: line.boundingBox.top,
+              bottom: line.boundingBox.bottom,
+            ),
+      ]..sort((a, b) => a.y.compareTo(b.y));
       final glyphs = _glyphs(text);
       _log(
         'OCR: ${text.blocks.length} blocks, ${lines.length} lines, '
         '${glyphs.length} frets; first lines: '
-        '${lines.take(5).map((l) => '"$l"').join(' ')}',
+        '${lines.take(5).map((l) => '"${l.text}"').join(' ')}',
       );
       final ascii = asciiTab(lines);
       if (ascii != null) {
         _log('read as a text tab');
         return ascii;
       }
-      final typeset = typesetTab(prepared.staves, glyphs);
+      final typeset = typesetTab(prepared.staves, glyphs, text: lines);
       _log(
         typeset == null
             ? 'neither a text nor a typeset tab'

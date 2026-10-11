@@ -55,14 +55,14 @@ app syncs a page ──► user-data bucket ──S3 event──► EventBridge 
 
 | Path | What |
 |---|---|
-| [locr/pipeline.py](locr/pipeline.py) | page → lines → staves → per-line readings → vote → text tab |
-| [locr/engines.py](locr/engines.py) | Tesseract, PaddleOCR, RapidOCR on one line strip |
+| [locr/pipeline.py](locr/pipeline.py) | page → lines → staves → per-line readings → vote → text tab, with the notations off the staves (chords, lyrics) |
+| [locr/engines.py](locr/engines.py) | Tesseract, PaddleOCR, RapidOCR on one line strip; RapidOCR on the page off the staves |
 | [locr/handler.py](locr/handler.py) | the two Lambda handlers (`api`, `ocr`) |
 | [locr/autocorrect.py](locr/autocorrect.py) | `/autocorrect`: the reading's notes, Claude's corrections, checked |
 | [locr/auth.py](locr/auth.py) | Google ID token check, Cognito identity |
 | [locr/premium.py](locr/premium.py) | rbacr's premium check |
 | [locr/keys.py](locr/keys.py) | the bucket's keys, strictly parsed |
-| [locr/selftest.py](locr/selftest.py) | reads a made-up riff back (image build, `scripts/test-image.sh`) |
+| [locr/selftest.py](locr/selftest.py) | reads a made-up riff and its title back (image build, `scripts/test-image.sh`) |
 | [Dockerfile](Dockerfile) | Debian trixie (Tesseract 5.5), the pinned packages, the PaddleOCR models |
 | [../tabscan_infra/ocr.yaml](../tabscan_infra/ocr.yaml), [ocr-repo.yaml](../tabscan_infra/ocr-repo.yaml) | the stacks |
 
