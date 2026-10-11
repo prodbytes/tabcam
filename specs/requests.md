@@ -409,3 +409,9 @@ spec.
     platform, tested both ways ([cloud OCR](cloud-ocr.md#in-the-app),
     [navigation](navigation.md#profile), [platforms](platforms.md),
     [app stores](app-stores.md)).
+50. **(Continuing 46) The upload key's App Links.** The upload key was
+    created (`scripts/android-keystore.sh`, at the default path), backed up
+    to the maintainer's Google Drive, set as the Release workflow's
+    secrets, and its SHA-256 added to `assetlinks.json`, so release builds it signs open
+    the sites' links in the app once deployed
+    ([sharing](sharing.md#android-app-links), [app stores](app-stores.md)).
