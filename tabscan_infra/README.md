@@ -7,8 +7,8 @@ templates.
 |---|---|---|
 | [site.yaml](site.yaml) | `tabscan-web` | https://tabscan.nu01.com: the ACM certificate (DNS-validated in the `tabscan.nu01.com` zone), a private S3 bucket, a CloudFront distribution, the Route 53 A/AAAA aliases, and a Route 53 health check of `/app/version.json` that emails `TABSCANNER_HEALTH_EMAILS` when it fails |
 | [user-data.yaml](user-data.yaml) | `tabscan-user-data` | The bucket of signed-in users' events, `nu01-user-events-<account>` (private, SSE-S3, TLS only, object events to EventBridge, versioned: old versions kept 30 days; CORS for the web app's origins). Not `tabscan-*`, so the deploy roles can't reach it. Shared by production and the RC |
-| [identity.yaml](identity.yaml) | `tabscan-identity` | The Cognito identity pool `tabscan` (Google sign-in, for the web client, and with `AppleClientId` Sign in with Apple, for the bundle ID; no guests, enhanced flow) and its authenticated role: get, put and delete in `<bucket>/<identity ID>/*`, and list that prefix. Shared by production and the RC |
-| [identity.yaml](identity.yaml) | `tabscan-identity-local` | The same for local web builds: the pool `tabscan-local`, trusting the "local - web" client (a pool can trust only one Google client), and its own authenticated role on the same bucket |
+| [identity.yaml](identity.yaml) | `tabscan-identity` | The Cognito identity pool `tabscan` (Google sign-in through the `accounts.google.com` OpenID Connect provider it makes, for the web, iOS and local web clients, and with `AppleClientId` Sign in with Apple, for the bundle ID; no guests, enhanced flow) and its authenticated role: get, put and delete in `<bucket>/<identity ID>/*`, and list that prefix. Shared by production and the RC |
+| [identity.yaml](identity.yaml) | `tabscan-identity-local` | The same for local web builds: the pool `tabscan-local`, trusting the "local - web" client through the same provider, and its own authenticated role on the same bucket |
 | [share-api.yaml](share-api.yaml) | `tabscan-share-api` | Sharing captures by email: the `tabscan-share-api` HTTP API (Google JWT authorizer, and with `AppleClientId` an Apple one for the same routes under `/apple`; throttled), its Python function ([tabscan_api/shares/](../tabscan_api/shares)), the grants table (PITR on) and the `tabscan-share-access` role, which the function assumes with a session policy narrowed to one capture's folder (and to reading, for read-only grants) |
 | [ocr-repo.yaml](ocr-repo.yaml) | `tabscan-ocr-repo` | The ECR repository `tabscan-ocr` of the cloud OCR image ([tabscan_locr/](../tabscan_locr/README.md)) |
 | [ocr.yaml](ocr.yaml) | `tabscan-ocr` | TabScan Premium's cloud OCR: the `tabscan-accounts` table, the `tabscan-ocr` and `tabscan-ocr-api` functions, the API's function URL (the app's `TABSCANNER_OCR_URL`) and the EventBridge rule for page uploads. Deployed by `tabscan_locr/scripts/deploy.sh` |
@@ -127,16 +127,33 @@ ACM validation names.
         --template-file tabscan_infra/identity.yaml \
         --capabilities CAPABILITY_IAM \
         --parameter-overrides "GoogleWebClientId=$TABSCANNER_GOOGLE_WEB_CLIENT_ID" \
-          PoolName=tabscan
-      # Local web builds' pool; its IdentityPoolId is
-      # TABSCANNER_COGNITO_LOCAL_IDENTITY_POOL_ID (private .env only).
+          "GoogleAppClientIds=$TABSCANNER_GOOGLE_IOS_CLIENT_ID,$TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID" \
+          GoogleProviderArn= PoolName=tabscan
+      # Local web builds' pool, on the same Google provider; its
+      # IdentityPoolId is TABSCANNER_COGNITO_LOCAL_IDENTITY_POOL_ID (private
+      # .env only).
+      provider="$(aws cloudformation describe-stacks --region us-east-1 \
+        --stack-name tabscan-identity \
+        --query "Stacks[0].Outputs[?OutputKey=='GoogleProviderArn'].OutputValue" --output text)"
       aws cloudformation deploy --region us-east-1 \
         --stack-name tabscan-identity-local \
         --template-file tabscan_infra/identity.yaml \
         --capabilities CAPABILITY_IAM \
         --parameter-overrides "GoogleWebClientId=$TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID" \
-          PoolName=tabscan-local
+          GoogleAppClientIds= "GoogleProviderArn=$provider" PoolName=tabscan-local
       ```
+
+      Google sign-in goes through an IAM OpenID Connect provider for
+      `accounts.google.com` that `tabscan-identity` makes, not the pools'
+      built-in Google login: an app's ID token names its own client as
+      well as the web client (on iOS `aud` is the web client, `azp` the
+      iOS client), and the built-in login, which takes one client ID,
+      refuses it. The provider takes every client in its list:
+      `GoogleWebClientId` and `GoogleAppClientIds` (iOS, "local - web", and
+      **each Android signing key's client, to add** as they're made). An
+      account has one provider per URL, so the local stack uses the main
+      stack's (`GoogleProviderArn`). Moving to it gave existing users new
+      identity IDs (their folders start empty; nothing was stored yet).
 
       Pass every parameter each time: `deploy` keeps a stack's previous
       value for a parameter left out, not the template's new default.

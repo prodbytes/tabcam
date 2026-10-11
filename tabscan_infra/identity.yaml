@@ -1,15 +1,20 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  A Cognito identity pool that trusts one Google OAuth client and, when
-  AppleClientId is set, Sign in with Apple for the app's bundle ID. The app
+  A Cognito identity pool that trusts Google sign-in (through an IAM OpenID
+  Connect provider for accounts.google.com, which takes every TabScan
+  Google client) and, when AppleClientId is set, Sign in with Apple for the
+  app's bundle ID. The app
   exchanges the signed-in user's ID token for temporary AWS
   credentials of the authenticated role, which may only read, write and
   delete that user's own folder in the user-data bucket (tabscan-user-data
   stack). Guests (unauthenticated identities) aren't allowed. Deployed
   twice: tabscan-identity (pool tabscan, the web client: every build but
   local web ones) and tabscan-identity-local (pool tabscan-local, the local
-  web client). A pool can't trust two Google clients (Cognito takes one ID
-  of at most 128 characters).
+  web client). The pool's built-in Google login takes one client ID, but
+  an app's token names its own client too (iOS: aud is the web client, azp
+  the iOS client), which that login refuses; the OpenID Connect provider
+  takes a list. An account has one provider per URL: tabscan-identity
+  makes it, tabscan-identity-local uses it (GoogleProviderArn).
 
 Parameters:
   GoogleWebClientId:
@@ -20,6 +25,22 @@ Parameters:
       Android and iOS as their server client), or for the local pool the
       "local - web" client (TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID).
     AllowedPattern: '[0-9]+-[0-9a-z]+\.apps\.googleusercontent\.com'
+  GoogleAppClientIds:
+    Type: String
+    Default: ''
+    Description: >
+      The other Google clients whose tokens the pools take, separated by
+      commas: the iOS client, the "local - web" client (for the local
+      pool) and each Android signing key's client. Only where the provider
+      is made (GoogleProviderArn empty).
+    AllowedPattern: '([0-9]+-[0-9a-z]+\.apps\.googleusercontent\.com)?(,[0-9]+-[0-9a-z]+\.apps\.googleusercontent\.com)*'
+  GoogleProviderArn:
+    Type: String
+    Default: ''
+    Description: >
+      The accounts.google.com OpenID Connect provider to use (the local
+      pool: tabscan-identity's GoogleProviderArn output). Empty: this stack
+      makes it.
   PoolName:
     Type: String
     Default: tabscan
@@ -36,8 +57,23 @@ Parameters:
 
 Conditions:
   HasApple: !Not [!Equals [!Ref AppleClientId, '']]
+  MakesGoogleProvider: !Equals [!Ref GoogleProviderArn, '']
+  HasAppClients: !Not [!Equals [!Ref GoogleAppClientIds, '']]
 
 Resources:
+  # Google's sign-in, for every TabScan client: the web client and the
+  # apps' own (their tokens name them). The app's Logins key stays
+  # accounts.google.com.
+  GoogleProvider:
+    Type: AWS::IAM::OIDCProvider
+    Condition: MakesGoogleProvider
+    Properties:
+      Url: https://accounts.google.com
+      ClientIdList: !If
+        - HasAppClients
+        - !Split [',', !Sub '${GoogleWebClientId},${GoogleAppClientIds}']
+        - [!Ref GoogleWebClientId]
+
   IdentityPool:
     Type: AWS::Cognito::IdentityPool
     Properties:
@@ -46,11 +82,12 @@ Resources:
       AllowClassicFlow: false
       # Each provider's users are their own identities (folders): the same
       # person signed in with Google and with Apple has two.
+      OpenIdConnectProviderARNs:
+        - !If [MakesGoogleProvider, !Ref GoogleProvider, !Ref GoogleProviderArn]
       SupportedLoginProviders: !If
         - HasApple
-        - accounts.google.com: !Ref GoogleWebClientId
-          appleid.apple.com: !Ref AppleClientId
-        - accounts.google.com: !Ref GoogleWebClientId
+        - appleid.apple.com: !Ref AppleClientId
+        - !Ref AWS::NoValue
 
   AuthenticatedRole:
     Type: AWS::IAM::Role
@@ -112,3 +149,7 @@ Outputs:
       Name: !Sub ${AWS::StackName}-pool-id
   AuthenticatedRoleArn:
     Value: !GetAtt AuthenticatedRole.Arn
+  GoogleProviderArn:
+    Condition: MakesGoogleProvider
+    Description: The accounts.google.com provider, for tabscan-identity-local's GoogleProviderArn
+    Value: !Ref GoogleProvider

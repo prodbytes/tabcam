@@ -564,3 +564,17 @@ spec.
     [scanning](scanning.md#adding-to-an-event),
     [library](library.md), [sharing](sharing.md),
     [cloud sync](cloud-sync.md)).
+62. **The app says Premium isn't active: make sure the rbacr integration
+    is set up and the premium role is returned for julio@nu01.com.**
+    rbacr was fine (`allowed: true` for `tabscan`/`premium`, through the
+    service's token). The iPhone's calls never reached it: the identity
+    pool refused the app's Google tokens ("Token is not from a supported
+    provider"), because an iOS token's `azp` is the iOS client and the
+    pool's built-in Google login takes one client ID; sync failed on iOS
+    the same way. Both pools now trust Google through an IAM OpenID
+    Connect provider listing the web, iOS and local web clients
+    (`identity.yaml`: `GoogleAppClientIds`, `GoogleProviderArn`),
+    deployed. On the iPhone, `/account` answers premium and sync uploads.
+    Existing users got new identity IDs (nothing was stored yet). Android
+    clients are to add to the list ([cloud sync](cloud-sync.md#googles-token),
+    [app stores](app-stores.md), [tabscan_infra](../tabscan_infra/README.md)).
