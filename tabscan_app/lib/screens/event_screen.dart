@@ -23,10 +23,10 @@ import 'text_page.dart';
 import 'video_page.dart';
 
 /// One event: its pages (images, videos and links) to swipe through, and
-/// the tools along the bottom: the view (Original, Scan or Text: the
-/// photos as taken, processed, or the tab read from them), Add (scan,
-/// photos and videos, files, a link), Rotate and Delete. Share and rename
-/// are in the app bar. The tab is read by itself ([AutoReader]): there's
+/// the tools along the bottom: the view (Original or Scan: the photos as
+/// taken, or processed), Text (the tab read from them, in place of the
+/// pages), Add (scan, photos and videos, files, a link), Rotate and
+/// Delete. Share and rename are in the app bar. The tab is read by itself ([AutoReader]): there's
 /// no Read tab button. With its images hidden, the pages are the text tab,
 /// then the videos and links.
 class EventScreen extends StatefulWidget {
@@ -63,11 +63,9 @@ class _EventScreenState extends State<EventScreen> {
   void initState() {
     super.initState();
     // A text tab marked correct is what the user wants to see: it opens on
-    // the Text view (the view tool goes back to the pages).
+    // the Text view (the Text tool goes back to the pages).
     final event = _library.byId(widget.eventId);
-    if (event != null && event.tabText != null && event.tabTextCorrect) {
-      _shown = _View.text;
-    }
+    _text = event != null && event.tabText != null && event.tabTextCorrect;
   }
 
   @override
@@ -207,8 +205,11 @@ class _EventScreenState extends State<EventScreen> {
     );
   }
 
-  /// What the pages show: [_View.text] here, or else the image pages'
-  /// filter (Original or Scan).
+  /// Whether the Text view shows, in place of the pages.
+  bool _text = false;
+
+  /// What the image pages show here, when it isn't their saved filter (an
+  /// event shared read only).
   _View? _shown;
 
   _View _viewOf(CaptureEvent event) {
@@ -217,18 +218,16 @@ class _EventScreenState extends State<EventScreen> {
     return first?.filter == PageFilter.original ? _View.original : _View.scan;
   }
 
-  /// Original → Scan → Text → Original. Original and Scan set the filter of
-  /// every image page (saved, so thumbnails and exports follow), but only
-  /// what shows for an event shared read only.
+  /// Original ↔ Scan: sets the filter of every image page (saved, so
+  /// thumbnails and exports follow), but only what shows for an event
+  /// shared read only.
   Future<void> _nextView(CaptureEvent event) async {
-    final next = _View.values[(_viewOf(event).index + 1) % _View.values.length];
+    final next = _viewOf(event) == _View.original ? _View.scan : _View.original;
     setState(() => _shown = next);
-    final filter = switch (next) {
-      _View.original => PageFilter.original,
-      _View.scan => PageFilter.tab,
-      _View.text => null,
-    };
-    if (filter == null || event.readOnly) return;
+    final filter = next == _View.original
+        ? PageFilter.original
+        : PageFilter.tab;
+    if (event.readOnly) return;
     if (event.pages.every((p) => !p.isImage || p.filter == filter)) return;
     await _library.update(
       event.copyWith(
@@ -324,13 +323,6 @@ class _EventScreenState extends State<EventScreen> {
       event.hideImages ? [null, ...event.visiblePages] : event.pages;
 
   /// The owner hides the images, or shows them again, for everyone.
-  Future<void> _toggleImages(CaptureEvent event) async {
-    await _library.update(event.copyWith(hideImages: !event.hideImages));
-    if (!mounted) return;
-    setState(() => _index = 0);
-    if (_pages.hasClients) _pages.jumpToPage(0);
-  }
-
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -345,7 +337,7 @@ class _EventScreenState extends State<EventScreen> {
         final editable = !event.readOnly;
         final enabled = !_busy && page != null && editable;
         final view = _viewOf(event);
-        final text = view == _View.text;
+        final text = _text;
         // Rotate is for images, not videos or links; nor in the Text view.
         final image = enabled && page.isImage && !text;
         final sync = widget.sync;
@@ -377,17 +369,6 @@ class _EventScreenState extends State<EventScreen> {
                   tooltip: 'Rename',
                   icon: const Icon(Icons.edit_outlined),
                   onPressed: () => _rename(event),
-                ),
-              // Only the owner hides the images, for everyone.
-              if (!event.isShared)
-                IconButton(
-                  tooltip: event.hideImages ? 'Show images' : 'Hide images',
-                  icon: Icon(
-                    event.hideImages
-                        ? Icons.image_outlined
-                        : Icons.hide_image_outlined,
-                  ),
-                  onPressed: _busy ? null : () => _toggleImages(event),
                 ),
               if (sync != null && sync.canShare && !event.isShared)
                 IconButton(
@@ -431,7 +412,7 @@ class _EventScreenState extends State<EventScreen> {
                       child: switch (shown[i]) {
                         null => TextPage(
                           event: event,
-                          onOpen: () => setState(() => _shown = _View.text),
+                          onOpen: () => setState(() => _text = true),
                         ),
                         final p when p.isLink => LinkPage(
                           key: ValueKey(p.id),
@@ -473,7 +454,15 @@ class _EventScreenState extends State<EventScreen> {
                     key: const Key('view'),
                     icon: view.icon,
                     label: view.label,
-                    onPressed: _busy ? null : () => _nextView(event),
+                    onPressed: _busy || text ? null : () => _nextView(event),
+                  ),
+                  _Tool(
+                    key: const Key('text'),
+                    icon: text ? Icons.photo_library_outlined : Icons.notes,
+                    label: text ? 'Pages' : 'Text',
+                    onPressed: _busy
+                        ? null
+                        : () => setState(() => _text = !_text),
                   ),
                   _Tool(
                     icon: Icons.add_circle_outline,
@@ -507,11 +496,10 @@ class _EventScreenState extends State<EventScreen> {
   }
 }
 
-/// What the event screen shows, chosen with its first tool.
+/// How the event screen shows the image pages, chosen with its first tool.
 enum _View {
   original('Original', Icons.photo_outlined),
-  scan('Scan', Icons.contrast),
-  text('Text', Icons.notes);
+  scan('Scan', Icons.contrast);
 
   const _View(this.label, this.icon);
   final String label;

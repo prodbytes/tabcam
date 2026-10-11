@@ -358,3 +358,12 @@ spec.
     new debug key each run, aren't verified until there's a release key
     ([sharing](sharing.md#android-app-links), [platforms](platforms.md),
     [release](release.md), [deploy](deploy.md)).
+44. **Bring back the "Text" button in the capture view to flip from scan
+    to text; remove the flip button from the top and leave flipping to
+    the bottom bar.** The event screen's tools are the view (**Original ↔
+    Scan**), then **Text**, which shows the text view in place of the
+    pages and reads **Pages** to go back; then Add, Rotate, Delete. The
+    app bar's Hide images / Show images button is gone. `hideImages` is
+    still honoured, so a capture already hidden stays hidden
+    ([event screen](event-screen.md), [hidden images](hidden-images.md),
+    [tab recognition](tab-recognition.md#text-view)).

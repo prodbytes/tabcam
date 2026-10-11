@@ -43,17 +43,13 @@ void main() {
       .widget<Text>(find.descendant(of: view, matching: find.byType(Text)))
       .data!;
 
-  testWidgets('the first tool cycles Original, Scan and Text', (tester) async {
+  final textTool = find.byKey(const Key('text'));
+
+  testWidgets('the first tool flips Original and Scan', (tester) async {
     await open(tester, text: 'e|--0--3--|');
     // Scanned pages start processed: Scan.
     expect(label(tester), 'Scan');
     expect(find.text('Read tab'), findsNothing);
-
-    await tester.tap(view);
-    await frames(tester);
-    expect(label(tester), 'Text');
-    expect(find.text('Copy'), findsOneWidget);
-    expect(find.text('1 / 1'), findsNothing);
 
     await tester.tap(view);
     await frames(tester);
@@ -70,9 +66,24 @@ void main() {
     expect(library.byId(id)!.pages.single.filter, PageFilter.tab);
   });
 
+  testWidgets('Text flips the pages and the text', (tester) async {
+    await open(tester, text: 'e|--0--3--|');
+    await tester.tap(textTool);
+    await frames(tester);
+    expect(find.text('Copy'), findsOneWidget);
+    expect(find.text('1 / 1'), findsNothing);
+    expect(find.text('Pages'), findsOneWidget);
+
+    await tester.tap(textTool);
+    await frames(tester);
+    expect(find.text('Copy'), findsNothing);
+    expect(find.text('1 / 1'), findsOneWidget);
+    expect(label(tester), 'Scan');
+  });
+
   testWidgets('it\'s the first tool, and Read tab is gone', (tester) async {
     await open(tester);
-    final tools = ['Scan', 'Add', 'Rotate', 'Delete'];
+    final tools = ['Scan', 'Text', 'Add', 'Rotate', 'Delete'];
     final xs = [for (final t in tools) tester.getCenter(find.text(t)).dx];
     expect(xs, [...xs]..sort());
     expect(find.text('Read tab'), findsNothing);
@@ -80,7 +91,7 @@ void main() {
 
   testWidgets('Text without a text tab says why', (tester) async {
     await open(tester);
-    await tester.tap(view);
+    await tester.tap(textTool);
     await frames(tester);
     // No reader in this test: nothing will read it.
     expect(find.text('No text yet.'), findsOneWidget);

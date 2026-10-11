@@ -92,24 +92,22 @@ void main() {
     await _frames(tester);
     expect(find.text('1 / 2'), findsOneWidget);
 
+    // No button for it on the event screen: set on the event.
+    expect(find.byTooltip('Hide images'), findsNothing);
     await tester.runAsync(() async {
-      await tester.tap(find.byTooltip('Hide images'));
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await library.update(library.byId(id)!.copyWith(hideImages: true));
     });
     await _frames(tester);
-    expect(library.byId(id)!.hideImages, isTrue);
     // The text tab's page, then the link: the image is gone.
     expect(find.text('Text tab'), findsOneWidget);
     expect(find.text('e|--0--3--|'), findsOneWidget);
     expect(find.text('1 / 2'), findsOneWidget);
-    expect(find.byTooltip('Show images'), findsOneWidget);
+    expect(find.byTooltip('Show images'), findsNothing);
 
     await tester.runAsync(() async {
-      await tester.tap(find.byTooltip('Show images'));
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await library.update(library.byId(id)!.copyWith(hideImages: false));
     });
     await _frames(tester);
-    expect(library.byId(id)!.hideImages, isFalse);
     expect(find.text('Text tab'), findsNothing);
   });
 

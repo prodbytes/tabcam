@@ -114,7 +114,7 @@ started editing. Read only for an event shared read only.
 has checked it (it then reads **Correct**, ticked; tapping it again
 unmarks it), saved at once. The mark is kept on the event and syncs with
 it (`tabTextCorrect`), and a clone keeps it. An event marked correct
-opens on its Text view (the view tool goes on to its pages); one that
+opens on its Text view (the Text tool goes back to its pages); one that
 isn't opens on its pages. No read, on the device or in the
 [cloud](cloud-ocr.md), replaces a text tab marked correct. On an event
 shared read only the mark is shown (when set) but can't be changed.

@@ -101,8 +101,8 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     expect(find.byType(TabTextView), findsOneWidget);
 
-    // The pages are the view tool away (Text → Original).
-    await tester.tap(find.byKey(const Key('view')));
+    // The pages are the Text tool away.
+    await tester.tap(find.byKey(const Key('text')));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
     expect(find.byType(TabTextView), findsNothing);
