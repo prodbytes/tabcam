@@ -10,6 +10,13 @@ the corners, straightens the page (perspective correction) and takes
 several pages in a row; the user confirms when done. Cancelling returns
 to where they were, with nothing added.
 
+On Android the scanner runs in ML Kit's base mode: no filters to pick,
+and no ML clean-up (stain and finger removal); cropping, rotating and
+reordering pages remain. TabScan applies its own Tab filter. VisionKit
+offers no such option, so the iOS scanner keeps its filters. Neither
+scanner lets the app set the shutter: both start on auto capture, and
+the user can switch to manual in the scanner.
+
 The scanner's files are copied into the [library](library.md), then its
 cache is emptied. The new event shows at the top of the list (see
 [library](library.md)); it isn't opened.
