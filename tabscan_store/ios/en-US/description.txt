@@ -1,0 +1,29 @@
+TabScan is a scanner app made for guitar and bass tablature. Point your phone at a tab and TabScan finds the page, straightens it and cleans it up. Then it reads the tab into plain-text tab you can edit, keep in sync and share.
+
+SCAN LIKE A DOCUMENT SCANNER
+• The system document scanner finds the page's edges and straightens it, several pages at a time.
+• Add photos and videos from your library, files, or a link (a lesson video, a backing track).
+• The Tab filter turns each page into crisp black ink on white; switch to the Original photo any time.
+• Swipe and zoom through the pages, rotate them, add more or delete them.
+
+READ TABS INTO TEXT
+• Every capture is read by itself into plain-text tab, on your phone.
+• Works with tabs printed from the web (e|--0--3--|) and with typeset tab staves from books and printouts, for six-string guitar and four-string bass.
+• Fix what the reading got wrong right in the Text view, copy it, and mark it correct once you've checked it. Your edits are never overwritten.
+• TabScan Premium subscribers also get their pages transcribed in the cloud as they sync.
+
+ORGANIZE AND SYNC
+• Your captures are events in a grid, newest first, with a title and artist. Rename, clone or delete them.
+• Sign in with Google to sync your events across your phones and the web app, deletions included.
+• Hide a capture's photos so only the text tab, videos and links show.
+
+SHARE
+• Share a capture as a link, a PDF, plain text, or a zip of all its files.
+• Share a capture with people by their email address, to edit together or read only. They find it in "Shared with me" when they sign in. A link opens only for the people you shared with.
+
+PRIVATE BY DEFAULT
+• You can scan without an account: signed out, everything stays on your device.
+• Reading tabs, syncing and sharing need you signed in with Google.
+• No ads, no tracking. You can delete your account and its cloud data from the Profile tab.
+
+TabScan is for your own tabs: your notes, lesson sheets, books and printouts you own.

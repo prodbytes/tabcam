@@ -59,7 +59,8 @@ the cloud as they sync.
   transcribed in AWS Lambda as they sync (Tesseract, PaddleOCR and
   RapidOCR per string line, voted), the text tab filled in by itself;
   premium is rbacr's `tabscan/premium` role (Substack subscription or
-  voucher); the upgrade offer for everyone else.
+  voucher); the upgrade offer for everyone else, on the web only (the
+  store apps show no purchase links).
 - [App icon](app-icon.md): a scanned tab page with a staff and fret
   numbers, in scanner corners; how the platform icons are generated.
 - [Platforms](platforms.md): Android, iOS and the web, and what each can do.
@@ -73,6 +74,6 @@ the cloud as they sync.
 - [Release builds](release.md): versions, tags and the Release workflow.
 - [App stores](app-stores.md): publishing to Google Play and the App
   Store under personal accounts: the status of each step, the Android
-  upload key and App Bundle.
+  upload key and App Bundle, the store listings drafts in `tabscan_store/`.
 - [Deploy](deploy.md): the web app at https://tabscan.nu01.com and the
   release candidate at https://rc.tabscan.nu01.com.

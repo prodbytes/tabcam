@@ -15,6 +15,7 @@ import 'clone.dart';
 import 'link_page.dart';
 import 'page_image.dart';
 import 'people_sheet.dart';
+import 'premium_card.dart';
 import 'rename_dialog.dart';
 import 'share_sheet.dart';
 import 'sign_in_gate.dart';
@@ -36,6 +37,7 @@ class EventScreen extends StatefulWidget {
     required this.eventId,
     this.sync,
     this.ocr,
+    this.store,
   });
 
   final Library library;
@@ -45,8 +47,11 @@ class EventScreen extends StatefulWidget {
   final CloudSync? sync;
 
   /// TabScan Premium: the text tab comes from the cloud by itself; without
-  /// it, a hint offers it (null: not set up).
+  /// it, a hint offers it on the web (null: not set up).
   final CloudOcr? ocr;
+
+  /// Whether to leave out the Premium hint (null: [storeApp]).
+  final bool? store;
 
   @override
   State<EventScreen> createState() => _EventScreenState();
@@ -174,10 +179,12 @@ class _EventScreenState extends State<EventScreen> {
 
   bool _hintClosed = false;
 
-  /// The upgrade hint, for users without Premium where it's set up.
+  /// The upgrade hint, for users without Premium where it's set up; never
+  /// in a [storeApp], which can't point to buying it.
   Widget? _premiumHint(CaptureEvent event) {
     final (ocr, sync) = (widget.ocr, widget.sync);
     if (ocr == null || sync == null || ocr.premium) return null;
+    if (widget.store ?? storeApp) return null;
     if (event.tabText != null || event.readOnly || _hintClosed) return null;
     return Material(
       color: Theme.of(context).colorScheme.secondaryContainer,
