@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/language.dart';
 import '../app_version.dart';
@@ -474,6 +475,21 @@ class _AddTile extends StatelessWidget {
   );
 }
 
+/// TabScan's privacy policy (tabscan_index/site/privacy/), the same for
+/// every build and site.
+final Uri privacyPolicyUrl = Uri.parse('https://tabscan.nu01.com/privacy');
+
+Future<void> _openPrivacyPolicy(BuildContext context) async {
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  final couldNotOpen = context.l10n.textViewCouldNotOpen('$privacyPolicyUrl');
+  if (!await launchUrl(
+    privacyPolicyUrl,
+    mode: LaunchMode.externalApplication,
+  )) {
+    messenger?.showSnackBar(SnackBar(content: Text(couldNotOpen)));
+  }
+}
+
 /// The language setting: the device's language, or English, Spanish or
 /// Portuguese; the app changes at once.
 class _LanguagePicker extends StatelessWidget {
@@ -547,13 +563,21 @@ class ProfileView extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(l10n.homeAboutDetail, style: theme.textTheme.bodySmall),
-                TextButton(
-                  onPressed: () => showLicensePage(
-                    context: context,
-                    applicationName: AppVersion.title,
-                    applicationVersion: AppVersion.version,
-                  ),
-                  child: Text(l10n.homeLicenses),
+                Wrap(
+                  children: [
+                    TextButton(
+                      onPressed: () => _openPrivacyPolicy(context),
+                      child: Text(l10n.homePrivacyPolicy),
+                    ),
+                    TextButton(
+                      onPressed: () => showLicensePage(
+                        context: context,
+                        applicationName: AppVersion.title,
+                        applicationVersion: AppVersion.version,
+                      ),
+                      child: Text(l10n.homeLicenses),
+                    ),
+                  ],
                 ),
               ],
             ),

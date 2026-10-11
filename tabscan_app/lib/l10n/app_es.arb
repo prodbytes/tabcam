@@ -240,5 +240,6 @@
   "textViewTitleHint": "Clase, grabación…",
   "textViewAdd": "Agregar",
   "textViewCantPlay": "Este video no se puede reproducir aquí",
-  "textViewVideo": "Video"
+  "textViewVideo": "Video",
+  "homePrivacyPolicy": "Política de privacidad"
 }

@@ -1208,5 +1208,9 @@
   "textViewVideo": "Video",
   "@textViewVideo": {
     "description": "Video page label before playing"
+  },
+  "homePrivacyPolicy": "Privacy policy",
+  "@homePrivacyPolicy": {
+    "description": "Profile, About: opens the privacy policy"
   }
 }

@@ -71,6 +71,10 @@ the cloud as they sync.
 - [App icon](app-icon.md): a scanned tab page with a staff and fret
   numbers, in scanner corners; how the platform icons are generated.
 - [Platforms](platforms.md): Android, iOS and the web, and what each can do.
+- [Privacy](privacy.md): the privacy policy at
+  https://tabscan.nu01.com/privacy (linked from the index page and About),
+  what it says and what it's based on; the iOS privacy manifest and
+  export compliance declaration.
 - [Maintenance mode](maintenance-mode.md): administrators switch it on
   with `scripts/maintenance.sh`; the apps then show only a sorry message.
 

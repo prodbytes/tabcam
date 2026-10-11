@@ -240,5 +240,6 @@
   "textViewTitleHint": "Aula, gravação…",
   "textViewAdd": "Adicionar",
   "textViewCantPlay": "Este vídeo não pode ser reproduzido aqui",
-  "textViewVideo": "Vídeo"
+  "textViewVideo": "Vídeo",
+  "homePrivacyPolicy": "Política de privacidade"
 }

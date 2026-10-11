@@ -1551,6 +1551,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Video'**
   String get textViewVideo;
+
+  /// Profile, About: opens the privacy policy
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy policy'**
+  String get homePrivacyPolicy;
 }
 
 class _AppLocalizationsDelegate

@@ -9,7 +9,9 @@ The zone also holds `local.tabscan.nu01.com`, A `127.0.0.1` and AAAA
 `::1` (TTL 300), so a name under the real domain reaches the
 [local dev servers](dev-environment.md). It was made by hand with the AWS
 CLI; no stack owns it.
-`/` is the [index page](../tabscan_index), which redirects to `/app/`.
+`/` is the [index page](../tabscan_index), which redirects to `/app/`
+(its footer links the privacy policy); `/privacy` is the
+[privacy policy](privacy.md).
 
 ## Production
 
@@ -21,14 +23,15 @@ which runs `scripts/deploy.sh` for that tag:
 2. deploys the `tabscan-web` stack: certificate, bucket, CloudFront, DNS
    records, and a Route 53 health check of `/app/version.json` (it must
    name `tabscan_app`) whose alarm emails `TABSCANNER_HEALTH_EMAILS`;
-3. uploads `index.html`, the web build (`Cache-Control: no-cache`,
+3. uploads `index.html`, the [privacy policy](privacy.md) (as the
+   object `privacy`, so it's served at `/privacy`), the web build (`Cache-Control: no-cache`,
    Flutter's files aren't content-hashed) and
    `/.well-known/assetlinks.json` ([App Links](sharing.md#android-app-links)),
    and invalidates `/*`;
    `/status.json` ([maintenance mode](maintenance-mode.md)) is left as
    it is;
 4. checks, for up to 10 minutes, that `/app/version.json` reports the
-   version and `/` is the index page.
+   version, `/` is the index page and `/privacy` the privacy policy.
 
 One production deploy runs at a time; a newer tag waits.
 

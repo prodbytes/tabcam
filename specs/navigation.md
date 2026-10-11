@@ -60,5 +60,6 @@ from an event's Premium **Upgrade** (on the web). In
 a build without sign-in, a line says so. Then **Language**
 ([localization](localization.md)): the device's language (the default),
 English, Español or Português; the app changes at once. Then **About**: the app's name
-and version (X.Y.Z, or "(development build)"), what it does, and
-**Licenses**.
+and version (X.Y.Z, or "(development build)"), what it does,
+**Privacy policy** (opens https://tabscan.nu01.com/privacy in the browser,
+[privacy](privacy.md)) and **Licenses**.

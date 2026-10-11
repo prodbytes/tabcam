@@ -932,4 +932,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get textViewVideo => 'Video';
+
+  @override
+  String get homePrivacyPolicy => 'Política de privacidad';
 }

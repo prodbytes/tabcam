@@ -929,4 +929,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get textViewVideo => 'Vídeo';
+
+  @override
+  String get homePrivacyPolicy => 'Política de privacidade';
 }

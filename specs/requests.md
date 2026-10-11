@@ -472,3 +472,16 @@ spec.
     language by default, or one of the three, kept on the device and
     applied at once. iOS lists the three languages
     ([localization](localization.md), [navigation](navigation.md#profile)).
+59. **Privacy policy and iOS privacy declarations** (part of publishing
+    to the stores). A privacy policy page at
+    https://tabscan.nu01.com/privacy (`tabscan_index/site/privacy/`,
+    uploaded by `scripts/deploy.sh` as the object `privacy` and checked by
+    its smoke test; served by the local index server too), based on what
+    the code does; linked from the index page's footer and the Profile
+    tab's About (**Privacy policy**). The contact email is a placeholder
+    until the maintainer gives one. iOS: `ITSAppUsesNonExemptEncryption`
+    false in `Info.plist`, and the app's privacy manifest,
+    `PrivacyInfo.xcprivacy`, in the Runner target
+    ([privacy](privacy.md), [platforms](platforms.md),
+    [deploy](deploy.md), [navigation](navigation.md#profile),
+    [app stores](app-stores.md)).

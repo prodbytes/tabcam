@@ -6,10 +6,10 @@
 #   2. deploys the site (CloudFormation tabscan_infra/site.yaml:
 #      tabscan-web: certificate, bucket, CloudFront, DNS, and the Route 53
 #      health check of /app/version.json with its alarm emails)
-#   3. uploads the index page (/) and the web build (/app/), and
-#      invalidates the CloudFront cache
+#   3. uploads the index page (/), the privacy policy (/privacy) and the
+#      web build (/app/), and invalidates the CloudFront cache
 #   4. smoke-tests the live site: /app/version.json must report this
-#      version, and / must be the index page
+#      version, / must be the index page, and /privacy the policy
 #
 # Run by .github/workflows/deploy.yml on *GA tags (deploy-rc.yml on *RC*
 # tags), or by hand with admin credentials. Settings, from the environment:
@@ -148,6 +148,10 @@ echo "    bucket: $bucket, distribution: $distribution"
 echo "==> uploading"
 aws s3 cp tabscan_index/site/index.html "s3://$bucket/index.html" \
   --cache-control no-cache --content-type "text/html; charset=utf-8" --only-show-errors
+# The privacy policy at /privacy: an object named privacy, served as HTML
+# (only /app* rewrites directory URIs; locally it's privacy/index.html).
+aws s3 cp tabscan_index/site/privacy/index.html "s3://$bucket/privacy" \
+  --cache-control no-cache --content-type "text/html; charset=utf-8" --only-show-errors
 aws s3 sync tabscan_app/build/web/ "s3://$bucket/app/" --delete --cache-control no-cache --only-show-errors
 # Android App Links: which signing keys' apps may open the site's links.
 aws s3 cp tabscan_index/site/.well-known/assetlinks.json "s3://$bucket/.well-known/assetlinks.json" \
@@ -166,6 +170,7 @@ check() {
   [[ "$live" == "$VERSION" ]] || { echo "    /app/version.json says $live, want $VERSION"; return 1; }
   curl -fsS --max-time 20 "https://$DOMAIN/" | grep -q "location.replace('/app/'" || { echo "    / isn't the index page"; return 1; }
   curl -fsS --max-time 20 -o /dev/null "https://$DOMAIN/app/" || { echo "    /app/ failed"; return 1; }
+  curl -fsS --max-time 20 "https://$DOMAIN/privacy" | grep -q "<title>TabScan Privacy Policy</title>" || { echo "    /privacy isn't the privacy policy"; return 1; }
 }
 for attempt in $(seq 1 30); do
   if check; then
