@@ -113,7 +113,9 @@ class CloudSync extends ChangeNotifier {
     _token = token;
     if (token == null) {
       credentials.clear();
+      // Cleared, so the next sign-in starts the timer again.
       _periodic?.cancel();
+      _periodic = null;
       _soon?.cancel();
       _set(SyncState.signedOut, null);
       return;
