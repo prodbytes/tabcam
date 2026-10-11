@@ -394,3 +394,8 @@ spec.
     explains a signing key mismatch ([release](release.md),
     [platforms](platforms.md), [sharing](sharing.md#android-app-links),
     [cloud sync](cloud-sync.md), [dev environment](dev-environment.md)).
+50. **(Continuing 46) The upload key's App Links.** The upload key was
+    created (`scripts/android-keystore.sh`, at the default path), and its
+    SHA-256 added to `assetlinks.json`, so release builds it signs open
+    the sites' links in the app once deployed
+    ([sharing](sharing.md#android-app-links), [app stores](app-stores.md)).

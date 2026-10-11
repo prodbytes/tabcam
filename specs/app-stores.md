@@ -11,7 +11,7 @@ publish to production.
 | Step | State |
 |---|---|
 | Developer accounts (Apple Developer Program, Google Play Console) | To do (maintainer) |
-| Android upload key and signed App Bundle | Done (below); the key itself is still to be created |
+| Android upload key and signed App Bundle | Done (below); the CI secrets and the upload key's OAuth client are to do |
 | Store builds: hide the Premium purchase links, in-app account deletion | To do |
 | Sign in with Apple (App Store guideline 4.8) | To do |
 | Privacy policy page; iOS privacy manifest and encryption declaration | To do |
@@ -54,6 +54,6 @@ Each key that signs installed apps needs, for sign-in and
 - its SHA-256 in
   [assetlinks.json](../tabscan_index/site/.well-known/assetlinks.json).
 
-That's the debug key (today), the upload key (sideloaded release builds)
-and Play's app signing key (Play Console → Test and release → App
-integrity) once the app is on Play.
+That's the debug key, the upload key (its SHA-256 is in assetlinks.json;
+its OAuth client is to do) and Play's app signing key (Play Console → Test
+and release → App integrity) once the app is on Play.
