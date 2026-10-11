@@ -42,6 +42,10 @@
 			</array>
 		</dict>
 	</array>
+	<!-- Export compliance: only HTTPS and the OS's standard crypto (SigV4
+	     request signing is HMAC authentication, which is exempt). -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../app_version.dart';
 import '../auth/auth_service.dart';
@@ -470,6 +471,22 @@ class _AddTile extends StatelessWidget {
   );
 }
 
+/// TabScan's privacy policy (tabscan_index/site/privacy/), the same for
+/// every build and site.
+final Uri privacyPolicyUrl = Uri.parse('https://tabscan.nu01.com/privacy');
+
+Future<void> _openPrivacyPolicy(BuildContext context) async {
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  if (!await launchUrl(
+    privacyPolicyUrl,
+    mode: LaunchMode.externalApplication,
+  )) {
+    messenger?.showSnackBar(
+      SnackBar(content: Text('Couldn\'t open $privacyPolicyUrl')),
+    );
+  }
+}
+
 /// The Profile tab: the account (in a build with sign-in), then About.
 class ProfileView extends StatelessWidget {
   const ProfileView({super.key, this.auth, this.sync, this.ocr});
@@ -510,13 +527,21 @@ class ProfileView extends StatelessWidget {
                   'Scan guitar tabs, read them as text, and share them.',
                   style: theme.textTheme.bodySmall,
                 ),
-                TextButton(
-                  onPressed: () => showLicensePage(
-                    context: context,
-                    applicationName: AppVersion.title,
-                    applicationVersion: AppVersion.version,
-                  ),
-                  child: const Text('Licenses'),
+                Wrap(
+                  children: [
+                    TextButton(
+                      onPressed: () => _openPrivacyPolicy(context),
+                      child: const Text('Privacy policy'),
+                    ),
+                    TextButton(
+                      onPressed: () => showLicensePage(
+                        context: context,
+                        applicationName: AppVersion.title,
+                        applicationVersion: AppVersion.version,
+                      ),
+                      child: const Text('Licenses'),
+                    ),
+                  ],
                 ),
               ],
             ),

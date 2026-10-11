@@ -14,7 +14,7 @@ publish to production.
 | Android upload key and signed App Bundle | Done (below); the key itself is still to be created |
 | Store builds: hide the Premium purchase links, in-app account deletion | To do |
 | Sign in with Apple (App Store guideline 4.8) | To do |
-| Privacy policy page; iOS privacy manifest and encryption declaration | To do |
+| Privacy policy page; iOS privacy manifest and encryption declaration | Done ([privacy](privacy.md)); the contact email is still to be added |
 | Play internal testing, then the 14-day closed test | To do |
 | App Store Connect record, TestFlight | To do |
 | Listings: screenshots, descriptions, data safety, privacy labels, rating | To do |

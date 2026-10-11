@@ -57,5 +57,6 @@ and with Premium set up the **TabScan Premium** card
 user is premium. The same panel opens in a sheet from an event's Premium
 **Upgrade**. In
 a build without sign-in, a line says so. Then **About**: the app's name
-and version (X.Y.Z, or "(development build)"), what it does, and
-**Licenses**.
+and version (X.Y.Z, or "(development build)"), what it does,
+**Privacy policy** (opens https://tabscan.nu01.com/privacy in the browser,
+[privacy](privacy.md)) and **Licenses**.
