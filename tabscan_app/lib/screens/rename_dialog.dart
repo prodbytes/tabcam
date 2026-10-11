@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../library/library.dart';
 import '../library/capture_event.dart';
+import '../l10n/language.dart';
 
 /// Asks for an event's song and artist, and saves them. An empty song keeps
 /// the title it had; an empty artist clears it.
@@ -52,20 +53,21 @@ class _RenameDialogState extends State<RenameDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return AlertDialog(
-      title: const Text('Rename'),
+      title: Text(l10n.eventRename),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
             controller: _title,
             autofocus: true,
-            decoration: const InputDecoration(labelText: 'Song'),
+            decoration: InputDecoration(labelText: l10n.eventSong),
             textInputAction: TextInputAction.next,
           ),
           TextField(
             controller: _artist,
-            decoration: const InputDecoration(labelText: 'Artist'),
+            decoration: InputDecoration(labelText: l10n.eventArtist),
             onSubmitted: (_) => _done(),
           ),
         ],
@@ -73,9 +75,9 @@ class _RenameDialogState extends State<RenameDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(l10n.eventCancel),
         ),
-        FilledButton(onPressed: _done, child: const Text('Save')),
+        FilledButton(onPressed: _done, child: Text(l10n.eventSave)),
       ],
     );
   }

@@ -5,6 +5,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 
 import '../library/capture_event.dart';
+import '../l10n/language.dart';
 import '../processing/page_filter.dart';
 import 'capture_link.dart';
 
@@ -62,7 +63,7 @@ abstract final class Exporter {
           pageFormat: PdfPageFormat.a4,
           margin: const pw.EdgeInsets.all(36),
           build: (_) => [
-            pw.Header(level: 1, text: 'Links'),
+            pw.Header(level: 1, text: appL10n.accountExportLinks),
             for (final link in links)
               pw.Padding(
                 padding: const pw.EdgeInsets.only(bottom: 8),

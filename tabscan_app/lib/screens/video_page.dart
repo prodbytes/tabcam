@@ -5,6 +5,7 @@ import 'package:video_player/video_player.dart';
 
 import '../library/library.dart';
 import '../library/capture_event.dart';
+import '../l10n/language.dart';
 
 /// A video page: a play button until tapped, then the video, with tap to
 /// pause and resume. It plays from the page's file (from memory on the
@@ -79,9 +80,9 @@ class _VideoPageState extends State<VideoPage> {
   Widget build(BuildContext context) {
     final controller = _controller;
     if (_error != null) {
-      return const _Poster(
+      return _Poster(
         icon: Icons.error_outline,
-        label: 'This video can\'t be played here',
+        label: context.l10n.textViewCantPlay,
       );
     }
     if (controller == null) {
@@ -89,7 +90,7 @@ class _VideoPageState extends State<VideoPage> {
           ? const Center(child: CircularProgressIndicator())
           : _Poster(
               icon: Icons.play_circle_fill,
-              label: 'Video',
+              label: context.l10n.textViewVideo,
               onTap: _start,
             );
     }

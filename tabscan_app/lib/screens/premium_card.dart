@@ -1,12 +1,28 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../cloud/cloud_ocr.dart';
+import '../l10n/language.dart';
+
+/// Whether this is a store app (Android, iOS): App Store and Google Play
+/// rules don't let it point to buying Premium, which is sold on the web,
+/// so it shows no Upgrade, voucher or subscribe wording. Premium bought
+/// on the web still works in it.
+bool get storeApp => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
 
 /// TabScan Premium in the account sheet: what it does, and for free users
-/// the upgrade offer (subscribe, redeem a voucher, check again after).
+/// the upgrade offer (subscribe, redeem a voucher, check again after); in
+/// a [storeApp], only that it isn't active, and Check again.
 class PremiumCard extends StatelessWidget {
-  const PremiumCard({super.key, required this.ocr, required this.email});
+  const PremiumCard({
+    super.key,
+    required this.ocr,
+    required this.email,
+    this.store,
+  });
 
   final CloudOcr ocr;
 
@@ -14,11 +30,15 @@ class PremiumCard extends StatelessWidget {
   /// subscribe with.
   final String email;
 
+  /// Whether to leave out the upgrade offer (null: [storeApp]).
+  final bool? store;
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: ocr,
     builder: (context, _) {
       final theme = Theme.of(context);
+      final l10n = context.l10n;
       final status = ocr.status;
       final children = <Widget>[
         Row(
@@ -28,7 +48,7 @@ class PremiumCard extends StatelessWidget {
               color: theme.colorScheme.primary,
             ),
             const SizedBox(width: 8),
-            Text('TabScan Premium', style: theme.textTheme.titleMedium),
+            Text(l10n.accountPremiumTitle, style: theme.textTheme.titleMedium),
           ],
         ),
         const SizedBox(height: 8),
@@ -37,21 +57,21 @@ class PremiumCard extends StatelessWidget {
         children.add(
           Text(
             [
-              'Your scans are transcribed in the cloud as they sync: the '
-                  'text tab appears on the event by itself.',
+              l10n.accountPremiumActive,
               if (status?.expiresAt case final t?)
-                ' Premium until ${_date(t)}.',
+                ' ${l10n.accountPremiumUntil(_date(t))}',
             ].join(),
           ),
         );
       } else if (status == null && ocr.checking) {
-        children.add(const Text('Checking…'));
+        children.add(Text(l10n.accountChecking));
       } else {
+        final store = this.store ?? storeApp;
         children.addAll([
           Text(
-            'Have every scan transcribed automatically in the cloud, more '
-            'accurately than on the phone, and read tabs on the web too. '
-            'Subscribe with $email.',
+            store
+                ? l10n.accountPremiumInactive(email)
+                : l10n.accountPremiumOffer(email),
           ),
           if (ocr.error case final e?) ...[
             const SizedBox(height: 8),
@@ -62,20 +82,20 @@ class PremiumCard extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              if (status?.upgradeUrl case final url?)
+              if (status?.upgradeUrl case final url? when !store)
                 FilledButton.icon(
                   onPressed: () => _open(context, url),
                   icon: const Icon(Icons.upgrade),
-                  label: const Text('Upgrade'),
+                  label: Text(l10n.accountPremiumUpgrade),
                 ),
-              if (status?.voucherUrl case final url?)
+              if (status?.voucherUrl case final url? when !store)
                 OutlinedButton(
                   onPressed: () => _open(context, url),
-                  child: const Text('Redeem a voucher'),
+                  child: Text(l10n.accountPremiumVoucher),
                 ),
               TextButton(
                 onPressed: ocr.checking ? null : ocr.refresh,
-                child: const Text('Check again'),
+                child: Text(l10n.accountPremiumCheckAgain),
               ),
             ],
           ),
@@ -100,8 +120,11 @@ class PremiumCard extends StatelessWidget {
 
   static Future<void> _open(BuildContext context, Uri url) async {
     final messenger = ScaffoldMessenger.maybeOf(context);
+    final l10n = context.l10n;
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      messenger?.showSnackBar(SnackBar(content: Text('Couldn\'t open $url')));
+      messenger?.showSnackBar(
+        SnackBar(content: Text(l10n.accountPremiumCouldntOpen('$url'))),
+      );
     }
   }
 }

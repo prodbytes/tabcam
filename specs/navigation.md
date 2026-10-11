@@ -54,9 +54,12 @@ their role: "Role: Premium" or "Role: Free"), the sync status, **Sync now**
 and **Sign out** ([sign-in and cloud sync](cloud-sync.md#signing-in)),
 and with Premium set up the **TabScan Premium** card
 ([cloud OCR](cloud-ocr.md)); opening the tab checks again whether the
-user is premium. The same panel opens in a sheet from an event's Premium
-**Upgrade**. In
-a build without sign-in, a line says so. Then **About**: the app's name
+user is premium (the store apps leave out the card's upgrade offer,
+[cloud OCR](cloud-ocr.md#in-the-app)). The same panel opens in a sheet
+from an event's Premium **Upgrade** (on the web). In
+a build without sign-in, a line says so. Then **Language**
+([localization](localization.md)): the device's language (the default),
+English, Español or Português; the app changes at once. Then **About**: the app's name
 and version (X.Y.Z, or "(development build)"), what it does,
 **Privacy policy** (opens https://tabscan.nu01.com/privacy in the browser,
 [privacy](privacy.md)) and **Licenses**.

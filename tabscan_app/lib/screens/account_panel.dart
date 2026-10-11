@@ -4,11 +4,13 @@ import '../auth/auth_service.dart';
 import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
 import '../cloud/ocr_api.dart';
+import '../l10n/language.dart';
 import 'premium_card.dart';
 
 /// The [AccountPanel] in a bottom sheet, for places away from the Profile
-/// tab (an event's Premium Upgrade); with Premium set up ([ocr]), it checks
-/// again whether the user is premium (they may have just upgraded).
+/// tab (an event's Premium Upgrade, on the web); with Premium set up
+/// ([ocr]), it checks again whether the user is premium (they may have just
+/// upgraded).
 Future<void> showAccountSheet(
   BuildContext context,
   AuthService auth,
@@ -31,18 +33,23 @@ Future<void> showAccountSheet(
 
 /// The Profile tab's account: signing in, and once signed in, who it is,
 /// how sync stands, Sync now and Sign out; with Premium set up ([ocr]),
-/// the user's role ([roleLabel]) and the Premium card too.
+/// the user's role ([roleLabel]) and the Premium card too (without the
+/// upgrade offer in a [storeApp]).
 class AccountPanel extends StatelessWidget {
   const AccountPanel({
     super.key,
     required this.auth,
     required this.sync,
     this.ocr,
+    this.store,
   });
 
   final AuthService auth;
   final CloudSync sync;
   final CloudOcr? ocr;
+
+  /// Whether to leave out the upgrade offer (null: [storeApp]).
+  final bool? store;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -53,30 +60,24 @@ class AccountPanel extends StatelessWidget {
 
   Widget _signedOut(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Sign in', style: theme.textTheme.titleLarge),
+        Text(l10n.accountSignIn, style: theme.textTheme.titleLarge),
         const SizedBox(height: 8),
-        const Text(
-          'Sign in to read tabs, share, and have your events backed up on '
-          'every device you sign in on. Signed out, you can still capture; '
-          'it stays on this device.',
-        ),
+        Text(l10n.accountSignInIntro),
         if (ocr != null) ...[
           const SizedBox(height: 8),
-          const Text(
-            'Signed in, TabScan Premium transcribes your scans in the cloud '
-            'as they sync.',
-          ),
+          Text(l10n.accountSignInPremium),
         ],
         const SizedBox(height: 16),
         auth.buildSignInButton() ??
             FilledButton.icon(
               onPressed: auth.checking ? null : auth.signIn,
               icon: const Icon(Icons.login),
-              label: const Text('Sign in with Google'),
+              label: Text(l10n.accountSignInWithGoogle),
             ),
         if (auth.error case final error?) ...[
           const SizedBox(height: 12),
@@ -88,6 +89,7 @@ class AccountPanel extends StatelessWidget {
 
   Widget _signedIn(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final user = auth.user!;
     final photo = user.photoUrl;
     return Column(
@@ -104,37 +106,40 @@ class AccountPanel extends StatelessWidget {
           subtitle: user.label == user.email ? null : Text(user.email),
         ),
         if (ocr case final ocr?)
-          if (roleLabel(ocr) case final role?)
+          if (roleLabel(ocr, l10n) case final role?)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: Text('Role: $role', key: const Key('role')),
+              child: Text(l10n.accountRole(role), key: const Key('role')),
             ),
         Text(
-          syncStatus(sync),
+          syncStatus(sync, l10n),
           style: sync.state == SyncState.failed
               ? TextStyle(color: theme.colorScheme.error)
               : theme.textTheme.bodyMedium,
         ),
         const SizedBox(height: 16),
-        Row(
+        // Wraps on a small phone (and in longer languages).
+        Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             FilledButton.tonalIcon(
               onPressed: sync.state == SyncState.syncing ? null : sync.syncNow,
               icon: const Icon(Icons.sync),
-              label: const Text('Sync now'),
+              label: Text(l10n.accountSyncNow),
             ),
-            const SizedBox(width: 12),
-            TextButton(onPressed: auth.signOut, child: const Text('Sign out')),
+            TextButton(
+              onPressed: auth.signOut,
+              child: Text(l10n.accountSignOut),
+            ),
           ],
         ),
         const SizedBox(height: 8),
-        Text(
-          'Signing out keeps your events on this device.',
-          style: theme.textTheme.bodySmall,
-        ),
+        Text(l10n.accountSignOutNote, style: theme.textTheme.bodySmall),
         if (ocr case final ocr?) ...[
           const SizedBox(height: 16),
-          PremiumCard(ocr: ocr, email: user.email),
+          PremiumCard(ocr: ocr, email: user.email, store: store),
         ],
       ],
     );
@@ -143,27 +148,31 @@ class AccountPanel extends StatelessWidget {
 
 /// The signed-in user's role in TabScan, as rbacr has it (through the
 /// cloud OCR service): Premium, or else Free (`premium` implies `free`);
-/// null before the first check.
-String? roleLabel(CloudOcr ocr) => switch (ocr.status) {
-  null => ocr.checking ? 'Checking…' : null,
-  PremiumStatus(premium: true) => 'Premium',
-  PremiumStatus(checked: false) => 'Free (couldn\'t check)',
-  _ => 'Free',
-};
+/// null before the first check. In [l10n]'s language (default: [appL10n]).
+String? roleLabel(CloudOcr ocr, [AppLocalizations? l10n]) {
+  final t = l10n ?? appL10n;
+  return switch (ocr.status) {
+    null => ocr.checking ? t.accountChecking : null,
+    PremiumStatus(premium: true) => t.accountRolePremium,
+    PremiumStatus(checked: false) => t.accountRoleFreeUnchecked,
+    _ => t.accountRoleFree,
+  };
+}
 
 /// The sync status line: "Syncing…", "Synced at 14:05 (2 uploaded)", or
-/// why it failed.
-String syncStatus(CloudSync sync) {
+/// why it failed. In [l10n]'s language (default: [appL10n]).
+String syncStatus(CloudSync sync, [AppLocalizations? l10n]) {
+  final l = l10n ?? appL10n;
   String two(int n) => n.toString().padLeft(2, '0');
   return switch (sync.state) {
-    SyncState.signedOut => 'Not syncing',
-    SyncState.syncing => 'Syncing…',
-    SyncState.failed => sync.message ?? 'Sync failed',
+    SyncState.signedOut => l.accountSyncOff,
+    SyncState.syncing => l.accountSyncing,
+    SyncState.failed => sync.message ?? l.accountSyncFailed,
     SyncState.synced => [
       if (sync.lastSynced case final t?)
-        'Synced at ${two(t.hour)}:${two(t.minute)}'
+        l.accountSyncedAt('${two(t.hour)}:${two(t.minute)}')
       else
-        'Synced',
+        l.accountSynced,
       if (sync.message case final m?) ' ($m)',
     ].join(),
   };

@@ -96,3 +96,7 @@ tabscan_app/ios/Flutter/Private.xcconfig
 # No trailing slash: a worktree may link the main folder's certs (a symlink,
 # not a folder), and its private key must never be committed either.
 tabscan_floci/certs
+
+# Store review contact and sign-in details (never committed)
+tabscan_store/ios/review_information/*
+!tabscan_store/ios/review_information/notes.txt
