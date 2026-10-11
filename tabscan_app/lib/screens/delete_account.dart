@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../cloud/account_deletion.dart';
 import '../cloud/cloud_sync.dart';
+import '../l10n/language.dart';
 import 'premium_card.dart';
 
 /// Profile's **Delete account**: asks first ([confirmAccountDeletion]),
@@ -14,6 +15,7 @@ Future<void> deleteAccount(
   bool? store,
 }) async {
   final messenger = ScaffoldMessenger.maybeOf(context);
+  final done = context.l10n.deleteAccountDone;
   if (!await confirmAccountDeletion(context, premium: premium, store: store)) {
     return;
   }
@@ -24,9 +26,7 @@ Future<void> deleteAccount(
     builder: (_) => DeletionDialog(deletion: AccountDeletion(sync)),
   );
   if (deleted ?? false) {
-    messenger?.showSnackBar(
-      const SnackBar(content: Text('Your TabScan account was deleted.')),
-    );
+    messenger?.showSnackBar(SnackBar(content: Text(done)));
   }
 }
 
@@ -40,22 +40,23 @@ Future<bool> confirmAccountDeletion(
   bool? store,
 }) async {
   final theme = Theme.of(context);
+  final l10n = context.l10n;
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
       icon: Icon(Icons.delete_forever, color: theme.colorScheme.error),
-      title: const Text('Delete your account?'),
+      title: Text(l10n.deleteAccountTitle),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('This deletes:'),
+            Text(l10n.deleteAccountThisDeletes),
             const SizedBox(height: 8),
-            for (final line in const [
-              'All your events, in the cloud and on this device.',
-              'Your shares: the people you shared captures with lose them.',
-              'The captures shared with you: they stop showing here.',
+            for (final line in [
+              l10n.deleteAccountEvents,
+              l10n.deleteAccountShares,
+              l10n.deleteAccountSharedWithYou,
             ])
               Padding(
                 padding: const EdgeInsets.only(left: 8, bottom: 4),
@@ -63,36 +64,31 @@ Future<bool> confirmAccountDeletion(
               ),
             const SizedBox(height: 8),
             Text(
-              "It can't be undone.",
+              l10n.deleteAccountCantUndo,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.error,
               ),
             ),
             const SizedBox(height: 8),
-            const Text("Your Google account isn't deleted."),
+            Text(l10n.deleteAccountGoogleKept),
             if (premium) ...[
               const SizedBox(height: 8),
               Text(
                 !(store ?? storeApp)
-                    ? "A TabScan Premium subscription isn't cancelled: "
-                          'cancel it on Substack, where you subscribed.'
-                    : "A TabScan Premium subscription isn't cancelled: "
-                          "it's managed where you bought it.",
+                    ? l10n.deleteAccountPremiumWeb
+                    : l10n.deleteAccountPremiumStore,
               ),
             ],
             const SizedBox(height: 8),
-            const Text(
-              'If TabScan is signed in on your other devices, sign out '
-              "there first, so they don't upload their events again.",
-            ),
+            Text(l10n.deleteAccountOtherDevices),
           ],
         ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancel'),
+          child: Text(l10n.deleteAccountCancel),
         ),
         FilledButton(
           key: const Key('confirm-delete-account'),
@@ -101,7 +97,7 @@ Future<bool> confirmAccountDeletion(
             foregroundColor: theme.colorScheme.onError,
           ),
           onPressed: () => Navigator.pop(context, true),
-          child: const Text('Delete account'),
+          child: Text(l10n.deleteAccountButton),
         ),
       ],
     ),
@@ -152,7 +148,7 @@ class _DeletionDialogState extends State<DeletionDialog> {
       setState(() {
         _error = e is AccountDeletionException
             ? e.message
-            : "Your account couldn't be deleted: $e";
+            : context.l10n.deleteAccountCouldnt('$e');
         _deleted = e is AccountDeletionException && e.deleted;
         _signedOut = widget.deletion.sync.auth.user == null;
       });
@@ -162,6 +158,7 @@ class _DeletionDialogState extends State<DeletionDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final error = _error;
     final p = _progress;
     return PopScope(
@@ -169,17 +166,17 @@ class _DeletionDialogState extends State<DeletionDialog> {
       child: AlertDialog(
         title: Text(
           error == null
-              ? 'Deleting your account'
+              ? l10n.deleteAccountDeleting
               : _deleted
-              ? 'Account deleted'
-              : 'Account not deleted',
+              ? l10n.deleteAccountDeleted
+              : l10n.deleteAccountNotDeleted,
         ),
         content: error == null
             ? Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(p.label),
+                  Text(p.label(l10n)),
                   const SizedBox(height: 16),
                   LinearProgressIndicator(
                     value: p.total > 0 ? p.done / p.total : null,
@@ -191,10 +188,13 @@ class _DeletionDialogState extends State<DeletionDialog> {
           if (error != null) ...[
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Close'),
+              child: Text(l10n.deleteAccountClose),
             ),
             if (!_deleted && !_signedOut)
-              FilledButton(onPressed: _run, child: const Text('Try again')),
+              FilledButton(
+                onPressed: _run,
+                child: Text(l10n.deleteAccountTryAgain),
+              ),
           ],
         ],
       ),

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../l10n/language.dart';
 import 'cloud_ocr.dart';
 import 'cloud_sync.dart';
 import 'cognito.dart';
@@ -32,14 +33,22 @@ class DeletionProgress {
   final int done;
   final int total;
 
-  /// "Deleting your files in the cloud (120 of 300)…".
-  String get label {
-    final count = total > 0 ? ' ($done of $total)' : '';
+  /// "Deleting your files in the cloud (120 of 300)…", in [l10n]'s
+  /// language (the app's, [appL10n], when null).
+  String label([AppLocalizations? l10n]) {
+    final t = l10n ?? appL10n;
+    final counted = total > 0;
     return switch (step) {
-      DeletionStep.cloud => 'Deleting your files in the cloud$count…',
-      DeletionStep.shares => 'Deleting your shares…',
-      DeletionStep.device => 'Deleting your events on this device$count…',
-      DeletionStep.signOut => 'Signing out…',
+      DeletionStep.cloud =>
+        counted
+            ? t.deleteAccountStepCloudCount(done, total)
+            : t.deleteAccountStepCloud,
+      DeletionStep.shares => t.deleteAccountStepShares,
+      DeletionStep.device =>
+        counted
+            ? t.deleteAccountStepDeviceCount(done, total)
+            : t.deleteAccountStepDevice,
+      DeletionStep.signOut => t.deleteAccountStepSignOut,
     };
   }
 }
@@ -91,7 +100,7 @@ class AccountDeletion {
     final token = auth.idToken;
     final user = auth.user?.id;
     if (token == null || user == null) {
-      throw AccountDeletionException('Sign in again to delete your account.');
+      throw AccountDeletionException(appL10n.deleteAccountSignInAgain);
     }
     report(DeletionStep.cloud);
     await sync.pause();
@@ -99,10 +108,7 @@ class AccountDeletion {
     try {
       identity = await _emptyFolder(token, report);
       if (auth.user?.id != user) {
-        throw AccountDeletionException(
-          'You signed out before your account was deleted. Your files in '
-          'the cloud were deleted; sign in and delete it again to finish.',
-        );
+        throw AccountDeletionException(appL10n.deleteAccountSignedOutMeanwhile);
       }
       if (sync.shares case final shares?) {
         report(DeletionStep.shares);
@@ -111,14 +117,15 @@ class AccountDeletion {
           await shares.deleteAccount(auth.idToken ?? token);
         } on ShareApiException catch (e) {
           throw AccountDeletionException(
-            'Your files in the cloud were deleted, but not your shares: '
-            '${e.statusCode == 401 ? 'sign in again' : e.message}. '
-            'Delete your account again to finish.',
+            appL10n.deleteAccountSharesFailed(
+              e.statusCode == 401
+                  ? appL10n.deleteAccountSignInAgainShort
+                  : e.message,
+            ),
           );
         } on Object catch (e) {
           throw AccountDeletionException(
-            'Your files in the cloud were deleted, but not your shares '
-            '($e). Delete your account again to finish.',
+            appL10n.deleteAccountSharesFailedBecause('$e'),
           );
         }
       }
@@ -139,9 +146,7 @@ class AccountDeletion {
     await auth.signOut();
     if (leftHere != null) {
       throw AccountDeletionException(
-        'Your account was deleted and you were signed out, but some events '
-        "on this device couldn't be deleted ($leftHere): delete them from "
-        'Home.',
+        appL10n.deleteAccountLeftHere('$leftHere'),
         deleted: true,
       );
     }
@@ -182,16 +187,11 @@ class AccountDeletion {
           if (failed.isNotEmpty) {
             debugPrint('TabScan: account deletion left $failed');
             throw AccountDeletionException(
-              "${failed.length} of ${keys.length} files in the cloud couldn't "
-              'be deleted. Nothing else was deleted, and you are still '
-              'signed in: try again.',
+              appL10n.deleteAccountSomeFiles(failed.length, keys.length),
             );
           }
         }
-        throw AccountDeletionException(
-          'Files kept appearing in your cloud folder while it was being '
-          'emptied. Nothing else was deleted: try again.',
-        );
+        throw AccountDeletionException(appL10n.deleteAccountKeptAppearing);
       } on S3Exception catch (e) {
         // Expired credentials, or a clock S3 just corrected: once more.
         if (attempt == 0 && (e.credentialsRejected || e.clockSkewed)) {
@@ -199,23 +199,18 @@ class AccountDeletion {
           continue;
         }
         throw AccountDeletionException(
-          "Your files in the cloud couldn't be deleted (HTTP "
-          '${e.statusCode}). Nothing else was deleted: try again.',
+          appL10n.deleteAccountFilesHttp(e.statusCode),
         );
       } on CognitoException catch (e) {
         throw AccountDeletionException(
           e.needsSignIn
-              ? 'Sign in again to delete your account.'
-              : "Your files in the cloud couldn't be deleted (${e.type}). "
-                    'Nothing was deleted: try again.',
+              ? appL10n.deleteAccountSignInAgain
+              : appL10n.deleteAccountFilesCognito(e.type),
         );
       } on AccountDeletionException {
         rethrow;
       } on Object catch (e) {
-        throw AccountDeletionException(
-          "Your files in the cloud couldn't be deleted ($e). Nothing else "
-          'was deleted: try again.',
-        );
+        throw AccountDeletionException(appL10n.deleteAccountFilesError('$e'));
       }
     }
   }

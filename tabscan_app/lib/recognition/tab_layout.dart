@@ -23,25 +23,153 @@ final RegExp _tabChar = RegExp(r'[-0-9|hpbrsx/\\~()<>.*: ]');
 // An optional string name and bar line in front of a tab line.
 final RegExp _prefix = RegExp(r'^\s*([eBGDAEbgda])?\s*[|:\]]?');
 
+/// A word OCR read, and where it starts (image pixels).
+class OcrWord {
+  const OcrWord(this.text, this.left);
+  final String text;
+  final double left;
+}
+
+/// A line OCR read: its text, words and box (image pixels; a zero box when
+/// unknown, as in tests).
+class OcrLine {
+  const OcrLine(
+    this.text, {
+    this.words = const [],
+    this.left = 0,
+    this.right = 0,
+    this.top = 0,
+    this.bottom = 0,
+  });
+
+  final String text;
+  final List<OcrWord> words;
+  final double left;
+  final double right;
+  final double top;
+  final double bottom;
+
+  bool get located => right > left;
+  double get y => (top + bottom) / 2;
+}
+
+/// A page's tab and the notations around it (chords, lyrics, section
+/// names), top to bottom: a staff, or a line of text.
+sealed class _Piece {}
+
+class _Staff extends _Piece {
+  _Staff(this.text);
+  final String text;
+}
+
+class _Text extends _Piece {
+  _Text(this.text);
+  final String text;
+}
+
+/// Pieces as one text: a blank line between staves and after a staff,
+/// none before a staff (chord names and labels sit right above it).
+String _join(List<_Piece> pieces) {
+  final out = StringBuffer();
+  for (final (i, p) in pieces.indexed) {
+    if (i > 0) out.write(pieces[i - 1] is _Staff ? '\n\n' : '\n');
+    out.write(p is _Staff ? p.text : (p as _Text).text);
+  }
+  return out.toString();
+}
+
 /// The tab lines OCR read on a text tab, as clean plain text: one block per
 /// staff, string names added when missing, every line of a staff the same
-/// length. Null when fewer than four lines look like tab.
-String? asciiTab(List<String> lines) {
-  final staves = <List<String>>[];
+/// length; the page's other notations (chords, lyrics, section names) kept
+/// in their place, chords at the tab's columns when OCR says where its
+/// words are. Null when fewer than four lines look like tab.
+String? asciiTab(List<OcrLine> lines) {
+  final pieces = <_Piece>[];
   var staff = <String>[];
-  for (final raw in lines) {
-    final body = _tabBody(raw);
-    if (body != null) {
-      staff.add(body);
-      continue;
-    }
-    if (staff.isNotEmpty) staves.add(staff);
+  // Where a tab line's text starts, and its letters' width, to place the
+  // words of the text lines at the tab's columns.
+  final origins = <double>[], widths = <double>[], shifts = <double>[];
+  void close() {
+    if (staff.length >= 4) pieces.add(_Staff(_formatAsciiStaff(staff)));
     staff = <String>[];
   }
-  if (staff.isNotEmpty) staves.add(staff);
-  staves.removeWhere((s) => s.length < 4);
-  if (staves.isEmpty) return null;
-  return staves.map(_formatAsciiStaff).join('\n\n');
+
+  for (final raw in lines) {
+    final body = _tabBody(raw.text);
+    if (body != null) {
+      staff.add(body);
+      final length = raw.text.trimRight().length;
+      if (raw.located && length > 0) {
+        origins.add(raw.left);
+        widths.add((raw.right - raw.left) / length);
+        // The formatted line starts `e|`, whatever the read one did.
+        shifts.add(2.0 - _prefix.firstMatch(raw.text)!.end);
+      }
+      continue;
+    }
+    close();
+    if (isNotation(raw.text)) pieces.add(_Text(raw.text.trim()));
+  }
+  close();
+  if (!pieces.any((p) => p is _Staff)) return null;
+  if (widths.isNotEmpty) {
+    final (origin, width, shift) = (
+      _median(origins),
+      _median(widths),
+      _median(shifts),
+    );
+    var t = 0;
+    for (final raw in lines) {
+      if (_tabBody(raw.text) != null || !isNotation(raw.text)) continue;
+      while (pieces[t] is! _Text) {
+        t++;
+      }
+      if (raw.located && raw.words.isNotEmpty) {
+        pieces[t] = _Text(
+          placeWords([
+            for (final w in raw.words)
+              (w.text, ((w.left - origin) / width + shift).round()),
+          ]),
+        );
+      }
+      t++;
+    }
+  }
+  return _join(pieces);
+}
+
+/// Words at their columns ([text], column), at least a space apart.
+String placeWords(List<(String, int)> words) {
+  final out = StringBuffer();
+  for (final (text, column) in [...words]..sort((a, b) => a.$2 - b.$2)) {
+    final gap = out.isEmpty ? column : column - out.length;
+    out.write(' ' * math.max(gap, out.isEmpty ? 0 : 1));
+    out.write(text);
+  }
+  return out.toString();
+}
+
+final RegExp _url = RegExp(
+  r'https?://|www\.|\.(com|net|org|br)\b',
+  caseSensitive: false,
+);
+final RegExp _pageNumber = RegExp(
+  r'^(page\s*)?\d+(\s*(/|of)\s*\d+)?$',
+  caseSensitive: false,
+);
+final RegExp _odd = RegExp(r"[^A-Za-z0-9À-ÿ\s#/()'’,.!?:;&+\-]");
+
+/// Whether a line of text OCR read is a notation worth keeping beside the
+/// tab (chord names, lyrics, a section's name), not noise: a web address,
+/// a page number, a garbled tab line, stray marks.
+bool isNotation(String line) {
+  final text = line.trim();
+  if (text.isEmpty || _url.hasMatch(text) || _pageNumber.hasMatch(text)) {
+    return false;
+  }
+  if (!RegExp('[A-Za-zÀ-ÿ]').hasMatch(text)) return false;
+  if ('-'.allMatches(text).length >= text.length * 0.3) return false;
+  return _odd.allMatches(text).length <= text.length * 0.2;
 }
 
 /// The body of a tab line, after its string name, with OCR's usual
@@ -158,13 +286,21 @@ class Glyph {
 
 /// Plain-text tab from the [staves] found in the image and the fret
 /// [glyphs] OCR read on it. Each glyph goes on its staff's nearest line;
-/// glyphs at about the same x are one column (a chord). Null when no glyph
+/// glyphs at about the same x are one column (a chord). The [text] lines
+/// OCR read off the staves that are notations (chord names, lyrics,
+/// section names) go in their place, top to bottom. Null when no glyph
 /// falls on a staff.
-String? typesetTab(List<List<double>> staves, List<Glyph> glyphs) {
-  final blocks = <String>[];
+String? typesetTab(
+  List<List<double>> staves,
+  List<Glyph> glyphs, {
+  List<OcrLine> text = const [],
+}) {
+  final blocks = <(double, _Piece)>[];
+  final bands = <(double, double)>[];
   for (final lines in staves) {
     final gap = (lines.last - lines.first) / (lines.length - 1);
     final top = lines.first - gap / 2, bottom = lines.last + gap / 2;
+    bands.add((top, bottom));
     final onStaff = glyphs.where((g) => g.y >= top && g.y <= bottom).toList()
       ..sort((a, b) => a.x.compareTo(b.x));
     if (onStaff.isEmpty) continue;
@@ -201,12 +337,26 @@ String? typesetTab(List<List<double>> staves, List<Glyph> glyphs) {
       }
     }
     final names = stringNames[lines.length]!;
-    blocks.add(
-      [for (var i = 0; i < lines.length; i++) '${names[i]}|${rows[i]}--|']
-          .join('\n'),
-    );
+    blocks.add((
+      top,
+      _Staff(
+        [for (var i = 0; i < lines.length; i++) '${names[i]}|${rows[i]}--|']
+            .join('\n'),
+      ),
+    ));
   }
-  return blocks.isEmpty ? null : blocks.join('\n\n');
+  if (blocks.isEmpty) return null;
+  for (final line in text) {
+    final onStaff = bands.any((b) => line.y >= b.$1 && line.y <= b.$2);
+    final frets =
+        line.words.isNotEmpty &&
+        line.words.every((w) => fretText(w.text) != null);
+    if (!onStaff && !frets && isNotation(line.text)) {
+      blocks.add((line.y, _Text(line.text.trim())));
+    }
+  }
+  blocks.sort((a, b) => a.$1.compareTo(b.$1));
+  return _join([for (final (_, piece) in blocks) piece]);
 }
 
 int _nearest(List<double> lines, double y) {

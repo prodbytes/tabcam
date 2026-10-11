@@ -434,3 +434,73 @@ spec.
     secrets, and its SHA-256 added to `assetlinks.json`, so release builds it signs open
     the sites' links in the app once deployed
     ([sharing](sharing.md#android-app-links), [app stores](app-stores.md)).
+51. **Fix: the minute's sync pass stopped after signing out and back in**
+    (found while adding account deletion). Sign-out cancelled the periodic
+    timer but kept it, so the next sign-in didn't start a new one; now
+    it's cleared, with a test ([cloud sync](cloud-sync.md)).
+53. **Draft the Google Play and App Store listings** (part of publishing
+    to the stores), in fastlane's layout for a later upload, without
+    fastlane yet: [tabscan_store/](../tabscan_store) with the Play title,
+    short and full descriptions and changelog; the App Store name,
+    subtitle, description, keywords, promotional text, release notes and
+    URLs; App Review notes (the test Google account is the maintainer's to
+    provide); and draft Data safety, App Privacy, content rating,
+    audience and category answers. `scripts/store-metadata-check.sh`
+    checks the lengths ([app stores](app-stores.md#store-listings)).
+54. **On the Text view, remove the Share text button (the event's Share
+    in the app bar is enough), make Copy and Mark correct look alike, and
+    make Mark correct a toggle.** Share text is gone. Mark correct is now
+    a button like Copy, a toggle: tonal while off, filled and reading
+    **Correct** while on ([tab recognition](tab-recognition.md#text-view)).
+55. **Add auto-correct: a Lambda that does its best to correct the tab,
+    for now from a button on the Text view; short button labels to fit the
+    screen's width. It searches online, popular tab sites first, for the
+    song's tab, works out the corrections and shows them per note in the
+    text view, for the user to accept or not. Make the text view a text
+    editor so the tab is easy to correct.** Chosen with the user: Claude
+    with web search does the search and comparison, Premium only, and the
+    editor gets an overtype mode. The cloud OCR service's API function
+    answers `POST /autocorrect` (Premium; Claude `claude-opus-5-5` with
+    web search and fetch, corrections by note id, checked against the
+    reading); its timeout went to 300 s and it may read the Claude API
+    key's secret. The Text view's buttons are now **Copy**, **Correct**
+    and **Fix**; Fix asks for the song and shows the corrections per note
+    to accept or reject. The editor has **Overtype** (on by default) and
+    no keyboard suggestions. Store apps show Fix to Premium users only,
+    as they show no upgrade offer ([auto-correct](autocorrect.md),
+    [tab recognition](tab-recognition.md#text-view),
+    [cloud OCR](cloud-ocr.md#infrastructure)).
+56. **In the text editor, add + and − buttons that increment or decrement
+    the number under the cursor, up to two digits (15 + → 16, 5 + → 6).**
+    − and + under the Text view's buttons change the fret under the
+    cursor by one, 0 to 99, keeping the columns
+    ([tab recognition](tab-recognition.md#text-view)).
+57. **If the document has other notations, such as lyrics and chords, add
+    them to the text as well.** Reading keeps the page's notations with
+    the tab, in their place: titles, section names, chord names (at the
+    tab's columns) and lyrics, without web addresses, page numbers or
+    stray marks. On the device for text and typeset tabs, and in the
+    cloud, which now also reads the page off the staves with RapidOCR
+    ([tab recognition](tab-recognition.md#notations-around-the-tab),
+    [cloud OCR](cloud-ocr.md#transcription)).
+58. **In the profile panel, add a language setting, for now English,
+    Spanish and Portuguese; extract all the texts, translate them, make
+    it work, verify and redeploy.** The app's texts moved to ARB files
+    (Flutter's gen-l10n), translated to Spanish (neutral Latin American)
+    and Portuguese (Brazilian). Profile has **Language**: the device's
+    language by default, or one of the three, kept on the device and
+    applied at once. iOS lists the three languages
+    ([localization](localization.md), [navigation](navigation.md#profile)).
+59. **Privacy policy and iOS privacy declarations** (part of publishing
+    to the stores). A privacy policy page at
+    https://tabscan.nu01.com/privacy (`tabscan_index/site/privacy/`,
+    uploaded by `scripts/deploy.sh` as the object `privacy` and checked by
+    its smoke test; served by the local index server too), based on what
+    the code does; linked from the index page's footer and the Profile
+    tab's About (**Privacy policy**). The contact email is a placeholder
+    until the maintainer gives one. iOS: `ITSAppUsesNonExemptEncryption`
+    false in `Info.plist`, and the app's privacy manifest,
+    `PrivacyInfo.xcprivacy`, in the Runner target
+    ([privacy](privacy.md), [platforms](platforms.md),
+    [deploy](deploy.md), [navigation](navigation.md#profile),
+    [app stores](app-stores.md)).

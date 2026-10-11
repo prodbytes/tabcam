@@ -102,7 +102,7 @@ Uploads use S3 Intelligent-Tiering.
 
 A **pass** runs at sign-in, 2 seconds after the user changes an event (a
 burst of changes is one pass), every minute while signed in (to bring
-other devices' changes), and on **Sync now**. One pass runs at a time; a
+other devices' changes; again after signing out and back in), and on **Sync now**. One pass runs at a time; a
 request during one runs another right after. Passes wait for the library
 to load.
 

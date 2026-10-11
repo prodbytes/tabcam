@@ -162,7 +162,7 @@ void main() {
     expect(
       progress
           .where((p) => p.step == DeletionStep.cloud && p.total > 0)
-          .map((p) => p.label),
+          .map((p) => p.label()),
       [
         'Deleting your files in the cloud (0 of 1500)…',
         'Deleting your files in the cloud (1000 of 1500)…',

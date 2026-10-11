@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../cloud/cloud_sync.dart';
 import '../cloud/share_api.dart';
+import '../l10n/language.dart';
 import '../library/capture_event.dart';
 
 /// Shows who [event] (the user's own) is shared with, to add people by
@@ -68,7 +69,7 @@ class _PeopleSheetState extends State<PeopleSheet> {
   Future<void> _add() async {
     final email = _address.text.trim().toLowerCase();
     if (!_email.hasMatch(email)) {
-      setState(() => _error = 'Enter an email address');
+      setState(() => _error = context.l10n.accountPeopleEnterEmail);
       return;
     }
     await _run(() => widget.sync.grant(widget.event, email, _role));
@@ -78,6 +79,7 @@ class _PeopleSheetState extends State<PeopleSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final grants = _grants;
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -90,12 +92,9 @@ class _PeopleSheetState extends State<PeopleSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Share with people', style: theme.textTheme.titleLarge),
+          Text(l10n.accountPeopleTitle, style: theme.textTheme.titleLarge),
           const SizedBox(height: 8),
-          const Text(
-            'People you add find this capture when they sign in to TabScan '
-            'with that email address. No email is sent.',
-          ),
+          Text(l10n.accountPeopleIntro),
           const SizedBox(height: 16),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,7 +104,9 @@ class _PeopleSheetState extends State<PeopleSheet> {
                   controller: _address,
                   keyboardType: TextInputType.emailAddress,
                   autocorrect: false,
-                  decoration: const InputDecoration(labelText: 'Email'),
+                  decoration: InputDecoration(
+                    labelText: l10n.accountPeopleEmail,
+                  ),
                   onSubmitted: (_) => _add(),
                 ),
               ),
@@ -122,7 +123,7 @@ class _PeopleSheetState extends State<PeopleSheet> {
             child: FilledButton.icon(
               onPressed: _busy ? null : _add,
               icon: const Icon(Icons.person_add_alt_1_outlined),
-              label: const Text('Add'),
+              label: Text(l10n.accountPeopleAdd),
             ),
           ),
           if (_error case final error?) ...[
@@ -133,7 +134,7 @@ class _PeopleSheetState extends State<PeopleSheet> {
           if (_busy && grants == null)
             const Center(child: CircularProgressIndicator())
           else if (grants != null && grants.isEmpty)
-            Text('Not shared yet.', style: theme.textTheme.bodyMedium)
+            Text(l10n.accountPeopleNone, style: theme.textTheme.bodyMedium)
           else if (grants != null)
             for (final g in grants)
               ListTile(
@@ -152,7 +153,7 @@ class _PeopleSheetState extends State<PeopleSheet> {
                             ),
                     ),
                     IconButton(
-                      tooltip: 'Remove ${g.email}',
+                      tooltip: l10n.accountPeopleRemove(g.email),
                       icon: const Icon(Icons.close),
                       onPressed: _busy
                           ? null
@@ -177,20 +178,28 @@ class _RoleMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => PopupMenuButton<ShareRole>(
-    tooltip: 'What they can do',
+    tooltip: context.l10n.accountPeopleRoleTooltip,
     enabled: onChanged != null,
     initialValue: role,
     onSelected: onChanged,
     itemBuilder: (_) => [
       for (final r in ShareRole.values)
-        PopupMenuItem(value: r, child: Text(r.label)),
+        PopupMenuItem(value: r, child: Text(_label(context, r))),
     ],
     child: Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [Text(role.label), const Icon(Icons.arrow_drop_down)],
+        children: [
+          Text(_label(context, role)),
+          const Icon(Icons.arrow_drop_down),
+        ],
       ),
     ),
   );
+
+  static String _label(BuildContext context, ShareRole role) =>
+      role == ShareRole.edit
+      ? context.l10n.accountPeopleCanEdit
+      : context.l10n.accountPeopleReadOnly;
 }

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../l10n/language.dart';
 import 'sigv4.dart';
 
 /// What a person may do with a capture shared with them.
@@ -14,7 +15,9 @@ enum ShareRole {
 
   static ShareRole byName(String? name) => name == 'read' ? read : edit;
 
-  String get label => this == edit ? 'Can edit' : 'Read only';
+  String get label => this == edit
+      ? appL10n.accountPeopleCanEdit
+      : appL10n.accountPeopleReadOnly;
 }
 
 /// One person a capture is shared with.
@@ -196,8 +199,8 @@ class ShareApi {
         response.statusCode,
         decoded['message'] as String? ??
             (response.statusCode == 401
-                ? 'Sign in again to share'
-                : 'Sharing failed (HTTP ${response.statusCode})'),
+                ? appL10n.accountSignInAgainToShare
+                : appL10n.accountShareFailedHttp('${response.statusCode}')),
       );
     }
     return decoded;

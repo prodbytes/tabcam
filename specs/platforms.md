@@ -27,6 +27,25 @@ trusting its certificate (Settings → General → VPN & Device Management),
 and must be reinstalled every 7 days. `bash scripts/flutter-run.sh -d
 <iPhone id> --release` builds, signs and installs it.
 
+**iOS privacy declarations** ([privacy](privacy.md)):
+
+- `Info.plist` sets `ITSAppUsesNonExemptEncryption` to false, so App
+  Store Connect doesn't ask about export compliance for each build. The
+  app's only cryptography is HTTPS (the OS's) and SigV4 request signing
+  (SHA-256 and HMAC from the `crypto` package): authentication, which is
+  exempt.
+- `Runner/PrivacyInfo.xcprivacy`, in the Runner target's resources (so
+  it's at the root of `Runner.app`), is the app's own privacy manifest: no
+  tracking, no tracking domains; collected, linked to the user, for app
+  functionality only: email address, name, user ID (the Cognito identity
+  ID), photos or videos, and other user content. The app's own code (two
+  stock Swift delegates; Dart files are read through Flutter) uses no
+  required-reason APIs, so it declares none. Plugins and SDKs bundle
+  their own manifests (Flutter, ML Kit, Google Sign-In, GoogleUtilities,
+  GoogleDataTransport, the plugins); GoogleDataTransport, which ML Kit
+  uses, declares other diagnostic data (not linked, analytics), to
+  reflect in the App Store privacy labels.
+
 **iOS dependencies** come two ways: Google sign-in (`google_sign_in`)
 through Swift Package Manager, its versions pinned in the committed
 `Package.resolved` files (`ios/Runner.xcworkspace/xcshareddata/swiftpm/`
