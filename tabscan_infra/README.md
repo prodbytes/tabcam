@@ -168,7 +168,9 @@ ACM validation names.
    ```
 
    It runs the function's tests, deploys the stack, uploads the code and
-   checks the API refuses requests without a token. Put the URL it prints
+   checks the API refuses requests without a token. When `tabscan-ocr` is
+   deployed, it passes its accounts table, so `DELETE /account` deletes a
+   user's record there too: run it again after deploying the OCR service. Put the URL it prints
    in `.env` and the repository variables as `TABSCANNER_SHARE_API_URL`:
 
    ```bash

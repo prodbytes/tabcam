@@ -1212,5 +1212,208 @@
   "homePrivacyPolicy": "Privacy policy",
   "@homePrivacyPolicy": {
     "description": "Profile, About: opens the privacy policy"
+  },
+  "deleteAccountDone": "Your TabScan account was deleted.",
+  "@deleteAccountDone": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountTitle": "Delete your account?",
+  "@deleteAccountTitle": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountThisDeletes": "This deletes:",
+  "@deleteAccountThisDeletes": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountEvents": "All your events, in the cloud and on this device.",
+  "@deleteAccountEvents": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountShares": "Your shares: the people you shared captures with lose them.",
+  "@deleteAccountShares": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountSharedWithYou": "The captures shared with you: they stop showing here.",
+  "@deleteAccountSharedWithYou": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountCantUndo": "It can't be undone.",
+  "@deleteAccountCantUndo": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountGoogleKept": "Your Google account isn't deleted.",
+  "@deleteAccountGoogleKept": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountPremiumWeb": "A TabScan Premium subscription isn't cancelled: cancel it on Substack, where you subscribed.",
+  "@deleteAccountPremiumWeb": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountPremiumStore": "A TabScan Premium subscription isn't cancelled: it's managed where you bought it.",
+  "@deleteAccountPremiumStore": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountOtherDevices": "If TabScan is signed in on your other devices, sign out there first, so they don't upload their events again.",
+  "@deleteAccountOtherDevices": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountCancel": "Cancel",
+  "@deleteAccountCancel": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountButton": "Delete account",
+  "@deleteAccountButton": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountCouldnt": "Your account couldn't be deleted: {error}",
+  "@deleteAccountCouldnt": {
+    "description": "Deleting the account (Profile > Delete account)",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteAccountDeleting": "Deleting your account",
+  "@deleteAccountDeleting": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountDeleted": "Account deleted",
+  "@deleteAccountDeleted": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountNotDeleted": "Account not deleted",
+  "@deleteAccountNotDeleted": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountClose": "Close",
+  "@deleteAccountClose": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountTryAgain": "Try again",
+  "@deleteAccountTryAgain": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountStepCloud": "Deleting your files in the cloud…",
+  "@deleteAccountStepCloud": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountStepCloudCount": "Deleting your files in the cloud ({done} of {total})…",
+  "@deleteAccountStepCloudCount": {
+    "description": "Deleting the account (Profile > Delete account)",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteAccountStepShares": "Deleting your shares…",
+  "@deleteAccountStepShares": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountStepDevice": "Deleting your events on this device…",
+  "@deleteAccountStepDevice": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountStepDeviceCount": "Deleting your events on this device ({done} of {total})…",
+  "@deleteAccountStepDeviceCount": {
+    "description": "Deleting the account (Profile > Delete account)",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteAccountStepSignOut": "Signing out…",
+  "@deleteAccountStepSignOut": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountSignInAgain": "Sign in again to delete your account.",
+  "@deleteAccountSignInAgain": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountSignedOutMeanwhile": "You signed out before your account was deleted. Your files in the cloud were deleted; sign in and delete it again to finish.",
+  "@deleteAccountSignedOutMeanwhile": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountSharesFailed": "Your files in the cloud were deleted, but not your shares: {reason}. Delete your account again to finish.",
+  "@deleteAccountSharesFailed": {
+    "description": "Deleting the account (Profile > Delete account)",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteAccountSignInAgainShort": "sign in again",
+  "@deleteAccountSignInAgainShort": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountSharesFailedBecause": "Your files in the cloud were deleted, but not your shares ({error}). Delete your account again to finish.",
+  "@deleteAccountSharesFailedBecause": {
+    "description": "Deleting the account (Profile > Delete account)",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteAccountLeftHere": "Your account was deleted and you were signed out, but some events on this device couldn't be deleted ({error}): delete them from Home.",
+  "@deleteAccountLeftHere": {
+    "description": "Deleting the account (Profile > Delete account)",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteAccountSomeFiles": "{failed} of {total} files in the cloud couldn't be deleted. Nothing else was deleted, and you are still signed in: try again.",
+  "@deleteAccountSomeFiles": {
+    "description": "Deleting the account (Profile > Delete account)",
+    "placeholders": {
+      "failed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteAccountKeptAppearing": "Files kept appearing in your cloud folder while it was being emptied. Nothing else was deleted: try again.",
+  "@deleteAccountKeptAppearing": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountFilesHttp": "Your files in the cloud couldn't be deleted (HTTP {status}). Nothing else was deleted: try again.",
+  "@deleteAccountFilesHttp": {
+    "description": "Deleting the account (Profile > Delete account)",
+    "placeholders": {
+      "status": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteAccountFilesCognito": "Your files in the cloud couldn't be deleted ({type}). Nothing was deleted: try again.",
+  "@deleteAccountFilesCognito": {
+    "description": "Deleting the account (Profile > Delete account)",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteAccountFilesError": "Your files in the cloud couldn't be deleted ({error}). Nothing else was deleted: try again.",
+  "@deleteAccountFilesError": {
+    "description": "Deleting the account (Profile > Delete account)",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -152,7 +152,8 @@ set to check both.
   kept).
 - **`ocr.yaml`**, stack `tabscan-ocr`:
   - the table `tabscan-accounts` (identity ID → address; on demand,
-    point-in-time recovery);
+    point-in-time recovery); a user's item is deleted with their account,
+    by the share API ([deleting the account](cloud-sync.md#deleting-the-account));
   - `tabscan-ocr` (3008 MB, the account's current cap; 5 min, one retry): it may get page images and put
     results;
   - `tabscan-ocr-api` (512 MB, 300 s for [auto-correct](autocorrect.md)'s

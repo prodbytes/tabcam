@@ -13,7 +13,7 @@ publish to production.
 | Developer accounts | Apple: the maintainer has one; Google Play Console: to do (maintainer) |
 | Android upload key and signed App Bundle | Done (below); the upload key's OAuth client is to do |
 | Store builds: hide the Premium purchase links | Done ([cloud OCR](cloud-ocr.md#in-the-app)) |
-| Store builds: in-app account deletion | To do |
+| Store builds: in-app account deletion (Profile, Delete account; the web app as the deletion URL) | Done ([cloud sync](cloud-sync.md#deleting-the-account)); needs the stacks deployed |
 | Sign in with Apple (App Store guideline 4.8) | To do |
 | Privacy policy page; iOS privacy manifest and encryption declaration | Done ([privacy](privacy.md)); the contact email is still to be added |
 | Play internal testing, then the 14-day closed test | To do |

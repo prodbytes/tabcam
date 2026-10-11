@@ -935,4 +935,142 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get homePrivacyPolicy => 'Política de privacidad';
+
+  @override
+  String get deleteAccountDone => 'Se eliminó tu cuenta de TabScan.';
+
+  @override
+  String get deleteAccountTitle => '¿Eliminar tu cuenta?';
+
+  @override
+  String get deleteAccountThisDeletes => 'Esto elimina:';
+
+  @override
+  String get deleteAccountEvents =>
+      'Todos tus eventos, en la nube y en este dispositivo.';
+
+  @override
+  String get deleteAccountShares =>
+      'Lo que compartiste: las personas con quienes compartiste capturas las pierden.';
+
+  @override
+  String get deleteAccountSharedWithYou =>
+      'Las capturas compartidas contigo: dejan de aparecer aquí.';
+
+  @override
+  String get deleteAccountCantUndo => 'No se puede deshacer.';
+
+  @override
+  String get deleteAccountGoogleKept => 'Tu cuenta de Google no se elimina.';
+
+  @override
+  String get deleteAccountPremiumWeb =>
+      'Una suscripción a TabScan Premium no se cancela: cancélala en Substack, donde te suscribiste.';
+
+  @override
+  String get deleteAccountPremiumStore =>
+      'Una suscripción a TabScan Premium no se cancela: se gestiona donde la compraste.';
+
+  @override
+  String get deleteAccountOtherDevices =>
+      'Si TabScan tiene la sesión iniciada en tus otros dispositivos, cierra sesión allí primero para que no vuelvan a subir sus eventos.';
+
+  @override
+  String get deleteAccountCancel => 'Cancelar';
+
+  @override
+  String get deleteAccountButton => 'Eliminar cuenta';
+
+  @override
+  String deleteAccountCouldnt(String error) {
+    return 'No se pudo eliminar tu cuenta: $error';
+  }
+
+  @override
+  String get deleteAccountDeleting => 'Eliminando tu cuenta';
+
+  @override
+  String get deleteAccountDeleted => 'Cuenta eliminada';
+
+  @override
+  String get deleteAccountNotDeleted => 'La cuenta no se eliminó';
+
+  @override
+  String get deleteAccountClose => 'Cerrar';
+
+  @override
+  String get deleteAccountTryAgain => 'Reintentar';
+
+  @override
+  String get deleteAccountStepCloud => 'Eliminando tus archivos en la nube…';
+
+  @override
+  String deleteAccountStepCloudCount(int done, int total) {
+    return 'Eliminando tus archivos en la nube ($done de $total)…';
+  }
+
+  @override
+  String get deleteAccountStepShares => 'Eliminando lo que compartiste…';
+
+  @override
+  String get deleteAccountStepDevice =>
+      'Eliminando tus eventos en este dispositivo…';
+
+  @override
+  String deleteAccountStepDeviceCount(int done, int total) {
+    return 'Eliminando tus eventos en este dispositivo ($done de $total)…';
+  }
+
+  @override
+  String get deleteAccountStepSignOut => 'Cerrando sesión…';
+
+  @override
+  String get deleteAccountSignInAgain =>
+      'Inicia sesión de nuevo para eliminar tu cuenta.';
+
+  @override
+  String get deleteAccountSignedOutMeanwhile =>
+      'Cerraste sesión antes de que se eliminara tu cuenta. Tus archivos en la nube se eliminaron; inicia sesión y elimínala de nuevo para terminar.';
+
+  @override
+  String deleteAccountSharesFailed(String reason) {
+    return 'Tus archivos en la nube se eliminaron, pero no lo que compartiste: $reason. Elimina tu cuenta de nuevo para terminar.';
+  }
+
+  @override
+  String get deleteAccountSignInAgainShort => 'inicia sesión de nuevo';
+
+  @override
+  String deleteAccountSharesFailedBecause(String error) {
+    return 'Tus archivos en la nube se eliminaron, pero no lo que compartiste ($error). Elimina tu cuenta de nuevo para terminar.';
+  }
+
+  @override
+  String deleteAccountLeftHere(String error) {
+    return 'Tu cuenta se eliminó y se cerró tu sesión, pero algunos eventos de este dispositivo no se pudieron eliminar ($error): elimínalos desde Inicio.';
+  }
+
+  @override
+  String deleteAccountSomeFiles(int failed, int total) {
+    return 'No se pudieron eliminar $failed de $total archivos en la nube. No se eliminó nada más y tu sesión sigue iniciada: inténtalo de nuevo.';
+  }
+
+  @override
+  String get deleteAccountKeptAppearing =>
+      'Siguieron apareciendo archivos en tu carpeta de la nube mientras se vaciaba. No se eliminó nada más: inténtalo de nuevo.';
+
+  @override
+  String deleteAccountFilesHttp(int status) {
+    return 'No se pudieron eliminar tus archivos en la nube (HTTP $status). No se eliminó nada más: inténtalo de nuevo.';
+  }
+
+  @override
+  String deleteAccountFilesCognito(String type) {
+    return 'No se pudieron eliminar tus archivos en la nube ($type). No se eliminó nada: inténtalo de nuevo.';
+  }
+
+  @override
+  String deleteAccountFilesError(String error) {
+    return 'No se pudieron eliminar tus archivos en la nube ($error). No se eliminó nada más: inténtalo de nuevo.';
+  }
 }

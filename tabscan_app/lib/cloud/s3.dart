@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -67,6 +69,13 @@ abstract interface class ObjectStore {
   });
 
   Future<void> delete(String key, {required AwsCredentials credentials});
+
+  /// Deletes [keys], up to [S3Bucket.maxBatch] of them; returns the keys
+  /// S3 couldn't delete (an empty list when all went).
+  Future<List<String>> deleteBatch(
+    List<String> keys, {
+    required AwsCredentials credentials,
+  });
 }
 
 /// Signed requests to one bucket (virtual-hosted-style URLs).
@@ -129,6 +138,73 @@ class S3Bucket implements ObjectStore {
     if (response.statusCode == 204) return;
     _check(response);
   }
+
+  /// The most keys one DeleteObjects request takes.
+  static const int maxBatch = 1000;
+
+  /// Deletes [keys] in one DeleteObjects request (`POST /?delete`, quiet:
+  /// S3 answers only the keys it couldn't delete). Where that request
+  /// can't be sent (a browser, before the bucket's CORS allowed POST), it
+  /// falls back to one DELETE per key.
+  @override
+  Future<List<String>> deleteBatch(
+    List<String> keys, {
+    required AwsCredentials credentials,
+  }) async {
+    if (keys.isEmpty) return const [];
+    assert(keys.length <= maxBatch);
+    final body = utf8.encode(deleteRequest(keys));
+    final uri = Uri.https(host, '/', {'delete': ''});
+    final headers = _signer.sign(
+      method: 'POST',
+      uri: uri,
+      headers: {
+        'host': host,
+        'content-type': 'application/xml',
+        'content-md5': base64.encode(md5.convert(body).bytes),
+      },
+      payloadHash: sha256.convert(body).toString(),
+      credentials: credentials,
+      now: clock.now(),
+    );
+    final http.Response response;
+    try {
+      response = await _client.post(
+        uri,
+        headers: {...headers}..remove('host'),
+        body: body,
+      );
+    } on http.ClientException catch (e) {
+      if (!kIsWeb) rethrow;
+      debugPrint('TabScan: DeleteObjects failed ($e); deleting one by one');
+      for (final key in keys) {
+        await delete(key, credentials: credentials);
+      }
+      return const [];
+    }
+    _check(response);
+    return parseDeleteErrors(response.body);
+  }
+
+  /// A quiet DeleteObjects request's body for [keys].
+  @visibleForTesting
+  static String deleteRequest(List<String> keys) => [
+    '<Delete xmlns="http://s3.amazonaws.com/doc/2006-03-01/">',
+    '<Quiet>true</Quiet>',
+    for (final key in keys) '<Object><Key>${_escape(key)}</Key></Object>',
+    '</Delete>',
+  ].join();
+
+  /// The keys a DeleteObjects answer lists as not deleted.
+  @visibleForTesting
+  static List<String> parseDeleteErrors(String xml) => [
+    for (final m in RegExp(
+      r'<Error>(.*?)</Error>',
+      dotAll: true,
+    ).allMatches(xml))
+      if (RegExp(r'<Key>([^<]*)</Key>').firstMatch(m[1]!)?[1] case final key?)
+        _unescape(key),
+  ];
 
   /// The signed headers for a request without a body (`host` left out:
   /// the client sets it, and browsers refuse it from scripts).
@@ -284,6 +360,13 @@ class S3Bucket implements ObjectStore {
       .replaceAll('&quot;', '"')
       .replaceAll('&apos;', "'")
       .replaceAll('&amp;', '&');
+
+  static String _escape(String s) => s
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&apos;');
 
   /// The storage class uploads use: S3 Intelligent-Tiering, which moves
   /// pages and videos nobody opens to cheaper tiers by itself (see

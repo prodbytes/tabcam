@@ -932,4 +932,142 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get homePrivacyPolicy => 'Política de privacidade';
+
+  @override
+  String get deleteAccountDone => 'Sua conta do TabScan foi excluída.';
+
+  @override
+  String get deleteAccountTitle => 'Excluir sua conta?';
+
+  @override
+  String get deleteAccountThisDeletes => 'Isto exclui:';
+
+  @override
+  String get deleteAccountEvents =>
+      'Todos os seus eventos, na nuvem e neste dispositivo.';
+
+  @override
+  String get deleteAccountShares =>
+      'Seus compartilhamentos: as pessoas com quem você compartilhou capturas deixam de tê-las.';
+
+  @override
+  String get deleteAccountSharedWithYou =>
+      'As capturas compartilhadas com você: deixam de aparecer aqui.';
+
+  @override
+  String get deleteAccountCantUndo => 'Não é possível desfazer.';
+
+  @override
+  String get deleteAccountGoogleKept => 'Sua conta do Google não é excluída.';
+
+  @override
+  String get deleteAccountPremiumWeb =>
+      'Uma assinatura do TabScan Premium não é cancelada: cancele-a no Substack, onde você assinou.';
+
+  @override
+  String get deleteAccountPremiumStore =>
+      'Uma assinatura do TabScan Premium não é cancelada: ela é gerenciada onde você a comprou.';
+
+  @override
+  String get deleteAccountOtherDevices =>
+      'Se o TabScan estiver conectado nos seus outros dispositivos, saia neles primeiro para que não enviem os eventos de novo.';
+
+  @override
+  String get deleteAccountCancel => 'Cancelar';
+
+  @override
+  String get deleteAccountButton => 'Excluir conta';
+
+  @override
+  String deleteAccountCouldnt(String error) {
+    return 'Não foi possível excluir sua conta: $error';
+  }
+
+  @override
+  String get deleteAccountDeleting => 'Excluindo sua conta';
+
+  @override
+  String get deleteAccountDeleted => 'Conta excluída';
+
+  @override
+  String get deleteAccountNotDeleted => 'Conta não excluída';
+
+  @override
+  String get deleteAccountClose => 'Fechar';
+
+  @override
+  String get deleteAccountTryAgain => 'Tentar de novo';
+
+  @override
+  String get deleteAccountStepCloud => 'Excluindo seus arquivos na nuvem…';
+
+  @override
+  String deleteAccountStepCloudCount(int done, int total) {
+    return 'Excluindo seus arquivos na nuvem ($done de $total)…';
+  }
+
+  @override
+  String get deleteAccountStepShares => 'Excluindo seus compartilhamentos…';
+
+  @override
+  String get deleteAccountStepDevice =>
+      'Excluindo seus eventos neste dispositivo…';
+
+  @override
+  String deleteAccountStepDeviceCount(int done, int total) {
+    return 'Excluindo seus eventos neste dispositivo ($done de $total)…';
+  }
+
+  @override
+  String get deleteAccountStepSignOut => 'Saindo…';
+
+  @override
+  String get deleteAccountSignInAgain =>
+      'Entre novamente para excluir sua conta.';
+
+  @override
+  String get deleteAccountSignedOutMeanwhile =>
+      'Você saiu antes de a conta ser excluída. Seus arquivos na nuvem foram excluídos; entre e exclua a conta de novo para terminar.';
+
+  @override
+  String deleteAccountSharesFailed(String reason) {
+    return 'Seus arquivos na nuvem foram excluídos, mas não seus compartilhamentos: $reason. Exclua a conta de novo para terminar.';
+  }
+
+  @override
+  String get deleteAccountSignInAgainShort => 'entre novamente';
+
+  @override
+  String deleteAccountSharesFailedBecause(String error) {
+    return 'Seus arquivos na nuvem foram excluídos, mas não seus compartilhamentos ($error). Exclua a conta de novo para terminar.';
+  }
+
+  @override
+  String deleteAccountLeftHere(String error) {
+    return 'Sua conta foi excluída e você saiu, mas alguns eventos deste dispositivo não puderam ser excluídos ($error): exclua-os pelo Início.';
+  }
+
+  @override
+  String deleteAccountSomeFiles(int failed, int total) {
+    return '$failed de $total arquivos na nuvem não puderam ser excluídos. Nada mais foi excluído e você continua conectado: tente de novo.';
+  }
+
+  @override
+  String get deleteAccountKeptAppearing =>
+      'Continuaram aparecendo arquivos na sua pasta na nuvem enquanto ela era esvaziada. Nada mais foi excluído: tente de novo.';
+
+  @override
+  String deleteAccountFilesHttp(int status) {
+    return 'Não foi possível excluir seus arquivos na nuvem (HTTP $status). Nada mais foi excluído: tente de novo.';
+  }
+
+  @override
+  String deleteAccountFilesCognito(String type) {
+    return 'Não foi possível excluir seus arquivos na nuvem ($type). Nada foi excluído: tente de novo.';
+  }
+
+  @override
+  String deleteAccountFilesError(String error) {
+    return 'Não foi possível excluir seus arquivos na nuvem ($error). Nada mais foi excluído: tente de novo.';
+  }
 }

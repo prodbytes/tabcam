@@ -1557,6 +1557,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Privacy policy'**
   String get homePrivacyPolicy;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Your TabScan account was deleted.'**
+  String get deleteAccountDone;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Delete your account?'**
+  String get deleteAccountTitle;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'This deletes:'**
+  String get deleteAccountThisDeletes;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'All your events, in the cloud and on this device.'**
+  String get deleteAccountEvents;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Your shares: the people you shared captures with lose them.'**
+  String get deleteAccountShares;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'The captures shared with you: they stop showing here.'**
+  String get deleteAccountSharedWithYou;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'It can\'t be undone.'**
+  String get deleteAccountCantUndo;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Your Google account isn\'t deleted.'**
+  String get deleteAccountGoogleKept;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'A TabScan Premium subscription isn\'t cancelled: cancel it on Substack, where you subscribed.'**
+  String get deleteAccountPremiumWeb;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'A TabScan Premium subscription isn\'t cancelled: it\'s managed where you bought it.'**
+  String get deleteAccountPremiumStore;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'If TabScan is signed in on your other devices, sign out there first, so they don\'t upload their events again.'**
+  String get deleteAccountOtherDevices;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get deleteAccountCancel;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account'**
+  String get deleteAccountButton;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Your account couldn\'t be deleted: {error}'**
+  String deleteAccountCouldnt(String error);
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting your account'**
+  String get deleteAccountDeleting;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Account deleted'**
+  String get deleteAccountDeleted;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Account not deleted'**
+  String get deleteAccountNotDeleted;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get deleteAccountClose;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get deleteAccountTryAgain;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting your files in the cloud…'**
+  String get deleteAccountStepCloud;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting your files in the cloud ({done} of {total})…'**
+  String deleteAccountStepCloudCount(int done, int total);
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting your shares…'**
+  String get deleteAccountStepShares;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting your events on this device…'**
+  String get deleteAccountStepDevice;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting your events on this device ({done} of {total})…'**
+  String deleteAccountStepDeviceCount(int done, int total);
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Signing out…'**
+  String get deleteAccountStepSignOut;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in again to delete your account.'**
+  String get deleteAccountSignInAgain;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'You signed out before your account was deleted. Your files in the cloud were deleted; sign in and delete it again to finish.'**
+  String get deleteAccountSignedOutMeanwhile;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Your files in the cloud were deleted, but not your shares: {reason}. Delete your account again to finish.'**
+  String deleteAccountSharesFailed(String reason);
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'sign in again'**
+  String get deleteAccountSignInAgainShort;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Your files in the cloud were deleted, but not your shares ({error}). Delete your account again to finish.'**
+  String deleteAccountSharesFailedBecause(String error);
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Your account was deleted and you were signed out, but some events on this device couldn\'t be deleted ({error}): delete them from Home.'**
+  String deleteAccountLeftHere(String error);
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'{failed} of {total} files in the cloud couldn\'t be deleted. Nothing else was deleted, and you are still signed in: try again.'**
+  String deleteAccountSomeFiles(int failed, int total);
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Files kept appearing in your cloud folder while it was being emptied. Nothing else was deleted: try again.'**
+  String get deleteAccountKeptAppearing;
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Your files in the cloud couldn\'t be deleted (HTTP {status}). Nothing else was deleted: try again.'**
+  String deleteAccountFilesHttp(int status);
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Your files in the cloud couldn\'t be deleted ({type}). Nothing was deleted: try again.'**
+  String deleteAccountFilesCognito(String type);
+
+  /// Deleting the account (Profile > Delete account)
+  ///
+  /// In en, this message translates to:
+  /// **'Your files in the cloud couldn\'t be deleted ({error}). Nothing else was deleted: try again.'**
+  String deleteAccountFilesError(String error);
 }
 
 class _AppLocalizationsDelegate

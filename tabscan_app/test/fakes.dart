@@ -85,6 +85,26 @@ class FakeBucket implements ObjectStore {
     objects.remove(key);
   }
 
+  /// Keys a batch delete leaves, reported as not deleted (AccessDenied).
+  final Set<String> undeletable = {};
+
+  @override
+  Future<List<String>> deleteBatch(
+    List<String> keys, {
+    required AwsCredentials credentials,
+  }) async {
+    _request('DELETE ${keys.length}');
+    expect(keys.length, lessThanOrEqualTo(S3Bucket.maxBatch));
+    final failed = [
+      for (final key in keys)
+        if (undeletable.contains(key)) key,
+    ];
+    for (final key in keys) {
+      if (!undeletable.contains(key)) objects.remove(key);
+    }
+    return failed;
+  }
+
   Map<String, Object?> json(String key) =>
       (jsonDecode(utf8.decode(objects[key]!)) as Map).cast();
 }
@@ -215,6 +235,25 @@ class FakeShareApi extends ShareApi {
   @override
   Future<void> leave(String token, String owner, String captureId) async =>
       grantsBy['$owner/$captureId']?.remove(email);
+
+  /// Identities whose accounts were deleted.
+  final List<String> deletedAccounts = [];
+
+  /// Thrown by the next [deleteAccount], once.
+  Object? failDeleteAccount;
+
+  @override
+  Future<void> deleteAccount(String token) async {
+    if (failDeleteAccount case final e?) {
+      failDeleteAccount = null;
+      throw e;
+    }
+    grantsBy.removeWhere((key, _) => key.startsWith('$identity/'));
+    for (final grants in grantsBy.values) {
+      grants.remove(email);
+    }
+    deletedAccounts.add(identity);
+  }
 
   @override
   Future<ShareCredentials> credentials(

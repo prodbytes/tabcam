@@ -125,6 +125,13 @@ class ShareApi {
   Future<void> leave(String token, String owner, String captureId) =>
       _call(token, 'DELETE', ['shared', owner, captureId]);
 
+  /// Deletes what the API keeps about the user, when they delete their
+  /// account: the grants of their captures, the grants to their address,
+  /// and their Cognito identity (last: their folder must be emptied
+  /// first, with its credentials).
+  Future<void> deleteAccount(String token) =>
+      _call(token, 'DELETE', ['account']);
+
   Future<ShareCredentials> credentials(
     String token,
     String owner,

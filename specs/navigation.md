@@ -53,10 +53,12 @@ for and the sign-in button; signed in, who (and, with Premium set up,
 their role: "Role: Premium" or "Role: Free"), the sync status, **Sync now**
 and **Sign out** ([sign-in and cloud sync](cloud-sync.md#signing-in)),
 and with Premium set up the **TabScan Premium** card
-([cloud OCR](cloud-ocr.md)); opening the tab checks again whether the
-user is premium (the store apps leave out the card's upgrade offer,
-[cloud OCR](cloud-ocr.md#in-the-app)). The same panel opens in a sheet
-from an event's Premium **Upgrade** (on the web). In
+([cloud OCR](cloud-ocr.md)), then **Delete account**, which asks first
+and deletes the account in the cloud and on the device
+([cloud sync](cloud-sync.md#deleting-the-account)); opening the tab checks
+again whether the user is premium (the store apps leave out the card's
+upgrade offer, [cloud OCR](cloud-ocr.md#in-the-app)). The same panel opens
+in a sheet from an event's Premium **Upgrade** (on the web). In
 a build without sign-in, a line says so. Then **Language**
 ([localization](localization.md)): the device's language (the default),
 English, Español or Português; the app changes at once. Then **About**: the app's name

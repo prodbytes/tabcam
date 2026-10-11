@@ -28,6 +28,13 @@ if [[ ! "${TABSCANNER_GOOGLE_WEB_CLIENT_ID:-}" =~ ^[0-9]+-[0-9a-z]+\.apps\.googl
   exit 1
 fi
 
+# The cloud OCR service's accounts table, when tabscan-ocr is deployed:
+# DELETE /account deletes the user's record there too.
+accounts="$(aws cloudformation describe-stacks --stack-name tabscan-ocr \
+  --query "Stacks[0].Outputs[?OutputKey=='AccountsTable'].OutputValue" \
+  --output text 2>/dev/null || true)"
+[[ "$accounts" =~ ^[A-Za-z0-9_.-]{3,255}$ && "$accounts" != None ]] || accounts=""
+
 echo "==> testing the function"
 python3 -I -m unittest discover -s tabscan_api/shares
 
@@ -40,6 +47,7 @@ aws cloudformation deploy --stack-name tabscan-share-api \
   --parameter-overrides "GoogleWebClientId=$TABSCANNER_GOOGLE_WEB_CLIENT_ID" \
     "GoogleLocalWebClientId=${TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID:-}" \
     "AllowedOrigins=$origins" \
+    "AccountsTableName=$accounts" \
   --no-fail-on-empty-changeset
 
 echo "==> uploading the code"

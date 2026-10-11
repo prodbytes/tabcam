@@ -53,7 +53,7 @@ the cloud as they sync.
 - [Sign-in and cloud sync](cloud-sync.md): optional Google sign-in from
   the Profile tab; signed-in users' events sync both ways with
   their own folder in S3 (Cognito identity pool credentials, no server),
-  deletions included.
+  deletions included; Delete account deletes it all.
 - [Shared captures](shared-captures.md): share a capture of one's own
   by email, to edit (the default) or read only; no email is sent, people
   find it when they sign in. A share API (Lambda, DynamoDB, an HTTP API

@@ -904,4 +904,141 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homePrivacyPolicy => 'Privacy policy';
+
+  @override
+  String get deleteAccountDone => 'Your TabScan account was deleted.';
+
+  @override
+  String get deleteAccountTitle => 'Delete your account?';
+
+  @override
+  String get deleteAccountThisDeletes => 'This deletes:';
+
+  @override
+  String get deleteAccountEvents =>
+      'All your events, in the cloud and on this device.';
+
+  @override
+  String get deleteAccountShares =>
+      'Your shares: the people you shared captures with lose them.';
+
+  @override
+  String get deleteAccountSharedWithYou =>
+      'The captures shared with you: they stop showing here.';
+
+  @override
+  String get deleteAccountCantUndo => 'It can\'t be undone.';
+
+  @override
+  String get deleteAccountGoogleKept => 'Your Google account isn\'t deleted.';
+
+  @override
+  String get deleteAccountPremiumWeb =>
+      'A TabScan Premium subscription isn\'t cancelled: cancel it on Substack, where you subscribed.';
+
+  @override
+  String get deleteAccountPremiumStore =>
+      'A TabScan Premium subscription isn\'t cancelled: it\'s managed where you bought it.';
+
+  @override
+  String get deleteAccountOtherDevices =>
+      'If TabScan is signed in on your other devices, sign out there first, so they don\'t upload their events again.';
+
+  @override
+  String get deleteAccountCancel => 'Cancel';
+
+  @override
+  String get deleteAccountButton => 'Delete account';
+
+  @override
+  String deleteAccountCouldnt(String error) {
+    return 'Your account couldn\'t be deleted: $error';
+  }
+
+  @override
+  String get deleteAccountDeleting => 'Deleting your account';
+
+  @override
+  String get deleteAccountDeleted => 'Account deleted';
+
+  @override
+  String get deleteAccountNotDeleted => 'Account not deleted';
+
+  @override
+  String get deleteAccountClose => 'Close';
+
+  @override
+  String get deleteAccountTryAgain => 'Try again';
+
+  @override
+  String get deleteAccountStepCloud => 'Deleting your files in the cloud…';
+
+  @override
+  String deleteAccountStepCloudCount(int done, int total) {
+    return 'Deleting your files in the cloud ($done of $total)…';
+  }
+
+  @override
+  String get deleteAccountStepShares => 'Deleting your shares…';
+
+  @override
+  String get deleteAccountStepDevice => 'Deleting your events on this device…';
+
+  @override
+  String deleteAccountStepDeviceCount(int done, int total) {
+    return 'Deleting your events on this device ($done of $total)…';
+  }
+
+  @override
+  String get deleteAccountStepSignOut => 'Signing out…';
+
+  @override
+  String get deleteAccountSignInAgain =>
+      'Sign in again to delete your account.';
+
+  @override
+  String get deleteAccountSignedOutMeanwhile =>
+      'You signed out before your account was deleted. Your files in the cloud were deleted; sign in and delete it again to finish.';
+
+  @override
+  String deleteAccountSharesFailed(String reason) {
+    return 'Your files in the cloud were deleted, but not your shares: $reason. Delete your account again to finish.';
+  }
+
+  @override
+  String get deleteAccountSignInAgainShort => 'sign in again';
+
+  @override
+  String deleteAccountSharesFailedBecause(String error) {
+    return 'Your files in the cloud were deleted, but not your shares ($error). Delete your account again to finish.';
+  }
+
+  @override
+  String deleteAccountLeftHere(String error) {
+    return 'Your account was deleted and you were signed out, but some events on this device couldn\'t be deleted ($error): delete them from Home.';
+  }
+
+  @override
+  String deleteAccountSomeFiles(int failed, int total) {
+    return '$failed of $total files in the cloud couldn\'t be deleted. Nothing else was deleted, and you are still signed in: try again.';
+  }
+
+  @override
+  String get deleteAccountKeptAppearing =>
+      'Files kept appearing in your cloud folder while it was being emptied. Nothing else was deleted: try again.';
+
+  @override
+  String deleteAccountFilesHttp(int status) {
+    return 'Your files in the cloud couldn\'t be deleted (HTTP $status). Nothing else was deleted: try again.';
+  }
+
+  @override
+  String deleteAccountFilesCognito(String type) {
+    return 'Your files in the cloud couldn\'t be deleted ($type). Nothing was deleted: try again.';
+  }
+
+  @override
+  String deleteAccountFilesError(String error) {
+    return 'Your files in the cloud couldn\'t be deleted ($error). Nothing else was deleted: try again.';
+  }
 }
