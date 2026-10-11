@@ -146,9 +146,10 @@ set to check both.
     point-in-time recovery);
   - `tabscan-ocr` (3008 MB, the account's current cap; 5 min, one retry): it may get page images and put
     results;
-  - `tabscan-ocr-api` (512 MB, 30 s): it may read and write the table, read
-    the rbacr secret, invoke `tabscan-ocr`, list the bucket and delete
-    results;
+  - `tabscan-ocr-api` (512 MB, 300 s for [auto-correct](autocorrect.md)'s
+    `/autocorrect`; the other requests take a second or two): it may read
+    and write the table, read the rbacr secret (and the Claude API key's,
+    when set), invoke `tabscan-ocr`, list the bucket and delete results;
   - its function URL (no IAM auth: each request carries a Google ID token;
     CORS for the web app's origins, the local HTTPS one included);
   - the EventBridge rule `tabscan-ocr-pages` (page images created or
@@ -156,7 +157,8 @@ set to check both.
 - **`user-data.yaml`** sends the bucket's events to EventBridge.
 - Deployed by an administrator with
   [tabscan_locr/scripts/deploy.sh](../tabscan_locr/scripts/deploy.sh); its
-  output URL is the app's `TABSCANNER_OCR_URL`.
+  output URL is the app's `TABSCANNER_OCR_URL`. It passes the Claude API
+  key's secret (`tabscan/anthropic-api-key`) when it exists.
 
 ## Verified
 

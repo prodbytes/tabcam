@@ -253,6 +253,21 @@ class _EventScreenState extends State<EventScreen> {
         key: ValueKey('text-${event.id}'),
         library: _library,
         eventId: event.id,
+        ocr: widget.ocr,
+        // Store apps can't point to buying Premium.
+        onUpgrade: switch ((
+          widget.sync,
+          widget.ocr,
+          widget.store ?? storeApp,
+        )) {
+          (final sync?, final ocr?, false) => () => showAccountSheet(
+            context,
+            sync.auth,
+            sync,
+            ocr,
+          ),
+          _ => null,
+        },
       );
     }
     final reader = AutoReaderScope.of(context);

@@ -41,8 +41,11 @@ the cloud as they sync.
 - [Tab recognition](tab-recognition.md): every capture read by itself
   into plain-text tab (on-device OCR, or Premium's cloud), for text tabs
   and typeset tab staves, never over the user's edits or a reading marked
-  correct; the Text view, where a reading is marked correct (the event
-  then opens on it).
+  correct; the Text view, a tab editor (overtype, − and + on a fret)
+  where a reading is marked correct (the event then opens on it).
+- [Auto-correct](autocorrect.md): Fix, for Premium: Claude finds the
+  song's tab online (tab sites first) and proposes corrections, which the
+  user accepts or rejects note by note.
 - [Sharing](sharing.md): a link to the capture (the default), PDF,
   text (the text tab and links), or a zip of everything, through the
   system share sheet; opening a capture's link.
