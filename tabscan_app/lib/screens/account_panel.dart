@@ -8,8 +8,9 @@ import 'delete_account.dart';
 import 'premium_card.dart';
 
 /// The [AccountPanel] in a bottom sheet, for places away from the Profile
-/// tab (an event's Premium Upgrade); with Premium set up ([ocr]), it checks
-/// again whether the user is premium (they may have just upgraded).
+/// tab (an event's Premium Upgrade, on the web); with Premium set up
+/// ([ocr]), it checks again whether the user is premium (they may have just
+/// upgraded).
 Future<void> showAccountSheet(
   BuildContext context,
   AuthService auth,
@@ -32,19 +33,23 @@ Future<void> showAccountSheet(
 
 /// The Profile tab's account: signing in, and once signed in, who it is,
 /// how sync stands, Sync now and Sign out; with Premium set up ([ocr]),
-/// the user's role ([roleLabel]) and the Premium card too; last, Delete
-/// account.
+/// the user's role ([roleLabel]) and the Premium card too (without the
+/// upgrade offer in a [storeApp]); last, Delete account.
 class AccountPanel extends StatelessWidget {
   const AccountPanel({
     super.key,
     required this.auth,
     required this.sync,
     this.ocr,
+    this.store,
   });
 
   final AuthService auth;
   final CloudSync sync;
   final CloudOcr? ocr;
+
+  /// Whether to leave out the upgrade offer (null: [storeApp]).
+  final bool? store;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -136,7 +141,7 @@ class AccountPanel extends StatelessWidget {
         ),
         if (ocr case final ocr?) ...[
           const SizedBox(height: 16),
-          PremiumCard(ocr: ocr, email: user.email),
+          PremiumCard(ocr: ocr, email: user.email, store: store),
         ],
         const SizedBox(height: 16),
         TextButton.icon(
@@ -144,7 +149,8 @@ class AccountPanel extends StatelessWidget {
             foregroundColor: theme.colorScheme.error,
             padding: EdgeInsets.zero,
           ),
-          onPressed: () => deleteAccount(context, sync, premium: ocr != null),
+          onPressed: () =>
+              deleteAccount(context, sync, premium: ocr != null, store: store),
           icon: const Icon(Icons.delete_forever_outlined),
           label: const Text('Delete account'),
         ),

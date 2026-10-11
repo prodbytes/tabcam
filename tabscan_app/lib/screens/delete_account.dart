@@ -1,8 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../cloud/account_deletion.dart';
 import '../cloud/cloud_sync.dart';
+import 'premium_card.dart';
 
 /// Profile's **Delete account**: asks first ([confirmAccountDeletion]),
 /// then deletes it ([AccountDeletion]) in a dialog that shows how far it
@@ -11,9 +11,12 @@ Future<void> deleteAccount(
   BuildContext context,
   CloudSync sync, {
   bool premium = false,
+  bool? store,
 }) async {
   final messenger = ScaffoldMessenger.maybeOf(context);
-  if (!await confirmAccountDeletion(context, premium: premium)) return;
+  if (!await confirmAccountDeletion(context, premium: premium, store: store)) {
+    return;
+  }
   if (!context.mounted) return;
   final deleted = await showDialog<bool>(
     context: context,
@@ -30,10 +33,11 @@ Future<void> deleteAccount(
 /// Whether the user confirms deleting their account, having been told what
 /// goes, that it can't be undone, and what it doesn't touch (their Google
 /// account; with Premium set up, a subscription, managed where it was
-/// bought: no purchase links in the apps).
+/// bought: no purchase links in a [storeApp], [store] when null).
 Future<bool> confirmAccountDeletion(
   BuildContext context, {
   bool premium = false,
+  bool? store,
 }) async {
   final theme = Theme.of(context);
   final confirmed = await showDialog<bool>(
@@ -70,7 +74,7 @@ Future<bool> confirmAccountDeletion(
             if (premium) ...[
               const SizedBox(height: 8),
               Text(
-                kIsWeb
+                !(store ?? storeApp)
                     ? "A TabScan Premium subscription isn't cancelled: "
                           'cancel it on Substack, where you subscribed.'
                     : "A TabScan Premium subscription isn't cancelled: "

@@ -3,7 +3,7 @@
 Premium users' scans are **transcribed in the cloud as they sync**: the
 event's text tab appears by itself, read more accurately than on the
 phone, and on the web too. Free users keep [on-device reading](tab-recognition.md)
-and are offered the upgrade. The service is
+and, on the web, are offered the upgrade. The service is
 [tabscan_locr/](../tabscan_locr/README.md), two AWS Lambda functions.
 
 A build has Premium only with [cloud sync](cloud-sync.md) set up and
@@ -58,7 +58,7 @@ blank line.
 `CloudOcr` ([lib/cloud/cloud_ocr.dart](../tabscan_app/lib/cloud/cloud_ocr.dart)):
 
 - **Status**: at sign-in, and each time the Profile tab (or the account
-  sheet, from an event's Upgrade) opens, the app
+  sheet, from an event's Upgrade on the web) opens, the app
   calls `POST /account` with the user's Google ID token. The service checks
   the token (signed by Google, issued for TabScan's web client or the
   local web client, verified address), asks the main identity pool for its identity ID
@@ -82,7 +82,7 @@ blank line.
   until the text comes. What the cloud writes counts as an automatic
   read (`tabTextAuto`): a text the user edited is never replaced.
 
-**Upgrade offer**:
+**Upgrade offer** (on the web; the store apps leave it out, below):
 
 - The account, on the [Profile](navigation.md#profile) tab, shows the
   user's role in the `tabscan` system under their name: **Role: Premium**,
@@ -100,6 +100,20 @@ blank line.
   Premium transcribes your scans automatically", with **Upgrade** (it opens
   the account, the Profile tab's panel, in a sheet), on events without a text tab, for users without
   Premium (signed out included).
+
+**In the store apps** (Android and iOS: `storeApp` in
+[premium_card.dart](../tabscan_app/lib/screens/premium_card.dart), not on
+the web): App Store guidelines 3.1.1 and 3.1.3(b) and Google Play's
+payments policy don't let an app point to buying a digital feature
+outside the store, and Premium is sold on the web. So the apps show no
+way to buy it: no Upgrade, no "Subscribe with <address>", no Redeem a
+voucher and no event screen hint. Premium bought on the web still works
+in them (multiplatform services): the role line, and for premium users
+the card's "transcribed automatically" and until when, are as on the
+web. A free user's card only says "TabScan Premium isn't active for
+<address>.", with **Check again**. The account panel, the card and the
+event screen take a `store` flag (null: the platform's), which the tests
+set to check both.
 - On the web without Premium, the Text view says reading tabs needs the
   Android or iOS app, or TabScan Premium.
 
@@ -159,7 +173,9 @@ blank line.
   pages without tab are left out; the user's edits stay; a text tab
   marked correct stays; a free user gets
   nothing; late pages are asked for once; the Premium card's upgrade offer
-  and premium state.
+  and premium state; in a store app, no Upgrade, voucher or subscribe
+  wording on the card and no event screen hint, while Premium (and until
+  when) still shows.
 - On a real photographed tab page (the OCR bench, kept out of git), the
   pipeline read 90% of the notes on macOS and 87.5% in the Linux image.
 
