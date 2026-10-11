@@ -358,6 +358,23 @@ spec.
     new debug key each run, aren't verified until there's a release key
     ([sharing](sharing.md#android-app-links), [platforms](platforms.md),
     [release](release.md), [deploy](deploy.md)).
+43. **In the camera screen, make auto shutter off the default and remove
+    filters.** On the phone, Scan is the system document scanner, which
+    lets the app set neither the shutter mode nor (on iOS) the filters.
+    Android's scanner now runs in ML Kit's base mode, so it has no filters
+    (and no ML clean-up). Auto capture stays the scanners' default, and iOS
+    keeps VisionKit's filters ([scanning](scanning.md),
+    [platforms](platforms.md)). TabScan's own camera screen (the web) has
+    neither auto shutter nor filters.
+44. **Bring back the "Text" button in the capture view to flip from scan
+    to text; remove the flip button from the top and leave flipping to
+    the bottom bar.** The event screen's tools are the view (**Original ↔
+    Scan**), then **Text**, which shows the text view in place of the
+    pages and reads **Pages** to go back; then Add, Rotate, Delete. The
+    app bar's Hide images / Show images button is gone. `hideImages` is
+    still honoured, so a capture already hidden stays hidden
+    ([event screen](event-screen.md), [hidden images](hidden-images.md),
+    [tab recognition](tab-recognition.md#text-view)).
 45. **Show the user's role on the profile screen.** The signed-in account
     on Profile has a "Role: Premium" or "Role: Free" line under the name,
     from the premium status the cloud OCR service gets from rbacr ("Free
