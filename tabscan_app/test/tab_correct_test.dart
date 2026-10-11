@@ -54,7 +54,7 @@ void main() {
       ),
     );
 
-    await tester.runAsync(() => tester.tap(find.text('Mark correct')));
+    await tester.runAsync(() => tester.tap(find.text('Correct')));
     await tester.pump();
     expect(library.byId(event.id)!.tabTextCorrect, isTrue);
     expect(find.text('Correct'), findsOneWidget);
@@ -62,7 +62,7 @@ void main() {
     await tester.runAsync(() => tester.tap(find.text('Correct')));
     await tester.pump();
     expect(library.byId(event.id)!.tabTextCorrect, isFalse);
-    expect(find.text('Mark correct'), findsOneWidget);
+    expect(find.text('Correct'), findsOneWidget);
   });
 
   testWidgets('read only, the mark is shown but not changed', (tester) async {
@@ -74,7 +74,7 @@ void main() {
         ),
       ),
     );
-    expect(find.text('Mark correct'), findsNothing);
+    expect(find.text('Correct'), findsNothing);
 
     (library, event) = await _event(tester, readOnly: true, correct: true);
     await tester.pumpWidget(
