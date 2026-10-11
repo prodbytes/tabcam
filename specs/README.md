@@ -59,7 +59,8 @@ the cloud as they sync.
   transcribed in AWS Lambda as they sync (Tesseract, PaddleOCR and
   RapidOCR per string line, voted), the text tab filled in by itself;
   premium is rbacr's `tabscan/premium` role (Substack subscription or
-  voucher); the upgrade offer for everyone else.
+  voucher); the upgrade offer for everyone else, on the web only (the
+  store apps show no purchase links).
 - [App icon](app-icon.md): a scanned tab page with a staff and fret
   numbers, in scanner corners; how the platform icons are generated.
 - [Platforms](platforms.md): Android, iOS and the web, and what each can do.
