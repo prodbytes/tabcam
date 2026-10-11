@@ -53,7 +53,9 @@ Each key that signs installed apps needs, for sign-in and
 [App Links](sharing.md#android-app-links):
 
 - an **Android OAuth client** in Google Cloud for `com.nu01.tabscan` and
-  the key's SHA-1;
+  the key's SHA-1, added to `tabscan-identity`'s `GoogleAppClientIds`
+  (the identity pool refuses tokens of a client it doesn't list,
+  [cloud sync](cloud-sync.md#googles-token));
 - its SHA-256 in
   [assetlinks.json](../tabscan_index/site/.well-known/assetlinks.json).
 
