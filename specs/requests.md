@@ -375,3 +375,10 @@ spec.
     still honoured, so a capture already hidden stays hidden
     ([event screen](event-screen.md), [hidden images](hidden-images.md),
     [tab recognition](tab-recognition.md#text-view)).
+45. **Show the user's role on the profile screen.** The signed-in account
+    on Profile has a "Role: Premium" or "Role: Free" line under the name,
+    from the premium status the cloud OCR service gets from rbacr ("Free
+    (couldn't check)" when rbacr doesn't answer, "Checking…" until the
+    first answer). Builds without the service show no role
+    ([cloud OCR](cloud-ocr.md#in-the-app), [navigation](navigation.md#profile),
+    [cloud sync](cloud-sync.md#signing-in)).
