@@ -504,3 +504,34 @@ spec.
     ([privacy](privacy.md), [platforms](platforms.md),
     [deploy](deploy.md), [navigation](navigation.md#profile),
     [app stores](app-stores.md)).
+52. **Sign in with Apple on iOS** (App Store guideline 4.8: an app with
+    Google sign-in must offer an equally private one). iOS offers **Sign
+    in with Apple** above Google's button, per Apple's guidelines, on the
+    Profile tab and the sign-in sheets, in builds with
+    `TABSCANNER_APPLE_SIGN_IN=1` (a new dart-define; it also adds the
+    `com.apple.developer.applesignin` entitlement through the git-ignored
+    `Private.xcconfig`, so free Personal Team and CI builds, which can't
+    sign it, have no entitlements). The app keeps one session at a time,
+    with its provider; the Apple sign-in checks a hashed nonce, keeps the
+    name and email Apple sends once, labels a private relay address "Apple
+    ID (private email)", keeps its session in the app's private files
+    until the token expires, and signs out a user who stopped using Apple
+    ID with the app. Cognito gets Apple's token under `appleid.apple.com`
+    (each provider its own identity); the identity pool trusts Apple with
+    the new optional `AppleClientId` (the bundle ID); the share API takes
+    Apple's tokens on the same routes under `/apple`, with an Apple JWT
+    authorizer, the function checking each token's issuer matches its path
+    and accepting `email_verified` as a string; the cloud OCR service
+    verifies Apple's tokens too (`APPLE_CLIENT_ID`), Premium going by the
+    verified address (a relay address has none; without Apple set up the
+    app says "Premium needs Google sign-in"). Not on Android or the web
+    (the web would need a Services ID, a domain and a return URL: a
+    follow-up). Needs the paid Apple Developer Program, the App ID's
+    capability and the stacks redeployed
+    ([cloud sync](cloud-sync.md#sign-in-with-apple-ios),
+    [shared captures](shared-captures.md#how-it-works),
+    [cloud OCR](cloud-ocr.md#who-is-premium), [platforms](platforms.md),
+    [app stores](app-stores.md), [tabscan_infra](../tabscan_infra/README.md)).
+    Merged after account deletion and localization: Apple users delete
+    their account under `/apple` too, and the sign-in buttons and Apple's
+    messages are in English, Spanish and Portuguese.

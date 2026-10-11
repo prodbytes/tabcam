@@ -127,6 +127,8 @@ class CloudOcr extends ChangeNotifier {
     } on OcrApiException catch (e) {
       _error = e.needsSignIn
           ? appL10n.accountSignInAgain
+          : e.needsGoogle
+          ? appL10n.accountPremiumNeedsGoogle
           : appL10n.accountPremiumCheckFailed;
       debugPrint('TabScan: premium check failed: $e');
     } on Object catch (e) {

@@ -1,7 +1,8 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  A Cognito identity pool that trusts one Google OAuth client. The app
-  exchanges the signed-in user's Google ID token for temporary AWS
+  A Cognito identity pool that trusts one Google OAuth client and, when
+  AppleClientId is set, Sign in with Apple for the app's bundle ID. The app
+  exchanges the signed-in user's ID token for temporary AWS
   credentials of the authenticated role, which may only read, write and
   delete that user's own folder in the user-data bucket (tabscan-user-data
   stack). Guests (unauthenticated identities) aren't allowed. Deployed
@@ -24,6 +25,17 @@ Parameters:
     Default: tabscan
     Description: The identity pool's name (tabscan-local for the local pool)
     AllowedPattern: '[a-z-]+'
+  AppleClientId:
+    Type: String
+    Default: ''
+    Description: >
+      Sign in with Apple: the audience of Apple's ID tokens, the app's
+      bundle ID (com.nu01.tabscan) for native sign-in on iOS. Empty: Google
+      only.
+    AllowedPattern: '([A-Za-z0-9-]+\.)+[A-Za-z0-9-]+|'
+
+Conditions:
+  HasApple: !Not [!Equals [!Ref AppleClientId, '']]
 
 Resources:
   IdentityPool:
@@ -32,13 +44,18 @@ Resources:
       IdentityPoolName: !Ref PoolName
       AllowUnauthenticatedIdentities: false
       AllowClassicFlow: false
-      SupportedLoginProviders:
-        accounts.google.com: !Ref GoogleWebClientId
+      # Each provider's users are their own identities (folders): the same
+      # person signed in with Google and with Apple has two.
+      SupportedLoginProviders: !If
+        - HasApple
+        - accounts.google.com: !Ref GoogleWebClientId
+          appleid.apple.com: !Ref AppleClientId
+        - accounts.google.com: !Ref GoogleWebClientId
 
   AuthenticatedRole:
     Type: AWS::IAM::Role
     Properties:
-      Description: Signed-in TabScan users (Cognito identity pool, Google)
+      Description: Signed-in TabScan users (Cognito identity pool, Google or Apple)
       MaxSessionDuration: 3600
       AssumeRolePolicyDocument:
         Version: '2012-10-17'

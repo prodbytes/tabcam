@@ -12,7 +12,8 @@ apps (Adobe Scan, CamScanner), made for tablature. Point the phone at a tab
 and it finds the page, straightens it and cleans it up. TabScan can then
 read the tab into editable plain text and share it as a link, a PDF,
 text or a zip of its files. Anyone can capture, signed out, and what they capture stays on
-the device. Reading tabs and sharing need signing in (with Google), which
+the device. Reading tabs and sharing need signing in (with Google, or
+with Apple on iOS), which
 also syncs the user's events with the cloud, so they're on every device
 the user signs in on. With TabScan Premium, scans are also transcribed in
 the cloud as they sync.
@@ -50,14 +51,14 @@ the cloud as they sync.
 - [Sharing](sharing.md): a link to the capture (the default), PDF,
   text (the text tab and links), or a zip of everything, through the
   system share sheet; opening a capture's link.
-- [Sign-in and cloud sync](cloud-sync.md): optional Google sign-in from
-  the Profile tab; signed-in users' events sync both ways with
+- [Sign-in and cloud sync](cloud-sync.md): optional Google sign-in (and
+  Sign in with Apple on iOS) from the Profile tab; signed-in users' events sync both ways with
   their own folder in S3 (Cognito identity pool credentials, no server),
   deletions included; Delete account deletes it all.
 - [Shared captures](shared-captures.md): share a capture of one's own
   by email, to edit (the default) or read only; no email is sent, people
   find it when they sign in. A share API (Lambda, DynamoDB, an HTTP API
-  with a Google JWT authorizer) keeps the grants and hands out
+  with Google and Apple JWT authorizers) keeps the grants and hands out
   credentials for just that capture's folder.
 - [TabScan Premium: cloud OCR](cloud-ocr.md): premium users' pages
   transcribed in AWS Lambda as they sync (Tesseract, PaddleOCR and

@@ -1773,6 +1773,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your files in the cloud couldn\'t be deleted ({error}). Nothing else was deleted: try again.'**
   String deleteAccountFilesError(String error);
+
+  /// Profile: Premium can't be checked for an Apple sign-in
+  ///
+  /// In en, this message translates to:
+  /// **'Premium needs Google sign-in'**
+  String get accountPremiumNeedsGoogle;
+
+  /// Sign-in button for Apple (Apple's own wording)
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with Apple'**
+  String get accountSignInWithApple;
+
+  /// Error after a failed Apple sign-in
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with Apple failed'**
+  String get accountAppleSignInFailed;
+
+  /// Error when the Apple sign-in expires
+  ///
+  /// In en, this message translates to:
+  /// **'Your Apple sign-in expired: sign in again.'**
+  String get accountAppleSignInExpired;
+
+  /// Why Apple sign-in can't be offered
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with Apple isn\'t available on this device.'**
+  String get accountAppleUnavailable;
+
+  /// Profile: the name shown for an account with a hidden email address
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} ID (private email)'**
+  String accountPrivateEmail(String provider);
 }
 
 class _AppLocalizationsDelegate

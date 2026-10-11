@@ -5,7 +5,9 @@ api (tabscan-ocr-api), light: it never loads the OCR engines.
     owner is premium, invoke ocr for it (asynchronously). Free users' pages
     stop here.
   - S3 "Object Deleted" events: delete the page's transcription.
-  - Its function URL, for the app, with the user's Google ID token:
+  - Its function URL, for the app, with the user's ID token (Google's, or
+    Apple's when APPLE_CLIENT_ID is set; otherwise 403 "google sign-in
+    needed"):
       POST /account     records which identity ID is which verified e-mail
                         (S3 events only carry the identity ID), and answers
                         whether the user is premium, with the upgrade links
@@ -72,14 +74,14 @@ class Services:
         return self._get("rbacr", Rbacr)
 
     @property
+    def tokens(self):
+        from .auth import TokenVerifier
+        return self._get("tokens", TokenVerifier)
+
+    @property
     def corrector(self):
         from .autocorrect import Corrector
         return self._get("corrector", Corrector)
-
-    @property
-    def google(self):
-        from .auth import GoogleVerifier
-        return self._get("google", GoogleVerifier)
 
     @property
     def cognito(self):
@@ -92,7 +94,7 @@ class Services:
 
 class Accounts:
     """Identity ID -> verified e-mail, in DynamoDB. Only /account and
-    /transcribe write it, from a checked Google token."""
+    /transcribe write it, from a checked ID token."""
 
     def __init__(self, table=None):
         import boto3
@@ -180,7 +182,7 @@ def on_http(event):
 
 
 def _on_http(event, method, path, request):
-    from .auth import Unauthorized
+    from .auth import Unauthorized, Unsupported
     if method != "POST" or path not in ("/account", "/transcribe", "/autocorrect"):
         return _reply(404, {"error": "not found"})
     auth = {k.lower(): v for k, v in (event.get("headers") or {}).items()}.get("authorization", "")
@@ -188,8 +190,11 @@ def _on_http(event, method, path, request):
         return _reply(401, {"error": "sign in"})
     token = auth[7:].strip()
     try:
-        email = services.google.email(token)
-        identity = services.cognito.identity(token)
+        email, login = services.tokens.verify(token)
+        identity = services.cognito.identity(token, login)
+    except Unsupported as e:
+        request["unauthorized"] = str(e)
+        return _reply(403, {"error": "google sign-in needed"})
     except Unauthorized as e:
         request["unauthorized"] = str(e)
         return _reply(401, {"error": "sign in again"})

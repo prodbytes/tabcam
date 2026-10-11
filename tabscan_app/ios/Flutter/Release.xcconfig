@@ -1,4 +1,4 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
 #include "Generated.xcconfig"
-// Private values (DEVELOPMENT_TEAM, GOOGLE_REVERSED_CLIENT_ID), from .env by scripts/dart-defines.sh; git-ignored.
+// Private values (DEVELOPMENT_TEAM, GOOGLE_REVERSED_CLIENT_ID, and with Sign in with Apple CODE_SIGN_ENTITLEMENTS), from .env by scripts/dart-defines.sh; git-ignored.
 #include? "Private.xcconfig"

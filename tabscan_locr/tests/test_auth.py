@@ -4,18 +4,23 @@ import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 
-from locr.auth import GoogleVerifier, Unauthorized
+from locr.auth import TokenVerifier, Unauthorized, Unsupported
 
 WEB = "111-web.apps.googleusercontent.com"
 LOCAL = "111-local.apps.googleusercontent.com"
+BUNDLE = "com.nu01.tabscan"
 KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+OTHER_KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
 
 class Keys:
-    """Stands in for Google's JWKS: always our test key."""
+    """Stands in for a provider's JWKS: always [key]."""
+
+    def __init__(self, key=KEY):
+        self.key = key
 
     def get_signing_key_from_jwt(self, token):
-        return type("Key", (), {"key": KEY.public_key()})()
+        return type("Key", (), {"key": self.key.public_key()})()
 
 
 def token(aud):
@@ -23,17 +28,60 @@ def token(aud):
                        "email": "Riff@Example.com", "email_verified": True}, KEY, algorithm="RS256")
 
 
+def apple_token(aud=BUNDLE, verified="true", email="x7k2@privaterelay.appleid.com", key=KEY):
+    claims = {"iss": "https://appleid.apple.com", "aud": aud, "exp": int(time.time()) + 600,
+              "sub": "000123.abc", "email_verified": verified, "is_private_email": "true"}
+    if email is not None:
+        claims["email"] = email
+    return jwt.encode(claims, key, algorithm="RS256")
+
+
+def verifier(google=WEB, apple=BUNDLE, apple_keys=None):
+    return TokenVerifier(client_id=google, jwks=Keys(), apple_client_id=apple,
+                         apple_jwks=apple_keys or Keys())
+
+
 def test_tokens_of_every_listed_client_are_taken():
-    verifier = GoogleVerifier(client_id=f"{WEB}, {LOCAL}", jwks=Keys())
-    assert verifier.email(token(WEB)) == "riff@example.com"
-    assert verifier.email(token(LOCAL)) == "riff@example.com"
+    v = TokenVerifier(client_id=f"{WEB}, {LOCAL}", jwks=Keys(), apple_client_id="")
+    assert v.email(token(WEB)) == "riff@example.com"
+    assert v.email(token(LOCAL)) == "riff@example.com"
+    assert v.verify(token(WEB)) == ("riff@example.com", "accounts.google.com")
 
 
 def test_tokens_of_other_clients_are_refused():
     with pytest.raises(Unauthorized):
-        GoogleVerifier(client_id=WEB, jwks=Keys()).email(token(LOCAL))
+        TokenVerifier(client_id=WEB, jwks=Keys(), apple_client_id="").email(token(LOCAL))
 
 
 def test_no_client_refuses_everything():
     with pytest.raises(Unauthorized):
-        GoogleVerifier(client_id="", jwks=Keys()).email(token(WEB))
+        TokenVerifier(client_id="", jwks=Keys(), apple_client_id="").email(token(WEB))
+
+
+def test_apple_tokens_for_the_bundle_are_taken_with_a_string_email_verified():
+    assert verifier().verify(apple_token()) == ("x7k2@privaterelay.appleid.com", "appleid.apple.com")
+    assert verifier().verify(apple_token(verified=True))[1] == "appleid.apple.com"
+
+
+def test_apple_tokens_must_be_verified_signed_by_apple_and_for_the_bundle():
+    for bad in (apple_token(verified="false"), apple_token(verified=None), apple_token(email=None),
+                apple_token(aud="com.example.other")):
+        with pytest.raises(Unauthorized):
+            verifier().verify(bad)
+    # Signed by another key than Apple's.
+    with pytest.raises(Unauthorized):
+        verifier(apple_keys=Keys(OTHER_KEY)).verify(apple_token(key=KEY))
+
+
+def test_apple_tokens_without_an_apple_client_are_unsupported():
+    with pytest.raises(Unsupported):
+        verifier(apple="").verify(apple_token())
+
+
+def test_other_issuers_and_garbage_are_refused():
+    forged = jwt.encode({"iss": "https://evil.example", "aud": WEB, "exp": int(time.time()) + 600,
+                         "email": "riff@example.com", "email_verified": True}, KEY, algorithm="RS256")
+    for bad in (forged, "not-a-token"):
+        with pytest.raises(Unauthorized) as e:
+            verifier().verify(bad)
+        assert not isinstance(e.value, Unsupported)

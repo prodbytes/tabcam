@@ -3,7 +3,7 @@ import json
 import pytest
 
 from locr import handler
-from locr.auth import Unauthorized
+from locr.auth import Unauthorized, Unsupported
 from locr.premium import Answer
 
 ID = "us-east-1:0f8b5b1e-1c2d-4e5f-8a9b-0c1d2e3f4a5b"
@@ -54,16 +54,30 @@ class FakeRbacr:
         return Answer(email in self.premium, "2026-11-01T00:00:00Z" if email in self.premium else None)
 
 
-class FakeGoogle:
-    def email(self, token):
-        if token != "good-token":
-            raise Unauthorized("bad token")
-        return "ana@example.com"
+APPLE_ID = "us-east-1:22222222-2222-2222-2222-222222222222"
+
+
+class FakeTokens:
+    """Google's good-token, Apple's apple-token (a private relay address),
+    and Apple's unset-token when the service has no Apple client."""
+
+    def verify(self, token):
+        if token == "good-token":
+            return "ana@example.com", "accounts.google.com"
+        if token == "apple-token":
+            return "x7k2@privaterelay.appleid.com", "appleid.apple.com"
+        if token == "unset-token":
+            raise Unsupported("apple sign-in isn't set up")
+        raise Unauthorized("bad token")
 
 
 class FakeCognito:
-    def identity(self, token):
-        return ID
+    def __init__(self):
+        self.logins = []
+
+    def identity(self, token, login="accounts.google.com"):
+        self.logins.append(login)
+        return APPLE_ID if login == "appleid.apple.com" else ID
 
 
 @pytest.fixture
@@ -74,7 +88,7 @@ def svc(monkeypatch):
     monkeypatch.setenv("VOUCHER_URL", "https://example.com/voucher")
     s = handler.Services()
     s._made.update(s3=FakeS3(), **{"lambda": FakeLambda()}, accounts=FakeAccounts(),
-                   rbacr=FakeRbacr(), google=FakeGoogle(), cognito=FakeCognito())
+                   rbacr=FakeRbacr(), tokens=FakeTokens(), cognito=FakeCognito())
     monkeypatch.setattr(handler, "services", s)
     return s
 
@@ -155,3 +169,21 @@ def test_transcribe_is_premium_only_and_checks_the_event_id(svc):
     svc._made["rbacr"] = FakeRbacr({"ana@example.com"})
     assert handler.api(http("/transcribe", body={"eventId": "../x"}))["statusCode"] == 400
     assert svc.lam.invoked == []
+
+
+def test_apple_users_are_their_own_identity_and_premium_by_their_address(svc):
+    body = json.loads(handler.api(http("/account", token="apple-token"))["body"])
+    assert svc.cognito.logins == ["appleid.apple.com"]
+    assert svc.accounts.known == {APPLE_ID: "x7k2@privaterelay.appleid.com"}
+    # A relay address matches no Premium unless that address has it.
+    assert body["premium"] is False
+    svc._made["rbacr"] = FakeRbacr({"x7k2@privaterelay.appleid.com"})
+    body = json.loads(handler.api(http("/account", token="apple-token"))["body"])
+    assert body["premium"] is True
+
+
+def test_apple_tokens_without_an_apple_client_need_google(svc):
+    r = handler.api(http("/account", token="unset-token"))
+    assert r["statusCode"] == 403
+    assert json.loads(r["body"])["error"] == "google sign-in needed"
+    assert svc.accounts.known == {}

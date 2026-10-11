@@ -9,9 +9,11 @@
 # tabscan-identity. Settings (environment or .env): TABSCANNER_GOOGLE_WEB_CLIENT_ID and
 # TABSCANNER_COGNITO_IDENTITY_POOL_ID (both may be empty: page OCR still works, the
 # function URL refuses requests), TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID (optional:
-# local web builds' client, trusted too), RBACR_TOKEN_SECRET (default
-# tabscan/rbacr-token), ANTHROPIC_KEY_SECRET (default
-# tabscan/anthropic-api-key; auto-correct is off while it doesn't exist).
+# local web builds' client, trusted too), TABSCANNER_APPLE_SIGN_IN (optional:
+# 1 to take Sign in with Apple's tokens for the bundle ID too),
+# RBACR_TOKEN_SECRET (default tabscan/rbacr-token), ANTHROPIC_KEY_SECRET
+# (default tabscan/anthropic-api-key; auto-correct is off while it doesn't
+# exist).
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
@@ -26,6 +28,10 @@ region="${AWS_REGION:-us-east-1}"
 # Passed every time: deploy would keep the stack's old origins otherwise.
 TABSCANNER_WEB_ORIGINS="https://tabscan.nu01.com,https://rc.tabscan.nu01.com,http://localhost:2012,https://local.tabscan.nu01.com:2443"
 secret_name="${RBACR_TOKEN_SECRET:-tabscan/rbacr-token}"
+apple_client=""
+if [[ "${TABSCANNER_APPLE_SIGN_IN:-}" == 1 || "${TABSCANNER_APPLE_SIGN_IN:-}" == true ]]; then
+  apple_client=com.nu01.tabscan
+fi
 version="$(git rev-parse --short=12 HEAD)$(git diff --quiet HEAD -- tabscan_locr || echo -dirty)"
 tag="${version}-$(date -u +%Y%m%d%H%M%S)"
 
@@ -61,6 +67,7 @@ aws cloudformation deploy --region "$region" --stack-name tabscan-ocr \
     "ImageUri=$repo@$digest" \
     "GoogleWebClientId=${TABSCANNER_GOOGLE_WEB_CLIENT_ID:-}" \
     "GoogleLocalWebClientId=${TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID:-}" \
+    "AppleClientId=$apple_client" \
     "AllowedOrigins=$TABSCANNER_WEB_ORIGINS" \
     "IdentityPoolId=${TABSCANNER_COGNITO_IDENTITY_POOL_ID:-}" \
     "RbacrTokenSecretArn=$secret_arn" \

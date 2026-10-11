@@ -52,6 +52,7 @@ dependencies:
   url_launcher: ^6.3.2
   camera: ^0.12.1
   archive: ^4.4.0
+  sign_in_with_apple: 8.2.0
   flutter_localizations:
     sdk: flutter
   intl: ^0.20.3

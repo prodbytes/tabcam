@@ -135,11 +135,22 @@ class FakeCredentials implements CredentialSource {
 }
 
 class FakeAuth extends AuthService {
+  FakeAuth({this.offered = const [AuthProvider.google]});
+
+  /// The providers whose buttons show.
+  final List<AuthProvider> offered;
+
+  /// Each [signIn], by provider.
+  final List<AuthProvider> signIns = [];
+
   AuthUser? _user;
   String? _token;
 
-  void signInAs(String id, [String token = 'token']) {
-    _user = AuthUser(id: id, email: '$id@example.com');
+  void signInAs(String id, [String token = 'token']) =>
+      signInWith(AuthUser(id: id, email: '$id@example.com'), token);
+
+  void signInWith(AuthUser user, [String token = 'token']) {
+    _user = user;
     _token = token;
     notifyListeners();
   }
@@ -148,6 +159,8 @@ class FakeAuth extends AuthService {
   AuthUser? get user => _user;
   @override
   String? get idToken => _token;
+  @override
+  List<AuthProvider> get providers => offered;
   @override
   bool get checking => false;
   @override
@@ -159,7 +172,8 @@ class FakeAuth extends AuthService {
   @override
   Future<void> init() async {}
   @override
-  Future<void> signIn() async {}
+  Future<void> signIn([AuthProvider provider = AuthProvider.google]) async =>
+      signIns.add(provider);
   @override
   Future<void> signOut() async {
     _user = null;
@@ -168,7 +182,8 @@ class FakeAuth extends AuthService {
   }
 
   @override
-  Widget? buildSignInButton() => null;
+  Widget? buildSignInButton([AuthProvider provider = AuthProvider.google]) =>
+      null;
 }
 
 /// The share API, in memory: grants by `<owner>/<capture>`, then email.

@@ -1041,4 +1041,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String deleteAccountFilesError(String error) {
     return 'Your files in the cloud couldn\'t be deleted ($error). Nothing else was deleted: try again.';
   }
+
+  @override
+  String get accountPremiumNeedsGoogle => 'Premium needs Google sign-in';
+
+  @override
+  String get accountSignInWithApple => 'Sign in with Apple';
+
+  @override
+  String get accountAppleSignInFailed => 'Sign in with Apple failed';
+
+  @override
+  String get accountAppleSignInExpired =>
+      'Your Apple sign-in expired: sign in again.';
+
+  @override
+  String get accountAppleUnavailable =>
+      'Sign in with Apple isn\'t available on this device.';
+
+  @override
+  String accountPrivateEmail(String provider) {
+    return '$provider ID (private email)';
+  }
 }

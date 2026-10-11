@@ -24,11 +24,15 @@ app syncs a page ──► user-data bucket ──S3 event──► EventBridge 
 
 - **tabscan-ocr-api** (512 MB) never loads the engines. For S3 events it
   decides who gets OCR; deleted pages lose their transcription. Its
-  **function URL** serves the app, with the user's Google ID token as
+  **function URL** serves the app, with the user's ID token as
   `Authorization: Bearer`:
-  - `POST /account` checks the token (Google's signature, TabScan's web
-    client, a verified e-mail), asks the identity pool for the token's
-    identity ID, and records identity → e-mail (S3 events only carry the
+  - `POST /account` checks the token by its issuer: Google's (Google's
+    signature, TabScan's web client) or, with `APPLE_CLIENT_ID` set,
+    Apple's (Sign in with Apple: Apple's signature, the bundle ID), with a
+    verified e-mail (Apple's `email_verified` is a string). An Apple token
+    without `APPLE_CLIENT_ID` gets 403 `google sign-in needed`. It asks the
+    identity pool for the token's identity ID (under the issuer's `Logins`
+    key), and records identity → e-mail (S3 events only carry the
     identity ID). It answers
     `{email, premium, expiresAt, checked, upgradeUrl, voucherUrl}`.
   - `POST /transcribe {"eventId"}` queues the event's synced pages that have
@@ -47,7 +51,8 @@ app syncs a page ──► user-data bucket ──S3 event──► EventBridge 
   Secrets Manager (`tabscan/rbacr-token`). Paying subscribers of
   prodbytes.substack.com get it from rbacr's Stripe sync (the `tabscan`
   system's subscriber role is `premium`), if they subscribe with the same
-  Google address. Others can get it from a voucher (redeemed on rbacr's
+  address they sign in with (Google's, or the Apple ID's; Apple's private
+  relay addresses match none). Others can get it from a voucher (redeemed on rbacr's
   `/me`) or a root's grant. rbacr not answering means "not premium" (it
   fails closed). A "yes" is cached up to 5 minutes, a "no" for 1.
 
@@ -59,7 +64,7 @@ app syncs a page ──► user-data bucket ──S3 event──► EventBridge 
 | [locr/engines.py](locr/engines.py) | Tesseract, PaddleOCR, RapidOCR on one line strip; RapidOCR on the page off the staves |
 | [locr/handler.py](locr/handler.py) | the two Lambda handlers (`api`, `ocr`) |
 | [locr/autocorrect.py](locr/autocorrect.py) | `/autocorrect`: the reading's notes, Claude's corrections, checked |
-| [locr/auth.py](locr/auth.py) | Google ID token check, Cognito identity |
+| [locr/auth.py](locr/auth.py) | ID token check (Google, Apple), Cognito identity |
 | [locr/premium.py](locr/premium.py) | rbacr's premium check |
 | [locr/keys.py](locr/keys.py) | the bucket's keys, strictly parsed |
 | [locr/selftest.py](locr/selftest.py) | reads a made-up riff and its title back (image build, `scripts/test-image.sh`) |
@@ -96,7 +101,9 @@ It deploys `tabscan-ocr-repo` (ECR, immutable tags, last 10 images kept),
 builds and pushes the image, and deploys `tabscan-ocr` with the image's
 digest. `TABSCANNER_GOOGLE_WEB_CLIENT_ID` and `TABSCANNER_COGNITO_IDENTITY_POOL_ID` (environment
 or `.env`) set up the function URL; without them, page OCR still runs but
-the URL refuses every request. The script prints the URL: set it as the
+the URL refuses every request. With `TABSCANNER_APPLE_SIGN_IN=1` it also
+passes `AppleClientId=com.nu01.tabscan`, so Sign in with Apple's tokens are
+taken. The script prints the URL: set it as the
 app's `TABSCANNER_OCR_URL` (`.env`, and the repository variable for deploys
 and releases).
 
@@ -110,4 +117,5 @@ and releases).
 - Reads text tabs (dash lines). Typeset staves with drawn lines aren't
   found; the app's on-device reading handles those.
 - The function URL has no rate limit beyond Lambda's; every request needs a
-  valid Google token for TabScan's client.
+  valid Google token for TabScan's client (or Apple token for its bundle
+  ID).

@@ -1,5 +1,39 @@
 import 'package:flutter/widgets.dart';
 
+import '../l10n/language.dart';
+import 'jwt.dart';
+
+/// Who vouches for the user: the OpenID Connect provider whose ID token the
+/// app holds, and the key Cognito (and the share API) know it by.
+enum AuthProvider {
+  /// Sign in with Google: every platform.
+  google('Google', 'https://accounts.google.com', 'accounts.google.com'),
+
+  /// Sign in with Apple: iOS, where the App Store asks for it next to
+  /// Google (guideline 4.8).
+  apple('Apple', 'https://appleid.apple.com', 'appleid.apple.com');
+
+  const AuthProvider(this.label, this.issuer, this.loginsKey);
+
+  /// "Google", "Apple".
+  final String label;
+
+  /// The ID tokens' `iss` claim.
+  final String issuer;
+
+  /// The key of the token in Cognito's `Logins`.
+  final String loginsKey;
+
+  /// The provider named [name] (as saved), Google for anything else.
+  static AuthProvider byName(String? name) =>
+      name == apple.name ? apple : google;
+
+  /// Who issued [idToken] (its `iss` claim, unverified: only to pick where
+  /// to send it, and the services check it). Google when it can't be read.
+  static AuthProvider ofToken(String idToken) =>
+      jwtClaims(idToken)?['iss'] == apple.issuer ? apple : google;
+}
+
 /// Who is signed in.
 @immutable
 class AuthUser {
@@ -8,6 +42,8 @@ class AuthUser {
     required this.email,
     this.name,
     this.photoUrl,
+    this.provider = AuthProvider.google,
+    this.privateEmail = false,
   });
 
   final String id;
@@ -15,8 +51,20 @@ class AuthUser {
   final String? name;
   final String? photoUrl;
 
-  /// A name to show: the display name, or the email.
-  String get label => (name?.trim().isNotEmpty ?? false) ? name! : email;
+  /// Who they signed in with.
+  final AuthProvider provider;
+
+  /// [email] is Apple's private relay address (Hide My Email), not the
+  /// user's own.
+  final bool privateEmail;
+
+  /// A name to show: the display name, or else the email (or, for a private
+  /// relay address, which means nothing to anyone, the provider).
+  String get label => (name?.trim().isNotEmpty ?? false)
+      ? name!
+      : privateEmail
+      ? appL10n.accountPrivateEmail(provider.label)
+      : email;
 
   /// Who is signed in, for tooltips: "Ana · ana@example.com".
   String get identity => label == email ? email : '$label · $email';
@@ -33,6 +81,10 @@ abstract class AuthService extends ChangeNotifier {
   /// when the provider didn't return one.
   String? get idToken;
 
+  /// The providers the user can sign in with here, in the order their
+  /// buttons show.
+  List<AuthProvider> get providers => const [AuthProvider.google];
+
   /// True while checking at launch whether a previous session can be
   /// restored silently.
   bool get checking;
@@ -48,13 +100,14 @@ abstract class AuthService extends ChangeNotifier {
   /// Sets up the provider and restores a previous session if possible.
   Future<void> init();
 
-  /// Starts an interactive sign-in. Not used on web, where the provider's
-  /// own button ([buildSignInButton]) signs in.
-  Future<void> signIn();
+  /// Starts an interactive sign-in with [provider] (one of [providers]).
+  /// Not used for Google on web, where Google's own button
+  /// ([buildSignInButton]) signs in.
+  Future<void> signIn([AuthProvider provider = AuthProvider.google]);
 
   Future<void> signOut();
 
-  /// The provider's own sign-in button, where the platform requires one
+  /// [provider]'s own sign-in button, where the platform requires one
   /// (Google on web); null to use the app's button, which calls [signIn].
-  Widget? buildSignInButton();
+  Widget? buildSignInButton([AuthProvider provider = AuthProvider.google]);
 }

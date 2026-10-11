@@ -28,6 +28,15 @@ Parameters:
       (TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID); its tokens are trusted like the
       web client's. Empty: only the web client.
     AllowedPattern: '([0-9]+-[0-9a-z]+\.apps\.googleusercontent\.com)?'
+  AppleClientId:
+    Type: String
+    Default: ''
+    Description: >
+      Sign in with Apple: the audience of Apple's ID tokens, the app's
+      bundle ID (com.nu01.tabscan) for native sign-in on iOS. Its tokens' verified
+      address is checked for Premium like a Google one. Empty: Apple tokens
+      are refused with "google sign-in needed".
+    AllowedPattern: '([A-Za-z0-9-]+\.)+[A-Za-z0-9-]+|'
   IdentityPoolId:
     Type: String
     Default: ''
@@ -228,6 +237,8 @@ Resources:
             - HasLocalClient
             - !Join [',', [!Ref GoogleWebClientId, !Ref GoogleLocalWebClientId]]
             - !Ref GoogleWebClientId
+          # Sign in with Apple's audience (the bundle ID); empty: Google only.
+          APPLE_CLIENT_ID: !Ref AppleClientId
           COGNITO_IDENTITY_POOL_ID: !Ref IdentityPoolId
           RBACR_URL: !Ref RbacrUrl
           RBACR_TOKEN_SECRET: !Ref RbacrTokenSecretArn
@@ -242,7 +253,7 @@ Resources:
     Type: AWS::Lambda::Url
     Properties:
       TargetFunctionArn: !GetAtt ApiFunction.Arn
-      AuthType: NONE  # each request carries a Google ID token, checked by the function
+      AuthType: NONE  # each request carries an ID token (Google's or Apple's), checked by the function
       Cors:
         AllowOrigins: !Ref AllowedOrigins
         AllowMethods: [POST]

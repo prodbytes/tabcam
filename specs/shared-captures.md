@@ -5,7 +5,7 @@ people by **email address**, to **edit** (the default, "Can edit": they
 change it as the owner does, and the owner sees their changes) or **read
 only** (they see it, and get its updates, but can't change it). No email
 is sent: someone sees what's shared with them when they sign in to TabScan
-with that address. To share a capture with other people than the
+with that address (with Google, or with Apple on iOS). To share a capture with other people than the
 original's, [clone](library.md#events) it and share the copy.
 
 A build has sharing only with [sign-in and cloud sync](cloud-sync.md) and
@@ -82,17 +82,38 @@ credentials:
 | `POST /shared/{owner}/{captureId}/credentials` | the grantee | temporary credentials for that capture's folder |
 | `DELETE /account` | anyone | [deletes their account](cloud-sync.md#deleting-the-account): the grants of their captures, the grants to their address, their record in the cloud OCR service's accounts table, then their Cognito identity |
 
-- Every request carries the user's Google ID token, checked by the HTTP
-  API's JWT authorizer (issuer `https://accounts.google.com`, audience the
-  web client, and the local web client where it's set, though the main
-  pool then refuses local tokens: no sharing in local web builds). Only verified addresses (`email_verified`) are used. The
-  owner's folder is their Cognito identity, found from the same token
-  (`GetId`), so a user can only grant their own captures. Every route
-  acts on the caller alone: as an owner, on that identity; as a grantee,
-  on their verified address. `DELETE /account` deletes only grants whose
-  key starts with the caller's identity, or whose email is theirs, and
-  the identity last, so a retry after a failure finds the same one
-  (Cognito keeping it is a 502, to retry).
+Each route is also under `/apple` (`GET /apple/shared`, …,
+`DELETE /apple/account`), for Sign in with Apple's tokens.
+
+- Every request carries the user's ID token, checked by the HTTP API's
+  JWT authorizers. An HTTP API route has one authorizer, and a JWT
+  authorizer one issuer, so each provider has its own paths:
+  - **Google's** at the routes above: the `google` authorizer, issuer
+    `https://accounts.google.com`, audience the web client, and the local
+    web client where it's set (though the main pool then refuses local
+    tokens: no sharing in local web builds);
+  - **Apple's** under `/apple`, only when the stack has `AppleClientId`:
+    the `apple` authorizer, issuer `https://appleid.apple.com`, audience
+    the bundle ID `com.nu01.tabscan`. The app sends an Apple token there
+    (it reads the token's issuer).
+
+  The function checks the token's issuer (`iss`) is its path's, or answers
+  401, so a token is never taken as another provider's, then routes both
+  paths alike. Only verified addresses are used: `email_verified` must be
+  true (Apple sends it as the string `"true"`, Google as a boolean), and a
+  token without an email is refused (403). Apple's private relay
+  addresses count as verified: each is the user's, for TabScan, and is
+  what others share with. The owner's folder is their Cognito identity,
+  found from the same token (`GetId`, with the token under its issuer's
+  `Logins` key: `accounts.google.com` or `appleid.apple.com`), so a user
+  can only grant their own captures. A Google and an Apple sign-in are two
+  identities: captures shared from one are owned by that one's folder,
+  but a grant to an address reaches whoever signs in with it, either way.
+  Every route acts on the caller alone: as an owner, on that identity; as
+  a grantee, on their verified address. `DELETE /account` deletes only
+  grants whose key starts with the caller's identity, or whose email is
+  theirs, and the identity last, so a retry after a failure finds the
+  same one (Cognito keeping it is a 502, to retry).
 - Grants are in a DynamoDB table: key `<owner>#<capture id>` and the
   email, with the role, the owner's identity and email, and when; an index
   by email lists what's shared with someone, and one by owner (keys only)
@@ -141,7 +162,14 @@ The script prints `TABSCANNER_SHARE_API_URL`.
   their accounts record and their identity, and nothing of anyone else's
   (another owner's grant to a third person stays), across query pages;
   without the OCR table too; Cognito keeping the identity is a 502 and a
-  retry finishes; an unverified address deletes nothing.
+  retry finishes; an unverified address deletes nothing; an Apple user
+  deletes theirs under `/apple`. With made-up Apple claims: the `/apple`
+  routes take Apple's tokens and use their own identity
+  (`appleid.apple.com`); an Apple user gets what's shared with their
+  (relay) address; Apple's `email_verified` may be a boolean or a string,
+  and false is refused; a token on another issuer's path is refused before
+  anything is read; an Apple token without an email is refused; unknown
+  `/apple` routes are 404.
 - The app's tests, two devices and a fake share API over the in-memory
   bucket: a capture shared to edit comes down and edits go back (without
   the sharing fields); read only uploads nothing; the grantee's own
@@ -149,9 +177,10 @@ The script prints `TABSCANNER_SHARE_API_URL`.
   comes back; the grantee removes it and leaves; the owner deletes it and
   it goes; a role change reaches the copy; a clone of a shared capture is
   the user's own. The API client's requests.
-- The template passes `validate-template`.
+- The template passes `validate-template` and cfn-lint (the `/apple`
+  routes and authorizer only with `AppleClientId`).
 - Not yet verified: the deployed API, which needs the Google OAuth
-  clients and the stacks.
+  clients and the stacks (and, for Apple, the stack with `AppleClientId`).
 
 ## Known limitations
 

@@ -7,9 +7,9 @@ templates.
 |---|---|---|
 | [site.yaml](site.yaml) | `tabscan-web` | https://tabscan.nu01.com: the ACM certificate (DNS-validated in the `tabscan.nu01.com` zone), a private S3 bucket, a CloudFront distribution, the Route 53 A/AAAA aliases, and a Route 53 health check of `/app/version.json` that emails `TABSCANNER_HEALTH_EMAILS` when it fails |
 | [user-data.yaml](user-data.yaml) | `tabscan-user-data` | The bucket of signed-in users' events, `nu01-user-events-<account>` (private, SSE-S3, TLS only, object events to EventBridge, versioned: old versions kept 30 days; CORS for the web app's origins). Not `tabscan-*`, so the deploy roles can't reach it. Shared by production and the RC |
-| [identity.yaml](identity.yaml) | `tabscan-identity` | The Cognito identity pool `tabscan` (Google sign-in only, for the web client; no guests, enhanced flow) and its authenticated role: get, put and delete in `<bucket>/<identity ID>/*`, and list that prefix. Shared by production and the RC |
+| [identity.yaml](identity.yaml) | `tabscan-identity` | The Cognito identity pool `tabscan` (Google sign-in, for the web client, and with `AppleClientId` Sign in with Apple, for the bundle ID; no guests, enhanced flow) and its authenticated role: get, put and delete in `<bucket>/<identity ID>/*`, and list that prefix. Shared by production and the RC |
 | [identity.yaml](identity.yaml) | `tabscan-identity-local` | The same for local web builds: the pool `tabscan-local`, trusting the "local - web" client (a pool can trust only one Google client), and its own authenticated role on the same bucket |
-| [share-api.yaml](share-api.yaml) | `tabscan-share-api` | Sharing captures by email: the `tabscan-share-api` HTTP API (Google JWT authorizer, throttled), its Python function ([tabscan_api/shares/](../tabscan_api/shares)), the grants table (PITR on) and the `tabscan-share-access` role, which the function assumes with a session policy narrowed to one capture's folder (and to reading, for read-only grants) |
+| [share-api.yaml](share-api.yaml) | `tabscan-share-api` | Sharing captures by email: the `tabscan-share-api` HTTP API (Google JWT authorizer, and with `AppleClientId` an Apple one for the same routes under `/apple`; throttled), its Python function ([tabscan_api/shares/](../tabscan_api/shares)), the grants table (PITR on) and the `tabscan-share-access` role, which the function assumes with a session policy narrowed to one capture's folder (and to reading, for read-only grants) |
 | [ocr-repo.yaml](ocr-repo.yaml) | `tabscan-ocr-repo` | The ECR repository `tabscan-ocr` of the cloud OCR image ([tabscan_locr/](../tabscan_locr/README.md)) |
 | [ocr.yaml](ocr.yaml) | `tabscan-ocr` | TabScan Premium's cloud OCR: the `tabscan-accounts` table, the `tabscan-ocr` and `tabscan-ocr-api` functions, the API's function URL (the app's `TABSCANNER_OCR_URL`) and the EventBridge rule for page uploads. Deployed by `tabscan_locr/scripts/deploy.sh` |
 | [github-deploy.yaml](github-deploy.yaml) | `tabscan-github-deploy` | The `tabscan-github-deploy` role (Deploy workflow, `*GA` tags) and the `tabscan-github-deploy-rc` role (Deploy RC workflow: `*RC*` tags and manual runs from `main`, limited to `tabscan-rc-*` resources and the `rc.tabscan.nu01.com` records), trusting GitHub's OIDC provider |
@@ -176,3 +176,35 @@ ACM validation names.
    ```bash
    gh variable set TABSCANNER_SHARE_API_URL --body "<ApiUrl>"
    ```
+
+5. Sign in with Apple on iOS (optional; App Store guideline 4.8). Off
+   until all of this is done:
+
+   1. Join the paid Apple Developer Program (a free Personal Team can't
+      sign the capability), and in Certificates, Identifiers & Profiles
+      enable **Sign in with Apple** on the App ID `com.nu01.tabscan`
+      ("Enable as a primary App ID"). No key, Services ID or domain is
+      needed: native sign-in on iOS only.
+   2. Redeploy the stacks with Apple trusted, its tokens' audience being
+      the bundle ID:
+
+      ```bash
+      aws cloudformation deploy --region us-east-1 \
+        --stack-name tabscan-identity \
+        --template-file tabscan_infra/identity.yaml \
+        --capabilities CAPABILITY_IAM \
+        --parameter-overrides "GoogleWebClientId=$TABSCANNER_GOOGLE_WEB_CLIENT_ID" \
+          PoolName=tabscan AppleClientId=com.nu01.tabscan
+      ```
+
+      Then, with `TABSCANNER_APPLE_SIGN_IN=1` in `.env`,
+      `bash scripts/deploy-share-api.sh` (it adds the `/apple` routes and
+      their authorizer, and checks `/apple/shared` answers 401 without a
+      token) and `bash tabscan_locr/scripts/deploy.sh` (the OCR function
+      takes Apple's tokens; without it, Apple users get "Premium needs
+      Google sign-in"). Leave the local pool (`tabscan-identity-local`)
+      as it is: local builds are web builds, with no Apple sign-in.
+   3. Set `TABSCANNER_APPLE_SIGN_IN=1` and the paid team's
+      `TABSCANNER_IOS_DEVELOPMENT_TEAM` in `.env`: iOS builds then show
+      Sign in with Apple and carry the entitlement
+      ([platforms](../specs/platforms.md)).

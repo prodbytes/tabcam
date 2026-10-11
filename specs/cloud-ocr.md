@@ -14,7 +14,8 @@ as before.
 
 [rbacr](https://github.com/prodbytes/rbacr) decides: the role `premium`
 in its `tabscan` system (`premium` implies `free`), for the user's verified
-Google address. People get it by:
+address: their Google address, or, signed in with Apple on iOS, their Apple
+ID's address. People get it by:
 
 - **Subscribing** to prodbytes.substack.com with the same Google address:
   rbacr's Stripe sync grants the `tabscan` system's subscriber role,
@@ -22,6 +23,15 @@ Google address. People get it by:
 - **A voucher**, redeemed on rbacr's own page (https://rbacr.nu01.com/me,
   signing in with Google).
 - A root's grant in rbacr.
+
+**Signed in with Apple**, the address is the one in Apple's ID token: the
+user's own if they shared it, which is premium like anyone's; Apple's
+private relay address if they hid it, which matches no subscription or
+voucher (unless rbacr grants that address), so it isn't premium. The card
+then says Premium goes by address and that their relay address has none:
+to use Premium under their own address, sign in with Google, or with Apple
+sharing it. An address is only trusted when the provider says it's
+verified (Apple's `email_verified` is the string `"true"`).
 
 The service asks rbacr (`POST /api/check`) with a root-owned API token kept
 in AWS Secrets Manager (`tabscan/rbacr-token`), never in the app. If rbacr
@@ -68,12 +78,18 @@ with text but no tab is still `no-tab`.
 
 - **Status**: at sign-in, and each time the Profile tab (or the account
   sheet, from an event's Upgrade on the web) opens, the app
-  calls `POST /account` with the user's Google ID token. The service checks
-  the token (signed by Google, issued for TabScan's web client or the
-  local web client, verified address), asks the main identity pool for its identity ID
-  (so local web builds, whose identities are in the local pool, get 401), records identity →
-  address, and answers `{email, premium, expiresAt, checked, upgradeUrl,
-  voucherUrl}`.
+  calls `POST /account` with the user's ID token. The service checks the
+  token, by its issuer: Google's (signed by Google, issued for TabScan's
+  web client or the local web client) or, with `APPLE_CLIENT_ID` set,
+  Apple's (signed by Apple's keys, `https://appleid.apple.com/auth/keys`,
+  issued for the bundle ID `com.nu01.tabscan`); either way unexpired, with
+  a verified address. It asks the main identity pool for the token's
+  identity ID, under the issuer's `Logins` key (so local web builds, whose
+  identities are in the local pool, get 401), records identity → address,
+  and answers `{email, premium, expiresAt, checked, upgradeUrl,
+  voucherUrl}`. An Apple token while the service has no `APPLE_CLIENT_ID`
+  gets 403 `google sign-in needed`, and the card says "Premium needs
+  Google sign-in".
 - **Results**: after each sync pass, a premium user's app lists
   `<identity>/ocr/`. Once every image page of one of their synced events
   has a result, the `ok` texts, in page order and separated by a blank
@@ -160,7 +176,8 @@ set to check both.
     `/autocorrect`; the other requests take a second or two): it may read
     and write the table, read the rbacr secret (and the Claude API key's,
     when set), invoke `tabscan-ocr`, list the bucket and delete results;
-  - its function URL (no IAM auth: each request carries a Google ID token;
+  - its function URL (no IAM auth: each request carries an ID token,
+    Google's or Apple's (`AppleClientId`, the function's `APPLE_CLIENT_ID`);
     CORS for the web app's origins, the local HTTPS one included);
   - the EventBridge rule `tabscan-ocr-pages` (page images created or
     deleted in the user-data bucket).
@@ -175,6 +192,13 @@ set to check both.
 - Service unit tests (pytest): page keys parsed strictly; premium pages
   queued and free ones not; unknown identities aren't premium; deletions
   remove results; `/account` needs a good token and records the identity;
+  tokens of every listed Google client are taken, others refused; Apple's
+  tokens (made up, signed with a test key) are taken for the bundle ID with
+  `email_verified` a string or a boolean, and refused unverified, without
+  an email, for another audience or signed by another key; without an
+  Apple client they're "google sign-in needed" (403); other issuers are
+  refused; an Apple user is their own identity, premium by their (relay)
+  address;
   `/transcribe` is premium-only and queues only untranscribed pages; rbacr's
   answer is cached by its ttl and fails closed; the pipeline finds lines,
   staves and widths, rebuilds lines and votes, and keeps the notations off
@@ -188,7 +212,9 @@ set to check both.
   nothing; late pages are asked for once; the Premium card's upgrade offer
   and premium state; in a store app, no Upgrade, voucher or subscribe
   wording on the card and no event screen hint, while Premium (and until
-  when) still shows.
+  when) still shows; an Apple user with a relay address is labelled by
+  Apple and told Premium goes by address; "Premium needs Google sign-in"
+  when the service takes no Apple tokens.
 - On a real photographed tab page (the OCR bench, kept out of git), the
   pipeline read 90% of the notes on macOS and 87.5% in the Linux image.
 

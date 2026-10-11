@@ -1415,5 +1415,34 @@
         "type": "String"
       }
     }
+  },
+  "accountPremiumNeedsGoogle": "Premium needs Google sign-in",
+  "@accountPremiumNeedsGoogle": {
+    "description": "Profile: Premium can't be checked for an Apple sign-in"
+  },
+  "accountSignInWithApple": "Sign in with Apple",
+  "@accountSignInWithApple": {
+    "description": "Sign-in button for Apple (Apple's own wording)"
+  },
+  "accountAppleSignInFailed": "Sign in with Apple failed",
+  "@accountAppleSignInFailed": {
+    "description": "Error after a failed Apple sign-in"
+  },
+  "accountAppleSignInExpired": "Your Apple sign-in expired: sign in again.",
+  "@accountAppleSignInExpired": {
+    "description": "Error when the Apple sign-in expires"
+  },
+  "accountAppleUnavailable": "Sign in with Apple isn't available on this device.",
+  "@accountAppleUnavailable": {
+    "description": "Why Apple sign-in can't be offered"
+  },
+  "accountPrivateEmail": "{provider} ID (private email)",
+  "@accountPrivateEmail": {
+    "description": "Profile: the name shown for an account with a hidden email address",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -1073,4 +1073,27 @@ class AppLocalizationsEs extends AppLocalizations {
   String deleteAccountFilesError(String error) {
     return 'No se pudieron eliminar tus archivos en la nube ($error). No se eliminó nada más: inténtalo de nuevo.';
   }
+
+  @override
+  String get accountPremiumNeedsGoogle =>
+      'Premium requiere iniciar sesión con Google';
+
+  @override
+  String get accountSignInWithApple => 'Iniciar sesión con Apple';
+
+  @override
+  String get accountAppleSignInFailed => 'No se pudo iniciar sesión con Apple';
+
+  @override
+  String get accountAppleSignInExpired =>
+      'Tu sesión de Apple expiró: inicia sesión de nuevo.';
+
+  @override
+  String get accountAppleUnavailable =>
+      'Iniciar sesión con Apple no está disponible en este dispositivo.';
+
+  @override
+  String accountPrivateEmail(String provider) {
+    return 'ID de $provider (correo privado)';
+  }
 }

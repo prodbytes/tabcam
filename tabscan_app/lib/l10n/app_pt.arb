@@ -277,5 +277,11 @@
   "deleteAccountKeptAppearing": "Continuaram aparecendo arquivos na sua pasta na nuvem enquanto ela era esvaziada. Nada mais foi excluído: tente de novo.",
   "deleteAccountFilesHttp": "Não foi possível excluir seus arquivos na nuvem (HTTP {status}). Nada mais foi excluído: tente de novo.",
   "deleteAccountFilesCognito": "Não foi possível excluir seus arquivos na nuvem ({type}). Nada foi excluído: tente de novo.",
-  "deleteAccountFilesError": "Não foi possível excluir seus arquivos na nuvem ({error}). Nada mais foi excluído: tente de novo."
+  "deleteAccountFilesError": "Não foi possível excluir seus arquivos na nuvem ({error}). Nada mais foi excluído: tente de novo.",
+  "accountPremiumNeedsGoogle": "O Premium exige entrar com o Google",
+  "accountSignInWithApple": "Iniciar sessão com a Apple",
+  "accountAppleSignInFailed": "Não foi possível iniciar sessão com a Apple",
+  "accountAppleSignInExpired": "Sua sessão da Apple expirou: entre novamente.",
+  "accountAppleUnavailable": "Iniciar sessão com a Apple não está disponível neste dispositivo.",
+  "accountPrivateEmail": "ID {provider} (e-mail privado)"
 }
