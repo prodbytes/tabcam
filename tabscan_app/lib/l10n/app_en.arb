@@ -1,0 +1,11 @@
+{
+  "@@locale": "en",
+  "languageTitle": "Language",
+  "@languageTitle": {
+    "description": "Profile: the language setting's title"
+  },
+  "languageSystem": "Device's language",
+  "@languageSystem": {
+    "description": "Profile: follow the device's language"
+  }
+}

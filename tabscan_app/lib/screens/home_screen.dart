@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../l10n/language.dart';
 import '../app_version.dart';
 import '../auth/auth_service.dart';
 import '../capture/media.dart';
@@ -470,7 +471,43 @@ class _AddTile extends StatelessWidget {
   );
 }
 
-/// The Profile tab: the account (in a build with sign-in), then About.
+/// The language setting: the device's language, or English, Spanish or
+/// Portuguese; the app changes at once.
+class _LanguagePicker extends StatelessWidget {
+  const _LanguagePicker({required this.language});
+
+  final LanguageSetting language;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Row(
+      children: [
+        const Icon(Icons.language),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            l10n.languageTitle,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+        ),
+        DropdownButton<String?>(
+          key: const Key('language'),
+          value: language.code,
+          onChanged: language.set,
+          items: [
+            DropdownMenuItem(child: Text(l10n.languageSystem)),
+            for (final MapEntry(:key, :value) in LanguageSetting.names.entries)
+              DropdownMenuItem(value: key, child: Text(value)),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// The Profile tab: the account (in a build with sign-in), the language,
+/// then About.
 class ProfileView extends StatelessWidget {
   const ProfileView({super.key, this.auth, this.sync, this.ocr});
 
@@ -498,6 +535,10 @@ class ProfileView extends StatelessWidget {
                     'on this device.',
                     style: theme.textTheme.bodyMedium,
                   ),
+                if (LanguageScope.maybeOf(context) case final language?) ...[
+                  const Divider(height: 48),
+                  _LanguagePicker(language: language),
+                ],
                 const Divider(height: 48),
                 Text('About', style: theme.textTheme.titleMedium),
                 const SizedBox(height: 8),
