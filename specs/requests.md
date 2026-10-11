@@ -415,3 +415,12 @@ spec.
     secrets, and its SHA-256 added to `assetlinks.json`, so release builds it signs open
     the sites' links in the app once deployed
     ([sharing](sharing.md#android-app-links), [app stores](app-stores.md)).
+53. **Draft the Google Play and App Store listings** (part of publishing
+    to the stores), in fastlane's layout for a later upload, without
+    fastlane yet: [tabscan_store/](../tabscan_store) with the Play title,
+    short and full descriptions and changelog; the App Store name,
+    subtitle, description, keywords, promotional text, release notes and
+    URLs; App Review notes (the test Google account is the maintainer's to
+    provide); and draft Data safety, App Privacy, content rating,
+    audience and category answers. `scripts/store-metadata-check.sh`
+    checks the lengths ([app stores](app-stores.md#store-listings)).
