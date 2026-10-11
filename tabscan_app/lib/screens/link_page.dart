@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -6,17 +7,26 @@ import '../library/capture_event.dart';
 import '../l10n/language.dart';
 
 /// A link page on the event screen: its title and address, with Open (in
-/// the browser, or the app that handles it, such as YouTube) and Copy.
+/// a browser inside the app on Android and iOS, in a new tab on the web)
+/// and Copy.
 class LinkPage extends StatelessWidget {
   const LinkPage({super.key, required this.page});
 
   final EventPage page;
 
   Future<void> _open(BuildContext context) async {
-    final ok = await launchUrl(
-      page.url!,
-      mode: LaunchMode.externalApplication,
+    final url = page.url!;
+    Future<bool> launch(LaunchMode mode) => launchUrl(
+      url,
+      mode: mode,
+      webOnlyWindowName: '_blank',
     ).catchError((_) => false);
+    // Where there's no browser inside the app, the browser (or the app
+    // that handles it, such as YouTube) opens it.
+    final ok = kIsWeb
+        ? await launch(LaunchMode.platformDefault)
+        : await launch(LaunchMode.inAppBrowserView) ||
+              await launch(LaunchMode.externalApplication);
     if (!ok && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

@@ -211,19 +211,6 @@ abstract final class Exporter {
       return ('png', 'image/png');
     }
     final extension = page.extension == 'img' ? 'jpg' : page.extension;
-    return (
-      extension,
-      switch (extension) {
-        'png' => 'image/png',
-        'heic' || 'heif' => 'image/heic',
-        'webp' => 'image/webp',
-        'gif' => 'image/gif',
-        'mov' => 'video/quicktime',
-        'webm' => 'video/webm',
-        '3gp' => 'video/3gpp',
-        'mp4' || 'm4v' => 'video/mp4',
-        _ => 'image/jpeg',
-      },
-    );
+    return (extension, page.mimeType);
   }
 }

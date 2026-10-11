@@ -227,11 +227,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountShareFilesHidden =>
-      'A zip of the videos, the text tab and links (the photos and scans are hidden)';
+      'A zip of the videos, recordings, PDFs, the text tab and links (the photos and scans are hidden)';
 
   @override
   String get accountShareFilesDetail =>
-      'A zip of everything: photos, scans, videos, the text tab and links';
+      'A zip of everything: photos, scans, videos, recordings, PDFs, the text tab and links';
 
   @override
   String accountShareFailed(String error) {
@@ -374,7 +374,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventAddFiles => 'Files';
 
   @override
-  String get eventAddFilesDetail => 'Image and video files';
+  String get eventAddFilesDetail => 'Image, video, audio and PDF files';
 
   @override
   String get eventAddLink => 'Link';
@@ -568,6 +568,28 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other: '$count videos',
       one: '1 video',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeAudio(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count recordings',
+      one: '1 recording',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homePdfs(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count PDFs',
+      one: '1 PDF',
     );
     return '$_temp0';
   }
@@ -901,6 +923,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get textViewVideo => 'Video';
+
+  @override
+  String get textViewAudio => 'Recording';
+
+  @override
+  String get textViewCantPlayAudio => 'This recording can\'t be played here';
+
+  @override
+  String get textViewPlay => 'Play';
+
+  @override
+  String get textViewPause => 'Pause';
+
+  @override
+  String get textViewCantShowPdf => 'This PDF can\'t be shown here';
 
   @override
   String get homePrivacyPolicy => 'Privacy policy';

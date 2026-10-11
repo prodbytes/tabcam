@@ -228,7 +228,7 @@ void main() {
       Media.of(XFile('a/upload', mimeType: 'video/quicktime'))!.extension,
       'mov',
     );
-    expect(Media.of(XFile('a/song.mp3')), isNull);
+    expect(Media.of(XFile('a/notes.docx')), isNull);
   });
 
   test('events saved before videos load as image pages', () {

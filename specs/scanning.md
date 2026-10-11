@@ -60,8 +60,9 @@ new pages at the end, moving the view to the first one:
 - **Scan pages**: more tab pages with the document scanner (as above).
 - **Photos & videos**: several photos and videos from the photo library
   (`image_picker`'s multiple media picker).
-- **Files**: image and video files (`file_picker`, media files): the Files
-  app on iOS, the system picker on Android, the browser's on the web.
+- **Files**: image, video, audio and PDF files (`file_picker`, offering
+  the extensions below): the Files app on iOS, the system picker on
+  Android, the browser's on the web.
 - **Link**: asks for the **Link** and an optional **Title** ("Lesson,
   recording…"). The address is trimmed and gets `https://` when it has no
   scheme (`youtu.be/abc` is `https://youtu.be/abc`); only `http` and
@@ -72,8 +73,10 @@ new pages at the end, moving the view to the first one:
 
 Picked files are recognized by extension, or else MIME type: images `jpg`,
 `jpeg`, `png`, `heic`, `heif`, `webp`, `gif`; videos `mp4`, `mov`, `m4v`,
-`webm`, `3gp`. Anything else is left out, and a message says how many.
-Photos get the Tab filter, as scanned pages do.
+`webm`, `3gp`; recordings `mp3`, `m4a`, `aac`, `wav`, `ogg`, `oga`,
+`opus`, `flac`; and `pdf`. Anything else is left out, and a message says
+how many. Photos get the Tab filter, as scanned pages do; the other files
+are kept as picked.
 
 ### Cropping photos to the page
 

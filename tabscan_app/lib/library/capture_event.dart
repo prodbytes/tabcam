@@ -1,11 +1,13 @@
 import '../processing/page_filter.dart';
 
 /// What a page is: a picture of the tab, a video (someone playing it, a
-/// lesson), or a link (a lesson online, a recording, the song's page).
-enum PageKind { image, video, link }
+/// lesson), a recording, a PDF (the tab as a document), or a link (a lesson
+/// online, a recording, the song's page).
+enum PageKind { image, video, audio, pdf, link }
 
-/// One page of an event: an image's or video's file is kept by the store as
-/// `<id>.<extension>`; a link has no file, only its [url].
+/// One page of an event: an image's, video's, recording's or PDF's file is
+/// kept by the store as `<id>.<extension>`; a link has no file, only its
+/// [url].
 class EventPage {
   const EventPage({
     required this.id,
@@ -43,10 +45,34 @@ class EventPage {
 
   bool get isVideo => kind == PageKind.video;
   bool get isImage => kind == PageKind.image;
+  bool get isAudio => kind == PageKind.audio;
+  bool get isPdf => kind == PageKind.pdf;
   bool get isLink => kind == PageKind.link;
 
-  /// Whether the store keeps a file for it (images and videos, not links).
+  /// Whether the store keeps a file for it (all but links).
   bool get hasFile => !isLink;
+
+  /// The MIME type of its file, by its extension.
+  String get mimeType => switch (extension) {
+    'img' || 'jpg' || 'jpeg' => 'image/jpeg',
+    'png' => 'image/png',
+    'webp' => 'image/webp',
+    'heic' || 'heif' => 'image/heic',
+    'gif' => 'image/gif',
+    'mp4' || 'm4v' => 'video/mp4',
+    'mov' => 'video/quicktime',
+    'webm' => 'video/webm',
+    '3gp' => 'video/3gpp',
+    'mp3' => 'audio/mpeg',
+    'm4a' => 'audio/mp4',
+    'aac' => 'audio/aac',
+    'wav' => 'audio/wav',
+    'ogg' || 'oga' => 'audio/ogg',
+    'opus' => 'audio/opus',
+    'flac' => 'audio/flac',
+    'pdf' => 'application/pdf',
+    _ => 'application/octet-stream',
+  };
 
   /// The page's file name in its event's folder.
   String get fileName => '$id.$extension';
@@ -82,7 +108,13 @@ class EventPage {
     return EventPage(
       id: id,
       filter: PageFilter.byName(json['filter'] as String?),
-      kind: json['kind'] == 'video' ? PageKind.video : PageKind.image,
+      // Unknown kinds (from a newer app) show as images, as before kinds.
+      kind: switch (json['kind']) {
+        'video' => PageKind.video,
+        'audio' => PageKind.audio,
+        'pdf' => PageKind.pdf,
+        _ => PageKind.image,
+      },
       extension: checkExtension(json['extension'] as String? ?? 'img'),
     );
   }

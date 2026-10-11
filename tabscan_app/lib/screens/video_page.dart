@@ -7,9 +7,9 @@ import '../library/library.dart';
 import '../library/capture_event.dart';
 import '../l10n/language.dart';
 
-/// A video page: a play button until tapped, then the video, with tap to
-/// pause and resume. It plays from the page's file (from memory on the
-/// web), and is let go when the page scrolls away.
+/// A video page: a play button until tapped, then the video, with a play /
+/// pause button and tap to pause and resume. It plays from the page's file
+/// (from memory on the web), and is let go when the page scrolls away.
 class VideoPage extends StatefulWidget {
   const VideoPage({
     super.key,
@@ -40,16 +40,11 @@ class _VideoPageState extends State<VideoPage> {
   Future<void> _start() async {
     setState(() => _loading = true);
     try {
-      final path = await widget.library.path(widget.event, widget.page);
-      final controller = path != null
-          ? VideoPlayerController.file(File(path))
-          : VideoPlayerController.networkUrl(
-              Uri.dataFromBytes(
-                await widget.library.original(widget.event, widget.page),
-                mimeType: _mime(widget.page.extension),
-              ),
-            );
-      await controller.initialize();
+      final controller = await openPlayer(
+        widget.library,
+        widget.event,
+        widget.page,
+      );
       await controller.setLooping(true);
       await controller.play();
       if (!mounted) {
@@ -63,13 +58,6 @@ class _VideoPageState extends State<VideoPage> {
       if (mounted) setState(() => _loading = false);
     }
   }
-
-  static String _mime(String extension) => switch (extension) {
-    'mov' => 'video/quicktime',
-    'webm' => 'video/webm',
-    '3gp' => 'video/3gpp',
-    _ => 'video/mp4',
-  };
 
   void _toggle() {
     final c = _controller!;
@@ -103,13 +91,86 @@ class _VideoPageState extends State<VideoPage> {
             alignment: Alignment.bottomCenter,
             children: [
               VideoPlayer(controller),
-              if (!controller.value.isPlaying)
-                const Center(child: Icon(Icons.play_arrow, size: 72)),
-              VideoProgressIndicator(controller, allowScrubbing: true),
+              Material(
+                color: Colors.black45,
+                child: Row(
+                  children: [
+                    PlayPauseButton(controller, color: Colors.white),
+                    Expanded(
+                      child: VideoProgressIndicator(
+                        controller,
+                        allowScrubbing: true,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// A player for [page]'s file: from the device's copy, or from memory on
+/// the web. Initialized, not playing yet.
+Future<VideoPlayerController> openPlayer(
+  Library library,
+  CaptureEvent event,
+  EventPage page,
+) async {
+  final path = await library.path(event, page);
+  final controller = path != null
+      ? VideoPlayerController.file(File(path))
+      : VideoPlayerController.networkUrl(
+          Uri.dataFromBytes(
+            await library.original(event, page),
+            mimeType: page.mimeType,
+          ),
+        );
+  try {
+    await controller.initialize();
+  } on Object {
+    await controller.dispose();
+    rethrow;
+  }
+  return controller;
+}
+
+/// Plays or pauses [controller], its icon following it; at the end, plays
+/// from the start.
+class PlayPauseButton extends StatelessWidget {
+  const PlayPauseButton(this.controller, {super.key, this.size, this.color});
+
+  final VideoPlayerController controller;
+  final double? size;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return ValueListenableBuilder(
+      valueListenable: controller,
+      builder: (context, value, _) {
+        final playing = value.isPlaying;
+        return IconButton(
+          key: const Key('play-pause'),
+          iconSize: size,
+          color: color,
+          tooltip: playing ? l10n.textViewPause : l10n.textViewPlay,
+          icon: Icon(playing ? Icons.pause : Icons.play_arrow),
+          onPressed: () async {
+            if (playing) return controller.pause();
+            final ended =
+                value.duration > Duration.zero &&
+                value.position >= value.duration;
+            if (ended) await controller.seekTo(Duration.zero);
+            await controller.play();
+          },
+        );
+      },
     );
   }
 }

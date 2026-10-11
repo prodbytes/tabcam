@@ -283,11 +283,15 @@ class _EventCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
-    final videos = event.pages.where((p) => p.isVideo).length;
-    final links = event.pages.where((p) => p.isLink).length;
-    final pages = event.pages.length - videos - links;
+    int count(bool Function(EventPage) test) => event.pages.where(test).length;
+    final videos = count((p) => p.isVideo);
+    final audio = count((p) => p.isAudio);
+    final pdfs = count((p) => p.isPdf);
+    final links = count((p) => p.isLink);
+    final pages = count((p) => p.isImage);
     // The first image is the thumbnail; without images (or with them
-    // hidden), the text tab's badge, a video's, or else a link's.
+    // hidden), the text tab's badge, a video's, a PDF's, a recording's, or
+    // else a link's.
     final cover = event.visiblePages.where((p) => p.isImage).firstOrNull;
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -321,6 +325,18 @@ class _EventCard extends StatelessWidget {
                     ? const Icon(Icons.notes, size: 48, color: Colors.black54)
                     : videos > 0
                     ? const VideoThumbnail()
+                    : pdfs > 0
+                    ? const Icon(
+                        Icons.picture_as_pdf_outlined,
+                        size: 48,
+                        color: Colors.black54,
+                      )
+                    : audio > 0
+                    ? const Icon(
+                        Icons.music_note,
+                        size: 48,
+                        color: Colors.black54,
+                      )
                     : links > 0
                     ? const Icon(Icons.link, size: 48, color: Colors.black54)
                     : const Icon(Icons.description_outlined),
@@ -345,9 +361,11 @@ class _EventCard extends StatelessWidget {
                             if (event.artist.isNotEmpty) event.artist,
                             if (event.hideImages)
                               l10n.homeLibraryImagesHidden
-                            else if (pages > 0 || videos + links == 0)
+                            else if (pages > 0 || pages == event.pages.length)
                               l10n.homePages(pages),
                             if (videos > 0) l10n.homeVideos(videos),
+                            if (audio > 0) l10n.homeAudio(audio),
+                            if (pdfs > 0) l10n.homePdfs(pdfs),
                             if (links > 0) l10n.homeLinks(links),
                             if (event.tabText != null) l10n.homeLibraryText,
                             if (event.sharedBy case final owner?)

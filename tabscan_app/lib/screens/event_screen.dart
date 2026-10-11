@@ -12,9 +12,11 @@ import '../recognition/auto_reader.dart';
 import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
 import 'account_panel.dart';
+import 'audio_page.dart';
 import 'clone.dart';
 import 'link_page.dart';
 import 'page_image.dart';
+import 'pdf_page.dart';
 import 'people_sheet.dart';
 import 'premium_card.dart';
 import 'rename_dialog.dart';
@@ -24,13 +26,14 @@ import 'tab_text_view.dart';
 import 'text_page.dart';
 import 'video_page.dart';
 
-/// One event: its pages (images, videos and links) to swipe through, and
+/// One event: its pages (images, videos, recordings, PDFs and links) to
+/// swipe through, each shown as what it is, and
 /// the tools along the bottom: the view (Original or Scan: the photos as
 /// taken, or processed), Text (the tab read from them, in place of the
 /// pages), Add (scan, photos and videos, files, a link), Rotate and
-/// Delete. Share and rename are in the app bar. The tab is read by itself ([AutoReader]): there's
-/// no Read tab button. With its images hidden, the pages are the text tab,
-/// then the videos and links.
+/// Delete. Share and rename are in the app bar. The tab is read by itself
+/// ([AutoReader]): there's no Read tab button. With its images hidden, the
+/// pages are the text tab, then the other pages.
 class EventScreen extends StatefulWidget {
   const EventScreen({
     super.key,
@@ -329,7 +332,7 @@ class _EventScreenState extends State<EventScreen> {
   }
 
   /// What the pager shows: the pages, or with the images hidden, the text
-  /// tab (null) and then the videos and links.
+  /// tab (null) and then the other pages.
   List<EventPage?> _pagesOf(CaptureEvent event) =>
       event.hideImages ? [null, ...event.visiblePages] : event.pages;
 
@@ -349,7 +352,7 @@ class _EventScreenState extends State<EventScreen> {
         final enabled = !_busy && page != null && editable;
         final view = _viewOf(event);
         final text = _text;
-        // Rotate is for images, not videos or links; nor in the Text view.
+        // Rotate is for images, not the other pages; nor in the Text view.
         final image = enabled && page.isImage && !text;
         final sync = widget.sync;
         final l10n = context.l10n;
@@ -431,6 +434,18 @@ class _EventScreenState extends State<EventScreen> {
                           page: p,
                         ),
                         final p when p.isVideo => VideoPage(
+                          key: ValueKey(p.id),
+                          library: _library,
+                          event: event,
+                          page: p,
+                        ),
+                        final p when p.isAudio => AudioPage(
+                          key: ValueKey(p.id),
+                          library: _library,
+                          event: event,
+                          page: p,
+                        ),
+                        final p when p.isPdf => PdfPage(
                           key: ValueKey(p.id),
                           library: _library,
                           event: event,
