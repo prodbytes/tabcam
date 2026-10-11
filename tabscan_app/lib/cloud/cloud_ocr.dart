@@ -152,6 +152,20 @@ class CloudOcr extends ChangeNotifier {
     return api.transcribe(token, event.id);
   }
 
+  /// Auto-correct: checks [text], [event]'s text tab, against [song]'s tab
+  /// found online. Throws [OcrApiException] (402) for users without
+  /// Premium, 401 signed out.
+  Future<AutocorrectResult> autocorrect(
+    CaptureEvent event, {
+    required String song,
+    required String text,
+  }) async {
+    final token = _token;
+    if (token == null) throw OcrApiException(401, 'sign in');
+    if (!premium) throw OcrApiException(402, 'premium only');
+    return api.autocorrect(token, eventId: event.id, song: song, text: text);
+  }
+
   static bool isImage(EventPage page) =>
       page.isImage && imageExtensions.contains(page.extension);
 

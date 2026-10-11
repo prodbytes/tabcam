@@ -402,3 +402,25 @@ spec.
     make Mark correct a toggle.** Share text is gone. Mark correct is now
     a button like Copy, a toggle: tonal while off, filled and reading
     **Correct** while on ([tab recognition](tab-recognition.md#text-view)).
+48. **Add auto-correct: a Lambda that does its best to correct the tab,
+    for now from a button on the Text view; short button labels to fit the
+    screen's width. It searches online, popular tab sites first, for the
+    song's tab, works out the corrections and shows them per note in the
+    text view, for the user to accept or not. Make the text view a text
+    editor so the tab is easy to correct.** Chosen with the user: Claude
+    with web search does the search and comparison, Premium only, and the
+    editor gets an overtype mode. The cloud OCR service's API function
+    answers `POST /autocorrect` (Premium; Claude `claude-opus-5-5` with
+    web search and fetch, corrections by note id, checked against the
+    reading); its timeout went to 300 s and it may read the Claude API
+    key's secret. The Text view's buttons are now **Copy**, **Correct**
+    and **Fix**; Fix asks for the song and shows the corrections per note
+    to accept or reject. The editor has **Overtype** (on by default) and
+    no keyboard suggestions ([auto-correct](autocorrect.md),
+    [tab recognition](tab-recognition.md#text-view),
+    [cloud OCR](cloud-ocr.md#infrastructure)).
+49. **In the text editor, add + and − buttons that increment or decrement
+    the number under the cursor, up to two digits (15 + → 16, 5 + → 6).**
+    − and + under the Text view's buttons change the fret under the
+    cursor by one, 0 to 99, keeping the columns
+    ([tab recognition](tab-recognition.md#text-view)).

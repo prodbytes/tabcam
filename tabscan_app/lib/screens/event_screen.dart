@@ -246,6 +246,16 @@ class _EventScreenState extends State<EventScreen> {
         key: ValueKey('text-${event.id}'),
         library: _library,
         eventId: event.id,
+        ocr: widget.ocr,
+        onUpgrade: switch ((widget.sync, widget.ocr)) {
+          (final sync?, final ocr?) => () => showAccountSheet(
+            context,
+            sync.auth,
+            sync,
+            ocr,
+          ),
+          _ => null,
+        },
       );
     }
     final reader = AutoReaderScope.of(context);

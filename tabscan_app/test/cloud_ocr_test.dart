@@ -11,6 +11,7 @@ import 'package:tabscan_app/library/event_store_memory.dart';
 import 'package:tabscan_app/library/library.dart';
 import 'package:tabscan_app/screens/account_panel.dart';
 import 'package:tabscan_app/screens/premium_card.dart';
+import 'package:tabscan_app/screens/tab_text_view.dart';
 
 import 'fakes.dart';
 
@@ -39,6 +40,20 @@ class FakeOcrApi implements OcrApi {
   Future<int> transcribe(String idToken, String eventId) async {
     transcribed.add(eventId);
     return 1;
+  }
+
+  AutocorrectResult corrections = const AutocorrectResult(found: false);
+  final List<({String song, String text})> checked = [];
+
+  @override
+  Future<AutocorrectResult> autocorrect(
+    String idToken, {
+    required String eventId,
+    required String song,
+    required String text,
+  }) async {
+    checked.add((song: song, text: text));
+    return corrections;
   }
 }
 
@@ -106,6 +121,7 @@ Future<CaptureEvent> _twoPages(Library library) =>
     library.create([Uint8List(4), Uint8List(4)]);
 
 void main() {
+  _fixTests();
   test(
     'a premium user\'s event gets its text tab once every page is read',
     () async {
@@ -277,6 +293,102 @@ void main() {
     });
     await tester.pump();
     expect(find.text('Role: Premium'), findsOneWidget);
+    s.dispose();
+  });
+}
+
+void _fixTests() {
+  testWidgets('Fix shows the corrections per note; the accepted are applied', (
+    tester,
+  ) async {
+    final s = _Setup(premium: true);
+    late CaptureEvent event;
+    await tester.runAsync(() async {
+      await s.start(syncing: false);
+      s.auth.signInAs('ana');
+      await _until(() => s.ocr.premium);
+      event = await s.library.update(
+        (await _twoPages(s.library)).copyWith(tabText: _riffA),
+      );
+    });
+    s.api.corrections = const AutocorrectResult(
+      found: true,
+      title: 'Made-up Riff',
+      summary: 'Two notes misread.',
+      corrections: [
+        TabCorrection(id: 'c1', line: 0, column: 5, old: '0', replacement: '2'),
+        TabCorrection(id: 'c2', line: 1, column: 7, old: '1', replacement: '3'),
+      ],
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TabTextView(library: s.library, eventId: event.id, ocr: s.ocr),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Fix'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'Made-up Riff');
+    await tester.tap(find.text('Check'));
+    await tester.pump();
+    await tester.pump();
+    expect(s.api.checked.single, (song: 'Made-up Riff', text: _riffA));
+    expect(find.text('1 of 2'), findsOneWidget);
+    expect(find.text('0 → 2'), findsOneWidget);
+
+    await tester.tap(find.text('Accept'));
+    await tester.pump();
+    expect(find.text('1 → 3'), findsOneWidget);
+    await tester.tap(find.text('Reject'));
+    await tester.pump();
+    await tester.tap(find.text('Done'));
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.pump();
+
+    expect(
+      s.library.byId(event.id)!.tabText,
+      'e|---2---3---|\nB|-1---1-----|\n',
+    );
+    expect(find.text('Copy'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    s.dispose();
+  });
+
+  testWidgets('Fix without Premium offers the upgrade', (tester) async {
+    final s = _Setup();
+    late CaptureEvent event;
+    await tester.runAsync(() async {
+      await s.start(syncing: false);
+      s.auth.signInAs('ana');
+      await _until(() => s.ocr.status != null);
+      event = await s.library.update(
+        (await _twoPages(s.library)).copyWith(tabText: _riffA),
+      );
+    });
+    var upgraded = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TabTextView(
+            library: s.library,
+            eventId: event.id,
+            ocr: s.ocr,
+            onUpgrade: () => upgraded = true,
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Fix'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('Fix is part of TabScan Premium'), findsOneWidget);
+    await tester.tap(find.text('Upgrade'));
+    await tester.pump();
+    expect(upgraded, isTrue);
+    expect(s.api.checked, isEmpty);
+    await tester.pumpWidget(const SizedBox());
     s.dispose();
   });
 }

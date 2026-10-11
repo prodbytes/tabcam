@@ -103,19 +103,41 @@ well as shown. Tokens are never logged.
 ## Text view
 
 The event screen's Text view ([lib/screens/tab_text_view.dart](../tabscan_app/lib/screens/tab_text_view.dart)):
-the read tab, monospaced and unwrapped (long lines scroll sideways),
-editable to fix what OCR got wrong, with **Copy** (to the clipboard)
-above it; sharing is the event screen's **Share** in the app bar. Edits are saved a second after the last one,
-and on leaving, and make the text the user's (no read replaces it). A
-read that ends while the view shows fills it in, unless the user has
-started editing. Read only for an event shared read only.
+the read tab, monospaced and unwrapped (long lines scroll sideways), in a
+text editor to fix what OCR got wrong. Edits are saved a second after the
+last one, and on leaving, and make the text the user's (no read replaces
+it). A read that ends while the view shows fills it in, unless the user
+has started editing. Read only for an event shared read only (no editing
+tools, no Fix). Sharing is the event screen's **Share** in the app bar.
 
-**Mark correct**, next to Copy and the same kind of button, is a toggle
-that marks the reading correct once the user has checked it: tonal like
-Copy while off, filled and reading **Correct**, ticked, while on; tapping
-it again unmarks it. Saved at once. The mark is kept on the event and syncs with
-it (`tabTextCorrect`), and a clone keeps it. An event marked correct
-opens on its Text view (the Text tool goes back to its pages); one that
-isn't opens on its pages. No read, on the device or in the
-[cloud](cloud-ocr.md), replaces a text tab marked correct. On an event
-shared read only the mark is shown (when set) but can't be changed.
+Above the text, three buttons of one kind, with short labels so they fit
+a phone's width:
+
+- **Copy**: the text, to the clipboard.
+- **Correct**: a toggle marking the reading correct once the user has
+  checked it: tonal like Copy while off, filled and ticked while on;
+  tapping it again unmarks it. Saved at once. The mark is kept on the
+  event and syncs with it (`tabTextCorrect`), and a clone keeps it. An
+  event marked correct opens on its Text view (the Text tool goes back to
+  its pages); one that isn't opens on its pages. No read, on the device
+  or in the [cloud](cloud-ocr.md), replaces a text tab marked correct. On
+  an event shared read only the mark is shown (when set) but can't be
+  changed.
+- **Fix**: [auto-correct](autocorrect.md) (Premium), in builds with the
+  cloud service: the song's tab found online proposes corrections, which
+  the user reviews per note.
+
+**Editing tools**, under them ([lib/screens/tab_editing.dart](../tabscan_app/lib/screens/tab_editing.dart)):
+
+- **−** and **+**: the fret number under the cursor (or just before it),
+  one or two digits, goes down or up by one (15 + → 16, 5 + → 6), from 0
+  to 99. Going from 9 to 10 takes the dash after it, from 10 to 9 leaves
+  one, so the notes after it keep their columns. The cursor stays on the
+  number, for the next press. With no number there, it says to put the
+  cursor on one.
+- **Overtype** (on by default; tap to switch to insert): typing replaces
+  the characters after the cursor on its line instead of pushing them
+  right, and backspace on a string line leaves a dash, so the columns
+  stay lined up. Enter still breaks the line.
+- The keyboard offers no suggestions or autocorrection, and dashes and
+  quotes aren't made "smart".
