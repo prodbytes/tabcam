@@ -419,3 +419,12 @@ spec.
     (found while adding account deletion). Sign-out cancelled the periodic
     timer but kept it, so the next sign-in didn't start a new one; now
     it's cleared, with a test ([cloud sync](cloud-sync.md)).
+53. **Draft the Google Play and App Store listings** (part of publishing
+    to the stores), in fastlane's layout for a later upload, without
+    fastlane yet: [tabscan_store/](../tabscan_store) with the Play title,
+    short and full descriptions and changelog; the App Store name,
+    subtitle, description, keywords, promotional text, release notes and
+    URLs; App Review notes (the test Google account is the maintainer's to
+    provide); and draft Data safety, App Privacy, content rating,
+    audience and category answers. `scripts/store-metadata-check.sh`
+    checks the lengths ([app stores](app-stores.md#store-listings)).
