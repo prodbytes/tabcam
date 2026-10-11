@@ -535,3 +535,11 @@ spec.
     Merged after account deletion and localization: Apple users delete
     their account under `/apple` too, and the sign-in buttons and Apple's
     messages are in English, Spanish and Portuguese.
+60. **Add instructions to the README on how to install a release on iOS
+    or Android.** The README has "Installing a release on a phone". For
+    Android: the APK opened on the phone or installed with `adb install
+    -r`, what to do about a key conflict, and that Google sign-in waits
+    for the upload key's OAuth client. For iOS: the release's app is
+    unsigned, so the tag is built and installed with the tester's own
+    team, with Developer Mode and trusting the developer, and a free
+    team's 7 days ([release](release.md#installing-a-release)).
