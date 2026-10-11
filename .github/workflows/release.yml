@@ -8,6 +8,10 @@
 #   commit if it doesn't exist yet.
 # - Pull requests that change the build only build (no release), so a broken
 #   build shows up before a tag does.
+# - Android is signed with the upload key from the secrets
+#   ANDROID_UPLOAD_KEYSTORE_BASE64 and ANDROID_UPLOAD_KEYSTORE_PASSWORD (see
+#   scripts/android-keystore.sh), except on pull requests, which never get
+#   them; without them it's signed with a throwaway debug key.
 name: Release
 
 on:
@@ -31,6 +35,7 @@ on:
     paths:
       - .github/workflows/release.yml
       - Makefile
+      - tabscan_app/android/app/build.gradle.kts
       - scripts/make.sh
       - scripts/dart-defines.sh
       - scripts/version.sh
@@ -120,16 +125,20 @@ jobs:
         include:
           - target: web
             name: web
+            make: web
             os: ubuntu-latest
           - target: android
             name: android
+            make: android appbundle
             os: ubuntu-latest
           - target: ios
             name: ios
+            make: ios
             os: macos-latest
     env:
       TAG: ${{ needs.prepare.outputs.tag }}
       TARGET: ${{ matrix.target }}
+      MAKE_TARGETS: ${{ matrix.make }}
       VERSION_Z: ${{ needs.prepare.outputs.version_z }}
       BUILD_NUMBER: ${{ needs.prepare.outputs.build_number }}
       # Sign-in and cloud sync (public identifiers; empty turns them off).
@@ -159,8 +168,28 @@ jobs:
       - name: Show the toolchain
         run: flutter --version
 
-      - name: make ${{ matrix.target }}
-        run: make "$TARGET"
+      # The upload key, for tags and manual runs (pull requests get no
+      # secrets). key.properties is git-ignored; the runner is thrown away.
+      - if: matrix.target == 'android' && github.event_name != 'pull_request'
+        name: Set up the Android upload key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+        run: |
+          if [[ -z "$KEYSTORE_BASE64" || -z "$KEYSTORE_PASSWORD" ]]; then
+            echo "::warning::No upload key secrets: Android is signed with a debug key"
+            exit 0
+          fi
+          umask 077
+          keystore="$RUNNER_TEMP/upload.jks"
+          base64 --decode > "$keystore" <<< "$KEYSTORE_BASE64"
+          printf 'storeFile=%s\nstorePassword=%s\nkeyAlias=upload\nkeyPassword=%s\n' \
+            "$keystore" "$KEYSTORE_PASSWORD" "$KEYSTORE_PASSWORD" \
+            > tabscan_app/android/key.properties
+
+      - name: make ${{ matrix.make }}
+        # Word splitting is wanted: MAKE_TARGETS is the matrix's list.
+        run: make $MAKE_TARGETS
 
       - name: Package
         run: |
@@ -173,12 +202,17 @@ jobs:
               ;;
             android)
               cp app/outputs/flutter-apk/app-release.apk "$dist/tabscan-$TAG-android.apk"
+              cp app/outputs/bundle/release/app-release.aab "$dist/tabscan-$TAG-android.aab"
               ;;
             ios)
               ditto -c -k --keepParent ios/iphoneos/Runner.app "$dist/tabscan-$TAG-ios-unsigned.zip"
               ;;
           esac
           ls -l "$dist"
+
+      - if: always() && matrix.target == 'android'
+        name: Remove the upload key
+        run: rm -f "$RUNNER_TEMP/upload.jks" tabscan_app/android/key.properties
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

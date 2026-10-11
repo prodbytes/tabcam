@@ -2,8 +2,11 @@
 # Builds the app binaries. Run through the Makefile (`make`, `make web`, ...)
 # or directly: `bash scripts/make.sh <target>...`.
 #
-# Targets: web, android, ios, all (every platform this host can build),
-# clean. Settings, from the environment or `make VAR=value`:
+# Targets: web, android (APK), appbundle (Android App Bundle, for Google
+# Play), ios, all (every platform this host can build: web, android, ios),
+# clean. Android release builds are signed with the upload key when
+# tabscan_app/android/key.properties exists (scripts/android-keystore.sh),
+# else with the debug key. Settings, from the environment or `make VAR=value`:
 #   MODE          release (default), profile or debug
 #   IOS_CODESIGN  1 to sign the iOS build (needs a signing team in Xcode);
 #                 unsigned by default
@@ -57,6 +60,10 @@ build() {
       flutter build apk "--$MODE" "${BUILD_ARGS[@]}"
       echo "==> android: tabscan_app/build/app/outputs/flutter-apk/app-$MODE.apk"
       ;;
+    appbundle)
+      flutter build appbundle "--$MODE" "${BUILD_ARGS[@]}"
+      echo "==> appbundle: tabscan_app/build/app/outputs/bundle/$MODE/app-$MODE.aab"
+      ;;
     ios)
       local sign=--no-codesign
       [[ "${IOS_CODESIGN:-}" == 1 ]] && sign=--codesign
@@ -69,7 +76,7 @@ build() {
 [[ $# -gt 0 ]] || set -- all
 for arg in "$@"; do
   case "$arg" in
-    web | android | ios) build "$arg" ;;
+    web | android | appbundle | ios) build "$arg" ;;
     all)
       for target in web android ios; do
         if can_build "$target"; then
@@ -80,6 +87,6 @@ for arg in "$@"; do
       done
       ;;
     clean) flutter clean ;;
-    *) echo "error: unknown target '$arg' (web, android, ios, all, clean)" >&2; exit 2 ;;
+    *) echo "error: unknown target '$arg' (web, android, appbundle, ios, all, clean)" >&2; exit 2 ;;
   esac
 done

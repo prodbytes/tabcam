@@ -39,7 +39,9 @@ failure has been traced to it so far.
 
 App IDs: `com.nu01.tabscan` (Android application ID and iOS bundle ID).
 Google's Android OAuth client matches the app by that ID and the SHA-1 of
-its signing key (release builds are signed with the debug key for now).
+its signing key: release builds are signed with the upload key when
+`tabscan_app/android/key.properties` is set up, else with the debug key
+([app stores](app-stores.md#android-signing)).
 The app is named **TabScan** everywhere.
 
 The web build is deployed to https://tabscan.nu01.com/app/

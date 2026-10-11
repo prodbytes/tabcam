@@ -212,11 +212,12 @@ Setting it up (the Google OAuth clients, the stacks, the variables):
 
 ## Known limitations
 
-- **Android release builds from CI** are signed with a fresh debug key
-  each run (the app has no release signing key yet), so their SHA-1
-  doesn't match the Android OAuth client and Google sign-in fails there.
-  Local builds (`scripts/android-install.sh`) use the developer's debug
-  key, which the client can list.
+- **Android sign-in needs the signing key's SHA-1** in an Android OAuth
+  client. CI builds without the upload key secrets are signed with a fresh
+  debug key each run, so sign-in fails there. The upload key and Play's
+  app signing key each need their own client
+  ([app stores](app-stores.md#android-signing)); local builds without the
+  upload key use the developer's debug key, which a client can list.
 - **Web** keeps events in memory, so each visit downloads all of a user's
   events again, videos included.
 - An ID token that can't be refreshed quietly (Google wants the user to

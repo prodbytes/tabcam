@@ -71,7 +71,7 @@ signing key: `https://<site>/.well-known/assetlinks.json` (from
 [tabscan_index/site/.well-known/](../tabscan_index/site/.well-known/assetlinks.json),
 uploaded by every deploy, both sites) lists the SHA-256 fingerprints of
 the keys allowed. It lists the maintainer's debug key, which signs the
-release builds installed with `scripts/android-install.sh`. APKs built by
-the Release workflow are signed with a fresh debug key each run, so their
-links open in the browser until a release key is set up and its
-fingerprint added there.
+release builds installed with `scripts/android-install.sh` until the
+upload key is set up. The upload key and Google Play's app signing key
+are to be added there ([app stores](app-stores.md#android-signing)); until
+then, builds they sign open the links in the browser.
