@@ -128,8 +128,7 @@ void main() {
       ),
     );
     await tester.pump();
-    // Scan → Text.
-    await tester.tap(find.byKey(const Key('view')));
+    await tester.tap(find.byKey(const Key('text')));
     await tester.pump();
     expect(find.text('Reading tabs needs you signed in.'), findsOneWidget);
     await tester.tap(find.text('Sign in'));
