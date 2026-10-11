@@ -53,6 +53,9 @@ dependencies:
   camera: ^0.12.1
   archive: ^4.4.0
   sign_in_with_apple: 8.2.0
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.3
 
 dev_dependencies:
   flutter_test:
@@ -67,12 +70,14 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.4
   camera_platform_interface: ^2.14.0
   plugin_platform_interface: ^2.1.8
+  url_launcher_platform_interface: ^2.3.2
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
 flutter:
+  generate: true
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

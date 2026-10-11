@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 import '../auth/auth_service.dart';
+import '../l10n/language.dart';
 import '../library/capture_event.dart';
 import '../library/library.dart';
 import 'cloud_sync.dart';
@@ -122,16 +123,16 @@ class CloudOcr extends ChangeNotifier {
       final status = await api.account(token);
       if (_token != token) return;
       _status = status;
-      _error = status.checked ? null : 'Couldn\'t check Premium right now';
+      _error = status.checked ? null : appL10n.accountPremiumCheckFailedNow;
     } on OcrApiException catch (e) {
       _error = e.needsSignIn
-          ? 'Sign in again'
+          ? appL10n.accountSignInAgain
           : e.needsGoogle
-          ? 'Premium needs Google sign-in'
-          : 'Couldn\'t check Premium';
+          ? appL10n.accountPremiumNeedsGoogle
+          : appL10n.accountPremiumCheckFailed;
       debugPrint('TabScan: premium check failed: $e');
     } on Object catch (e) {
-      _error = 'Couldn\'t check Premium';
+      _error = appL10n.accountPremiumCheckFailed;
       debugPrint('TabScan: premium check failed: $e');
     } finally {
       _checking = false;
@@ -154,6 +155,20 @@ class CloudOcr extends ChangeNotifier {
     }
     _requested.add(event.id);
     return api.transcribe(token, event.id);
+  }
+
+  /// Auto-correct: checks [text], [event]'s text tab, against [song]'s tab
+  /// found online. Throws [OcrApiException] (402) for users without
+  /// Premium, 401 signed out.
+  Future<AutocorrectResult> autocorrect(
+    CaptureEvent event, {
+    required String song,
+    required String text,
+  }) async {
+    final token = _token;
+    if (token == null) throw OcrApiException(401, 'sign in');
+    if (!premium) throw OcrApiException(402, 'premium only');
+    return api.autocorrect(token, eventId: event.id, song: song, text: text);
   }
 
   static bool isImage(EventPage page) =>

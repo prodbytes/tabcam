@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
 
 import '../auth/auth_service.dart';
+import '../l10n/language.dart';
 import 'sign_in_buttons.dart';
 
 /// What needs signing in: reading tabs and sharing. Signed out, the user
 /// can still capture (scan, import, add photos, videos and links), kept on
 /// the device only.
 enum Gated {
-  readTab(
-    'Sign in to read tabs',
-    'Reading a tab into text needs you signed in.',
-  ),
-  share('Sign in to share', 'Sharing needs you signed in.');
+  readTab,
+  share;
 
-  const Gated(this.title, this.detail);
-  final String title;
-  final String detail;
+  String title(AppLocalizations l10n) => switch (this) {
+    readTab => l10n.eventGateReadTabTitle,
+    share => l10n.eventGateShareTitle,
+  };
+
+  String detail(AppLocalizations l10n) => switch (this) {
+    readTab => l10n.eventGateReadTabDetail,
+    share => l10n.eventGateShareDetail,
+  };
 }
 
 /// True when the user may do [what]: signed in, or in a build without
@@ -72,6 +76,7 @@ class _SignInSheetState extends State<_SignInSheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final auth = widget.auth;
+    final l10n = context.l10n;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
@@ -79,12 +84,9 @@ class _SignInSheetState extends State<_SignInSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.what.title, style: theme.textTheme.titleLarge),
+            Text(widget.what.title(l10n), style: theme.textTheme.titleLarge),
             const SizedBox(height: 8),
-            Text(
-              '${widget.what.detail} Signed out, you can still scan and add '
-              'to your captures; they stay on this device.',
-            ),
+            Text(l10n.eventGateBody(widget.what.detail(l10n))),
             const SizedBox(height: 16),
             SignInButtons(auth: auth),
             if (auth.error case final error?) ...[

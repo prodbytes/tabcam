@@ -40,17 +40,21 @@ the cloud as they sync.
 - [Page filters](page-filters.md): Original, and Tab (black ink on white,
   by adaptive thresholding), the default.
 - [Tab recognition](tab-recognition.md): every capture read by itself
-  into plain-text tab (on-device OCR, or Premium's cloud), for text tabs
+  into plain-text tab with the page's chords, lyrics and section names
+  (on-device OCR, or Premium's cloud), for text tabs
   and typeset tab staves, never over the user's edits or a reading marked
-  correct; the Text view, where a reading is marked correct (the event
-  then opens on it).
+  correct; the Text view, a tab editor (overtype, − and + on a fret)
+  where a reading is marked correct (the event then opens on it).
+- [Auto-correct](autocorrect.md): Fix, for Premium: Claude finds the
+  song's tab online (tab sites first) and proposes corrections, which the
+  user accepts or rejects note by note.
 - [Sharing](sharing.md): a link to the capture (the default), PDF,
   text (the text tab and links), or a zip of everything, through the
   system share sheet; opening a capture's link.
 - [Sign-in and cloud sync](cloud-sync.md): optional Google sign-in (and
   Sign in with Apple on iOS) from the Profile tab; signed-in users' events sync both ways with
   their own folder in S3 (Cognito identity pool credentials, no server),
-  deletions included.
+  deletions included; Delete account deletes it all.
 - [Shared captures](shared-captures.md): share a capture of one's own
   by email, to edit (the default) or read only; no email is sent, people
   find it when they sign in. A share API (Lambda, DynamoDB, an HTTP API
@@ -62,9 +66,16 @@ the cloud as they sync.
   premium is rbacr's `tabscan/premium` role (Substack subscription or
   voucher); the upgrade offer for everyone else, on the web only (the
   store apps show no purchase links).
+- [Localization](localization.md): the app in English, Spanish and
+  Portuguese, the device's language by default or one picked on the
+  Profile tab.
 - [App icon](app-icon.md): a scanned tab page with a staff and fret
   numbers, in scanner corners; how the platform icons are generated.
 - [Platforms](platforms.md): Android, iOS and the web, and what each can do.
+- [Privacy](privacy.md): the privacy policy at
+  https://tabscan.nu01.com/privacy (linked from the index page and About),
+  what it says and what it's based on; the iOS privacy manifest and
+  export compliance declaration.
 - [Maintenance mode](maintenance-mode.md): administrators switch it on
   with `scripts/maintenance.sh`; the apps then show only a sorry message.
 
@@ -75,6 +86,6 @@ the cloud as they sync.
 - [Release builds](release.md): versions, tags and the Release workflow.
 - [App stores](app-stores.md): publishing to Google Play and the App
   Store under personal accounts: the status of each step, the Android
-  upload key and App Bundle.
+  upload key and App Bundle, the store listings drafts in `tabscan_store/`.
 - [Deploy](deploy.md): the web app at https://tabscan.nu01.com and the
   release candidate at https://rc.tabscan.nu01.com.

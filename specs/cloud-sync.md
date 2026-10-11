@@ -56,8 +56,10 @@ The [Profile](navigation.md#profile) tab shows the account:
   set up, the user's role ([cloud OCR](cloud-ocr.md#in-the-app)); the sync status
   ("Syncing…", "Synced at 14:05 (2 uploaded, 1 downloaded)", or why it
   failed, such as "Sign in again to sync"); **Sync now**; **Sign out**,
-  which keeps the events on the device; and, where it's set up, the
-  [TabScan Premium](cloud-ocr.md#in-the-app) card.
+  which keeps the events on the device; where it's set up, the
+  [TabScan Premium](cloud-ocr.md#in-the-app) card; and last, in the
+  error color, **Delete account**, "Deletes your events in the cloud and
+  on this device, and your shares." ([below](#deleting-the-account)).
 
 Google sign-in (`google_sign_in`,
 [lib/auth/](../tabscan_app/lib/auth)) per platform:
@@ -157,7 +159,7 @@ Uploads use S3 Intelligent-Tiering.
 
 A **pass** runs at sign-in, 2 seconds after the user changes an event (a
 burst of changes is one pass), every minute while signed in (to bring
-other devices' changes), and on **Sync now**. One pass runs at a time; a
+other devices' changes; again after signing out and back in), and on **Sync now**. One pass runs at a time; a
 request during one runs another right after. Passes wait for the library
 to load.
 
@@ -195,6 +197,102 @@ account. Events made signed out go up to whoever signs in next.
 captures shared with them, each in its owner's folder, the same way (but
 never uploading a read-only one); see
 [shared captures](shared-captures.md#how-it-works).
+
+## Deleting the account
+
+App Store guideline 5.1.1(v) and Google Play want apps that make
+accounts to delete them from inside the app. A TabScan account is the
+user's Google sign-in, their Cognito identity and folder, their grants in
+the [share API](shared-captures.md#how-it-works) and their record in the
+[cloud OCR](cloud-ocr.md) service; **Delete account**, on the signed-in
+Profile (and the same panel on the web), deletes all of it
+([lib/cloud/account_deletion.dart](../tabscan_app/lib/cloud/account_deletion.dart),
+[lib/screens/delete_account.dart](../tabscan_app/lib/screens/delete_account.dart)).
+
+**Confirming**: a dialog, "Delete your account?", says what goes (all
+their events, in the cloud and on this device; their shares, so the
+people they shared captures with lose them; the captures shared with
+them, which stop showing), "It can't be undone." (in the error color),
+that their Google account isn't deleted, and, where Premium is set up,
+that a TabScan Premium subscription isn't cancelled: on the web, "cancel
+it on Substack, where you subscribed"; in the Android and iOS apps only
+"it's managed where you bought it" (no purchase links in the apps). It
+also asks to sign out on their other devices first (below). **Cancel**
+or **Delete account** (red).
+
+**Deleting**, in a dialog that can't be dismissed while it runs, with
+the step and a progress bar ("Deleting your files in the cloud (1000 of
+1500)…", "Deleting your shares…", "Deleting your events on this
+device (3 of 7)…", "Signing out…"). Sync is paused first (after the
+running pass), so nothing goes up while the folder empties:
+
+1. **The folder**: every object under `<identity>/` (events, page files,
+   tombstones, `ocr/` transcriptions) is listed (ListObjectsV2, every
+   page) and deleted 1000 at a time with DeleteObjects (`POST /?delete`,
+   quiet, so S3 lists only the keys it couldn't delete), with the
+   identity's own credentials. It lists again after, up to three rounds,
+   for a transcription written meanwhile. On the web, before the bucket's
+   CORS allows `POST`, it deletes one key at a time instead. Expired
+   credentials or a skewed clock get one more try, as for a pass.
+2. **The share API**, `DELETE /account` (when the build has sharing):
+   the grants of the user's captures, the grants to their address, their
+   record in the OCR service's accounts table, and last their Cognito
+   identity ([shared captures](shared-captures.md#how-it-works)).
+3. **This device**: the user's events (their identity's, those not
+   synced yet, and copies of captures shared with them), tombstones
+   included, removed without leaving tombstones; `cloudsync.json` and
+   `cloudocr.json` are reset. Events of another account that used the
+   device stay.
+4. **Signing out**. The dialog closes and a message says "Your TabScan
+   account was deleted."
+
+**Failures** stop it where they happen and say what was and wasn't
+deleted, with **Try again** and **Close**: keys S3 wouldn't delete ("2
+of 300 files in the cloud couldn't be deleted. Nothing else was deleted,
+and you are still signed in: try again."), a listing that failed, the
+share API refusing ("Your files in the cloud were deleted, but not your
+shares: …"), Cognito wanting a new sign-in. The user stays signed in and
+sync resumes (the account still exists, so a pass may upload the
+device's events again; trying again deletes them again). Each step is
+safe to repeat. Only once the cloud parts are done is anything on the
+device deleted; if that then fails, the user is signed out all the same
+and told to delete what's left from Home.
+
+**Not deleted**, and why:
+
+- **Old versions in the bucket**: it's versioned, and the identity's
+  credentials can't delete versions, so deleted objects stay as
+  noncurrent versions until the lifecycle rule expires them, **30 days**
+  later; nobody can reach them without an administrator.
+- **Backups and logs**: the grants table and the accounts table have
+  point-in-time recovery (35 days); the share API's and the OCR
+  service's logs (30 days) name identity IDs.
+- **The Google account**, and Google's record that TabScan was granted
+  sign-in (the user removes it in their Google account's settings).
+- **rbacr and Substack**: a Premium role or subscription is kept by
+  rbacr and Substack, not TabScan; the user cancels it where they
+  bought it.
+- **Builds without the share API** can't delete the grants nor the
+  Cognito identity (only the folder and the device): the identity's role
+  can't delete identities, so that's done by the share API's function.
+  Production and RC builds have it.
+
+**Other devices** still signed in keep their credentials for up to an
+hour; a pass there in that time would upload their events again, under
+the deleted identity (where no one can reach them). Hence the dialog's
+"sign out there first". After that hour their sync fails ("Sign in again
+to sync"), and signing in again makes a new, empty identity, to which the
+old account's events on that device aren't uploaded.
+
+**Without the app** (Google Play's "delete account URL"): the web app
+has the same panel, so https://tabscan.nu01.com/app/ (sign in, Profile,
+Delete account) deletes an account from any browser. Proposed for the
+store listing: a static page on the index site,
+`https://tabscan.nu01.com/delete-account`, that names TabScan and its
+developer, lists those steps, says what's deleted and what's kept for 30
+days, and gives a contact address for people who can't sign in any more
+(to be done with the privacy policy page, [app stores](app-stores.md);
+the deploy uploads only `index.html` today).
 
 ## Credentials and errors
 
@@ -240,7 +338,8 @@ either):
   SSE-S3, TLS only, its object events sent to EventBridge (for
   [cloud OCR](cloud-ocr.md)), versioned (old and deleted versions are kept 30 days,
   so a deletion can be undone), incomplete uploads cleared after a day.
-  CORS allows `GET`, `PUT`, `HEAD` and `DELETE` from
+  CORS allows `GET`, `PUT`, `HEAD`, `DELETE` and `POST` (DeleteObjects,
+  for [deleting the account](#deleting-the-account)) from
   `https://tabscan.nu01.com`, `https://rc.tabscan.nu01.com`,
   `http://localhost:2012` and `https://local.tabscan.nu01.com:2443`.
 - **`identity.yaml`**, stack `tabscan-identity`: the identity pool
@@ -279,13 +378,25 @@ Setting it up (the Google OAuth clients, the stacks, the variables):
 - `flutter build ios --no-codesign --release` builds with and without
   `TABSCANNER_APPLE_SIGN_IN` (with it, the build has
   `CODE_SIGN_ENTITLEMENTS`; without it, none).
-- Both templates pass `aws cloudformation validate-template`; the web and
+- Account deletion, over the in-memory bucket and share API: the
+  folder (pages, tombstones, transcriptions) empties, the shares go both
+  ways (the other user's next pass drops the copy), only another
+  account's event stays on the device, and it signs out; 1500 objects go
+  in two batches, with progress; keys S3 keeps, or the share API
+  failing, stop it with the user still signed in and nothing on the
+  device deleted, and trying again finishes; expired credentials are
+  renewed once. Widget tests: Cancel deletes nothing; confirming shows
+  the progress, then the message, signed out; a failure shows why, with
+  Try again. The S3 client's DeleteObjects request (signed, with
+  `Content-MD5`, escaped keys) and its errors.
+- The templates pass `aws cloudformation validate-template`; the web and
   Android builds compile with sync set up.
 - Not yet verified: a real sign-in and sync, which needs the Google OAuth
-  clients and the deployed stacks; a real Sign in with Apple, which also
-  needs the paid Apple Developer Program, the App ID's capability and the
-  stacks deployed with `AppleClientId`
-  ([app stores](app-stores.md#status)).
+  clients and the deployed stacks; a real account deletion, which also
+  needs the updated `tabscan-user-data` (CORS) and `tabscan-share-api`
+  stacks; a real Sign in with Apple, which also needs the paid Apple
+  Developer Program, the App ID's capability and the stacks deployed with
+  `AppleClientId` ([app stores](app-stores.md#status)).
 
 ## Known limitations
 

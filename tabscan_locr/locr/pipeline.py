@@ -11,6 +11,10 @@ The pipeline that read tabs best in the OCR bench:
    columns: gaps between the words an engine finds become dashes.
 4. vote: per line, the reading closest to the others' (the medoid of the
    fret tokens) wins.
+5. page_text: the rest of the page (the staves blanked out) is read whole,
+   for the notations around the tab: chord names, lyrics, section names.
+   They go between the staves where they are on the page, chord names at
+   the tab's columns.
 """
 import re
 import time
@@ -186,9 +190,92 @@ def vote(readings):
     return readings[cost.index(min(cost))]
 
 
-def transcribe(data, engines):
+_URL = re.compile(r"https?://|www\.|\.(com|net|org|br)\b", re.I)
+_PAGE_NUMBER = re.compile(r"^(page\s*)?\d+(\s*(/|of)\s*\d+)?$", re.I)
+_ODD = re.compile(r"[^A-Za-z0-9\u00c0-\u00ff\s#/()'\u2019,.!?:;&+\-]")
+
+
+def is_notation(text):
+    """A line of text worth keeping beside the tab (chord names, lyrics, a
+    section's name), not noise: a web address, a page number, a garbled tab
+    line, stray marks. As the app's isNotation (tab_layout.dart)."""
+    text = text.strip()
+    if not text or _URL.search(text) or _PAGE_NUMBER.match(text):
+        return False
+    if not re.search(r"[A-Za-z\u00c0-\u00ff]", text):
+        return False
+    if text.count("-") >= len(text) * 0.3:
+        return False
+    return len(_ODD.findall(text)) <= len(text) * 0.2
+
+
+def place_words(words):
+    """[(text, column)] as one line, each word at its column, at least a
+    space apart."""
+    out = ""
+    for text, col in sorted(words, key=lambda w: w[1]):
+        gap = col - len(out)
+        out += " " * max(gap, 1 if out else 0) + text
+    return out
+
+
+def text_lines(words, groups):
+    """[words]: (text, x0, y0, x1, y1, score) read off the staves. Their
+    lines, (y, text), each word at the column of the nearest staff it lines
+    up with (its first dash is column 2, after `e|`)."""
+    words = [w for w in words if w[5] >= 0.5 and w[0].strip()]
+    if not words:
+        return []
+    height = float(np.median([w[4] - w[2] for w in words]))
+    rows = []
+    for w in sorted(words, key=lambda w: (w[2] + w[4]) / 2):
+        cy = (w[2] + w[4]) / 2
+        if rows and abs(cy - rows[-1][0]) <= 0.6 * height:
+            row = rows[-1]
+            row[1].append(w)
+            row[0] = float(np.mean([(v[2] + v[4]) / 2 for v in row[1]]))
+        else:
+            rows.append([cy, [w]])
+    out = []
+    for cy, row in rows:
+        ref = min((g[0] for g in groups), key=lambda l: abs(l.cy - cy))
+        text = place_words([(w[0].strip(), max(0, round((w[1] - ref.dash_x0) / ref.cw) + 2))
+                            for w in row])
+        if is_notation(text):
+            out.append((cy, text.rstrip()))
+    return out
+
+
+def page_text(gray, groups, read_page):
+    """The page's text off the staves, as text_lines. The staves are
+    blanked out and the page read at half size (big enough for print)."""
+    page = gray.copy()
+    for g in groups:
+        pad = (g[0].y1 - g[0].y0) // 4
+        page[max(0, min(l.y0 for l in g) - pad):max(l.y1 for l in g) + pad, :] = 255
+    half = cv2.resize(page, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
+    words = [(t, x0 * 2, y0 * 2, x1 * 2, y1 * 2, score)
+             for t, x0, y0, x1, y1, score in read_page(half)]
+    return text_lines(words, groups)
+
+
+def join(pieces):
+    """[(kind, text)], top to bottom, kind "staff" or "text", as one text: a
+    blank line between staves and after a staff, none before a staff
+    (chord names and labels sit right above it). As the app's."""
+    out = ""
+    for i, (kind, text) in enumerate(pieces):
+        if i:
+            out += "\n\n" if pieces[i - 1][0] == "staff" else "\n"
+        out += text
+    return out
+
+
+def transcribe(data, engines, read_page=None):
     """[data]: an image file's bytes. [engines]: name -> read(strip, line),
-    each returning the line's text as read (engines.py)."""
+    each returning the line's text as read (engines.py). [read_page]: reads
+    a whole (grayscale) page into words with their boxes, for the
+    notations around the tab; None leaves them out."""
     start = time.monotonic()
     gray = prepare(decode(data))
     groups = staves(find_lines(gray))
@@ -218,7 +305,13 @@ def transcribe(data, engines):
                 readings[name].append(o)
             block.append(vote(options))
             i += 1
-        blocks.append("\n".join(block))
-    return Result("\n\n".join(blocks) + "\n", staves=len(groups), lines=len(jobs),
+        blocks.append((g[0].y0, "staff", "\n".join(block)))
+    if read_page:
+        t = time.monotonic()
+        blocks += [(y, "text", text) for y, text in page_text(gray, groups, read_page)]
+        timings["page"] = round(time.monotonic() - t, 2)
+    blocks.sort(key=lambda b: b[0])
+    text = join([(kind, text) for _, kind, text in blocks])
+    return Result(text + "\n", staves=len(groups), lines=len(jobs),
                   seconds=round(time.monotonic() - start, 2), readings=readings,
                   timings=timings)

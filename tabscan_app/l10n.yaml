@@ -1,0 +1,9 @@
+# Flutter's gen-l10n: the ARB files in lib/l10n (English is the template),
+# generated into lib/l10n/app_localizations*.dart on `flutter pub get` and
+# builds. See lib/l10n/language.dart for how the app picks the language.
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+nullable-getter: true
+required-resource-attributes: false

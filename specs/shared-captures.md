@@ -80,9 +80,10 @@ credentials:
 | `GET /shared` | anyone | the captures shared with them: owner, capture, owner's email, role |
 | `DELETE /shared/{owner}/{captureId}` | the grantee | leaves a share |
 | `POST /shared/{owner}/{captureId}/credentials` | the grantee | temporary credentials for that capture's folder |
+| `DELETE /account` | anyone | [deletes their account](cloud-sync.md#deleting-the-account): the grants of their captures, the grants to their address, their record in the cloud OCR service's accounts table, then their Cognito identity |
 
-Each route is also under `/apple` (`GET /apple/shared`, …), for Sign in
-with Apple's tokens.
+Each route is also under `/apple` (`GET /apple/shared`, …,
+`DELETE /apple/account`), for Sign in with Apple's tokens.
 
 - Every request carries the user's ID token, checked by the HTTP API's
   JWT authorizers. An HTTP API route has one authorizer, and a JWT
@@ -108,9 +109,16 @@ with Apple's tokens.
   can only grant their own captures. A Google and an Apple sign-in are two
   identities: captures shared from one are owned by that one's folder,
   but a grant to an address reaches whoever signs in with it, either way.
+  Every route acts on the caller alone: as an owner, on that identity; as
+  a grantee, on their verified address. `DELETE /account` deletes only
+  grants whose key starts with the caller's identity, or whose email is
+  theirs, and the identity last, so a retry after a failure finds the
+  same one (Cognito keeping it is a 502, to retry).
 - Grants are in a DynamoDB table: key `<owner>#<capture id>` and the
   email, with the role, the owner's identity and email, and when; an index
-  by email lists what's shared with someone.
+  by email lists what's shared with someone, and one by owner (keys only)
+  the grants someone made, for deleting their account. Queries follow
+  every page.
 - **Credentials**: the function assumes the `tabscan-share-access` role
   for an hour with a session policy that allows only
   `<bucket>/<owner>/events/<capture id>/*` (get; put and delete too to
@@ -136,6 +144,10 @@ never upload. A failing share is logged and skipped; the others go on.
 (CORS for the web app's origins) and its log group (30 days). An
 administrator deploys it, after `tabscan-user-data` and
 `tabscan-identity`: see [tabscan_infra/README.md](../tabscan_infra/README.md).
+The function may get, put, delete and query grants, call `GetId` and
+`DeleteIdentities` on the identity pool, and, when the `tabscan-ocr`
+stack is deployed (the script finds its `AccountsTable`, the
+`AccountsTableName` parameter), delete items of the accounts table.
 The script prints `TABSCANNER_SHARE_API_URL`.
 
 ## Verified
@@ -146,13 +158,18 @@ The script prints `TABSCANNER_SHARE_API_URL`.
   IDs and one's own address are refused; unverified addresses are
   refused; the grantee lists, gets credentials narrowed to the capture's
   folder (read only: get only), and leaves; no grant, no credentials; the
-  owner revokes. With made-up Apple claims: the `/apple` routes take
-  Apple's tokens and use their own identity (`appleid.apple.com`); an
-  Apple user gets what's shared with their (relay) address; Apple's
-  `email_verified` may be a boolean or a string, and false is refused; a
-  token on another issuer's path is refused before anything is read; an
-  Apple token without an email is refused; unknown `/apple` routes are
-  404.
+  owner revokes. `DELETE /account` deletes the caller's grants both ways,
+  their accounts record and their identity, and nothing of anyone else's
+  (another owner's grant to a third person stays), across query pages;
+  without the OCR table too; Cognito keeping the identity is a 502 and a
+  retry finishes; an unverified address deletes nothing; an Apple user
+  deletes theirs under `/apple`. With made-up Apple claims: the `/apple`
+  routes take Apple's tokens and use their own identity
+  (`appleid.apple.com`); an Apple user gets what's shared with their
+  (relay) address; Apple's `email_verified` may be a boolean or a string,
+  and false is refused; a token on another issuer's path is refused before
+  anything is read; an Apple token without an email is refused; unknown
+  `/apple` routes are 404.
 - The app's tests, two devices and a fake share API over the in-memory
   bucket: a capture shared to edit comes down and edits go back (without
   the sharing fields); read only uploads nothing; the grantee's own

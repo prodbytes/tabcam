@@ -17,6 +17,7 @@ import 'cloud/s3.dart';
 import 'cloud/share_api.dart';
 import 'cloud/share_config.dart';
 import 'cloud/sigv4.dart';
+import 'l10n/language.dart';
 import 'library/library.dart';
 import 'maintenance/maintenance.dart';
 import 'export/incoming_links.dart';
@@ -47,6 +48,7 @@ void main() {
           sync: s.sync,
           ocr: s.ocr,
           reader: s.reader,
+          language: s.language,
         );
       },
       onEnter: () => services?.stopSync(),
@@ -57,6 +59,7 @@ void main() {
 /// The running app's services.
 class AppServices {
   AppServices() : library = Library()..load() {
+    language = LanguageSetting(library)..load();
     // Sign-in and sync only in a build that has both set up (.env, or the
     // deploys' repository variables); otherwise events stay on the device.
     if (_cloud) auth = _signIn()..init();
@@ -65,6 +68,7 @@ class AppServices {
 
   /// Reads every capture's tab by itself.
   late final AutoReader reader;
+  late final LanguageSetting language;
 
   /// Google everywhere; on iOS, in a build with the capability
   /// (`TABSCANNER_APPLE_SIGN_IN`), Sign in with Apple too.
@@ -135,6 +139,7 @@ class TabScanApp extends StatelessWidget {
     this.sync,
     this.ocr,
     this.reader,
+    this.language,
   });
 
   final Library library;
@@ -144,6 +149,9 @@ class TabScanApp extends StatelessWidget {
 
   /// Reads every capture's tab by itself (null in tests: no reading).
   final AutoReader? reader;
+
+  /// The language picked on the Profile tab (null in tests: the device's).
+  final LanguageSetting? language;
 
   @override
   Widget build(BuildContext context) {
@@ -185,8 +193,16 @@ class TabScanApp extends StatelessWidget {
       );
     }
 
-    final app = MaterialApp(
+    final language = this.language;
+    Widget materialApp(BuildContext context) => MaterialApp(
       title: AppVersion.title,
+      locale: language?.locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      builder: (context, child) {
+        showingL10n(AppLocalizations.of(context));
+        return child!;
+      },
       debugShowCheckedModeBanner: false,
       theme: theme(Brightness.light),
       darkTheme: theme(Brightness.dark),
@@ -196,6 +212,15 @@ class TabScanApp extends StatelessWidget {
       initialRoute: '/',
       home: HomeScreen(library: library, auth: auth, sync: sync, ocr: ocr),
     );
+    final app = language == null
+        ? materialApp(context)
+        : LanguageScope(
+            setting: language,
+            child: ListenableBuilder(
+              listenable: language,
+              builder: (c, _) => materialApp(c),
+            ),
+          );
     final reader = this.reader;
     return reader == null ? app : AutoReaderScope(notifier: reader, child: app);
   }

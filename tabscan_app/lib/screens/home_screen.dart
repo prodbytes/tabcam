@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/language.dart';
 import '../app_version.dart';
 import '../auth/auth_service.dart';
 import '../capture/media.dart';
@@ -18,17 +20,23 @@ import 'link_page.dart';
 
 /// The app's tabs, in the bottom navigation bar's order.
 enum HomeTab {
-  home('Home', Icons.home_outlined, Icons.home),
-  capture('Capture', Icons.add_a_photo_outlined, Icons.add_a_photo),
-  profile('Profile', Icons.person_outline, Icons.person);
+  home(Icons.home_outlined, Icons.home),
+  capture(Icons.add_a_photo_outlined, Icons.add_a_photo),
+  profile(Icons.person_outline, Icons.person);
 
-  const HomeTab(this.label, this.icon, this.selectedIcon);
-  final String label;
+  const HomeTab(this.icon, this.selectedIcon);
   final IconData icon;
   final IconData selectedIcon;
 
+  /// This tab's name in the navigation bar, in [l10n]'s language.
+  String label(AppLocalizations l10n) => switch (this) {
+    home => l10n.homeTabHome,
+    capture => l10n.homeTabCapture,
+    profile => l10n.homeTabProfile,
+  };
+
   /// The app bar's title on this tab.
-  String get title => this == home ? 'TabScan' : label;
+  String title(AppLocalizations l10n) => this == home ? 'TabScan' : label(l10n);
 }
 
 /// The app's frame, as Presence's: a bottom navigation bar flips between
@@ -131,13 +139,13 @@ class _HomeScreenState extends State<HomeScreen> {
     final sync = widget.sync;
     if (sync == null) {
       _stopLink();
-      _snack('That capture isn\'t on this device.');
+      _snack(context.l10n.homeLinkNotHere);
       return;
     }
     if (widget.auth?.user == null) {
       if (!_askedToSignIn) {
         _askedToSignIn = true;
-        _snack('Sign in (Profile) to open the capture in this link.');
+        _snack(context.l10n.homeLinkSignIn);
       }
       return;
     }
@@ -146,10 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _passSinceLink = true;
       case SyncState.synced || SyncState.failed when _passSinceLink:
         _stopLink();
-        _snack(
-          'That capture isn\'t shared with you. Ask its owner to share it '
-          'with your email address.',
-        );
+        _snack(context.l10n.homeLinkNotShared);
       case SyncState.synced || SyncState.failed:
         unawaited(sync.syncNow());
       case SyncState.signedOut:
@@ -160,14 +165,14 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Runs [capture], which makes a new event (or null when cancelled), and
   /// shows it on Home.
   Future<void> _capture(
-    String failure,
+    String Function(AppLocalizations l10n, String error) failure,
     Future<CaptureEvent?> Function() capture,
   ) async {
     final CaptureEvent? event;
     try {
       event = await capture();
     } on Object catch (e) {
-      if (mounted) _snack('$failure: $e');
+      if (mounted) _snack(failure(context.l10n, '$e'));
       return;
     }
     if (event == null || !mounted) return;
@@ -175,17 +180,18 @@ class _HomeScreenState extends State<HomeScreen> {
       _tab = HomeTab.home;
       _fresh = event!.id;
     });
+    final l10n = context.l10n;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text('Saved "${event.title}" (${contentsOf(event)})'),
+          content: Text(l10n.homeSaved(event.title, contentsOf(event, l10n))),
           // Gone after a while, like the others: with an action, Flutter
           // would keep it until it's dismissed.
           persist: false,
           duration: savedMessageFor,
           action: SnackBarAction(
-            label: 'Open',
+            label: l10n.homeOpen,
             onPressed: () =>
                 openEvent(context, library, event!, widget.sync, widget.ocr),
           ),
@@ -196,22 +202,19 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<void> _scan() => _capture('Couldn\'t scan', () async {
-    final pages = await PageSource.scan(context);
-    return pages.isEmpty ? null : library.create(pages);
-  });
+  Future<void> _scan() =>
+      _capture((l10n, e) => l10n.homeScanFailed(e), () async {
+        final pages = await PageSource.scan(context);
+        return pages.isEmpty ? null : library.create(pages);
+      });
 
   Future<void> _addMedia({required bool files}) =>
-      _capture('Couldn\'t add', () async {
+      _capture((l10n, e) => l10n.homeAddFailed(e), () async {
         final pick = files
             ? await MediaSource.files()
             : await MediaSource.library();
         if (pick.skipped > 0 && mounted) {
-          _snack(
-            '${pick.skipped} '
-            '${pick.skipped == 1 ? 'file isn\'t' : 'files aren\'t'} '
-            'a photo or video, so not added.',
-          );
+          _snack(context.l10n.homeSkipped(pick.skipped));
         }
         if (pick.media.isEmpty) return null;
         return library.addMedia(await library.create(const []), pick.media);
@@ -221,7 +224,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final link = await askForLink(context);
     if (link == null) return;
     final (url, title) = link;
-    await _capture('Couldn\'t add', () async {
+    await _capture((l10n, e) => l10n.homeAddFailed(e), () async {
       var event = await library.create(const []);
       event = await library.addLink(event, url, title: title);
       // A link's title names its event, when it has one.
@@ -237,7 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         centerTitle: false,
         title: Text(
-          _tab.title,
+          _tab.title(context.l10n),
           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
         ),
       ),
@@ -283,16 +286,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-/// What an event holds, for messages: "2 pages", "1 video, 1 link".
-String contentsOf(CaptureEvent event) {
-  String count(int n, String one) => '$n $one${n == 1 ? '' : 's'}';
+/// What an event holds, for messages: "2 pages", "1 video, 1 link"; in
+/// [l10n]'s language (the app's when null).
+String contentsOf(CaptureEvent event, [AppLocalizations? l10n]) {
+  final texts = l10n ?? appL10n;
   final videos = event.pages.where((p) => p.isVideo).length;
   final links = event.pages.where((p) => p.isLink).length;
   final pages = event.pages.length - videos - links;
   return [
-    if (pages > 0 || videos + links == 0) count(pages, 'page'),
-    if (videos > 0) count(videos, 'video'),
-    if (links > 0) count(links, 'link'),
+    if (pages > 0 || videos + links == 0) texts.homePages(pages),
+    if (videos > 0) texts.homeVideos(videos),
+    if (links > 0) texts.homeLinks(links),
   ].join(', ');
 }
 
@@ -316,6 +320,7 @@ class _NavigationBar extends StatelessWidget {
     builder: (context, _) {
       final user = auth?.user;
       final accent = Theme.of(context).colorScheme.primary;
+      final l10n = context.l10n;
       return NavigationBar(
         selectedIndex: tab.index,
         onDestinationSelected: (i) => onSelected(HomeTab.values[i]),
@@ -326,13 +331,13 @@ class _NavigationBar extends StatelessWidget {
                 NavigationDestination(
                   icon: _Avatar(user: user, ring: null),
                   selectedIcon: _Avatar(user: user, ring: accent),
-                  label: t.label,
-                  tooltip: 'Signed in as ${user.identity}',
+                  label: t.label(l10n),
+                  tooltip: l10n.homeSignedInAs(user.identity),
                 ),
               _ => NavigationDestination(
                 icon: Icon(t.icon),
                 selectedIcon: Icon(t.selectedIcon),
-                label: t.label,
+                label: t.label(l10n),
               ),
             },
         ],
@@ -390,6 +395,7 @@ class CaptureView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -406,34 +412,33 @@ class CaptureView extends StatelessWidget {
                     textStyle: theme.textTheme.titleLarge,
                   ),
                   icon: const Icon(Icons.document_scanner_outlined, size: 32),
-                  label: const Text('Scan'),
+                  label: Text(l10n.homeScan),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'With the camera: the page is found, straightened and '
-                  'cleaned up, and you can take several in a row.',
+                  l10n.homeScanDetail,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodySmall,
                 ),
                 const SizedBox(height: 24),
-                Text('Add', style: theme.textTheme.titleMedium),
+                Text(l10n.homeAdd, style: theme.textTheme.titleMedium),
                 const SizedBox(height: 8),
                 _AddTile(
                   icon: Icons.photo_library_outlined,
-                  title: 'Photos & videos',
-                  detail: 'From your photo library',
+                  title: l10n.homeAddPhotos,
+                  detail: l10n.homeAddPhotosDetail,
                   onTap: onPhotos,
                 ),
                 _AddTile(
                   icon: Icons.folder_open_outlined,
-                  title: 'Files',
-                  detail: 'Image and video files',
+                  title: l10n.homeAddFiles,
+                  detail: l10n.homeAddFilesDetail,
                   onTap: onFiles,
                 ),
                 _AddTile(
                   icon: Icons.link,
-                  title: 'Link',
-                  detail: 'A lesson, a recording, the song online',
+                  title: l10n.homeAddLink,
+                  detail: l10n.homeAddLinkDetail,
                   onTap: onLink,
                 ),
               ],
@@ -470,7 +475,57 @@ class _AddTile extends StatelessWidget {
   );
 }
 
-/// The Profile tab: the account (in a build with sign-in), then About.
+/// TabScan's privacy policy (tabscan_index/site/privacy/), the same for
+/// every build and site.
+final Uri privacyPolicyUrl = Uri.parse('https://tabscan.nu01.com/privacy');
+
+Future<void> _openPrivacyPolicy(BuildContext context) async {
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  final couldNotOpen = context.l10n.textViewCouldNotOpen('$privacyPolicyUrl');
+  if (!await launchUrl(
+    privacyPolicyUrl,
+    mode: LaunchMode.externalApplication,
+  )) {
+    messenger?.showSnackBar(SnackBar(content: Text(couldNotOpen)));
+  }
+}
+
+/// The language setting: the device's language, or English, Spanish or
+/// Portuguese; the app changes at once.
+class _LanguagePicker extends StatelessWidget {
+  const _LanguagePicker({required this.language});
+
+  final LanguageSetting language;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.languageTitle,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        DropdownButton<String?>(
+          key: const Key('language'),
+          isExpanded: true,
+          icon: const Icon(Icons.language),
+          value: language.code,
+          onChanged: language.set,
+          items: [
+            DropdownMenuItem(child: Text(l10n.languageSystem)),
+            for (final MapEntry(:key, :value) in LanguageSetting.names.entries)
+              DropdownMenuItem(value: key, child: Text(value)),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// The Profile tab: the account (in a build with sign-in), the language,
+/// then About.
 class ProfileView extends StatelessWidget {
   const ProfileView({super.key, this.auth, this.sync, this.ocr});
 
@@ -481,6 +536,7 @@ class ProfileView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
@@ -493,30 +549,35 @@ class ProfileView extends StatelessWidget {
                 if ((auth, sync) case (final auth?, final sync?))
                   AccountPanel(auth: auth, sync: sync, ocr: ocr)
                 else
-                  Text(
-                    'Sign-in isn\'t set up in this build: your events stay '
-                    'on this device.',
-                    style: theme.textTheme.bodyMedium,
-                  ),
+                  Text(l10n.homeNoSignIn, style: theme.textTheme.bodyMedium),
+                if (LanguageScope.maybeOf(context) case final language?) ...[
+                  const Divider(height: 48),
+                  _LanguagePicker(language: language),
+                ],
                 const Divider(height: 48),
-                Text('About', style: theme.textTheme.titleMedium),
+                Text(l10n.homeAbout, style: theme.textTheme.titleMedium),
                 const SizedBox(height: 8),
                 Text(
                   '${AppVersion.title} '
-                  '${AppVersion.version.isEmpty ? '(development build)' : AppVersion.version}',
+                  '${AppVersion.version.isEmpty ? l10n.homeDevelopmentBuild : AppVersion.version}',
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'Scan guitar tabs, read them as text, and share them.',
-                  style: theme.textTheme.bodySmall,
-                ),
-                TextButton(
-                  onPressed: () => showLicensePage(
-                    context: context,
-                    applicationName: AppVersion.title,
-                    applicationVersion: AppVersion.version,
-                  ),
-                  child: const Text('Licenses'),
+                Text(l10n.homeAboutDetail, style: theme.textTheme.bodySmall),
+                Wrap(
+                  children: [
+                    TextButton(
+                      onPressed: () => _openPrivacyPolicy(context),
+                      child: Text(l10n.homePrivacyPolicy),
+                    ),
+                    TextButton(
+                      onPressed: () => showLicensePage(
+                        context: context,
+                        applicationName: AppVersion.title,
+                        applicationVersion: AppVersion.version,
+                      ),
+                      child: Text(l10n.homeLicenses),
+                    ),
+                  ],
                 ),
               ],
             ),

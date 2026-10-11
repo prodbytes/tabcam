@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../l10n/language.dart';
 import 'jwt.dart';
 
 /// Who vouches for the user: the OpenID Connect provider whose ID token the
@@ -62,7 +63,7 @@ class AuthUser {
   String get label => (name?.trim().isNotEmpty ?? false)
       ? name!
       : privateEmail
-      ? '${provider.label} ID (private email)'
+      ? appL10n.accountPrivateEmail(provider.label)
       : email;
 
   /// Who is signed in, for tooltips: "Ana · ana@example.com".

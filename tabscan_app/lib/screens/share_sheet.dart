@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../cloud/cloud_sync.dart';
 import '../export/exporter.dart';
+import '../l10n/language.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
 
@@ -24,64 +25,63 @@ Future<void> showShareSheet(
   final format = await showModalBottomSheet<ShareFormat>(
     context: context,
     showDragHandle: true,
-    builder: (context) => SafeArea(
-      child: ListView(
-        shrinkWrap: true,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.link),
-            title: const Text('Link'),
-            subtitle: Text(
-              sync == null
-                  ? 'Needs sign-in and cloud sync'
-                  : 'Opens this capture in TabScan, for you and the people '
-                        'it\'s shared with',
+    builder: (context) {
+      final l10n = context.l10n;
+      return SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.link),
+              title: Text(l10n.accountShareLink),
+              subtitle: Text(
+                sync == null
+                    ? l10n.accountShareLinkNeedsSync
+                    : l10n.accountShareLinkDetail,
+              ),
+              enabled: sync != null,
+              // The default: first, and marked.
+              selected: sync != null,
+              autofocus: sync != null,
+              onTap: () => Navigator.pop(context, ShareFormat.link),
             ),
-            enabled: sync != null,
-            // The default: first, and marked.
-            selected: sync != null,
-            autofocus: sync != null,
-            onTap: () => Navigator.pop(context, ShareFormat.link),
-          ),
-          ListTile(
-            leading: const Icon(Icons.picture_as_pdf_outlined),
-            title: const Text('PDF'),
-            subtitle: Text(
-              hidden
-                  ? 'The text tab and links (the photos and scans are hidden)'
-                  : 'Every photo and scan in one PDF, plus the text tab and '
-                        'links',
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf_outlined),
+              title: Text(l10n.accountSharePdf),
+              subtitle: Text(
+                hidden
+                    ? l10n.accountSharePdfHidden
+                    : l10n.accountSharePdfDetail,
+              ),
+              enabled: !hidden || hasText,
+              onTap: () => Navigator.pop(context, ShareFormat.pdf),
             ),
-            enabled: !hidden || hasText,
-            onTap: () => Navigator.pop(context, ShareFormat.pdf),
-          ),
-          ListTile(
-            leading: const Icon(Icons.notes),
-            title: const Text('Text'),
-            subtitle: Text(
-              hasText
-                  ? 'The text tab and links, as plain text'
-                  : 'No text tab yet: it\'s read after each capture',
+            ListTile(
+              leading: const Icon(Icons.notes),
+              title: Text(l10n.accountShareText),
+              subtitle: Text(
+                hasText
+                    ? l10n.accountShareTextDetail
+                    : l10n.accountShareTextNone,
+              ),
+              enabled: hasText,
+              onTap: () => Navigator.pop(context, ShareFormat.text),
             ),
-            enabled: hasText,
-            onTap: () => Navigator.pop(context, ShareFormat.text),
-          ),
-          ListTile(
-            leading: const Icon(Icons.folder_zip_outlined),
-            title: const Text('Files'),
-            subtitle: Text(
-              hidden
-                  ? 'A zip of the videos, the text tab and links (the photos '
-                        'and scans are hidden)'
-                  : 'A zip of everything: photos, scans, videos, the text tab '
-                        'and links',
+            ListTile(
+              leading: const Icon(Icons.folder_zip_outlined),
+              title: Text(l10n.accountShareFiles),
+              subtitle: Text(
+                hidden
+                    ? l10n.accountShareFilesHidden
+                    : l10n.accountShareFilesDetail,
+              ),
+              enabled: !hidden || hasText || hasVideos,
+              onTap: () => Navigator.pop(context, ShareFormat.files),
             ),
-            enabled: !hidden || hasText || hasVideos,
-            onTap: () => Navigator.pop(context, ShareFormat.files),
-          ),
-        ],
-      ),
-    ),
+          ],
+        ),
+      );
+    },
   );
   if (format == null) return;
   // A link opens the capture from the cloud: make sure it gets there.
@@ -94,8 +94,9 @@ Future<void> showShareSheet(
     );
   } on Object catch (e) {
     if (context.mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Couldn\'t share: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.accountShareFailed('$e'))),
+      );
     }
   }
 }

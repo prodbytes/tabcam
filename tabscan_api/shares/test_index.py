@@ -17,11 +17,14 @@ os.environ.update(
 import index  # noqa: E402
 
 OWNER = "us-east-1:11111111-1111-1111-1111-111111111111"
+OTHER = "us-east-1:22222222-2222-2222-2222-222222222222"
 
 
 class Table:
-    def __init__(self):
+    def __init__(self, page_size=None):
         self.items = {}
+        # Queries answer this many items a page, as DynamoDB pages by size.
+        self.page_size = page_size
 
     def put_item(self, Item):
         # DynamoDB hands numbers back as Decimals.
@@ -37,10 +40,25 @@ class Table:
         return {"Item": item} if item else {}
 
     def query(self, KeyConditionExpression, ExpressionAttributeNames,
-              ExpressionAttributeValues, IndexName=None):
+              ExpressionAttributeValues, IndexName=None, ExclusiveStartKey=None):
         name = list(ExpressionAttributeNames.values())[0]
         value = list(ExpressionAttributeValues.values())[0]
-        return {"Items": [i for i in self.items.values() if i[name] == value]}
+        items = [i for i in self.items.values() if i[name] == value]
+        start = ExclusiveStartKey or 0
+        if self.page_size is None or start + self.page_size >= len(items):
+            return {"Items": items[start:]}
+        end = start + self.page_size
+        return {"Items": items[start:end], "LastEvaluatedKey": end}
+
+
+class Accounts:
+    """The cloud OCR service's identity -> address table."""
+
+    def __init__(self, items):
+        self.items = dict(items)
+
+    def delete_item(self, Key):
+        self.items.pop(Key["identityId"], None)
 
 
 APPLE_OWNER = "us-east-1:22222222-2222-2222-2222-222222222222"
@@ -51,14 +69,25 @@ class Cognito:
         # By provider: each sign-in is its own identity.
         self.identities = {
             ("accounts.google.com", "owner-token"): OWNER,
+            ("accounts.google.com", "other-token"): OTHER,
             ("appleid.apple.com", "apple-owner-token"): APPLE_OWNER,
         }
         self.logins = []
+        self.deleted = []
+        self.unprocessed = False
 
     def get_id(self, IdentityPoolId, Logins):
         self.logins.append(Logins)
         ((provider, token),) = Logins.items()
         return {"IdentityId": self.identities[(provider, token)]}
+
+    def delete_identities(self, IdentityIdsToDelete):
+        if self.unprocessed:
+            return {"UnprocessedIdentityIds": [
+                {"IdentityId": i, "ErrorCode": "InternalServerError"}
+                for i in IdentityIdsToDelete]}
+        self.deleted += IdentityIdsToDelete
+        return {"UnprocessedIdentityIds": []}
 
 
 class Sts:
@@ -79,7 +108,9 @@ class Sts:
 
 class ShareApiTest(unittest.TestCase):
     def setUp(self):
-        self.clients = {"table": Table(), "cognito": Cognito(), "sts": Sts()}
+        self.clients = {"table": Table(), "cognito": Cognito(), "sts": Sts(),
+                        "accounts": Accounts({OWNER: "julio@example.com",
+                                              OTHER: "olga@example.com"})}
 
     def call(self, route, email, token="owner-token", path=None, query=None,
              body=None, verified="true", iss=None):
@@ -172,6 +203,64 @@ class ShareApiTest(unittest.TestCase):
                                  query={"email": "ana@example.com"})
         self.assertEqual(body["grants"], [])
 
+    def grants_left(self):
+        return sorted(self.clients["table"].items)
+
+    def share_both_ways(self):
+        """Julio shares abc with Ana and Bo; Olga shares xyz with Julio and
+        Ana."""
+        self.grant("ana@example.com")
+        self.grant("bo@example.com", "read")
+        for email in ("julio@example.com", "ana@example.com"):
+            self.call("PUT /shares/{captureId}", "olga@example.com",
+                      token="other-token", path={"captureId": "xyz"},
+                      body={"email": email})
+
+    def test_deleting_the_account_deletes_only_the_callers_grants(self):
+        self.share_both_ways()
+        status, body = self.call("DELETE /account", "julio@example.com")
+        self.assertEqual(status, 200)
+        self.assertEqual(body, {"grantsMade": 2, "grantsToMe": 1})
+        # Olga's share with Ana stays; everything of Julio's is gone.
+        self.assertEqual(self.grants_left(), [(f"{OTHER}#xyz", "ana@example.com")])
+        self.assertEqual(self.clients["cognito"].deleted, [OWNER])
+        self.assertEqual(self.clients["accounts"].items, {OTHER: "olga@example.com"})
+        # Julio's shares are gone for Ana too.
+        status, body = self.call("GET /shared", "ana@example.com", token="ana")
+        self.assertEqual([s["owner"] for s in body["shared"]], [OTHER])
+
+    def test_deleting_the_account_follows_every_page(self):
+        self.clients["table"].page_size = 1
+        self.share_both_ways()
+        self.call("DELETE /account", "julio@example.com")
+        self.assertEqual(self.grants_left(), [(f"{OTHER}#xyz", "ana@example.com")])
+
+    def test_deleting_the_account_without_the_ocr_service(self):
+        del self.clients["accounts"]
+        self.grant("ana@example.com")
+        status, _ = self.call("DELETE /account", "julio@example.com")
+        self.assertEqual(status, 200)
+        self.assertEqual(self.grants_left(), [])
+
+    def test_an_identity_cognito_kept_is_an_error_to_retry(self):
+        self.grant("ana@example.com")
+        self.clients["cognito"].unprocessed = True
+        status, body = self.call("DELETE /account", "julio@example.com")
+        self.assertEqual(status, 502)
+        self.assertIn("try again", body["message"])
+        self.clients["cognito"].unprocessed = False
+        status, _ = self.call("DELETE /account", "julio@example.com")
+        self.assertEqual(status, 200)
+        self.assertEqual(self.clients["cognito"].deleted, [OWNER])
+
+    def test_an_unverified_address_deletes_nothing(self):
+        self.share_both_ways()
+        status, _ = self.call("DELETE /account", "julio@example.com",
+                              verified="false")
+        self.assertEqual(status, 403)
+        self.assertEqual(len(self.grants_left()), 4)
+        self.assertEqual(self.clients["cognito"].deleted, [])
+
 
     # Sign in with Apple: the same routes under /apple, with Apple's claims
     # (made up here, as the authorizer would pass them).
@@ -186,6 +275,17 @@ class ShareApiTest(unittest.TestCase):
         item = self.clients["table"].items[(f"{APPLE_OWNER}#abc", "ana@example.com")]
         self.assertEqual(item["owner"], APPLE_OWNER)
         self.assertEqual(item["ownerEmail"], "riff@example.com")
+
+    def test_apple_users_delete_their_account_under_apple(self):
+        status, _ = self.call("PUT /apple/shares/{captureId}", "riff@example.com",
+                              token="apple-owner-token", path={"captureId": "abc"},
+                              body={"email": "ana@example.com"})
+        self.assertEqual(status, 200)
+        status, body = self.call("DELETE /apple/account", "riff@example.com",
+                                 token="apple-owner-token")
+        self.assertEqual(status, 200)
+        self.assertEqual(body["grantsMade"], 1)
+        self.assertEqual(self.clients["cognito"].deleted, [APPLE_OWNER])
 
     def test_apple_users_get_what_is_shared_with_their_address(self):
         self.grant("x7k2@privaterelay.appleid.com", "read")

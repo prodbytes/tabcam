@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 
 import '../auth/auth_service.dart';
+import '../l10n/language.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
 import 'cognito.dart';
@@ -112,8 +113,11 @@ class CloudSync extends ChangeNotifier {
     final wasSignedIn = _token != null;
     _token = token;
     if (token == null) {
+      _paused = false;
       credentials.clear();
+      // Cleared, so the next sign-in starts the timer again.
       _periodic?.cancel();
+      _periodic = null;
       _soon?.cancel();
       _set(SyncState.signedOut, null);
       return;
@@ -132,21 +136,40 @@ class CloudSync extends ChangeNotifier {
 
   /// Runs a pass now (or right after the running one).
   Future<void> syncNow() async {
-    if (_token == null) return;
+    if (_token == null || _paused) return;
     if (_running) {
       _again = true;
       return;
     }
     _running = true;
+    await (_passes = _runPasses());
+  }
+
+  Future<void> _runPasses() async {
     try {
       do {
         _again = false;
         await _pass();
-      } while (_again && _token != null);
+      } while (_again && _token != null && !_paused);
     } finally {
       _running = false;
     }
   }
+
+  /// The passes running, if any.
+  Future<void>? _passes;
+  bool _paused = false;
+
+  /// Stops passes, for deleting the account (so none uploads what's being
+  /// deleted), once the running one ends. Until [resume], or signing out.
+  Future<void> pause() async {
+    _paused = true;
+    _soon?.cancel();
+    if (_running) await _passes;
+  }
+
+  /// Lets passes run again after [pause].
+  void resume() => _paused = false;
 
   Future<void> _pass() async {
     final token = _token;
@@ -171,18 +194,20 @@ class CloudSync extends ChangeNotifier {
         _fail(
           e.clockOffset != null
               ? AwsClock.describe(e.clockOffset!)
-              : 'Sync failed (HTTP ${e.statusCode})',
+              : appL10n.accountSyncFailedHttp('${e.statusCode}'),
           e,
         );
         return;
       } on CognitoException catch (e) {
         _fail(
-          e.needsSignIn ? 'Sign in again to sync' : 'Sync failed: ${e.type}',
+          e.needsSignIn
+              ? appL10n.accountSignInAgainToSync
+              : appL10n.accountSyncFailedBecause(e.type),
           e,
         );
         return;
       } catch (e) {
-        _fail('Sync failed: $e', e);
+        _fail(appL10n.accountSyncFailedBecause('$e'), e);
         return;
       }
     }
@@ -191,8 +216,8 @@ class CloudSync extends ChangeNotifier {
   static String? _summary(int up, int down) => up == 0 && down == 0
       ? null
       : [
-          if (up > 0) '$up uploaded',
-          if (down > 0) '$down downloaded',
+          if (up > 0) appL10n.accountSyncUploaded(up),
+          if (down > 0) appL10n.accountSyncDownloaded(down),
         ].join(', ');
 
   void _fail(String message, Object e) {
@@ -450,7 +475,7 @@ class CloudSync extends ChangeNotifier {
   }
 
   String _signedIn() =>
-      _token ?? (throw ShareApiException(401, 'Sign in to share'));
+      _token ?? (throw ShareApiException(401, appL10n.accountSignInToShare));
 
   /// The event in the folder, or null when its event.json isn't one.
   Future<CaptureEvent?> _fetch(

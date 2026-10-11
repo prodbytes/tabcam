@@ -29,6 +29,13 @@ Parameters:
       bundle ID (com.nu01.tabscan) for native sign-in on iOS. Empty: Google
       only.
     AllowedPattern: '([A-Za-z0-9-]+\.)+[A-Za-z0-9-]+|'
+  AccountsTableName:
+    Type: String
+    Default: ''
+    Description: >
+      The cloud OCR service's accounts table (the tabscan-ocr stack's
+      AccountsTable output), whose record of a user DELETE /account deletes
+      too. Empty: no OCR service.
   AllowedOrigins:
     Type: CommaDelimitedList
     Default: https://tabscan.nu01.com,https://rc.tabscan.nu01.com,http://localhost:2012,https://local.tabscan.nu01.com:2443
@@ -37,6 +44,7 @@ Parameters:
 Conditions:
   HasLocalClient: !Not [!Equals [!Ref GoogleLocalWebClientId, '']]
   HasApple: !Not [!Equals [!Ref AppleClientId, '']]
+  HasAccountsTable: !Not [!Equals [!Ref AccountsTableName, '']]
 
 Resources:
   SharesTable:
@@ -50,6 +58,7 @@ Resources:
       AttributeDefinitions:
         - {AttributeName: capture, AttributeType: S}
         - {AttributeName: email, AttributeType: S}
+        - {AttributeName: owner, AttributeType: S}
       KeySchema:
         - {AttributeName: capture, KeyType: HASH}
         - {AttributeName: email, KeyType: RANGE}
@@ -60,6 +69,13 @@ Resources:
             - {AttributeName: capture, KeyType: RANGE}
           Projection:
             ProjectionType: ALL
+        # The grants an owner made, for deleting their account.
+        - IndexName: byOwner
+          KeySchema:
+            - {AttributeName: owner, KeyType: HASH}
+            - {AttributeName: capture, KeyType: RANGE}
+          Projection:
+            ProjectionType: KEYS_ONLY
 
   # What a share's credentials can do at most: each session is narrowed to
   # one capture's folder, and to reading for read-only grants.
@@ -129,14 +145,25 @@ Resources:
                 Resource:
                   - !GetAtt SharesTable.Arn
                   - !Sub ${SharesTable.Arn}/index/byEmail
+                  - !Sub ${SharesTable.Arn}/index/byOwner
               - Effect: Allow
                 Action: sts:AssumeRole
                 Resource: !GetAtt ShareAccessRole.Arn
+              # GetId finds the caller's identity; DeleteIdentities deletes
+              # it when they delete their account (DELETE /account).
               - Effect: Allow
-                Action: cognito-identity:GetId
+                Action:
+                  - cognito-identity:GetId
+                  - cognito-identity:DeleteIdentities
                 Resource: !Sub
                   - arn:${AWS::Partition}:cognito-identity:${AWS::Region}:${AWS::AccountId}:identitypool/${Pool}
                   - Pool: !ImportValue tabscan-identity-pool-id
+              - !If
+                - HasAccountsTable
+                - Effect: Allow
+                  Action: dynamodb:DeleteItem
+                  Resource: !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${AccountsTableName}
+                - !Ref AWS::NoValue
 
   FunctionLogs:
     Type: AWS::Logs::LogGroup
@@ -165,6 +192,7 @@ Resources:
           IDENTITY_POOL_ID: !ImportValue tabscan-identity-pool-id
           ACCESS_ROLE_ARN: !GetAtt ShareAccessRole.Arn
           MAX_GRANTS: '50'
+          ACCOUNTS_TABLE: !Ref AccountsTableName
       # A placeholder: scripts/deploy-share-api.sh uploads the real code.
       Code:
         ZipFile: |
@@ -221,7 +249,7 @@ Resources:
 
   Fn::ForEach::Routes:
     - Route
-    - [Grants, Grant, Revoke, Shared, Leave, Credentials]
+    - [Grants, Grant, Revoke, Shared, Leave, Credentials, DeleteAccount]
     - Route${Route}:
         Type: AWS::ApiGatewayV2::Route
         Properties:
@@ -266,6 +294,7 @@ Mappings:
     Shared: {Key: 'GET /shared', AppleKey: 'GET /apple/shared'}
     Leave: {Key: 'DELETE /shared/{owner}/{captureId}', AppleKey: 'DELETE /apple/shared/{owner}/{captureId}'}
     Credentials: {Key: 'POST /shared/{owner}/{captureId}/credentials', AppleKey: 'POST /apple/shared/{owner}/{captureId}/credentials'}
+    DeleteAccount: {Key: 'DELETE /account', AppleKey: 'DELETE /apple/account'}
 
 Transform: AWS::LanguageExtensions
 

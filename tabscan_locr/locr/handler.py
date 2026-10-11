@@ -13,6 +13,9 @@ api (tabscan-ocr-api), light: it never loads the OCR engines.
                         whether the user is premium, with the upgrade links
       POST /transcribe  {"eventId"}: transcribes the event's pages that have
                         no transcription yet (pages from before upgrading)
+      POST /autocorrect {"eventId", "song", "text"}: checks a text tab
+                        against the song's tab found online (autocorrect.py)
+                        and answers with per-note corrections
 
 ocr (tabscan-ocr), heavy: reads one page and writes its transcription,
 <identity>/ocr/<event id>/<page id>.json, which the app reads.
@@ -74,6 +77,11 @@ class Services:
     def tokens(self):
         from .auth import TokenVerifier
         return self._get("tokens", TokenVerifier)
+
+    @property
+    def corrector(self):
+        from .autocorrect import Corrector
+        return self._get("corrector", Corrector)
 
     @property
     def cognito(self):
@@ -175,7 +183,7 @@ def on_http(event):
 
 def _on_http(event, method, path, request):
     from .auth import Unauthorized, Unsupported
-    if method != "POST" or path not in ("/account", "/transcribe"):
+    if method != "POST" or path not in ("/account", "/transcribe", "/autocorrect"):
         return _reply(404, {"error": "not found"})
     auth = {k.lower(): v for k, v in (event.get("headers") or {}).items()}.get("authorization", "")
     if not auth.lower().startswith("bearer "):
@@ -208,12 +216,36 @@ def _on_http(event, method, path, request):
         body = event.get("body") or "{}"
         if event.get("isBase64Encoded"):
             body = base64.b64decode(body)
-        event_id = keys.check_id(json.loads(body).get("eventId"))
+        body = json.loads(body)
+        event_id = keys.check_id(body.get("eventId"))
     except (ValueError, AttributeError) as e:
         request["bad_body"] = f"{type(e).__name__}: {e}"
         return _reply(400, {"error": "eventId needed"})
     request["event"] = event_id
+    if path == "/autocorrect":
+        return _autocorrect(body, request)
     return _reply(200, {"queued": _transcribe_missing(identity, event_id)})
+
+
+def _autocorrect(body, request):
+    from .autocorrect import MAX_SONG, MAX_TEXT, NotSetUp
+    text, song = body.get("text"), body.get("song") or ""
+    if not isinstance(text, str) or not text.strip() or len(text) > MAX_TEXT \
+            or not isinstance(song, str) or len(song) > MAX_SONG:
+        request["bad_body"] = "text or song"
+        return _reply(400, {"error": f"text (up to {MAX_TEXT} characters) needed"})
+    try:
+        result = services.corrector.correct(text, song)
+    except NotSetUp as e:
+        request["not_set_up"] = str(e)
+        return _reply(503, {"error": "auto-correct isn't set up"})
+    except Exception as e:  # the API or the web: logged, the user told to try later
+        log("autocorrect failed", error=f"{type(e).__name__}: {e}", trace=traceback.format_exc())
+        return _reply(502, {"error": "couldn't check online right now"})
+    usage = result.pop("usage", None)
+    log("autocorrect", event=request["event"], found=result["found"], notes=result["notes"],
+        proposed=result["proposed"], kept=len(result["corrections"]), usage=usage)
+    return _reply(200, result)
 
 
 def _list(prefix):
@@ -268,7 +300,7 @@ def ocr(event, context=None):
         obj = services.s3.get_object(Bucket=services.bucket, Key=page.key)
         if obj["ContentLength"] > MAX_BYTES:
             raise pipeline.TooLarge("image too large")
-        r = pipeline.transcribe(obj["Body"].read(), _engines)
+        r = pipeline.transcribe(obj["Body"].read(), _engines, read_page=engines.read_page)
         result.update(status="ok" if r.text else "no-tab", text=r.text,
                       staves=r.staves, lines=r.lines, timings=r.timings)
     except services.s3.exceptions.NoSuchKey:

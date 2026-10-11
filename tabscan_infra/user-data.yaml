@@ -56,7 +56,8 @@ Resources:
       CorsConfiguration:
         CorsRules:
           - AllowedOrigins: !Ref AllowedOrigins
-            AllowedMethods: [GET, PUT, HEAD, DELETE]
+            # POST: DeleteObjects (?delete), when a user deletes their account.
+            AllowedMethods: [GET, PUT, HEAD, DELETE, POST]
             AllowedHeaders: ['*']
             ExposedHeaders: [ETag]
             MaxAge: 3600

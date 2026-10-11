@@ -11,7 +11,9 @@
 # function URL refuses requests), TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID (optional:
 # local web builds' client, trusted too), TABSCANNER_APPLE_SIGN_IN (optional:
 # 1 to take Sign in with Apple's tokens for the bundle ID too),
-# RBACR_TOKEN_SECRET (default tabscan/rbacr-token).
+# RBACR_TOKEN_SECRET (default tabscan/rbacr-token), ANTHROPIC_KEY_SECRET
+# (default tabscan/anthropic-api-key; auto-correct is off while it doesn't
+# exist).
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
@@ -50,6 +52,12 @@ digest="$(aws ecr describe-images --region "$region" --repository-name tabscan-o
 
 secret_arn="$(aws secretsmanager describe-secret --region "$region" --secret-id "$secret_name" \
   --query ARN --output text)"
+anthropic_secret="${ANTHROPIC_KEY_SECRET:-tabscan/anthropic-api-key}"
+if ! anthropic_arn="$(aws secretsmanager describe-secret --region "$region" \
+    --secret-id "$anthropic_secret" --query ARN --output text 2>/dev/null)"; then
+  echo "No secret $anthropic_secret: auto-correct stays off"
+  anthropic_arn=""
+fi
 
 echo "== Stack tabscan-ocr"
 aws cloudformation deploy --region "$region" --stack-name tabscan-ocr \
@@ -63,6 +71,7 @@ aws cloudformation deploy --region "$region" --stack-name tabscan-ocr \
     "AllowedOrigins=$TABSCANNER_WEB_ORIGINS" \
     "IdentityPoolId=${TABSCANNER_COGNITO_IDENTITY_POOL_ID:-}" \
     "RbacrTokenSecretArn=$secret_arn" \
+    "AnthropicKeySecretArn=$anthropic_arn" \
     "Version=$version"
 
 url="$(aws cloudformation describe-stacks --region "$region" --stack-name tabscan-ocr \

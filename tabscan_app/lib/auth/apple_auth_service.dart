@@ -8,6 +8,7 @@ import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
+import '../l10n/language.dart';
 import 'auth_service.dart';
 import 'jwt.dart';
 import 'saved_session.dart';
@@ -204,7 +205,7 @@ class AppleAuthService extends AuthService {
     }
     try {
       if (!await _apple.isAvailable()) {
-        _unavailable = "Sign in with Apple isn't available on this device.";
+        _unavailable = appL10n.accountAppleUnavailable;
       } else if (_user case final user?
           when !await _apple.stillAuthorized(user.id)) {
         // Stopped using Apple ID with TabScan, in Settings.
@@ -272,7 +273,7 @@ class AppleAuthService extends AuthService {
             when message.isNotEmpty =>
           message,
         StateError(:final message) => message,
-        _ => 'Sign in with Apple failed',
+        _ => appL10n.accountAppleSignInFailed,
       };
     }
     notifyListeners();
@@ -295,7 +296,7 @@ class AppleAuthService extends AuthService {
     _expiry = Timer(left.isNegative ? Duration.zero : left, () async {
       if (_idToken != token) return;
       await _forget();
-      _error = 'Your Apple sign-in expired: sign in again.';
+      _error = appL10n.accountAppleSignInExpired;
       notifyListeners();
     });
   }

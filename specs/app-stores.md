@@ -13,12 +13,13 @@ publish to production.
 | Developer accounts | Apple: the maintainer has one; Google Play Console: to do (maintainer) |
 | Android upload key and signed App Bundle | Done (below); the upload key's OAuth client is to do |
 | Store builds: hide the Premium purchase links | Done ([cloud OCR](cloud-ocr.md#in-the-app)) |
-| Store builds: in-app account deletion | To do (with Sign in with Apple, deleting the account must also revoke the user's Apple tokens through Apple's REST API, which needs a Sign in with Apple key on a server) |
+| Store builds: in-app account deletion (Profile, Delete account; the web app as the deletion URL) | Done ([cloud sync](cloud-sync.md#deleting-the-account)); needs the stacks deployed. To do with Sign in with Apple: deleting the account must also revoke the user's Apple tokens through Apple's REST API, which needs a Sign in with Apple key on a server |
 | Sign in with Apple (App Store guideline 4.8) | Code done ([cloud sync](cloud-sync.md#sign-in-with-apple-ios)), off by default. To do (maintainer): join the paid Apple Developer Program (a free Personal Team can't sign the capability); enable Sign in with Apple on the App ID `com.nu01.tabscan`; deploy `tabscan-identity`, `tabscan-share-api` and `tabscan-ocr` with Apple (`AppleClientId=com.nu01.tabscan`, [tabscan_infra](../tabscan_infra/README.md)); set `TABSCANNER_APPLE_SIGN_IN=1` and the paid team in `.env`; try it on a phone |
-| Privacy policy page; iOS privacy manifest and encryption declaration | To do |
+| Privacy policy page; iOS privacy manifest and encryption declaration | Done ([privacy](privacy.md)); the contact email is still to be added |
 | Play internal testing, then the 14-day closed test | To do |
 | App Store Connect record, TestFlight | To do |
-| Listings: screenshots, descriptions, data safety, privacy labels, rating | To do |
+| Listings: descriptions, data safety, privacy labels, rating, category | Drafts done ([below](#store-listings)) |
+| Listings: screenshots, feature graphic, the review test account | To do (maintainer) |
 | Review submission | To do |
 
 ## Android signing
@@ -59,3 +60,42 @@ Each key that signs installed apps needs, for sign-in and
 That's the debug key, the upload key (its SHA-256 is in assetlinks.json;
 its OAuth client is to do) and Play's app signing key (Play Console → Test
 and release → App integrity) once the app is on Play.
+
+## Store listings
+
+[tabscan_store/](../tabscan_store) holds the listings, drafted in the
+layout fastlane reads (`fastlane supply` for Play, `deliver` for the App
+Store), so they can be uploaded later; fastlane itself isn't set up yet.
+
+- `android/en-US/`: `title.txt` (TabScan: Guitar Tab Scanner),
+  `short_description.txt`, `full_description.txt`,
+  `changelogs/default.txt`; `images/` waits for the icon (512 x 512),
+  feature graphic (1024 x 500) and phone screenshots, its README says
+  what's needed.
+- `ios/en-US/`: `name.txt` (as the Play title), `subtitle.txt` (Scan tabs
+  into editable text), `description.txt` (the Play full description),
+  `keywords.txt`, `promotional_text.txt`, `release_notes.txt`, the
+  support and marketing URLs (https://tabscan.nu01.com/) and the privacy
+  URL (https://tabscan.nu01.com/privacy). `ios/review_information/notes.txt`
+  is App Review's notes (how to sign in, what to try);
+  [REVIEW_NOTES.md](../tabscan_store/ios/REVIEW_NOTES.md) says what the
+  maintainer must add: contact details and a Google test account, kept
+  out of git (`.gitignore` ignores the folder's other files).
+- [data-safety.md](../tabscan_store/data-safety.md): draft answers for
+  Play's Data safety form and Apple's App Privacy labels (email, user ID,
+  name, photos and videos, files, other user content; only when signed
+  in; encrypted in transit; deletable in the app; nothing shared, nor
+  used for ads or tracking; ML Kit's anonymous diagnostics to confirm),
+  the content rating (no objectionable content; users share captures
+  with people they pick), target audience (not children), category
+  (Music & Audio on Play, Music on the App Store) and Play's account
+  deletion URL (https://tabscan.nu01.com/app/: sign in, Profile, Delete
+  account).
+
+The text claims only what the app does and never offers to buy Premium
+(the store apps don't sell it); it says Premium subscribers get cloud
+transcription. Screenshots are to show made-up riffs only.
+`bash scripts/store-metadata-check.sh [dir]` checks each file is there
+and within its store's limit (title and name 30, subtitle 30, short
+description 80, descriptions 4000, keywords 100 bytes, promotional text
+170, URLs https), and exits non-zero otherwise.

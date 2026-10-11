@@ -1,0 +1,1448 @@
+{
+  "@@locale": "en",
+  "languageTitle": "Language",
+  "@languageTitle": {
+    "description": "Profile: the language setting's title"
+  },
+  "languageSystem": "Device's language",
+  "@languageSystem": {
+    "description": "Profile: follow the device's language"
+  },
+  "accountSignIn": "Sign in",
+  "@accountSignIn": {
+    "description": "Account: signed-out title"
+  },
+  "accountSignInIntro": "Sign in to read tabs, share, and have your events backed up on every device you sign in on. Signed out, you can still capture; it stays on this device.",
+  "@accountSignInIntro": {
+    "description": "Account: why to sign in"
+  },
+  "accountSignInPremium": "Signed in, TabScan Premium transcribes your scans in the cloud as they sync.",
+  "@accountSignInPremium": {
+    "description": "Account: Premium note when signed out"
+  },
+  "accountSignInWithGoogle": "Sign in with Google",
+  "@accountSignInWithGoogle": {
+    "description": "Account: sign-in button"
+  },
+  "accountRole": "Role: {role}",
+  "@accountRole": {
+    "description": "Account: the user's role line",
+    "placeholders": {
+      "role": {
+        "type": "String",
+        "example": "Premium"
+      }
+    }
+  },
+  "accountSyncNow": "Sync now",
+  "@accountSyncNow": {
+    "description": "Account: sync button"
+  },
+  "accountSignOut": "Sign out",
+  "@accountSignOut": {
+    "description": "Account: sign-out button"
+  },
+  "accountSignOutNote": "Signing out keeps your events on this device.",
+  "@accountSignOutNote": {
+    "description": "Account: note under Sign out"
+  },
+  "accountChecking": "Checking…",
+  "@accountChecking": {
+    "description": "Account: Premium status being checked"
+  },
+  "accountRolePremium": "Premium",
+  "@accountRolePremium": {
+    "description": "Account: Premium role name"
+  },
+  "accountRoleFree": "Free",
+  "@accountRoleFree": {
+    "description": "Account: Free role name"
+  },
+  "accountRoleFreeUnchecked": "Free (couldn't check)",
+  "@accountRoleFreeUnchecked": {
+    "description": "Account: Free role when the check failed"
+  },
+  "accountSyncOff": "Not syncing",
+  "@accountSyncOff": {
+    "description": "Account: sync status, signed out"
+  },
+  "accountSyncing": "Syncing…",
+  "@accountSyncing": {
+    "description": "Account: sync status, in progress"
+  },
+  "accountSyncFailed": "Sync failed",
+  "@accountSyncFailed": {
+    "description": "Account: sync status, failed"
+  },
+  "accountSyncedAt": "Synced at {time}",
+  "@accountSyncedAt": {
+    "description": "Account: sync status with the time (HH:MM)",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "14:05"
+      }
+    }
+  },
+  "accountSynced": "Synced",
+  "@accountSynced": {
+    "description": "Account: sync status, done"
+  },
+  "accountSyncUploaded": "{count} uploaded",
+  "@accountSyncUploaded": {
+    "description": "Sync summary: events uploaded",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountSyncDownloaded": "{count} downloaded",
+  "@accountSyncDownloaded": {
+    "description": "Sync summary: events downloaded",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountSyncFailedHttp": "Sync failed (HTTP {status})",
+  "@accountSyncFailedHttp": {
+    "description": "Sync error with the HTTP status",
+    "placeholders": {
+      "status": {
+        "type": "String",
+        "example": "500"
+      }
+    }
+  },
+  "accountSyncFailedBecause": "Sync failed: {reason}",
+  "@accountSyncFailedBecause": {
+    "description": "Sync error with its technical reason",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "accountSignInAgainToSync": "Sign in again to sync",
+  "@accountSignInAgainToSync": {
+    "description": "Sync error: session expired"
+  },
+  "accountSyncClockOff": "This device's clock is off by {minutes} min: set it to the right time to sync",
+  "@accountSyncClockOff": {
+    "description": "Sync error: device clock skewed",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "accountSignInAgain": "Sign in again",
+  "@accountSignInAgain": {
+    "description": "Premium check error: session expired"
+  },
+  "accountPremiumCheckFailed": "Couldn't check Premium",
+  "@accountPremiumCheckFailed": {
+    "description": "Premium check error"
+  },
+  "accountPremiumCheckFailedNow": "Couldn't check Premium right now",
+  "@accountPremiumCheckFailedNow": {
+    "description": "Premium check error: service unavailable"
+  },
+  "accountPremiumTitle": "TabScan Premium",
+  "@accountPremiumTitle": {
+    "description": "Premium card title (product name)"
+  },
+  "accountPremiumActive": "Your scans are transcribed in the cloud as they sync: the text tab appears on the event by itself.",
+  "@accountPremiumActive": {
+    "description": "Premium card: what Premium does, for premium users"
+  },
+  "accountPremiumUntil": "Premium until {date}.",
+  "@accountPremiumUntil": {
+    "description": "Premium card: expiry date (YYYY-MM-DD)",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "2026-12-31"
+      }
+    }
+  },
+  "accountPremiumInactive": "TabScan Premium isn't active for {email}.",
+  "@accountPremiumInactive": {
+    "description": "Premium card in store apps: not active",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "accountPremiumOffer": "Have every scan transcribed automatically in the cloud, more accurately than on the phone, and read tabs on the web too. Subscribe with {email}.",
+  "@accountPremiumOffer": {
+    "description": "Premium card: the upgrade offer",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "accountPremiumUpgrade": "Upgrade",
+  "@accountPremiumUpgrade": {
+    "description": "Premium card: upgrade button"
+  },
+  "accountPremiumVoucher": "Redeem a voucher",
+  "@accountPremiumVoucher": {
+    "description": "Premium card: voucher button"
+  },
+  "accountPremiumCheckAgain": "Check again",
+  "@accountPremiumCheckAgain": {
+    "description": "Premium card: re-check button"
+  },
+  "accountPremiumCouldntOpen": "Couldn't open {url}",
+  "@accountPremiumCouldntOpen": {
+    "description": "Snackbar: a link didn't open",
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "accountPeopleTitle": "Share with people",
+  "@accountPeopleTitle": {
+    "description": "People sheet title"
+  },
+  "accountPeopleIntro": "People you add find this capture when they sign in to TabScan with that email address. No email is sent.",
+  "@accountPeopleIntro": {
+    "description": "People sheet: how sharing works"
+  },
+  "accountPeopleEmail": "Email",
+  "@accountPeopleEmail": {
+    "description": "People sheet: email field label"
+  },
+  "accountPeopleAdd": "Add",
+  "@accountPeopleAdd": {
+    "description": "People sheet: add button"
+  },
+  "accountPeopleEnterEmail": "Enter an email address",
+  "@accountPeopleEnterEmail": {
+    "description": "People sheet: invalid email error"
+  },
+  "accountPeopleNone": "Not shared yet.",
+  "@accountPeopleNone": {
+    "description": "People sheet: no one yet"
+  },
+  "accountPeopleRemove": "Remove {email}",
+  "@accountPeopleRemove": {
+    "description": "People sheet: remove tooltip",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "accountPeopleRoleTooltip": "What they can do",
+  "@accountPeopleRoleTooltip": {
+    "description": "People sheet: role menu tooltip"
+  },
+  "accountPeopleCanEdit": "Can edit",
+  "@accountPeopleCanEdit": {
+    "description": "Share role: edit"
+  },
+  "accountPeopleReadOnly": "Read only",
+  "@accountPeopleReadOnly": {
+    "description": "Share role: read only"
+  },
+  "accountSignInToShare": "Sign in to share",
+  "@accountSignInToShare": {
+    "description": "Share error: signed out"
+  },
+  "accountSignInAgainToShare": "Sign in again to share",
+  "@accountSignInAgainToShare": {
+    "description": "Share error: session expired"
+  },
+  "accountShareFailedHttp": "Sharing failed (HTTP {status})",
+  "@accountShareFailedHttp": {
+    "description": "Share API error with HTTP status",
+    "placeholders": {
+      "status": {
+        "type": "String",
+        "example": "500"
+      }
+    }
+  },
+  "accountShareLink": "Link",
+  "@accountShareLink": {
+    "description": "Share sheet: link option"
+  },
+  "accountShareLinkNeedsSync": "Needs sign-in and cloud sync",
+  "@accountShareLinkNeedsSync": {
+    "description": "Share sheet: link unavailable"
+  },
+  "accountShareLinkDetail": "Opens this capture in TabScan, for you and the people it's shared with",
+  "@accountShareLinkDetail": {
+    "description": "Share sheet: link option description"
+  },
+  "accountSharePdf": "PDF",
+  "@accountSharePdf": {
+    "description": "Share sheet: PDF option"
+  },
+  "accountSharePdfHidden": "The text tab and links (the photos and scans are hidden)",
+  "@accountSharePdfHidden": {
+    "description": "Share sheet: PDF with images hidden"
+  },
+  "accountSharePdfDetail": "Every photo and scan in one PDF, plus the text tab and links",
+  "@accountSharePdfDetail": {
+    "description": "Share sheet: PDF option description"
+  },
+  "accountShareText": "Text",
+  "@accountShareText": {
+    "description": "Share sheet: text option"
+  },
+  "accountShareTextDetail": "The text tab and links, as plain text",
+  "@accountShareTextDetail": {
+    "description": "Share sheet: text option description"
+  },
+  "accountShareTextNone": "No text tab yet: it's read after each capture",
+  "@accountShareTextNone": {
+    "description": "Share sheet: text unavailable"
+  },
+  "accountShareFiles": "Files",
+  "@accountShareFiles": {
+    "description": "Share sheet: files option"
+  },
+  "accountShareFilesHidden": "A zip of the videos, the text tab and links (the photos and scans are hidden)",
+  "@accountShareFilesHidden": {
+    "description": "Share sheet: files with images hidden"
+  },
+  "accountShareFilesDetail": "A zip of everything: photos, scans, videos, the text tab and links",
+  "@accountShareFilesDetail": {
+    "description": "Share sheet: files option description"
+  },
+  "accountShareFailed": "Couldn't share: {error}",
+  "@accountShareFailed": {
+    "description": "Snackbar: sharing failed",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "accountExportLinks": "Links",
+  "@accountExportLinks": {
+    "description": "Exported PDF: heading of the links page"
+  },
+  "accountSignInNotSetUp": "Sign-in isn't set up in this build.",
+  "@accountSignInNotSetUp": {
+    "description": "Account: sign-in not configured"
+  },
+  "accountGoogleUnavailable": "Google sign-in is unavailable: {reason}",
+  "@accountGoogleUnavailable": {
+    "description": "Account: Google sign-in failed to start",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "eventCouldntAdd": "Couldn't add",
+  "@eventCouldntAdd": {
+    "description": "Event: Add failed (before ': error')"
+  },
+  "eventSkippedFiles": "{count, plural, =1{1 file isn't} other{{count} files aren't}} a photo or video, so not added.",
+  "@eventSkippedFiles": {
+    "description": "Event: snackbar, picked files that aren't media",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventAddedHidden": "Added. Images are hidden on this capture.",
+  "@eventAddedHidden": {
+    "description": "Event: snackbar after adding to a capture with hidden images"
+  },
+  "eventPremiumHint": "TabScan Premium transcribes your scans automatically.",
+  "@eventPremiumHint": {
+    "description": "Event: Premium upgrade hint"
+  },
+  "eventUpgrade": "Upgrade",
+  "@eventUpgrade": {
+    "description": "Event: Premium hint button"
+  },
+  "eventNotNow": "Not now",
+  "@eventNotNow": {
+    "description": "Event: close the Premium hint (tooltip)"
+  },
+  "eventNothingToRead": "Nothing to read: add a scan or a photo.",
+  "@eventNothingToRead": {
+    "description": "Event Text view: no images"
+  },
+  "eventReadingTab": "Reading the tab…",
+  "@eventReadingTab": {
+    "description": "Event Text view: reading"
+  },
+  "eventInCloud": "Transcribing in the cloud. The text appears here when it's done.",
+  "@eventInCloud": {
+    "description": "Event Text view: transcribing in the cloud"
+  },
+  "eventNoTab": "No tab found in the pages. Try rescanning closer and flatter.",
+  "@eventNoTab": {
+    "description": "Event Text view: no tab found"
+  },
+  "eventReadAgain": "Read again",
+  "@eventReadAgain": {
+    "description": "Event Text view: button to read again"
+  },
+  "eventReadFailed": "Reading the tab failed.",
+  "@eventReadFailed": {
+    "description": "Event Text view: reading failed"
+  },
+  "eventReadUnsupported": "Reading tabs needs the Android or iOS app, or TabScan Premium.",
+  "@eventReadUnsupported": {
+    "description": "Event Text view: reading not available here"
+  },
+  "eventReadNeedsSignIn": "Reading tabs needs you signed in.",
+  "@eventReadNeedsSignIn": {
+    "description": "Event Text view: must sign in to read"
+  },
+  "eventSignIn": "Sign in",
+  "@eventSignIn": {
+    "description": "Event Text view: sign-in button"
+  },
+  "eventNoTextYet": "No text yet.",
+  "@eventNoTextYet": {
+    "description": "Event Text view: no reader"
+  },
+  "eventNotReadYet": "Not read yet.",
+  "@eventNotReadYet": {
+    "description": "Event Text view: not read yet"
+  },
+  "eventRead": "Read",
+  "@eventRead": {
+    "description": "Event Text view: button to read the tab"
+  },
+  "eventKeepOnePage": "An event keeps at least one page; delete the event instead.",
+  "@eventKeepOnePage": {
+    "description": "Event: snackbar on deleting the last page"
+  },
+  "eventRename": "Rename",
+  "@eventRename": {
+    "description": "Event app bar tooltip and rename dialog title"
+  },
+  "eventShareWithPeople": "Share with people",
+  "@eventShareWithPeople": {
+    "description": "Event app bar tooltip"
+  },
+  "eventClone": "Clone",
+  "@eventClone": {
+    "description": "Event app bar tooltip"
+  },
+  "eventShare": "Share",
+  "@eventShare": {
+    "description": "Event app bar tooltip"
+  },
+  "eventPages": "Pages",
+  "@eventPages": {
+    "description": "Event tool: back to the pages from Text"
+  },
+  "eventText": "Text",
+  "@eventText": {
+    "description": "Event tool: show the text tab"
+  },
+  "eventAdd": "Add",
+  "@eventAdd": {
+    "description": "Event tool: add pages"
+  },
+  "eventRotate": "Rotate",
+  "@eventRotate": {
+    "description": "Event tool: rotate the page"
+  },
+  "eventCouldntRotate": "Couldn't rotate",
+  "@eventCouldntRotate": {
+    "description": "Event: rotate failed (before ': error')"
+  },
+  "eventDelete": "Delete",
+  "@eventDelete": {
+    "description": "Event tool: delete the page"
+  },
+  "eventViewOriginal": "Original",
+  "@eventViewOriginal": {
+    "description": "Event view tool / page filter: photos as taken"
+  },
+  "eventViewScan": "Scan",
+  "@eventViewScan": {
+    "description": "Event view tool: processed (black and white) pages"
+  },
+  "eventFilterTab": "Tab",
+  "@eventFilterTab": {
+    "description": "Page filter name: black ink on white"
+  },
+  "eventAddScan": "Scan pages",
+  "@eventAddScan": {
+    "description": "Add sheet: scan with the camera"
+  },
+  "eventAddScanDetail": "More tab pages, with the camera",
+  "@eventAddScanDetail": {
+    "description": "Add sheet: scan detail"
+  },
+  "eventAddLibrary": "Photos & videos",
+  "@eventAddLibrary": {
+    "description": "Add sheet: from the photo library"
+  },
+  "eventAddLibraryDetail": "From your photo library",
+  "@eventAddLibraryDetail": {
+    "description": "Add sheet: photo library detail"
+  },
+  "eventAddFiles": "Files",
+  "@eventAddFiles": {
+    "description": "Add sheet: from files"
+  },
+  "eventAddFilesDetail": "Image and video files",
+  "@eventAddFilesDetail": {
+    "description": "Add sheet: files detail"
+  },
+  "eventAddLink": "Link",
+  "@eventAddLink": {
+    "description": "Add sheet: a link"
+  },
+  "eventAddLinkDetail": "A lesson, a recording, the song online",
+  "@eventAddLinkDetail": {
+    "description": "Add sheet: link detail"
+  },
+  "eventSharedBy": "Shared by {owner} · {access}",
+  "@eventSharedBy": {
+    "description": "Event banner: who shared it, and the access (eventReadOnly or eventCanEdit)",
+    "placeholders": {
+      "owner": {
+        "type": "String"
+      },
+      "access": {
+        "type": "String"
+      }
+    }
+  },
+  "eventReadOnly": "Read only",
+  "@eventReadOnly": {
+    "description": "Event banner: shared read only"
+  },
+  "eventCanEdit": "Can edit",
+  "@eventCanEdit": {
+    "description": "Event banner: shared, editable"
+  },
+  "eventClonedAs": "Cloned as \"{title}\"",
+  "@eventClonedAs": {
+    "description": "Snackbar after cloning an event",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "eventCouldntClone": "Couldn't clone: {error}",
+  "@eventCouldntClone": {
+    "description": "Snackbar when cloning fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "eventSong": "Song",
+  "@eventSong": {
+    "description": "Rename dialog: song field"
+  },
+  "eventArtist": "Artist",
+  "@eventArtist": {
+    "description": "Rename dialog: artist field"
+  },
+  "eventCancel": "Cancel",
+  "@eventCancel": {
+    "description": "Rename dialog button; camera close tooltip"
+  },
+  "eventSave": "Save",
+  "@eventSave": {
+    "description": "Rename dialog button"
+  },
+  "eventGateReadTabTitle": "Sign in to read tabs",
+  "@eventGateReadTabTitle": {
+    "description": "Sign-in sheet title, reading tabs"
+  },
+  "eventGateReadTabDetail": "Reading a tab into text needs you signed in.",
+  "@eventGateReadTabDetail": {
+    "description": "Sign-in sheet, reading tabs"
+  },
+  "eventGateShareTitle": "Sign in to share",
+  "@eventGateShareTitle": {
+    "description": "Sign-in sheet title, sharing"
+  },
+  "eventGateShareDetail": "Sharing needs you signed in.",
+  "@eventGateShareDetail": {
+    "description": "Sign-in sheet, sharing"
+  },
+  "eventGateBody": "{detail} Signed out, you can still scan and add to your captures; they stay on this device.",
+  "@eventGateBody": {
+    "description": "Sign-in sheet body; detail is eventGate...Detail",
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "eventSignInGoogle": "Sign in with Google",
+  "@eventSignInGoogle": {
+    "description": "Sign-in sheet button"
+  },
+  "eventNoCamera": "No camera found.",
+  "@eventNoCamera": {
+    "description": "Camera screen: no camera"
+  },
+  "eventCameraNotAllowed": "The camera isn't allowed: let TabScan use it in the browser's site settings.",
+  "@eventCameraNotAllowed": {
+    "description": "Camera screen: permission denied"
+  },
+  "eventCameraFailed": "The camera failed: {error}",
+  "@eventCameraFailed": {
+    "description": "Camera screen: camera error",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "eventCouldntTakePicture": "Couldn't take the picture: {error}",
+  "@eventCouldntTakePicture": {
+    "description": "Camera screen: snackbar, shot failed",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "eventDiscardPages": "Discard {count, plural, =1{1 page} other{{count} pages}}?",
+  "@eventDiscardPages": {
+    "description": "Camera screen: close with pages taken",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventKeepScanning": "Keep scanning",
+  "@eventKeepScanning": {
+    "description": "Camera screen: discard dialog, keep"
+  },
+  "eventDiscard": "Discard",
+  "@eventDiscard": {
+    "description": "Camera screen: discard dialog, discard"
+  },
+  "eventScanTitle": "Scan",
+  "@eventScanTitle": {
+    "description": "Camera screen title with no pages yet"
+  },
+  "eventPageCount": "{count, plural, =1{1 page} other{{count} pages}}",
+  "@eventPageCount": {
+    "description": "Camera screen title: pages taken",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventFlipCamera": "Flip camera",
+  "@eventFlipCamera": {
+    "description": "Camera screen tooltip"
+  },
+  "eventDone": "Done",
+  "@eventDone": {
+    "description": "Camera screen: finish"
+  },
+  "eventTakePicture": "Take a picture",
+  "@eventTakePicture": {
+    "description": "Camera screen: shutter"
+  },
+  "eventChoosePhotos": "Choose photos instead",
+  "@eventChoosePhotos": {
+    "description": "Camera screen: no camera, pick photos"
+  },
+  "homeTabHome": "Home",
+  "@homeTabHome": {
+    "description": "Bottom navigation: the Home tab"
+  },
+  "homeTabCapture": "Capture",
+  "@homeTabCapture": {
+    "description": "Bottom navigation: the Capture tab"
+  },
+  "homeTabProfile": "Profile",
+  "@homeTabProfile": {
+    "description": "Bottom navigation: the Profile tab"
+  },
+  "homeSignedInAs": "Signed in as {identity}",
+  "@homeSignedInAs": {
+    "description": "Profile tab's tooltip when signed in",
+    "placeholders": {
+      "identity": {
+        "type": "String"
+      }
+    }
+  },
+  "homeLinkNotHere": "That capture isn't on this device.",
+  "@homeLinkNotHere": {
+    "description": "Message: a link's capture isn't on this device"
+  },
+  "homeLinkSignIn": "Sign in (Profile) to open the capture in this link.",
+  "@homeLinkSignIn": {
+    "description": "Message: sign in to open a linked capture"
+  },
+  "homeLinkNotShared": "That capture isn't shared with you. Ask its owner to share it with your email address.",
+  "@homeLinkNotShared": {
+    "description": "Message: a linked capture isn't shared with the user"
+  },
+  "homeSaved": "Saved \"{title}\" ({contents})",
+  "@homeSaved": {
+    "description": "Message after a capture: its title and what it holds (homePages etc.)",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "contents": {
+        "type": "String"
+      }
+    }
+  },
+  "homeOpen": "Open",
+  "@homeOpen": {
+    "description": "Action on the saved message: open the event"
+  },
+  "homeScanFailed": "Couldn't scan: {error}",
+  "@homeScanFailed": {
+    "description": "Message: scanning failed",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "homeAddFailed": "Couldn't add: {error}",
+  "@homeAddFailed": {
+    "description": "Message: adding media or a link failed",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "homeSkipped": "{count, plural, =1{1 file isn't a photo or video, so not added.} other{{count} files aren't a photo or video, so not added.}}",
+  "@homeSkipped": {
+    "description": "Message: files picked that aren't photos or videos",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homePages": "{count, plural, =1{1 page} other{{count} pages}}",
+  "@homePages": {
+    "description": "An event's page count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeVideos": "{count, plural, =1{1 video} other{{count} videos}}",
+  "@homeVideos": {
+    "description": "An event's video count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeLinks": "{count, plural, =1{1 link} other{{count} links}}",
+  "@homeLinks": {
+    "description": "An event's link count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeScan": "Scan",
+  "@homeScan": {
+    "description": "Capture tab: the Scan button"
+  },
+  "homeScanDetail": "With the camera: the page is found, straightened and cleaned up, and you can take several in a row.",
+  "@homeScanDetail": {
+    "description": "Capture tab: what Scan does"
+  },
+  "homeAdd": "Add",
+  "@homeAdd": {
+    "description": "Capture tab: the uploads section's title"
+  },
+  "homeAddPhotos": "Photos & videos",
+  "@homeAddPhotos": {
+    "description": "Capture tab: add from the photo library"
+  },
+  "homeAddPhotosDetail": "From your photo library",
+  "@homeAddPhotosDetail": {
+    "description": "Capture tab: Photos & videos' detail"
+  },
+  "homeAddFiles": "Files",
+  "@homeAddFiles": {
+    "description": "Capture tab: add files"
+  },
+  "homeAddFilesDetail": "Image and video files",
+  "@homeAddFilesDetail": {
+    "description": "Capture tab: Files' detail"
+  },
+  "homeAddLink": "Link",
+  "@homeAddLink": {
+    "description": "Capture tab: add a link"
+  },
+  "homeAddLinkDetail": "A lesson, a recording, the song online",
+  "@homeAddLinkDetail": {
+    "description": "Capture tab: Link's detail"
+  },
+  "homeNoSignIn": "Sign-in isn't set up in this build: your events stay on this device.",
+  "@homeNoSignIn": {
+    "description": "Profile tab in a build without sign-in"
+  },
+  "homeAbout": "About",
+  "@homeAbout": {
+    "description": "Profile tab: the About section's title"
+  },
+  "homeDevelopmentBuild": "(development build)",
+  "@homeDevelopmentBuild": {
+    "description": "About: in place of the version in a development build"
+  },
+  "homeAboutDetail": "Scan guitar tabs, read them as text, and share them.",
+  "@homeAboutDetail": {
+    "description": "About: what the app does"
+  },
+  "homeLicenses": "Licenses",
+  "@homeLicenses": {
+    "description": "About: the button to the licenses"
+  },
+  "homeLibraryMine": "My captures",
+  "@homeLibraryMine": {
+    "description": "Home: the user's own events' section"
+  },
+  "homeLibraryMineEmpty": "Nothing of your own yet: go to Capture to add some.",
+  "@homeLibraryMineEmpty": {
+    "description": "Home: no events of the user's own"
+  },
+  "homeLibraryShared": "Shared with me",
+  "@homeLibraryShared": {
+    "description": "Home: the section of events shared with the user"
+  },
+  "homeLibraryEmpty": "No tabs yet",
+  "@homeLibraryEmpty": {
+    "description": "Home with no events: the title"
+  },
+  "homeLibraryEmptyDetail": "Go to Capture to scan a tab with the camera (the page is found, straightened and cleaned up for you), or to add photos, videos, files and links.",
+  "@homeLibraryEmptyDetail": {
+    "description": "Home with no events: what to do"
+  },
+  "homeLibraryRemoveTitle": "Remove \"{title}\"?",
+  "@homeLibraryRemoveTitle": {
+    "description": "Dialog: remove an event shared with the user",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "homeLibraryRemoveBody": "It goes from your library. {owner} keeps it, and can share it with you again.",
+  "@homeLibraryRemoveBody": {
+    "description": "Dialog: what removing a shared event does",
+    "placeholders": {
+      "owner": {
+        "type": "String"
+      }
+    }
+  },
+  "homeLibraryCancel": "Cancel",
+  "@homeLibraryCancel": {
+    "description": "Dialog button"
+  },
+  "homeLibraryRemove": "Remove",
+  "@homeLibraryRemove": {
+    "description": "Button / menu item: remove a shared event"
+  },
+  "homeLibraryRemoveFailed": "Couldn't remove: {error}",
+  "@homeLibraryRemoveFailed": {
+    "description": "Message: removing a shared event failed",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "homeLibraryDeleteTitle": "Delete \"{title}\"?",
+  "@homeLibraryDeleteTitle": {
+    "description": "Dialog: delete an event",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "homeLibraryDeleteBody": "Its pages and text tab are deleted too.",
+  "@homeLibraryDeleteBody": {
+    "description": "Dialog: what deleting an event does"
+  },
+  "homeLibraryDelete": "Delete",
+  "@homeLibraryDelete": {
+    "description": "Button / menu item: delete an event"
+  },
+  "homeLibraryImagesHidden": "images hidden",
+  "@homeLibraryImagesHidden": {
+    "description": "Event card: its images are hidden"
+  },
+  "homeLibraryText": "text",
+  "@homeLibraryText": {
+    "description": "Event card: it has a text tab"
+  },
+  "homeLibrarySharedBy": "shared by {owner}",
+  "@homeLibrarySharedBy": {
+    "description": "Event card: who shared it",
+    "placeholders": {
+      "owner": {
+        "type": "String"
+      }
+    }
+  },
+  "homeLibraryMore": "More",
+  "@homeLibraryMore": {
+    "description": "Event card: the menu's tooltip"
+  },
+  "homeLibraryRename": "Rename",
+  "@homeLibraryRename": {
+    "description": "Event card menu item"
+  },
+  "homeLibraryShare": "Share",
+  "@homeLibraryShare": {
+    "description": "Event card menu item"
+  },
+  "homeLibraryClone": "Clone",
+  "@homeLibraryClone": {
+    "description": "Event card menu item"
+  },
+  "homeMaintenanceDefault": "Sorry, TabScan is down for maintenance. Please try again later.",
+  "@homeMaintenanceDefault": {
+    "description": "Maintenance screen's default message"
+  },
+  "textViewTabCopied": "Tab copied",
+  "@textViewTabCopied": {
+    "description": "Snackbar after copying the text tab"
+  },
+  "textViewPutCursorOnFret": "Put the cursor on a fret number",
+  "@textViewPutCursorOnFret": {
+    "description": "Snackbar when fret up/down has no number under the cursor"
+  },
+  "textViewFixPremium": "Fix is part of TabScan Premium",
+  "@textViewFixPremium": {
+    "description": "Snackbar when Fix needs Premium"
+  },
+  "textViewUpgrade": "Upgrade",
+  "@textViewUpgrade": {
+    "description": "Snackbar action to upgrade to Premium"
+  },
+  "textViewFixSignIn": "Sign in again to use Fix",
+  "@textViewFixSignIn": {
+    "description": "Snackbar when Fix needs a new sign-in"
+  },
+  "textViewFixUnavailable": "Fix isn't available yet",
+  "@textViewFixUnavailable": {
+    "description": "Snackbar when the Fix service is not available"
+  },
+  "textViewCheckFailed": "Couldn't check online right now. Try again later.",
+  "@textViewCheckFailed": {
+    "description": "Snackbar when the Fix lookup fails"
+  },
+  "textViewTextChanged": "The text changed meanwhile: tap Fix again",
+  "@textViewTextChanged": {
+    "description": "Snackbar when the text was edited during Fix"
+  },
+  "textViewTabMatches": "The tab matches the one found online",
+  "@textViewTabMatches": {
+    "description": "Snackbar when Fix finds no corrections"
+  },
+  "textViewTabNotFound": "Couldn't find this song's tab online",
+  "@textViewTabNotFound": {
+    "description": "Snackbar when Fix finds no tab for the song"
+  },
+  "textViewApplied": "{count, plural, =1{1 correction applied} other{{count} corrections applied}}",
+  "@textViewApplied": {
+    "description": "Snackbar after the review, with the number of accepted corrections",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "textViewCopy": "Copy",
+  "@textViewCopy": {
+    "description": "Button copying the text tab"
+  },
+  "textViewFix": "Fix",
+  "@textViewFix": {
+    "description": "Button that corrects the tab from the song's tab online"
+  },
+  "textViewLookingOnline": "Looking for the song's tab online…",
+  "@textViewLookingOnline": {
+    "description": "Progress text while Fix runs"
+  },
+  "textViewCorrect": "Correct",
+  "@textViewCorrect": {
+    "description": "Toggle marking the text tab correct"
+  },
+  "textViewMarkedCorrect": "Marked correct: the event opens on its text",
+  "@textViewMarkedCorrect": {
+    "description": "Tooltip of the Correct toggle while on"
+  },
+  "textViewMarkCorrect": "Mark the reading correct",
+  "@textViewMarkCorrect": {
+    "description": "Tooltip of the Correct toggle while off"
+  },
+  "textViewFretDown": "Fret down (the number under the cursor)",
+  "@textViewFretDown": {
+    "description": "Tooltip of the − button"
+  },
+  "textViewFretUp": "Fret up (the number under the cursor)",
+  "@textViewFretUp": {
+    "description": "Tooltip of the + button"
+  },
+  "textViewOvertypeOn": "Overtype: typing replaces characters, columns stay put",
+  "@textViewOvertypeOn": {
+    "description": "Tooltip of Overtype while on"
+  },
+  "textViewOvertypeOff": "Insert: typing pushes the line right",
+  "@textViewOvertypeOff": {
+    "description": "Tooltip of Overtype while off"
+  },
+  "textViewOvertype": "Overtype",
+  "@textViewOvertype": {
+    "description": "Checkbox button toggling overtype mode"
+  },
+  "textViewSongDialogTitle": "Fix from the song's tab",
+  "@textViewSongDialogTitle": {
+    "description": "Title of the dialog asking which song the tab is"
+  },
+  "textViewSongLabel": "Song and artist",
+  "@textViewSongLabel": {
+    "description": "Label of the song field in the Fix dialog"
+  },
+  "textViewSongHelper": "Looked up on tab sites to correct the reading",
+  "@textViewSongHelper": {
+    "description": "Helper text of the song field in the Fix dialog"
+  },
+  "textViewCancel": "Cancel",
+  "@textViewCancel": {
+    "description": "Dialog cancel button"
+  },
+  "textViewCheck": "Check",
+  "@textViewCheck": {
+    "description": "Fix dialog button that starts the lookup"
+  },
+  "textViewRemoved": "removed",
+  "@textViewRemoved": {
+    "description": "Shown as the new value of a correction that deletes text"
+  },
+  "textViewPrevious": "Previous",
+  "@textViewPrevious": {
+    "description": "Tooltip: previous correction"
+  },
+  "textViewNext": "Next",
+  "@textViewNext": {
+    "description": "Tooltip: next correction"
+  },
+  "textViewPosition": "{index} of {total}",
+  "@textViewPosition": {
+    "description": "Which correction is shown, of how many",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "textViewLineColumn": "Line {line}, column {column}",
+  "@textViewLineColumn": {
+    "description": "Where a correction is, for a line without a string name",
+    "placeholders": {
+      "line": {
+        "type": "int"
+      },
+      "column": {
+        "type": "int"
+      }
+    }
+  },
+  "textViewLineStringColumn": "Line {line} ({string}), column {column}",
+  "@textViewLineStringColumn": {
+    "description": "Where a correction is, with the line's string name (e, B, G…)",
+    "placeholders": {
+      "line": {
+        "type": "int"
+      },
+      "string": {
+        "type": "String"
+      },
+      "column": {
+        "type": "int"
+      }
+    }
+  },
+  "textViewReject": "Reject",
+  "@textViewReject": {
+    "description": "Button rejecting a correction"
+  },
+  "textViewRejected": "Rejected",
+  "@textViewRejected": {
+    "description": "Reject button once the correction is rejected"
+  },
+  "textViewAccept": "Accept",
+  "@textViewAccept": {
+    "description": "Button accepting a correction"
+  },
+  "textViewAccepted": "Accepted",
+  "@textViewAccepted": {
+    "description": "Accept button once the correction is accepted"
+  },
+  "textViewAll": "All",
+  "@textViewAll": {
+    "description": "Tooltip of the menu for all corrections"
+  },
+  "textViewAcceptAll": "Accept all",
+  "@textViewAcceptAll": {
+    "description": "Menu item accepting all corrections"
+  },
+  "textViewRejectAll": "Reject all",
+  "@textViewRejectAll": {
+    "description": "Menu item rejecting all corrections"
+  },
+  "textViewAllMenu": "All…",
+  "@textViewAllMenu": {
+    "description": "Menu button for all corrections"
+  },
+  "textViewDoneCount": "Done ({decided}/{total})",
+  "@textViewDoneCount": {
+    "description": "Button ending the review, with how many are decided",
+    "placeholders": {
+      "decided": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "textViewDone": "Done",
+  "@textViewDone": {
+    "description": "Button ending the review once all are decided"
+  },
+  "textViewNoTextTab": "No text tab yet",
+  "@textViewNoTextTab": {
+    "description": "Text page title before the tab is read"
+  },
+  "textViewHiddenNotRead": "The images are hidden, and the tab hasn't been read.",
+  "@textViewHiddenNotRead": {
+    "description": "Text page, read-only event, before the tab is read"
+  },
+  "textViewHiddenStillRead": "The images are hidden. They're still read: the text appears here.",
+  "@textViewHiddenStillRead": {
+    "description": "Text page before the tab is read"
+  },
+  "textViewTextTab": "Text tab",
+  "@textViewTextTab": {
+    "description": "Title of the text tab page"
+  },
+  "textViewOpen": "Open",
+  "@textViewOpen": {
+    "description": "Button opening the text tab or a link"
+  },
+  "textViewCouldNotOpen": "Couldn't open {url}",
+  "@textViewCouldNotOpen": {
+    "description": "Snackbar when a link can't be opened",
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "textViewLinkCopied": "Link copied",
+  "@textViewLinkCopied": {
+    "description": "Snackbar after copying a link"
+  },
+  "textViewAddLink": "Add a link",
+  "@textViewAddLink": {
+    "description": "Title of the add link dialog"
+  },
+  "textViewLink": "Link",
+  "@textViewLink": {
+    "description": "Label of the link address field"
+  },
+  "textViewEnterAddress": "Enter a web address (https://…)",
+  "@textViewEnterAddress": {
+    "description": "Error under the link field"
+  },
+  "textViewTitleOptional": "Title (optional)",
+  "@textViewTitleOptional": {
+    "description": "Label of the link title field"
+  },
+  "textViewTitleHint": "Lesson, recording…",
+  "@textViewTitleHint": {
+    "description": "Hint of the link title field"
+  },
+  "textViewAdd": "Add",
+  "@textViewAdd": {
+    "description": "Add link dialog button"
+  },
+  "textViewCantPlay": "This video can't be played here",
+  "@textViewCantPlay": {
+    "description": "Video page when the video can't play"
+  },
+  "textViewVideo": "Video",
+  "@textViewVideo": {
+    "description": "Video page label before playing"
+  },
+  "homePrivacyPolicy": "Privacy policy",
+  "@homePrivacyPolicy": {
+    "description": "Profile, About: opens the privacy policy"
+  },
+  "deleteAccountDone": "Your TabScan account was deleted.",
+  "@deleteAccountDone": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountTitle": "Delete your account?",
+  "@deleteAccountTitle": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountThisDeletes": "This deletes:",
+  "@deleteAccountThisDeletes": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountEvents": "All your events, in the cloud and on this device.",
+  "@deleteAccountEvents": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountShares": "Your shares: the people you shared captures with lose them.",
+  "@deleteAccountShares": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountSharedWithYou": "The captures shared with you: they stop showing here.",
+  "@deleteAccountSharedWithYou": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountCantUndo": "It can't be undone.",
+  "@deleteAccountCantUndo": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountGoogleKept": "Your Google account isn't deleted.",
+  "@deleteAccountGoogleKept": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountPremiumWeb": "A TabScan Premium subscription isn't cancelled: cancel it on Substack, where you subscribed.",
+  "@deleteAccountPremiumWeb": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountPremiumStore": "A TabScan Premium subscription isn't cancelled: it's managed where you bought it.",
+  "@deleteAccountPremiumStore": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountOtherDevices": "If TabScan is signed in on your other devices, sign out there first, so they don't upload their events again.",
+  "@deleteAccountOtherDevices": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountCancel": "Cancel",
+  "@deleteAccountCancel": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountButton": "Delete account",
+  "@deleteAccountButton": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountCouldnt": "Your account couldn't be deleted: {error}",
+  "@deleteAccountCouldnt": {
+    "description": "Deleting the account (Profile > Delete account)",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteAccountDeleting": "Deleting your account",
+  "@deleteAccountDeleting": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountDeleted": "Account deleted",
+  "@deleteAccountDeleted": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountNotDeleted": "Account not deleted",
+  "@deleteAccountNotDeleted": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountClose": "Close",
+  "@deleteAccountClose": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountTryAgain": "Try again",
+  "@deleteAccountTryAgain": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountStepCloud": "Deleting your files in the cloud…",
+  "@deleteAccountStepCloud": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountStepCloudCount": "Deleting your files in the cloud ({done} of {total})…",
+  "@deleteAccountStepCloudCount": {
+    "description": "Deleting the account (Profile > Delete account)",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteAccountStepShares": "Deleting your shares…",
+  "@deleteAccountStepShares": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountStepDevice": "Deleting your events on this device…",
+  "@deleteAccountStepDevice": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountStepDeviceCount": "Deleting your events on this device ({done} of {total})…",
+  "@deleteAccountStepDeviceCount": {
+    "description": "Deleting the account (Profile > Delete account)",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteAccountStepSignOut": "Signing out…",
+  "@deleteAccountStepSignOut": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountSignInAgain": "Sign in again to delete your account.",
+  "@deleteAccountSignInAgain": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountSignedOutMeanwhile": "You signed out before your account was deleted. Your files in the cloud were deleted; sign in and delete it again to finish.",
+  "@deleteAccountSignedOutMeanwhile": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountSharesFailed": "Your files in the cloud were deleted, but not your shares: {reason}. Delete your account again to finish.",
+  "@deleteAccountSharesFailed": {
+    "description": "Deleting the account (Profile > Delete account)",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteAccountSignInAgainShort": "sign in again",
+  "@deleteAccountSignInAgainShort": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountSharesFailedBecause": "Your files in the cloud were deleted, but not your shares ({error}). Delete your account again to finish.",
+  "@deleteAccountSharesFailedBecause": {
+    "description": "Deleting the account (Profile > Delete account)",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteAccountLeftHere": "Your account was deleted and you were signed out, but some events on this device couldn't be deleted ({error}): delete them from Home.",
+  "@deleteAccountLeftHere": {
+    "description": "Deleting the account (Profile > Delete account)",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteAccountSomeFiles": "{failed} of {total} files in the cloud couldn't be deleted. Nothing else was deleted, and you are still signed in: try again.",
+  "@deleteAccountSomeFiles": {
+    "description": "Deleting the account (Profile > Delete account)",
+    "placeholders": {
+      "failed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteAccountKeptAppearing": "Files kept appearing in your cloud folder while it was being emptied. Nothing else was deleted: try again.",
+  "@deleteAccountKeptAppearing": {
+    "description": "Deleting the account (Profile > Delete account)"
+  },
+  "deleteAccountFilesHttp": "Your files in the cloud couldn't be deleted (HTTP {status}). Nothing else was deleted: try again.",
+  "@deleteAccountFilesHttp": {
+    "description": "Deleting the account (Profile > Delete account)",
+    "placeholders": {
+      "status": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteAccountFilesCognito": "Your files in the cloud couldn't be deleted ({type}). Nothing was deleted: try again.",
+  "@deleteAccountFilesCognito": {
+    "description": "Deleting the account (Profile > Delete account)",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteAccountFilesError": "Your files in the cloud couldn't be deleted ({error}). Nothing else was deleted: try again.",
+  "@deleteAccountFilesError": {
+    "description": "Deleting the account (Profile > Delete account)",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "accountPremiumNeedsGoogle": "Premium needs Google sign-in",
+  "@accountPremiumNeedsGoogle": {
+    "description": "Profile: Premium can't be checked for an Apple sign-in"
+  },
+  "accountSignInWithApple": "Sign in with Apple",
+  "@accountSignInWithApple": {
+    "description": "Sign-in button for Apple (Apple's own wording)"
+  },
+  "accountAppleSignInFailed": "Sign in with Apple failed",
+  "@accountAppleSignInFailed": {
+    "description": "Error after a failed Apple sign-in"
+  },
+  "accountAppleSignInExpired": "Your Apple sign-in expired: sign in again.",
+  "@accountAppleSignInExpired": {
+    "description": "Error when the Apple sign-in expires"
+  },
+  "accountAppleUnavailable": "Sign in with Apple isn't available on this device.",
+  "@accountAppleUnavailable": {
+    "description": "Why Apple sign-in can't be offered"
+  },
+  "accountPrivateEmail": "{provider} ID (private email)",
+  "@accountPrivateEmail": {
+    "description": "Profile: the name shown for an account with a hidden email address",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  }
+}

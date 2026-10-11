@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../auth/auth_service.dart';
+import '../l10n/language.dart';
 
 /// A sign-in button for each of [auth]'s providers, one under the other:
 /// Sign in with Apple first where it's offered (iOS), drawn per Apple's
@@ -48,6 +49,7 @@ class SignInButtons extends StatelessWidget {
         key: const Key('sign-in-apple'),
         onPressed: onPressed,
         height: _height,
+        text: context.l10n.accountSignInWithApple,
         style: Theme.of(context).brightness == Brightness.dark
             ? SignInWithAppleButtonStyle.white
             : SignInWithAppleButtonStyle.black,
@@ -64,7 +66,7 @@ class SignInButtons extends StatelessWidget {
               )
             : null,
         icon: const Icon(Icons.login),
-        label: const Text('Sign in with Google'),
+        label: Text(context.l10n.accountSignInWithGoogle),
       ),
     };
   }

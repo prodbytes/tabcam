@@ -8,6 +8,7 @@ come back. The riff is invented: tests never use published songs' tabs.
 """
 import argparse
 import os
+import re
 import sys
 
 import cv2
@@ -44,7 +45,7 @@ def page_photo(text=RIFF):
     font = ImageFont.truetype(next(f for f in FONTS if os.path.exists(f)), 22)
     page = Image.new("RGB", (900, 1200), "white")
     draw = ImageDraw.Draw(page)
-    draw.text((60, 50), "Made-up riff for tests", fill="black", font=font)
+    draw.text((60, 50), TITLE, fill="black", font=font)
     for i, line in enumerate(text.splitlines()):
         draw.text((60, 120 + i * 34), line, fill="black", font=font)
     draw.line([(480, 100), (500, 700)], fill=(200, 20, 60), width=6)
@@ -57,10 +58,18 @@ def page_photo(text=RIFF):
     return jpg.tobytes()
 
 
+TITLE = "Made-up riff for tests"
+
+
+def _tab(text):
+    return [l for l in text.splitlines() if re.match(r"^[eBGDAE]?\|", l)]
+
+
 def score(expected, got):
+    """The share of the riff's notes read right, on the tab lines only."""
     from .pipeline import tokens
-    want = [t for l in expected.splitlines() for t in tokens(l)]
-    have = [t for l in got.splitlines() for t in tokens(l)]
+    want = [t for l in _tab(expected) for t in tokens(l)]
+    have = [t for l in _tab(got) for t in tokens(l)]
     return 1 - Levenshtein.distance(want, have) / len(want)
 
 
@@ -72,13 +81,17 @@ def main():
     args = ap.parse_args()
     if args.engines:
         os.environ["LOCR_ENGINES"] = args.engines
-    r = pipeline.transcribe(page_photo(), engines.default())
+    r = pipeline.transcribe(page_photo(), engines.default(), read_page=engines.read_page)
     s = score(RIFF, r.text)
+    # The page's title, read off the staves, comes first.
+    first = r.text.splitlines()[0] if r.text else ""
+    title = Levenshtein.normalized_similarity(first.strip().lower(), TITLE.lower())
     print(r.text)
-    print(f"staves={r.staves} lines={r.lines} seconds={r.seconds} notes={s:.1%} timings={r.timings}")
+    print(f"staves={r.staves} lines={r.lines} seconds={r.seconds} notes={s:.1%} "
+          f"title={title:.0%} timings={r.timings}")
     for name, lines in r.readings.items():
         print(f"  {name}: notes={score(RIFF, chr(10).join(lines)):.1%}")
-    sys.exit(0 if s >= args.min else 1)
+    sys.exit(0 if s >= args.min and title >= 0.8 else 1)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -161,6 +163,47 @@ void main() {
       'p/events/b&c.json': '92eb5ffee6ae2fec3ad71c777531578f',
     });
     expect(tokens, [null, 'next']);
+  });
+
+  test('a batch delete is one signed DeleteObjects, and says which keys '
+      'stayed', () async {
+    late http.Request sent;
+    final bucket = S3Bucket(
+      bucket: 'b',
+      region: 'us-east-1',
+      now: () => DateTime.utc(2026, 9, 27),
+      client: MockClient((request) async {
+        sent = request;
+        return http.Response(
+          '<DeleteResult><Error><Key>p/events/b&amp;c.img</Key>'
+          '<Code>AccessDenied</Code><Message>Access Denied</Message>'
+          '</Error></DeleteResult>',
+          200,
+        );
+      }),
+    );
+    final failed = await bucket.deleteBatch(
+      ['p/events/a.json', 'p/events/b&c.img'],
+      credentials: const AwsCredentials(
+        accessKeyId: 'AKID',
+        secretAccessKey: 'secret',
+        sessionToken: 'token',
+      ),
+    );
+    expect(failed, ['p/events/b&c.img']);
+    expect(sent.method, 'POST');
+    expect(sent.url.toString(), 'https://b.s3.us-east-1.amazonaws.com/?delete');
+    expect(sent.body, contains('<Quiet>true</Quiet>'));
+    expect(sent.body, contains('<Key>p/events/b&amp;c.img</Key>'));
+    expect(
+      sent.headers['content-md5'],
+      base64.encode(md5.convert(sent.bodyBytes).bytes),
+    );
+    expect(sent.headers['authorization'], contains('content-md5'));
+  });
+
+  test('a batch delete that deleted everything leaves nothing', () {
+    expect(S3Bucket.parseDeleteErrors('<DeleteResult></DeleteResult>'), []);
   });
 }
 

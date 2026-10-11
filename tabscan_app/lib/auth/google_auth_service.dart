@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+import '../l10n/language.dart';
 import 'auth_service.dart';
 import 'google_button.dart';
 import 'google_config.dart';
@@ -89,7 +90,7 @@ class GoogleAuthService extends AuthService {
     }
     final ids = _ids;
     if (ids.clientId == null && ids.serverClientId == null) {
-      _unavailable = "Sign-in isn't set up in this build.";
+      _unavailable = appL10n.accountSignInNotSetUp;
       _checking = false;
       notifyListeners();
       return;
@@ -114,7 +115,7 @@ class GoogleAuthService extends AuthService {
       );
     } catch (e) {
       debugPrint('TabScan: Google sign-in is unavailable: ${_details(e)}');
-      _unavailable = 'Google sign-in is unavailable: ${_describe(e)}';
+      _unavailable = appL10n.accountGoogleUnavailable(_describe(e));
       _checking = false;
       notifyListeners();
       return;

@@ -37,6 +37,13 @@ app syncs a page ──► user-data bucket ──S3 event──► EventBridge 
     `{email, premium, expiresAt, checked, upgradeUrl, voucherUrl}`.
   - `POST /transcribe {"eventId"}` queues the event's synced pages that have
     no transcription yet (pages from before upgrading). Premium only (402).
+  - `POST /autocorrect {"eventId", "song", "text"}` checks a text tab
+    against the song's tab found online: Claude, with web search and web
+    fetch, answers with corrections by note id, which are checked against
+    the reading ([locr/autocorrect.py](locr/autocorrect.py),
+    [specs](../specs/autocorrect.md)). Premium only (402); 503 without the
+    Claude API key. It can take a few minutes, so the function's timeout
+    is 300 s.
 - **tabscan-ocr** (3008 MB, the account's cap; 5 min) reads one page and writes
   `{page, status: ok|no-tab|error, text, staves, lines, seconds, engines,
   version, created}`.
@@ -53,13 +60,14 @@ app syncs a page ──► user-data bucket ──S3 event──► EventBridge 
 
 | Path | What |
 |---|---|
-| [locr/pipeline.py](locr/pipeline.py) | page → lines → staves → per-line readings → vote → text tab |
-| [locr/engines.py](locr/engines.py) | Tesseract, PaddleOCR, RapidOCR on one line strip |
+| [locr/pipeline.py](locr/pipeline.py) | page → lines → staves → per-line readings → vote → text tab, with the notations off the staves (chords, lyrics) |
+| [locr/engines.py](locr/engines.py) | Tesseract, PaddleOCR, RapidOCR on one line strip; RapidOCR on the page off the staves |
 | [locr/handler.py](locr/handler.py) | the two Lambda handlers (`api`, `ocr`) |
+| [locr/autocorrect.py](locr/autocorrect.py) | `/autocorrect`: the reading's notes, Claude's corrections, checked |
 | [locr/auth.py](locr/auth.py) | ID token check (Google, Apple), Cognito identity |
 | [locr/premium.py](locr/premium.py) | rbacr's premium check |
 | [locr/keys.py](locr/keys.py) | the bucket's keys, strictly parsed |
-| [locr/selftest.py](locr/selftest.py) | reads a made-up riff back (image build, `scripts/test-image.sh`) |
+| [locr/selftest.py](locr/selftest.py) | reads a made-up riff and its title back (image build, `scripts/test-image.sh`) |
 | [Dockerfile](Dockerfile) | Debian trixie (Tesseract 5.5), the pinned packages, the PaddleOCR models |
 | [../tabscan_infra/ocr.yaml](../tabscan_infra/ocr.yaml), [ocr-repo.yaml](../tabscan_infra/ocr-repo.yaml) | the stacks |
 
@@ -84,6 +92,8 @@ with EventBridge on) and the rbacr token is in Secrets Manager:
 ```bash
 aws secretsmanager create-secret --name tabscan/rbacr-token \
   --secret-string file:///dev/stdin <<< "$ROOT_OWNED_RBACR_TOKEN"   # once
+aws secretsmanager create-secret --name tabscan/anthropic-api-key \
+  --secret-string file:///dev/stdin <<< "$ANTHROPIC_API_KEY"        # once, for /autocorrect
 bash tabscan_locr/scripts/deploy.sh
 ```
 

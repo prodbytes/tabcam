@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../auth/auth_service.dart';
+import '../l10n/language.dart';
 import 'sigv4.dart';
 
 /// What a person may do with a capture shared with them.
@@ -15,7 +16,9 @@ enum ShareRole {
 
   static ShareRole byName(String? name) => name == 'read' ? read : edit;
 
-  String get label => this == edit ? 'Can edit' : 'Read only';
+  String get label => this == edit
+      ? appL10n.accountPeopleCanEdit
+      : appL10n.accountPeopleReadOnly;
 }
 
 /// One person a capture is shared with.
@@ -124,6 +127,13 @@ class ShareApi {
   Future<void> leave(String token, String owner, String captureId) =>
       _call(token, 'DELETE', ['shared', owner, captureId]);
 
+  /// Deletes what the API keeps about the user, when they delete their
+  /// account: the grants of their captures, the grants to their address,
+  /// and their Cognito identity (last: their folder must be emptied
+  /// first, with its credentials).
+  Future<void> deleteAccount(String token) =>
+      _call(token, 'DELETE', ['account']);
+
   Future<ShareCredentials> credentials(
     String token,
     String owner,
@@ -192,8 +202,8 @@ class ShareApi {
         response.statusCode,
         decoded['message'] as String? ??
             (response.statusCode == 401
-                ? 'Sign in again to share'
-                : 'Sharing failed (HTTP ${response.statusCode})'),
+                ? appL10n.accountSignInAgainToShare
+                : appL10n.accountShareFailedHttp('${response.statusCode}')),
       );
     }
     return decoded;
