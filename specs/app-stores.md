@@ -10,9 +10,10 @@ publish to production.
 
 | Step | State |
 |---|---|
-| Developer accounts (Apple Developer Program, Google Play Console) | To do (maintainer) |
-| Android upload key and signed App Bundle | Done (below); the CI secrets and the upload key's OAuth client are to do |
-| Store builds: hide the Premium purchase links, in-app account deletion | To do |
+| Developer accounts | Apple: the maintainer has one; Google Play Console: to do (maintainer) |
+| Android upload key and signed App Bundle | Done (below); the upload key's OAuth client is to do |
+| Store builds: hide the Premium purchase links | Done ([cloud OCR](cloud-ocr.md#in-the-app)) |
+| Store builds: in-app account deletion | To do |
 | Sign in with Apple (App Store guideline 4.8) | To do |
 | Privacy policy page; iOS privacy manifest and encryption declaration | To do |
 | Play internal testing, then the 14-day closed test | To do |
@@ -30,8 +31,9 @@ what's uploaded; TabScan's builds are signed with an **upload key**.
   `~/.android-keys/tabscan-upload.jks` by default, outside the repo, and
   writes `tabscan_app/android/key.properties` (git-ignored, mode 600) with
   its path and password. Run again, it prints the key's SHA-1 and SHA-256.
-  The keystore and password must be backed up; losing them means asking
-  Google to reset the upload key.
+  The keystore and password must be backed up (they are, in the
+  maintainer's Google Drive); losing them means asking Google to reset the
+  upload key.
 - The Gradle build signs release builds with that key when
   `key.properties` exists, else with the debug key, so builds without it
   (other developers, pull requests) still work.

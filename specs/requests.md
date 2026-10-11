@@ -394,8 +394,24 @@ spec.
     explains a signing key mismatch ([release](release.md),
     [platforms](platforms.md), [sharing](sharing.md#android-app-links),
     [cloud sync](cloud-sync.md), [dev environment](dev-environment.md)).
+
+## 2026-10-11
+
+47. **Hide the Premium purchase links in the store apps** (part of
+    publishing to the stores). Apple's guidelines 3.1.1 and 3.1.3(b) and
+    Google Play's payments policy reject apps that link out to buy
+    digital features, and Premium is sold on the web. On Android and iOS
+    the Premium card has no Upgrade, Redeem a voucher or "Subscribe with
+    <address>" (a free user's card says Premium isn't active, with Check
+    again), and the event screen has no Premium hint. Premium users still
+    see the role, that Premium is on and until when. The web is
+    unchanged. The widgets take a `store` flag, defaulting to the
+    platform, tested both ways ([cloud OCR](cloud-ocr.md#in-the-app),
+    [navigation](navigation.md#profile), [platforms](platforms.md),
+    [app stores](app-stores.md)).
 50. **(Continuing 46) The upload key's App Links.** The upload key was
-    created (`scripts/android-keystore.sh`, at the default path), and its
-    SHA-256 added to `assetlinks.json`, so release builds it signs open
+    created (`scripts/android-keystore.sh`, at the default path), backed up
+    to the maintainer's Google Drive, set as the Release workflow's
+    secrets, and its SHA-256 added to `assetlinks.json`, so release builds it signs open
     the sites' links in the app once deployed
     ([sharing](sharing.md#android-app-links), [app stores](app-stores.md)).
