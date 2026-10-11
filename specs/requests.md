@@ -428,3 +428,8 @@ spec.
     provide); and draft Data safety, App Privacy, content rating,
     audience and category answers. `scripts/store-metadata-check.sh`
     checks the lengths ([app stores](app-stores.md#store-listings)).
+54. **On the Text view, remove the Share text button (the event's Share
+    in the app bar is enough), make Copy and Mark correct look alike, and
+    make Mark correct a toggle.** Share text is gone. Mark correct is now
+    a button like Copy, a toggle: tonal while off, filled and reading
+    **Correct** while on ([tab recognition](tab-recognition.md#text-view)).

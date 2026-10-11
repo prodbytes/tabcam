@@ -2,33 +2,22 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:share_plus/share_plus.dart';
 
-import '../auth/auth_service.dart';
 import '../library/library.dart';
-import 'sign_in_gate.dart';
 
 /// The event screen's Text view: the tab read from the event's pages, to
 /// check against them and fix, monospaced and unwrapped (long lines scroll
-/// sideways), with Copy and Share. Edits are saved as they're made (after
+/// sideways), with Copy. Edits are saved as they're made (after
 /// a second's pause) and on leaving, and make the text the user's: no
 /// later read replaces it. A read that ends while it shows fills it in,
 /// unless the user has started editing. Once checked, the user marks it
-/// correct (**Mark correct**): the event then opens on its Text view, and
-/// no read replaces it. Read only for an event shared read only.
+/// correct (**Mark correct**, a toggle styled like Copy): the event then
+/// opens on its Text view, and no read replaces it. Read only for an event shared read only.
 class TabTextView extends StatefulWidget {
-  const TabTextView({
-    super.key,
-    required this.library,
-    required this.eventId,
-    this.auth,
-  });
+  const TabTextView({super.key, required this.library, required this.eventId});
 
   final Library library;
   final String eventId;
-
-  /// Sharing needs the user signed in (null: a build without sign-in).
-  final AuthService? auth;
 
   @override
   State<TabTextView> createState() => _TabTextViewState();
@@ -106,15 +95,6 @@ class _TabTextViewState extends State<TabTextView> {
     }
   }
 
-  Future<void> _share() async {
-    final title = widget.library.byId(widget.eventId)?.title ?? 'Tab';
-    if (await requireSignIn(context, widget.auth, Gated.share)) {
-      await SharePlus.instance.share(
-        ShareParams(text: _text.text, subject: title),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final event = widget.library.byId(widget.eventId);
@@ -135,29 +115,36 @@ class _TabTextViewState extends State<TabTextView> {
                 icon: const Icon(Icons.copy),
                 label: const Text('Copy'),
               ),
-              if (editable || correct)
-                FilterChip(
-                  tooltip: correct
-                      ? 'Marked correct: the event opens on its text'
-                      : 'Mark the reading correct',
-                  avatar: Icon(
-                    correct ? Icons.check_circle : Icons.check_circle_outline,
-                  ),
-                  showCheckmark: false,
-                  label: Text(correct ? 'Correct' : 'Mark correct'),
-                  selected: correct,
-                  onSelected: editable ? (_) => _toggleCorrect() : null,
-                ),
-              TextButton.icon(
-                onPressed: _share,
-                icon: const Icon(Icons.ios_share),
-                label: const Text('Share text'),
-              ),
+              if (editable || correct) _correctToggle(correct, editable),
             ],
           ),
         ),
         Expanded(child: _editor(context)),
       ],
+    );
+  }
+
+  /// Mark correct, a toggle shaped like Copy: tonal while off, filled
+  /// while on.
+  Widget _correctToggle(bool correct, bool editable) {
+    final onPressed = editable ? _toggleCorrect : null;
+    final label = Text(correct ? 'Correct' : 'Mark correct');
+    final button = correct
+        ? FilledButton.icon(
+            onPressed: onPressed,
+            icon: const Icon(Icons.check_circle),
+            label: label,
+          )
+        : FilledButton.tonalIcon(
+            onPressed: onPressed,
+            icon: const Icon(Icons.check_circle_outline),
+            label: label,
+          );
+    return Tooltip(
+      message: correct
+          ? 'Marked correct: the event opens on its text'
+          : 'Mark the reading correct',
+      child: Semantics(toggled: correct, child: button),
     );
   }
 
