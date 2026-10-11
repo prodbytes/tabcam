@@ -88,6 +88,30 @@ class EventPage {
   }
 }
 
+/// Someone a capture is shared with, as recorded on the event when its
+/// owner shares it (the share API keeps the grants that count).
+class EventShare {
+  const EventShare(this.email, {this.readOnly = false});
+
+  final String email;
+  final bool readOnly;
+
+  Map<String, Object?> toJson() => {
+    'email': email,
+    'role': readOnly ? 'read' : 'edit',
+  };
+
+  factory EventShare.fromJson(Map<String, Object?> json) =>
+      EventShare(json['email'] as String, readOnly: json['role'] == 'read');
+
+  @override
+  bool operator ==(Object other) =>
+      other is EventShare && other.email == email && other.readOnly == readOnly;
+
+  @override
+  int get hashCode => Object.hash(email, readOnly);
+}
+
 /// An event: what the user captured of a tab (scanned pages, photos,
 /// videos, links), what it's called, and the text tab read from it (if it
 /// was read).
@@ -102,6 +126,7 @@ class CaptureEvent {
     this.tabText,
     this.deleted,
     this.owner,
+    this.shares = const [],
     this.sharedBy,
     this.readOnly = false,
   }) : updated = updated ?? created;
@@ -137,8 +162,12 @@ class CaptureEvent {
   bool get isDeleted => deleted != null;
 
   /// The Cognito identity ID it syncs with, once it has synced (null
-  /// before). Kept on the device only: other users' events never sync.
+  /// before). Saved in the cloud too, but there the folder it's in says
+  /// whose it is.
   final String? owner;
+
+  /// Who the owner shared it with, as last recorded by the owner's app.
+  final List<EventShare> shares;
 
   /// For an event someone shared with the user: their email (its [owner]
   /// is then their identity). Null for the user's own. Kept on the device
@@ -165,6 +194,7 @@ class CaptureEvent {
     String? tabText,
     DateTime? updated,
     String? owner,
+    List<EventShare>? shares,
     String? sharedBy,
     bool? readOnly,
   }) => CaptureEvent(
@@ -177,12 +207,14 @@ class CaptureEvent {
     tabText: tabText ?? this.tabText,
     deleted: deleted,
     owner: owner ?? this.owner,
+    shares: shares ?? this.shares,
     sharedBy: sharedBy ?? this.sharedBy,
     readOnly: readOnly ?? this.readOnly,
   );
 
-  /// The event as saved: on the device with its [owner] (and sharing),
-  /// in the cloud ([local] false) without.
+  /// The event as saved: with its [owner] and [shares]; on the device
+  /// also how it's shared with the user, which the cloud copy ([local]
+  /// false) leaves out.
   Map<String, Object?> toJson({bool local = true}) => {
     'id': id,
     'title': title,
@@ -192,7 +224,8 @@ class CaptureEvent {
     'pages': [for (final p in pages) p.toJson()],
     if (tabText != null) 'tabText': tabText,
     if (deleted != null) 'deleted': deleted!.toUtc().toIso8601String(),
-    if (local && owner != null) 'owner': owner,
+    if (owner != null) 'owner': owner,
+    if (shares.isNotEmpty) 'shares': [for (final s in shares) s.toJson()],
     if (local && sharedBy != null) 'sharedBy': sharedBy,
     if (local && readOnly) 'readOnly': true,
   };
@@ -215,6 +248,10 @@ class CaptureEvent {
       tabText: json['tabText'] as String?,
       deleted: time('deleted'),
       owner: json['owner'] as String?,
+      shares: [
+        for (final s in json['shares'] as List? ?? const [])
+          EventShare.fromJson((s as Map).cast<String, Object?>()),
+      ],
       sharedBy: json['sharedBy'] as String?,
       readOnly: json['readOnly'] == true,
     );

@@ -20,7 +20,7 @@ it's as before: no account button, events only on the device.
 Signed out (anonymous), the user can **capture**: scan, and add pages, photos, videos, files and links to their events, and
 rename, filter, rotate, clone and delete them. All of it is stored on the
 device only. **Read tab** (the processing) and **sharing** need signing
-in. **Share with people** only shows signed in. **Share** (as a PDF, text
+in. **Share with people** only shows signed in. **Share** (as a link, a PDF, text
 or files, from a card, the event screen or the text tab editor) and
 **Read tab**, tapped signed out, open a
 sheet, "Sign in to read tabs" or "Sign in to share", saying why, that
@@ -79,7 +79,7 @@ the user-data bucket:
 
 | Object | Content |
 |---|---|
-| `<identity>/events/<event id>/event.json` | the event's details, as on the device but without `owner`; or its tombstone once deleted |
+| `<identity>/events/<event id>/event.json` | the event's details, as on the device, with the folder's identity as `owner` and the people it's shared with (`shares`), but without how it's shared with the user (`sharedBy`, `readOnly`); or its tombstone once deleted. Coming down, the folder it's in, not `owner`, says whose it is |
 | `<identity>/events/<event id>/<page id>.<extension>` | each page's file, as stored on the device, with its MIME type (`image/jpeg` for scanned pages, the video's type for videos) |
 
 Links are in `event.json` only: they have no file.
@@ -193,7 +193,7 @@ Setting it up (the Google OAuth clients, the stacks, the variables):
 ## Verified
 
 - Unit tests with an in-memory bucket and two simulated devices: an event
-  goes up pages first and without `owner`; an unchanged pass is one
+  goes up pages first, naming its `owner`; an unchanged pass is one
   listing; another device's events come down with their pages and don't go
   back up; changes reach the other device; the later change wins; removed
   and rotated pages leave the folder; a deletion reaches other devices and

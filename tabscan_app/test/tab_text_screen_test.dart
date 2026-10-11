@@ -32,7 +32,9 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(home: TabTextScreen(library: library, eventId: event.id)),
+      MaterialApp(
+        home: TabTextScreen(library: library, eventId: event.id),
+      ),
     );
 
     final copy = find.widgetWithText(FilledButton, 'Copy');

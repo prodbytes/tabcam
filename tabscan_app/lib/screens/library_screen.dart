@@ -175,7 +175,7 @@ class _EventCard extends StatelessWidget {
       case _CardAction.share:
         if (await requireSignIn(context, sync?.auth, Gated.share) &&
             context.mounted) {
-          await showShareSheet(context, library, event);
+          await showShareSheet(context, library, event, sync: sync);
         }
       case _CardAction.delete when event.isShared:
         final ok = await showDialog<bool>(

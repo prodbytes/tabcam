@@ -1,3 +1,4 @@
+import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -5,9 +6,14 @@ import 'package:share_plus/share_plus.dart';
 
 import '../library/capture_event.dart';
 import '../processing/page_filter.dart';
+import 'capture_link.dart';
 
 /// What an event can be shared as.
 enum ShareFormat {
+  /// The capture's link ([CaptureLink]): it opens in TabScan for its owner
+  /// and the people it's shared with. The default.
+  link('Link'),
+
   /// Every image page (filtered) in one PDF, then the text tab if it was
   /// read, then the links. Videos are left out.
   pdf('PDF'),
@@ -15,8 +21,8 @@ enum ShareFormat {
   /// The text tab and the links, as plain text: pastes anywhere.
   text('Text'),
 
-  /// Each image and video as a file: images filtered, videos as they are.
-  /// Links are left out.
+  /// One zip of everything: each image (filtered) and video, the text tab
+  /// (`tab.txt`) and the links (`links.txt`).
   files('Files');
 
   const ShareFormat(this.label);
@@ -97,6 +103,13 @@ abstract final class Exporter {
   ) async {
     final name = event.fileName;
     switch (format) {
+      case ShareFormat.link:
+        await SharePlus.instance.share(
+          ShareParams(
+            text: CaptureLink.of(event).toString(),
+            subject: event.title,
+          ),
+        );
       case ShareFormat.text:
         await SharePlus.instance.share(
           ShareParams(text: shareText(event), subject: event.title),
@@ -115,22 +128,56 @@ abstract final class Exporter {
           ),
         );
       case ShareFormat.files:
-        final files = <XFile>[];
-        final names = <String>[];
-        for (final (i, page) in event.pages.where((p) => p.hasFile).indexed) {
-          final (extension, mime) = _type(page);
-          files.add(XFile.fromData(await filteredPage(page), mimeType: mime));
-          names.add('$name ${i + 1}.$extension');
-        }
+        final bytes = await zip(event, [
+          for (final p in event.pages)
+            if (p.hasFile) await filteredPage(p),
+        ]);
         await SharePlus.instance.share(
           ShareParams(
             subject: event.title,
-            files: files,
-            fileNameOverrides: names,
+            files: [XFile.fromData(bytes, mimeType: 'application/zip')],
+            fileNameOverrides: ['$name.zip'],
           ),
         );
     }
     debugPrint('Shared ${event.id} as ${format.name}');
+  }
+
+  /// Files: a zip of [files], the event's image and video pages' bytes in
+  /// page order (images filtered), named as `<name> <n>.<extension>`; then
+  /// `tab.txt` (the text tab) and `links.txt` (a link per line), when
+  /// there are any. Pictures and videos are stored as they are: they're
+  /// compressed already.
+  static Future<Uint8List> zip(CaptureEvent event, List<Uint8List> files) =>
+      compute(_zip, (event, files));
+
+  static Uint8List _zip((CaptureEvent, List<Uint8List>) args) {
+    final (event, files) = args;
+    final name = event.fileName;
+    final archive = Archive();
+    for (final (i, page) in event.pages.where((p) => p.hasFile).indexed) {
+      final (extension, _) = _type(page);
+      final bytes = files[i];
+      archive.add(
+        ArchiveFile.noCompress(
+          '$name ${i + 1}.$extension',
+          bytes.length,
+          bytes,
+        ),
+      );
+    }
+    final tab = event.tabText?.trimRight();
+    if (tab != null && tab.isNotEmpty) {
+      archive.add(ArchiveFile.string('tab.txt', '$tab\n'));
+    }
+    final links = [
+      for (final p in event.pages)
+        if (p.isLink) linkLine(p),
+    ];
+    if (links.isNotEmpty) {
+      archive.add(ArchiveFile.string('links.txt', '${links.join('\n')}\n'));
+    }
+    return ZipEncoder().encodeBytes(archive);
   }
 
   /// What Text shares: the text tab, then each link on a line; null when
