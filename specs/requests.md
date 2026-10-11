@@ -415,3 +415,7 @@ spec.
     secrets, and its SHA-256 added to `assetlinks.json`, so release builds it signs open
     the sites' links in the app once deployed
     ([sharing](sharing.md#android-app-links), [app stores](app-stores.md)).
+51. **Fix: the minute's sync pass stopped after signing out and back in**
+    (found while adding account deletion). Sign-out cancelled the periodic
+    timer but kept it, so the next sign-in didn't start a new one; now
+    it's cleared, with a test ([cloud sync](cloud-sync.md)).

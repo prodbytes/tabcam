@@ -12,8 +12,12 @@ import 'fakes.dart';
 
 /// One device: its library, signed in, syncing with [bucket].
 class Device {
-  Device(this.bucket, {String identity = 'us-east-1:me', ShareApi? shares})
-    : credentials = FakeCredentials(identity) {
+  Device(
+    this.bucket, {
+    String identity = 'us-east-1:me',
+    ShareApi? shares,
+    Duration period = const Duration(days: 1),
+  }) : credentials = FakeCredentials(identity) {
     library = Library(PlatformEventStore(), () => now);
     sync = CloudSync(
       library: library,
@@ -21,7 +25,7 @@ class Device {
       bucket: bucket,
       credentials: credentials,
       shares: shares,
-      period: const Duration(days: 1),
+      period: period,
       debounce: const Duration(days: 1),
     );
   }
@@ -58,6 +62,28 @@ void main() {
   setUp(() => bucket = FakeBucket());
 
   const folder = 'us-east-1:me/events';
+
+  test("the periodic pass runs again after signing out and back in", () async {
+    final phone = Device(bucket, period: const Duration(milliseconds: 20));
+    await phone.start();
+    await phone.auth.signOut();
+    phone.auth.signInAs('me');
+    await phone.settle();
+    // The change waits for the debounce (a day): only the periodic pass
+    // can take it up.
+    final event = await phone.library.create([
+      bytes([4, 5, 6]),
+    ]);
+    for (var i = 0; i < 50; i++) {
+      if (bucket.objects.containsKey('$folder/${event.id}/event.json')) break;
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+    }
+    expect(
+      bucket.objects.containsKey('$folder/${event.id}/event.json'),
+      isTrue,
+    );
+    phone.sync.dispose();
+  });
 
   test(
     "an event goes up: its pages, then event.json, naming its owner",
