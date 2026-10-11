@@ -1,18 +1,36 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../cloud/cloud_ocr.dart';
 
+/// Whether this is a store app (Android, iOS): App Store and Google Play
+/// rules don't let it point to buying Premium, which is sold on the web,
+/// so it shows no Upgrade, voucher or subscribe wording. Premium bought
+/// on the web still works in it.
+bool get storeApp => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+
 /// TabScan Premium in the account sheet: what it does, and for free users
-/// the upgrade offer (subscribe, redeem a voucher, check again after).
+/// the upgrade offer (subscribe, redeem a voucher, check again after); in
+/// a [storeApp], only that it isn't active, and Check again.
 class PremiumCard extends StatelessWidget {
-  const PremiumCard({super.key, required this.ocr, required this.email});
+  const PremiumCard({
+    super.key,
+    required this.ocr,
+    required this.email,
+    this.store,
+  });
 
   final CloudOcr ocr;
 
   /// The signed-in address: Premium follows it, so it's the one to
   /// subscribe with.
   final String email;
+
+  /// Whether to leave out the upgrade offer (null: [storeApp]).
+  final bool? store;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -47,11 +65,14 @@ class PremiumCard extends StatelessWidget {
       } else if (status == null && ocr.checking) {
         children.add(const Text('Checking…'));
       } else {
+        final store = this.store ?? storeApp;
         children.addAll([
           Text(
-            'Have every scan transcribed automatically in the cloud, more '
-            'accurately than on the phone, and read tabs on the web too. '
-            'Subscribe with $email.',
+            store
+                ? 'TabScan Premium isn\'t active for $email.'
+                : 'Have every scan transcribed automatically in the cloud, '
+                      'more accurately than on the phone, and read tabs on '
+                      'the web too. Subscribe with $email.',
           ),
           if (ocr.error case final e?) ...[
             const SizedBox(height: 8),
@@ -62,13 +83,13 @@ class PremiumCard extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              if (status?.upgradeUrl case final url?)
+              if (status?.upgradeUrl case final url? when !store)
                 FilledButton.icon(
                   onPressed: () => _open(context, url),
                   icon: const Icon(Icons.upgrade),
                   label: const Text('Upgrade'),
                 ),
-              if (status?.voucherUrl case final url?)
+              if (status?.voucherUrl case final url? when !store)
                 OutlinedButton(
                   onPressed: () => _open(context, url),
                   child: const Text('Redeem a voucher'),

@@ -397,7 +397,38 @@ spec.
 
 ## 2026-10-11
 
-47. **On the Text view, remove the Share text button (the event's Share
+47. **Hide the Premium purchase links in the store apps** (part of
+    publishing to the stores). Apple's guidelines 3.1.1 and 3.1.3(b) and
+    Google Play's payments policy reject apps that link out to buy
+    digital features, and Premium is sold on the web. On Android and iOS
+    the Premium card has no Upgrade, Redeem a voucher or "Subscribe with
+    <address>" (a free user's card says Premium isn't active, with Check
+    again), and the event screen has no Premium hint. Premium users still
+    see the role, that Premium is on and until when. The web is
+    unchanged. The widgets take a `store` flag, defaulting to the
+    platform, tested both ways ([cloud OCR](cloud-ocr.md#in-the-app),
+    [navigation](navigation.md#profile), [platforms](platforms.md),
+    [app stores](app-stores.md)).
+50. **(Continuing 46) The upload key's App Links.** The upload key was
+    created (`scripts/android-keystore.sh`, at the default path), backed up
+    to the maintainer's Google Drive, set as the Release workflow's
+    secrets, and its SHA-256 added to `assetlinks.json`, so release builds it signs open
+    the sites' links in the app once deployed
+    ([sharing](sharing.md#android-app-links), [app stores](app-stores.md)).
+51. **Fix: the minute's sync pass stopped after signing out and back in**
+    (found while adding account deletion). Sign-out cancelled the periodic
+    timer but kept it, so the next sign-in didn't start a new one; now
+    it's cleared, with a test ([cloud sync](cloud-sync.md)).
+53. **Draft the Google Play and App Store listings** (part of publishing
+    to the stores), in fastlane's layout for a later upload, without
+    fastlane yet: [tabscan_store/](../tabscan_store) with the Play title,
+    short and full descriptions and changelog; the App Store name,
+    subtitle, description, keywords, promotional text, release notes and
+    URLs; App Review notes (the test Google account is the maintainer's to
+    provide); and draft Data safety, App Privacy, content rating,
+    audience and category answers. `scripts/store-metadata-check.sh`
+    checks the lengths ([app stores](app-stores.md#store-listings)).
+54. **On the Text view, remove the Share text button (the event's Share
     in the app bar is enough), make Copy and Mark correct look alike, and
     make Mark correct a toggle.** Share text is gone. Mark correct is now
     a button like Copy, a toggle: tonal while off, filled and reading

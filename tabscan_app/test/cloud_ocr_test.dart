@@ -10,6 +10,7 @@ import 'package:tabscan_app/library/capture_event.dart';
 import 'package:tabscan_app/library/event_store_memory.dart';
 import 'package:tabscan_app/library/library.dart';
 import 'package:tabscan_app/screens/account_panel.dart';
+import 'package:tabscan_app/screens/event_screen.dart';
 import 'package:tabscan_app/screens/premium_card.dart';
 import 'package:tabscan_app/screens/tab_text_view.dart';
 
@@ -31,6 +32,7 @@ class FakeOcrApi implements OcrApi {
     accountCalls++;
     return PremiumStatus(
       premium: premium,
+      expiresAt: premium ? DateTime(2027, 3, 1) : null,
       upgradeUrl: Uri.parse('https://example.com/subscribe'),
       voucherUrl: Uri.parse('https://example.com/voucher'),
     );
@@ -245,7 +247,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: PremiumCard(ocr: s.ocr, email: 'ana@example.com'),
+          body: PremiumCard(ocr: s.ocr, email: 'ana@example.com', store: false),
         ),
       ),
     );
@@ -279,12 +281,18 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: SingleChildScrollView(
-            child: AccountPanel(auth: s.auth, sync: s.sync, ocr: s.ocr),
+            child: AccountPanel(
+              auth: s.auth,
+              sync: s.sync,
+              ocr: s.ocr,
+              store: false,
+            ),
           ),
         ),
       ),
     );
     expect(find.text('Role: Free'), findsOneWidget);
+    expect(find.text('Upgrade'), findsOneWidget);
 
     s.api.premium = true;
     await tester.runAsync(() async {
@@ -295,6 +303,87 @@ void main() {
     expect(find.text('Role: Premium'), findsOneWidget);
     s.dispose();
   });
+
+  testWidgets('in a store app, the Premium card offers no purchase', (
+    tester,
+  ) async {
+    final s = _Setup();
+    await tester.runAsync(() async {
+      await s.start(syncing: false);
+      s.auth.signInAs('ana');
+      await _until(() => s.ocr.status != null);
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: AccountPanel(
+              auth: s.auth,
+              sync: s.sync,
+              ocr: s.ocr,
+              store: true,
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Role: Free'), findsOneWidget);
+    expect(find.text('TabScan Premium'), findsOneWidget);
+    expect(
+      find.text('TabScan Premium isn\'t active for ana@example.com.'),
+      findsOneWidget,
+    );
+    expect(find.text('Upgrade'), findsNothing);
+    expect(find.text('Redeem a voucher'), findsNothing);
+    expect(find.textContaining('Subscribe'), findsNothing);
+    expect(find.text('Check again'), findsOneWidget);
+
+    // Premium bought on the web still works, and says until when.
+    s.api.premium = true;
+    await tester.runAsync(() async {
+      await s.ocr.refresh();
+      await _until(() => s.ocr.premium);
+    });
+    await tester.pump();
+    expect(find.text('Role: Premium'), findsOneWidget);
+    expect(find.textContaining('Premium until 2027-03-01.'), findsOneWidget);
+    expect(find.textContaining('transcribed in the cloud'), findsOneWidget);
+    s.dispose();
+  });
+
+  for (final store in [false, true]) {
+    testWidgets(
+      'the event\'s Premium hint ${store ? 'is hidden in a store app' : 'shows on the web'}',
+      (tester) async {
+        final s = _Setup();
+        late String id;
+        await tester.runAsync(() async {
+          await s.start(syncing: false);
+          id = (await _twoPages(s.library)).id;
+          s.auth.signInAs('ana');
+          await _until(() => s.ocr.status != null);
+        });
+        await tester.pumpWidget(
+          MaterialApp(
+            home: EventScreen(
+              library: s.library,
+              eventId: id,
+              sync: s.sync,
+              ocr: s.ocr,
+              store: store,
+            ),
+          ),
+        );
+        await tester.pump();
+        final hint = find.text(
+          'TabScan Premium transcribes your scans automatically.',
+        );
+        expect(hint, store ? findsNothing : findsOneWidget);
+        expect(find.text('Upgrade'), store ? findsNothing : findsOneWidget);
+        s.dispose();
+      },
+    );
+  }
 }
 
 void _fixTests() {

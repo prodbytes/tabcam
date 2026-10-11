@@ -70,8 +70,9 @@ Android opens them in the app only when the site vouches for the app's
 signing key: `https://<site>/.well-known/assetlinks.json` (from
 [tabscan_index/site/.well-known/](../tabscan_index/site/.well-known/assetlinks.json),
 uploaded by every deploy, both sites) lists the SHA-256 fingerprints of
-the keys allowed. It lists the maintainer's debug key, which signs the
-release builds installed with `scripts/android-install.sh` until the
-upload key is set up. The upload key and Google Play's app signing key
-are to be added there ([app stores](app-stores.md#android-signing)); until
-then, builds they sign open the links in the browser.
+the keys allowed. It lists the maintainer's debug key (builds without the
+upload key) and the upload key, which signs release builds: those
+installed with `scripts/android-install.sh` and the Release workflow's.
+Google Play's app signing key is to be added once the app is on Play
+([app stores](app-stores.md#android-signing)); until then, Play's builds
+open the links in the browser.
