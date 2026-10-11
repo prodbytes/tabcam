@@ -24,7 +24,16 @@ flutter build apk --release ${DART_DEFINES[@]+"${DART_DEFINES[@]}"} \
   --dart-define="TABSCANNER_VERSION=$VERSION"
 
 echo "Installing $VERSION on $serial" >&2
-adb_s install -r build/app/outputs/flutter-apk/app-release.apk
+if ! out="$(adb_s install -r build/app/outputs/flutter-apk/app-release.apk 2>&1)"; then
+  echo "$out" >&2
+  if [[ "$out" == *INSTALL_FAILED_UPDATE_INCOMPATIBLE* ]]; then
+    # Another key signed the installed app (the debug key, or Google Play's).
+    echo "error: the installed TabScan is signed with another key; uninstall it" \
+      "(adb uninstall $package: its events on the phone go, synced ones come back" \
+      "at sign-in) and run this again" >&2
+  fi
+  exit 1
+fi
 # NEW_TASK | CLEAR_TASK (0x10008000): a fresh task with only the app. No
 # -W: it waits for the screen to be drawn, which never happens while the
 # phone is locked (the app still starts, and is checked below).

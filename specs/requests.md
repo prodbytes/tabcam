@@ -358,3 +358,15 @@ spec.
     new debug key each run, aren't verified until there's a release key
     ([sharing](sharing.md#android-app-links), [platforms](platforms.md),
     [release](release.md), [deploy](deploy.md)).
+46. **Help me publish the app to the Apple and Google stores, step by
+    step; with personal (individual) accounts.** A new
+    [app stores](app-stores.md) spec tracks the steps. First, Android
+    release signing: `scripts/android-keystore.sh` creates the upload key
+    outside the repo and writes the git-ignored `key.properties`, which
+    the Gradle build signs release builds with (else the debug key, as
+    before); `make appbundle` builds the App Bundle; the Release workflow
+    signs Android with the upload key from two secrets (never on pull
+    requests) and publishes the `.aab` too; `scripts/android-install.sh`
+    explains a signing key mismatch ([release](release.md),
+    [platforms](platforms.md), [sharing](sharing.md#android-app-links),
+    [cloud sync](cloud-sync.md), [dev environment](dev-environment.md)).

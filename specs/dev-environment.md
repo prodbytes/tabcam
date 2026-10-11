@@ -48,7 +48,8 @@
 - **Android** (USB, debugging on; `ANDROID_SERIAL` picks one of several):
   `devbox run android` runs a debug build attached
   (`scripts/flutter-android.sh`); `devbox run android-release` installs a
-  release build over the app (keeping its events), starts it and checks it
+  release build over the app (keeping its events; one signed with another
+  key must be uninstalled first, and it says so), starts it and checks it
   runs (`scripts/android-install.sh`); `devbox run android-log` streams the
   app's log lines and the system's related errors
   (`scripts/android-log.sh`, `--clear`, `--all`).

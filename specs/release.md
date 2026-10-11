@@ -18,16 +18,24 @@ app binaries with `make` and publishes them as a GitHub release.
   - Tag names must be letters, digits, `.`, `_` and `-`.
 - **Builds**, one job per target, with Flutter 3.47.5 (cloned at its tag):
   `web` and `android` (JDK 17) on `ubuntu-latest`, `ios` on
-  `macos-latest`. Each runs `make <target>`.
+  `macos-latest`. Each runs `make <target>`; Android runs
+  `make android appbundle`.
+- **Android signing**: on tags and manual runs, with the upload key from
+  the secrets `ANDROID_UPLOAD_KEYSTORE_BASE64` and
+  `ANDROID_UPLOAD_KEYSTORE_PASSWORD` ([app stores](app-stores.md#android-signing)),
+  written to `key.properties` on the runner and removed after the build.
+  Without them (and always on pull requests), a debug key new each run.
 - **Release** `tabscan-<tag>`, with generated notes and:
   - `tabscan-<tag>-web.zip`: the web build;
-  - `tabscan-<tag>-android.apk`: the release APK (signed with the debug
-    key until a release key is set up; that key is new each run, so its
+  - `tabscan-<tag>-android.apk`: the release APK, and
+    `tabscan-<tag>-android.aab`: the App Bundle for Google Play, both
+    signed as above (with a debug key, their
     [App Links](sharing.md#android-app-links) aren't verified);
   - `tabscan-<tag>-ios-unsigned.zip`: the unsigned `Runner.app`.
 - **Security**: actions are pinned to commit SHAs; the token is read-only
   except in the release job (`contents: write`); checkout doesn't keep
-  credentials; no secrets are used.
+  credentials; the only secrets are the Android upload key's, given to
+  the Android build step that needs them, never on pull requests.
 
 ## Versioning
 
@@ -51,7 +59,7 @@ already; `DRY_RUN=1` only prints the tag.
 
 ## Make
 
-`make` builds every platform this host can; `make web|android|ios` one
-(`scripts/make.sh`). `MODE=release|profile|debug` (release by default),
+`make` builds every platform this host can; `make web|android|ios` one,
+`make appbundle` the Android App Bundle (`scripts/make.sh`). `MODE=release|profile|debug` (release by default),
 `IOS_CODESIGN=1` signs iOS, `WEB_BASE_HREF` sets the web base (`/app/` for
 the site). `make clean` runs `flutter clean`.
