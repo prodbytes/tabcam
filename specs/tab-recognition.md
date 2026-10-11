@@ -52,11 +52,40 @@ and 30% are dashes. Before the check, OCR's usual misreadings are fixed:
 long dashes, `_` and `=` become `-`; `O`/`o` become `0`; `l`, `I`, `!`
 become `1`; `S` becomes `5`.
 
-Consecutive tab lines are a staff; other lines (titles, "Chorus") end it.
-Staves of fewer than four lines are dropped. Each staff's lines are padded
-with dashes to one length, spaces become dashes, and the lines are named
-`e B G D A E` (six lines) or `G D A E` (four, bass), or kept unnamed for
-other counts.
+Consecutive tab lines are a staff; other lines (titles, chord names,
+lyrics, "Chorus") end it. Staves of fewer than four lines are dropped.
+Each staff's lines are padded with dashes to one length, spaces become
+dashes, and the lines are named `e B G D A E` (six lines) or `G D A E`
+(four, bass), or kept unnamed for other counts.
+
+## Notations around the tab
+
+The page's other notations are kept with the tab, where they are on the
+page: titles, section names, chord names, lyrics. OCR's lines are taken
+top to bottom. A line of text is kept when it has a letter and isn't
+noise: a web address, a page number ("2", "Page 1/2", "1 of 3"), a
+garbled tab line (30% or more dashes) or mostly stray marks (more than
+20% characters other than letters, digits, spaces and `# / ( ) ' , . ! ?
+: ; & + -`). On text tabs each word goes at the tab's column its position
+implies (measured from the tab lines' starts and letter width), so chord
+names stay over the notes they're played on; without positions the line
+is kept as read.
+
+Joined: a blank line between two staves and after a staff, none before a
+staff (a chord line or a section name sits right above it):
+
+```
+Verse
+   Am      G
+e|-0-------3-|
+B|-1-------0-|
+...
+
+la la la
+```
+
+A page with text but no tab still has no tab (no text tab is made). The
+[cloud](cloud-ocr.md#transcription) keeps the same notations.
 
 ## Typeset tabs
 
@@ -85,6 +114,10 @@ OCR finds only the numbers.
   A|-2------|
   E|3-------|
   ```
+
+- **Notations**: OCR's text lines off the staves (more than half a line
+  gap away), not made of frets only, and not noise (as above), go between
+  the staves by their height on the page, as read.
 
 Text tabs are tried first; typeset layout runs when no text tab is found.
 

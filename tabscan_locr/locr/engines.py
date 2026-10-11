@@ -80,6 +80,15 @@ def rapid(strip, line):
     return place([(t, min(p[0] for p in q)) for q, t, _ in found or []], line)
 
 
+def read_page(gray):
+    """A whole grayscale page's text, for the notations around the tab:
+    (text, x0, y0, x1, y1, score) per box RapidOCR finds."""
+    found, _ = _rapid()(cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR))
+    return [(t, min(p[0] for p in q), min(p[1] for p in q),
+             max(p[0] for p in q), max(p[1] for p in q), float(s))
+            for q, t, s in found or []]
+
+
 def default():
     """The engines, in tie-breaking order (the best alone first)."""
     names = os.environ.get("LOCR_ENGINES", "tesseract,paddle,rapid").split(",")

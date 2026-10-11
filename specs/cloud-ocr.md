@@ -50,8 +50,17 @@ by Tesseract (one line, tab characters only), PaddleOCR and RapidOCR. Each
 word goes at the column its position implies, from where the line's dashes
 start, so the dashes the engines drop come back. Per line, the reading
 closest to the other two (fewest token edits between dashes) wins. Lines
-are padded with dashes to their staff's width; staves are separated by a
-blank line.
+are padded with dashes to their staff's width.
+
+**Notations**: the rest of the page, with the staves blanked out, is read
+by RapidOCR at half size (1400 px). Its words (confidence 0.5 or more) are
+grouped into lines by height; each word goes at the column of the nearest
+staff it lines up with, so chord names stay over their notes. Lines that
+are notations, not noise (as on the device:
+[notations around the tab](tab-recognition.md#notations-around-the-tab)),
+go between the staves where they are on the page; staves are separated by
+a blank line, and text sits right above the staff that follows it. A page
+with text but no tab is still `no-tab`.
 
 ## In the app
 
@@ -151,9 +160,11 @@ blank line.
   remove results; `/account` needs a good token and records the identity;
   `/transcribe` is premium-only and queues only untranscribed pages; rbacr's
   answer is cached by its ttl and fails closed; the pipeline finds lines,
-  staves and widths, rebuilds lines and votes.
+  staves and widths, rebuilds lines and votes, and keeps the notations off
+  the staves in their place (chord names at their columns, noise dropped).
 - The image's build reads back a made-up riff (at least 80% of its notes,
-  90% at the time of writing).
+  90% at the time of writing, counted on the tab lines) and the title
+  above it (80% alike).
 - App tests: a premium event gets its text tab once every page is read;
   pages without tab are left out; the user's edits stay; a text tab
   marked correct stays; a free user gets

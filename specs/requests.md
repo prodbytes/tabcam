@@ -394,3 +394,14 @@ spec.
     explains a signing key mismatch ([release](release.md),
     [platforms](platforms.md), [sharing](sharing.md#android-app-links),
     [cloud sync](cloud-sync.md), [dev environment](dev-environment.md)).
+
+## 2026-10-11
+
+50. **If the document has other notations, such as lyrics and chords, add
+    them to the text as well.** Reading keeps the page's notations with
+    the tab, in their place: titles, section names, chord names (at the
+    tab's columns) and lyrics, without web addresses, page numbers or
+    stray marks. On the device for text and typeset tabs, and in the
+    cloud, which now also reads the page off the staves with RapidOCR
+    ([tab recognition](tab-recognition.md#notations-around-the-tab),
+    [cloud OCR](cloud-ocr.md#transcription)).

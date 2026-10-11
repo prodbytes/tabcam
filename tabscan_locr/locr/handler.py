@@ -263,7 +263,7 @@ def ocr(event, context=None):
         obj = services.s3.get_object(Bucket=services.bucket, Key=page.key)
         if obj["ContentLength"] > MAX_BYTES:
             raise pipeline.TooLarge("image too large")
-        r = pipeline.transcribe(obj["Body"].read(), _engines)
+        r = pipeline.transcribe(obj["Body"].read(), _engines, read_page=engines.read_page)
         result.update(status="ok" if r.text else "no-tab", text=r.text,
                       staves=r.staves, lines=r.lines, timings=r.timings)
     except services.s3.exceptions.NoSuchKey:

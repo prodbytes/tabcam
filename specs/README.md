@@ -39,7 +39,8 @@ the cloud as they sync.
 - [Page filters](page-filters.md): Original, and Tab (black ink on white,
   by adaptive thresholding), the default.
 - [Tab recognition](tab-recognition.md): every capture read by itself
-  into plain-text tab (on-device OCR, or Premium's cloud), for text tabs
+  into plain-text tab with the page's chords, lyrics and section names
+  (on-device OCR, or Premium's cloud), for text tabs
   and typeset tab staves, never over the user's edits or a reading marked
   correct; the Text view, where a reading is marked correct (the event
   then opens on it).
