@@ -54,8 +54,9 @@ their role: "Role: Premium" or "Role: Free"), the sync status, **Sync now**
 and **Sign out** ([sign-in and cloud sync](cloud-sync.md#signing-in)),
 and with Premium set up the **TabScan Premium** card
 ([cloud OCR](cloud-ocr.md)); opening the tab checks again whether the
-user is premium. The same panel opens in a sheet from an event's Premium
-**Upgrade**. In
+user is premium (the store apps leave out the card's upgrade offer,
+[cloud OCR](cloud-ocr.md#in-the-app)). The same panel opens in a sheet
+from an event's Premium **Upgrade** (on the web). In
 a build without sign-in, a line says so. Then **About**: the app's name
 and version (X.Y.Z, or "(development build)"), what it does, and
 **Licenses**.
