@@ -53,8 +53,10 @@ for and the sign-in button; signed in, who (and, with Premium set up,
 their role: "Role: Premium" or "Role: Free"), the sync status, **Sync now**
 and **Sign out** ([sign-in and cloud sync](cloud-sync.md#signing-in)),
 and with Premium set up the **TabScan Premium** card
-([cloud OCR](cloud-ocr.md)); opening the tab checks again whether the
-user is premium. The same panel opens in a sheet from an event's Premium
+([cloud OCR](cloud-ocr.md)), then **Delete account**, which asks first
+and deletes the account in the cloud and on the device
+([cloud sync](cloud-sync.md#deleting-the-account)); opening the tab checks
+again whether the user is premium. The same panel opens in a sheet from an event's Premium
 **Upgrade**. In
 a build without sign-in, a line says so. Then **About**: the app's name
 and version (X.Y.Z, or "(development build)"), what it does, and

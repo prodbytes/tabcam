@@ -4,6 +4,7 @@ import '../auth/auth_service.dart';
 import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
 import '../cloud/ocr_api.dart';
+import 'delete_account.dart';
 import 'premium_card.dart';
 
 /// The [AccountPanel] in a bottom sheet, for places away from the Profile
@@ -31,7 +32,8 @@ Future<void> showAccountSheet(
 
 /// The Profile tab's account: signing in, and once signed in, who it is,
 /// how sync stands, Sync now and Sign out; with Premium set up ([ocr]),
-/// the user's role ([roleLabel]) and the Premium card too.
+/// the user's role ([roleLabel]) and the Premium card too; last, Delete
+/// account.
 class AccountPanel extends StatelessWidget {
   const AccountPanel({
     super.key,
@@ -136,6 +138,21 @@ class AccountPanel extends StatelessWidget {
           const SizedBox(height: 16),
           PremiumCard(ocr: ocr, email: user.email),
         ],
+        const SizedBox(height: 16),
+        TextButton.icon(
+          style: TextButton.styleFrom(
+            foregroundColor: theme.colorScheme.error,
+            padding: EdgeInsets.zero,
+          ),
+          onPressed: () => deleteAccount(context, sync, premium: ocr != null),
+          icon: const Icon(Icons.delete_forever_outlined),
+          label: const Text('Delete account'),
+        ),
+        Text(
+          'Deletes your events in the cloud and on this device, and your '
+          'shares.',
+          style: theme.textTheme.bodySmall,
+        ),
       ],
     );
   }

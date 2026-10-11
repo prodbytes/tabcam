@@ -12,7 +12,8 @@ publish to production.
 |---|---|
 | Developer accounts (Apple Developer Program, Google Play Console) | To do (maintainer) |
 | Android upload key and signed App Bundle | Done (below); the key itself is still to be created |
-| Store builds: hide the Premium purchase links, in-app account deletion | To do |
+| Store builds: hide the Premium purchase links | To do |
+| In-app account deletion (Profile, Delete account; the web app as the deletion URL) | Done ([cloud sync](cloud-sync.md#deleting-the-account)); needs the stacks deployed |
 | Sign in with Apple (App Store guideline 4.8) | To do |
 | Privacy policy page; iOS privacy manifest and encryption declaration | To do |
 | Play internal testing, then the 14-day closed test | To do |

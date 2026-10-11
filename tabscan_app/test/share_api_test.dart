@@ -52,6 +52,13 @@ void main() {
     expect(access.credentials.sessionToken, 'session');
   });
 
+  test('deleting the account is a DELETE /account with the token', () async {
+    await api(200, {'grantsMade': 2, 'grantsToMe': 1}).deleteAccount('token');
+    expect(sent.single.method, 'DELETE');
+    expect(sent.single.url.toString(), 'https://api.example/account');
+    expect(sent.single.headers['authorization'], 'Bearer token');
+  });
+
   test("the API's refusal says why", () async {
     await expectLater(
       api(404, {'message': 'Not shared with you'}).credentials('t', 'o', 'a'),

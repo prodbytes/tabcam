@@ -394,3 +394,25 @@ spec.
     explains a signing key mismatch ([release](release.md),
     [platforms](platforms.md), [sharing](sharing.md#android-app-links),
     [cloud sync](cloud-sync.md), [dev environment](dev-environment.md)).
+
+## 2026-10-11
+
+48. **In-app account deletion** (part of publishing to the stores: App
+    Store guideline 5.1.1(v), Google Play). The signed-in Profile has
+    **Delete account**: a confirmation that says what goes (events in the
+    cloud and on the device, shares both ways), that it can't be undone,
+    that the Google account stays and a Premium subscription is managed
+    where it was bought (no purchase links in the apps); then, with
+    progress, it empties the user's S3 folder (paged listing, batch
+    DeleteObjects), calls the share API's new `DELETE /account` (grants
+    both ways, the OCR service's accounts record, the Cognito identity),
+    deletes the user's events on the device and signs out. Failures stop
+    it, say what was deleted and offer Try again, the user still signed
+    in. The share API gets a `byOwner` index and `DeleteIdentities`; the
+    bucket's CORS allows `POST`. What can't be deleted (30-day old
+    versions, backups, logs) and the deletion URL for Google Play (the web
+    app's Profile; a static page proposed) are in the spec
+    ([cloud sync](cloud-sync.md#deleting-the-account),
+    [shared captures](shared-captures.md),
+    [navigation](navigation.md#profile), [cloud OCR](cloud-ocr.md),
+    [app stores](app-stores.md)).

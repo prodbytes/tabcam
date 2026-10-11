@@ -112,6 +112,7 @@ class CloudSync extends ChangeNotifier {
     final wasSignedIn = _token != null;
     _token = token;
     if (token == null) {
+      _paused = false;
       credentials.clear();
       _periodic?.cancel();
       _soon?.cancel();
@@ -132,21 +133,40 @@ class CloudSync extends ChangeNotifier {
 
   /// Runs a pass now (or right after the running one).
   Future<void> syncNow() async {
-    if (_token == null) return;
+    if (_token == null || _paused) return;
     if (_running) {
       _again = true;
       return;
     }
     _running = true;
+    await (_passes = _runPasses());
+  }
+
+  Future<void> _runPasses() async {
     try {
       do {
         _again = false;
         await _pass();
-      } while (_again && _token != null);
+      } while (_again && _token != null && !_paused);
     } finally {
       _running = false;
     }
   }
+
+  /// The passes running, if any.
+  Future<void>? _passes;
+  bool _paused = false;
+
+  /// Stops passes, for deleting the account (so none uploads what's being
+  /// deleted), once the running one ends. Until [resume], or signing out.
+  Future<void> pause() async {
+    _paused = true;
+    _soon?.cancel();
+    if (_running) await _passes;
+  }
+
+  /// Lets passes run again after [pause].
+  void resume() => _paused = false;
 
   Future<void> _pass() async {
     final token = _token;

@@ -18,6 +18,10 @@ Routes:
   GET    /shared                                  what's shared with me
   DELETE /shared/{owner}/{captureId}              leave a share
   POST   /shared/{owner}/{captureId}/credentials  credentials for it
+  DELETE /account                                 delete what's kept about me
+
+Every route acts on the caller alone: as an owner, on the Cognito identity
+their token maps to; as a grantee, on their verified address.
 """
 
 import json
@@ -43,10 +47,12 @@ def _clients():
     import boto3
 
     region = os.environ.get("AWS_REGION", "us-east-1")
+    dynamodb = boto3.resource("dynamodb", region_name=region)
+    accounts = os.environ.get("ACCOUNTS_TABLE")
     return {
-        "table": boto3.resource("dynamodb", region_name=region).Table(
-            os.environ["TABLE"]
-        ),
+        "table": dynamodb.Table(os.environ["TABLE"]),
+        # The cloud OCR service's identity -> address table, if it's set up.
+        "accounts": dynamodb.Table(accounts) if accounts else None,
         "cognito": boto3.client("cognito-identity", region_name=region),
         "sts": boto3.client("sts", region_name=region),
     }
@@ -102,6 +108,7 @@ class Api:
         self.table = clients["table"]
         self.cognito = clients["cognito"]
         self.sts = clients["sts"]
+        self.accounts = clients.get("accounts")
         claims = (
             event.get("requestContext", {})
             .get("authorizer", {})
@@ -124,6 +131,7 @@ class Api:
             "GET /shared": self.shared,
             "DELETE /shared/{owner}/{captureId}": self.leave,
             "POST /shared/{owner}/{captureId}/credentials": self.credentials,
+            "DELETE /account": self.delete_account,
         }
         if route not in handlers:
             raise ApiError(404, "No such route")
@@ -148,12 +156,22 @@ class Api:
         )
         return result["IdentityId"]
 
+    def _query(self, **kwargs):
+        """Every item a query matches, page after page."""
+        items = []
+        while True:
+            page = self.table.query(**kwargs)
+            items += page["Items"]
+            if "LastEvaluatedKey" not in page:
+                return items
+            kwargs["ExclusiveStartKey"] = page["LastEvaluatedKey"]
+
     def _grants_of(self, owner, capture_id):
-        items = self.table.query(
+        items = self._query(
             KeyConditionExpression="#c = :c",
             ExpressionAttributeNames={"#c": "capture"},
             ExpressionAttributeValues={":c": _key(owner, capture_id)},
-        )["Items"]
+        )
         return [
             {"email": i["email"], "role": i["role"], "grantedAt": int(i["grantedAt"])}
             for i in items
@@ -196,13 +214,16 @@ class Api:
         self.table.delete_item(Key={"capture": _key(owner, capture_id), "email": email})
         return {"grants": self._grants_of(owner, capture_id)}
 
-    def shared(self):
-        items = self.table.query(
+    def _shared_with_me(self):
+        return self._query(
             IndexName="byEmail",
             KeyConditionExpression="#e = :e",
             ExpressionAttributeNames={"#e": "email"},
             ExpressionAttributeValues={":e": self.email},
-        )["Items"]
+        )
+
+    def shared(self):
+        items = self._shared_with_me()
         return {
             "shared": [
                 {
@@ -271,3 +292,31 @@ class Api:
             "prefix": prefix,
             "role": role,
         }
+
+    def delete_account(self):
+        """Deletes what's kept about the caller: the grants of their
+        captures, the grants to their address, their record in the cloud OCR
+        service's accounts table, and last their Cognito identity, so a
+        retry after a failure still finds the same identity. Their folder's
+        objects are the app's to delete (with the identity's credentials),
+        before this."""
+        owner = self._me()
+        made = self._query(
+            IndexName="byOwner",
+            KeyConditionExpression="#o = :o",
+            ExpressionAttributeNames={"#o": "owner"},
+            ExpressionAttributeValues={":o": owner},
+        )
+        # The keys say whose a grant is: never delete anyone else's.
+        made = [i for i in made if i["capture"].startswith(f"{owner}#")]
+        to_me = [i for i in self._shared_with_me() if i["email"] == self.email]
+        for item in made + to_me:
+            self.table.delete_item(
+                Key={"capture": item["capture"], "email": item["email"]}
+            )
+        if self.accounts is not None:
+            self.accounts.delete_item(Key={"identityId": owner})
+        result = self.cognito.delete_identities(IdentityIdsToDelete=[owner])
+        if result.get("UnprocessedIdentityIds"):
+            raise ApiError(502, "Couldn't delete your identity: try again")
+        return {"grantsMade": len(made), "grantsToMe": len(to_me)}
