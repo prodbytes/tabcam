@@ -433,7 +433,7 @@ spec.
     make Mark correct a toggle.** Share text is gone. Mark correct is now
     a button like Copy, a toggle: tonal while off, filled and reading
     **Correct** while on ([tab recognition](tab-recognition.md#text-view)).
-48. **Add auto-correct: a Lambda that does its best to correct the tab,
+55. **Add auto-correct: a Lambda that does its best to correct the tab,
     for now from a button on the Text view; short button labels to fit the
     screen's width. It searches online, popular tab sites first, for the
     song's tab, works out the corrections and shows them per note in the
@@ -447,10 +447,11 @@ spec.
     key's secret. The Text view's buttons are now **Copy**, **Correct**
     and **Fix**; Fix asks for the song and shows the corrections per note
     to accept or reject. The editor has **Overtype** (on by default) and
-    no keyboard suggestions ([auto-correct](autocorrect.md),
+    no keyboard suggestions. Store apps show Fix to Premium users only,
+    as they show no upgrade offer ([auto-correct](autocorrect.md),
     [tab recognition](tab-recognition.md#text-view),
     [cloud OCR](cloud-ocr.md#infrastructure)).
-49. **In the text editor, add + and − buttons that increment or decrement
+56. **In the text editor, add + and − buttons that increment or decrement
     the number under the cursor, up to two digits (15 + → 16, 5 + → 6).**
     − and + under the Text view's buttons change the fret under the
     cursor by one, 0 to 99, keeping the columns

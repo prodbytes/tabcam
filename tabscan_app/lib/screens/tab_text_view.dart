@@ -39,7 +39,8 @@ class TabTextView extends StatefulWidget {
   /// Auto-correct's service (null: a build without it, no Fix).
   final CloudOcr? ocr;
 
-  /// Opens the upgrade offer, for Fix without Premium.
+  /// Opens the upgrade offer, for Fix without Premium. Null (a store app,
+  /// which can't point to buying it): Fix shows for Premium users only.
   final VoidCallback? onUpgrade;
 
   @override
@@ -68,6 +69,12 @@ class _TabTextViewState extends State<TabTextView> {
     _known = _stored;
     _text.text = _known ?? '';
     widget.library.addListener(_onLibrary);
+    widget.ocr?.addListener(_onPremium);
+  }
+
+  /// Premium's status came: Fix shows or hides.
+  void _onPremium() {
+    if (mounted) setState(() {});
   }
 
   /// A read (or another device) changed the text: shown, if the user
@@ -84,6 +91,7 @@ class _TabTextViewState extends State<TabTextView> {
   @override
   void dispose() {
     widget.library.removeListener(_onLibrary);
+    widget.ocr?.removeListener(_onPremium);
     _saveSoon?.cancel();
     _save();
     _review?.dispose();
@@ -240,7 +248,9 @@ class _TabTextViewState extends State<TabTextView> {
               ),
               if (editable || correct)
                 _correctToggle(correct, editable && review == null),
-              if (editable && widget.ocr != null)
+              if (editable &&
+                  widget.ocr != null &&
+                  (widget.ocr!.premium || widget.onUpgrade != null))
                 FilledButton.tonalIcon(
                   onPressed: _checking || review != null ? null : _autocorrect,
                   icon: const Icon(Icons.auto_fix_high),

@@ -254,8 +254,13 @@ class _EventScreenState extends State<EventScreen> {
         library: _library,
         eventId: event.id,
         ocr: widget.ocr,
-        onUpgrade: switch ((widget.sync, widget.ocr)) {
-          (final sync?, final ocr?) => () => showAccountSheet(
+        // Store apps can't point to buying Premium.
+        onUpgrade: switch ((
+          widget.sync,
+          widget.ocr,
+          widget.store ?? storeApp,
+        )) {
+          (final sync?, final ocr?, false) => () => showAccountSheet(
             context,
             sync.auth,
             sync,

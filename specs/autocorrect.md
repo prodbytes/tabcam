@@ -9,7 +9,10 @@ changes in the text until they do.
 
 1. **Fix** (shown in builds with the [cloud OCR](cloud-ocr.md) service, on
    events the user can edit). Without Premium it says "Fix is part of
-   TabScan Premium" with **Upgrade** (the account sheet's offer).
+   TabScan Premium" with **Upgrade** (the account sheet's offer); in the
+   store apps (Android, iOS), which can't point to buying Premium, Fix
+   shows only for Premium users. It appears as soon as the Premium check
+   answers.
 2. It asks for the song and artist, filled in with the event's title, and
    saves any pending edit.
 3. While it checks (up to about 4½ minutes) a progress bar says it's

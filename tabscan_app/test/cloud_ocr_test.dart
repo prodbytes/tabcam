@@ -478,6 +478,18 @@ void _fixTests() {
     expect(upgraded, isTrue);
     expect(s.api.checked, isEmpty);
     await tester.pumpWidget(const SizedBox());
+
+    // A store app can't offer the upgrade: no Fix without Premium.
+    await tester.pumpWidget(
+      MaterialApp(
+        key: UniqueKey(),
+        home: Scaffold(
+          body: TabTextView(library: s.library, eventId: event.id, ocr: s.ocr),
+        ),
+      ),
+    );
+    expect(find.text('Fix'), findsNothing);
+    await tester.pumpWidget(const SizedBox());
     s.dispose();
   });
 }
