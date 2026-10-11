@@ -50,7 +50,9 @@ saying how many.
 
 The account, up to 560 dp wide: signed out, **Sign in** with what it's
 for and the sign-in button; signed in, who (and, with Premium set up,
-their role: "Role: Premium" or "Role: Free"), the sync status, **Sync now**
+their [profile](profiles.md#in-the-app): "Profile: huge_wavy_darter",
+its roles, and **Linked accounts**; without profiles, the role, "Role:
+Premium" or "Role: Free"), the sync status, **Sync now**
 and **Sign out** ([sign-in and cloud sync](cloud-sync.md#signing-in)),
 and with Premium set up the **TabScan Premium** card
 ([cloud OCR](cloud-ocr.md)), then **Delete account**, which asks first

@@ -55,6 +55,17 @@ Parameters:
     Description: >
       The Secrets Manager secret (tabscan/anthropic-api-key) holding the
       Claude API key auto-correct uses. Empty: /autocorrect answers 503.
+  ProfilesTableName:
+    Type: String
+    Default: ''
+    Description: >
+      The share API's profiles table (tabscan-share-api's ProfilesTable):
+      a sign-in's folder is its profile's, and it's premium if any of the
+      profile's addresses is. Empty, with SubjectsTableName: no profiles.
+  SubjectsTableName:
+    Type: String
+    Default: ''
+    Description: The share API's sign-ins table (tabscan-share-api's SubjectsTable)
   UpgradeUrl:
     Type: String
     Default: https://prodbytes.substack.com/subscribe
@@ -72,6 +83,7 @@ Parameters:
     Description: Web origins the app runs on (the function URL's CORS)
 
 Conditions:
+  HasProfiles: !Not [!Equals [!Ref ProfilesTableName, '']]
   HasLocalClient: !Not [!Equals [!Ref GoogleLocalWebClientId, '']]
   HasAnthropicKey: !Not [!Equals [!Ref AnthropicKeySecretArn, '']]
 
@@ -153,6 +165,15 @@ Resources:
               - Effect: Allow
                 Action: [dynamodb:GetItem, dynamodb:PutItem]
                 Resource: !GetAtt Accounts.Arn
+              - !If
+                - HasProfiles
+                - Effect: Allow
+                  Action: [dynamodb:GetItem, dynamodb:Query]
+                  Resource:
+                    - !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProfilesTableName}
+                    - !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${SubjectsTableName}
+                    - !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${SubjectsTableName}/index/byProfile
+                - !Ref AWS::NoValue
               - Effect: Allow
                 Action: secretsmanager:GetSecretValue
                 Resource: !If
@@ -247,6 +268,8 @@ Resources:
           UPGRADE_URL: !Ref UpgradeUrl
           VOUCHER_URL: !Ref VoucherUrl
           ANTHROPIC_KEY_SECRET: !Ref AnthropicKeySecretArn
+          PROFILES_TABLE: !Ref ProfilesTableName
+          SUBJECTS_TABLE: !Ref SubjectsTableName
           LOCR_VERSION: !Ref Version
 
   ApiUrl:

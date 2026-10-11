@@ -1482,5 +1482,122 @@
         "type": "String"
       }
     }
+  },
+  "profileLinkedAccounts": "Linked accounts",
+  "@profileLinkedAccounts": {
+    "description": "Profile: the linked accounts sheet's title and button"
+  },
+  "profileLinkedIntro": "Any of these accounts reaches the same captures, and the profile has all their roles.",
+  "@profileLinkedIntro": {
+    "description": "Linked accounts: what linking does"
+  },
+  "profileOwner": "Owner",
+  "@profileOwner": {
+    "description": "Linked accounts: the profile's owner"
+  },
+  "profileThisAccount": "This account",
+  "@profileThisAccount": {
+    "description": "Linked accounts: the sign-in in use"
+  },
+  "profileUnlink": "Unlink",
+  "@profileUnlink": {
+    "description": "Linked accounts: unlink an account"
+  },
+  "profileLinkAnother": "Link another account",
+  "@profileLinkAnother": {
+    "description": "Linked accounts: section title"
+  },
+  "profileGetCode": "Get a link code",
+  "@profileGetCode": {
+    "description": "Linked accounts: make a link code"
+  },
+  "profileCodeHow": "Within 10 minutes, sign in with the other account and enter this code under Linked accounts.",
+  "@profileCodeHow": {
+    "description": "Linked accounts: how to use the code"
+  },
+  "profileCopyCode": "Copy the code",
+  "@profileCopyCode": {
+    "description": "Linked accounts: copy the link code"
+  },
+  "profileHaveCode": "Have a code from your other account? Enter it to link this account to it.",
+  "@profileHaveCode": {
+    "description": "Linked accounts: entering a code"
+  },
+  "profileCodeLabel": "Link code",
+  "@profileCodeLabel": {
+    "description": "Linked accounts: the code field"
+  },
+  "profileLinkThis": "Link this account",
+  "@profileLinkThis": {
+    "description": "Linked accounts: join the code's profile"
+  },
+  "profileLinkThisNote": "This account then uses the other account's profile and captures.",
+  "@profileLinkThisNote": {
+    "description": "Linked accounts: what joining does"
+  },
+  "profileCodeWrong": "That code is wrong, already used or expired.",
+  "@profileCodeWrong": {
+    "description": "Linked accounts: a bad code"
+  },
+  "profileCantLink": "This account can't be linked: it has captures in the cloud of its own, or other accounts linked to it.",
+  "@profileCantLink": {
+    "description": "Linked accounts: linking refused"
+  },
+  "profileTooManyTries": "Too many tries: wait a minute and try again.",
+  "@profileTooManyTries": {
+    "description": "Linked accounts: throttled"
+  },
+  "profileLinkFailed": "Couldn't link: {error}",
+  "@profileLinkFailed": {
+    "description": "Linked accounts: another error",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "profileLinked": "Linked: this account now uses the profile {profileId}",
+  "@profileLinked": {
+    "description": "Linked accounts: joined a profile",
+    "placeholders": {
+      "profileId": {
+        "type": "String"
+      }
+    }
+  },
+  "profileId": "Profile: {profileId}",
+  "@profileId": {
+    "description": "Profile tab: the profile's ID",
+    "placeholders": {
+      "profileId": {
+        "type": "String"
+      }
+    }
+  },
+  "profileRoles": "Roles: {roles}",
+  "@profileRoles": {
+    "description": "Profile tab: every linked account's roles",
+    "placeholders": {
+      "roles": {
+        "type": "String"
+      }
+    }
+  },
+  "profileNotOwner": "Only the profile's owner can delete it. To leave it, unlink this account under Linked accounts.",
+  "@profileNotOwner": {
+    "description": "Profile tab: a linked (not owner) account can't delete"
+  },
+  "accountSignedInWith": "Signed in with {provider}",
+  "@accountSignedInWith": {
+    "description": "Profile tab: the sign-in's provider",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "accountDeleteNote": "Deletes your events in the cloud and on this device, and your shares.",
+  "@accountDeleteNote": {
+    "description": "Profile tab: under Delete account"
   }
 }

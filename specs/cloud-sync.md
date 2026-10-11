@@ -143,8 +143,10 @@ quietly for a new one.
 ## What's synced, and where
 
 Everything is under the user's **Cognito identity ID**
-(`us-east-1:<uuid>`), the same on every device for an account (a Google
-account, or an Apple ID: each its own identity), in the user-data bucket:
+(`us-east-1:<uuid>`), in the user-data bucket: their
+[profile](profiles.md)'s, the same on every device and for every account
+linked to the profile (a Google account, an Apple ID). Builds without
+the share API (local web builds) use the sign-in's own identity instead:
 
 | Object | Content |
 |---|---|
@@ -303,7 +305,15 @@ the deploy uploads only `index.html` today).
 
 ## Credentials and errors
 
-- **Credentials** (`CognitoCredentials`): the enhanced flow, `GetId` then
+- **Credentials** (`ProfileCredentials`, in builds with the share API):
+  the share API's `POST /profile/credentials` vouches for the profile
+  (a Cognito OpenID token for its developer identity), then
+  `GetCredentialsForIdentity` with `Logins:
+  {"cognito-identity.amazonaws.com": <that token>}`; reused like the
+  others ([profiles](profiles.md#storage)). When the same user's folder
+  changes, their own captures on the device move to the new one.
+- **Credentials** (`CognitoCredentials`, without the share API): the
+  enhanced flow, `GetId` then
   `GetCredentialsForIdentity`, with `Logins: {"accounts.google.com":
   <ID token>}`, or `{"appleid.apple.com": <ID token>}` for Apple's (the
   key follows the token's issuer). Neither call is signed: the token is

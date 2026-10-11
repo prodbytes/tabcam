@@ -52,6 +52,15 @@ digest="$(aws ecr describe-images --region "$region" --repository-name tabscan-o
 
 secret_arn="$(aws secretsmanager describe-secret --region "$region" --secret-id "$secret_name" \
   --query ARN --output text)"
+# The share API's profiles, when it's deployed: folders and addresses by
+# profile.
+share_output() {
+  aws cloudformation describe-stacks --region "$region" --stack-name tabscan-share-api \
+    --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text 2>/dev/null || true
+}
+profiles_table="$(share_output ProfilesTable)"; subjects_table="$(share_output SubjectsTable)"
+[[ "$profiles_table" =~ ^[A-Za-z0-9_.-]{3,255}$ && "$profiles_table" != None ]] || profiles_table=""
+[[ "$subjects_table" =~ ^[A-Za-z0-9_.-]{3,255}$ && "$subjects_table" != None ]] || subjects_table=""
 anthropic_secret="${ANTHROPIC_KEY_SECRET:-tabscan/anthropic-api-key}"
 if ! anthropic_arn="$(aws secretsmanager describe-secret --region "$region" \
     --secret-id "$anthropic_secret" --query ARN --output text 2>/dev/null)"; then
@@ -72,6 +81,8 @@ aws cloudformation deploy --region "$region" --stack-name tabscan-ocr \
     "IdentityPoolId=${TABSCANNER_COGNITO_IDENTITY_POOL_ID:-}" \
     "RbacrTokenSecretArn=$secret_arn" \
     "AnthropicKeySecretArn=$anthropic_arn" \
+    "ProfilesTableName=$profiles_table" \
+    "SubjectsTableName=$subjects_table" \
     "Version=$version"
 
 url="$(aws cloudformation describe-stacks --region "$region" --stack-name tabscan-ocr \
