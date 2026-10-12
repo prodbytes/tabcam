@@ -110,6 +110,84 @@ void main() {
       expect(tab.split('\n').take(2), ['  Am    G', 'e|-0-----3-|']);
     });
 
+    group('with the characters\' positions', () {
+      // Letters 10 px wide from x = 100, a line every 10 px. OCR reads
+      // [truth] without the characters at [drop], but where each is.
+      OcrLine seen(String truth, double top, {Set<int> drop = const {}}) {
+        final kept = [
+          for (var i = 0; i < truth.length; i++)
+            if (!drop.contains(i)) i,
+        ];
+        return OcrLine(
+          kept.map((i) => truth[i]).join(),
+          chars: [
+            for (final i in kept)
+              OcrChar(truth[i], 100 + i * 10.0, 110 + i * 10.0),
+          ],
+          left: 100,
+          right: 100 + truth.length * 10.0,
+          top: top,
+          bottom: top + 10,
+        );
+      }
+
+      test('keeps a chord\'s notes in one column where OCR dropped dashes', () {
+        final tab = asciiTab([
+          seen('e|-0-----3-|', 0),
+          seen('B|-1-----0-|', 10, drop: {4, 5, 6}),
+          seen('G|-2-----0-|', 20, drop: {2}),
+          seen('D|-2-----0-|', 30),
+          seen('A|-0-----2-|', 40, drop: {5, 6}),
+          seen('E|-------3-|', 50, drop: {2, 3, 4, 5}),
+        ])!;
+        expect(
+          tab,
+          [
+            'e|-0-----3-|',
+            'B|-1-----0-|',
+            'G|-2-----0-|',
+            'D|-2-----0-|',
+            'A|-0-----2-|',
+            'E|-------3-|',
+          ].join('\n'),
+        );
+      });
+
+      test('ends every line together', () {
+        final tab = asciiTab([
+          seen('e|-0-----3---|', 0),
+          seen('B|-1-----0', 10),
+          seen('G|-2-----0---|', 20),
+          seen('D|-2-----0-|', 30, drop: {10}),
+        ])!;
+        final lines = tab.split('\n');
+        expect(lines.map((l) => l.length).toSet(), {lines.first.length});
+        expect(lines.every((l) => l.endsWith('|')), isTrue);
+        expect(lines.first.indexOf('3'), 9);
+        expect(lines.skip(1).map((l) => l.indexOf('0', 4)), [9, 9, 9]);
+      });
+
+      test('puts chord names at the grid\'s columns', () {
+        final tab = asciiTab([
+          const OcrLine(
+            'Am G',
+            words: [OcrWord('Am', 130), OcrWord('G', 190)],
+            left: 130,
+            right: 200,
+            top: -10,
+            bottom: 0,
+          ),
+          seen('e|-0-----3-|', 0),
+          seen('B|-1-----0-|', 10, drop: {4, 5}),
+          seen('G|-2-----0-|', 20),
+          seen('D|-2-----0-|', 30),
+          seen('A|-0-----2-|', 40),
+          seen('E|-------3-|', 50),
+        ])!;
+        expect(tab.split('\n').take(2), ['   Am    G', 'e|-0-----3-|']);
+      });
+    });
+
     test('is null when there is no tab', () {
       expect(_ascii(['Intro', 'Play it slowly', '1, 2, 3, 4']), isNull);
     });

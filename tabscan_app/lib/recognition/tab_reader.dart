@@ -68,6 +68,7 @@ class TabReader {
                 for (final e in line.elements)
                   OcrWord(e.text, e.boundingBox.left),
               ],
+              chars: [for (final e in line.elements) ..._chars(e)],
               left: line.boundingBox.left,
               right: line.boundingBox.right,
               top: line.boundingBox.top,
@@ -98,6 +99,28 @@ class TabReader {
   }
 
   static void _log(String message) => debugPrint('TabScan: read tab: $message');
+
+  /// Where each of an element's characters is: its symbols' boxes, or,
+  /// when ML Kit gives none, the element's box shared evenly between them.
+  static List<OcrChar> _chars(TextElement element) {
+    final symbols = [
+      for (final s in element.symbols)
+        if (s.text.trim().isNotEmpty) s,
+    ];
+    final text = element.text.replaceAll(RegExp(r'\s'), '');
+    if (symbols.map((s) => s.text).join() == text) {
+      return [
+        for (final s in symbols)
+          OcrChar(s.text, s.boundingBox.left, s.boundingBox.right),
+      ];
+    }
+    final box = element.boundingBox;
+    final step = box.width / (text.isEmpty ? 1 : text.length);
+    return [
+      for (var i = 0; i < text.length; i++)
+        OcrChar(text[i], box.left + i * step, box.left + (i + 1) * step),
+    ];
+  }
 
   /// Fret numbers, one per word: ML Kit reads digits on different staff
   /// lines as different words, and a two-digit fret as one.
