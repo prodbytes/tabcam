@@ -622,3 +622,17 @@ spec.
     capture's **Add** menu now has **Document** right after Scan pages, the
     menu scrolls (five items overflowed a small phone), and a release
     puts it all on the web ([scanning](scanning.md#adding-to-an-event)).
+
+## 2026-10-12
+
+68. **Embed a YouTube player when the link added is for a YouTube video;
+    if the video can't be seen for any reason, just show the link and
+    open it in a new tab.** A link page for a YouTube video gets
+    **Play**, which plays it in YouTube's embedded player
+    (`youtube_player_iframe`, youtube-nocookie.com) on the web, Android
+    and iOS, from the link's start time. Any failure (YouTube's error,
+    the page not loading, a 20-second timeout, no web view) goes back to
+    the link card, which says the video can't be played here and opens
+    it in a new tab ([event screen](event-screen.md),
+    [platforms](platforms.md)). The privacy policy names YouTube, which
+    is contacted only on Play ([privacy](privacy.md)).

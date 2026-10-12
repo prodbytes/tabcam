@@ -5,14 +5,38 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../library/capture_event.dart';
 import '../l10n/language.dart';
+import 'youtube_player_view.dart';
 
 /// A link page on the event screen: its title and address, with Open (in
 /// a browser inside the app on Android and iOS, in a new tab on the web)
-/// and Copy.
-class LinkPage extends StatelessWidget {
+/// and Copy. A YouTube video's link also has Play, which plays it here in
+/// YouTube's player; if it can't play here, for any reason, the page goes
+/// back to the link, saying so.
+class LinkPage extends StatefulWidget {
   const LinkPage({super.key, required this.page});
 
   final EventPage page;
+
+  @override
+  State<LinkPage> createState() => _LinkPageState();
+}
+
+class _LinkPageState extends State<LinkPage> {
+  YouTubeVideo? get _video =>
+      canEmbedYouTube ? youTubeVideo(widget.page.url!) : null;
+  bool _playing = false;
+  bool _cantPlay = false;
+
+  @override
+  void didUpdateWidget(LinkPage old) {
+    super.didUpdateWidget(old);
+    if (old.page.url != widget.page.url) {
+      _playing = false;
+      _cantPlay = false;
+    }
+  }
+
+  EventPage get page => widget.page;
 
   Future<void> _open(BuildContext context) async {
     final url = page.url!;
@@ -45,10 +69,59 @@ class LinkPage extends StatelessWidget {
     }
   }
 
+  Widget _buttons(BuildContext context, {required bool play}) => Wrap(
+    spacing: 12,
+    runSpacing: 8,
+    alignment: WrapAlignment.center,
+    children: [
+      if (play)
+        FilledButton.icon(
+          onPressed: () => setState(() => _playing = true),
+          icon: const Icon(Icons.play_arrow),
+          label: Text(context.l10n.textViewPlay),
+        ),
+      if (play)
+        OutlinedButton.icon(
+          onPressed: () => _open(context),
+          icon: const Icon(Icons.open_in_new),
+          label: Text(context.l10n.textViewOpen),
+        )
+      else
+        FilledButton.icon(
+          onPressed: () => _open(context),
+          icon: const Icon(Icons.open_in_new),
+          label: Text(context.l10n.textViewOpen),
+        ),
+      OutlinedButton.icon(
+        onPressed: () => _copy(context),
+        icon: const Icon(Icons.copy),
+        label: Text(context.l10n.textViewCopy),
+      ),
+    ],
+  );
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final url = page.url!;
+    final video = _cantPlay ? null : _video;
+    if (video != null && _playing) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: YouTubePlayerView(
+                video: video,
+                onFailed: () => setState(() => _cantPlay = true),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buttons(context, play: false),
+          ],
+        ),
+      );
+    }
     return Center(
       child: Card(
         child: Padding(
@@ -56,7 +129,11 @@ class LinkPage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.link, size: 56, color: theme.colorScheme.primary),
+              Icon(
+                video != null ? Icons.smart_display : Icons.link,
+                size: 56,
+                color: theme.colorScheme.primary,
+              ),
               const SizedBox(height: 12),
               Text(
                 page.title ?? url.host,
@@ -69,24 +146,18 @@ class LinkPage extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodySmall,
               ),
+              if (_cantPlay) ...[
+                const SizedBox(height: 8),
+                Text(
+                  context.l10n.textViewCantPlay,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
-              Wrap(
-                spacing: 12,
-                runSpacing: 8,
-                alignment: WrapAlignment.center,
-                children: [
-                  FilledButton.icon(
-                    onPressed: () => _open(context),
-                    icon: const Icon(Icons.open_in_new),
-                    label: Text(context.l10n.textViewOpen),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () => _copy(context),
-                    icon: const Icon(Icons.copy),
-                    label: Text(context.l10n.textViewCopy),
-                  ),
-                ],
-              ),
+              _buttons(context, play: video != null),
             ],
           ),
         ),

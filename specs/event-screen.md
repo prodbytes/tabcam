@@ -40,6 +40,23 @@ it opens on the pages.
     on Android and iOS (Custom Tabs, Safari View Controller), or where
     there's none, the browser or the app that handles it (such as
     YouTube); on the web, in a new tab. A link that can't open says so.
+  - **YouTube videos**: a link to one (`youtube.com/watch?v=…`,
+    `youtu.be/…`, `/shorts/…`, `/live/…`, `/embed/…`, on any YouTube
+    host) shows the same card with a video icon and **Play** first.
+    Nothing is loaded from YouTube until **Play**: tapped, the card
+    becomes YouTube's embedded player (`youtube_player_iframe`, in the
+    privacy-enhanced youtube-nocookie.com mode), playing from the link's
+    start time (`t=` / `start=`, as `90`, `90s` or `1m30s`), with
+    **Open** and **Copy** under it. YouTube's controls are in the app's
+    language; captions follow the viewer's YouTube setting; related
+    videos at the end are from the same channel; full screen on the web
+    only. If the video can't play here for any reason (YouTube's error,
+    such as the video not allowing embedding or not found; the player
+    page not loading; no player within 20 seconds; no web view), the
+    page goes back to the link card, saying "This video can't be played
+    here", without **Play**: **Open** opens it in a new tab (on Android
+    and iOS, the browser inside the app, as for any link). Only the web,
+    Android and iOS embed; elsewhere it's a plain link.
 
   Under the pages, "2 / 5". With the images [hidden](hidden-images.md),
   the pages are the text tab (its **Open** goes to the Text view), then
