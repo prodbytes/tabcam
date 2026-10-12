@@ -578,3 +578,9 @@ spec.
     Existing users got new identity IDs (nothing was stored yet). Android
     clients are to add to the list ([cloud sync](cloud-sync.md#googles-token),
     [app stores](app-stores.md), [tabscan_infra](../tabscan_infra/README.md)).
+64. **In the capture view, where there are the Scan, Photos, Files and Link
+    options, add a Document option for PDFs, first in the Add list; leave
+    Scan as is.** Capture's Add list starts with **Document** ("PDF
+    files"), which picks PDFs only and makes an event of them, like Files;
+    Scan is unchanged. In English, Spanish and Portuguese
+    ([navigation](navigation.md#capture)).

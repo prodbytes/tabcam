@@ -1131,4 +1131,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String accountPrivateEmail(String provider) {
     return 'ID $provider (e-mail privado)';
   }
+
+  @override
+  String get homeAddDocument => 'Documento';
+
+  @override
+  String get homeAddDocumentDetail => 'Arquivos PDF';
 }

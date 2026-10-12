@@ -1851,6 +1851,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{provider} ID (private email)'**
   String accountPrivateEmail(String provider);
+
+  /// Capture tab: add PDF documents (first in Add)
+  ///
+  /// In en, this message translates to:
+  /// **'Document'**
+  String get homeAddDocument;
+
+  /// Capture tab: what Document adds
+  ///
+  /// In en, this message translates to:
+  /// **'PDF files'**
+  String get homeAddDocumentDetail;
 }
 
 class _AppLocalizationsDelegate

@@ -1482,5 +1482,13 @@
         "type": "String"
       }
     }
+  },
+  "homeAddDocument": "Document",
+  "@homeAddDocument": {
+    "description": "Capture tab: add PDF documents (first in Add)"
+  },
+  "homeAddDocumentDetail": "PDF files",
+  "@homeAddDocumentDetail": {
+    "description": "Capture tab: what Document adds"
   }
 }

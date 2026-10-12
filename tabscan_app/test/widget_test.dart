@@ -27,9 +27,14 @@ void main() {
     await tester.tap(find.descendant(of: bar, matching: find.text('Capture')));
     await tester.pumpAndSettle();
     expect(find.text('Scan'), findsOneWidget);
-    for (final add in ['Photos & videos', 'Files', 'Link']) {
+    // Document (PDFs) first in Add, then the others, in this order.
+    final adds = ['Document', 'Photos & videos', 'Files', 'Link'];
+    for (final add in adds) {
       expect(find.text(add), findsOneWidget);
     }
+    final ys = [for (final add in adds) tester.getTopLeft(find.text(add)).dy];
+    expect(ys, [...ys]..sort());
+    expect(find.text('PDF files'), findsOneWidget);
 
     await tester.tap(find.descendant(of: bar, matching: find.text('Profile')));
     await tester.pumpAndSettle();
@@ -43,6 +48,8 @@ void main() {
     final library = await empty();
     await tester.pumpWidget(TabScanApp(library: library));
     await tester.tap(find.text('Capture'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Link'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Link'));
     await tester.pumpAndSettle();

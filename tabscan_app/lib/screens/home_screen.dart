@@ -208,11 +208,9 @@ class _HomeScreenState extends State<HomeScreen> {
         return pages.isEmpty ? null : library.create(pages);
       });
 
-  Future<void> _addMedia({required bool files}) =>
+  Future<void> _addMedia(Future<MediaPick> Function() picker) =>
       _capture((l10n, e) => l10n.homeAddFailed(e), () async {
-        final pick = files
-            ? await MediaSource.files()
-            : await MediaSource.library();
+        final pick = await picker();
         if (pick.skipped > 0 && mounted) {
           _snack(context.l10n.homeSkipped(pick.skipped));
         }
@@ -255,8 +253,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           CaptureView(
             onScan: _scan,
-            onPhotos: () => _addMedia(files: false),
-            onFiles: () => _addMedia(files: true),
+            onDocuments: () => _addMedia(MediaSource.documents),
+            onPhotos: () => _addMedia(MediaSource.library),
+            onFiles: () => _addMedia(MediaSource.files),
             onLink: _addLink,
           ),
           ProfileView(auth: widget.auth, sync: widget.sync, ocr: widget.ocr),
@@ -387,12 +386,14 @@ class CaptureView extends StatelessWidget {
   const CaptureView({
     super.key,
     required this.onScan,
+    required this.onDocuments,
     required this.onPhotos,
     required this.onFiles,
     required this.onLink,
   });
 
   final VoidCallback onScan;
+  final VoidCallback onDocuments;
   final VoidCallback onPhotos;
   final VoidCallback onFiles;
   final VoidCallback onLink;
@@ -429,6 +430,13 @@ class CaptureView extends StatelessWidget {
                 Text(l10n.homeAdd, style: theme.textTheme.titleMedium),
                 const SizedBox(height: 8),
                 _AddTile(
+                  key: const Key('add-document'),
+                  icon: Icons.picture_as_pdf_outlined,
+                  title: l10n.homeAddDocument,
+                  detail: l10n.homeAddDocumentDetail,
+                  onTap: onDocuments,
+                ),
+                _AddTile(
                   icon: Icons.photo_library_outlined,
                   title: l10n.homeAddPhotos,
                   detail: l10n.homeAddPhotosDetail,
@@ -457,6 +465,7 @@ class CaptureView extends StatelessWidget {
 
 class _AddTile extends StatelessWidget {
   const _AddTile({
+    super.key,
     required this.icon,
     required this.title,
     required this.detail,

@@ -290,5 +290,7 @@
   "accountAppleSignInFailed": "Não foi possível iniciar sessão com a Apple",
   "accountAppleSignInExpired": "Sua sessão da Apple expirou: entre novamente.",
   "accountAppleUnavailable": "Iniciar sessão com a Apple não está disponível neste dispositivo.",
-  "accountPrivateEmail": "ID {provider} (e-mail privado)"
+  "accountPrivateEmail": "ID {provider} (e-mail privado)",
+  "homeAddDocument": "Documento",
+  "homeAddDocumentDetail": "Arquivos PDF"
 }
