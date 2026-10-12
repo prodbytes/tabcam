@@ -1102,6 +1102,93 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get profileLinkedAccounts => 'Linked accounts';
+
+  @override
+  String get profileLinkedIntro =>
+      'Any of these accounts reaches the same captures, and the profile has all their roles.';
+
+  @override
+  String get profileOwner => 'Owner';
+
+  @override
+  String get profileThisAccount => 'This account';
+
+  @override
+  String get profileUnlink => 'Unlink';
+
+  @override
+  String get profileLinkAnother => 'Link another account';
+
+  @override
+  String get profileGetCode => 'Get a link code';
+
+  @override
+  String get profileCodeHow =>
+      'Within 10 minutes, sign in with the other account and enter this code under Linked accounts.';
+
+  @override
+  String get profileCopyCode => 'Copy the code';
+
+  @override
+  String get profileHaveCode =>
+      'Have a code from your other account? Enter it to link this account to it.';
+
+  @override
+  String get profileCodeLabel => 'Link code';
+
+  @override
+  String get profileLinkThis => 'Link this account';
+
+  @override
+  String get profileLinkThisNote =>
+      'This account then uses the other account\'s profile and captures.';
+
+  @override
+  String get profileCodeWrong => 'That code is wrong, already used or expired.';
+
+  @override
+  String get profileCantLink =>
+      'This account can\'t be linked: it has captures in the cloud of its own, or other accounts linked to it.';
+
+  @override
+  String get profileTooManyTries =>
+      'Too many tries: wait a minute and try again.';
+
+  @override
+  String profileLinkFailed(String error) {
+    return 'Couldn\'t link: $error';
+  }
+
+  @override
+  String profileLinked(String profileId) {
+    return 'Linked: this account now uses the profile $profileId';
+  }
+
+  @override
+  String profileId(String profileId) {
+    return 'Profile: $profileId';
+  }
+
+  @override
+  String profileRoles(String roles) {
+    return 'Roles: $roles';
+  }
+
+  @override
+  String get profileNotOwner =>
+      'Only the profile\'s owner can delete it. To leave it, unlink this account under Linked accounts.';
+
+  @override
+  String accountSignedInWith(String provider) {
+    return 'Signed in with $provider';
+  }
+
+  @override
+  String get accountDeleteNote =>
+      'Deletes your events in the cloud and on this device, and your shares.';
+
+  @override
   String get homeAddDocument => 'Document';
 
   @override

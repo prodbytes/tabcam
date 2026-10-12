@@ -84,6 +84,10 @@ class Services:
         return self._get("corrector", Corrector)
 
     @property
+    def profiles(self):
+        return self._get("profiles", ProfileDirectory)
+
+    @property
     def cognito(self):
         from .auth import CognitoIdentities
         return self._get("cognito", CognitoIdentities)
@@ -92,20 +96,57 @@ class Services:
     ocr_function = property(lambda self: os.environ["OCR_FUNCTION"])
 
 
+class ProfileDirectory:
+    """The share API's profiles (read only): a sign-in's profile, its
+    folder (Cognito identity) and its addresses. Without the tables set up
+    (PROFILES_TABLE, SUBJECTS_TABLE), no profiles: each sign-in is its own
+    identity, as before profiles."""
+
+    def __init__(self, profiles=None, subjects=None):
+        names = os.environ.get("PROFILES_TABLE"), os.environ.get("SUBJECTS_TABLE")
+        if profiles is None and all(names):
+            import boto3
+            db = boto3.resource("dynamodb")
+            profiles, subjects = db.Table(names[0]), db.Table(names[1])
+        self.profiles, self.subjects = profiles, subjects
+
+    def of(self, subject):
+        """(identity ID or None, addresses) of the subject's profile, or
+        None when it has none (yet)."""
+        if self.subjects is None:
+            return None
+        link = self.subjects.get_item(Key={"subject": subject}).get("Item")
+        if link is None:
+            return None
+        profile = self.profiles.get_item(Key={"id": link["profileId"]}).get("Item") or {}
+        linked = self.subjects.query(
+            IndexName="byProfile", KeyConditionExpression="#p = :p",
+            ExpressionAttributeNames={"#p": "profileId"},
+            ExpressionAttributeValues={":p": link["profileId"]})["Items"]
+        emails = sorted({i["email"] for i in linked if i.get("email")})
+        return profile.get("identityId"), emails
+
+
 class Accounts:
-    """Identity ID -> verified e-mail, in DynamoDB. Only /account and
-    /transcribe write it, from a checked ID token."""
+    """Identity ID -> verified e-mail addresses (a profile's), in DynamoDB.
+    Only /account and /transcribe write it, from a checked ID token."""
 
     def __init__(self, table=None):
         import boto3
         self.table = table or boto3.resource("dynamodb").Table(os.environ["ACCOUNTS_TABLE"])
 
-    def put(self, identity, email):
-        self.table.put_item(Item={"identityId": identity, "email": email, "updatedAt": _now()})
+    def put(self, identity, emails):
+        emails = [emails] if isinstance(emails, str) else list(emails)
+        self.table.put_item(Item={"identityId": identity, "email": emails[0], "emails": emails,
+                                  "updatedAt": _now()})
+
+    def emails(self, identity):
+        item = self.table.get_item(Key={"identityId": identity}).get("Item") or {}
+        return list(item.get("emails") or ([item["email"]] if item.get("email") else []))
 
     def email(self, identity):
-        item = self.table.get_item(Key={"identityId": identity}).get("Item")
-        return item and item.get("email")
+        found = self.emails(identity)
+        return found[0] if found else None
 
 
 services = Services()
@@ -142,11 +183,11 @@ def _on_s3(event):
         return "deleted"
     if detail.get("object", {}).get("size", 0) > MAX_BYTES:
         return "too large"
-    email = services.accounts.email(page.identity)
-    if not email:
+    emails = services.accounts.emails(page.identity)
+    if not emails:
         log("unknown identity: the app hasn't called /account", identity=page.identity)
         return "not premium"
-    if not services.rbacr.check(email).premium:
+    if not _premium(emails).premium:
         return "not premium"
     _queue(page)
     return "queued"
@@ -190,17 +231,25 @@ def _on_http(event, method, path, request):
         return _reply(401, {"error": "sign in"})
     token = auth[7:].strip()
     try:
-        email, login = services.tokens.verify(token)
-        identity = services.cognito.identity(token, login)
+        email, login, subject = services.tokens.verify_subject(token)
+        # The sign-in's profile: its folder, and every linked address.
+        found = services.profiles.of(subject)
+        if found is None:
+            identity, emails = services.cognito.identity(token, login), [email]
+        else:
+            identity, emails = found
+            emails = emails or [email]
     except Unsupported as e:
         request["unauthorized"] = str(e)
         return _reply(403, {"error": "google sign-in needed"})
     except Unauthorized as e:
         request["unauthorized"] = str(e)
         return _reply(401, {"error": "sign in again"})
-    services.accounts.put(identity, email)
-    answer = services.rbacr.check(email)
-    request.update(identity=identity, premium=answer.premium, checked=answer.checked)
+    if identity:
+        services.accounts.put(identity, emails)
+    answer = _premium(emails)
+    request.update(identity=identity, premium=answer.premium, checked=answer.checked,
+                   addresses=len(emails))
     if path == "/account":
         return _reply(200, {
             "email": email,
@@ -224,7 +273,19 @@ def _on_http(event, method, path, request):
     request["event"] = event_id
     if path == "/autocorrect":
         return _autocorrect(body, request)
+    if not identity:  # a profile whose folder isn't made yet: nothing synced
+        return _reply(200, {"queued": 0})
     return _reply(200, {"queued": _transcribe_missing(identity, event_id)})
+
+
+def _premium(emails):
+    """Premium if any of the addresses is; checked only if every "no" was."""
+    from .premium import Answer
+    answers = [services.rbacr.check(e) for e in emails]
+    for a in answers:
+        if a.premium:
+            return a
+    return Answer(False, None, all(a.checked for a in answers))
 
 
 def _autocorrect(body, request):

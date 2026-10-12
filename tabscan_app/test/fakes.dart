@@ -112,7 +112,8 @@ class FakeBucket implements ObjectStore {
 class FakeCredentials implements CredentialSource {
   FakeCredentials([this.identityId = 'us-east-1:me']);
 
-  final String identityId;
+  /// The folder: changes when the user's sign-in joins another profile.
+  String identityId;
   int sessions = 0;
   int clears = 0;
   Object? error;
@@ -250,6 +251,69 @@ class FakeShareApi extends ShareApi {
   @override
   Future<void> leave(String token, String owner, String captureId) async =>
       grantsBy['$owner/$captureId']?.remove(email);
+
+  /// The user's profile, as the API answers it; [linkTo] the profile a
+  /// good code links to, and [linkError] what a link throws instead.
+  Profile profileNow = const Profile(
+    id: 'brave_calm_otter',
+    accounts: [
+      ProfileAccount(
+        id: 'a1',
+        email: 'ana@example.com',
+        provider: 'google',
+        owner: true,
+        you: true,
+      ),
+    ],
+    roles: ['free'],
+  );
+  Profile? linkTo;
+  Object? linkError;
+  final List<String> calls = [];
+
+  @override
+  Future<Profile> profile(String token) async {
+    calls.add('profile');
+    return profileNow;
+  }
+
+  @override
+  Future<LinkCode> linkCode(String token) async {
+    calls.add('link-code');
+    return LinkCode('ABCD-EFGH', DateTime(2030));
+  }
+
+  @override
+  Future<Profile> link(String token, String code) async {
+    calls.add('link $code');
+    if (linkError case final e?) throw e;
+    return profileNow = linkTo!;
+  }
+
+  @override
+  Future<Profile?> unlink(String token, String id) async {
+    calls.add('unlink $id');
+    final left = profileNow.accounts.firstWhere((a) => a.id == id);
+    profileNow = Profile(
+      id: profileNow.id,
+      accounts: [
+        for (final a in profileNow.accounts)
+          if (a.id != id) a,
+      ],
+      roles: profileNow.roles,
+    );
+    return left.you ? null : profileNow;
+  }
+
+  @override
+  Future<ProfileToken> profileToken(String token) async {
+    calls.add('credentials');
+    return ProfileToken(
+      profileId: profileNow.id,
+      identityId: identity,
+      token: 'openid-${profileNow.id}',
+    );
+  }
 
   /// Identities whose accounts were deleted.
   final List<String> deletedAccounts = [];

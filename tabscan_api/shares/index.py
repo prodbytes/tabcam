@@ -16,23 +16,35 @@ identity (their folder) comes from that token too (GetId, with the token
 under its issuer's Logins key: Google and Apple sign-ins are different
 identities).
 
+Every sign-in belongs to a profile (profiles.py), created the first time
+it's seen: the profile's Cognito identity (a developer identity) is the
+folder, shared by every sign-in linked to it, and its addresses are all
+those sign-ins' verified ones.
+
 Routes (each also under /apple, for Apple's tokens):
+  GET    /profile                                 my profile: ID, accounts, roles
+  POST   /profile/link-code                       a code to link another sign-in
+  POST   /profile/link                            {code}: join that profile
+  POST   /profile/unlink                          {id}: unlink an account
+  POST   /profile/credentials                     a Cognito token for its folder
   GET    /shares/{captureId}                      the capture's grants (owner)
   PUT    /shares/{captureId}                      grant {email, role} (owner)
   DELETE /shares/{captureId}?email=               revoke (owner)
   GET    /shared                                  what's shared with me
   DELETE /shared/{owner}/{captureId}              leave a share
   POST   /shared/{owner}/{captureId}/credentials  credentials for it
-  DELETE /account                                 delete what's kept about me
+  DELETE /account                                 delete my profile (its owner)
 
-Every route acts on the caller alone: as an owner, on the Cognito identity
-their token maps to; as a grantee, on their verified address.
+Every route acts on the caller's profile alone: as an owner, on its
+Cognito identity; as a grantee, on its verified addresses.
 """
 
 import json
 import os
 import re
 import time
+
+import profiles as prof
 
 ROLES = ("edit", "read")
 MAX_GRANTS = int(os.environ.get("MAX_GRANTS", "50"))
@@ -46,6 +58,10 @@ GOOGLE = "https://accounts.google.com"
 APPLE = "https://appleid.apple.com"
 PREFIXES = {GOOGLE: "", APPLE: "/apple"}
 LOGINS = {GOOGLE: "accounts.google.com", APPLE: "appleid.apple.com"}
+PROVIDERS = {GOOGLE: "google", APPLE: "apple"}
+# The identity pool's developer provider: a profile's Cognito identity is
+# the developer identity of its ID.
+DEVELOPER = os.environ.get("DEVELOPER_PROVIDER", "login.tabscan.profiles")
 
 
 class ApiError(Exception):
@@ -67,6 +83,13 @@ def _clients():
         "accounts": dynamodb.Table(accounts) if accounts else None,
         "cognito": boto3.client("cognito-identity", region_name=region),
         "sts": boto3.client("sts", region_name=region),
+        "s3": boto3.client("s3", region_name=region),
+        "store": prof.Store(
+            dynamodb.Table(os.environ["PROFILES_TABLE"]),
+            dynamodb.Table(os.environ["SUBJECTS_TABLE"]),
+            dynamodb.Table(os.environ["LINK_CODES_TABLE"]),
+        ),
+        "rbacr": prof.Rbacr(),
     }
 
 
@@ -121,6 +144,11 @@ class Api:
         self.cognito = clients["cognito"]
         self.sts = clients["sts"]
         self.accounts = clients.get("accounts")
+        self.s3 = clients.get("s3")
+        self.store = clients["store"]
+        self.profiles = prof.Profiles(self.store)
+        self.rbacr = clients["rbacr"]
+        self._profile_item = None
         claims = (
             event.get("requestContext", {})
             .get("authorizer", {})
@@ -136,6 +164,11 @@ class Api:
         if claims.get("iss") != issuer:
             raise ApiError(401, "Sign in again")
         self.login = LOGINS[issuer]
+        self.provider = PROVIDERS[issuer]
+        if not claims.get("sub"):
+            raise ApiError(401, "Sign in again")
+        # The sign-in, never the email: an address can change hands.
+        self.subject = f"{issuer}#{claims['sub']}"
         self.route_key = f"{method} {path[len(PREFIXES[issuer]):]}"
         # Only a verified address can be granted, or use a grant. Apple sends
         # email_verified as a string ("true"), Google as a boolean. Apple's
@@ -152,6 +185,11 @@ class Api:
     def route(self):
         route = self.route_key
         handlers = {
+            "GET /profile": self.profile,
+            "POST /profile/link-code": self.link_code,
+            "POST /profile/link": self.link,
+            "POST /profile/unlink": self.unlink,
+            "POST /profile/credentials": self.profile_credentials,
             "GET /shares/{captureId}": self.grants,
             "PUT /shares/{captureId}": self.grant,
             "DELETE /shares/{captureId}": self.revoke,
@@ -173,15 +211,106 @@ class Api:
             raise ApiError(400, "The body isn't a JSON object")
         return body
 
+    # --- the caller's profile ----------------------------------------------
+
+    def _profile(self):
+        if self._profile_item is None:
+            self._profile_item = self.profiles.of(self.subject, self.email, self.provider)
+        return self._profile_item
+
+    def _developer_token(self, profile):
+        """A Cognito OpenID token for the profile's identity (made the first
+        time), and that identity's ID, which is kept on the profile."""
+        kwargs = {
+            "IdentityPoolId": os.environ["IDENTITY_POOL_ID"],
+            "Logins": {DEVELOPER: profile["id"]},
+            "TokenDuration": 3600,
+        }
+        if profile.get("identityId"):
+            kwargs["IdentityId"] = profile["identityId"]
+        result = self.cognito.get_open_id_token_for_developer_identity(**kwargs)
+        if profile.get("identityId") != result["IdentityId"]:
+            profile["identityId"] = result["IdentityId"]
+            self.store.save_profile(profile)
+        return result
+
     def _me(self):
-        """The caller's Cognito identity: their own folder."""
-        header = (self.event.get("headers") or {}).get("authorization", "")
-        token = header[7:] if header.lower().startswith("bearer ") else ""
-        result = self.cognito.get_id(
-            IdentityPoolId=os.environ["IDENTITY_POOL_ID"],
-            Logins={self.login: token},
-        )
-        return result["IdentityId"]
+        """The profile's Cognito identity: its folder."""
+        profile = self._profile()
+        return profile.get("identityId") or self._developer_token(profile)["IdentityId"]
+
+    def _emails(self):
+        """The profile's verified addresses: every linked sign-in's."""
+        return self.profiles.emails(self._profile()["id"]) or [self.email]
+
+    def _view(self, profile):
+        roles, global_roles = self.rbacr.union(self.profiles.emails(profile["id"]))
+        return {
+            "profileId": profile["id"],
+            "accounts": self.profiles.accounts(profile, self.subject),
+            "roles": roles,
+            "globalRoles": global_roles,
+            "premium": "premium" in roles,
+        }
+
+    def profile(self):
+        return self._view(self._profile())
+
+    def profile_credentials(self):
+        profile = self._profile()
+        result = self._developer_token(profile)
+        return {"profileId": profile["id"], "identityId": result["IdentityId"],
+                "token": result["Token"]}
+
+    def link_code(self):
+        profile = self._profile()
+        self._me()  # the profile's identity, settled before anyone joins
+        code, expires = self.store.make_code(profile["id"], self.subject)
+        return {"code": code, "expiresAt": expires}
+
+    def _folder_empty(self, identity):
+        listing = self.s3.list_objects_v2(Bucket=os.environ["BUCKET"], Prefix=f"{identity}/", MaxKeys=1)
+        return not listing.get("Contents")
+
+    def link(self):
+        code = self._body().get("code")
+        target = self.store.peek_code(code)
+        if target is None:
+            raise ApiError(404, "That code is wrong, already used or expired")
+        mine = self._profile()
+        if target == mine["id"]:
+            raise ApiError(409, "This account is in that profile already")
+        owner = mine.get("ownerSubject") == self.subject
+        if owner:
+            # An owner brings nothing along: its profile must be alone and
+            # empty, as nothing is moved between folders.
+            others = [s for s in self.store.linked(mine["id"]) if s["subject"] != self.subject]
+            if others:
+                raise ApiError(409, "Other accounts are linked to this one: unlink them first")
+            if mine.get("identityId") and not self._folder_empty(mine["identityId"]):
+                raise ApiError(409, "This account has captures in the cloud of its own")
+        if self.store.profile(target) is None or not self.store.take_code(code):
+            raise ApiError(404, "That code is wrong, already used or expired")
+        self.store.relink(self.subject, target, self.email, self.provider)
+        if owner:
+            self.store.delete_profile(mine["id"])
+            if mine.get("identityId"):
+                self.cognito.delete_identities(IdentityIdsToDelete=[mine["identityId"]])
+        self._profile_item = self.store.profile(target)
+        return self._view(self._profile_item)
+
+    def unlink(self):
+        account = self._body().get("id")
+        profile = self._profile()
+        for s in self.store.linked(profile["id"]):
+            if prof.account_id(s["subject"]) == account:
+                if s["subject"] == profile.get("ownerSubject"):
+                    raise ApiError(409, "The profile's owner can't be unlinked")
+                self.store.unlink(s["subject"])
+                if s["subject"] == self.subject:
+                    return {"unlinked": True}
+                return self._view(profile)
+        raise ApiError(404, "No such account in this profile")
 
     def _query(self, **kwargs):
         """Every item a query matches, page after page."""
@@ -215,7 +344,7 @@ class Api:
         role = body.get("role", "edit")
         if role not in ROLES:
             raise ApiError(400, "The role is edit or read")
-        if email == self.email:
+        if email in self._emails():
             raise ApiError(400, "That's your own address")
         owner = self._me()
         grants = self._grants_of(owner, capture_id)
@@ -242,12 +371,16 @@ class Api:
         return {"grants": self._grants_of(owner, capture_id)}
 
     def _shared_with_me(self):
-        return self._query(
-            IndexName="byEmail",
-            KeyConditionExpression="#e = :e",
-            ExpressionAttributeNames={"#e": "email"},
-            ExpressionAttributeValues={":e": self.email},
-        )
+        """The grants to any of the profile's addresses."""
+        items = []
+        for email in self._emails():
+            items += self._query(
+                IndexName="byEmail",
+                KeyConditionExpression="#e = :e",
+                ExpressionAttributeNames={"#e": "email"},
+                ExpressionAttributeValues={":e": email},
+            )
+        return items
 
     def shared(self):
         items = self._shared_with_me()
@@ -264,18 +397,25 @@ class Api:
         }
 
     def _my_grant(self):
+        """The grant of a capture to one of the profile's addresses (edit
+        over read, if there are both)."""
         owner = _identity(self.params.get("owner"))
         capture_id = _id(self.params.get("captureId"))
-        item = self.table.get_item(
-            Key={"capture": _key(owner, capture_id), "email": self.email}
-        ).get("Item")
-        return owner, capture_id, item
+        found = None
+        for email in self._emails():
+            item = self.table.get_item(
+                Key={"capture": _key(owner, capture_id), "email": email}
+            ).get("Item")
+            if item is not None and (found is None or item["role"] == "edit"):
+                found = item
+        return owner, capture_id, found
 
     def leave(self):
-        owner, capture_id, _ = self._my_grant()
-        self.table.delete_item(
-            Key={"capture": _key(owner, capture_id), "email": self.email}
-        )
+        owner, capture_id = _identity(self.params.get("owner")), _id(self.params.get("captureId"))
+        for email in self._emails():
+            self.table.delete_item(
+                Key={"capture": _key(owner, capture_id), "email": email}
+            )
         return {}
 
     def credentials(self):
@@ -321,12 +461,15 @@ class Api:
         }
 
     def delete_account(self):
-        """Deletes what's kept about the caller: the grants of their
-        captures, the grants to their address, their record in the cloud OCR
-        service's accounts table, and last their Cognito identity, so a
-        retry after a failure still finds the same identity. Their folder's
-        objects are the app's to delete (with the identity's credentials),
-        before this."""
+        """Deletes the caller's profile: the grants of its captures, the
+        grants to its addresses, its record in the cloud OCR service's
+        accounts table, its linked sign-ins, and last its Cognito identity,
+        so a retry after a failure still finds the same identity. Only its
+        owner may; its folder's objects are the app's to delete (with the
+        profile's credentials), before this."""
+        profile = self._profile()
+        if profile.get("ownerSubject") != self.subject:
+            raise ApiError(409, "Only the profile's owner can delete it: unlink this account instead")
         owner = self._me()
         made = self._query(
             IndexName="byOwner",
@@ -336,7 +479,8 @@ class Api:
         )
         # The keys say whose a grant is: never delete anyone else's.
         made = [i for i in made if i["capture"].startswith(f"{owner}#")]
-        to_me = [i for i in self._shared_with_me() if i["email"] == self.email]
+        emails = set(self._emails())
+        to_me = [i for i in self._shared_with_me() if i["email"] in emails]
         for item in made + to_me:
             self.table.delete_item(
                 Key={"capture": item["capture"], "email": item["email"]}
@@ -346,4 +490,7 @@ class Api:
         result = self.cognito.delete_identities(IdentityIdsToDelete=[owner])
         if result.get("UnprocessedIdentityIds"):
             raise ApiError(502, "Couldn't delete your identity: try again")
+        for s in self.store.linked(profile["id"]):
+            self.store.unlink(s["subject"])
+        self.store.delete_profile(profile["id"])
         return {"grantsMade": len(made), "grantsToMe": len(to_me)}

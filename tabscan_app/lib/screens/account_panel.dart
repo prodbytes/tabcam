@@ -5,7 +5,9 @@ import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
 import '../cloud/ocr_api.dart';
 import '../l10n/language.dart';
+import '../cloud/profile_service.dart';
 import 'delete_account.dart';
+import 'linked_accounts_sheet.dart';
 import 'premium_card.dart';
 import 'sign_in_buttons.dart';
 
@@ -103,13 +105,15 @@ class AccountPanel extends StatelessWidget {
           subtitle: switch ([
             if (user.label != user.email) user.email,
             if (user.provider != AuthProvider.google)
-              'Signed in with ${user.provider.label}',
+              l10n.accountSignedInWith(user.provider.label),
           ]) {
             [] => null,
             final lines => Text(lines.join('\n')),
           },
         ),
-        if (ocr case final ocr?)
+        if (sync.profiles case final profiles?)
+          _ProfileLines(profiles: profiles)
+        else if (ocr case final ocr?)
           if (roleLabel(ocr, l10n) case final role?)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -151,22 +155,80 @@ class AccountPanel extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 16),
-        TextButton.icon(
-          style: TextButton.styleFrom(
-            foregroundColor: theme.colorScheme.error,
-            padding: EdgeInsets.zero,
+        // Only a profile's owner deletes it: the others unlink.
+        if (sync.profiles?.profile case final p? when !p.youOwn)
+          Text(l10n.profileNotOwner, style: theme.textTheme.bodySmall)
+        else ...[
+          TextButton.icon(
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.error,
+              padding: EdgeInsets.zero,
+            ),
+            onPressed: () => deleteAccount(
+              context,
+              sync,
+              premium: ocr != null,
+              store: store,
+            ),
+            icon: const Icon(Icons.delete_forever_outlined),
+            label: Text(l10n.deleteAccountButton),
           ),
-          onPressed: () =>
-              deleteAccount(context, sync, premium: ocr != null, store: store),
-          icon: const Icon(Icons.delete_forever_outlined),
-          label: Text(l10n.deleteAccountButton),
-        ),
-        Text(
-          'Deletes your events in the cloud and on this device, and your '
-          'shares.',
-          style: theme.textTheme.bodySmall,
-        ),
+          Text(l10n.accountDeleteNote, style: theme.textTheme.bodySmall),
+        ],
       ],
+    );
+  }
+}
+
+/// The profile: its ID, its roles (every linked account's), and
+/// **Linked accounts**.
+class _ProfileLines extends StatelessWidget {
+  const _ProfileLines({required this.profiles});
+
+  final ProfileService profiles;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return ListenableBuilder(
+      listenable: profiles,
+      builder: (context, _) {
+        final p = profiles.profile;
+        if (p == null) {
+          return profiles.error == null
+              ? const SizedBox.shrink()
+              : Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    profiles.error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                );
+        }
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SelectableText(l10n.profileId(p.id), key: const Key('profile')),
+              Text(
+                l10n.profileRoles(p.roles.join(', ')),
+                key: const Key('role'),
+              ),
+              TextButton.icon(
+                style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                onPressed: () => showLinkedAccounts(context, profiles),
+                icon: const Icon(Icons.link),
+                label: Text(
+                  '${l10n.profileLinkedAccounts} (${p.accounts.length})',
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

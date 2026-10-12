@@ -15,6 +15,7 @@ os.environ.update(
 )
 
 import index  # noqa: E402
+import profiles  # noqa: E402
 
 OWNER = "us-east-1:11111111-1111-1111-1111-111111111111"
 OTHER = "us-east-1:22222222-2222-2222-2222-222222222222"
@@ -51,6 +52,66 @@ class Table:
         return {"Items": items[start:end], "LastEvaluatedKey": end}
 
 
+class ConditionalCheckFailedException(Exception):
+    pass
+
+
+class KeyTable:
+    """A one-key table (profiles, subjects, link codes) with its indexes
+    (name -> attribute) and conditional writes."""
+
+    def __init__(self, key, indexes=None):
+        self.key = key
+        self.indexes = indexes or {}
+        self.items = {}
+
+    def get_item(self, Key, ConsistentRead=False):
+        item = self.items.get(Key[self.key])
+        return {"Item": dict(item)} if item else {}
+
+    def put_item(self, Item, ConditionExpression=None):
+        k = Item[self.key]
+        if ConditionExpression and "attribute_not_exists" in ConditionExpression and k in self.items:
+            raise ConditionalCheckFailedException()
+        self.items[k] = {kk: Decimal(v) if isinstance(v, int) else v for kk, v in Item.items()}
+
+    def delete_item(self, Key, ConditionExpression=None):
+        k = Key[self.key]
+        if ConditionExpression and "attribute_exists" in ConditionExpression and k not in self.items:
+            raise ConditionalCheckFailedException()
+        self.items.pop(k, None)
+
+    def query(self, IndexName, KeyConditionExpression, ExpressionAttributeNames,
+              ExpressionAttributeValues, ExclusiveStartKey=None):
+        attr = self.indexes[IndexName]
+        value = list(ExpressionAttributeValues.values())[0]
+        return {"Items": [dict(i) for i in self.items.values() if i.get(attr) == value]}
+
+
+class FakeRbacr:
+    def __init__(self, roles=None):
+        self.by_email = roles or {}
+
+    def union(self, emails):
+        roles = set()
+        for e in emails:
+            roles |= set(self.by_email.get(e, ["free"]))
+        return sorted(roles), []
+
+
+def store():
+    return profiles.Store(
+        KeyTable("id"),
+        KeyTable("subject", {"byProfile": "profileId", "byEmail": "email"}),
+        KeyTable("code"),
+        now=lambda: 1_800_000_000,
+    )
+
+
+GOOGLE = "https://accounts.google.com"
+APPLE = "https://appleid.apple.com"
+
+
 class Accounts:
     """The cloud OCR service's identity -> address table."""
 
@@ -66,20 +127,19 @@ APPLE_OWNER = "us-east-1:22222222-2222-2222-2222-222222222222"
 
 class Cognito:
     def __init__(self):
-        # By provider: each sign-in is its own identity.
-        self.identities = {
-            ("accounts.google.com", "owner-token"): OWNER,
-            ("accounts.google.com", "other-token"): OTHER,
-            ("appleid.apple.com", "apple-owner-token"): APPLE_OWNER,
-        }
-        self.logins = []
+        # A profile's developer identity, made the first time it's asked for.
+        self.identities = {}
+        self.tokens = []
         self.deleted = []
         self.unprocessed = False
 
-    def get_id(self, IdentityPoolId, Logins):
-        self.logins.append(Logins)
-        ((provider, token),) = Logins.items()
-        return {"IdentityId": self.identities[(provider, token)]}
+    def get_open_id_token_for_developer_identity(self, IdentityPoolId, Logins, TokenDuration, IdentityId=None):
+        ((provider, profile_id),) = Logins.items()
+        assert provider == "login.tabscan.profiles"
+        identity = self.identities.setdefault(
+            profile_id, IdentityId or f"us-east-1:{len(self.identities) + 1:08d}-0000-0000-0000-000000000000")
+        self.tokens.append(profile_id)
+        return {"IdentityId": identity, "Token": f"openid-{profile_id}"}
 
     def delete_identities(self, IdentityIdsToDelete):
         if self.unprocessed:
@@ -106,11 +166,33 @@ class Sts:
         }
 
 
+class S3:
+    def __init__(self):
+        self.keys = []
+
+    def list_objects_v2(self, Bucket, Prefix, MaxKeys):
+        found = [k for k in self.keys if k.startswith(Prefix)][:MaxKeys]
+        return {"Contents": [{"Key": k} for k in found]} if found else {}
+
+
+def seed(clients, issuer, token, email, profile_id, identity):
+    """A profile that's been around: its owner's sign-in and its identity."""
+    st = clients["store"]
+    st.save_profile({"id": profile_id, "createdAt": 1, "ownerSubject": f"{issuer}#{token}",
+                     "ownerEmail": email, "identityId": identity})
+    st.link(f"{issuer}#{token}", profile_id, email, "google" if issuer == GOOGLE else "apple")
+    clients["cognito"].identities[profile_id] = identity
+
+
 class ShareApiTest(unittest.TestCase):
     def setUp(self):
         self.clients = {"table": Table(), "cognito": Cognito(), "sts": Sts(),
                         "accounts": Accounts({OWNER: "julio@example.com",
-                                              OTHER: "olga@example.com"})}
+                                              OTHER: "olga@example.com"}),
+                        "store": store(), "rbacr": FakeRbacr(), "s3": S3()}
+        seed(self.clients, GOOGLE, "owner-token", "julio@example.com", "brave_calm_otter", OWNER)
+        seed(self.clients, GOOGLE, "other-token", "olga@example.com", "quiet_bold_heron", OTHER)
+        seed(self.clients, APPLE, "apple-owner-token", "riff@example.com", "shy_tall_lynx", APPLE_OWNER)
 
     def call(self, route, email, token="owner-token", path=None, query=None,
              body=None, verified="true", iss=None):
@@ -118,7 +200,7 @@ class ShareApiTest(unittest.TestCase):
         if iss is None:
             apple = route.split(" ", 1)[1].startswith("/apple/")
             iss = "https://appleid.apple.com" if apple else "https://accounts.google.com"
-        claims = {"iss": iss, "email_verified": verified}
+        claims = {"iss": iss, "email_verified": verified, "sub": token}
         if email is not None:
             claims["email"] = email
         event = {
@@ -270,8 +352,6 @@ class ShareApiTest(unittest.TestCase):
                                  token="apple-owner-token", path={"captureId": "abc"},
                                  body={"email": "ana@example.com"})
         self.assertEqual(status, 200)
-        self.assertEqual(self.clients["cognito"].logins[-1],
-                         {"appleid.apple.com": "apple-owner-token"})
         item = self.clients["table"].items[(f"{APPLE_OWNER}#abc", "ana@example.com")]
         self.assertEqual(item["owner"], APPLE_OWNER)
         self.assertEqual(item["ownerEmail"], "riff@example.com")
@@ -319,7 +399,8 @@ class ShareApiTest(unittest.TestCase):
                            ("GET /apple/shared", "")):
             status, _ = self.call(route, "riff@example.com", iss=iss)
             self.assertEqual(status, 401, (route, iss))
-        self.assertEqual(self.clients["cognito"].logins, [])
+        self.assertEqual(self.clients["cognito"].tokens, [])
+        self.assertEqual(len(self.clients["store"].subjects.items), 3)
 
     def test_an_apple_token_without_an_email_is_refused(self):
         status, body = self.call("GET /apple/shared", None, token="apple-ana")
