@@ -1671,5 +1671,9 @@
   "eventAddDocumentDetail": "PDF files",
   "@eventAddDocumentDetail": {
     "description": "Event, Add: what Document adds"
+  },
+  "eventRenameFile": "Rename file",
+  "@eventRenameFile": {
+    "description": "A capture's file (photo, PDF, link, ...): rename it"
   }
 }

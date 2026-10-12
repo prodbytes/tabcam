@@ -168,7 +168,13 @@ class Library extends ChangeNotifier {
       );
 
   Future<EventPage> _addFile(CaptureEvent event, Media m) async {
-    final page = EventPage(id: newId(), kind: m.kind, extension: m.extension);
+    final page = EventPage(
+      id: newId(),
+      kind: m.kind,
+      extension: m.extension,
+      // A file is named after its file (photos' names are the picker's).
+      title: m.kind == PageKind.image ? null : nameOfFile(m.file.name),
+    );
     await _store.putPageFile(event.id, page, m.file);
     return page;
   }
@@ -205,6 +211,24 @@ class Library extends ChangeNotifier {
   }
 
   Future<CaptureEvent> update(CaptureEvent event) => _save(event);
+
+  /// Names page [pageId] of event [eventId] [name] (trimmed); an empty
+  /// name goes back to the page's default (its kind and number, or a
+  /// link's address).
+  Future<CaptureEvent?> renamePage(String eventId, String pageId, String name) {
+    final title = name.trim();
+    return patch(
+      eventId,
+      (now) => now.copyWith(
+        pages: [
+          for (final p in now.pages)
+            p.id == pageId
+                ? p.copyWith(title: () => title.isEmpty ? null : title)
+                : p,
+        ],
+      ),
+    );
+  }
 
   /// Applies [change] to the event [id] as it is now, so changes made
   /// meanwhile (pages added while a read ran) aren't overwritten by an
@@ -447,4 +471,13 @@ class Library extends ChangeNotifier {
 String defaultTitle(DateTime t) {
   String two(int n) => n.toString().padLeft(2, '0');
   return 'Tab ${t.year}-${two(t.month)}-${two(t.day)} ${two(t.hour)}:${two(t.minute)}';
+}
+
+/// A file's name without its extension and path, for a page's name; null
+/// when there's none to keep.
+String? nameOfFile(String fileName) {
+  final base = fileName.split(RegExp(r'[/\\]')).last;
+  final dot = base.lastIndexOf('.');
+  final name = (dot > 0 ? base.substring(0, dot) : base).trim();
+  return name.isEmpty ? null : name;
 }

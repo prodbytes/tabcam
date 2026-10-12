@@ -694,3 +694,11 @@ spec.
     Printed tabs on drawn lines read exactly; the user's handwritten page
     reads about two notes in three
     ([cloud OCR](cloud-ocr.md#transcription)).
+70. **Always let users rename added content: captures, files, links, all of
+    it.** Every file of a capture (photos, scans, PDFs, recordings, videos,
+    links) has a name the user can change: **Rename file** on each row of
+    the capture's list (or a long press) and on the file screen's title;
+    files added are named after their file name; an empty name goes back
+    to the default. Captures renamed as before. Not on captures shared
+    read only. In English, Spanish and Portuguese
+    ([event screen](event-screen.md)).

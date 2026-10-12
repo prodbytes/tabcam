@@ -38,8 +38,13 @@ it opens on the Text view; otherwise on the list.
   - **Links**: a link badge; the title (or the address's host), the
     address under it.
 
-  Numbers count the files of that kind. A tap opens the file alone on
-  the file screen. With the images [hidden](hidden-images.md), the list
+  Numbers count the files of that kind. A file the user named shows its
+  name instead, whatever it is; files, PDFs, recordings and videos added
+  are named after their file name (without the extension; photos aren't,
+  pickers name them at random). **Rename file** (a pencil on each row, or
+  a long press) asks for the name, prefilled; saving it empty goes back
+  to the default name. The name is the page's `title`, synced with the
+  event. A tap opens the file alone on the file screen. With the images [hidden](hidden-images.md), the list
   is the **text tab** first (its first line, or "No text tab yet"; a tap
   goes to the Text view), then the other files.
 - **Tools** along the bottom:
@@ -61,7 +66,9 @@ it opens on the Text view; otherwise on the list.
 ## File screen
 
 One file, opened from the list, on its own screen (the back button goes
-to the list). The app bar has the file's name ("Page 2", a link's title).
+to the list). The app bar has the file's name ("Page 2", a link's title,
+or the name the user gave it); tapping it, or **Rename file** (pencil),
+renames the file.
 The file is shown whole, as what it is:
 
 - **Images** are pinch-zoomable (up to 5×), as the view says.
