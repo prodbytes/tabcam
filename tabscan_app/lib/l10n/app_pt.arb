@@ -71,7 +71,7 @@
   "eventPremiumHint": "O TabScan Premium transcreve suas digitalizações automaticamente.",
   "eventUpgrade": "Assinar",
   "eventNotNow": "Agora não",
-  "eventNothingToRead": "Nada para ler: adicione uma digitalização ou foto.",
+  "eventNothingToRead": "Nada para ler: adicione uma digitalização, uma foto ou um PDF.",
   "eventReadingTab": "Lendo a tablatura…",
   "eventInCloud": "Transcrevendo na nuvem. O texto aparece aqui quando terminar.",
   "eventNoTab": "Nenhuma tablatura encontrada nas páginas. Digitalize mais perto e com a folha mais plana.",

@@ -7,6 +7,7 @@ import '../auth/auth_service.dart';
 import '../cloud/cloud_ocr.dart';
 import '../library/capture_event.dart';
 import '../library/library.dart';
+import 'pdf_reader.dart';
 import 'tab_reader.dart';
 
 /// Where reading an event's tab stands, for its Text view.
@@ -32,10 +33,12 @@ enum ReadState {
 }
 
 /// Reads every event's tab by itself: whenever the user adds or changes an
-/// event's image pages (a new capture, pages added, rotated or deleted),
-/// its pages are read into its text tab, one event at a time. With TabScan
-/// Premium the cloud transcribes them ([CloudOcr]); otherwise ML Kit on
-/// the device ([TabReader]). A text the user edited or marked correct is
+/// event's image or PDF pages (a new capture, pages added, rotated or
+/// deleted), its pages are read into its text tab, one event at a time.
+/// With TabScan Premium the cloud transcribes image pages ([CloudOcr]);
+/// otherwise ML Kit on the device ([TabReader]). PDFs are read on the
+/// device: their text where they have one (every platform, the web too),
+/// else their pages as images, by ML Kit ([PdfTabReader]). A text the user edited or marked correct is
 /// never replaced: a read only fills an empty text tab, or one an earlier
 /// read left ([CaptureEvent.tabTextAuto], [CaptureEvent.tabTextCorrect]).
 ///
@@ -48,15 +51,26 @@ class AutoReader extends ChangeNotifier {
     this.auth,
     CloudOcr? Function()? ocr,
     Future<String?> Function(List<Uint8List> pages)? read,
+    Future<String?> Function(
+      Uint8List pdf,
+      Future<String?> Function(List<Uint8List>)? ocr,
+    )?
+    readPdf,
     bool? supported,
   }) : _ocr = ocr ?? (() => null),
        _read = read ?? TabReader.read,
+       _readPdf = readPdf ?? ((pdf, ocr) => PdfTabReader.read(pdf, ocr: ocr)),
        _supported = supported ?? TabReader.supported;
 
   final Library library;
   final AuthService? auth;
   final CloudOcr? Function() _ocr;
   final Future<String?> Function(List<Uint8List> pages) _read;
+  final Future<String?> Function(
+    Uint8List pdf,
+    Future<String?> Function(List<Uint8List>)? ocr,
+  )
+  _readPdf;
   final bool _supported;
 
   final Map<String, ReadState> _states = {};
@@ -86,9 +100,15 @@ class AutoReader extends ChangeNotifier {
     auth?.addListener(_onAuth);
   }
 
+  String? _pagesNow(String id) => switch (library.byId(id)) {
+    final e? => _imagesOf(e),
+    null => null,
+  };
+
+  /// The pages a read reads: images and PDFs.
   static String _imagesOf(CaptureEvent e) => [
     for (final p in e.pages)
-      if (p.isImage) p.fileName,
+      if (p.isImage || p.isPdf) p.fileName,
   ].join(',');
 
   void _onChange() {
@@ -124,11 +144,19 @@ class AutoReader extends ChangeNotifier {
     try {
       while (_queue.isNotEmpty && !_disposed) {
         final id = _queue.removeAt(0);
+        final before = _pagesNow(id);
         try {
           _set(id, await _readOne(id));
         } on Object catch (e) {
           _log('event $id: failed: $e');
           _set(id, ReadState.failed);
+        }
+        // Pages changed while it read: it reads them again.
+        final after = _pagesNow(id);
+        if (after != null && after != before && !_queue.contains(id)) {
+          _log('event $id: pages changed while reading, reading again');
+          _queue.add(id);
+          _set(id, ReadState.reading);
         }
       }
     } finally {
@@ -144,24 +172,49 @@ class AutoReader extends ChangeNotifier {
       _log('event $id: signed out, waiting for a sign-in');
       return ReadState.needsSignIn;
     }
+    final images = event.pages.where((p) => p.isImage).length;
+    final pdfs = event.pages.where((p) => p.isPdf).length;
     final ocr = _ocr();
-    if (ocr != null && ocr.premium) {
+    // Premium's cloud reads photos; an event of PDFs only is the device's.
+    if (ocr != null && ocr.premium && images > 0) {
       final queued = await ocr.transcribe(event);
       _log('event $id: in the cloud, $queued pages queued');
       return ReadState.inCloud;
     }
-    if (!_supported) {
+    // Without OCR here (the web), only PDFs' text can be read.
+    if (!_supported && pdfs == 0) {
       _log('event $id: this device can\'t read tabs');
       return ReadState.unsupported;
     }
-    final pages = [
-      for (final p in event.pages)
-        if (p.isImage) await library.original(event, p),
-    ];
-    if (pages.isEmpty) return null;
-    final text = await _read(pages);
+    // In page order: each run of photos read together by OCR, each PDF by
+    // its text (or OCR).
+    final parts = <String>[];
+    var read = 0;
+    final photos = <Uint8List>[];
+    Future<void> readPhotos() async {
+      if (photos.isEmpty) return;
+      if (await _read([...photos]) case final t?) parts.add(t);
+      photos.clear();
+    }
+
+    for (final p in event.pages) {
+      if (p.isImage && _supported) {
+        read++;
+        photos.add(await library.original(event, p));
+      } else if (p.isPdf) {
+        read++;
+        await readPhotos();
+        final bytes = await library.original(event, p);
+        if (await _readPdf(bytes, _supported ? _read : null) case final t?) {
+          parts.add(t);
+        }
+      }
+    }
+    await readPhotos();
+    if (read == 0) return null;
+    final text = parts.isEmpty ? null : parts.join('\n\n');
     _log(
-      'event $id: ${pages.length} pages, '
+      'event $id: $read pages, '
       '${text == null ? 'no tab found' : 'read ${text.length} characters'}',
     );
     if (text == null) return ReadState.noTab;
@@ -174,7 +227,11 @@ class AutoReader extends ChangeNotifier {
       return null;
     }
     if (current.tabText != text) {
-      await library.update(current.copyWith(tabText: text, tabTextAuto: true));
+      // Only the text: pages added meanwhile stay.
+      await library.patch(
+        id,
+        (now) => now.copyWith(tabText: text, tabTextAuto: true),
+      );
     }
     return null;
   }

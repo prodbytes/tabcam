@@ -296,7 +296,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get eventNothingToRead =>
-      'Nada que leer: agrega un escaneo o una foto.';
+      'Nada que leer: agrega un escaneo, una foto o un PDF.';
 
   @override
   String get eventReadingTab => 'Leyendo la tablatura…';

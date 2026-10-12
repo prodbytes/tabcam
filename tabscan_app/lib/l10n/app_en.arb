@@ -373,7 +373,7 @@
   "@eventNotNow": {
     "description": "Event: close the Premium hint (tooltip)"
   },
-  "eventNothingToRead": "Nothing to read: add a scan or a photo.",
+  "eventNothingToRead": "Nothing to read: add a scan, a photo or a PDF.",
   "@eventNothingToRead": {
     "description": "Event Text view: no images"
   },

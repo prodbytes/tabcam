@@ -10,8 +10,10 @@ Android and iOS only (below).
 
 `AutoReader` ([lib/recognition/auto_reader.dart](../tabscan_app/lib/recognition/auto_reader.dart))
 watches the library: whenever the user adds or changes an event's image
-pages (a new capture, pages added, rotated or deleted), that event is
-read, one event at a time. Other changes (the title, the view, the text)
+or PDF pages (a new capture, pages added, rotated or deleted), that event
+is read, one event at a time ([PDFs](#pdfs) below). Pages changed while it
+was read are read again; a read writes only the text, onto the event as
+it is then (`Library.patch`), so pages added meanwhile aren't lost. Other changes (the title, the view, the text)
 don't read again, nor do events another device changed (that device reads
 them), nor the events there were at launch.
 
@@ -120,6 +122,29 @@ OCR finds only the numbers.
   the staves by their height on the page, as read.
 
 Text tabs are tried first; typeset layout runs when no text tab is found.
+
+## PDFs
+
+A PDF page (Capture → Document, or Files) is read like a photo, into the
+text tab ([lib/recognition/pdf_reader.dart](../tabscan_app/lib/recognition/pdf_reader.dart)):
+
+1. **Its text**, where it has one (a tab printed from a website, a
+   typeset book): each page's text and every character's box, from PDFium
+   (`pdfrx`, on every platform, the web too), become lines with their
+   words and positions ([lib/recognition/pdf_lines.dart](../tabscan_app/lib/recognition/pdf_lines.dart)),
+   laid out as a text tab is ([text tabs](#text-tabs), with its
+   [notations](#notations-around-the-tab): chord names at their columns,
+   lyrics, titles).
+2. **A scanned PDF**, with no tab in its text: its pages rendered at
+   2400 px (the longer side), on white, and read by the device's OCR
+   (Android and iOS; the web has none).
+
+The event's pages are read in their order: each run of photos together,
+each PDF on its own; the texts are joined by a blank line. On the web, a
+PDF's text is read though photos can't be. With TabScan Premium, an event
+with photos goes to the cloud as before (which reads photos only); an
+event of PDFs only is read on the device. "Nothing to read" now asks for
+a scan, a photo or a PDF.
 
 ## Troubleshooting log
 
