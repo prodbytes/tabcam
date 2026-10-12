@@ -48,10 +48,11 @@ only, checked again whenever an event is loaded, since events also come
 from the cloud) and an optional `title`. A new event is titled `Tab YYYY-MM-DD HH:MM` (its local time).
 
 **Rename** (a card's menu or long-press, or the event screen's title or
-pencil) asks for the **Song** and **Artist**, prefilled, with the song's
-text selected so typing replaces it. Saving with an empty song keeps the
-title; an empty artist clears it. Exports are named from the new title
-([sharing](sharing.md)).
+pencil) asks for one **Name**, prefilled with the title and selected so
+typing replaces it. Whatever the user types becomes the title, as typed
+(no song or artist format), and the artist is cleared so nothing shows
+beside it. Saving an empty name keeps the title. Exports are named from
+the new title ([sharing](sharing.md)).
 
 **Clone** (a card's menu, or the event screen's app bar, which then opens
 the copy) makes a copy that is a new event of the user's own: titled

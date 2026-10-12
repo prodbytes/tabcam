@@ -16,6 +16,7 @@ import 'file_screen.dart';
 import 'link_page.dart';
 import 'premium_card.dart';
 import 'rename_dialog.dart';
+import 'reorder_sheet.dart';
 import 'share_sheet.dart';
 import 'place.dart';
 import 'sign_in_gate.dart';
@@ -25,8 +26,8 @@ import 'tab_text_view.dart';
 /// recordings, PDFs and links), each with a preview, a tap opening it alone
 /// on a [FileScreen]; and the tools along the bottom: Files (the list),
 /// Text (the tab read from them, in place of the list) and Add (scan,
-/// a document, photos and videos, files, a link). Rename, Clone and Share
-/// are in the app bar. The tab is read by itself ([AutoReader]): there's no
+/// a document, photos and videos, files, a link). Rename, Reorder, Clone
+/// and Share are in the app bar. The tab is read by itself ([AutoReader]): there's no
 /// Read tab button. With its images hidden, the list is the text tab, then
 /// the other files.
 class EventScreen extends StatefulWidget {
@@ -234,6 +235,17 @@ class _EventScreenState extends State<EventScreen> {
     });
   }
 
+  /// Opens the reorder sheet; then shows the page that showed before, in
+  /// its new place.
+  Future<void> _reorder(CaptureEvent event) => showReorderSheet(
+    context,
+    _library,
+    event.id,
+    onError: (e) {
+      if (mounted) _snack('${context.l10n.eventCouldntReorder}: $e');
+    },
+  );
+
   bool _hintClosed = false;
 
   /// The upgrade hint, for users without Premium where it's set up; never
@@ -299,11 +311,12 @@ class _EventScreenState extends State<EventScreen> {
     final l10n = context.l10n;
     // What a read reads: photos and PDFs.
     final images = event.pages.any((p) => p.isImage || p.isPdf);
-    void again() => reader?.readSoon(event.id);
+    void again() => reader?.readSoon(event.id, again: true);
     final (message, action) = switch (reader?.stateOf(event.id)) {
       _ when !images => (l10n.eventNothingToRead, null),
       ReadState.reading => (l10n.eventReadingTab, null),
-      ReadState.inCloud => (l10n.eventInCloud, null),
+      // The cloud may find no tab: Read again asks it again.
+      ReadState.inCloud => (l10n.eventInCloud, (l10n.eventReadAgain, again)),
       ReadState.noTab => (l10n.eventNoTab, (l10n.eventReadAgain, again)),
       ReadState.failed => (l10n.eventReadFailed, (l10n.eventReadAgain, again)),
       ReadState.unsupported => (l10n.eventReadUnsupported, null),
@@ -440,6 +453,13 @@ class _EventScreenState extends State<EventScreen> {
                   tooltip: l10n.eventRename,
                   icon: const Icon(Icons.edit_outlined),
                   onPressed: () => _rename(event),
+                ),
+              if (editable && event.visiblePages.length > 1)
+                IconButton(
+                  key: const Key('reorder'),
+                  tooltip: l10n.eventReorder,
+                  icon: const Icon(Icons.swap_vert),
+                  onPressed: _busy ? null : () => _reorder(event),
                 ),
               IconButton(
                 tooltip: l10n.eventClone,

@@ -625,7 +625,47 @@ spec.
 
 ## 2026-10-12
 
-68. **Improve the capture page: keep the title, Rename and Clone; one
+68. **PDF reading doesn't work: a PDF uploaded wasn't read, and Read again
+    does nothing. Fix it, check the logs; PDFs must be scanned just as if
+    they were photographed.** The logs showed the PDF was a scan (an image,
+    no text), uploaded on the web, signed in with an address that isn't
+    Premium: the web has no OCR, and the cloud read photos only, so it was
+    "no tab found" every time. The cloud OCR service now reads PDFs (each
+    page rendered and read as a photo; the rule takes `.pdf`); Premium
+    users' PDFs are read by their text on the device, else in the cloud;
+    on the web without Premium, a scanned PDF says what it needs. The
+    user's PDF turned out to be a handwritten tab on drawn staff lines,
+    which the cloud's engines never read (photographed either): Claude
+    (vision) now reads the pages the engines find no tab on, with the
+    Claude API key in Secrets Manager (`tabscan/anthropic-api-key`, read
+    by name: on as soon as it exists). Read again now makes the cloud read
+    every page again, and shows while the text is on its way
+    ([tab recognition](tab-recognition.md#pdfs), [cloud OCR](cloud-ocr.md)).
+69. **Let users reorder the files they add.** The event screen's app bar
+    has **Reorder** (with more than one page, when the user can edit):
+    a sheet lists the pages with a thumbnail or icon and what each is,
+    dragged by their handles into a new order, saved at each drop and
+    synced; photos and PDFs moved are read again in their new order. With
+    the images hidden, only the other pages are listed and the images
+    stay put. In English, Spanish and Portuguese
+    ([event screen](event-screen.md)).
+70. **When a user renames a capture, just make it a name, no artist and
+    song name; let the user name it whatever.** The rename dialog has one
+    **Name** field instead of Song and Artist; what the user types is the
+    title, and renaming clears the artist
+    ([library](library.md#events)).
+71. **Embed a YouTube player when the link added is for a YouTube video;
+    if the video can't be seen for any reason, just show the link and
+    open it in a new tab.** A link page for a YouTube video gets
+    **Play**, which plays it in YouTube's embedded player
+    (`youtube_player_iframe`, youtube-nocookie.com) on the web, Android
+    and iOS, from the link's start time. Any failure (YouTube's error,
+    the page not loading, a 20-second timeout, no web view) goes back to
+    the link card, which says the video can't be played here and opens
+    it in a new tab ([event screen](event-screen.md),
+    [platforms](platforms.md)). The privacy policy names YouTube, which
+    is contacted only on Play ([privacy](privacy.md)).
+72. **Improve the capture page: keep the title, Rename and Clone; one
     Share, not Share and Share with people; take out the Scan toggle and
     make the first tool the capture's files, then Text, then Add; Rotate
     and Delete are fine but confusing. Home shows every capture; a capture

@@ -374,6 +374,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventDelete => 'Delete';
 
   @override
+  String get eventReorder => 'Reorder';
+
+  @override
+  String get eventReorderTitle => 'Drag to reorder';
+
+  @override
+  String get eventCouldntReorder => 'Couldn\'t reorder';
+
+  @override
+  String get eventPagePhoto => 'Photo';
+
+  @override
+  String get eventPagePdf => 'PDF';
+
+  @override
   String get eventViewOriginal => 'Original';
 
   @override
@@ -428,10 +443,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get eventSong => 'Song';
-
-  @override
-  String get eventArtist => 'Artist';
+  String get eventName => 'Name';
 
   @override
   String get eventCancel => 'Cancel';

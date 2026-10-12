@@ -15,3 +15,10 @@ def test_everything_else_is_not_a_page():
                 "nobody/events/abc123/p1.img", f"{ID}/events/ABC/p1.img",
                 f"{ID}/events/abc123/p1", f"{ID}/events/../p1.img"]:
         assert keys.parse_page(key) is None, key
+
+
+def test_pdf_pages_are_pages_too():
+    from locr import keys
+    p = keys.parse_page("us-east-1:0f8b5b1e-1c2d-4e5f-8a9b-0c1d2e3f4a5b/events/ev1/p1.pdf")
+    assert p is not None and p.is_pdf
+    assert keys.parse_page("us-east-1:0f8b5b1e-1c2d-4e5f-8a9b-0c1d2e3f4a5b/events/ev1/p1.mp4") is None

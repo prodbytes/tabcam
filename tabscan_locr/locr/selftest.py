@@ -91,7 +91,16 @@ def main():
           f"title={title:.0%} timings={r.timings}")
     for name, lines in r.readings.items():
         print(f"  {name}: notes={score(RIFF, chr(10).join(lines)):.1%}")
-    sys.exit(0 if s >= args.min and title >= 0.8 else 1)
+    # The same page in a PDF (a scanned document) reads the same.
+    from PIL import Image
+    import io
+    jpg = cv2.imdecode(np.frombuffer(page_photo(), np.uint8), cv2.IMREAD_COLOR)
+    pdf = io.BytesIO()
+    Image.fromarray(jpg[..., ::-1]).save(pdf, format="PDF", resolution=150)
+    p = pipeline.transcribe_pdf(pdf.getvalue(), engines.default(), read_page=engines.read_page)
+    pdf_score = score(RIFF, p.text)
+    print(f"pdf: notes={pdf_score:.1%} seconds={p.seconds}")
+    sys.exit(0 if s >= args.min and title >= 0.8 and pdf_score >= args.min else 1)
 
 
 if __name__ == "__main__":

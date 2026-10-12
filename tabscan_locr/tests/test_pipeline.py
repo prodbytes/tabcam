@@ -1,6 +1,8 @@
 """The pipeline's own logic, without OCR engines: a fake engine reads each
 strip as the line it is (from the made-up riff), so this checks finding the
 lines, staves, labels, widths and the vote."""
+import cv2
+
 from locr import pipeline, selftest
 
 
@@ -77,3 +79,34 @@ def test_notations_and_their_columns():
     assert pipeline.place_words([("Am", 0), ("G", 1)]) == "Am G"
     assert pipeline.join([("text", "Intro"), ("staff", "e|-|"), ("staff", "e|-|"),
                           ("text", "la")]) == "Intro\ne|-|\n\ne|-|\n\nla"
+
+
+def _pdf_of(*jpgs):
+    """A PDF whose pages are these photos (a scanned document)."""
+    import io
+    import numpy as np
+    from PIL import Image
+    images = [Image.fromarray(cv2.imdecode(np.frombuffer(j, np.uint8), cv2.IMREAD_COLOR)[..., ::-1])
+              for j in jpgs]
+    out = io.BytesIO()
+    images[0].save(out, format="PDF", save_all=True, append_images=images[1:], resolution=150)
+    return out.getvalue()
+
+
+def test_a_pdf_is_read_as_its_pages_photographed():
+    riff = [l for l in selftest.RIFF.splitlines() if l]
+    seen = iter(riff * 4)
+    pdf = _pdf_of(selftest.page_photo(), selftest.page_photo())
+    pages = pipeline.pdf_pages(pdf)
+    assert len(pages) == 2 and pages[0].shape[1] == pipeline.PDF_RENDER_WIDTH
+    r = pipeline.transcribe_pdf(pdf, {"a": lambda strip, line: next(seen)})
+    assert (r.staves, r.lines) == (4, 24)
+    # Both pages read back the whole riff, one after the other.
+    assert r.text.count("e|") == 4
+    assert selftest.score(selftest.RIFF + selftest.RIFF, r.text) == 1.0
+
+
+def test_not_a_pdf_is_an_error():
+    import pytest
+    with pytest.raises(ValueError):
+        pipeline.pdf_pages(b"not a pdf")

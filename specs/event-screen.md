@@ -8,13 +8,23 @@ it opens on the Text view; otherwise on the list.
 - **App bar**: the title (and the artist under it, if set); tapping it, or
   **Rename** (pencil), renames the event (see
   [library](library.md#events)). **Clone** copies the event and opens the
-  copy ([library](library.md#events)). **Share**, the only share button,
+  copy ([library](library.md#events)).
+  **Reorder** (up-down arrows; the user's own events or shared to edit,
+  with more than one file) opens a sheet listing the files in order,
+  "Drag to reorder": each with a thumbnail (images) or an icon, its number
+  and what it is (Photo, PDF, Video, Recording, or a link's title or
+  host), and a drag handle. Each drop saves the new order (the event
+  changes, so it syncs, and moved photos or PDFs are
+  [read again](tab-recognition.md#reading-by-itself) in their new order),
+  and the list follows it. With the images [hidden](hidden-images.md),
+  only the other files are listed, and the images keep their places.
+  **Share**, the only share button,
   opens the [share sheet](sharing.md), which also has **Share with
   people** ([shared captures](shared-captures.md)) for the user's own
   events, signed in, in a build with sharing. There's no Hide images
   button (captures already [hidden](hidden-images.md) stay hidden).
 - **Shared with the user**: a line under the app bar, "Shared by <email>
-  · Can edit" or "· Read only". Read only, Rename, Add, Rotate, Delete
+  · Can edit" or "· Read only". Read only, Rename, Reorder, Add, Rotate, Delete
   and editing the text tab are off; the view still changes what shows,
   without saving it.
 - **Files**: the list of the event's files, in their order, newest last
@@ -73,6 +83,23 @@ The file is shown whole, as what it is:
   Android and iOS (Custom Tabs, Safari View Controller), or where there's
   none, the browser or the app that handles it (such as YouTube); on the
   web, in a new tab. A link that can't open says so.
+- **YouTube videos**: a link to one (`youtube.com/watch?v=…`,
+  `youtu.be/…`, `/shorts/…`, `/live/…`, `/embed/…`, on any YouTube
+  host) shows the same card with a video icon and **Play** first.
+  Nothing is loaded from YouTube until **Play**: tapped, the card
+  becomes YouTube's embedded player (`youtube_player_iframe`, in the
+  privacy-enhanced youtube-nocookie.com mode), playing from the link's
+  start time (`t=` / `start=`, as `90`, `90s` or `1m30s`), with
+  **Open** and **Copy** under it. YouTube's controls are in the app's
+  language; captions follow the viewer's YouTube setting; related
+  videos at the end are from the same channel; full screen on the web
+  only. If the video can't play here for any reason (YouTube's error,
+  such as the video not allowing embedding or not found; the player
+  page not loading; no player within 20 seconds; no web view), the
+  page goes back to the link card, saying "This video can't be played
+  here", without **Play**: **Open** opens it in a new tab (on Android
+  and iOS, the browser inside the app, as for any link). Only the web,
+  Android and iOS embed; elsewhere it's a plain link.
 
 Its tools, along the bottom:
 

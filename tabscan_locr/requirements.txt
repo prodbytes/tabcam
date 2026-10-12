@@ -4,6 +4,8 @@ numpy==1.26.4
 # PaddleX requires this exact OpenCV build (its dependency check names it).
 opencv-contrib-python==4.10.0.84
 pillow==12.3.0
+# PDF pages, rendered to be read as photos.
+pypdfium2==5.13.0
 pytesseract==0.3.13
 rapidocr-onnxruntime==1.4.4
 onnxruntime==1.31.0

@@ -32,7 +32,7 @@ the cloud as they sync.
   and links.
 - [Event screen](event-screen.md): one event's files (images, videos,
   recordings, PDFs and links) as a list with previews, Files, Text and
-  Add, plus Rename, Clone and one Share; a tap opens a file alone, with
+  Add, plus Rename, Reorder, Clone and one Share; a tap opens a file alone, with
   its view (Original or Scan), Rotate and Delete.
 - [Hidden images](hidden-images.md): the owner hides a capture's photos
   and scans, for everyone; it then shows only the text tab, videos and
