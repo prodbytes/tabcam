@@ -345,6 +345,19 @@ def _transcribe_missing(identity, event_id):
 _engines = None
 
 
+def _vision(img):
+    """Claude's reading of a page the engines find no tab on; "" while the
+    Claude API key isn't set up, or when Claude fails (logged)."""
+    from . import claude, vision
+    try:
+        return vision.read_tab(img)
+    except claude.NotSetUp:
+        return ""
+    except Exception as e:
+        log("vision failed", error=f"{type(e).__name__}: {e}")
+        return ""
+
+
 def ocr(event, context=None):
     global _engines
     page = keys.parse_page(event.get("key", ""))
@@ -362,9 +375,11 @@ def ocr(event, context=None):
         if obj["ContentLength"] > MAX_BYTES:
             raise pipeline.TooLarge("image too large")
         read = pipeline.transcribe_pdf if page.is_pdf else pipeline.transcribe
-        r = read(obj["Body"].read(), _engines, read_page=engines.read_page)
+        r = read(obj["Body"].read(), _engines, read_page=engines.read_page, vision=_vision)
         result.update(status="ok" if r.text else "no-tab", text=r.text,
                       staves=r.staves, lines=r.lines, timings=r.timings)
+        if "claude" in r.timings:
+            result["engines"] = ["claude"]
     except services.s3.exceptions.NoSuchKey:
         log("ocr page gone", key=page.key)
         return "gone"  # deleted meanwhile
@@ -374,8 +389,8 @@ def ocr(event, context=None):
         log("ocr failed", key=page.key, error=f"{type(e).__name__}: {e}",
             seconds=round(time.monotonic() - start, 2), trace=traceback.format_exc())
         raise
-    result.update(seconds=round(time.monotonic() - start, 2), created=_now(),
-                  engines=list(_engines))
+    result.update(seconds=round(time.monotonic() - start, 2), created=_now())
+    result.setdefault("engines", list(_engines))
     services.s3.put_object(Bucket=services.bucket, Key=page.result_key,
                            Body=json.dumps(result).encode(), ContentType="application/json")
     log("ocr done", key=page.key, status=result["status"], error=result.get("error"),
