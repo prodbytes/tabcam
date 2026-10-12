@@ -425,10 +425,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get eventSong => 'Canción';
-
-  @override
-  String get eventArtist => 'Artista';
+  String get eventName => 'Nombre';
 
   @override
   String get eventCancel => 'Cancelar';

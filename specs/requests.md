@@ -622,3 +622,11 @@ spec.
     capture's **Add** menu now has **Document** right after Scan pages, the
     menu scrolls (five items overflowed a small phone), and a release
     puts it all on the web ([scanning](scanning.md#adding-to-an-event)).
+
+## 2026-10-12
+
+68. **When a user renames a capture, just make it a name, no artist and
+    song name; let the user name it whatever.** The rename dialog has one
+    **Name** field instead of Song and Artist; what the user types is the
+    title, and renaming clears the artist
+    ([library](library.md#events)).
