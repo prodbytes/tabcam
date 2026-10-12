@@ -100,6 +100,15 @@ class TokenVerifier:
             raise Unauthorized("no e-mail")
         return email.strip().lower(), p.login
 
+    def verify_subject(self, token):
+        """(e-mail, Logins key, subject): the subject is the sign-in,
+        `<issuer>#<sub>`, as the share API's profiles know it."""
+        email, login = self.verify(token)
+        claims = jwt.decode(token, options={"verify_signature": False})
+        issuer = {"accounts.google.com": "https://accounts.google.com",
+                  "appleid.apple.com": "https://appleid.apple.com"}[login]
+        return email, login, f"{issuer}#{claims.get('sub', '')}"
+
     def email(self, token):
         """The token's verified e-mail address, lower case."""
         return self.verify(token)[0]

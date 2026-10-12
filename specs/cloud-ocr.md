@@ -14,8 +14,12 @@ as before.
 
 [rbacr](https://github.com/prodbytes/rbacr) decides: the role `premium`
 in its `tabscan` system (`premium` implies `free`), for the user's verified
-address: their Google address, or, signed in with Apple on iOS, their Apple
-ID's address. People get it by:
+addresses: every account linked to their [profile](profiles.md#roles)
+(Google, or Apple on iOS); premium if any of them is. The service finds
+the request's profile in the share API's tables (`PROFILES_TABLE`,
+`SUBJECTS_TABLE`, read only), records its folder with all its addresses,
+and for uploads checks those addresses; a sign-in without a profile is
+checked by its own address, as before. People get it by:
 
 - **Subscribing** to prodbytes.substack.com with the same Google address:
   rbacr's Stripe sync grants the `tabscan` system's subscriber role,

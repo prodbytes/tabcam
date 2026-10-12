@@ -85,3 +85,8 @@ def test_other_issuers_and_garbage_are_refused():
         with pytest.raises(Unauthorized) as e:
             verifier().verify(bad)
         assert not isinstance(e.value, Unsupported)
+
+
+def test_the_subject_is_the_sign_in_as_profiles_know_it():
+    email, login, subject = verifier().verify_subject(apple_token())
+    assert (login, subject) == ("appleid.apple.com", "https://appleid.apple.com#000123.abc")

@@ -10,6 +10,7 @@ import '../library/library.dart';
 import '../library/capture_event.dart';
 import 'cognito.dart';
 import 's3.dart';
+import 'profile_service.dart';
 import 'share_api.dart';
 import 'sigv4.dart';
 
@@ -66,6 +67,9 @@ class CloudSync extends ChangeNotifier {
   /// The share API, for captures shared with the user and their own
   /// grants; null in a build without sharing.
   final ShareApi? shares;
+
+  /// The signed-in user's profile, in builds with the share API.
+  ProfileService? profiles;
 
   /// How often a signed-in device looks for other devices' changes.
   final Duration period;
@@ -240,7 +244,18 @@ class CloudSync extends ChangeNotifier {
     final session = await credentials.session(token);
     _check(token);
     final identity = session.identityId;
-    final state = await _SyncState.load(library, identity);
+    final user = auth.user?.id;
+    final state = await _SyncState.load(library, identity, user);
+    // The same user's folder moved (their sign-in joined a profile, or
+    // left one): their own captures go with them, to sync into the new one.
+    if (state.movedFrom case final previous?) {
+      for (final e in library.all) {
+        if (!e.isShared && e.owner == previous) {
+          await library.setOwner(e, identity);
+        }
+      }
+      debugPrint('TabScan: cloud sync: the folder moved from $previous');
+    }
     // Captures the user left since: what synced of them is forgotten, so
     // shared again, they come down again.
     final forgotten = {..._forgotten};
@@ -643,18 +658,35 @@ class _Synced {
 /// What has synced, per event, for one identity: kept beside the events
 /// ([CloudSync.stateName]). Another identity's state starts over.
 class _SyncState {
-  _SyncState(this.identity, this.events);
+  _SyncState(this.identity, this.events, {this.user, this.movedFrom});
 
   final String identity;
   final Map<String, _Synced> events;
 
-  static Future<_SyncState> load(Library library, String identity) async {
+  /// Whose folder it is (the sign-in's user ID).
+  final String? user;
+
+  /// The folder the same user synced before, when it was another one.
+  final String? movedFrom;
+
+  static Future<_SyncState> load(
+    Library library,
+    String identity, [
+    String? user,
+  ]) async {
     try {
       final json = await library.readMeta(CloudSync.stateName);
       if (json != null) {
         final m = (jsonDecode(json) as Map).cast<String, Object?>();
-        if (m['identity'] == identity) {
-          return _SyncState(identity, {
+        final before = m['identity'];
+        if (before is String &&
+            before != identity &&
+            user != null &&
+            (m['user'] == user || m['user'] == null)) {
+          return _SyncState(identity, {}, user: user, movedFrom: before);
+        }
+        if (before == identity) {
+          return _SyncState(identity, user: user, {
             for (final MapEntry(:key, :value)
                 in (m['events'] as Map).cast<String, Object?>().entries)
               key: _Synced(
@@ -667,13 +699,14 @@ class _SyncState {
     } on Object catch (e) {
       debugPrint('TabScan: starting cloud sync over: $e');
     }
-    return _SyncState(identity, {});
+    return _SyncState(identity, {}, user: user);
   }
 
   Future<void> save(Library library) => library.writeMeta(
     CloudSync.stateName,
     jsonEncode({
       'identity': identity,
+      'user': ?user,
       'events': {
         for (final MapEntry(:key, :value) in events.entries)
           key: {

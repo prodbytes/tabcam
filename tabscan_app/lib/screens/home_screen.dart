@@ -277,6 +277,7 @@ class _HomeScreenState extends State<HomeScreen> {
             // (they may have just upgraded).
             if (tab == HomeTab.profile && widget.auth?.user != null) {
               widget.ocr?.refresh();
+              widget.sync?.profiles?.refresh();
             }
             setState(() => _tab = tab);
           },

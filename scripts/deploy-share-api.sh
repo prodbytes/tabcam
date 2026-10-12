@@ -45,6 +45,10 @@ accounts="$(aws cloudformation describe-stacks --stack-name tabscan-ocr \
   --output text 2>/dev/null || true)"
 [[ "$accounts" =~ ^[A-Za-z0-9_.-]{3,255}$ && "$accounts" != None ]] || accounts=""
 
+# Profiles' roles come from rbacr, with the token the cloud OCR service uses.
+rbacr_secret="$(aws secretsmanager describe-secret --secret-id "${RBACR_TOKEN_SECRET:-tabscan/rbacr-token}" \
+  --query ARN --output text)"
+
 echo "==> testing the function"
 python3 -I -m unittest discover -s tabscan_api/shares
 
@@ -59,13 +63,16 @@ aws cloudformation deploy --stack-name tabscan-share-api \
     "AppleClientId=$apple_client" \
     "AllowedOrigins=$origins" \
     "AccountsTableName=$accounts" \
+    "RbacrTokenSecretArn=$rbacr_secret" \
+    DeveloperProviderName=login.tabscan.profiles \
   --no-fail-on-empty-changeset
 
 echo "==> uploading the code"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
-cp tabscan_api/shares/index.py "$work/"
-(cd "$work" && python3 -I -m zipfile -c share-api.zip index.py)
+files=(index.py profiles.py adjectives.txt animals.txt)
+for f in "${files[@]}"; do cp "tabscan_api/shares/$f" "$work/"; done
+(cd "$work" && python3 -I -m zipfile -c share-api.zip "${files[@]}")
 aws lambda update-function-code --function-name tabscan-share-api \
   --zip-file "fileb://$work/share-api.zip" --query LastModified --output text
 aws lambda wait function-updated --function-name tabscan-share-api

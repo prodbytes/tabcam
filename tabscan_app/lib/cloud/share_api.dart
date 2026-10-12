@@ -53,6 +53,91 @@ class ShareCredentials {
   final ShareRole role;
 }
 
+/// One sign-in linked to the user's profile.
+class ProfileAccount {
+  const ProfileAccount({
+    required this.id,
+    required this.email,
+    required this.provider,
+    required this.owner,
+    required this.you,
+  });
+
+  /// What the API calls it (a hash of the sign-in): to unlink it.
+  final String id;
+  final String email;
+
+  /// `google` or `apple`.
+  final String provider;
+
+  /// The profile's owner: it can't be unlinked.
+  final bool owner;
+
+  /// The sign-in this app is using.
+  final bool you;
+}
+
+/// The signed-in user's profile: its ID (`huge_wavy_darter`), the sign-ins
+/// linked to it, and its roles, every linked address's together.
+class Profile {
+  const Profile({
+    required this.id,
+    required this.accounts,
+    required this.roles,
+    this.globalRoles = const [],
+  });
+
+  final String id;
+  final List<ProfileAccount> accounts;
+  final List<String> roles;
+  final List<String> globalRoles;
+
+  bool get premium => roles.contains('premium');
+
+  /// Whether this sign-in owns the profile (only the owner deletes it).
+  bool get youOwn => accounts.any((a) => a.you && a.owner);
+
+  static Profile fromJson(Map<String, Object?> json) => Profile(
+    id: json['profileId'] as String? ?? '',
+    accounts: [
+      for (final a in json['accounts'] as List? ?? const [])
+        if (a is Map)
+          ProfileAccount(
+            id: a['id'] as String? ?? '',
+            email: a['email'] as String? ?? '',
+            provider: a['provider'] as String? ?? '',
+            owner: a['owner'] == true,
+            you: a['you'] == true,
+          ),
+    ],
+    roles: [for (final r in json['roles'] as List? ?? const []) '$r'],
+    globalRoles: [
+      for (final r in json['globalRoles'] as List? ?? const []) '$r',
+    ],
+  );
+}
+
+/// A code another sign-in enters to join the profile.
+class LinkCode {
+  const LinkCode(this.code, this.expiresAt);
+
+  final String code;
+  final DateTime expiresAt;
+}
+
+/// The profile's Cognito identity and a token for it.
+class ProfileToken {
+  const ProfileToken({
+    required this.profileId,
+    required this.identityId,
+    required this.token,
+  });
+
+  final String profileId;
+  final String identityId;
+  final String token;
+}
+
 /// Why the share API refused.
 class ShareApiException implements Exception {
   ShareApiException(this.statusCode, this.message);
@@ -60,8 +145,14 @@ class ShareApiException implements Exception {
   final int statusCode;
   final String message;
 
-  /// Not shared with the user (any more).
+  /// Not shared with the user (any more), or a link code that's wrong.
   bool get notShared => statusCode == 404;
+
+  /// The request can't be done as things are (linking, unlinking).
+  bool get conflict => statusCode == 409;
+
+  /// Too many tries (link codes).
+  bool get throttled => statusCode == 429;
 
   @override
   String toString() => message;
@@ -121,6 +212,48 @@ class ShareApi {
           role: ShareRole.byName(s['role'] as String?),
         ),
     ];
+  }
+
+  /// The user's profile, made at their first sign-in.
+  Future<Profile> profile(String token) async =>
+      Profile.fromJson(await _call(token, 'GET', ['profile']));
+
+  /// A code for another sign-in to join the profile (10 minutes, once).
+  Future<LinkCode> linkCode(String token) async {
+    final body = await _call(token, 'POST', ['profile', 'link-code']);
+    return LinkCode(
+      body['code'] as String,
+      DateTime.fromMillisecondsSinceEpoch(
+        ((body['expiresAt'] as num?) ?? 0).toInt() * 1000,
+      ),
+    );
+  }
+
+  /// Joins the profile [code] is for; that profile.
+  Future<Profile> link(String token, String code) async => Profile.fromJson(
+    await _call(token, 'POST', ['profile', 'link'], body: {'code': code}),
+  );
+
+  /// Unlinks the account [id] from the profile; the profile after (null
+  /// when the user unlinked this sign-in).
+  Future<Profile?> unlink(String token, String id) async {
+    final body = await _call(
+      token,
+      'POST',
+      ['profile', 'unlink'],
+      body: {'id': id},
+    );
+    return body['unlinked'] == true ? null : Profile.fromJson(body);
+  }
+
+  /// A Cognito token for the profile's identity (its folder).
+  Future<ProfileToken> profileToken(String token) async {
+    final body = await _call(token, 'POST', ['profile', 'credentials']);
+    return ProfileToken(
+      profileId: body['profileId'] as String,
+      identityId: body['identityId'] as String,
+      token: body['token'] as String,
+    );
   }
 
   /// Stops [captureId] of [owner] being shared with the user.

@@ -14,6 +14,7 @@ import 'cloud/cloud_sync.dart';
 import 'cloud/cognito.dart';
 import 'cloud/ocr_api.dart';
 import 'cloud/s3.dart';
+import 'cloud/profile_service.dart';
 import 'cloud/share_api.dart';
 import 'cloud/share_config.dart';
 import 'cloud/sigv4.dart';
@@ -96,20 +97,37 @@ class AppServices {
       bucket: CloudConfig.userDataBucket,
       region: CloudConfig.region,
     );
-    final credentials = CognitoCredentials(
-      region: CloudConfig.region,
-      identityPoolId: CloudConfig.identityPoolId,
-      now: AwsClock.shared.now,
-    );
+    final shares = ShareConfig.apiUrl.isEmpty
+        ? null
+        : ShareApi(baseUrl: Uri.parse(ShareConfig.apiUrl));
+    // With the share API, the folder is the profile's (every linked
+    // sign-in's); without it (local web builds), the sign-in's own.
+    final credentials = shares == null
+        ? CognitoCredentials(
+            region: CloudConfig.region,
+            identityPoolId: CloudConfig.identityPoolId,
+            now: AwsClock.shared.now,
+          )
+        : ProfileCredentials(
+            region: CloudConfig.region,
+            identityPoolId: CloudConfig.identityPoolId,
+            shares: shares,
+            now: AwsClock.shared.now,
+          );
     final started = sync = CloudSync(
       library: library,
       auth: auth,
       bucket: bucket,
       credentials: credentials,
-      shares: ShareConfig.apiUrl.isEmpty
-          ? null
-          : ShareApi(baseUrl: Uri.parse(ShareConfig.apiUrl)),
+      shares: shares,
     )..start();
+    if (shares != null) {
+      // Linking changes the profile's addresses: Premium is checked again.
+      started.profiles = ProfileService(
+        sync: started,
+        onChanged: () => ocr?.refresh(),
+      )..start();
+    }
     if (CloudConfig.ocrUrl.startsWith('https://')) {
       ocr = CloudOcr(
         library: library,
@@ -126,6 +144,7 @@ class AppServices {
   void stopSync() {
     ocr?.dispose();
     ocr = null;
+    sync?.profiles?.dispose();
     sync?.dispose();
     sync = null;
   }

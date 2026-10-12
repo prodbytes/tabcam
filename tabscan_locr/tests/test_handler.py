@@ -39,11 +39,26 @@ class FakeAccounts:
     def __init__(self, known=None):
         self.known = dict(known or {})
 
-    def put(self, identity, email):
-        self.known[identity] = email
+    def put(self, identity, emails):
+        self.known[identity] = [emails] if isinstance(emails, str) else list(emails)
+
+    def emails(self, identity):
+        found = self.known.get(identity)
+        return [found] if isinstance(found, str) else list(found or [])
 
     def email(self, identity):
-        return self.known.get(identity)
+        found = self.emails(identity)
+        return found[0] if found else None
+
+
+class FakeProfiles:
+    """subject -> (identity, addresses); no profile by default."""
+
+    def __init__(self, known=None):
+        self.known = dict(known or {})
+
+    def of(self, subject):
+        return self.known.get(subject)
 
 
 class FakeRbacr:
@@ -70,6 +85,11 @@ class FakeTokens:
             raise Unsupported("apple sign-in isn't set up")
         raise Unauthorized("bad token")
 
+    def verify_subject(self, token):
+        email, login = self.verify(token)
+        issuer = "https://appleid.apple.com" if login == "appleid.apple.com" else "https://accounts.google.com"
+        return email, login, f"{issuer}#{token}"
+
 
 class FakeCognito:
     def __init__(self):
@@ -88,7 +108,8 @@ def svc(monkeypatch):
     monkeypatch.setenv("VOUCHER_URL", "https://example.com/voucher")
     s = handler.Services()
     s._made.update(s3=FakeS3(), **{"lambda": FakeLambda()}, accounts=FakeAccounts(),
-                   rbacr=FakeRbacr(), tokens=FakeTokens(), cognito=FakeCognito())
+                   rbacr=FakeRbacr(), tokens=FakeTokens(), cognito=FakeCognito(),
+                   profiles=FakeProfiles())
     monkeypatch.setattr(handler, "services", s)
     return s
 
@@ -141,7 +162,7 @@ def test_account_records_the_identity_and_says_who_is_premium(svc):
     body = json.loads(r["body"])
     assert r["statusCode"] == 200
     assert body["premium"] is False and body["upgradeUrl"] == "https://example.com/subscribe"
-    assert svc.accounts.known == {ID: "ana@example.com"}
+    assert svc.accounts.known == {ID: ["ana@example.com"]}
     svc._made["rbacr"] = FakeRbacr({"ana@example.com"})
     body = json.loads(handler.api(http("/account"))["body"])
     assert body["premium"] is True and body["expiresAt"] == "2026-11-01T00:00:00Z"
@@ -174,7 +195,7 @@ def test_transcribe_is_premium_only_and_checks_the_event_id(svc):
 def test_apple_users_are_their_own_identity_and_premium_by_their_address(svc):
     body = json.loads(handler.api(http("/account", token="apple-token"))["body"])
     assert svc.cognito.logins == ["appleid.apple.com"]
-    assert svc.accounts.known == {APPLE_ID: "x7k2@privaterelay.appleid.com"}
+    assert svc.accounts.known == {APPLE_ID: ["x7k2@privaterelay.appleid.com"]}
     # A relay address matches no Premium unless that address has it.
     assert body["premium"] is False
     svc._made["rbacr"] = FakeRbacr({"x7k2@privaterelay.appleid.com"})
@@ -187,3 +208,26 @@ def test_apple_tokens_without_an_apple_client_need_google(svc):
     assert r["statusCode"] == 403
     assert json.loads(r["body"])["error"] == "google sign-in needed"
     assert svc.accounts.known == {}
+
+
+PROFILE_ID = "us-east-1:33333333-3333-3333-3333-333333333333"
+
+
+def test_a_profile_is_premium_if_any_linked_address_is(svc):
+    svc._made["profiles"] = FakeProfiles({
+        "https://accounts.google.com#good-token": (PROFILE_ID, ["ana@example.com", "x7k2@privaterelay.appleid.com"])})
+    svc._made["rbacr"] = FakeRbacr({"x7k2@privaterelay.appleid.com"})
+    r = handler.api(http("/account"))
+    assert r["statusCode"] == 200 and json.loads(r["body"])["premium"] is True
+    # The profile's folder, not the sign-in's own identity; both addresses.
+    assert svc.cognito.logins == []
+    assert svc.accounts.emails(PROFILE_ID) == ["ana@example.com", "x7k2@privaterelay.appleid.com"]
+    page = f"{PROFILE_ID}/events/ev1/p1.img"
+    assert handler.api(s3_event(page)) == "queued"
+
+
+def test_a_profile_without_a_folder_yet_queues_nothing(svc):
+    svc._made["profiles"] = FakeProfiles({"https://accounts.google.com#good-token": (None, ["ana@example.com"])})
+    svc._made["rbacr"] = FakeRbacr({"ana@example.com"})
+    r = handler.api(http("/transcribe", body={"eventId": "ev1"}))
+    assert r["statusCode"] == 200 and json.loads(r["body"]) == {"queued": 0}

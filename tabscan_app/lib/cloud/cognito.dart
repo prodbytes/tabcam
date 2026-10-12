@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../auth/auth_service.dart';
+import 'share_api.dart';
 import 'sigv4.dart';
 
 /// A Cognito identity (its ID is the user's folder in the bucket) with its
@@ -83,13 +84,32 @@ class CognitoCredentials implements CredentialSource {
                 'Logins': logins,
               }))['IdentityId']
               as String;
+    final session = await _credentialsFor(identityId, logins);
+    _session = session;
+    _sessionToken = idToken;
+    _sessionProvider = provider;
+    return session;
+  }
+
+  /// Forgets the session (on sign-out, or rejected credentials).
+  @override
+  void clear() {
+    _session = null;
+    _sessionToken = null;
+    _sessionProvider = null;
+  }
+
+  Future<CognitoSession> _credentialsFor(
+    String identityId,
+    Map<String, String> logins,
+  ) async {
     final result = await _call('GetCredentialsForIdentity', {
       'IdentityId': identityId,
       'Logins': logins,
     });
     final c = (result['Credentials'] as Map).cast<String, Object?>();
     final expiration = c['Expiration'];
-    final session = CognitoSession(
+    return CognitoSession(
       identityId: result['IdentityId'] as String? ?? identityId,
       credentials: AwsCredentials(
         accessKeyId: c['AccessKeyId']! as String,
@@ -103,18 +123,6 @@ class CognitoCredentials implements CredentialSource {
             : null,
       ),
     );
-    _session = session;
-    _sessionToken = idToken;
-    _sessionProvider = provider;
-    return session;
-  }
-
-  /// Forgets the session (on sign-out, or rejected credentials).
-  @override
-  void clear() {
-    _session = null;
-    _sessionToken = null;
-    _sessionProvider = null;
   }
 
   Future<Map<String, Object?>> _call(
@@ -139,5 +147,38 @@ class CognitoCredentials implements CredentialSource {
       );
     }
     return decoded;
+  }
+}
+
+/// Credentials for the folder of the signed-in user's profile: the share
+/// API vouches for the profile ([ShareApi.profileToken], a Cognito token
+/// for its developer identity), so every sign-in linked to it gets the same
+/// folder. Builds with the share API use it; others, [CognitoCredentials].
+class ProfileCredentials extends CognitoCredentials {
+  ProfileCredentials({
+    required super.region,
+    required super.identityPoolId,
+    required this.shares,
+    super.client,
+    super.now,
+  });
+
+  final ShareApi shares;
+
+  @override
+  Future<CognitoSession> session(String idToken) async {
+    final current = _session;
+    if (current != null &&
+        _sessionToken == idToken &&
+        !current.credentials.expiresSoon(_now())) {
+      return current;
+    }
+    final profile = await shares.profileToken(idToken);
+    final session = await _credentialsFor(profile.identityId, {
+      'cognito-identity.amazonaws.com': profile.token,
+    });
+    _session = session;
+    _sessionToken = idToken;
+    return session;
   }
 }
