@@ -11,8 +11,9 @@ api (tabscan-ocr-api), light: it never loads the OCR engines.
       POST /account     records which identity ID is which verified e-mail
                         (S3 events only carry the identity ID), and answers
                         whether the user is premium, with the upgrade links
-      POST /transcribe  {"eventId"}: transcribes the event's pages that have
-                        no transcription yet (pages from before upgrading)
+      POST /transcribe  {"eventId", "again"?}: transcribes the event's pages
+                        that have no transcription yet (pages from before
+                        upgrading); with "again", every page (Read again)
       POST /autocorrect {"eventId", "song", "text"}: checks a text tab
                         against the song's tab found online (autocorrect.py)
                         and answers with per-note corrections
@@ -275,7 +276,10 @@ def _on_http(event, method, path, request):
         return _autocorrect(body, request)
     if not identity:  # a profile whose folder isn't made yet: nothing synced
         return _reply(200, {"queued": 0})
-    return _reply(200, {"queued": _transcribe_missing(identity, event_id)})
+    # "again" (the app's Read again): every page, read results too.
+    again = body.get("again") is True
+    request["again"] = again
+    return _reply(200, {"queued": _transcribe_missing(identity, event_id, again)})
 
 
 def _premium(emails):
@@ -322,8 +326,9 @@ def _list(prefix):
         token = r["NextContinuationToken"]
 
 
-def _transcribe_missing(identity, event_id):
-    done = {k.rsplit("/", 1)[-1].removesuffix(".json") for k in _list(f"{identity}/ocr/{event_id}/")}
+def _transcribe_missing(identity, event_id, again=False):
+    done = set() if again else {
+        k.rsplit("/", 1)[-1].removesuffix(".json") for k in _list(f"{identity}/ocr/{event_id}/")}
     files = _list(f"{identity}/events/{event_id}/")
     queued, skipped = 0, []
     for key in files:
