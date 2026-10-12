@@ -97,4 +97,22 @@ void main() {
     expect(find.text('No text yet.'), findsOneWidget);
     expect(library.byId(id)!.pages.single.kind, PageKind.image);
   });
+
+  testWidgets('Add offers Document right after Scan pages', (tester) async {
+    await open(tester);
+    await tester.tap(find.byIcon(Icons.add_circle_outline));
+    await frames(tester);
+    final items = [
+      'Scan pages',
+      'Document',
+      'Photos & videos',
+      'Files',
+      'Link',
+    ];
+    final ys = [
+      for (final item in items) tester.getTopLeft(find.text(item).last).dy,
+    ];
+    expect(ys, [...ys]..sort());
+    expect(find.text('PDF files'), findsOneWidget);
+  });
 }

@@ -315,5 +315,7 @@
   "accountSignedInWith": "Sesión iniciada con {provider}",
   "accountDeleteNote": "Elimina tus eventos en la nube y en este dispositivo, y lo que compartiste.",
   "homeAddDocument": "Documento",
-  "homeAddDocumentDetail": "Archivos PDF"
+  "homeAddDocumentDetail": "Archivos PDF",
+  "eventAddDocument": "Documento",
+  "eventAddDocumentDetail": "Archivos PDF"
 }

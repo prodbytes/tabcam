@@ -315,5 +315,7 @@
   "accountSignedInWith": "Conectado com {provider}",
   "accountDeleteNote": "Exclui seus eventos na nuvem e neste dispositivo, e seus compartilhamentos.",
   "homeAddDocument": "Documento",
-  "homeAddDocumentDetail": "Arquivos PDF"
+  "homeAddDocumentDetail": "Arquivos PDF",
+  "eventAddDocument": "Documento",
+  "eventAddDocumentDetail": "Arquivos PDF"
 }

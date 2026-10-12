@@ -1194,4 +1194,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeAddDocumentDetail => 'PDF files';
+
+  @override
+  String get eventAddDocument => 'Document';
+
+  @override
+  String get eventAddDocumentDetail => 'PDF files';
 }

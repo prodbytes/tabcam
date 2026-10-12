@@ -611,3 +611,9 @@ spec.
     copy of the event); it now writes only its text onto the event as it
     is, adding pages does the same, and pages changed during a read are
     read again ([tab recognition](tab-recognition.md#pdfs)).
+67. **I still don't see the button for adding PDFs: make sure everything is
+    merged and deployed.** The Document option was on the Capture tab
+    only (and the web was still the release from before it). The open
+    capture's **Add** menu now has **Document** right after Scan pages, the
+    menu scrolls (five items overflowed a small phone), and a release
+    puts it all on the web ([scanning](scanning.md#adding-to-an-event)).

@@ -132,18 +132,22 @@ class _EventScreenState extends State<EventScreen> {
     final source = await showModalBottomSheet<_AddSource>(
       context: context,
       showDragHandle: true,
+      // Five sources: taller than a sheet's default on a small phone.
+      isScrollControlled: true,
       builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final source in _AddSource.values)
-              ListTile(
-                leading: Icon(source.icon),
-                title: Text(source.label(context.l10n)),
-                subtitle: Text(source.detail(context.l10n)),
-                onTap: () => Navigator.pop(context, source),
-              ),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final source in _AddSource.values)
+                ListTile(
+                  leading: Icon(source.icon),
+                  title: Text(source.label(context.l10n)),
+                  subtitle: Text(source.detail(context.l10n)),
+                  onTap: () => Navigator.pop(context, source),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -159,9 +163,11 @@ class _EventScreenState extends State<EventScreen> {
         if (pages.isEmpty) return;
         await _library.addPages(event, pages);
       } else {
-        final pick = source == _AddSource.library
-            ? await MediaSource.library()
-            : await MediaSource.files();
+        final pick = switch (source) {
+          _AddSource.document => await MediaSource.documents(),
+          _AddSource.library => await MediaSource.library(),
+          _ => await MediaSource.files(),
+        };
         if (pick.skipped > 0) {
           _snack(l10n.eventSkippedFiles(pick.skipped));
         }
@@ -541,6 +547,7 @@ enum _View {
 /// Where Add gets new pages.
 enum _AddSource {
   scan(Icons.document_scanner_outlined),
+  document(Icons.picture_as_pdf_outlined),
   library(Icons.photo_library_outlined),
   files(Icons.folder_open_outlined),
   link(Icons.link);
@@ -550,6 +557,7 @@ enum _AddSource {
 
   String label(AppLocalizations l10n) => switch (this) {
     scan => l10n.eventAddScan,
+    document => l10n.eventAddDocument,
     library => l10n.eventAddLibrary,
     files => l10n.eventAddFiles,
     link => l10n.eventAddLink,
@@ -557,6 +565,7 @@ enum _AddSource {
 
   String detail(AppLocalizations l10n) => switch (this) {
     scan => l10n.eventAddScanDetail,
+    document => l10n.eventAddDocumentDetail,
     library => l10n.eventAddLibraryDetail,
     files => l10n.eventAddFilesDetail,
     link => l10n.eventAddLinkDetail,
