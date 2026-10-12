@@ -1989,6 +1989,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Deletes your events in the cloud and on this device, and your shares.'**
   String get accountDeleteNote;
+
+  /// Capture tab: add PDF documents (first in Add)
+  ///
+  /// In en, this message translates to:
+  /// **'Document'**
+  String get homeAddDocument;
+
+  /// Capture tab: what Document adds
+  ///
+  /// In en, this message translates to:
+  /// **'PDF files'**
+  String get homeAddDocumentDetail;
 }
 
 class _AppLocalizationsDelegate

@@ -1187,4 +1187,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get accountDeleteNote =>
       'Deletes your events in the cloud and on this device, and your shares.';
+
+  @override
+  String get homeAddDocument => 'Document';
+
+  @override
+  String get homeAddDocumentDetail => 'PDF files';
 }

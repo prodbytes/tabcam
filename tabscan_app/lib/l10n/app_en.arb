@@ -1599,5 +1599,13 @@
   "accountDeleteNote": "Deletes your events in the cloud and on this device, and your shares.",
   "@accountDeleteNote": {
     "description": "Profile tab: under Delete account"
+  },
+  "homeAddDocument": "Document",
+  "@homeAddDocument": {
+    "description": "Capture tab: add PDF documents (first in Add)"
+  },
+  "homeAddDocumentDetail": "PDF files",
+  "@homeAddDocumentDetail": {
+    "description": "Capture tab: what Document adds"
   }
 }

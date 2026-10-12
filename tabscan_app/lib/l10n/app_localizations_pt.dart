@@ -1219,4 +1219,10 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get accountDeleteNote =>
       'Exclui seus eventos na nuvem e neste dispositivo, e seus compartilhamentos.';
+
+  @override
+  String get homeAddDocument => 'Documento';
+
+  @override
+  String get homeAddDocumentDetail => 'Arquivos PDF';
 }

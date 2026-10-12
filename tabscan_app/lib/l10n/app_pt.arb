@@ -313,5 +313,7 @@
   "profileRoles": "Funções: {roles}",
   "profileNotOwner": "Só a conta principal do perfil pode excluí-lo. Para sair, desvincule esta conta em Contas vinculadas.",
   "accountSignedInWith": "Conectado com {provider}",
-  "accountDeleteNote": "Exclui seus eventos na nuvem e neste dispositivo, e seus compartilhamentos."
+  "accountDeleteNote": "Exclui seus eventos na nuvem e neste dispositivo, e seus compartilhamentos.",
+  "homeAddDocument": "Documento",
+  "homeAddDocumentDetail": "Arquivos PDF"
 }

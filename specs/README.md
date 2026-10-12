@@ -23,8 +23,8 @@ the cloud as they sync.
 **App**
 
 - [Navigation](navigation.md): as Presence's, a bottom navigation bar
-  with Home (the events), Capture (Scan with the camera; Add photos &
-  videos, files or a link) and Profile (the account, About).
+  with Home (the events), Capture (Scan with the camera; Add a
+  document (PDF), photos & videos, files or a link) and Profile (the account, About).
 - [Library](library.md): the Home tab, a grid of events (newest first),
   in My captures and Shared with me sections once something is shared, with Rename, Share, Clone and Delete; how events are stored.
 - [Scanning](scanning.md): the system document scanner (edge detection,

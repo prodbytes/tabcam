@@ -596,3 +596,9 @@ spec.
     ([profiles](profiles.md), [cloud sync](cloud-sync.md),
     [shared captures](shared-captures.md), [cloud OCR](cloud-ocr.md),
     [navigation](navigation.md#profile)).
+64. **In the capture view, where there are the Scan, Photos, Files and Link
+    options, add a Document option for PDFs, first in the Add list; leave
+    Scan as is.** Capture's Add list starts with **Document** ("PDF
+    files"), which picks PDFs only and makes an event of them, like Files;
+    Scan is unchanged. In English, Spanish and Portuguese
+    ([navigation](navigation.md#capture)).

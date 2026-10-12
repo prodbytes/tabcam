@@ -81,6 +81,16 @@ abstract final class MediaSource {
   static Future<MediaPick> library() async =>
       MediaPick.of(await ImagePicker().pickMultipleMedia());
 
+  /// PDF documents, from the Files app (iOS), the system file picker
+  /// (Android) or the browser.
+  static Future<MediaPick> documents() async {
+    final files = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['pdf'],
+    );
+    return MediaPick.of([for (final f in files) f.xFile]);
+  }
+
   /// Image, video, audio and PDF files, from the Files app (iOS), the
   /// system file picker (Android) or the browser.
   static Future<MediaPick> files() async {

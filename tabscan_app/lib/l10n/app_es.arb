@@ -313,5 +313,7 @@
   "profileRoles": "Roles: {roles}",
   "profileNotOwner": "Solo la cuenta principal del perfil puede eliminarlo. Para salir, desvincula esta cuenta en Cuentas vinculadas.",
   "accountSignedInWith": "Sesión iniciada con {provider}",
-  "accountDeleteNote": "Elimina tus eventos en la nube y en este dispositivo, y lo que compartiste."
+  "accountDeleteNote": "Elimina tus eventos en la nube y en este dispositivo, y lo que compartiste.",
+  "homeAddDocument": "Documento",
+  "homeAddDocumentDetail": "Archivos PDF"
 }
