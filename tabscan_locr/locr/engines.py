@@ -80,6 +80,24 @@ def rapid(strip, line):
     return place([(t, min(p[0] for p in q)) for q, t, _ in found or []], line)
 
 
+def read_crop(ink):
+    """One number on drawn staff lines ([ink]: 1 = ink, the number alone),
+    read by RapidOCR's recognizer (no detection: the crop is the text)."""
+    padded = cv2.copyMakeBorder((255 - ink * 255).astype("uint8"), 12, 12, 12, 12,
+                                cv2.BORDER_CONSTANT, value=255)
+    bgr = cv2.cvtColor(padded, cv2.COLOR_GRAY2BGR)
+    found, _ = _rapid()(bgr, use_det=False, use_cls=False, use_rec=True)
+    text = found[0][0] if found else ""
+    from .staves import fret
+    if fret(text) is None:
+        # A second opinion: PaddleOCR's, on the same number.
+        res = _paddle().predict(bgr)[0]
+        other = "".join(res["rec_texts"])
+        if fret(other) is not None:
+            return other
+    return text
+
+
 def read_page(gray):
     """A whole grayscale page's text, for the notations around the tab:
     (text, x0, y0, x1, y1, score) per box RapidOCR finds."""

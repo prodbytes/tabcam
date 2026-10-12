@@ -190,7 +190,8 @@ def vote(readings):
     return readings[cost.index(min(cost))]
 
 
-_URL = re.compile(r"https?://|www\.|\.(com|net|org|br)\b", re.I)
+_URL = re.compile(r"https?://|www\.|\.(com|net|org|br)\b"
+                  r"|camscanner|scanned with|digitalizado com|escaneado con", re.I)
 _PAGE_NUMBER = re.compile(r"^(page\s*)?\d+(\s*(/|of)\s*\d+)?$", re.I)
 _ODD = re.compile(r"[^A-Za-z0-9\u00c0-\u00ff\s#/()'\u2019,.!?:;&+\-]")
 
@@ -246,17 +247,54 @@ def text_lines(words, groups):
     return out
 
 
-def page_text(gray, groups, read_page):
+def page_text(gray, groups, read_page, full=False, pad=None):
     """The page's text off the staves, as text_lines. The staves are
-    blanked out and the page read at half size (big enough for print)."""
+    blanked out ([pad] around them: a quarter of a line's band, unless
+    given) and the page read at half size (big enough for print), or at
+    full size ([full]: handwriting)."""
     page = gray.copy()
     for g in groups:
-        pad = (g[0].y1 - g[0].y0) // 4
-        page[max(0, min(l.y0 for l in g) - pad):max(l.y1 for l in g) + pad, :] = 255
+        p = pad if pad is not None else (g[0].y1 - g[0].y0) // 4
+        page[max(0, int(min(l.y0 for l in g) - p)):int(max(l.y1 for l in g) + p), :] = 255
+    if full:
+        # Handwriting: each strip between staves read on its own, full
+        # size (a mostly blank page throws the detector off).
+        words, top = [], 0
+        bands = sorted((int(min(l.y0 for l in g)), int(max(l.y1 for l in g))) for g in groups)
+        for y0, y1 in bands + [(page.shape[0], page.shape[0])]:
+            if y0 - top > 20:
+                words += [(t, a, b + top, c, d + top, sc)
+                          for t, a, b, c, d, sc in read_page(page[top:y0])]
+            top = max(top, y1)
+        # And the whole page: each way finds words the other misses.
+        words = _merge_words(words, read_page(page))
+        return text_lines(words, groups)
     half = cv2.resize(page, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
     words = [(t, x0 * 2, y0 * 2, x1 * 2, y1 * 2, score)
              for t, x0, y0, x1, y1, score in read_page(half)]
     return text_lines(words, groups)
+
+
+def _area(w):
+    return (w[3] - w[1]) * (w[4] - w[2])
+
+
+def _merge_words(a, b):
+    """Words read two ways: all of them; of two that overlap, the one much
+    bigger (more of the line), else the surer."""
+    def overlap(u, v):
+        ix = max(0, min(u[3], v[3]) - max(u[1], v[1]))
+        iy = max(0, min(u[4], v[4]) - max(u[2], v[2]))
+        smaller = min((u[3] - u[1]) * (u[4] - u[2]), (v[3] - v[1]) * (v[4] - v[2])) or 1
+        return ix * iy / smaller
+    out = list(a)
+    for w in b:
+        clash = [i for i, o in enumerate(out) if overlap(w, o) > 0.3]
+        if not clash:
+            out.append(w)
+        elif all(_area(w) > 1.5 * _area(out[i]) or w[5] > out[i][5] for i in clash):
+            out = [o for i, o in enumerate(out) if i not in clash] + [w]
+    return out
 
 
 def join(pieces):
@@ -298,11 +336,12 @@ def pdf_pages(data, max_pages=MAX_PDF_PAGES):
         pdf.close()
 
 
-def transcribe_pdf(data, engines, read_page=None, vision=None):
+def transcribe_pdf(data, engines, read_page=None, vision=None, read_crop=None):
     """A PDF's tab: each page read as a photo of it would be (transcribe),
     the pages' tabs joined by a blank line."""
     start = time.monotonic()
-    results = [transcribe_image(img, engines, read_page, vision) for img in pdf_pages(data)]
+    results = [transcribe_image(img, engines, read_page, vision, read_crop)
+               for img in pdf_pages(data)]
     found = [r for r in results if r.text]
     timings = {}
     for r in results:
@@ -313,26 +352,57 @@ def transcribe_pdf(data, engines, read_page=None, vision=None):
                   timings=timings)
 
 
-def transcribe(data, engines, read_page=None, vision=None):
+def transcribe(data, engines, read_page=None, vision=None, read_crop=None):
     """[data]: an image file's bytes. [engines]: name -> read(strip, line),
     each returning the line's text as read (engines.py). [read_page]: reads
     a whole (grayscale) page into words with their boxes, for the
     notations around the tab; None leaves them out. [vision]: reads a page
     the engines find no tab lines on (a handwritten tab, drawn staff
     lines), image -> its tab text ("" for none); None: no tab."""
-    return transcribe_image(decode(data), engines, read_page, vision)
+    return transcribe_image(decode(data), engines, read_page, vision, read_crop)
 
 
-def transcribe_image(img, engines, read_page=None, vision=None):
+def _drawn(gray, read_crop, read_page):
+    """The tab on drawn staff lines (staves.py), with the notations off
+    them, or None when there's none."""
+    from . import staves
+    blocks, found = staves.read(gray, read_crop)
+    if not blocks:
+        return None
+    pieces = [(y, "staff", t) for y, t in blocks]
+    if read_page:
+        # Stand-in lines, for blanking the staves and placing chord names.
+        groups = []
+        for ys, x0, x1 in found:
+            gap = (ys[-1] - ys[0]) / (len(ys) - 1)
+            groups.append([Line(int(y - gap / 2), int(y + gap / 2), x0, x1, y,
+                                int((x1 - x0) / gap), gap, x0) for y in ys])
+        # Full size: handwriting reads better; the staff itself only blanked.
+        pieces += [(y, "text", t) for y, t in page_text(gray, groups, read_page, full=True,
+                                                      pad=0)]
+    pieces.sort(key=lambda p: p[0])
+    lines = sum(len(f[0]) for f in found)
+    return Result(join([(k, t) for _, k, t in pieces]) + "\n", staves=len(blocks), lines=lines)
+
+
+def transcribe_image(img, engines, read_page=None, vision=None, read_crop=None):
     """transcribe, for an image already decoded (BGR)."""
     start = time.monotonic()
     gray = prepare(img)
     groups = staves(find_lines(gray))
     jobs = [(line, gray[line.y0:line.y1, line.x0:line.x1]) for g in groups for line in g]
+    if not jobs and read_crop is not None:
+        # No dash lines: frets on drawn staff lines (handwritten, typeset)?
+        t = time.monotonic()
+        drawn = _drawn(gray, read_crop, read_page)
+        if drawn is not None:
+            drawn.timings["drawn"] = round(time.monotonic() - t, 2)
+            drawn.seconds = round(time.monotonic() - start, 2)
+            return drawn
     if not jobs:
         if vision is None:
             return Result("", seconds=time.monotonic() - start)
-        # No dash lines: a tab the engines can't read, if any. Claude's.
+        # Nothing the engines read: Claude's, where it's switched on.
         t = time.monotonic()
         text = vision(img)
         staves_read = len([b for b in text.split("\n\n") if "|" in b])

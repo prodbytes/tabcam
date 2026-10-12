@@ -72,18 +72,40 @@ a photo is (below); the pages' tabs are joined by a blank line into the
 PDF's one result. The image's build reads the made-up riff from a PDF of
 its photo too.
 
-**Pages the engines can't read**: when a page (a photo, or a PDF's page)
-has no dash lines, it isn't a text tab the engines read: a handwritten
-tab, or one on drawn staff lines. **Claude** (vision, `claude-opus-5-5`,
-[locr/vision.py](../tabscan_locr/locr/vision.py)) transcribes it into
-the app's plain-text tab instead: each staff's strings `e B G D A E`,
-notes at their columns, the title, section names, repeat marks, chord
-names above their staff, lyrics under it; page furniture (a scanner's
-watermark) left out; "found" false when it has no tab. The result's
-`engines` is `["claude"]`. It needs the Claude API key
-(`tabscan/anthropic-api-key` in Secrets Manager), read by name, so it's on
-as soon as the secret exists; without it, or if Claude fails (logged),
-such a page is `no-tab` as before.
+**Tabs on drawn staff lines** (handwritten, or typeset: books, Guitar Pro
+printouts), where the frets sit on the lines and there are no dashes, are
+read by the same engines another way ([locr/staves.py](../tabscan_locr/locr/staves.py)),
+when a page has no dash lines:
+
+1. Long horizontal strokes are the staff lines (a slightly skewed line,
+   two rows a few pixels apart, is one); lines about a gap apart, six (four
+   for bass, five where the page cuts the last), make a staff.
+2. The lines are erased, except where a pen stroke crosses them, so the
+   numbers stay whole.
+3. The ink near each staff is split into marks of a digit's size; marks
+   side by side at about the same height are one number, on the string
+   nearest its middle. Marks at the staff's start (handwritten string
+   numbers, the TAB clef) are left out.
+4. Each number's crop is read by RapidOCR's recognizer (no detection), or
+   PaddleOCR's when that isn't a fret; misreadings are fixed (S 5, g 9,
+   o 0, l 1, B 8, ...); a read of several ("5 7-9") is split across the
+   crop, and a "number" past fret 24 (55, 97) is two notes.
+5. Numbers about the same x are one column (a chord); columns get dashes
+   before them by their distance, as the app lays out a typeset tab.
+
+The title, section names and chord names around the staves are read at
+full size, each strip between staves on its own and the whole page too
+(each finds words the other misses), and placed as for text tabs; scanner
+watermarks ("Digitalizado com CamScanner", "Scanned with ...") are left
+out, in the app too. Printed numbers read exactly (the image's build reads
+a made-up riff set on drawn lines back, every note); handwriting about two
+in three notes right, in order and on the right string, so the text is
+worth checking against the page.
+
+Claude (vision, [locr/vision.py](../tabscan_locr/locr/vision.py)) can
+read the pages nothing else does, but it's **off**: on only with
+`VISION_FALLBACK=1` on the function and the Claude API key
+(`tabscan/anthropic-api-key`), neither set.
 
 **Notations**: the rest of the page, with the staves blanked out, is read
 by RapidOCR at half size (1400 px). Its words (confidence 0.5 or more) are

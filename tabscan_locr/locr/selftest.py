@@ -65,6 +65,49 @@ def _tab(text):
     return [l for l in text.splitlines() if re.match(r"^[eBGDAE]?\|", l)]
 
 
+# A made-up riff for drawn staff lines: frets only (no dashes are drawn).
+DRAWN_RIFF = """\
+e|-----0-------3-------0-----|
+B|---1-------1-------1-----1-|
+G|-2-------2-------2---------|
+D|---------------------------|
+A|-------3---------------3---|
+E|-3-------------3-----------|
+
+e|---------------12----------|
+B|-----5---7---10-----8------|
+G|---7---9------------7------|
+D|-5-----------------------x-|
+A|---------------------------|
+E|---------------------------|
+"""
+
+
+def drawn_page(text=DRAWN_RIFF):
+    """[text]'s frets set on drawn staff lines (a book's or Guitar Pro's
+    tab), photographed as page_photo is."""
+    font = ImageFont.truetype(next(f for f in FONTS if os.path.exists(f)), 26)
+    page = Image.new("RGB", (900, 1200), "white")
+    draw = ImageDraw.Draw(page)
+    draw.text((60, 50), TITLE, fill="black", font=font)
+    staves = [b.splitlines() for b in text.strip().split("\n\n")]
+    col = 22  # pixels per column of the text
+    for si, staff in enumerate(staves):
+        top = 160 + si * 260
+        for li, line in enumerate(staff):
+            y = top + li * 30
+            draw.line([(60, y), (60 + col * (len(line) - 1), y)], fill="black", width=2)
+            body = line[2:]
+            for m in re.finditer(r"[0-9x]+", body):
+                x = 60 + col * (m.start() + 2)
+                w = draw.textlength(m.group(), font=font)
+                draw.rectangle([x - 3, y - 13, x + w + 3, y + 13], fill="white")
+                draw.text((x, y - 15), m.group(), fill="black", font=font)
+    page = np.array(page)[..., ::-1]
+    ok, jpg = cv2.imencode(".jpg", page, [cv2.IMWRITE_JPEG_QUALITY, 90])
+    return jpg.tobytes()
+
+
 def score(expected, got):
     """The share of the riff's notes read right, on the tab lines only."""
     from .pipeline import tokens
@@ -100,7 +143,14 @@ def main():
     p = pipeline.transcribe_pdf(pdf.getvalue(), engines.default(), read_page=engines.read_page)
     pdf_score = score(RIFF, p.text)
     print(f"pdf: notes={pdf_score:.1%} seconds={p.seconds}")
-    sys.exit(0 if s >= args.min and title >= 0.8 and pdf_score >= args.min else 1)
+    # Frets on drawn staff lines (no dashes): the drawn-staves reading.
+    d = pipeline.transcribe(drawn_page(), engines.default(), read_page=engines.read_page,
+                            read_crop=engines.read_crop)
+    drawn_score = score(DRAWN_RIFF, d.text)
+    print(d.text)
+    print(f"drawn: notes={drawn_score:.1%} staves={d.staves} seconds={d.seconds}")
+    sys.exit(0 if s >= args.min and title >= 0.8 and pdf_score >= args.min
+             and drawn_score >= args.min else 1)
 
 
 if __name__ == "__main__":

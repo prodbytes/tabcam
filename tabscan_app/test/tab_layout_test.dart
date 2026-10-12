@@ -73,6 +73,7 @@ void main() {
         'A|-------|',
         'E|-------|',
         'Page 1/2',
+        'Digitalizado com CamScanner',
         '%% ~~ ^^',
         'la la la',
       ])!;

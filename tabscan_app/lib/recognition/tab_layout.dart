@@ -150,7 +150,8 @@ String placeWords(List<(String, int)> words) {
 }
 
 final RegExp _url = RegExp(
-  r'https?://|www\.|\.(com|net|org|br)\b',
+  r'https?://|www\.|\.(com|net|org|br)\b'
+  r'|camscanner|scanned with|digitalizado com|escaneado con',
   caseSensitive: false,
 );
 final RegExp _pageNumber = RegExp(
