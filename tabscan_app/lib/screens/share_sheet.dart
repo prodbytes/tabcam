@@ -7,11 +7,13 @@ import '../export/exporter.dart';
 import '../l10n/language.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
+import 'people_sheet.dart';
 
 /// Asks what to share the event as, then opens the system's share sheet:
 /// its link (the default, with cloud sync), a PDF, the text, or a zip of
 /// its files. Text is offered once the tab has been read or there are
-/// links.
+/// links. Share with people (the user's own events, where sharing is set
+/// up) opens the [PeopleSheet] instead.
 Future<void> showShareSheet(
   BuildContext context,
   Library library,
@@ -22,7 +24,8 @@ Future<void> showShareSheet(
   // With the images hidden, a PDF or zip needs something else to hold.
   final hidden = event.hideImages;
   final hasFiles = event.visiblePages.any((p) => p.hasFile);
-  final format = await showModalBottomSheet<ShareFormat>(
+  final people = sync != null && sync.canShare && !event.isShared;
+  final choice = await showModalBottomSheet<Object>(
     context: context,
     showDragHandle: true,
     builder: (context) {
@@ -45,6 +48,13 @@ Future<void> showShareSheet(
               autofocus: sync != null,
               onTap: () => Navigator.pop(context, ShareFormat.link),
             ),
+            if (people)
+              ListTile(
+                leading: const Icon(Icons.group_add_outlined),
+                title: Text(l10n.eventShareWithPeople),
+                subtitle: Text(l10n.eventShareWithPeopleDetail),
+                onTap: () => Navigator.pop(context, _people),
+              ),
             ListTile(
               leading: const Icon(Icons.picture_as_pdf_outlined),
               title: Text(l10n.accountSharePdf),
@@ -83,7 +93,12 @@ Future<void> showShareSheet(
       );
     },
   );
-  if (format == null) return;
+  if (choice == _people && context.mounted) {
+    await showPeopleSheet(context, sync!, event);
+    return;
+  }
+  if (choice is! ShareFormat) return;
+  final format = choice;
   // A link opens the capture from the cloud: make sure it gets there.
   if (format == ShareFormat.link) unawaited(sync?.syncNow());
   try {
@@ -100,3 +115,6 @@ Future<void> showShareSheet(
     }
   }
 }
+
+/// The share sheet's choice of Share with people.
+const Object _people = #people;

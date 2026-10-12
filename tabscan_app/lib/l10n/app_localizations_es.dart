@@ -352,7 +352,31 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventShare => 'Compartir';
 
   @override
-  String get eventPages => 'Páginas';
+  String get eventShareWithPeopleDetail =>
+      'Por correo, para editar o solo lectura';
+
+  @override
+  String get eventFiles => 'Archivos';
+
+  @override
+  String eventFilePage(int number) {
+    return 'Página $number';
+  }
+
+  @override
+  String eventFileVideo(int number) {
+    return 'Video $number';
+  }
+
+  @override
+  String eventFilePdf(int number) {
+    return 'PDF $number';
+  }
+
+  @override
+  String eventFileRecording(int number) {
+    return 'Grabación $number';
+  }
 
   @override
   String get eventText => 'Texto';

@@ -51,7 +51,7 @@ void main() {
     });
   });
 
-  testWidgets('Reorder drags a page and keeps showing it', (tester) async {
+  testWidgets('Reorder drags a page and the list follows', (tester) async {
     final library = Library(PlatformEventStore(), null, (_) async => null);
     late String id;
     await tester.runAsync(() async {
@@ -93,10 +93,14 @@ void main() {
     expect(library.byId(id)!.pages.map((p) => p.id), before.reversed);
     expect(find.text('1. Lesson'), findsOneWidget);
 
-    // Closed, the photo still shows, now second.
+    // Closed, the list shows the new order: the link, then the photo.
     await tester.tapAt(const Offset(10, 10));
     await frames(tester);
-    expect(find.text('2 / 2'), findsOneWidget);
+    final [photo, link] = before;
+    expect(
+      tester.getTopLeft(find.byKey(ValueKey('file-$link'))).dy,
+      lessThan(tester.getTopLeft(find.byKey(ValueKey('file-$photo'))).dy),
+    );
   });
 
   testWidgets('no Reorder with a single page', (tester) async {

@@ -28,11 +28,13 @@ tabs, and a compact **app bar** on top names the open one
 
 A reload (the web) or a restart (the apps) opens where the user was:
 the tab, and the event that was open over it, on its Text view or its
-pages, at the page shown ([lib/screens/place.dart](../tabscan_app/lib/screens/place.dart)).
+list of files, and the file open over that, if one was
+([lib/screens/place.dart](../tabscan_app/lib/screens/place.dart)).
 The place is kept on the device (the library's `place` meta file, not
 synced), saved half a second after each move: switching tabs, opening
-or closing an event, flipping Text and pages, swiping pages. A capture's
-link opening at launch wins over it; an event deleted since isn't
+or closing an event, switching Files and Text, opening or closing a
+file. A capture's link opening at launch wins over it; an event deleted
+since isn't
 opened.
 
 ## Capture

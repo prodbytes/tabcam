@@ -1,9 +1,9 @@
 # Page filters
 
 Each page keeps the image as scanned; a filter is applied when it's shown,
-shared or exported, and can be changed at any time, for all of an
-event's image pages at once, with the event screen's view (**Original**
-or **Scan**, which is the Tab filter; see [event screen](event-screen.md)).
+shared or exported, and can be changed at any time, one image at a
+time, with the file screen's view (**Original** or **Scan**, which is the
+Tab filter; see [event screen](event-screen.md#file-screen)).
 
 - **Tab** (the default for new pages): black ink on white paper. The page
   is turned upright (EXIF orientation), scaled to at most 2400 px on its

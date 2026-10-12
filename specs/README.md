@@ -30,10 +30,10 @@ the cloud as they sync.
 - [Scanning](scanning.md): the system document scanner (edge detection,
   straightening, several pages), and adding pages, photos, videos, files
   and links.
-- [Event screen](event-screen.md): one event's pages (images, videos and
-  links, with Open and Copy) to swipe and zoom, with
-  the view (Original, Scan or Text), Add, Rotate and Delete, plus Reorder, Rename
-  and Share.
+- [Event screen](event-screen.md): one event's files (images, videos,
+  recordings, PDFs and links) as a list with previews, Files, Text and
+  Add, plus Rename, Reorder, Clone and one Share; a tap opens a file alone, with
+  its view (Original or Scan), Rotate and Delete.
 - [Hidden images](hidden-images.md): the owner hides a capture's photos
   and scans, for everyone; it then shows only the text tab, videos and
   links, and exports leave the images out.

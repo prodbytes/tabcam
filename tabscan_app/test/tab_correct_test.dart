@@ -101,15 +101,15 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     expect(find.byType(TabTextView), findsOneWidget);
 
-    // The pages are the Text tool away.
-    await tester.tap(find.byKey(const Key('text')));
+    // The files are the Files tool away.
+    await tester.tap(find.byKey(const Key('files')));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
     expect(find.byType(TabTextView), findsNothing);
-    expect(find.text('1 / 1'), findsOneWidget);
+    expect(find.text('Page 1'), findsOneWidget);
   });
 
-  testWidgets('an event not marked correct opens on its pages', (tester) async {
+  testWidgets('an event not marked correct opens on its files', (tester) async {
     final (library, event) = await _event(tester);
     await tester.pumpWidget(
       MaterialApp(
@@ -119,6 +119,6 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
     expect(find.byType(TabTextView), findsNothing);
-    expect(find.text('1 / 1'), findsOneWidget);
+    expect(find.text('Page 1'), findsOneWidget);
   });
 }

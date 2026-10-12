@@ -625,31 +625,7 @@ spec.
 
 ## 2026-10-12
 
-68. **Embed a YouTube player when the link added is for a YouTube video;
-    if the video can't be seen for any reason, just show the link and
-    open it in a new tab.** A link page for a YouTube video gets
-    **Play**, which plays it in YouTube's embedded player
-    (`youtube_player_iframe`, youtube-nocookie.com) on the web, Android
-    and iOS, from the link's start time. Any failure (YouTube's error,
-    the page not loading, a 20-second timeout, no web view) goes back to
-    the link card, which says the video can't be played here and opens
-    it in a new tab ([event screen](event-screen.md),
-    [platforms](platforms.md)). The privacy policy names YouTube, which
-    is contacted only on Play ([privacy](privacy.md)).
-69. **When a user renames a capture, just make it a name, no artist and
-    song name; let the user name it whatever.** The rename dialog has one
-    **Name** field instead of Song and Artist; what the user types is the
-    title, and renaming clears the artist
-    ([library](library.md#events)).
-70. **Let users reorder the files they add.** The event screen's app bar
-    has **Reorder** (with more than one page, when the user can edit):
-    a sheet lists the pages with a thumbnail or icon and what each is,
-    dragged by their handles into a new order, saved at each drop and
-    synced; photos and PDFs moved are read again in their new order. With
-    the images hidden, only the other pages are listed and the images
-    stay put. In English, Spanish and Portuguese
-    ([event screen](event-screen.md)).
-71. **PDF reading doesn't work: a PDF uploaded wasn't read, and Read again
+68. **PDF reading doesn't work: a PDF uploaded wasn't read, and Read again
     does nothing. Fix it, check the logs; PDFs must be scanned just as if
     they were photographed.** The logs showed the PDF was a scan (an image,
     no text), uploaded on the web, signed in with an address that isn't
@@ -665,3 +641,47 @@ spec.
     by name: on as soon as it exists). Read again now makes the cloud read
     every page again, and shows while the text is on its way
     ([tab recognition](tab-recognition.md#pdfs), [cloud OCR](cloud-ocr.md)).
+69. **Let users reorder the files they add.** The event screen's app bar
+    has **Reorder** (with more than one page, when the user can edit):
+    a sheet lists the pages with a thumbnail or icon and what each is,
+    dragged by their handles into a new order, saved at each drop and
+    synced; photos and PDFs moved are read again in their new order. With
+    the images hidden, only the other pages are listed and the images
+    stay put. In English, Spanish and Portuguese
+    ([event screen](event-screen.md)).
+70. **When a user renames a capture, just make it a name, no artist and
+    song name; let the user name it whatever.** The rename dialog has one
+    **Name** field instead of Song and Artist; what the user types is the
+    title, and renaming clears the artist
+    ([library](library.md#events)).
+71. **Embed a YouTube player when the link added is for a YouTube video;
+    if the video can't be seen for any reason, just show the link and
+    open it in a new tab.** A link page for a YouTube video gets
+    **Play**, which plays it in YouTube's embedded player
+    (`youtube_player_iframe`, youtube-nocookie.com) on the web, Android
+    and iOS, from the link's start time. Any failure (YouTube's error,
+    the page not loading, a 20-second timeout, no web view) goes back to
+    the link card, which says the video can't be played here and opens
+    it in a new tab ([event screen](event-screen.md),
+    [platforms](platforms.md)). The privacy policy names YouTube, which
+    is contacted only on Play ([privacy](privacy.md)).
+72. **Improve the capture page: keep the title, Rename and Clone; one
+    Share, not Share and Share with people; take out the Scan toggle and
+    make the first tool the capture's files, then Text, then Add; Rotate
+    and Delete are fine but confusing. Home shows every capture; a capture
+    shows the list of its files (with the one just scanned) and a preview
+    of each; a tap on a file opens only that file.** The event screen is
+    now a list of its files, each with a preview (the image itself, or a
+    badge for videos, PDFs, recordings and links) and a name ("Page 2",
+    "Video 1", a link's title); after Add it scrolls to the new files. A
+    tap opens the file alone on a new **file screen**, which has the
+    view (Original ↔ Scan, now per image), Rotate and Delete (back to the
+    list after a delete). The bottom tools are **Files**, **Text** and
+    **Add**; the Original/Scan toggle, Rotate and Delete left the capture
+    screen, and so did the pager and its "2 / 5". The app bar has one
+    **Share**; **Share with people** moved into its sheet, right after
+    Link. A reload reopens the file that was open. In English, Spanish
+    and Portuguese ([event screen](event-screen.md),
+    [sharing](sharing.md), [shared captures](shared-captures.md),
+    [hidden images](hidden-images.md), [page filters](page-filters.md),
+    [navigation](navigation.md#coming-back-where-the-user-was)).
