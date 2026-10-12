@@ -298,11 +298,11 @@ def pdf_pages(data, max_pages=MAX_PDF_PAGES):
         pdf.close()
 
 
-def transcribe_pdf(data, engines, read_page=None):
+def transcribe_pdf(data, engines, read_page=None, vision=None):
     """A PDF's tab: each page read as a photo of it would be (transcribe),
     the pages' tabs joined by a blank line."""
     start = time.monotonic()
-    results = [transcribe_image(img, engines, read_page) for img in pdf_pages(data)]
+    results = [transcribe_image(img, engines, read_page, vision) for img in pdf_pages(data)]
     found = [r for r in results if r.text]
     timings = {}
     for r in results:
@@ -313,22 +313,32 @@ def transcribe_pdf(data, engines, read_page=None):
                   timings=timings)
 
 
-def transcribe(data, engines, read_page=None):
+def transcribe(data, engines, read_page=None, vision=None):
     """[data]: an image file's bytes. [engines]: name -> read(strip, line),
     each returning the line's text as read (engines.py). [read_page]: reads
     a whole (grayscale) page into words with their boxes, for the
-    notations around the tab; None leaves them out."""
-    return transcribe_image(decode(data), engines, read_page)
+    notations around the tab; None leaves them out. [vision]: reads a page
+    the engines find no tab lines on (a handwritten tab, drawn staff
+    lines), image -> its tab text ("" for none); None: no tab."""
+    return transcribe_image(decode(data), engines, read_page, vision)
 
 
-def transcribe_image(img, engines, read_page=None):
+def transcribe_image(img, engines, read_page=None, vision=None):
     """transcribe, for an image already decoded (BGR)."""
     start = time.monotonic()
     gray = prepare(img)
     groups = staves(find_lines(gray))
     jobs = [(line, gray[line.y0:line.y1, line.x0:line.x1]) for g in groups for line in g]
     if not jobs:
-        return Result("", seconds=time.monotonic() - start)
+        if vision is None:
+            return Result("", seconds=time.monotonic() - start)
+        # No dash lines: a tab the engines can't read, if any. Claude's.
+        t = time.monotonic()
+        text = vision(img)
+        staves_read = len([b for b in text.split("\n\n") if "|" in b])
+        return Result(text, staves=staves_read,
+                      seconds=round(time.monotonic() - start, 2),
+                      timings={"claude": round(time.monotonic() - t, 2)})
 
     def run(read):
         t = time.monotonic()

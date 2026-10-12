@@ -11,8 +11,9 @@ api (tabscan-ocr-api), light: it never loads the OCR engines.
       POST /account     records which identity ID is which verified e-mail
                         (S3 events only carry the identity ID), and answers
                         whether the user is premium, with the upgrade links
-      POST /transcribe  {"eventId"}: transcribes the event's pages that have
-                        no transcription yet (pages from before upgrading)
+      POST /transcribe  {"eventId", "again"?}: transcribes the event's pages
+                        that have no transcription yet (pages from before
+                        upgrading); with "again", every page (Read again)
       POST /autocorrect {"eventId", "song", "text"}: checks a text tab
                         against the song's tab found online (autocorrect.py)
                         and answers with per-note corrections
@@ -275,7 +276,10 @@ def _on_http(event, method, path, request):
         return _autocorrect(body, request)
     if not identity:  # a profile whose folder isn't made yet: nothing synced
         return _reply(200, {"queued": 0})
-    return _reply(200, {"queued": _transcribe_missing(identity, event_id)})
+    # "again" (the app's Read again): every page, read results too.
+    again = body.get("again") is True
+    request["again"] = again
+    return _reply(200, {"queued": _transcribe_missing(identity, event_id, again)})
 
 
 def _premium(emails):
@@ -322,8 +326,9 @@ def _list(prefix):
         token = r["NextContinuationToken"]
 
 
-def _transcribe_missing(identity, event_id):
-    done = {k.rsplit("/", 1)[-1].removesuffix(".json") for k in _list(f"{identity}/ocr/{event_id}/")}
+def _transcribe_missing(identity, event_id, again=False):
+    done = set() if again else {
+        k.rsplit("/", 1)[-1].removesuffix(".json") for k in _list(f"{identity}/ocr/{event_id}/")}
     files = _list(f"{identity}/events/{event_id}/")
     queued, skipped = 0, []
     for key in files:
@@ -345,6 +350,19 @@ def _transcribe_missing(identity, event_id):
 _engines = None
 
 
+def _vision(img):
+    """Claude's reading of a page the engines find no tab on; "" while the
+    Claude API key isn't set up, or when Claude fails (logged)."""
+    from . import claude, vision
+    try:
+        return vision.read_tab(img)
+    except claude.NotSetUp:
+        return ""
+    except Exception as e:
+        log("vision failed", error=f"{type(e).__name__}: {e}")
+        return ""
+
+
 def ocr(event, context=None):
     global _engines
     page = keys.parse_page(event.get("key", ""))
@@ -362,9 +380,11 @@ def ocr(event, context=None):
         if obj["ContentLength"] > MAX_BYTES:
             raise pipeline.TooLarge("image too large")
         read = pipeline.transcribe_pdf if page.is_pdf else pipeline.transcribe
-        r = read(obj["Body"].read(), _engines, read_page=engines.read_page)
+        r = read(obj["Body"].read(), _engines, read_page=engines.read_page, vision=_vision)
         result.update(status="ok" if r.text else "no-tab", text=r.text,
                       staves=r.staves, lines=r.lines, timings=r.timings)
+        if "claude" in r.timings:
+            result["engines"] = ["claude"]
     except services.s3.exceptions.NoSuchKey:
         log("ocr page gone", key=page.key)
         return "gone"  # deleted meanwhile
@@ -374,8 +394,8 @@ def ocr(event, context=None):
         log("ocr failed", key=page.key, error=f"{type(e).__name__}: {e}",
             seconds=round(time.monotonic() - start, 2), trace=traceback.format_exc())
         raise
-    result.update(seconds=round(time.monotonic() - start, 2), created=_now(),
-                  engines=list(_engines))
+    result.update(seconds=round(time.monotonic() - start, 2), created=_now())
+    result.setdefault("engines", list(_engines))
     services.s3.put_object(Bucket=services.bucket, Key=page.result_key,
                            Body=json.dumps(result).encode(), ContentType="application/json")
     log("ocr done", key=page.key, status=result["status"], error=result.get("error"),

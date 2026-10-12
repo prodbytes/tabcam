@@ -2,6 +2,9 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:tabscan_app/recognition/auto_reader.dart';
+import 'package:tabscan_app/capture/media.dart';
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tabscan_app/auth/auth_service.dart';
 import 'package:tabscan_app/cloud/cloud_ocr.dart';
@@ -26,6 +29,7 @@ class FakeOcrApi implements OcrApi {
 
   bool premium;
   final List<String> transcribed = [];
+  final List<String> transcribedAgain = [];
   int accountCalls = 0;
 
   /// Thrown by [account] instead of answering.
@@ -44,8 +48,13 @@ class FakeOcrApi implements OcrApi {
   }
 
   @override
-  Future<int> transcribe(String idToken, String eventId) async {
+  Future<int> transcribe(
+    String idToken,
+    String eventId, {
+    bool again = false,
+  }) async {
     transcribed.add(eventId);
+    if (again) transcribedAgain.add(eventId);
     return 1;
   }
 
@@ -200,6 +209,56 @@ void main() {
     expect(s.library.byId(event.id)!.tabText, read);
     s.dispose();
   });
+
+  test(
+    'Premium: a PDF\'s text is read here; a scanned PDF goes to the cloud',
+    () async {
+      final s = _Setup(premium: true);
+      await s.start();
+      await s.signIn();
+      String? pdfText = 'e|--0--3--|';
+      final reader = AutoReader(
+        library: s.library,
+        auth: s.auth,
+        ocr: () => s.ocr,
+        supported: false, // the web: no OCR here
+        read: (_) async => fail('no OCR here'),
+        readPdf: (pdf, ocr) async => pdfText,
+      )..start();
+      Future<CaptureEvent> addPdf() async =>
+          s.library.addMedia(await s.library.create(const []), [
+            Media(
+              XFile.fromData(Uint8List.fromList([1]), name: 'tab.pdf'),
+              PageKind.pdf,
+              'pdf',
+            ),
+          ]);
+      final withText = await addPdf();
+      await _until(() => s.library.byId(withText.id)!.tabText != null);
+      expect(s.library.byId(withText.id)!.tabText, 'e|--0--3--|');
+      expect(s.api.transcribed, isEmpty);
+
+      pdfText = null; // scanned: no text
+      final scanned = await addPdf();
+      await _until(() => s.api.transcribed.contains(scanned.id));
+      expect(reader.stateOf(scanned.id), ReadState.inCloud);
+      expect(s.api.transcribedAgain, isEmpty);
+
+      // Read again: the cloud reads every page again.
+      reader.readSoon(scanned.id, again: true);
+      await _until(() => s.api.transcribedAgain.contains(scanned.id));
+
+      // The cloud's reading of the PDF fills the text tab.
+      await s.sync.syncNow();
+      final page = s.library.byId(scanned.id)!.pages.single;
+      s.result(s.library.byId(scanned.id)!, page, 'ok', _riffA);
+      await s.ocr.collect();
+      await _until(() => s.library.byId(scanned.id)!.tabText != null);
+      expect(s.library.byId(scanned.id)!.tabText, contains('e|---0---3---|'));
+      reader.dispose();
+      s.dispose();
+    },
+  );
 
   test('a free user gets nothing from the cloud', () async {
     final s = _Setup();

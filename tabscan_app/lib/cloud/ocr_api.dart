@@ -154,7 +154,7 @@ abstract interface class OcrApi {
 
   /// Transcribes [eventId]'s synced pages that have no transcription yet;
   /// how many were queued.
-  Future<int> transcribe(String idToken, String eventId);
+  Future<int> transcribe(String idToken, String eventId, {bool again = false});
 
   /// Checks [text], [eventId]'s text tab, against [song]'s tab found
   /// online; the corrections, per note. Premium only.
@@ -228,8 +228,15 @@ class HttpOcrApi implements OcrApi {
       PremiumStatus.fromJson(await _post('/account', idToken));
 
   @override
-  Future<int> transcribe(String idToken, String eventId) async =>
-      (await _post('/transcribe', idToken, {'eventId': eventId}))['queued']
+  Future<int> transcribe(
+    String idToken,
+    String eventId, {
+    bool again = false,
+  }) async =>
+      (await _post('/transcribe', idToken, {
+            'eventId': eventId,
+            if (again) 'again': true,
+          }))['queued']
           as int? ??
       0;
 

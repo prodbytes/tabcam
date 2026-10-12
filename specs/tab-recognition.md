@@ -141,9 +141,15 @@ text tab ([lib/recognition/pdf_reader.dart](../tabscan_app/lib/recognition/pdf_r
 
 The event's pages are read in their order: each run of photos together,
 each PDF on its own; the texts are joined by a blank line. On the web, a
-PDF's text is read though photos can't be. With TabScan Premium, an event
-with photos goes to the cloud as before (which reads photos only); an
-event of PDFs only is read on the device. "Nothing to read" now asks for
+PDF's text is read though photos can't be; a scanned PDF there says that
+reading it needs the Android or iOS app, or TabScan Premium (not "no tab
+found").
+
+With **TabScan Premium**, PDFs are read as if their pages were
+photographed, everywhere: an event of PDFs only first tries their text on
+the device (exact, at once); a scanned PDF, or an event with photos, goes
+to the [cloud](cloud-ocr.md#transcription), which renders each PDF page
+and reads it as it reads a photo. "Nothing to read" now asks for
 a scan, a photo or a PDF.
 
 ## Troubleshooting log
