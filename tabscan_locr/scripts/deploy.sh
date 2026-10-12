@@ -12,8 +12,8 @@
 # local web builds' client, trusted too), TABSCANNER_APPLE_SIGN_IN (optional:
 # 1 to take Sign in with Apple's tokens for the bundle ID too),
 # RBACR_TOKEN_SECRET (default tabscan/rbacr-token), ANTHROPIC_KEY_SECRET
-# (default tabscan/anthropic-api-key; auto-correct is off while it doesn't
-# exist).
+# (default tabscan/anthropic-api-key, read by name: auto-correct and Claude
+# reading the pages the engines can't are off until it exists, then on).
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
@@ -61,12 +61,6 @@ share_output() {
 profiles_table="$(share_output ProfilesTable)"; subjects_table="$(share_output SubjectsTable)"
 [[ "$profiles_table" =~ ^[A-Za-z0-9_.-]{3,255}$ && "$profiles_table" != None ]] || profiles_table=""
 [[ "$subjects_table" =~ ^[A-Za-z0-9_.-]{3,255}$ && "$subjects_table" != None ]] || subjects_table=""
-anthropic_secret="${ANTHROPIC_KEY_SECRET:-tabscan/anthropic-api-key}"
-if ! anthropic_arn="$(aws secretsmanager describe-secret --region "$region" \
-    --secret-id "$anthropic_secret" --query ARN --output text 2>/dev/null)"; then
-  echo "No secret $anthropic_secret: auto-correct stays off"
-  anthropic_arn=""
-fi
 
 echo "== Stack tabscan-ocr"
 aws cloudformation deploy --region "$region" --stack-name tabscan-ocr \
@@ -80,7 +74,7 @@ aws cloudformation deploy --region "$region" --stack-name tabscan-ocr \
     "AllowedOrigins=$TABSCANNER_WEB_ORIGINS" \
     "IdentityPoolId=${TABSCANNER_COGNITO_IDENTITY_POOL_ID:-}" \
     "RbacrTokenSecretArn=$secret_arn" \
-    "AnthropicKeySecretArn=$anthropic_arn" \
+    "AnthropicKeySecretName=${ANTHROPIC_KEY_SECRET:-tabscan/anthropic-api-key}" \
     "ProfilesTableName=$profiles_table" \
     "SubjectsTableName=$subjects_table" \
     "Version=$version"

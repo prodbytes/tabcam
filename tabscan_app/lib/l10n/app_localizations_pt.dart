@@ -370,6 +370,21 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventDelete => 'Excluir';
 
   @override
+  String get eventReorder => 'Reordenar';
+
+  @override
+  String get eventReorderTitle => 'Arraste para reordenar';
+
+  @override
+  String get eventCouldntReorder => 'Não foi possível reordenar';
+
+  @override
+  String get eventPagePhoto => 'Foto';
+
+  @override
+  String get eventPagePdf => 'PDF';
+
+  @override
   String get eventViewOriginal => 'Original';
 
   @override

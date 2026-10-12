@@ -370,6 +370,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventDelete => 'Eliminar';
 
   @override
+  String get eventReorder => 'Reordenar';
+
+  @override
+  String get eventReorderTitle => 'Arrastra para reordenar';
+
+  @override
+  String get eventCouldntReorder => 'No se pudo reordenar';
+
+  @override
+  String get eventPagePhoto => 'Foto';
+
+  @override
+  String get eventPagePdf => 'PDF';
+
+  @override
   String get eventViewOriginal => 'Original';
 
   @override
