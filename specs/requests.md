@@ -611,6 +611,11 @@ spec.
     copy of the event); it now writes only its text onto the event as it
     is, adding pages does the same, and pages changed during a read are
     read again ([tab recognition](tab-recognition.md#pdfs)).
+66. **When the app is reloaded, keep it on the same page it was.** The app
+    remembers, on the device, the tab and the event open (Text view or
+    pages, and the page), and reopens there after a reload or a restart;
+    a capture's link at launch wins
+    ([navigation](navigation.md#coming-back-where-the-user-was)).
 67. **I still don't see the button for adding PDFs: make sure everything is
     merged and deployed.** The Document option was on the Capture tab
     only (and the web was still the release from before it). The open

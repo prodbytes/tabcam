@@ -16,6 +16,7 @@ import '../library/capture_event.dart';
 import '../library/library.dart';
 import 'account_panel.dart';
 import 'library_screen.dart';
+import 'place.dart';
 import 'link_page.dart';
 
 /// The app's tabs, in the bottom navigation bar's order.
@@ -87,6 +88,32 @@ class _HomeScreenState extends State<HomeScreen> {
     // Opened from a capture's link (…/app/?c=<id>), now or later.
     IncomingLinks.instance.addListener(_incoming);
     _incoming();
+    unawaited(_restorePlace());
+  }
+
+  /// Where the user was before a reload or a restart: the tab, and the
+  /// event that was open (its view and page). A capture's link wins.
+  Future<void> _restorePlace() async {
+    final place = await PlaceMemory.of(library).load();
+    await library.ready;
+    if (!mounted || _linked != null) return;
+    final tab = HomeTab.values.where((t) => t.name == place.tab).firstOrNull;
+    if (tab != null && tab != _tab) setState(() => _tab = tab);
+    if (place.eventId case final id?) {
+      if (library.byId(id) case final event?) {
+        unawaited(
+          openEvent(
+            context,
+            library,
+            event,
+            widget.sync,
+            widget.ocr,
+            place.page,
+            place.text,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -176,6 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     if (event == null || !mounted) return;
+    PlaceMemory.of(library).update((p) => p.copyWith(tab: HomeTab.home.name));
     setState(() {
       _tab = HomeTab.home;
       _fresh = event!.id;
@@ -279,6 +307,7 @@ class _HomeScreenState extends State<HomeScreen> {
               widget.sync?.profiles?.refresh();
             }
             setState(() => _tab = tab);
+            PlaceMemory.of(library).update((p) => p.copyWith(tab: tab.name));
           },
         ),
       ),
