@@ -365,6 +365,8 @@ Resources:
 
   Stage:
     Type: AWS::ApiGatewayV2::Stage
+    # Its route settings name the link routes: they must exist first.
+    DependsOn: [RouteLink, RouteLinkCode]
     Properties:
       ApiId: !Ref Api
       StageName: $default
