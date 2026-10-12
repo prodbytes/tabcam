@@ -7,34 +7,28 @@ import '../capture/page_source.dart';
 import '../l10n/language.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
-import '../processing/page_filter.dart';
 import '../recognition/auto_reader.dart';
 import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
 import 'account_panel.dart';
-import 'audio_page.dart';
 import 'clone.dart';
+import 'file_screen.dart';
 import 'link_page.dart';
-import 'page_image.dart';
-import 'pdf_page.dart';
-import 'people_sheet.dart';
 import 'premium_card.dart';
 import 'rename_dialog.dart';
 import 'share_sheet.dart';
 import 'place.dart';
 import 'sign_in_gate.dart';
 import 'tab_text_view.dart';
-import 'text_page.dart';
-import 'video_page.dart';
 
-/// One event: its pages (images, videos, recordings, PDFs and links) to
-/// swipe through, each shown as what it is, and
-/// the tools along the bottom: the view (Original or Scan: the photos as
-/// taken, or processed), Text (the tab read from them, in place of the
-/// pages), Add (scan, photos and videos, files, a link), Rotate and
-/// Delete. Share and rename are in the app bar. The tab is read by itself
-/// ([AutoReader]): there's no Read tab button. With its images hidden, the
-/// pages are the text tab, then the other pages.
+/// One event (a capture): the list of its files (images, videos,
+/// recordings, PDFs and links), each with a preview, a tap opening it alone
+/// on a [FileScreen]; and the tools along the bottom: Files (the list),
+/// Text (the tab read from them, in place of the list) and Add (scan,
+/// a document, photos and videos, files, a link). Rename, Clone and Share
+/// are in the app bar. The tab is read by itself ([AutoReader]): there's no
+/// Read tab button. With its images hidden, the list is the text tab, then
+/// the other files.
 class EventScreen extends StatefulWidget {
   const EventScreen({
     super.key,
@@ -43,15 +37,15 @@ class EventScreen extends StatefulWidget {
     this.sync,
     this.ocr,
     this.store,
-    this.initialPage,
+    this.initialFile,
     this.initialText,
   });
 
   final Library library;
   final String eventId;
 
-  /// The page it opens on (a reload: where the user was).
-  final int? initialPage;
+  /// The file it opens over its list (a reload: where the user was).
+  final String? initialFile;
 
   /// Whether it opens on its Text view (null: if its text is marked correct).
   final bool? initialText;
@@ -71,8 +65,7 @@ class EventScreen extends StatefulWidget {
 }
 
 class _EventScreenState extends State<EventScreen> {
-  late final _pages = PageController(initialPage: widget.initialPage ?? 0);
-  late int _index = widget.initialPage ?? 0;
+  final _list = ScrollController();
   bool _busy = false;
 
   Library get _library => widget.library;
@@ -86,13 +79,37 @@ class _EventScreenState extends State<EventScreen> {
     _text =
         widget.initialText ??
         (event != null && event.tabText != null && event.tabTextCorrect);
+    // A reload: the file the user had open, over the list again.
+    final file = event?.pages.where((p) => p.id == widget.initialFile);
+    if (file?.firstOrNull case final page?) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _openFile(page);
+      });
+    }
   }
 
-  /// Remembers the view and the page, for a reload ([PlaceMemory]).
-  void _remember() => PlaceMemory.of(_library).update(
-    (p) =>
-        p.eventId == widget.eventId ? p.copyWith(text: _text, page: _index) : p,
-  );
+  /// Remembers the view, for a reload ([PlaceMemory]).
+  void _remember() => PlaceMemory.of(_library)
+      .update((p) => p.eventId == widget.eventId ? p.copyWith(text: _text) : p);
+
+  /// Opens [page] alone on its [FileScreen], remembered until it's closed.
+  Future<void> _openFile(EventPage page) async {
+    final memory = PlaceMemory.of(_library);
+    void remember(String? id) => memory.update(
+      (p) => p.eventId == widget.eventId ? p.copyWith(fileId: () => id) : p,
+    );
+    remember(page.id);
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => FileScreen(
+          library: _library,
+          eventId: widget.eventId,
+          pageId: page.id,
+        ),
+      ),
+    );
+    remember(null);
+  }
 
   @override
   void setState(VoidCallback fn) {
@@ -102,7 +119,7 @@ class _EventScreenState extends State<EventScreen> {
 
   @override
   void dispose() {
-    _pages.dispose();
+    _list.dispose();
     super.dispose();
   }
 
@@ -178,7 +195,7 @@ class _EventScreenState extends State<EventScreen> {
     final link = source == _AddSource.link ? await askForLink(context) : null;
     if (source == _AddSource.link && link == null) return;
     await _run(l10n.eventCouldntAdd, () async {
-      final first = _pagesOf(event).length;
+      final before = event.pages.length;
       if (link != null) {
         await _library.addLink(event, link.$1, title: link.$2);
       } else if (source == _AddSource.scan) {
@@ -200,11 +217,20 @@ class _EventScreenState extends State<EventScreen> {
       if (event.hideImages && link == null) {
         _snack(l10n.eventAddedHidden);
       }
-      // Show the first page added.
-      if (mounted) {
-        setState(() => _index = first);
-        _pages.jumpToPage(first);
+      // Show the files added, at the end of the list.
+      if (!mounted || (_library.byId(event.id)?.pages.length ?? 0) <= before) {
+        return;
       }
+      setState(() => _text = false);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_list.hasClients) {
+          _list.animateTo(
+            _list.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
     });
   }
 
@@ -244,37 +270,6 @@ class _EventScreenState extends State<EventScreen> {
 
   /// Whether the Text view shows, in place of the pages.
   bool _text = false;
-
-  /// What the image pages show here, when it isn't their saved filter (an
-  /// event shared read only).
-  _View? _shown;
-
-  _View _viewOf(CaptureEvent event) {
-    if (_shown case final shown?) return shown;
-    final first = event.pages.where((p) => p.isImage).firstOrNull;
-    return first?.filter == PageFilter.original ? _View.original : _View.scan;
-  }
-
-  /// Original ↔ Scan: sets the filter of every image page (saved, so
-  /// thumbnails and exports follow), but only what shows for an event
-  /// shared read only.
-  Future<void> _nextView(CaptureEvent event) async {
-    final next = _viewOf(event) == _View.original ? _View.scan : _View.original;
-    setState(() => _shown = next);
-    final filter = next == _View.original
-        ? PageFilter.original
-        : PageFilter.tab;
-    if (event.readOnly) return;
-    if (event.pages.every((p) => !p.isImage || p.filter == filter)) return;
-    await _library.update(
-      event.copyWith(
-        pages: [
-          for (final p in event.pages)
-            p.isImage ? p.copyWith(filter: filter) : p,
-        ],
-      ),
-    );
-  }
 
   /// The Text view: the tab, or why there's none yet.
   Widget _textView(CaptureEvent event) {
@@ -352,21 +347,66 @@ class _EventScreenState extends State<EventScreen> {
     );
   }
 
-  Future<void> _deletePage(CaptureEvent event, EventPage page) async {
-    if (event.pages.length == 1) {
-      _snack(context.l10n.eventKeepOnePage);
-      return;
-    }
-    await _library.deletePage(event, page);
-    setState(() => _index = _index.clamp(0, _pagesOf(event).length - 2));
+  /// The list: each file with its preview, a tap opening it alone; with
+  /// the images hidden, the text tab first (a tap goes to the Text view).
+  Widget _fileList(CaptureEvent event) {
+    final l10n = context.l10n;
+    final tab = event.tabText?.trim() ?? '';
+    return ListView(
+      controller: _list,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      children: [
+        if (event.hideImages)
+          ListTile(
+            key: const Key('text-tab'),
+            leading: const SizedBox.square(
+              dimension: 64,
+              child: Icon(Icons.notes),
+            ),
+            title: Text(
+              tab.isNotEmpty ? l10n.textViewTextTab : l10n.textViewNoTextTab,
+            ),
+            subtitle: Text(
+              tab.isNotEmpty
+                  ? tab.split('\n').first
+                  : event.readOnly
+                  ? l10n.textViewHiddenNotRead
+                  : l10n.textViewHiddenStillRead,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: tab.isNotEmpty
+                  ? const TextStyle(fontFamily: 'monospace')
+                  : null,
+            ),
+            onTap: () => setState(() => _text = true),
+          ),
+        for (final page in event.visiblePages)
+          ListTile(
+            key: ValueKey('file-${page.id}'),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 4,
+            ),
+            leading: FileThumbnail(library: _library, event: event, page: page),
+            title: Text(
+              fileLabel(l10n, event, page),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: page.url == null
+                ? null
+                : Text(
+                    '${page.url}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _openFile(page),
+          ),
+      ],
+    );
   }
 
-  /// What the pager shows: the pages, or with the images hidden, the text
-  /// tab (null) and then the other pages.
-  List<EventPage?> _pagesOf(CaptureEvent event) =>
-      event.hideImages ? [null, ...event.visiblePages] : event.pages;
-
-  /// The owner hides the images, or shows them again, for everyone.
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -374,24 +414,10 @@ class _EventScreenState extends State<EventScreen> {
       builder: (context, _) {
         final event = _library.byId(widget.eventId);
         if (event == null) return const Scaffold();
-        final shown = _pagesOf(event);
-        final index = _index.clamp(0, shown.length - 1);
-        final page = shown.isEmpty ? null : shown[index];
         // Shared read only: everything that changes it is off.
         final editable = !event.readOnly;
-        final enabled = !_busy && page != null && editable;
-        final view = _viewOf(event);
         final text = _text;
-        // Rotate is for images, not the other pages; nor in the Text view.
-        final image = enabled && page.isImage && !text;
-        final sync = widget.sync;
         final l10n = context.l10n;
-        // What the image pages show: Original or Scan.
-        final filter = view == _View.original
-            ? PageFilter.original
-            : PageFilter.tab;
-        EventPage shownPage(EventPage p) =>
-            p.isImage && !text ? p.copyWith(filter: filter) : p;
         return Scaffold(
           appBar: AppBar(
             title: InkWell(
@@ -414,12 +440,6 @@ class _EventScreenState extends State<EventScreen> {
                   tooltip: l10n.eventRename,
                   icon: const Icon(Icons.edit_outlined),
                   onPressed: () => _rename(event),
-                ),
-              if (sync != null && sync.canShare && !event.isShared)
-                IconButton(
-                  tooltip: l10n.eventShareWithPeople,
-                  icon: const Icon(Icons.group_add_outlined),
-                  onPressed: () => showPeopleSheet(context, sync, event),
                 ),
               IconButton(
                 tooltip: l10n.eventClone,
@@ -444,61 +464,7 @@ class _EventScreenState extends State<EventScreen> {
               if (event.sharedBy case final owner?)
                 _SharedBanner(owner: owner, readOnly: event.readOnly),
               ?_premiumHint(event),
-              if (text)
-                Expanded(child: _textView(event))
-              else ...[
-                Expanded(
-                  child: PageView.builder(
-                    controller: _pages,
-                    itemCount: shown.length,
-                    onPageChanged: (i) => setState(() => _index = i),
-                    itemBuilder: (context, i) => Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: switch (shown[i]) {
-                        null => TextPage(
-                          event: event,
-                          onOpen: () => setState(() => _text = true),
-                        ),
-                        final p when p.isLink => LinkPage(
-                          key: ValueKey(p.id),
-                          page: p,
-                        ),
-                        final p when p.isVideo => VideoPage(
-                          key: ValueKey(p.id),
-                          library: _library,
-                          event: event,
-                          page: p,
-                        ),
-                        final p when p.isAudio => AudioPage(
-                          key: ValueKey(p.id),
-                          library: _library,
-                          event: event,
-                          page: p,
-                        ),
-                        final p when p.isPdf => PdfPage(
-                          key: ValueKey(p.id),
-                          library: _library,
-                          event: event,
-                          page: p,
-                        ),
-                        final p => InteractiveViewer(
-                          maxScale: 5,
-                          child: PageImage(
-                            library: _library,
-                            event: event,
-                            page: shownPage(p),
-                          ),
-                        ),
-                      },
-                    ),
-                  ),
-                ),
-                Text(
-                  '${index + 1} / ${shown.length}',
-                  style: Theme.of(context).textTheme.labelMedium,
-                ),
-                const SizedBox(height: 8),
-              ],
+              Expanded(child: text ? _textView(event) : _fileList(event)),
             ],
           ),
           bottomNavigationBar: SafeArea(
@@ -507,41 +473,28 @@ class _EventScreenState extends State<EventScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _Tool(
-                    key: const Key('view'),
-                    icon: view.icon,
-                    label: view.label(l10n),
-                    onPressed: _busy || text ? null : () => _nextView(event),
-                  ),
-                  _Tool(
-                    key: const Key('text'),
-                    icon: text ? Icons.photo_library_outlined : Icons.notes,
-                    label: text ? l10n.eventPages : l10n.eventText,
+                  EventTool(
+                    key: const Key('files'),
+                    icon: Icons.folder_copy_outlined,
+                    label: l10n.eventFiles,
+                    selected: !text,
                     onPressed: _busy
                         ? null
-                        : () => setState(() => _text = !_text),
+                        : () => setState(() => _text = false),
                   ),
-                  _Tool(
+                  EventTool(
+                    key: const Key('text'),
+                    icon: Icons.notes,
+                    label: l10n.eventText,
+                    selected: text,
+                    onPressed: _busy
+                        ? null
+                        : () => setState(() => _text = true),
+                  ),
+                  EventTool(
                     icon: Icons.add_circle_outline,
                     label: l10n.eventAdd,
                     onPressed: _busy || !editable ? null : () => _add(event),
-                  ),
-                  _Tool(
-                    icon: Icons.rotate_90_degrees_cw_outlined,
-                    label: l10n.eventRotate,
-                    onPressed: image
-                        ? () => _run(
-                            l10n.eventCouldntRotate,
-                            () => _library.rotatePage(event, page),
-                          )
-                        : null,
-                  ),
-                  _Tool(
-                    icon: Icons.delete_outline,
-                    label: l10n.eventDelete,
-                    onPressed: enabled && !text
-                        ? () => _deletePage(event, page)
-                        : null,
                   ),
                 ],
               ),
@@ -551,20 +504,6 @@ class _EventScreenState extends State<EventScreen> {
       },
     );
   }
-}
-
-/// How the event screen shows the image pages, chosen with its first tool.
-enum _View {
-  original(Icons.photo_outlined),
-  scan(Icons.contrast);
-
-  const _View(this.icon);
-  final IconData icon;
-
-  String label(AppLocalizations l10n) => switch (this) {
-    original => l10n.eventViewOriginal,
-    scan => l10n.eventViewScan,
-  };
 }
 
 /// Where Add gets new pages.
@@ -630,41 +569,6 @@ class _SharedBanner extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _Tool extends StatelessWidget {
-  const _Tool({
-    super.key,
-    required this.icon,
-    required this.label,
-    this.onPressed,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    // An equal share of the bar; a label longer than it (some languages')
-    // shrinks to fit.
-    return Expanded(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(tooltip: label, icon: Icon(icon), onPressed: onPressed),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              label,
-              maxLines: 1,
-              style: Theme.of(context).textTheme.labelSmall,
-            ),
-          ),
-        ],
       ),
     );
   }

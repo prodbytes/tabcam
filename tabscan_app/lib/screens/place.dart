@@ -6,12 +6,12 @@ import 'package:flutter/foundation.dart';
 import '../library/library.dart';
 
 /// Where the user is in the app: the tab, and the event open over it (its
-/// Text view or its pages, and which page). Kept on this device (the
+/// Text view or its files, and the file open over them). Kept on this device (the
 /// library's `place` meta file), so a reload or a restart opens where the
 /// user was.
 @immutable
 class Place {
-  const Place({this.tab, this.eventId, this.text = false, this.page = 0});
+  const Place({this.tab, this.eventId, this.text = false, this.fileId});
 
   /// The tab's name ([HomeTab.name]).
   final String? tab;
@@ -19,36 +19,36 @@ class Place {
   /// The event open, if one is.
   final String? eventId;
 
-  /// Its Text view, not its pages.
+  /// Its Text view, not its files.
   final bool text;
 
-  /// The page shown.
-  final int page;
+  /// The file open over its list, if one is (its page's ID).
+  final String? fileId;
 
   Place copyWith({
     String? tab,
     String? Function()? eventId,
     bool? text,
-    int? page,
+    String? Function()? fileId,
   }) => Place(
     tab: tab ?? this.tab,
     eventId: eventId == null ? this.eventId : eventId(),
     text: text ?? this.text,
-    page: page ?? this.page,
+    fileId: fileId == null ? this.fileId : fileId(),
   );
 
   Map<String, Object?> toJson() => {
     'tab': ?tab,
     'event': ?eventId,
     if (text) 'text': true,
-    if (page > 0) 'page': page,
+    'file': ?fileId,
   };
 
   static Place fromJson(Map<String, Object?> json) => Place(
     tab: json['tab'] as String?,
     eventId: json['event'] as String?,
     text: json['text'] == true,
-    page: (json['page'] as num?)?.toInt() ?? 0,
+    fileId: json['file'] as String?,
   );
 }
 

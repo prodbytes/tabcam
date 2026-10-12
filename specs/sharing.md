@@ -1,9 +1,13 @@
 # Sharing
 
-**Share** (event screen app bar, or a library card's menu) asks what to share
-the event as, then opens the system share sheet (`share_plus`). Signed
-out, it asks to sign in first ([signed out](cloud-sync.md#signed-out)).
-The sheet scrolls when the screen is short.
+**Share** (the event screen's only share button, or a library card's
+menu) asks what to share the event as, then opens the system share sheet
+(`share_plus`). Signed out, it asks to sign in first
+([signed out](cloud-sync.md#signed-out)). The sheet scrolls when the
+screen is short. Right after Link, the user's own events (in a build
+with sharing) have **Share with people** ("By email, to edit or read
+only"), which opens the [people sheet](shared-captures.md#sharing)
+instead of the system's.
 
 - **Link**, the default (first, and marked): the capture's link,
   `https://tabscan.nu01.com/app/?c=<capture id>`

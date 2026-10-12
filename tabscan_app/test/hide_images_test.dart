@@ -90,7 +90,8 @@ void main() {
       ),
     );
     await _frames(tester);
-    expect(find.text('1 / 2'), findsOneWidget);
+    expect(find.text('Page 1'), findsOneWidget);
+    expect(find.text('example.com'), findsOneWidget);
 
     // No button for it on the event screen: set on the event.
     expect(find.byTooltip('Hide images'), findsNothing);
@@ -98,11 +99,21 @@ void main() {
       await library.update(library.byId(id)!.copyWith(hideImages: true));
     });
     await _frames(tester);
-    // The text tab's page, then the link: the image is gone.
+    // The text tab first, then the link: the image is gone.
     expect(find.text('Text tab'), findsOneWidget);
     expect(find.text('e|--0--3--|'), findsOneWidget);
-    expect(find.text('1 / 2'), findsOneWidget);
+    expect(find.text('Page 1'), findsNothing);
+    expect(
+      tester.getCenter(find.text('Text tab')).dy,
+      lessThan(tester.getCenter(find.text('example.com')).dy),
+    );
     expect(find.byTooltip('Show images'), findsNothing);
+    // A tap on it shows the Text view.
+    await tester.tap(find.text('Text tab'));
+    await _frames(tester);
+    expect(find.text('Copy'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('files')));
+    await _frames(tester);
 
     await tester.runAsync(() async {
       await library.update(library.byId(id)!.copyWith(hideImages: false));

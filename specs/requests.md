@@ -622,3 +622,26 @@ spec.
     capture's **Add** menu now has **Document** right after Scan pages, the
     menu scrolls (five items overflowed a small phone), and a release
     puts it all on the web ([scanning](scanning.md#adding-to-an-event)).
+
+## 2026-10-12
+
+68. **Improve the capture page: keep the title, Rename and Clone; one
+    Share, not Share and Share with people; take out the Scan toggle and
+    make the first tool the capture's files, then Text, then Add; Rotate
+    and Delete are fine but confusing. Home shows every capture; a capture
+    shows the list of its files (with the one just scanned) and a preview
+    of each; a tap on a file opens only that file.** The event screen is
+    now a list of its files, each with a preview (the image itself, or a
+    badge for videos, PDFs, recordings and links) and a name ("Page 2",
+    "Video 1", a link's title); after Add it scrolls to the new files. A
+    tap opens the file alone on a new **file screen**, which has the
+    view (Original ↔ Scan, now per image), Rotate and Delete (back to the
+    list after a delete). The bottom tools are **Files**, **Text** and
+    **Add**; the Original/Scan toggle, Rotate and Delete left the capture
+    screen, and so did the pager and its "2 / 5". The app bar has one
+    **Share**; **Share with people** moved into its sheet, right after
+    Link. A reload reopens the file that was open. In English, Spanish
+    and Portuguese ([event screen](event-screen.md),
+    [sharing](sharing.md), [shared captures](shared-captures.md),
+    [hidden images](hidden-images.md), [page filters](page-filters.md),
+    [navigation](navigation.md#coming-back-where-the-user-was)).

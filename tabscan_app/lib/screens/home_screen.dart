@@ -92,7 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   /// Where the user was before a reload or a restart: the tab, and the
-  /// event that was open (its view and page). A capture's link wins.
+  /// event that was open (its view and file). A capture's link wins.
   Future<void> _restorePlace() async {
     final place = await PlaceMemory.of(library).load();
     await library.ready;
@@ -108,7 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
             event,
             widget.sync,
             widget.ocr,
-            place.page,
+            place.fileId,
             place.text,
           ),
         );

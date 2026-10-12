@@ -152,15 +152,16 @@ class _None extends StatelessWidget {
   );
 }
 
-/// Opens [event]'s [EventScreen] (on [page], or its Text view), and
-/// remembers it's open until it's closed ([PlaceMemory]).
+/// Opens [event]'s [EventScreen] (its Text view, or its files with
+/// [fileId] open over them), and remembers it's open until it's closed
+/// ([PlaceMemory]).
 Future<void> openEvent(
   BuildContext context,
   Library library,
   CaptureEvent event,
   CloudSync? sync, [
   CloudOcr? ocr,
-  int? page,
+  String? fileId,
   bool? text,
 ]) async {
   final memory = PlaceMemory.of(library);
@@ -168,7 +169,7 @@ Future<void> openEvent(
     (p) => p.copyWith(
       eventId: () => event.id,
       text: text ?? false,
-      page: page ?? 0,
+      fileId: () => fileId,
     ),
   );
   await Navigator.of(context).push(
@@ -178,14 +179,14 @@ Future<void> openEvent(
         eventId: event.id,
         sync: sync,
         ocr: ocr,
-        initialPage: page,
+        initialFile: fileId,
         initialText: text,
       ),
     ),
   );
   memory.update(
     (p) => p.eventId == event.id
-        ? p.copyWith(eventId: () => null, text: false, page: 0)
+        ? p.copyWith(eventId: () => null, text: false, fileId: () => null)
         : p,
   );
 }

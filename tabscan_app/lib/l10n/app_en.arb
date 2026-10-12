@@ -441,9 +441,49 @@
   "@eventShare": {
     "description": "Event app bar tooltip"
   },
-  "eventPages": "Pages",
-  "@eventPages": {
-    "description": "Event tool: back to the pages from Text"
+  "eventShareWithPeopleDetail": "By email, to edit or read only",
+  "@eventShareWithPeopleDetail": {
+    "description": "Share sheet: what Share with people does"
+  },
+  "eventFiles": "Files",
+  "@eventFiles": {
+    "description": "Event tool: the list of the capture's files"
+  },
+  "eventFilePage": "Page {number}",
+  "@eventFilePage": {
+    "description": "Event file list: a photo or scan, numbered among the capture's pages",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "eventFileVideo": "Video {number}",
+  "@eventFileVideo": {
+    "description": "Event file list: a video, numbered among the capture's videos",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "eventFilePdf": "PDF {number}",
+  "@eventFilePdf": {
+    "description": "Event file list: a PDF, numbered among the capture's PDFs",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "eventFileRecording": "Recording {number}",
+  "@eventFileRecording": {
+    "description": "Event file list: a recording, numbered among the capture's recordings",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
   },
   "eventText": "Text",
   "@eventText": {

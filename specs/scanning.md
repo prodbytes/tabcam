@@ -55,8 +55,8 @@ scanner.
 ## Adding to an event
 
 The [event screen](event-screen.md)'s **Add** asks where from, and adds the
-new pages at the end, moving the view to the first one (the list
-scrolls on a small phone):
+new pages at the end, then shows the list of files scrolled to them (the
+Add menu scrolls on a small phone):
 
 - **Scan pages**: more tab pages with the document scanner (as above).
 - **Document**: PDF files (the file picker offering only `.pdf`).

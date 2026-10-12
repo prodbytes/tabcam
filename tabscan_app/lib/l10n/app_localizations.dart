@@ -634,11 +634,41 @@ abstract class AppLocalizations {
   /// **'Share'**
   String get eventShare;
 
-  /// Event tool: back to the pages from Text
+  /// Share sheet: what Share with people does
   ///
   /// In en, this message translates to:
-  /// **'Pages'**
-  String get eventPages;
+  /// **'By email, to edit or read only'**
+  String get eventShareWithPeopleDetail;
+
+  /// Event tool: the list of the capture's files
+  ///
+  /// In en, this message translates to:
+  /// **'Files'**
+  String get eventFiles;
+
+  /// Event file list: a photo or scan, numbered among the capture's pages
+  ///
+  /// In en, this message translates to:
+  /// **'Page {number}'**
+  String eventFilePage(int number);
+
+  /// Event file list: a video, numbered among the capture's videos
+  ///
+  /// In en, this message translates to:
+  /// **'Video {number}'**
+  String eventFileVideo(int number);
+
+  /// Event file list: a PDF, numbered among the capture's PDFs
+  ///
+  /// In en, this message translates to:
+  /// **'PDF {number}'**
+  String eventFilePdf(int number);
+
+  /// Event file list: a recording, numbered among the capture's recordings
+  ///
+  /// In en, this message translates to:
+  /// **'Recording {number}'**
+  String eventFileRecording(int number);
 
   /// Event tool: show the text tab
   ///

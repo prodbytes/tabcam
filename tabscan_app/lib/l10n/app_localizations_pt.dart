@@ -352,7 +352,31 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventShare => 'Compartilhar';
 
   @override
-  String get eventPages => 'Páginas';
+  String get eventShareWithPeopleDetail =>
+      'Por e-mail, para editar ou só leitura';
+
+  @override
+  String get eventFiles => 'Arquivos';
+
+  @override
+  String eventFilePage(int number) {
+    return 'Página $number';
+  }
+
+  @override
+  String eventFileVideo(int number) {
+    return 'Vídeo $number';
+  }
+
+  @override
+  String eventFilePdf(int number) {
+    return 'PDF $number';
+  }
+
+  @override
+  String eventFileRecording(int number) {
+    return 'Gravação $number';
+  }
 
   @override
   String get eventText => 'Texto';

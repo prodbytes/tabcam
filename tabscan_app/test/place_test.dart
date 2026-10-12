@@ -6,6 +6,7 @@ import 'package:tabscan_app/library/event_store_memory.dart';
 import 'package:tabscan_app/library/library.dart';
 import 'package:tabscan_app/main.dart';
 import 'package:tabscan_app/screens/event_screen.dart';
+import 'package:tabscan_app/screens/file_screen.dart';
 import 'package:tabscan_app/screens/place.dart';
 
 Future<void> frames(WidgetTester tester) async {
@@ -72,12 +73,45 @@ void main() {
     expect(jsonDecode(saved!), {'tab': 'capture'});
   });
 
+  testWidgets('a restart reopens the file that was open', (tester) async {
+    late String id;
+    late String file;
+    await tester.runAsync(() async {
+      await library.load();
+      final event = await library.create([
+        img.encodeJpg(img.Image(width: 8, height: 8)),
+        img.encodeJpg(img.Image(width: 8, height: 8)),
+      ]);
+      id = event.id;
+      file = event.pages.last.id;
+      await library.writeMeta(
+        PlaceMemory.metaName,
+        jsonEncode({'tab': 'home', 'event': id, 'file': file}),
+      );
+    });
+    await tester.pumpWidget(TabScanApp(library: library));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await frames(tester);
+    expect(find.byType(FileScreen), findsOneWidget);
+    expect(find.text('Page 2'), findsOneWidget);
+    expect(PlaceMemory.of(library).place.fileId, file);
+
+    // Back on the list, it's forgotten.
+    await tester.pageBack();
+    await frames(tester);
+    expect(find.byType(FileScreen), findsNothing);
+    expect(PlaceMemory.of(library).place.fileId, isNull);
+    expect(PlaceMemory.of(library).place.eventId, id);
+  });
+
   test('a place reads back as it was written', () {
-    const place = Place(tab: 'home', eventId: 'abc', text: true, page: 2);
+    const place = Place(tab: 'home', eventId: 'abc', text: true, fileId: 'f');
     final back = Place.fromJson(jsonDecode(jsonEncode(place.toJson())));
     expect(
-      (back.tab, back.eventId, back.text, back.page),
-      ('home', 'abc', true, 2),
+      (back.tab, back.eventId, back.text, back.fileId),
+      ('home', 'abc', true, 'f'),
     );
   });
 }

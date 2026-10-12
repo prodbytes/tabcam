@@ -9,15 +9,13 @@ the owner, on every device, and the people it's
 - **No control in the app.** The [event screen](event-screen.md)'s
   app bar had a **Hide images** / **Show images** button for the owner;
   it was removed (request 44), since the bottom bar's **Text** tool
-  switches between the pages and the text. A capture already hidden
+  switches between the files and the text. A capture already hidden
   stays hidden, and the app can't show its images again.
-- **Hidden**, the event screen's pages are first the **text tab**,
-  then the videos and links in their order ("1 / 3"). The text tab page
-  shows the tab, monospaced, with long lines scaled down to fit (so that
-  a sideways swipe still goes to the next page), and **Open**, which goes
-  to the [Text view](tab-recognition.md#text-view). Before the tab has
-  been read, it says "No text tab yet". Rotate and Delete are off on the
-  text tab page. The hidden images are still read
+- **Hidden**, the event screen's list of files is first the **text
+  tab**, then the videos, PDFs, recordings and links in their order. The
+  text tab's row shows its first line, monospaced, and a tap goes to the
+  [Text view](tab-recognition.md#text-view). Before the tab has been
+  read, it says "No text tab yet". The hidden images are still read
   ([by itself](tab-recognition.md#reading-by-itself)). Adding photos or
   scans adds them hidden, and says so ("Added. Images are hidden on this
   capture.").

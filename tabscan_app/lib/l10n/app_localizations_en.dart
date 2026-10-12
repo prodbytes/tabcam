@@ -333,7 +333,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventShare => 'Share';
 
   @override
-  String get eventPages => 'Pages';
+  String get eventShareWithPeopleDetail => 'By email, to edit or read only';
+
+  @override
+  String get eventFiles => 'Files';
+
+  @override
+  String eventFilePage(int number) {
+    return 'Page $number';
+  }
+
+  @override
+  String eventFileVideo(int number) {
+    return 'Video $number';
+  }
+
+  @override
+  String eventFilePdf(int number) {
+    return 'PDF $number';
+  }
+
+  @override
+  String eventFileRecording(int number) {
+    return 'Recording $number';
+  }
 
   @override
   String get eventText => 'Text';
