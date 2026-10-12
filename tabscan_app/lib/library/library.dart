@@ -148,7 +148,12 @@ class Library extends ChangeNotifier {
           : await _addFile(event, m);
       added.add(page);
     }
-    return _save(event.copyWith(pages: [...event.pages, ...added]));
+    // As it is now, not as it was: a read may have written its text meanwhile.
+    return await patch(
+          event.id,
+          (now) => now.copyWith(pages: [...now.pages, ...added]),
+        ) ??
+        _save(event.copyWith(pages: [...event.pages, ...added]));
   }
 
   /// Adds a link to the end of [event] (see [parseLink]).
@@ -200,6 +205,20 @@ class Library extends ChangeNotifier {
   }
 
   Future<CaptureEvent> update(CaptureEvent event) => _save(event);
+
+  /// Applies [change] to the event [id] as it is now, so changes made
+  /// meanwhile (pages added while a read ran) aren't overwritten by an
+  /// older copy: memory first, then the store. Null when it's gone.
+  Future<CaptureEvent?> patch(
+    String id,
+    CaptureEvent Function(CaptureEvent now) change,
+  ) async {
+    final now = _byIdAll(id);
+    if (now == null) return null;
+    final updated = _update(change(now).copyWith(updated: _now()));
+    await _store.save(updated);
+    return updated;
+  }
 
   /// Saves the user's change to [event], as changed now.
   Future<CaptureEvent> _save(CaptureEvent event) async {

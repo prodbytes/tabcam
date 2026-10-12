@@ -71,7 +71,7 @@
   "eventPremiumHint": "TabScan Premium transcribe tus escaneos automáticamente.",
   "eventUpgrade": "Mejorar",
   "eventNotNow": "Ahora no",
-  "eventNothingToRead": "Nada que leer: agrega un escaneo o una foto.",
+  "eventNothingToRead": "Nada que leer: agrega un escaneo, una foto o un PDF.",
   "eventReadingTab": "Leyendo la tablatura…",
   "eventInCloud": "Transcribiendo en la nube. El texto aparecerá aquí cuando termine.",
   "eventNoTab": "No se encontró tablatura en las páginas. Escanea más cerca y con la hoja más plana.",

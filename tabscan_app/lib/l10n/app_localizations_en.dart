@@ -277,7 +277,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventNotNow => 'Not now';
 
   @override
-  String get eventNothingToRead => 'Nothing to read: add a scan or a photo.';
+  String get eventNothingToRead =>
+      'Nothing to read: add a scan, a photo or a PDF.';
 
   @override
   String get eventReadingTab => 'Reading the tab…';

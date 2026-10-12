@@ -273,7 +273,8 @@ class _EventScreenState extends State<EventScreen> {
     }
     final reader = AutoReaderScope.of(context);
     final l10n = context.l10n;
-    final images = event.pages.any((p) => p.isImage);
+    // What a read reads: photos and PDFs.
+    final images = event.pages.any((p) => p.isImage || p.isPdf);
     void again() => reader?.readSoon(event.id);
     final (message, action) = switch (reader?.stateOf(event.id)) {
       _ when !images => (l10n.eventNothingToRead, null),

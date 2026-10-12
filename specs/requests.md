@@ -602,3 +602,12 @@ spec.
     files"), which picks PDFs only and makes an event of them, like Files;
     Scan is unchanged. In English, Spanish and Portuguese
     ([navigation](navigation.md#capture)).
+65. **When a PDF is added, just like an image, try to parse it into text,
+    and present it as a tab.** PDF pages are read by themselves into the
+    text tab: their text where they have one (PDFium through `pdfrx`, the
+    characters' positions laid out as a text tab, chords and lyrics kept),
+    else their pages rendered and read by the device's OCR. Found on the
+    way: a read could overwrite pages added while it ran (it saved an old
+    copy of the event); it now writes only its text onto the event as it
+    is, adding pages does the same, and pages changed during a read are
+    read again ([tab recognition](tab-recognition.md#pdfs)).

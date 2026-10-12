@@ -535,7 +535,7 @@ abstract class AppLocalizations {
   /// Event Text view: no images
   ///
   /// In en, this message translates to:
-  /// **'Nothing to read: add a scan or a photo.'**
+  /// **'Nothing to read: add a scan, a photo or a PDF.'**
   String get eventNothingToRead;
 
   /// Event Text view: reading
