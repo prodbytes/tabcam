@@ -380,7 +380,9 @@ def ocr(event, context=None):
         if obj["ContentLength"] > MAX_BYTES:
             raise pipeline.TooLarge("image too large")
         read = pipeline.transcribe_pdf if page.is_pdf else pipeline.transcribe
-        r = read(obj["Body"].read(), _engines, read_page=engines.read_page, vision=_vision)
+        r = read(obj["Body"].read(), _engines, read_page=engines.read_page,
+                 read_crop=engines.read_crop,
+                 vision=_vision if os.environ.get("VISION_FALLBACK") == "1" else None)
         result.update(status="ok" if r.text else "no-tab", text=r.text,
                       staves=r.staves, lines=r.lines, timings=r.timings)
         if "claude" in r.timings:

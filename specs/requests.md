@@ -685,3 +685,12 @@ spec.
     [sharing](sharing.md), [shared captures](shared-captures.md),
     [hidden images](hidden-images.md), [page filters](page-filters.md),
     [navigation](navigation.md#coming-back-where-the-user-was)).
+69. **Remove the Claude key for now; read it without an LLM first, as well
+    as possible.** No key had been stored; Claude's reading is now off
+    unless switched on (`VISION_FALLBACK=1`). The cloud OCR service reads
+    tabs on drawn staff lines with its engines: staves found, lines erased
+    under the numbers, each number read on its own and set on its string,
+    in columns; notations read at full size; scanner watermarks dropped.
+    Printed tabs on drawn lines read exactly; the user's handwritten page
+    reads about two notes in three
+    ([cloud OCR](cloud-ocr.md#transcription)).
