@@ -1851,6 +1851,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{provider} ID (private email)'**
   String accountPrivateEmail(String provider);
+
+  /// Profile: the linked accounts sheet's title and button
+  ///
+  /// In en, this message translates to:
+  /// **'Linked accounts'**
+  String get profileLinkedAccounts;
+
+  /// Linked accounts: what linking does
+  ///
+  /// In en, this message translates to:
+  /// **'Any of these accounts reaches the same captures, and the profile has all their roles.'**
+  String get profileLinkedIntro;
+
+  /// Linked accounts: the profile's owner
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get profileOwner;
+
+  /// Linked accounts: the sign-in in use
+  ///
+  /// In en, this message translates to:
+  /// **'This account'**
+  String get profileThisAccount;
+
+  /// Linked accounts: unlink an account
+  ///
+  /// In en, this message translates to:
+  /// **'Unlink'**
+  String get profileUnlink;
+
+  /// Linked accounts: section title
+  ///
+  /// In en, this message translates to:
+  /// **'Link another account'**
+  String get profileLinkAnother;
+
+  /// Linked accounts: make a link code
+  ///
+  /// In en, this message translates to:
+  /// **'Get a link code'**
+  String get profileGetCode;
+
+  /// Linked accounts: how to use the code
+  ///
+  /// In en, this message translates to:
+  /// **'Within 10 minutes, sign in with the other account and enter this code under Linked accounts.'**
+  String get profileCodeHow;
+
+  /// Linked accounts: copy the link code
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the code'**
+  String get profileCopyCode;
+
+  /// Linked accounts: entering a code
+  ///
+  /// In en, this message translates to:
+  /// **'Have a code from your other account? Enter it to link this account to it.'**
+  String get profileHaveCode;
+
+  /// Linked accounts: the code field
+  ///
+  /// In en, this message translates to:
+  /// **'Link code'**
+  String get profileCodeLabel;
+
+  /// Linked accounts: join the code's profile
+  ///
+  /// In en, this message translates to:
+  /// **'Link this account'**
+  String get profileLinkThis;
+
+  /// Linked accounts: what joining does
+  ///
+  /// In en, this message translates to:
+  /// **'This account then uses the other account\'s profile and captures.'**
+  String get profileLinkThisNote;
+
+  /// Linked accounts: a bad code
+  ///
+  /// In en, this message translates to:
+  /// **'That code is wrong, already used or expired.'**
+  String get profileCodeWrong;
+
+  /// Linked accounts: linking refused
+  ///
+  /// In en, this message translates to:
+  /// **'This account can\'t be linked: it has captures in the cloud of its own, or other accounts linked to it.'**
+  String get profileCantLink;
+
+  /// Linked accounts: throttled
+  ///
+  /// In en, this message translates to:
+  /// **'Too many tries: wait a minute and try again.'**
+  String get profileTooManyTries;
+
+  /// Linked accounts: another error
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t link: {error}'**
+  String profileLinkFailed(String error);
+
+  /// Linked accounts: joined a profile
+  ///
+  /// In en, this message translates to:
+  /// **'Linked: this account now uses the profile {profileId}'**
+  String profileLinked(String profileId);
+
+  /// Profile tab: the profile's ID
+  ///
+  /// In en, this message translates to:
+  /// **'Profile: {profileId}'**
+  String profileId(String profileId);
+
+  /// Profile tab: every linked account's roles
+  ///
+  /// In en, this message translates to:
+  /// **'Roles: {roles}'**
+  String profileRoles(String roles);
+
+  /// Profile tab: a linked (not owner) account can't delete
+  ///
+  /// In en, this message translates to:
+  /// **'Only the profile\'s owner can delete it. To leave it, unlink this account under Linked accounts.'**
+  String get profileNotOwner;
+
+  /// Profile tab: the sign-in's provider
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in with {provider}'**
+  String accountSignedInWith(String provider);
+
+  /// Profile tab: under Delete account
+  ///
+  /// In en, this message translates to:
+  /// **'Deletes your events in the cloud and on this device, and your shares.'**
+  String get accountDeleteNote;
+
+  /// Capture tab: add PDF documents (first in Add)
+  ///
+  /// In en, this message translates to:
+  /// **'Document'**
+  String get homeAddDocument;
+
+  /// Capture tab: what Document adds
+  ///
+  /// In en, this message translates to:
+  /// **'PDF files'**
+  String get homeAddDocumentDetail;
 }
 
 class _AppLocalizationsDelegate

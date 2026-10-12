@@ -128,7 +128,8 @@ ACM validation names.
         --capabilities CAPABILITY_IAM \
         --parameter-overrides "GoogleWebClientId=$TABSCANNER_GOOGLE_WEB_CLIENT_ID" \
           "GoogleAppClientIds=$TABSCANNER_GOOGLE_IOS_CLIENT_ID,$TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID" \
-          GoogleProviderArn= PoolName=tabscan
+          GoogleProviderArn= PoolName=tabscan \
+          DeveloperProviderName=login.tabscan.profiles
       # Local web builds' pool, on the same Google provider; its
       # IdentityPoolId is TABSCANNER_COGNITO_LOCAL_IDENTITY_POOL_ID (private
       # .env only).
@@ -140,7 +141,8 @@ ACM validation names.
         --template-file tabscan_infra/identity.yaml \
         --capabilities CAPABILITY_IAM \
         --parameter-overrides "GoogleWebClientId=$TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID" \
-          GoogleAppClientIds= "GoogleProviderArn=$provider" PoolName=tabscan-local
+          GoogleAppClientIds= "GoogleProviderArn=$provider" PoolName=tabscan-local \
+          DeveloperProviderName=
       ```
 
       Google sign-in goes through an IAM OpenID Connect provider for
@@ -152,7 +154,12 @@ ACM validation names.
       `GoogleWebClientId` and `GoogleAppClientIds` (iOS, "local - web", and
       **each Android signing key's client, to add** as they're made). An
       account has one provider per URL, so the local stack uses the main
-      stack's (`GoogleProviderArn`). Moving to it gave existing users new
+      stack's (`GoogleProviderArn`).
+
+      The main pool's developer provider, `login.tabscan.profiles`, is how
+      [profiles](../specs/profiles.md) get their folder: the share API
+      vouches for a profile's ID (`GetOpenIdTokenForDeveloperIdentity`).
+      A pool's developer provider can be set once and never changed. Moving to it gave existing users new
       identity IDs (their folders start empty; nothing was stored yet).
 
       Pass every parameter each time: `deploy` keeps a stack's previous

@@ -1131,4 +1131,98 @@ class AppLocalizationsPt extends AppLocalizations {
   String accountPrivateEmail(String provider) {
     return 'ID $provider (e-mail privado)';
   }
+
+  @override
+  String get profileLinkedAccounts => 'Contas vinculadas';
+
+  @override
+  String get profileLinkedIntro =>
+      'Qualquer uma destas contas acessa as mesmas capturas, e o perfil tem as funções de todas.';
+
+  @override
+  String get profileOwner => 'Principal';
+
+  @override
+  String get profileThisAccount => 'Esta conta';
+
+  @override
+  String get profileUnlink => 'Desvincular';
+
+  @override
+  String get profileLinkAnother => 'Vincular outra conta';
+
+  @override
+  String get profileGetCode => 'Gerar um código';
+
+  @override
+  String get profileCodeHow =>
+      'Em até 10 minutos, entre com a outra conta e digite este código em Contas vinculadas.';
+
+  @override
+  String get profileCopyCode => 'Copiar o código';
+
+  @override
+  String get profileHaveCode =>
+      'Tem um código da sua outra conta? Digite-o para vincular esta conta a ela.';
+
+  @override
+  String get profileCodeLabel => 'Código de vinculação';
+
+  @override
+  String get profileLinkThis => 'Vincular esta conta';
+
+  @override
+  String get profileLinkThisNote =>
+      'Esta conta passa a usar o perfil e as capturas da outra conta.';
+
+  @override
+  String get profileCodeWrong =>
+      'Esse código está errado, já foi usado ou expirou.';
+
+  @override
+  String get profileCantLink =>
+      'Esta conta não pode ser vinculada: tem capturas próprias na nuvem ou outras contas vinculadas a ela.';
+
+  @override
+  String get profileTooManyTries =>
+      'Tentativas demais: espere um minuto e tente de novo.';
+
+  @override
+  String profileLinkFailed(String error) {
+    return 'Não foi possível vincular: $error';
+  }
+
+  @override
+  String profileLinked(String profileId) {
+    return 'Vinculada: esta conta agora usa o perfil $profileId';
+  }
+
+  @override
+  String profileId(String profileId) {
+    return 'Perfil: $profileId';
+  }
+
+  @override
+  String profileRoles(String roles) {
+    return 'Funções: $roles';
+  }
+
+  @override
+  String get profileNotOwner =>
+      'Só a conta principal do perfil pode excluí-lo. Para sair, desvincule esta conta em Contas vinculadas.';
+
+  @override
+  String accountSignedInWith(String provider) {
+    return 'Conectado com $provider';
+  }
+
+  @override
+  String get accountDeleteNote =>
+      'Exclui seus eventos na nuvem e neste dispositivo, e seus compartilhamentos.';
+
+  @override
+  String get homeAddDocument => 'Documento';
+
+  @override
+  String get homeAddDocumentDetail => 'Arquivos PDF';
 }

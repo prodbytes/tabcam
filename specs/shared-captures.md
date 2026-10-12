@@ -67,7 +67,10 @@ Who shared it and the role are kept on the device only (`sharedBy`,
 ## How it works
 
 The capture stays in its owner's folder,
-`<owner identity>/events/<capture id>/`. The **share API**
+`<owner identity>/events/<capture id>/`, its owner's
+[profile](profiles.md)'s: the owner is the profile, and a grant to any of
+the profile's addresses reaches every account linked to it. The same API
+keeps the profiles (`/profile` routes, [profiles](profiles.md#api)). The **share API**
 ([tabscan_api/shares/index.py](../tabscan_api/shares/index.py), Python
 3.13 on Lambda) behind an HTTP API keeps the grants and hands out
 credentials:

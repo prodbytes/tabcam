@@ -578,6 +578,30 @@ spec.
     Existing users got new identity IDs (nothing was stored yet). Android
     clients are to add to the list ([cloud sync](cloud-sync.md#googles-token),
     [app stores](app-stores.md), [tabscan_infra](../tabscan_infra/README.md)).
+63. **Make profiles work like in Presence: an authenticated user without a
+    profile gets one, in the same style (unguessable, adjectives and an
+    animal at the end); identities can be added to the profile; the
+    profile has the sum of all roles from all identities.** Chosen with
+    the user: the profile owns the data (one Cognito developer identity per
+    profile), accounts join with a link code or automatically by the same
+    verified address, and the profile API is in the share API. The share
+    API makes, finds and links profiles (`/profile` routes; profiles,
+    subjects and link-code tables; Presence's word lists), its sharing
+    works by profile, and a profile's roles are its addresses' rbacr roles
+    together; the identity pool gets the developer provider
+    `login.tabscan.profiles`; the cloud OCR service checks Premium by
+    profile. The app gets its folder through the profile, moves the user's
+    captures when their folder changes, and shows the profile, its roles
+    and Linked accounts on the Profile tab
+    ([profiles](profiles.md), [cloud sync](cloud-sync.md),
+    [shared captures](shared-captures.md), [cloud OCR](cloud-ocr.md),
+    [navigation](navigation.md#profile)).
+64. **In the capture view, where there are the Scan, Photos, Files and Link
+    options, add a Document option for PDFs, first in the Add list; leave
+    Scan as is.** Capture's Add list starts with **Document** ("PDF
+    files"), which picks PDFs only and makes an event of them, like Files;
+    Scan is unchanged. In English, Spanish and Portuguese
+    ([navigation](navigation.md#capture)).
 65. **When a PDF is added, just like an image, try to parse it into text,
     and present it as a tab.** PDF pages are read by themselves into the
     text tab: their text where they have one (PDFium through `pdfrx`, the
