@@ -304,11 +304,12 @@ class _EventScreenState extends State<EventScreen> {
     final l10n = context.l10n;
     // What a read reads: photos and PDFs.
     final images = event.pages.any((p) => p.isImage || p.isPdf);
-    void again() => reader?.readSoon(event.id);
+    void again() => reader?.readSoon(event.id, again: true);
     final (message, action) = switch (reader?.stateOf(event.id)) {
       _ when !images => (l10n.eventNothingToRead, null),
       ReadState.reading => (l10n.eventReadingTab, null),
-      ReadState.inCloud => (l10n.eventInCloud, null),
+      // The cloud may find no tab: Read again asks it again.
+      ReadState.inCloud => (l10n.eventInCloud, (l10n.eventReadAgain, again)),
       ReadState.noTab => (l10n.eventNoTab, (l10n.eventReadAgain, again)),
       ReadState.failed => (l10n.eventReadFailed, (l10n.eventReadAgain, again)),
       ReadState.unsupported => (l10n.eventReadUnsupported, null),

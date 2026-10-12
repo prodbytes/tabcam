@@ -45,7 +45,7 @@ most 5 minutes (less if the grant ends sooner), a "no" for 1 minute.
 ## Transcription
 
 1. Cloud sync uploads a page image (`.img`, `.jpg`, `.jpeg`, `.png`,
-   `.webp`) to `<identity>/events/<event id>/`. The bucket sends the
+   `.webp`) or a PDF (`.pdf`) to `<identity>/events/<event id>/`. The bucket sends the
    upload to EventBridge, which calls `tabscan-ocr-api`.
 2. It looks up the identity's verified address (recorded by `/account`,
    below), asks rbacr, and for premium users invokes `tabscan-ocr`.
@@ -65,6 +65,25 @@ word goes at the column its position implies, from where the line's dashes
 start, so the dashes the engines drop come back. Per line, the reading
 closest to the other two (fewest token edits between dashes) wins. Lines
 are padded with dashes to their staff's width.
+
+**PDFs** are read as if their pages were photographed: each page (at most
+10) is rendered on white, 2000 px wide (PDFium, `pypdfium2`), and read as
+a photo is (below); the pages' tabs are joined by a blank line into the
+PDF's one result. The image's build reads the made-up riff from a PDF of
+its photo too.
+
+**Pages the engines can't read**: when a page (a photo, or a PDF's page)
+has no dash lines, it isn't a text tab the engines read: a handwritten
+tab, or one on drawn staff lines. **Claude** (vision, `claude-opus-5-5`,
+[locr/vision.py](../tabscan_locr/locr/vision.py)) transcribes it into
+the app's plain-text tab instead: each staff's strings `e B G D A E`,
+notes at their columns, the title, section names, repeat marks, chord
+names above their staff, lyrics under it; page furniture (a scanner's
+watermark) left out; "found" false when it has no tab. The result's
+`engines` is `["claude"]`. It needs the Claude API key
+(`tabscan/anthropic-api-key` in Secrets Manager), read by name, so it's on
+as soon as the secret exists; without it, or if Claude fails (logged),
+such a page is `no-tab` as before.
 
 **Notations**: the rest of the page, with the staves blanked out, is read
 by RapidOCR at half size (1400 px). Its words (confidence 0.5 or more) are
@@ -101,6 +120,9 @@ with text but no tab is still `no-tab`.
   writes the text tab only while it's empty or still the text it wrote
   (kept in `cloudocr.json`), and not marked correct, so it never replaces
   the user's edits, an on-device reading or a checked text tab. New pages update it the same way.
+- **Read again** (the Text view; also while the text is on its way from
+  the cloud): `POST /transcribe {eventId, again: true}` reads every page
+  again, results or not.
 - **Pages from before upgrading**: an event whose pages still lack results
   two minutes after its last change is sent to `POST /transcribe
   {eventId}` (once per event per session), which queues its untranscribed

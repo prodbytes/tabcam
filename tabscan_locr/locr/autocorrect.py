@@ -202,13 +202,11 @@ class Corrector:
     @property
     def client(self):
         if self._client is None:
-            arn = os.environ.get("ANTHROPIC_KEY_SECRET")
-            if not arn:
-                raise NotSetUp("no Anthropic key configured")
-            import anthropic
-            import boto3
-            key = boto3.client("secretsmanager").get_secret_value(SecretId=arn)["SecretString"].strip()
-            self._client = anthropic.Anthropic(api_key=key, max_retries=1)
+            from . import claude
+            try:
+                self._client = claude.client()
+            except claude.NotSetUp as e:
+                raise NotSetUp(str(e)) from e
         return self._client
 
     def correct(self, text, song=""):
