@@ -622,3 +622,14 @@ spec.
     capture's **Add** menu now has **Document** right after Scan pages, the
     menu scrolls (five items overflowed a small phone), and a release
     puts it all on the web ([scanning](scanning.md#adding-to-an-event)).
+
+## 2026-10-12
+
+68. **Let users reorder the files they add.** The event screen's app bar
+    has **Reorder** (with more than one page, when the user can edit):
+    a sheet lists the pages with a thumbnail or icon and what each is,
+    dragged by their handles into a new order, saved at each drop and
+    synced; photos and PDFs moved are read again in their new order. With
+    the images hidden, only the other pages are listed and the images
+    stay put. In English, Spanish and Portuguese
+    ([event screen](event-screen.md)).

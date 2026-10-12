@@ -32,7 +32,7 @@ the cloud as they sync.
   and links.
 - [Event screen](event-screen.md): one event's pages (images, videos and
   links, with Open and Copy) to swipe and zoom, with
-  the view (Original, Scan or Text), Add, Rotate and Delete, plus Rename
+  the view (Original, Scan or Text), Add, Rotate and Delete, plus Reorder, Rename
   and Share.
 - [Hidden images](hidden-images.md): the owner hides a capture's photos
   and scans, for everyone; it then shows only the text tab, videos and
