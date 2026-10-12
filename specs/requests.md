@@ -636,3 +636,32 @@ spec.
     it in a new tab ([event screen](event-screen.md),
     [platforms](platforms.md)). The privacy policy names YouTube, which
     is contacted only on Play ([privacy](privacy.md)).
+69. **When a user renames a capture, just make it a name, no artist and
+    song name; let the user name it whatever.** The rename dialog has one
+    **Name** field instead of Song and Artist; what the user types is the
+    title, and renaming clears the artist
+    ([library](library.md#events)).
+70. **Let users reorder the files they add.** The event screen's app bar
+    has **Reorder** (with more than one page, when the user can edit):
+    a sheet lists the pages with a thumbnail or icon and what each is,
+    dragged by their handles into a new order, saved at each drop and
+    synced; photos and PDFs moved are read again in their new order. With
+    the images hidden, only the other pages are listed and the images
+    stay put. In English, Spanish and Portuguese
+    ([event screen](event-screen.md)).
+71. **PDF reading doesn't work: a PDF uploaded wasn't read, and Read again
+    does nothing. Fix it, check the logs; PDFs must be scanned just as if
+    they were photographed.** The logs showed the PDF was a scan (an image,
+    no text), uploaded on the web, signed in with an address that isn't
+    Premium: the web has no OCR, and the cloud read photos only, so it was
+    "no tab found" every time. The cloud OCR service now reads PDFs (each
+    page rendered and read as a photo; the rule takes `.pdf`); Premium
+    users' PDFs are read by their text on the device, else in the cloud;
+    on the web without Premium, a scanned PDF says what it needs. The
+    user's PDF turned out to be a handwritten tab on drawn staff lines,
+    which the cloud's engines never read (photographed either): Claude
+    (vision) now reads the pages the engines find no tab on, with the
+    Claude API key in Secrets Manager (`tabscan/anthropic-api-key`, read
+    by name: on as soon as it exists). Read again now makes the cloud read
+    every page again, and shows while the text is on its way
+    ([tab recognition](tab-recognition.md#pdfs), [cloud OCR](cloud-ocr.md)).

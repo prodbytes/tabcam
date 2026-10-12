@@ -73,6 +73,9 @@ class AutoReader extends ChangeNotifier {
   _readPdf;
   final bool _supported;
 
+  /// Events whose next read reads every page again (Read again).
+  final Set<String> _again = {};
+
   final Map<String, ReadState> _states = {};
 
   /// Each event's image pages, as last seen: a read is due when they change.
@@ -131,7 +134,11 @@ class AutoReader extends ChangeNotifier {
 
   /// Reads [eventId]'s tab after any reads before it (also for the Text
   /// view's Read again).
-  void readSoon(String eventId) {
+  ///
+  /// With [again] (the Text view's Read again), the cloud reads every page
+  /// again, not only those it hasn't read.
+  void readSoon(String eventId, {bool again = false}) {
+    if (again) _again.add(eventId);
     if (_disposed || _queue.contains(eventId)) return;
     _queue.add(eventId);
     _set(eventId, ReadState.reading);
@@ -175,9 +182,23 @@ class AutoReader extends ChangeNotifier {
     final images = event.pages.where((p) => p.isImage).length;
     final pdfs = event.pages.where((p) => p.isPdf).length;
     final ocr = _ocr();
-    // Premium's cloud reads photos; an event of PDFs only is the device's.
-    if (ocr != null && ocr.premium && images > 0) {
-      final queued = await ocr.transcribe(event);
+    if (ocr != null && ocr.premium) {
+      // PDFs only: their text, read here, is exact and at once; a scanned
+      // one (no text) goes to the cloud, which reads its pages as photos.
+      if (images == 0) {
+        final parts = <String>[];
+        for (final p in event.pages.where((p) => p.isPdf)) {
+          if (await _readPdf(await library.original(event, p), null)
+              case final t?) {
+            parts.add(t);
+          }
+        }
+        if (parts.isNotEmpty) {
+          _log('event $id: read from its PDFs\' text');
+          return _write(id, parts.join('\n\n'));
+        }
+      }
+      final queued = await ocr.transcribe(event, again: _again.remove(id));
       _log('event $id: in the cloud, $queued pages queued');
       return ReadState.inCloud;
     }
@@ -217,7 +238,18 @@ class AutoReader extends ChangeNotifier {
       'event $id: $read pages, '
       '${text == null ? 'no tab found' : 'read ${text.length} characters'}',
     );
+    // A scanned PDF needs OCR, which isn't here (the web): not "no tab".
+    if (text == null && !_supported && pdfs > 0) {
+      _log('event $id: a scanned PDF, and no OCR here');
+      return ReadState.unsupported;
+    }
     if (text == null) return ReadState.noTab;
+    return _write(id, text);
+  }
+
+  /// Writes [text], read, as [id]'s text tab, unless the user edited it or
+  /// marked it correct.
+  Future<ReadState?> _write(String id, String text) async {
     // As it is now: the user may have edited the text meanwhile.
     final current = library.byId(id);
     if (current == null) return null;

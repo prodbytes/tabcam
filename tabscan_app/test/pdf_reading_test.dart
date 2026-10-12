@@ -139,6 +139,20 @@ void main() {
       },
     );
 
+    test(
+      'on the web, a scanned PDF says what it needs (not "no tab")',
+      () async {
+        final r = reader(supported: false, pdfText: null);
+        await settle();
+        final event = await library.addMedia(await library.create(const []), [
+          _pdf(Uint8List.fromList([1])),
+        ]);
+        await settle();
+        expect(r.stateOf(event.id), ReadState.unsupported);
+        r.dispose();
+      },
+    );
+
     test('a PDF without tab says so', () async {
       final r = reader(pdfText: null);
       await settle();

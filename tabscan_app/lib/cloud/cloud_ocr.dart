@@ -59,6 +59,8 @@ class CloudOcr extends ChangeNotifier {
     'jpeg',
     'png',
     'webp',
+    // PDFs: each page read as if photographed.
+    'pdf',
   };
 
   PremiumStatus? _status;
@@ -144,7 +146,8 @@ class CloudOcr extends ChangeNotifier {
   /// Transcribes [event] in the cloud now (reading by itself, for premium
   /// users):
   /// its synced pages that have no transcription yet. How many were queued.
-  Future<int> transcribe(CaptureEvent event) async {
+  /// With [again] (Read again), every page, read before or not.
+  Future<int> transcribe(CaptureEvent event, {bool again = false}) async {
     final token = _token;
     if (token == null || !premium) {
       debugPrint(
@@ -154,7 +157,7 @@ class CloudOcr extends ChangeNotifier {
       return 0;
     }
     _requested.add(event.id);
-    return api.transcribe(token, event.id);
+    return api.transcribe(token, event.id, again: again);
   }
 
   /// Auto-correct: checks [text], [event]'s text tab, against [song]'s tab
@@ -171,8 +174,9 @@ class CloudOcr extends ChangeNotifier {
     return api.autocorrect(token, eventId: event.id, song: song, text: text);
   }
 
+  /// A page the service reads: an image, or a PDF.
   static bool isImage(EventPage page) =>
-      page.isImage && imageExtensions.contains(page.extension);
+      (page.isImage || page.isPdf) && imageExtensions.contains(page.extension);
 
   /// Applies the transcriptions that are complete, and asks for the missing
   /// ones that have waited too long.

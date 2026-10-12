@@ -20,6 +20,7 @@ import 'pdf_page.dart';
 import 'people_sheet.dart';
 import 'premium_card.dart';
 import 'rename_dialog.dart';
+import 'reorder_sheet.dart';
 import 'share_sheet.dart';
 import 'place.dart';
 import 'sign_in_gate.dart';
@@ -32,8 +33,8 @@ import 'video_page.dart';
 /// the tools along the bottom: the view (Original or Scan: the photos as
 /// taken, or processed), Text (the tab read from them, in place of the
 /// pages), Add (scan, photos and videos, files, a link), Rotate and
-/// Delete. Share and rename are in the app bar. The tab is read by itself
-/// ([AutoReader]): there's no Read tab button. With its images hidden, the
+/// Delete. Share, rename and reorder are in the app bar. The tab is read by
+/// itself ([AutoReader]): there's no Read tab button. With its images hidden, the
 /// pages are the text tab, then the other pages.
 class EventScreen extends StatefulWidget {
   const EventScreen({
@@ -208,6 +209,29 @@ class _EventScreenState extends State<EventScreen> {
     });
   }
 
+  /// Opens the reorder sheet; then shows the page that showed before, in
+  /// its new place.
+  Future<void> _reorder(CaptureEvent event) async {
+    final shown = _pagesOf(event);
+    final page = shown.isEmpty
+        ? null
+        : shown[_index.clamp(0, shown.length - 1)];
+    await showReorderSheet(
+      context,
+      _library,
+      event.id,
+      onError: (e) {
+        if (mounted) _snack('${context.l10n.eventCouldntReorder}: $e');
+      },
+    );
+    final now = _library.byId(event.id);
+    if (!mounted || now == null) return;
+    final index = _pagesOf(now).indexOf(page);
+    if (index < 0 || index == _index) return;
+    setState(() => _index = index);
+    if (_pages.hasClients) _pages.jumpToPage(index);
+  }
+
   bool _hintClosed = false;
 
   /// The upgrade hint, for users without Premium where it's set up; never
@@ -304,11 +328,12 @@ class _EventScreenState extends State<EventScreen> {
     final l10n = context.l10n;
     // What a read reads: photos and PDFs.
     final images = event.pages.any((p) => p.isImage || p.isPdf);
-    void again() => reader?.readSoon(event.id);
+    void again() => reader?.readSoon(event.id, again: true);
     final (message, action) = switch (reader?.stateOf(event.id)) {
       _ when !images => (l10n.eventNothingToRead, null),
       ReadState.reading => (l10n.eventReadingTab, null),
-      ReadState.inCloud => (l10n.eventInCloud, null),
+      // The cloud may find no tab: Read again asks it again.
+      ReadState.inCloud => (l10n.eventInCloud, (l10n.eventReadAgain, again)),
       ReadState.noTab => (l10n.eventNoTab, (l10n.eventReadAgain, again)),
       ReadState.failed => (l10n.eventReadFailed, (l10n.eventReadAgain, again)),
       ReadState.unsupported => (l10n.eventReadUnsupported, null),
@@ -414,6 +439,13 @@ class _EventScreenState extends State<EventScreen> {
                   tooltip: l10n.eventRename,
                   icon: const Icon(Icons.edit_outlined),
                   onPressed: () => _rename(event),
+                ),
+              if (editable && event.visiblePages.length > 1)
+                IconButton(
+                  key: const Key('reorder'),
+                  tooltip: l10n.eventReorder,
+                  icon: const Icon(Icons.swap_vert),
+                  onPressed: _busy ? null : () => _reorder(event),
                 ),
               if (sync != null && sync.canShare && !event.isShared)
                 IconButton(

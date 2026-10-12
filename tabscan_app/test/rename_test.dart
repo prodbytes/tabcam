@@ -30,20 +30,22 @@ void main() {
     await tester.tap(find.text('Rename'));
     await _frames(tester);
 
-    // The song's text is selected, so typing replaces it.
-    final song = tester.widget<TextField>(find.byType(TextField).first);
+    // One Name field, its text selected, so typing replaces it.
+    expect(find.byType(TextField), findsOneWidget);
+    final name = tester.widget<TextField>(find.byType(TextField));
     expect(
-      song.controller!.selection.textInside(song.controller!.text),
+      name.controller!.selection.textInside(name.controller!.text),
       library.byId(id)!.title,
     );
 
-    await tester.enterText(find.byType(TextField).first, 'Riff in E');
-    await tester.enterText(find.byType(TextField).last, 'Me');
+    // Whatever the user types is the name; no artist is kept beside it.
+    await library.update(library.byId(id)!.copyWith(artist: 'Someone'));
+    await tester.enterText(find.byType(TextField), 'my practice riff #2');
     await tester.tap(find.text('Save'));
     await _frames(tester);
 
-    expect(library.byId(id)!.title, 'Riff in E');
-    expect(library.byId(id)!.artist, 'Me');
-    expect(find.text('Riff in E'), findsOneWidget);
+    expect(library.byId(id)!.title, 'my practice riff #2');
+    expect(library.byId(id)!.artist, '');
+    expect(find.text('my practice riff #2'), findsOneWidget);
   });
 }

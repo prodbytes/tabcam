@@ -8,7 +8,17 @@ it opens on the pages.
 - **App bar**: the title (and the artist under it, if set); tapping it, or
   **Rename** (pencil), renames the event (see
   [library](library.md#events)). **Clone** copies the event
-  and opens the copy ([library](library.md#events)). **Share** opens the
+  and opens the copy ([library](library.md#events)). **Reorder**
+  (up-down arrows; the user's own events or shared to edit, with more
+  than one page) opens a sheet listing the pages in order, "Drag to
+  reorder": each with a thumbnail (images) or an icon, its number and
+  what it is (Photo, PDF, Video, Recording, or a link's title or host),
+  and a drag handle. Each drop saves the new order (the event changes, so
+  it syncs, and moved photos or PDFs are [read again](tab-recognition.md#reading-by-itself)
+  in their new order). With the images [hidden](hidden-images.md), only
+  the other pages are listed, and the images keep their places. Closed,
+  the screen shows the page it showed before, at its new place.
+  **Share** opens the
   [share sheet](sharing.md). **Share with people** (the user's own
   events, signed in, in a build with sharing) shares it by email
   ([shared captures](shared-captures.md)). There's no Hide images button
@@ -16,7 +26,7 @@ it opens on the pages.
   job, at the bottom (captures already [hidden](hidden-images.md) stay
   hidden).
 - **Shared with the user**: a line under the app bar, "Shared by <email>
-  · Can edit" or "· Read only". Read only, Rename, Add, Rotate, Delete
+  · Can edit" or "· Read only". Read only, Rename, Reorder, Add, Rotate, Delete
   and editing the text tab are off; the view still changes what shows,
   without saving it.
 - **Pages**: swiped left and right, each previewed as what it is:

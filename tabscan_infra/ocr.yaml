@@ -49,12 +49,14 @@ Parameters:
     Description: >
       The Secrets Manager secret (tabscan/rbacr-token) holding a root-owned
       rbacr API token, which may ask about any address's roles
-  AnthropicKeySecretArn:
+  AnthropicKeySecretName:
     Type: String
-    Default: ''
+    Default: tabscan/anthropic-api-key
     Description: >
-      The Secrets Manager secret (tabscan/anthropic-api-key) holding the
-      Claude API key auto-correct uses. Empty: /autocorrect answers 503.
+      The Secrets Manager secret with the Claude API key: auto-correct, and
+      reading pages the OCR engines can't (handwritten, drawn staff lines).
+      Read by name, so it works as soon as the secret exists.
+    AllowedPattern: '[A-Za-z0-9/_+=.@-]+'
   ProfilesTableName:
     Type: String
     Default: ''
@@ -85,7 +87,6 @@ Parameters:
 Conditions:
   HasProfiles: !Not [!Equals [!Ref ProfilesTableName, '']]
   HasLocalClient: !Not [!Equals [!Ref GoogleLocalWebClientId, '']]
-  HasAnthropicKey: !Not [!Equals [!Ref AnthropicKeySecretArn, '']]
 
 Resources:
   # Cognito identity ID -> verified e-mail address. S3 events carry only the
@@ -139,6 +140,11 @@ Resources:
                 Resource: !Sub
                   - ${BucketArn}/*/events/*
                   - BucketArn: !ImportValue tabscan-user-data-bucket-arn
+              # The Claude API key: pages the engines can't read (a
+              # handwritten tab, drawn staff lines) are Claude's.
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: !Sub arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AnthropicKeySecretName}-*
               - Effect: Allow
                 Action: s3:PutObject
                 Resource: !Sub
@@ -176,10 +182,11 @@ Resources:
                 - !Ref AWS::NoValue
               - Effect: Allow
                 Action: secretsmanager:GetSecretValue
-                Resource: !If
-                  - HasAnthropicKey
-                  - [!Ref RbacrTokenSecretArn, !Ref AnthropicKeySecretArn]
-                  - [!Ref RbacrTokenSecretArn]
+                Resource:
+                  - !Ref RbacrTokenSecretArn
+                  # The Claude API key (auto-correct), by name: it works as
+                  # soon as the secret is made, without a deploy.
+                  - !Sub arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AnthropicKeySecretName}-*
               - Effect: Allow
                 Action: lambda:InvokeFunction
                 Resource: !GetAtt OcrFunction.Arn
@@ -218,6 +225,7 @@ Resources:
       Environment:
         Variables:
           USER_DATA_BUCKET: !ImportValue tabscan-user-data-bucket
+          ANTHROPIC_KEY_SECRET: !Ref AnthropicKeySecretName
           LOCR_VERSION: !Ref Version
 
   # One try more for a failed page, then it's dropped; the app can ask
@@ -267,7 +275,7 @@ Resources:
           RBACR_ROLE: premium
           UPGRADE_URL: !Ref UpgradeUrl
           VOUCHER_URL: !Ref VoucherUrl
-          ANTHROPIC_KEY_SECRET: !Ref AnthropicKeySecretArn
+          ANTHROPIC_KEY_SECRET: !Ref AnthropicKeySecretName
           PROFILES_TABLE: !Ref ProfilesTableName
           SUBJECTS_TABLE: !Ref SubjectsTableName
           LOCR_VERSION: !Ref Version
@@ -312,7 +320,8 @@ Resources:
         detail:
           bucket:
             name: [!ImportValue tabscan-user-data-bucket]
-          # By extension only (EventBridge refuses path wildcards this
+          # Page images and PDFs (read as their pages photographed). By
+          # extension only (EventBridge refuses path wildcards this
           # complex); the function parses each key and ignores anything but
           # a page in a user's events folder.
           object:
@@ -322,6 +331,7 @@ Resources:
               - suffix: .jpeg
               - suffix: .png
               - suffix: .webp
+              - suffix: .pdf
       Targets:
         - Id: api
           Arn: !GetAtt ApiFunction.Arn

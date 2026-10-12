@@ -231,3 +231,14 @@ def test_a_profile_without_a_folder_yet_queues_nothing(svc):
     svc._made["rbacr"] = FakeRbacr({"ana@example.com"})
     r = handler.api(http("/transcribe", body={"eventId": "ev1"}))
     assert r["statusCode"] == 200 and json.loads(r["body"]) == {"queued": 0}
+
+
+def test_transcribe_again_reads_every_page(svc):
+    svc._made["accounts"] = FakeAccounts({ID: "ana@example.com"})
+    svc._made["rbacr"] = FakeRbacr({"ana@example.com"})
+    svc._made["s3"] = FakeS3([f"{ID}/events/ev1/p1.pdf", f"{ID}/ocr/ev1/p1.json"])
+    r = handler.api(http("/transcribe", body={"eventId": "ev1"}))
+    assert json.loads(r["body"]) == {"queued": 0}
+    r = handler.api(http("/transcribe", body={"eventId": "ev1", "again": True}))
+    assert json.loads(r["body"]) == {"queued": 1}
+    assert svc.lam.invoked == [f"{ID}/events/ev1/p1.pdf"]

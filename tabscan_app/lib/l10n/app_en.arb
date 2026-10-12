@@ -465,6 +465,26 @@
   "@eventDelete": {
     "description": "Event tool: delete the page"
   },
+  "eventReorder": "Reorder",
+  "@eventReorder": {
+    "description": "Event app bar tooltip: change the pages' order"
+  },
+  "eventReorderTitle": "Drag to reorder",
+  "@eventReorderTitle": {
+    "description": "Reorder sheet title"
+  },
+  "eventCouldntReorder": "Couldn't reorder",
+  "@eventCouldntReorder": {
+    "description": "Event: reorder failed (before ': error')"
+  },
+  "eventPagePhoto": "Photo",
+  "@eventPagePhoto": {
+    "description": "Reorder sheet: an image page"
+  },
+  "eventPagePdf": "PDF",
+  "@eventPagePdf": {
+    "description": "Reorder sheet: a PDF page"
+  },
   "eventViewOriginal": "Original",
   "@eventViewOriginal": {
     "description": "Event view tool / page filter: photos as taken"
@@ -547,13 +567,9 @@
       }
     }
   },
-  "eventSong": "Song",
-  "@eventSong": {
-    "description": "Rename dialog: song field"
-  },
-  "eventArtist": "Artist",
-  "@eventArtist": {
-    "description": "Rename dialog: artist field"
+  "eventName": "Name",
+  "@eventName": {
+    "description": "Rename dialog: the capture's name field"
   },
   "eventCancel": "Cancel",
   "@eventCancel": {
