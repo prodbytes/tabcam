@@ -625,12 +625,23 @@ spec.
 
 ## 2026-10-12
 
-68. **When a user renames a capture, just make it a name, no artist and
+68. **Embed a YouTube player when the link added is for a YouTube video;
+    if the video can't be seen for any reason, just show the link and
+    open it in a new tab.** A link page for a YouTube video gets
+    **Play**, which plays it in YouTube's embedded player
+    (`youtube_player_iframe`, youtube-nocookie.com) on the web, Android
+    and iOS, from the link's start time. Any failure (YouTube's error,
+    the page not loading, a 20-second timeout, no web view) goes back to
+    the link card, which says the video can't be played here and opens
+    it in a new tab ([event screen](event-screen.md),
+    [platforms](platforms.md)). The privacy policy names YouTube, which
+    is contacted only on Play ([privacy](privacy.md)).
+69. **When a user renames a capture, just make it a name, no artist and
     song name; let the user name it whatever.** The rename dialog has one
     **Name** field instead of Song and Artist; what the user types is the
     title, and renaming clears the artist
     ([library](library.md#events)).
-69. **Let users reorder the files they add.** The event screen's app bar
+70. **Let users reorder the files they add.** The event screen's app bar
     has **Reorder** (with more than one page, when the user can edit):
     a sheet lists the pages with a thumbnail or icon and what each is,
     dragged by their handles into a new order, saved at each drop and
@@ -638,7 +649,7 @@ spec.
     the images hidden, only the other pages are listed and the images
     stay put. In English, Spanish and Portuguese
     ([event screen](event-screen.md)).
-70. **PDF reading doesn't work: a PDF uploaded wasn't read, and Read again
+71. **PDF reading doesn't work: a PDF uploaded wasn't read, and Read again
     does nothing. Fix it, check the logs; PDFs must be scanned just as if
     they were photographed.** The logs showed the PDF was a scan (an image,
     no text), uploaded on the web, signed in with an address that isn't
