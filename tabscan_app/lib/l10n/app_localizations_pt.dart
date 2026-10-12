@@ -1225,4 +1225,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get homeAddDocumentDetail => 'Arquivos PDF';
+
+  @override
+  String get eventAddDocument => 'Documento';
+
+  @override
+  String get eventAddDocumentDetail => 'Arquivos PDF';
 }

@@ -2001,6 +2001,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'PDF files'**
   String get homeAddDocumentDetail;
+
+  /// Event, Add: PDF documents (right after Scan pages)
+  ///
+  /// In en, this message translates to:
+  /// **'Document'**
+  String get eventAddDocument;
+
+  /// Event, Add: what Document adds
+  ///
+  /// In en, this message translates to:
+  /// **'PDF files'**
+  String get eventAddDocumentDetail;
 }
 
 class _AppLocalizationsDelegate

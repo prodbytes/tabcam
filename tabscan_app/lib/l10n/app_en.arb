@@ -1607,5 +1607,13 @@
   "homeAddDocumentDetail": "PDF files",
   "@homeAddDocumentDetail": {
     "description": "Capture tab: what Document adds"
+  },
+  "eventAddDocument": "Document",
+  "@eventAddDocument": {
+    "description": "Event, Add: PDF documents (right after Scan pages)"
+  },
+  "eventAddDocumentDetail": "PDF files",
+  "@eventAddDocumentDetail": {
+    "description": "Event, Add: what Document adds"
   }
 }

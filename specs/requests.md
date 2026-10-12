@@ -616,3 +616,9 @@ spec.
     pages, and the page), and reopens there after a reload or a restart;
     a capture's link at launch wins
     ([navigation](navigation.md#coming-back-where-the-user-was)).
+67. **I still don't see the button for adding PDFs: make sure everything is
+    merged and deployed.** The Document option was on the Capture tab
+    only (and the web was still the release from before it). The open
+    capture's **Add** menu now has **Document** right after Scan pages, the
+    menu scrolls (five items overflowed a small phone), and a release
+    puts it all on the web ([scanning](scanning.md#adding-to-an-event)).
