@@ -14,6 +14,8 @@ IDENTITY = re.compile(r"^[a-z]{2}-[a-z]+-\d:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-
 ID = re.compile(r"^[a-z0-9]{1,32}$")
 # Image pages: scans are JPEG files named .img; imported photos keep theirs.
 IMAGE_EXTENSIONS = ("img", "jpg", "jpeg", "png", "webp")
+# PDFs are read too: each page rendered, as if photographed.
+PAGE_EXTENSIONS = IMAGE_EXTENSIONS + ("pdf",)
 
 
 @dataclass(frozen=True)
@@ -28,12 +30,17 @@ class PageKey:
         return f"{self.identity}/events/{self.event_id}/{self.page_id}.{self.extension}"
 
     @property
+    def is_pdf(self):
+        return self.extension == "pdf"
+
+    @property
     def result_key(self):
         return result_key(self.identity, self.event_id, self.page_id)
 
 
 def parse_page(key):
-    """The image page [key] names, or None (event.json, videos, anything else)."""
+    """The image or PDF page [key] names, or None (event.json, videos,
+    anything else)."""
     parts = key.split("/")
     if len(parts) != 4 or parts[1] != "events":
         return None
@@ -41,7 +48,7 @@ def parse_page(key):
     page_id, dot, extension = name.partition(".")
     if not (dot and IDENTITY.match(identity) and ID.match(event_id) and ID.match(page_id)):
         return None
-    if extension not in IMAGE_EXTENSIONS:
+    if extension not in PAGE_EXTENSIONS:
         return None
     return PageKey(identity, event_id, page_id, extension)
 

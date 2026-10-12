@@ -312,7 +312,8 @@ Resources:
         detail:
           bucket:
             name: [!ImportValue tabscan-user-data-bucket]
-          # By extension only (EventBridge refuses path wildcards this
+          # Page images and PDFs (read as their pages photographed). By
+          # extension only (EventBridge refuses path wildcards this
           # complex); the function parses each key and ignores anything but
           # a page in a user's events folder.
           object:
@@ -322,6 +323,7 @@ Resources:
               - suffix: .jpeg
               - suffix: .png
               - suffix: .webp
+              - suffix: .pdf
       Targets:
         - Id: api
           Arn: !GetAtt ApiFunction.Arn
