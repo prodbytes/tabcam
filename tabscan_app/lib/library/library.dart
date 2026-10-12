@@ -262,6 +262,23 @@ class Library extends ChangeNotifier {
     return updated;
   }
 
+  /// Puts the pages [order] names (page IDs, some or all of the event's) in
+  /// that order. They take the places those pages had, so pages left out
+  /// (images hidden from the list) stay where they are. The event as it is
+  /// now is changed; IDs it no longer has are skipped.
+  Future<CaptureEvent?> reorderPages(String eventId, List<String> order) =>
+      patch(eventId, (now) {
+        final byId = {for (final p in now.pages) p.id: p};
+        final moved = [for (final id in order) ?byId[id]];
+        final ids = {for (final p in moved) p.id};
+        var next = 0;
+        return now.copyWith(
+          pages: [
+            for (final p in now.pages) ids.contains(p.id) ? moved[next++] : p,
+          ],
+        );
+      });
+
   Future<CaptureEvent> deletePage(CaptureEvent event, EventPage page) async {
     final updated = await _save(
       event.copyWith(

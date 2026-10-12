@@ -10,7 +10,7 @@ Android and iOS only (below).
 
 `AutoReader` ([lib/recognition/auto_reader.dart](../tabscan_app/lib/recognition/auto_reader.dart))
 watches the library: whenever the user adds or changes an event's image
-or PDF pages (a new capture, pages added, rotated or deleted), that event
+or PDF pages (a new capture, pages added, rotated, deleted or reordered), that event
 is read, one event at a time ([PDFs](#pdfs) below). Pages changed while it
 was read are read again; a read writes only the text, onto the event as
 it is then (`Library.patch`), so pages added meanwhile aren't lost. Other changes (the title, the view, the text)

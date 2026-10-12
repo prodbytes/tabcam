@@ -625,7 +625,15 @@ spec.
 
 ## 2026-10-12
 
-68. **PDF reading doesn't work: a PDF uploaded wasn't read, and Read again
+68. **Let users reorder the files they add.** The event screen's app bar
+    has **Reorder** (with more than one page, when the user can edit):
+    a sheet lists the pages with a thumbnail or icon and what each is,
+    dragged by their handles into a new order, saved at each drop and
+    synced; photos and PDFs moved are read again in their new order. With
+    the images hidden, only the other pages are listed and the images
+    stay put. In English, Spanish and Portuguese
+    ([event screen](event-screen.md)).
+69. **PDF reading doesn't work: a PDF uploaded wasn't read, and Read again
     does nothing. Fix it, check the logs; PDFs must be scanned just as if
     they were photographed.** The logs showed the PDF was a scan (an image,
     no text), uploaded on the web, signed in with an address that isn't
