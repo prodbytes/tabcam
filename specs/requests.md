@@ -625,7 +625,12 @@ spec.
 
 ## 2026-10-12
 
-68. **Let users reorder the files they add.** The event screen's app bar
+68. **When a user renames a capture, just make it a name, no artist and
+    song name; let the user name it whatever.** The rename dialog has one
+    **Name** field instead of Song and Artist; what the user types is the
+    title, and renaming clears the artist
+    ([library](library.md#events)).
+69. **Let users reorder the files they add.** The event screen's app bar
     has **Reorder** (with more than one page, when the user can edit):
     a sheet lists the pages with a thumbnail or icon and what each is,
     dragged by their handles into a new order, saved at each drop and
@@ -633,7 +638,7 @@ spec.
     the images hidden, only the other pages are listed and the images
     stay put. In English, Spanish and Portuguese
     ([event screen](event-screen.md)).
-69. **PDF reading doesn't work: a PDF uploaded wasn't read, and Read again
+70. **PDF reading doesn't work: a PDF uploaded wasn't read, and Read again
     does nothing. Fix it, check the logs; PDFs must be scanned just as if
     they were photographed.** The logs showed the PDF was a scan (an image,
     no text), uploaded on the web, signed in with an address that isn't

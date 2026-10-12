@@ -567,13 +567,9 @@
       }
     }
   },
-  "eventSong": "Song",
-  "@eventSong": {
-    "description": "Rename dialog: song field"
-  },
-  "eventArtist": "Artist",
-  "@eventArtist": {
-    "description": "Rename dialog: artist field"
+  "eventName": "Name",
+  "@eventName": {
+    "description": "Rename dialog: the capture's name field"
   },
   "eventCancel": "Cancel",
   "@eventCancel": {

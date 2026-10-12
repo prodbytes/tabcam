@@ -796,17 +796,11 @@ abstract class AppLocalizations {
   /// **'Couldn\'t clone: {error}'**
   String eventCouldntClone(String error);
 
-  /// Rename dialog: song field
+  /// Rename dialog: the capture's name field
   ///
   /// In en, this message translates to:
-  /// **'Song'**
-  String get eventSong;
-
-  /// Rename dialog: artist field
-  ///
-  /// In en, this message translates to:
-  /// **'Artist'**
-  String get eventArtist;
+  /// **'Name'**
+  String get eventName;
 
   /// Rename dialog button; camera close tooltip
   ///
