@@ -21,6 +21,7 @@ import 'people_sheet.dart';
 import 'premium_card.dart';
 import 'rename_dialog.dart';
 import 'share_sheet.dart';
+import 'place.dart';
 import 'sign_in_gate.dart';
 import 'tab_text_view.dart';
 import 'text_page.dart';
@@ -42,10 +43,18 @@ class EventScreen extends StatefulWidget {
     this.sync,
     this.ocr,
     this.store,
+    this.initialPage,
+    this.initialText,
   });
 
   final Library library;
   final String eventId;
+
+  /// The page it opens on (a reload: where the user was).
+  final int? initialPage;
+
+  /// Whether it opens on its Text view (null: if its text is marked correct).
+  final bool? initialText;
 
   /// Cloud sync, for sharing the event with people (null: no sharing).
   final CloudSync? sync;
@@ -62,8 +71,8 @@ class EventScreen extends StatefulWidget {
 }
 
 class _EventScreenState extends State<EventScreen> {
-  final _pages = PageController();
-  int _index = 0;
+  late final _pages = PageController(initialPage: widget.initialPage ?? 0);
+  late int _index = widget.initialPage ?? 0;
   bool _busy = false;
 
   Library get _library => widget.library;
@@ -74,7 +83,21 @@ class _EventScreenState extends State<EventScreen> {
     // A text tab marked correct is what the user wants to see: it opens on
     // the Text view (the Text tool goes back to the pages).
     final event = _library.byId(widget.eventId);
-    _text = event != null && event.tabText != null && event.tabTextCorrect;
+    _text =
+        widget.initialText ??
+        (event != null && event.tabText != null && event.tabTextCorrect);
+  }
+
+  /// Remembers the view and the page, for a reload ([PlaceMemory]).
+  void _remember() => PlaceMemory.of(_library).update(
+    (p) =>
+        p.eventId == widget.eventId ? p.copyWith(text: _text, page: _index) : p,
+  );
+
+  @override
+  void setState(VoidCallback fn) {
+    super.setState(fn);
+    _remember();
   }
 
   @override

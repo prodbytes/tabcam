@@ -9,6 +9,7 @@ import 'clone.dart';
 import 'page_image.dart';
 import 'rename_dialog.dart';
 import 'event_screen.dart';
+import 'place.dart';
 import 'share_sheet.dart';
 import 'sign_in_gate.dart';
 import 'video_page.dart';
@@ -151,19 +152,43 @@ class _None extends StatelessWidget {
   );
 }
 
-/// Opens [event]'s [EventScreen].
-void openEvent(
+/// Opens [event]'s [EventScreen] (on [page], or its Text view), and
+/// remembers it's open until it's closed ([PlaceMemory]).
+Future<void> openEvent(
   BuildContext context,
   Library library,
   CaptureEvent event,
   CloudSync? sync, [
   CloudOcr? ocr,
-]) => Navigator.of(context).push(
-  MaterialPageRoute<void>(
-    builder: (_) =>
-        EventScreen(library: library, eventId: event.id, sync: sync, ocr: ocr),
-  ),
-);
+  int? page,
+  bool? text,
+]) async {
+  final memory = PlaceMemory.of(library);
+  memory.update(
+    (p) => p.copyWith(
+      eventId: () => event.id,
+      text: text ?? false,
+      page: page ?? 0,
+    ),
+  );
+  await Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => EventScreen(
+        library: library,
+        eventId: event.id,
+        sync: sync,
+        ocr: ocr,
+        initialPage: page,
+        initialText: text,
+      ),
+    ),
+  );
+  memory.update(
+    (p) => p.eventId == event.id
+        ? p.copyWith(eventId: () => null, text: false, page: 0)
+        : p,
+  );
+}
 
 class _Empty extends StatelessWidget {
   const _Empty();
