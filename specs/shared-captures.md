@@ -84,10 +84,14 @@ credentials:
 | `GET /shared` | anyone | the captures shared with them: owner, capture, owner's email, role |
 | `DELETE /shared/{owner}/{captureId}` | the grantee | leaves a share |
 | `POST /shared/{owner}/{captureId}/credentials` | the grantee | temporary credentials for that capture's folder |
+| `PUT /links/{captureId}` | the owner | records the capture's link key (`{key}`): anyone with the link may read it ([sharing](sharing.md)) |
+| `POST /public/{captureId}/credentials` | anyone, no token | `{key}`: read-only credentials for the capture's folder, and its owner; a wrong or unknown key is a 404 |
 | `DELETE /account` | anyone | [deletes their account](cloud-sync.md#deleting-the-account): the grants of their captures, the grants to their address, their record in the cloud OCR service's accounts table, then their Cognito identity |
 
 Each route is also under `/apple` (`GET /apple/shared`, …,
-`DELETE /apple/account`), for Sign in with Apple's tokens.
+`DELETE /apple/account`), for Sign in with Apple's tokens, except
+`POST /public/…`, which has no authorizer: the function answers it before
+reading any token, with nothing but the key to go on.
 
 - Every request carries the user's ID token, checked by the HTTP API's
   JWT authorizers. An HTTP API route has one authorizer, and a JWT
@@ -128,8 +132,15 @@ Each route is also under `/apple` (`GET /apple/shared`, …,
   `<bucket>/<owner>/events/<capture id>/*` (get; put and delete too to
   edit) and listing that prefix. The role itself allows at most the
   `events/` folders, and only the function may assume it.
+- **Links**: the links table keeps each key's SHA-256 (never the key),
+  with the owner's identity and the capture ID; one key is one capture's
+  (another's is a 409). A link's credentials are those of a read-only
+  grant (get and list that capture's folder), for an hour. The public
+  route is throttled harder (5 requests a second, bursts of 10); keys are
+  192 random bits, so guessing one is hopeless anyway. `DELETE /account`
+  deletes the caller's links too (an index by owner).
 - Inputs are checked: capture IDs `[a-z0-9]{1,32}`, owners
-  `<region>:<uuid>`, emails, roles. The API is throttled (10 requests a
+  `<region>:<uuid>`, emails, roles, link keys (`[A-Za-z0-9_-]{32,64}`). The API is throttled (10 requests a
   second, bursts of 20).
 
 In the app ([lib/cloud/share_api.dart](../tabscan_app/lib/cloud/share_api.dart)),
@@ -163,7 +174,7 @@ The script prints `TABSCANNER_SHARE_API_URL`.
   refused; the grantee lists, gets credentials narrowed to the capture's
   folder (read only: get only), and leaves; no grant, no credentials; the
   owner revokes. `DELETE /account` deletes the caller's grants both ways,
-  their accounts record and their identity, and nothing of anyone else's
+  their accounts record, their links and their identity, and nothing of anyone else's
   (another owner's grant to a third person stays), across query pages;
   without the OCR table too; Cognito keeping the identity is a 502 and a
   retry finishes; an unverified address deletes nothing; an Apple user
@@ -173,14 +184,21 @@ The script prints `TABSCANNER_SHARE_API_URL`.
   (relay) address; Apple's `email_verified` may be a boolean or a string,
   and false is refused; a token on another issuer's path is refused before
   anything is read; an Apple token without an email is refused; unknown
-  `/apple` routes are 404.
+  `/apple` routes are 404. Links: a published key opens read-only
+  credentials (get only, that capture's folder) without a token, and only
+  its hash is kept; publishing again is the same; a wrong key, another
+  capture's ID, a bad key or body open nothing; a key is one capture's.
 - The app's tests, two devices and a fake share API over the in-memory
   bucket: a capture shared to edit comes down and edits go back (without
   the sharing fields); read only uploads nothing; the grantee's own
   events stay in their folder; revoked, it goes, and shared again it
   comes back; the grantee removes it and leaves; the owner deletes it and
   it goes; a role change reaches the copy; a clone of a shared capture is
-  the user's own. The API client's requests.
+  the user's own. The API client's requests. A capture's link with its
+  key opens it read only, signed out (instead of the welcome) and signed
+  in when it isn't shared with the user, in a library apart; a wrong key
+  says it can't be opened; Share makes the key once, on the tap, and a
+  link the API couldn't record is recorded at the next pass.
 - The template passes `validate-template` and cfn-lint (the `/apple`
   routes and authorizer only with `AppleClientId`).
 - Not yet verified: the deployed API, which needs the Google OAuth
@@ -197,3 +215,7 @@ The script prints `TABSCANNER_SHARE_API_URL`.
   skipped.
 - People only find what's shared with them in the app; there's no email
   or notification.
+- A capture's link can't be revoked or changed yet: whoever has a link
+  with its key can see the capture, read only, until the capture is
+  deleted (or its owner deletes their account). A clone has no key, so
+  cloning gives a capture with a new link.

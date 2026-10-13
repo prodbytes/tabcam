@@ -56,7 +56,8 @@ when it last changed (`updated`: every change the user makes sets it;
 older events count their creation), its pages, and the text tab once read.
 Once it has synced it also has an `owner`, the Cognito identity it syncs
 with, and one shared with the user has `sharedBy` (the owner's email) and
-`readOnly` (all kept on the device only). A page has an ID, a kind (**image**,
+`readOnly` (all kept on the device only). Once its link has been copied
+it has a `linkKey` ([sharing](sharing.md)), synced; a clone has none. A page has an ID, a kind (**image**,
 **video**, **audio**, **pdf** or **link**), its file's extension, and a
 [filter](page-filters.md) (used for images only). A link has no file
 (its extension is `url`): it has its address (`url`, `http` or `https`

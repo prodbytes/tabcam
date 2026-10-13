@@ -23,6 +23,7 @@ void main() {
   late FakeAuth auth;
   late CloudSync sync;
   late String id;
+  late FakeShareApi api;
 
   Future<void> open(WidgetTester tester, {bool sharing = true}) async {
     library = Library(PlatformEventStore(), null, (_) async => null);
@@ -39,7 +40,9 @@ void main() {
       auth: auth,
       bucket: FakeBucket(),
       credentials: FakeCredentials(),
-      shares: sharing ? FakeShareApi({}, email: 'ana@example.com') : null,
+      shares: sharing
+          ? (api = FakeShareApi({}, email: 'ana@example.com'))
+          : null,
       period: const Duration(days: 1),
     );
     addTearDown(sync.dispose);
@@ -69,26 +72,59 @@ void main() {
         });
   });
 
-  testWidgets(
-    'Share copies the link on the tap itself: the URL, nothing else',
-    (tester) async {
-      await open(tester);
-      await tester.tap(find.byTooltip('Share'));
-      // Copied at once: no frame, no sheet, no wait.
-      expect(
-        copied,
-        matches(RegExp(r'^https://tabscan\.nu01\.com/app/\?c=[a-z0-9]+$')),
-      );
-      expect(copied, 'https://tabscan.nu01.com/app/?c=$id');
-      await frames(tester);
-      expect(copied, CaptureLink.of(library.byId(id)!).toString());
-      expect(copied, endsWith('/app/?c=$id'));
-      expect(find.text('Link copied'), findsOneWidget);
-      // No sheet, no options.
-      expect(find.text('PDF'), findsNothing);
-      expect(find.byType(BottomSheet), findsNothing);
-    },
-  );
+  testWidgets('Share copies the link on the tap itself: the URL, nothing else', (
+    tester,
+  ) async {
+    await open(tester);
+    await tester.tap(find.byTooltip('Share'));
+    // Copied at once: no frame, no sheet, no wait. With its key, made
+    // now, so anyone holding the link can open it.
+    expect(
+      copied,
+      matches(
+        RegExp(
+          r'^https://tabscan\.nu01\.com/app/\?c=[a-z0-9]+&k=[A-Za-z0-9_-]{32}$',
+        ),
+      ),
+    );
+    expect(copied, startsWith('https://tabscan.nu01.com/app/?c=$id&k='));
+    await frames(tester);
+    // The key is kept on the capture and recorded by the share API.
+    final key = library.byId(id)!.linkKey!;
+    expect(copied, CaptureLink.of(library.byId(id)!).toString());
+    expect(copied, endsWith('/app/?c=$id&k=$key'));
+    expect(FakeShareApi.links[key], '/$id');
+    expect(find.text('Link copied'), findsOneWidget);
+    // No sheet, no options.
+    expect(find.text('PDF'), findsNothing);
+    expect(find.byType(BottomSheet), findsNothing);
+
+    // Again: the same link.
+    final first = copied;
+    await tester.tap(find.byTooltip('Share'));
+    await frames(tester);
+    expect(copied, first);
+    expect(library.byId(id)!.linkKey, key);
+  });
+
+  testWidgets('a link the API couldn\'t record is recorded at the next pass', (
+    tester,
+  ) async {
+    await open(tester);
+    api.failPublish = Exception('offline');
+    await tester.tap(find.byTooltip('Share'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await frames(tester);
+    // It failed once (the fake throws once), then the pass Share starts
+    // recorded it.
+    expect(api.failPublish, isNull);
+    final key = library.byId(id)!.linkKey!;
+    expect(FakeShareApi.links[key], '/$id');
+    await tester.pump(const Duration(seconds: 3)); // the change's sync
+    await frames(tester);
+  });
 
   testWidgets('Share with people has its own button', (tester) async {
     await open(tester);
@@ -103,6 +139,7 @@ void main() {
     expect(find.byTooltip('Share with people'), findsNothing);
     await tester.tap(find.byTooltip('Share'));
     await frames(tester);
+    // No share API, no key: the link opens it for its owner only.
     expect(copied, endsWith('/app/?c=$id'));
   });
 
