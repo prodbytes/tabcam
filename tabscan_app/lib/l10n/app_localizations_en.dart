@@ -377,16 +377,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventReorder => 'Reorder';
 
   @override
-  String get eventReorderTitle => 'Drag to reorder';
-
-  @override
   String get eventCouldntReorder => 'Couldn\'t reorder';
-
-  @override
-  String get eventPagePhoto => 'Photo';
-
-  @override
-  String get eventPagePdf => 'PDF';
 
   @override
   String get eventViewOriginal => 'Original';
