@@ -34,6 +34,20 @@ def test_rebuild_fills_gaps_and_labels():
     assert pipeline.rebuild("|-1O-", "", 4) == "|-10-|"
 
 
+def test_align_measures_a_staff_from_one_start():
+    def line(dash_x0, cw, cols):
+        return pipeline.Line(0, 10, 0, 500, 5, cols, cw, dash_x0)
+    # The B line starts with a fret, so its dashes start a column late.
+    group = pipeline.align([line(100, 20, 30), line(120, 21, 29), line(100, 20, 30)])
+    assert {(l.dash_x0, l.cw, l.cols) for l in group} == {(100, 20.0, 30)}
+
+
+def test_even_ends_a_staffs_lines_together():
+    assert pipeline.even(["e|-3--|", "B|-1--------|", "G|-0"], 5) == [
+        "e|-3---|", "B|-1---|", "G|-0---|"]
+    assert pipeline.even(["e|-3-|", "B|-1----5|"], 3) == ["e|-3-----|", "B|-1----5|"]
+
+
 def test_vote_takes_the_reading_most_like_the_others():
     assert pipeline.vote(["e|-3-|", "e|-8-|", "e|-3-|"]) == "e|-3-|"
     assert pipeline.vote(["e|-1-|", "e|-2-|"]) == "e|-1-|"  # tie: first engine
