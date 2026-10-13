@@ -104,7 +104,47 @@ void main() {
     expect(library.byId(id)!.pages.first.title, 'Verse');
   });
 
-  testWidgets('an opened file is renamed from its title bar', (tester) async {
+  /// The file screen's Rename tool, beside Delete.
+  IconButton renameTool(WidgetTester tester) => tester.widget<IconButton>(
+    find.descendant(
+      of: find.byKey(const Key('rename-file')),
+      matching: find.byType(IconButton),
+    ),
+  );
+
+  testWidgets('an opened file is renamed from the tool beside Delete', (
+    tester,
+  ) async {
+    // A narrow phone: View, Rotate, Rename and Delete fit along the bottom.
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final id = await open(tester);
+    final photo = library.byId(id)!.pages.first;
+    await tester.tap(find.byKey(ValueKey('file-${photo.id}')));
+    await frames(tester);
+
+    // Rename sits just before Delete.
+    final rename = tester.getCenter(find.byIcon(Icons.edit_outlined));
+    final delete = tester.getCenter(find.byIcon(Icons.delete_outline));
+    expect(rename.dx, lessThan(delete.dx));
+    expect(rename.dy, delete.dy);
+
+    await tester.tap(find.byKey(const Key('rename-file')));
+    await frames(tester);
+    expect(find.byType(AlertDialog), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'Opening riff');
+    await tester.tap(find.text('Save'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 20)),
+    );
+    await frames(tester);
+    expect(library.byId(id)!.pages.first.title, 'Opening riff');
+    expect(find.text('Opening riff'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a link opened is renamed beside Delete too', (tester) async {
     final id = await open(tester);
     // A tap on a link opens it; its chevron opens it on its own screen.
     final link = library.byId(id)!.pages.last;
@@ -126,5 +166,13 @@ void main() {
     final id = await open(tester, readOnly: true);
     final link = library.byId(id)!.pages.last;
     expect(find.byKey(ValueKey('rename-${link.id}')), findsNothing);
+
+    // Opened, its Rename tool (like Delete) is off.
+    await tester.tap(find.text('example.com'));
+    await frames(tester);
+    expect(renameTool(tester).onPressed, isNull);
+    await tester.tap(find.byKey(const Key('rename-file')));
+    await frames(tester);
+    expect(find.byType(AlertDialog), findsNothing);
   });
 }

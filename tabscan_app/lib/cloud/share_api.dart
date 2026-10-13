@@ -53,6 +53,16 @@ class ShareCredentials {
   final ShareRole role;
 }
 
+/// Read-only credentials for a capture anyone with its link may open, and
+/// whose folder it's in.
+class LinkedCapture {
+  const LinkedCapture(this.owner, this.credentials);
+
+  /// The owner's Cognito identity: the folder the capture is in.
+  final String owner;
+  final AwsCredentials credentials;
+}
+
 /// One sign-in linked to the user's profile.
 class ProfileAccount {
   const ProfileAccount({
@@ -279,18 +289,37 @@ class ShareApi {
       'credentials',
     ]);
     return ShareCredentials(
-      AwsCredentials(
-        accessKeyId: c['accessKeyId'] as String,
-        secretAccessKey: c['secretAccessKey'] as String,
-        sessionToken: c['sessionToken'] as String,
-        expiration: DateTime.fromMillisecondsSinceEpoch(
-          (c['expiration'] as num).toInt() * 1000,
-          isUtc: true,
-        ),
-      ),
+      _credentials(c),
       ShareRole.byName(c['role'] as String?),
     );
   }
+
+  /// Lets anyone with the capture's link (its [key]) see it, read only.
+  /// The same key again does nothing new.
+  Future<void> publishLink(String token, String captureId, String key) =>
+      _call(token, 'PUT', ['links', captureId], body: {'key': key});
+
+  /// Read-only credentials for the capture a link names, without signing
+  /// in: its [captureId] and [key].
+  Future<LinkedCapture> openLink(String captureId, String key) async {
+    final c = await _call(
+      null,
+      'POST',
+      ['public', captureId, 'credentials'],
+      body: {'key': key},
+    );
+    return LinkedCapture(c['owner'] as String, _credentials(c));
+  }
+
+  static AwsCredentials _credentials(Map<String, Object?> c) => AwsCredentials(
+    accessKeyId: c['accessKeyId'] as String,
+    secretAccessKey: c['secretAccessKey'] as String,
+    sessionToken: c['sessionToken'] as String,
+    expiration: DateTime.fromMillisecondsSinceEpoch(
+      (c['expiration'] as num).toInt() * 1000,
+      isUtc: true,
+    ),
+  );
 
   static List<Grant> _grants(Map<String, Object?> body) => [
     for (final g in body['grants'] as List)
@@ -300,8 +329,10 @@ class ShareApi {
       ),
   ];
 
+  /// Calls the API: with the user's ID [token], or, null, without one (the
+  /// public route).
   Future<Map<String, Object?>> _call(
-    String token,
+    String? token,
     String method,
     List<String> path, {
     Map<String, Object?>? body,
@@ -310,13 +341,14 @@ class ShareApi {
     final uri = baseUrl.replace(
       pathSegments: [
         ...baseUrl.pathSegments.where((s) => s.isNotEmpty),
-        if (AuthProvider.ofToken(token) == AuthProvider.apple) 'apple',
+        if (token != null && AuthProvider.ofToken(token) == AuthProvider.apple)
+          'apple',
         ...path,
       ],
       queryParameters: query,
     );
-    final request = http.Request(method, uri)
-      ..headers['authorization'] = 'Bearer $token';
+    final request = http.Request(method, uri);
+    if (token != null) request.headers['authorization'] = 'Bearer $token';
     if (body != null) {
       request.headers['content-type'] = 'application/json';
       request.body = jsonEncode(body);

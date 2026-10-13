@@ -24,6 +24,9 @@ class IncomingLinks extends ChangeNotifier with WidgetsBindingObserver {
     if (launch != null && CaptureLink.idIn(launch) != null) _pending = launch;
   }
 
+  /// The link waiting to be opened, if any, left waiting.
+  Uri? get pending => _pending;
+
   /// The link waiting to be opened, if any; it's then no longer waiting.
   Uri? take() {
     final link = _pending;

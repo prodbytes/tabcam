@@ -430,6 +430,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventReadOnly => 'Read only';
 
   @override
+  String get eventByLink => 'Opened by its link · Read only';
+
+  @override
+  String get linkSignIn => 'Sign in';
+
+  @override
+  String get linkOpening => 'Opening the capture…';
+
+  @override
+  String get linkTryAgain => 'Try again';
+
+  @override
+  String get linkUnavailable =>
+      'This capture can\'t be opened. The link may be wrong, its owner may have deleted it, or you may be offline.';
+
+  @override
   String get eventCanEdit => 'Can edit';
 
   @override

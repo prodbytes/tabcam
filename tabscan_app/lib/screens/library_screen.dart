@@ -5,13 +5,12 @@ import '../cloud/cloud_sync.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
 import '../l10n/language.dart';
+import 'card_preview.dart';
 import 'clone.dart';
-import 'page_image.dart';
 import 'rename_dialog.dart';
 import 'event_screen.dart';
 import 'place.dart';
 import 'share_sheet.dart';
-import 'video_page.dart';
 
 /// The Home tab: every event as a card, newest first; once something is
 /// shared with the user, in two sections, My captures and Shared with me. A new event
@@ -311,10 +310,6 @@ class _EventCard extends StatelessWidget {
     final pdfs = count((p) => p.isPdf);
     final links = count((p) => p.isLink);
     final pages = count((p) => p.isImage);
-    // The first image is the thumbnail; without images (or with them
-    // hidden), the text tab's badge, a video's, a PDF's, a recording's, or
-    // else a link's.
-    final cover = event.visiblePages.where((p) => p.isImage).firstOrNull;
     return Card(
       clipBehavior: Clip.antiAlias,
       shape: fresh
@@ -335,33 +330,7 @@ class _EventCard extends StatelessWidget {
             Expanded(
               child: ColoredBox(
                 color: Colors.white,
-                child: cover != null
-                    ? PageImage(
-                        library: library,
-                        event: event,
-                        page: cover,
-                        fit: BoxFit.cover,
-                        cacheWidth: 400,
-                      )
-                    : event.hideImages && event.tabText != null
-                    ? const Icon(Icons.notes, size: 48, color: Colors.black54)
-                    : videos > 0
-                    ? const VideoThumbnail()
-                    : pdfs > 0
-                    ? const Icon(
-                        Icons.picture_as_pdf_outlined,
-                        size: 48,
-                        color: Colors.black54,
-                      )
-                    : audio > 0
-                    ? const Icon(
-                        Icons.music_note,
-                        size: 48,
-                        color: Colors.black54,
-                      )
-                    : links > 0
-                    ? const Icon(Icons.link, size: 48, color: Colors.black54)
-                    : const Icon(Icons.description_outlined),
+                child: CardPreview(library: library, event: event),
               ),
             ),
             Padding(

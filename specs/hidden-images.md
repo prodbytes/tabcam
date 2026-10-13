@@ -24,8 +24,9 @@ the owner, on every device, and the people it's
   sync](cloud-sync.md)), so the setting reaches the owner's other devices
   and the people it's shared with at the next sync pass. A
   [clone](library.md#events) keeps the setting.
-- **Library**: the card has no image thumbnail (a text icon once the tab
-  has been read; otherwise a video or link badge), and "images hidden"
+- **Library**: the card never shows an image: its preview is a PDF's
+  first page, else the text tab's first lines once read, else a video,
+  link or recording preview ([library](library.md)), and "images hidden"
   takes the place of the page count.
 - **Exports** ([sharing](sharing.md)) leave the hidden images out: PDF
   has only the links and the text tab, and Files only the videos,

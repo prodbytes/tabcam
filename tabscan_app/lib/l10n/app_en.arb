@@ -427,7 +427,7 @@
   },
   "eventRename": "Rename",
   "@eventRename": {
-    "description": "Event app bar tooltip and rename dialog title"
+    "description": "Event app bar tooltip, rename dialog title, and the file screen tool (beside Delete) that renames the file"
   },
   "eventShareWithPeople": "Share with people",
   "@eventShareWithPeople": {
@@ -584,6 +584,26 @@
   "eventReadOnly": "Read only",
   "@eventReadOnly": {
     "description": "Event banner: shared read only"
+  },
+  "eventByLink": "Opened by its link · Read only",
+  "@eventByLink": {
+    "description": "Banner on a capture opened by its link by someone it isn't shared with"
+  },
+  "linkSignIn": "Sign in",
+  "@linkSignIn": {
+    "description": "Button: leave a capture opened by its link, to sign in"
+  },
+  "linkOpening": "Opening the capture…",
+  "@linkOpening": {
+    "description": "While a capture opened by its link loads"
+  },
+  "linkTryAgain": "Try again",
+  "@linkTryAgain": {
+    "description": "Button: open the capture's link again"
+  },
+  "linkUnavailable": "This capture can't be opened. The link may be wrong, its owner may have deleted it, or you may be offline.",
+  "@linkUnavailable": {
+    "description": "A capture's link that didn't open"
   },
   "eventCanEdit": "Can edit",
   "@eventCanEdit": {

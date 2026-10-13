@@ -71,8 +71,8 @@ it opens on the Text view; otherwise on the list.
 
 One file, opened from the list, on its own screen (the back button goes
 to the list). The app bar has the file's name ("Page 2", a link's title,
-or the name the user gave it); tapping it, or **Rename file** (pencil),
-renames the file.
+or the name the user gave it); tapping it renames the file, as does the
+**Rename** tool beside Delete.
 The file is shown whole, as what it is:
 
 - **Images** are pinch-zoomable (up to 5×), as the view says.
@@ -111,8 +111,15 @@ Its tools, along the bottom:
 - **Rotate** (images only): turns the image a quarter turn clockwise
   (stored as a new page in its place; see [library](library.md#events));
   the screen stays on it.
+- **Rename** (pencil), just before Delete: asks for the file's name,
+  prefilled, as on the list (saving it empty goes back to the default
+  name).
 - **Delete**: deletes the file and goes back to the list. The last file
   can't be deleted (the message says to delete the event instead).
+
+Rename and Delete are off while a tool works and on a capture shared read
+only. The tools share the bar equally, so all four (an image's) fit a
+narrow phone.
 
 A reload or a restart with a file open reopens it, over its event's list
 ([navigation](navigation.md#coming-back-where-the-user-was)).

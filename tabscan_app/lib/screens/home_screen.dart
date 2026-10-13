@@ -10,6 +10,7 @@ import '../capture/media.dart';
 import '../capture/page_source.dart';
 import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
+import '../cloud/public_capture.dart';
 import '../export/capture_link.dart';
 import '../export/incoming_links.dart';
 import '../library/capture_event.dart';
@@ -17,6 +18,7 @@ import '../library/library.dart';
 import 'account_panel.dart';
 import 'library_screen.dart';
 import 'place.dart';
+import 'public_capture_screen.dart';
 import 'link_page.dart';
 
 /// The app's tabs, in the bottom navigation bar's order.
@@ -52,9 +54,14 @@ class HomeScreen extends StatefulWidget {
     this.auth,
     this.sync,
     this.ocr,
+    this.captures,
   });
 
   final Library library;
+
+  /// Opens captures by their link (with its key) for a user they aren't
+  /// shared with, read only; null in a build without the share API.
+  final PublicCaptures? captures;
 
   /// Sign-in and sync, in a build that has them; null otherwise.
   final AuthService? auth;
@@ -127,8 +134,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (IncomingLinks.instance.take() case final link?) openLink(link);
   }
 
-  /// The capture a link named, until it's opened (or found missing).
+  /// The capture a link named, until it's opened (or found missing), and
+  /// the link.
   String? _linked;
+  Uri? _link;
   bool _askedToSignIn = false;
   bool _passSinceLink = false;
 
@@ -140,6 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (id == null) return;
     _stopLink();
     _linked = id;
+    _link = link;
     _askedToSignIn = false;
     _passSinceLink = false;
     library.addListener(_tryLink);
@@ -180,8 +190,22 @@ class _HomeScreenState extends State<HomeScreen> {
       case SyncState.syncing:
         _passSinceLink = true;
       case SyncState.synced || SyncState.failed when _passSinceLink:
+        final link = _link;
         _stopLink();
-        _snack(context.l10n.homeLinkNotShared);
+        // Not the user's, nor shared with them: by its key, read only.
+        if (widget.captures case final captures?
+            when link != null && PublicCaptures.opens(link)) {
+          unawaited(
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) =>
+                    PublicCaptureScreen(link: link, captures: captures),
+              ),
+            ),
+          );
+        } else {
+          _snack(context.l10n.homeLinkNotShared);
+        }
       case SyncState.synced || SyncState.failed:
         unawaited(sync.syncNow());
       case SyncState.signedOut:
