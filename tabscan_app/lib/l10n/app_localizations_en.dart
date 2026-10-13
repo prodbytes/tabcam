@@ -1235,4 +1235,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventAddDocumentDetail => 'PDF files';
+
+  @override
+  String get eventRenameFile => 'Rename file';
 }

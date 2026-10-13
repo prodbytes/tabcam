@@ -14,29 +14,45 @@ Future<void> renameEvent(
 ) async {
   final name = await showDialog<String>(
     context: context,
-    builder: (_) => RenameDialog(event: event),
+    builder: (_) => RenameDialog(name: event.title),
   );
   if (name == null || name.isEmpty) return;
   await library.update(event.copyWith(title: name, artist: ''));
 }
 
-/// The rename dialog: one Name field, prefilled with the title, its text
+/// Asks for a page's name (a file, a photo, a link), prefilled with what it
+/// shows now ([shown]); saves it on the page. Emptied, the page goes back
+/// to its default name.
+Future<void> renamePage(
+  BuildContext context,
+  Library library,
+  CaptureEvent event,
+  EventPage page,
+  String shown,
+) async {
+  final name = await showDialog<String>(
+    context: context,
+    builder: (_) => RenameDialog(name: page.title ?? shown),
+  );
+  if (name == null) return;
+  await library.renamePage(event.id, page.id, name);
+}
+
+/// The rename dialog: one Name field, prefilled with [name], its text
 /// selected so typing replaces it.
 class RenameDialog extends StatefulWidget {
-  const RenameDialog({super.key, required this.event});
+  const RenameDialog({super.key, required this.name});
 
-  final CaptureEvent event;
+  final String name;
 
   @override
   State<RenameDialog> createState() => _RenameDialogState();
 }
 
 class _RenameDialogState extends State<RenameDialog> {
-  late final _name = TextEditingController(text: widget.event.title)
-    ..selection = TextSelection(
-      baseOffset: 0,
-      extentOffset: widget.event.title.length,
-    );
+  late final _name = TextEditingController(
+    text: widget.name,
+  )..selection = TextSelection(baseOffset: 0, extentOffset: widget.name.length);
 
   @override
   void dispose() {

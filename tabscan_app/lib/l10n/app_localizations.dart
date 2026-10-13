@@ -2067,6 +2067,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'PDF files'**
   String get eventAddDocumentDetail;
+
+  /// A capture's file (photo, PDF, link, ...): rename it
+  ///
+  /// In en, this message translates to:
+  /// **'Rename file'**
+  String get eventRenameFile;
 }
 
 class _AppLocalizationsDelegate

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/language.dart';
+import 'rename_dialog.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
 import '../processing/page_filter.dart';
@@ -14,7 +15,8 @@ import 'video_page.dart';
 /// 1", "Recording 1" (numbered among the files of its kind), or a link's
 /// title (else its host).
 String fileLabel(AppLocalizations l10n, CaptureEvent event, EventPage page) {
-  if (page.isLink) return page.title ?? page.url?.host ?? '';
+  if (page.title case final title? when title.isNotEmpty) return title;
+  if (page.isLink) return page.url?.host ?? '';
   final number =
       event.pages.where((p) => p.kind == page.kind).toList().indexOf(page) + 1;
   return switch (page.kind) {
@@ -135,6 +137,14 @@ class FileScreen extends StatefulWidget {
 }
 
 class _FileScreenState extends State<FileScreen> {
+  Future<void> _rename(CaptureEvent event, EventPage page) => renamePage(
+    context,
+    _library,
+    event,
+    page,
+    fileLabel(context.l10n, event, page),
+  );
+
   /// The file shown: Rotate stores it as a new page in its place.
   late String _pageId = widget.pageId;
   bool _busy = false;
@@ -212,10 +222,23 @@ class _FileScreenState extends State<FileScreen> {
         final original = filter == PageFilter.original;
         return Scaffold(
           appBar: AppBar(
-            title: Text(
-              fileLabel(l10n, event, page),
-              overflow: TextOverflow.ellipsis,
+            // Tapping the name renames the file (when the user can edit).
+            title: InkWell(
+              onTap: event.readOnly ? null : () => _rename(event, page),
+              child: Text(
+                fileLabel(l10n, event, page),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
+            actions: [
+              if (!event.readOnly)
+                IconButton(
+                  key: const Key('rename-file'),
+                  tooltip: l10n.eventRenameFile,
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: () => _rename(event, page),
+                ),
+            ],
             bottom: _busy
                 ? const PreferredSize(
                     preferredSize: Size.fromHeight(4),
