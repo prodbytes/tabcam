@@ -35,8 +35,8 @@ it opens on the Text view; otherwise on the list.
   - **Videos**: a play badge; "Video 1"…
   - **PDFs**: a PDF badge; "PDF 1"…
   - **Recordings** (audio): a music note; "Recording 1"…
-  - **Links**: a link badge; the title (or the address's host), the
-    address under it.
+  - **Links**: a link badge (a video badge for a YouTube video); the
+    title (or the address's host), the address under it.
 
   Numbers count the files of that kind. A file the user named shows its
   name instead, whatever it is; files, PDFs, recordings and videos added
@@ -44,7 +44,11 @@ it opens on the Text view; otherwise on the list.
   pickers name them at random). **Rename file** (a pencil on each row, or
   a long press) asks for the name, prefilled; saving it empty goes back
   to the default name. The name is the page's `title`, synced with the
-  event. A tap opens the file alone on the file screen. With the images [hidden](hidden-images.md), the list
+  event. A tap opens the file alone on the file screen, except a link's:
+  a tap opens the link itself, outside the app, as the file screen's
+  **Open** does (a new tab on the web; the browser, or the app for it
+  such as YouTube, on Android and iOS). A link's chevron (**Details**)
+  opens it on the file screen, for Copy and Delete. With the images [hidden](hidden-images.md), the list
   is the **text tab** first (its first line, or "No text tab yet"; a tap
   goes to the Text view), then the other files.
 - **Tools** along the bottom:
@@ -86,27 +90,16 @@ The file is shown whole, as what it is:
   play through `video_player`, as videos do.
 - **Links** show as a card with a link icon, the title (or the address's
   host), the address (selectable), **Open** and **Copy** (to the
-  clipboard). **Open** shows the page in a browser inside the app on
-  Android and iOS (Custom Tabs, Safari View Controller), or where there's
-  none, the browser or the app that handles it (such as YouTube); on the
-  web, in a new tab. A link that can't open says so.
+  clipboard). **Open** opens the link outside the app: on the web in a
+  new tab; on Android and iOS in the browser, or the app the system
+  hands it to (such as YouTube) (`url_launcher`,
+  `LaunchMode.externalApplication`, window `_blank`). Only `http` and
+  `https` links open. A link that can't open says so.
 - **YouTube videos**: a link to one (`youtube.com/watch?v=…`,
   `youtu.be/…`, `/shorts/…`, `/live/…`, `/embed/…`, on any YouTube
-  host) shows the same card with a video icon and **Play** first.
-  Nothing is loaded from YouTube until **Play**: tapped, the card
-  becomes YouTube's embedded player (`youtube_player_iframe`, in the
-  privacy-enhanced youtube-nocookie.com mode), playing from the link's
-  start time (`t=` / `start=`, as `90`, `90s` or `1m30s`), with
-  **Open** and **Copy** under it. YouTube's controls are in the app's
-  language; captions follow the viewer's YouTube setting; related
-  videos at the end are from the same channel; full screen on the web
-  only. If the video can't play here for any reason (YouTube's error,
-  such as the video not allowing embedding or not found; the player
-  page not loading; no player within 20 seconds; no web view), the
-  page goes back to the link card, saying "This video can't be played
-  here", without **Play**: **Open** opens it in a new tab (on Android
-  and iOS, the browser inside the app, as for any link). Only the web,
-  Android and iOS embed; elsewhere it's a plain link.
+  host) shows the same card with a video icon. Nothing plays in the app:
+  **Open** opens it like any link, where YouTube starts it at the
+  link's own start time (`t=`), if it has one.
 
 Its tools, along the bottom:
 

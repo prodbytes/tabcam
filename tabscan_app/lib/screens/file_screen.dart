@@ -10,6 +10,7 @@ import 'link_page.dart';
 import 'page_image.dart';
 import 'pdf_page.dart';
 import 'video_page.dart';
+import 'youtube_link.dart';
 
 /// What a file is called in its capture's list: "Page 2", "Video 1", "PDF
 /// 1", "Recording 1" (numbered among the files of its kind), or a link's
@@ -64,7 +65,12 @@ class FileThumbnail extends StatelessWidget {
               color: badge,
             ),
             PageKind.audio => const Icon(Icons.music_note, color: badge),
-            PageKind.link => const Icon(Icons.link, color: badge),
+            PageKind.link => Icon(
+              page.url != null && youTubeVideoId(page.url!) != null
+                  ? Icons.smart_display
+                  : Icons.link,
+              color: badge,
+            ),
           },
         ),
       ),

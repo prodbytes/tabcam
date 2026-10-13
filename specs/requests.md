@@ -743,3 +743,17 @@ spec.
     the sign-in text no longer says capturing works signed out
     ([navigation](navigation.md#signed-out-the-welcome), [library](library.md),
     [cloud sync](cloud-sync.md#signed-out)).
+
+## 2026-10-13
+
+85. **Make added links / YouTube open in a new tab on web and on the
+    browser on mobile.** Links open outside the app: a new tab on the
+    web; the browser on Android and iOS (or the app the system hands
+    them to, such as YouTube), no longer a browser inside the app. A tap
+    on a link in a capture's list opens it straight away; its chevron
+    (**Details**) shows it on the file screen, whose **Open** does the
+    same. YouTube's embedded player is gone (and with it
+    `youtube_player_iframe` and the web views): a YouTube link shows a
+    video icon and opens like any link. The privacy policy no longer says
+    YouTube is loaded in the app ([event screen](event-screen.md),
+    [platforms](platforms.md), [privacy](privacy.md)).

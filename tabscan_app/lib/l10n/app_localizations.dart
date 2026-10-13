@@ -2074,6 +2074,12 @@ abstract class AppLocalizations {
   /// **'Rename file'**
   String get eventRenameFile;
 
+  /// A link in a capture's list: show it on its own screen (title, address, Copy, Delete); a tap on the row opens the link in the browser
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get eventFileDetails;
+
   /// Share: the capture's link was copied to the clipboard
   ///
   /// In en, this message translates to:

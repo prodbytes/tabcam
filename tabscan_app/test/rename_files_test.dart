@@ -106,7 +106,9 @@ void main() {
 
   testWidgets('an opened file is renamed from its title bar', (tester) async {
     final id = await open(tester);
-    await tester.tap(find.text('example.com'));
+    // A tap on a link opens it; its chevron opens it on its own screen.
+    final link = library.byId(id)!.pages.last;
+    await tester.tap(find.byKey(ValueKey('details-${link.id}')));
     await frames(tester);
     await tester.tap(find.byKey(const Key('rename-file')));
     await frames(tester);

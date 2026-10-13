@@ -1272,6 +1272,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventRenameFile => 'Renomear arquivo';
 
   @override
+  String get eventFileDetails => 'Detalhes';
+
+  @override
   String get eventLinkCopied => 'Link copiado';
 
   @override

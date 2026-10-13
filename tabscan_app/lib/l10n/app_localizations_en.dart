@@ -1240,6 +1240,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventRenameFile => 'Rename file';
 
   @override
+  String get eventFileDetails => 'Details';
+
+  @override
   String get eventLinkCopied => 'Link copied';
 
   @override

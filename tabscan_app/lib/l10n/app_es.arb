@@ -328,6 +328,7 @@
   "eventAddDocument": "Documento",
   "eventAddDocumentDetail": "Archivos PDF",
   "eventRenameFile": "Cambiar nombre del archivo",
+  "eventFileDetails": "Detalles",
   "eventLinkCopied": "Enlace copiado",
   "textViewFixLinedUp": "Tablatura alineada: las barras y el final de cada cuerda coinciden",
   "textViewFixAlreadyLinedUp": "Las cuerdas de la tablatura ya están alineadas",

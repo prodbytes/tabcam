@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tabscan_app/library/capture_event.dart';
 import 'package:tabscan_app/screens/link_page.dart';
-import 'package:tabscan_app/screens/youtube_player_view.dart';
+import 'package:tabscan_app/screens/youtube_link.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
+
+import 'fakes.dart';
 
 void main() {
   // Made-up video IDs, not real videos.
   const id = 'Riff_Lesson';
 
-  group('youTubeVideo', () {
-    YouTubeVideo? of(String url) => youTubeVideo(Uri.parse(url));
+  group('youTubeVideoId', () {
+    String? of(String url) => youTubeVideoId(Uri.parse(url));
 
     test('finds the video in each kind of YouTube link', () {
       for (final url in [
@@ -19,24 +22,14 @@ void main() {
         'https://music.youtube.com/watch?v=$id',
         'https://youtu.be/$id',
         'http://youtu.be/$id?si=share',
+        'https://youtu.be/$id?t=90',
         'https://www.youtube.com/shorts/$id',
         'https://www.youtube.com/live/$id',
         'https://www.youtube.com/embed/$id',
         'https://www.youtube-nocookie.com/embed/$id',
       ]) {
-        expect(of(url)?.id, id, reason: url);
-        expect(of(url)?.start, isNull, reason: url);
+        expect(of(url), id, reason: url);
       }
-    });
-
-    test('starts where the link says', () {
-      expect(of('https://youtu.be/$id?t=90')?.start, 90);
-      expect(of('https://youtu.be/$id?t=90s')?.start, 90);
-      expect(of('https://www.youtube.com/watch?v=$id&t=1m30s')?.start, 90);
-      expect(of('https://www.youtube.com/watch?v=$id&t=1h2m3s')?.start, 3723);
-      expect(of('https://www.youtube.com/embed/$id?start=45')?.start, 45);
-      expect(of('https://youtu.be/$id?t=0')?.start, isNull);
-      expect(of('https://youtu.be/$id?t=soon')?.start, isNull);
     });
 
     test('other links are not videos', () {
@@ -67,30 +60,39 @@ void main() {
     ),
   );
 
-  testWidgets('a YouTube link has Play; other links don\'t', (tester) async {
-    await show(tester, 'https://youtu.be/$id');
-    expect(find.text('Play'), findsOneWidget);
-    expect(find.text('Open'), findsOneWidget);
-    expect(find.byIcon(Icons.smart_display), findsOneWidget);
-
-    await show(tester, 'https://example.com/lesson');
-    expect(find.text('Play'), findsNothing);
-    expect(find.text('Open'), findsOneWidget);
-    expect(find.byIcon(Icons.link), findsOneWidget);
-  });
-
-  testWidgets('a video that can\'t play here goes back to the link', (
+  testWidgets('a YouTube link shows as a video, with no player', (
     tester,
   ) async {
-    // Tests have no web view, so the player can't start.
     await show(tester, 'https://youtu.be/$id');
-    await tester.tap(find.text('Play'));
-    await tester.pump();
-    await tester.pump();
-    expect(find.text('This video can\'t be played here'), findsOneWidget);
+    expect(find.byIcon(Icons.smart_display), findsOneWidget);
     expect(find.text('Play'), findsNothing);
     expect(find.text('Open'), findsOneWidget);
     expect(find.text('Copy'), findsOneWidget);
-    expect(find.text('https://youtu.be/$id'), findsOneWidget);
+
+    await show(tester, 'https://example.com/lesson');
+    expect(find.byIcon(Icons.link), findsOneWidget);
+    expect(find.text('Open'), findsOneWidget);
+  });
+
+  testWidgets('a YouTube link opens outside the app, at its start time', (
+    tester,
+  ) async {
+    final launcher = FakeLauncher();
+    UrlLauncherPlatform.instance = launcher;
+    await show(tester, 'https://youtu.be/$id?t=90');
+    await tester.tap(find.text('Open'));
+    await tester.pump();
+    final (url, options) = launcher.launched.single;
+    expect(url, 'https://youtu.be/$id?t=90');
+    expect(options.mode, PreferredLaunchMode.externalApplication);
+    expect(options.webOnlyWindowName, '_blank');
+  });
+
+  test('only web links are launched', () async {
+    final launcher = FakeLauncher();
+    UrlLauncherPlatform.instance = launcher;
+    expect(await launchLink(Uri.parse('javascript:alert(1)')), isFalse);
+    expect(await launchLink(Uri.parse('intent://x#Intent;end')), isFalse);
+    expect(launcher.launched, isEmpty);
   });
 }
