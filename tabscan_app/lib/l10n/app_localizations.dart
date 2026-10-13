@@ -2079,6 +2079,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Link copied'**
   String get eventLinkCopied;
+
+  /// Fix: the strings were lined up
+  ///
+  /// In en, this message translates to:
+  /// **'Tab lined up: every string\'s bars and end match'**
+  String get textViewFixLinedUp;
+
+  /// Fix: nothing to line up
+  ///
+  /// In en, this message translates to:
+  /// **'The tab\'s strings already line up'**
+  String get textViewFixAlreadyLinedUp;
+
+  /// Fix without Premium: lined up; the online check is Premium's
+  ///
+  /// In en, this message translates to:
+  /// **'Tab lined up. Checking it against the song online is part of TabScan Premium.'**
+  String get textViewFixLinedUpPremium;
 }
 
 class _AppLocalizationsDelegate

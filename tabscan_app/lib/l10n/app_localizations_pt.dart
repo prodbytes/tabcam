@@ -1273,4 +1273,16 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get eventLinkCopied => 'Link copiado';
+
+  @override
+  String get textViewFixLinedUp =>
+      'Tablatura alinhada: as barras e o fim de cada corda coincidem';
+
+  @override
+  String get textViewFixAlreadyLinedUp =>
+      'As cordas da tablatura já estão alinhadas';
+
+  @override
+  String get textViewFixLinedUpPremium =>
+      'Tablatura alinhada. Conferir com a música online faz parte do TabScan Premium.';
 }

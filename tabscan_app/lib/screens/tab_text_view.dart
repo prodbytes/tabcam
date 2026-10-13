@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../cloud/cloud_ocr.dart';
 import '../cloud/ocr_api.dart';
 import '../library/library.dart';
+import '../recognition/tab_layout.dart';
 import 'tab_editing.dart';
 import '../l10n/language.dart';
 
@@ -154,19 +155,35 @@ class _TabTextViewState extends State<TabTextView> {
   Future<void> _autocorrect() async {
     final ocr = widget.ocr;
     final event = widget.library.byId(widget.eventId);
-    if (ocr == null || event == null) return;
-    if (!ocr.premium) {
+    if (event == null) return;
+    // First, here and for everyone: the strings lined up (reformatTab).
+    final l10n = context.l10n;
+    final tidy = reformatTab(_text.text);
+    final lined = tidy != _text.text;
+    if (lined) {
+      _text.text = tidy;
+      _saveSoon?.cancel();
+      _save();
+    }
+    if (ocr == null || !ocr.premium) {
+      // The check against the song online is Premium's.
+      final offer = ocr != null && widget.onUpgrade != null;
       _say(
-        context.l10n.textViewFixPremium,
-        action: widget.onUpgrade == null
-            ? null
-            : SnackBarAction(
-                label: context.l10n.textViewUpgrade,
+        offer
+            ? l10n.textViewFixLinedUpPremium
+            : lined
+            ? l10n.textViewFixLinedUp
+            : l10n.textViewFixAlreadyLinedUp,
+        action: offer
+            ? SnackBarAction(
+                label: l10n.textViewUpgrade,
                 onPressed: widget.onUpgrade!,
-              ),
+              )
+            : null,
       );
       return;
     }
+    if (lined) _say(l10n.textViewFixLinedUp);
     final song = await _askSong(event.title);
     if (song == null || !mounted) return;
     _saveSoon?.cancel();
@@ -250,9 +267,9 @@ class _TabTextViewState extends State<TabTextView> {
               ),
               if (editable || correct)
                 _correctToggle(correct, editable && review == null),
-              if (editable &&
-                  widget.ocr != null &&
-                  (widget.ocr!.premium || widget.onUpgrade != null))
+              // Fix lines the strings up for everyone; with Premium, it
+              // also checks the tab against the song online.
+              if (editable)
                 FilledButton.tonalIcon(
                   onPressed: _checking || review != null ? null : _autocorrect,
                   icon: const Icon(Icons.auto_fix_high),

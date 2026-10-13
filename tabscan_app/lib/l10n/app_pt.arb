@@ -328,5 +328,8 @@
   "eventAddDocument": "Documento",
   "eventAddDocumentDetail": "Arquivos PDF",
   "eventRenameFile": "Renomear arquivo",
-  "eventLinkCopied": "Link copiado"
+  "eventLinkCopied": "Link copiado",
+  "textViewFixLinedUp": "Tablatura alinhada: as barras e o fim de cada corda coincidem",
+  "textViewFixAlreadyLinedUp": "As cordas da tablatura já estão alinhadas",
+  "textViewFixLinedUpPremium": "Tablatura alinhada. Conferir com a música online faz parte do TabScan Premium."
 }

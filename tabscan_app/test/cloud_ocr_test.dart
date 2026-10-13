@@ -588,14 +588,20 @@ void _fixTests() {
     await tester.tap(find.text('Fix'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
-    expect(find.text('Fix is part of TabScan Premium'), findsOneWidget);
+    expect(
+      find.text(
+        'Tab lined up. Checking it against the song online is part of '
+        'TabScan Premium.',
+      ),
+      findsOneWidget,
+    );
     await tester.tap(find.text('Upgrade'));
     await tester.pump();
     expect(upgraded, isTrue);
     expect(s.api.checked, isEmpty);
     await tester.pumpWidget(const SizedBox());
 
-    // A store app can't offer the upgrade: no Fix without Premium.
+    // A store app can't offer the upgrade: Fix only lines the tab up.
     await tester.pumpWidget(
       MaterialApp(
         key: UniqueKey(),
@@ -604,7 +610,11 @@ void _fixTests() {
         ),
       ),
     );
-    expect(find.text('Fix'), findsNothing);
+    await tester.tap(find.text('Fix'));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text("The tab's strings already line up"), findsOneWidget);
+    expect(find.text('Upgrade'), findsNothing);
+    expect(s.api.checked, isEmpty);
     await tester.pumpWidget(const SizedBox());
     s.dispose();
   });
