@@ -700,35 +700,17 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get eventDelete;
 
-  /// Event app bar tooltip: change the pages' order
+  /// Event file list: a file's drag handle, to change the files' order
   ///
   /// In en, this message translates to:
   /// **'Reorder'**
   String get eventReorder;
-
-  /// Reorder sheet title
-  ///
-  /// In en, this message translates to:
-  /// **'Drag to reorder'**
-  String get eventReorderTitle;
 
   /// Event: reorder failed (before ': error')
   ///
   /// In en, this message translates to:
   /// **'Couldn\'t reorder'**
   String get eventCouldntReorder;
-
-  /// Reorder sheet: an image page
-  ///
-  /// In en, this message translates to:
-  /// **'Photo'**
-  String get eventPagePhoto;
-
-  /// Reorder sheet: a PDF page
-  ///
-  /// In en, this message translates to:
-  /// **'PDF'**
-  String get eventPagePdf;
 
   /// Event view tool / page filter: photos as taken
   ///
