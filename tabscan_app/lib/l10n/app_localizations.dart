@@ -1174,6 +1174,24 @@ abstract class AppLocalizations {
   /// **'Shared with me'**
   String get homeLibraryShared;
 
+  /// Home: the search field's hint
+  ///
+  /// In en, this message translates to:
+  /// **'Search captures'**
+  String get homeSearch;
+
+  /// Home: the button that empties the search
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get homeSearchClear;
+
+  /// Home: no event matches the search
+  ///
+  /// In en, this message translates to:
+  /// **'No captures match “{query}”'**
+  String homeSearchNone(String query);
+
   /// Home with no events: the title
   ///
   /// In en, this message translates to:

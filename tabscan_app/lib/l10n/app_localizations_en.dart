@@ -704,6 +704,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeLibraryShared => 'Shared with me';
 
   @override
+  String get homeSearch => 'Search captures';
+
+  @override
+  String get homeSearchClear => 'Clear search';
+
+  @override
+  String homeSearchNone(String query) {
+    return 'No captures match “$query”';
+  }
+
+  @override
   String get homeLibraryEmpty => 'No tabs yet';
 
   @override

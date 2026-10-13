@@ -14,6 +14,12 @@ Future<void> _frames(WidgetTester tester) async {
 }
 
 void main() {
+  // The rename dialog's field (Home has its search field too).
+  final nameField = find.descendant(
+    of: find.byType(AlertDialog),
+    matching: find.byType(TextField),
+  );
+
   testWidgets('an event is renamed from its card in the list', (tester) async {
     final library = Library(PlatformEventStore());
     late String id;
@@ -31,8 +37,8 @@ void main() {
     await _frames(tester);
 
     // One Name field, its text selected, so typing replaces it.
-    expect(find.byType(TextField), findsOneWidget);
-    final name = tester.widget<TextField>(find.byType(TextField));
+    expect(nameField, findsOneWidget);
+    final name = tester.widget<TextField>(nameField);
     expect(
       name.controller!.selection.textInside(name.controller!.text),
       library.byId(id)!.title,
@@ -40,7 +46,7 @@ void main() {
 
     // Whatever the user types is the name; no artist is kept beside it.
     await library.update(library.byId(id)!.copyWith(artist: 'Someone'));
-    await tester.enterText(find.byType(TextField), 'my practice riff #2');
+    await tester.enterText(nameField, 'my practice riff #2');
     await tester.tap(find.text('Save'));
     await _frames(tester);
 
