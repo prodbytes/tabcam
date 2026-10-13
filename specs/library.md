@@ -5,11 +5,8 @@ The **Home** tab ([navigation](navigation.md)), titled **TabScan**.
 Home, like the whole app, is for signed-in users: signed out, the app is
 the [welcome](navigation.md#signed-out-the-welcome) alone.
 
-- **Events** show as a grid of cards, newest first: the first image page's
-  thumbnail (with its filter; without images, a play badge if it has
-  videos, or else a PDF icon, a music note for recordings, or a link
-  icon; with them [hidden](hidden-images.md), a text icon once the tab
-  is read, or else those badges), the title, and a line with the artist
+- **Events** show as a grid of cards, newest first. Each card has a
+  **preview** (below), the title, and a line with the artist
   (if set), the page count ("images hidden" when they are), the video,
   recording, PDF and link counts (if any), "text"
   once the tab has been read, and "shared by <email>" for a capture
@@ -19,6 +16,22 @@ the [welcome](navigation.md#signed-out-the-welcome) alone.
   **Share** ([sharing](sharing.md)), **Clone** (below) and **Delete** (after a confirmation,
   which says the pages and text tab go too). Long-pressing a card renames
   it.
+- **Previews**: a card shows, in order of preference, the first image
+  page's thumbnail (with its [filter](page-filters.md); never when the
+  images are [hidden](hidden-images.md)); else the first PDF's first page,
+  rendered; else the text tab's first lines (up to 24), small, monospaced
+  and unwrapped, cut at the card's edges; else, for a video, a play badge
+  on black (no frame is taken from the video); else the first link's
+  title (if it has one) and host; else a music note for recordings, or a
+  document icon. While a PDF renders, or if it can't be, the card shows
+  what it would without it (the text, or a PDF icon). A preview other
+  than an image or a lone video has a small round badge in its bottom
+  right corner for what else the capture holds: a PDF, else a video
+  (play), a recording (music note) or a link. Rendered PDF pages (480
+  pixels wide) are kept in memory, the 48 most recently shown, so
+  scrolling back doesn't render them again; a failed render is tried
+  again the next time the card is built (its file may not have synced
+  down yet).
 - **Sections**: once something is shared with the user, Home has two
   headed sections, **My captures** (the user's own, or "Nothing of your
   own yet: go to Capture to add some." when there are none) and below it
