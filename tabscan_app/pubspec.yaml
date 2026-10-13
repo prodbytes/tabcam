@@ -101,6 +101,13 @@ flutter:
   # "family" key with the font family name, and a "fonts" key with a
   # list giving the asset and other descriptors for the font. For
   # example:
+  fonts:
+    # Tabs line up only in a fixed-width font; the web has no system one
+    # to fall back on, so it ships with the app (SIL OFL, see
+    # assets/fonts/RobotoMono-OFL.txt).
+    - family: RobotoMono
+      fonts:
+        - asset: assets/fonts/RobotoMono.ttf
   # fonts:
   #   - family: Schyler
   #     fonts:

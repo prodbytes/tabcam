@@ -21,6 +21,7 @@ import 'people_sheet.dart';
 import 'place.dart';
 import 'sign_in_gate.dart';
 import 'tab_text_view.dart';
+import 'mono_font.dart';
 
 /// One event (a capture): the list of its files (images, videos,
 /// recordings, PDFs and links), each with a preview, a tap opening it alone
@@ -419,7 +420,7 @@ class _EventScreenState extends State<EventScreen> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: tab.isNotEmpty
-                  ? const TextStyle(fontFamily: 'monospace')
+                  ? const TextStyle(fontFamily: monoFont)
                   : null,
             ),
             onTap: () => setState(() => _text = true),

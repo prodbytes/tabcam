@@ -180,8 +180,17 @@ well as shown. Tokens are never logged.
 
 ## Text view
 
+Tabs show in **Roboto Mono**, a fixed-width font shipped with the app
+(SIL Open Font License, [assets/fonts/](../tabscan_app/assets/fonts/RobotoMono-OFL.txt);
+[`monoFont`](../tabscan_app/lib/screens/mono_font.dart)), so a staff's
+strings of the same length end together everywhere, the web included
+(it has no system monospace font to use: before, it fell back to a
+proportional one and the strings came out ragged). The Text view's tab is
+15 px, the review's lines 17 px; the cards' and the list's previews use the
+same font.
+
 The event screen's Text view ([lib/screens/tab_text_view.dart](../tabscan_app/lib/screens/tab_text_view.dart)):
-the read tab, monospaced and unwrapped (long lines scroll sideways), in a
+the read tab, unwrapped (long lines scroll sideways), in a
 text editor to fix what OCR got wrong. Edits are saved a second after the
 last one, and on leaving, and make the text the user's (no read replaces
 it). A read that ends while the view shows fills it in, unless the user

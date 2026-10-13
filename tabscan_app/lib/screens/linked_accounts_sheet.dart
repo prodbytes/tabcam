@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../cloud/profile_service.dart';
 import '../cloud/share_api.dart';
 import '../l10n/language.dart';
+import 'mono_font.dart';
 
 /// Profile → **Linked accounts**: the sign-ins that reach the profile's
 /// captures (the owner can't be unlinked), a code to link another one, and
@@ -151,7 +152,7 @@ class _LinkedAccountsSheetState extends State<LinkedAccountsSheet> {
                       made.code,
                       key: const Key('link-code'),
                       style: theme.textTheme.headlineMedium?.copyWith(
-                        fontFamily: 'monospace',
+                        fontFamily: monoFont,
                         letterSpacing: 2,
                       ),
                     ),

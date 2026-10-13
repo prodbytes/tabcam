@@ -808,3 +808,11 @@ spec.
     (whose picture would have to come from the internet, YouTube's
     included), keep their generic badges, as does any file that can't be
     drawn ([event screen](event-screen.md)).
+90. **Tabs are misaligned: make sure the lines finish together, add or
+    remove dashes appropriately, fixed-width font and a little bigger.**
+    The stored tabs were aligned (each staff's strings the same length,
+    since reading aligns them on one grid); the font wasn't fixed-width
+    on the web, which has no system monospace font. Tabs now show in
+    Roboto Mono, shipped with the app, a little bigger (15 px in the Text
+    view, from 13; 17 px in the review, from 15)
+    ([tab recognition](tab-recognition.md)).

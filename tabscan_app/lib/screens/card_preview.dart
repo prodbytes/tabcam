@@ -7,6 +7,7 @@ import '../library/capture_event.dart';
 import '../library/library.dart';
 import 'page_image.dart';
 import 'video_page.dart';
+import 'mono_font.dart';
 
 /// What a Home card shows above its title: a preview of the capture.
 ///
@@ -158,7 +159,7 @@ class TextPreview extends StatelessWidget {
             lines,
             softWrap: false,
             style: const TextStyle(
-              fontFamily: 'monospace',
+              fontFamily: monoFont,
               fontFamilyFallback: ['Menlo', 'Courier New', 'Courier'],
               fontSize: 8,
               height: 1.2,
