@@ -610,7 +610,7 @@ abstract class AppLocalizations {
   /// **'An event keeps at least one page; delete the event instead.'**
   String get eventKeepOnePage;
 
-  /// Event app bar tooltip and rename dialog title
+  /// Event app bar tooltip, rename dialog title, and the file screen tool (beside Delete) that renames the file
   ///
   /// In en, this message translates to:
   /// **'Rename'**
