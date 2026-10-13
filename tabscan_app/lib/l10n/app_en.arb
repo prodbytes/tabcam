@@ -427,7 +427,7 @@
   },
   "eventRename": "Rename",
   "@eventRename": {
-    "description": "Event app bar tooltip and rename dialog title"
+    "description": "Event app bar tooltip, rename dialog title, and the file screen tool (beside Delete) that renames the file"
   },
   "eventShareWithPeople": "Share with people",
   "@eventShareWithPeople": {
