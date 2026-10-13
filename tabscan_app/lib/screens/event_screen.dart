@@ -155,13 +155,10 @@ class _EventScreenState extends State<EventScreen> {
     fileLabel(context.l10n, event, page),
   );
 
-  /// Share: copies the capture's link, once the user is signed in.
-  Future<void> _share(CaptureEvent event) async {
-    if (await requireSignIn(context, widget.sync?.auth, Gated.share) &&
-        mounted) {
-      await copyCaptureLink(context, event, sync: widget.sync);
-    }
-  }
+  /// Share: copies the capture's link, at once (signed out, after signing
+  /// in).
+  Future<void> _share(CaptureEvent event) =>
+      shareCapture(context, event, sync: widget.sync);
 
   /// Share with people: who it's shared with, by email.
   Future<void> _people(CaptureEvent event) async {

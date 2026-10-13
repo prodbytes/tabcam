@@ -6,6 +6,7 @@ import 'package:tabscan_app/cloud/cloud_sync.dart';
 import 'package:tabscan_app/export/capture_link.dart';
 import 'package:tabscan_app/library/event_store_memory.dart';
 import 'package:tabscan_app/library/library.dart';
+import 'package:tabscan_app/main.dart';
 import 'package:tabscan_app/screens/event_screen.dart';
 import 'package:tabscan_app/screens/people_sheet.dart';
 
@@ -68,17 +69,26 @@ void main() {
         });
   });
 
-  testWidgets('Share copies the capture\'s link, nothing else', (tester) async {
-    await open(tester);
-    await tester.tap(find.byTooltip('Share'));
-    await frames(tester);
-    expect(copied, CaptureLink.of(library.byId(id)!).toString());
-    expect(copied, endsWith('/app/?c=$id'));
-    expect(find.text('Link copied'), findsOneWidget);
-    // No sheet, no options.
-    expect(find.text('PDF'), findsNothing);
-    expect(find.byType(BottomSheet), findsNothing);
-  });
+  testWidgets(
+    'Share copies the link on the tap itself: the URL, nothing else',
+    (tester) async {
+      await open(tester);
+      await tester.tap(find.byTooltip('Share'));
+      // Copied at once: no frame, no sheet, no wait.
+      expect(
+        copied,
+        matches(RegExp(r'^https://tabscan\.nu01\.com/app/\?c=[a-z0-9]+$')),
+      );
+      expect(copied, 'https://tabscan.nu01.com/app/?c=$id');
+      await frames(tester);
+      expect(copied, CaptureLink.of(library.byId(id)!).toString());
+      expect(copied, endsWith('/app/?c=$id'));
+      expect(find.text('Link copied'), findsOneWidget);
+      // No sheet, no options.
+      expect(find.text('PDF'), findsNothing);
+      expect(find.byType(BottomSheet), findsNothing);
+    },
+  );
 
   testWidgets('Share with people has its own button', (tester) async {
     await open(tester);
@@ -94,5 +104,40 @@ void main() {
     await tester.tap(find.byTooltip('Share'));
     await frames(tester);
     expect(copied, endsWith('/app/?c=$id'));
+  });
+
+  testWidgets('a Home card\'s Share copies the link too', (tester) async {
+    library = Library(PlatformEventStore(), null, (_) async => null);
+    auth = FakeAuth();
+    await tester.runAsync(() async {
+      await library.load();
+      id = (await library.create([
+        img.encodeJpg(img.Image(width: 8, height: 8)),
+      ])).id;
+    });
+    sync = CloudSync(
+      library: library,
+      auth: auth,
+      bucket: FakeBucket(),
+      credentials: FakeCredentials(),
+      period: const Duration(days: 1),
+    );
+    addTearDown(sync.dispose);
+    await tester.runAsync(() async {
+      sync.start();
+      auth.signInAs('ana');
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    });
+    await tester.pumpWidget(
+      TabScanApp(library: library, auth: auth, sync: sync),
+    );
+    await frames(tester);
+    await tester.tap(find.byTooltip('More'));
+    await frames(tester);
+    await tester.tap(find.text('Share'));
+    await frames(tester);
+    expect(copied, 'https://tabscan.nu01.com/app/?c=$id');
+    expect(find.text('Link copied'), findsOneWidget);
+    expect(find.byType(BottomSheet), findsNothing);
   });
 }
