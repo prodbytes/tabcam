@@ -439,21 +439,32 @@ class _EventScreenState extends State<EventScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-            trailing: event.readOnly
-                ? const Icon(Icons.chevron_right)
-                : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        key: ValueKey('rename-${page.id}'),
-                        tooltip: l10n.eventRenameFile,
-                        icon: const Icon(Icons.edit_outlined),
-                        onPressed: () => _renamePage(event, page),
-                      ),
-                      const Icon(Icons.chevron_right),
-                    ],
+            // A link's details (Copy, Delete) are behind its chevron: a
+            // tap opens the link itself, outside the app.
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!event.readOnly)
+                  IconButton(
+                    key: ValueKey('rename-${page.id}'),
+                    tooltip: l10n.eventRenameFile,
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () => _renamePage(event, page),
                   ),
-            onTap: () => _openFile(page),
+                if (page.isLink)
+                  IconButton(
+                    key: ValueKey('details-${page.id}'),
+                    tooltip: l10n.eventFileDetails,
+                    icon: const Icon(Icons.chevron_right),
+                    onPressed: () => _openFile(page),
+                  )
+                else
+                  const Icon(Icons.chevron_right),
+              ],
+            ),
+            onTap: page.isLink && page.url != null
+                ? () => openLink(context, page.url!)
+                : () => _openFile(page),
             onLongPress: event.readOnly ? null : () => _renamePage(event, page),
           ),
       ],

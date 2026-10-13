@@ -1,7 +1,6 @@
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:tabscan_app/capture/media.dart';
 import 'package:tabscan_app/cloud/cloud_sync.dart';
 import 'package:tabscan_app/l10n/app_localizations_en.dart';
@@ -12,28 +11,9 @@ import 'package:tabscan_app/screens/audio_page.dart';
 import 'package:tabscan_app/screens/home_screen.dart';
 import 'package:tabscan_app/screens/link_page.dart';
 import 'package:tabscan_app/screens/pdf_page.dart';
-import 'package:url_launcher_platform_interface/link.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
-/// Records how the app opens URLs, opening none; [inApp] says whether a
-/// browser inside the app is there.
-class _FakeLauncher extends Fake
-    with MockPlatformInterfaceMixin
-    implements UrlLauncherPlatform {
-  _FakeLauncher({this.inApp = true});
-
-  final bool inApp;
-  final modes = <PreferredLaunchMode>[];
-
-  @override
-  LinkDelegate? get linkDelegate => null;
-
-  @override
-  Future<bool> launchUrl(String url, LaunchOptions options) async {
-    modes.add(options.mode);
-    return inApp || options.mode != PreferredLaunchMode.inAppBrowserView;
-  }
-}
+import 'fakes.dart';
 
 final _event = CaptureEvent(
   id: 'e1',
@@ -119,23 +99,22 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('Open shows a link in a browser inside the app', (tester) async {
-    final launcher = _FakeLauncher();
-    UrlLauncherPlatform.instance = launcher;
-    await tapOpen(tester);
-    expect(launcher.modes, [PreferredLaunchMode.inAppBrowserView]);
-  });
-
-  testWidgets('without a browser inside the app, Open uses the browser', (
+  testWidgets('Open opens a link outside the app: a new tab, or the browser', (
     tester,
   ) async {
-    final launcher = _FakeLauncher(inApp: false);
+    final launcher = FakeLauncher();
     UrlLauncherPlatform.instance = launcher;
     await tapOpen(tester);
-    expect(launcher.modes, [
-      PreferredLaunchMode.inAppBrowserView,
-      PreferredLaunchMode.externalApplication,
-    ]);
+    final (url, options) = launcher.launched.single;
+    expect(url, 'https://example.com/lesson');
+    expect(options.mode, PreferredLaunchMode.externalApplication);
+    expect(options.webOnlyWindowName, '_blank');
     expect(find.textContaining('Couldn\'t open'), findsNothing);
+  });
+
+  testWidgets('a link that can\'t open says so', (tester) async {
+    UrlLauncherPlatform.instance = FakeLauncher(opens: false);
+    await tapOpen(tester);
+    expect(find.textContaining('Couldn\'t open'), findsOneWidget);
   });
 }

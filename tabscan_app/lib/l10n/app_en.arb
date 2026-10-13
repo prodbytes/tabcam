@@ -1696,6 +1696,10 @@
   "@eventRenameFile": {
     "description": "A capture's file (photo, PDF, link, ...): rename it"
   },
+  "eventFileDetails": "Details",
+  "@eventFileDetails": {
+    "description": "A link in a capture's list: show it on its own screen (title, address, Copy, Delete); a tap on the row opens the link in the browser"
+  },
   "eventLinkCopied": "Link copied",
   "@eventLinkCopied": {
     "description": "Share: the capture's link was copied to the clipboard"

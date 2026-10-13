@@ -146,7 +146,9 @@ void main() {
 
   testWidgets('a link opened is renamed beside Delete too', (tester) async {
     final id = await open(tester);
-    await tester.tap(find.text('example.com'));
+    // A tap on a link opens it; its chevron opens it on its own screen.
+    final link = library.byId(id)!.pages.last;
+    await tester.tap(find.byKey(ValueKey('details-${link.id}')));
     await frames(tester);
     await tester.tap(find.byKey(const Key('rename-file')));
     await frames(tester);
@@ -165,8 +167,9 @@ void main() {
     final link = library.byId(id)!.pages.last;
     expect(find.byKey(ValueKey('rename-${link.id}')), findsNothing);
 
-    // Opened, its Rename tool (like Delete) is off.
-    await tester.tap(find.text('example.com'));
+    // Opened (Details: tapping a link's row opens the link), its Rename
+    // tool (like Delete) is off.
+    await tester.tap(find.byKey(ValueKey('details-${link.id}')));
     await frames(tester);
     expect(renameTool(tester).onPressed, isNull);
     await tester.tap(find.byKey(const Key('rename-file')));

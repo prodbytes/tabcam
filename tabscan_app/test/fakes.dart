@@ -4,11 +4,34 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:tabscan_app/auth/auth_service.dart';
 import 'package:tabscan_app/cloud/cognito.dart';
 import 'package:tabscan_app/cloud/s3.dart';
 import 'package:tabscan_app/cloud/share_api.dart';
 import 'package:tabscan_app/cloud/sigv4.dart';
+import 'package:url_launcher_platform_interface/link.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
+
+/// Records the URLs the app opens, and how, opening none; [opens] says
+/// whether they open.
+class FakeLauncher extends Fake
+    with MockPlatformInterfaceMixin
+    implements UrlLauncherPlatform {
+  FakeLauncher({this.opens = true});
+
+  final bool opens;
+  final launched = <(String, LaunchOptions)>[];
+
+  @override
+  LinkDelegate? get linkDelegate => null;
+
+  @override
+  Future<bool> launchUrl(String url, LaunchOptions options) async {
+    launched.add((url, options));
+    return opens;
+  }
+}
 
 /// The bucket, in memory: ETags are MD5s, as S3's are for single PUTs.
 class FakeBucket implements ObjectStore {
