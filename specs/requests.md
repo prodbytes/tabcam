@@ -341,7 +341,7 @@ spec.
     Android app links are a follow-up. The text tab and links go in the
     PDF and the zip. (There are no PDF pages: pages are images, videos and
     links, so PDF combines the images.)
-38. **Let the owner hide the original image and show only the text and
+42. **Let the owner hide the original image and show only the text and
     attachments.** A capture's owner can now **Hide images** (and **Show
     images**) from the event screen's app bar. This is a synced setting
     (`hideImages` in `event.json`), so it applies to everyone: the owner's
@@ -350,7 +350,7 @@ spec.
     and links. Library cards show no image, and PDF and Files exports
     leave the images out. The images are kept, Read tab still reads them,
     and grantees still sync them ([hidden images](hidden-images.md)).
-42. **(Continuing 37) Android links.** Android App Links: the app opens
+43. **(Continuing 37) Android links.** Android App Links: the app opens
     `https://tabscan.nu01.com/app…` and the RC's (verified intent filter),
     and opens the capture a link names, launched or running
     (`IncomingLinks`). Deploys upload `/.well-known/assetlinks.json`, which
@@ -358,7 +358,7 @@ spec.
     new debug key each run, aren't verified until there's a release key
     ([sharing](sharing.md#android-app-links), [platforms](platforms.md),
     [release](release.md), [deploy](deploy.md)).
-43. **In the camera screen, make auto shutter off the default and remove
+44. **In the camera screen, make auto shutter off the default and remove
     filters.** On the phone, Scan is the system document scanner, which
     lets the app set neither the shutter mode nor (on iOS) the filters.
     Android's scanner now runs in ML Kit's base mode, so it has no filters
@@ -366,7 +366,7 @@ spec.
     keeps VisionKit's filters ([scanning](scanning.md),
     [platforms](platforms.md)). TabScan's own camera screen (the web) has
     neither auto shutter nor filters.
-44. **Bring back the "Text" button in the capture view to flip from scan
+45. **Bring back the "Text" button in the capture view to flip from scan
     to text; remove the flip button from the top and leave flipping to
     the bottom bar.** The event screen's tools are the view (**Original ↔
     Scan**), then **Text**, which shows the text view in place of the
@@ -375,14 +375,14 @@ spec.
     still honoured, so a capture already hidden stays hidden
     ([event screen](event-screen.md), [hidden images](hidden-images.md),
     [tab recognition](tab-recognition.md#text-view)).
-45. **Show the user's role on the profile screen.** The signed-in account
+46. **Show the user's role on the profile screen.** The signed-in account
     on Profile has a "Role: Premium" or "Role: Free" line under the name,
     from the premium status the cloud OCR service gets from rbacr ("Free
     (couldn't check)" when rbacr doesn't answer, "Checking…" until the
     first answer). Builds without the service show no role
     ([cloud OCR](cloud-ocr.md#in-the-app), [navigation](navigation.md#profile),
     [cloud sync](cloud-sync.md#signing-in)).
-46. **Help me publish the app to the Apple and Google stores, step by
+47. **Help me publish the app to the Apple and Google stores, step by
     step; with personal (individual) accounts.** A new
     [app stores](app-stores.md) spec tracks the steps. First, Android
     release signing: `scripts/android-keystore.sh` creates the upload key
@@ -397,7 +397,7 @@ spec.
 
 ## 2026-10-11
 
-47. **Hide the Premium purchase links in the store apps** (part of
+48. **Hide the Premium purchase links in the store apps** (part of
     publishing to the stores). Apple's guidelines 3.1.1 and 3.1.3(b) and
     Google Play's payments policy reject apps that link out to buy
     digital features, and Premium is sold on the web. On Android and iOS
@@ -409,7 +409,7 @@ spec.
     platform, tested both ways ([cloud OCR](cloud-ocr.md#in-the-app),
     [navigation](navigation.md#profile), [platforms](platforms.md),
     [app stores](app-stores.md)).
-48. **In-app account deletion** (part of publishing to the stores: App
+49. **In-app account deletion** (part of publishing to the stores: App
     Store guideline 5.1.1(v), Google Play). The signed-in Profile has
     **Delete account**: a confirmation that says what goes (events in the
     cloud and on the device, shares both ways), that it can't be undone,
@@ -504,7 +504,7 @@ spec.
     ([privacy](privacy.md), [platforms](platforms.md),
     [deploy](deploy.md), [navigation](navigation.md#profile),
     [app stores](app-stores.md)).
-52. **Sign in with Apple on iOS** (App Store guideline 4.8: an app with
+60. **Sign in with Apple on iOS** (App Store guideline 4.8: an app with
     Google sign-in must offer an equally private one). iOS offers **Sign
     in with Apple** above Google's button, per Apple's guidelines, on the
     Profile tab and the sign-in sheets, in builds with
@@ -535,7 +535,7 @@ spec.
     Merged after account deletion and localization: Apple users delete
     their account under `/apple` too, and the sign-in buttons and Apple's
     messages are in English, Spanish and Portuguese.
-60. **Add instructions to the README on how to install a release on iOS
+61. **Add instructions to the README on how to install a release on iOS
     or Android.** The README has "Installing a release on a phone". For
     Android: the APK opened on the phone or installed with `adb install
     -r`, what to do about a key conflict, and that Google sign-in waits
@@ -543,7 +543,7 @@ spec.
     unsigned, so the tag is built and installed with the tester's own
     team, with Developer Mode and trusting the developer, and a free
     team's 7 days ([release](release.md#installing-a-release)).
-61. **In the capture's pages, let every file type have a preview: a PDF or
+62. **In the capture's pages, let every file type have a preview: a PDF or
     image as shown, a video or audio with a play / pause button, a link
     with a button to open it in a browser inside the app (mobile) or a new
     tab (web).** Events take two more kinds of page, **audio** (`mp3`,
@@ -564,7 +564,7 @@ spec.
     [scanning](scanning.md#adding-to-an-event),
     [library](library.md), [sharing](sharing.md),
     [cloud sync](cloud-sync.md)).
-62. **The app says Premium isn't active: make sure the rbacr integration
+63. **The app says Premium isn't active: make sure the rbacr integration
     is set up and the premium role is returned for julio@nu01.com.**
     rbacr was fine (`allowed: true` for `tabscan`/`premium`, through the
     service's token). The iPhone's calls never reached it: the identity
@@ -578,7 +578,7 @@ spec.
     Existing users got new identity IDs (nothing was stored yet). Android
     clients are to add to the list ([cloud sync](cloud-sync.md#googles-token),
     [app stores](app-stores.md), [tabscan_infra](../tabscan_infra/README.md)).
-63. **Make profiles work like in Presence: an authenticated user without a
+64. **Make profiles work like in Presence: an authenticated user without a
     profile gets one, in the same style (unguessable, adjectives and an
     animal at the end); identities can be added to the profile; the
     profile has the sum of all roles from all identities.** Chosen with
@@ -596,13 +596,13 @@ spec.
     ([profiles](profiles.md), [cloud sync](cloud-sync.md),
     [shared captures](shared-captures.md), [cloud OCR](cloud-ocr.md),
     [navigation](navigation.md#profile)).
-64. **In the capture view, where there are the Scan, Photos, Files and Link
+65. **In the capture view, where there are the Scan, Photos, Files and Link
     options, add a Document option for PDFs, first in the Add list; leave
     Scan as is.** Capture's Add list starts with **Document** ("PDF
     files"), which picks PDFs only and makes an event of them, like Files;
     Scan is unchanged. In English, Spanish and Portuguese
     ([navigation](navigation.md#capture)).
-65. **When a PDF is added, just like an image, try to parse it into text,
+66. **When a PDF is added, just like an image, try to parse it into text,
     and present it as a tab.** PDF pages are read by themselves into the
     text tab: their text where they have one (PDFium through `pdfrx`, the
     characters' positions laid out as a text tab, chords and lyrics kept),
@@ -611,12 +611,12 @@ spec.
     copy of the event); it now writes only its text onto the event as it
     is, adding pages does the same, and pages changed during a read are
     read again ([tab recognition](tab-recognition.md#pdfs)).
-66. **When the app is reloaded, keep it on the same page it was.** The app
+67. **When the app is reloaded, keep it on the same page it was.** The app
     remembers, on the device, the tab and the event open (Text view or
     pages, and the page), and reopens there after a reload or a restart;
     a capture's link at launch wins
     ([navigation](navigation.md#coming-back-where-the-user-was)).
-67. **I still don't see the button for adding PDFs: make sure everything is
+68. **I still don't see the button for adding PDFs: make sure everything is
     merged and deployed.** The Document option was on the Capture tab
     only (and the web was still the release from before it). The open
     capture's **Add** menu now has **Document** right after Scan pages, the
@@ -625,7 +625,7 @@ spec.
 
 ## 2026-10-12
 
-68. **PDF reading doesn't work: a PDF uploaded wasn't read, and Read again
+69. **PDF reading doesn't work: a PDF uploaded wasn't read, and Read again
     does nothing. Fix it, check the logs; PDFs must be scanned just as if
     they were photographed.** The logs showed the PDF was a scan (an image,
     no text), uploaded on the web, signed in with an address that isn't
@@ -641,7 +641,7 @@ spec.
     by name: on as soon as it exists). Read again now makes the cloud read
     every page again, and shows while the text is on its way
     ([tab recognition](tab-recognition.md#pdfs), [cloud OCR](cloud-ocr.md)).
-69. **Let users reorder the files they add.** The event screen's app bar
+70. **Let users reorder the files they add.** The event screen's app bar
     has **Reorder** (with more than one page, when the user can edit):
     a sheet lists the pages with a thumbnail or icon and what each is,
     dragged by their handles into a new order, saved at each drop and
@@ -649,12 +649,12 @@ spec.
     the images hidden, only the other pages are listed and the images
     stay put. In English, Spanish and Portuguese
     ([event screen](event-screen.md)).
-70. **When a user renames a capture, just make it a name, no artist and
+71. **When a user renames a capture, just make it a name, no artist and
     song name; let the user name it whatever.** The rename dialog has one
     **Name** field instead of Song and Artist; what the user types is the
     title, and renaming clears the artist
     ([library](library.md#events)).
-71. **Embed a YouTube player when the link added is for a YouTube video;
+72. **Embed a YouTube player when the link added is for a YouTube video;
     if the video can't be seen for any reason, just show the link and
     open it in a new tab.** A link page for a YouTube video gets
     **Play**, which plays it in YouTube's embedded player
@@ -665,7 +665,7 @@ spec.
     it in a new tab ([event screen](event-screen.md),
     [platforms](platforms.md)). The privacy policy names YouTube, which
     is contacted only on Play ([privacy](privacy.md)).
-72. **Improve the capture page: keep the title, Rename and Clone; one
+73. **Improve the capture page: keep the title, Rename and Clone; one
     Share, not Share and Share with people; take out the Scan toggle and
     make the first tool the capture's files, then Text, then Add; Rotate
     and Delete are fine but confusing. Home shows every capture; a capture
@@ -685,7 +685,7 @@ spec.
     [sharing](sharing.md), [shared captures](shared-captures.md),
     [hidden images](hidden-images.md), [page filters](page-filters.md),
     [navigation](navigation.md#coming-back-where-the-user-was)).
-69. **Remove the Claude key for now; read it without an LLM first, as well
+74. **Remove the Claude key for now; read it without an LLM first, as well
     as possible.** No key had been stored; Claude's reading is now off
     unless switched on (`VISION_FALLBACK=1`). The cloud OCR service reads
     tabs on drawn staff lines with its engines: staves found, lines erased
@@ -694,7 +694,27 @@ spec.
     Printed tabs on drawn lines read exactly; the user's handwritten page
     reads about two notes in three
     ([cloud OCR](cloud-ocr.md#transcription)).
-71. **When sharing, just copy the link to the capture, no options or extra
+75. **On the text recognition, make the lines (strings) align as well as
+    possible, so a chord shows properly, and all the same length, ending
+    together.** On the device, when ML Kit says where each character is
+    (its symbols), a text tab's staff is laid out on one grid: every
+    character at the column its x implies, from the staff's start in its
+    character pitch, so dashes OCR dropped or doubled no longer shift the
+    notes after them; every line is padded to the longest, chord names
+    placed on the same grid. In the cloud, a staff's lines are measured
+    from one start and column width (medians across the staff), and end
+    together (trailing dashes trimmed, all padded to the staff's width)
+    ([tab recognition](tab-recognition.md#text-tabs),
+    [cloud OCR](cloud-ocr.md#transcription)).
+76. **Always let users rename added content: captures, files, links, all of
+    it.** Every file of a capture (photos, scans, PDFs, recordings, videos,
+    links) has a name the user can change: **Rename file** on each row of
+    the capture's list (or a long press) and on the file screen's title;
+    files added are named after their file name; an empty name goes back
+    to the default. Captures renamed as before. Not on captures shared
+    read only. In English, Spanish and Portuguese
+    ([event screen](event-screen.md)).
+77. **When sharing, just copy the link to the capture, no options or extra
     text.** Share copies the capture's link to the clipboard and says "Link
     copied"; the share sheet (Link, PDF, Text, Files) and the exports are
     gone. Share with people, which was in that sheet, has its own button

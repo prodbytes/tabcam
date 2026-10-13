@@ -124,6 +124,7 @@ IconData _iconOf(EventPage page) => switch (page.kind) {
 
 String _labelOf(BuildContext context, EventPage page) {
   final l10n = context.l10n;
+  if (page.title case final title? when title.isNotEmpty) return title;
   return switch (page.kind) {
     PageKind.image => l10n.eventPagePhoto,
     PageKind.video => l10n.textViewVideo,

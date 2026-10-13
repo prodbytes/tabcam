@@ -1272,5 +1272,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventAddDocumentDetail => 'Archivos PDF';
 
   @override
+  String get eventRenameFile => 'Cambiar nombre del archivo';
+
+  @override
   String get eventLinkCopied => 'Enlace copiado';
 }

@@ -146,7 +146,20 @@ class _EventScreenState extends State<EventScreen> {
   Future<void> _rename(CaptureEvent event) =>
       renameEvent(context, _library, event);
 
+<<<<<<< HEAD
   /// Share: copies the capture's link, once the user is signed in.
+=======
+  /// Names one of its files (a photo, a PDF, a link, ...).
+  Future<void> _renamePage(CaptureEvent event, EventPage page) => renamePage(
+    context,
+    _library,
+    event,
+    page,
+    fileLabel(context.l10n, event, page),
+  );
+
+  /// Opens the share sheet, once the user is signed in.
+>>>>>>> origin/main
   Future<void> _share(CaptureEvent event) async {
     if (await requireSignIn(context, widget.sync?.auth, Gated.share) &&
         mounted) {
@@ -423,8 +436,22 @@ class _EventScreenState extends State<EventScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: event.readOnly
+                ? const Icon(Icons.chevron_right)
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        key: ValueKey('rename-${page.id}'),
+                        tooltip: l10n.eventRenameFile,
+                        icon: const Icon(Icons.edit_outlined),
+                        onPressed: () => _renamePage(event, page),
+                      ),
+                      const Icon(Icons.chevron_right),
+                    ],
+                  ),
             onTap: () => _openFile(page),
+            onLongPress: event.readOnly ? null : () => _renamePage(event, page),
           ),
       ],
     );

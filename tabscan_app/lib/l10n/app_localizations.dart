@@ -2068,6 +2068,12 @@ abstract class AppLocalizations {
   /// **'PDF files'**
   String get eventAddDocumentDetail;
 
+  /// A capture's file (photo, PDF, link, ...): rename it
+  ///
+  /// In en, this message translates to:
+  /// **'Rename file'**
+  String get eventRenameFile;
+
   /// Share: the capture's link was copied to the clipboard
   ///
   /// In en, this message translates to:

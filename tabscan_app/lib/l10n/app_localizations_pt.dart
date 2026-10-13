@@ -1269,5 +1269,8 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventAddDocumentDetail => 'Arquivos PDF';
 
   @override
+  String get eventRenameFile => 'Renomear arquivo';
+
+  @override
   String get eventLinkCopied => 'Link copiado';
 }

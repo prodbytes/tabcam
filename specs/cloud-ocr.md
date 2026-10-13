@@ -61,10 +61,13 @@ ink dropped, the light evened out and the page scaled to 2800 px. Each tab
 string line is a row of dashes: they're found, grouped into staves (six
 lines `e B G D A E`, four `G D A E`), and each line is cut out and read
 by Tesseract (one line, tab characters only), PaddleOCR and RapidOCR. Each
-word goes at the column its position implies, from where the line's dashes
-start, so the dashes the engines drop come back. Per line, the reading
-closest to the other two (fewest token edits between dashes) wins. Lines
-are padded with dashes to their staff's width.
+word goes at the column its position implies, measured alike on every line
+of a staff (from the staff's first dash, the median of where its lines'
+dashes start, in its median column width), so the dashes the engines drop
+come back and a chord's notes share a column. Per line, the reading
+closest to the other two (fewest token edits between dashes) wins. A
+staff's lines end together: trailing dashes trimmed, then all padded with
+dashes to the staff's width (or to the line whose notes go furthest).
 
 **PDFs** are read as if their pages were photographed: each page (at most
 10) is rendered on white, 2000 px wide (PDFium, `pypdfium2`), and read as

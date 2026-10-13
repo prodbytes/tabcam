@@ -1672,6 +1672,10 @@
   "@eventAddDocumentDetail": {
     "description": "Event, Add: what Document adds"
   },
+  "eventRenameFile": "Rename file",
+  "@eventRenameFile": {
+    "description": "A capture's file (photo, PDF, link, ...): rename it"
+  },
   "eventLinkCopied": "Link copied",
   "@eventLinkCopied": {
     "description": "Share: the capture's link was copied to the clipboard"
