@@ -56,9 +56,22 @@ become `1`; `S` becomes `5`.
 
 Consecutive tab lines are a staff; other lines (titles, chord names,
 lyrics, "Chorus") end it. Staves of fewer than four lines are dropped.
-Each staff's lines are padded with dashes to one length, spaces become
-dashes, and the lines are named `e B G D A E` (six lines) or `G D A E`
-(four, bass), or kept unnamed for other counts.
+The lines are named `e B G D A E` (six lines) or `G D A E` (four, bass),
+or kept unnamed for other counts, and every line of a staff ends at the
+same column, so the strings line up and a chord's notes sit in one
+column:
+
+- **On a grid**, when OCR says where each character is (ML Kit's symbol
+  boxes; an element without them has its box shared evenly between its
+  characters): each character after the string name and bar goes at the
+  column its x implies, measured from the staff's start (the median of
+  where its lines' bodies start) in the staff's character pitch (the
+  median gap between neighbouring characters). The dashes OCR dropped or
+  doubled don't shift the notes after them; the gaps are dashes, a note
+  never overwrites another (it takes the next free column), and every
+  line is padded with dashes to the longest.
+- **Otherwise** (no character positions), each line as read: spaces
+  become dashes and the lines are padded with dashes to one length.
 
 ## Notations around the tab
 
@@ -69,7 +82,8 @@ noise: a web address, a page number ("2", "Page 1/2", "1 of 3"), a
 garbled tab line (30% or more dashes) or mostly stray marks (more than
 20% characters other than letters, digits, spaces and `# / ( ) ' , . ! ?
 : ; & + -`). On text tabs each word goes at the tab's column its position
-implies (measured from the tab lines' starts and letter width), so chord
+implies (on the staff's grid, or measured from the tab lines' starts and
+letter width), so chord
 names stay over the notes they're played on; without positions the line
 is kept as read.
 

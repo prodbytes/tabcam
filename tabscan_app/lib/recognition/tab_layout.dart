@@ -30,12 +30,25 @@ class OcrWord {
   final double left;
 }
 
-/// A line OCR read: its text, words and box (image pixels; a zero box when
-/// unknown, as in tests).
+/// A character OCR read (not a space), and its box's left and right
+/// (image pixels).
+class OcrChar {
+  const OcrChar(this.text, this.left, this.right);
+  final String text;
+  final double left;
+  final double right;
+
+  double get x => (left + right) / 2;
+}
+
+/// A line OCR read: its text, words, characters and box (image pixels; a
+/// zero box when unknown, as in tests). [chars] are the text's characters
+/// other than spaces, in order, when OCR says where each one is.
 class OcrLine {
   const OcrLine(
     this.text, {
     this.words = const [],
+    this.chars = const [],
     this.left = 0,
     this.right = 0,
     this.top = 0,
@@ -44,6 +57,7 @@ class OcrLine {
 
   final String text;
   final List<OcrWord> words;
+  final List<OcrChar> chars;
   final double left;
   final double right;
   final double top;
@@ -82,29 +96,47 @@ String _join(List<_Piece> pieces) {
 /// staff, string names added when missing, every line of a staff the same
 /// length; the page's other notations (chords, lyrics, section names) kept
 /// in their place, chords at the tab's columns when OCR says where its
-/// words are. Null when fewer than four lines look like tab.
+/// words are. When OCR says where each character is, a staff's characters
+/// go on one grid of columns ([_gridStaff]), so a chord's notes line up
+/// even where OCR dropped or added dashes. Null when fewer than four lines
+/// look like tab.
 String? asciiTab(List<OcrLine> lines) {
   final pieces = <_Piece>[];
-  var staff = <String>[];
+  var staff = <OcrLine>[];
   // Where a tab line's text starts, and its letters' width, to place the
   // words of the text lines at the tab's columns.
   final origins = <double>[], widths = <double>[], shifts = <double>[];
   void close() {
-    if (staff.length >= 4) pieces.add(_Staff(_formatAsciiStaff(staff)));
-    staff = <String>[];
+    if (staff.length >= 4) {
+      final grid = _gridStaff(staff);
+      if (grid != null) {
+        pieces.add(_Staff(grid.text));
+        // Column 0 of the body starts half a column left of its center, and
+        // the formatted line starts `e|`.
+        origins.add(grid.origin - grid.width / 2);
+        widths.add(grid.width);
+        shifts.add(2);
+      } else {
+        pieces.add(
+          _Staff(_formatAsciiStaff([for (final l in staff) _tabBody(l.text)!])),
+        );
+        for (final raw in staff) {
+          final length = raw.text.trimRight().length;
+          if (raw.located && length > 0) {
+            origins.add(raw.left);
+            widths.add((raw.right - raw.left) / length);
+            // The formatted line starts `e|`, whatever the read one did.
+            shifts.add(2.0 - _prefix.firstMatch(raw.text)!.end);
+          }
+        }
+      }
+    }
+    staff = <OcrLine>[];
   }
 
   for (final raw in lines) {
-    final body = _tabBody(raw.text);
-    if (body != null) {
-      staff.add(body);
-      final length = raw.text.trimRight().length;
-      if (raw.located && length > 0) {
-        origins.add(raw.left);
-        widths.add((raw.right - raw.left) / length);
-        // The formatted line starts `e|`, whatever the read one did.
-        shifts.add(2.0 - _prefix.firstMatch(raw.text)!.end);
-      }
+    if (_tabBody(raw.text) != null) {
+      staff.add(raw);
       continue;
     }
     close();
@@ -137,6 +169,90 @@ String? asciiTab(List<OcrLine> lines) {
   }
   return _join(pieces);
 }
+
+/// A staff laid out by where OCR saw each character: its text, the center
+/// of its body's first column and a column's width (image pixels). Every
+/// line's body characters go at the column their x implies, measured from
+/// the staff's start (the median of where the lines' bodies start) in the
+/// staff's character pitch (the median gap between neighbouring
+/// characters), so a chord's notes share a column even where OCR dropped
+/// or doubled dashes; the gaps are dashes, and every line ends at the same
+/// column. Null when a line doesn't say where its characters are.
+({String text, double origin, double width})? _gridStaff(List<OcrLine> staff) {
+  final bodies = <List<OcrChar>>[];
+  for (final line in staff) {
+    final body = _bodyChars(line);
+    if (body == null || body.isEmpty) return null;
+    bodies.add(body);
+  }
+  final pitches = <double>[
+    for (final body in bodies)
+      for (var i = 1; i < body.length; i++)
+        if (body[i].x > body[i - 1].x) body[i].x - body[i - 1].x,
+  ];
+  if (pitches.isEmpty) return null;
+  final width = _median(pitches);
+  final origin = _median([for (final body in bodies) body.first.x]);
+  final rows = <List<String>>[];
+  for (final body in bodies) {
+    final row = <String>[];
+    for (final c in body) {
+      var column = math.max(0, ((c.x - origin) / width).round());
+      if (c.text == '-') {
+        while (row.length <= column) {
+          row.add('-');
+        }
+        continue;
+      }
+      // A note never overwrites another: it takes the next free column.
+      while (column < row.length && row[column] != '-') {
+        column++;
+      }
+      while (row.length <= column) {
+        row.add('-');
+      }
+      row[column] = c.text;
+    }
+    rows.add(row);
+  }
+  final names = stringNames[rows.length];
+  final columns = rows.map((r) => r.length).reduce(math.max);
+  return (
+    text: [
+      for (final (i, row) in rows.indexed)
+        '${names?[i] ?? ' '}|${row.join().padRight(columns, '-')}|',
+    ].join('\n'),
+    origin: origin,
+    width: width,
+  );
+}
+
+/// A tab line's body characters (after its string name and bar, without
+/// the closing bar), misreadings fixed as [_tabBody] does; null when OCR
+/// didn't say where each character is.
+List<OcrChar>? _bodyChars(OcrLine line) {
+  final visible = line.text.replaceAll(RegExp(r'\s'), '');
+  if (line.chars.length != visible.length ||
+      line.chars.map((c) => c.text).join() != visible) {
+    return null;
+  }
+  final prefix = _prefix.firstMatch(line.text)!.group(0)!;
+  final skip = prefix.replaceAll(RegExp(r'\s'), '').length;
+  final body = [
+    for (final c in line.chars.skip(skip))
+      OcrChar(_fixTabChars(c.text), c.left, c.right),
+  ];
+  if (body.isNotEmpty && body.last.text == '|') body.removeLast();
+  return body;
+}
+
+/// OCR's usual misreadings on a tab line fixed: long dashes, `_` and `=`
+/// are `-`; `O` and `o` are 0; `l`, `I` and `!` are 1; `S` is 5.
+String _fixTabChars(String text) => text
+    .replaceAll(RegExp(r'[—–_=‒−]'), '-')
+    .replaceAll(RegExp(r'[Oo]'), '0')
+    .replaceAll(RegExp(r'[lI!]'), '1')
+    .replaceAll(RegExp(r'[S]'), '5');
 
 /// Words at their columns ([text], column), at least a space apart.
 String placeWords(List<(String, int)> words) {
@@ -176,12 +292,7 @@ bool isNotation(String line) {
 /// The body of a tab line, after its string name, with OCR's usual
 /// misreadings fixed; null if the line isn't tab.
 String? _tabBody(String line) {
-  var body = line.replaceFirst(_prefix, '');
-  body = body
-      .replaceAll(RegExp(r'[—–_=‒−]'), '-')
-      .replaceAll(RegExp(r'[Oo]'), '0')
-      .replaceAll(RegExp(r'[lI!]'), '1')
-      .replaceAll(RegExp(r'[S]'), '5')
+  var body = _fixTabChars(line.replaceFirst(_prefix, ''))
       .replaceAll(RegExp(r'\s+$'), '');
   if (body.endsWith('|')) body = body.substring(0, body.length - 1);
   if (body.length < 4) return null;

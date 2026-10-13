@@ -40,7 +40,8 @@ class EventPage {
   /// A link's address: http or https only.
   final Uri? url;
 
-  /// A link's name, as the user gave it; null shows the address.
+  /// The page's name, as the user gave it (any kind: a link, a file, a
+  /// photo); null shows its kind and number, or a link's address.
   final String? title;
 
   bool get isVideo => kind == PageKind.video;
@@ -77,14 +78,15 @@ class EventPage {
   /// The page's file name in its event's folder.
   String get fileName => '$id.$extension';
 
-  EventPage copyWith({PageFilter? filter}) => EventPage(
-    id: id,
-    filter: filter ?? this.filter,
-    kind: kind,
-    extension: extension,
-    url: url,
-    title: title,
-  );
+  EventPage copyWith({PageFilter? filter, String? Function()? title}) =>
+      EventPage(
+        id: id,
+        filter: filter ?? this.filter,
+        kind: kind,
+        extension: extension,
+        url: url,
+        title: title == null ? this.title : title(),
+      );
 
   Map<String, Object?> toJson() => {
     'id': id,

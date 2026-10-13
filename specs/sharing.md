@@ -1,42 +1,21 @@
 # Sharing
 
-**Share** (the event screen's only share button, or a library card's
-menu) asks what to share the event as, then opens the system share sheet
-(`share_plus`). Signed out, it asks to sign in first
-([signed out](cloud-sync.md#signed-out)). The sheet scrolls when the
-screen is short. Right after Link, the user's own events (in a build
-with sharing) have **Share with people** ("By email, to edit or read
-only"), which opens the [people sheet](shared-captures.md#sharing)
-instead of the system's.
+**Share** (the event screen's app bar, a link icon, or a library card's
+menu) copies the capture's link to the clipboard, nothing else: no
+choice of format, no text around it. "Link copied" says it's done.
+Signed out, it asks to sign in first
+([signed out](cloud-sync.md#signed-out)).
 
-- **Link**, the default (first, and marked): the capture's link,
-  `https://tabscan.nu01.com/app/?c=<capture id>`
-  ([`CaptureLink`](../tabscan_app/lib/export/capture_link.dart)), shared
-  as text with the title as the subject. It names the capture by its ID
-  only. On the web the link is to the site the app runs on (the RC's, or a
-  local one); in the phone apps, to production's, or the RC's for RC
-  builds. Sharing it starts a sync pass, so the capture is in the cloud.
-  Off ("Needs sign-in and cloud sync") in builds without cloud sync. See
-  [opening a link](#opening-a-link).
-- **PDF**: every image page, with its filter, fitted to an A4 page (18 pt
-  margins; videos, recordings, PDF pages and
-  [hidden images](hidden-images.md) are left out);
-  then the links, if any, under "Links",
-  one per line ("Title: address", or the address), each a clickable link;
-  then, if the tab has been read, the text tab under the title in 9 pt
-  Courier, on as many pages as it needs. The PDF's title is the
-  event's, its author the artist, its creator "TabScan".
-- **Text**: the text tab, then a blank line and the links, one per line
-  ("Title: address", or the address), as plain text; off (greyed, saying
-  to read the tab first) while there's neither.
-- **Files**: one zip of everything (`My riff - Me.zip`): each image,
-  video, recording and PDF, in page order (images with their filter: PNG
-  for Tab, their own format for Original; the others as they are), stored
-  without recompressing;
-  then `tab.txt` (the text tab) and `links.txt` (a link per line), when
-  there are any. [Hidden images](hidden-images.md) are left out.
-- With the images hidden, PDF is off when there's neither a text tab nor
-  a link, and Files when there's no other file either: they'd be empty.
+- The link is `https://tabscan.nu01.com/app/?c=<capture id>`
+  ([`CaptureLink`](../tabscan_app/lib/export/capture_link.dart)); it
+  names the capture by its ID only. On the web it's to the site the app
+  runs on (the RC's, or a local one); in the phone apps, to production's,
+  or the RC's for RC builds. Copying it starts a sync pass, so the capture
+  is in the cloud. See [opening a link](#opening-a-link).
+- **Share with people** has its own button beside it (people with a
+  plus), on the user's own captures in a build with sharing: it opens the
+  [people sheet](shared-captures.md#sharing).
+- There's no PDF, text or zip export any more.
 
 Files are named from the title and artist (`My riff - Me.pdf`,
 `My riff - Me 1.png`, `My riff - Me 2.mov`), keeping only letters, digits, spaces, `.`, `_` and

@@ -13,9 +13,9 @@ A build has sharing only with [sign-in and cloud sync](cloud-sync.md) and
 
 ## Sharing
 
-**Share with people**, in the [share sheet](sharing.md) of the user's own
-events while signed in (the event screen's Share, or a library card's),
-opens a sheet:
+**Share with people**, a button of its own in the capture's app bar for
+the user's own events (signed in first, in a build with sharing), opens a
+sheet:
 
 - what it does ("People you add find this capture when they sign in to
   TabScan with that email address. No email is sent.");
