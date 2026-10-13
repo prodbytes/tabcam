@@ -6,6 +6,7 @@ import '../library/library.dart';
 import '../library/capture_event.dart';
 import '../processing/page_filter.dart';
 import 'audio_page.dart';
+import 'file_thumbnails.dart';
 import 'link_page.dart';
 import 'page_image.dart';
 import 'pdf_page.dart';
@@ -28,8 +29,10 @@ String fileLabel(AppLocalizations l10n, CaptureEvent event, EventPage page) {
   };
 }
 
-/// A file's small preview, for its capture's list: an image's picture (as
-/// its filter shows it), else its kind's badge.
+/// A file's small preview, for its capture's list, made on the device: an
+/// image's picture (as its filter shows it), a PDF's first page, a video's
+/// first frame; a recording or a link (whose picture would come from the
+/// internet), and a file that can't be drawn, shows its kind's badge.
 class FileThumbnail extends StatelessWidget {
   const FileThumbnail({
     super.key,
@@ -59,10 +62,17 @@ class FileThumbnail extends StatelessWidget {
               fit: BoxFit.cover,
               cacheWidth: 192,
             ),
-            PageKind.video => const VideoThumbnail(),
-            PageKind.pdf => const Icon(
-              Icons.picture_as_pdf_outlined,
-              color: badge,
+            PageKind.video => VideoFrameThumbnail(
+              library: library,
+              event: event,
+              page: page,
+              fallback: const VideoThumbnail(),
+            ),
+            PageKind.pdf => PdfThumbnail(
+              library: library,
+              event: event,
+              page: page,
+              fallback: const Icon(Icons.picture_as_pdf_outlined, color: badge),
             ),
             PageKind.audio => const Icon(Icons.music_note, color: badge),
             PageKind.link => Icon(

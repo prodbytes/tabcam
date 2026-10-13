@@ -801,3 +801,10 @@ spec.
     reads it again every 10 seconds and on coming back to the front
     ([cloud sync](cloud-sync.md#when-and-how),
     [sharing](sharing.md#opening-a-link)).
+89. **Do the best possible locally to make a thumbnail of each added file or
+    link; if one can't be made, use a generic one.** The capture's file
+    list now shows a PDF's first page and a video's first frame, drawn on
+    the device; images already showed themselves. Recordings, and links
+    (whose picture would have to come from the internet, YouTube's
+    included), keep their generic badges, as does any file that can't be
+    drawn ([event screen](event-screen.md)).
