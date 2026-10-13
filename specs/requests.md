@@ -743,3 +743,14 @@ spec.
     the sign-in text no longer says capturing works signed out
     ([navigation](navigation.md#signed-out-the-welcome), [library](library.md),
     [cloud sync](cloud-sync.md#signed-out)).
+
+## 2026-10-13
+
+86. **If you can, make the reorder in the same capture list view, not a
+    separate one.** The capture's files list reorders in place: editable,
+    with more than one file, each row has a drag handle (in place of the
+    arrow) that moves it in the list, saved at each drop as before; tap,
+    the rename pencil and long press still work. The Reorder button and
+    its sheet are gone (and their "Drag to reorder", "Photo" and "PDF"
+    strings). With the images hidden, only the other files move and the
+    images keep their places ([event screen](event-screen.md#reordering)).

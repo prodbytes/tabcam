@@ -507,23 +507,11 @@
   },
   "eventReorder": "Reorder",
   "@eventReorder": {
-    "description": "Event app bar tooltip: change the pages' order"
-  },
-  "eventReorderTitle": "Drag to reorder",
-  "@eventReorderTitle": {
-    "description": "Reorder sheet title"
+    "description": "Event file list: a file's drag handle, to change the files' order"
   },
   "eventCouldntReorder": "Couldn't reorder",
   "@eventCouldntReorder": {
     "description": "Event: reorder failed (before ': error')"
-  },
-  "eventPagePhoto": "Photo",
-  "@eventPagePhoto": {
-    "description": "Reorder sheet: an image page"
-  },
-  "eventPagePdf": "PDF",
-  "@eventPagePdf": {
-    "description": "Reorder sheet: a PDF page"
   },
   "eventViewOriginal": "Original",
   "@eventViewOriginal": {

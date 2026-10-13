@@ -16,7 +16,6 @@ import 'file_screen.dart';
 import 'link_page.dart';
 import 'premium_card.dart';
 import 'rename_dialog.dart';
-import 'reorder_sheet.dart';
 import 'share_sheet.dart';
 import 'people_sheet.dart';
 import 'place.dart';
@@ -27,10 +26,11 @@ import 'tab_text_view.dart';
 /// recordings, PDFs and links), each with a preview, a tap opening it alone
 /// on a [FileScreen]; and the tools along the bottom: Files (the list),
 /// Text (the tab read from them, in place of the list) and Add (scan,
-/// a document, photos and videos, files, a link). Rename, Reorder, Clone
-/// and Share are in the app bar. The tab is read by itself ([AutoReader]): there's no
-/// Read tab button. With its images hidden, the list is the text tab, then
-/// the other files.
+/// a document, photos and videos, files, a link). Rename, Clone and Share
+/// are in the app bar. Editable, with more than one file, the list reorders
+/// in place, each file dragged by its handle. The tab is read by itself
+/// ([AutoReader]): there's no Read tab button. With its images hidden, the
+/// list is the text tab, then the other files.
 class EventScreen extends StatefulWidget {
   const EventScreen({
     super.key,
@@ -251,16 +251,21 @@ class _EventScreenState extends State<EventScreen> {
     });
   }
 
-  /// Opens the reorder sheet; then shows the page that showed before, in
-  /// its new place.
-  Future<void> _reorder(CaptureEvent event) => showReorderSheet(
-    context,
-    _library,
-    event.id,
-    onError: (e) {
+  /// Moves the listed file at [from] to [to] and saves the order at once
+  /// ([Library.reorderPages]). Only the listed (visible) files are
+  /// reordered: with the images hidden, they keep their places.
+  Future<void> _move(List<EventPage> listed, int from, int to) async {
+    final order = [...listed];
+    order.insert(to, order.removeAt(from));
+    try {
+      await _library.reorderPages(widget.eventId, [
+        for (final p in order) p.id,
+      ]);
+    } on Object catch (e, stack) {
+      debugPrint('TabScan: reorder: $e\n$stack');
       if (mounted) _snack('${context.l10n.eventCouldntReorder}: $e');
-    },
-  );
+    }
+  }
 
   bool _hintClosed = false;
 
@@ -381,12 +386,12 @@ class _EventScreenState extends State<EventScreen> {
   Widget _fileList(CaptureEvent event) {
     final l10n = context.l10n;
     final tab = event.tabText?.trim() ?? '';
-    return ListView(
-      controller: _list,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      children: [
-        if (event.hideImages)
-          ListTile(
+    final pages = event.visiblePages;
+    // Editable with more than one file: each has a drag handle.
+    final reorder = !event.readOnly && pages.length > 1 && !_busy;
+    final textTab = !event.hideImages
+        ? null
+        : ListTile(
             key: const Key('text-tab'),
             leading: const SizedBox.square(
               dimension: 64,
@@ -408,45 +413,66 @@ class _EventScreenState extends State<EventScreen> {
                   : null,
             ),
             onTap: () => setState(() => _text = true),
+          );
+    return ReorderableListView.builder(
+      scrollController: _list,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      header: textTab,
+      buildDefaultDragHandles: false,
+      itemCount: pages.length,
+      onReorderItem: (from, to) => _move(pages, from, to),
+      itemBuilder: (context, i) {
+        final page = pages[i];
+        return ListTile(
+          key: ValueKey('file-${page.id}'),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 4,
           ),
-        for (final page in event.visiblePages)
-          ListTile(
-            key: ValueKey('file-${page.id}'),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 4,
-            ),
-            leading: FileThumbnail(library: _library, event: event, page: page),
-            title: Text(
-              fileLabel(l10n, event, page),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: page.url == null
-                ? null
-                : Text(
-                    '${page.url}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-            trailing: event.readOnly
-                ? const Icon(Icons.chevron_right)
-                : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        key: ValueKey('rename-${page.id}'),
-                        tooltip: l10n.eventRenameFile,
-                        icon: const Icon(Icons.edit_outlined),
-                        onPressed: () => _renamePage(event, page),
-                      ),
+          leading: FileThumbnail(library: _library, event: event, page: page),
+          title: Text(
+            fileLabel(l10n, event, page),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: page.url == null
+              ? null
+              : Text(
+                  '${page.url}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+          trailing: event.readOnly
+              ? const Icon(Icons.chevron_right)
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      key: ValueKey('rename-${page.id}'),
+                      tooltip: l10n.eventRenameFile,
+                      icon: const Icon(Icons.edit_outlined),
+                      onPressed: () => _renamePage(event, page),
+                    ),
+                    if (reorder)
+                      ReorderableDragStartListener(
+                        key: ValueKey('drag-${page.id}'),
+                        index: i,
+                        child: Tooltip(
+                          message: l10n.eventReorder,
+                          child: const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Icon(Icons.drag_handle),
+                          ),
+                        ),
+                      )
+                    else
                       const Icon(Icons.chevron_right),
-                    ],
-                  ),
-            onTap: () => _openFile(page),
-            onLongPress: event.readOnly ? null : () => _renamePage(event, page),
-          ),
-      ],
+                  ],
+                ),
+          onTap: () => _openFile(page),
+          onLongPress: event.readOnly ? null : () => _renamePage(event, page),
+        );
+      },
     );
   }
 
@@ -483,13 +509,6 @@ class _EventScreenState extends State<EventScreen> {
                   tooltip: l10n.eventRename,
                   icon: const Icon(Icons.edit_outlined),
                   onPressed: () => _rename(event),
-                ),
-              if (editable && event.visiblePages.length > 1)
-                IconButton(
-                  key: const Key('reorder'),
-                  tooltip: l10n.eventReorder,
-                  icon: const Icon(Icons.swap_vert),
-                  onPressed: _busy ? null : () => _reorder(event),
                 ),
               IconButton(
                 tooltip: l10n.eventClone,

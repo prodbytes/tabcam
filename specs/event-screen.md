@@ -8,23 +8,15 @@ it opens on the Text view; otherwise on the list.
 - **App bar**: the title (and the artist under it, if set); tapping it, or
   **Rename** (pencil), renames the event (see
   [library](library.md#events)). **Clone** copies the event and opens the
-  copy ([library](library.md#events)).
-  **Reorder** (up-down arrows; the user's own events or shared to edit,
-  with more than one file) opens a sheet listing the files in order,
-  "Drag to reorder": each with a thumbnail (images) or an icon, its number
-  and what it is (Photo, PDF, Video, Recording, or a link's title or
-  host), and a drag handle. Each drop saves the new order (the event
-  changes, so it syncs, and moved photos or PDFs are
-  [read again](tab-recognition.md#reading-by-itself) in their new order),
-  and the list follows it. With the images [hidden](hidden-images.md),
-  only the other files are listed, and the images keep their places.
+  copy ([library](library.md#events)). There's no Reorder button: the
+  [files list](#reordering) reorders in place.
   **Share** (a link icon) copies the capture's link ([sharing](sharing.md));
   **Share with people** (people with a plus,
   [shared captures](shared-captures.md)) is beside it for the user's own
   events, in a build with sharing. There's no Hide images
   button (captures already [hidden](hidden-images.md) stay hidden).
 - **Shared with the user**: a line under the app bar, "Shared by <email>
-  · Can edit" or "· Read only". Read only, Rename, Reorder, Add, Rotate, Delete
+  · Can edit" or "· Read only". Read only, Rename, reordering, Add, Rotate, Delete
   and editing the text tab are off; the view still changes what shows,
   without saving it.
 - **Files**: the list of the event's files, in their order, newest last
@@ -47,6 +39,19 @@ it opens on the Text view; otherwise on the list.
   event. A tap opens the file alone on the file screen. With the images [hidden](hidden-images.md), the list
   is the **text tab** first (its first line, or "No text tab yet"; a tap
   goes to the Text view), then the other files.
+- <a id="reordering"></a>**Reordering**: in the user's own events or
+  those shared to edit, with more than one file listed, each row ends in a
+  **drag handle** (in place of the arrow, tooltip "Reorder"); dragging a
+  row by it moves the file in the list itself (no separate sheet). Only
+  the handle starts a drag, so a tap still opens the file, and the rename
+  pencil and long press still rename it, on the web, desktop and phones.
+  Each drop saves the new order at once (the event changes, so it syncs,
+  and moved photos or PDFs are
+  [read again](tab-recognition.md#reading-by-itself) in their new order).
+  With the images [hidden](hidden-images.md), only the other files are
+  listed and dragged, the images keep their places, and the text tab
+  stays first. Read only, with a single file, or while a tool works,
+  there are no handles. A failed save shows "Couldn't reorder".
 - **Tools** along the bottom:
   - **Files**, first: the list (highlighted while it shows).
   - **Text**, second: the tab read from the files, in place of the list
