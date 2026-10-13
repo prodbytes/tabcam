@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tabscan_app/cloud/cloud_sync.dart';
 import 'package:tabscan_app/library/library.dart';
@@ -54,5 +55,48 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Sign in with Google'), findsNothing);
     expect(find.textContaining("Sign-in isn't set up"), findsOneWidget);
+  });
+
+  testWidgets('signed out, Home offers to sign in; signed in, it goes', (
+    tester,
+  ) async {
+    final library = Library(PlatformEventStore());
+    await library.load();
+    final auth = FakeAuth();
+    final sync = CloudSync(
+      library: library,
+      auth: auth,
+      bucket: FakeBucket(),
+      credentials: FakeCredentials(),
+      period: const Duration(days: 1),
+    )..start();
+    await tester.pumpWidget(
+      TabScanApp(library: library, auth: auth, sync: sync),
+    );
+    await tester.pumpAndSettle();
+    final card = find.byKey(const Key('home-sign-in'));
+    expect(card, findsOneWidget);
+    expect(
+      find.descendant(of: card, matching: find.text('Sign in with Google')),
+      findsOneWidget,
+    );
+
+    await tester.runAsync(() async {
+      auth.signInAs('ana');
+      while (sync.state != SyncState.synced) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+    });
+    await tester.pumpAndSettle();
+    expect(card, findsNothing);
+    sync.dispose();
+  });
+
+  testWidgets('a build without sign-in has no sign-in on Home', (tester) async {
+    final library = Library(PlatformEventStore());
+    await library.load();
+    await tester.pumpWidget(TabScanApp(library: library));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('home-sign-in')), findsNothing);
   });
 }

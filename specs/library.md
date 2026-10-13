@@ -2,6 +2,13 @@
 
 The **Home** tab ([navigation](navigation.md)), titled **TabScan**.
 
+Signed out (in a build with sign-in), Home starts with a **Sign in** card
+above the captures: what signing in is for, and the sign-in buttons
+(Google's, and Apple's where it's offered), as on the
+[Profile](navigation.md#profile) tab; an error from signing in shows
+under them. It goes once signed in
+([lib/screens/sign_in_card.dart](../tabscan_app/lib/screens/sign_in_card.dart)).
+
 - **Events** show as a grid of cards, newest first: the first image page's
   thumbnail (with its filter; without images, a play badge if it has
   videos, or else a PDF icon, a music note for recordings, or a link

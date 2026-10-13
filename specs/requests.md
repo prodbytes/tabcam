@@ -694,3 +694,6 @@ spec.
     Printed tabs on drawn lines read exactly; the user's handwritten page
     reads about two notes in three
     ([cloud OCR](cloud-ocr.md#transcription)).
+72. **Present the login on the home screen.** Signed out, Home has a Sign
+    in card above the captures, with the sign-in buttons; it goes once
+    signed in ([library](library.md)).

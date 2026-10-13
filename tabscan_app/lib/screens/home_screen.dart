@@ -17,6 +17,7 @@ import '../library/library.dart';
 import 'account_panel.dart';
 import 'library_screen.dart';
 import 'place.dart';
+import 'sign_in_card.dart';
 import 'link_page.dart';
 
 /// The app's tabs, in the bottom navigation bar's order.
@@ -273,11 +274,19 @@ class _HomeScreenState extends State<HomeScreen> {
       body: IndexedStack(
         index: _tab.index,
         children: [
-          LibraryView(
-            library: library,
-            sync: widget.sync,
-            ocr: widget.ocr,
-            fresh: _fresh,
+          // Signed out: sign in right on Home, above the captures.
+          Column(
+            children: [
+              if (widget.auth case final auth?) SignInCard(auth: auth),
+              Expanded(
+                child: LibraryView(
+                  library: library,
+                  sync: widget.sync,
+                  ocr: widget.ocr,
+                  fresh: _fresh,
+                ),
+              ),
+            ],
           ),
           CaptureView(
             onScan: _scan,
