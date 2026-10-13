@@ -146,9 +146,6 @@ class _EventScreenState extends State<EventScreen> {
   Future<void> _rename(CaptureEvent event) =>
       renameEvent(context, _library, event);
 
-<<<<<<< HEAD
-  /// Share: copies the capture's link, once the user is signed in.
-=======
   /// Names one of its files (a photo, a PDF, a link, ...).
   Future<void> _renamePage(CaptureEvent event, EventPage page) => renamePage(
     context,
@@ -158,8 +155,7 @@ class _EventScreenState extends State<EventScreen> {
     fileLabel(context.l10n, event, page),
   );
 
-  /// Opens the share sheet, once the user is signed in.
->>>>>>> origin/main
+  /// Share: copies the capture's link, once the user is signed in.
   Future<void> _share(CaptureEvent event) async {
     if (await requireSignIn(context, widget.sync?.auth, Gated.share) &&
         mounted) {
