@@ -21,14 +21,19 @@ it opens on the Text view; otherwise on the list.
   without saving it.
 - **Files**: the list of the event's files, in their order, newest last
   (so a page just scanned or added is at the end, and the list scrolls to
-  it after Add). Each row has a preview and a name:
+  it after Add). Each row has a preview and a name. Previews are made on
+  the device, from the file itself (nothing is fetched from the
+  internet); one that can't be made shows its kind's generic badge:
   - **Images** (photos and scans): the image itself, as its filter shows
     it; "Page 1", "Page 2"…
-  - **Videos**: a play badge; "Video 1"…
-  - **PDFs**: a PDF badge; "PDF 1"…
+  - **Videos**: the video's first frame (paused, silent) with a play mark
+    over it, else a play badge; "Video 1"…
+  - **PDFs**: the PDF's first page (PDFium, as the file screen draws it),
+    else a PDF badge; "PDF 1"…
   - **Recordings** (audio): a music note; "Recording 1"…
-  - **Links**: a link badge (a video badge for a YouTube video); the
-    title (or the address's host), the address under it.
+  - **Links**: a link badge (a video badge for a YouTube video: its
+    picture would come from YouTube, and nothing loads from there before
+    **Play**); the title (or the address's host), the address under it.
 
   Numbers count the files of that kind. A file the user named shows its
   name instead, whatever it is; files, PDFs, recordings and videos added
