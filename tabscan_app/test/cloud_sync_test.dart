@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tabscan_app/cloud/cloud_sync.dart';
 import 'package:tabscan_app/cloud/cognito.dart';
@@ -58,6 +59,8 @@ class Device {
 Uint8List bytes(List<int> b) => Uint8List.fromList(b);
 
 void main() {
+  // Sync follows the app coming to the front, through the binding.
+  TestWidgetsFlutterBinding.ensureInitialized();
   late FakeBucket bucket;
   setUp(() => bucket = FakeBucket());
 
@@ -160,6 +163,44 @@ void main() {
     await phone.sync.syncNow();
     await tablet.sync.syncNow();
     expect(tablet.library.byId(event.id)!.title, 'Riff in A');
+  });
+
+  test('a file renamed on one device reaches the other as it comes to '
+      'the front', () async {
+    final phone = Device(bucket);
+    final tablet = Device(bucket);
+    await phone.start();
+    final event = await phone.library.create([
+      bytes([1]),
+    ]);
+    await phone.sync.syncNow();
+    await tablet.start();
+    tablet.sync.didChangeAppLifecycleState(AppLifecycleState.hidden);
+
+    phone.later();
+    final page = phone.library.byId(event.id)!.pages.single;
+    await phone.library.update(
+      phone.library
+          .byId(event.id)!
+          .copyWith(pages: [page.copyWith(title: () => 'Tablature')]),
+    );
+    await phone.sync.syncNow();
+    // No pass of the tablet's own: back in front, it looks at once.
+    tablet.sync.didChangeAppLifecycleState(AppLifecycleState.resumed);
+    await tablet.settle();
+    expect(tablet.library.byId(event.id)!.pages.single.title, 'Tablature');
+  });
+
+  test('in front, a device looks for changes every few seconds', () {
+    final device = Device(bucket);
+    final sync = CloudSync(
+      library: device.library,
+      auth: device.auth,
+      bucket: bucket,
+      credentials: device.credentials,
+    );
+    expect(sync.period, lessThanOrEqualTo(const Duration(seconds: 10)));
+    expect(sync.backgroundPeriod, greaterThan(sync.period));
   });
 
   test('changed on both: the later change wins', () async {

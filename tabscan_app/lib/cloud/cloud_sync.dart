@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 import '../auth/auth_service.dart';
 import '../l10n/language.dart';
@@ -47,15 +48,18 @@ enum SyncState {
 /// synced with another account stay on the device, untouched.
 ///
 /// Passes run at sign-in, a moment after each change, every
-/// [CloudSync.period], and on [syncNow].
-class CloudSync extends ChangeNotifier {
+/// [CloudSync.period] while the app is in front (every
+/// [CloudSync.backgroundPeriod] behind), as it comes back to the front,
+/// and on [syncNow]: another device's change shows within seconds.
+class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
   CloudSync({
     required this.library,
     required this.auth,
     required this.bucket,
     required this.credentials,
     this.shares,
-    this.period = const Duration(minutes: 1),
+    this.period = const Duration(seconds: 10),
+    this.backgroundPeriod = const Duration(minutes: 1),
     this.debounce = const Duration(seconds: 2),
   });
 
@@ -71,8 +75,19 @@ class CloudSync extends ChangeNotifier {
   /// The signed-in user's profile, in builds with the share API.
   ProfileService? profiles;
 
-  /// How often a signed-in device looks for other devices' changes.
+  /// How often a signed-in device looks for other devices' changes while
+  /// the app is in front. A pass with nothing new is one listing.
   final Duration period;
+
+  /// How often it looks while the app is behind (a hidden tab, a phone
+  /// app in the background, while it still runs).
+  final Duration backgroundPeriod;
+
+  /// Whether the app is in front, as the platform last said.
+  bool _foreground = true;
+
+  /// When the last pass started.
+  DateTime? _lastPass;
 
   /// How long after a change its pass starts, so a burst is one pass.
   final Duration debounce;
@@ -103,7 +118,35 @@ class CloudSync extends ChangeNotifier {
     _started = true;
     auth.addListener(_onAuth);
     library.localChanges.addListener(_onLocalChange);
+    WidgetsBinding.instance.addObserver(this);
     _onAuth();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        final wasBehind = !_foreground;
+        _foreground = true;
+        // Back in front: what changed elsewhere meanwhile, at once.
+        if (wasBehind) unawaited(syncNow());
+      case AppLifecycleState.hidden ||
+          AppLifecycleState.paused ||
+          AppLifecycleState.detached:
+        _foreground = false;
+      case AppLifecycleState.inactive:
+        break; // still shown (a dialog over it, a window without focus)
+    }
+  }
+
+  void _tick() {
+    final last = _lastPass;
+    if (!_foreground &&
+        last != null &&
+        DateTime.now().difference(last) < backgroundPeriod) {
+      return;
+    }
+    unawaited(syncNow());
   }
 
   String? _userId;
@@ -129,7 +172,7 @@ class CloudSync extends ChangeNotifier {
     // A new token of the same session (a refresh) needs no pass of its
     // own, unless the last one failed (it may have been the token).
     if (!wasSignedIn || _state == SyncState.failed) unawaited(syncNow());
-    _periodic ??= Timer.periodic(period, (_) => unawaited(syncNow()));
+    _periodic ??= Timer.periodic(period, (_) => _tick());
   }
 
   void _onLocalChange() {
@@ -178,6 +221,7 @@ class CloudSync extends ChangeNotifier {
   Future<void> _pass() async {
     final token = _token;
     if (token == null) return;
+    _lastPass = DateTime.now();
     _set(SyncState.syncing, null);
     // Rejected credentials and a skewed clock are worth one more try: new
     // credentials, and the clock S3 just corrected.
@@ -635,6 +679,7 @@ class CloudSync extends ChangeNotifier {
     if (_started) {
       auth.removeListener(_onAuth);
       library.localChanges.removeListener(_onLocalChange);
+      WidgetsBinding.instance.removeObserver(this);
     }
     _periodic?.cancel();
     _soon?.cancel();

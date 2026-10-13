@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../cloud/public_capture.dart';
@@ -11,12 +13,16 @@ import 'event_screen.dart';
 /// someone signed out (it's then the whole app, with **Sign in**), or
 /// signed in but not one of the people it's shared with. It's kept in
 /// memory only, apart from the user's library, and goes when this does.
+/// While it shows, it looks for the owner's changes every [refreshEvery]
+/// and as the app comes back to the front, so a rename or a file added
+/// shows within seconds.
 class PublicCaptureScreen extends StatefulWidget {
   const PublicCaptureScreen({
     super.key,
     required this.link,
     required this.captures,
     this.onSignIn,
+    this.refreshEvery = const Duration(seconds: 10),
   });
 
   final Uri link;
@@ -25,19 +31,53 @@ class PublicCaptureScreen extends StatefulWidget {
   /// Signed out: leaves for the welcome, to sign in. Null signed in.
   final VoidCallback? onSignIn;
 
+  final Duration refreshEvery;
+
   @override
   State<PublicCaptureScreen> createState() => _PublicCaptureScreenState();
 }
 
-class _PublicCaptureScreenState extends State<PublicCaptureScreen> {
+class _PublicCaptureScreenState extends State<PublicCaptureScreen>
+    with WidgetsBindingObserver {
   final Library _library = Library(memory.PlatformEventStore())..load();
   late Future<CaptureEvent> _opening = widget.captures.open(
     widget.link,
     _library,
   );
+  Timer? _refresh;
+  bool _refreshing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refresh = Timer.periodic(widget.refreshEvery, (_) => _refreshNow());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refreshNow();
+  }
+
+  /// Brings in the owner's changes, once the capture shows. A failed look
+  /// (offline, say) keeps what shows; the next one tries again.
+  Future<void> _refreshNow() async {
+    if (_refreshing) return;
+    _refreshing = true;
+    try {
+      await _opening;
+      await widget.captures.refresh(widget.link, _library);
+    } on Object {
+      // Not open yet, or this look failed: nothing changes.
+    } finally {
+      _refreshing = false;
+    }
+  }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _refresh?.cancel();
     _library.dispose();
     super.dispose();
   }

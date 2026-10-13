@@ -121,6 +121,9 @@ class EventPage {
         _ => PageKind.image,
       },
       extension: checkExtension(json['extension'] as String? ?? 'img'),
+      // The name the user gave the file: kept, on the device and coming
+      // down from the cloud, as a link's is.
+      title: json['title'] as String?,
     );
   }
 }

@@ -789,3 +789,15 @@ spec.
     its sheet are gone (and their "Drag to reorder", "Photo" and "PDF"
     strings). With the images hidden, only the other files move and the
     images keep their places ([event screen](event-screen.md#reordering)).
+88. **I renamed a file in a capture (from "PDF 1") but its link still
+    shows "PDF 1": make renames and changes effective in captures as soon
+    as they're made, on devices and shares.** A file's name was dropped
+    whenever an event was read back (only links kept it): the cloud had
+    the new name, but other devices, people it's shared with, link
+    viewers and the same device after a restart showed the default.
+    Names are now kept for every kind of file. Sync looks for changes
+    every 10 seconds while the app is in front (every minute behind) and
+    at once when it comes back to the front; a capture opened by its link
+    reads it again every 10 seconds and on coming back to the front
+    ([cloud sync](cloud-sync.md#when-and-how),
+    [sharing](sharing.md#opening-a-link)).
