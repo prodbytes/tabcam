@@ -11,6 +11,7 @@ import '../library/library.dart';
 import '../recognition/tab_layout.dart';
 import 'tab_editing.dart';
 import '../l10n/language.dart';
+import 'mono_font.dart';
 
 /// The event screen's Text view: the tab read from the event's pages, to
 /// check against them and fix, monospaced and unwrapped (long lines scroll
@@ -434,12 +435,7 @@ class _SongDialogState extends State<_SongDialog> {
   }
 }
 
-const _mono = TextStyle(
-  fontFamily: 'monospace',
-  fontFamilyFallback: ['Menlo', 'Courier New', 'Courier'],
-  fontSize: 13,
-  height: 1.25,
-);
+const _mono = TextStyle(fontFamily: monoFont, fontSize: 15, height: 1.25);
 
 class _Unwrapped extends StatelessWidget {
   const _Unwrapped({required this.child});
@@ -666,7 +662,7 @@ class _ReviewView extends StatelessWidget {
                   Expanded(
                     child: Text.rich(
                       TextSpan(
-                        style: _mono.copyWith(fontSize: 15),
+                        style: _mono.copyWith(fontSize: 17),
                         children: [
                           TextSpan(
                             text: old,
