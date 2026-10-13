@@ -19,20 +19,10 @@ with Apple** is offered on iOS only, in builds with
 
 ## Signed out
 
-Signed out (anonymous), the user can **capture**: scan, and add pages, photos, videos, files and links to their events, and
-rename, filter, rotate, clone and delete them. All of it is stored on the
-device only. **Reading tabs** (the processing) and **sharing** need
-signing in. **Share with people** only shows signed in. Captures made
-signed out are read once the user signs in
-([tab recognition](tab-recognition.md#reading-by-itself)); the Text view
-says so, with **Sign in**. **Share** (as a link, a PDF, text or files,
-from a card, the event screen or the Text view) and the Text view's
-**Sign in**, tapped signed out, open a sheet, "Sign in to read tabs" or "Sign in to share", saying why, that
-capturing still works and stays on the device, and the sign-in buttons
-(as on the Profile tab).
-Signing in there closes it and goes on with what was tapped; closing it
-does nothing. What was captured signed out goes up at the first sign-in,
-as the user's own.
+Signed out, the app is only the [welcome](navigation.md#signed-out-the-welcome):
+nothing can be captured, read or shared until the user signs in. Events
+already on the device (from before, or another user's) stay there; the
+first sign-in's sync takes those that belong to no one as the user's own.
 
 In a build without sign-in set up, nothing asks to sign in: reading and
 sharing work as before (there'd be no way to sign in).

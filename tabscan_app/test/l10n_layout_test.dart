@@ -109,14 +109,16 @@ void main() {
         ),
       );
       await frames(tester);
-      await tester.tap(find.text(l10n.homeTabProfile).last);
-      await frames(tester);
+      // Signed out: the welcome, alone.
+      expect(find.text(l10n.welcomeBody), findsOneWidget);
       await tester.runAsync(() async {
         auth.signInAs('ana');
         while (sync.state != SyncState.synced) {
           await Future<void>.delayed(const Duration(milliseconds: 10));
         }
       });
+      await frames(tester);
+      await tester.tap(find.text(l10n.homeTabProfile).last);
       await frames(tester);
       expect(find.text(l10n.languageTitle), findsOneWidget);
       await tester.pumpWidget(const SizedBox());

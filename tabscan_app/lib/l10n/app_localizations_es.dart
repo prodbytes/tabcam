@@ -20,7 +20,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get accountSignInIntro =>
-      'Inicia sesión para leer tablaturas, compartir y tener tus eventos respaldados en cada dispositivo donde inicies sesión. Sin sesión, puedes seguir capturando; todo queda en este dispositivo.';
+      'Inicia sesión para leer tablaturas, compartir y tener tus eventos respaldados en cada dispositivo donde inicies sesión.';
 
   @override
   String get accountSignInPremium =>
@@ -1288,4 +1288,8 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get textViewFixLinedUpPremium =>
       'Tablatura alineada. Revisarla con la canción en línea es parte de TabScan Premium.';
+
+  @override
+  String get welcomeBody =>
+      'Escanea tablaturas de guitarra, léelas como texto y compártelas. Inicia sesión para empezar: tus capturas quedan en cada dispositivo donde inicies sesión.';
 }

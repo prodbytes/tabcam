@@ -2,7 +2,7 @@
   "languageTitle": "Idioma",
   "languageSystem": "Idioma del dispositivo",
   "accountSignIn": "Iniciar sesión",
-  "accountSignInIntro": "Inicia sesión para leer tablaturas, compartir y tener tus eventos respaldados en cada dispositivo donde inicies sesión. Sin sesión, puedes seguir capturando; todo queda en este dispositivo.",
+  "accountSignInIntro": "Inicia sesión para leer tablaturas, compartir y tener tus eventos respaldados en cada dispositivo donde inicies sesión.",
   "accountSignInPremium": "Con sesión iniciada, TabScan Premium transcribe tus escaneos en la nube mientras se sincronizan.",
   "accountSignInWithGoogle": "Iniciar sesión con Google",
   "accountRole": "Rol: {role}",
@@ -331,5 +331,6 @@
   "eventLinkCopied": "Enlace copiado",
   "textViewFixLinedUp": "Tablatura alineada: las barras y el final de cada cuerda coinciden",
   "textViewFixAlreadyLinedUp": "Las cuerdas de la tablatura ya están alineadas",
-  "textViewFixLinedUpPremium": "Tablatura alineada. Revisarla con la canción en línea es parte de TabScan Premium."
+  "textViewFixLinedUpPremium": "Tablatura alineada. Revisarla con la canción en línea es parte de TabScan Premium.",
+  "welcomeBody": "Escanea tablaturas de guitarra, léelas como texto y compártelas. Inicia sesión para empezar: tus capturas quedan en cada dispositivo donde inicies sesión."
 }

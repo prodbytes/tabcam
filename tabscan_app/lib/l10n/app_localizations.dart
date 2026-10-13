@@ -121,7 +121,7 @@ abstract class AppLocalizations {
   /// Account: why to sign in
   ///
   /// In en, this message translates to:
-  /// **'Sign in to read tabs, share, and have your events backed up on every device you sign in on. Signed out, you can still capture; it stays on this device.'**
+  /// **'Sign in to read tabs, share, and have your events backed up on every device you sign in on.'**
   String get accountSignInIntro;
 
   /// Account: Premium note when signed out
@@ -2097,6 +2097,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tab lined up. Checking it against the song online is part of TabScan Premium.'**
   String get textViewFixLinedUpPremium;
+
+  /// Welcome screen (signed out): what TabScan does, and to sign in
+  ///
+  /// In en, this message translates to:
+  /// **'Scan guitar tabs, read them as text, and share them. Sign in to start: your captures are kept on every device you sign in on.'**
+  String get welcomeBody;
 }
 
 class _AppLocalizationsDelegate

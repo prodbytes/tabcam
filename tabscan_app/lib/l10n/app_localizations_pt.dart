@@ -20,7 +20,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get accountSignInIntro =>
-      'Entre para ler tablaturas, compartilhar e ter seus eventos com backup em todos os dispositivos em que você entrar. Sem entrar, você ainda pode capturar; tudo fica neste dispositivo.';
+      'Entre para ler tablaturas, compartilhar e ter seus eventos com backup em todos os dispositivos em que você entrar.';
 
   @override
   String get accountSignInPremium =>
@@ -1285,4 +1285,8 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get textViewFixLinedUpPremium =>
       'Tablatura alinhada. Conferir com a música online faz parte do TabScan Premium.';
+
+  @override
+  String get welcomeBody =>
+      'Digitalize tablaturas de violão, leia-as como texto e compartilhe-as. Entre para começar: suas capturas ficam em todos os dispositivos em que você entrar.';
 }

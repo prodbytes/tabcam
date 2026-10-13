@@ -16,13 +16,28 @@ tabs, and a compact **app bar** on top names the open one
     bold, both in the theme's primary (amber); the others outlined, in
     the secondary text color; no pill behind the icon. Flat, 64 dp, every
     label shown, a hairline above it (the theme's `navigationBarTheme`).
-  - Shown signed in and signed out alike; tabs keep their state (the
-    list's scroll) while another is open.
+  - Signed in only (signed out, there's only the welcome, below); tabs
+    keep their state (the list's scroll) while another is open.
 - **App bar**: the open tab's name on the left, bold (22 sp, weight 700):
   "TabScan" on Home, "Capture", "Profile". No buttons: what was there
   (Import photos, About, the cloud button) is on the tabs.
 - An event opens over the tabs as its own screen ([event screen](event-screen.md)),
   with a back button.
+
+## Signed out: the welcome
+
+In a build with sign-in, a user who isn't signed in sees only the
+**welcome** ([lib/screens/welcome_screen.dart](../tabscan_app/lib/screens/welcome_screen.dart)):
+TabScan's name, what it does and that signing in starts it ("your
+captures are kept on every device you sign in on"), the sign-in buttons
+(Google's, and Apple's where it's offered), a sign-in error under them,
+a progress line while a saved session is restored at launch, and
+**Privacy policy**. No tabs, no Capture, no Profile: TabScan's features
+are for signed-in users. Signing in opens Home (where a capture's link,
+opened signed out, then opens); signing out goes back to the welcome.
+Captures already on the device stay there, and are the user's once they
+sign in. A build without sign-in set up has no welcome: the app is as it
+was, on the device only.
 
 ## Coming back where the user was
 

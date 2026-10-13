@@ -17,7 +17,6 @@ import '../library/library.dart';
 import 'account_panel.dart';
 import 'library_screen.dart';
 import 'place.dart';
-import 'sign_in_card.dart';
 import 'link_page.dart';
 
 /// The app's tabs, in the bottom navigation bar's order.
@@ -274,19 +273,11 @@ class _HomeScreenState extends State<HomeScreen> {
       body: IndexedStack(
         index: _tab.index,
         children: [
-          // Signed out: sign in right on Home, above the captures.
-          Column(
-            children: [
-              if (widget.auth case final auth?) SignInCard(auth: auth),
-              Expanded(
-                child: LibraryView(
-                  library: library,
-                  sync: widget.sync,
-                  ocr: widget.ocr,
-                  fresh: _fresh,
-                ),
-              ),
-            ],
+          LibraryView(
+            library: library,
+            sync: widget.sync,
+            ocr: widget.ocr,
+            fresh: _fresh,
           ),
           CaptureView(
             onScan: _scan,
@@ -532,7 +523,8 @@ class _AddTile extends StatelessWidget {
 /// every build and site.
 final Uri privacyPolicyUrl = Uri.parse('https://tabscan.nu01.com/privacy');
 
-Future<void> _openPrivacyPolicy(BuildContext context) async {
+/// Opens TabScan's privacy policy in the browser.
+Future<void> openPrivacyPolicy(BuildContext context) async {
   final messenger = ScaffoldMessenger.maybeOf(context);
   final couldNotOpen = context.l10n.textViewCouldNotOpen('$privacyPolicyUrl');
   if (!await launchUrl(
@@ -619,7 +611,7 @@ class ProfileView extends StatelessWidget {
                 Wrap(
                   children: [
                     TextButton(
-                      onPressed: () => _openPrivacyPolicy(context),
+                      onPressed: () => openPrivacyPolicy(context),
                       child: Text(l10n.homePrivacyPolicy),
                     ),
                     TextButton(
