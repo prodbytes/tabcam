@@ -694,3 +694,15 @@ spec.
     Printed tabs on drawn lines read exactly; the user's handwritten page
     reads about two notes in three
     ([cloud OCR](cloud-ocr.md#transcription)).
+70. **On the text recognition, make the lines (strings) align as well as
+    possible, so a chord shows properly, and all the same length, ending
+    together.** On the device, when ML Kit says where each character is
+    (its symbols), a text tab's staff is laid out on one grid: every
+    character at the column its x implies, from the staff's start in its
+    character pitch, so dashes OCR dropped or doubled no longer shift the
+    notes after them; every line is padded to the longest, chord names
+    placed on the same grid. In the cloud, a staff's lines are measured
+    from one start and column width (medians across the staff), and end
+    together (trailing dashes trimmed, all padded to the staff's width)
+    ([tab recognition](tab-recognition.md#text-tabs),
+    [cloud OCR](cloud-ocr.md#transcription)).

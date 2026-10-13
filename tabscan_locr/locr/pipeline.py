@@ -19,7 +19,7 @@ The pipeline that read tabs best in the OCR bench:
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import cv2
 import numpy as np
@@ -154,6 +154,28 @@ def staves(lines):
             out.append([])
         out[-1].append(line)
     return out
+
+
+def align(group):
+    """A staff's lines measured alike, so a chord's notes land in one
+    column on every line: from the staff's first dash (the median of where
+    its lines' dashes start: a line starting with a fret starts its dashes
+    late), in its column width (the median), to its last column (the
+    most)."""
+    x0 = int(np.median([l.dash_x0 for l in group]))
+    cw = float(np.median([l.cw for l in group]))
+    cols = max(l.cols for l in group)
+    return [replace(l, dash_x0=x0, cw=cw, cols=cols) for l in group]
+
+
+def even(block, width):
+    """A staff's tab lines (`e|...|`) ending together: trailing dashes
+    trimmed, then every line padded with dashes to [width] columns, or to
+    the line whose notes go furthest."""
+    parts = [(l[:l.index("|") + 1], l[l.index("|") + 1:].rstrip("|").rstrip("-"))
+             for l in block]
+    width = max([width] + [len(body) for _, body in parts])
+    return [f"{label}{body.ljust(width, '-')}|" for label, body in parts]
 
 
 def tokens(line):
@@ -389,7 +411,7 @@ def transcribe_image(img, engines, read_page=None, vision=None, read_crop=None):
     """transcribe, for an image already decoded (BGR)."""
     start = time.monotonic()
     gray = prepare(img)
-    groups = staves(find_lines(gray))
+    groups = [align(g) for g in staves(find_lines(gray))]
     jobs = [(line, gray[line.y0:line.y1, line.x0:line.x1]) for g in groups for line in g]
     if not jobs and read_crop is not None:
         # No dash lines: frets on drawn staff lines (handwritten, typeset)?
@@ -432,7 +454,7 @@ def transcribe_image(img, engines, read_page=None, vision=None, read_crop=None):
                 readings[name].append(o)
             block.append(vote(options))
             i += 1
-        blocks.append((g[0].y0, "staff", "\n".join(block)))
+        blocks.append((g[0].y0, "staff", "\n".join(even(block, width))))
     if read_page:
         t = time.monotonic()
         blocks += [(y, "text", text) for y, text in page_text(gray, groups, read_page)]
