@@ -821,3 +821,9 @@ spec.
     title, artist, text tab, file names, links or who shared them, case
     and accents aside; with no match it says so, with Clear search. In
     English, Spanish and Portuguese ([library](library.md)).
+92. **Let users just drag files to the capture view to add them.** Files
+    dragged onto the Capture tab make a new capture, and dragged onto a
+    capture's screen are added to it, as the Files button would, with
+    "Drop files to add" shown while they're over it. On the web, desktops
+    and Android (`desktop_drop` 0.8.4), not iOS
+    ([navigation](navigation.md#capture), [event screen](event-screen.md)).

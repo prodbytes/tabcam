@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
 
 import '../capture/media.dart';
@@ -12,6 +13,7 @@ import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
 import 'account_panel.dart';
 import 'clone.dart';
+import 'file_drop_area.dart';
 import 'file_screen.dart';
 import 'link_page.dart';
 import 'premium_card.dart';
@@ -242,23 +244,44 @@ class _EventScreenState extends State<EventScreen> {
         if (pick.media.isEmpty) return;
         await _library.addMedia(event, pick.media);
       }
-      if (event.hideImages && link == null) {
-        _snack(l10n.eventAddedHidden);
+      _showAdded(event, before, images: link == null);
+    });
+  }
+
+  /// Files the user dragged onto the screen ([FileDropArea]): added, as
+  /// Add's Files would.
+  Future<void> _addDropped(
+    CaptureEvent event,
+    List<XFile> files,
+    int skipped,
+  ) => _run(context.l10n.eventCouldntAdd, () async {
+    final pick = MediaPick.of(files);
+    final notPages = pick.skipped + skipped;
+    if (notPages > 0) _snack(context.l10n.eventSkippedFiles(notPages));
+    if (pick.media.isEmpty) return;
+    final before = event.pages.length;
+    await _library.addMedia(event, pick.media);
+    _showAdded(event, before, images: true);
+  });
+
+  /// After files were added to [event] (which had [before] pages): says
+  /// so when its images are hidden, and shows them at the end of the list.
+  void _showAdded(CaptureEvent event, int before, {required bool images}) {
+    if (event.hideImages && images) {
+      _snack(context.l10n.eventAddedHidden);
+    }
+    if (!mounted || (_library.byId(event.id)?.pages.length ?? 0) <= before) {
+      return;
+    }
+    setState(() => _text = false);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_list.hasClients) {
+        _list.animateTo(
+          _list.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
       }
-      // Show the files added, at the end of the list.
-      if (!mounted || (_library.byId(event.id)?.pages.length ?? 0) <= before) {
-        return;
-      }
-      setState(() => _text = false);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_list.hasClients) {
-          _list.animateTo(
-            _list.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      });
     });
   }
 
@@ -558,15 +581,20 @@ class _EventScreenState extends State<EventScreen> {
                   )
                 : null,
           ),
-          body: Column(
-            children: [
-              if (widget.byLink)
-                _LinkBanner(onSignIn: widget.onSignIn)
-              else if (event.sharedBy case final owner?)
-                _SharedBanner(owner: owner, readOnly: event.readOnly),
-              ?_premiumHint(event),
-              Expanded(child: text ? _textView(event) : _fileList(event)),
-            ],
+          // Files dragged onto the screen are added to the capture.
+          body: FileDropArea(
+            enabled: !_busy && !event.readOnly && !widget.byLink,
+            onFiles: (files, skipped) => _addDropped(event, files, skipped),
+            child: Column(
+              children: [
+                if (widget.byLink)
+                  _LinkBanner(onSignIn: widget.onSignIn)
+                else if (event.sharedBy case final owner?)
+                  _SharedBanner(owner: owner, readOnly: event.readOnly),
+                ?_premiumHint(event),
+                Expanded(child: text ? _textView(event) : _fileList(event)),
+              ],
+            ),
           ),
           bottomNavigationBar: SafeArea(
             child: Padding(

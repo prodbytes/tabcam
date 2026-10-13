@@ -2139,6 +2139,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Scan guitar tabs, read them as text, and share them. Sign in to start: your captures are kept on every device you sign in on.'**
   String get welcomeBody;
+
+  /// Capture and a capture's screen: shown while files are dragged over them
+  ///
+  /// In en, this message translates to:
+  /// **'Drop files to add'**
+  String get dropFilesToAdd;
 }
 
 class _AppLocalizationsDelegate

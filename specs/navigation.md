@@ -79,6 +79,13 @@ with a button until it's dismissed). Cancelling does nothing;
 picked files that aren't photos or videos are left out, with a message
 saying how many.
 
+**Dragging files** (from the desktop or a file manager) onto the Capture
+tab makes a new event of them, as **Files** does: while they're over it,
+it's outlined with "Drop files to add"; dropped folders are left out
+with the others. On the web, macOS, Windows, Linux and Android
+(`desktop_drop`; [FileDropArea](../tabscan_app/lib/screens/file_drop_area.dart)),
+not iOS.
+
 ## Profile
 
 The account, up to 560 dp wide: signed out, **Sign in** with what it's

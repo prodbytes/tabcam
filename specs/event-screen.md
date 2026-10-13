@@ -72,6 +72,11 @@ it opens on the Text view; otherwise on the list.
   - **Add**: more files, [scanned or picked](scanning.md#adding-to-an-event):
     Scan pages, Document, Photos & videos, Files, or a **Link**. The list
     then shows, scrolled to what was added.
+  - **Dragging files** onto the screen adds them too, as Files does
+    (outlined with "Drop files to add" while they're over it; folders and
+    files that aren't pages are left out, with the message saying how
+    many). Not on a capture shared read only or opened by its link, nor
+    while a tool works; not on iOS (see [Capture](navigation.md#capture)).
 
   The Original / Scan view, Rotate and Delete are the file screen's, not
   this one's.

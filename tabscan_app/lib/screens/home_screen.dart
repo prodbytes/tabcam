@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'file_drop_area.dart';
+
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -303,12 +305,19 @@ class _HomeScreenState extends State<HomeScreen> {
             ocr: widget.ocr,
             fresh: _fresh,
           ),
-          CaptureView(
-            onScan: _scan,
-            onDocuments: () => _addMedia(MediaSource.documents),
-            onPhotos: () => _addMedia(MediaSource.library),
-            onFiles: () => _addMedia(MediaSource.files),
-            onLink: _addLink,
+          // Files dragged onto Capture make a new capture of them.
+          FileDropArea(
+            onFiles: (files, skipped) => _addMedia(() async {
+              final pick = MediaPick.of(files);
+              return MediaPick(pick.media, pick.skipped + skipped);
+            }),
+            child: CaptureView(
+              onScan: _scan,
+              onDocuments: () => _addMedia(MediaSource.documents),
+              onPhotos: () => _addMedia(MediaSource.library),
+              onFiles: () => _addMedia(MediaSource.files),
+              onLink: _addLink,
+            ),
           ),
           ProfileView(auth: widget.auth, sync: widget.sync, ocr: widget.ocr),
         ],

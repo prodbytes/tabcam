@@ -1310,4 +1310,7 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get welcomeBody =>
       'Digitalize tablaturas de violão, leia-as como texto e compartilhe-as. Entre para começar: suas capturas ficam em todos os dispositivos em que você entrar.';
+
+  @override
+  String get dropFilesToAdd => 'Solte os arquivos para adicioná-los';
 }

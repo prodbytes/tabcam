@@ -57,6 +57,7 @@ dependencies:
     sdk: flutter
   intl: ^0.20.3
   pdfrx: ^2.6.5
+  desktop_drop: ^0.8.4
 
 dev_dependencies:
   flutter_test:
