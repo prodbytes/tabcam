@@ -41,10 +41,20 @@ class EventScreen extends StatefulWidget {
     this.store,
     this.initialFile,
     this.initialText,
+    this.byLink = false,
+    this.onSignIn,
   });
 
   final Library library;
   final String eventId;
+
+  /// Opened by its link, by someone it isn't shared with
+  /// ([PublicCaptureScreen]): read only, no Clone (it isn't in their
+  /// library), and a banner saying so.
+  final bool byLink;
+
+  /// With [byLink], signed out: the banner's **Sign in**.
+  final VoidCallback? onSignIn;
 
   /// The file it opens over its list (a reload: where the user was).
   final String? initialFile;
@@ -491,11 +501,12 @@ class _EventScreenState extends State<EventScreen> {
                   icon: const Icon(Icons.swap_vert),
                   onPressed: _busy ? null : () => _reorder(event),
                 ),
-              IconButton(
-                tooltip: l10n.eventClone,
-                icon: const Icon(Icons.copy_all_outlined),
-                onPressed: _busy ? null : () => _clone(event),
-              ),
+              if (!widget.byLink)
+                IconButton(
+                  tooltip: l10n.eventClone,
+                  icon: const Icon(Icons.copy_all_outlined),
+                  onPressed: _busy ? null : () => _clone(event),
+                ),
               if (widget.sync case final sync?
                   when sync.canShare && !event.isShared)
                 IconButton(
@@ -518,7 +529,9 @@ class _EventScreenState extends State<EventScreen> {
           ),
           body: Column(
             children: [
-              if (event.sharedBy case final owner?)
+              if (widget.byLink)
+                _LinkBanner(onSignIn: widget.onSignIn)
+              else if (event.sharedBy case final owner?)
                 _SharedBanner(owner: owner, readOnly: event.readOnly),
               ?_premiumHint(event),
               Expanded(child: text ? _textView(event) : _fileList(event)),
@@ -589,6 +602,42 @@ enum _AddSource {
     files => l10n.eventAddFilesDetail,
     link => l10n.eventAddLinkDetail,
   };
+}
+
+/// A capture opened by its link: read only, and, signed out, **Sign in**.
+class _LinkBanner extends StatelessWidget {
+  const _LinkBanner({this.onSignIn});
+
+  final VoidCallback? onSignIn;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    final color = theme.colorScheme.onSecondaryContainer;
+    return ColoredBox(
+      key: const Key('link-banner'),
+      color: theme.colorScheme.secondaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: Row(
+          children: [
+            Icon(Icons.visibility_outlined, size: 18, color: color),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                l10n.eventByLink,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: color),
+              ),
+            ),
+            if (onSignIn case final signIn?)
+              TextButton(onPressed: signIn, child: Text(l10n.linkSignIn)),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// Who shared the event with the user, and whether they can change it.

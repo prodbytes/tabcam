@@ -6,15 +6,17 @@ import 'package:flutter/services.dart';
 import '../cloud/cloud_sync.dart';
 import '../export/capture_link.dart';
 import '../l10n/language.dart';
+import '../cloud/public_capture.dart';
 import '../library/capture_event.dart';
 import 'sign_in_gate.dart';
 
-/// **Share**: copies the capture's link (`…/app/?c=<id>`) to the
+/// **Share**: copies the capture's link (`…/app/?c=<id>&k=<key>`) to the
 /// clipboard, nothing else, and says so. Signed in (or in a build without
 /// sign-in) it copies at once, on the tap itself: nothing comes before the
 /// copy (a browser lets a page write the clipboard only right after a
 /// tap). Signed out, it asks to sign in first. Then the capture is synced,
-/// so the link opens it for whoever it's shared with.
+/// so the link opens it for whoever it's shared with, and, with its key,
+/// for anyone else holding it, read only ([PublicCaptures]).
 Future<void> shareCapture(
   BuildContext context,
   CaptureEvent event, {
@@ -30,14 +32,20 @@ Future<void> shareCapture(
 }
 
 /// Copies the link (the copy first, before anything else), says so, and
-/// syncs.
+/// syncs. The owner's first copy, in a build with sharing, makes the
+/// link's key: it's saved on the capture (so every device of theirs copies
+/// the same link) and recorded by the share API, so anyone holding the
+/// link can open it, read only.
 Future<void> copyCaptureLink(
   BuildContext context,
   CaptureEvent event, {
   CloudSync? sync,
 }) async {
+  final keyed = event.linkKey == null && !event.isShared && sync?.shares != null
+      ? event.copyWith(linkKey: newLinkKey())
+      : event;
   final copying = Clipboard.setData(
-    ClipboardData(text: CaptureLink.of(event).toString()),
+    ClipboardData(text: CaptureLink.of(keyed).toString()),
   );
   final messenger = ScaffoldMessenger.maybeOf(context);
   final copied = context.l10n.eventLinkCopied;
@@ -45,5 +53,13 @@ Future<void> copyCaptureLink(
   messenger
     ?..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(copied)));
-  unawaited(sync?.syncNow());
+  if (sync == null) return;
+  if (!identical(keyed, event)) {
+    await sync.library.patch(
+      event.id,
+      (now) => now.linkKey == null ? now.copyWith(linkKey: keyed.linkKey) : now,
+    );
+  }
+  if (!event.isShared) await sync.publishLink(keyed);
+  unawaited(sync.syncNow());
 }

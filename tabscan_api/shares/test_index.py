@@ -189,7 +189,8 @@ class ShareApiTest(unittest.TestCase):
         self.clients = {"table": Table(), "cognito": Cognito(), "sts": Sts(),
                         "accounts": Accounts({OWNER: "julio@example.com",
                                               OTHER: "olga@example.com"}),
-                        "store": store(), "rbacr": FakeRbacr(), "s3": S3()}
+                        "store": store(), "rbacr": FakeRbacr(), "s3": S3(),
+                        "links": KeyTable("keyHash", {"byOwner": "owner"})}
         seed(self.clients, GOOGLE, "owner-token", "julio@example.com", "brave_calm_otter", OWNER)
         seed(self.clients, GOOGLE, "other-token", "olga@example.com", "quiet_bold_heron", OTHER)
         seed(self.clients, APPLE, "apple-owner-token", "riff@example.com", "shy_tall_lynx", APPLE_OWNER)
@@ -302,7 +303,7 @@ class ShareApiTest(unittest.TestCase):
         self.share_both_ways()
         status, body = self.call("DELETE /account", "julio@example.com")
         self.assertEqual(status, 200)
-        self.assertEqual(body, {"grantsMade": 2, "grantsToMe": 1})
+        self.assertEqual(body, {"grantsMade": 2, "grantsToMe": 1, "links": 0})
         # Olga's share with Ana stays; everything of Julio's is gone.
         self.assertEqual(self.grants_left(), [(f"{OTHER}#xyz", "ana@example.com")])
         self.assertEqual(self.clients["cognito"].deleted, [OWNER])
@@ -410,6 +411,63 @@ class ShareApiTest(unittest.TestCase):
     def test_unknown_apple_routes_are_not_found(self):
         status, _ = self.call("GET /apple/other", "riff@example.com", token="apple-ana")
         self.assertEqual(status, 404)
+
+    # --- links: anyone with a capture's link reads it --------------------
+
+    KEY = "riffkey-0123456789abcdefghijklmnopqrstu"
+
+    def publish(self, key=None, capture="abc", token="owner-token", email="julio@example.com"):
+        return self.call("PUT /links/{captureId}", email, token=token,
+                         path={"captureId": capture}, body={"key": key or self.KEY})
+
+    def open_link(self, capture="abc", key=None, body=None):
+        event = {
+            "routeKey": index.PUBLIC_ROUTE,
+            "pathParameters": {"captureId": capture},
+            "body": json.dumps(body if body is not None else {"key": key or self.KEY}),
+        }
+        response = index.handler(event, None, self.clients)
+        return response["statusCode"], json.loads(response["body"])
+
+    def test_a_published_link_gives_anyone_read_only_credentials(self):
+        self.assertEqual(self.publish()[0], 200)
+        self.assertEqual(self.publish()[0], 200)  # again: the same
+        # Only the key's hash is kept.
+        self.assertNotIn(self.KEY, json.dumps(list(self.clients["links"].items.values()), default=str))
+        status, creds = self.open_link()
+        self.assertEqual(status, 200)
+        self.assertEqual(creds["owner"], OWNER)
+        self.assertEqual(creds["role"], "read")
+        self.assertEqual(creds["prefix"], f"{OWNER}/events/abc/")
+        policy = json.loads(self.clients["sts"].calls[-1]["Policy"])
+        self.assertEqual(policy["Statement"][0]["Action"], ["s3:GetObject"])
+        self.assertEqual(policy["Statement"][0]["Resource"],
+                         f"arn:aws:s3:::nu01-user-events-1/{OWNER}/events/abc/*")
+
+    def test_a_wrong_key_or_capture_opens_nothing(self):
+        self.publish()
+        self.assertEqual(self.open_link(key="riffkey-wrong-0123456789abcdefghijklmn")[0], 404)
+        self.assertEqual(self.open_link(capture="xyz")[0], 404)
+        self.assertEqual(self.open_link(key="short")[0], 400)
+        self.assertEqual(self.open_link(capture="../x")[0], 400)
+        self.assertEqual(self.open_link(body=[])[0], 400)
+        self.assertEqual(self.clients["sts"].calls, [])
+
+    def test_a_key_is_one_captures(self):
+        self.publish()
+        self.assertEqual(self.publish(capture="xyz")[0], 409)
+        self.assertEqual(self.publish(token="other-token", email="olga@example.com")[0], 409)
+        self.assertEqual(self.publish(key="bad key")[0], 400)
+
+    def test_deleting_the_account_deletes_its_links(self):
+        self.publish()
+        self.call("PUT /links/{captureId}", "olga@example.com", token="other-token",
+                  path={"captureId": "xyz"}, body={"key": "olgakey-0123456789abcdefghijklmnopqrstu"})
+        status, body = self.call("DELETE /account", "julio@example.com")
+        self.assertEqual(body["links"], 1)
+        self.assertEqual(self.open_link()[0], 404)
+        status, _ = self.open_link(capture="xyz", key="olgakey-0123456789abcdefghijklmnopqrstu")
+        self.assertEqual(status, 200)
 
 
 if __name__ == "__main__":
