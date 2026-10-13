@@ -15,6 +15,7 @@ import 'cloud/cognito.dart';
 import 'cloud/ocr_api.dart';
 import 'cloud/s3.dart';
 import 'cloud/profile_service.dart';
+import 'cloud/public_capture.dart';
 import 'cloud/share_api.dart';
 import 'cloud/share_config.dart';
 import 'cloud/sigv4.dart';
@@ -51,6 +52,7 @@ void main() {
           ocr: s.ocr,
           reader: s.reader,
           language: s.language,
+          captures: s.captures,
         );
       },
       onEnter: () => services?.stopSync(),
@@ -65,6 +67,16 @@ class AppServices {
     // Sign-in and sync only in a build that has both set up (.env, or the
     // deploys' repository variables); otherwise events stay on the device.
     if (_cloud) auth = _signIn()..init();
+    // Anyone with a capture's link (with its key) may open it, read only.
+    if (_cloud && ShareConfig.apiUrl.isNotEmpty) {
+      captures = PublicCaptures(
+        api: ShareApi(baseUrl: Uri.parse(ShareConfig.apiUrl)),
+        bucket: S3Bucket(
+          bucket: CloudConfig.userDataBucket,
+          region: CloudConfig.region,
+        ),
+      );
+    }
     reader = AutoReader(library: library, auth: auth, ocr: () => ocr)..start();
   }
 
@@ -86,6 +98,7 @@ class AppServices {
 
   final Library library;
   AuthService? auth;
+  PublicCaptures? captures;
   CloudSync? sync;
   CloudOcr? ocr;
 
@@ -160,7 +173,11 @@ class TabScanApp extends StatelessWidget {
     this.ocr,
     this.reader,
     this.language,
+    this.captures,
   });
+
+  /// Opens captures by their link, read only (null: not in this build).
+  final PublicCaptures? captures;
 
   final Library library;
   final AuthService? auth;
@@ -230,14 +247,17 @@ class TabScanApp extends StatelessWidget {
       // Not the launch link's path (an App Link's /app/?c=…): there are no
       // named routes. IncomingLinks opens the capture.
       initialRoute: '/',
-      // Signed out (in a build with sign-in): only the welcome.
+      // Signed out (in a build with sign-in): only the welcome, or a
+      // capture opened by its link.
       home: SignedInOnly(
         auth: auth,
+        captures: captures,
         signedIn: HomeScreen(
           library: library,
           auth: auth,
           sync: sync,
           ocr: ocr,
+          captures: captures,
         ),
       ),
     );

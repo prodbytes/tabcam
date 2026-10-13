@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:math';
+
 import '../processing/page_filter.dart';
 
 /// What a page is: a picture of the tab, a video (someone playing it, a
@@ -166,6 +169,7 @@ class CaptureEvent {
     this.shares = const [],
     this.sharedBy,
     this.readOnly = false,
+    this.linkKey,
   }) : updated = updated ?? created;
 
   /// What's left of [event] once deleted: a tombstone, so the deletion
@@ -240,6 +244,12 @@ class CaptureEvent {
   /// Shared read only: the user can see it, not change it.
   final bool readOnly;
 
+  /// The key in the capture's link (`…/app/?c=<id>&k=<key>`), made the first
+  /// time its owner copies the link: with it, anyone holding the link may
+  /// see the capture, read only, signed in or not ([CaptureLink]). Synced,
+  /// so every device of the owner's copies the same link.
+  final String? linkKey;
+
   /// A file name for exports: the title, safe for any file system.
   String get fileName {
     final name = [
@@ -262,6 +272,7 @@ class CaptureEvent {
     List<EventShare>? shares,
     String? sharedBy,
     bool? readOnly,
+    String? linkKey,
   }) => CaptureEvent(
     id: id,
     title: title ?? this.title,
@@ -278,6 +289,7 @@ class CaptureEvent {
     shares: shares ?? this.shares,
     sharedBy: sharedBy ?? this.sharedBy,
     readOnly: readOnly ?? this.readOnly,
+    linkKey: linkKey ?? this.linkKey,
   );
 
   /// The event as saved: with its [owner] and [shares]; on the device
@@ -297,6 +309,7 @@ class CaptureEvent {
     if (deleted != null) 'deleted': deleted!.toUtc().toIso8601String(),
     if (owner != null) 'owner': owner,
     if (shares.isNotEmpty) 'shares': [for (final s in shares) s.toJson()],
+    if (linkKey != null) 'linkKey': linkKey,
     if (local && sharedBy != null) 'sharedBy': sharedBy,
     if (local && readOnly) 'readOnly': true,
   };
@@ -328,8 +341,26 @@ class CaptureEvent {
       ],
       sharedBy: json['sharedBy'] as String?,
       readOnly: json['readOnly'] == true,
+      linkKey: switch (json['linkKey']) {
+        final String k when isLinkKey(k) => k,
+        _ => null,
+      },
     );
   }
+}
+
+final RegExp _linkKey = RegExp(r'^[A-Za-z0-9_-]{32,64}$');
+
+/// Whether [key] is a link key ([CaptureEvent.linkKey]): what the share
+/// API takes.
+bool isLinkKey(String key) => _linkKey.hasMatch(key);
+
+/// A new link key: 192 random bits, base64url (32 characters).
+String newLinkKey() {
+  final random = Random.secure();
+  return base64Url
+      .encode([for (var i = 0; i < 24; i++) random.nextInt(256)])
+      .replaceAll('=', '');
 }
 
 final RegExp _id = RegExp(r'^[a-z0-9]{1,32}$');

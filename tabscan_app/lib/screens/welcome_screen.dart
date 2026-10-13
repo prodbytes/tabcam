@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../auth/auth_service.dart';
+import '../cloud/public_capture.dart';
+import '../export/incoming_links.dart';
 import '../l10n/language.dart';
 import 'home_screen.dart';
+import 'public_capture_screen.dart';
 import 'sign_in_buttons.dart';
 
 /// Signed out, the whole app is this: a welcome and the sign-in buttons.
@@ -75,22 +78,79 @@ class WelcomeScreen extends StatelessWidget {
   }
 }
 
-/// [signedIn] for a signed-in user; the [WelcomeScreen] for everyone else.
-/// Without sign-in in this build ([auth] null, or unavailable), [signedIn].
-class SignedInOnly extends StatelessWidget {
-  const SignedInOnly({super.key, required this.auth, required this.signedIn});
+/// [signedIn] for a signed-in user; the [WelcomeScreen] for everyone else,
+/// except that a capture's link with its key ([PublicCaptures]) opens the
+/// capture, read only, until they choose **Sign in**. Without sign-in in
+/// this build ([auth] null, or unavailable), [signedIn].
+class SignedInOnly extends StatefulWidget {
+  const SignedInOnly({
+    super.key,
+    required this.auth,
+    required this.signedIn,
+    this.captures,
+  });
 
   final AuthService? auth;
   final Widget signedIn;
 
+  /// Opens captures by their link, signed out; null in a build without the
+  /// share API.
+  final PublicCaptures? captures;
+
+  @override
+  State<SignedInOnly> createState() => _SignedInOnlyState();
+}
+
+class _SignedInOnlyState extends State<SignedInOnly> {
+  /// The link being viewed signed out. It stays waiting in [IncomingLinks]
+  /// too, so once signed in, Home opens it.
+  Uri? _link;
+
+  @override
+  void initState() {
+    super.initState();
+    _link = _openable(IncomingLinks.instance.pending);
+    IncomingLinks.instance.addListener(_incoming);
+  }
+
+  @override
+  void dispose() {
+    IncomingLinks.instance.removeListener(_incoming);
+    super.dispose();
+  }
+
+  Uri? _openable(Uri? link) =>
+      widget.captures != null && link != null && PublicCaptures.opens(link)
+      ? link
+      : null;
+
+  void _incoming() {
+    final link = _openable(IncomingLinks.instance.pending);
+    if (link != null && widget.auth?.user == null) {
+      setState(() => _link = link);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final auth = this.auth;
-    if (auth == null || !auth.available) return signedIn;
+    final auth = widget.auth;
+    if (auth == null || !auth.available) return widget.signedIn;
     return ListenableBuilder(
       listenable: auth,
-      builder: (context, _) =>
-          auth.user == null ? WelcomeScreen(auth: auth) : signedIn,
+      builder: (context, _) {
+        if (auth.user != null) return widget.signedIn;
+        final link = _link;
+        final captures = widget.captures;
+        if (link != null && captures != null) {
+          return PublicCaptureScreen(
+            key: ValueKey(link),
+            link: link,
+            captures: captures,
+            onSignIn: () => setState(() => _link = null),
+          );
+        }
+        return WelcomeScreen(auth: auth);
+      },
     );
   }
 }

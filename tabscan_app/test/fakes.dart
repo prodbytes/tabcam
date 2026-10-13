@@ -252,6 +252,34 @@ class FakeShareApi extends ShareApi {
   Future<void> leave(String token, String owner, String captureId) async =>
       grantsBy['$owner/$captureId']?.remove(email);
 
+  /// Published links, shared by every device: key -> `<owner>/<capture>`.
+  static final Map<String, String> links = {};
+
+  /// Thrown by the next [publishLink], once.
+  Object? failPublish;
+
+  @override
+  Future<void> publishLink(String token, String captureId, String key) async {
+    if (failPublish case final e?) {
+      failPublish = null;
+      throw e;
+    }
+    calls.add('publish $captureId');
+    links[key] = '$identity/$captureId';
+  }
+
+  @override
+  Future<LinkedCapture> openLink(String captureId, String key) async {
+    final found = links[key];
+    if (found == null || found.split('/').last != captureId) {
+      throw ShareApiException(404, 'No such link');
+    }
+    return LinkedCapture(
+      found.split('/').first,
+      const AwsCredentials(accessKeyId: 'ASIA', secretAccessKey: 'public'),
+    );
+  }
+
   /// The user's profile, as the API answers it; [linkTo] the profile a
   /// good code links to, and [linkError] what a link throws instead.
   Profile profileNow = const Profile(
