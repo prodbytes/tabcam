@@ -38,7 +38,7 @@ recorded (and an editor could change it in their copy).
 ## Shared with me
 
 A capture shared with the user comes down at the next
-[sync pass](cloud-sync.md#when-and-how) (within a minute) and shows in
+[sync pass](cloud-sync.md#when-and-how) (within seconds while the app is in front) and shows in
 the [library](library.md)'s **Shared with me** section, below the user's
 own (**My captures**), with "shared by <their email>" on its card. Its
 event screen says **"Shared by <email> · Can edit"** or **"· Read only"**

@@ -55,7 +55,12 @@ those [shared with them](shared-captures.md). If it isn't there yet:
 asks the share API, without signing in, for read-only credentials to the
 capture's folder (`POST /public/{captureId}/credentials` with the key),
 then downloads its `event.json` and files into a library of its own, in
-memory, apart from the user's, and gone with the screen. It shows
+memory, apart from the user's, and gone with the screen. While it
+shows, it reads the capture's `event.json` again every 10 seconds and
+when the app comes back to the front: when it changed (a rename, a file
+added, removed or moved, the text tab), the screen shows the change, so
+the owner's edits reach whoever has the link open within seconds. A
+failed look (offline) keeps what shows. It shows
 "Opening the capture…" meanwhile, then the event screen, read only, with
 a banner "Opened by its link · Read only": no Rename, Add, Reorder,
 editing or Clone (it isn't in the user's library), no Share with people;

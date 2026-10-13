@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
@@ -84,6 +86,41 @@ void main() {
     // Its Share copies the same link.
     expect(CaptureLink.of(library.byId(id)!), link);
   });
+
+  test(
+    'refreshing brings the owner\'s rename, and nothing when unchanged',
+    () async {
+      await ownerShares();
+      final library = Library(PlatformEventStore());
+      await library.load();
+      final opened = captures();
+      await opened.open(link, library);
+      expect(await opened.refresh(link, library), isNull);
+
+      // The owner renames the file; their device syncs it up.
+      final key = '$owner/events/$id/event.json';
+      final json = (jsonDecode(utf8.decode(bucket.objects[key]!)) as Map)
+          .cast<String, Object?>();
+      final renamed = CaptureEvent.fromJson(json);
+      bucket.objects[key] = utf8.encode(
+        jsonEncode(
+          renamed
+              .copyWith(
+                pages: [
+                  renamed.pages.single.copyWith(title: () => 'Tablature'),
+                ],
+              )
+              .toJson(local: false),
+        ),
+      );
+
+      final event = await opened.refresh(link, library);
+      expect(event?.pages.single.title, 'Tablature');
+      expect(library.byId(id)!.pages.single.title, 'Tablature');
+      expect(library.byId(id)!.readOnly, isTrue);
+      expect(await opened.refresh(link, library), isNull);
+    },
+  );
 
   test('a wrong key, or none, opens nothing', () async {
     await ownerShares();

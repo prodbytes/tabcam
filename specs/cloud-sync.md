@@ -150,6 +150,9 @@ Beside `events/`, the user's folder has `ocr/`: the transcriptions the
 (`<identity>/ocr/<event id>/<page id>.json`). Sync doesn't touch them;
 `CloudOcr` reads them.
 
+Each page's name (its `title`, [renamed](event-screen.md) by the user)
+is in `event.json` and kept coming back down, for every kind of file.
+
 Page files never change once written: a rotated page is a new page (see
 [library](library.md#events)), so an event's pages are known by their names.
 Uploads use S3 Intelligent-Tiering.
@@ -157,8 +160,13 @@ Uploads use S3 Intelligent-Tiering.
 ## When, and how
 
 A **pass** runs at sign-in, 2 seconds after the user changes an event (a
-burst of changes is one pass), every minute while signed in (to bring
-other devices' changes; again after signing out and back in), and on **Sync now**. One pass runs at a time; a
+burst of changes is one pass), every 10 seconds while signed in and the
+app is in front (to bring other devices' changes; a pass with nothing new
+is one listing; every minute while the app is behind, as long as it
+runs; again after signing out and back in), at once when the app comes
+back to the front (a tab shown again, the phone app reopened), and on
+**Sync now**. So a change on one device (a rename, a file added or
+moved) shows on the others within seconds. One pass runs at a time; a
 request during one runs another right after. Passes wait for the library
 to load.
 
