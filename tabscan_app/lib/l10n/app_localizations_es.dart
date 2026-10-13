@@ -1313,4 +1313,7 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get welcomeBody =>
       'Escanea tablaturas de guitarra, léelas como texto y compártelas. Inicia sesión para empezar: tus capturas quedan en cada dispositivo donde inicies sesión.';
+
+  @override
+  String get dropFilesToAdd => 'Suelta los archivos para agregarlos';
 }

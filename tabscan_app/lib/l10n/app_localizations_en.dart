@@ -1277,4 +1277,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get welcomeBody =>
       'Scan guitar tabs, read them as text, and share them. Sign in to start: your captures are kept on every device you sign in on.';
+
+  @override
+  String get dropFilesToAdd => 'Drop files to add';
 }

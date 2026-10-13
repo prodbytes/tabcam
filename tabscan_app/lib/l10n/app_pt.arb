@@ -338,5 +338,6 @@
   "textViewFixLinedUp": "Tablatura alinhada: as barras e o fim de cada corda coincidem",
   "textViewFixAlreadyLinedUp": "As cordas da tablatura já estão alinhadas",
   "textViewFixLinedUpPremium": "Tablatura alinhada. Conferir com a música online faz parte do TabScan Premium.",
-  "welcomeBody": "Digitalize tablaturas de violão, leia-as como texto e compartilhe-as. Entre para começar: suas capturas ficam em todos os dispositivos em que você entrar."
+  "welcomeBody": "Digitalize tablaturas de violão, leia-as como texto e compartilhe-as. Entre para começar: suas capturas ficam em todos os dispositivos em que você entrar.",
+  "dropFilesToAdd": "Solte os arquivos para adicioná-los"
 }
