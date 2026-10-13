@@ -201,9 +201,10 @@ a phone's width:
   or in the [cloud](cloud-ocr.md), replaces a text tab marked correct. On
   an event shared read only the mark is shown (when set) but can't be
   changed.
-- **Fix**: [auto-correct](autocorrect.md) (Premium), in builds with the
-  cloud service: the song's tab found online proposes corrections, which
-  the user reviews per note.
+- **Fix**: lines the tab up (each staff's strings named, bars lined up,
+  every string ending together), for everyone; then, with Premium,
+  [auto-correct](autocorrect.md): the song's tab found online proposes
+  corrections, which the user reviews per note.
 
 **Editing tools**, under them ([lib/screens/tab_editing.dart](../tabscan_app/lib/screens/tab_editing.dart)):
 

@@ -722,6 +722,12 @@ spec.
 78. **Present the login on the home screen.** Signed out, Home has a Sign
     in card above the captures, with the sign-in buttons; it goes once
     signed in ([library](library.md)).
+79. **Make the Fix button also re-format the tab so that the lines
+    (strings) are correctly matching.** Fix first lines the tab up, for
+    everyone, on the device: each staff's strings named and the bars lined
+    up measure by measure, every string ending together, everything else
+    untouched; then, with Premium, the online check as before
+    ([auto-correct](autocorrect.md#lining-the-tab-up)).
 80. **Verify that the Share button immediately copies the share link to the
     clipboard: the URL only, no options or extra text.** It did, but after
     an await (the sign-in check, even signed in) and the start of a sync:

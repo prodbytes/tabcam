@@ -1,18 +1,35 @@
 # Auto-correct (Fix)
 
-A Premium feature of the [Text view](tab-recognition.md#text-view): **Fix**
-checks the read tab against the song's tab published online and proposes
-corrections, note by note, which the user accepts or rejects. Nothing
-changes in the text until they do.
+The [Text view](tab-recognition.md#text-view)'s **Fix**: first, for
+everyone and on the device, it **lines the tab up**; then, with Premium,
+it checks the tab against the song's tab published online and proposes
+corrections, note by note, which the user accepts or rejects (nothing
+changes until they do).
 
-## In the app
+## Lining the tab up
 
-1. **Fix** (shown in builds with the [cloud OCR](cloud-ocr.md) service, on
-   events the user can edit). Without Premium it says "Fix is part of
-   TabScan Premium" with **Upgrade** (the account sheet's offer); in the
-   store apps (Android, iOS), which can't point to buying Premium, Fix
-   shows only for Premium users. It appears as soon as the Premium check
-   answers.
+`reformatTab` ([lib/recognition/tab_layout.dart](../tabscan_app/lib/recognition/tab_layout.dart)),
+on the text as it is, saved as the user's edit:
+
+- Two or more tab lines in a row are a staff; every other line (title,
+  chord names, lyrics, notes, blank lines) stays exactly as it is, and so
+  does a lone tab-like line.
+- In a staff: OCR's usual slips fixed (long dashes, `O` for 0, `l` for 1,
+  spaces as dashes); strings without a name named `e B G D A E` (bass
+  `G D A E`), names written on every string kept as written; the bars
+  lined up, each measure padded with dashes to its widest string, so a
+  measure's notes stay in it and every string ends at the same column.
+- It says "Tab lined up", or that the strings already line up. Without
+  Premium (where the upgrade can be offered) it adds that checking it
+  online is Premium's, with **Upgrade**.
+
+## Checking it online (Premium)
+
+### In the app
+
+1. **Fix** shows on every event the user can edit; the online check runs
+   for Premium users in builds with the [cloud OCR](cloud-ocr.md)
+   service, after lining up.
 2. It asks for the song and artist, filled in with the event's title, and
    saves any pending edit.
 3. While it checks (up to about 4½ minutes) a progress bar says it's

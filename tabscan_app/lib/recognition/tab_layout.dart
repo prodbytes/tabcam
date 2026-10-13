@@ -302,6 +302,65 @@ String? _tabBody(String line) {
   return body.replaceAll(' ', '-');
 }
 
+/// Fix's tidying of a text tab, typed or read: each staff's strings
+/// lined up, nothing else touched. Consecutive tab lines are a staff (two
+/// or more); in one, OCR's usual slips are fixed (long dashes, `O` for 0,
+/// spaces), strings without a name are named (`e B G D A E`, bass
+/// `G D A E`; names written on every string are kept), and the bars line up: each measure is padded
+/// with dashes to its widest string, so every string ends together and a
+/// measure's notes stay in it. Every other line (chords, lyrics, notes,
+/// blank lines) stays as it is, and a lone tab-like line too.
+String reformatTab(String text) {
+  final out = <String>[];
+  var raws = <String>[];
+  var bodies = <String>[];
+  void close() {
+    if (bodies.length >= 2) {
+      // The names as written when every string has one; else the usual
+      // ones for the count (or as written, or none).
+      final given = [for (final r in raws) _prefix.firstMatch(r)?.group(1)];
+      final names = stringNames[bodies.length];
+      final labels = [
+        for (final (i, name) in given.indexed)
+          given.every((n) => n != null) ? name! : names?[i] ?? name ?? ' ',
+      ];
+      out.addAll(_alignMeasures(labels, bodies));
+    } else {
+      out.addAll(raws.map((r) => r.trimRight()));
+    }
+    raws = [];
+    bodies = [];
+  }
+
+  for (final raw in text.split('\n')) {
+    final body = _tabBody(raw);
+    if (body != null) {
+      raws.add(raw);
+      bodies.add(body);
+      continue;
+    }
+    close();
+    out.add(raw.trimRight());
+  }
+  close();
+  return out.join('\n');
+}
+
+/// A staff's lines with their bars lined up: measure by measure, each
+/// padded to the widest string's, then the closing bar.
+List<String> _alignMeasures(List<String> labels, List<String> bodies) {
+  final measures = [for (final b in bodies) b.split('|')];
+  final count = measures.map((m) => m.length).reduce(math.max);
+  final widths = [
+    for (var k = 0; k < count; k++)
+      measures.map((m) => k < m.length ? m[k].length : 0).reduce(math.max),
+  ];
+  return [
+    for (final (i, m) in measures.indexed)
+      '${labels[i]}|${[for (var k = 0; k < count; k++) (k < m.length ? m[k] : '').padRight(widths[k], '-')].join('|')}|',
+  ];
+}
+
 String _formatAsciiStaff(List<String> bodies) {
   final names = stringNames[bodies.length];
   final width = bodies.map((b) => b.length).reduce(math.max);

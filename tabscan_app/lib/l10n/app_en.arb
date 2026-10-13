@@ -1679,5 +1679,17 @@
   "eventLinkCopied": "Link copied",
   "@eventLinkCopied": {
     "description": "Share: the capture's link was copied to the clipboard"
+  },
+  "textViewFixLinedUp": "Tab lined up: every string's bars and end match",
+  "@textViewFixLinedUp": {
+    "description": "Fix: the strings were lined up"
+  },
+  "textViewFixAlreadyLinedUp": "The tab's strings already line up",
+  "@textViewFixAlreadyLinedUp": {
+    "description": "Fix: nothing to line up"
+  },
+  "textViewFixLinedUpPremium": "Tab lined up. Checking it against the song online is part of TabScan Premium.",
+  "@textViewFixLinedUpPremium": {
+    "description": "Fix without Premium: lined up; the online check is Premium's"
   }
 }
