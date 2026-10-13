@@ -2,7 +2,7 @@
   "languageTitle": "Idioma",
   "languageSystem": "Idioma do dispositivo",
   "accountSignIn": "Entrar",
-  "accountSignInIntro": "Entre para ler tablaturas, compartilhar e ter seus eventos com backup em todos os dispositivos em que você entrar. Sem entrar, você ainda pode capturar; tudo fica neste dispositivo.",
+  "accountSignInIntro": "Entre para ler tablaturas, compartilhar e ter seus eventos com backup em todos os dispositivos em que você entrar.",
   "accountSignInPremium": "Com a sessão iniciada, o TabScan Premium transcreve suas digitalizações na nuvem enquanto sincronizam.",
   "accountSignInWithGoogle": "Entrar com o Google",
   "accountRole": "Função: {role}",
@@ -331,5 +331,6 @@
   "eventLinkCopied": "Link copiado",
   "textViewFixLinedUp": "Tablatura alinhada: as barras e o fim de cada corda coincidem",
   "textViewFixAlreadyLinedUp": "As cordas da tablatura já estão alinhadas",
-  "textViewFixLinedUpPremium": "Tablatura alinhada. Conferir com a música online faz parte do TabScan Premium."
+  "textViewFixLinedUpPremium": "Tablatura alinhada. Conferir com a música online faz parte do TabScan Premium.",
+  "welcomeBody": "Digitalize tablaturas de violão, leia-as como texto e compartilhe-as. Entre para começar: suas capturas ficam em todos os dispositivos em que você entrar."
 }

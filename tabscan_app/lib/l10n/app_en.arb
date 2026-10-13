@@ -12,7 +12,7 @@
   "@accountSignIn": {
     "description": "Account: signed-out title"
   },
-  "accountSignInIntro": "Sign in to read tabs, share, and have your events backed up on every device you sign in on. Signed out, you can still capture; it stays on this device.",
+  "accountSignInIntro": "Sign in to read tabs, share, and have your events backed up on every device you sign in on.",
   "@accountSignInIntro": {
     "description": "Account: why to sign in"
   },
@@ -1691,5 +1691,9 @@
   "textViewFixLinedUpPremium": "Tab lined up. Checking it against the song online is part of TabScan Premium.",
   "@textViewFixLinedUpPremium": {
     "description": "Fix without Premium: lined up; the online check is Premium's"
+  },
+  "welcomeBody": "Scan guitar tabs, read them as text, and share them. Sign in to start: your captures are kept on every device you sign in on.",
+  "@welcomeBody": {
+    "description": "Welcome screen (signed out): what TabScan does, and to sign in"
   }
 }

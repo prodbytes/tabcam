@@ -20,7 +20,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountSignInIntro =>
-      'Sign in to read tabs, share, and have your events backed up on every device you sign in on. Signed out, you can still capture; it stays on this device.';
+      'Sign in to read tabs, share, and have your events backed up on every device you sign in on.';
 
   @override
   String get accountSignInPremium =>
@@ -1252,4 +1252,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get textViewFixLinedUpPremium =>
       'Tab lined up. Checking it against the song online is part of TabScan Premium.';
+
+  @override
+  String get welcomeBody =>
+      'Scan guitar tabs, read them as text, and share them. Sign in to start: your captures are kept on every device you sign in on.';
 }

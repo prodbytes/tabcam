@@ -24,6 +24,7 @@ import 'maintenance/maintenance.dart';
 import 'export/incoming_links.dart';
 import 'recognition/auto_reader.dart';
 import 'screens/home_screen.dart';
+import 'screens/welcome_screen.dart';
 
 void main() {
   // The maintenance check watches the app's lifecycle (WidgetsBinding)
@@ -229,7 +230,16 @@ class TabScanApp extends StatelessWidget {
       // Not the launch link's path (an App Link's /app/?c=…): there are no
       // named routes. IncomingLinks opens the capture.
       initialRoute: '/',
-      home: HomeScreen(library: library, auth: auth, sync: sync, ocr: ocr),
+      // Signed out (in a build with sign-in): only the welcome.
+      home: SignedInOnly(
+        auth: auth,
+        signedIn: HomeScreen(
+          library: library,
+          auth: auth,
+          sync: sync,
+          ocr: ocr,
+        ),
+      ),
     );
     final app = language == null
         ? materialApp(context)

@@ -735,3 +735,11 @@ spec.
     Tests check the clipboard holds exactly `https://tabscan.nu01.com/app/?c=<id>`
     right after the tap, with no sheet, from the capture and from a Home
     card ([sharing](sharing.md)).
+81. **Make the home screen a simple welcome / login only, and offer the
+    features only to logged-in users.** Signed out (in a build with
+    sign-in), the app is a welcome: TabScan, what it does, the sign-in
+    buttons, Privacy policy. Home, Capture and Profile come once signed in;
+    signing out goes back to the welcome. The Home sign-in card is gone;
+    the sign-in text no longer says capturing works signed out
+    ([navigation](navigation.md#signed-out-the-welcome), [library](library.md),
+    [cloud sync](cloud-sync.md#signed-out)).
