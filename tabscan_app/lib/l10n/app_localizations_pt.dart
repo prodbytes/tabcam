@@ -441,6 +441,22 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventReadOnly => 'Somente leitura';
 
   @override
+  String get eventByLink => 'Aberta pelo link · Somente leitura';
+
+  @override
+  String get linkSignIn => 'Entrar';
+
+  @override
+  String get linkOpening => 'Abrindo a captura…';
+
+  @override
+  String get linkTryAgain => 'Tentar de novo';
+
+  @override
+  String get linkUnavailable =>
+      'Não foi possível abrir esta captura. O link pode estar errado, o dono pode tê-la apagado ou você pode estar sem conexão.';
+
+  @override
   String get eventCanEdit => 'Pode editar';
 
   @override
@@ -1261,6 +1277,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get eventRenameFile => 'Renomear arquivo';
+
+  @override
+  String get eventFileDetails => 'Detalhes';
 
   @override
   String get eventLinkCopied => 'Link copiado';

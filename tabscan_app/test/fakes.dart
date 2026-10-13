@@ -4,11 +4,34 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:tabscan_app/auth/auth_service.dart';
 import 'package:tabscan_app/cloud/cognito.dart';
 import 'package:tabscan_app/cloud/s3.dart';
 import 'package:tabscan_app/cloud/share_api.dart';
 import 'package:tabscan_app/cloud/sigv4.dart';
+import 'package:url_launcher_platform_interface/link.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
+
+/// Records the URLs the app opens, and how, opening none; [opens] says
+/// whether they open.
+class FakeLauncher extends Fake
+    with MockPlatformInterfaceMixin
+    implements UrlLauncherPlatform {
+  FakeLauncher({this.opens = true});
+
+  final bool opens;
+  final launched = <(String, LaunchOptions)>[];
+
+  @override
+  LinkDelegate? get linkDelegate => null;
+
+  @override
+  Future<bool> launchUrl(String url, LaunchOptions options) async {
+    launched.add((url, options));
+    return opens;
+  }
+}
 
 /// The bucket, in memory: ETags are MD5s, as S3's are for single PUTs.
 class FakeBucket implements ObjectStore {
@@ -251,6 +274,34 @@ class FakeShareApi extends ShareApi {
   @override
   Future<void> leave(String token, String owner, String captureId) async =>
       grantsBy['$owner/$captureId']?.remove(email);
+
+  /// Published links, shared by every device: key -> `<owner>/<capture>`.
+  static final Map<String, String> links = {};
+
+  /// Thrown by the next [publishLink], once.
+  Object? failPublish;
+
+  @override
+  Future<void> publishLink(String token, String captureId, String key) async {
+    if (failPublish case final e?) {
+      failPublish = null;
+      throw e;
+    }
+    calls.add('publish $captureId');
+    links[key] = '$identity/$captureId';
+  }
+
+  @override
+  Future<LinkedCapture> openLink(String captureId, String key) async {
+    final found = links[key];
+    if (found == null || found.split('/').last != captureId) {
+      throw ShareApiException(404, 'No such link');
+    }
+    return LinkedCapture(
+      found.split('/').first,
+      const AwsCredentials(accessKeyId: 'ASIA', secretAccessKey: 'public'),
+    );
+  }
 
   /// The user's profile, as the API answers it; [linkTo] the profile a
   /// good code links to, and [linkError] what a link throws instead.

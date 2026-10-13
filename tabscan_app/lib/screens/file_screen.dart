@@ -10,6 +10,7 @@ import 'link_page.dart';
 import 'page_image.dart';
 import 'pdf_page.dart';
 import 'video_page.dart';
+import 'youtube_link.dart';
 
 /// What a file is called in its capture's list: "Page 2", "Video 1", "PDF
 /// 1", "Recording 1" (numbered among the files of its kind), or a link's
@@ -64,7 +65,12 @@ class FileThumbnail extends StatelessWidget {
               color: badge,
             ),
             PageKind.audio => const Icon(Icons.music_note, color: badge),
-            PageKind.link => const Icon(Icons.link, color: badge),
+            PageKind.link => Icon(
+              page.url != null && youTubeVideoId(page.url!) != null
+                  ? Icons.smart_display
+                  : Icons.link,
+              color: badge,
+            ),
           },
         ),
       ),
@@ -230,15 +236,6 @@ class _FileScreenState extends State<FileScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            actions: [
-              if (!event.readOnly)
-                IconButton(
-                  key: const Key('rename-file'),
-                  tooltip: l10n.eventRenameFile,
-                  icon: const Icon(Icons.edit_outlined),
-                  onPressed: () => _rename(event, page),
-                ),
-            ],
             bottom: _busy
                 ? const PreferredSize(
                     preferredSize: Size.fromHeight(4),
@@ -278,6 +275,13 @@ class _FileScreenState extends State<FileScreen> {
                       onPressed: editable ? () => _rotate(event, page) : null,
                     ),
                   ],
+                  // Rename, beside Delete.
+                  EventTool(
+                    key: const Key('rename-file'),
+                    icon: Icons.edit_outlined,
+                    label: l10n.eventRename,
+                    onPressed: editable ? () => _rename(event, page) : null,
+                  ),
                   EventTool(
                     icon: Icons.delete_outline,
                     label: l10n.eventDelete,

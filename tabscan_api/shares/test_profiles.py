@@ -8,7 +8,7 @@ import unittest
 
 import profiles
 from test_index import (APPLE, GOOGLE, OWNER, S3, Cognito, FakeRbacr, Sts,
-                        Table, index, seed, store)
+                        KeyTable, Table, index, seed, store)
 
 
 class IdsTest(unittest.TestCase):
@@ -33,7 +33,7 @@ class IdsTest(unittest.TestCase):
 
 class Api(unittest.TestCase):
     def setUp(self):
-        self.clients = {"table": Table(), "cognito": Cognito(), "sts": Sts(),
+        self.clients = {"table": Table(), "links": KeyTable("keyHash", {"byOwner": "owner"}), "cognito": Cognito(), "sts": Sts(),
                         "accounts": None, "store": store(),
                         "rbacr": FakeRbacr({"julio@example.com": ["free", "premium"],
                                             "admin@example.com": ["admin", "free"]}),

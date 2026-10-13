@@ -41,10 +41,20 @@ class EventScreen extends StatefulWidget {
     this.store,
     this.initialFile,
     this.initialText,
+    this.byLink = false,
+    this.onSignIn,
   });
 
   final Library library;
   final String eventId;
+
+  /// Opened by its link, by someone it isn't shared with
+  /// ([PublicCaptureScreen]): read only, no Clone (it isn't in their
+  /// library), and a banner saying so.
+  final bool byLink;
+
+  /// With [byLink], signed out: the banner's **Sign in**.
+  final VoidCallback? onSignIn;
 
   /// The file it opens over its list (a reload: where the user was).
   final String? initialFile;
@@ -442,34 +452,45 @@ class _EventScreenState extends State<EventScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-          trailing: event.readOnly
-              ? const Icon(Icons.chevron_right)
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      key: ValueKey('rename-${page.id}'),
-                      tooltip: l10n.eventRenameFile,
-                      icon: const Icon(Icons.edit_outlined),
-                      onPressed: () => _renamePage(event, page),
-                    ),
-                    if (reorder)
-                      ReorderableDragStartListener(
-                        key: ValueKey('drag-${page.id}'),
-                        index: i,
-                        child: Tooltip(
-                          message: l10n.eventReorder,
-                          child: const Padding(
-                            padding: EdgeInsets.all(8),
-                            child: Icon(Icons.drag_handle),
-                          ),
-                        ),
-                      )
-                    else
-                      const Icon(Icons.chevron_right),
-                  ],
+          // A link's details (Copy, Delete) are behind its Details button:
+          // a tap opens the link itself, outside the app. Editable, with
+          // more than one file, each ends in a drag handle.
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!event.readOnly)
+                IconButton(
+                  key: ValueKey('rename-${page.id}'),
+                  tooltip: l10n.eventRenameFile,
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: () => _renamePage(event, page),
                 ),
-          onTap: () => _openFile(page),
+              if (page.isLink)
+                IconButton(
+                  key: ValueKey('details-${page.id}'),
+                  tooltip: l10n.eventFileDetails,
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: () => _openFile(page),
+                ),
+              if (reorder)
+                ReorderableDragStartListener(
+                  key: ValueKey('drag-${page.id}'),
+                  index: i,
+                  child: Tooltip(
+                    message: l10n.eventReorder,
+                    child: const Padding(
+                      padding: EdgeInsets.all(8),
+                      child: Icon(Icons.drag_handle),
+                    ),
+                  ),
+                )
+              else if (!page.isLink)
+                const Icon(Icons.chevron_right),
+            ],
+          ),
+          onTap: page.isLink && page.url != null
+              ? () => openLink(context, page.url!)
+              : () => _openFile(page),
           onLongPress: event.readOnly ? null : () => _renamePage(event, page),
         );
       },
@@ -510,11 +531,12 @@ class _EventScreenState extends State<EventScreen> {
                   icon: const Icon(Icons.edit_outlined),
                   onPressed: () => _rename(event),
                 ),
-              IconButton(
-                tooltip: l10n.eventClone,
-                icon: const Icon(Icons.copy_all_outlined),
-                onPressed: _busy ? null : () => _clone(event),
-              ),
+              if (!widget.byLink)
+                IconButton(
+                  tooltip: l10n.eventClone,
+                  icon: const Icon(Icons.copy_all_outlined),
+                  onPressed: _busy ? null : () => _clone(event),
+                ),
               if (widget.sync case final sync?
                   when sync.canShare && !event.isShared)
                 IconButton(
@@ -537,7 +559,9 @@ class _EventScreenState extends State<EventScreen> {
           ),
           body: Column(
             children: [
-              if (event.sharedBy case final owner?)
+              if (widget.byLink)
+                _LinkBanner(onSignIn: widget.onSignIn)
+              else if (event.sharedBy case final owner?)
                 _SharedBanner(owner: owner, readOnly: event.readOnly),
               ?_premiumHint(event),
               Expanded(child: text ? _textView(event) : _fileList(event)),
@@ -608,6 +632,42 @@ enum _AddSource {
     files => l10n.eventAddFilesDetail,
     link => l10n.eventAddLinkDetail,
   };
+}
+
+/// A capture opened by its link: read only, and, signed out, **Sign in**.
+class _LinkBanner extends StatelessWidget {
+  const _LinkBanner({this.onSignIn});
+
+  final VoidCallback? onSignIn;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    final color = theme.colorScheme.onSecondaryContainer;
+    return ColoredBox(
+      key: const Key('link-banner'),
+      color: theme.colorScheme.secondaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: Row(
+          children: [
+            Icon(Icons.visibility_outlined, size: 18, color: color),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                l10n.eventByLink,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: color),
+              ),
+            ),
+            if (onSignIn case final signIn?)
+              TextButton(onPressed: signIn, child: Text(l10n.linkSignIn)),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// Who shared the event with the user, and whether they can change it.

@@ -42,7 +42,7 @@ app, and the iOS privacy declarations.
 | Links name a capture by ID and give no access by themselves | [sharing](sharing.md#opening-a-link) |
 | Deleted files kept 30 days (bucket versions); DynamoDB point-in-time recovery 35 days; Lambda logs 30 days, no capture content, OCR logs without emails | `user-data.yaml`, `share-api.yaml`, `ocr.yaml`, [cloud OCR](cloud-ocr.md#troubleshooting-log) |
 | **Delete account** in the Profile tab deletes the account's cloud data | Added in a parallel change; the policy's wording must match what it deletes |
-| YouTube links play in YouTube's embedded player (youtube-nocookie.com) only after **Play**, under Google's privacy policy | [event screen](event-screen.md), `youtube_player_view.dart`; the app collects nothing from it |
+| Links (YouTube's too) open outside TabScan, in the browser or the app for them, under that site's own policy; nothing is loaded from them in the app | [event screen](event-screen.md), `link_page.dart` (`launchLink`) |
 | No ads, analytics, crash reporting or tracking | No such packages in `pubspec.lock` or `Podfile.lock`; the site keeps no CloudFront access logs |
 | Not directed to children under 13 | |
 

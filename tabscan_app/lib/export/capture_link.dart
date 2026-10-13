@@ -3,9 +3,11 @@ import 'package:flutter/foundation.dart';
 import '../app_version.dart';
 import '../library/capture_event.dart';
 
-/// A capture's link, `https://tabscan.nu01.com/app/?c=<capture id>`: it
-/// opens the capture in TabScan for whoever has it (its owner, and the
-/// people it's shared with), found by its ID alone.
+/// A capture's link, `https://tabscan.nu01.com/app/?c=<capture id>&k=<key>`:
+/// it opens the capture in TabScan for whoever has it (its owner, and the
+/// people it's shared with), found by its ID; and, with its key
+/// ([CaptureEvent.linkKey]), for anyone else too, read only, signed in or
+/// not. A capture without a key yet has a link without one.
 abstract final class CaptureLink {
   /// The web app the link opens: the site this web build runs on, else
   /// the stage's site.
@@ -25,8 +27,14 @@ abstract final class CaptureLink {
     );
   }
 
-  static Uri of(CaptureEvent event, {Uri? app}) =>
-      (app ?? CaptureLink.app).replace(queryParameters: {'c': event.id});
+  static Uri of(CaptureEvent event, {Uri? app}) => (app ?? CaptureLink.app)
+      .replace(queryParameters: {'c': event.id, 'k': ?event.linkKey});
+
+  /// The key in [link], or null when it has none (or a bad one).
+  static String? keyIn(Uri link) => switch (link.queryParameters['k']) {
+    final String key when isLinkKey(key) => key,
+    _ => null,
+  };
 
   /// The capture ID in [link], or null when it holds none (or a bad one).
   static String? idIn(Uri link) {

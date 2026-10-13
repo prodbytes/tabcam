@@ -269,6 +269,9 @@ class CloudSync extends ChangeNotifier {
       final (u, d) = await _shared(token, state);
       up += u;
       down += d;
+      for (final MapEntry(key: id, value: key) in [..._unpublished.entries]) {
+        await _publish(token, id, key);
+      }
     }
     await state.save(library);
     _forgotten.removeAll(forgotten);
@@ -435,6 +438,32 @@ class CloudSync extends ChangeNotifier {
     await shares!.leave(token, event.owner!, event.id);
     await library.removeLocal(event);
     state.events.remove('${event.owner}/${event.id}');
+  }
+
+  /// Links (capture ID -> key) the share API hasn't recorded yet: tried
+  /// again each pass.
+  final Map<String, String> _unpublished = {};
+
+  /// Lets anyone with [event]'s link (its [CaptureEvent.linkKey]) see it,
+  /// read only: the share API records the key. Failing (offline), it's
+  /// tried again at each pass.
+  Future<void> publishLink(CaptureEvent event) async {
+    final key = event.linkKey;
+    final token = _token;
+    if (key == null || shares == null || token == null || event.isShared) {
+      return;
+    }
+    await _publish(token, event.id, key);
+  }
+
+  Future<void> _publish(String token, String id, String key) async {
+    try {
+      await shares!.publishLink(token, id, key);
+      _unpublished.remove(id);
+    } on Object catch (e) {
+      _unpublished[id] = key;
+      debugPrint('TabScan: publishing the link of $id failed: $e');
+    }
   }
 
   /// Whether the user can share their events (signed in, with a share

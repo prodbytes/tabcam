@@ -34,11 +34,19 @@ Routes (each also under /apple, for Apple's tokens):
   DELETE /shared/{owner}/{captureId}              leave a share
   POST   /shared/{owner}/{captureId}/credentials  credentials for it
   DELETE /account                                 delete my profile (its owner)
+  PUT    /links/{captureId}                       {key}: anyone with the link
+                                                  (…/app/?c=<id>&k=<key>) may
+                                                  read the capture (owner)
+
+And one route without a token (no authorizer), for anyone holding a link:
+  POST   /public/{captureId}/credentials          {key}: read-only credentials
+                                                  for that capture's folder
 
 Every route acts on the caller's profile alone: as an owner, on its
 Cognito identity; as a grantee, on its verified addresses.
 """
 
+import hashlib
 import json
 import os
 import re
@@ -50,6 +58,9 @@ ROLES = ("edit", "read")
 MAX_GRANTS = int(os.environ.get("MAX_GRANTS", "50"))
 ID = re.compile(r"^[a-z0-9]{1,32}$")
 IDENTITY = re.compile(r"^[a-z]{2}(-[a-z]+)+-\d:[0-9a-f-]{36}$")
+# A link's key: random, made by the app (only its SHA-256 is kept).
+LINK_KEY = re.compile(r"^[A-Za-z0-9_-]{32,64}$")
+PUBLIC_ROUTE = "POST /public/{captureId}/credentials"
 EMAIL = re.compile(r"^[^@\s]{1,64}@[A-Za-z0-9.-]{1,189}\.[A-Za-z]{2,}$")
 
 # The issuers whose tokens the API takes: the path prefix of their routes,
@@ -79,6 +90,7 @@ def _clients():
     accounts = os.environ.get("ACCOUNTS_TABLE")
     return {
         "table": dynamodb.Table(os.environ["TABLE"]),
+        "links": dynamodb.Table(os.environ["LINKS_TABLE"]),
         # The cloud OCR service's identity -> address table, if it's set up.
         "accounts": dynamodb.Table(accounts) if accounts else None,
         "cognito": boto3.client("cognito-identity", region_name=region),
@@ -102,6 +114,8 @@ def handler(event, context, clients=None):
         _cached = _cached or _clients()
         clients = _cached
     try:
+        if event.get("routeKey") == PUBLIC_ROUTE:
+            return _json(200, public_credentials(event, clients))
         return _json(200, Api(event, clients).route())
     except ApiError as e:
         return _json(e.status, {"message": e.message})
@@ -137,10 +151,92 @@ def _key(owner, capture_id):
     return f"{owner}#{capture_id}"
 
 
+def _link_key(value):
+    if not isinstance(value, str) or not LINK_KEY.match(value):
+        raise ApiError(400, "Not a link key")
+    return hashlib.sha256(value.encode()).hexdigest()
+
+
+def _body_of(event):
+    try:
+        body = json.loads(event.get("body") or "{}")
+    except ValueError:
+        raise ApiError(400, "The body isn't JSON")
+    if not isinstance(body, dict):
+        raise ApiError(400, "The body isn't a JSON object")
+    return body
+
+
+def query_all(table, **kwargs):
+    """Every item a query matches, page after page."""
+    items = []
+    while True:
+        page = table.query(**kwargs)
+        items += page["Items"]
+        if "LastEvaluatedKey" not in page:
+            return items
+        kwargs["ExclusiveStartKey"] = page["LastEvaluatedKey"]
+
+
+def folder_credentials(sts, owner, capture_id, role):
+    """Credentials for the capture's folder alone: get and list, plus put
+    and delete to edit."""
+    bucket = os.environ["BUCKET"]
+    prefix = f"{owner}/events/{capture_id}/"
+    actions = ["s3:GetObject"]
+    if role == "edit":
+        actions += ["s3:PutObject", "s3:DeleteObject"]
+    policy = {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": actions,
+                "Resource": f"arn:aws:s3:::{bucket}/{prefix}*",
+            },
+            {
+                "Effect": "Allow",
+                "Action": "s3:ListBucket",
+                "Resource": f"arn:aws:s3:::{bucket}",
+                "Condition": {"StringLike": {"s3:prefix": [prefix, f"{prefix}*"]}},
+            },
+        ],
+    }
+    result = sts.assume_role(
+        RoleArn=os.environ["ACCESS_ROLE_ARN"],
+        RoleSessionName=f"share-{capture_id}"[:64],
+        Policy=json.dumps(policy),
+        DurationSeconds=3600,
+    )
+    c = result["Credentials"]
+    return {
+        "accessKeyId": c["AccessKeyId"],
+        "secretAccessKey": c["SecretAccessKey"],
+        "sessionToken": c["SessionToken"],
+        "expiration": int(c["Expiration"].timestamp()),
+        "prefix": prefix,
+        "role": role,
+    }
+
+
+def public_credentials(event, clients):
+    """Anyone with a capture's link (its ID and key, no sign-in): read-only
+    credentials for its folder, and whose folder it is. A wrong key and an
+    unknown one are the same 404."""
+    capture_id = _id((event.get("pathParameters") or {}).get("captureId"))
+    digest = _link_key(_body_of(event).get("key"))
+    item = clients["links"].get_item(Key={"keyHash": digest}).get("Item")
+    if item is None or item.get("captureId") != capture_id:
+        raise ApiError(404, "No such link")
+    owner = item["owner"]
+    return {"owner": owner, **folder_credentials(clients["sts"], owner, capture_id, "read")}
+
+
 class Api:
     def __init__(self, event, clients):
         self.event = event
         self.table = clients["table"]
+        self.links = clients.get("links")
         self.cognito = clients["cognito"]
         self.sts = clients["sts"]
         self.accounts = clients.get("accounts")
@@ -197,19 +293,14 @@ class Api:
             "DELETE /shared/{owner}/{captureId}": self.leave,
             "POST /shared/{owner}/{captureId}/credentials": self.credentials,
             "DELETE /account": self.delete_account,
+            "PUT /links/{captureId}": self.publish_link,
         }
         if route not in handlers:
             raise ApiError(404, "No such route")
         return handlers[route]()
 
     def _body(self):
-        try:
-            body = json.loads(self.event.get("body") or "{}")
-        except ValueError:
-            raise ApiError(400, "The body isn't JSON")
-        if not isinstance(body, dict):
-            raise ApiError(400, "The body isn't a JSON object")
-        return body
+        return _body_of(self.event)
 
     # --- the caller's profile ----------------------------------------------
 
@@ -313,14 +404,7 @@ class Api:
         raise ApiError(404, "No such account in this profile")
 
     def _query(self, **kwargs):
-        """Every item a query matches, page after page."""
-        items = []
-        while True:
-            page = self.table.query(**kwargs)
-            items += page["Items"]
-            if "LastEvaluatedKey" not in page:
-                return items
-            kwargs["ExclusiveStartKey"] = page["LastEvaluatedKey"]
+        return query_all(self.table, **kwargs)
 
     def _grants_of(self, owner, capture_id):
         items = self._query(
@@ -422,43 +506,23 @@ class Api:
         owner, capture_id, item = self._my_grant()
         if item is None:
             raise ApiError(404, "Not shared with you")
-        role = item["role"]
-        bucket = os.environ["BUCKET"]
-        prefix = f"{owner}/events/{capture_id}/"
-        actions = ["s3:GetObject"]
-        if role == "edit":
-            actions += ["s3:PutObject", "s3:DeleteObject"]
-        policy = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Effect": "Allow",
-                    "Action": actions,
-                    "Resource": f"arn:aws:s3:::{bucket}/{prefix}*",
-                },
-                {
-                    "Effect": "Allow",
-                    "Action": "s3:ListBucket",
-                    "Resource": f"arn:aws:s3:::{bucket}",
-                    "Condition": {"StringLike": {"s3:prefix": [prefix, f"{prefix}*"]}},
-                },
-            ],
-        }
-        result = self.sts.assume_role(
-            RoleArn=os.environ["ACCESS_ROLE_ARN"],
-            RoleSessionName=f"share-{capture_id}"[:64],
-            Policy=json.dumps(policy),
-            DurationSeconds=3600,
-        )
-        c = result["Credentials"]
-        return {
-            "accessKeyId": c["AccessKeyId"],
-            "secretAccessKey": c["SecretAccessKey"],
-            "sessionToken": c["SessionToken"],
-            "expiration": int(c["Expiration"].timestamp()),
-            "prefix": prefix,
-            "role": role,
-        }
+        return folder_credentials(self.sts, owner, capture_id, item["role"])
+
+    def publish_link(self):
+        """Lets anyone with the capture's link read it: the link's key (made
+        by the app, in the link) is kept, by its SHA-256, for this capture
+        of the caller's folder. Again with the same key does nothing new."""
+        capture_id = _id(self.params.get("captureId"))
+        digest = _link_key(self._body().get("key"))
+        owner = self._me()
+        item = self.links.get_item(Key={"keyHash": digest}).get("Item")
+        if item is not None and (item["owner"], item["captureId"]) != (owner, capture_id):
+            raise ApiError(409, "That key is another capture's")
+        if item is None:
+            self.links.put_item(Item={"keyHash": digest, "owner": owner,
+                                      "captureId": capture_id,
+                                      "createdAt": int(time.time())})
+        return {"published": True}
 
     def delete_account(self):
         """Deletes the caller's profile: the grants of its captures, the
@@ -485,6 +549,16 @@ class Api:
             self.table.delete_item(
                 Key={"capture": item["capture"], "email": item["email"]}
             )
+        links = query_all(
+            self.links,
+            IndexName="byOwner",
+            KeyConditionExpression="#o = :o",
+            ExpressionAttributeNames={"#o": "owner"},
+            ExpressionAttributeValues={":o": owner},
+        )
+        for item in links:
+            if item["owner"] == owner:
+                self.links.delete_item(Key={"keyHash": item["keyHash"]})
         if self.accounts is not None:
             self.accounts.delete_item(Key={"identityId": owner})
         result = self.cognito.delete_identities(IdentityIdsToDelete=[owner])
@@ -493,4 +567,4 @@ class Api:
         for s in self.store.linked(profile["id"]):
             self.store.unlink(s["subject"])
         self.store.delete_profile(profile["id"])
-        return {"grantsMade": len(made), "grantsToMe": len(to_me)}
+        return {"grantsMade": len(made), "grantsToMe": len(to_me), "links": len(links)}

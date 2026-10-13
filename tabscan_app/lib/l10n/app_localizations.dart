@@ -610,7 +610,7 @@ abstract class AppLocalizations {
   /// **'An event keeps at least one page; delete the event instead.'**
   String get eventKeepOnePage;
 
-  /// Event app bar tooltip and rename dialog title
+  /// Event app bar tooltip, rename dialog title, and the file screen tool (beside Delete) that renames the file
   ///
   /// In en, this message translates to:
   /// **'Rename'**
@@ -789,6 +789,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Read only'**
   String get eventReadOnly;
+
+  /// Banner on a capture opened by its link by someone it isn't shared with
+  ///
+  /// In en, this message translates to:
+  /// **'Opened by its link · Read only'**
+  String get eventByLink;
+
+  /// Button: leave a capture opened by its link, to sign in
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get linkSignIn;
+
+  /// While a capture opened by its link loads
+  ///
+  /// In en, this message translates to:
+  /// **'Opening the capture…'**
+  String get linkOpening;
+
+  /// Button: open the capture's link again
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get linkTryAgain;
+
+  /// A capture's link that didn't open
+  ///
+  /// In en, this message translates to:
+  /// **'This capture can\'t be opened. The link may be wrong, its owner may have deleted it, or you may be offline.'**
+  String get linkUnavailable;
 
   /// Event banner: shared, editable
   ///
@@ -2055,6 +2085,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rename file'**
   String get eventRenameFile;
+
+  /// A link in a capture's list: show it on its own screen (title, address, Copy, Delete); a tap on the row opens the link in the browser
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get eventFileDetails;
 
   /// Share: the capture's link was copied to the clipboard
   ///

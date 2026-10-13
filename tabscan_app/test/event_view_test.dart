@@ -7,6 +7,9 @@ import 'package:tabscan_app/library/library.dart';
 import 'package:tabscan_app/processing/page_filter.dart';
 import 'package:tabscan_app/screens/event_screen.dart';
 import 'package:tabscan_app/screens/file_screen.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
+
+import 'fakes.dart';
 
 /// Lets animations finish; not pumpAndSettle (page spinners never settle).
 Future<void> frames(WidgetTester tester) async {
@@ -178,10 +181,29 @@ void main() {
     expect(find.byType(FileScreen), findsOneWidget);
   });
 
-  testWidgets('a link has no view or Rotate', (tester) async {
+  testWidgets('a tap on a link opens it outside the app', (tester) async {
+    final launcher = FakeLauncher();
+    UrlLauncherPlatform.instance = launcher;
     await open(tester, link: true);
     await tester.tap(find.text('Made-up lesson'));
     await frames(tester);
+    final (url, options) = launcher.launched.single;
+    expect(url, 'https://example.com/lesson');
+    // The browser (or the app for it) on Android and iOS; a new tab on the
+    // web.
+    expect(options.mode, PreferredLaunchMode.externalApplication);
+    expect(options.webOnlyWindowName, '_blank');
+    // The capture stays as it was, on its list.
+    expect(find.byType(FileScreen), findsNothing);
+    expect(find.text('Made-up lesson'), findsOneWidget);
+  });
+
+  testWidgets('a link has no view or Rotate', (tester) async {
+    await open(tester, link: true);
+    final link = event().pages.last;
+    await tester.tap(find.byKey(ValueKey('details-${link.id}')));
+    await frames(tester);
+    expect(find.byType(FileScreen), findsOneWidget);
     expect(view, findsNothing);
     expect(find.byTooltip('Rotate'), findsNothing);
     expect(find.byTooltip('Delete'), findsOneWidget);
