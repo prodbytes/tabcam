@@ -230,15 +230,6 @@ class _FileScreenState extends State<FileScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            actions: [
-              if (!event.readOnly)
-                IconButton(
-                  key: const Key('rename-file'),
-                  tooltip: l10n.eventRenameFile,
-                  icon: const Icon(Icons.edit_outlined),
-                  onPressed: () => _rename(event, page),
-                ),
-            ],
             bottom: _busy
                 ? const PreferredSize(
                     preferredSize: Size.fromHeight(4),
@@ -278,6 +269,13 @@ class _FileScreenState extends State<FileScreen> {
                       onPressed: editable ? () => _rotate(event, page) : null,
                     ),
                   ],
+                  // Rename, beside Delete.
+                  EventTool(
+                    key: const Key('rename-file'),
+                    icon: Icons.edit_outlined,
+                    label: l10n.eventRename,
+                    onPressed: editable ? () => _rename(event, page) : null,
+                  ),
                   EventTool(
                     icon: Icons.delete_outline,
                     label: l10n.eventDelete,

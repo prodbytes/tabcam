@@ -756,4 +756,9 @@ spec.
     token ([sharing](sharing.md#opening-a-link),
     [shared captures](shared-captures.md#how-it-works),
     [navigation](navigation.md#signed-out-the-welcome)).
-
+84. **Let users rename a file, just beside the delete button.** The file
+    screen's Rename moved from a pencil in its app bar to a **Rename** tool
+    along the bottom, just before Delete (off, like Delete, on a capture
+    shared read only); tapping the file's name still renames it, and the
+    list keeps its pencil and long press
+    ([event screen](event-screen.md#file-screen)).
