@@ -38,15 +38,22 @@ Routes (each also under /apple, for Apple's tokens):
                                                   (…/app/?c=<id>&k=<key>) may
                                                   read the capture (owner)
 
-And one route without a token (no authorizer), for anyone holding a link:
+And two routes without a token (no authorizer), for anyone holding a link:
   POST   /public/{captureId}/credentials          {key}: read-only credentials
                                                   for that capture's folder
+  GET    /preview/{captureId}/{key}               the link's preview page:
+                                                  the capture's title and
+                                                  what it holds, for chat
+                                                  apps' link previews (the
+                                                  site sends their crawlers
+                                                  here)
 
 Every route acts on the caller's profile alone: as an owner, on its
 Cognito identity; as a grantee, on its verified addresses.
 """
 
 import hashlib
+import html
 import json
 import os
 import re
@@ -61,6 +68,10 @@ IDENTITY = re.compile(r"^[a-z]{2}(-[a-z]+)+-\d:[0-9a-f-]{36}$")
 # A link's key: random, made by the app (only its SHA-256 is kept).
 LINK_KEY = re.compile(r"^[A-Za-z0-9_-]{32,64}$")
 PUBLIC_ROUTE = "POST /public/{captureId}/credentials"
+PREVIEW_ROUTE = "GET /preview/{captureId}/{key}"
+# The sites a preview may name (the site's CloudFront sends its own in
+# x-tabscan-site); production's by default.
+SITES = ("tabscan.nu01.com", "rc.tabscan.nu01.com")
 EMAIL = re.compile(r"^[^@\s]{1,64}@[A-Za-z0-9.-]{1,189}\.[A-Za-z]{2,}$")
 
 # The issuers whose tokens the API takes: the path prefix of their routes,
@@ -96,6 +107,14 @@ def _clients():
         "cognito": boto3.client("cognito-identity", region_name=region),
         "sts": boto3.client("sts", region_name=region),
         "s3": boto3.client("s3", region_name=region),
+        # S3 as some temporary credentials (a link's, read only).
+        "s3_as": lambda c: boto3.client(
+            "s3",
+            region_name=region,
+            aws_access_key_id=c["accessKeyId"],
+            aws_secret_access_key=c["secretAccessKey"],
+            aws_session_token=c["sessionToken"],
+        ),
         "store": prof.Store(
             dynamodb.Table(os.environ["PROFILES_TABLE"]),
             dynamodb.Table(os.environ["SUBJECTS_TABLE"]),
@@ -116,6 +135,8 @@ def handler(event, context, clients=None):
     try:
         if event.get("routeKey") == PUBLIC_ROUTE:
             return _json(200, public_credentials(event, clients))
+        if event.get("routeKey") == PREVIEW_ROUTE:
+            return preview(event, clients)
         return _json(200, Api(event, clients).route())
     except ApiError as e:
         return _json(e.status, {"message": e.message})
@@ -230,6 +251,112 @@ def public_credentials(event, clients):
         raise ApiError(404, "No such link")
     owner = item["owner"]
     return {"owner": owner, **folder_credentials(clients["sts"], owner, capture_id, "read")}
+
+
+def preview(event, clients):
+    """The page a capture's link shows chat apps (WhatsApp, iMessage,
+    Slack...), whose crawlers don't run the app: the capture's title and
+    what it holds, as Open Graph tags, for a key that opens it; else
+    TabScan's own. People who land here go on to the app."""
+    params = event.get("pathParameters") or {}
+    headers = {k.lower(): v for k, v in (event.get("headers") or {}).items()}
+    site = headers.get("x-tabscan-site")
+    site = site if site in SITES else SITES[0]
+    capture_id = params.get("captureId") or ""
+    key = params.get("key") or ""
+    valid = bool(ID.match(capture_id) and LINK_KEY.match(key))
+    link = (f"https://{site}/app/?c={capture_id}&k={key}" if valid
+            else f"https://{site}/app/")
+    title, description = "TabScan", "Scan and share guitar tabs."
+    if valid:
+        try:
+            capture = _linked_capture(clients, capture_id, key)
+        except Exception as e:  # a wrong key, a deleted capture, S3
+            print(f"preview of {capture_id}: {e}")
+            capture = None
+        if capture is not None:
+            title, description = _preview_text(capture)
+    page = PREVIEW_PAGE.format(
+        title=html.escape(title),
+        description=html.escape(description),
+        link=html.escape(link),
+        image=html.escape(f"https://{site}/app/icons/Icon-512.png"),
+        link_js=json.dumps(link),
+    )
+    return {
+        "statusCode": 200,
+        "headers": {
+            "content-type": "text/html; charset=utf-8",
+            # A rename shows in new previews within minutes.
+            "cache-control": "public, max-age=300",
+            "x-robots-tag": "noindex",
+        },
+        "body": page,
+    }
+
+
+def _linked_capture(clients, capture_id, key):
+    """The capture's event.json, read with the link's own read-only
+    credentials; None for a key that doesn't open it, or a deleted one."""
+    item = clients["links"].get_item(Key={"keyHash": _link_key(key)}).get("Item")
+    if item is None or item.get("captureId") != capture_id:
+        return None
+    owner = item["owner"]
+    creds = folder_credentials(clients["sts"], owner, capture_id, "read")
+    s3 = clients["s3_as"](creds)
+    body = s3.get_object(
+        Bucket=os.environ["BUCKET"], Key=f"{owner}/events/{capture_id}/event.json"
+    )["Body"].read()
+    capture = json.loads(body)
+    return None if capture.get("deleted") else capture
+
+
+def _preview_text(capture):
+    """A capture's preview: its title (with the artist), and what it holds:
+    "Black Sabbath · 3 pages, 1 PDF, a text tab"."""
+    title = (capture.get("title") or "").strip() or "TabScan"
+    artist = (capture.get("artist") or "").strip()
+    counts = {}
+    for page in capture.get("pages") or []:
+        kind = page.get("kind") or "image"
+        counts[kind] = counts.get(kind, 0) + 1
+    names = (("image", "page"), ("pdf", "PDF"), ("video", "video"),
+             ("audio", "recording"), ("link", "link"))
+    held = [f"{counts[k]} {name}{'' if counts[k] == 1 else 's'}"
+            for k, name in names if counts.get(k)]
+    if capture.get("hideImages"):
+        held = [h for h in held if not h.endswith(("page", "pages"))]
+    if (capture.get("tabText") or "").strip():
+        held.append("a text tab")
+    parts = [p for p in (artist, ", ".join(held)) if p]
+    description = " · ".join(parts) or "A guitar tab"
+    return (f"{title} – {artist}" if artist else title), f"{description}. Shared with TabScan."
+
+
+PREVIEW_PAGE = """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{title}</title>
+<meta name="description" content="{description}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TabScan">
+<meta property="og:title" content="{title}">
+<meta property="og:description" content="{description}">
+<meta property="og:url" content="{link}">
+<meta property="og:image" content="{image}">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="{title}">
+<meta name="twitter:description" content="{description}">
+<link rel="canonical" href="{link}">
+</head>
+<body>
+<p><a href="{link}">{title}</a></p>
+<script>location.replace({link_js});</script>
+</body>
+</html>
+"""
 
 
 class Api:

@@ -132,12 +132,17 @@ if [[ "$built" != "$VERSION" ]]; then
 fi
 
 # 2. The site
+# Link previews come from the share API, when the build has one.
+share_api_domain="${TABSCANNER_SHARE_API_URL:-}"
+share_api_domain="${share_api_domain#https://}"
+share_api_domain="${share_api_domain%%/*}"
 echo "==> deploying $SITE_STACK"
 # AUTO_EXPAND: the template's Fn::ForEach (AWS::LanguageExtensions).
 aws cloudformation deploy --stack-name "$SITE_STACK" \
   --template-file tabscan_infra/site.yaml --capabilities CAPABILITY_AUTO_EXPAND \
   --parameter-overrides "DomainName=$DOMAIN" "HostedZoneId=$TABSCANNER_HOSTED_ZONE_ID" \
     "HealthNotificationEmails=$TABSCANNER_HEALTH_EMAILS" \
+    "ShareApiDomain=$share_api_domain" \
   --no-fail-on-empty-changeset
 bucket="$(stack_output "$SITE_STACK" SiteBucketName)"
 distribution="$(stack_output "$SITE_STACK" DistributionId)"
