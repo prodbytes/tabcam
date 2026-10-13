@@ -33,8 +33,11 @@ captures are kept on every device you sign in on"), the sign-in buttons
 (Google's, and Apple's where it's offered), a sign-in error under them,
 a progress line while a saved session is restored at launch, and
 **Privacy policy**. No tabs, no Capture, no Profile: TabScan's features
-are for signed-in users. Signing in opens Home (where a capture's link,
-opened signed out, then opens); signing out goes back to the welcome.
+are for signed-in users, except a capture's link with its key: it opens
+that capture, read only, instead of the welcome, with **Sign in** to go to
+the welcome ([opening a link](sharing.md#opening-a-link)). Signing in opens
+Home (where a capture's link, opened signed out, then opens); signing out
+goes back to the welcome.
 Captures already on the device stay there, and are the user's once they
 sign in. A build without sign-in set up has no welcome: the app is as it
 was, on the device only.

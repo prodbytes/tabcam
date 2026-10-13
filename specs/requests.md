@@ -743,3 +743,17 @@ spec.
     the sign-in text no longer says capturing works signed out
     ([navigation](navigation.md#signed-out-the-welcome), [library](library.md),
     [cloud sync](cloud-sync.md#signed-out)).
+
+## 2026-10-13
+
+82. **Keep #75 (the welcome), but let anonymous users open a shared
+    capture in read only mode.** A capture's link now carries a key
+    (`…/app/?c=<id>&k=<key>`), made the first time its owner copies it and
+    recorded by the share API; anyone holding the link opens the capture,
+    read only, signed out (instead of the welcome, with **Sign in**) or
+    signed in without it being shared with them. The share API swaps the
+    key for read-only credentials to that capture's folder, without a
+    token ([sharing](sharing.md#opening-a-link),
+    [shared captures](shared-captures.md#how-it-works),
+    [navigation](navigation.md#signed-out-the-welcome)).
+

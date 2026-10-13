@@ -84,6 +84,10 @@ echo "==> TABSCANNER_SHARE_API_URL=$url"
 status="$(curl -s -o /dev/null -w '%{http_code}' "$url/shared")"
 [[ "$status" == 401 ]] || { echo "error: $url/shared answered $status, not 401" >&2; exit 1; }
 echo "    $url/shared refuses requests without a token (401), as it should"
+# The links route takes no token: without a key, the function says 400.
+status="$(curl -s -o /dev/null -w '%{http_code}' -X POST -d '{}' "$url/public/abc/credentials")"
+[[ "$status" == 400 ]] || { echo "error: $url/public/abc/credentials answered $status, not 400" >&2; exit 1; }
+echo "    $url/public/… answers without a token, and wants a link key (400)"
 if [[ -n "$apple_client" ]]; then
   status="$(curl -s -o /dev/null -w '%{http_code}' "$url/apple/shared")"
   [[ "$status" == 401 ]] || { echo "error: $url/apple/shared answered $status, not 401" >&2; exit 1; }
