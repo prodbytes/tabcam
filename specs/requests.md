@@ -719,3 +719,6 @@ spec.
     copied"; the share sheet (Link, PDF, Text, Files) and the exports are
     gone. Share with people, which was in that sheet, has its own button
     in the capture's app bar ([sharing](sharing.md)).
+78. **Present the login on the home screen.** Signed out, Home has a Sign
+    in card above the captures, with the sign-in buttons; it goes once
+    signed in ([library](library.md)).
