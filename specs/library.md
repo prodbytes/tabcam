@@ -32,6 +32,16 @@ the [welcome](navigation.md#signed-out-the-welcome) alone.
   scrolling back doesn't render them again; a failed render is tried
   again the next time the card is built (its file may not have synced
   down yet).
+- **Search**: a field above the cards, "Search captures" (a magnifier;
+  an ✕, "Clear search", once something is typed), keeps only the
+  captures that match as the user types ([lib/library/search.dart](../tabscan_app/lib/library/search.dart)):
+  every word typed must be somewhere in the title, the artist, the text
+  tab, the files' names, the links (title and address) or who shared it,
+  case and accents aside ("cancion" finds "Canción"). The sections stay,
+  each only with its matches (a section with none is left out). Nothing
+  matching: a search icon, "No captures match "<search>"", and **Clear
+  search**. A new capture clears the search, so it shows. Not shown on an
+  empty library.
 - **Sections**: once something is shared with the user, Home has two
   headed sections, **My captures** (the user's own, or "Nothing of your
   own yet: go to Capture to add some." when there are none) and below it

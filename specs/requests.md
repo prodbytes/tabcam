@@ -816,3 +816,8 @@ spec.
     Roboto Mono, shipped with the app, a little bigger (15 px in the Text
     view, from 13; 17 px in the review, from 15)
     ([tab recognition](tab-recognition.md)).
+91. **Add search to the home screen.** Home has a search field above the
+    cards that keeps the captures matching every word typed, in their
+    title, artist, text tab, file names, links or who shared them, case
+    and accents aside; with no match it says so, with Clear search. In
+    English, Spanish and Portuguese ([library](library.md)).

@@ -917,6 +917,23 @@
   "@homeLibraryShared": {
     "description": "Home: the section of events shared with the user"
   },
+  "homeSearch": "Search captures",
+  "@homeSearch": {
+    "description": "Home: the search field's hint"
+  },
+  "homeSearchClear": "Clear search",
+  "@homeSearchClear": {
+    "description": "Home: the button that empties the search"
+  },
+  "homeSearchNone": "No captures match “{query}”",
+  "@homeSearchNone": {
+    "description": "Home: no event matches the search",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "homeLibraryEmpty": "No tabs yet",
   "@homeLibraryEmpty": {
     "description": "Home with no events: the title"

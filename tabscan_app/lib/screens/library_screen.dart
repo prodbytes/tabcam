@@ -4,6 +4,7 @@ import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
+import '../library/search.dart';
 import '../l10n/language.dart';
 import 'card_preview.dart';
 import 'clone.dart';
@@ -15,7 +16,8 @@ import 'share_sheet.dart';
 /// The Home tab: every event as a card, newest first; once something is
 /// shared with the user, in two sections, My captures and Shared with me. A new event
 /// ([fresh]) is scrolled to and outlined for a moment. Tapping a card opens
-/// its [EventScreen].
+/// its [EventScreen]. A search field above the cards keeps only the events
+/// that match ([matchesSearch]).
 class LibraryView extends StatefulWidget {
   const LibraryView({
     super.key,
@@ -38,6 +40,10 @@ class LibraryView extends StatefulWidget {
 
 class _LibraryViewState extends State<LibraryView> {
   final _grid = ScrollController();
+  final _search = TextEditingController();
+
+  /// What the search field holds: the events shown match it.
+  String get _query => _search.text.trim();
 
   Library get library => widget.library;
 
@@ -45,6 +51,8 @@ class _LibraryViewState extends State<LibraryView> {
   void didUpdateWidget(LibraryView old) {
     super.didUpdateWidget(old);
     if (widget.fresh != null && widget.fresh != old.fresh) {
+      // A new event shows, whatever was searched.
+      _search.clear();
       // New events are first: after this frame, the list scrolls up.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_grid.hasClients) {
@@ -61,38 +69,76 @@ class _LibraryViewState extends State<LibraryView> {
   @override
   void dispose() {
     _grid.dispose();
+    _search.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: library,
+    listenable: Listenable.merge([library, _search]),
     builder: (context, _) {
       if (!library.loaded) {
         return const Center(child: CircularProgressIndicator());
       }
       if (library.events.isEmpty) return const _Empty();
-      final mine = library.events.where((e) => !e.isShared).toList();
-      final shared = library.events.where((e) => e.isShared).toList();
-      // Headed sections only once something is shared with the user.
-      final plain = shared.isEmpty;
+      final l10n = context.l10n;
+      final query = _query;
+      final searching = query.isNotEmpty;
+      final found = [
+        for (final e in library.events)
+          if (matchesSearch(e, query)) e,
+      ];
+      final mine = found.where((e) => !e.isShared).toList();
+      final shared = found.where((e) => e.isShared).toList();
+      // Headed sections only once something is shared with the user;
+      // searching, only those with a match.
+      final plain = library.events.every((e) => !e.isShared);
       return CustomScrollView(
         controller: _grid,
         slivers: [
-          if (plain)
+          SliverToBoxAdapter(child: _searchField(l10n)),
+          if (found.isEmpty)
+            _NoMatch(query, onClear: _search.clear)
+          else if (plain)
             _section(mine)
           else ...[
-            _Heading(context.l10n.homeLibraryMine),
-            if (mine.isEmpty)
-              _None(context.l10n.homeLibraryMineEmpty)
-            else
-              _section(mine),
-            _Heading(context.l10n.homeLibraryShared),
-            _section(shared),
+            if (mine.isNotEmpty || !searching) ...[
+              _Heading(l10n.homeLibraryMine),
+              if (mine.isEmpty)
+                _None(l10n.homeLibraryMineEmpty)
+              else
+                _section(mine),
+            ],
+            if (shared.isNotEmpty) ...[
+              _Heading(l10n.homeLibraryShared),
+              _section(shared),
+            ],
           ],
         ],
       );
     },
+  );
+
+  Widget _searchField(AppLocalizations l10n) => Padding(
+    padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+    child: TextField(
+      key: const Key('home-search'),
+      controller: _search,
+      textInputAction: TextInputAction.search,
+      decoration: InputDecoration(
+        hintText: l10n.homeSearch,
+        prefixIcon: const Icon(Icons.search),
+        suffixIcon: _search.text.isEmpty
+            ? null
+            : IconButton(
+                tooltip: l10n.homeSearchClear,
+                icon: const Icon(Icons.close),
+                onPressed: _search.clear,
+              ),
+        border: const OutlineInputBorder(),
+        isDense: true,
+      ),
+    ),
   );
 
   Widget _section(List<CaptureEvent> events) => SliverPadding(
@@ -116,6 +162,33 @@ class _LibraryViewState extends State<LibraryView> {
           sync: widget.sync,
         );
       },
+    ),
+  );
+}
+
+/// No event matches the search: says so, with Clear.
+class _NoMatch extends StatelessWidget {
+  const _NoMatch(this.query, {required this.onClear});
+
+  final String query;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) => SliverPadding(
+    padding: const EdgeInsets.all(32),
+    sliver: SliverToBoxAdapter(
+      child: Column(
+        children: [
+          const Icon(Icons.search_off, size: 48),
+          const SizedBox(height: 12),
+          Text(context.l10n.homeSearchNone(query), textAlign: TextAlign.center),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: onClear,
+            child: Text(context.l10n.homeSearchClear),
+          ),
+        ],
+      ),
     ),
   );
 }

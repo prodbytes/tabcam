@@ -725,6 +725,17 @@ class AppLocalizationsPt extends AppLocalizations {
   String get homeLibraryShared => 'Compartilhado comigo';
 
   @override
+  String get homeSearch => 'Buscar capturas';
+
+  @override
+  String get homeSearchClear => 'Limpar busca';
+
+  @override
+  String homeSearchNone(String query) {
+    return 'Nenhuma captura corresponde a “$query”';
+  }
+
+  @override
   String get homeLibraryEmpty => 'Ainda não há tablaturas';
 
   @override

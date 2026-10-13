@@ -727,6 +727,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get homeLibraryShared => 'Compartido conmigo';
 
   @override
+  String get homeSearch => 'Buscar capturas';
+
+  @override
+  String get homeSearchClear => 'Borrar búsqueda';
+
+  @override
+  String homeSearchNone(String query) {
+    return 'Ninguna captura coincide con “$query”';
+  }
+
+  @override
   String get homeLibraryEmpty => 'Aún no hay tablaturas';
 
   @override
