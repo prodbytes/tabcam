@@ -722,3 +722,10 @@ spec.
 78. **Present the login on the home screen.** Signed out, Home has a Sign
     in card above the captures, with the sign-in buttons; it goes once
     signed in ([library](library.md)).
+80. **Verify that the Share button immediately copies the share link to the
+    clipboard: the URL only, no options or extra text.** It did, but after
+    an await (the sign-in check, even signed in) and the start of a sync:
+    now, signed in, the copy is the first thing on the tap, the sync after.
+    Tests check the clipboard holds exactly `https://tabscan.nu01.com/app/?c=<id>`
+    right after the tap, with no sheet, from the capture and from a Home
+    card ([sharing](sharing.md)).

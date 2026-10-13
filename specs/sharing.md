@@ -2,9 +2,11 @@
 
 **Share** (the event screen's app bar, a link icon, or a library card's
 menu) copies the capture's link to the clipboard, nothing else: no
-choice of format, no text around it. "Link copied" says it's done.
-Signed out, it asks to sign in first
-([signed out](cloud-sync.md#signed-out)).
+choice of format, no text around it, the URL alone. Signed in (or in a
+build without sign-in) it copies on the tap itself, before anything else
+(browsers let a page write the clipboard only right after a tap; the sync
+pass comes after); "Link copied" says it's done. Signed out, it asks to
+sign in first ([signed out](cloud-sync.md#signed-out)), then copies.
 
 - The link is `https://tabscan.nu01.com/app/?c=<capture id>`
   ([`CaptureLink`](../tabscan_app/lib/export/capture_link.dart)); it

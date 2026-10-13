@@ -11,7 +11,6 @@ import 'rename_dialog.dart';
 import 'event_screen.dart';
 import 'place.dart';
 import 'share_sheet.dart';
-import 'sign_in_gate.dart';
 import 'video_page.dart';
 
 /// The Home tab: every event as a card, newest first; once something is
@@ -253,10 +252,7 @@ class _EventCard extends StatelessWidget {
       case _CardAction.clone:
         await cloneEvent(context, library, event);
       case _CardAction.share:
-        if (await requireSignIn(context, sync?.auth, Gated.share) &&
-            context.mounted) {
-          await copyCaptureLink(context, event, sync: sync);
-        }
+        await shareCapture(context, event, sync: sync);
       case _CardAction.delete when event.isShared:
         final ok = await showDialog<bool>(
           context: context,
