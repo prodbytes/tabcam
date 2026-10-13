@@ -743,3 +743,14 @@ spec.
     the sign-in text no longer says capturing works signed out
     ([navigation](navigation.md#signed-out-the-welcome), [library](library.md),
     [cloud sync](cloud-sync.md#signed-out)).
+
+## 2026-10-13
+
+83. **Generate a preview of the capture to show on the list instead of a
+    blank.** A Home card without an image thumbnail showed only an icon.
+    Now it shows a preview: a PDF's first page, rendered (and kept in
+    memory); else the text tab's first lines in miniature, monospaced;
+    else a video's play badge; else a link's title and host; the icon only
+    when there's nothing else (a recording alone). A small badge in the
+    corner says what else the capture holds. Hidden images are never shown
+    ([library](library.md), [hidden images](hidden-images.md)).
