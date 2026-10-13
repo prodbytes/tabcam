@@ -327,5 +327,6 @@
   "homeAddDocumentDetail": "Arquivos PDF",
   "eventAddDocument": "Documento",
   "eventAddDocumentDetail": "Arquivos PDF",
-  "eventRenameFile": "Renomear arquivo"
+  "eventRenameFile": "Renomear arquivo",
+  "eventLinkCopied": "Link copiado"
 }

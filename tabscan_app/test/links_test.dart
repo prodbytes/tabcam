@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tabscan_app/export/exporter.dart';
 import 'package:tabscan_app/library/capture_event.dart';
 import 'package:tabscan_app/library/event_store_io.dart';
 import 'package:tabscan_app/library/library.dart';
@@ -68,33 +67,6 @@ void main() {
     // Deleting a link page has no file to delete, and works.
     await reopened.deletePage(reopened.events.single, link);
     expect(reopened.events.single.pages, isEmpty);
-  });
-
-  test('Text shares the text tab, then the links', () {
-    final event = CaptureEvent(
-      id: 'a',
-      title: 'Riff',
-      created: DateTime(2026, 10, 10),
-      tabText: 'e|--0--|\n',
-      pages: [
-        EventPage.link(id: 'b', url: Uri.parse('https://example.com/a')),
-        EventPage.link(
-          id: 'c',
-          url: Uri.parse('https://example.com/b'),
-          title: 'Lesson',
-        ),
-      ],
-    );
-    expect(
-      Exporter.shareText(event),
-      'e|--0--|\n\nhttps://example.com/a\nLesson: https://example.com/b',
-    );
-    expect(
-      Exporter.shareText(
-        CaptureEvent(id: 'd', title: 'X', created: DateTime(2026)),
-      ),
-      isNull,
-    );
   });
 
   testWidgets('the link dialog checks the address', (tester) async {

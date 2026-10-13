@@ -714,3 +714,8 @@ spec.
     to the default. Captures renamed as before. Not on captures shared
     read only. In English, Spanish and Portuguese
     ([event screen](event-screen.md)).
+77. **When sharing, just copy the link to the capture, no options or extra
+    text.** Share copies the capture's link to the clipboard and says "Link
+    copied"; the share sheet (Link, PDF, Text, Files) and the exports are
+    gone. Share with people, which was in that sheet, has its own button
+    in the capture's app bar ([sharing](sharing.md)).

@@ -1,10 +1,6 @@
-import 'dart:typed_data';
-
-import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
-import 'package:tabscan_app/export/exporter.dart';
 import 'package:tabscan_app/library/capture_event.dart';
 import 'package:tabscan_app/library/event_store_memory.dart';
 import 'package:tabscan_app/library/library.dart';
@@ -61,15 +57,6 @@ void main() {
     );
     final copy = await library.clone(event);
     expect(copy.hideImages, isTrue);
-  });
-
-  test('Files leaves hidden images out of the zip', () async {
-    final event = _event(hideImages: true);
-    final bytes = await Exporter.zip(event, [
-      Uint8List.fromList([1, 2, 3]),
-    ]);
-    final names = ZipDecoder().decodeBytes(bytes).map((f) => f.name);
-    expect(names, ['Riff 1.mp4', 'tab.txt', 'links.txt']);
   });
 
   testWidgets('the owner hides the images: the text tab, then the rest', (

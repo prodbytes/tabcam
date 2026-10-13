@@ -2073,6 +2073,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rename file'**
   String get eventRenameFile;
+
+  /// Share: the capture's link was copied to the clipboard
+  ///
+  /// In en, this message translates to:
+  /// **'Link copied'**
+  String get eventLinkCopied;
 }
 
 class _AppLocalizationsDelegate

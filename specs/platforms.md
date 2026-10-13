@@ -10,7 +10,7 @@
 | Play YouTube links (`youtube_player_iframe`) | In a web view (`webview_flutter`), identified to YouTube as the site's origin | In a web view (WKWebView), the same | In an iframe; full screen too |
 | Reading tabs (by itself) | ✅ ML Kit on the device | ✅ ML Kit on the device | Premium only (else the Text view says it needs the app) |
 | Library | Files in the app's documents | Files in the app's documents | Memory, until the tab closes |
-| Share | System share sheet | System share sheet | Web Share, or downloads |
+| Share | Copies the link | Copies the link | Copies the link |
 | Capture links ([opening](sharing.md#opening-a-link)) | App Links: the site's links open in the app | In Safari (the web app) | The web app |
 | Sign-in ([cloud sync](cloud-sync.md)) | Credential Manager | Google Sign-In SDK; Sign in with Apple too, with `TABSCANNER_APPLE_SIGN_IN=1` | Google's button (FedCM); the session kept in `localStorage` |
 | TabScan Premium ([cloud OCR](cloud-ocr.md#in-the-app)) | Works if bought on the web; no purchase links | Works if bought on the web; no purchase links | Upgrade offer: Upgrade, Redeem a voucher, the event screen hint |

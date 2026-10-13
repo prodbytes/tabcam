@@ -1273,4 +1273,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get eventRenameFile => 'Cambiar nombre del archivo';
+
+  @override
+  String get eventLinkCopied => 'Enlace copiado';
 }
