@@ -429,6 +429,77 @@ class ShareApiTest(unittest.TestCase):
         response = index.handler(event, None, self.clients)
         return response["statusCode"], json.loads(response["body"])
 
+    # --- link previews: chat apps' crawlers see the capture's title --------
+
+    def preview(self, capture="abc", key=None, site=None, capture_json=None):
+        """GET /preview/{captureId}/{key}, with [capture_json] as the
+        capture's event.json; the page, and the S3 credentials it read with."""
+        used = []
+
+        class Objects:
+            def get_object(self, Bucket, Key):
+                used.append(Key)
+                import io
+                return {"Body": io.BytesIO(json.dumps(capture_json or {}).encode())}
+
+        def s3_as(creds):
+            used.append(creds["accessKeyId"])
+            return Objects()
+
+        self.clients["s3_as"] = s3_as
+        event = {
+            "routeKey": index.PREVIEW_ROUTE,
+            "pathParameters": {"captureId": capture, "key": key or self.KEY},
+            "headers": {"X-TabScan-Site": site} if site else {},
+        }
+        response = index.handler(event, None, self.clients)
+        self.assertEqual(response["statusCode"], 200)
+        self.assertIn("text/html", response["headers"]["content-type"])
+        return response["body"], used
+
+    RIFF = {
+        "id": "abc", "title": "Morning <riff>", "artist": "Me",
+        "pages": [{"id": "p1", "kind": "image"}, {"id": "p2", "kind": "image"},
+                  {"id": "p3", "kind": "pdf"}, {"id": "p4", "kind": "link"}],
+        "tabText": "e|--3--5--|",
+    }
+
+    def test_a_links_preview_has_the_captures_title_and_contents(self):
+        self.publish()
+        page, used = self.preview(capture_json=self.RIFF, site="rc.tabscan.nu01.com")
+        # Escaped, with the artist; what it holds.
+        self.assertIn('<meta property="og:title" content="Morning &lt;riff&gt; – Me">', page)
+        self.assertIn("<title>Morning &lt;riff&gt; – Me</title>", page)
+        self.assertIn('content="Me · 2 pages, 1 PDF, 1 link, a text tab. Shared with TabScan."', page)
+        link = f"https://rc.tabscan.nu01.com/app/?c=abc&amp;k={self.KEY}"
+        self.assertIn(f'<meta property="og:url" content="{link}">', page)
+        # Read with the link's own read-only credentials, its folder alone.
+        self.assertEqual(used, ["ASIA", f"{OWNER}/events/abc/event.json"])
+        policy = json.loads(self.clients["sts"].calls[-1]["Policy"])
+        self.assertEqual(policy["Statement"][0]["Action"], ["s3:GetObject"])
+
+    def test_a_wrong_key_previews_as_tabscan_and_reads_nothing(self):
+        self.publish()
+        page, used = self.preview(key="x" * 32, capture_json=self.RIFF)
+        self.assertIn('<meta property="og:title" content="TabScan">', page)
+        self.assertNotIn("riff", page)
+        self.assertEqual(used, [])
+        # Another site than ours: production's is named.
+        page, _ = self.preview(key="x" * 32, site="evil.example.com")
+        self.assertIn("https://tabscan.nu01.com/app/", page)
+        self.assertNotIn("evil", page)
+
+    def test_a_deleted_capture_previews_as_tabscan(self):
+        self.publish()
+        page, _ = self.preview(capture_json={"id": "abc", "deleted": 1})
+        self.assertIn('<meta property="og:title" content="TabScan">', page)
+
+    def test_a_malformed_link_previews_as_tabscan(self):
+        page, used = self.preview(capture="<script>", key="k")
+        self.assertIn('<meta property="og:title" content="TabScan">', page)
+        self.assertNotIn("<script>", page.split("<script>location")[0])
+        self.assertEqual(used, [])
+
     def test_a_published_link_gives_anyone_read_only_credentials(self):
         self.assertEqual(self.publish()[0], 200)
         self.assertEqual(self.publish()[0], 200)  # again: the same

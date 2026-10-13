@@ -827,3 +827,10 @@ spec.
     "Drop files to add" shown while they're over it. On the web, desktops
     and Android (`desktop_drop` 0.8.4), not iOS
     ([navigation](navigation.md#capture), [event screen](event-screen.md)).
+93. **When a link is shared, let it have the title and description of the
+    capture instead of "TabScan" and the app's description.** Chat apps'
+    crawlers asking for a capture's link are sent to its preview page,
+    from the share API: the capture's title (and artist) and what it
+    holds, as Open Graph tags, read with the link's own read-only
+    credentials; a wrong key previews as TabScan. People still get the
+    app ([sharing](sharing.md#link-previews)).

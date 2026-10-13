@@ -400,10 +400,20 @@ Resources:
       AuthorizationType: NONE
       Target: !Sub integrations/${Integration}
 
+  # A link's preview page, for chat apps' crawlers (the site sends them
+  # here): no authorizer; the function checks the key in the path.
+  RoutePreview:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Api
+      RouteKey: GET /preview/{captureId}/{key}
+      AuthorizationType: NONE
+      Target: !Sub integrations/${Integration}
+
   Stage:
     Type: AWS::ApiGatewayV2::Stage
     # Its route settings name these routes: they must exist first.
-    DependsOn: [RouteLink, RouteLinkCode, RoutePublic]
+    DependsOn: [RouteLink, RouteLinkCode, RoutePublic, RoutePreview]
     Properties:
       ApiId: !Ref Api
       StageName: $default
@@ -421,6 +431,10 @@ Resources:
           ThrottlingRateLimit: 1
         # Guessing link keys (128 bits: hopeless anyway), and no token.
         POST /public/{captureId}/credentials:
+          ThrottlingBurstLimit: 10
+          ThrottlingRateLimit: 5
+        # Crawlers, behind CloudFront's cache (5 minutes a link).
+        GET /preview/{captureId}/{key}:
           ThrottlingBurstLimit: 10
           ThrottlingRateLimit: 5
 

@@ -23,6 +23,9 @@ which runs `scripts/deploy.sh` for that tag:
 2. deploys the `tabscan-web` stack: certificate, bucket, CloudFront, DNS
    records, and a Route 53 health check of `/app/version.json` (it must
    name `tabscan_app`) whose alarm emails `TABSCANNER_HEALTH_EMAILS`;
+   with `TABSCANNER_SHARE_API_URL` set, its domain is the stack's
+   `ShareApiDomain`, which turns on [link previews](sharing.md#link-previews)
+   (the share API as a second origin, for `/preview/*`);
 3. uploads `index.html`, the [privacy policy](privacy.md) (as the
    object `privacy`, so it's served at `/privacy`), the web build (`Cache-Control: no-cache`,
    Flutter's files aren't content-hashed) and
