@@ -1270,4 +1270,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get eventAddDocumentDetail => 'Archivos PDF';
+
+  @override
+  String get eventLinkCopied => 'Enlace copiado';
 }

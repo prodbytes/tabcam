@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:tabscan_app/cloud/cloud_sync.dart';
+import 'package:tabscan_app/export/capture_link.dart';
 import 'package:tabscan_app/library/event_store_memory.dart';
 import 'package:tabscan_app/library/library.dart';
 import 'package:tabscan_app/screens/event_screen.dart';
@@ -53,33 +55,44 @@ void main() {
     await frames(tester);
   }
 
-  testWidgets('one Share: the sheet offers Share with people', (tester) async {
-    await open(tester);
-    expect(find.byTooltip('Share'), findsOneWidget);
-    expect(find.byTooltip('Share with people'), findsNothing);
+  /// What Share copied: the clipboard's text, as the platform got it.
+  String? copied;
+  setUp(() {
+    copied = null;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied = (call.arguments as Map)['text'] as String?;
+          }
+          return null;
+        });
+  });
 
+  testWidgets('Share copies the capture\'s link, nothing else', (tester) async {
+    await open(tester);
     await tester.tap(find.byTooltip('Share'));
     await frames(tester);
-    expect(find.text('Link'), findsOneWidget);
-    expect(find.text('Share with people'), findsOneWidget);
-    expect(find.text('PDF'), findsOneWidget);
-    // Right after the link, the default.
-    expect(
-      tester.getTopLeft(find.text('Link')).dy,
-      lessThan(tester.getTopLeft(find.text('Share with people')).dy),
-    );
+    expect(copied, CaptureLink.of(library.byId(id)!).toString());
+    expect(copied, endsWith('/app/?c=$id'));
+    expect(find.text('Link copied'), findsOneWidget);
+    // No sheet, no options.
+    expect(find.text('PDF'), findsNothing);
+    expect(find.byType(BottomSheet), findsNothing);
+  });
 
-    await tester.tap(find.text('Share with people'));
+  testWidgets('Share with people has its own button', (tester) async {
+    await open(tester);
+    await tester.tap(find.byTooltip('Share with people'));
     await frames(tester);
     expect(find.byType(PeopleSheet), findsOneWidget);
-    expect(find.text('PDF'), findsNothing);
+    expect(copied, isNull);
   });
 
   testWidgets('a build without sharing: no Share with people', (tester) async {
     await open(tester, sharing: false);
+    expect(find.byTooltip('Share with people'), findsNothing);
     await tester.tap(find.byTooltip('Share'));
     await frames(tester);
-    expect(find.text('Link'), findsOneWidget);
-    expect(find.text('Share with people'), findsNothing);
+    expect(copied, endsWith('/app/?c=$id'));
   });
 }

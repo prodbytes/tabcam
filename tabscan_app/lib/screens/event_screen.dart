@@ -18,6 +18,7 @@ import 'premium_card.dart';
 import 'rename_dialog.dart';
 import 'reorder_sheet.dart';
 import 'share_sheet.dart';
+import 'people_sheet.dart';
 import 'place.dart';
 import 'sign_in_gate.dart';
 import 'tab_text_view.dart';
@@ -145,11 +146,20 @@ class _EventScreenState extends State<EventScreen> {
   Future<void> _rename(CaptureEvent event) =>
       renameEvent(context, _library, event);
 
-  /// Opens the share sheet, once the user is signed in.
+  /// Share: copies the capture's link, once the user is signed in.
   Future<void> _share(CaptureEvent event) async {
     if (await requireSignIn(context, widget.sync?.auth, Gated.share) &&
         mounted) {
-      await showShareSheet(context, _library, event, sync: widget.sync);
+      await copyCaptureLink(context, event, sync: widget.sync);
+    }
+  }
+
+  /// Share with people: who it's shared with, by email.
+  Future<void> _people(CaptureEvent event) async {
+    final sync = widget.sync;
+    if (sync == null) return;
+    if (await requireSignIn(context, sync.auth, Gated.share) && mounted) {
+      await showPeopleSheet(context, sync, event);
     }
   }
 
@@ -466,9 +476,16 @@ class _EventScreenState extends State<EventScreen> {
                 icon: const Icon(Icons.copy_all_outlined),
                 onPressed: _busy ? null : () => _clone(event),
               ),
+              if (widget.sync case final sync?
+                  when sync.canShare && !event.isShared)
+                IconButton(
+                  tooltip: l10n.eventShareWithPeople,
+                  icon: const Icon(Icons.group_add_outlined),
+                  onPressed: _busy ? null : () => _people(event),
+                ),
               IconButton(
                 tooltip: l10n.eventShare,
-                icon: const Icon(Icons.ios_share),
+                icon: const Icon(Icons.link),
                 onPressed: _busy ? null : () => _share(event),
               ),
             ],

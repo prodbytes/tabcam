@@ -326,5 +326,6 @@
   "homeAddDocument": "Documento",
   "homeAddDocumentDetail": "Arquivos PDF",
   "eventAddDocument": "Documento",
-  "eventAddDocumentDetail": "Arquivos PDF"
+  "eventAddDocumentDetail": "Arquivos PDF",
+  "eventLinkCopied": "Link copiado"
 }

@@ -48,9 +48,8 @@ the cloud as they sync.
 - [Auto-correct](autocorrect.md): Fix, for Premium: Claude finds the
   song's tab online (tab sites first) and proposes corrections, which the
   user accepts or rejects note by note.
-- [Sharing](sharing.md): a link to the capture (the default), PDF,
-  text (the text tab and links), or a zip of everything, through the
-  system share sheet; opening a capture's link.
+- [Sharing](sharing.md): Share copies the capture's link, nothing
+  else; opening a capture's link.
 - [Sign-in and cloud sync](cloud-sync.md): optional Google sign-in (and
   Sign in with Apple on iOS) from the Profile tab; signed-in users' events sync both ways with
   their own folder in S3 (Cognito identity pool credentials, no server),

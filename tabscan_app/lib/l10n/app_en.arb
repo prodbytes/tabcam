@@ -1671,5 +1671,9 @@
   "eventAddDocumentDetail": "PDF files",
   "@eventAddDocumentDetail": {
     "description": "Event, Add: what Document adds"
+  },
+  "eventLinkCopied": "Link copied",
+  "@eventLinkCopied": {
+    "description": "Share: the capture's link was copied to the clipboard"
   }
 }

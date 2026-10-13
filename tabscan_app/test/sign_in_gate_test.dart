@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 import 'package:tabscan_app/recognition/auto_reader.dart';
 import 'package:tabscan_app/screens/event_screen.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tabscan_app/cloud/cloud_sync.dart';
 import 'package:tabscan_app/library/event_store_memory.dart';
@@ -11,6 +12,15 @@ import 'package:tabscan_app/main.dart';
 import 'fakes.dart';
 
 void main() {
+  // Share copies a link: a clipboard to copy it to.
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async => null,
+        );
+  });
+
   Future<Library> libraryWithOne() async {
     final library = Library(PlatformEventStore());
     await library.load();
@@ -41,13 +51,13 @@ void main() {
     await tester.tap(find.text('Share'));
     await tester.pumpAndSettle();
     expect(find.text('Sign in to share'), findsOneWidget);
-    expect(find.text('PDF'), findsNothing);
+    expect(find.text('Link copied'), findsNothing);
 
-    // Signing in closes the sheet and goes on to sharing.
+    // Signing in closes the sheet and goes on to sharing: the link copied.
     await tester.runAsync(() async => auth.signInAs('ana'));
     await tester.pumpAndSettle();
     expect(find.text('Sign in to share'), findsNothing);
-    expect(find.text('PDF'), findsOneWidget);
+    expect(find.text('Link copied'), findsOneWidget);
   });
 
   testWidgets('signed out, closing the sheet shares nothing', (tester) async {
@@ -71,7 +81,7 @@ void main() {
     await tester.tapAt(const Offset(10, 10)); // outside the sheet
     await tester.pumpAndSettle();
     expect(find.text('Sign in to share'), findsNothing);
-    expect(find.text('PDF'), findsNothing);
+    expect(find.text('Link copied'), findsNothing);
   });
 
   testWidgets('a build without sign-in shares at once', (tester) async {
@@ -81,7 +91,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Share'));
     await tester.pumpAndSettle();
-    expect(find.text('PDF'), findsOneWidget);
+    expect(find.text('Link copied'), findsOneWidget);
   });
 
   testWidgets('signed out, a capture waits to be read; Sign in reads it', (

@@ -694,3 +694,8 @@ spec.
     Printed tabs on drawn lines read exactly; the user's handwritten page
     reads about two notes in three
     ([cloud OCR](cloud-ocr.md#transcription)).
+71. **When sharing, just copy the link to the capture, no options or extra
+    text.** Share copies the capture's link to the clipboard and says "Link
+    copied"; the share sheet (Link, PDF, Text, Files) and the exports are
+    gone. Share with people, which was in that sheet, has its own button
+    in the capture's app bar ([sharing](sharing.md)).

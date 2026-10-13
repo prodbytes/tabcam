@@ -2067,6 +2067,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'PDF files'**
   String get eventAddDocumentDetail;
+
+  /// Share: the capture's link was copied to the clipboard
+  ///
+  /// In en, this message translates to:
+  /// **'Link copied'**
+  String get eventLinkCopied;
 }
 
 class _AppLocalizationsDelegate

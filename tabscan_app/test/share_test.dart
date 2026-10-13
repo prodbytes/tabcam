@@ -1,10 +1,5 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
-import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tabscan_app/export/capture_link.dart';
-import 'package:tabscan_app/export/exporter.dart';
 import 'package:tabscan_app/export/incoming_links.dart';
 import 'package:flutter/widgets.dart';
 import 'package:tabscan_app/library/capture_event.dart';
@@ -72,34 +67,6 @@ void main() {
       ),
       isFalse,
     );
-  });
-
-  test('Files is a zip of every file, the text tab and the links', () async {
-    final bytes = await Exporter.zip(event, [
-      Uint8List.fromList([1]),
-      Uint8List.fromList([2, 2]),
-      Uint8List.fromList([3, 3, 3]),
-    ]);
-    final archive = ZipDecoder().decodeBytes(bytes);
-    String text(String name) =>
-        utf8.decode(archive.findFile(name)!.readBytes()!);
-    expect(
-      [for (final f in archive.files) f.name],
-      [
-        'Made-up riff - Nobody 1.png',
-        'Made-up riff - Nobody 2.jpg',
-        'Made-up riff - Nobody 3.mp4',
-        'tab.txt',
-        'links.txt',
-      ],
-    );
-    expect(archive.findFile('Made-up riff - Nobody 3.mp4')!.readBytes(), [
-      3,
-      3,
-      3,
-    ]);
-    expect(text('tab.txt'), 'e|--0--3--|\nB|--1-----|\n');
-    expect(text('links.txt'), 'https://example.com/lesson\n');
   });
 
   test('shares and the owner survive the cloud copy', () {

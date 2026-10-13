@@ -18,10 +18,10 @@ it opens on the Text view; otherwise on the list.
   [read again](tab-recognition.md#reading-by-itself) in their new order),
   and the list follows it. With the images [hidden](hidden-images.md),
   only the other files are listed, and the images keep their places.
-  **Share**, the only share button,
-  opens the [share sheet](sharing.md), which also has **Share with
-  people** ([shared captures](shared-captures.md)) for the user's own
-  events, signed in, in a build with sharing. There's no Hide images
+  **Share** (a link icon) copies the capture's link ([sharing](sharing.md));
+  **Share with people** (people with a plus,
+  [shared captures](shared-captures.md)) is beside it for the user's own
+  events, in a build with sharing. There's no Hide images
   button (captures already [hidden](hidden-images.md) stay hidden).
 - **Shared with the user**: a line under the app bar, "Shared by <email>
   · Can edit" or "· Read only". Read only, Rename, Reorder, Add, Rotate, Delete
