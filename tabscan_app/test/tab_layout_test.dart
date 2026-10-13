@@ -312,4 +312,41 @@ void main() {
       expect(fretText('123'), isNull);
     });
   });
+
+  group('reformatTab (Fix)', () {
+    test('lines a staff\'s strings up, bar by bar; text stays', () {
+      const messy = [
+        'Verse',
+        '   Am       G',
+        'e|-0--|-3----|',
+        'B|-1----|-0-|',
+        'G|—2--|-0|',
+        '|-2--|-0---|',
+        'A|-0|-2--|',
+        'E|---|-3--',
+        '',
+        'la la la',
+      ];
+      final tidy = reformatTab(messy.join('\n')).split('\n');
+      expect(tidy.take(2), messy.take(2));
+      final staff = tidy.sublist(2, 8);
+      expect(staff.map((l) => l[0]).join(), 'eBGDAE');
+      expect(staff.map((l) => l.length).toSet(), hasLength(1));
+      // The bars in the same columns on every string.
+      final bars = staff.first.indexOf('|', 2);
+      expect(staff.every((l) => l[bars] == '|'), isTrue);
+      expect(staff[2], startsWith('G|-2'));
+      expect(tidy.sublist(8), ['', 'la la la']);
+    });
+
+    test('a tab already lined up is left as it is', () {
+      const neat = 'e|-0-|-3-|\nB|-1-|-0-|\nG|-2-|-0-|\nD|-2-|-0-|';
+      expect(reformatTab(neat), neat);
+    });
+
+    test('text without a staff is left alone', () {
+      const text = 'Practice slowly\n\n--- notes ---';
+      expect(reformatTab(text), text);
+    });
+  });
 }

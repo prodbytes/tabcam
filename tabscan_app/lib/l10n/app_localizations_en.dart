@@ -1241,4 +1241,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventLinkCopied => 'Link copied';
+
+  @override
+  String get textViewFixLinedUp =>
+      'Tab lined up: every string\'s bars and end match';
+
+  @override
+  String get textViewFixAlreadyLinedUp => 'The tab\'s strings already line up';
+
+  @override
+  String get textViewFixLinedUpPremium =>
+      'Tab lined up. Checking it against the song online is part of TabScan Premium.';
 }
