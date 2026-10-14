@@ -3,7 +3,7 @@ Description: >
   tabscan-github-deploy: lets GitHub Actions deploy TabScan. A production
   role that only *GA tag runs can assume, and a release-candidate role for
   *RC* tag runs and manual runs from main, limited to the tabscan-rc-*
-  resources and the rc.tabscan.nu01.com records. Both trust GitHub's OIDC
+  resources and the rc.tabscan.nu01.com names. Both trust GitHub's OIDC
   identity provider, created here unless the account has it already.
   Deployed once, by hand (see tabscan_infra/README.md).
 
@@ -23,7 +23,19 @@ Parameters:
       repo:<this>:ref:... rather than repo:owner/name:ref:...
   HostedZoneId:
     Type: AWS::Route53::HostedZone::Id
-    Description: The site's zone, where its records and certificate validation live (TABSCANNER_HOSTED_ZONE_ID in the private .env)
+    Description: >
+      The old tabscan.nu01.com zone, Z10277161AEN9OU2H73PJ, merged into
+      nu01.com (2026-10-14). The roles keep access to it only so the first
+      deploys after the merge can delete the records the site stacks owned
+      there; drop it once that has deployed on both stages.
+  ValidationZoneId:
+    Type: AWS::Route53::HostedZone::Id
+    Default: Z04838091YTBIM6PNI1XK
+    Description: >
+      The apex zone nu01.com, where the site certificates validate. Its
+      A/AAAA records belong to the nu01-dns stack (nu01 repository); the
+      roles may only touch the _<token> ACM validation names of their
+      stage.
   CreateOidcProvider:
     Type: String
     AllowedValues: ['true', 'false']
@@ -132,7 +144,7 @@ Resources:
                   - sns:UntagResource
                   - sns:ListTagsForResource
                 Resource: !Sub arn:${AWS::Partition}:sns:${AWS::Region}:${AWS::AccountId}:tabscan-*
-              # The site: CloudFront, its certificate and DNS records
+              # The site: CloudFront, its certificate and its validation record
               - Effect: Allow
                 Action: cloudfront:*
                 Resource: '*'
@@ -146,13 +158,29 @@ Resources:
                   - acm:RemoveTagsFromCertificate
                   - acm:ListTagsForCertificate
                 Resource: '*'
+              # The certificate validates in the apex zone nu01.com, whose
+              # other records (every nu01 site's) are out of reach: changes
+              # may only name _<token>.tabscan.nu01.com. The condition key
+              # holds every name in the change batch, lowercased and without
+              # the trailing dot; ForAllValues requires all of them to match.
               - Effect: Allow
                 Action:
                   - route53:ListResourceRecordSets
                   - route53:GetHostedZone
-                Resource: !Sub arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}
-              # Records may change only for tabscan.nu01.com and the names
-              # under it (ACM validation, the RC): never the zone's other sites.
+                Resource:
+                  - !Sub arn:${AWS::Partition}:route53:::hostedzone/${ValidationZoneId}
+                  - !Sub arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}
+              - Effect: Allow
+                Action: route53:ChangeResourceRecordSets
+                Resource: !Sub arn:${AWS::Partition}:route53:::hostedzone/${ValidationZoneId}
+                Condition:
+                  ForAllValues:StringLike:
+                    route53:ChangeResourceRecordSetsNormalizedRecordNames:
+                      - _*.tabscan.nu01.com
+              # The old tabscan.nu01.com zone: until round 2 of the zone
+              # merge has deployed on both stages (CloudFormation deletes the
+              # site's old A/AAAA records there), then remove with the
+              # HostedZoneId parameter.
               - Effect: Allow
                 Action: route53:ChangeResourceRecordSets
                 Resource: !Sub arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}
@@ -253,7 +281,7 @@ Resources:
                   - sns:UntagResource
                   - sns:ListTagsForResource
                 Resource: !Sub arn:${AWS::Partition}:sns:${AWS::Region}:${AWS::AccountId}:tabscan-rc-*
-              # The site: CloudFront, its certificate and DNS records
+              # The site: CloudFront, its certificate and its validation record
               - Effect: Allow
                 Action: cloudfront:*
                 Resource: '*'
@@ -267,13 +295,25 @@ Resources:
                   - acm:RemoveTagsFromCertificate
                   - acm:ListTagsForCertificate
                 Resource: '*'
+              # The certificate validates in the apex zone nu01.com: changes
+              # may only name the RC's ACM validation record,
+              # _<token>.rc.tabscan.nu01.com, never prod's or other sites'.
               - Effect: Allow
                 Action:
                   - route53:ListResourceRecordSets
                   - route53:GetHostedZone
-                Resource: !Sub arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}
-              # Records may change only for rc.tabscan.nu01.com and its ACM
-              # validation name (_<token>.rc.tabscan.nu01.com): never prod's.
+                Resource:
+                  - !Sub arn:${AWS::Partition}:route53:::hostedzone/${ValidationZoneId}
+                  - !Sub arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}
+              - Effect: Allow
+                Action: route53:ChangeResourceRecordSets
+                Resource: !Sub arn:${AWS::Partition}:route53:::hostedzone/${ValidationZoneId}
+                Condition:
+                  ForAllValues:StringLike:
+                    route53:ChangeResourceRecordSetsNormalizedRecordNames:
+                      - _*.rc.tabscan.nu01.com
+              # The old tabscan.nu01.com zone: until round 2 of the zone
+              # merge has deployed on both stages, as for production.
               - Effect: Allow
                 Action: route53:ChangeResourceRecordSets
                 Resource: !Sub arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}

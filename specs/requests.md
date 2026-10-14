@@ -885,3 +885,22 @@ spec.
    models in an arm64 build
    ([deploy](deploy.md), [cloud OCR](cloud-ocr.md), [profiles](profiles.md),
    [tabscan_infra/README.md](../tabscan_infra/README.md)).
+3. **Merge the `tabscan.nu01.com` zone into `nu01.com` (round 2), to save
+   the zone's $0.50 a month.** Round 1, in the nu01 repository, removes
+   the NS delegation, copies the ACM validation CNAMEs into `nu01.com`,
+   and has its `nu01-dns` stack own the A/AAAA records of
+   `tabscan.nu01.com`, `rc.tabscan.nu01.com` and `local.tabscan.nu01.com`.
+   Here, `site.yaml` lost its `DnsRecordA`/`DnsRecordAAAA` and its
+   `HostedZoneId` parameter; the certificate validates in `nu01.com`
+   through the new `ValidationZoneId`, which `scripts/deploy.sh` sets to
+   `Z04838091YTBIM6PNI1XK` (that replaces both stages' certificates on
+   their next deploy). `TABSCANNER_HOSTED_ZONE_ID` is gone from the
+   script, the deploy workflows and `.env.example`. The deploy roles may
+   change only their stage's validation names in `nu01.com`
+   (`_*.tabscan.nu01.com`, `_*.rc.tabscan.nu01.com`), and keep their old
+   records in the old zone until this has deployed on both stages. It
+   must not be released sooner than 48 hours after round 1, the roles
+   must be redeployed before it, and the old zone is emptied and deleted
+   by hand afterwards
+   ([deploy](deploy.md), [dev environment](dev-environment.md),
+   [tabscan_infra/README.md](../tabscan_infra/README.md#the-zone-merge-2026-10-14)).

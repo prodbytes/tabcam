@@ -60,7 +60,8 @@ serves its own prefix: the app has the `/app/` base href.
 ## HTTPS
 
 `local.tabscan.nu01.com` resolves to `127.0.0.1` and `::1` (A and AAAA
-records in the Route 53 zone `tabscan.nu01.com`). It is the distribution's
+records in the Route 53 zone `nu01.com`, owned by the nu01 repository's
+`nu01-dns` stack). It is the distribution's
 second alias, for origins that need a public top-level domain, such as
 Google sign-in's JavaScript origins.
 

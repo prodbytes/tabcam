@@ -15,7 +15,8 @@ CERT_DIR="$(cd "$(dirname "$0")/.." && pwd)/tabscan_floci/certs"
 CERT="$CERT_DIR/tabscan.pem"
 KEY="$CERT_DIR/tabscan-key.pem"
 # local.tabscan.nu01.com is a public name that resolves to 127.0.0.1 (Route 53,
-# zone tabscan.nu01.com), for OAuth origins that must end in a public TLD.
+# zone nu01.com, stack nu01-dns in the nu01 repository), for OAuth origins
+# that must end in a public TLD.
 NAMES=("${TABSCANNER_PUBLIC_HOST:-local.tabscan.nu01.com}" tabscan.localhost '*.tabscan.localhost' localhost 127.0.0.1 ::1)
 
 if ! command -v mkcert >/dev/null 2>&1; then

@@ -42,8 +42,9 @@
     against mkcert's CA.
   - Servers bind to 127.0.0.1; `TABSCANNER_BIND_HOST=0.0.0.0` serves other
     devices (a phone's browser).
-  - `local.tabscan.nu01.com` resolves to localhost (`127.0.0.1`, `::1`),
-    so the local app is reachable under the real domain, over HTTPS through
+  - `local.tabscan.nu01.com` resolves to localhost (`127.0.0.1`, `::1`;
+    records in the `nu01.com` zone, owned by the nu01 repository's
+    `nu01-dns` stack), so the local app is reachable under the real domain, over HTTPS through
     Floci: https://local.tabscan.nu01.com:2443/app/.
 - **Android** (USB, debugging on; `ANDROID_SERIAL` picks one of several):
   `devbox run android` runs a debug build attached
