@@ -178,6 +178,54 @@ Resources:
           Projection:
             ProjectionType: KEYS_ONLY
 
+  # The one key that wraps every profile's private key (keys.py): profile
+  # key pairs come from it (GenerateDataKeyPairWithoutPlaintext), each with
+  # its profile's ID as encryption context. Losing it loses every encrypted
+  # capture: kept when the stack goes, 30 days to undo a deletion, rotated
+  # yearly (old versions still open what they wrapped).
+  ProfileKey:
+    Type: AWS::KMS::Key
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Description: TabScan profile keys (wraps each profile's private key)
+      KeySpec: SYMMETRIC_DEFAULT
+      KeyUsage: ENCRYPT_DECRYPT
+      EnableKeyRotation: true
+      PendingWindowInDays: 30
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          # The account's IAM policies say who may use it (the function's
+          # role, below).
+          - Sid: AccountAdministers
+            Effect: Allow
+            Principal:
+              AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
+            Action: kms:*
+            Resource: '*'
+
+  ProfileKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: alias/tabscan-profile-keys
+      TargetKeyId: !Ref ProfileKey
+
+  # Each profile's key pair: its public key, and its private key wrapped by
+  # ProfileKey. Written once per profile, never overwritten (keys.py).
+  ProfileKeysTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - {AttributeName: profileId, AttributeType: S}
+      KeySchema:
+        - {AttributeName: profileId, KeyType: HASH}
+
   # What a share's credentials can do at most: each session is narrowed to
   # one capture's folder, and to reading for read-only grants.
   ShareAccessRole:
@@ -253,6 +301,22 @@ Resources:
                   - !GetAtt LinkCodesTable.Arn
                   - !GetAtt LinksTable.Arn
                   - !Sub ${LinksTable.Arn}/index/byOwner
+                  - !GetAtt ProfileKeysTable.Arn
+                  # A capture's owner profile, by its folder (keys.py).
+                  - !Sub ${ProfilesTable.Arn}/index/byIdentity
+              # Profile key pairs: made (the private key only wrapped), and
+              # a profile's private key opened, always with that profile's
+              # ID as encryption context.
+              - Effect: Allow
+                Action:
+                  - kms:GenerateDataKeyPairWithoutPlaintext
+                  - kms:Decrypt
+                Resource: !GetAtt ProfileKey.Arn
+                Condition:
+                  'ForAllValues:StringEquals':
+                    kms:EncryptionContextKeys: [profile]
+                  'Null':
+                    kms:EncryptionContextKeys: 'false'
               - Effect: Allow
                 Action: secretsmanager:GetSecretValue
                 Resource: !Ref RbacrTokenSecretArn
@@ -312,6 +376,8 @@ Resources:
           SUBJECTS_TABLE: !Ref SubjectsTable
           LINK_CODES_TABLE: !Ref LinkCodesTable
           LINKS_TABLE: !Ref LinksTable
+          PROFILE_KEYS_TABLE: !Ref ProfileKeysTable
+          PROFILE_KEY_ID: !GetAtt ProfileKey.Arn
           DEVELOPER_PROVIDER: !Ref DeveloperProviderName
           RBACR_TOKEN_SECRET: !Ref RbacrTokenSecretArn
           RBACR_SYSTEM: tabscan
@@ -371,7 +437,7 @@ Resources:
 
   Fn::ForEach::Routes:
     - Route
-    - [Grants, Grant, Revoke, Shared, Leave, Credentials, DeleteAccount, Profile, LinkCode, Link, Unlink, ProfileCredentials, PublishLink]
+    - [Grants, Grant, Revoke, Shared, Leave, Credentials, DeleteAccount, Profile, LinkCode, Link, Unlink, ProfileCredentials, PublishLink, ContentKey]
     - Route${Route}:
         Type: AWS::ApiGatewayV2::Route
         Properties:
@@ -461,6 +527,7 @@ Mappings:
     Unlink: {Key: 'POST /profile/unlink', AppleKey: 'POST /apple/profile/unlink'}
     ProfileCredentials: {Key: 'POST /profile/credentials', AppleKey: 'POST /apple/profile/credentials'}
     PublishLink: {Key: 'PUT /links/{captureId}', AppleKey: 'PUT /apple/links/{captureId}'}
+    ContentKey: {Key: 'POST /keys/{owner}/{captureId}', AppleKey: 'POST /apple/keys/{owner}/{captureId}'}
 
 Transform: AWS::LanguageExtensions
 
@@ -476,3 +543,13 @@ Outputs:
   SubjectsTable:
     Description: The sign-ins' profiles (the cloud OCR service reads them)
     Value: !Ref SubjectsTable
+  ProfileKeyArn:
+    Description: The KMS key that wraps profiles' private keys
+    Value: !GetAtt ProfileKey.Arn
+    Export:
+      Name: tabscan-profile-key-arn
+  ProfileKeysTable:
+    Description: Profiles' key pairs (the cloud OCR service reads them)
+    Value: !Ref ProfileKeysTable
+    Export:
+      Name: tabscan-profile-keys-table

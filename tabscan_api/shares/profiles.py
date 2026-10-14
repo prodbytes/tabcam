@@ -84,12 +84,14 @@ def normalize_code(code):
 
 
 class Store:
-    """The three tables (DynamoDB resources, or fakes in tests)."""
+    """The tables (DynamoDB resources, or fakes in tests): profiles, their
+    sign-ins, link codes, and the profiles' keys (keys.py), if set up."""
 
-    def __init__(self, profiles, subjects, codes, now=time.time):
+    def __init__(self, profiles, subjects, codes, now=time.time, keys=None):
         self.profiles = profiles
         self.subjects = subjects
         self.codes = codes
+        self.keys = keys
         self.now = now
 
     # Items are written whole (put_item), conditionally where races matter.
@@ -103,6 +105,16 @@ class Store:
 
     def profile(self, profile_id):
         return self.profiles.get_item(Key={"id": profile_id}).get("Item")
+
+    def profile_by_identity(self, identity):
+        """The profile whose folder is [identity], if any."""
+        items = self.profiles.query(
+            IndexName="byIdentity",
+            KeyConditionExpression="#i = :i",
+            ExpressionAttributeNames={"#i": "identityId"},
+            ExpressionAttributeValues={":i": identity},
+        )["Items"]
+        return items[0] if items else None
 
     def link_of(self, subject):
         return self.subjects.get_item(Key={"subject": subject}, ConsistentRead=True).get("Item")
@@ -148,6 +160,9 @@ class Store:
 
     def delete_profile(self, profile_id):
         self.profiles.delete_item(Key={"id": profile_id})
+        # Its keys go too: whatever it left behind can't be read again.
+        if self.keys is not None:
+            self.keys.delete_item(Key={"profileId": profile_id})
 
     # --- link codes -------------------------------------------------------
 

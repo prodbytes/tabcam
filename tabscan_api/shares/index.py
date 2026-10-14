@@ -37,10 +37,15 @@ Routes (each also under /apple, for Apple's tokens):
   PUT    /links/{captureId}                       {key}: anyone with the link
                                                   (…/app/?c=<id>&k=<key>) may
                                                   read the capture (owner)
+  POST   /keys/{owner}/{captureId}                the capture's content key
+                                                  (its owner, or someone it's
+                                                  shared with; keys.py)
 
 And two routes without a token (no authorizer), for anyone holding a link:
   POST   /public/{captureId}/credentials          {key}: read-only credentials
-                                                  for that capture's folder
+                                                  for that capture's folder,
+                                                  and its content key when
+                                                  it's encrypted
   GET    /preview/{captureId}/{key}               the link's preview page:
                                                   the capture's title and
                                                   what it holds, for chat
@@ -52,6 +57,7 @@ Every route acts on the caller's profile alone: as an owner, on its
 Cognito identity; as a grantee, on its verified addresses.
 """
 
+import base64
 import hashlib
 import html
 import json
@@ -59,7 +65,9 @@ import os
 import re
 import time
 
+import keys as pkeys
 import profiles as prof
+import sealed
 
 ROLES = ("edit", "read")
 MAX_GRANTS = int(os.environ.get("MAX_GRANTS", "50"))
@@ -99,8 +107,13 @@ def _clients():
     region = os.environ.get("AWS_REGION", "us-east-1")
     dynamodb = boto3.resource("dynamodb", region_name=region)
     accounts = os.environ.get("ACCOUNTS_TABLE")
+    keys_table = os.environ.get("PROFILE_KEYS_TABLE")
+    keys = dynamodb.Table(keys_table) if keys_table else None
     return {
         "table": dynamodb.Table(os.environ["TABLE"]),
+        # Profile keys (keys.py): off without the table and the KMS key.
+        "keys": keys if os.environ.get("PROFILE_KEY_ID") else None,
+        "kms": boto3.client("kms", region_name=region),
         "links": dynamodb.Table(os.environ["LINKS_TABLE"]),
         # The cloud OCR service's identity -> address table, if it's set up.
         "accounts": dynamodb.Table(accounts) if accounts else None,
@@ -119,6 +132,7 @@ def _clients():
             dynamodb.Table(os.environ["PROFILES_TABLE"]),
             dynamodb.Table(os.environ["SUBJECTS_TABLE"]),
             dynamodb.Table(os.environ["LINK_CODES_TABLE"]),
+            keys=keys,
         ),
         "rbacr": prof.Rbacr(),
     }
@@ -250,7 +264,53 @@ def public_credentials(event, clients):
     if item is None or item.get("captureId") != capture_id:
         raise ApiError(404, "No such link")
     owner = item["owner"]
-    return {"owner": owner, **folder_credentials(clients["sts"], owner, capture_id, "read")}
+    creds = folder_credentials(clients["sts"], owner, capture_id, "read")
+    body = {"owner": owner, **creds}
+    content_key = _content_key(clients, owner, capture_id, creds)
+    if content_key is not None:
+        body["contentKey"] = content_key
+    return body
+
+
+def _read_event(clients, owner, capture_id, creds):
+    """The capture's event.json, read with [creds] (its folder's, read
+    only); None when it isn't there."""
+    s3 = clients["s3_as"](creds)
+    try:
+        body = s3.get_object(
+            Bucket=os.environ["BUCKET"], Key=f"{owner}/events/{capture_id}/event.json"
+        )["Body"].read()
+    except Exception as e:
+        if "NoSuchKey" in str(e) or type(e).__name__ == "NoSuchKey":
+            return None
+        raise
+    return json.loads(body)
+
+
+def _content_key_bytes(clients, owner, capture_id, event):
+    """An encrypted capture's content key (its event as read), unwrapped
+    with the owner profile's private key; None when it isn't encrypted."""
+    wrapped = sealed.wrapped_key(event)
+    if wrapped is None:
+        return None
+    if clients.get("keys") is None:
+        raise ApiError(503, "Keys aren't set up")
+    profile = clients["store"].profile_by_identity(owner)
+    if profile is None:
+        raise ApiError(404, "No such capture")
+    try:
+        return pkeys.unwrap(clients["keys"], clients["kms"], profile["id"], capture_id, wrapped)
+    except pkeys.KeyError_ as e:
+        print(f"key of {owner}/{capture_id}: {e}")
+        raise ApiError(409, "That capture's key doesn't open") from e
+
+
+def _content_key(clients, owner, capture_id, creds):
+    """The capture's content key, base64, or None (not encrypted, or not
+    there yet)."""
+    event = _read_event(clients, owner, capture_id, creds)
+    key = None if event is None else _content_key_bytes(clients, owner, capture_id, event)
+    return None if key is None else base64.b64encode(key).decode()
 
 
 def preview(event, clients):
@@ -303,12 +363,13 @@ def _linked_capture(clients, capture_id, key):
         return None
     owner = item["owner"]
     creds = folder_credentials(clients["sts"], owner, capture_id, "read")
-    s3 = clients["s3_as"](creds)
-    body = s3.get_object(
-        Bucket=os.environ["BUCKET"], Key=f"{owner}/events/{capture_id}/event.json"
-    )["Body"].read()
-    capture = json.loads(body)
-    return None if capture.get("deleted") else capture
+    capture = _read_event(clients, owner, capture_id, creds)
+    if capture is None or capture.get("deleted"):
+        return None
+    if sealed.is_sealed_event(capture):
+        key = _content_key_bytes(clients, owner, capture_id, capture)
+        capture = sealed.open_event(capture, key)
+    return capture
 
 
 def _preview_text(capture):
@@ -371,6 +432,9 @@ class Api:
         self.store = clients["store"]
         self.profiles = prof.Profiles(self.store)
         self.rbacr = clients["rbacr"]
+        self.clients = clients
+        self.keys = clients.get("keys")
+        self.kms = clients.get("kms")
         self._profile_item = None
         claims = (
             event.get("requestContext", {})
@@ -409,6 +473,7 @@ class Api:
         route = self.route_key
         handlers = {
             "GET /profile": self.profile,
+            "POST /keys/{owner}/{captureId}": self.content_key,
             "POST /profile/link-code": self.link_code,
             "POST /profile/link": self.link,
             "POST /profile/unlink": self.unlink,
@@ -434,6 +499,12 @@ class Api:
     def _profile(self):
         if self._profile_item is None:
             self._profile_item = self.profiles.of(self.subject, self.email, self.provider)
+            # Every profile has its keys from its first request on.
+            if self.keys is not None:
+                try:
+                    pkeys.keys_of(self.keys, self.kms, self._profile_item["id"])
+                except Exception as e:  # made again at the next request
+                    print(f"keys of {self._profile_item['id']}: {e}")
         return self._profile_item
 
     def _developer_token(self, profile):
@@ -461,10 +532,20 @@ class Api:
         """The profile's verified addresses: every linked sign-in's."""
         return self.profiles.emails(self._profile()["id"]) or [self.email]
 
+    def _public_key(self, profile):
+        """The profile's public key (base64 DER, SubjectPublicKeyInfo), for
+        its devices to wrap captures' keys with; None without keys."""
+        if self.keys is None:
+            return None
+        return pkeys.keys_of(self.keys, self.kms, profile["id"])["publicKey"]
+
     def _view(self, profile):
         roles, global_roles = self.rbacr.union(self.profiles.emails(profile["id"]))
+        public_key = self._public_key(profile)
         return {
             "profileId": profile["id"],
+            **({"publicKey": public_key, "keyAlgorithm": pkeys.ALGORITHM}
+               if public_key else {}),
             "accounts": self.profiles.accounts(profile, self.subject),
             "roles": roles,
             "globalRoles": global_roles,
@@ -634,6 +715,24 @@ class Api:
         if item is None:
             raise ApiError(404, "Not shared with you")
         return folder_credentials(self.sts, owner, capture_id, item["role"])
+
+    def content_key(self):
+        """An encrypted capture's content key, for its owner's profile or
+        someone it's shared with: unwrapped from what its event.json holds
+        (read here, never taken from the caller). 404 for anyone else, and
+        for a capture that isn't there or isn't encrypted."""
+        owner = _identity(self.params.get("owner"))
+        capture_id = _id(self.params.get("captureId"))
+        if owner != self._me():
+            _, _, grant = self._my_grant()
+            if grant is None:
+                raise ApiError(404, "Not shared with you")
+        creds = folder_credentials(self.sts, owner, capture_id, "read")
+        event = _read_event(self.clients, owner, capture_id, creds)
+        key = None if event is None else _content_key_bytes(self.clients, owner, capture_id, event)
+        if key is None:
+            raise ApiError(404, "No key for that capture")
+        return {"contentKey": base64.b64encode(key).decode(), "algorithm": "A256GCM"}
 
     def publish_link(self):
         """Lets anyone with the capture's link read it: the link's key (made

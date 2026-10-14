@@ -8,6 +8,7 @@ import unittest
 from decimal import Decimal
 
 os.environ.update(
+    PROFILE_KEY_ID="arn:aws:kms:us-east-1:1:key/profiles",
     TABLE="shares",
     BUCKET="nu01-user-events-1",
     IDENTITY_POOL_ID="us-east-1:pool",
@@ -15,6 +16,7 @@ os.environ.update(
 )
 
 import index  # noqa: E402
+import keys  # noqa: E402
 import profiles  # noqa: E402
 
 OWNER = "us-east-1:11111111-1111-1111-1111-111111111111"
@@ -101,10 +103,11 @@ class FakeRbacr:
 
 def store():
     return profiles.Store(
-        KeyTable("id"),
+        KeyTable("id", {"byIdentity": "identityId"}),
         KeyTable("subject", {"byProfile": "profileId", "byEmail": "email"}),
         KeyTable("code"),
         now=lambda: 1_800_000_000,
+        keys=KeyTable("profileId"),
     )
 
 
@@ -175,6 +178,89 @@ class S3:
         return {"Contents": [{"Key": k} for k in found]} if found else {}
 
 
+class NoSuchKey(Exception):
+    pass
+
+
+class Objects:
+    """The user-data bucket's objects, read with whatever credentials."""
+
+    def __init__(self):
+        self.objects = {}
+        self.reads = []
+
+    def as_(self, creds):
+        self.reads.append(creds["accessKeyId"])
+        return self
+
+    def get_object(self, Bucket, Key):
+        import io
+        if Key not in self.objects:
+            raise NoSuchKey(Key)
+        return {"Body": io.BytesIO(self.objects[Key])}
+
+
+_PAIR = None
+
+
+def _pair():
+    """One RSA_3072 pair for every test (making them is slow)."""
+    global _PAIR
+    if _PAIR is None:
+        from cryptography.hazmat.primitives import serialization
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        key = rsa.generate_private_key(public_exponent=65537, key_size=3072)
+        _PAIR = (
+            key.public_key().public_bytes(serialization.Encoding.DER,
+                                          serialization.PublicFormat.SubjectPublicKeyInfo),
+            key.private_bytes(serialization.Encoding.DER, serialization.PrivateFormat.PKCS8,
+                              serialization.NoEncryption()),
+        )
+    return _PAIR
+
+
+class Kms:
+    """KMS: key pairs wrapped by the one key, opened only with the same
+    encryption context."""
+
+    def __init__(self):
+        self.made = 0
+        self.decrypts = 0
+
+    def generate_data_key_pair_without_plaintext(self, KeyId, KeyPairSpec, EncryptionContext):
+        assert KeyId == os.environ["PROFILE_KEY_ID"] and KeyPairSpec == "RSA_3072"
+        self.made += 1
+        public, private = _pair()
+        blob = json.dumps({"ctx": EncryptionContext, "n": self.made}).encode() + b"|" + private
+        return {"PublicKey": public, "PrivateKeyCiphertextBlob": blob}
+
+    def decrypt(self, CiphertextBlob, KeyId, EncryptionContext):
+        head, _, private = CiphertextBlob.partition(b"|")
+        if json.loads(head)["ctx"] != EncryptionContext:
+            raise Exception("InvalidCiphertextException")
+        self.decrypts += 1
+        return {"Plaintext": private}
+
+
+def seal(capture_id, event, content_key):
+    """An encrypted event.json, as the app writes it."""
+    import base64
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import padding
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    public = serialization.load_der_public_key(_pair()[0])
+    wrapped = public.encrypt(content_key, padding.OAEP(
+        mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(),
+        label=f"tabscan:{capture_id}".encode()))
+    nonce = os.urandom(12)
+    sealed = nonce + AESGCM(content_key).encrypt(nonce, json.dumps(event).encode(), capture_id.encode())
+    return json.dumps({
+        "v": 1, "id": capture_id, "updated": event.get("updated", 1),
+        "key": {"alg": "RSA-OAEP-256", "wrapped": base64.b64encode(wrapped).decode()},
+        "sealed": base64.b64encode(sealed).decode(),
+    }).encode()
+
+
 def seed(clients, issuer, token, email, profile_id, identity):
     """A profile that's been around: its owner's sign-in and its identity."""
     st = clients["store"]
@@ -190,7 +276,12 @@ class ShareApiTest(unittest.TestCase):
                         "accounts": Accounts({OWNER: "julio@example.com",
                                               OTHER: "olga@example.com"}),
                         "store": store(), "rbacr": FakeRbacr(), "s3": S3(),
-                        "links": KeyTable("keyHash", {"byOwner": "owner"})}
+                        "links": KeyTable("keyHash", {"byOwner": "owner"}),
+                        "kms": Kms()}
+        self.clients["keys"] = self.clients["store"].keys
+        self.objects = Objects()
+        self.clients["s3_as"] = self.objects.as_
+        keys.forget("brave_calm_otter")
         seed(self.clients, GOOGLE, "owner-token", "julio@example.com", "brave_calm_otter", OWNER)
         seed(self.clients, GOOGLE, "other-token", "olga@example.com", "quiet_bold_heron", OTHER)
         seed(self.clients, APPLE, "apple-owner-token", "riff@example.com", "shy_tall_lynx", APPLE_OWNER)
@@ -428,6 +519,125 @@ class ShareApiTest(unittest.TestCase):
         }
         response = index.handler(event, None, self.clients)
         return response["statusCode"], json.loads(response["body"])
+
+    # --- profile keys: captures encrypted at rest --------------------------
+
+    CONTENT_KEY = bytes(range(32))
+
+    def store_capture(self, capture="abc", event=None, owner=OWNER):
+        """The capture's event.json in its owner's folder, encrypted with
+        CONTENT_KEY (or [event] as is, when it's bytes)."""
+        body = event if isinstance(event, bytes) else seal(
+            capture, event or {"id": capture, "title": "Morning riff"}, self.CONTENT_KEY)
+        self.objects.objects[f"{owner}/events/{capture}/event.json"] = body
+
+    def key_of(self, token="owner-token", email="julio@example.com", capture="abc", owner=OWNER):
+        return self.call("POST /keys/{owner}/{captureId}", email, token=token,
+                         path={"owner": owner, "captureId": capture})
+
+    def test_a_profile_has_its_keys_from_its_first_request(self):
+        status, body = self.call("GET /profile", "julio@example.com")
+        self.assertEqual(status, 200)
+        self.assertEqual(body["keyAlgorithm"], "RSA-OAEP-256")
+        from cryptography.hazmat.primitives import serialization
+        import base64
+        public = serialization.load_der_public_key(base64.b64decode(body["publicKey"]))
+        self.assertEqual(public.key_size, 3072)
+        # Made once, kept: the same key at every request.
+        made = self.clients["kms"].made
+        self.assertEqual(self.call("GET /profile", "julio@example.com")[1]["publicKey"], body["publicKey"])
+        self.assertEqual(self.clients["kms"].made, made)
+        # Kept: the public key, and the private key only wrapped by KMS.
+        item = self.clients["keys"].items["brave_calm_otter"]
+        self.assertEqual(set(item), {"profileId", "publicKey", "privateKeyWrapped", "keySpec", "createdAt"})
+
+    def test_a_new_profile_gets_keys_at_its_first_sign_in(self):
+        self.call("GET /shared", "new@example.com", token="new-token")
+        profile = self.clients["store"].link_of("https://accounts.google.com#new-token")["profileId"]
+        self.assertIn(profile, self.clients["keys"].items)
+
+    def test_the_owner_and_people_its_shared_with_get_the_content_key(self):
+        import base64
+        self.call("GET /profile", "julio@example.com")
+        self.store_capture()
+        status, body = self.key_of()
+        self.assertEqual(status, 200, body)
+        self.assertEqual(base64.b64decode(body["contentKey"]), self.CONTENT_KEY)
+        # Read with the folder's read-only credentials.
+        self.assertEqual(self.objects.reads[-1], "ASIA")
+        # Someone it isn't shared with: nothing.
+        self.assertEqual(self.key_of("other-token", "olga@example.com")[0], 404)
+        self.grant("olga@example.com", "read")
+        status, body = self.key_of("other-token", "olga@example.com")
+        self.assertEqual(status, 200, body)
+        self.assertEqual(base64.b64decode(body["contentKey"]), self.CONTENT_KEY)
+
+    def test_a_wrapped_key_only_opens_its_own_capture(self):
+        self.call("GET /profile", "julio@example.com")
+        self.store_capture("abc")
+        # The other capture's event.json carries abc's wrapped key.
+        abc = json.loads(self.objects.objects[f"{OWNER}/events/abc/event.json"])
+        self.store_capture("xyz", json.dumps({"id": "xyz", "key": abc["key"], "sealed": abc["sealed"]}).encode())
+        self.assertEqual(self.key_of(capture="xyz")[0], 409)
+
+    def test_a_capture_that_isnt_encrypted_has_no_key(self):
+        self.call("GET /profile", "julio@example.com")
+        self.store_capture(event=json.dumps({"id": "abc", "title": "Old riff"}).encode())
+        self.assertEqual(self.key_of()[0], 404)
+        self.assertEqual(self.key_of(capture="nothere")[0], 404)
+
+    def test_a_link_opens_an_encrypted_capture_with_its_key(self):
+        import base64
+        self.call("GET /profile", "julio@example.com")
+        self.publish()
+        self.store_capture()
+        status, creds = self.open_link()
+        self.assertEqual(status, 200)
+        self.assertEqual(base64.b64decode(creds["contentKey"]), self.CONTENT_KEY)
+        # Not encrypted (yet): no key, as before.
+        self.store_capture(event=json.dumps({"id": "abc"}).encode())
+        self.assertNotIn("contentKey", self.open_link()[1])
+
+    def test_a_link_previews_an_encrypted_capture(self):
+        self.call("GET /profile", "julio@example.com")
+        self.publish()
+        self.store_capture(event=None)
+        event = {
+            "routeKey": index.PREVIEW_ROUTE,
+            "pathParameters": {"captureId": "abc", "key": self.KEY},
+            "headers": {},
+        }
+        page = index.handler(event, None, self.clients)["body"]
+        self.assertIn('<meta property="og:title" content="Morning riff">', page)
+
+    def test_deleting_the_account_deletes_its_keys(self):
+        self.call("GET /profile", "julio@example.com")
+        self.assertIn("brave_calm_otter", self.clients["keys"].items)
+        self.assertEqual(self.call("DELETE /account", "julio@example.com")[0], 200)
+        self.assertNotIn("brave_calm_otter", self.clients["keys"].items)
+
+    def test_the_sealed_formats_open(self):
+        import struct
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+        import sealed
+        key = self.CONTENT_KEY
+        event = json.loads(seal("abc", {"id": "abc", "title": "Riff"}, key))
+        self.assertEqual(sealed.open_event(event, key)["title"], "Riff")
+        with self.assertRaises(sealed.SealError):
+            sealed.open_event(event, bytes(32))
+        # A file of three chunks (5 bytes each, the last short).
+        data, prefix, aes = b"e|--3--5--7--|", b"\x01" * 7, AESGCM(key)
+        aad = sealed.file_aad("abc", "p1.img")
+        chunks = [data[i:i + 5] for i in range(0, len(data), 5)]
+        blob = b"TSE1" + struct.pack(">I", 5) + prefix + b"".join(
+            aes.encrypt(prefix + struct.pack(">IB", n, 1 if n == len(chunks) - 1 else 0), c, aad)
+            for n, c in enumerate(chunks))
+        self.assertEqual(sealed.open_file(blob, key, "abc", "p1.img"), data)
+        # Another file's name, or a chunk dropped: it doesn't open.
+        with self.assertRaises(sealed.SealError):
+            sealed.open_file(blob, key, "abc", "p2.img")
+        with self.assertRaises(sealed.SealError):
+            sealed.open_file(blob[:-21], key, "abc", "p1.img")
 
     # --- link previews: chat apps' crawlers see the capture's title --------
 

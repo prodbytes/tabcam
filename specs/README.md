@@ -59,6 +59,10 @@ the cloud as they sync.
   profile (`huge_wavy_darter`), made at their first sign-in; Google and
   Apple accounts link to it with a code (or by the same verified address),
   reach the same captures, and give it all their roles.
+- [Encryption at rest](encryption.md): each profile has an RSA key pair
+  (its private key wrapped by one KMS key); each capture its own AES-256
+  key, wrapped with the profile's public key; the API unwraps it for the
+  owner, the people it's shared with and its link's holders.
 - [Shared captures](shared-captures.md): share a capture of one's own
   by email, to edit (the default) or read only; no email is sent, people
   find it when they sign in. A share API (Lambda, DynamoDB, an HTTP API
