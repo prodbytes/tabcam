@@ -48,7 +48,7 @@ app syncs a page ──► user-data bucket ──S3 event──► EventBridge 
   `{page, status: ok|no-tab|error, text, staves, lines, seconds, engines,
   version, created}`.
 - **Premium** comes from rbacr, asked with a root-owned API token kept in
-  Secrets Manager (`tabscan/rbacr-token`). Paying subscribers of
+  SSM Parameter Store (the SecureString `/tabscan/rbacr-token`). Paying subscribers of
   prodbytes.substack.com get it from rbacr's Stripe sync (the `tabscan`
   system's subscriber role is `premium`), if they subscribe with the same
   address they sign in with (Google's, or the Apple ID's; Apple's private
@@ -87,11 +87,13 @@ riff is invented: tests never use published songs' tabs.
 ## Deploy
 
 An administrator, once the user-data bucket exists (`tabscan-user-data`,
-with EventBridge on) and the rbacr token is in Secrets Manager:
+with EventBridge on) and the rbacr token is in SSM Parameter Store (a
+standard-tier SecureString under the AWS-managed `aws/ssm` key: free, where
+a Secrets Manager secret costs $0.40 a month):
 
 ```bash
-aws secretsmanager create-secret --name tabscan/rbacr-token \
-  --secret-string file:///dev/stdin <<< "$ROOT_OWNED_RBACR_TOKEN"   # once
+aws ssm put-parameter --name /tabscan/rbacr-token --type SecureString \
+  --tier Standard --value file:///dev/stdin <<< "$ROOT_OWNED_RBACR_TOKEN"   # once
 aws secretsmanager create-secret --name tabscan/anthropic-api-key \
   --secret-string file:///dev/stdin <<< "$ANTHROPIC_API_KEY"        # once, for /autocorrect
 bash tabscan_locr/scripts/deploy.sh

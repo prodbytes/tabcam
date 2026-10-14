@@ -12,6 +12,9 @@
 #   TABSCANNER_APPLE_SIGN_IN
 #                optional: 1 to take Sign in with Apple's tokens too (for
 #                the bundle ID com.nu01.tabscan), under /apple
+#   RBACR_TOKEN_PARAMETER
+#                default /tabscan/rbacr-token: the SSM SecureString with
+#                rbacr's root token (made once, see tabscan_locr/README.md)
 #   AWS_REGION   default us-east-1
 set -euo pipefail
 
@@ -45,9 +48,14 @@ accounts="$(aws cloudformation describe-stacks --stack-name tabscan-ocr \
   --output text 2>/dev/null || true)"
 [[ "$accounts" =~ ^[A-Za-z0-9_.-]{3,255}$ && "$accounts" != None ]] || accounts=""
 
-# Profiles' roles come from rbacr, with the token the cloud OCR service uses.
-rbacr_secret="$(aws secretsmanager describe-secret --secret-id "${RBACR_TOKEN_SECRET:-tabscan/rbacr-token}" \
-  --query ARN --output text)"
+# Profiles' roles come from rbacr, with the token the cloud OCR service uses
+# (an SSM SecureString; only its metadata is read here, never its value).
+rbacr_param="${RBACR_TOKEN_PARAMETER:-/tabscan/rbacr-token}"
+if [[ "$(aws ssm describe-parameters --parameter-filters "Key=Name,Values=$rbacr_param" \
+      --query 'Parameters[0].Type' --output text)" != SecureString ]]; then
+  echo "error: SSM SecureString $rbacr_param not found (see tabscan_locr/README.md)" >&2
+  exit 1
+fi
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
@@ -64,15 +72,17 @@ python3 -m venv "$work/venv"
 echo "==> deploying tabscan-share-api"
 # NAMED_IAM: the function's and the access role's names are fixed (the
 # access role trusts the function's by name). AUTO_EXPAND: Fn::ForEach.
+# One API for production and the RC, so tenancy=shared.
 aws cloudformation deploy --stack-name tabscan-share-api \
   --template-file tabscan_infra/share-api.yaml \
   --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
+  --tags project=tabscan tenancy=shared \
   --parameter-overrides "GoogleWebClientId=$TABSCANNER_GOOGLE_WEB_CLIENT_ID" \
     "GoogleLocalWebClientId=${TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID:-}" \
     "AppleClientId=$apple_client" \
     "AllowedOrigins=$origins" \
     "AccountsTableName=$accounts" \
-    "RbacrTokenSecretArn=$rbacr_secret" \
+    "RbacrTokenParameterName=$rbacr_param" \
     DeveloperProviderName=login.tabscan.profiles \
   --no-fail-on-empty-changeset
 

@@ -3,8 +3,10 @@ in-memory stand-ins (test_index.py)."""
 
 import io
 import json
+import os
 import random
 import unittest
+import unittest.mock
 
 import profiles
 from test_index import (APPLE, GOOGLE, OWNER, S3, Cognito, FakeRbacr, Sts,
@@ -220,6 +222,25 @@ class RbacrTest(unittest.TestCase):
         self.assertEqual(r.union(["a@example.com", "a@example.com"]), (["free", "premium"], ["root"]))
         self.assertEqual(asked, ["a@example.com"])
         self.assertEqual(r.roles("broken@example.com"), (frozenset(), frozenset()))
+
+    def test_token_is_read_once_from_the_ssm_parameter(self):
+        calls = []
+
+        class Ssm:
+            def get_parameter(self, **kw):
+                calls.append(kw)
+                return {"Parameter": {"Value": "from-ssm\n"}}
+        heard = []
+
+        def opener(req, timeout):
+            heard.append(req.get_header("Authorization"))
+            return io.BytesIO(b'{"roles": {}}')
+        with unittest.mock.patch.dict(os.environ, {"RBACR_TOKEN_PARAMETER": "/tabscan/rbacr-token"}):
+            r = profiles.Rbacr(url="https://rbacr.example", opener=opener, clock=lambda: 0, ssm=Ssm())
+            r.roles("a@example.com")
+            r.roles("b@example.com")
+        self.assertEqual(calls, [{"Name": "/tabscan/rbacr-token", "WithDecryption": True}])
+        self.assertEqual(heard, ["Bearer from-ssm"] * 2)
 
 
 if __name__ == "__main__":

@@ -1,7 +1,8 @@
 """Who is premium: rbacr (https://github.com/prodbytes/rbacr) decides.
 
 rbacr knows people by verified e-mail address. This asks it, with a
-root-owned API token kept in Secrets Manager (rbacr SPEC C1, C2), whether an
+root-owned API token kept in SSM Parameter Store (a SecureString,
+RBACR_TOKEN_PARAMETER; rbacr SPEC C1, C2), whether an
 address holds the premium role in the tabscan system (C3). Paying
 subscribers get that role from rbacr's Stripe sync (Q2), others from a
 voucher or a root's grant.
@@ -30,22 +31,28 @@ class Answer:
 
 
 class Rbacr:
-    def __init__(self, url=None, system=None, role=None, token=None, opener=None, clock=time.monotonic):
+    def __init__(self, url=None, system=None, role=None, token=None, opener=None, clock=time.monotonic,
+                 ssm=None):
         self.url = (url or os.environ.get("RBACR_URL") or "https://rbacr.nu01.com").rstrip("/")
         if not (self.url.startswith("https://") or self.url.startswith("http://localhost")):
             raise ValueError("rbacr must be reached over https")
         self.system = system or os.environ.get("RBACR_SYSTEM", "tabscan")
         self.role = role or os.environ.get("RBACR_ROLE", "premium")
         self._token = token
+        self._ssm = ssm
         self._open = opener or urllib.request.urlopen
         self._clock = clock
         self._cache = {}
 
     def token(self):
+        """Read once per container (the services, and so this, are kept)."""
         if self._token is None:
-            import boto3
-            arn = os.environ["RBACR_TOKEN_SECRET"]
-            self._token = boto3.client("secretsmanager").get_secret_value(SecretId=arn)["SecretString"].strip()
+            if self._ssm is None:
+                import boto3
+                self._ssm = boto3.client("ssm")
+            name = os.environ["RBACR_TOKEN_PARAMETER"]
+            got = self._ssm.get_parameter(Name=name, WithDecryption=True)
+            self._token = got["Parameter"]["Value"].strip()
         return self._token
 
     def check(self, email):

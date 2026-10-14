@@ -1,5 +1,8 @@
 # TabScan cloud OCR: one image, two Lambda functions (see locr/handler.py).
-# x86_64: PaddlePaddle publishes no Linux ARM wheels for this version.
+# x86_64: PaddlePaddle publishes no Linux ARM wheels for this version on
+# PyPI. Paddle's own index has a linux_aarch64 3.3.1 wheel, but with it the
+# self-test aborts (SIGABRT) loading the PaddleOCR models (tried 2026-10-14),
+# so arm64 Lambda (20% cheaper) waits for a working manylinux aarch64 wheel.
 # Debian trixie: Tesseract 5.5 (bookworm's 5.3 reads tab lines far worse).
 FROM python:3.12.11-slim-trixie
 

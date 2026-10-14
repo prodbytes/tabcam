@@ -11,7 +11,8 @@
 # function URL refuses requests), TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID (optional:
 # local web builds' client, trusted too), TABSCANNER_APPLE_SIGN_IN (optional:
 # 1 to take Sign in with Apple's tokens for the bundle ID too),
-# RBACR_TOKEN_SECRET (default tabscan/rbacr-token), ANTHROPIC_KEY_SECRET
+# RBACR_TOKEN_PARAMETER (default /tabscan/rbacr-token, an SSM SecureString),
+# ANTHROPIC_KEY_SECRET
 # (default tabscan/anthropic-api-key, read by name: auto-correct and Claude
 # reading the pages the engines can't are off until it exists, then on).
 set -euo pipefail
@@ -27,7 +28,7 @@ fi
 region="${AWS_REGION:-us-east-1}"
 # Passed every time: deploy would keep the stack's old origins otherwise.
 TABSCANNER_WEB_ORIGINS="https://tabscan.nu01.com,https://rc.tabscan.nu01.com,http://localhost:2012,https://local.tabscan.nu01.com:2443"
-secret_name="${RBACR_TOKEN_SECRET:-tabscan/rbacr-token}"
+rbacr_param="${RBACR_TOKEN_PARAMETER:-/tabscan/rbacr-token}"
 apple_client=""
 if [[ "${TABSCANNER_APPLE_SIGN_IN:-}" == 1 || "${TABSCANNER_APPLE_SIGN_IN:-}" == true ]]; then
   apple_client=com.nu01.tabscan
@@ -35,9 +36,22 @@ fi
 version="$(git rev-parse --short=12 HEAD)$(git diff --quiet HEAD -- tabscan_locr || echo -dirty)"
 tag="${version}-$(date -u +%Y%m%d%H%M%S)"
 
+# One OCR service for production and the RC: cost-allocation tags
+# tenancy=shared.
+tags=(project=tabscan tenancy=shared)
+
+# The rbacr token, checked before building: only its metadata is read,
+# never its value.
+if [[ "$(aws ssm describe-parameters --region "$region" \
+      --parameter-filters "Key=Name,Values=$rbacr_param" \
+      --query 'Parameters[0].Type' --output text)" != SecureString ]]; then
+  echo "error: SSM SecureString $rbacr_param not found (see tabscan_locr/README.md)" >&2
+  exit 1
+fi
+
 echo "== ECR repository (tabscan-ocr-repo)"
 aws cloudformation deploy --region "$region" --stack-name tabscan-ocr-repo \
-  --template-file tabscan_infra/ocr-repo.yaml --no-fail-on-empty-changeset
+  --template-file tabscan_infra/ocr-repo.yaml --tags "${tags[@]}" --no-fail-on-empty-changeset
 repo="$(aws cloudformation describe-stacks --region "$region" --stack-name tabscan-ocr-repo \
   --query "Stacks[0].Outputs[?OutputKey=='RepositoryUri'].OutputValue" --output text)"
 
@@ -50,8 +64,6 @@ docker push "$repo:$tag"
 digest="$(aws ecr describe-images --region "$region" --repository-name tabscan-ocr \
   --image-ids "imageTag=$tag" --query 'imageDetails[0].imageDigest' --output text)"
 
-secret_arn="$(aws secretsmanager describe-secret --region "$region" --secret-id "$secret_name" \
-  --query ARN --output text)"
 # The share API's profiles, when it's deployed: folders and addresses by
 # profile.
 share_output() {
@@ -65,7 +77,7 @@ profiles_table="$(share_output ProfilesTable)"; subjects_table="$(share_output S
 echo "== Stack tabscan-ocr"
 aws cloudformation deploy --region "$region" --stack-name tabscan-ocr \
   --template-file tabscan_infra/ocr.yaml --capabilities CAPABILITY_IAM \
-  --no-fail-on-empty-changeset \
+  --tags "${tags[@]}" --no-fail-on-empty-changeset \
   --parameter-overrides \
     "ImageUri=$repo@$digest" \
     "GoogleWebClientId=${TABSCANNER_GOOGLE_WEB_CLIENT_ID:-}" \
@@ -73,7 +85,7 @@ aws cloudformation deploy --region "$region" --stack-name tabscan-ocr \
     "AppleClientId=$apple_client" \
     "AllowedOrigins=$TABSCANNER_WEB_ORIGINS" \
     "IdentityPoolId=${TABSCANNER_COGNITO_IDENTITY_POOL_ID:-}" \
-    "RbacrTokenSecretArn=$secret_arn" \
+    "RbacrTokenParameterName=$rbacr_param" \
     "AnthropicKeySecretName=${ANTHROPIC_KEY_SECRET:-tabscan/anthropic-api-key}" \
     "ProfilesTableName=$profiles_table" \
     "SubjectsTableName=$subjects_table" \
