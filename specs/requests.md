@@ -834,3 +834,10 @@ spec.
     holds, as Open Graph tags, read with the link's own read-only
     credentials; a wrong key previews as TabScan. People still get the
     app ([sharing](sharing.md#link-previews)).
+94. **In the capture's file list, add a mini player to video and audio
+    files so they can be played right from the list; make the rows
+    taller.** Videos and recordings have a play / pause button in their
+    row and play there, one at a time (a video in its thumbnail), with a
+    scrubbable progress bar and the time under the name. Rows are taller:
+    80 px previews (from 64), 10 px padding (from 4)
+    ([event screen](event-screen.md)).
