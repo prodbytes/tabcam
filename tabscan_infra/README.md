@@ -5,14 +5,14 @@ templates.
 
 | Template | Stack | Holds |
 |---|---|---|
-| [site.yaml](site.yaml) | `tabscan-web` | https://tabscan.nu01.com: the ACM certificate (DNS-validated in the `tabscan.nu01.com` zone), a private S3 bucket, a CloudFront distribution, and the Route 53 A/AAAA aliases (uptime: the `nu01-monitor` stack, in the nu01 repository, polls `/app/version.json`) |
+| [site.yaml](site.yaml) | `tabscan-web` | https://tabscan.nu01.com: the ACM certificate (DNS-validated in the `nu01.com` zone), a private S3 bucket and a CloudFront distribution; its A/AAAA aliases belong to the `nu01-dns` stack ([DNS](#dns)) (uptime: the `nu01-monitor` stack, in the nu01 repository, polls `/app/version.json`) |
 | [user-data.yaml](user-data.yaml) | `tabscan-user-data` | The bucket of signed-in users' events, `nu01-user-events-<account>` (private, SSE-S3, TLS only, object events to EventBridge, versioned: old versions kept 30 days; CORS for the web app's origins). Not `tabscan-*`, so the deploy roles can't reach it. Shared by production and the RC |
 | [identity.yaml](identity.yaml) | `tabscan-identity` | The Cognito identity pool `tabscan` (Google sign-in through the `accounts.google.com` OpenID Connect provider it makes, for the web, iOS and local web clients, and with `AppleClientId` Sign in with Apple, for the bundle ID; no guests, enhanced flow) and its authenticated role: get, put and delete in `<bucket>/<identity ID>/*`, and list that prefix. Shared by production and the RC |
 | [identity.yaml](identity.yaml) | `tabscan-identity-local` | The same for local web builds: the pool `tabscan-local`, trusting the "local - web" client through the same provider, and its own authenticated role on the same bucket |
 | [share-api.yaml](share-api.yaml) | `tabscan-share-api` | Sharing captures by email: the `tabscan-share-api` HTTP API (Google JWT authorizer, and with `AppleClientId` an Apple one for the same routes under `/apple`; throttled), its Python function ([tabscan_api/shares/](../tabscan_api/shares)), the grants table (PITR on) and the `tabscan-share-access` role, which the function assumes with a session policy narrowed to one capture's folder (and to reading, for read-only grants) |
 | [ocr-repo.yaml](ocr-repo.yaml) | `tabscan-ocr-repo` | The ECR repository `tabscan-ocr` of the cloud OCR image ([tabscan_locr/](../tabscan_locr/README.md)) |
 | [ocr.yaml](ocr.yaml) | `tabscan-ocr` | TabScan Premium's cloud OCR: the `tabscan-accounts` table, the `tabscan-ocr` and `tabscan-ocr-api` functions, the API's function URL (the app's `TABSCANNER_OCR_URL`) and the EventBridge rule for page uploads. Deployed by `tabscan_locr/scripts/deploy.sh` |
-| [github-deploy.yaml](github-deploy.yaml) | `tabscan-github-deploy` | The `tabscan-github-deploy` role (Deploy workflow, `*GA` tags) and the `tabscan-github-deploy-rc` role (Deploy RC workflow: `*RC*` tags and manual runs from `main`, limited to `tabscan-rc-*` resources and the `rc.tabscan.nu01.com` records), trusting GitHub's OIDC provider |
+| [github-deploy.yaml](github-deploy.yaml) | `tabscan-github-deploy` | The `tabscan-github-deploy` role (Deploy workflow, `*GA` tags) and the `tabscan-github-deploy-rc` role (Deploy RC workflow: `*RC*` tags and manual runs from `main`, limited to `tabscan-rc-*` resources and the RC certificate's validation record), trusting GitHub's OIDC provider |
 
 `scripts/deploy.sh` deploys `tabscan-web`. With `STAGE=rc` it deploys the
 release candidate's own copy, `tabscan-rc-web`, for
@@ -53,21 +53,78 @@ devbox): `TAG=0.1.<Z>-GA bash scripts/deploy.sh`.
 
 ## DNS
 
-`tabscan.nu01.com` has its own public Route 53 zone,
-`Z10277161AEN9OU2H73PJ` (`TABSCANNER_HOSTED_ZONE_ID`), delegated from the `nu01.com`
-zone by an NS record (TTL 3600), like `rbacr` and `uplink`. Both stages'
-records live in it: `tabscan.nu01.com`, `rc.tabscan.nu01.com`, and their
-ACM validation names.
+TabScan's names live in the apex zone `nu01.com` (`Z04838091YTBIM6PNI1XK`),
+managed in the **nu01 repository**: the zone is its `nu01-route53-zone`
+stack, and its `nu01-dns` stack owns the A/AAAA aliases of
+`tabscan.nu01.com` and `rc.tabscan.nu01.com` (to the two distributions) and
+`local.tabscan.nu01.com` (`127.0.0.1` and `::1`, for the
+[local dev servers](../specs/dev-environment.md)). Change those there, not
+here. This repository only validates the site certificates in `nu01.com`:
+`site.yaml`'s `ValidationZoneId`, which `scripts/deploy.sh` sets to
+`Z04838091YTBIM6PNI1XK`; the deploy roles may only change their stage's
+`_<token>` validation name in that zone (`_*.tabscan.nu01.com`,
+`_*.rc.tabscan.nu01.com` for the RC).
 
-## One-time setup
+### The zone merge (2026-10-14)
 
-0. Create the zone and its delegation (done 2026-10-10):
+Until then `tabscan.nu01.com` had its own zone, `Z10277161AEN9OU2H73PJ`
+(made with the AWS CLI, no stack), delegated from `nu01.com` by an NS
+record. It was merged into `nu01.com` to save its $0.50 a month, in two
+rounds:
+
+1. **Round 1, in the nu01 repository** (an administrator):
+   `CONFIRM=yes scripts/migrate-subzone.sh tabscan` deletes the NS delegation and
+   copies the zone's ACM validation CNAMEs into `nu01.com` in one batch,
+   and the `nu01-dns` stack takes over the A/AAAA records. The old zone
+   stays as it is, since resolvers may cache its NS records for up to
+   2 days. The script prints the earliest time for round 2.
+2. **Round 2, this repository, no sooner than round 1 + 48 h**: the change
+   that moved the certificates' validation to `nu01.com` and dropped the
+   site stacks' records.
+   1. An administrator updates the deploy roles first (they gain the
+      `nu01.com` validation names and keep the old zone, step 1 of
+      [One-time setup](#one-time-setup)); without it the release's
+      certificate request is denied and the stack rolls back.
+   2. Release an RC, then a GA. Each site stack replaces its certificate
+      (a changed validation zone means a new certificate: CloudFormation
+      requests it, validates it through `nu01.com` with the same
+      `_<token>` CNAME round 1 copied there, switches CloudFront to it and
+      deletes the old one) and deletes its A/AAAA records from the old
+      zone. Released earlier, the new certificate can't validate while
+      resolvers still follow the old delegation, and the deploy times out.
+3. **After round 2 has deployed on both stages**, retire the old zone (an
+   administrator):
 
    ```bash
-   aws route53 create-hosted-zone --name tabscan.nu01.com --caller-reference "tabscan-$(date -u +%s)"
-   # then, in the nu01.com zone, an NS record for tabscan.nu01.com with
-   # the new zone's four name servers
+   old=Z10277161AEN9OU2H73PJ
+   # Checks: no delegation left in nu01.com, and neither site stack still
+   # owns records (both print nothing).
+   aws route53 list-resource-record-sets --hosted-zone-id Z04838091YTBIM6PNI1XK \
+     --query "ResourceRecordSets[?Name=='tabscan.nu01.com.' && Type=='NS']" --output text
+   for stack in tabscan-web tabscan-rc-web; do
+     aws cloudformation describe-stack-resources --region us-east-1 --stack-name "$stack" \
+       --query "StackResources[?ResourceType=='AWS::Route53::RecordSet'].LogicalResourceId" --output text
+   done
+   # Keep a copy, then delete every record but the zone's own NS and SOA,
+   # then the zone.
+   aws route53 list-resource-record-sets --hosted-zone-id "$old" > tabscan-zone-final.json
+   python3 -c 'import json, sys
+   rrs = json.load(open(sys.argv[1]))["ResourceRecordSets"]
+   print(json.dumps({"Changes": [{"Action": "DELETE", "ResourceRecordSet": r}
+       for r in rrs if r["Type"] not in ("NS", "SOA")]}))' tabscan-zone-final.json > tabscan-zone-delete.json
+   aws route53 change-resource-record-sets --hosted-zone-id "$old" \
+     --change-batch file://tabscan-zone-delete.json   # skip if Changes is empty
+   aws route53 delete-hosted-zone --id "$old"
    ```
+
+   Then drop the old zone from the deploy roles (the `HostedZoneId`
+   parameter and the statements marked "until round 2 has deployed on
+   both stages" in `github-deploy.yaml`) and redeploy them, and delete
+   the repository variable `TABSCANNER_HOSTED_ZONE_ID`
+   (`gh variable delete TABSCANNER_HOSTED_ZONE_ID`) and its line in the
+   private `.env`.
+
+## One-time setup
 
 1. Deploy the GitHub roles. They're IAM resources, so an administrator
    deploys them, once. The account already has GitHub's OIDC provider
@@ -80,14 +137,19 @@ ACM validation names.
      --template-file tabscan_infra/github-deploy.yaml \
      --capabilities CAPABILITY_NAMED_IAM \
      --tags project=tabscan tenancy=shared \
-     --parameter-overrides "HostedZoneId=$TABSCANNER_HOSTED_ZONE_ID"   # from the private .env
+     --parameter-overrides HostedZoneId=Z10277161AEN9OU2H73PJ
    ```
+
+   `HostedZoneId` is the old `tabscan.nu01.com` zone, kept only until
+   [the zone merge](#the-zone-merge-2026-10-14) is done; `ValidationZoneId`
+   defaults to `nu01.com`.
 
    The production role trusts only tokens for `*GA` tags of
    `prodbytes/tabscan`. Its permissions cover the TabScan stacks:
-   CloudFormation, S3, CloudFront, ACM, records under `tabscan.nu01.com`
-   in the zone, and, until the next GA deploy has deleted them, the site's
-   old health check (Route 53 health checks, `tabscan-*` alarms and SNS
+   CloudFormation, S3, CloudFront, ACM, the certificate's validation
+   names in `nu01.com` (and records under `tabscan.nu01.com` in the old
+   zone, until the zone merge is done), and, until the next GA deploy has
+   deleted them, the site's old health check (Route 53 health checks, `tabscan-*` alarms and SNS
    topics, the `LanguageExtensions` transform); remove those statements
    then.
    Run the same command again whenever `github-deploy.yaml` changes.
@@ -97,7 +159,6 @@ ACM validation names.
    ```bash
    gh variable set TABSCANNER_AWS_DEPLOY_ROLE_ARN --body "<DeployRoleArn>"
    gh variable set TABSCANNER_AWS_DEPLOY_RC_ROLE_ARN --body "<RcDeployRoleArn>"
-   gh variable set TABSCANNER_HOSTED_ZONE_ID --body Z10277161AEN9OU2H73PJ
    ```
 
 3. Sign-in and cloud sync (once; again when the templates change). An
