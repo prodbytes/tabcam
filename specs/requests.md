@@ -841,3 +841,15 @@ spec.
     scrubbable progress bar and the time under the name. Rows are taller:
     80 px previews (from 64), 10 px padding (from 4)
     ([event screen](event-screen.md)).
+95. **Protect user privacy per profile: make sure all data is encrypted,
+    with keys generated when the profile is created; asymmetric keys; shares
+    must still work, even anonymous ones.** Encrypting with the private
+    key (for others to decrypt with the public one) would hide nothing, so
+    it's the other way round: each capture's own AES key, wrapped with the
+    profile's public key. The keys are kept by the API in DynamoDB, the
+    private ones wrapped by a single KMS key (about $1 a month, against $1
+    a profile a month for a KMS key each). Stage 1, the keys: the KMS key
+    and the keys table (deployed with the share API), every profile's key
+    pair, the public key in `GET /profile`, content keys unwrapped for the
+    owner, people it's shared with and link holders, and link previews of
+    sealed captures ([encryption at rest](encryption.md)).

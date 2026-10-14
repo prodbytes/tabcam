@@ -49,8 +49,17 @@ accounts="$(aws cloudformation describe-stacks --stack-name tabscan-ocr \
 rbacr_secret="$(aws secretsmanager describe-secret --secret-id "${RBACR_TOKEN_SECRET:-tabscan/rbacr-token}" \
   --query ARN --output text)"
 
+work="$(mktemp -d)"
+trap 'rm -rf "$work"' EXIT
+
+# The function's one library beyond boto3, cryptography (keys.py), pinned
+# with hashes in requirements.txt: for the tests here, and for the Lambda
+# (Python 3.13, arm64) in the package.
 echo "==> testing the function"
-python3 -I -m unittest discover -s tabscan_api/shares
+python3 -m venv "$work/venv"
+"$work/venv/bin/pip" install --quiet --only-binary=:all: --require-hashes \
+  -r tabscan_api/shares/requirements.txt
+"$work/venv/bin/python" -I -m unittest discover -s tabscan_api/shares
 
 echo "==> deploying tabscan-share-api"
 # NAMED_IAM: the function's and the access role's names are fixed (the
@@ -68,11 +77,14 @@ aws cloudformation deploy --stack-name tabscan-share-api \
   --no-fail-on-empty-changeset
 
 echo "==> uploading the code"
-work="$(mktemp -d)"
-trap 'rm -rf "$work"' EXIT
-files=(index.py profiles.py adjectives.txt animals.txt)
-for f in "${files[@]}"; do cp "tabscan_api/shares/$f" "$work/"; done
-(cd "$work" && python3 -I -m zipfile -c share-api.zip "${files[@]}")
+mkdir "$work/package"
+files=(index.py profiles.py keys.py sealed.py adjectives.txt animals.txt)
+for f in "${files[@]}"; do cp "tabscan_api/shares/$f" "$work/package/"; done
+"$work/venv/bin/pip" install --quiet --only-binary=:all: --require-hashes \
+  --platform manylinux_2_28_aarch64 --platform manylinux_2_17_aarch64 \
+  --platform manylinux2014_aarch64 --implementation cp --python-version 3.13 \
+  --target "$work/package" -r tabscan_api/shares/requirements.txt
+(cd "$work/package" && "$work/venv/bin/python" -I -m zipfile -c ../share-api.zip ./*)
 aws lambda update-function-code --function-name tabscan-share-api \
   --zip-file "fileb://$work/share-api.zip" --query LastModified --output text
 aws lambda wait function-updated --function-name tabscan-share-api
@@ -93,3 +105,7 @@ if [[ -n "$apple_client" ]]; then
   [[ "$status" == 401 ]] || { echo "error: $url/apple/shared answered $status, not 401" >&2; exit 1; }
   echo "    $url/apple/shared too (Sign in with Apple)"
 fi
+# The key route wants a sign-in too.
+status="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$url/keys/us-east-1:00000000-0000-0000-0000-000000000000/abc")"
+[[ "$status" == 401 ]] || { echo "error: $url/keys/… answered $status, not 401" >&2; exit 1; }
+echo "    $url/keys/… refuses requests without a token (401), as it should"

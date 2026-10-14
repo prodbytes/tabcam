@@ -66,6 +66,9 @@ are every linked account's rbacr roles together.
 
 ## Storage
 
+- Each profile has its key pair, for [encryption at rest](encryption.md):
+  made at its first request, deleted with it.
+
 - The profile's folder is its **Cognito developer identity** in the main
   pool (developer provider `login.tabscan.profiles`, the profile ID as the
   user identifier): `POST /profile/credentials` gets an OpenID token for
