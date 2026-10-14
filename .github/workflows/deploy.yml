@@ -60,9 +60,6 @@ jobs:
         env:
           TAG: ${{ github.ref_name }}
           TABSCANNER_HOSTED_ZONE_ID: ${{ vars.TABSCANNER_HOSTED_ZONE_ID }}
-          # Who is emailed when the site's health check fails or recovers:
-          # a secret, not a variable, so the public run logs never show it.
-          TABSCANNER_HEALTH_EMAILS: ${{ secrets.TABSCANNER_HEALTH_EMAILS }}
           # Sign-in and cloud sync (public identifiers; empty turns them off).
           TABSCANNER_GOOGLE_WEB_CLIENT_ID: ${{ vars.TABSCANNER_GOOGLE_WEB_CLIENT_ID }}
           TABSCANNER_COGNITO_IDENTITY_POOL_ID: ${{ vars.TABSCANNER_COGNITO_IDENTITY_POOL_ID }}

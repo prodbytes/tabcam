@@ -41,11 +41,14 @@ Parameters:
       The cloud OCR service's accounts table (the tabscan-ocr stack's
       AccountsTable output), whose record of a user DELETE /account deletes
       too. Empty: no OCR service.
-  RbacrTokenSecretArn:
+  RbacrTokenParameterName:
     Type: String
     Description: >
-      The Secrets Manager secret (tabscan/rbacr-token) with a root-owned
-      rbacr API token: a profile's roles are its addresses' (POST /api/roles)
+      The SSM SecureString parameter (standard tier, the AWS-managed aws/ssm
+      key) with a root-owned rbacr API token: a profile's roles are its
+      addresses' (POST /api/roles)
+    Default: /tabscan/rbacr-token
+    AllowedPattern: '/[A-Za-z0-9_./-]+'
   DeveloperProviderName:
     Type: String
     Default: login.tabscan.profiles
@@ -317,9 +320,12 @@ Resources:
                     kms:EncryptionContextKeys: [profile]
                   'Null':
                     kms:EncryptionContextKeys: 'false'
+              # The rbacr token. Encrypted with the AWS-managed aws/ssm
+              # key, whose key policy lets SSM decrypt for the account's
+              # principals: no kms:Decrypt needed here.
               - Effect: Allow
-                Action: secretsmanager:GetSecretValue
-                Resource: !Ref RbacrTokenSecretArn
+                Action: ssm:GetParameter
+                Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${RbacrTokenParameterName}
               # Whether a profile's folder is empty, before it joins another.
               - Effect: Allow
                 Action: s3:ListBucket
@@ -379,7 +385,7 @@ Resources:
           PROFILE_KEYS_TABLE: !Ref ProfileKeysTable
           PROFILE_KEY_ID: !GetAtt ProfileKey.Arn
           DEVELOPER_PROVIDER: !Ref DeveloperProviderName
-          RBACR_TOKEN_SECRET: !Ref RbacrTokenSecretArn
+          RBACR_TOKEN_PARAMETER: !Ref RbacrTokenParameterName
           RBACR_SYSTEM: tabscan
       # A placeholder: scripts/deploy-share-api.sh uploads the real code.
       Code:

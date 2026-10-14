@@ -89,8 +89,11 @@ Resources:
                 Resource:
                   - arn:aws:s3:::tabscan-*
                   - arn:aws:s3:::tabscan-*/*
-              # The site's health check (site.yaml): its Fn::ForEach transform,
-              # the Route 53 health check, its alarm and the email topic.
+              # The site's old health check: its Fn::ForEach transform, the
+              # Route 53 health check, its alarm and the email topic, gone
+              # from site.yaml (the nu01-monitor stack watches uptime now).
+              # Kept so CloudFormation can delete them on the next deploy;
+              # remove these statements after the next GA deploy.
               # Health checks have no names to scope by, so any in the account.
               - Effect: Allow
                 Action: cloudformation:CreateChangeSet
@@ -140,6 +143,7 @@ Resources:
                   - acm:DeleteCertificate
                   - acm:ListCertificates
                   - acm:AddTagsToCertificate
+                  - acm:RemoveTagsFromCertificate
                   - acm:ListTagsForCertificate
                 Resource: '*'
               - Effect: Allow
@@ -209,7 +213,9 @@ Resources:
                 Resource:
                   - arn:aws:s3:::tabscan-rc-*
                   - arn:aws:s3:::tabscan-rc-*/*
-              # The site's health check (site.yaml), as for production.
+              # The RC site's old health check, as for production: kept so
+              # CloudFormation can delete it on the next RC deploy; remove
+              # after the next GA deploy.
               - Effect: Allow
                 Action: cloudformation:CreateChangeSet
                 Resource: !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:aws:transform/LanguageExtensions
@@ -258,6 +264,7 @@ Resources:
                   - acm:DeleteCertificate
                   - acm:ListCertificates
                   - acm:AddTagsToCertificate
+                  - acm:RemoveTagsFromCertificate
                   - acm:ListTagsForCertificate
                 Resource: '*'
               - Effect: Allow

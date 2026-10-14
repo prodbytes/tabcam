@@ -261,22 +261,27 @@ class Profiles:
 
 class Rbacr:
     """Every role an address has, from rbacr (POST /api/roles, with a root's
-    token from Secrets Manager). Cached a minute; on any error, none
-    (fails closed)."""
+    token from an SSM SecureString parameter, RBACR_TOKEN_PARAMETER). Cached
+    a minute; on any error, none (fails closed)."""
 
-    def __init__(self, url=None, token=None, opener=None, clock=time.monotonic):
+    def __init__(self, url=None, token=None, opener=None, clock=time.monotonic, ssm=None):
         self.url = (url or os.environ.get("RBACR_URL") or "https://rbacr.nu01.com").rstrip("/")
         self.system = os.environ.get("RBACR_SYSTEM", "tabscan")
         self._token = token
+        self._ssm = ssm
         self._open = opener or urllib.request.urlopen
         self._clock = clock
         self._cache = {}
 
     def token(self):
+        """Read once per container (the instance lives as long as it does)."""
         if self._token is None:
-            import boto3
-            arn = os.environ["RBACR_TOKEN_SECRET"]
-            self._token = boto3.client("secretsmanager").get_secret_value(SecretId=arn)["SecretString"].strip()
+            if self._ssm is None:
+                import boto3
+                self._ssm = boto3.client("ssm")
+            name = os.environ["RBACR_TOKEN_PARAMETER"]
+            got = self._ssm.get_parameter(Name=name, WithDecryption=True)
+            self._token = got["Parameter"]["Value"].strip()
         return self._token
 
     def roles(self, email):

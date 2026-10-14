@@ -20,10 +20,8 @@ which runs `scripts/deploy.sh` for that tag:
 
 1. builds the web app for `/app/` with the tag's version
    (`TABSCANNER_STAGE=prod`);
-2. deploys the `tabscan-web` stack: certificate, bucket, CloudFront, DNS
-   records, and a Route 53 health check of `/app/version.json` (it must
-   name `tabscan_app`) whose alarm emails `TABSCANNER_HEALTH_EMAILS`;
-   with `TABSCANNER_SHARE_API_URL` set, its domain is the stack's
+2. deploys the `tabscan-web` stack: certificate, bucket, CloudFront and
+   DNS records; with `TABSCANNER_SHARE_API_URL` set, its domain is the stack's
    `ShareApiDomain`, which turns on [link previews](sharing.md#link-previews)
    (the share API as a second origin, for `/preview/*`);
 3. uploads `index.html`, the [privacy policy](privacy.md) (as the
@@ -62,9 +60,17 @@ Repository variables: `TABSCANNER_AWS_DEPLOY_ROLE_ARN`, `TABSCANNER_AWS_DEPLOY_R
 the builds (empty: no sign-in, no sharing, or no Premium). Their stacks,
 `tabscan-user-data`, `tabscan-identity`, `tabscan-share-api`,
 `tabscan-ocr-repo` and `tabscan-ocr`, are
-deployed by an administrator, not by the workflows; repository secret: `TABSCANNER_HEALTH_EMAILS` (a secret
-because the repository is public and run logs show variables). One-time setup:
+deployed by an administrator, not by the workflows. Every stack carries the
+cost-allocation tags `project=tabscan` and `tenancy` (`GA`, `RC`, or `shared`
+for the stacks both stages use; see [tabscan_infra/README.md](../tabscan_infra/README.md)). One-time setup:
 [tabscan_infra/README.md](../tabscan_infra/README.md).
+
+Uptime isn't watched by these stacks: the `nu01-monitor` stack (in the nu01
+repository) fetches https://tabscan.nu01.com/app/version.json and the RC's
+every 5 minutes and emails when one fails. It replaced the sites' Route 53
+health checks, alarms and SNS topics (removed 2026-10-14, to save their
+cost); the deploy roles keep the permissions to delete those until the
+next GA deploy has.
 
 By hand, with admin credentials: `TAG=0.1.<Z>-GA bash scripts/deploy.sh`
 (`STAGE=rc` for the RC; `SKIP_BUILD=1` to reuse a build).

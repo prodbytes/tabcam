@@ -4,8 +4,8 @@
 # (its own stack, tabscan-rc-web):
 #   1. builds the Flutter web app for /app/ (make web, WEB_BASE_HREF=/app/)
 #   2. deploys the site (CloudFormation tabscan_infra/site.yaml:
-#      tabscan-web: certificate, bucket, CloudFront, DNS, and the Route 53
-#      health check of /app/version.json with its alarm emails)
+#      tabscan-web: certificate, bucket, CloudFront, DNS; uptime is
+#      watched by the nu01-monitor stack, outside this repo)
 #   3. uploads the index page (/), the privacy policy (/privacy) and the
 #      web build (/app/), and invalidates the CloudFront cache
 #   4. smoke-tests the live site: /app/version.json must report this
@@ -22,10 +22,6 @@
 #   TABSCANNER_HOSTED_ZONE_ID
 #                the Route 53 zone of tabscan.nu01.com (default: the
 #                repo's .env, from the private repo)
-#   TABSCANNER_HEALTH_EMAILS
-#                who is emailed when the health check fails or recovers,
-#                comma-separated (also from .env). Each must confirm
-#                AWS's subscription email.
 #   TABSCANNER_GOOGLE_WEB_CLIENT_ID, TABSCANNER_COGNITO_IDENTITY_POOL_ID,
 #   TABSCANNER_USER_DATA_BUCKET, TABSCANNER_SHARE_API_URL
 #                sign-in, cloud sync and sharing, compiled into the build
@@ -48,10 +44,12 @@ case "$STAGE" in
   prod)
     stack_prefix=tabscan
     DOMAIN=tabscan.nu01.com
+    tenancy=GA
     ;;
   rc)
     stack_prefix=tabscan-rc
     DOMAIN=rc.tabscan.nu01.com
+    tenancy=RC
     ;;
   *) echo "error: STAGE must be prod or rc (got '$STAGE')" >&2; exit 2 ;;
 esac
@@ -79,7 +77,7 @@ stack_output() { # stack_output <stack> <output key>
 }
 
 # Private settings: from the environment, else the private .env.
-for name in TABSCANNER_HOSTED_ZONE_ID TABSCANNER_HEALTH_EMAILS; do
+for name in TABSCANNER_HOSTED_ZONE_ID; do
   if [[ -z "${!name:-}" && -f .env ]]; then
     printf -v "$name" '%s' "$(sed -n "s/^$name=//p" .env | tail -1)"
   fi
@@ -92,12 +90,6 @@ if [[ ! "$TABSCANNER_HOSTED_ZONE_ID" =~ ^Z[A-Z0-9]+$ ]]; then
   echo "error: TABSCANNER_HOSTED_ZONE_ID must be a Route 53 zone ID" >&2
   exit 1
 fi
-if [[ ! "$TABSCANNER_HEALTH_EMAILS" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+(,[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+)*$ ]]; then
-  echo "error: TABSCANNER_HEALTH_EMAILS must be comma-separated emails" >&2
-  exit 1
-fi
-# Emails are people's: logged only as a count.
-echo "    health alarm emails: $(tr ',' '\n' <<<"$TABSCANNER_HEALTH_EMAILS" | grep -c .)"
 
 # 1. The web app
 if [[ "${SKIP_BUILD:-}" != 1 ]]; then
@@ -137,11 +129,11 @@ share_api_domain="${TABSCANNER_SHARE_API_URL:-}"
 share_api_domain="${share_api_domain#https://}"
 share_api_domain="${share_api_domain%%/*}"
 echo "==> deploying $SITE_STACK"
-# AUTO_EXPAND: the template's Fn::ForEach (AWS::LanguageExtensions).
+# The stack's cost-allocation tags reach every resource that takes tags.
 aws cloudformation deploy --stack-name "$SITE_STACK" \
-  --template-file tabscan_infra/site.yaml --capabilities CAPABILITY_AUTO_EXPAND \
+  --template-file tabscan_infra/site.yaml \
+  --tags project=tabscan "tenancy=$tenancy" \
   --parameter-overrides "DomainName=$DOMAIN" "HostedZoneId=$TABSCANNER_HOSTED_ZONE_ID" \
-    "HealthNotificationEmails=$TABSCANNER_HEALTH_EMAILS" \
     "ShareApiDomain=$share_api_domain" \
   --no-fail-on-empty-changeset
 bucket="$(stack_output "$SITE_STACK" SiteBucketName)"

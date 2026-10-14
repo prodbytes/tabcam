@@ -1,14 +1,10 @@
 AWSTemplateFormatVersion: '2010-09-09'
-# Fn::ForEach: one email subscription per HealthNotificationEmails entry
-# (deploy with CAPABILITY_AUTO_EXPAND).
-Transform: AWS::LanguageExtensions
 Description: >
   tabscan-web: the site at https://tabscan.nu01.com (and, as
   tabscan-rc-web, https://rc.tabscan.nu01.com). One CloudFront
   distribution in front of the index page (/) and the Flutter web app
-  (/app/), both from a private S3 bucket. A Route 53 health check polls
-  https://DomainName/app/version.json; when it fails, an alarm emails
-  HealthNotificationEmails.
+  (/app/), both from a private S3 bucket. Uptime is watched from outside
+  the stack (the nu01-monitor stack polls /app/version.json).
   Deploy in us-east-1 (CloudFront certificates must live there).
 
 Parameters:
@@ -18,11 +14,6 @@ Parameters:
   HostedZoneId:
     Type: AWS::Route53::HostedZone::Id
     Description: The public zone of DomainName, tabscan.nu01.com's own (TABSCANNER_HOSTED_ZONE_ID)
-  HealthNotificationEmails:
-    Type: CommaDelimitedList
-    Description: >
-      Who is emailed when the health check fails and recovers, comma-separated.
-      Each address must confirm AWS's subscription email first.
   ShareApiDomain:
     Type: String
     Default: ''
@@ -239,66 +230,6 @@ Resources:
         HostedZoneId: Z2FDTNDATAQYW2
         EvaluateTargetHealth: false
 
-  # Polls https://DomainName/app/version.json through CloudFront: the
-  # edge, the bucket and the web build. Healthy only on a 2xx/3xx whose
-  # body names the app (Flutter writes app_name into version.json).
-  HealthCheck:
-    Type: AWS::Route53::HealthCheck
-    Properties:
-      HealthCheckConfig:
-        Type: HTTPS_STR_MATCH
-        FullyQualifiedDomainName: !Ref DomainName
-        Port: 443
-        ResourcePath: /app/version.json
-        SearchString: '"app_name":"tabscan_app"'
-        EnableSNI: true
-        RequestInterval: 30
-        FailureThreshold: 3
-        # Three regions (the fewest allowed) keep the checkers' calls down.
-        Regions: [us-east-1, us-west-2, eu-west-1]
-      HealthCheckTags:
-        - Key: Name
-          Value: !Sub ${DomainName}/app/version.json
-
-  HealthTopic:
-    Type: AWS::SNS::Topic
-    Properties:
-      TopicName: !Sub ${AWS::StackName}-health
-      DisplayName: TabScan health
-
-  # The default topic policy lets this account's CloudWatch alarms publish.
-  Fn::ForEach::HealthEmails:
-    - Email
-    - !Ref HealthNotificationEmails
-    - HealthEmail&{Email}:
-        Type: AWS::SNS::Subscription
-        Properties:
-          TopicArn: !Ref HealthTopic
-          Protocol: email
-          Endpoint: !Ref Email
-
-  # Route 53 publishes health check metrics in us-east-1, where this stack
-  # lives. Missing data (the check gone) counts as failing.
-  HealthAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmName: !Sub ${AWS::StackName}-health
-      AlarmDescription: !Sub https://${DomainName}/app/version.json is failing (Route 53 health check)
-      Namespace: AWS/Route53
-      MetricName: HealthCheckStatus
-      Dimensions:
-        - Name: HealthCheckId
-          Value: !GetAtt HealthCheck.HealthCheckId
-      Statistic: Minimum
-      Period: 60
-      EvaluationPeriods: 2
-      DatapointsToAlarm: 2
-      Threshold: 1
-      ComparisonOperator: LessThanThreshold
-      TreatMissingData: breaching
-      AlarmActions: [!Ref HealthTopic]
-      OKActions: [!Ref HealthTopic]
-
 Outputs:
   SiteUrl:
     Value: !Sub https://${DomainName}/
@@ -309,9 +240,3 @@ Outputs:
     Value: !Ref Distribution
   DistributionDomainName:
     Value: !GetAtt Distribution.DomainName
-  HealthCheckId:
-    Description: The Route 53 health check of https://DomainName/app/version.json
-    Value: !GetAtt HealthCheck.HealthCheckId
-  HealthTopicArn:
-    Description: Where health alarms go (HealthNotificationEmails subscribe to it)
-    Value: !Ref HealthTopic

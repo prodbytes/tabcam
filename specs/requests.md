@@ -853,3 +853,35 @@ spec.
     pair, the public key in `GET /profile`, content keys unwrapped for the
     owner, people it's shared with and link holders, and link previews of
     sealed captures ([encryption at rest](encryption.md)).
+
+## 2026-10-14
+
+1. **Tag every AWS resource with `project` and `tenancy`, so Cost Explorer
+   can split cost by product and stage.** Every stack is deployed with the
+   stack tags `project=tabscan` and `tenancy` (`GA` for `tabscan-web`, `RC`
+   for `tabscan-rc-web`, `dev` for `tabscan-identity-local`, `shared` for
+   the rest), which CloudFormation copies to the resources; the deploy
+   roles may now also remove certificate tags
+   ([deploy](deploy.md), [tabscan_infra/README.md](../tabscan_infra/README.md)).
+2. **Cut TabScan's AWS cost: drop the Route 53 health check, move the rbacr
+   token to SSM Parameter Store, and run the cloud OCR on arm64 if it
+   can.** The sites' Route 53 health check, its `HealthCheckStatus` alarm,
+   the SNS health topic and its email subscriptions, the
+   `HealthNotificationEmails` parameter, the `IsRc` condition, the
+   `HealthCheckId` and `HealthTopicArn` outputs and the `LanguageExtensions`
+   transform are gone from `site.yaml`, with `TABSCANNER_HEALTH_EMAILS` in
+   `scripts/deploy.sh`, the deploy workflows and `.env.example`; the
+   `nu01-monitor` stack (nu01 repository) polls both sites'
+   `/app/version.json` every 5 minutes instead. The deploy roles keep the
+   permissions to delete the old resources until the next GA deploy. The
+   rbacr token moved from the Secrets Manager secret `tabscan/rbacr-token`
+   to the SSM SecureString `/tabscan/rbacr-token` (standard tier, `aws/ssm`
+   key: free): the share API and `tabscan-ocr-api` read it with
+   `ssm:GetParameter` (decrypted, once per container; env
+   `RBACR_TOKEN_PARAMETER`, stack parameter `RbacrTokenParameterName`),
+   and the deploy scripts check it exists without reading its value. The
+   OCR functions stay x86_64: PaddlePaddle 3.3.1 has no Linux ARM wheel on
+   PyPI, and the one on Paddle's own index aborts loading the PaddleOCR
+   models in an arm64 build
+   ([deploy](deploy.md), [cloud OCR](cloud-ocr.md), [profiles](profiles.md),
+   [tabscan_infra/README.md](../tabscan_infra/README.md)).

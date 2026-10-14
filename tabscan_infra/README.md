@@ -5,7 +5,7 @@ templates.
 
 | Template | Stack | Holds |
 |---|---|---|
-| [site.yaml](site.yaml) | `tabscan-web` | https://tabscan.nu01.com: the ACM certificate (DNS-validated in the `tabscan.nu01.com` zone), a private S3 bucket, a CloudFront distribution, the Route 53 A/AAAA aliases, and a Route 53 health check of `/app/version.json` that emails `TABSCANNER_HEALTH_EMAILS` when it fails |
+| [site.yaml](site.yaml) | `tabscan-web` | https://tabscan.nu01.com: the ACM certificate (DNS-validated in the `tabscan.nu01.com` zone), a private S3 bucket, a CloudFront distribution, and the Route 53 A/AAAA aliases (uptime: the `nu01-monitor` stack, in the nu01 repository, polls `/app/version.json`) |
 | [user-data.yaml](user-data.yaml) | `tabscan-user-data` | The bucket of signed-in users' events, `nu01-user-events-<account>` (private, SSE-S3, TLS only, object events to EventBridge, versioned: old versions kept 30 days; CORS for the web app's origins). Not `tabscan-*`, so the deploy roles can't reach it. Shared by production and the RC |
 | [identity.yaml](identity.yaml) | `tabscan-identity` | The Cognito identity pool `tabscan` (Google sign-in through the `accounts.google.com` OpenID Connect provider it makes, for the web, iOS and local web clients, and with `AppleClientId` Sign in with Apple, for the bundle ID; no guests, enhanced flow) and its authenticated role: get, put and delete in `<bucket>/<identity ID>/*`, and list that prefix. Shared by production and the RC |
 | [identity.yaml](identity.yaml) | `tabscan-identity-local` | The same for local web builds: the pool `tabscan-local`, trusting the "local - web" client through the same provider, and its own authenticated role on the same bucket |
@@ -18,6 +18,13 @@ templates.
 release candidate's own copy, `tabscan-rc-web`, for
 https://rc.tabscan.nu01.com; `*RC*` tags do that through
 [deploy-rc.yml](../.github/workflows/deploy-rc.yml).
+
+Every stack is deployed with the cost-allocation tags `project=tabscan`
+and `tenancy` (CloudFormation copies them to the resources that take
+tags): `GA` for `tabscan-web`, `RC` for `tabscan-rc-web`, `dev` for
+`tabscan-identity-local`, and `shared` for the stacks both stages use
+(`tabscan-user-data`, `tabscan-identity`, `tabscan-share-api`,
+`tabscan-ocr-repo`, `tabscan-ocr`, `tabscan-github-deploy`).
 
 ## The distribution
 
@@ -72,14 +79,17 @@ ACM validation names.
      --stack-name tabscan-github-deploy \
      --template-file tabscan_infra/github-deploy.yaml \
      --capabilities CAPABILITY_NAMED_IAM \
+     --tags project=tabscan tenancy=shared \
      --parameter-overrides "HostedZoneId=$TABSCANNER_HOSTED_ZONE_ID"   # from the private .env
    ```
 
    The production role trusts only tokens for `*GA` tags of
    `prodbytes/tabscan`. Its permissions cover the TabScan stacks:
    CloudFormation, S3, CloudFront, ACM, records under `tabscan.nu01.com`
-   in the zone, and the site's health check (Route 53 health checks,
-   `tabscan-*` alarms and SNS topics, the `LanguageExtensions` transform).
+   in the zone, and, until the next GA deploy has deleted them, the site's
+   old health check (Route 53 health checks, `tabscan-*` alarms and SNS
+   topics, the `LanguageExtensions` transform); remove those statements
+   then.
    Run the same command again whenever `github-deploy.yaml` changes.
 
 2. Set the repository variables:
@@ -88,9 +98,6 @@ ACM validation names.
    gh variable set TABSCANNER_AWS_DEPLOY_ROLE_ARN --body "<DeployRoleArn>"
    gh variable set TABSCANNER_AWS_DEPLOY_RC_ROLE_ARN --body "<RcDeployRoleArn>"
    gh variable set TABSCANNER_HOSTED_ZONE_ID --body Z10277161AEN9OU2H73PJ
-   # A secret, not a variable: the repository is public, and run logs
-   # show variables.
-   gh secret set TABSCANNER_HEALTH_EMAILS --body "<who gets health alarms>"
    ```
 
 3. Sign-in and cloud sync (once; again when the templates change). An
@@ -121,11 +128,13 @@ ACM validation names.
       aws cloudformation deploy --region us-east-1 \
         --stack-name tabscan-user-data \
         --template-file tabscan_infra/user-data.yaml \
+        --tags project=tabscan tenancy=shared \
         --parameter-overrides "AllowedOrigins=$origins"
       aws cloudformation deploy --region us-east-1 \
         --stack-name tabscan-identity \
         --template-file tabscan_infra/identity.yaml \
         --capabilities CAPABILITY_IAM \
+        --tags project=tabscan tenancy=shared \
         --parameter-overrides "GoogleWebClientId=$TABSCANNER_GOOGLE_WEB_CLIENT_ID" \
           "GoogleAppClientIds=$TABSCANNER_GOOGLE_IOS_CLIENT_ID,$TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID" \
           GoogleProviderArn= PoolName=tabscan \
@@ -140,6 +149,7 @@ ACM validation names.
         --stack-name tabscan-identity-local \
         --template-file tabscan_infra/identity.yaml \
         --capabilities CAPABILITY_IAM \
+        --tags project=tabscan tenancy=dev \
         --parameter-overrides "GoogleWebClientId=$TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID" \
           GoogleAppClientIds= "GoogleProviderArn=$provider" PoolName=tabscan-local \
           DeveloperProviderName=
@@ -217,6 +227,7 @@ ACM validation names.
         --stack-name tabscan-identity \
         --template-file tabscan_infra/identity.yaml \
         --capabilities CAPABILITY_IAM \
+        --tags project=tabscan tenancy=shared \
         --parameter-overrides "GoogleWebClientId=$TABSCANNER_GOOGLE_WEB_CLIENT_ID" \
           PoolName=tabscan AppleClientId=com.nu01.tabscan
       ```

@@ -44,11 +44,14 @@ Parameters:
   RbacrUrl:
     Type: String
     Default: https://rbacr.nu01.com
-  RbacrTokenSecretArn:
+  RbacrTokenParameterName:
     Type: String
     Description: >
-      The Secrets Manager secret (tabscan/rbacr-token) holding a root-owned
-      rbacr API token, which may ask about any address's roles
+      The SSM SecureString parameter (standard tier, the AWS-managed aws/ssm
+      key) holding a root-owned rbacr API token, which may ask about any
+      address's roles
+    Default: /tabscan/rbacr-token
+    AllowedPattern: '/[A-Za-z0-9_./-]+'
   AnthropicKeySecretName:
     Type: String
     Default: tabscan/anthropic-api-key
@@ -180,13 +183,17 @@ Resources:
                     - !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${SubjectsTableName}
                     - !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${SubjectsTableName}/index/byProfile
                 - !Ref AWS::NoValue
+              # The rbacr token. Encrypted with the AWS-managed aws/ssm
+              # key, whose key policy lets SSM decrypt for the account's
+              # principals: no kms:Decrypt needed here.
+              - Effect: Allow
+                Action: ssm:GetParameter
+                Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${RbacrTokenParameterName}
+              # The Claude API key (auto-correct), by name: it works as
+              # soon as the secret is made, without a deploy.
               - Effect: Allow
                 Action: secretsmanager:GetSecretValue
-                Resource:
-                  - !Ref RbacrTokenSecretArn
-                  # The Claude API key (auto-correct), by name: it works as
-                  # soon as the secret is made, without a deploy.
-                  - !Sub arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AnthropicKeySecretName}-*
+                Resource: !Sub arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AnthropicKeySecretName}-*
               - Effect: Allow
                 Action: lambda:InvokeFunction
                 Resource: !GetAtt OcrFunction.Arn
@@ -212,6 +219,8 @@ Resources:
         ImageUri: !Ref ImageUri
       ImageConfig:
         Command: [locr.handler.ocr]
+      # Not arm64 (20% cheaper) yet: PaddlePaddle has no working Linux ARM
+      # build of this version (see tabscan_locr/Dockerfile).
       Architectures: [x86_64]
       # The account's Lambda memory cap is 3008 MB (new accounts); more
       # memory brings more vCPUs, so raise it once the quota allows.
@@ -270,7 +279,7 @@ Resources:
           APPLE_CLIENT_ID: !Ref AppleClientId
           COGNITO_IDENTITY_POOL_ID: !Ref IdentityPoolId
           RBACR_URL: !Ref RbacrUrl
-          RBACR_TOKEN_SECRET: !Ref RbacrTokenSecretArn
+          RBACR_TOKEN_PARAMETER: !Ref RbacrTokenParameterName
           RBACR_SYSTEM: tabscan
           RBACR_ROLE: premium
           UPGRADE_URL: !Ref UpgradeUrl

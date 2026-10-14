@@ -55,7 +55,8 @@ are every linked account's rbacr roles together.
 ## Roles
 
 - rbacr's `POST /api/roles` for each linked account's address (a root's
-  token, `tabscan/rbacr-token`), cached a minute, failing closed (no
+  token, from the SSM SecureString `/tabscan/rbacr-token`, read once per
+  container), cached a minute, failing closed (no
   roles): the profile's roles are the union of the `tabscan` system's
   roles (`free`, `premium`, `admin`; rbacr's answer already includes the
   implied ones), and `globalRoles` too. **Premium** if any linked account
@@ -130,7 +131,7 @@ first two are retained and have point-in-time recovery.
   normalized), owners with data or links refused, unlinking (not the
   owner), every linked sign-in getting the same folder, shares reaching
   every address, deleting by the owner only; rbacr asked, cached, failing
-  closed; the earlier sharing tests on profiles.
+  closed, its token read once from the SSM parameter; the earlier sharing tests on profiles.
 - Cloud OCR (pytest): a profile premium through any address, its folder
   recorded; no folder yet, nothing queued; the token's subject.
 - App: profile credentials (the share API's token, then Cognito); the

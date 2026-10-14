@@ -38,7 +38,9 @@ sharing it. An address is only trusted when the provider says it's
 verified (Apple's `email_verified` is the string `"true"`).
 
 The service asks rbacr (`POST /api/check`) with a root-owned API token kept
-in AWS Secrets Manager (`tabscan/rbacr-token`), never in the app. If rbacr
+in SSM Parameter Store (the standard-tier SecureString
+`/tabscan/rbacr-token`, under the AWS-managed `aws/ssm` key), never in the
+app; each container reads it once. If rbacr
 can't answer, the user is not premium for now. A "yes" is trusted for at
 most 5 minutes (less if the grant ends sooner), a "no" for 1 minute.
 
@@ -221,12 +223,13 @@ set to check both.
   - the table `tabscan-accounts` (identity ID → address; on demand,
     point-in-time recovery); a user's item is deleted with their account,
     by the share API ([deleting the account](cloud-sync.md#deleting-the-account));
-  - `tabscan-ocr` (3008 MB, the account's current cap; 5 min, one retry): it may get page images and put
+  - `tabscan-ocr` (x86_64, like `tabscan-ocr-api`: one image, and
+    PaddlePaddle has no working Linux ARM build of its version; 3008 MB, the account's current cap; 5 min, one retry): it may get page images and put
     results;
   - `tabscan-ocr-api` (512 MB, 300 s for [auto-correct](autocorrect.md)'s
     `/autocorrect`; the other requests take a second or two): it may read
-    and write the table, read the rbacr secret (and the Claude API key's,
-    when set), invoke `tabscan-ocr`, list the bucket and delete results;
+    and write the table, read the rbacr token's parameter (and the Claude
+    API key's secret, when set), invoke `tabscan-ocr`, list the bucket and delete results;
   - its function URL (no IAM auth: each request carries an ID token,
     Google's or Apple's (`AppleClientId`, the function's `APPLE_CLIENT_ID`);
     CORS for the web app's origins, the local HTTPS one included);
@@ -251,7 +254,8 @@ set to check both.
   refused; an Apple user is their own identity, premium by their (relay)
   address;
   `/transcribe` is premium-only and queues only untranscribed pages; rbacr's
-  answer is cached by its ttl and fails closed; the pipeline finds lines,
+  answer is cached by its ttl and fails closed; its token is read once
+  from the SSM parameter, decrypted, and an unreadable one fails closed; the pipeline finds lines,
   staves and widths, rebuilds lines and votes, and keeps the notations off
   the staves in their place (chord names at their columns, noise dropped).
 - The image's build reads back a made-up riff (at least 80% of its notes,
