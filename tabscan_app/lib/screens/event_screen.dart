@@ -24,6 +24,7 @@ import 'place.dart';
 import 'sign_in_gate.dart';
 import 'tab_text_view.dart';
 import 'mono_font.dart';
+import 'mini_player.dart';
 
 /// One event (a capture): the list of its files (images, videos,
 /// recordings, PDFs and links), each with a preview, a tap opening it alone
@@ -109,6 +110,9 @@ class _EventScreenState extends State<EventScreen> {
 
   /// Opens [page] alone on its [FileScreen], remembered until it's closed.
   Future<void> _openFile(EventPage page) async {
+    // The file screen has its own player: the list's stops.
+    await _player.stop();
+    if (!mounted) return;
     final memory = PlaceMemory.of(_library);
     void remember(String? id) => memory.update(
       (p) => p.eventId == widget.eventId ? p.copyWith(fileId: () => id) : p,
@@ -135,8 +139,12 @@ class _EventScreenState extends State<EventScreen> {
   @override
   void dispose() {
     _list.dispose();
+    _player.dispose();
     super.dispose();
   }
+
+  /// Plays videos and recordings from the list, one at a time.
+  late final ListPlayer _player = ListPlayer(_library);
 
   /// Runs [task] with the progress bar shown and buttons off, and reports
   /// a failure.
@@ -428,7 +436,7 @@ class _EventScreenState extends State<EventScreen> {
         : ListTile(
             key: const Key('text-tab'),
             leading: const SizedBox.square(
-              dimension: 64,
+              dimension: fileThumbnailSize,
               child: Icon(Icons.notes),
             ),
             title: Text(
@@ -457,31 +465,47 @@ class _EventScreenState extends State<EventScreen> {
       onReorderItem: (from, to) => _move(pages, from, to),
       itemBuilder: (context, i) {
         final page = pages[i];
+        final playable =
+            page.kind == PageKind.video || page.kind == PageKind.audio;
+        final thumbnail = FileThumbnail(
+          library: _library,
+          event: event,
+          page: page,
+        );
         return ListTile(
           key: ValueKey('file-${page.id}'),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
-            vertical: 4,
+            vertical: 10,
           ),
-          leading: FileThumbnail(library: _library, event: event, page: page),
+          minVerticalPadding: 10,
+          // A video plays in its thumbnail's place.
+          leading: page.kind == PageKind.video
+              ? MiniVideo(player: _player, page: page, thumbnail: thumbnail)
+              : thumbnail,
           title: Text(
             fileLabel(l10n, event, page),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          subtitle: page.url == null
-              ? null
-              : Text(
+          subtitle: page.url != null
+              ? Text(
                   '${page.url}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                ),
+                )
+              // Playing: its progress and time.
+              : playable
+              ? MiniProgress(player: _player, page: page)
+              : null,
           // A link's details (Copy, Delete) are behind its Details button:
           // a tap opens the link itself, outside the app. Editable, with
           // more than one file, each ends in a drag handle.
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (playable)
+                MiniPlayButton(player: _player, event: event, page: page),
               if (!event.readOnly)
                 IconButton(
                   key: ValueKey('rename-${page.id}'),

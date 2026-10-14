@@ -8,6 +8,7 @@ import '../processing/page_filter.dart';
 import 'audio_page.dart';
 import 'file_thumbnails.dart';
 import 'link_page.dart';
+import 'mini_player.dart';
 import 'page_image.dart';
 import 'pdf_page.dart';
 import 'video_page.dart';
@@ -49,7 +50,7 @@ class FileThumbnail extends StatelessWidget {
   Widget build(BuildContext context) {
     const badge = Colors.black54;
     return SizedBox.square(
-      dimension: 64,
+      dimension: fileThumbnailSize,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: ColoredBox(
@@ -60,7 +61,7 @@ class FileThumbnail extends StatelessWidget {
               event: event,
               page: page,
               fit: BoxFit.cover,
-              cacheWidth: 192,
+              cacheWidth: 240,
             ),
             PageKind.video => VideoFrameThumbnail(
               library: library,

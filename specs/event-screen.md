@@ -21,7 +21,8 @@ it opens on the Text view; otherwise on the list.
   without saving it.
 - **Files**: the list of the event's files, in their order, newest last
   (so a page just scanned or added is at the end, and the list scrolls to
-  it after Add). Each row has a preview and a name. Previews are made on
+  it after Add). Each row has a preview (80 px square, in a row with
+  10 px of padding above and below) and a name. Previews are made on
   the device, from the file itself (nothing is fetched from the
   internet); one that can't be made shows its kind's generic badge:
   - **Images** (photos and scans): the image itself, as its filter shows
@@ -34,6 +35,16 @@ it opens on the Text view; otherwise on the list.
   - **Links**: a link badge (a video badge for a YouTube video: its
     picture would come from YouTube, and nothing loads from there before
     **Play**); the title (or the address's host), the address under it.
+
+  **Playing from the list**: a video's or recording's row has a **play /
+  pause** button (before the rename pencil); it plays the file right
+  there ([`ListPlayer`](../tabscan_app/lib/screens/mini_player.dart),
+  `video_player`), a video in its thumbnail's place, with a scrubbable
+  progress bar and the time ("0:12 / 3:04") under its name. One plays at
+  a time: playing another stops the first; opening a file (its own
+  screen has its own player) and leaving the capture stop it too. At the
+  end, play starts it over. One that can't play says so under its name
+  ("This video can't be played here", or the recording's message).
 
   Numbers count the files of that kind. A file the user named shows its
   name instead, whatever it is; files, PDFs, recordings and videos added
