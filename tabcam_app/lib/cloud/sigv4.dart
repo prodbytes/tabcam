@@ -3,20 +3,35 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 
 import '../l10n/language.dart';
+import 'cdn.dart';
 
-/// Temporary AWS credentials (from Cognito).
+/// Temporary AWS credentials (from Cognito), and the CloudFront grant for
+/// the same folder, when the share API gave one ([cdn]).
 class AwsCredentials {
   const AwsCredentials({
     required this.accessKeyId,
     required this.secretAccessKey,
     this.sessionToken,
     this.expiration,
+    this.cdn,
   });
 
   final String accessKeyId;
   final String secretAccessKey;
   final String? sessionToken;
   final DateTime? expiration;
+
+  /// GETs under the folder through the site's CloudFront ([S3Bucket]).
+  final CdnGrant? cdn;
+
+  /// The same credentials, with [grant] for reading through CloudFront.
+  AwsCredentials withCdn(CdnGrant? grant) => AwsCredentials(
+    accessKeyId: accessKeyId,
+    secretAccessKey: secretAccessKey,
+    sessionToken: sessionToken,
+    expiration: expiration,
+    cdn: grant,
+  );
 
   /// Whether these expire within [margin] of [now].
   bool expiresSoon(

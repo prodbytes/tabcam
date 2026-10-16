@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -8,6 +10,7 @@ import 'auth/auth_service.dart';
 import 'auth/google_auth_service.dart';
 import 'auth/google_config.dart';
 import 'auth/multi_auth_service.dart';
+import 'cloud/cdn.dart';
 import 'cloud/cloud_config.dart';
 import 'cloud/cloud_ocr.dart';
 import 'cloud/cloud_sync.dart';
@@ -71,10 +74,7 @@ class AppServices {
     if (_cloud && ShareConfig.apiUrl.isNotEmpty) {
       captures = PublicCaptures(
         api: ShareApi(baseUrl: Uri.parse(ShareConfig.apiUrl)),
-        bucket: S3Bucket(
-          bucket: CloudConfig.userDataBucket,
-          region: CloudConfig.region,
-        ),
+        bucket: _linkBucket = _bucket(),
       );
     }
     reader = AutoReader(library: library, auth: auth, ocr: () => ocr)..start();
@@ -96,6 +96,32 @@ class AppServices {
   static bool get _cloud =>
       CloudConfig.enabled && GoogleConfig.webClientId.isNotEmpty;
 
+  /// The user-data bucket, read through the site's CloudFront where the
+  /// share API grants it (CdnConfig), and kept on the device as the files'
+  /// Cache-Control says.
+  static S3Bucket _bucket() => S3Bucket(
+    bucket: CloudConfig.userDataBucket,
+    region: CloudConfig.region,
+    cdnSite: CdnConfig.site,
+  );
+
+  S3Bucket? _linkBucket;
+  String? _cachedFor;
+
+  /// What the device keeps of users' folders is the signed-in user's: it
+  /// goes when they sign out, or another account signs in.
+  void _clearCacheOnSignOut(AuthService auth, S3Bucket bucket) {
+    _cachedFor = auth.user?.id;
+    auth.addListener(() {
+      final id = auth.user?.id;
+      if (_cachedFor != null && id != _cachedFor) {
+        unawaited(bucket.clearCache());
+        unawaited(_linkBucket?.clearCache());
+      }
+      _cachedFor = id;
+    });
+  }
+
   final Library library;
   AuthService? auth;
   PublicCaptures? captures;
@@ -107,10 +133,8 @@ class AppServices {
   void startSync() {
     final auth = this.auth;
     if (auth == null || sync != null) return;
-    final bucket = S3Bucket(
-      bucket: CloudConfig.userDataBucket,
-      region: CloudConfig.region,
-    );
+    final bucket = _bucket();
+    _clearCacheOnSignOut(auth, bucket);
     final shares = ShareConfig.apiUrl.isEmpty
         ? null
         : ShareApi(baseUrl: Uri.parse(ShareConfig.apiUrl));

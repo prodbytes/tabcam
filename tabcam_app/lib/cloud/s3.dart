@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import 'http_cache.dart';
 import 'sigv4.dart';
 
 /// An S3 request that didn't succeed.
@@ -78,7 +79,11 @@ abstract interface class ObjectStore {
   });
 }
 
-/// Signed requests to one bucket (virtual-hosted-style URLs).
+/// Signed requests to one bucket (virtual-hosted-style URLs). With a
+/// [cdnSite], GETs of keys the credentials' CloudFront grant covers go
+/// through that site instead, and through [cache], which keeps them on the
+/// device as their `Cache-Control` says; anything CloudFront doesn't
+/// answer is asked of S3 as before.
 class S3Bucket implements ObjectStore {
   S3Bucket({
     required this.bucket,
@@ -86,13 +91,41 @@ class S3Bucket implements ObjectStore {
     http.Client? client,
     DateTime Function()? now,
     AwsClock? clock,
+    this.cdnSite,
+    HttpCache? cache,
   }) : _client = client ?? http.Client(),
        clock = clock ?? (now == null ? AwsClock.shared : AwsClock(now: now)),
-       _signer = SigV4Signer(region: region);
+       _signer = SigV4Signer(region: region) {
+    _cache = cdnSite == null
+        ? null
+        : cache ?? HttpCache(client: _client, now: this.clock.now);
+  }
 
   final String bucket;
   final String region;
   final http.Client _client;
+
+  /// The site whose CloudFront serves users' folders (null: S3 only).
+  final Uri? cdnSite;
+  late final HttpCache? _cache;
+
+  /// What uploads say about caching them, by key: a page's file is
+  /// written once (a changed page is a new one), so it's kept a year as it
+  /// is; JSON (event.json, OCR results) is rewritten in place, so every
+  /// reader checks its ETag first.
+  static String cacheControlOf(String key) => key.endsWith('.json')
+      ? 'no-cache'
+      : 'public, max-age=31536000, immutable';
+
+  /// [key]'s signed CloudFront URL, when its grant covers it.
+  Uri? _cdnUrl(String key, AwsCredentials credentials) {
+    final site = cdnSite;
+    if (site == null || _cache == null) return null;
+    return credentials.cdn?.urlOf(key, site, clock.now());
+  }
+
+  /// Forgets what the device keeps of users' folders (on sign-out).
+  Future<void> clearCache() async => _cache?.clear();
 
   /// The time requests are signed with; corrected when AWS says it's off.
   final AwsClock clock;
@@ -106,6 +139,14 @@ class S3Bucket implements ObjectStore {
     String key, {
     required AwsCredentials credentials,
   }) async {
+    final url = _cdnUrl(key, credentials);
+    if (url != null) {
+      try {
+        return await _cache!.get(url, key);
+      } on Object catch (e) {
+        debugPrint('TabCam: CDN: $key from S3 instead ($e)');
+      }
+    }
     final response = await _send('GET', Uri.https(host, '/$key'), credentials);
     return response.bodyBytes;
   }
@@ -116,6 +157,14 @@ class S3Bucket implements ObjectStore {
     String key, {
     required AwsCredentials credentials,
   }) async {
+    final url = _cdnUrl(key, credentials);
+    if (url != null) {
+      try {
+        return await _cache!.getStream(url, key);
+      } on Object catch (e) {
+        debugPrint('TabCam: CDN: $key from S3 instead ($e)');
+      }
+    }
     final uri = Uri.https(host, '/$key');
     final request = http.Request('GET', uri)
       ..headers.addAll(_signed('GET', uri, credentials));
@@ -388,6 +437,7 @@ class S3Bucket implements ObjectStore {
       headers: {
         'host': host,
         'content-type': contentType,
+        'cache-control': cacheControlOf(key),
         'x-amz-storage-class': storageClass,
       },
       payloadHash: sha256.convert(bytes).toString(),
@@ -422,6 +472,7 @@ class S3Bucket implements ObjectStore {
       headers: {
         'host': host,
         'content-type': contentType,
+        'cache-control': cacheControlOf(key),
         'x-amz-storage-class': storageClass,
       },
       payloadHash: SigV4Signer.unsignedPayload,

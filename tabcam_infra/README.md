@@ -5,11 +5,11 @@ templates.
 
 | Template | Stack | Holds |
 |---|---|---|
-| [site.yaml](site.yaml) | `tabcam-web` | https://tabcam.nu01.com: the ACM certificate (DNS-validated in the `tabcam.nu01.com` zone), a private S3 bucket, a CloudFront distribution, and the Route 53 A/AAAA aliases (uptime: the `nu01-monitor` stack, in the nu01 repository, polls `/app/version.json`) |
-| [user-data.yaml](user-data.yaml) | `tabcam-user-data` | The bucket of signed-in users' events, `nu01-user-events-<account>` (private, SSE-S3, TLS only, object events to EventBridge, versioned: old versions kept 30 days; CORS for the web app's origins). Not `tabcam-*`, so the deploy roles can't reach it. Shared by production and the RC |
+| [site.yaml](site.yaml) | `tabcam-web` | https://tabcam.nu01.com: the ACM certificate (DNS-validated in the `tabcam.nu01.com` zone), a private S3 bucket, a CloudFront distribution (with `CdnKeyGroupId`, also users' folders at `/us-east-1:*` for signed URLs only, [caching](../specs/cdn.md)), and the Route 53 A/AAAA aliases (uptime: the `nu01-monitor` stack, in the nu01 repository, polls `/app/version.json`) |
+| [user-data.yaml](user-data.yaml) | `tabcam-user-data` | The bucket of signed-in users' events, `nu01-user-events-<account>` (private, SSE-S3, TLS only, object events to EventBridge, versioned: old versions kept 30 days; CORS for the web app's origins; read by the sites' distributions named in `CdnDistributionArns`, and no others). Not `tabcam-*`, so the deploy roles can't reach it. Shared by production and the RC |
 | [identity.yaml](identity.yaml) | `tabcam-identity` | The Cognito identity pool `tabcam` (Google sign-in through the `accounts.google.com` OpenID Connect provider it makes, for the web, iOS and local web clients, and with `AppleClientId` Sign in with Apple, for the bundle ID; no guests, enhanced flow) and its authenticated role: get, put and delete in `<bucket>/<identity ID>/*`, and list that prefix. Shared by production and the RC |
 | [identity.yaml](identity.yaml) | `tabcam-identity-local` | The same for local web builds: the pool `tabcam-local`, trusting the "local - web" client through the same provider, and its own authenticated role on the same bucket |
-| [share-api.yaml](share-api.yaml) | `tabcam-share-api` | Sharing captures by email: the `tabcam-share-api` HTTP API (Google JWT authorizer, and with `AppleClientId` an Apple one for the same routes under `/apple`; throttled), its Python function ([tabcam_api/shares/](../tabcam_api/shares)), the grants table (PITR on) and the `tabcam-share-access` role, which the function assumes with a session policy narrowed to one capture's folder (and to reading, for read-only grants) |
+| [share-api.yaml](share-api.yaml) | `tabcam-share-api` | Sharing captures by email: the `tabcam-share-api` HTTP API (Google JWT authorizer, and with `AppleClientId` an Apple one for the same routes under `/apple`; throttled), its Python function ([tabcam_api/shares/](../tabcam_api/shares)), the grants table (PITR on) and the `tabcam-share-access` role, which the function assumes with a session policy narrowed to one capture's folder (and to reading, for read-only grants); with `CdnPublicKey`, the `tabcam-user-data` CloudFront key group whose key signs URLs of users' folders |
 | [ocr-repo.yaml](ocr-repo.yaml) | `tabcam-ocr-repo` | The ECR repository `tabcam-ocr` of the cloud OCR image ([tabcam_locr/](../tabcam_locr/README.md)) |
 | [ocr.yaml](ocr.yaml) | `tabcam-ocr` | TabCam Premium's cloud OCR: the `tabcam-accounts` table, the `tabcam-ocr` and `tabcam-ocr-api` functions, the API's function URL (the app's `TABCAM_OCR_URL`) and the EventBridge rule for page uploads. Deployed by `tabcam_locr/scripts/deploy.sh` |
 | [github-deploy.yaml](github-deploy.yaml) | `tabcam-github-deploy` | The `tabcam-github-deploy` role (Deploy workflow, `*GA` tags) and the `tabcam-github-deploy-rc` role (Deploy RC workflow: `*RC*` tags and manual runs from `main`, limited to `tabcam-rc-*` resources and the `rc.tabcam.nu01.com` records), trusting GitHub's OIDC provider |
@@ -269,3 +269,33 @@ ACM validation names.
       account is deleted, so no redeploy is needed; until it exists,
       Apple accounts are deleted without revoking, and
       `scripts/deploy-share-api.sh` warns.
+
+## CloudFront for users' folders
+
+Reads of users' files go through the sites' distributions, to URLs the
+share API signs ([specs/cdn.md](../specs/cdn.md)). To set it up, or after
+replacing a site's distribution, run these in order:
+
+1. `bash scripts/make-cdn-key.sh`: the signing key (SSM
+   `/tabcam/cdn-signing-key`, and its public half `/tabcam/cdn-public-key`).
+   Run it once; `ROTATE=1` replaces the key.
+2. `bash scripts/deploy-share-api.sh`: the key group, the signer, and the
+   sites' distributions for invalidating a deleted account's folder. It
+   prints `TABCAM_CDN_KEY_GROUP_ID`.
+3. Set the repository variables `TABCAM_CDN_KEY_GROUP_ID` (that ID) and
+   `TABCAM_CDN_URL` (`https://tabcam.nu01.com`, for the phone apps), plus
+   both in `.env`, then deploy the sites (an RC and a GA tag, or
+   `scripts/deploy.sh`). Each gains the `/us-east-1:*` behavior.
+4. Let the two distributions read the bucket:
+
+   ```bash
+   arns="$(for s in tabcam-web tabcam-rc-web; do aws cloudformation describe-stacks --stack-name $s \
+     --query "Stacks[0].Outputs[?OutputKey=='DistributionArn'].OutputValue" --output text; done | paste -sd, -)"
+   aws cloudformation deploy --region us-east-1 --stack-name tabcam-user-data \
+     --template-file tabcam_infra/user-data.yaml --tags project=tabcam tenancy=shared \
+     --parameter-overrides "AllowedOrigins=$origins" "CdnDistributionArns=$arns" \
+     --no-fail-on-empty-changeset
+   ```
+
+Until step 4, CloudFront answers 403 and the app reads S3 directly.
+

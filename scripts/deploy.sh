@@ -86,6 +86,14 @@ for name in TABCAM_HOSTED_ZONE_ID; do
     exit 1
   fi
 done
+# Optional: the share API's CloudFront key group (tabcam_api/shares/cdn.py).
+if [[ -z "${TABCAM_CDN_KEY_GROUP_ID:-}" && -f .env ]]; then
+  TABCAM_CDN_KEY_GROUP_ID="$(sed -n 's/^TABCAM_CDN_KEY_GROUP_ID=//p' .env | tail -1)"
+fi
+if [[ -n "${TABCAM_CDN_KEY_GROUP_ID:-}" && ! "$TABCAM_CDN_KEY_GROUP_ID" =~ ^[0-9a-f-]{36}$ ]]; then
+  echo "error: TABCAM_CDN_KEY_GROUP_ID must be a CloudFront key group ID" >&2
+  exit 1
+fi
 if [[ ! "$TABCAM_HOSTED_ZONE_ID" =~ ^Z[A-Z0-9]+$ ]]; then
   echo "error: TABCAM_HOSTED_ZONE_ID must be a Route 53 zone ID" >&2
   exit 1
@@ -134,7 +142,7 @@ aws cloudformation deploy --stack-name "$SITE_STACK" \
   --template-file tabcam_infra/site.yaml \
   --tags project=tabcam "tenancy=$tenancy" \
   --parameter-overrides "DomainName=$DOMAIN" "HostedZoneId=$TABCAM_HOSTED_ZONE_ID" \
-    "ShareApiDomain=$share_api_domain" \
+    "ShareApiDomain=$share_api_domain" "CdnKeyGroupId=${TABCAM_CDN_KEY_GROUP_ID:-}" \
   --no-fail-on-empty-changeset
 bucket="$(stack_output "$SITE_STACK" SiteBucketName)"
 distribution="$(stack_output "$SITE_STACK" DistributionId)"

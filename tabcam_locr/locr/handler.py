@@ -398,8 +398,10 @@ def ocr(event, context=None):
         raise
     result.update(seconds=round(time.monotonic() - start, 2), created=_now())
     result.setdefault("engines", list(_engines))
+    # Rewritten by a new reading: readers revalidate it (its ETag) each time.
     services.s3.put_object(Bucket=services.bucket, Key=page.result_key,
-                           Body=json.dumps(result).encode(), ContentType="application/json")
+                           Body=json.dumps(result).encode(), ContentType="application/json",
+                           CacheControl="no-cache")
     log("ocr done", key=page.key, status=result["status"], error=result.get("error"),
         staves=result.get("staves"), lines=result.get("lines"), timings=result.get("timings"),
         seconds=result["seconds"])

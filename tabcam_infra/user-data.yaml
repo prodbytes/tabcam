@@ -11,6 +11,18 @@ Parameters:
     Type: CommaDelimitedList
     Default: https://tabcam.nu01.com,https://rc.tabcam.nu01.com,http://localhost:2012,https://local.tabcam.nu01.com:2443
     Description: Web origins the app runs on (browser requests need CORS)
+  CdnDistributionArns:
+    Type: CommaDelimitedList
+    Default: ''
+    Description: >
+      The sites' CloudFront distributions (tabcam-web's and tabcam-rc-web's
+      DistributionArn outputs) that may read objects, for signed URLs only
+      (tabcam_api/shares/cdn.py). Named one by one: the GitHub deploy roles
+      may make distributions, and must never reach users' events. Empty:
+      none may.
+
+Conditions:
+  HasCdn: !Not [!Equals [!Join ['', !Ref CdnDistributionArns], '']]
 
 Resources:
   UserDataBucket:
@@ -79,6 +91,21 @@ Resources:
             Condition:
               Bool:
                 aws:SecureTransport: 'false'
+          # The sites' CloudFront distributions (tabcam_infra/site.yaml) read
+          # objects through their Origin Access Control, for signed URLs only
+          # (the share API's key group; tabcam_api/shares/cdn.py).
+          - !If
+            - HasCdn
+            - Sid: CloudFrontReads
+              Effect: Allow
+              Principal:
+                Service: cloudfront.amazonaws.com
+              Action: s3:GetObject
+              Resource: !Sub ${UserDataBucket.Arn}/*
+              Condition:
+                StringEquals:
+                  aws:SourceArn: !Ref CdnDistributionArns
+            - !Ref AWS::NoValue
 
 Outputs:
   UserDataBucketName:

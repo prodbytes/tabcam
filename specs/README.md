@@ -64,6 +64,10 @@ the cloud as they sync.
   Sign in with Apple on iOS) from the Profile tab; signed-in users' events sync both ways with
   their own folder in S3 (Cognito identity pool credentials, no server),
   deletions included; Delete account deletes it all.
+- [Caching users' files](cdn.md): every object says how to cache it
+  (pages a year, JSON revalidated); reads go through the site's
+  CloudFront, signed per folder by the share API, and a device cache keeps
+  them as the same headers say (files on phones, IndexedDB on the web).
 - [Profiles](profiles.md): as in Presence, a user's data belongs to a
   profile (`huge_wavy_darter`), made at their first sign-in; Google and
   Apple accounts link to it with a code (or by the same verified address),
