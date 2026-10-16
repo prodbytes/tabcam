@@ -1,10 +1,12 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+
 import 'package:pdfrx/pdfrx.dart';
 
 import '../library/capture_event.dart';
 import '../library/library.dart';
+import 'arriving.dart';
 import 'page_image.dart';
 import 'video_page.dart';
 import 'mono_font.dart';
@@ -25,6 +27,21 @@ class CardPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // What the card shows first, if its file is still on its way: a
+    // spinner on the card until it's here.
+    final shown = event.visiblePages
+        .where((p) => p.isImage || p.isPdf)
+        .firstOrNull;
+    return Arriving(
+      library: library,
+      event: event,
+      page: shown,
+      placeholder: const ColoredBox(color: Colors.white),
+      child: _preview,
+    );
+  }
+
+  Widget _preview(BuildContext context) {
     final visible = event.visiblePages;
     EventPage? first(bool Function(EventPage) test) =>
         visible.where(test).firstOrNull;

@@ -982,7 +982,63 @@ spec.
    a failure keeps the take as recorded ([Cam](cam.md#the-tab-in-the-take),
    [platforms](platforms.md)). Also: the iOS `Podfile.lock` was brought up
    to date with the face detection pod head gestures added.
-9. **Optimize the OCR Lambda: increase its memory and scan until it stops
+9. **"The spinner icon is showing for a tab that was already read. Only
+   read tabs that were not yet read or that were forced to re-read by
+   clicking the icon when it is already ready."** Then: **"icon seems to
+   be spinning forever, make it sure it fails after 2x the lambda
+   timeout"**, **"make it 3x"**. The cause: with Premium, `AutoReader`
+   set `inCloud` and nothing ever cleared it, as the cloud's text comes
+   with sync, which it didn't watch, so the Text tool spun on a read tab.
+   Now the reader watches every library change (sync's too) and drops the
+   state once the event has a text tab or is gone, and `CloudOcr`
+   tells it when an event's results are collected (`collected`). Pages
+   reordered, rotated, added or deleted no longer re-read an event that
+   has a text tab; events without one are read as before. Tapping the
+   Text tool on the Text view with a tab asks "Read the tab again?"
+   (Cancel / Read again; en, es, pt) and reads it again with the
+   spinner. Read again in the cloud now waits for every page's new
+   result (by ETag) and replaces an auto text, on-device ones too (it
+   used to skip events whose pages it had filled). A read still waiting
+   after `cloudReadTimeout`, 3 x the OCR Lambda's 15-minute timeout
+   (45 minutes), fails, with Read again; a text that comes later still
+   fills in ([tab recognition](tab-recognition.md#reading-by-itself),
+   [event screen](event-screen.md), [cloud OCR](cloud-ocr.md)).
+10. **The tab overlay isn't in the recorded video: make sure it is.** The
+   web recorder was checked end to end (the real Cam screen in Chromium,
+   Firefox and WebKit with a fake webcam, the saved take's frames read
+   back): the band is there. Where it can't be added, Cam no longer
+   stays silent: a message says the take was recorded or saved without
+   the tab, and why; a band image that fails is drawn as plain text
+   instead. The band is smaller (a six-string staff takes about a third
+   of a landscape take) ([Cam](cam.md#the-tab-in-the-take)).
+11. **When the app loads, data takes a long while to come: make it
+   quicker, perhaps by getting a list first, showing it with a loading
+   icon, then fetching.** A pass downloaded each new capture's files one
+   after another before showing it, one capture at a time. Now it fetches
+   the changed `scan.json` files 8 at a time and shows the captures at
+   once; their files download after, 4 at a time (pictures and PDFs
+   first, newest captures first), each preview showing a spinner until
+   its file is here, and whatever needs a file waiting for it. A file that
+   fails to come is asked for again at the next pass
+   ([cloud sync](cloud-sync.md#listed-first-files-after),
+   [platforms](platforms.md)).
+12. **Home shows no tabs though there are some: show a loading icon while
+   a signed-in user's captures load, or just the welcome without features
+   signed out.** Signed in with nothing on the device, Home now shows
+   "Loading your captures…" with a spinner until the first sync pass since
+   signing in ends (`CloudSync.firstPassDone`), then the captures (or "No
+   tabs yet" if there are truly none); a failed first pass says so, with
+   Try again. Signed out was already only the welcome and sign-in
+   ([library](library.md)).
+13. **Add a button to download each file, and one to download all, on
+   top.** Each file row has **Download** (its file under its name in the
+   list; scanned `img` pages as `.jpg`), and the app bar **Download
+   all**: `<title>.zip` with every file, the text tab and the links
+   (`lib/export/download.dart`). The browser downloads; Android and iOS
+   show the system's "save as" (`file_picker`). On a phone narrower than
+   600 px, Rename, Download and Delete move into a ⋮ menu on each row
+   ([event screen](event-screen.md)).
+14. **Optimize the OCR Lambda: increase its memory and scan until it stops
    improving, to find the sweet spot of cost and performance.** Measured
    `tabcam-ocr` on a made-up riff page at 2048, 2560 and 3008 MB (the
    account's cap): 144 s, 106 s and 97 s a page warm, $4.79, $4.40 and

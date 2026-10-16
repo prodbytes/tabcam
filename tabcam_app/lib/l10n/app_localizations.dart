@@ -562,6 +562,18 @@ abstract class AppLocalizations {
   /// **'Read again'**
   String get eventReadAgain;
 
+  /// Event: asked when tapping the Text tool again while the Text view shows a tab
+  ///
+  /// In en, this message translates to:
+  /// **'Read the tab again?'**
+  String get eventReadAgainTitle;
+
+  /// Event: what reading the tab again does
+  ///
+  /// In en, this message translates to:
+  /// **'The text read before is replaced, unless you edited it or marked it correct.'**
+  String get eventReadAgainBody;
+
   /// Event Text view: reading failed
   ///
   /// In en, this message translates to:
@@ -705,6 +717,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete file'**
   String get eventDeleteFile;
+
+  /// Capture screen: download one file
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get eventDownload;
+
+  /// Capture screen: download every file as a zip
+  ///
+  /// In en, this message translates to:
+  /// **'Download all'**
+  String get eventDownloadAll;
+
+  /// Capture screen: a download failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t download'**
+  String get eventCouldntDownload;
+
+  /// Capture screen: a file's menu (rename, download, delete) on a narrow phone
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get eventFileMore;
 
   /// Capture screen: deleting a file failed
   ///
@@ -1030,11 +1066,17 @@ abstract class AppLocalizations {
   /// **'Adding the tab to the video…'**
   String get camAddingTab;
 
-  /// Cam: burning the tab into the take failed
+  /// Cam: burning the tab into the take failed, and why
   ///
   /// In en, this message translates to:
-  /// **'The take was saved without the tab.'**
-  String get camNoOverlay;
+  /// **'The take was saved without the tab: {reason}'**
+  String camNoOverlay(String reason);
+
+  /// Cam (web): the tab couldn't be recorded in, and why
+  ///
+  /// In en, this message translates to:
+  /// **'Recording without the tab: {reason}'**
+  String camRecordingNoTab(String reason);
 
   /// Cam: head gestures toggle, on
   ///
@@ -1299,6 +1341,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No tabs yet'**
   String get homeLibraryEmpty;
+
+  /// Home: signed in, the first sync is bringing the captures
+  ///
+  /// In en, this message translates to:
+  /// **'Loading your captures…'**
+  String get homeLibraryLoading;
+
+  /// Home: nothing here and the first sync failed
+  ///
+  /// In en, this message translates to:
+  /// **'Your captures couldn\'t be loaded'**
+  String get homeLibraryLoadFailed;
+
+  /// Home: retry loading the captures
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get homeLibraryTryAgain;
 
   /// Home with no events: what to do
   ///

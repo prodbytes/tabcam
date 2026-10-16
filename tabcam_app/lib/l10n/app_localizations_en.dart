@@ -295,6 +295,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventReadAgain => 'Read again';
 
   @override
+  String get eventReadAgainTitle => 'Read the tab again?';
+
+  @override
+  String get eventReadAgainBody =>
+      'The text read before is replaced, unless you edited it or marked it correct.';
+
+  @override
   String get eventReadFailed => 'Reading the tab failed.';
 
   @override
@@ -375,6 +382,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventDeleteFile => 'Delete file';
+
+  @override
+  String get eventDownload => 'Download';
+
+  @override
+  String get eventDownloadAll => 'Download all';
+
+  @override
+  String get eventCouldntDownload => 'Couldn\'t download';
+
+  @override
+  String get eventFileMore => 'More';
 
   @override
   String get eventCouldntDelete => 'Couldn\'t delete';
@@ -577,7 +596,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camAddingTab => 'Adding the tab to the video…';
 
   @override
-  String get camNoOverlay => 'The take was saved without the tab.';
+  String camNoOverlay(String reason) {
+    return 'The take was saved without the tab: $reason';
+  }
+
+  @override
+  String camRecordingNoTab(String reason) {
+    return 'Recording without the tab: $reason';
+  }
 
   @override
   String get camHeadsOn =>
@@ -776,6 +802,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeLibraryEmpty => 'No tabs yet';
+
+  @override
+  String get homeLibraryLoading => 'Loading your captures…';
+
+  @override
+  String get homeLibraryLoadFailed => 'Your captures couldn\'t be loaded';
+
+  @override
+  String get homeLibraryTryAgain => 'Try again';
 
   @override
   String get homeLibraryEmptyDetail =>

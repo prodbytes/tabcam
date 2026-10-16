@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tabcam_app/capture/media.dart';
 import 'package:tabcam_app/cloud/cloud_sync.dart';
 import 'package:tabcam_app/cloud/cognito.dart';
 import 'package:tabcam_app/cloud/share_api.dart';
@@ -144,6 +147,92 @@ void main() {
     bucket.requests.clear();
     await tablet.sync.syncNow();
     expect(bucket.requests, ['LIST $folder/']);
+  });
+
+  test('a new device lists the captures first, their files after', () async {
+    final phone = Device(bucket);
+    await phone.start();
+    for (var i = 0; i < 3; i++) {
+      phone.later();
+      await phone.library.create([
+        bytes([i, i]),
+      ]);
+    }
+    await phone.sync.syncNow();
+
+    final hold = bucket.holdFiles = Completer<void>();
+    final tablet = Device(bucket);
+    await tablet.start();
+    // Listed at once, every file still loading.
+    final events = tablet.library.events;
+    expect(events, hasLength(3));
+    for (final e in events) {
+      expect(tablet.library.isArriving(e.id, e.pages.single), isTrue);
+    }
+    // What needs a file waits for it.
+    final first = events.first;
+    var got = <int>[];
+    final waiting = tablet.library
+        .original(first, first.pages.single)
+        .then((b) => got = b);
+    await Future<void>.delayed(Duration.zero);
+    expect(got, isEmpty);
+
+    hold.complete();
+    await waiting;
+    await tablet.settle();
+    for (final e in tablet.library.events) {
+      expect(tablet.library.isArriving(e.id, e.pages.single), isFalse);
+    }
+    expect(got, isNotEmpty);
+  });
+
+  test('a file that failed to come is asked for again', () async {
+    final phone = Device(bucket);
+    await phone.start();
+    await phone.library.create([
+      bytes([4, 2]),
+    ]);
+    await phone.sync.syncNow();
+
+    bucket.failFiles = 1;
+    final tablet = Device(bucket);
+    await tablet.start();
+    final copy = tablet.library.events.single;
+    expect(tablet.library.isArriving(copy.id, copy.pages.single), isTrue);
+    // The next pass asks again.
+    await tablet.sync.syncNow();
+    await tablet.settle();
+    expect(tablet.library.isArriving(copy.id, copy.pages.single), isFalse);
+    expect(await tablet.library.original(copy, copy.pages.single), [4, 2]);
+  });
+
+  test('pictures come before videos', () async {
+    final phone = Device(bucket);
+    await phone.start();
+    var event = await phone.library.create(const []);
+    event = await phone.library.addMedia(event, [
+      Media(
+        XFile.fromData(bytes([9]), path: 'riff.mp4'),
+        PageKind.video,
+        'mp4',
+      ),
+    ]);
+    await phone.library.addPages(event, [
+      bytes([1]),
+    ]);
+    await phone.sync.syncNow();
+
+    bucket.requests.clear();
+    final tablet = Device(bucket);
+    await tablet.start();
+    final files = [
+      for (final r in bucket.requests)
+        if (r.startsWith('GET') && !r.endsWith('event.json')) r,
+    ];
+    expect(files, hasLength(2));
+    expect(files.first, isNot(endsWith('.mp4')));
+    expect(files.last, endsWith('.mp4'));
   });
 
   test('a change on one device reaches the other', () async {

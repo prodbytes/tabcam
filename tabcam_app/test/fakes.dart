@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -55,6 +56,7 @@ class FakeBucket implements ObjectStore {
     required AwsCredentials credentials,
   }) async {
     _request('LIST $prefix');
+    await holdList?.future;
     return {
       for (final MapEntry(:key, :value) in objects.entries)
         if (key.startsWith(prefix)) key: md5.convert(value).toString(),
@@ -74,7 +76,28 @@ class FakeBucket implements ObjectStore {
   Future<Stream<List<int>>> getStream(
     String key, {
     required AwsCredentials credentials,
-  }) async => Stream.value(await get(key, credentials: credentials));
+  }) async {
+    // Page files (not event.json) wait while [holdFiles] is set, and
+    // the next [failFiles] fail.
+    if (!key.endsWith('/event.json')) {
+      await holdFiles?.future;
+      if (failFiles > 0) {
+        failFiles--;
+        _request('GET $key');
+        throw S3Exception(500, 'InternalError');
+      }
+    }
+    return Stream.value(await get(key, credentials: credentials));
+  }
+
+  /// While set, listings don't come until it completes.
+  Completer<void>? holdList;
+
+  /// While set, page files don't come until it completes.
+  Completer<void>? holdFiles;
+
+  /// How many of the next page files fail to come.
+  int failFiles = 0;
 
   @override
   Future<void> put(

@@ -184,14 +184,35 @@ one's yet):
   then `scan.json`, then the files of pages it no longer has are deleted.
   It then belongs to this user (`owner`).
 - **Changed only in the folder** (its `scan.json` ETag differs): it
-  **comes down**: the pages the device lacks (streamed to a file, renamed
-  into place when complete), then the event, so it never shows without
-  them; local pages it no longer has are deleted.
+  **comes down**: the event at once, its pages' files after (see
+  [Listed first, files after](#listed-first-files-after)); local pages
+  it no longer has are deleted.
 - **Changed in both**: the later `updated` wins. An event the user changes
   while it's coming down keeps that change, which goes up next.
 
-Events only in the folder come down too; another device's tombstone of an
-event never here is just remembered. **Deleting** an event that has synced
+Events only in the folder come down too, newest first; another device's
+tombstone of an event never here is just remembered.
+
+### Listed first, files after
+
+So a device that has nothing yet (a new phone, and the web at every
+visit) shows the user's captures quickly:
+
+- A pass first fetches every `scan.json` that changed, **8 at a time**,
+  and shows those captures at once.
+- Their pages' files then **download in the background, 4 at a time**:
+  pictures and PDFs before videos and recordings, the newest captures
+  first. Each is streamed to a file and renamed into place when complete,
+  so a broken download leaves nothing.
+- Until a file is here, its preview (the capture's card on Home, its
+  thumbnail in the file list) shows a **spinner**
+  (`Library.isArriving`), and whatever needs the file (opening it, the
+  tab's reading, Clone, Rotate, exports) **waits for it**
+  (`Library.original` and `path`). Uploads don't wait: a file still
+  arriving is already in the folder.
+- A file that fails to come stays loading and is **asked for again at the
+  next pass**, as is one the app closed before it came; a file whose page
+  or capture went is dropped, and what waited for it fails. **Deleting** an event that has synced
 leaves a tombstone, which goes up (its page files are deleted from the
 folder) and deletes it on the other devices. An event that never synced is
 simply deleted.

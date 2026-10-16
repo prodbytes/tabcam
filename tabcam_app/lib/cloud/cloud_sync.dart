@@ -103,6 +103,12 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
   String? _message;
 
   DateTime? get lastSynced => _lastSynced;
+
+  /// Whether a pass has ended (synced or failed) since the user signed
+  /// in; true signed out. Until then, an empty library may just not have
+  /// come down yet (Home says it's loading).
+  bool get firstPassDone => _token == null || _passed;
+  bool _passed = false;
   DateTime? _lastSynced;
 
   String? _token;
@@ -159,6 +165,7 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
     _userId = auth.user?.id;
     final wasSignedIn = _token != null;
     _token = token;
+    if (!wasSignedIn || token == null) _passed = false;
     if (token == null) {
       _paused = false;
       credentials.clear();
@@ -276,6 +283,9 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
   void _set(SyncState state, String? message) {
     // A pass that ends after dispose (the app closing) has no one to tell.
     if (_disposed) return;
+    if (state == SyncState.synced || state == SyncState.failed) {
+      _passed = true;
+    }
     _state = state;
     _message = message;
     notifyListeners();
@@ -361,6 +371,23 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
     final seen = <String>{};
     String key(String id) => '$owner/$id';
 
+    // Every event.json that changed there, fetched several at a time
+    // first: a new device lists its captures at once, their files after.
+    final fetch = <String>{};
+    for (final event in library.all) {
+      if (!folder.holds(event)) continue;
+      final etag = remote[event.id];
+      if (etag != null && state.events[key(event.id)]?.etag != etag) {
+        fetch.add(event.id);
+      }
+    }
+    for (final MapEntry(key: id, value: etag) in remote.entries) {
+      if (state.events[key(id)]?.etag == etag) continue;
+      final local = library.byIdAll(id);
+      if (local == null || folder.holds(local)) fetch.add(id);
+    }
+    final fetched = await _fetchAll(owner, fetch, creds, token);
+
     for (final event in [...library.all]) {
       if (!folder.holds(event)) continue;
       seen.add(event.id);
@@ -369,8 +396,7 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
       final changedHere = last == null || last.updated != event.updated;
       final changedThere = etag != null && last?.etag != etag;
       if (changedThere) {
-        final theirs = await _fetch(owner, event.id, creds);
-        _check(token);
+        final theirs = fetched[event.id];
         if (theirs != null &&
             (!changedHere ||
                 !folder.canWrite ||
@@ -391,11 +417,20 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
     }
 
     // Events only in the folder: new from another device, or just shared.
-    for (final MapEntry(key: id, value: etag) in remote.entries) {
-      if (seen.contains(id) || state.events[key(id)]?.etag == etag) continue;
-      if (library.byIdAll(id) != null) continue; // someone else's ID
-      final theirs = await _fetch(owner, id, creds);
-      _check(token);
+    // Newest first, so the top of the list fills first.
+    final only =
+        [
+          for (final MapEntry(key: id, value: etag) in remote.entries)
+            if (!seen.contains(id) &&
+                state.events[key(id)]?.etag != etag &&
+                library.byIdAll(id) == null) // else someone else's ID
+              (id, etag, fetched[id]),
+        ]..sort(
+          (a, b) => (b.$3?.updated ?? DateTime(0)).compareTo(
+            a.$3?.updated ?? DateTime(0),
+          ),
+        );
+    for (final (id, etag, theirs) in only) {
       if (theirs == null) continue;
       // Another device's tombstone of an event never here: nothing to take.
       if (theirs.isDeleted || await _take(folder, theirs, files, token)) {
@@ -403,7 +438,126 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
         if (!theirs.isDeleted) down++;
       }
     }
+
+    // Files still to come (a download that failed, or the app closed
+    // first): asked for again.
+    for (final event in library.all) {
+      if (!folder.holds(event) || event.isDeleted) continue;
+      await _bringPages(folder, event, files, token);
+    }
     return (up, down);
+  }
+
+  /// [ids]' event.json in [owner]'s folder, [fetchesAtOnce] at a time.
+  Future<Map<String, CaptureEvent?>> _fetchAll(
+    String owner,
+    Set<String> ids,
+    AwsCredentials creds,
+    String token,
+  ) async {
+    final out = <String, CaptureEvent?>{};
+    final left = [...ids];
+    Future<void> worker() async {
+      while (left.isNotEmpty) {
+        final id = left.removeLast();
+        out[id] = await _fetch(owner, id, creds);
+        _check(token);
+      }
+    }
+
+    await Future.wait([
+      for (var i = 0; i < fetchesAtOnce && i < ids.length; i++) worker(),
+    ]);
+    return out;
+  }
+
+  /// How many event.json files a pass fetches at once.
+  static const fetchesAtOnce = 8;
+
+  /// How many page files download at once.
+  static const downloadsAtOnce = 4;
+
+  /// Page files to download ([_bringPages]), the next first.
+  final List<_Download> _downloads = [];
+  final Set<String> _queued = {};
+  int _downloading = 0;
+
+  /// Queues the files of [event]'s pages that aren't here yet but are in
+  /// the folder ([files]): its previews show them loading until they are
+  /// ([Library.expectPage]).
+  Future<void> _bringPages(
+    _Folder folder,
+    CaptureEvent event,
+    Map<String, Set<String>> files,
+    String token,
+  ) async {
+    final there = files[event.id] ?? const <String>{};
+    var added = false;
+    for (final page in event.pages) {
+      if (!page.hasFile || !there.contains(page.fileName)) continue;
+      final key = '${event.id}/${page.fileName}';
+      if (_queued.contains(key)) continue;
+      if (await library.hasPage(event.id, page)) continue;
+      library.expectPage(event.id, page);
+      _queued.add(key);
+      _downloads.add(
+        _Download(
+          key: key,
+          owner: folder.owner,
+          eventId: event.id,
+          page: page,
+          credentials: folder.credentials,
+          token: token,
+          updated: event.updated,
+        ),
+      );
+      added = true;
+    }
+    if (!added) return;
+    // Pictures and PDFs before videos and recordings; the newest first.
+    _downloads.sort((a, b) {
+      final slow = a.slow == b.slow ? 0 : (a.slow ? 1 : -1);
+      return slow != 0 ? slow : b.updated.compareTo(a.updated);
+    });
+    _pump();
+  }
+
+  void _pump() {
+    while (_downloading < downloadsAtOnce && _downloads.isNotEmpty) {
+      final next = _downloads.removeAt(0);
+      _downloading++;
+      unawaited(
+        _download(next).whenComplete(() {
+          _downloading--;
+          _queued.remove(next.key);
+          if (!_disposed) _pump();
+        }),
+      );
+    }
+  }
+
+  Future<void> _download(_Download d) async {
+    // Signed out meanwhile: the next sign-in's pass asks again.
+    if (_disposed || _token != d.token) return;
+    final event = library.byIdAll(d.eventId);
+    if (event == null || event.isDeleted) {
+      library.pageGone(d.eventId, d.page);
+      return;
+    }
+    try {
+      await library.putPageStream(
+        d.eventId,
+        d.page,
+        await bucket.getStream(
+          _key(d.owner, d.eventId, d.page.fileName),
+          credentials: d.credentials,
+        ),
+      );
+      library.pageArrived(d.eventId, d.page);
+    } on Object catch (e) {
+      // Still on its way: the next pass asks again.
+      debugPrint('TabCam: cloud sync: ${d.key} not here yet: $e');
+    }
   }
 
   /// Syncs each capture shared with the user, with credentials for its
@@ -583,8 +737,9 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  /// Brings [theirs] here: its pages first, then the event, so it never
-  /// shows without them. False when it changed here meanwhile ([seen]).
+  /// Brings [theirs] here: the event at once, its pages' files after
+  /// ([_bringPages]), shown loading until they come. False when it changed
+  /// here meanwhile ([seen]).
   Future<bool> _take(
     _Folder folder,
     CaptureEvent theirs,
@@ -592,26 +747,16 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
     String token, {
     CaptureEvent? seen,
   }) async {
-    final identity = folder.owner;
-    final creds = folder.credentials;
-    for (final page in theirs.pages) {
-      if (!page.hasFile || await library.hasPage(theirs.id, page)) continue;
-      final key = _key(identity, theirs.id, page.fileName);
-      await library.putPageStream(
-        theirs.id,
-        page,
-        await bucket.getStream(key, credentials: creds),
-      );
-      _check(token);
-    }
-    return library.applyRemote(
+    final taken = await library.applyRemote(
       theirs.copyWith(
-        owner: identity,
+        owner: folder.owner,
         sharedBy: folder.sharedBy,
         readOnly: folder.readOnly,
       ),
       seen: seen,
     );
+    if (taken) await _bringPages(folder, theirs, files, token);
+    return taken;
   }
 
   /// Sends [event] to the folder: the pages it lacks, then event.json, then
@@ -790,4 +935,28 @@ class _SyncState {
       },
     }),
   );
+}
+
+/// A page's file to download ([CloudSync._bringPages]).
+class _Download {
+  _Download({
+    required this.key,
+    required this.owner,
+    required this.eventId,
+    required this.page,
+    required this.credentials,
+    required this.token,
+    required this.updated,
+  });
+
+  final String key;
+  final String owner;
+  final String eventId;
+  final EventPage page;
+  final AwsCredentials credentials;
+  final String token;
+  final DateTime updated;
+
+  /// Videos and recordings: big, after the rest.
+  bool get slow => page.kind == PageKind.video || page.kind == PageKind.audio;
 }

@@ -15,7 +15,7 @@
 | Capture links ([opening](sharing.md#opening-a-link)) | App Links: the site's links open in the app | In Safari (the web app) | The web app |
 | Sign-in ([cloud sync](cloud-sync.md)) | Credential Manager | Google Sign-In SDK; Sign in with Apple too, with `TABCAM_APPLE_SIGN_IN=1` | Google's button (FedCM); the session kept in `localStorage` |
 | TabCam Premium ([cloud OCR](cloud-ocr.md#in-the-app)) | Works if bought on the web; no purchase links | Works if bought on the web; no purchase links | Upgrade offer: Upgrade, Redeem a voucher, the event screen hint |
-| Synced events | Kept in the app's documents | Kept in the app's documents | Downloaded again on each visit |
+| Synced events | Kept in the app's documents | Kept in the app's documents | Downloaded again on each visit: listed first, files after ([cloud sync](cloud-sync.md#listed-first-files-after)) |
 
 **iOS signing**: automatic, with each developer's own team:
 `TABCAM_IOS_DEVELOPMENT_TEAM` in `.env` (a free Personal Team works) is written by

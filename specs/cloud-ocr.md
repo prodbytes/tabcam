@@ -147,17 +147,26 @@ with text but no tab is still `no-tab`.
   writes the text tab only while it's empty or still the text it wrote
   (kept in `cloudocr.json`), and not marked correct, so it never replaces
   the user's edits, an on-device reading or a checked text tab. New pages update it the same way.
-- **Read again** (the Text view; also while the text is on its way from
-  the cloud): `POST /transcribe {eventId, again: true}` reads every page
-  again, results or not.
+- **Read again** (the Text view, or the Text tool tapped on it; also while
+  the text is on its way from the cloud): `POST /transcribe {eventId,
+  again: true}` reads every page again, results or not. The app first
+  notes each page's result ETag, and fills the text tab only once every
+  page's result is a new one (each result has the time it was made, so a
+  rewrite always changes it); the earlier results don't count as the new
+  reading. That text replaces any text tab a read left (`tabTextAuto`,
+  on-device readings too), never the user's edits or a checked one.
+- **Collected**: `CloudOcr.collected(eventId)` completes once an event's
+  results are applied (a tab found, or none), so the reader stops saying
+  it's in the cloud.
 - **Pages from before upgrading**: an event whose pages still lack results
   two minutes after its last change is sent to `POST /transcribe
   {eventId}` (once per event per session), which queues its untranscribed
   pages.
 - **Reading by itself** ([tab recognition](tab-recognition.md#reading-by-itself)),
   for premium users, asks for the event's transcription (`/transcribe`)
-  as soon as its image pages change; the Text view says it's on its way
-  until the text comes. What the cloud writes counts as an automatic
+  when an event without a text tab gets new pages; the Text view says
+  it's on its way until the text comes, or for at most three times the
+  OCR worker's timeout, when it says reading failed. What the cloud writes counts as an automatic
   read (`tabTextAuto`): a text the user edited is never replaced.
 
 **Upgrade offer** (on the web; the store apps leave it out, below):

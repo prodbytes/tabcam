@@ -62,7 +62,7 @@ const int bandWidth = 1280;
 /// monospaced text on a dark, see-through background, as wide as
 /// [width], its text as big as fits (a long staff gets smaller). PNG.
 Future<Uint8List> renderBand(String neckline, {int width = bandWidth}) async {
-  final pad = width / 40;
+  final pad = width / 64;
   TextPainter painter(double size) => TextPainter(
     text: TextSpan(
       text: neckline,
@@ -75,11 +75,12 @@ Future<Uint8List> renderBand(String neckline, {int width = bandWidth}) async {
     ),
     textDirection: TextDirection.ltr,
   )..layout();
-  // Measured at 100, then sized to fit (never bigger than width / 24).
+  // Measured at 100, then sized to fit (never bigger than width / 48, so
+  // a six-string staff takes about a third of a landscape take).
   final probe = painter(100);
   final fit = probe.width <= 0 ? 100.0 : 100 * (width - 2 * pad) / probe.width;
   probe.dispose();
-  final text = painter(min(fit, width / 24));
+  final text = painter(min(fit, width / 48));
   final height = (text.height + 2 * pad).ceil();
   final recorder = ui.PictureRecorder();
   final canvas = Canvas(recorder);
@@ -106,6 +107,9 @@ Future<Uint8List> renderBand(String neckline, {int width = bandWidth}) async {
 abstract final class TakeOverlay {
   static const _channel = MethodChannel('tabcam/take_overlay');
 
+  /// Why the last [burn] gave nothing, for the message saying so.
+  static String? lastError;
+
   /// Whether takes are burned here (Android, iOS).
   static bool get supported =>
       !kIsWeb &&
@@ -118,6 +122,7 @@ abstract final class TakeOverlay {
     XFile take,
     List<(TabBand, Uint8List)> bands,
   ) async {
+    lastError = null;
     if (!supported || bands.isEmpty) return null;
     try {
       final dir = await getTemporaryDirectory();
@@ -136,7 +141,12 @@ abstract final class TakeOverlay {
         ],
       });
       return path == null ? null : XFile(path, mimeType: 'video/mp4');
+    } on PlatformException catch (e) {
+      lastError = e.message ?? e.code;
+      debugPrint('TabCam: cam: the tab wasn\'t burned in: $e');
+      return null;
     } on Object catch (e) {
+      lastError = '$e';
       debugPrint('TabCam: cam: the tab wasn\'t burned in: $e');
       return null;
     }

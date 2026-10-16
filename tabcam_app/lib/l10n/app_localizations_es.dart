@@ -313,6 +313,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventReadAgain => 'Leer de nuevo';
 
   @override
+  String get eventReadAgainTitle => '¿Leer la tablatura de nuevo?';
+
+  @override
+  String get eventReadAgainBody =>
+      'Se reemplaza el texto leído antes, salvo que lo hayas editado o marcado como correcto.';
+
+  @override
   String get eventReadFailed => 'No se pudo leer la tablatura.';
 
   @override
@@ -395,6 +402,18 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get eventDeleteFile => 'Eliminar archivo';
+
+  @override
+  String get eventDownload => 'Descargar';
+
+  @override
+  String get eventDownloadAll => 'Descargar todo';
+
+  @override
+  String get eventCouldntDownload => 'No se pudo descargar';
+
+  @override
+  String get eventFileMore => 'Más';
 
   @override
   String get eventCouldntDelete => 'No se pudo eliminar';
@@ -599,7 +618,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get camAddingTab => 'Añadiendo la tablatura al vídeo…';
 
   @override
-  String get camNoOverlay => 'La toma se guardó sin la tablatura.';
+  String camNoOverlay(String reason) {
+    return 'La toma se guardó sin la tablatura: $reason';
+  }
+
+  @override
+  String camRecordingNoTab(String reason) {
+    return 'Grabando sin la tablatura: $reason';
+  }
 
   @override
   String get camHeadsOn =>
@@ -799,6 +825,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get homeLibraryEmpty => 'Aún no hay tablaturas';
+
+  @override
+  String get homeLibraryLoading => 'Cargando tus capturas…';
+
+  @override
+  String get homeLibraryLoadFailed => 'No se pudieron cargar tus capturas';
+
+  @override
+  String get homeLibraryTryAgain => 'Reintentar';
 
   @override
   String get homeLibraryEmptyDetail =>

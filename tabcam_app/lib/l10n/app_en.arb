@@ -393,6 +393,14 @@
   "@eventReadAgain": {
     "description": "Event Text view: button to read again"
   },
+  "eventReadAgainTitle": "Read the tab again?",
+  "@eventReadAgainTitle": {
+    "description": "Event: asked when tapping the Text tool again while the Text view shows a tab"
+  },
+  "eventReadAgainBody": "The text read before is replaced, unless you edited it or marked it correct.",
+  "@eventReadAgainBody": {
+    "description": "Event: what reading the tab again does"
+  },
   "eventReadFailed": "Reading the tab failed.",
   "@eventReadFailed": {
     "description": "Event Text view: reading failed"
@@ -508,6 +516,22 @@
   "eventDeleteFile": "Delete file",
   "@eventDeleteFile": {
     "description": "Capture screen: a file's delete button in the list"
+  },
+  "eventDownload": "Download",
+  "@eventDownload": {
+    "description": "Capture screen: download one file"
+  },
+  "eventDownloadAll": "Download all",
+  "@eventDownloadAll": {
+    "description": "Capture screen: download every file as a zip"
+  },
+  "eventCouldntDownload": "Couldn't download",
+  "@eventCouldntDownload": {
+    "description": "Capture screen: a download failed"
+  },
+  "eventFileMore": "More",
+  "@eventFileMore": {
+    "description": "Capture screen: a file's menu (rename, download, delete) on a narrow phone"
   },
   "eventCouldntDelete": "Couldn't delete",
   "@eventCouldntDelete": {
@@ -783,9 +807,23 @@
   "@camAddingTab": {
     "description": "Cam: the tab is being burned into the take"
   },
-  "camNoOverlay": "The take was saved without the tab.",
+  "camNoOverlay": "The take was saved without the tab: {reason}",
   "@camNoOverlay": {
-    "description": "Cam: burning the tab into the take failed"
+    "description": "Cam: burning the tab into the take failed, and why",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "camRecordingNoTab": "Recording without the tab: {reason}",
+  "@camRecordingNoTab": {
+    "description": "Cam (web): the tab couldn't be recorded in, and why",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
   },
   "camHeadsOn": "Head gestures on: nod up or right for the next line, down or left for the one before",
   "@camHeadsOn": {
@@ -1020,6 +1058,18 @@
   "homeLibraryEmpty": "No tabs yet",
   "@homeLibraryEmpty": {
     "description": "Home with no events: the title"
+  },
+  "homeLibraryLoading": "Loading your captures…",
+  "@homeLibraryLoading": {
+    "description": "Home: signed in, the first sync is bringing the captures"
+  },
+  "homeLibraryLoadFailed": "Your captures couldn't be loaded",
+  "@homeLibraryLoadFailed": {
+    "description": "Home: nothing here and the first sync failed"
+  },
+  "homeLibraryTryAgain": "Try again",
+  "@homeLibraryTryAgain": {
+    "description": "Home: retry loading the captures"
   },
   "homeLibraryEmptyDetail": "Go to Capture to scan a tab with the camera (the page is found, straightened and cleaned up for you), or to add photos, videos, files and links.",
   "@homeLibraryEmptyDetail": {

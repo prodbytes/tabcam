@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../capture/media.dart';
 import '../capture/page_source.dart';
 import '../capture/play_along_screen.dart';
+import '../export/download.dart';
 import '../l10n/language.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
@@ -275,6 +276,41 @@ class _EventScreenState extends State<EventScreen> {
     if (mounted && event != null) _showAdded(event, before, images: false);
   }
 
+  void _fileAction(_FileAction action, CaptureEvent event, EventPage page) =>
+      switch (action) {
+        _FileAction.rename => _renamePage(event, page),
+        _FileAction.download => _download(event, page),
+        _FileAction.delete => _deletePage(event, page),
+      };
+
+  /// Downloads one file: the browser's download, or the system's "save
+  /// as" on Android and iOS.
+  Future<void> _download(CaptureEvent event, EventPage page) {
+    final l10n = context.l10n;
+    return _run(
+      l10n.eventCouldntDownload,
+      () => Downloads.saveFile(
+        _library,
+        event,
+        page,
+        fileLabel(l10n, event, page),
+      ),
+    );
+  }
+
+  /// Downloads every file, the text tab and the links, as one zip.
+  Future<void> _downloadAll(CaptureEvent event) {
+    final l10n = context.l10n;
+    return _run(
+      l10n.eventCouldntDownload,
+      () => Downloads.saveAll(
+        _library,
+        event,
+        (page) => fileLabel(l10n, event, page),
+      ),
+    );
+  }
+
   /// Deletes one of its files from the list, once the user confirms; the
   /// last one stays (the event is deleted instead).
   Future<void> _deletePage(CaptureEvent event, EventPage page) async {
@@ -399,6 +435,32 @@ class _EventScreenState extends State<EventScreen> {
   /// Whether the Text view shows, in place of the pages.
   bool _text = false;
 
+  /// The Text tool tapped on the Text view: asks, then reads the tab again
+  /// (a text the user edited or marked correct is kept).
+  Future<void> _readAgain(CaptureEvent event) async {
+    final reader = AutoReaderScope.of(context);
+    if (reader == null) return;
+    final l10n = context.l10n;
+    final sure = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.eventReadAgainTitle),
+        content: Text(l10n.eventReadAgainBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.eventCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.eventReadAgain),
+          ),
+        ],
+      ),
+    );
+    if (sure == true && mounted) reader.readSoon(event.id, again: true);
+  }
+
   /// The Text view: the tab, or why there's none yet.
   Widget _textView(CaptureEvent event) {
     if (event.tabText != null) {
@@ -484,6 +546,7 @@ class _EventScreenState extends State<EventScreen> {
     final pages = event.visiblePages;
     // Editable with more than one file: each has a drag handle.
     final reorder = !event.readOnly && pages.length > 1 && !_busy;
+    final narrow = MediaQuery.sizeOf(context).width < 600;
     final textTab = !event.hideImages
         ? null
         : ListTile(
@@ -559,20 +622,39 @@ class _EventScreenState extends State<EventScreen> {
             children: [
               if (playable)
                 MiniPlayButton(player: _player, event: event, page: page),
-              if (!event.readOnly)
-                IconButton(
-                  key: ValueKey('rename-${page.id}'),
-                  tooltip: l10n.eventRenameFile,
-                  icon: const Icon(Icons.edit_outlined),
-                  onPressed: () => _renamePage(event, page),
-                ),
-              if (!event.readOnly)
-                IconButton(
-                  key: ValueKey('delete-${page.id}'),
-                  tooltip: l10n.eventDeleteFile,
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: _busy ? null : () => _deletePage(event, page),
-                ),
+              // Rename, Download and Delete: buttons where there's room,
+              // a menu on a narrow phone (the name needs the room).
+              if (narrow)
+                PopupMenuButton<_FileAction>(
+                  key: ValueKey('more-${page.id}'),
+                  tooltip: l10n.eventFileMore,
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: (action) => _fileAction(action, event, page),
+                  itemBuilder: (context) => [
+                    for (final action in _FileAction.values)
+                      if (action.offered(event, page))
+                        PopupMenuItem(
+                          key: ValueKey('${action.name}-${page.id}'),
+                          value: action,
+                          enabled: !_busy,
+                          child: ListTile(
+                            leading: Icon(action.icon),
+                            title: Text(action.label(l10n)),
+                          ),
+                        ),
+                  ],
+                )
+              else
+                for (final action in _FileAction.values)
+                  if (action.offered(event, page))
+                    IconButton(
+                      key: ValueKey('${action.name}-${page.id}'),
+                      tooltip: action.label(l10n),
+                      icon: Icon(action.icon),
+                      onPressed: _busy && action != _FileAction.rename
+                          ? null
+                          : () => _fileAction(action, event, page),
+                    ),
               if (page.isLink)
                 IconButton(
                   key: ValueKey('details-${page.id}'),
@@ -659,6 +741,12 @@ class _EventScreenState extends State<EventScreen> {
                   onPressed: _busy ? null : () => _people(event),
                 ),
               IconButton(
+                key: const Key('download-all'),
+                tooltip: l10n.eventDownloadAll,
+                icon: const Icon(Icons.download_outlined),
+                onPressed: _busy ? null : () => _downloadAll(event),
+              ),
+              IconButton(
                 tooltip: l10n.eventShare,
                 icon: const Icon(Icons.link),
                 onPressed: _busy ? null : () => _share(event),
@@ -710,8 +798,11 @@ class _EventScreenState extends State<EventScreen> {
                     working: reading,
                     dimmed: !reading && !hasText,
                     tooltip: reading ? l10n.eventReadingTab : null,
+                    // Again on the Text view, with a tab: read it again.
                     onPressed: _busy
                         ? null
+                        : text && hasText && editable && !reading
+                        ? () => _readAgain(event)
                         : () => setState(() => _text = true),
                   ),
                   EventTool(
@@ -733,6 +824,28 @@ class _EventScreenState extends State<EventScreen> {
       },
     );
   }
+}
+
+/// What a file's row offers besides opening it.
+enum _FileAction {
+  rename(Icons.edit_outlined),
+  download(Icons.download_outlined),
+  delete(Icons.delete_outline);
+
+  const _FileAction(this.icon);
+  final IconData icon;
+
+  /// Renaming and deleting change the capture; links have no file.
+  bool offered(CaptureEvent event, EventPage page) => switch (this) {
+    rename || delete => !event.readOnly,
+    download => page.hasFile,
+  };
+
+  String label(AppLocalizations l10n) => switch (this) {
+    rename => l10n.eventRenameFile,
+    download => l10n.eventDownload,
+    delete => l10n.eventDeleteFile,
+  };
 }
 
 /// Where Add gets new pages.
