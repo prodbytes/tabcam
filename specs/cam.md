@@ -65,8 +65,8 @@ camera view ([`PlayAlongScreen`](../tabcam_app/lib/capture/play_along_screen.dar
     right is on the frame's left.
 
   A face icon in the app bar switches them on (the default) and off,
-  green while it sees a face; off, nothing watches for faces. While a
-  take plays back, gestures do nothing.
+  in the theme's primary colour while it sees a face; off, nothing
+  watches for faces. While a take plays back, gestures do nothing.
 - **Rec** records video and sound (`camera`, `ResolutionPreset.high`)
   from the neckline showing, until **Stop**. The take is then added to
   the capture as a video, at the end of its files, named "Take 1",

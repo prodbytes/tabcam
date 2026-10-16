@@ -1118,7 +1118,10 @@ spec.
    file plays in the app. The privacy policy now says a link chosen in
    Cam shows inside TabCam ([cam](cam.md#playing-along-with-a-file),
    [privacy](privacy.md)).
-21. **Get TabCam ready for App Store submission: turn on Sign in with
+21. **Make the head icon in the camera view use the primary theme colour,
+   not green.** Cam's head gestures icon is now in the theme's primary
+   colour (was green) while it sees a face ([cam](cam.md#head-gestures)).
+22. **Get TabCam ready for App Store submission: turn on Sign in with
    Apple for store builds, and have Delete account revoke the user's
    Apple tokens (guideline 5.1.1(v)).** Deployed `tabcam-identity`
    (the pool now takes `appleid.apple.com` for `com.nu01.tabcam`),

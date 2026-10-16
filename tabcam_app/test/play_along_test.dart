@@ -286,6 +286,12 @@ void main() {
     // The camera's frames go to it.
     expect(camera.streaming, isTrue);
     expect(find.byTooltip(RegExp('^Head gestures on')), findsOneWidget);
+    // Seeing a face: the theme's primary colour.
+    final context = tester.element(find.byKey(const Key('cam-heads')));
+    expect(
+      tester.widget<IconButton>(find.byKey(const Key('cam-heads'))).color,
+      Theme.of(context).colorScheme.primary,
+    );
 
     heads!.onGesture(HeadGesture.next);
     await tester.pump();
