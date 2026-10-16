@@ -678,9 +678,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get camAlongStop => 'Detener';
 
   @override
-  String get camAlongClose => 'Cerrar';
-
-  @override
   String get camHeadsOn =>
       'Gestos de cabeza activados: asiente hacia arriba o a la derecha para la línea siguiente, hacia abajo o a la izquierda para la anterior';
 

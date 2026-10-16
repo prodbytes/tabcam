@@ -33,9 +33,10 @@ import 'take_overlay.dart';
 /// where they turned while it was recorded.
 ///
 /// **Play along** (the app bar's, when the capture has recordings, videos
-/// or links) opens a sidebar of them: the one tapped plays in a frame
-/// above the camera ([BackingTrack]), while the user plays and records;
-/// the space bar pauses and plays it.
+/// or links) shows and hides a sidebar of them, open from the start: the
+/// one tapped plays in a compact frame at the sidebar's top, above the
+/// list ([BackingTrack]), while the user plays and records; the space bar
+/// pauses and plays it.
 class PlayAlongScreen extends StatefulWidget {
   const PlayAlongScreen({
     super.key,
@@ -271,8 +272,8 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     if (event is KeyUpEvent) return KeyEventResult.ignored;
     final key = event.logicalKey;
     if (_modifiers.contains(key)) return KeyEventResult.ignored;
-    // Space: the backing track's play / pause, when there's one.
-    if (key == LogicalKeyboardKey.space && _track.page != null) {
+    // Space: the backing track's play / pause, while its sidebar shows.
+    if (key == LogicalKeyboardKey.space && _sidebar && _track.page != null) {
       if (event is KeyDownEvent) unawaited(_track.toggle());
       return KeyEventResult.handled;
     }
@@ -445,6 +446,12 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     if (mounted) Navigator.pop(context);
   }
 
+  /// Shows or hides the sidebar; hidden, what plays along pauses.
+  void _toggleSidebar() {
+    setState(() => _sidebar = !_sidebar);
+    if (!_sidebar) unawaited(_track.pause());
+  }
+
   /// Plays [page] along (or pauses it, chosen again).
   Future<void> _choose(EventPage page) async {
     _focus.requestFocus();
@@ -601,7 +608,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
                       ? Theme.of(context).colorScheme.primary
                       : null,
                   icon: const Icon(Icons.queue_music),
-                  onPressed: () => setState(() => _sidebar = !_sidebar),
+                  onPressed: _toggleSidebar,
                 ),
               if (_heads case final heads?)
                 ValueListenableBuilder(
@@ -640,12 +647,25 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(child: _main(controller, playing)),
-              if (_sidebar && event != null)
-                _Sidebar(
-                  library: widget.library,
-                  eventId: widget.eventId,
-                  track: _track,
-                  onChoose: _choose,
+              // Hidden, it's kept (offstage): a link's page isn't reloaded.
+              if (event?.pages.any(BackingTrack.plays) ?? false)
+                Offstage(
+                  offstage: !_sidebar,
+                  child: _Sidebar(
+                    library: widget.library,
+                    eventId: widget.eventId,
+                    track: _track,
+                    linkFrame: widget.linkFrame,
+                    onChoose: _choose,
+                    onStop: () {
+                      _focus.requestFocus();
+                      _track.stop();
+                    },
+                    onToggle: () {
+                      _focus.requestFocus();
+                      _track.toggle();
+                    },
+                  ),
                 ),
             ],
           ),
@@ -654,29 +674,11 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     );
   }
 
-  /// The camera (with the backing track's frame above it), the neckline
-  /// and Rec and Play.
+  /// The camera, the neckline and Rec and Play.
   Widget _main(CameraController? controller, bool playing) {
     final l10n = context.l10n;
     return Column(
       children: [
-        _BackingFrame(
-          eventId: widget.eventId,
-          track: _track,
-          linkFrame: widget.linkFrame,
-          onClose: () {
-            _focus.requestFocus();
-            _track.close();
-          },
-          onStop: () {
-            _focus.requestFocus();
-            _track.stop();
-          },
-          onToggle: () {
-            _focus.requestFocus();
-            _track.toggle();
-          },
-        ),
         Expanded(
           child: Stack(
             alignment: Alignment.center,
@@ -779,15 +781,14 @@ class _Control extends StatelessWidget {
   }
 }
 
-/// The backing track's frame, above the camera: its name, play / pause,
-/// stop and close, over the video or link playing (a recording shows its
-/// progress only). Nothing while there's none.
+/// The backing track's frame, compact, at the top of the sidebar and as
+/// wide: the video or link playing (a recording shows its progress only),
+/// its name, play / pause and stop. Nothing while there's none.
 class _BackingFrame extends StatelessWidget {
   const _BackingFrame({
     required this.eventId,
     required this.track,
     required this.linkFrame,
-    required this.onClose,
     required this.onToggle,
     required this.onStop,
   });
@@ -795,7 +796,6 @@ class _BackingFrame extends StatelessWidget {
   final String eventId;
   final BackingTrack track;
   final Widget Function(LinkFrameController controller) linkFrame;
-  final VoidCallback onClose;
   final VoidCallback onToggle;
   final VoidCallback onStop;
 
@@ -809,27 +809,32 @@ class _BackingFrame extends StatelessWidget {
       final event = track.library.byId(eventId);
       final media = track.media;
       final link = track.link;
-      // At most a third of the screen's height: the camera keeps the rest.
-      final height = MediaQuery.sizeOf(context).height / 3;
+      // As wide as the sidebar, at most a third of the screen's height.
+      final maxHeight = MediaQuery.sizeOf(context).height / 3;
       final Widget? content = switch ((media, link)) {
         _ when track.error != null => Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(8),
           child: Text(
             page.isAudio ? l10n.textViewCantPlayAudio : l10n.textViewCantPlay,
-            style: const TextStyle(color: Colors.white70),
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
           ),
         ),
         (final media?, _) when page.isVideo || media.value.size.width > 0 =>
           ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: height),
+            constraints: BoxConstraints(maxHeight: maxHeight),
             child: AspectRatio(
               aspectRatio: media.value.aspectRatio,
               child: VideoPlayer(media),
             ),
           ),
-        (_, final link?) => SizedBox(height: height, child: linkFrame(link)),
+        // 16:9, a YouTube video's shape.
+        (_, final link?) => ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxHeight),
+          child: AspectRatio(aspectRatio: 16 / 9, child: linkFrame(link)),
+        ),
         _ => null,
       };
+      const compact = VisualDensity(horizontal: -4, vertical: -4);
       return ColoredBox(
         key: const Key('cam-along-frame'),
         color: Colors.black,
@@ -843,52 +848,58 @@ class _BackingFrame extends StatelessWidget {
                 allowScrubbing: true,
                 padding: const EdgeInsets.symmetric(vertical: 4),
               ),
-            Row(
-              children: [
-                const SizedBox(width: 12),
-                Icon(_icon(page), color: Colors.white70, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    event == null ? '' : fileLabel(l10n, event, page),
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
-                if (track.loading)
-                  const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: SizedBox.square(
-                      dimension: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+              child: Row(
+                children: [
+                  Icon(_icon(page), color: Colors.white70, size: 16),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      event == null ? '' : fileLabel(l10n, event, page),
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
                     ),
-                  )
-                else if (track.canToggle) ...[
-                  IconButton(
-                    key: const Key('cam-along-toggle'),
-                    tooltip: track.playing
-                        ? l10n.camAlongPause
-                        : l10n.camAlongPlay,
-                    color: Colors.white,
-                    icon: Icon(track.playing ? Icons.pause : Icons.play_arrow),
-                    onPressed: onToggle,
-                  ),
-                  IconButton(
-                    key: const Key('cam-along-stop'),
-                    tooltip: l10n.camAlongStop,
-                    color: Colors.white,
-                    icon: const Icon(Icons.stop),
-                    onPressed: onStop,
                   ),
                 ],
-                IconButton(
-                  key: const Key('cam-along-close'),
-                  tooltip: l10n.camAlongClose,
-                  color: Colors.white,
-                  icon: const Icon(Icons.close),
-                  onPressed: onClose,
-                ),
-              ],
+              ),
+            ),
+            SizedBox(
+              height: 40,
+              child: track.loading
+                  ? const Center(
+                      child: SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (track.canToggle) ...[
+                          IconButton(
+                            key: const Key('cam-along-toggle'),
+                            tooltip: track.playing
+                                ? l10n.camAlongPause
+                                : l10n.camAlongPlay,
+                            visualDensity: compact,
+                            color: Colors.white,
+                            icon: Icon(
+                              track.playing ? Icons.pause : Icons.play_arrow,
+                            ),
+                            onPressed: onToggle,
+                          ),
+                          IconButton(
+                            key: const Key('cam-along-stop'),
+                            tooltip: l10n.camAlongStop,
+                            visualDensity: compact,
+                            color: Colors.white,
+                            icon: const Icon(Icons.stop),
+                            onPressed: onStop,
+                          ),
+                        ],
+                      ],
+                    ),
             ),
           ],
         ),
@@ -897,20 +908,27 @@ class _BackingFrame extends StatelessWidget {
   );
 }
 
-/// The sidebar: the capture's recordings, videos and links, the one
-/// playing along marked; a tap plays one along.
+/// The sidebar: the backing track's frame at its top, always there, and
+/// under it the capture's recordings, videos and links, the one playing
+/// along marked; a tap plays one along.
 class _Sidebar extends StatelessWidget {
   const _Sidebar({
     required this.library,
     required this.eventId,
     required this.track,
+    required this.linkFrame,
     required this.onChoose,
+    required this.onToggle,
+    required this.onStop,
   });
 
   final Library library;
   final String eventId;
   final BackingTrack track;
+  final Widget Function(LinkFrameController controller) linkFrame;
   final void Function(EventPage page) onChoose;
+  final VoidCallback onToggle;
+  final VoidCallback onStop;
 
   @override
   Widget build(BuildContext context) {
@@ -922,47 +940,63 @@ class _Sidebar extends StatelessWidget {
       width: (width * 0.4).clamp(120.0, 280.0),
       child: Material(
         color: const Color(0xFF1C1C1C),
-        child: ListenableBuilder(
-          listenable: Listenable.merge([library, track]),
-          builder: (context, _) {
-            final event = library.byId(eventId);
-            final pages = [...?event?.pages.where(BackingTrack.plays)];
-            return ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                  child: Text(
-                    l10n.camAlongTitle,
-                    style: const TextStyle(color: Colors.white54, fontSize: 12),
-                  ),
-                ),
-                for (final page in pages)
-                  ListTile(
-                    key: ValueKey('cam-along-${page.id}'),
-                    dense: true,
-                    selected: track.page?.id == page.id,
-                    selectedColor: Theme.of(context).colorScheme.primary,
-                    textColor: Colors.white,
-                    iconColor: Colors.white70,
-                    leading: Icon(_icon(page)),
-                    title: Text(
-                      fileLabel(l10n, event!, page),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    trailing: track.page?.id == page.id && track.playing
-                        ? const Icon(Icons.graphic_eq, size: 18)
-                        : null,
-                    onTap: () => onChoose(page),
-                  ),
-              ],
-            );
-          },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _BackingFrame(
+              eventId: eventId,
+              track: track,
+              linkFrame: linkFrame,
+              onToggle: onToggle,
+              onStop: onStop,
+            ),
+            Expanded(child: _list(context, l10n)),
+          ],
         ),
       ),
     );
   }
+
+  /// The files to play along, under the frame.
+  Widget _list(BuildContext context, AppLocalizations l10n) =>
+      ListenableBuilder(
+        listenable: Listenable.merge([library, track]),
+        builder: (context, _) {
+          final event = library.byId(eventId);
+          final pages = [...?event?.pages.where(BackingTrack.plays)];
+          return ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                child: Text(
+                  l10n.camAlongTitle,
+                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+              ),
+              for (final page in pages)
+                ListTile(
+                  key: ValueKey('cam-along-${page.id}'),
+                  dense: true,
+                  selected: track.page?.id == page.id,
+                  selectedColor: Theme.of(context).colorScheme.primary,
+                  textColor: Colors.white,
+                  iconColor: Colors.white70,
+                  leading: Icon(_icon(page)),
+                  title: Text(
+                    fileLabel(l10n, event!, page),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: track.page?.id == page.id && track.playing
+                      ? const Icon(Icons.graphic_eq, size: 18)
+                      : null,
+                  onTap: () => onChoose(page),
+                ),
+            ],
+          );
+        },
+      );
 }
 
 /// A recording's, video's or link's icon (a YouTube video's as a video).

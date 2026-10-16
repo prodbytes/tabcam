@@ -406,8 +406,9 @@ void main() {
   });
 
   testWidgets('Play along: the sidebar opens with the first file loaded, '
-      'paused; a recording or link from it plays in a frame above; space '
-      'pauses and plays it; Stop goes back to the start', (tester) async {
+      'paused, in a frame at its top; a recording or link from it plays '
+      'there; space pauses and plays it; Stop goes back to the start; '
+      'hidden, it pauses and space turns the tab', (tester) async {
     final (library, id) = await capture(tester, tab: _tab);
     late String audio, youTube;
     await tester.runAsync(() async {
@@ -451,7 +452,13 @@ void main() {
     // Open, with the first file (the recording, not the photo) loaded in
     // the frame, paused.
     expect(find.byKey(const Key('cam-along-sidebar')), findsOneWidget);
-    expect(find.byKey(const Key('cam-along-frame')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('cam-along-sidebar')),
+        matching: find.byKey(const Key('cam-along-frame')),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Lesson'), findsNWidgets(2));
     expect(find.text('Backing track'), findsOneWidget);
     expect(video.playing, isEmpty);
@@ -465,15 +472,20 @@ void main() {
     await frames(tester);
     expect(video.playing, isEmpty);
 
-    // Hidden and shown again.
+    // Hidden (the frame with it, paused) and shown again.
+    await tester.tap(find.byKey(const Key('cam-along-toggle')));
+    await frames(tester);
+    expect(video.playing, hasLength(1));
     await tester.tap(find.byKey(const Key('cam-along')));
     await frames(tester);
     expect(find.byKey(const Key('cam-along-sidebar')), findsNothing);
+    expect(find.byKey(const Key('cam-along-frame')), findsNothing);
+    expect(video.playing, isEmpty);
     await tester.tap(find.byKey(const Key('cam-along')));
     await frames(tester);
     expect(find.byKey(const Key('cam-along-sidebar')), findsOneWidget);
 
-    // The recording, tapped in the sidebar: plays above the camera.
+    // The recording, tapped in the sidebar: plays in its frame.
     await tester.tap(find.byKey(ValueKey('cam-along-$audio')));
     await frames(tester);
     expect(video.playing, hasLength(1));
@@ -506,10 +518,9 @@ void main() {
     await frames(tester);
     expect(commands.last, LinkCommand.stop);
 
-    // Closed: space turns the tab again.
-    await tester.tap(find.byKey(const Key('cam-along-close')));
+    // Hidden: space turns the tab again.
+    await tester.tap(find.byKey(const Key('cam-along')));
     await frames(tester);
-    expect(find.byKey(const Key('cam-along-frame')), findsNothing);
     await tester.sendKeyEvent(LogicalKeyboardKey.space);
     await tester.pump();
     expect(find.text('3 / 3'), findsOneWidget);

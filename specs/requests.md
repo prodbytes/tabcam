@@ -1341,3 +1341,17 @@ spec.
     hint under the tools now says to tap a note once it's checked (en,
     es, pt). Not on a capture shared to read. See
     [tab recognition](tab-recognition.md).
+
+## 2026-10-17
+
+1. **In the Cam view, open the player sidebar by default (hidden when
+   there's nothing to play), play the video or song in a separate frame,
+   always visible, with play / pause, open the first file by default, and
+   put that frame in the sidebar, compact, above the list (inside the
+   sidebar, not the screen's width).** The sidebar already opened with
+   the first file loaded; its frame moves from above the camera into the
+   sidebar's top, as wide as the sidebar, pinned above the scrolling
+   list, with smaller type and compact Play / Pause and Stop. Close is
+   gone (the frame is always there; its string was dropped in en, es,
+   pt). ♫ hides the whole sidebar, which pauses what plays; while it's
+   hidden, space turns the tab. See [Cam](cam.md).

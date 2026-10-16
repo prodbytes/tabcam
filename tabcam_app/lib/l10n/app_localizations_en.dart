@@ -656,9 +656,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camAlongStop => 'Stop';
 
   @override
-  String get camAlongClose => 'Close';
-
-  @override
   String get camHeadsOn =>
       'Head gestures on: nod up or right for the next line, down or left for the one before';
 

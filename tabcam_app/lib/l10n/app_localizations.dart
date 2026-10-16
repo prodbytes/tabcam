@@ -1156,12 +1156,6 @@ abstract class AppLocalizations {
   /// **'Stop'**
   String get camAlongStop;
 
-  /// Cam backing track: close its frame
-  ///
-  /// In en, this message translates to:
-  /// **'Close'**
-  String get camAlongClose;
-
   /// Cam: head gestures toggle, on
   ///
   /// In en, this message translates to:
