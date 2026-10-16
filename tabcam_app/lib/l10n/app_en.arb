@@ -1921,5 +1921,13 @@
   "dropFilesToAdd": "Drop files to add",
   "@dropFilesToAdd": {
     "description": "Capture and a capture's screen: shown while files are dragged over them"
+  },
+  "deleteAccountAppleCanceled": "Your files in the cloud were deleted, but not your account: Apple's confirmation was canceled. Delete your account again to finish.",
+  "deleteAccountAppleOtherId": "That's another Apple ID: confirm with the Apple ID you signed in with.",
+  "@deleteAccountAppleCanceled": {
+    "description": "Deleting the account (Profile > Delete account), signed in with Apple: the user canceled Apple's sheet"
+  },
+  "@deleteAccountAppleOtherId": {
+    "description": "Deleting the account, signed in with Apple: Apple's sheet confirmed with another Apple ID"
   }
 }

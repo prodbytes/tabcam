@@ -228,6 +228,12 @@ class FakeAuth extends AuthService {
     notifyListeners();
   }
 
+  /// What [deletionAuthorization] answers (an Apple sign-in's code).
+  Future<String?> Function()? deletionAnswer;
+
+  @override
+  Future<String?> deletionAuthorization() async => deletionAnswer?.call();
+
   @override
   Widget? buildSignInButton([AuthProvider provider = AuthProvider.google]) =>
       null;
@@ -395,8 +401,15 @@ class FakeShareApi extends ShareApi {
   /// Thrown by the next [deleteAccount], once.
   Object? failDeleteAccount;
 
+  /// The Apple authorization code each [deleteAccount] got.
+  final List<String?> appleCodes = [];
+
   @override
-  Future<void> deleteAccount(String token) async {
+  Future<void> deleteAccount(
+    String token, {
+    String? appleAuthorizationCode,
+  }) async {
+    appleCodes.add(appleAuthorizationCode);
     if (failDeleteAccount case final e?) {
       failDeleteAccount = null;
       throw e;

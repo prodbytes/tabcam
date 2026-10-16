@@ -49,6 +49,16 @@ Parameters:
       addresses' (POST /api/roles)
     Default: /tabcam/rbacr-token
     AllowedPattern: '/[A-Za-z0-9_./-]+'
+  AppleSignInKeyParameterName:
+    Type: String
+    Description: >
+      With AppleClientId: the SSM SecureString parameter (standard tier,
+      the AWS-managed aws/ssm key) with TabCam's Sign in with Apple key, a
+      JSON object {teamId, keyId, privateKey (the .p8's PEM)}. DELETE
+      /apple/account revokes the user's Apple tokens with it (App Store
+      guideline 5.1.1(v)); until it exists, nothing is revoked.
+    Default: /tabcam/apple-sign-in-key
+    AllowedPattern: '/[A-Za-z0-9_./-]+'
   DeveloperProviderName:
     Type: String
     Default: login.tabcam.profiles
@@ -326,6 +336,14 @@ Resources:
               - Effect: Allow
                 Action: ssm:GetParameter
                 Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${RbacrTokenParameterName}
+              # The Sign in with Apple key, to revoke a deleted account's
+              # Apple tokens (apple_revoke.py).
+              - !If
+                - HasApple
+                - Effect: Allow
+                  Action: ssm:GetParameter
+                  Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppleSignInKeyParameterName}
+                - !Ref AWS::NoValue
               # Whether a profile's folder is empty, before it joins another.
               - Effect: Allow
                 Action: s3:ListBucket
@@ -366,7 +384,8 @@ Resources:
       Architectures: [arm64]
       Handler: index.handler
       MemorySize: 256
-      Timeout: 10
+      # DELETE /apple/account waits for two calls to Apple (5 s each at most).
+      Timeout: 20
       Role: !GetAtt FunctionRole.Arn
       LoggingConfig:
         LogGroup: !Ref FunctionLogs
@@ -387,6 +406,8 @@ Resources:
           DEVELOPER_PROVIDER: !Ref DeveloperProviderName
           RBACR_TOKEN_PARAMETER: !Ref RbacrTokenParameterName
           RBACR_SYSTEM: tabcam
+          APPLE_CLIENT_ID: !Ref AppleClientId
+          APPLE_SIGN_IN_KEY_PARAMETER: !Ref AppleSignInKeyParameterName
       # A placeholder: scripts/deploy-share-api.sh uploads the real code.
       Code:
         ZipFile: |

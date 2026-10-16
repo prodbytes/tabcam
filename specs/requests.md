@@ -1121,3 +1121,20 @@ spec.
 21. **Make the head icon in the camera view use the primary theme colour,
    not green.** Cam's head gestures icon is now in the theme's primary
    colour (was green) while it sees a face ([cam](cam.md#head-gestures)).
+22. **Get TabCam ready for App Store submission: turn on Sign in with
+   Apple for store builds, and have Delete account revoke the user's
+   Apple tokens (guideline 5.1.1(v)).** Deployed `tabcam-identity`
+   (the pool now takes `appleid.apple.com` for `com.nu01.tabcam`),
+   `tabcam-ocr` and `tabcam-share-api` with Apple, and set
+   `TABCAM_APPLE_SIGN_IN=1` in the maintainer's `.env`. Deleting an
+   account signed in with Apple now shows Apple's sheet once more, at the
+   share API's step, and sends its fresh authorization code with
+   `DELETE /apple/account`; the share API trades it for the user's tokens
+   with a client secret signed by TabCam's Sign in with Apple key (the new
+   SSM SecureString `/tabcam/apple-sign-in-key`, `{teamId, keyId,
+   privateKey}`, which only its function may read), checks they're the
+   caller's, and revokes them at `appleid.apple.com/auth/revoke` before
+   deleting anything. Until the key's parameter exists, accounts are
+   deleted without revoking ([cloud sync](cloud-sync.md#revoking-apples-tokens),
+   [shared captures](shared-captures.md#how-it-works),
+   [app stores](app-stores.md#status)).

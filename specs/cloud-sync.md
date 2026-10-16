@@ -263,6 +263,8 @@ running pass), so nothing goes up while the folder empties:
    CORS allows `POST`, it deletes one key at a time instead. Expired
    credentials or a skewed clock get one more try, as for a pass.
 2. **The share API**, `DELETE /account` (when the build has sharing):
+   signed in with Apple, first Apple's sheet once more and the revoking
+   of the user's Apple tokens ([below](#revoking-apples-tokens)); then
    the grants of the user's captures, the grants to their address, their
    record in the OCR service's accounts table, and last their Cognito
    identity ([shared captures](shared-captures.md#how-it-works)).
@@ -285,6 +287,45 @@ device's events again; trying again deletes them again). Each step is
 safe to repeat. Only once the cloud parts are done is anything on the
 device deleted; if that then fails, the user is signed out all the same
 and told to delete what's left from Home.
+
+### Revoking Apple's tokens
+
+App Store guideline 5.1.1(v) wants an app with Sign in with Apple to
+revoke the user's Apple tokens when their account is deleted, with
+Apple's REST API. Apple's tokens are only had by trading an authorization
+code with a key of TabCam's, so the share API does it
+([apple_revoke.py](../tabcam_api/shares/apple_revoke.py)):
+
+- **The app**, signed in with Apple, shows Apple's sheet again when it
+  gets to the share API's step (after the folder: the code lasts five
+  minutes), asking for nothing (`AuthService.deletionAuthorization`). The
+  code must be the signed-in Apple ID's ("That's another Apple ID: …").
+  Canceling stops the deletion there: "Your files in the cloud were
+  deleted, but not your account: Apple's confirmation was canceled.
+  Delete your account again to finish." It sends the code as
+  `{"appleAuthorizationCode": …}` with `DELETE /apple/account`. Google
+  sign-ins have nothing to revoke.
+- **The share API**, before deleting anything, makes a client secret (an
+  ES256 JWT, issued by the team for the bundle ID, valid five minutes,
+  signed with the Sign in with Apple key), trades the code at
+  `https://appleid.apple.com/auth/token`, checks the ID token Apple
+  returns is the caller's (its `sub`), and revokes the refresh token
+  (else the access token) at `https://appleid.apple.com/auth/revoke`.
+  Apple refusing either, or not answering, is a 502 ("…: try again") and
+  nothing is deleted; trying again asks Apple for a new code. The reply
+  says `appleTokensRevoked`. TabCam then leaves the user's Sign in with
+  Apple list, and their next sign-in is a first one (Apple asks for the
+  name and email again).
+- **The key**: the SSM SecureString `/tabcam/apple-sign-in-key`
+  (`AppleSignInKeyParameterName`), a JSON object `{"teamId", "keyId",
+  "privateKey"}` (the .p8's PEM), made by the maintainer
+  ([tabcam_infra](../tabcam_infra/README.md)); only the share API's
+  function may read it. Until it exists, Apple accounts are deleted
+  without revoking (the function logs it, and `appleTokensRevoked` is
+  false), so it must exist before the App Store review.
+- **Not revoked**: an Apple sign-in linked to a profile whose owner is a
+  Google sign-in (deleting it as the owner signs in with Google, which
+  can't get Apple's code).
 
 **Not deleted**, and why:
 

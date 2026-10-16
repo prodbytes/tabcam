@@ -90,6 +90,10 @@ class MultiAuthService extends AuthService {
   }
 
   @override
+  Future<String?> deletionAuthorization() async =>
+      _active?.deletionAuthorization();
+
+  @override
   Widget? buildSignInButton([AuthProvider provider = AuthProvider.google]) =>
       _for(provider).buildSignInButton(provider);
 

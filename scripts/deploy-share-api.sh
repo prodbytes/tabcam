@@ -12,6 +12,11 @@
 #   TABCAM_APPLE_SIGN_IN
 #                optional: 1 to take Sign in with Apple's tokens too (for
 #                the bundle ID com.nu01.tabcam), under /apple
+#   APPLE_SIGN_IN_KEY_PARAMETER
+#                default /tabcam/apple-sign-in-key: with TABCAM_APPLE_SIGN_IN,
+#                the SSM SecureString with the Sign in with Apple key, to
+#                revoke a deleted account's Apple tokens (see
+#                tabcam_api/shares/apple_revoke.py); may be made later
 #   RBACR_TOKEN_PARAMETER
 #                default /tabcam/rbacr-token: the SSM SecureString with
 #                rbacr's root token (made once, see tabcam_locr/README.md)
@@ -57,6 +62,14 @@ if [[ "$(aws ssm describe-parameters --parameter-filters "Key=Name,Values=$rbacr
   exit 1
 fi
 
+# The Sign in with Apple key (only its metadata is read): without it, deleting
+# an Apple account can't revoke its Apple tokens, as App Store review wants.
+apple_key_param="${APPLE_SIGN_IN_KEY_PARAMETER:-/tabcam/apple-sign-in-key}"
+if [[ -n "$apple_client" && "$(aws ssm describe-parameters --parameter-filters "Key=Name,Values=$apple_key_param" \
+      --query 'Parameters[0].Type' --output text)" != SecureString ]]; then
+  echo "warning: SSM SecureString $apple_key_param not found: deleting an Apple account won't revoke its Apple tokens until it's made (tabcam_api/shares/apple_revoke.py)" >&2
+fi
+
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 
@@ -83,12 +96,13 @@ aws cloudformation deploy --stack-name tabcam-share-api \
     "AllowedOrigins=$origins" \
     "AccountsTableName=$accounts" \
     "RbacrTokenParameterName=$rbacr_param" \
+    "AppleSignInKeyParameterName=$apple_key_param" \
     DeveloperProviderName=login.tabcam.profiles \
   --no-fail-on-empty-changeset
 
 echo "==> uploading the code"
 mkdir "$work/package"
-files=(index.py profiles.py keys.py sealed.py adjectives.txt animals.txt)
+files=(index.py profiles.py keys.py sealed.py apple_revoke.py adjectives.txt animals.txt)
 for f in "${files[@]}"; do cp "tabcam_api/shares/$f" "$work/package/"; done
 "$work/venv/bin/pip" install --quiet --only-binary=:all: --require-hashes \
   --platform manylinux_2_28_aarch64 --platform manylinux_2_17_aarch64 \

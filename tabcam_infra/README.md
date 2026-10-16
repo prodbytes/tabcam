@@ -217,8 +217,9 @@ ACM validation names.
    1. Join the paid Apple Developer Program (a free Personal Team can't
       sign the capability), and in Certificates, Identifiers & Profiles
       enable **Sign in with Apple** on the App ID `com.nu01.tabcam`
-      ("Enable as a primary App ID"). No key, Services ID or domain is
-      needed: native sign-in on iOS only.
+      ("Enable as a primary App ID"). No Services ID or domain is
+      needed (native sign-in on iOS only); a key is, for deleting
+      accounts (step 4).
    2. Redeploy the stacks with Apple trusted, its tokens' audience being
       the bundle ID:
 
@@ -228,9 +229,13 @@ ACM validation names.
         --template-file tabcam_infra/identity.yaml \
         --capabilities CAPABILITY_IAM \
         --tags project=tabcam tenancy=shared \
-        --parameter-overrides "GoogleWebClientId=$TABCAM_GOOGLE_WEB_CLIENT_ID" \
-          PoolName=tabcam AppleClientId=com.nu01.tabcam
+        --parameter-overrides PoolName=tabcam \
+          DeveloperProviderName=login.tabcam.profiles AppleClientId=com.nu01.tabcam
       ```
+
+      `deploy` keeps the Google parameters left out (the stack uses the
+      account's existing provider, `GoogleProviderArn`, so they're unused
+      here). Done 2026-10-16.
 
       Then, with `TABCAM_APPLE_SIGN_IN=1` in `.env`,
       `bash scripts/deploy-share-api.sh` (it adds the `/apple` routes and
@@ -243,3 +248,24 @@ ACM validation names.
       `TABCAM_IOS_DEVELOPMENT_TEAM` in `.env`: iOS builds then show
       Sign in with Apple and carry the entitlement
       ([platforms](../specs/platforms.md)).
+   4. The Sign in with Apple key, with which deleting an account revokes
+      the user's Apple tokens (App Store guideline 5.1.1(v),
+      [cloud sync](../specs/cloud-sync.md#revoking-apples-tokens)). In
+      Certificates, Identifiers & Profiles > Keys, create a key with
+      **Sign in with Apple** (primary App ID `com.nu01.tabcam`) and
+      download its `AuthKey_<key ID>.p8` (once only). Store it, with its
+      key ID and the team ID, as the SSM SecureString the share API reads
+      (`AppleSignInKeyParameterName`), then delete the downloaded file
+      (keep a copy where the other keys are backed up):
+
+      ```bash
+      aws ssm put-parameter --region us-east-1 --type SecureString \
+        --name /tabcam/apple-sign-in-key \
+        --value "$(jq -n --arg t "$TABCAM_IOS_DEVELOPMENT_TEAM" --arg k <key ID> \
+          --rawfile p AuthKey_<key ID>.p8 '{teamId: $t, keyId: $k, privateKey: $p}')"
+      ```
+
+      Add `--overwrite` to replace it. The function reads it when an
+      account is deleted, so no redeploy is needed; until it exists,
+      Apple accounts are deleted without revoking, and
+      `scripts/deploy-share-api.sh` warns.
