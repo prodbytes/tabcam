@@ -517,6 +517,22 @@
   "@eventDeleteFile": {
     "description": "Capture screen: a file's delete button in the list"
   },
+  "eventDownload": "Download",
+  "@eventDownload": {
+    "description": "Capture screen: download one file"
+  },
+  "eventDownloadAll": "Download all",
+  "@eventDownloadAll": {
+    "description": "Capture screen: download every file as a zip"
+  },
+  "eventCouldntDownload": "Couldn't download",
+  "@eventCouldntDownload": {
+    "description": "Capture screen: a download failed"
+  },
+  "eventFileMore": "More",
+  "@eventFileMore": {
+    "description": "Capture screen: a file's menu (rename, download, delete) on a narrow phone"
+  },
   "eventCouldntDelete": "Couldn't delete",
   "@eventCouldntDelete": {
     "description": "Capture screen: deleting a file failed"
