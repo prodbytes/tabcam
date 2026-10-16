@@ -5,6 +5,7 @@ import 'rename_dialog.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
 import '../processing/page_filter.dart';
+import 'arriving.dart';
 import 'audio_page.dart';
 import 'file_thumbnails.dart';
 import 'link_page.dart';
@@ -48,44 +49,55 @@ class FileThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const badge = Colors.black54;
     return SizedBox.square(
       dimension: fileThumbnailSize,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: ColoredBox(
           color: Colors.white,
-          child: switch (page.kind) {
-            PageKind.image => PageImage(
-              library: library,
-              event: event,
-              page: page,
-              fit: BoxFit.cover,
-              cacheWidth: 240,
-            ),
-            PageKind.video => VideoFrameThumbnail(
-              library: library,
-              event: event,
-              page: page,
-              fallback: const VideoThumbnail(),
-            ),
-            PageKind.pdf => PdfThumbnail(
-              library: library,
-              event: event,
-              page: page,
-              fallback: const Icon(Icons.picture_as_pdf_outlined, color: badge),
-            ),
-            PageKind.audio => const Icon(Icons.music_note, color: badge),
-            PageKind.link => Icon(
-              page.url != null && youTubeVideoId(page.url!) != null
-                  ? Icons.smart_display
-                  : Icons.link,
-              color: badge,
-            ),
-          },
+          // Its file still on its way: a spinner until it's here.
+          child: Arriving(
+            library: library,
+            event: event,
+            page: page.hasFile ? page : null,
+            placeholder: const SizedBox.shrink(),
+            child: (_) => _preview(),
+          ),
         ),
       ),
     );
+  }
+
+  Widget _preview() {
+    const badge = Colors.black54;
+    return switch (page.kind) {
+      PageKind.image => PageImage(
+        library: library,
+        event: event,
+        page: page,
+        fit: BoxFit.cover,
+        cacheWidth: 240,
+      ),
+      PageKind.video => VideoFrameThumbnail(
+        library: library,
+        event: event,
+        page: page,
+        fallback: const VideoThumbnail(),
+      ),
+      PageKind.pdf => PdfThumbnail(
+        library: library,
+        event: event,
+        page: page,
+        fallback: const Icon(Icons.picture_as_pdf_outlined, color: badge),
+      ),
+      PageKind.audio => const Icon(Icons.music_note, color: badge),
+      PageKind.link => Icon(
+        page.url != null && youTubeVideoId(page.url!) != null
+            ? Icons.smart_display
+            : Icons.link,
+        color: badge,
+      ),
+    };
   }
 }
 

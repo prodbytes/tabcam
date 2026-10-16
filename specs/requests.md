@@ -1011,3 +1011,14 @@ spec.
    the tab, and why; a band image that fails is drawn as plain text
    instead. The band is smaller (a six-string staff takes about a third
    of a landscape take) ([Cam](cam.md#the-tab-in-the-take)).
+11. **When the app loads, data takes a long while to come: make it
+   quicker, perhaps by getting a list first, showing it with a loading
+   icon, then fetching.** A pass downloaded each new capture's files one
+   after another before showing it, one capture at a time. Now it fetches
+   the changed `scan.json` files 8 at a time and shows the captures at
+   once; their files download after, 4 at a time (pictures and PDFs
+   first, newest captures first), each preview showing a spinner until
+   its file is here, and whatever needs a file waiting for it. A file that
+   fails to come is asked for again at the next pass
+   ([cloud sync](cloud-sync.md#listed-first-files-after),
+   [platforms](platforms.md)).

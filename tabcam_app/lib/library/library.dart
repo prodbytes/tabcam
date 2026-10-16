@@ -34,6 +34,10 @@ class Library extends ChangeNotifier {
   /// Filtered pages already rendered, by page ID and filter.
   final Map<String, Uint8List> _filtered = {};
 
+  /// Pages cloud sync brings after their event shows ([expectPage]), by
+  /// `<event id>/<file name>`: what needs one ([original], [path]) waits.
+  final Map<String, Completer<void>> _arriving = {};
+
   /// The events to show, newest first (not the deleted ones).
   List<CaptureEvent> get events => _scans;
 
@@ -111,6 +115,7 @@ class Library extends ChangeNotifier {
         kind: page.kind,
         extension: page.extension,
       );
+      await _arrival(event.id, page);
       final (bytes, _) = await _store.pageStream(event.id, page);
       await _store.putPageStream(id, copy, bytes);
       pages.add(copy);
@@ -266,6 +271,7 @@ class Library extends ChangeNotifier {
   /// ID): page files never change once written, so cloud sync only has to
   /// look at which pages an event has.
   Future<CaptureEvent> rotatePage(CaptureEvent event, EventPage page) async {
+    await _arrival(event.id, page);
     final rotated = await rotatedPage(await _store.page(event.id, page));
     final turned = EventPage(
       id: newId(),
@@ -337,6 +343,7 @@ class Library extends ChangeNotifier {
 
   Future<void> _removePages(CaptureEvent event) async {
     for (final p in event.pages) {
+      pageGone(event.id, p);
       await _store.deletePage(event.id, p);
       _forget(p);
     }
@@ -360,6 +367,7 @@ class Library extends ChangeNotifier {
     final kept = {for (final p in event.pages) p.fileName};
     for (final p in local?.pages ?? const <EventPage>[]) {
       if (!kept.contains(p.fileName)) {
+        pageGone(event.id, p);
         await _store.deletePage(event.id, p);
         _forget(p);
       }
@@ -428,6 +436,9 @@ class Library extends ChangeNotifier {
   Future<bool> hasPage(String eventId, EventPage page) =>
       _store.hasPage(eventId, page);
 
+  /// [page]'s file, for cloud sync to send. It doesn't wait for one still
+  /// arriving ([expectPage]): sync sends only what the folder lacks, and
+  /// what arrives comes from there.
   Future<(Stream<List<int>>, int)> pageStream(String eventId, EventPage page) =>
       _store.pageStream(eventId, page);
 
@@ -442,13 +453,54 @@ class Library extends ChangeNotifier {
   Future<void> writeMeta(String name, String json) =>
       _store.writeMeta(name, json);
 
-  /// The page's file as scanned or picked.
-  Future<Uint8List> original(CaptureEvent event, EventPage page) =>
-      _store.page(event.id, page);
+  static String _arrivalKey(String eventId, EventPage page) =>
+      '$eventId/${page.fileName}';
+
+  /// Whether [page]'s file is still on its way (cloud sync brings it
+  /// after its event): its preview shows that it's loading.
+  bool isArriving(String eventId, EventPage page) =>
+      _arriving.containsKey(_arrivalKey(eventId, page));
+
+  /// Cloud sync shows an event before its pages' files, and brings them
+  /// after: until [pageArrived], what needs [page] waits for it.
+  void expectPage(String eventId, EventPage page) => _arriving.putIfAbsent(
+    _arrivalKey(eventId, page),
+    // Nothing may be waiting when it fails ([pageGone]).
+    () => Completer<void>()..future.ignore(),
+  );
+
+  /// [page]'s file is stored ([putPageStream]): what waited for it goes
+  /// on, and its previews show it.
+  void pageArrived(String eventId, EventPage page) {
+    final arrival = _arriving.remove(_arrivalKey(eventId, page));
+    if (arrival == null) return;
+    arrival.complete();
+    notifyListeners();
+  }
+
+  /// [page] won't come (it, or its event, went): what waited for it fails.
+  void pageGone(String eventId, EventPage page) {
+    final arrival = _arriving.remove(_arrivalKey(eventId, page));
+    if (arrival == null) return;
+    arrival.completeError(StateError('${page.fileName} is gone'));
+    notifyListeners();
+  }
+
+  Future<void> _arrival(String eventId, EventPage page) =>
+      _arriving[_arrivalKey(eventId, page)]?.future ?? Future.value();
+
+  /// The page's file as scanned or picked (once it's here: see
+  /// [expectPage]).
+  Future<Uint8List> original(CaptureEvent event, EventPage page) async {
+    await _arrival(event.id, page);
+    return _store.page(event.id, page);
+  }
 
   /// The page's file on disk (videos play from it); null on the web.
-  Future<String?> path(CaptureEvent event, EventPage page) =>
-      _store.pagePath(event.id, page);
+  Future<String?> path(CaptureEvent event, EventPage page) async {
+    await _arrival(event.id, page);
+    return _store.pagePath(event.id, page);
+  }
 
   /// An image page with its filter applied (cached); a video as it is.
   Future<Uint8List> filtered(CaptureEvent event, EventPage page) async {
