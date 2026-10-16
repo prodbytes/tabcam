@@ -980,4 +980,5 @@ spec.
    Transformer) and iOS (AVFoundation) burn them in after recording,
    through the method channel `tabcam/take_overlay`. All on the device;
    a failure keeps the take as recorded ([Cam](cam.md#the-tab-in-the-take),
-   [platforms](platforms.md)).
+   [platforms](platforms.md)). Also: the iOS `Podfile.lock` was brought up
+   to date with the face detection pod head gestures added.
