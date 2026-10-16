@@ -259,16 +259,20 @@ class _EventScreenState extends State<EventScreen> {
   }
 
   /// Cam: the camera, with the tab under it, to record playing along
-  /// ([PlayAlongScreen]); its takes are added to the list.
+  /// ([PlayAlongScreen]); back from it, the takes it added show, at the
+  /// end of the list.
   Future<void> _cam() async {
     await _player.stop();
     if (!mounted) return;
+    final before = _library.byId(widget.eventId)?.pages.length ?? 0;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) =>
             PlayAlongScreen(library: _library, eventId: widget.eventId),
       ),
     );
+    final event = _library.byId(widget.eventId);
+    if (mounted && event != null) _showAdded(event, before, images: false);
   }
 
   /// Files the user dragged onto the screen ([FileDropArea]): added, as
@@ -571,6 +575,12 @@ class _EventScreenState extends State<EventScreen> {
         final editable = !event.readOnly;
         final text = _text;
         final l10n = context.l10n;
+        final hasText = event.tabText?.trim().isNotEmpty ?? false;
+        final reading = switch (AutoReaderScope.of(context)
+            ?.stateOf(event.id)) {
+          ReadState.reading || ReadState.inCloud => true,
+          _ => false,
+        };
         return Scaffold(
           appBar: AppBar(
             title: InkWell(
@@ -655,6 +665,10 @@ class _EventScreenState extends State<EventScreen> {
                     icon: Icons.notes,
                     label: l10n.eventText,
                     selected: text,
+                    // How the tab stands: being read, there, or not.
+                    working: reading,
+                    dimmed: !reading && !hasText,
+                    tooltip: reading ? l10n.eventReadingTab : null,
                     onPressed: _busy
                         ? null
                         : () => setState(() => _text = true),

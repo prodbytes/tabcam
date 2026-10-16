@@ -333,4 +333,26 @@ void main() {
     expect(find.byKey(const Key('cam-heads')), findsNothing);
     expect(camera.streaming, isFalse);
   });
+
+  testWidgets('back from Cam, the capture shows its new takes', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    await tester.pumpWidget(
+      app(EventScreen(library: library, eventId: id, initialText: true)),
+    );
+    await frames(tester);
+    await tester.tap(find.byKey(const Key('cam')));
+    await frames(tester);
+    await tester.tap(find.byTooltip('Rec'));
+    await frames(tester);
+    await tester.tap(find.byTooltip('Stop'));
+    await frames(tester);
+    // Saved before going back.
+    expect(find.text('Take 1 added to the capture'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pump();
+    await frames(tester);
+    expect(find.byType(PlayAlongScreen), findsNothing);
+    // The list, not the Text view, with the take in it.
+    expect(find.text('Take 1'), findsOneWidget);
+  });
 }

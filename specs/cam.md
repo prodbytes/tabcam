@@ -71,7 +71,8 @@ camera view ([`PlayAlongScreen`](../tabcam_app/lib/capture/play_along_screen.dar
   the capture as a video, at the end of its files, named "Take 1",
   "Take 2"… (the first number no file has), and a message says so. It
   syncs as any video does. Going back while recording stops it and
-  keeps the take.
+  keeps the take. Back on the capture, its takes show: the file list
+  (not the Text view), scrolled to its end.
 - **Play** plays the last take of this visit back in the camera's place,
   until **Stop** or its end; the necklines turn where they turned while
   it was recorded. When they turned isn't saved with the take: older

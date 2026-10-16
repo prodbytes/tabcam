@@ -937,7 +937,19 @@ spec.
    saved or sent
    ([Cam](cam.md#head-gestures), [platforms](platforms.md),
    [privacy](privacy.md)).
-4. **Make Cam's head gestures work in the web build (the user tried it in
+4. **Make the "Text" icon in the capture's bottom bar show the reading
+   status: normal when the text is ready, disabled when no text was found
+   or it was deleted, a spinner while processing.** The Text tool (an
+   `EventTool` with `working` and `dimmed`) shows a spinner while
+   `AutoReader` reads the capture (on the device or in the cloud), the
+   usual icon with a text tab, and is greyed out without one. It stays
+   tappable when greyed, so the Text view can still say why and offer
+   Read again or Sign in ([event screen](event-screen.md)).
+5. **Show the recorded videos on the capture page by themselves.** Back
+   from Cam with new takes, the capture shows its file list (even if it
+   was on the Text view), scrolled to the end, where the takes are
+   ([Cam](cam.md), [event screen](event-screen.md)).
+6. **Make Cam's head gestures work in the web build (the user tried it in
    the browser and nothing happened).** The web now has a
    `WebHeadTracker` (`web_head_tracker.dart`, conditionally imported):
    MediaPipe Tasks Vision's Face Landmarker (`@mediapipe/tasks-vision`

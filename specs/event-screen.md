@@ -79,13 +79,19 @@ it opens on the Text view; otherwise on the list.
     (highlighted while it shows): the
     [text view](tab-recognition.md#text-view), or why there's no text
     yet. There's no Read tab: every capture is read by itself
-    ([tab recognition](tab-recognition.md#reading-by-itself)).
+    ([tab recognition](tab-recognition.md#reading-by-itself)). Its icon
+    says how the tab stands: a **spinner** in its place while the
+    capture is read, on the device or in the cloud (tooltip "Reading the
+    tab…"); the usual icon once there's a text tab; **greyed out**
+    without one (no tab found, not read, the text deleted or blank,
+    reading failed or not possible here). Greyed out, it still opens the
+    Text view, which says why and offers Read again or Sign in.
   - **Add**: more files, [scanned or picked](scanning.md#adding-to-an-event):
     Scan pages, Document, Photos & videos, Files, or a **Link**. The list
     then shows, scrolled to what was added.
   - **Cam**, last: the camera with the tab under it, one neckline at a
     time, to record the user playing along; takes are added as videos
-    ([Cam](cam.md)). Off on a capture shared read only or opened by its
+    ([Cam](cam.md)), and back from it the list shows, scrolled to them. Off on a capture shared read only or opened by its
     link.
   - **Dragging files** onto the screen adds them too, as Files does
     (outlined with "Drop files to add" while they're over it; folders and
