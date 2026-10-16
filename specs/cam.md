@@ -73,10 +73,36 @@ camera view ([`PlayAlongScreen`](../tabcam_app/lib/capture/play_along_screen.dar
   syncs as any video does. Going back while recording stops it and
   keeps the take. Back on the capture, its takes show: the file list
   (not the Text view), scrolled to its end.
+- <a id="the-tab-in-the-take"></a>**The tab is in the take**: each
+  neckline shows along the bottom of the video while it showed in Cam,
+  as a band as wide as the video (white monospaced text on a dark,
+  see-through strip; [`take_overlay.dart`](../tabcam_app/lib/capture/take_overlay.dart)).
+  The app draws each band itself (`renderBand`, 1280 px wide, scaled to
+  the video), the same on every platform, and puts it in on the device:
+  nothing is uploaded to make it, and no server is involved.
+  - **Web**: recorded in as it goes
+    ([`web_take_recorder.dart`](../tabcam_app/lib/capture/web_take_recorder.dart)):
+    every frame, the camera preview's `<video>` and the band go onto a
+    canvas, and the browser's `MediaRecorder` records the canvas
+    (`captureStream(30)`) with the camera's sound (else the
+    microphone's): WebM (VP9 or VP8, Opus), or MP4 where only that
+    records (Safari). Should it fail to start, the camera records the
+    take alone, without the tab.
+  - **Android and iOS**: burned in after recording, by the platform's
+    own video tools over the method channel `tabcam/take_overlay`
+    (`burn`: the take, an output path, and the bands with their times
+    in ms): Media3 Transformer with an `OverlayEffect`
+    ([`TakeOverlay.kt`](../tabcam_app/android/app/src/main/kotlin/com/nu01/tabcam/TakeOverlay.kt))
+    on Android; an `AVMutableVideoComposition` with Core Animation
+    layers ([`AppDelegate.swift`](../tabcam_app/ios/Runner/AppDelegate.swift))
+    on iOS. The take comes out upright, as it showed, as H.264 and AAC
+    in MP4. "Adding the tab to the video…" shows meanwhile. If it
+    fails, the take is saved as recorded and a message says it was
+    saved without the tab.
+  - A capture with no text tab records the camera alone.
 - **Play** plays the last take of this visit back in the camera's place,
-  until **Stop** or its end; the necklines turn where they turned while
-  it was recorded. When they turned isn't saved with the take: older
-  takes play from the [file list](event-screen.md) without the tab.
+  until **Stop** or its end; the necklines under it turn where they
+  turned while it was recorded (the take has the tab in it too).
 
 Cam is off on a capture shared read only or opened by its link (a take
 couldn't be saved there), and while a tool works. Opening it stops what

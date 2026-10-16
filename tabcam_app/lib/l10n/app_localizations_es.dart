@@ -596,6 +596,12 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get camAddingTab => 'Añadiendo la tablatura al vídeo…';
+
+  @override
+  String get camNoOverlay => 'La toma se guardó sin la tablatura.';
+
+  @override
   String get camHeadsOn =>
       'Gestos de cabeza activados: asiente hacia arriba o a la derecha para la línea siguiente, hacia abajo o a la izquierda para la anterior';
 

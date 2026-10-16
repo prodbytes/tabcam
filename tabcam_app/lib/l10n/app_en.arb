@@ -779,6 +779,14 @@
       }
     }
   },
+  "camAddingTab": "Adding the tab to the video…",
+  "@camAddingTab": {
+    "description": "Cam: the tab is being burned into the take"
+  },
+  "camNoOverlay": "The take was saved without the tab.",
+  "@camNoOverlay": {
+    "description": "Cam: burning the tab into the take failed"
+  },
   "camHeadsOn": "Head gestures on: nod up or right for the next line, down or left for the one before",
   "@camHeadsOn": {
     "description": "Cam: head gestures toggle, on"
