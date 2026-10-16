@@ -1199,3 +1199,30 @@ spec.
       in Internal, with the account holder, testing internally. Still to
       do before submitting: App Privacy labels, price and availability,
       review contact details ([app stores](app-stores.md#status)).
+26. **Bring the privacy policy up to date with the app, add a contact
+    email, and make the iOS privacy manifest and the store answers match
+    the App Store Connect labels.**
+    - The policy ([privacy](privacy.md),
+      `tabcam_index/site/privacy/index.html`): signing in is required
+      (Google, or Sign in with Apple on iOS; the welcome only, signed
+      out), Apple's data and session, the profile, Cam's takes with
+      their sound and the microphone, ML Kit's diagnostics (a device or
+      installation ID, performance and diagnostic data, not linked) in
+      place of "no analytics", Premium's Fix sending the song and the
+      tab's text to Anthropic's Claude, Apple and Anthropic among the
+      processors, KMS; Share copying a link that anyone holding it can
+      open, read only, and that can't be turned off yet (replacing "a
+      link gives no access by itself" and PDF or text sharing); Delete
+      account's whole scope, Apple token revocation included, and that it
+      doesn't cancel Premium. Contact: privacy@nu01.com, replacing the
+      placeholder.
+    - `PrivacyInfo.xcprivacy`: Audio Data, linked, not tracking, App
+      Functionality; its comment names ML Kit's own manifests for the
+      not-linked analytics data.
+    - [data-safety.md](../tabcam_store/data-safety.md): Apple's labels as
+      entered (Name, Email, Photos or Videos, Audio Data, Other User
+      Content, User ID linked for App Functionality; Device ID,
+      Performance Data, Other Diagnostic Data not linked, for Analytics),
+      Play's Device or other IDs row for ML Kit, and a note that ML
+      Kit's manifests also list Product Interaction, Other User Content
+      and Other Data Types, to check against the app's privacy report.

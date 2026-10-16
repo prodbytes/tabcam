@@ -28,8 +28,9 @@ others change too.
   encrypted at rest; HTTPS only. Google, and Apple on iOS, for sign-in.
 - **Cam's head gestures**: ML Kit face detection on the device; only the
   head's angles are used, nothing about the face is kept or sent.
-- **No** ads, analytics, crash reporting or tracking SDKs; no data sold
-  or shared for advertising.
+- **No** ads, crash reporting or tracking SDKs, and no analytics of
+  TabCam's own (ML Kit's, below, aside); no data sold or shared for
+  advertising.
 - **ML Kit** (on-device text recognition and, on Android, the document
   scanner) may send Google anonymous diagnostics and usage metrics about
   the ML Kit APIs (GoogleDataTransport). Google's guidance on declaring
@@ -68,10 +69,11 @@ is processed ephemerally only.
 | Files and docs | Yes | App functionality | PDFs and files added to captures |
 | App activity → Other user-generated content | Yes | App functionality | Text tabs, titles, artists, links |
 | App info and performance → Diagnostics | Yes, if ML Kit's disclosure says so | Analytics (by Google ML Kit) | Anonymous ML Kit metrics; collected also signed out; confirm against Google's ML Kit page |
+| Device or other IDs | Yes, if ML Kit's disclosure says so | Analytics (by Google ML Kit) | The installation identifier ML Kit's metrics carry; not linked to the account |
 
 Not collected: location, financial info (Premium is paid through Stripe
 via Substack, outside the app), health, messages, voice recordings, contacts,
-calendar, web browsing, device IDs, app interactions, crash logs.
+calendar, web browsing, app interactions, crash logs.
 
 ## Apple: App Privacy labels
 
@@ -87,17 +89,32 @@ used for tracking):
 | Contact Info → Name | Shown only; declared to match `PrivacyInfo.xcprivacy` |
 | Identifiers → User ID | Cognito identity ID, Google account ID, Apple user ID |
 | User Content → Photos or Videos | Scans, photos, videos, Cam's takes |
-| User Content → Audio Data | Recordings added to captures; Cam's takes record sound. Not in `PrivacyInfo.xcprivacy` yet: add it there (a new build) to match |
+| User Content → Audio Data | Recordings added to captures; Cam's takes record sound |
 | User Content → Other User Content | PDFs and files, text tabs, titles, links |
 
 App Store Connect takes these answers in its web UI (App Privacy); the
 App Store Connect API key used by `scripts/store-upload-ios.sh` can't set
 them.
 
-**Data not linked to the user** (only if ML Kit's disclosure requires
-it): Diagnostics → Other Diagnostic Data, for **Analytics** (third-party
-SDK). If declared, add it to `PrivacyInfo.xcprivacy` as well (the
-app's own manifest doesn't list it; GoogleDataTransport's does).
+All six are in `PrivacyInfo.xcprivacy`, the same way.
+
+**Data not linked to the user**, for **Analytics** only (by Google's
+ML Kit, a third-party SDK; not used for tracking):
+
+| Apple category → type | Notes |
+|---|---|
+| Identifiers → Device ID | The installation identifier ML Kit's metrics carry |
+| Diagnostics → Performance Data | ML Kit's timings and outcomes |
+| Diagnostics → Other Diagnostic Data | ML Kit's diagnostics (GoogleDataTransport) |
+
+These come from ML Kit's own privacy manifests (MLKitCommon,
+MLKitFaceDetection, GoogleDataTransport), which Xcode merges into the
+app's privacy report, so the app's own manifest doesn't repeat them.
+Those manifests also list Product Interaction, Other User Content and
+Other Data Types, not linked, for Analytics and App Functionality: the
+maintainer should check the app's privacy report (Xcode → Archive →
+Generate Privacy Report) and Google's ML Kit disclosure, and add any of
+them App Review expects.
 
 ## Content rating (IARC questionnaire, Play; Apple's age rating)
 
