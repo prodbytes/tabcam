@@ -19,8 +19,8 @@ import 'mono_font.dart';
 /// check against them and fix, monospaced and unwrapped (long lines scroll
 /// sideways). The notes the read wasn't sure of (likely wrong) are in red,
 /// until the user changes them or marks the text Verified. Edits are saved
-/// as they're made (after a second's pause) and
-/// on leaving, and make the text the user's: no later read replaces it. A
+/// as they're made (after a second's pause) and on leaving, and make the
+/// text the user's: no later read replaces it. A
 /// read that ends while it shows fills it in, unless the user has started
 /// editing. Read only for an event shared read only.
 ///
