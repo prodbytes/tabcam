@@ -81,5 +81,5 @@ health checks, alarms and SNS topics (removed 2026-10-14, to save their
 cost); the deploy roles keep the permissions to delete those until the
 next GA deploy has.
 
-By hand, with admin credentials: `TAG=0.1.<Z>-GA bash scripts/deploy.sh`
+By hand, with admin credentials: `TAG=0.2.<Z>-GA bash scripts/deploy.sh`
 (`STAGE=rc` for the RC; `SKIP_BUILD=1` to reuse a build).
