@@ -13,6 +13,15 @@ CLI; no stack owns it.
 (its footer links the privacy policy); `/privacy` is the
 [privacy policy](privacy.md).
 
+## The old domains
+
+TabCam was TabScan: `tabscan.nu01.com` and `rc.tabscan.nu01.com` (the
+`tabscan-web` and `tabscan-rc-web` stacks, zone `Z10277161AEN9OU2H73PJ`)
+are kept as permanent redirects (301) to the same path and query on
+`tabcam.nu01.com` and `rc.tabcam.nu01.com` ([site.yaml](../tabcam_infra/site.yaml)
+with `RedirectTo`), so links shared before the rename still open, and
+still preview as the capture. Deploy them again only to change that.
+
 ## Production
 
 A pushed `*GA` tag runs the [Deploy workflow](../.github/workflows/deploy.yml),
