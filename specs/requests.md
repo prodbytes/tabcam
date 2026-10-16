@@ -966,3 +966,8 @@ spec.
    code and model downloaded from jsDelivr and Google
    ([Cam](cam.md#head-gestures), [platforms](platforms.md),
    [privacy](privacy.md)).
+7. **Add a delete button in the file list to delete a file.** Each row
+   of the capture's file list has **Delete file** (a bin, after the rename
+   pencil): it asks to confirm, then deletes the file; the last file
+   stays, as on the file screen. Not on captures shared read only
+   ([event screen](event-screen.md)).

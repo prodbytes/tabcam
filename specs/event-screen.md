@@ -52,7 +52,11 @@ it opens on the Text view; otherwise on the list.
   pickers name them at random). **Rename file** (a pencil on each row, or
   a long press) asks for the name, prefilled; saving it empty goes back
   to the default name. The name is the page's `title`, synced with the
-  event. A tap opens the file alone on the file screen, except a link's:
+  event. **Delete file** (a bin on each row, after the pencil) asks
+  "Delete "<name>"?" (Cancel, Delete) and deletes the file (stopping it
+  if it plays in the list); the last file can't be deleted (the message
+  says to delete the event instead), and a failure shows "Couldn't
+  delete". Rename and Delete aren't there read only. A tap opens the file alone on the file screen, except a link's:
   a tap opens the link itself, outside the app, as the file screen's
   **Open** does (a new tab on the web; the browser, or the app for it
   such as YouTube, on Android and iOS). A link's chevron (**Details**)
@@ -99,8 +103,8 @@ it opens on the Text view; otherwise on the list.
     many). Not on a capture shared read only or opened by its link, nor
     while a tool works; not on iOS (see [Capture](navigation.md#capture)).
 
-  The Original / Scan view, Rotate and Delete are the file screen's, not
-  this one's.
+  The Original / Scan view and Rotate are the file screen's, not this
+  one's; Delete is on both.
 - While a tool works, a progress bar shows under the app bar and the tools
   are off. Failures show as a message at the bottom.
 

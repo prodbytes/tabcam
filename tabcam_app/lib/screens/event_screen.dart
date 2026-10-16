@@ -275,6 +275,40 @@ class _EventScreenState extends State<EventScreen> {
     if (mounted && event != null) _showAdded(event, before, images: false);
   }
 
+  /// Deletes one of its files from the list, once the user confirms; the
+  /// last one stays (the event is deleted instead).
+  Future<void> _deletePage(CaptureEvent event, EventPage page) async {
+    final l10n = context.l10n;
+    if (event.pages.length == 1) {
+      _snack(l10n.eventKeepOnePage);
+      return;
+    }
+    final sure = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.homeLibraryDeleteTitle(fileLabel(l10n, event, page))),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.eventCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.eventDelete),
+          ),
+        ],
+      ),
+    );
+    if (sure != true || !mounted) return;
+    // It may be the one playing in the list.
+    if (_player.holds(page)) await _player.stop();
+    await _run(l10n.eventCouldntDelete, () async {
+      // As it is now: a read may have changed it meanwhile.
+      final now = _library.byId(event.id);
+      if (now != null) await _library.deletePage(now, page);
+    });
+  }
+
   /// Files the user dragged onto the screen ([FileDropArea]): added, as
   /// Add's Files would.
   Future<void> _addDropped(
@@ -531,6 +565,13 @@ class _EventScreenState extends State<EventScreen> {
                   tooltip: l10n.eventRenameFile,
                   icon: const Icon(Icons.edit_outlined),
                   onPressed: () => _renamePage(event, page),
+                ),
+              if (!event.readOnly)
+                IconButton(
+                  key: ValueKey('delete-${page.id}'),
+                  tooltip: l10n.eventDeleteFile,
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: _busy ? null : () => _deletePage(event, page),
                 ),
               if (page.isLink)
                 IconButton(

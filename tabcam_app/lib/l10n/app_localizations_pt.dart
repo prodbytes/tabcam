@@ -394,6 +394,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventDelete => 'Excluir';
 
   @override
+  String get eventDeleteFile => 'Excluir arquivo';
+
+  @override
+  String get eventCouldntDelete => 'Não foi possível excluir';
+
+  @override
   String get eventReorder => 'Reordenar';
 
   @override
