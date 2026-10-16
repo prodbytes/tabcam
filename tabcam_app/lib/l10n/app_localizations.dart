@@ -862,6 +862,30 @@ abstract class AppLocalizations {
   /// **'Opened by its link · Read only'**
   String get eventByLink;
 
+  /// While a tab site's link is imported as a PDF of its page
+  ///
+  /// In en, this message translates to:
+  /// **'Importing the page from {site}…'**
+  String linkTabImporting(String site);
+
+  /// A tab site's page was imported as a PDF beside its link
+  ///
+  /// In en, this message translates to:
+  /// **'The page from {site} was added as a PDF, to read its tab.'**
+  String linkTabImported(String site);
+
+  /// On the web without Premium, a tab site's page isn't imported
+  ///
+  /// In en, this message translates to:
+  /// **'Link added. On the web, importing the page from {site} needs TabCam Premium.'**
+  String linkTabPremium(String site);
+
+  /// A tab site's page couldn't be fetched or had no tab text
+  ///
+  /// In en, this message translates to:
+  /// **'Link added. Couldn\'t import the page from {site}.'**
+  String linkTabFailed(String site);
+
   /// Button: leave a capture opened by its link, to sign in
   ///
   /// In en, this message translates to:

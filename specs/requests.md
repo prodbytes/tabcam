@@ -1285,3 +1285,22 @@ spec.
     save as much as possible of the server side's resources; if a feature
     needs the server, add it there but make it available only to Premium
     users.** CLAUDE.md has a Design guidelines section saying so.
+33. **When a user adds a link, check whether it's from a known tab site
+    (a list of the most popular ones); if so, import the page as if it
+    were a PDF print of it, then scan it for tabs.**
+    - A list of 14 tab sites (Ultimate Guitar, Songsterr, 911Tabs,
+      GuitarTabs.cc, AZ Chords, E-Chords, Guitaretab, Chordie,
+      Tabs4Acoustic, Big Bass Tabs, Classtab, Cifra Club, Cifras,
+      LaCuerda). A link to one of them, from Capture or an event's Add,
+      also adds a PDF print of the page (the title, the tab's text in
+      Courier, the address and date at the foot), which the PDF reader
+      reads for tab on the device. The link stays.
+    - The device fetches the page (Android, iOS); on the web, where CORS
+      forbids it, the cloud OCR service's new `POST /page` does, for
+      Premium only, from the listed sites only (redirects included).
+    - The tab is Ultimate Guitar's page data, other sites' `<pre>`
+      blocks, or a plain-text page.
+    - Reading tells apart staves one right under another (by a blank
+      line's gap, or the first string's name coming back), which merged
+      into one before.
+    See [tab site links](tab-site-links.md).

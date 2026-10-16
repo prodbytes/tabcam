@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../import/tab_page_import.dart';
 import '../library/capture_event.dart';
 import '../l10n/language.dart';
 import 'youtube_link.dart';
@@ -31,6 +32,14 @@ Future<void> openLink(BuildContext context, Uri url) async {
     );
   }
 }
+
+/// What importing a tab site's link did, for a message.
+String tabImportMessage(AppLocalizations l10n, TabImport done) =>
+    switch (done.outcome) {
+      TabImportOutcome.imported => l10n.linkTabImported(done.site.name),
+      TabImportOutcome.needsPremium => l10n.linkTabPremium(done.site.name),
+      TabImportOutcome.failed => l10n.linkTabFailed(done.site.name),
+    };
 
 /// A link page on the file screen: its title and address, with Open
 /// ([openLink]: a new tab on the web, the browser or the app for it on

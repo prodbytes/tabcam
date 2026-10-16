@@ -30,6 +30,10 @@ the cloud as they sync.
 - [Scanning](scanning.md): the system document scanner (edge detection,
   straightening, several pages), and adding pages, photos, videos, files
   and links.
+- [Tab site links](tab-site-links.md): a link to a known tab site
+  (Ultimate Guitar, Songsterr, Cifra Club, LaCuerda...) is also imported
+  as a PDF print of its page, read for tab; fetched on the device (on the
+  web, by the cloud, for Premium only).
 - [Event screen](event-screen.md): one event's files (images, videos,
   recordings, PDFs and links) as a list with previews, Files, Text and
   Add and Cam (the list reorders in place by drag handles), plus Rename,

@@ -260,6 +260,21 @@ set to check both.
 - On the web without Premium, the Text view says reading tabs needs the
   Android or iOS app, or TabCam Premium.
 
+### Tab sites' pages for the web
+
+`POST /page {url}` ([tabcam_locr/locr/pages.py](../tabcam_locr/locr/pages.py)),
+**Premium only** (402 otherwise): the web app can't fetch other sites'
+pages (CORS), so the service fetches a [tab site link](tab-site-links.md)'s
+page for it and answers `{url, contentType, html}`, the page as text (by
+its charset, else UTF-8). Android and iOS fetch pages on the device and
+never call it. Only the tab sites' domains (`TAB_SITES`, the app's list),
+over `http` or `https`, on the default port, without user or password,
+and redirects (at most 5) only to them; anything else is 400 ("a tab
+site's page needed"), and a redirect elsewhere, an HTTP error, a timeout
+(15 s) or a page over 2 MB is 502 ("couldn't fetch the page"). The `http`
+log line has the address and the page's size, not the page. The app asks
+with `CloudOcr.fetchPage` (`OcrApi.page`), its log line the size only.
+
 ## Troubleshooting log
 
 - **App**: every call to the service is logged
@@ -293,7 +308,8 @@ set to check both.
     chosen by [measuring](#memory); 15 min, one retry): it may get page
     images and put results;
   - `tabcam-ocr-api` (512 MB, 300 s for [auto-correct](autocorrect.md)'s
-    `/autocorrect`; the other requests take a second or two): it may read
+    `/autocorrect`; the other requests take a second or two, `/page` up to
+    15 s): it may read
     and write the table, read the rbacr token's parameter (and the Claude
     API key's secret, when set), invoke `tabcam-ocr`, list the bucket and delete results;
   - its function URL (no IAM auth: each request carries an ID token,
@@ -334,6 +350,12 @@ peak close to its limit. Measure again if the quota is raised: up to
 
 ## Verified
 
+- `/page` (pytest, a made-up page, a fake opener): the tab sites and their
+  subdomains taken; other hosts, look-alikes, ports, credentials, `file:`,
+  the metadata address and overlong addresses refused, and redirects off
+  the sites; decoded by charset; capped at 2 MB; HTTP errors 502; Premium
+  only; a bad body 400 without fetching; the log has the size, not the
+  page.
 - Service unit tests (pytest): page keys parsed strictly; premium pages
   queued and free ones not; unknown identities aren't premium; deletions
   remove results; `/account` needs a good token and records the identity;

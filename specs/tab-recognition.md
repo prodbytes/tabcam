@@ -78,7 +78,13 @@ long dashes, `_` and `=` become `-`; `O`/`o` become `0`; `l`, `I`, `!`
 become `1`; `S` becomes `5`.
 
 Consecutive tab lines are a staff; other lines (titles, chord names,
-lyrics, "Chorus") end it. Staves of fewer than four lines are dropped.
+lyrics, "Chorus") end it. So does a tab line that starts the next staff
+right under it (a page printed from a tab site): one further below than
+the staff's strings are apart (more than 1.6 times their median gap: a
+blank line, where OCR or the PDF says where lines are), or one with the
+staff's first string's name once the staff has four, six or seven lines
+(`e|` after `e B G D A E`; a staff naming both its high and low string
+`E` stays one). Staves of fewer than four lines are dropped.
 The lines are named `e B G D A E` (six lines) or `G D A E` (four, bass),
 or kept unnamed for other counts, and every line of a staff ends at the
 same column, so the strings line up and a chord's notes sit in one

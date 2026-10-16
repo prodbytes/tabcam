@@ -10,6 +10,7 @@ import 'package:tabcam_app/auth/auth_service.dart';
 import 'package:tabcam_app/cloud/cloud_ocr.dart';
 import 'package:tabcam_app/cloud/cloud_sync.dart';
 import 'package:tabcam_app/cloud/ocr_api.dart';
+import 'package:tabcam_app/import/tab_page_import.dart';
 import 'package:tabcam_app/library/capture_event.dart';
 import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
@@ -57,6 +58,16 @@ class FakeOcrApi implements OcrApi {
     transcribed.add(eventId);
     if (again) transcribedAgain.add(eventId);
     return 1;
+  }
+
+  /// What [page] answers, and the pages asked for.
+  String pageHtml = '';
+  final List<Uri> pages = [];
+
+  @override
+  Future<FetchedPage> page(String idToken, Uri url) async {
+    pages.add(url);
+    return FetchedPage(body: pageHtml, contentType: 'text/html');
   }
 
   AutocorrectResult corrections = const AutocorrectResult(found: false);
@@ -147,6 +158,42 @@ Future<CaptureEvent> _twoPages(Library library) =>
 
 void main() {
   _fixTests();
+  group('a tab site\'s page on the web', () {
+    final url = Uri.parse('https://www.azchords.com/n/nobody-tabs/riff.html');
+    const html =
+        '<html><title>Riff</title><pre>e|-0-----3-|\nB|-1-----0-|</pre></html>';
+
+    test('the service fetches it for Premium users', () async {
+      final s = _Setup(premium: true);
+      await s.start();
+      await s.signIn();
+      s.api.pageHtml = html;
+      final event = await s.library.create(const []);
+      final done = await TabPageImporter(
+        ocr: s.ocr,
+        onDevice: false,
+      ).addTo(s.library, event, url);
+      expect(done!.outcome, TabImportOutcome.imported);
+      expect(s.api.pages, [url]);
+      expect(s.library.byId(event.id)!.pages.single.title, 'Riff');
+      s.dispose();
+    });
+
+    test('without Premium, the service isn\'t asked', () async {
+      final s = _Setup();
+      await s.start();
+      await s.signIn();
+      final event = await s.library.create(const []);
+      final done = await TabPageImporter(
+        ocr: s.ocr,
+        onDevice: false,
+      ).addTo(s.library, event, url);
+      expect(done!.outcome, TabImportOutcome.needsPremium);
+      expect(s.api.pages, isEmpty);
+      s.dispose();
+    });
+  });
+
   test(
     'a premium user\'s event gets its text tab once every page is read',
     () async {

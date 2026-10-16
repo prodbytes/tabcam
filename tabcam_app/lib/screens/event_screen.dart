@@ -7,6 +7,7 @@ import '../capture/media.dart';
 import '../capture/page_source.dart';
 import '../capture/play_along_screen.dart';
 import '../export/download.dart';
+import '../import/tab_page_import.dart';
 import '../l10n/language.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
@@ -239,7 +240,17 @@ class _EventScreenState extends State<EventScreen> {
     await _run(l10n.eventCouldntAdd, () async {
       final before = event.pages.length;
       if (link != null) {
-        await _library.addLink(event, link.$1, title: link.$2);
+        final url = link.$1;
+        final site = tabSiteOf(url);
+        if (site != null) _snack(l10n.linkTabImporting(site.name));
+        final added = await _library.addLink(event, url, title: link.$2);
+        // A tab site's page, printed as a PDF beside the link, to read.
+        final imported = await TabPageImporter.create(widget.ocr)
+            .addTo(_library, added, url);
+        if (imported != null && mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          _snack(tabImportMessage(l10n, imported));
+        }
       } else if (source == _AddSource.scan) {
         final pages = await PageSource.scan(context);
         if (pages.isEmpty) return;

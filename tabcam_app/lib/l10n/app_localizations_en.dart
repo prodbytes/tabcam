@@ -461,6 +461,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventByLink => 'Opened by its link · Read only';
 
   @override
+  String linkTabImporting(String site) {
+    return 'Importing the page from $site…';
+  }
+
+  @override
+  String linkTabImported(String site) {
+    return 'The page from $site was added as a PDF, to read its tab.';
+  }
+
+  @override
+  String linkTabPremium(String site) {
+    return 'Link added. On the web, importing the page from $site needs TabCam Premium.';
+  }
+
+  @override
+  String linkTabFailed(String site) {
+    return 'Link added. Couldn\'t import the page from $site.';
+  }
+
+  @override
   String get linkSignIn => 'Sign in';
 
   @override

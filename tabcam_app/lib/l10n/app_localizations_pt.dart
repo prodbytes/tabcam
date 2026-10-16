@@ -481,6 +481,26 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventByLink => 'Aberta pelo link · Somente leitura';
 
   @override
+  String linkTabImporting(String site) {
+    return 'Importando a página do $site…';
+  }
+
+  @override
+  String linkTabImported(String site) {
+    return 'A página do $site foi adicionada como PDF, para ler a tablatura.';
+  }
+
+  @override
+  String linkTabPremium(String site) {
+    return 'Link adicionado. Na web, importar a página do $site precisa do TabCam Premium.';
+  }
+
+  @override
+  String linkTabFailed(String site) {
+    return 'Link adicionado. Não foi possível importar a página do $site.';
+  }
+
+  @override
   String get linkSignIn => 'Entrar';
 
   @override

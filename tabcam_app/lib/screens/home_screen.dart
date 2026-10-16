@@ -15,6 +15,7 @@ import '../cloud/cloud_sync.dart';
 import '../cloud/public_capture.dart';
 import '../export/capture_link.dart';
 import '../export/incoming_links.dart';
+import '../import/tab_page_import.dart';
 import '../library/capture_event.dart';
 import '../library/library.dart';
 import 'account_panel.dart';
@@ -274,15 +275,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _addLink() async {
     final link = await askForLink(context);
-    if (link == null) return;
+    if (link == null || !mounted) return;
     final (url, title) = link;
+    final site = tabSiteOf(url);
+    if (site != null) _snack(context.l10n.linkTabImporting(site.name));
+    TabImport? imported;
     await _capture((l10n, e) => l10n.homeAddFailed(e), () async {
       var event = await library.create(const []);
       event = await library.addLink(event, url, title: title);
-      // A link's title names its event, when it has one.
-      final name = title?.trim() ?? '';
+      // A tab site's page, printed as a PDF beside the link, to read.
+      imported = await TabPageImporter.create(widget.ocr)
+          .addTo(library, event, url);
+      event = imported?.event ?? event;
+      // A link's title names its event, when it has one; else the page's.
+      var name = title?.trim() ?? '';
+      if (name.isEmpty) name = imported?.page?.title ?? '';
       return name.isEmpty ? event : library.update(event.copyWith(title: name));
     });
+    // Imported, the saved message lists the PDF; else, why not.
+    if (imported case final done?
+        when mounted && done.outcome != TabImportOutcome.imported) {
+      _snack(tabImportMessage(context.l10n, done));
+    }
   }
 
   @override
