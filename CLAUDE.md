@@ -1,5 +1,16 @@
 @AGENTS.md
 
+## Design guidelines
+
+- **The client device first.** Do the work on the user's device (phone,
+  browser) wherever it can be done there, and spend as little as possible
+  of the server side's resources (Lambda time, storage, transfer, paid
+  APIs).
+- **Server side only when needed, and then Premium only.** When a feature
+  truly needs the server (the device can't do it, or the web can't, e.g.
+  for CORS), add it there, but make that server-side part available to
+  TabCam Premium users only ([specs/cloud-ocr.md](specs/cloud-ocr.md)).
+
 ## Keep the specification up to date
 
 After every user request, update the [specs/](specs/) folder in the same
