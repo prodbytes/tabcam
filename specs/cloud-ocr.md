@@ -58,18 +58,30 @@ most 5 minutes (less if the grant ends sooner), a "no" for 1 minute.
    `status` being `ok`, `no-tab` or `error`.
 4. Deleting a page (or its event) in the bucket deletes its transcription.
 
-**Reading a page**: the page is found and flattened if it's a photo, red
-ink dropped, the light evened out and the page scaled to 2800 px. Each tab
-string line is a row of dashes: they're found, grouped into staves (six
-lines `e B G D A E`, four `G D A E`), and each line is cut out and read
-by Tesseract (one line, tab characters only), PaddleOCR and RapidOCR. Each
-word goes at the column its position implies, measured alike on every line
-of a staff (from the staff's first dash, the median of where its lines'
-dashes start, in its median column width), so the dashes the engines drop
-come back and a chord's notes share a column. Per line, the reading
-closest to the other two (fewest token edits between dashes) wins. A
-staff's lines end together: trailing dashes trimmed, then all padded with
-dashes to the staff's width (or to the line whose notes go furthest).
+**Reading a page**: the page is found and flattened if it's a photo; red
+ink is dropped (the red channel, then whatever is still red, not dark,
+becomes paper, so no grey ghost of a red pen stays over the notes); the
+light is evened out; a page tilted half a degree or more is levelled (the
+angle, within 4 degrees, at which its rows of ink are sharpest; turning
+blurs fine strokes, so a page nearly level is left as is); and it's scaled
+to 2800 px. Each tab string line is a row of dashes a column apart (flat
+marks that aren't evenly spaced, such as a drawn line a poor scan broke
+up, aren't one): they're found, grouped into staves (six lines
+`e B G D A E`, four `G D A E`; fewer than four isn't a staff), and each
+line is cut out and read by Tesseract (one line, tab characters only),
+PaddleOCR and RapidOCR. Each word goes at the column its position implies,
+measured alike on every line of a staff (from the staff's first dash, the
+median of where its lines' dashes start, in its median column width).
+Then the ink itself says where the notes are: on the line's strip, the
+marks that aren't dashes (nor the label, the bars or specks), grouped by
+gaps of most of a column, are its notes; when a reading has as many
+tokens as the strip has notes, each token goes at its note's column. The
+engines drop and double dashes, so the columns they imply drift (by up to
+30 on a long line); the ink's don't, and a chord's notes share a column.
+Per line, the reading closest to the other two (fewest token edits
+between dashes) wins. A staff's lines end together: trailing dashes
+trimmed, then all padded with dashes to the staff's width (or to the line
+whose notes go furthest).
 
 **PDFs** are read as if their pages were photographed: each page (at most
 10) is rendered on white, 2000 px wide (PDFium, `pypdfium2`), and read as
@@ -82,19 +94,27 @@ printouts), where the frets sit on the lines and there are no dashes, are
 read by the same engines another way ([locr/staves.py](../tabcam_locr/locr/staves.py)),
 when a page has no dash lines:
 
-1. Long horizontal strokes are the staff lines (a slightly skewed line,
-   two rows a few pixels apart, is one); lines about a gap apart, six (four
+1. Long horizontal strokes are the staff lines (a scan's thin lines come
+   dotted: the gaps are bridged first; a slightly skewed or bowed line,
+   rows a few pixels apart, is one); lines about a gap apart, six (four
    for bass, five where the page cuts the last), make a staff.
 2. The lines are erased, except where a pen stroke crosses them, so the
    numbers stay whole.
-3. The ink near each staff is split into marks of a digit's size; marks
-   side by side at about the same height are one number, on the string
-   nearest its middle. Marks at the staff's start (handwritten string
-   numbers, the TAB clef) are left out.
-4. Each number's crop is read by RapidOCR's recognizer (no detection), or
-   PaddleOCR's when that isn't a fret; misreadings are fixed (S 5, g 9,
-   o 0, l 1, B 8, ...); a read of several ("5 7-9") is split across the
-   crop, and a "number" past fret 24 (55, 97) is two notes.
+3. The ink near each staff (reaching further above the top line than
+   below the bottom one: handwritten frets often sit above their line) is
+   split into marks of a digit's size. A digit the line cut in pieces one
+   above the other (a 3 through its middle) is one mark again; flat
+   strokes (slurs, a brace's tail) are left out. Marks side by side at
+   about the same height are one number, on the string nearest its
+   middle. Marks at the staff's start, within a line gap of it
+   (handwritten string numbers, the TAB clef), are left out.
+4. Each number's crop is read by PaddleOCR's recognizer, or RapidOCR's
+   (no detection) when that isn't a fret: PaddleOCR read handwritten
+   digits best. On a page written with a fine pen (strokes under a tenth
+   of a line gap) the crops are made a little bolder first. Misreadings
+   are fixed (S 5, $ 5, g 9, o 0, l 1, B 8, C 6, ...); a read of several
+   ("5 7-9", "5(6)5") is split across the crop, and a "number" past fret
+   24 (55, 97) is two notes.
 5. Numbers about the same x are one column (a chord); columns get dashes
    before them by their distance, as the app lays out a typeset tab.
 
@@ -103,9 +123,10 @@ full size, each strip between staves on its own and the whole page too
 (each finds words the other misses), and placed as for text tabs; scanner
 watermarks ("Digitalizado com CamScanner", "Scanned with ...") are left
 out, in the app too. Printed numbers read exactly (the image's build reads
-a made-up riff set on drawn lines back, every note); handwriting about two
-in three notes right, in order and on the right string, so the text is
-worth checking against the page.
+a made-up riff set on drawn lines back, every note); handwriting from
+about 80% to 90% of the notes right, in order and on the right string, on
+the bench's two handwritten pages (crowded pages, numbers written into
+each other, less), so the text is worth checking against the page.
 
 Claude (vision, [locr/vision.py](../tabcam_locr/locr/vision.py)) can
 read the pages nothing else does, but it's **off**: on only with
@@ -268,7 +289,7 @@ set to check both.
   staves and widths, rebuilds lines and votes, and keeps the notations off
   the staves in their place (chord names at their columns, noise dropped).
 - The image's build reads back a made-up riff (at least 80% of its notes,
-  90% at the time of writing, counted on the tab lines) and the title
+  95% at the time of writing, counted on the tab lines) and the title
   above it (80% alike).
 - App tests: a premium event gets its text tab once every page is read;
   pages without tab are left out; the user's edits stay; a text tab
@@ -279,12 +300,26 @@ set to check both.
   when) still shows; an Apple user with a relay address is labelled by
   Apple and told Premium goes by address; "Premium needs Google sign-in"
   when the service takes no Apple tokens.
-- On a real photographed tab page (the OCR bench, kept out of git), the
-  pipeline read 90% of the notes on macOS and 87.5% in the Linux image.
+- The OCR bench (`test_data/ocr_bench`, kept out of git: published
+  songs) scores each note by its string, its order and, on printed tabs,
+  its column, against hand transcriptions. On macOS: a photographed
+  printed tab with red ink across it, 92.5% of the notes (97.5% counting
+  any vibrato run as one), every one in its column (77.5% and 90% before
+  the red ghost was removed and the columns came from the ink); a
+  scanned handwritten page in marker, 82.9% (none before: a drawn line in
+  pieces passed for a row of dashes); a handwritten intro in fine pen,
+  88.1% (42.9% before).
+- Tried on the bench and left out, each worse than the pipeline: CLAHE,
+  sharpening, Sauvola binarization or a 1.5x upscale of the line strips;
+  erasing the dashes before the engines read; cutting the string label
+  off the strip (Tesseract then reads dashes as `~`); pages at 2400 or
+  3200 px; a vertical close of the erased ink; Tesseract on handwritten
+  digits.
 
 ## Known limitations
 
-- Text tabs only; typeset staves are left to on-device reading.
+- Handwritten numbers written into each other ("12" touching "10") are
+  read as one; a section letter's circle touching a fret takes it.
 - No concurrency is reserved (the account's limit is 10); a burst of
   uploads queues.
 - Results arrive at the next sync pass after they're written (up to a

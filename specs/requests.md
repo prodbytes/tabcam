@@ -1038,3 +1038,23 @@ spec.
    show the system's "save as" (`file_picker`). On a phone narrower than
    600 px, Rename, Download and Delete move into a ⋮ menu on each row
    ([event screen](event-screen.md)).
+14. **"The text recognition is still not accurate. Research and test
+   pre-processing techniques to make it as accurate as possible. Test with
+   the two songs already uploaded."** Then: **"try this one too, black
+   magic woman intro by santana"**. The cloud OCR was measured on the
+   bench's three pages (a photographed printed tab with red ink, a
+   scanned handwritten page, a handwritten intro in fine pen), scoring
+   each note by string, order and column, and changed where a technique
+   paid: what's still red after the red channel becomes paper; a page
+   tilted half a degree or more is levelled; rows of flat marks that
+   aren't evenly spaced aren't dash lines, and fewer than four lines
+   aren't a staff (a broken drawn line had sent a handwritten page down
+   the text-tab path); each note's column comes from its ink on the strip,
+   not from the dashes the engines read; on drawn staves, broken lines are
+   bridged, the band reaches higher above the staff, cut digits are joined,
+   flat strokes and string numbers are left out, PaddleOCR reads the
+   crops first, a fine pen's crops are made bolder, and `$`, `C` and
+   "5(6)5" are read. Notes read: 77.5% → 92.5%, 0% → 82.9% and
+   42.9% → 88.1%. Strip contrast (CLAHE), sharpening, Sauvola
+   binarization, upscaling, dash erasure, label cropping and other page
+   sizes were tried and scored worse ([cloud OCR](cloud-ocr.md#verified)).

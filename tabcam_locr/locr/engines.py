@@ -82,18 +82,20 @@ def rapid(strip, line):
 
 def read_crop(ink):
     """One number on drawn staff lines ([ink]: 1 = ink, the number alone),
-    read by RapidOCR's recognizer (no detection: the crop is the text)."""
+    read by PaddleOCR's recognizer, which read handwritten digits best in
+    the OCR bench; RapidOCR's (no detection: the crop is the text) when
+    that isn't a fret."""
     padded = cv2.copyMakeBorder((255 - ink * 255).astype("uint8"), 12, 12, 12, 12,
                                 cv2.BORDER_CONSTANT, value=255)
     bgr = cv2.cvtColor(padded, cv2.COLOR_GRAY2BGR)
-    found, _ = _rapid()(bgr, use_det=False, use_cls=False, use_rec=True)
-    text = found[0][0] if found else ""
-    from .staves import fret
-    if fret(text) is None:
-        # A second opinion: PaddleOCR's, on the same number.
-        res = _paddle().predict(bgr)[0]
-        other = "".join(res["rec_texts"])
-        if fret(other) is not None:
+    res = _paddle().predict(bgr)[0]
+    text = "".join(res["rec_texts"])
+    from .staves import frets
+    if not frets(text, 0, 1):
+        # A second opinion: RapidOCR's, on the same number.
+        found, _ = _rapid()(bgr, use_det=False, use_cls=False, use_rec=True)
+        other = found[0][0] if found else ""
+        if frets(other, 0, 1):
             return other
     return text
 
