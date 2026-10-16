@@ -6,6 +6,17 @@ it checks the tab against the song's tab published online and proposes
 corrections, note by note, which the user accepts or rejects (nothing
 changes until they do).
 
+## Hidden for now
+
+The Fix button is **off** in every build unless it's made with
+`TABCAM_FIX=true` (`.env`, passed by `scripts/dart-defines.sh`;
+`TabTextView.fixEnabled`). The online check's Claude cost per user is
+unmeasured and has no per-user cap (an estimate put it at about $0.65 a
+run, most of a Premium user's cost), so it stays hidden until it's
+measured and capped. Lining the tab up goes with it, as it's the same
+button. The code, the service's `/autocorrect` route and the tests stay
+(the tests turn the button on with `showFix: true`).
+
 ## Lining the tab up
 
 `reformatTab` ([lib/recognition/tab_layout.dart](../tabcam_app/lib/recognition/tab_layout.dart)),

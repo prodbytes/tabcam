@@ -9,7 +9,7 @@ SCAN LIKE A DOCUMENT SCANNER
 READ TABS INTO TEXT
 • Every capture is read by itself into plain-text tab, on your phone, with the page's chord names, lyrics and section names where they were.
 • Works with tabs printed from the web (e|--0--3--|) and with typeset tab staves from books and printouts, for six-string guitar and four-string bass.
-• Correct the reading in the Text view, with tools made for tab: overtype, raise or lower a fret, move a note to another string. Fix lines the strings and bars up. Copy the tab, and tap Verified once you've checked it. Your edits and verified tabs are never overwritten.
+• Correct the reading in the Text view, with tools made for tab: overtype, raise or lower a fret, move a note to another string. Copy the tab, and tap Verified once you've checked it. Your edits and verified tabs are never overwritten.
 • TabCam Premium subscribers also get their pages transcribed in the cloud as they sync.
 
 PLAY ALONG WITH CAM

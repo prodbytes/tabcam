@@ -715,7 +715,12 @@ void _fixTests() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: TabTextView(library: s.library, eventId: event.id, ocr: s.ocr),
+          body: TabTextView(
+            library: s.library,
+            eventId: event.id,
+            ocr: s.ocr,
+            showFix: true,
+          ),
         ),
       ),
     );
@@ -768,6 +773,7 @@ void _fixTests() {
             eventId: event.id,
             ocr: s.ocr,
             onUpgrade: () => upgraded = true,
+            showFix: true,
           ),
         ),
       ),
@@ -793,7 +799,12 @@ void _fixTests() {
       MaterialApp(
         key: UniqueKey(),
         home: Scaffold(
-          body: TabTextView(library: s.library, eventId: event.id, ocr: s.ocr),
+          body: TabTextView(
+            library: s.library,
+            eventId: event.id,
+            ocr: s.ocr,
+            showFix: true,
+          ),
         ),
       ),
     );

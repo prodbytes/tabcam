@@ -125,6 +125,7 @@ void main() {
             library: library,
             eventId: event.id,
             onRescan: () => rescans++,
+            showFix: true,
           ),
         ),
       ),
@@ -155,6 +156,24 @@ void main() {
       ),
     );
     expect(find.text('Rescan'), findsNothing);
+  });
+
+  testWidgets('no Fix unless the build turns it on', (tester) async {
+    final library = Library(PlatformEventStore());
+    await library.load();
+    final event = await library.update(
+      (await library.create(const [])).copyWith(tabText: 'e|--0--|'),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TabTextView(library: library, eventId: event.id),
+        ),
+      ),
+    );
+    expect(TabTextView.fixEnabled, isFalse);
+    expect(find.text('Fix'), findsNothing);
+    expect(find.text('Copy'), findsOneWidget);
   });
 
   testWidgets('the tools are outlined, Overtype a toggle', (tester) async {

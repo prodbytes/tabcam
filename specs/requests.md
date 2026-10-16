@@ -1226,3 +1226,14 @@ spec.
       Play's Device or other IDs row for ML Kit, and a note that ML
       Kit's manifests also list Product Interaction, Other User Content
       and Other Data Types, to check against the app's privacy report.
+27. **Disable Fix for now and take it out of the UI** (after an estimate
+    of the cost per user put Fix's Claude runs at most of a Premium
+    user's cost).
+    - The Text view no longer shows **Fix**: it's behind a build flag,
+      `TABCAM_FIX` (off; `true` shows it), passed through
+      `scripts/dart-defines.sh` and listed in `.env.example`. Lining the
+      tab up goes with it. The code, the `/autocorrect` route and the
+      tests stay; the tests turn the button on.
+    - Specs ([auto-correct](autocorrect.md#hidden-for-now),
+      [tab recognition](tab-recognition.md), [app stores](app-stores.md))
+      and the store descriptions no longer offer Fix.
