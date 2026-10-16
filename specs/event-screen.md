@@ -79,7 +79,13 @@ it opens on the Text view; otherwise on the list.
     (highlighted while it shows): the
     [text view](tab-recognition.md#text-view), or why there's no text
     yet. There's no Read tab: every capture is read by itself
-    ([tab recognition](tab-recognition.md#reading-by-itself)).
+    ([tab recognition](tab-recognition.md#reading-by-itself)). Its icon
+    says how the tab stands: a **spinner** in its place while the
+    capture is read, on the device or in the cloud (tooltip "Reading the
+    tab…"); the usual icon once there's a text tab; **greyed out**
+    without one (no tab found, not read, the text deleted or blank,
+    reading failed or not possible here). Greyed out, it still opens the
+    Text view, which says why and offers Read again or Sign in.
   - **Add**: more files, [scanned or picked](scanning.md#adding-to-an-event):
     Scan pages, Document, Photos & videos, Files, or a **Link**. The list
     then shows, scrolled to what was added.

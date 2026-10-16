@@ -571,6 +571,12 @@ class _EventScreenState extends State<EventScreen> {
         final editable = !event.readOnly;
         final text = _text;
         final l10n = context.l10n;
+        final hasText = event.tabText?.trim().isNotEmpty ?? false;
+        final reading = switch (AutoReaderScope.of(context)
+            ?.stateOf(event.id)) {
+          ReadState.reading || ReadState.inCloud => true,
+          _ => false,
+        };
         return Scaffold(
           appBar: AppBar(
             title: InkWell(
@@ -655,6 +661,10 @@ class _EventScreenState extends State<EventScreen> {
                     icon: Icons.notes,
                     label: l10n.eventText,
                     selected: text,
+                    // How the tab stands: being read, there, or not.
+                    working: reading,
+                    dimmed: !reading && !hasText,
+                    tooltip: reading ? l10n.eventReadingTab : null,
                     onPressed: _busy
                         ? null
                         : () => setState(() => _text = true),

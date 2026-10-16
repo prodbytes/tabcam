@@ -937,3 +937,11 @@ spec.
    saved or sent
    ([Cam](cam.md#head-gestures), [platforms](platforms.md),
    [privacy](privacy.md)).
+4. **Make the "Text" icon in the capture's bottom bar show the reading
+   status: normal when the text is ready, disabled when no text was found
+   or it was deleted, a spinner while processing.** The Text tool (an
+   `EventTool` with `working` and `dimmed`) shows a spinner while
+   `AutoReader` reads the capture (on the device or in the cloud), the
+   usual icon with a text tab, and is greyed out without one. It stays
+   tappable when greyed, so the Text view can still say why and offer
+   Read again or Sign in ([event screen](event-screen.md)).
