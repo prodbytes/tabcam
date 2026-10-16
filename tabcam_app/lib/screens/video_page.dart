@@ -116,19 +116,25 @@ class _VideoPageState extends State<VideoPage> {
 
 /// A player for [page]'s file: from the device's copy, or from memory on
 /// the web. Initialized, not playing yet.
+///
+/// With [mixWithOthers], its sound plays along with the app's other
+/// sound, such as a recording's microphone (iOS).
 Future<VideoPlayerController> openPlayer(
   Library library,
   CaptureEvent event,
-  EventPage page,
-) async {
+  EventPage page, {
+  bool mixWithOthers = false,
+}) async {
   final path = await library.path(event, page);
+  final options = VideoPlayerOptions(mixWithOthers: mixWithOthers);
   final controller = path != null
-      ? VideoPlayerController.file(File(path))
+      ? VideoPlayerController.file(File(path), videoPlayerOptions: options)
       : VideoPlayerController.networkUrl(
           Uri.dataFromBytes(
             await library.original(event, page),
             mimeType: page.mimeType,
           ),
+          videoPlayerOptions: options,
         );
   try {
     await controller.initialize();

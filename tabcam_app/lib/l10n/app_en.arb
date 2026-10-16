@@ -833,6 +833,30 @@
       }
     }
   },
+  "camAlong": "Play along with a file",
+  "@camAlong": {
+    "description": "Cam app bar: shows the sidebar of recordings, videos and links to play along with"
+  },
+  "camAlongHide": "Hide the files to play along",
+  "@camAlongHide": {
+    "description": "Cam app bar: hides that sidebar"
+  },
+  "camAlongTitle": "Play along",
+  "@camAlongTitle": {
+    "description": "Cam sidebar heading"
+  },
+  "camAlongPlay": "Play (space)",
+  "@camAlongPlay": {
+    "description": "Cam backing track: play; the space bar does it too"
+  },
+  "camAlongPause": "Pause (space)",
+  "@camAlongPause": {
+    "description": "Cam backing track: pause; the space bar does it too"
+  },
+  "camAlongClose": "Close",
+  "@camAlongClose": {
+    "description": "Cam backing track: close its frame"
+  },
   "camHeadsOn": "Head gestures on: nod up or right for the next line, down or left for the one before",
   "@camHeadsOn": {
     "description": "Cam: head gestures toggle, on"
