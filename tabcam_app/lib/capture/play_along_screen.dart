@@ -347,13 +347,14 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       final library = widget.library;
       final event = library.byId(widget.eventId);
       if (event == null) return;
-      final names = {for (final p in event.pages) p.title};
+      // A reader's take is theirs: in their contribution, named among it.
+      final names = {for (final p in Library.addedPages(event)) p.title};
       var n = 1;
       while (names.contains(l10n.camTake(n))) {
         n++;
       }
       final updated = await library.addMedia(event, [media]);
-      final page = updated.pages.last;
+      final page = Library.addedPages(updated).last;
       final name = l10n.camTake(n);
       await library.renamePage(event.id, page.id, name);
       _take = page;

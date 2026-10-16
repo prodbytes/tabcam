@@ -22,9 +22,14 @@ it opens on the Text view; otherwise on the list.
   events, in a build with sharing. There's no Hide images
   button (captures already [hidden](hidden-images.md) stay hidden).
 - **Shared with the user**: a line under the app bar, "Shared by <email>
-  · Can edit" or "· Read only". Read only, Rename, reordering, Add, Rotate, Delete
-  and editing the text tab are off; the view still changes what shows,
-  without saving it.
+  · Can edit" or "· Can view and add". Shared to read, Rename, reordering,
+  Rotate, Delete and editing the text tab are off for the owner's files
+  (the view still changes what shows, without saving it); Add, dragging
+  files and Cam add to the user's own [contribution](contributions.md).
+- **Contributions**, below the files ([contributions](contributions.md)):
+  on the owner's capture, each reader's files under "From <email>", each
+  with **Publish** (or Published, to take it back); on a reader's, their
+  own under "Your files", each with Delete.
 - **Files**: the list of the event's files, in their order, newest last
   (so a page just scanned or added is at the end, and the list scrolls to
   it after Add). Each row has a preview (80 px square, in a row with
@@ -88,7 +93,7 @@ it opens on the Text view; otherwise on the list.
   [read again](tab-recognition.md#reading-by-itself) in their new order).
   With the images [hidden](hidden-images.md), only the other files are
   listed and dragged, the images keep their places, and the text tab
-  stays first. Read only, with a single file, or while a tool works,
+  stays first. Shared to read, with a single file, or while a tool works,
   there are no handles. A failed save shows "Couldn't reorder".
 - **Tools** along the bottom:
   - **Files**, first: the list (highlighted while it shows).
@@ -116,13 +121,14 @@ it opens on the Text view; otherwise on the list.
     then shows, scrolled to what was added.
   - **Cam**, last: the camera with the tab under it, one neckline at a
     time, to record the user playing along; takes are added as videos
-    ([Cam](cam.md)), and back from it the list shows, scrolled to them. Off on a capture shared read only or opened by its
-    link.
+    ([Cam](cam.md)), and back from it the list shows, scrolled to them.
+    On a capture shared to read, takes are the user's own contribution's.
+    Off on a capture opened by its link.
   - **Dragging files** onto the screen adds them too, as Files does
     (outlined with "Drop files to add" while they're over it; folders and
     files that aren't pages are left out, with the message saying how
-    many). Not on a capture shared read only or opened by its link, nor
-    while a tool works; not on iOS (see [Capture](navigation.md#capture)).
+    many); on a capture shared to read, to the user's own contribution.
+    Not on a capture opened by its link, nor while a tool works; not on iOS (see [Capture](navigation.md#capture)).
 
   The Original / Scan view and Rotate are the file screen's, not this
   one's; Delete is on both.

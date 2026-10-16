@@ -141,6 +141,7 @@ class _PeopleSheetState extends State<PeopleSheet> {
                 contentPadding: EdgeInsets.zero,
                 leading: const CircleAvatar(child: Icon(Icons.person_outline)),
                 title: Text(g.email, overflow: TextOverflow.ellipsis),
+                subtitle: g.viaLink ? Text(l10n.accountPeopleViaLink) : null,
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

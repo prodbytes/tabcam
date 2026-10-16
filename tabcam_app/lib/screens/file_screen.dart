@@ -16,13 +16,20 @@ import 'video_page.dart';
 import 'youtube_link.dart';
 
 /// What a file is called in its capture's list: "Page 2", "Video 1", "PDF
-/// 1", "Recording 1" (numbered among the files of its kind), or a link's
-/// title (else its host).
+/// 1", "Recording 1" (numbered among the files of its kind, in the capture
+/// or in the contribution it's in), or a link's title (else its host).
 String fileLabel(AppLocalizations l10n, CaptureEvent event, EventPage page) {
   if (page.title case final title? when title.isNotEmpty) return title;
   if (page.isLink) return page.url?.host ?? '';
+  final among = event.pages.contains(page)
+      ? event.pages
+      : event.contributions
+                .where((c) => c.pages.contains(page))
+                .firstOrNull
+                ?.pages ??
+            event.pages;
   final number =
-      event.pages.where((p) => p.kind == page.kind).toList().indexOf(page) + 1;
+      among.where((p) => p.kind == page.kind).toList().indexOf(page) + 1;
   return switch (page.kind) {
     PageKind.video => l10n.eventFileVideo(number),
     PageKind.pdf => l10n.eventFilePdf(number),
@@ -184,6 +191,12 @@ class _FileScreenState extends State<FileScreen> {
 
   Library get _library => widget.library;
 
+  /// Whether [page] can't be changed here: the capture is shared to read,
+  /// or it's a contribution's file (shown as it is; its list has its own
+  /// tools).
+  static bool _fixed(CaptureEvent event, EventPage page) =>
+      event.readOnly || !event.pages.contains(page);
+
   Future<void> _run(String failure, Future<void> Function() task) async {
     setState(() => _busy = true);
     try {
@@ -207,7 +220,7 @@ class _FileScreenState extends State<FileScreen> {
         ? PageFilter.tab
         : PageFilter.original;
     setState(() => _shown = next);
-    if (event.readOnly) return;
+    if (_fixed(event, page)) return;
     await _library.update(
       event.copyWith(
         pages: [
@@ -243,17 +256,18 @@ class _FileScreenState extends State<FileScreen> {
       listenable: _library,
       builder: (context, _) {
         final event = _library.byId(widget.eventId);
-        final page = event?.pages.where((p) => p.id == _pageId).firstOrNull;
+        // The capture's own file, or one of a contribution's.
+        final page = event?.allPages.where((p) => p.id == _pageId).firstOrNull;
         if (event == null || page == null) return const Scaffold();
         final l10n = context.l10n;
-        final editable = !_busy && !event.readOnly;
+        final editable = !_busy && !_fixed(event, page);
         final filter = _shown ?? page.filter;
         final original = filter == PageFilter.original;
         return Scaffold(
           appBar: AppBar(
             // Tapping the name renames the file (when the user can edit).
             title: InkWell(
-              onTap: event.readOnly ? null : () => _rename(event, page),
+              onTap: _fixed(event, page) ? null : () => _rename(event, page),
               child: Text(
                 fileLabel(l10n, event, page),
                 overflow: TextOverflow.ellipsis,

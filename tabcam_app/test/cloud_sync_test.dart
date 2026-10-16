@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -638,6 +639,217 @@ void main() {
         bucket.objects.containsKey('$ana/events/${copy.id}/event.json'),
         isTrue,
       );
+    });
+  });
+
+  // The teacher shares a capture; students see the teacher's files, add
+  // their own, and never see each other's; the teacher sees them all and
+  // publishes the ones they like.
+  group('contributions', () {
+    const teacher = 'us-east-1:teacher';
+    const ana = 'us-east-1:ana';
+    const bo = 'us-east-1:bo';
+    late Map<String, Map<String, ShareRole>> grants;
+    late Device julio;
+    late Device anaPhone;
+    late Device boPhone;
+    late CaptureEvent lesson;
+
+    Device device(String identity, String email) => Device(
+      bucket,
+      identity: identity,
+      shares: FakeShareApi(grants, email: email, identity: identity),
+    );
+
+    setUp(() async {
+      grants = {};
+      FakeShareApi.identities.clear();
+      julio = device(teacher, 'julio@example.com');
+      anaPhone = device(ana, 'ana@example.com');
+      boPhone = device(bo, 'bo@example.com');
+      for (final d in [julio, anaPhone, boPhone]) {
+        await d.start();
+      }
+      lesson = await julio.library.create([
+        bytes([1, 2]),
+      ]);
+      await julio.sync.syncNow();
+      for (final email in ['ana@example.com', 'bo@example.com']) {
+        await julio.sync.grant(
+          julio.library.byId(lesson.id)!,
+          email,
+          ShareRole.read,
+        );
+      }
+      await julio.sync.syncNow();
+      await anaPhone.sync.syncNow();
+      await boPhone.sync.syncNow();
+    });
+
+    Future<CaptureEvent> anaAddsATake() async {
+      final copy = anaPhone.library.byId(lesson.id)!;
+      expect(copy.contributes, isTrue);
+      anaPhone.later();
+      await anaPhone.library.addMedia(copy, [
+        Media(
+          XFile.fromData(bytes([7, 7, 7]), name: 'take.mp4'),
+          PageKind.video,
+          'mp4',
+        ),
+      ]);
+      final now = anaPhone.library.byId(lesson.id)!;
+      await anaPhone.library.addLink(
+        now,
+        Uri.parse('https://example.com/ana-cover'),
+      );
+      await anaPhone.sync.syncNow();
+      return anaPhone.library.byId(lesson.id)!;
+    }
+
+    test("a student's files go to their own folder, not the capture", () async {
+      final before = bucket.json('$teacher/events/${lesson.id}/event.json');
+      final copy = await anaAddsATake();
+      expect(copy.pages, hasLength(1));
+      final mine = copy.myContribution!;
+      expect(mine.by, ana);
+      expect(mine.pages, hasLength(2));
+      final folder = '$teacher/contrib/${lesson.id}/$ana/';
+      expect(bucket.objects.keys.where((k) => k.startsWith(folder)).toSet(), {
+        '${folder}contrib.json',
+        '$folder${mine.pages.first.fileName}',
+      });
+      // Whose it is is its folder's name: the cloud copy doesn't say.
+      expect(bucket.json('${folder}contrib.json'), isNot(contains('by')));
+      expect(bucket.json('$teacher/events/${lesson.id}/event.json'), before);
+    });
+
+    test("students never see each other's files", () async {
+      await anaAddsATake();
+      bucket.requests.clear();
+      await boPhone.sync.syncNow();
+      expect(boPhone.library.byId(lesson.id)!.contributions, isEmpty);
+      // Bo's device never asks for anything of Ana's.
+      expect(bucket.requests.where((r) => r.contains(ana)), isEmpty);
+    });
+
+    test('the teacher sees every student\'s files, by name', () async {
+      final copy = await anaAddsATake();
+      boPhone.later();
+      await boPhone.library.addLink(
+        boPhone.library.byId(lesson.id)!,
+        Uri.parse('https://example.com/bo-cover'),
+      );
+      await boPhone.sync.syncNow();
+      await julio.sync.syncNow();
+      final event = julio.library.byId(lesson.id)!;
+      expect(
+        {for (final c in event.contributions) c.by: c.email},
+        {ana: 'ana@example.com', bo: 'bo@example.com'},
+      );
+      final take = copy.myContribution!.pages.first;
+      expect(await julio.library.original(event, take), [7, 7, 7]);
+      // Nothing of theirs is the capture's until it's published.
+      expect(event.pages, hasLength(1));
+    });
+
+    test('the teacher publishes a file: everyone sees it', () async {
+      final copy = await anaAddsATake();
+      await julio.sync.syncNow();
+      final take = copy.myContribution!.pages.first;
+      final event = julio.library.byId(lesson.id)!;
+      final theirs = event.contributions.single.pages.first;
+      await julio.library.original(event, theirs);
+      julio.later();
+      await julio.library.publish(event, theirs);
+      expect(julio.library.byId(lesson.id)!.isPublished(theirs), isTrue);
+      await julio.sync.syncNow();
+      // A copy in the capture's own folder, so its link's holders see it.
+      final published = julio.library.byId(lesson.id)!.pages.last;
+      expect(published.from, take.id);
+      expect(published.id, isNot(take.id));
+      final copied = '$teacher/events/${lesson.id}/${published.fileName}';
+      expect(bucket.objects[copied], [7, 7, 7]);
+      await boPhone.sync.syncNow();
+      final bos = boPhone.library.byId(lesson.id)!;
+      expect(bos.pages.last.from, take.id);
+      expect(await boPhone.library.original(bos, bos.pages.last), [7, 7, 7]);
+      expect(bos.contributions, isEmpty);
+      // Ana sees it's published.
+      await anaPhone.sync.syncNow();
+      expect(anaPhone.library.byId(lesson.id)!.isPublished(take), isTrue);
+
+      // Taken back, it's Ana's alone again; her file stays with her.
+      julio.later();
+      await julio.library.unpublish(julio.library.byId(lesson.id)!, theirs);
+      await julio.sync.syncNow();
+      final after = julio.library.byId(lesson.id)!;
+      expect(after.isPublished(theirs), isFalse);
+      expect(await julio.library.original(after, theirs), [7, 7, 7]);
+      await anaPhone.sync.syncNow();
+      final anas = anaPhone.library.byId(lesson.id)!;
+      expect(await anaPhone.library.original(anas, take), [7, 7, 7]);
+    });
+
+    test('a student deletes a file: it goes from the teacher too', () async {
+      final copy = await anaAddsATake();
+      await julio.sync.syncNow();
+      final link = copy.myContribution!.pages.last;
+      anaPhone.later();
+      await anaPhone.library.deleteContributionPage(copy, link);
+      await anaPhone.sync.syncNow();
+      await julio.sync.syncNow();
+      expect(
+        julio.library.byId(lesson.id)!.contributions.single.pages,
+        hasLength(1),
+      );
+    });
+
+    test("a student's files reach their other devices", () async {
+      await anaAddsATake();
+      final tablet = device(ana, 'ana@example.com');
+      await tablet.start();
+      final copy = tablet.library.byId(lesson.id)!;
+      expect(copy.myContribution?.pages, hasLength(2));
+      expect(
+        await tablet.library.original(copy, copy.myContribution!.pages.first),
+        [7, 7, 7],
+      );
+    });
+
+    test("a contribution can't pass a page off as the capture's", () async {
+      final folder = '$teacher/contrib/${lesson.id}/$ana/';
+      final own = julio.library.byId(lesson.id)!.pages.single;
+      bucket.objects['${folder}contrib.json'] = bytes(
+        utf8.encode(
+          jsonEncode({
+            'updated': '2026-10-16T12:00:00Z',
+            'pages': [
+              own.toJson(),
+              {'id': 'fake1', 'kind': 'link', 'url': 'https://example.com/x'},
+            ],
+          }),
+        ),
+      );
+      await julio.sync.syncNow();
+      final event = julio.library.byId(lesson.id)!;
+      final theirs = event.contributions.single.pages;
+      expect(theirs.map((p) => p.id), ['fake1']);
+      expect(event.isPublished(theirs.single), isFalse);
+    });
+
+    test('signed in, opening the link joins it as a student', () async {
+      const key = 'riffkey-0123456789abcdefghijklmnopqrstu';
+      FakeShareApi.links[key] = '$teacher/${lesson.id}';
+      final kim = device('us-east-1:kim', 'kim@example.com');
+      await kim.start();
+      expect(kim.library.byId(lesson.id), isNull);
+      expect(await kim.sync.joinLink(lesson.id, key), isTrue);
+      await kim.sync.syncNow();
+      final copy = kim.library.byId(lesson.id)!;
+      expect(copy.contributes, isTrue);
+      expect(copy.sharedBy, 'julio@example.com');
+      // The teacher's own link joins nothing.
+      expect(await julio.sync.joinLink(lesson.id, key), isFalse);
     });
   });
 }

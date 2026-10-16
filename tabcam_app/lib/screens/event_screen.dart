@@ -39,6 +39,11 @@ import 'mini_player.dart';
 /// in place, each file dragged by its handle. The tab is read by itself
 /// ([AutoReader]): there's no Read tab button. With its images hidden, the
 /// list is the text tab, then the other files.
+///
+/// Below them, what people added ([Contribution]): on the owner's capture,
+/// each person's files, which the owner publishes into the capture (or
+/// takes back) one by one; on a capture shared with the user to read, their
+/// own, which only they and the owner see. There, Add and Cam add to it.
 class EventScreen extends StatefulWidget {
   const EventScreen({
     super.key,
@@ -100,7 +105,7 @@ class _EventScreenState extends State<EventScreen> {
         widget.initialText ??
         (event != null && event.tabText != null && event.tabTextCorrect);
     // A reload: the file the user had open, over the list again.
-    final file = event?.pages.where((p) => p.id == widget.initialFile);
+    final file = event?.allPages.where((p) => p.id == widget.initialFile);
     if (file?.firstOrNull case final page?) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _openFile(page);
@@ -238,7 +243,7 @@ class _EventScreenState extends State<EventScreen> {
     final link = source == _AddSource.link ? await askForLink(context) : null;
     if (source == _AddSource.link && link == null) return;
     await _run(l10n.eventCouldntAdd, () async {
-      final before = event.pages.length;
+      final before = Library.addedPages(event).length;
       if (link != null) {
         final url = link.$1;
         final site = tabSiteOf(url);
@@ -277,7 +282,10 @@ class _EventScreenState extends State<EventScreen> {
   Future<void> _cam() async {
     await _player.stop();
     if (!mounted) return;
-    final before = _library.byId(widget.eventId)?.pages.length ?? 0;
+    final before = switch (_library.byId(widget.eventId)) {
+      final event? => Library.addedPages(event).length,
+      null => 0,
+    };
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) =>
@@ -368,18 +376,20 @@ class _EventScreenState extends State<EventScreen> {
     final notPages = pick.skipped + skipped;
     if (notPages > 0) _snack(context.l10n.eventSkippedFiles(notPages));
     if (pick.media.isEmpty) return;
-    final before = event.pages.length;
+    final before = Library.addedPages(event).length;
     await _library.addMedia(event, pick.media);
     _showAdded(event, before, images: true);
   });
 
-  /// After files were added to [event] (which had [before] pages): says
-  /// so when its images are hidden, and shows them at the end of the list.
+  /// After files were added to [event] (which had [before] pages, or its
+  /// reader's contribution had): says so when its images are hidden, and
+  /// shows them at the end of the list.
   void _showAdded(CaptureEvent event, int before, {required bool images}) {
-    if (event.hideImages && images) {
+    if (event.hideImages && images && !event.contributes) {
       _snack(context.l10n.eventAddedHidden);
     }
-    if (!mounted || (_library.byId(event.id)?.pages.length ?? 0) <= before) {
+    final now = _library.byId(event.id);
+    if (!mounted || now == null || Library.addedPages(now).length <= before) {
       return;
     }
     setState(() => _text = false);
@@ -619,8 +629,155 @@ class _EventScreenState extends State<EventScreen> {
     );
   }
 
+  /// The owner publishes [page], someone's contribution, into the capture
+  /// (everyone sees it), or takes it back.
+  Future<void> _togglePublished(CaptureEvent event, EventPage page) {
+    final l10n = context.l10n;
+    return _run(l10n.eventCouldntPublish, () async {
+      final now = _library.byId(event.id);
+      if (now == null) return;
+      if (now.isPublished(page)) {
+        if (_player.holds(page)) await _player.stop();
+        await _library.unpublish(now, page);
+      } else {
+        await _library.publish(now, page);
+        if (mounted) {
+          _snack(l10n.eventPublishedSnack(fileLabel(l10n, now, page)));
+        }
+      }
+    });
+  }
+
+  /// A reader deletes one of their own files, once they confirm.
+  Future<void> _deleteContribution(CaptureEvent event, EventPage page) async {
+    final l10n = context.l10n;
+    final sure = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.homeLibraryDeleteTitle(fileLabel(l10n, event, page))),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.eventCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.eventDelete),
+          ),
+        ],
+      ),
+    );
+    if (sure != true || !mounted) return;
+    if (_player.holds(page)) await _player.stop();
+    await _run(l10n.eventCouldntDelete, () async {
+      final now = _library.byId(event.id);
+      if (now != null) await _library.deleteContributionPage(now, page);
+    });
+  }
+
+  /// What people added, below the capture's own files: each person's on
+  /// the owner's capture, or the reader's own; null when there's none.
+  Widget? _contributionList(CaptureEvent event) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final mine = event.contributes;
+    final groups = [
+      for (final c in event.contributions)
+        if (c.pages.isNotEmpty) c,
+    ]..sort((a, b) => (a.email ?? '~').compareTo(b.email ?? '~'));
+    if (groups.isEmpty) return null;
+    return Column(
+      key: const Key('contributions'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final c in groups) ...[
+          const Divider(height: 24),
+          ListTile(
+            dense: true,
+            leading: Icon(
+              mine ? Icons.person_outline : Icons.inbox_outlined,
+              color: theme.colorScheme.primary,
+            ),
+            title: Text(
+              mine
+                  ? l10n.eventYourFiles
+                  : l10n.eventFilesFrom(c.email ?? l10n.eventSomeone),
+              style: theme.textTheme.titleSmall,
+            ),
+            subtitle: Text(
+              mine
+                  ? l10n.eventYourFilesDetail(event.sharedBy ?? '')
+                  : l10n.eventPublishHint,
+            ),
+          ),
+          for (final page in c.pages) _contributionTile(event, page, mine),
+        ],
+      ],
+    );
+  }
+
+  /// One contribution's file: on the owner's capture with Publish (or
+  /// Published, to take back); on the reader's with Delete.
+  Widget _contributionTile(CaptureEvent event, EventPage page, bool mine) {
+    final l10n = context.l10n;
+    final published = event.isPublished(page);
+    final playable = page.kind == PageKind.video || page.kind == PageKind.audio;
+    final thumbnail = FileThumbnail(
+      library: _library,
+      event: event,
+      page: page,
+    );
+    return ListTile(
+      key: ValueKey('contribution-${page.id}'),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      minVerticalPadding: 10,
+      leading: page.kind == PageKind.video
+          ? MiniVideo(player: _player, page: page, thumbnail: thumbnail)
+          : thumbnail,
+      title: Text(
+        fileLabel(l10n, event, page),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: published
+          ? Text(l10n.eventPublished)
+          : page.url != null
+          ? Text('${page.url}', maxLines: 1, overflow: TextOverflow.ellipsis)
+          : playable
+          ? MiniProgress(player: _player, page: page)
+          : null,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (playable)
+            MiniPlayButton(player: _player, event: event, page: page),
+          if (mine)
+            IconButton(
+              key: ValueKey('delete-contribution-${page.id}'),
+              tooltip: l10n.eventDeleteFile,
+              icon: const Icon(Icons.delete_outline),
+              onPressed: _busy ? null : () => _deleteContribution(event, page),
+            )
+          else
+            IconButton(
+              key: ValueKey('publish-${page.id}'),
+              tooltip: published ? l10n.eventUnpublish : l10n.eventPublish,
+              isSelected: published,
+              icon: const Icon(Icons.publish_outlined),
+              selectedIcon: const Icon(Icons.check_circle),
+              onPressed: _busy ? null : () => _togglePublished(event, page),
+            ),
+        ],
+      ),
+      onTap: page.isLink && page.url != null
+          ? () => openLink(context, page.url!)
+          : () => _openFile(page),
+    );
+  }
+
   /// The list: each file with its preview, a tap opening it alone; with
   /// the images hidden, the text tab first (a tap goes to the Text view).
+  /// What people added follows ([_contributionList]).
   Widget _fileList(CaptureEvent event) {
     final l10n = context.l10n;
     final tab = event.tabText?.trim() ?? '';
@@ -657,6 +814,7 @@ class _EventScreenState extends State<EventScreen> {
       scrollController: _list,
       padding: const EdgeInsets.symmetric(vertical: 8),
       header: textTab,
+      footer: _contributionList(event),
       buildDefaultDragHandles: false,
       itemCount: pages.length,
       onReorderItem: (from, to) => _move(pages, from, to),
@@ -775,8 +933,10 @@ class _EventScreenState extends State<EventScreen> {
       builder: (context, _) {
         final event = _library.byId(widget.eventId);
         if (event == null) return const Scaffold();
-        // Shared read only: everything that changes it is off.
+        // Shared to read: everything that changes it is off, but Add and
+        // Cam add to the user's own contribution.
         final editable = !event.readOnly;
+        final canAdd = !widget.byLink && (editable || event.contributes);
         final text = _text;
         final l10n = context.l10n;
         final hasText = event.tabText?.trim().isNotEmpty ?? false;
@@ -842,7 +1002,7 @@ class _EventScreenState extends State<EventScreen> {
           ),
           // Files dragged onto the screen are added to the capture.
           body: FileDropArea(
-            enabled: !_busy && !event.readOnly && !widget.byLink,
+            enabled: !_busy && canAdd,
             onFiles: (files, skipped) => _addDropped(event, files, skipped),
             child: Column(
               children: [
@@ -889,13 +1049,13 @@ class _EventScreenState extends State<EventScreen> {
                   EventTool(
                     icon: Icons.add_circle_outline,
                     label: l10n.eventAdd,
-                    onPressed: _busy || !editable ? null : () => _add(event),
+                    onPressed: _busy || !canAdd ? null : () => _add(event),
                   ),
                   EventTool(
                     key: const Key('cam'),
                     icon: Icons.videocam_outlined,
                     label: l10n.eventCam,
-                    onPressed: _busy || !editable ? null : _cam,
+                    onPressed: _busy || !canAdd ? null : _cam,
                   ),
                 ],
               ),

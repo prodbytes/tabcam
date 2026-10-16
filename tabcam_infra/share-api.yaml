@@ -266,7 +266,8 @@ Resources:
         - {AttributeName: profileId, KeyType: HASH}
 
   # What a share's credentials can do at most: each session is narrowed to
-  # one capture's folder, and to reading for read-only grants.
+  # one capture's folder, and to reading for read grants (plus, for a
+  # reader, their own contribution's folder beside it).
   ShareAccessRole:
     Type: AWS::IAM::Role
     Properties:
@@ -295,9 +296,13 @@ Resources:
                   - s3:GetObject
                   - s3:PutObject
                   - s3:DeleteObject
-                Resource: !Sub
-                  - ${BucketArn}/*/events/*
-                  - BucketArn: !ImportValue tabcam-user-data-bucket-arn
+                Resource:
+                  - !Sub
+                    - ${BucketArn}/*/events/*
+                    - BucketArn: !ImportValue tabcam-user-data-bucket-arn
+                  - !Sub
+                    - ${BucketArn}/*/contrib/*
+                    - BucketArn: !ImportValue tabcam-user-data-bucket-arn
               - Effect: Allow
                 Action: s3:ListBucket
                 Resource: !ImportValue tabcam-user-data-bucket-arn
@@ -374,6 +379,13 @@ Resources:
               - Effect: Allow
                 Action: s3:ListBucket
                 Resource: !ImportValue tabcam-user-data-bucket-arn
+              # A deleted account's contributions to others' captures
+              # (DELETE /account).
+              - Effect: Allow
+                Action: s3:DeleteObject
+                Resource: !Sub
+                  - ${BucketArn}/*/contrib/*
+                  - BucketArn: !ImportValue tabcam-user-data-bucket-arn
               - Effect: Allow
                 Action: sts:AssumeRole
                 Resource: !GetAtt ShareAccessRole.Arn
@@ -458,6 +470,7 @@ Resources:
           IDENTITY_POOL_ID: !ImportValue tabcam-identity-pool-id
           ACCESS_ROLE_ARN: !GetAtt ShareAccessRole.Arn
           MAX_GRANTS: '50'
+          MAX_JOINS: '500'
           ACCOUNTS_TABLE: !Ref AccountsTableName
           PROFILES_TABLE: !Ref ProfilesTable
           SUBJECTS_TABLE: !Ref SubjectsTable
@@ -530,7 +543,7 @@ Resources:
 
   Fn::ForEach::Routes:
     - Route
-    - [Grants, Grant, Revoke, Shared, Leave, Credentials, DeleteAccount, Profile, LinkCode, Link, Unlink, ProfileCredentials, PublishLink, ContentKey]
+    - [Grants, Grant, Revoke, Shared, Leave, Credentials, DeleteAccount, Profile, LinkCode, Link, Unlink, ProfileCredentials, PublishLink, JoinLink, ContentKey]
     - Route${Route}:
         Type: AWS::ApiGatewayV2::Route
         Properties:
@@ -620,6 +633,7 @@ Mappings:
     Unlink: {Key: 'POST /profile/unlink', AppleKey: 'POST /apple/profile/unlink'}
     ProfileCredentials: {Key: 'POST /profile/credentials', AppleKey: 'POST /apple/profile/credentials'}
     PublishLink: {Key: 'PUT /links/{captureId}', AppleKey: 'PUT /apple/links/{captureId}'}
+    JoinLink: {Key: 'POST /links/{captureId}/join', AppleKey: 'POST /apple/links/{captureId}/join'}
     ContentKey: {Key: 'POST /keys/{owner}/{captureId}', AppleKey: 'POST /apple/keys/{owner}/{captureId}'}
 
 Transform: AWS::LanguageExtensions

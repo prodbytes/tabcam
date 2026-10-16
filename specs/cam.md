@@ -155,8 +155,10 @@ recording's: `mixWithOthers`).
     page in it gets the space bar) until the user taps Cam again.
 - **Play** (the last take) pauses it first. Leaving Cam stops it.
 
-Cam is off on a capture shared read only or opened by its link (a take
-couldn't be saved there), and while a tool works. Opening it stops what
+On a capture shared with the user to read, each take goes to their own
+[contribution](contributions.md), named among its takes. Cam is off on a
+capture opened by its link (a take couldn't be saved there), and while a
+tool works. Opening it stops what
 plays in the list.
 
 **Permissions**: the camera and the microphone (iOS:

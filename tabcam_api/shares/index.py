@@ -2,10 +2,18 @@
 
 A capture (an event) lives in its owner's folder of the user-data bucket,
 <owner identity>/events/<capture id>/. Its owner grants it to email
-addresses, to edit (the default) or read only. Someone signed in with a
-granted address lists what's shared with them, and gets temporary
-credentials for just that capture's folder: get and list, plus put and
-delete to edit. No email is sent.
+addresses, to edit (the default) or read: to see the owner's files and add
+their own. Someone signed in with a granted address lists what's shared
+with them, and gets temporary credentials for just that capture's folder:
+get and list, plus put and delete to edit. No email is sent. Someone signed
+in who opens the capture's link joins it (a read grant of their own).
+
+What a reader adds is a contribution, in its own folder beside the
+capture's, <owner>/contrib/<capture id>/<reader's identity>/: their
+credentials also get, put, delete and list that folder, and no other
+reader's. The owner's own credentials reach every contribution (their whole
+folder), so only the owner sees them all, and publishes one by copying it
+into the capture.
 
 Behind an HTTP API with JWT authorizers, so every request carries a
 verified ID token: Google's (for the TabCam web client) at the routes
@@ -39,6 +47,9 @@ Routes (each also under /apple, for Apple's tokens):
   PUT    /links/{captureId}                       {key}: anyone with the link
                                                   (…/app/?c=<id>&k=<key>) may
                                                   read the capture (owner)
+  POST   /links/{captureId}/join                  {key}: join the capture the
+                                                  link opens, as a reader who
+                                                  adds files of their own
   POST   /keys/{owner}/{captureId}                the capture's content key
                                                   (its owner, or someone it's
                                                   shared with; keys.py)
@@ -75,6 +86,8 @@ import sealed
 
 ROLES = ("edit", "read")
 MAX_GRANTS = int(os.environ.get("MAX_GRANTS", "50"))
+# People who joined by the capture's link (a class), apart from MAX_GRANTS.
+MAX_JOINS = int(os.environ.get("MAX_JOINS", "500"))
 ID = re.compile(r"^[a-z0-9]{1,32}$")
 IDENTITY = re.compile(r"^[a-z]{2}(-[a-z]+)+-\d:[0-9a-f-]{36}$")
 # A link's key: random, made by the app (only its SHA-256 is kept).
@@ -245,30 +258,44 @@ def with_cdn(clients, body):
     return body
 
 
-def folder_credentials(sts, owner, capture_id, role):
+def contrib_prefix(owner, capture_id, contributor):
+    """The folder of what [contributor] adds to the capture."""
+    return f"{owner}/contrib/{capture_id}/{contributor}/"
+
+
+def folder_credentials(sts, owner, capture_id, role, contributor=None):
     """Credentials for the capture's folder alone: get and list, plus put
-    and delete to edit."""
+    and delete to edit. With [contributor] (a reader's identity), also get,
+    put, delete and list their own contribution's folder."""
     bucket = os.environ["BUCKET"]
     prefix = f"{owner}/events/{capture_id}/"
     actions = ["s3:GetObject"]
     if role == "edit":
         actions += ["s3:PutObject", "s3:DeleteObject"]
-    policy = {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Effect": "Allow",
-                "Action": actions,
-                "Resource": f"arn:aws:s3:::{bucket}/{prefix}*",
-            },
-            {
-                "Effect": "Allow",
-                "Action": "s3:ListBucket",
-                "Resource": f"arn:aws:s3:::{bucket}",
-                "Condition": {"StringLike": {"s3:prefix": [prefix, f"{prefix}*"]}},
-            },
-        ],
-    }
+    statements = [
+        {
+            "Effect": "Allow",
+            "Action": actions,
+            "Resource": f"arn:aws:s3:::{bucket}/{prefix}*",
+        },
+    ]
+    listed = [prefix, f"{prefix}*"]
+    mine = None
+    if contributor is not None:
+        mine = contrib_prefix(owner, capture_id, contributor)
+        statements.append({
+            "Effect": "Allow",
+            "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+            "Resource": f"arn:aws:s3:::{bucket}/{mine}*",
+        })
+        listed += [mine, f"{mine}*"]
+    statements.append({
+        "Effect": "Allow",
+        "Action": "s3:ListBucket",
+        "Resource": f"arn:aws:s3:::{bucket}",
+        "Condition": {"StringLike": {"s3:prefix": listed}},
+    })
+    policy = {"Version": "2012-10-17", "Statement": statements}
     result = sts.assume_role(
         RoleArn=os.environ["ACCESS_ROLE_ARN"],
         RoleSessionName=f"share-{capture_id}"[:64],
@@ -283,6 +310,7 @@ def folder_credentials(sts, owner, capture_id, role):
         "expiration": int(c["Expiration"].timestamp()),
         "prefix": prefix,
         "role": role,
+        **({"contribPrefix": mine} if mine else {}),
     }
 
 
@@ -518,6 +546,7 @@ class Api:
             "POST /shared/{owner}/{captureId}/credentials": self.credentials,
             "DELETE /account": self.delete_account,
             "PUT /links/{captureId}": self.publish_link,
+            "POST /links/{captureId}/join": self.join_link,
         }
         if route not in handlers:
             raise ApiError(404, "No such route")
@@ -655,7 +684,11 @@ class Api:
             ExpressionAttributeValues={":c": _key(owner, capture_id)},
         )
         return [
-            {"email": i["email"], "role": i["role"], "grantedAt": int(i["grantedAt"])}
+            {"email": i["email"], "role": i["role"], "grantedAt": int(i["grantedAt"]),
+             # The reader's identity (their contribution's folder), once
+             # they've synced; and whether they joined by the link.
+             **({"identity": i["identity"]} if i.get("identity") else {}),
+             **({"via": i["via"]} if i.get("via") else {})}
             for i in items
         ]
 
@@ -674,8 +707,11 @@ class Api:
             raise ApiError(400, "That's your own address")
         owner = self._me()
         grants = self._grants_of(owner, capture_id)
-        if len(grants) >= MAX_GRANTS and email not in {g["email"] for g in grants}:
+        by_email = [g for g in grants if g.get("via") != "link"]
+        if len(by_email) >= MAX_GRANTS and email not in {g["email"] for g in grants}:
             raise ApiError(400, f"A capture can be shared with {MAX_GRANTS} people")
+        before = self.table.get_item(
+            Key={"capture": _key(owner, capture_id), "email": email}).get("Item") or {}
         self.table.put_item(
             Item={
                 "capture": _key(owner, capture_id),
@@ -685,6 +721,8 @@ class Api:
                 "ownerEmail": self.email,
                 "role": role,
                 "grantedAt": int(time.time()),
+                # Who uses it stays known through a role change.
+                **({"identity": before["identity"]} if before.get("identity") else {}),
             }
         )
         return {"grants": self._grants_of(owner, capture_id)}
@@ -745,10 +783,19 @@ class Api:
         return {}
 
     def credentials(self):
+        """Credentials for a capture shared with the caller: a reader's
+        include their contribution's folder, and their grant records whose
+        it is (their identity), so the owner can tell who added what."""
         owner, capture_id, item = self._my_grant()
         if item is None:
             raise ApiError(404, "Not shared with you")
-        return with_cdn(self.clients, folder_credentials(self.sts, owner, capture_id, item["role"]))
+        contributor = None
+        if item["role"] == "read":
+            contributor = self._me()
+            if item.get("identity") != contributor:
+                self.table.put_item(Item={**item, "identity": contributor})
+        creds = folder_credentials(self.sts, owner, capture_id, item["role"], contributor)
+        return with_cdn(self.clients, creds)
 
     def content_key(self):
         """An encrypted capture's content key, for its owner's profile or
@@ -781,8 +828,49 @@ class Api:
         if item is None:
             self.links.put_item(Item={"keyHash": digest, "owner": owner,
                                       "captureId": capture_id,
+                                      "ownerEmail": self.email,
                                       "createdAt": int(time.time())})
         return {"published": True}
+
+    def join_link(self):
+        """Someone signed in opens a capture's link: they join it, with a
+        read grant of their own (they see the owner's files and add theirs),
+        so it's in their library from then on. The capture's owner, and
+        whoever has a grant already, keep what they have."""
+        capture_id = _id(self.params.get("captureId"))
+        digest = _link_key(self._body().get("key"))
+        item = self.links.get_item(Key={"keyHash": digest}).get("Item")
+        if item is None or item.get("captureId") != capture_id:
+            raise ApiError(404, "No such link")
+        owner = item["owner"]
+        if owner == self._me():
+            return {"owner": owner, "captureId": capture_id, "own": True}
+        self.params = {**self.params, "owner": owner}
+        _, _, grant = self._my_grant()
+        if grant is None:
+            grants = self._grants_of(owner, capture_id)
+            if sum(1 for g in grants if g.get("via") == "link") >= MAX_JOINS:
+                raise ApiError(409, f"{MAX_JOINS} people have joined this capture already")
+            grant = {
+                "capture": _key(owner, capture_id),
+                "email": self.email,
+                "owner": owner,
+                "captureId": capture_id,
+                "ownerEmail": item.get("ownerEmail") or self._email_of(owner),
+                "role": "read",
+                "via": "link",
+                "grantedAt": int(time.time()),
+            }
+            self.table.put_item(Item=grant)
+        return {"owner": owner, "captureId": capture_id,
+                "ownerEmail": grant["ownerEmail"], "role": grant["role"]}
+
+    def _email_of(self, identity):
+        """A profile's first address, by its folder (links from before
+        they kept their owner's)."""
+        profile = self.store.profile_by_identity(identity)
+        emails = self.profiles.emails(profile["id"]) if profile else []
+        return emails[0] if emails else ""
 
     def delete_account(self):
         """Deletes the caller's profile: the grants of its captures, the
@@ -806,6 +894,13 @@ class Api:
         made = [i for i in made if i["capture"].startswith(f"{owner}#")]
         emails = set(self._emails())
         to_me = [i for i in self._shared_with_me() if i["email"] in emails]
+        # What the caller added to others' captures goes first: once their
+        # grants are gone, nothing says where it is.
+        contributions = 0
+        for item in to_me:
+            if item.get("identity") == owner and item["owner"] != owner:
+                contributions += self._delete_prefix(
+                    contrib_prefix(item["owner"], item["captureId"], owner))
         for item in made + to_me:
             self.table.delete_item(
                 Key={"capture": item["capture"], "email": item["email"]}
@@ -833,7 +928,22 @@ class Api:
             self.store.unlink(s["subject"])
         self.store.delete_profile(profile["id"])
         return {"grantsMade": len(made), "grantsToMe": len(to_me), "links": len(links),
-                "appleTokensRevoked": apple_revoked}
+                "contributions": contributions, "appleTokensRevoked": apple_revoked}
+
+    def _delete_prefix(self, prefix):
+        """Deletes every object under [prefix] (a contribution's folder);
+        how many. Each listing starts over: what it lists is deleted, so
+        the next one lists what's left."""
+        bucket = os.environ["BUCKET"]
+        deleted = 0
+        while True:
+            page = self.s3.list_objects_v2(Bucket=bucket, Prefix=prefix, MaxKeys=1000)
+            found = page.get("Contents") or []
+            for o in found:
+                self.s3.delete_object(Bucket=bucket, Key=o["Key"])
+                deleted += 1
+            if not found or not page.get("IsTruncated"):
+                return deleted
 
     def _revoke_apple(self):
         """Signed in with Apple: revokes the caller's Apple tokens with the

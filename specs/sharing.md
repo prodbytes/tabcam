@@ -44,9 +44,12 @@ those [shared with them](shared-captures.md). If it isn't there yet:
   one without a key shows the welcome, and the capture opens once signing
   in has synced it;
 - signed in, it waits for a sync pass (starting one if none is running);
-  if the pass doesn't bring it, a link with its key opens it by its link,
-  over Home (Back returns); one without says the capture isn't shared with
-  the user and to ask its owner to share it with their email address;
+  if the pass doesn't bring it, a link with its key **joins** it
+  ([contributions](contributions.md#joining-by-the-link)): it's shared with
+  the user to read from then on, and opens once the next pass brings it;
+  if joining fails, it opens by its link, over Home (Back returns). One
+  without a key says the capture isn't shared with the user and to ask its
+  owner to share it with their email address;
 - in a build without cloud sync, it says the capture isn't on this
   device.
 
@@ -72,8 +75,10 @@ cloud yet, or no connection: "This capture can't be opened…", with **Try
 again**.
 
 So the link is what gives access: whoever holds a link with its key can
-see the capture (never change it). Edit access is still only for the
-people the owner shares it with ([Share with people](shared-captures.md)).
+see the capture's own files (never change them, nor see what people
+[contributed](contributions.md) until the owner publishes it); signed in,
+it also lets them add files of their own. Edit access is still only for
+the people the owner shares it with ([Share with people](shared-captures.md)).
 
 ## Link previews
 

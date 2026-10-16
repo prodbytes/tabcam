@@ -39,7 +39,10 @@ enum SyncState {
 ///   the folder's identity as `owner`, and its `shares`), or its tombstone
 ///   once deleted;
 /// - `<identity>/events/<event id>/<page id>.<extension>`: each page's file,
-///   written once (a rotated page is a new page).
+///   written once (a rotated page is a new page);
+/// - `<identity>/contrib/<event id>/<their identity>/`: what someone the
+///   event is shared with to read added to it (`contrib.json` and its
+///   files), which only they and the owner may read ([Contribution]).
 ///
 /// A pass lists the folder (one request when nothing changed), then for
 /// each event: one changed only here goes up, one changed only in the
@@ -320,6 +323,12 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
       token,
     );
     if (shares != null) {
+      down += await _contributionsToMine(
+        identity,
+        session.credentials,
+        state,
+        token,
+      );
       final (u, d) = await _shared(token, state);
       up += u;
       down += d;
@@ -503,7 +512,7 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
       _downloads.add(
         _Download(
           key: key,
-          owner: folder.owner,
+          objectKey: _key(folder.owner, event.id, page.fileName),
           eventId: event.id,
           page: page,
           credentials: folder.credentials,
@@ -513,7 +522,44 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
       );
       added = true;
     }
-    if (!added) return;
+    if (added) _queueChanged();
+  }
+
+  /// Queues the files of [contribution]'s pages (to [eventId]) that aren't
+  /// here yet but are in its folder ([prefix], holding [there]).
+  Future<void> _bringContribution(
+    String eventId,
+    Contribution contribution,
+    String prefix,
+    Set<String> there,
+    AwsCredentials creds,
+    String token,
+  ) async {
+    var added = false;
+    for (final page in contribution.pages) {
+      if (!page.hasFile || !there.contains(page.fileName)) continue;
+      final key = '$eventId/${page.fileName}';
+      if (_queued.contains(key)) continue;
+      if (await library.hasPage(eventId, page)) continue;
+      library.expectPage(eventId, page);
+      _queued.add(key);
+      _downloads.add(
+        _Download(
+          key: key,
+          objectKey: '$prefix${page.fileName}',
+          eventId: eventId,
+          page: page,
+          credentials: creds,
+          token: token,
+          updated: contribution.updated,
+        ),
+      );
+      added = true;
+    }
+    if (added) _queueChanged();
+  }
+
+  void _queueChanged() {
     // Pictures and PDFs before videos and recordings; the newest first.
     _downloads.sort((a, b) {
       final slow = a.slow == b.slow ? 0 : (a.slow ? 1 : -1);
@@ -548,10 +594,7 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
       await library.putPageStream(
         d.eventId,
         d.page,
-        await bucket.getStream(
-          _key(d.owner, d.eventId, d.page.fileName),
-          credentials: d.credentials,
-        ),
+        await bucket.getStream(d.objectKey, credentials: d.credentials),
       );
       library.pageArrived(d.eventId, d.page);
     } on Object catch (e) {
@@ -610,6 +653,17 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
         );
         up += u;
         down += d;
+        if (readOnly && access.contribPrefix != null) {
+          final (cu, cd) = await _myContribution(
+            g.captureId,
+            access.contribPrefix!,
+            access.credentials,
+            state,
+            token,
+          );
+          up += cu;
+          down += cd;
+        }
         // The owner deleted it: gone here, and no longer shared.
         if (library.byIdAll(g.captureId)?.isDeleted ?? false) {
           await _leave(token, library.byIdAll(g.captureId)!, state);
@@ -627,6 +681,228 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Credentials of shared captures, by `<owner>/<capture id>`.
   final Map<String, ShareCredentials> _shareCredentials = {};
+
+  /// The name of a contribution's details in its folder.
+  static const contributionName = 'contrib.json';
+
+  /// The owner's side: what people added to the user's own captures
+  /// (`<identity>/contrib/`, one listing), brought here as it changes; a
+  /// contribution whose folder went is forgotten. The owner never writes
+  /// them. How many came down.
+  Future<int> _contributionsToMine(
+    String identity,
+    AwsCredentials creds,
+    _SyncState state,
+    String token,
+  ) async {
+    final base = '$identity/contrib/';
+    final listing = await bucket.listETags(base, credentials: creds);
+    _check(token);
+    // Each contribution's contrib.json ETag, and its files, by
+    // `<capture>/<their identity>`.
+    final remote = <String, String>{};
+    final files = <String, Set<String>>{};
+    for (final MapEntry(:key, :value) in listing.entries) {
+      final parts = key.substring(base.length).split('/');
+      if (parts.length != 3 || !_isId(parts[0]) || parts[1].isEmpty) continue;
+      final folder = '${parts[0]}/${parts[1]}';
+      if (parts[2] == contributionName) {
+        remote[folder] = value;
+      } else {
+        (files[folder] ??= {}).add(parts[2]);
+      }
+    }
+    String stateKey(String folder) => 'contrib/$identity/$folder';
+    var down = 0;
+    final unnamed = <String>{};
+    for (final event in [...library.all]) {
+      if (event.isShared || event.owner != identity || event.isDeleted) {
+        continue;
+      }
+      final here = {for (final c in event.contributions) ?c.by};
+      final there = {
+        for (final folder in remote.keys)
+          if (folder.startsWith('${event.id}/'))
+            folder.substring(event.id.length + 1),
+      };
+      for (final by in here.difference(there)) {
+        await library.removeContribution(event.id, by);
+        state.events.remove(stateKey('${event.id}/$by'));
+      }
+      for (final by in there) {
+        final folder = '${event.id}/$by';
+        final etag = remote[folder]!;
+        if (state.events[stateKey(folder)]?.etag != etag) {
+          final theirs = await _fetchContribution('$base$folder/', creds);
+          _check(token);
+          if (theirs == null) continue;
+          await library.applyContribution(event.id, theirs.copyWith(by: by));
+          state.events[stateKey(folder)] = _Synced(etag, theirs.updated);
+          down++;
+        }
+        final c = library
+            .byIdAll(event.id)
+            ?.contributions
+            .where((c) => c.by == by)
+            .firstOrNull;
+        if (c == null) continue;
+        if (c.email == null) unnamed.add(event.id);
+        await _bringContribution(
+          event.id,
+          c,
+          '$base$folder/',
+          files[folder] ?? const {},
+          creds,
+          token,
+        );
+      }
+    }
+    for (final id in unnamed) {
+      await _nameContributors(token, id);
+    }
+    return down;
+  }
+
+  /// Captures whose contributors' addresses were asked for this session
+  /// (once each, until a new contributor shows).
+  final Map<String, Set<String>> _askedNames = {};
+
+  /// Asks the share API who added to the user's capture [id] (its grants
+  /// know each reader's identity), for their contributions' names.
+  Future<void> _nameContributors(String token, String id) async {
+    final event = library.byIdAll(id);
+    if (event == null) return;
+    final unknown = {
+      for (final c in event.contributions)
+        if (c.email == null) ?c.by,
+    };
+    final asked = _askedNames[id] ?? const {};
+    if (unknown.difference(asked).isEmpty) return;
+    _askedNames[id] = {...asked, ...unknown};
+    try {
+      final grants = await shares!.grants(token, id);
+      _check(token);
+      await library.nameContributions(
+        id,
+        emails: {for (final g in grants) ?g.identity: g.email},
+      );
+    } on _SignedOut {
+      rethrow;
+    } on Object catch (e) {
+      debugPrint('TabCam: naming the contributors of $id failed: $e');
+    }
+  }
+
+  /// The reader's side: their own contribution to [captureId], synced with
+  /// its folder ([prefix]) both ways, as events are: changed only here it
+  /// goes up, only there it comes down, in both the later wins. How many
+  /// went up and came down.
+  Future<(int, int)> _myContribution(
+    String captureId,
+    String prefix,
+    AwsCredentials creds,
+    _SyncState state,
+    String token,
+  ) async {
+    final segments = prefix.split('/');
+    final me = segments.length >= 2 ? segments[segments.length - 2] : '';
+    if (me.isEmpty) return (0, 0);
+    final listing = await bucket.listETags(prefix, credentials: creds);
+    _check(token);
+    final etag = listing['$prefix$contributionName'];
+    final there = {
+      for (final key in listing.keys)
+        if (key != '$prefix$contributionName') key.substring(prefix.length),
+    };
+    await library.nameContributions(captureId, by: me);
+    final stateKey = 'contrib/$prefix';
+    final last = state.events[stateKey];
+    var local = library.byIdAll(captureId)?.myContribution;
+    final changedHere = local != null && last?.updated != local.updated;
+    final changedThere = etag != null && last?.etag != etag;
+    var (up, down) = (0, 0);
+    if (changedThere) {
+      final theirs = await _fetchContribution(prefix, creds);
+      _check(token);
+      if (theirs != null &&
+          (!changedHere || !theirs.updated.isBefore(local.updated))) {
+        await library.applyContribution(captureId, theirs.copyWith(by: me));
+        state.events[stateKey] = _Synced(etag, theirs.updated);
+        local = library.byIdAll(captureId)?.myContribution;
+        down++;
+      }
+    }
+    if (local != null && state.events[stateKey]?.updated != local.updated) {
+      for (final page in local.pages) {
+        if (!page.hasFile || there.contains(page.fileName)) continue;
+        final (body, length) = await library.pageStream(captureId, page);
+        await bucket.putStream(
+          '$prefix${page.fileName}',
+          body,
+          length,
+          contentType: contentTypeOf(page),
+          credentials: creds,
+        );
+        _check(token);
+      }
+      final json = utf8.encode(jsonEncode(local.toJson(local: false)));
+      await bucket.put(
+        '$prefix$contributionName',
+        json,
+        contentType: 'application/json',
+        credentials: creds,
+      );
+      final kept = {for (final p in local.pages) p.fileName};
+      for (final name in there) {
+        if (kept.contains(name)) continue;
+        await bucket.delete('$prefix$name', credentials: creds);
+      }
+      state.events[stateKey] = _Synced(
+        md5.convert(json).toString(),
+        local.updated,
+      );
+      up++;
+    }
+    if (local != null) {
+      await _bringContribution(captureId, local, prefix, there, creds, token);
+    }
+    return (up, down);
+  }
+
+  /// The contribution in the folder [prefix], or null when its
+  /// contrib.json isn't one.
+  Future<Contribution?> _fetchContribution(
+    String prefix,
+    AwsCredentials creds,
+  ) async {
+    final bytes = await bucket.get(
+      '$prefix$contributionName',
+      credentials: creds,
+    );
+    try {
+      final json = (jsonDecode(utf8.decode(bytes)) as Map)
+          .cast<String, Object?>();
+      // Whose it is comes from its folder, never from what it says.
+      return Contribution.fromJson(
+        {...json}
+          ..remove('by')
+          ..remove('email'),
+      );
+    } on Object catch (e) {
+      debugPrint('TabCam: skipping the contribution in $prefix: $e');
+      return null;
+    }
+  }
+
+  /// Joins the capture a link names (its [captureId] and [key]), signed
+  /// in: shared with the user to read, so the next pass brings it. False
+  /// when it's the user's own (nothing to join).
+  Future<bool> joinLink(String captureId, String key) async {
+    final joined = await shares!.joinLink(_signedIn(), captureId, key);
+    if (joined.own) return false;
+    await syncNow();
+    return true;
+  }
 
   Future<void> _leave(
     String token,
@@ -941,7 +1217,7 @@ class _SyncState {
 class _Download {
   _Download({
     required this.key,
-    required this.owner,
+    required this.objectKey,
     required this.eventId,
     required this.page,
     required this.credentials,
@@ -950,7 +1226,9 @@ class _Download {
   });
 
   final String key;
-  final String owner;
+
+  /// Where it is in the bucket.
+  final String objectKey;
   final String eventId;
   final EventPage page;
   final AwsCredentials credentials;

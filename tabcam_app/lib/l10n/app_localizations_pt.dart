@@ -191,7 +191,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get accountPeopleCanEdit => 'Pode editar';
 
   @override
-  String get accountPeopleReadOnly => 'Somente leitura';
+  String get accountPeopleReadOnly => 'Pode ver e adicionar';
 
   @override
   String get accountSignInToShare => 'Entre para compartilhar';
@@ -475,7 +475,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get eventReadOnly => 'Somente leitura';
+  String get eventReadOnly => 'Pode ver e adicionar';
 
   @override
   String get eventByLink => 'Aberta pelo link · Somente leitura';
@@ -1495,4 +1495,43 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get deleteAccountAppleOtherId =>
       'Esse é outro Apple ID: confirme com o Apple ID com que você entrou.';
+
+  @override
+  String get eventYourFiles => 'Seus arquivos';
+
+  @override
+  String eventYourFilesDetail(String owner) {
+    return 'Só você e $owner os veem';
+  }
+
+  @override
+  String eventFilesFrom(String person) {
+    return 'De $person';
+  }
+
+  @override
+  String get eventSomeone => 'alguém';
+
+  @override
+  String get eventPublishHint => 'Só você os vê até publicá-los';
+
+  @override
+  String get eventPublish => 'Publicar: todos veem';
+
+  @override
+  String get eventUnpublish => 'Publicado: toque para retirar';
+
+  @override
+  String get eventPublished => 'Publicado';
+
+  @override
+  String eventPublishedSnack(String name) {
+    return '$name publicado: agora todos veem';
+  }
+
+  @override
+  String get eventCouldntPublish => 'Não foi possível publicar';
+
+  @override
+  String get accountPeopleViaLink => 'Entrou pelo link';
 }

@@ -2,8 +2,11 @@
 
 A signed-in user can share any capture (event) of their own with other
 people by **email address**, to **edit** (the default, "Can edit": they
-change it as the owner does, and the owner sees their changes) or **read
-only** (they see it, and get its updates, but can't change it). No email
+change it as the owner does, and the owner sees their changes) or **read**
+("Can view and add": they see the owner's files and get its updates, can't
+change them, and add files of their own that only they and the owner see:
+[contributions](contributions.md)). Someone signed in who opens its link
+joins it to read too. No email
 is sent: someone sees what's shared with them when they sign in to TabCam
 with that address (with Google, or with Apple on iOS). To share a capture with other people than the
 original's, [clone](library.md#events) it and share the copy.
@@ -19,14 +22,16 @@ sheet:
 
 - what it does ("People you add find this capture when they sign in to
   TabCam with that email address. No email is sent.");
-- **Email** and the role (**Can edit**, the default, or **Read only**),
+- **Email** and the role (**Can edit**, the default, or **Can view and add**),
   and **Add**, which checks the address looks like one ("Enter an email
   address"), grants it and syncs the capture, so it's in the cloud;
 - the people it's shared with ("Not shared yet." when nobody), each with
-  their role, to change, and **Remove** (×).
+  their role, to change, and **Remove** (×); those who joined by its link
+  say "Joined by the link".
 
 Addresses are compared in lower case. One's own address, and more than
-50 people per capture, are refused, with the API's message.
+50 people per capture, are refused, with the API's message (people who
+joined by its link don't count; up to 500 may).
 
 The owner's app records the people and roles on the event (`shares`:
 `[{email, role}]`, `role` `edit` or `read`) each time it lists, adds,
@@ -41,17 +46,18 @@ A capture shared with the user comes down at the next
 [sync pass](cloud-sync.md#when-and-how) (within seconds while the app is in front) and shows in
 the [library](library.md)'s **Shared with me** section, below the user's
 own (**My captures**), with "shared by <their email>" on its card. Its
-event screen says **"Shared by <email> · Can edit"** or **"· Read only"**
-under the app bar.
+event screen says **"Shared by <email> · Can edit"** or **"· Can view and
+add"** under the app bar.
 
 - **Can edit**: everything works as for the user's own, except Share with
   people (only the owner shares). Changes go up to the owner's folder,
   and the owner's changes come down; the later one wins, as between one's
   own devices.
-- **Read only**: Rename, Add, Rotate, Delete (a page) and editing the
-  text tab are off (the view changes only what shows), and nothing
-  reads it here; Share (export) and Clone work. A clone
-  is the user's own.
+- **Read** ("Can view and add"): Rename, Rotate, Delete (a page) and
+  editing the text tab are off for the owner's files (the view changes
+  only what shows), and nothing reads it here; Share (export) and Clone
+  work. Add, dragging files and Cam add to the user's own
+  [contribution](contributions.md). A clone is the user's own.
 - **Remove** (a card's menu, instead of Delete, after a confirmation that
   the owner keeps it) takes it off the user's devices and leaves the
   share.
@@ -78,15 +84,16 @@ credentials:
 
 | Route | Who | Does |
 |---|---|---|
-| `GET /shares/{captureId}` | the owner | the capture's grants |
+| `GET /shares/{captureId}` | the owner | the capture's grants, with each reader's `identity` once known and `via: "link"` for those who joined |
 | `PUT /shares/{captureId}` | the owner | grants `{email, role}` (role `edit` by default, or `read`) |
 | `DELETE /shares/{captureId}?email=` | the owner | removes a grant |
 | `GET /shared` | anyone | the captures shared with them: owner, capture, owner's email, role |
 | `DELETE /shared/{owner}/{captureId}` | the grantee | leaves a share |
 | `POST /shared/{owner}/{captureId}/credentials` | the grantee | temporary credentials for that capture's folder |
 | `PUT /links/{captureId}` | the owner | records the capture's link key (`{key}`): anyone with the link may read it ([sharing](sharing.md)) |
+| `POST /links/{captureId}/join` | anyone signed in | `{key}`: joins the capture the link opens, with a read grant of their own ([contributions](contributions.md#joining-by-the-link)); the owner's own link answers `own`, and an existing grant stays |
 | `POST /public/{captureId}/credentials` | anyone, no token | `{key}`: read-only credentials for the capture's folder, and its owner; a wrong or unknown key is a 404 |
-| `DELETE /account` | anyone | [deletes their account](cloud-sync.md#deleting-the-account): the grants of their captures, the grants to their address, their record in the cloud OCR service's accounts table, then their Cognito identity. Under `/apple`, with `{appleAuthorizationCode}`, it first revokes their Sign in with Apple tokens ([below](cloud-sync.md#revoking-apples-tokens)) |
+| `DELETE /account` | anyone | [deletes their account](cloud-sync.md#deleting-the-account): what they contributed to others' captures, the grants of their captures, the grants to their address, their record in the cloud OCR service's accounts table, then their Cognito identity. Under `/apple`, with `{appleAuthorizationCode}`, it first revokes their Sign in with Apple tokens ([below](cloud-sync.md#revoking-apples-tokens)) |
 
 Each route is also under `/apple` (`GET /apple/shared`, …,
 `DELETE /apple/account`), for Sign in with Apple's tokens, except
@@ -130,8 +137,11 @@ reading any token, with nothing but the key to go on.
 - **Credentials**: the function assumes the `tabcam-share-access` role
   for an hour with a session policy that allows only
   `<bucket>/<owner>/events/<capture id>/*` (get; put and delete too to
-  edit) and listing that prefix. The role itself allows at most the
-  `events/` folders, and only the function may assume it.
+  edit) and listing that prefix; for a reader, also get, put, delete and
+  list their own contribution's folder,
+  `<owner>/contrib/<capture id>/<their identity>/` (`contribPrefix`), and
+  their grant records their identity. The role itself allows at most the
+  `events/` and `contrib/` folders, and only the function may assume it.
 - **Links**: the links table keeps each key's SHA-256 (never the key),
   with the owner's identity and the capture ID; one key is one capture's
   (another's is a 409). A link's credentials are those of a read-only

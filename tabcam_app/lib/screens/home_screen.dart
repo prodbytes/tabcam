@@ -144,6 +144,10 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _askedToSignIn = false;
   bool _passSinceLink = false;
 
+  /// Joining the linked capture ([CloudSync.joinLink]): asked, or done.
+  bool _joining = false;
+  bool _joined = false;
+
   /// Opens the capture [link] names ([CaptureLink]), found by its ID among
   /// the user's own and those shared with them: right away if it's here,
   /// else once signed in and a sync pass has brought it.
@@ -155,6 +159,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _link = link;
     _askedToSignIn = false;
     _passSinceLink = false;
+    _joining = false;
+    _joined = false;
     library.addListener(_tryLink);
     widget.sync?.addListener(_tryLink);
     widget.auth?.addListener(_tryLink);
@@ -194,6 +200,17 @@ class _HomeScreenState extends State<HomeScreen> {
         _passSinceLink = true;
       case SyncState.synced || SyncState.failed when _passSinceLink:
         final link = _link;
+        if (_joining) return;
+        // Not the user's, nor shared with them: a link with its key joins
+        // it (to see the owner's files and add theirs), and the pass that
+        // follows brings it.
+        if (!_joined && link != null && sync.shares != null) {
+          if (CaptureLink.keyIn(link) case final key?) {
+            _joining = true;
+            unawaited(_join(sync, id, key));
+            return;
+          }
+        }
         _stopLink();
         // Not the user's, nor shared with them: by its key, read only.
         if (widget.captures case final captures?
@@ -214,6 +231,21 @@ class _HomeScreenState extends State<HomeScreen> {
       case SyncState.signedOut:
         break; // the first pass hasn't started yet
     }
+  }
+
+  /// Joins the linked capture [id] with its [key], then waits for the pass
+  /// that brings it; failing (an old link, offline), it opens by its link.
+  Future<void> _join(CloudSync sync, String id, String key) async {
+    try {
+      await sync.joinLink(id, key);
+    } on Object catch (e) {
+      debugPrint('TabCam: joining $id failed: $e');
+    }
+    if (_linked != id) return;
+    _joining = false;
+    _joined = true;
+    _passSinceLink = false;
+    unawaited(sync.syncNow());
   }
 
   /// Runs [capture], which makes a new event (or null when cancelled), and
