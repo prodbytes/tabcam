@@ -222,9 +222,11 @@ Resources:
       # Not arm64 (20% cheaper) yet: PaddlePaddle has no working Linux ARM
       # build of this version (see tabcam_locr/Dockerfile).
       Architectures: [x86_64]
-      # The account's Lambda memory cap is 3008 MB (new accounts); more
-      # memory brings more vCPUs, so raise it once the quota allows.
-      MemorySize: 3008
+      # Measured 2026-10-16 (specs/cloud-ocr.md#memory): 2560 MB is the
+      # cheapest per page (~106 s warm); 3008 MB, the account's cap, is 8%
+      # faster for 8% more; 2048 MB is slower and dearer. A page peaks at
+      # ~2 GB. Measure again if the quota is raised past 3008 MB.
+      MemorySize: 2560
       Timeout: 900
       EphemeralStorage:
         Size: 1024
