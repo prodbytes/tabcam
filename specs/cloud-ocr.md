@@ -289,7 +289,7 @@ set to check both.
   staves and widths, rebuilds lines and votes, and keeps the notations off
   the staves in their place (chord names at their columns, noise dropped).
 - The image's build reads back a made-up riff (at least 80% of its notes,
-  95% at the time of writing, counted on the tab lines) and the title
+  90% in the image at the time of writing, counted on the tab lines) and the title
   above it (80% alike).
 - App tests: a premium event gets its text tab once every page is read;
   pages without tab are left out; the user's edits stay; a text tab
@@ -303,12 +303,16 @@ set to check both.
 - The OCR bench (`test_data/ocr_bench`, kept out of git: published
   songs) scores each note by its string, its order and, on printed tabs,
   its column, against hand transcriptions. On macOS: a photographed
-  printed tab with red ink across it, 92.5% of the notes (97.5% counting
+  printed tab with red ink across it, 90% of the notes (95% counting
   any vibrato run as one), every one in its column (77.5% and 90% before
   the red ghost was removed and the columns came from the ink); a
   scanned handwritten page in marker, 82.9% (none before: a drawn line in
   pieces passed for a row of dashes); a handwritten intro in fine pen,
   88.1% (42.9% before).
+- In the Linux image the made-up riff's photo reads as before (90%),
+  its PDF better (95%, from 90%), its drawn staves every note. A wider
+  margin round the red ink read the real photo better (92.5%) but took
+  the edges of the riff's digits under its red stroke (85%).
 - Tried on the bench and left out, each worse than the pipeline: CLAHE,
   sharpening, Sauvola binarization or a 1.5x upscale of the line strips;
   erasing the dashes before the engines read; cutting the string label

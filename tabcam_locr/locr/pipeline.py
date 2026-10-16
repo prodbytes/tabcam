@@ -140,7 +140,9 @@ def prepare(img):
     # it stays), it becomes paper.
     bgr = page.astype(np.int16)
     red = (bgr[..., 2] - bgr[..., :2].max(2) > 30) & (bgr[..., 2] > 120)
-    red = cv2.dilate(red.astype(np.uint8), np.ones((3, 3), np.uint8)) > 0
+    # Its edges blend into the paper; a wider margin than 2 px would take
+    # the edges of the black digits it crosses too.
+    red = cv2.dilate(red.astype(np.uint8), np.ones((2, 2), np.uint8)) > 0
     gray[red] = np.maximum(gray[red], np.percentile(gray, 80))
     gray = deskew(gray)
     return cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)

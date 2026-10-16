@@ -1054,7 +1054,7 @@ spec.
    bridged, the band reaches higher above the staff, cut digits are joined,
    flat strokes and string numbers are left out, PaddleOCR reads the
    crops first, a fine pen's crops are made bolder, and `$`, `C` and
-   "5(6)5" are read. Notes read: 77.5% → 92.5%, 0% → 82.9% and
+   "5(6)5" are read. Notes read: 77.5% → 90%, 0% → 82.9% and
    42.9% → 88.1%. Strip contrast (CLAHE), sharpening, Sauvola
    binarization, upscaling, dash erasure, label cropping and other page
    sizes were tried and scored worse ([cloud OCR](cloud-ocr.md#verified)).
