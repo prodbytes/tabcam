@@ -324,7 +324,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get eventRescanBody =>
-      'O texto atual é apagado, mesmo que você o tenha editado ou marcado como verificado, e cada foto e PDF é lido de novo para substituí-lo.';
+      'Cada foto e PDF é lido de novo. Se uma tablatura for encontrada, ela substitui o texto atual, mesmo que você o tenha editado ou marcado como verificado; se não, o texto é mantido.';
+
+  @override
+  String eventRescanKept(String reason) {
+    return '$reason O texto foi mantido.';
+  }
 
   @override
   String get eventReadFailed => 'Falha ao ler a tablatura.';
@@ -982,6 +987,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get textViewRescanTip => 'Ler de novo a tablatura das páginas';
+
+  @override
+  String get textViewRescanning => 'Digitalizando as páginas de novo…';
 
   @override
   String get textViewLookingOnline =>

@@ -141,6 +141,7 @@ class _EventScreenState extends State<EventScreen> {
 
   @override
   void dispose() {
+    _stopFollowing();
     _list.dispose();
     _player.dispose();
     super.dispose();
@@ -461,13 +462,13 @@ class _EventScreenState extends State<EventScreen> {
     if (sure == true && mounted) reader.readSoon(event.id, again: true);
   }
 
-  /// Rescan emptied the text tab: until a reading fills it, the Text view
-  /// says how the read stands.
-  bool _rescanned = false;
+  /// Rescan is reading the pages: the Text view spins, its text kept.
+  bool get _rescanning => _unfollow != null;
 
-  /// The Text view's Rescan: asks, then deletes the text tab (and its
-  /// Verified mark) and reads every photo and PDF again into it. Emptied
-  /// and left to the reader, it's replaced on the device and by the cloud.
+  /// The Text view's Rescan: asks, then reads every photo and PDF again.
+  /// The text stays (and the Text view spins) until the read ends: a tab
+  /// found replaces it, even one the user edited or marked verified (the
+  /// mark is cleared); none found, or a failure, keeps it and says why.
   Future<void> _rescan(CaptureEvent event) async {
     final reader = AutoReaderScope.of(context);
     if (reader == null) return;
@@ -490,28 +491,45 @@ class _EventScreenState extends State<EventScreen> {
       ),
     );
     if (sure != true || !mounted) return;
-    setState(() => _rescanned = true);
-    await _library.patch(
-      event.id,
-      (now) => now.copyWith(
-        tabText: '',
-        tabTextAuto: true,
-        tabTextCorrect: false,
-        tabTextDoubts: const [],
-      ),
-    );
-    if (mounted) reader.readSoon(event.id, again: true);
+    reader.readSoon(event.id, replace: true);
+    _stopFollowing();
+    final id = event.id;
+    void follow() {
+      final state = reader.stateOf(id);
+      // Still reading: on the device, or in the cloud until its text comes.
+      if (state == ReadState.reading || state == ReadState.inCloud) return;
+      _stopFollowing();
+      if (!mounted) return;
+      setState(() {});
+      if (state == null) return; // a tab found: the text is replaced
+      final l10n = context.l10n;
+      _snack(
+        l10n.eventRescanKept(switch (state) {
+          ReadState.noTab => l10n.eventNoTab,
+          ReadState.unsupported => l10n.eventReadUnsupported,
+          ReadState.needsSignIn => l10n.eventReadNeedsSignIn,
+          _ => l10n.eventReadFailed,
+        }),
+      );
+    }
+
+    reader.addListener(follow);
+    setState(() => _unfollow = () => reader.removeListener(follow));
+    follow();
+  }
+
+  /// Stops waiting on Rescan's read.
+  VoidCallback? _unfollow;
+  void _stopFollowing() {
+    _unfollow?.call();
+    _unfollow = null;
   }
 
   /// The Text view: the tab, or why there's none yet.
   Widget _textView(CaptureEvent event) {
     final reader = AutoReaderScope.of(context);
     final state = reader?.stateOf(event.id);
-    // Emptied by Rescan: how the read stands (reading, no tab found,
-    // failed…), until its text comes.
-    final rescanning =
-        _rescanned && (event.tabText?.trim().isEmpty ?? false) && state != null;
-    if (event.tabText != null && !rescanning) {
+    if (event.tabText != null) {
       return TabTextView(
         key: ValueKey('text-${event.id}'),
         library: _library,
@@ -521,6 +539,7 @@ class _EventScreenState extends State<EventScreen> {
         onRescan: reader != null && event.pages.any((p) => p.isImage || p.isPdf)
             ? () => _rescan(event)
             : null,
+        rescanning: _rescanning,
         // Store apps can't point to buying Premium.
         onUpgrade: switch ((
           widget.sync,

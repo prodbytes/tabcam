@@ -405,9 +405,18 @@
   "@eventRescanTitle": {
     "description": "Event: asked when tapping Rescan on the Text view"
   },
-  "eventRescanBody": "The current text is deleted, even if you edited it or marked it verified, and every photo and PDF is read again to replace it.",
+  "eventRescanBody": "Every photo and PDF is read again. A tab found replaces the current text, even if you edited it or marked it verified; if none is found, the text is kept.",
   "@eventRescanBody": {
     "description": "Event: what Rescan does"
+  },
+  "eventRescanKept": "{reason} The text was kept.",
+  "@eventRescanKept": {
+    "description": "Event: Rescan found no tab, or failed: why, and that the text is as it was",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
   },
   "eventReadFailed": "Reading the tab failed.",
   "@eventReadFailed": {
@@ -1264,6 +1273,10 @@
   "textViewRescanTip": "Read the tab from the pages again",
   "@textViewRescanTip": {
     "description": "Tooltip of the Rescan button"
+  },
+  "textViewRescanning": "Rescanning the pages…",
+  "@textViewRescanning": {
+    "description": "Text view: shown while Rescan reads the pages"
   },
   "textViewLookingOnline": "Looking for the song's tab online…",
   "@textViewLookingOnline": {

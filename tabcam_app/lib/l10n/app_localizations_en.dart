@@ -306,7 +306,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventRescanBody =>
-      'The current text is deleted, even if you edited it or marked it verified, and every photo and PDF is read again to replace it.';
+      'Every photo and PDF is read again. A tab found replaces the current text, even if you edited it or marked it verified; if none is found, the text is kept.';
+
+  @override
+  String eventRescanKept(String reason) {
+    return '$reason The text was kept.';
+  }
 
   @override
   String get eventReadFailed => 'Reading the tab failed.';
@@ -956,6 +961,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get textViewRescanTip => 'Read the tab from the pages again';
+
+  @override
+  String get textViewRescanning => 'Rescanning the pages…';
 
   @override
   String get textViewLookingOnline => 'Looking for the song\'s tab online…';

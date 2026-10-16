@@ -204,6 +204,11 @@ with text but no tab is still `no-tab`.
   rewrite always changes it); the earlier results don't count as the new
   reading. That text replaces any text tab a read left (`tabTextAuto`,
   on-device readings too), never the user's edits or a checked one.
+- **Rescan** (the Text view's): a Read again whose reading, once every
+  page's result is new, replaces the text tab whatever it is, the user's
+  edits and a verified one too (`transcribe(event, again: true,
+  replace: true)`), clearing Verified. A reading with no tab on any page
+  leaves the text as it was.
 - **Collected**: `CloudOcr.collected(eventId)` completes once an event's
   results are applied (a tab found, or none), so the reader stops saying
   it's in the cloud.
