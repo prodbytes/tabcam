@@ -268,7 +268,7 @@
   "textViewNoStringFree": "Nenhuma outra corda tem espaço para esta nota ali",
   "textViewOvertypeOn": "Sobrescrever: digitar substitui caracteres, as colunas não se movem",
   "textViewOvertypeOff": "Inserir: digitar empurra a linha para a direita",
-  "textViewDoubts": "As notas em vermelho foram lidas com pouca confiança e podem estar erradas: confira-as com a página.",
+  "textViewDoubts": "As notas em vermelho foram lidas com pouca confiança e podem estar erradas: confira-as com a página e toque em cada uma depois de conferir.",
   "textViewOvertype": "Sobrescrever",
   "textViewSongDialogTitle": "Corrigir pela tablatura da música",
   "textViewSongLabel": "Música e artista",

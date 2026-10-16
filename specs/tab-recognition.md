@@ -230,12 +230,16 @@ tools, no Fix). Sharing is the event screen's **Share** in the app bar.
 read with little confidence, likely wrong, are in red, bold, on a light
 red background, and under the editing tools a line says so: "Notes in red
 were read with low confidence and may be wrong: check them against the
-page." (en, es, pt). They're kept on the event and sync with it
+page, and tap one once it's checked." (en, es, pt). They're kept on the event and sync with it
 (`tabTextDoubts`: `[[line, column, note]]`), and a clone keeps them. A
 note is red only while it's still where it was read and the same, a whole
 note (not part of a longer one): once the user changes it, it's black, and
 saving drops it; moving it (inserting before it on its line) does too.
-Marking the text **Verified** shows none (the user checked it); a **Rescan**
+**Tapping** a red note, or right beside it (the cursor landing in it, or
+one character to its left or right on its line), clears its mark at once:
+the user has checked it. It's dropped from `tabTextDoubts` and saved (the
+text's pending edits first), so it's black on every device; not on a
+capture shared to read, whose text can't be changed. Marking the text **Verified** shows none (the user checked it); a **Rescan**
 that finds a tab replaces them with the text, and the new reading
 brings its own. A read on
 the device says nothing of how sure it is: its text has none

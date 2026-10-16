@@ -39,6 +39,22 @@ void main() {
     expect(doubtRanges('e|-3-|', _doubts), isEmpty);
   });
 
+  test('the cursor on a red note, or right beside it, finds it', () {
+    // "5h7" is at 13..16 on its line (6..17), "10" at 24..26 on its own.
+    for (final at in [12, 13, 15, 16, 17]) {
+      expect(doubtAt(_riff, _doubts, at), _doubts.first, reason: '$at');
+    }
+    for (final at in [23, 24, 26, 27]) {
+      expect(doubtAt(_riff, _doubts, at), _doubts.last, reason: '$at');
+    }
+    // Two away, or past the line's end: none.
+    for (final at in [3, 11, 18, 22, 28]) {
+      expect(doubtAt(_riff, _doubts, at), isNull, reason: '$at');
+    }
+    // A note the user changed isn't doubtful any more.
+    expect(doubtAt(_riff.replaceFirst('10', '12'), _doubts, 24), isNull);
+  });
+
   test('doubts are saved with the event, and odd ones are dropped', () {
     final event = CaptureEvent(
       id: 'e1',
@@ -94,6 +110,17 @@ void main() {
       await tester.pump(const Duration(seconds: 2));
       expect(_red(tester), ['5h7']);
       expect(library.byId(event.id)!.tabTextDoubts, [_doubts.first]);
+
+      // A tap right beside the other one: the user looked at it, so it
+      // isn't red any more, nor saved as doubtful.
+      final field = tester.widget<TextField>(find.byType(TextField));
+      field.controller!.selection = const TextSelection.collapsed(offset: 17);
+      field.onTap!();
+      await tester.pump(const Duration(seconds: 2));
+      expect(_red(tester), isEmpty);
+      expect(library.byId(event.id)!.tabTextDoubts, isEmpty);
+      expect(find.textContaining('Notes in red'), findsNothing);
+      expect(library.byId(event.id)!.tabText, _riff.replaceFirst('10', '12'));
 
       // Verified: the user checked it, nothing is red.
       await tester.tap(find.text('Verified'));
