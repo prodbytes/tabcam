@@ -6,7 +6,7 @@
 | Scan | System document scanner (ML Kit, base mode: no filters): edges, straightening, several pages | System document scanner (VisionKit) | TabCam's camera screen (the browser's camera): several pages, cropped to the page when one stands out |
 | Add photos & videos, files | Photo picker; system file picker | Photo library; Files app | Browser file picker (both) |
 | Play videos | From the file | From the file | From memory |
-| [Cam](cam.md) takes | MP4 | MOV | WebM (the browser's camera and microphone) |
+| [Cam](cam.md) takes, [the tab in them](cam.md#the-tab-in-the-take) | MP4, the tab burned in after (Media3 Transformer) | MP4, the tab burned in after (AVFoundation) | WebM (MP4 on Safari), the tab recorded in as it goes (canvas and MediaRecorder) |
 | [Cam's head gestures](cam.md#head-gestures) | ✅ ML Kit face detection | ✅ ML Kit face detection | ✅ MediaPipe Face Landmarker, in the browser (library and model from jsDelivr and Google when Cam opens) |
 | Open links, YouTube's too (`url_launcher`, outside the app) | The browser, or the app for the link (YouTube) | Safari, or the app for the link (YouTube) | A new tab |
 | Reading tabs (by itself) | ✅ ML Kit on the device | ✅ ML Kit on the device | Premium only (else the Text view says it needs the app) |

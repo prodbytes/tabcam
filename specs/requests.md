@@ -971,3 +971,13 @@ spec.
    pencil): it asks to confirm, then deletes the file; the last file
    stays, as on the file screen. Not on captures shared read only
    ([event screen](event-screen.md)).
+8. **Put the tab overlay into the recorded video, on every device, with no
+   server-side spend; Flutter can run platform-specific code for each
+   platform.** Cam's takes now have the tab in them: each neckline as a
+   band along the bottom of the video while it showed. The bands are
+   drawn by the app (`renderBand`); the web records the camera and the
+   band onto a canvas as it goes (`MediaRecorder`); Android (Media3
+   Transformer) and iOS (AVFoundation) burn them in after recording,
+   through the method channel `tabcam/take_overlay`. All on the device;
+   a failure keeps the take as recorded ([Cam](cam.md#the-tab-in-the-take),
+   [platforms](platforms.md)).
