@@ -1003,3 +1003,11 @@ spec.
    (45 minutes), fails, with Read again; a text that comes later still
    fills in ([tab recognition](tab-recognition.md#reading-by-itself),
    [event screen](event-screen.md), [cloud OCR](cloud-ocr.md)).
+10. **The tab overlay isn't in the recorded video: make sure it is.** The
+   web recorder was checked end to end (the real Cam screen in Chromium,
+   Firefox and WebKit with a fake webcam, the saved take's frames read
+   back): the band is there. Where it can't be added, Cam no longer
+   stays silent: a message says the take was recorded or saved without
+   the tab, and why; a band image that fails is drawn as plain text
+   instead. The band is smaller (a six-string staff takes about a third
+   of a landscape take) ([Cam](cam.md#the-tab-in-the-take)).

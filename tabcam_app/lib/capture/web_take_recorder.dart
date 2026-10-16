@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:js_interop';
+import 'dart:math';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
@@ -28,6 +29,10 @@ class WebTakeRecorder implements TakeRecorder {
   /// Bands drawn so far, by their neckline (null while it's being drawn).
   final Map<String, web.ImageBitmap?> _bands = {};
 
+  /// Necklines whose band couldn't be drawn: their text goes on the
+  /// canvas as it is instead.
+  final Set<String> _plain = {};
+
   /// The first of these the browser records (Safari: MP4 only).
   static const _types = [
     'video/webm;codecs=vp9,opus',
@@ -54,7 +59,9 @@ class WebTakeRecorder implements TakeRecorder {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
       }
       if (_neckline() case final text?) {
-        if (_bands[text] case final band?) {
+        if (_plain.contains(text)) {
+          _drawPlain(context, canvas.width, canvas.height, text);
+        } else if (_bands[text] case final band?) {
           // As wide as the video, along its bottom.
           final height = canvas.width * band.height / band.width;
           context.drawImage(
@@ -129,7 +136,39 @@ class WebTakeRecorder implements TakeRecorder {
           .toDart;
       _bands[text] = bitmap;
     } on Object catch (e) {
-      debugPrint('TabCam: cam: band not drawn: $e');
+      debugPrint('TabCam: cam: band not drawn, the text instead: $e');
+      _plain.add(text);
+    }
+  }
+
+  /// [text] along the bottom as the canvas draws text, where its band
+  /// couldn't be made: the same look, roughly.
+  static void _drawPlain(
+    web.CanvasRenderingContext2D context,
+    int width,
+    int height,
+    String text,
+  ) {
+    final lines = text.split('\n');
+    var size = width / 48;
+    context.font = '${size}px RobotoMono, monospace';
+    var widest = 0.0;
+    for (final line in lines) {
+      widest = max(widest, context.measureText(line).width);
+    }
+    final pad = width / 64;
+    if (widest > width - 2 * pad) {
+      size *= (width - 2 * pad) / widest;
+      context.font = '${size}px RobotoMono, monospace';
+    }
+    final band = lines.length * size * 1.2 + 2 * pad;
+    context.fillStyle = 'rgba(0, 0, 0, 0.7)'.toJS;
+    context.fillRect(0, height - band, width, band);
+    context.fillStyle = 'white'.toJS;
+    context.textBaseline = 'top';
+    context.textAlign = 'center';
+    for (final (i, line) in lines.indexed) {
+      context.fillText(line, width / 2, height - band + pad + i * size * 1.2);
     }
   }
 

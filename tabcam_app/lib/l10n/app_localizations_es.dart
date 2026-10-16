@@ -606,7 +606,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get camAddingTab => 'Añadiendo la tablatura al vídeo…';
 
   @override
-  String get camNoOverlay => 'La toma se guardó sin la tablatura.';
+  String camNoOverlay(String reason) {
+    return 'La toma se guardó sin la tablatura: $reason';
+  }
+
+  @override
+  String camRecordingNoTab(String reason) {
+    return 'Grabando sin la tablatura: $reason';
+  }
 
   @override
   String get camHeadsOn =>
