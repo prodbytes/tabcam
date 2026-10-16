@@ -1281,3 +1281,7 @@ spec.
     with a message ending "The text was kept.". The confirmation's text
     says so (en, es, pt). See [tab recognition](tab-recognition.md) and
     [cloud OCR](cloud-ocr.md).
+32. **Add to CLAUDE.md design guidelines: always use the client device and
+    save as much as possible of the server side's resources; if a feature
+    needs the server, add it there but make it available only to Premium
+    users.** CLAUDE.md has a Design guidelines section saying so.
