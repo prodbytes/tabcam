@@ -43,7 +43,7 @@ app, and the iOS privacy declarations.
 | Links name a capture by ID and give no access by themselves | [sharing](sharing.md#opening-a-link) |
 | Deleted files kept 30 days (bucket versions); DynamoDB point-in-time recovery 35 days; Lambda logs 30 days, no capture content, OCR logs without emails | `user-data.yaml`, `share-api.yaml`, `ocr.yaml`, [cloud OCR](cloud-ocr.md#troubleshooting-log) |
 | **Delete account** in the Profile tab deletes the account's cloud data | Added in a parallel change; the policy's wording must match what it deletes |
-| Links (YouTube's too) open outside TabCam, in the browser or the app for them, under that site's own policy; nothing is loaded from them in the app | [event screen](event-screen.md), `link_page.dart` (`launchLink`) |
+| Links (YouTube's too) open outside TabCam, in the browser or the app for them, under that site's own policy; the one exception is a link chosen to play along with in Cam, shown in a frame on that screen (a YouTube video in its privacy-enhanced player, youtube-nocookie.com) | [event screen](event-screen.md), `link_page.dart` (`launchLink`); [Cam](cam.md#playing-along-with-a-file) |
 | No ads, analytics, crash reporting or tracking | No such packages in `pubspec.lock` or `Podfile.lock`; the site keeps no CloudFront access logs |
 | Not directed to children under 13 | |
 

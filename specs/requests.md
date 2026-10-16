@@ -1105,3 +1105,16 @@ spec.
    the note or marks the text Verified. On-device reads have none
    ([cloud OCR](cloud-ocr.md#doubtful-notes),
    [tab recognition](tab-recognition.md#text-view)).
+20. **In the camera view add a sidebar to play one of the audio, video or
+   link files in the capture while recording; the space bar pauses and
+   plays the file or link, in a separate frame above, so the user can
+   play while recording.** Cam has **Play along** in the app bar: a
+   sidebar of the capture's recordings, videos and links; the one tapped
+   plays in a frame above the camera while the user plays and records,
+   and the space bar pauses and plays it (instead of turning the tab).
+   A YouTube link plays in YouTube's embedded player, any other page
+   shows in the frame (on Android and iOS in a web view, the new
+   `webview_flutter` dependency); a link straight to a sound or video
+   file plays in the app. The privacy policy now says a link chosen in
+   Cam shows inside TabCam ([cam](cam.md#playing-along-with-a-file),
+   [privacy](privacy.md)).

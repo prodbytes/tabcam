@@ -1,10 +1,13 @@
 import 'package:camera_platform_interface/camera_platform_interface.dart';
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:tabcam_app/capture/head_gestures.dart';
+import 'package:tabcam_app/capture/link_frame.dart';
+import 'package:tabcam_app/capture/media.dart';
 import 'package:tabcam_app/capture/play_along_screen.dart';
 import 'package:tabcam_app/capture/take_overlay.dart';
 import 'package:tabcam_app/l10n/app_localizations.dart';
@@ -394,5 +397,114 @@ void main() {
     expect(find.byType(PlayAlongScreen), findsNothing);
     // The list, not the Text view, with the take in it.
     expect(find.text('Take 1'), findsOneWidget);
+  });
+
+  testWidgets('Play along: a recording or link from the sidebar plays in a '
+      'frame above; space pauses and plays it', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    late String audio, youTube;
+    await tester.runAsync(() async {
+      var event = await library.addMedia(library.byId(id)!, [
+        Media(
+          XFile.fromData(Uint8List.fromList([1]), name: 'lesson.m4a'),
+          PageKind.audio,
+          'm4a',
+        ),
+      ]);
+      audio = event.pages.last.id;
+      await library.renamePage(id, audio, 'Lesson');
+      event = await library.addLink(
+        library.byId(id)!,
+        Uri.parse('https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+        title: 'Backing track',
+      );
+      youTube = event.pages.last.id;
+    });
+    final links = <LinkFrameController>[];
+    final commands = <bool>[];
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          linkFrame: (link) {
+            if (!links.contains(link)) {
+              links.add(link);
+              link.command = (play) async => commands.add(play);
+            }
+            return const SizedBox(key: Key('fake-link-frame'));
+          },
+        ),
+      ),
+    );
+    await frames(tester);
+    expect(find.byKey(const Key('cam-along-sidebar')), findsNothing);
+    expect(find.byKey(const Key('cam-along-frame')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('cam-along')));
+    await frames(tester);
+    expect(find.byKey(const Key('cam-along-sidebar')), findsOneWidget);
+    // The recording and the link; not the photo.
+    expect(find.text('Lesson'), findsOneWidget);
+    expect(find.text('Backing track'), findsOneWidget);
+
+    // The recording: plays above the camera.
+    await tester.tap(find.byKey(ValueKey('cam-along-$audio')));
+    await frames(tester);
+    expect(find.byKey(const Key('cam-along-frame')), findsOneWidget);
+    expect(video.playing, hasLength(1));
+
+    // Space pauses and plays it; the neckline stays.
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await frames(tester);
+    expect(video.playing, isEmpty);
+    expect(find.text('1 / 3'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await frames(tester);
+    expect(video.playing, hasLength(1));
+    // Other keys still turn the tab.
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+    await tester.pump();
+    expect(find.text('2 / 3'), findsOneWidget);
+
+    // The link, in its place: the recording stops.
+    await tester.tap(find.byKey(ValueKey('cam-along-$youTube')));
+    await frames(tester);
+    expect(video.playing, isEmpty);
+    expect(find.byKey(const Key('fake-link-frame')), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await frames(tester);
+    expect(commands, [false]);
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await frames(tester);
+    expect(commands, [false, true]);
+
+    // Closed: space turns the tab again.
+    await tester.tap(find.byKey(const Key('cam-along-close')));
+    await frames(tester);
+    expect(find.byKey(const Key('cam-along-frame')), findsNothing);
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pump();
+    expect(find.text('3 / 3'), findsOneWidget);
+  });
+
+  testWidgets('with nothing to play along, no Play along', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+        ),
+      ),
+    );
+    await frames(tester);
+    expect(find.byKey(const Key('cam-along')), findsNothing);
   });
 }
