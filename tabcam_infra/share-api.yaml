@@ -1,0 +1,561 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  tabcam-share-api: sharing captures by email. An HTTP API (a Google JWT
+  authorizer, and with AppleClientId an Apple one for the same routes under
+  /apple) in front of a Lambda (tabcam_api/shares/index.py) that keeps
+  the grants in a DynamoDB table and vends temporary credentials for one
+  shared capture's folder, through the tabcam-share-access role narrowed
+  by a session policy; and read-only ones, without sign-in, to anyone
+  holding a capture's link (its key). It also keeps the profiles (tabcam_api/shares/
+  profiles.py): every sign-in belongs to one, whose Cognito developer
+  identity is the folder its sign-ins share and whose roles are the union of
+  their addresses' rbacr roles. Needs the tabcam-user-data and
+  tabcam-identity stacks. The function's code is uploaded by
+  scripts/deploy-share-api.sh.
+
+Parameters:
+  GoogleWebClientId:
+    Type: String
+    Description: The Google "Web application" OAuth client ID (the tokens' audience)
+    AllowedPattern: '[0-9]+-[0-9a-z]+\.apps\.googleusercontent\.com'
+  GoogleLocalWebClientId:
+    Type: String
+    Default: ''
+    Description: >
+      The "local - web" OAuth client ID, which local web builds sign in with
+      (TABCAM_GOOGLE_LOCAL_WEB_CLIENT_ID); its tokens are trusted like the
+      web client's. Empty: only the web client.
+    AllowedPattern: '([0-9]+-[0-9a-z]+\.apps\.googleusercontent\.com)?'
+  AppleClientId:
+    Type: String
+    Default: ''
+    Description: >
+      Sign in with Apple: the audience of Apple's ID tokens, the app's
+      bundle ID (com.nu01.tabcam) for native sign-in on iOS. Empty: Google
+      only.
+    AllowedPattern: '([A-Za-z0-9-]+\.)+[A-Za-z0-9-]+|'
+  AccountsTableName:
+    Type: String
+    Default: ''
+    Description: >
+      The cloud OCR service's accounts table (the tabcam-ocr stack's
+      AccountsTable output), whose record of a user DELETE /account deletes
+      too. Empty: no OCR service.
+  RbacrTokenParameterName:
+    Type: String
+    Description: >
+      The SSM SecureString parameter (standard tier, the AWS-managed aws/ssm
+      key) with a root-owned rbacr API token: a profile's roles are its
+      addresses' (POST /api/roles)
+    Default: /tabcam/rbacr-token
+    AllowedPattern: '/[A-Za-z0-9_./-]+'
+  DeveloperProviderName:
+    Type: String
+    Default: login.tabcam.profiles
+    Description: The identity pool's developer provider (tabcam-identity's)
+  AllowedOrigins:
+    Type: CommaDelimitedList
+    Default: https://tabcam.nu01.com,https://rc.tabcam.nu01.com,http://localhost:2012,https://local.tabcam.nu01.com:2443
+    Description: Web origins the app runs on (CORS)
+
+Conditions:
+  HasLocalClient: !Not [!Equals [!Ref GoogleLocalWebClientId, '']]
+  HasApple: !Not [!Equals [!Ref AppleClientId, '']]
+  HasAccountsTable: !Not [!Equals [!Ref AccountsTableName, '']]
+
+Resources:
+  # A profile: its ID (huge_wavy_darter), owner, Cognito identity.
+  ProfilesTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - {AttributeName: id, AttributeType: S}
+        - {AttributeName: identityId, AttributeType: S}
+      KeySchema:
+        - {AttributeName: id, KeyType: HASH}
+      GlobalSecondaryIndexes:
+        # A folder's profile, for the cloud OCR service (S3 events name the
+        # folder).
+        - IndexName: byIdentity
+          KeySchema:
+            - {AttributeName: identityId, KeyType: HASH}
+          Projection:
+            ProjectionType: ALL
+
+  # Each sign-in (<issuer>#<sub>) and the profile it's linked to.
+  SubjectsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - {AttributeName: subject, AttributeType: S}
+        - {AttributeName: profileId, AttributeType: S}
+        - {AttributeName: email, AttributeType: S}
+      KeySchema:
+        - {AttributeName: subject, KeyType: HASH}
+      GlobalSecondaryIndexes:
+        - IndexName: byProfile
+          KeySchema:
+            - {AttributeName: profileId, KeyType: HASH}
+          Projection:
+            ProjectionType: ALL
+        # A new sign-in with a known verified address joins its profile.
+        - IndexName: byEmail
+          KeySchema:
+            - {AttributeName: email, KeyType: HASH}
+          Projection:
+            ProjectionType: ALL
+
+  # Link codes, by their SHA-256 only; gone once used or 10 minutes old.
+  LinkCodesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - {AttributeName: code, AttributeType: S}
+      KeySchema:
+        - {AttributeName: code, KeyType: HASH}
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
+  SharesTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - {AttributeName: capture, AttributeType: S}
+        - {AttributeName: email, AttributeType: S}
+        - {AttributeName: owner, AttributeType: S}
+      KeySchema:
+        - {AttributeName: capture, KeyType: HASH}
+        - {AttributeName: email, KeyType: RANGE}
+      GlobalSecondaryIndexes:
+        - IndexName: byEmail
+          KeySchema:
+            - {AttributeName: email, KeyType: HASH}
+            - {AttributeName: capture, KeyType: RANGE}
+          Projection:
+            ProjectionType: ALL
+        # The grants an owner made, for deleting their account.
+        - IndexName: byOwner
+          KeySchema:
+            - {AttributeName: owner, KeyType: HASH}
+            - {AttributeName: capture, KeyType: RANGE}
+          Projection:
+            ProjectionType: KEYS_ONLY
+
+  # Capture links anyone may open (…/app/?c=<id>&k=<key>): the key's
+  # SHA-256, the owner's folder and the capture.
+  LinksTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - {AttributeName: keyHash, AttributeType: S}
+        - {AttributeName: owner, AttributeType: S}
+      KeySchema:
+        - {AttributeName: keyHash, KeyType: HASH}
+      GlobalSecondaryIndexes:
+        # An owner's links, for deleting their account.
+        - IndexName: byOwner
+          KeySchema:
+            - {AttributeName: owner, KeyType: HASH}
+          Projection:
+            ProjectionType: KEYS_ONLY
+
+  # The one key that wraps every profile's private key (keys.py): profile
+  # key pairs come from it (GenerateDataKeyPairWithoutPlaintext), each with
+  # its profile's ID as encryption context. Losing it loses every encrypted
+  # capture: kept when the stack goes, 30 days to undo a deletion, rotated
+  # yearly (old versions still open what they wrapped).
+  ProfileKey:
+    Type: AWS::KMS::Key
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Description: TabCam profile keys (wraps each profile's private key)
+      KeySpec: SYMMETRIC_DEFAULT
+      KeyUsage: ENCRYPT_DECRYPT
+      EnableKeyRotation: true
+      PendingWindowInDays: 30
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          # The account's IAM policies say who may use it (the function's
+          # role, below).
+          - Sid: AccountAdministers
+            Effect: Allow
+            Principal:
+              AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
+            Action: kms:*
+            Resource: '*'
+
+  ProfileKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: alias/tabcam-profile-keys
+      TargetKeyId: !Ref ProfileKey
+
+  # Each profile's key pair: its public key, and its private key wrapped by
+  # ProfileKey. Written once per profile, never overwritten (keys.py).
+  ProfileKeysTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - {AttributeName: profileId, AttributeType: S}
+      KeySchema:
+        - {AttributeName: profileId, KeyType: HASH}
+
+  # What a share's credentials can do at most: each session is narrowed to
+  # one capture's folder, and to reading for read-only grants.
+  ShareAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: tabcam-share-access
+      Description: Shared captures (tabcam-share-api, narrowed per session)
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # Only the share API's function. Named by ARN in a condition, so
+          # the trust doesn't depend on the function's role existing first.
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
+            Action: sts:AssumeRole
+            Condition:
+              ArnEquals:
+                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/tabcam-share-api
+      Policies:
+        - PolicyName: shared-captures
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource: !Sub
+                  - ${BucketArn}/*/events/*
+                  - BucketArn: !ImportValue tabcam-user-data-bucket-arn
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource: !ImportValue tabcam-user-data-bucket-arn
+
+  FunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: tabcam-share-api
+      Description: The tabcam-share-api function
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: share-api
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !GetAtt FunctionLogs.Arn
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt SharesTable.Arn
+                  - !Sub ${SharesTable.Arn}/index/byEmail
+                  - !Sub ${SharesTable.Arn}/index/byOwner
+                  - !GetAtt ProfilesTable.Arn
+                  - !GetAtt SubjectsTable.Arn
+                  - !Sub ${SubjectsTable.Arn}/index/*
+                  - !GetAtt LinkCodesTable.Arn
+                  - !GetAtt LinksTable.Arn
+                  - !Sub ${LinksTable.Arn}/index/byOwner
+                  - !GetAtt ProfileKeysTable.Arn
+                  # A capture's owner profile, by its folder (keys.py).
+                  - !Sub ${ProfilesTable.Arn}/index/byIdentity
+              # Profile key pairs: made (the private key only wrapped), and
+              # a profile's private key opened, always with that profile's
+              # ID as encryption context.
+              - Effect: Allow
+                Action:
+                  - kms:GenerateDataKeyPairWithoutPlaintext
+                  - kms:Decrypt
+                Resource: !GetAtt ProfileKey.Arn
+                Condition:
+                  'ForAllValues:StringEquals':
+                    kms:EncryptionContextKeys: [profile]
+                  'Null':
+                    kms:EncryptionContextKeys: 'false'
+              # The rbacr token. Encrypted with the AWS-managed aws/ssm
+              # key, whose key policy lets SSM decrypt for the account's
+              # principals: no kms:Decrypt needed here.
+              - Effect: Allow
+                Action: ssm:GetParameter
+                Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${RbacrTokenParameterName}
+              # Whether a profile's folder is empty, before it joins another.
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource: !ImportValue tabcam-user-data-bucket-arn
+              - Effect: Allow
+                Action: sts:AssumeRole
+                Resource: !GetAtt ShareAccessRole.Arn
+              # A profile's developer identity and its token (its folder);
+              # DeleteIdentities when it's deleted (DELETE /account) or
+              # joins another.
+              - Effect: Allow
+                Action:
+                  - cognito-identity:GetOpenIdTokenForDeveloperIdentity
+                  - cognito-identity:DeleteIdentities
+                Resource: !Sub
+                  - arn:${AWS::Partition}:cognito-identity:${AWS::Region}:${AWS::AccountId}:identitypool/${Pool}
+                  - Pool: !ImportValue tabcam-identity-pool-id
+              - !If
+                - HasAccountsTable
+                - Effect: Allow
+                  Action: dynamodb:DeleteItem
+                  Resource: !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${AccountsTableName}
+                - !Ref AWS::NoValue
+
+  FunctionLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/tabcam-share-api
+      RetentionInDays: 30
+
+  Function:
+    Type: AWS::Lambda::Function
+    DependsOn: FunctionLogs
+    Properties:
+      FunctionName: tabcam-share-api
+      Description: Sharing captures by email (tabcam_api/shares/index.py)
+      Runtime: python3.13
+      Architectures: [arm64]
+      Handler: index.handler
+      MemorySize: 256
+      Timeout: 10
+      Role: !GetAtt FunctionRole.Arn
+      LoggingConfig:
+        LogGroup: !Ref FunctionLogs
+      Environment:
+        Variables:
+          TABLE: !Ref SharesTable
+          BUCKET: !ImportValue tabcam-user-data-bucket
+          IDENTITY_POOL_ID: !ImportValue tabcam-identity-pool-id
+          ACCESS_ROLE_ARN: !GetAtt ShareAccessRole.Arn
+          MAX_GRANTS: '50'
+          ACCOUNTS_TABLE: !Ref AccountsTableName
+          PROFILES_TABLE: !Ref ProfilesTable
+          SUBJECTS_TABLE: !Ref SubjectsTable
+          LINK_CODES_TABLE: !Ref LinkCodesTable
+          LINKS_TABLE: !Ref LinksTable
+          PROFILE_KEYS_TABLE: !Ref ProfileKeysTable
+          PROFILE_KEY_ID: !GetAtt ProfileKey.Arn
+          DEVELOPER_PROVIDER: !Ref DeveloperProviderName
+          RBACR_TOKEN_PARAMETER: !Ref RbacrTokenParameterName
+          RBACR_SYSTEM: tabcam
+      # A placeholder: scripts/deploy-share-api.sh uploads the real code.
+      Code:
+        ZipFile: |
+          def handler(event, context):
+              return {"statusCode": 503, "body": '{"message": "Not deployed yet"}'}
+
+  Api:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: tabcam-share-api
+      ProtocolType: HTTP
+      CorsConfiguration:
+        AllowOrigins: !Ref AllowedOrigins
+        AllowMethods: [GET, PUT, POST, DELETE]
+        AllowHeaders: [authorization, content-type]
+        MaxAge: 3600
+
+  Authorizer:
+    Type: AWS::ApiGatewayV2::Authorizer
+    Properties:
+      ApiId: !Ref Api
+      Name: google
+      AuthorizerType: JWT
+      IdentitySource: [$request.header.Authorization]
+      JwtConfiguration:
+        Issuer: https://accounts.google.com
+        Audience: !If
+          - HasLocalClient
+          - [!Ref GoogleWebClientId, !Ref GoogleLocalWebClientId]
+          - [!Ref GoogleWebClientId]
+
+  # An HTTP API route has one authorizer, and a JWT authorizer one issuer:
+  # Apple's tokens go to the same routes under /apple. The function checks
+  # each token's issuer is its path's.
+  AppleAuthorizer:
+    Type: AWS::ApiGatewayV2::Authorizer
+    Condition: HasApple
+    Properties:
+      ApiId: !Ref Api
+      Name: apple
+      AuthorizerType: JWT
+      IdentitySource: [$request.header.Authorization]
+      JwtConfiguration:
+        Issuer: https://appleid.apple.com
+        Audience: [!Ref AppleClientId]
+
+  Integration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref Api
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt Function.Arn
+      PayloadFormatVersion: '2.0'
+
+  Fn::ForEach::Routes:
+    - Route
+    - [Grants, Grant, Revoke, Shared, Leave, Credentials, DeleteAccount, Profile, LinkCode, Link, Unlink, ProfileCredentials, PublishLink, ContentKey]
+    - Route${Route}:
+        Type: AWS::ApiGatewayV2::Route
+        Properties:
+          ApiId: !Ref Api
+          RouteKey: !FindInMap [Routes, !Ref Route, Key]
+          AuthorizationType: JWT
+          AuthorizerId: !Ref Authorizer
+          Target: !Sub integrations/${Integration}
+      AppleRoute${Route}:
+        Type: AWS::ApiGatewayV2::Route
+        Condition: HasApple
+        Properties:
+          ApiId: !Ref Api
+          RouteKey: !FindInMap [Routes, !Ref Route, AppleKey]
+          AuthorizationType: JWT
+          AuthorizerId: !Ref AppleAuthorizer
+          Target: !Sub integrations/${Integration}
+
+  # Anyone holding a capture's link, signed in or not: no authorizer. The
+  # function checks the link's key (POST, so it's in the body).
+  RoutePublic:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Api
+      RouteKey: POST /public/{captureId}/credentials
+      AuthorizationType: NONE
+      Target: !Sub integrations/${Integration}
+
+  # A link's preview page, for chat apps' crawlers (the site sends them
+  # here): no authorizer; the function checks the key in the path.
+  RoutePreview:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Api
+      RouteKey: GET /preview/{captureId}/{key}
+      AuthorizationType: NONE
+      Target: !Sub integrations/${Integration}
+
+  Stage:
+    Type: AWS::ApiGatewayV2::Stage
+    # Its route settings name these routes: they must exist first.
+    DependsOn: [RouteLink, RouteLinkCode, RoutePublic, RoutePreview]
+    Properties:
+      ApiId: !Ref Api
+      StageName: $default
+      AutoDeploy: true
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 20
+        ThrottlingRateLimit: 10
+      # Guessing link codes: a few tries a second for everyone.
+      RouteSettings:
+        POST /profile/link:
+          ThrottlingBurstLimit: 5
+          ThrottlingRateLimit: 1
+        POST /profile/link-code:
+          ThrottlingBurstLimit: 5
+          ThrottlingRateLimit: 1
+        # Guessing link keys (128 bits: hopeless anyway), and no token.
+        POST /public/{captureId}/credentials:
+          ThrottlingBurstLimit: 10
+          ThrottlingRateLimit: 5
+        # Crawlers, behind CloudFront's cache (5 minutes a link).
+        GET /preview/{captureId}/{key}:
+          ThrottlingBurstLimit: 10
+          ThrottlingRateLimit: 5
+
+  InvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref Function
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${Api}/*
+
+Mappings:
+  Routes:
+    Grants: {Key: 'GET /shares/{captureId}', AppleKey: 'GET /apple/shares/{captureId}'}
+    Grant: {Key: 'PUT /shares/{captureId}', AppleKey: 'PUT /apple/shares/{captureId}'}
+    Revoke: {Key: 'DELETE /shares/{captureId}', AppleKey: 'DELETE /apple/shares/{captureId}'}
+    Shared: {Key: 'GET /shared', AppleKey: 'GET /apple/shared'}
+    Leave: {Key: 'DELETE /shared/{owner}/{captureId}', AppleKey: 'DELETE /apple/shared/{owner}/{captureId}'}
+    Credentials: {Key: 'POST /shared/{owner}/{captureId}/credentials', AppleKey: 'POST /apple/shared/{owner}/{captureId}/credentials'}
+    DeleteAccount: {Key: 'DELETE /account', AppleKey: 'DELETE /apple/account'}
+    Profile: {Key: 'GET /profile', AppleKey: 'GET /apple/profile'}
+    LinkCode: {Key: 'POST /profile/link-code', AppleKey: 'POST /apple/profile/link-code'}
+    Link: {Key: 'POST /profile/link', AppleKey: 'POST /apple/profile/link'}
+    Unlink: {Key: 'POST /profile/unlink', AppleKey: 'POST /apple/profile/unlink'}
+    ProfileCredentials: {Key: 'POST /profile/credentials', AppleKey: 'POST /apple/profile/credentials'}
+    PublishLink: {Key: 'PUT /links/{captureId}', AppleKey: 'PUT /apple/links/{captureId}'}
+    ContentKey: {Key: 'POST /keys/{owner}/{captureId}', AppleKey: 'POST /apple/keys/{owner}/{captureId}'}
+
+Transform: AWS::LanguageExtensions
+
+Outputs:
+  ApiUrl:
+    Description: The app's TABCAM_SHARE_API_URL
+    Value: !Sub https://${Api}.execute-api.${AWS::Region}.amazonaws.com
+  FunctionName:
+    Value: !Ref Function
+  ProfilesTable:
+    Description: The profiles (the cloud OCR service reads them)
+    Value: !Ref ProfilesTable
+  SubjectsTable:
+    Description: The sign-ins' profiles (the cloud OCR service reads them)
+    Value: !Ref SubjectsTable
+  ProfileKeyArn:
+    Description: The KMS key that wraps profiles' private keys
+    Value: !GetAtt ProfileKey.Arn
+    Export:
+      Name: tabcam-profile-key-arn
+  ProfileKeysTable:
+    Description: Profiles' key pairs (the cloud OCR service reads them)
+    Value: !Ref ProfileKeysTable
+    Export:
+      Name: tabcam-profile-keys-table

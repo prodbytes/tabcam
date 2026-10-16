@@ -4,8 +4,8 @@
 # `flutter run`.
 set -euo pipefail
 
-cd "$(dirname "$0")/../tabscan_app"
+cd "$(dirname "$0")/../tabcam_app"
 source ../scripts/dart-defines.sh
 source ../scripts/version.sh
 # The About dialog shows X.Y.Z, Z being when this run started.
-exec flutter run ${DART_DEFINES[@]+"${DART_DEFINES[@]}"} --dart-define="TABSCANNER_VERSION=$VERSION" "$@"
+exec flutter run ${DART_DEFINES[@]+"${DART_DEFINES[@]}"} --dart-define="TABCAM_VERSION=$VERSION" "$@"

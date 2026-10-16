@@ -19,14 +19,14 @@ spec.
      `Makefile` and `scripts/` (build, run on web and Android, logs,
      version, RC and GA release tags, deploy, private settings link, health
      monitor), `process-compose.yaml` (web app, index page, health check),
-     the Release, Deploy and Deploy RC workflows, `tabscan_infra/` (the
+     the Release, Deploy and Deploy RC workflows, `tabcam_infra/` (the
      S3 + CloudFront site and the GitHub OIDC deploy roles),
-     `tabscan_index/`, the version files, and this `specs/` folder with
+     `tabcam_index/`, the version files, and this `specs/` folder with
      the CLAUDE.md rules. Left out, as presence's own: the auth API, local
      AWS emulation (Floci), cloud sync, the install script site, and the
      Linux / Raspberry Pi builds. The blank template's PostgreSQL service
      was removed.
-   - The app ([tabscan_app/](../tabscan_app)): a [library](library.md) of
+   - The app ([tabcam_app/](../tabcam_app)): a [library](library.md) of
      scans, [scanning](scanning.md) with the system document scanner,
      [page filters](page-filters.md), the [scan screen](scan-screen.md),
      [tab recognition](tab-recognition.md) and [sharing](sharing.md).
@@ -35,15 +35,15 @@ spec.
    and 8081. The web app now serves on **2012** and the index page on
    **2013** (process-compose, the scripts' defaults, the dev container's
    forwarded ports and the docs), so both stacks run side by side.
-4. **Create the `tabscan.nu01.com` hosted zone and its delegation, and
-   prepare to deploy.** Created the public zone `Z10277161AEN9OU2H73PJ`
+4. **Create the `tabcam.nu01.com` hosted zone and its delegation, and
+   prepare to deploy.** Created the public zone `Z01245733BIHST1A417HE`
    and its NS delegation in `nu01.com` (TTL 3600, like `rbacr` and
    `uplink`); see [deploy](deploy.md). Set the repository variable
-   `HOSTED_ZONE_ID`. `TABSCAN_HEALTH_EMAILS` is now read from a repository
+   `HOSTED_ZONE_ID`. `TABCAM_HEALTH_EMAILS` is now read from a repository
    secret, not a variable: the repository is public and run logs show
-   variables. Pending: deploying the `tabscan-github-deploy` roles stack,
+   variables. Pending: deploying the `tabcam-github-deploy` roles stack,
    then the `AWS_DEPLOY_ROLE_ARN` / `AWS_DEPLOY_RC_ROLE_ARN` variables and
-   the `TABSCAN_HEALTH_EMAILS` secret.
+   the `TABCAM_HEALTH_EMAILS` secret.
 5. **One health check line per run, with an icon, short label and status
    for each dependency; print the local URL once at startup.** The
    monitor now prints the app's and the index's URLs when it starts, then
@@ -87,8 +87,8 @@ spec.
     credentials limited to the user's own folder in a new user-data
     bucket; scans and their pages sync both ways, deletions as tombstones.
     Scans now have `updated`, and `owner` once synced; Rotate stores a new
-    page ([library](library.md)). New stacks `tabscan-user-data` and
-    `tabscan-identity` (deployed once by an administrator); the settings
+    page ([library](library.md)). New stacks `tabcam-user-data` and
+    `tabcam-identity` (deployed once by an administrator); the settings
     come from `.env` or repository variables
     ([deploy](deploy.md), [platforms](platforms.md)). The Google OAuth
     clients are still to be created.
@@ -121,20 +121,20 @@ spec.
     address so they can access it; edit (collaborate) by default, or read
     only.** New [shared captures](shared-captures.md): the event screen's
     **Share with people** grants addresses, to edit or read only. A share
-    API (`tabscan_api/shares/`, stack `tabscan-share-api`: Lambda,
+    API (`tabcam_api/shares/`, stack `tabcam-share-api`: Lambda,
     DynamoDB, an HTTP API with a Google JWT authorizer) keeps the grants
     and hands out credentials for one capture's folder. Each sync pass
     then syncs what's shared with the user; read-only copies are locked
     in the app and never upload; **Remove** leaves a share. The API is
     to be deployed by an administrator (`scripts/deploy-share-api.sh`)
     once the OAuth clients exist.
-17. **Prefix all variables with `TABSCANNER_`.** Every setting now has
+17. **Prefix all variables with `TABCAM_`.** Every setting now has
     the prefix, with one name everywhere: `.env`, the scripts, the app's
     dart-defines and the repository variables and secrets
-    (`TABSCANNER_GOOGLE_WEB_CLIENT_ID`, `TABSCANNER_HOSTED_ZONE_ID`,
-    `TABSCANNER_AWS_DEPLOY_ROLE_ARN`, …); `TABSCAN_STAGE`,
-    `TABSCAN_VERSION`, `TABSCAN_BIND_HOST` and `TABSCAN_HEALTH_EMAILS`
-    became `TABSCANNER_*`. `AWS_REGION` is unchanged
+    (`TABCAM_GOOGLE_WEB_CLIENT_ID`, `TABCAM_HOSTED_ZONE_ID`,
+    `TABCAM_AWS_DEPLOY_ROLE_ARN`, …); `TABCAM_STAGE`,
+    `TABCAM_VERSION`, `TABCAM_BIND_HOST` and `TABCAM_HEALTH_EMAILS`
+    became `TABCAM_*`. `AWS_REGION` is unchanged
     ([dev environment](dev-environment.md)), and so is the share
     function's own environment (set by its stack, not by people).
 18. **Let anonymous users capture, stored only locally; require sign-in
@@ -166,20 +166,20 @@ spec.
     PaddleOCR and RapidOCR came closest. No change to the app.
 22. **Could the best one run in AWS Lambda?** Yes, as a container image;
     no change.
-23. **Add `tabscan_locr`, a Lambda that transcribes tabs as they're
+23. **Add `tabcam_locr`, a Lambda that transcribes tabs as they're
     scanned, for premium users only (premium from rbacr), offering the
-    upgrade to free users.** New [TabScan Premium: cloud OCR](cloud-ocr.md):
-    the service in [tabscan_locr/](../tabscan_locr/README.md), triggered by
+    upgrade to free users.** New [TabCam Premium: cloud OCR](cloud-ocr.md):
+    the service in [tabcam_locr/](../tabcam_locr/README.md), triggered by
     page uploads to the user-data bucket (now sending its events to
-    EventBridge), checking rbacr's `tabscan/premium` role with a root token
+    EventBridge), checking rbacr's `tabcam/premium` role with a root token
     in Secrets Manager, and writing transcriptions beside the user's events;
-    new stacks `tabscan-ocr-repo` and `tabscan-ocr`. The app fills in text
+    new stacks `tabcam-ocr-repo` and `tabcam-ocr`. The app fills in text
     tabs from them, asks for pages from before upgrading, and offers
     Premium in the account sheet and on the event screen
     ([cloud sync](cloud-sync.md), [tab recognition](tab-recognition.md));
-    new setting `TABSCANNER_OCR_URL` ([deploy](deploy.md),
+    new setting `TABCAM_OCR_URL` ([deploy](deploy.md),
     [dev environment](dev-environment.md)).
-24. **TabScan doesn't work on the iPhone: relaunch and verify.** It
+24. **TabCam doesn't work on the iPhone: relaunch and verify.** It
     crashed at launch ("Null check operator used on a null value" in
     `MaintenanceCheck.start`): the maintenance check, started before
     `runApp`, used `WidgetsBinding.instance` before there was one. `main`
@@ -191,18 +191,18 @@ spec.
     [platforms](platforms.md) says where iOS dependencies come from and
     notes the two copies of Google's utilities (ML Kit's CocoaPods and
     sign-in's Swift packages) that iOS warns about.
-26. **Create the DNS record for https://local.tabscan.nu01.com, pointing
-    to localhost.** Added `local.tabscan.nu01.com` to the
-    `tabscan.nu01.com` zone: A `127.0.0.1` and AAAA `::1`, TTL 300, made
+26. **Create the DNS record for https://local.tabcam.nu01.com, pointing
+    to localhost.** Added `local.tabcam.nu01.com` to the
+    `tabcam.nu01.com` zone: A `127.0.0.1` and AAAA `::1`, TTL 300, made
     by hand with the AWS CLI (no stack owns it)
     ([deploy](deploy.md), [dev environment](dev-environment.md)).
 27. **Local HTTPS through Floci, merged as it was, when asked to merge
     everything.** The dev stack gets Floci as a local CloudFront (HTTP on
     2014, HTTPS on 2443, both on 127.0.0.1) in front of the dev servers,
-    with an mkcert certificate for `local.tabscan.nu01.com` and the
+    with an mkcert certificate for `local.tabcam.nu01.com` and the
     `*.localhost` names (`scripts/local-certs.sh`; the key stays in the
-    git-ignored `tabscan_floci/certs`); the health monitor checks the CDN
-    and HTTPS too. Still to write: `tabscan_floci/README.md` (with the
+    git-ignored `tabcam_floci/certs`); the health monitor checks the CDN
+    and HTTPS too. Still to write: `tabcam_floci/README.md` (with the
     one-time `mkcert -install`) and the [dev environment](dev-environment.md)
     spec for it.
 28. **Make the navigation like Presence's: a bottom navigation bar with
@@ -215,24 +215,24 @@ spec.
     the app bar's cloud button and its sheet) and About (was an app bar
     button). Import photos through the scanner is gone: photos are added
     as they are.
-29. **Make https://local.tabscan.nu01.com work over HTTPS using Floci, as
+29. **Make https://local.tabcam.nu01.com work over HTTPS using Floci, as
     presence does.** Finished the local HTTPS from 27. Floci no longer gets
     `FLOCI_PORT` in its environment: it read that as its own listen port,
     so its setup hook couldn't reach it and the container restarted in a
-    loop. Wrote [tabscan_floci/README.md](../tabscan_floci/README.md), and
+    loop. Wrote [tabcam_floci/README.md](../tabcam_floci/README.md), and
     described `4-floci` and the `cdn` and `https` checks in the
     [dev environment](dev-environment.md) spec, the README and AGENTS.md.
     Checked with `devbox services up`:
-    https://local.tabscan.nu01.com:2443/app/ answers with a trusted
+    https://local.tabcam.nu01.com:2443/app/ answers with a trusted
     certificate.
 30. **The local Google OIDC client ID should be
     `1061413485511-2ndd6lqkmi61j17vpk5f2ntjb91tt38r`; verify and fix.**
     Local builds used the production web client, whose only origin is
-    https://tabscan.nu01.com. New setting
-    `TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID` (the "local - web" client),
+    https://tabcam.nu01.com. New setting
+    `TABCAM_GOOGLE_LOCAL_WEB_CLIENT_ID` (the "local - web" client),
     which the dev web server uses in its place
     ([dev environment](dev-environment.md)). That client needs
-    `https://local.tabscan.nu01.com:2443` among its JavaScript origins, and
+    `https://local.tabcam.nu01.com:2443` among its JavaScript origins, and
     no redirect URI.
 31. **Read tab is not working; add the logging needed to troubleshoot it,
     in the client and the server.** The app logs each step of Read tab
@@ -246,18 +246,18 @@ spec.
 32. **The Cognito role is failing to assume; create the identity pool in
     infrastructure as code so that authenticated users can write to S3 and
     invoke Lambda functions.** The pool and its role were already in
-    `tabscan_infra/identity.yaml` (deployed), with S3 writes to the user's
+    `tabcam_infra/identity.yaml` (deployed), with S3 writes to the user's
     own folder. What failed: the pool trusted only the production web
     client, so local builds' tokens (the local web client) were refused
     before any role was assumed. The pool, the OCR service and the share
     API now also trust `GoogleLocalWebClientId`, and the bucket, the OCR
     function URL and the share API allow the origin
-    `https://local.tabscan.nu01.com:2443`
+    `https://local.tabcam.nu01.com:2443`
     ([cloud sync](cloud-sync.md), [cloud OCR](cloud-ocr.md),
     [shared captures](shared-captures.md)). No `lambda:InvokeFunction` was
     granted to users: the app reaches its functions through the OCR function
     URL and the share API with the Google token, and invoking
-    `tabscan-ocr-api` or `tabscan-ocr` directly would let a user forge S3
+    `tabcam-ocr-api` or `tabcam-ocr` directly would let a user forge S3
     events for other users' pages. Deploying the pool change failed:
     Cognito takes one Google client ID of at most 128 characters, so a pool
     can't trust two clients (rolled back, the pool unchanged; see 36).
@@ -274,7 +274,7 @@ spec.
 35. **In the Capture view, Scan should open the camera, Photos the album,
     Files the upload.** Photos & videos and Files already did; on the
     web, Scan was a file input with a camera hint, which desktop browsers
-    show as a file chooser. It now opens TabScan's own camera screen (the
+    show as a file chooser. It now opens TabCam's own camera screen (the
     browser's camera: a preview, a shutter, several pages, Flip, Done;
     photos instead when there's no camera)
     ([scanning](scanning.md#web)). Android and iOS keep the system
@@ -285,10 +285,10 @@ spec.
     PRs and deployed the bucket's CORS, the OCR service (with the
     logging) and the share API. As a Cognito pool can trust only one
     Google client, `identity.yaml` now makes one pool per stack (parameter
-    `PoolName`; export `<stack>-pool-id`): `tabscan-identity` (unchanged)
-    and the new `tabscan-identity-local`, pool `tabscan-local`, trusting the
+    `PoolName`; export `<stack>-pool-id`): `tabcam-identity` (unchanged)
+    and the new `tabcam-identity-local`, pool `tabcam-local`, trusting the
     local web client, with its own role on the bucket. The dev web server
-    uses `TABSCANNER_COGNITO_LOCAL_IDENTITY_POOL_ID` with the local client
+    uses `TABCAM_COGNITO_LOCAL_IDENTITY_POOL_ID` with the local client
     ([dev environment](dev-environment.md), [cloud sync](cloud-sync.md)).
     Premium and sharing still don't work in local web builds (the OCR
     service and share API look identities up in the main pool).
@@ -307,7 +307,7 @@ spec.
     status file, so every [maintenance](maintenance-mode.md) check of the
     local web app logged a 404 (harmless: the app reads a missing file as
     "not in maintenance"). The index now serves
-    `tabscan_index/site/status.json` (`{"maintenance": false}`); flip it to
+    `tabcam_index/site/status.json` (`{"maintenance": false}`); flip it to
     `true` to try maintenance mode locally. Deploys still upload only the
     index page, so the live sites' status files are untouched.
 39. **On the home screen, show both the captures I created and the
@@ -333,7 +333,7 @@ spec.
     Web link first, then Android links.** [Sharing](sharing.md) offers
     Link (default), PDF, Text and Files; Files is now one zip with the
     pages, `tab.txt` and `links.txt`. The link is
-    `https://tabscan.nu01.com/app/?c=<capture id>`; the web app opens it
+    `https://tabcam.nu01.com/app/?c=<capture id>`; the web app opens it
     from the user's events (own or shared), after signing in and a sync
     pass if needed. `event.json` in the cloud now has `owner` and
     `shares`, which the owner's app records from the share API
@@ -351,7 +351,7 @@ spec.
     leave the images out. The images are kept, Read tab still reads them,
     and grantees still sync them ([hidden images](hidden-images.md)).
 43. **(Continuing 37) Android links.** Android App Links: the app opens
-    `https://tabscan.nu01.com/app…` and the RC's (verified intent filter),
+    `https://tabcam.nu01.com/app…` and the RC's (verified intent filter),
     and opens the capture a link names, launched or running
     (`IncomingLinks`). Deploys upload `/.well-known/assetlinks.json`, which
     lists the maintainer's debug key; Release-workflow APKs, signed with a
@@ -364,7 +364,7 @@ spec.
     Android's scanner now runs in ML Kit's base mode, so it has no filters
     (and no ML clean-up). Auto capture stays the scanners' default, and iOS
     keeps VisionKit's filters ([scanning](scanning.md),
-    [platforms](platforms.md)). TabScan's own camera screen (the web) has
+    [platforms](platforms.md)). TabCam's own camera screen (the web) has
     neither auto shutter nor filters.
 45. **Bring back the "Text" button in the capture view to flip from scan
     to text; remove the flip button from the top and leave flipping to
@@ -440,7 +440,7 @@ spec.
     it's cleared, with a test ([cloud sync](cloud-sync.md)).
 53. **Draft the Google Play and App Store listings** (part of publishing
     to the stores), in fastlane's layout for a later upload, without
-    fastlane yet: [tabscan_store/](../tabscan_store) with the Play title,
+    fastlane yet: [tabcam_store/](../tabcam_store) with the Play title,
     short and full descriptions and changelog; the App Store name,
     subtitle, description, keywords, promotional text, release notes and
     URLs; App Review notes (the test Google account is the maintainer's to
@@ -493,7 +493,7 @@ spec.
     ([localization](localization.md), [navigation](navigation.md#profile)).
 59. **Privacy policy and iOS privacy declarations** (part of publishing
     to the stores). A privacy policy page at
-    https://tabscan.nu01.com/privacy (`tabscan_index/site/privacy/`,
+    https://tabcam.nu01.com/privacy (`tabcam_index/site/privacy/`,
     uploaded by `scripts/deploy.sh` as the object `privacy` and checked by
     its smoke test; served by the local index server too), based on what
     the code does; linked from the index page's footer and the Profile
@@ -508,7 +508,7 @@ spec.
     Google sign-in must offer an equally private one). iOS offers **Sign
     in with Apple** above Google's button, per Apple's guidelines, on the
     Profile tab and the sign-in sheets, in builds with
-    `TABSCANNER_APPLE_SIGN_IN=1` (a new dart-define; it also adds the
+    `TABCAM_APPLE_SIGN_IN=1` (a new dart-define; it also adds the
     `com.apple.developer.applesignin` entitlement through the git-ignored
     `Private.xcconfig`, so free Personal Team and CI builds, which can't
     sign it, have no entitlements). The app keeps one session at a time,
@@ -531,7 +531,7 @@ spec.
     ([cloud sync](cloud-sync.md#sign-in-with-apple-ios),
     [shared captures](shared-captures.md#how-it-works),
     [cloud OCR](cloud-ocr.md#who-is-premium), [platforms](platforms.md),
-    [app stores](app-stores.md), [tabscan_infra](../tabscan_infra/README.md)).
+    [app stores](app-stores.md), [tabcam_infra](../tabcam_infra/README.md)).
     Merged after account deletion and localization: Apple users delete
     their account under `/apple` too, and the sign-in buttons and Apple's
     messages are in English, Spanish and Portuguese.
@@ -566,7 +566,7 @@ spec.
     [cloud sync](cloud-sync.md)).
 63. **The app says Premium isn't active: make sure the rbacr integration
     is set up and the premium role is returned for julio@nu01.com.**
-    rbacr was fine (`allowed: true` for `tabscan`/`premium`, through the
+    rbacr was fine (`allowed: true` for `tabcam`/`premium`, through the
     service's token). The iPhone's calls never reached it: the identity
     pool refused the app's Google tokens ("Token is not from a supported
     provider"), because an iOS token's `azp` is the iOS client and the
@@ -577,7 +577,7 @@ spec.
     deployed. On the iPhone, `/account` answers premium and sync uploads.
     Existing users got new identity IDs (nothing was stored yet). Android
     clients are to add to the list ([cloud sync](cloud-sync.md#googles-token),
-    [app stores](app-stores.md), [tabscan_infra](../tabscan_infra/README.md)).
+    [app stores](app-stores.md), [tabcam_infra](../tabcam_infra/README.md)).
 64. **Make profiles work like in Presence: an authenticated user without a
     profile gets one, in the same style (unguessable, adjectives and an
     animal at the end); identities can be added to the profile; the
@@ -589,7 +589,7 @@ spec.
     subjects and link-code tables; Presence's word lists), its sharing
     works by profile, and a profile's roles are its addresses' rbacr roles
     together; the identity pool gets the developer provider
-    `login.tabscan.profiles`; the cloud OCR service checks Premium by
+    `login.tabcam.profiles`; the cloud OCR service checks Premium by
     profile. The app gets its folder through the profile, moves the user's
     captures when their folder changes, and shows the profile, its roles
     and Linked accounts on the Profile tab
@@ -637,7 +637,7 @@ spec.
     user's PDF turned out to be a handwritten tab on drawn staff lines,
     which the cloud's engines never read (photographed either): Claude
     (vision) now reads the pages the engines find no tab on, with the
-    Claude API key in Secrets Manager (`tabscan/anthropic-api-key`, read
+    Claude API key in Secrets Manager (`tabcam/anthropic-api-key`, read
     by name: on as soon as it exists). Read again now makes the cloud read
     every page again, and shows while the text is on its way
     ([tab recognition](tab-recognition.md#pdfs), [cloud OCR](cloud-ocr.md)).
@@ -732,12 +732,12 @@ spec.
     clipboard: the URL only, no options or extra text.** It did, but after
     an await (the sign-in check, even signed in) and the start of a sync:
     now, signed in, the copy is the first thing on the tap, the sync after.
-    Tests check the clipboard holds exactly `https://tabscan.nu01.com/app/?c=<id>`
+    Tests check the clipboard holds exactly `https://tabcam.nu01.com/app/?c=<id>`
     right after the tap, with no sheet, from the capture and from a Home
     card ([sharing](sharing.md)).
 81. **Make the home screen a simple welcome / login only, and offer the
     features only to logged-in users.** Signed out (in a build with
-    sign-in), the app is a welcome: TabScan, what it does, the sign-in
+    sign-in), the app is a welcome: TabCam, what it does, the sign-in
     buttons, Privacy policy. Home, Capture and Profile come once signed in;
     signing out goes back to the welcome. The Home sign-in card is gone;
     the sign-in text no longer says capturing works signed out
@@ -828,11 +828,11 @@ spec.
     and Android (`desktop_drop` 0.8.4), not iOS
     ([navigation](navigation.md#capture), [event screen](event-screen.md)).
 93. **When a link is shared, let it have the title and description of the
-    capture instead of "TabScan" and the app's description.** Chat apps'
+    capture instead of "TabCam" and the app's description.** Chat apps'
     crawlers asking for a capture's link are sent to its preview page,
     from the share API: the capture's title (and artist) and what it
     holds, as Open Graph tags, read with the link's own read-only
-    credentials; a wrong key previews as TabScan. People still get the
+    credentials; a wrong key previews as TabCam. People still get the
     app ([sharing](sharing.md#link-previews)).
 94. **In the capture's file list, add a mini player to video and audio
     files so they can be played right from the list; make the rows
@@ -858,25 +858,25 @@ spec.
 
 1. **Tag every AWS resource with `project` and `tenancy`, so Cost Explorer
    can split cost by product and stage.** Every stack is deployed with the
-   stack tags `project=tabscan` and `tenancy` (`GA` for `tabscan-web`, `RC`
-   for `tabscan-rc-web`, `dev` for `tabscan-identity-local`, `shared` for
+   stack tags `project=tabcam` and `tenancy` (`GA` for `tabcam-web`, `RC`
+   for `tabcam-rc-web`, `dev` for `tabcam-identity-local`, `shared` for
    the rest), which CloudFormation copies to the resources; the deploy
    roles may now also remove certificate tags
-   ([deploy](deploy.md), [tabscan_infra/README.md](../tabscan_infra/README.md)).
-2. **Cut TabScan's AWS cost: drop the Route 53 health check, move the rbacr
+   ([deploy](deploy.md), [tabcam_infra/README.md](../tabcam_infra/README.md)).
+2. **Cut TabCam's AWS cost: drop the Route 53 health check, move the rbacr
    token to SSM Parameter Store, and run the cloud OCR on arm64 if it
    can.** The sites' Route 53 health check, its `HealthCheckStatus` alarm,
    the SNS health topic and its email subscriptions, the
    `HealthNotificationEmails` parameter, the `IsRc` condition, the
    `HealthCheckId` and `HealthTopicArn` outputs and the `LanguageExtensions`
-   transform are gone from `site.yaml`, with `TABSCANNER_HEALTH_EMAILS` in
+   transform are gone from `site.yaml`, with `TABCAM_HEALTH_EMAILS` in
    `scripts/deploy.sh`, the deploy workflows and `.env.example`; the
    `nu01-monitor` stack (nu01 repository) polls both sites'
    `/app/version.json` every 5 minutes instead. The deploy roles keep the
    permissions to delete the old resources until the next GA deploy. The
-   rbacr token moved from the Secrets Manager secret `tabscan/rbacr-token`
-   to the SSM SecureString `/tabscan/rbacr-token` (standard tier, `aws/ssm`
-   key: free): the share API and `tabscan-ocr-api` read it with
+   rbacr token moved from the Secrets Manager secret `tabcam/rbacr-token`
+   to the SSM SecureString `/tabcam/rbacr-token` (standard tier, `aws/ssm`
+   key: free): the share API and `tabcam-ocr-api` read it with
    `ssm:GetParameter` (decrypted, once per container; env
    `RBACR_TOKEN_PARAMETER`, stack parameter `RbacrTokenParameterName`),
    and the deploy scripts check it exists without reading its value. The
@@ -884,7 +884,7 @@ spec.
    PyPI, and the one on Paddle's own index aborts loading the PaddleOCR
    models in an arm64 build
    ([deploy](deploy.md), [cloud OCR](cloud-ocr.md), [profiles](profiles.md),
-   [tabscan_infra/README.md](../tabscan_infra/README.md)).
+   [tabcam_infra/README.md](../tabcam_infra/README.md)).
 
 ## 2026-10-16
 
@@ -894,10 +894,10 @@ spec.
    playing along. Any key moves to the next neckline; Backspace, back
    and up to the one before.** The event screen has a fourth tool,
    **Cam**, opening the camera view
-   ([`PlayAlongScreen`](../tabscan_app/lib/capture/play_along_screen.dart)):
+   ([`PlayAlongScreen`](../tabcam_app/lib/capture/play_along_screen.dart)):
    the front camera first, the text tab cut into necklines (each staff
    with the chords and labels right above it,
-   [`necklines`](../tabscan_app/lib/recognition/necklines.dart)) shown
+   [`necklines`](../tabcam_app/lib/recognition/necklines.dart)) shown
    one at a time, shrunk to the screen's width. Any key goes to the next
    neckline; Backspace, ←, ↑ and Page Up to the one before (modifiers and
    Escape alone do nothing); a tap and the arrows beside it too. **Rec**

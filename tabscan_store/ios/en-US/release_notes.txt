@@ -1,1 +1,0 @@
-First release of TabScan: scan guitar and bass tabs, read them into editable text, sync them across your devices and share them by link, PDF, text or zip.

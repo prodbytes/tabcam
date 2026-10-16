@@ -6,7 +6,7 @@ breaking the lines the way typeset tab does, framed by four amber
 (`#E0A030`) scanner corner brackets, on a dark warm background
 (`#1E1A15`).
 
-- **Masters**: `tabscan_app/assets/icon/icon.svg` (the full icon) and
+- **Masters**: `tabcam_app/assets/icon/icon.svg` (the full icon) and
   `icon_foreground.svg` (Android's adaptive foreground: transparent, shrunk
   to 60% so it stays inside the safe zone), rendered to 1024 px PNGs.
 - **Platform icons** are generated from the PNGs by

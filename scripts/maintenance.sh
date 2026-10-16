@@ -21,8 +21,8 @@ export AWS_REGION="${AWS_REGION:-us-east-1}"
 export AWS_DEFAULT_REGION="$AWS_REGION"
 STAGE="${STAGE:-prod}"
 case "$STAGE" in
-  prod) SITE_STACK=tabscan-web; DOMAIN=tabscan.nu01.com ;;
-  rc) SITE_STACK=tabscan-rc-web; DOMAIN=rc.tabscan.nu01.com ;;
+  prod) SITE_STACK=tabcam-web; DOMAIN=tabcam.nu01.com ;;
+  rc) SITE_STACK=tabcam-rc-web; DOMAIN=rc.tabcam.nu01.com ;;
   *) echo "error: STAGE must be prod or rc (got '$STAGE')" >&2; exit 2 ;;
 esac
 

@@ -34,14 +34,14 @@ report if any step fails:
 1. **Commit** the pending changes (each on its own branch and PR, as above,
    with their `specs/` updates).
 2. **Rebuild** the app and **run the tests** (`flutter analyze` and
-   `flutter test` in `tabscan_app/`).
+   `flutter test` in `tabcam_app/`).
 3. **Merge** the open PRs into `main`.
 4. **Cut the RC and GA releases**: tags on the merge commit at the tip of
    `main` (see [specs/release.md](specs/release.md)), pushed so the Release
    and Deploy workflows run.
 5. **Check the live version**: wait for the Deploy and Deploy RC runs to
-   finish, then confirm https://tabscan.nu01.com/app/version.json and
-   https://rc.tabscan.nu01.com/app/version.json report the new tags'
+   finish, then confirm https://tabcam.nu01.com/app/version.json and
+   https://rc.tabcam.nu01.com/app/version.json report the new tags'
    version. Report it updated live, or report the failure (the failing
    run, or the version still live).
 6. **Deploy locally**: start the dev servers (`devbox services up`) and

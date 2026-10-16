@@ -1,11 +1,11 @@
-# Deploys a *GA tag to production, https://tabscan.nu01.com: the Flutter
+# Deploys a *GA tag to production, https://tabcam.nu01.com: the Flutter
 # web app (/app/) and the index page (/), through scripts/deploy.sh. It
 # ends by checking that the live site serves this tag's version.
 #
 # AWS access is keyless: GitHub's OIDC token is exchanged for the
-# tabscan-github-deploy role (tabscan_infra/github-deploy.yaml), which
+# tabcam-github-deploy role (tabcam_infra/github-deploy.yaml), which
 # only trusts *GA tag runs of this repository. Its ARN is the repository
-# variable TABSCANNER_AWS_DEPLOY_ROLE_ARN.
+# variable TABCAM_AWS_DEPLOY_ROLE_ARN.
 #
 # The Release workflow runs on the same tags and publishes the binaries.
 name: Deploy
@@ -52,19 +52,19 @@ jobs:
 
       - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
-          role-to-assume: ${{ vars.TABSCANNER_AWS_DEPLOY_ROLE_ARN }}
-          role-session-name: tabscan-deploy-${{ github.run_id }}
+          role-to-assume: ${{ vars.TABCAM_AWS_DEPLOY_ROLE_ARN }}
+          role-session-name: tabcam-deploy-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Deploy ${{ github.ref_name }}
         env:
           TAG: ${{ github.ref_name }}
-          TABSCANNER_HOSTED_ZONE_ID: ${{ vars.TABSCANNER_HOSTED_ZONE_ID }}
+          TABCAM_HOSTED_ZONE_ID: ${{ vars.TABCAM_HOSTED_ZONE_ID }}
           # Sign-in and cloud sync (public identifiers; empty turns them off).
-          TABSCANNER_GOOGLE_WEB_CLIENT_ID: ${{ vars.TABSCANNER_GOOGLE_WEB_CLIENT_ID }}
-          TABSCANNER_COGNITO_IDENTITY_POOL_ID: ${{ vars.TABSCANNER_COGNITO_IDENTITY_POOL_ID }}
-          TABSCANNER_USER_DATA_BUCKET: ${{ vars.TABSCANNER_USER_DATA_BUCKET }}
-          TABSCANNER_SHARE_API_URL: ${{ vars.TABSCANNER_SHARE_API_URL }}
-          TABSCANNER_OCR_URL: ${{ vars.TABSCANNER_OCR_URL }}
+          TABCAM_GOOGLE_WEB_CLIENT_ID: ${{ vars.TABCAM_GOOGLE_WEB_CLIENT_ID }}
+          TABCAM_COGNITO_IDENTITY_POOL_ID: ${{ vars.TABCAM_COGNITO_IDENTITY_POOL_ID }}
+          TABCAM_USER_DATA_BUCKET: ${{ vars.TABCAM_USER_DATA_BUCKET }}
+          TABCAM_SHARE_API_URL: ${{ vars.TABCAM_SHARE_API_URL }}
+          TABCAM_OCR_URL: ${{ vars.TABCAM_OCR_URL }}
         run: bash scripts/deploy.sh
 

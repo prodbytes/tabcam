@@ -1,0 +1,12 @@
+TabCam scans guitar and bass tabs and reads them into editable plain-text tab.
+
+Signing in: open the Profile tab and tap Sign in, then use the Google test account given in the Sign-In Information fields. Scanning works without signing in; reading tabs, syncing and sharing need it.
+
+What to try:
+1. Capture tab > Scan: point the camera at a printed tab (a sample page is attached to this submission). The scanner finds and straightens the page.
+2. Open the new event: switch between Original and Scan, then open the Text view. The tab is read on the device in a few seconds; edit it, Copy it, and Mark correct.
+3. Share: choose Link, PDF, Text or Files; or Share with people to give another email address edit or read-only access.
+4. Capture tab > Add photos & videos, Files or Link adds pages to an event.
+5. Profile > Delete account deletes the account's cloud data and signs out.
+
+TabCam Premium (cloud transcription) is sold outside the app and has no purchase options or links in it; the app works fully without it.

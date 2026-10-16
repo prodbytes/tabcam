@@ -13,11 +13,11 @@ The site's `/status.json`, at the root of the site bucket (outside
 {"maintenance": true, "message": "Back at 18:00 UTC"}
 ```
 
-`message` is optional; without it the apps say "Sorry, TabScan is down
+`message` is optional; without it the apps say "Sorry, TabCam is down
 for maintenance. Please try again later." Production
-(https://tabscan.nu01.com/status.json) and the release candidate
-(https://rc.tabscan.nu01.com/status.json) each have their own. The local
-stack's is [tabscan_index/site/status.json](../tabscan_index/site/status.json),
+(https://tabcam.nu01.com/status.json) and the release candidate
+(https://rc.tabcam.nu01.com/status.json) each have their own. The local
+stack's is [tabcam_index/site/status.json](../tabcam_index/site/status.json),
 off; edit it to try maintenance mode locally (deploys upload only the
 index page, never this file).
 
@@ -46,8 +46,8 @@ what it wrote.
   stops; when it ends, the app comes back and they start again.
 - **Where it looks**: the web app reads its own site's `/status.json`;
   Android and iOS builds read their stage's site (the RC's for
-  `TABSCANNER_STAGE=rc`, otherwise production's).
-  `TABSCANNER_STATUS_URL` overrides it (e.g. for testing).
+  `TABCAM_STAGE=rc`, otherwise production's).
+  `TABCAM_STATUS_URL` overrides it (e.g. for testing).
 - **It fails open**: if the status can't be read at start (offline, no
   file, not JSON), the app runs, so capturing without a network keeps
   working. A failed check later keeps what was known: an app in

@@ -6,9 +6,9 @@ app binaries with `make` and publishes them as a GitHub release.
 - **Triggers:**
   - A pushed tag matching `*QA` or `*RC*` (e.g. `0.1.202610101200-RC`) is
     released as a **prerelease**. `*RC*` tags are also
-    [deployed](deploy.md) to https://rc.tabscan.nu01.com.
+    [deployed](deploy.md) to https://rc.tabcam.nu01.com.
   - A pushed tag matching `*GA` is released as a full release (GitHub's
-    latest) and [deployed](deploy.md) to https://tabscan.nu01.com.
+    latest) and [deployed](deploy.md) to https://tabcam.nu01.com.
   - **Manual dispatch** takes an optional `tag` (created on the dispatched
     commit if missing; empty uses the selected tag, or `manual-<run>`) and
     a `prerelease` switch (on by default).
@@ -25,13 +25,13 @@ app binaries with `make` and publishes them as a GitHub release.
   `ANDROID_UPLOAD_KEYSTORE_PASSWORD` ([app stores](app-stores.md#android-signing)),
   written to `key.properties` on the runner and removed after the build.
   Without them (and always on pull requests), a debug key new each run.
-- **Release** `tabscan-<tag>`, with generated notes and:
-  - `tabscan-<tag>-web.zip`: the web build;
-  - `tabscan-<tag>-android.apk`: the release APK, and
-    `tabscan-<tag>-android.aab`: the App Bundle for Google Play, both
+- **Release** `tabcam-<tag>`, with generated notes and:
+  - `tabcam-<tag>-web.zip`: the web build;
+  - `tabcam-<tag>-android.apk`: the release APK, and
+    `tabcam-<tag>-android.aab`: the App Bundle for Google Play, both
     signed as above (with a debug key, their
     [App Links](sharing.md#android-app-links) aren't verified);
-  - `tabscan-<tag>-ios-unsigned.zip`: the unsigned `Runner.app`.
+  - `tabcam-<tag>-ios-unsigned.zip`: the unsigned `Runner.app`.
 - **Security**: actions are pinned to commit SHAs; the token is read-only
   except in the release job (`contents: write`); checkout doesn't keep
   credentials; the only secrets are the Android upload key's, given to

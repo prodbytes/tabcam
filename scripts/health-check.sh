@@ -27,8 +27,8 @@ status() {
 WEB_URL="http://localhost:${FLUTTER_WEB_PORT:-2012}/app/"
 INDEX_URL="http://localhost:${INDEX_PORT:-2013}/"
 FLOCI="http://localhost:${FLOCI_PORT:-2014}"
-CDN_ALIAS="${TABSCANNER_CDN_ALIAS:-tabscan.localhost}"
-PUBLIC_HOST="${TABSCANNER_PUBLIC_HOST:-local.tabscan.nu01.com}"
+CDN_ALIAS="${TABCAM_CDN_ALIAS:-tabcam.localhost}"
+PUBLIC_HOST="${TABCAM_PUBLIC_HOST:-local.tabcam.nu01.com}"
 HTTPS_PORT="${FLOCI_HTTPS_PORT:-2443}"
 HTTPS_URL="https://$PUBLIC_HOST:$HTTPS_PORT/app/"
 MKCERT_CA="$(mkcert -CAROOT 2>/dev/null)/rootCA.pem"
@@ -46,7 +46,7 @@ https() {
         --resolve "$PUBLIC_HOST:$HTTPS_PORT:127.0.0.1" "$HTTPS_URL"
 }
 
-echo "🎸 TabScan: $WEB_URL"
+echo "🎸 TabCam: $WEB_URL"
 echo "🏠 index:   $INDEX_URL (redirects to the app)"
 echo "🔒 HTTPS:   $HTTPS_URL (through Floci's CloudFront)"
 

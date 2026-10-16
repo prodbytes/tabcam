@@ -21,7 +21,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 source "$(dirname "$0")/android-device.sh"
-package=com.nu01.tabscan
+package=com.nu01.tabcam
 adb_s() { "$adb" -s "$serial" "$@"; }
 
 if $clear; then adb_s logcat -c; fi

@@ -7,15 +7,15 @@ device, or the web app after a reload, gets them back. Signed out,
 nothing leaves the device. It works as Presence's first cloud sync did:
 Google sign-in (and, on iOS, Sign in with Apple), a Cognito identity pool
 that turns the ID token into temporary AWS credentials for the user's own folder, and signed S3
-requests made by the app itself ([lib/cloud/](../tabscan_app/lib/cloud)).
-Sync needs no TabScan server (only [sharing](shared-captures.md) has an
+requests made by the app itself ([lib/cloud/](../tabcam_app/lib/cloud)).
+Sync needs no TabCam server (only [sharing](shared-captures.md) has an
 API).
 
-A build has sign-in only when it has all of `TABSCANNER_GOOGLE_WEB_CLIENT_ID`,
-`TABSCANNER_COGNITO_IDENTITY_POOL_ID` and `TABSCANNER_USER_DATA_BUCKET` (below). Without them
+A build has sign-in only when it has all of `TABCAM_GOOGLE_WEB_CLIENT_ID`,
+`TABCAM_COGNITO_IDENTITY_POOL_ID` and `TABCAM_USER_DATA_BUCKET` (below). Without them
 it's as before: no account button, events only on the device. **Sign in
 with Apple** is offered on iOS only, in builds with
-`TABSCANNER_APPLE_SIGN_IN=1` (below); elsewhere Google is the only sign-in.
+`TABCAM_APPLE_SIGN_IN=1` (below); elsewhere Google is the only sign-in.
 
 ## Signed out
 
@@ -47,17 +47,17 @@ The [Profile](navigation.md#profile) tab shows the account:
   ("Syncing…", "Synced at 14:05 (2 uploaded, 1 downloaded)", or why it
   failed, such as "Sign in again to sync"); **Sync now**; **Sign out**,
   which keeps the events on the device; where it's set up, the
-  [TabScan Premium](cloud-ocr.md#in-the-app) card; and last, in the
+  [TabCam Premium](cloud-ocr.md#in-the-app) card; and last, in the
   error color, **Delete account**, "Deletes your events in the cloud and
   on this device, and your shares." ([below](#deleting-the-account)).
 
 Google sign-in (`google_sign_in`,
-[lib/auth/](../tabscan_app/lib/auth)) per platform:
+[lib/auth/](../tabcam_app/lib/auth)) per platform:
 
 - **Web**: Google Identity Services with FedCM: a quiet auto-select prompt
   at launch, and Google's rendered button. GIS keeps no session, so the
   app keeps the user and ID token in `localStorage`
-  (`tabscan.session`) and restores it at launch while the token has more
+  (`tabcam.session`) and restores it at launch while the token has more
   than a minute left. Sign out forgets it.
 - **Android**: Credential Manager: a quiet check at launch of the
   accounts that signed in before, and Google's sheet for the button.
@@ -70,7 +70,7 @@ Google sign-in (`google_sign_in`,
 The App Store asks apps that offer Google sign-in to offer an equally
 private one too (guideline 4.8), so iOS has **Sign in with Apple**
 (`sign_in_with_apple`, pinned, AuthenticationServices;
-[apple_auth_service.dart](../tabscan_app/lib/auth/apple_auth_service.dart)),
+[apple_auth_service.dart](../tabcam_app/lib/auth/apple_auth_service.dart)),
 beside Google, through `MultiAuthService`: one session at a time, with
 either provider; signing in with one signs the other out. The session
 keeps who, the provider and the ID token.
@@ -88,19 +88,19 @@ keeps who, the provider and the ID token.
   above. That address is what sharing and Premium go by: people share
   with it, and it has no Premium ([cloud OCR](cloud-ocr.md#who-is-premium)).
 - **The session**: Apple keeps none, and can't renew the ID token without
-  a server of TabScan's own, so the app keeps the user and token in a file
+  a server of TabCam's own, so the app keeps the user and token in a file
   in its private Application Support folder (`apple_sign_in.json`) and
   restores it at launch while the token has more than a minute left. When
   the token expires the user is signed out, "Your Apple sign-in expired:
   sign in again." At launch, a user who stopped using Apple ID with
-  TabScan (Settings → Apple ID → Sign in with Apple) is signed out. Sign
+  TabCam (Settings → Apple ID → Sign in with Apple) is signed out. Sign
   out forgets the session (Apple has no sign-out of its own).
-- **Its ID token** is issued for the bundle ID, `com.nu01.tabscan`, which
+- **Its ID token** is issued for the bundle ID, `com.nu01.tabcam`, which
   the identity pool and the share API trust when set up (below). Each
   provider is its own Cognito identity: the same person signed in with
   Google and with Apple has two folders, and sees only that sign-in's
   events (no account linking).
-- **The build**: `TABSCANNER_APPLE_SIGN_IN=1` (`.env`, a dart-define) shows
+- **The build**: `TABCAM_APPLE_SIGN_IN=1` (`.env`, a dart-define) shows
   the button, and `scripts/dart-defines.sh` then writes
   `CODE_SIGN_ENTITLEMENTS=Runner/Runner.entitlements` (the
   `com.apple.developer.applesignin` entitlement) to the git-ignored
@@ -116,15 +116,15 @@ Every platform's ID token is issued for the **web client** (the server
 client ID on Android and iOS: its `aud`). An app's token also names the
 app's own client (`azp`: the iOS client, or the Android signing key's), so
 the pools trust Google through an IAM OpenID Connect provider for
-`accounts.google.com` that lists every TabScan client (web, iOS, local
+`accounts.google.com` that lists every TabCam client (web, iOS, local
 web, and the Android clients as they're made), not the pools' built-in
 Google login, which takes one client ID and refused the apps' tokens: on
 iOS, sync and the Premium check failed with "Token is not from a supported
 provider of this identity pool". The app's `Logins` key is still
 `accounts.google.com`. Local web builds sign in with the **local web
-client** instead (`TABSCANNER_GOOGLE_LOCAL_WEB_CLIENT_ID`, the one with
+client** instead (`TABCAM_GOOGLE_LOCAL_WEB_CLIENT_ID`, the one with
 the local origins), and get their credentials from the **local pool**,
-`tabscan-local`, on the same provider. The same
+`tabcam-local`, on the same provider. The same
 Google account has another identity ID there, so local builds sync to
 another folder ([dev environment](dev-environment.md)).
 Tokens last an hour; five minutes before one expires the app asks Google
@@ -208,20 +208,20 @@ never uploading a read-only one); see
 ## Deleting the account
 
 App Store guideline 5.1.1(v) and Google Play want apps that make
-accounts to delete them from inside the app. A TabScan account is the
+accounts to delete them from inside the app. A TabCam account is the
 user's Google sign-in, their Cognito identity and folder, their grants in
 the [share API](shared-captures.md#how-it-works) and their record in the
 [cloud OCR](cloud-ocr.md) service; **Delete account**, on the signed-in
 Profile (and the same panel on the web), deletes all of it
-([lib/cloud/account_deletion.dart](../tabscan_app/lib/cloud/account_deletion.dart),
-[lib/screens/delete_account.dart](../tabscan_app/lib/screens/delete_account.dart)).
+([lib/cloud/account_deletion.dart](../tabcam_app/lib/cloud/account_deletion.dart),
+[lib/screens/delete_account.dart](../tabcam_app/lib/screens/delete_account.dart)).
 
 **Confirming**: a dialog, "Delete your account?", says what goes (all
 their events, in the cloud and on this device; their shares, so the
 people they shared captures with lose them; the captures shared with
 them, which stop showing), "It can't be undone." (in the error color),
 that their Google account isn't deleted, and, where Premium is set up,
-that a TabScan Premium subscription isn't cancelled: on the web, "cancel
+that a TabCam Premium subscription isn't cancelled: on the web, "cancel
 it on Substack, where you subscribed"; in the Android and iOS apps only
 "it's managed where you bought it" (no purchase links in the apps). It
 also asks to sign out on their other devices first (below). **Cancel**
@@ -250,7 +250,7 @@ running pass), so nothing goes up while the folder empties:
    included, removed without leaving tombstones; `cloudsync.json` and
    `cloudocr.json` are reset. Events of another account that used the
    device stay.
-4. **Signing out**. The dialog closes and a message says "Your TabScan
+4. **Signing out**. The dialog closes and a message says "Your TabCam
    account was deleted."
 
 **Failures** stop it where they happen and say what was and wasn't
@@ -274,10 +274,10 @@ and told to delete what's left from Home.
 - **Backups and logs**: the grants table and the accounts table have
   point-in-time recovery (35 days); the share API's and the OCR
   service's logs (30 days) name identity IDs.
-- **The Google account**, and Google's record that TabScan was granted
+- **The Google account**, and Google's record that TabCam was granted
   sign-in (the user removes it in their Google account's settings).
 - **rbacr and Substack**: a Premium role or subscription is kept by
-  rbacr and Substack, not TabScan; the user cancels it where they
+  rbacr and Substack, not TabCam; the user cancels it where they
   bought it.
 - **Builds without the share API** can't delete the grants nor the
   Cognito identity (only the folder and the device): the identity's role
@@ -292,10 +292,10 @@ to sync"), and signing in again makes a new, empty identity, to which the
 old account's events on that device aren't uploaded.
 
 **Without the app** (Google Play's "delete account URL"): the web app
-has the same panel, so https://tabscan.nu01.com/app/ (sign in, Profile,
+has the same panel, so https://tabcam.nu01.com/app/ (sign in, Profile,
 Delete account) deletes an account from any browser. Proposed for the
 store listing: a static page on the index site,
-`https://tabscan.nu01.com/delete-account`, that names TabScan and its
+`https://tabcam.nu01.com/delete-account`, that names TabCam and its
 developer, lists those steps, says what's deleted and what's kept for 30
 days, and gives a contact address for people who can't sign in any more
 (to be done with the privacy policy page, [app stores](app-stores.md);
@@ -334,41 +334,41 @@ the deploy uploads only `index.html` today).
   trigger.
 - **Settings** (`CloudConfig`, `GoogleConfig`; dart-defines from `.env`,
   or repository variables for the deploys and releases):
-  `TABSCANNER_GOOGLE_WEB_CLIENT_ID`, `TABSCANNER_GOOGLE_IOS_CLIENT_ID`, `AWS_REGION` (default
-  `us-east-1`), `TABSCANNER_COGNITO_IDENTITY_POOL_ID`, `TABSCANNER_USER_DATA_BUCKET`, for
-  [sharing](shared-captures.md) `TABSCANNER_SHARE_API_URL`, and
-  `TABSCANNER_APPLE_SIGN_IN` (`1`: Sign in with Apple on iOS; `AppleConfig`).
+  `TABCAM_GOOGLE_WEB_CLIENT_ID`, `TABCAM_GOOGLE_IOS_CLIENT_ID`, `AWS_REGION` (default
+  `us-east-1`), `TABCAM_COGNITO_IDENTITY_POOL_ID`, `TABCAM_USER_DATA_BUCKET`, for
+  [sharing](shared-captures.md) `TABCAM_SHARE_API_URL`, and
+  `TABCAM_APPLE_SIGN_IN` (`1`: Sign in with Apple on iOS; `AppleConfig`).
   All are public, not secrets.
 
 ## Infrastructure
 
-In [tabscan_infra/](../tabscan_infra), shared by production, the release
+In [tabcam_infra/](../tabcam_infra), shared by production, the release
 candidate and local builds, and deployed once by an administrator (the
 identity stack makes an IAM role; the GitHub deploy roles don't manage
 either):
 
-- **`user-data.yaml`**, stack `tabscan-user-data`: the bucket
-  `nu01-user-events-<account>` (not `tabscan-*`, so the deploy roles,
-  which manage `tabscan-*` buckets, can't reach users' events). Private,
+- **`user-data.yaml`**, stack `tabcam-user-data`: the bucket
+  `nu01-user-events-<account>` (not `tabcam-*`, so the deploy roles,
+  which manage `tabcam-*` buckets, can't reach users' events). Private,
   SSE-S3, TLS only, its object events sent to EventBridge (for
   [cloud OCR](cloud-ocr.md)), versioned (old and deleted versions are kept 30 days,
   so a deletion can be undone), incomplete uploads cleared after a day.
   CORS allows `GET`, `PUT`, `HEAD`, `DELETE` and `POST` (DeleteObjects,
   for [deleting the account](#deleting-the-account)) from
-  `https://tabscan.nu01.com`, `https://rc.tabscan.nu01.com`,
-  `http://localhost:2012` and `https://local.tabscan.nu01.com:2443`.
-- **`identity.yaml`**, stack `tabscan-identity`: the identity pool
-  `tabscan`, trusting Google through the `accounts.google.com` OpenID
+  `https://tabcam.nu01.com`, `https://rc.tabcam.nu01.com`,
+  `http://localhost:2012` and `https://local.tabcam.nu01.com:2443`.
+- **`identity.yaml`**, stack `tabcam-identity`: the identity pool
+  `tabcam`, trusting Google through the `accounts.google.com` OpenID
   Connect provider it makes (`GoogleWebClientId` and `GoogleAppClientIds`)
   and, with `AppleClientId` set, Apple (`appleid.apple.com` = the bundle ID
-  `com.nu01.tabscan`); no guests, no classic flow. The same template, as stack
-  `tabscan-identity-local`, makes the local pool `tabscan-local` on the
+  `com.nu01.tabcam`); no guests, no classic flow. The same template, as stack
+  `tabcam-identity-local`, makes the local pool `tabcam-local` on the
   same provider (`GoogleProviderArn`). Each pool's authenticated role may only get, put and
   delete objects in `<bucket>/${cognito-identity.amazonaws.com:sub}/*`,
   and list that prefix.
 
 Setting it up (the Google OAuth clients, the stacks, the variables):
-[tabscan_infra/README.md](../tabscan_infra/README.md).
+[tabcam_infra/README.md](../tabcam_infra/README.md).
 
 ## Verified
 
@@ -392,7 +392,7 @@ Setting it up (the Google OAuth clients, the stacks, the variables):
   `/apple`; both providers' buttons, Apple's first and the same width,
   each signing in with its own; one session at a time.
 - `flutter build ios --no-codesign --release` builds with and without
-  `TABSCANNER_APPLE_SIGN_IN` (with it, the build has
+  `TABCAM_APPLE_SIGN_IN` (with it, the build has
   `CODE_SIGN_ENTITLEMENTS`; without it, none).
 - Account deletion, over the in-memory bucket and share API: the
   folder (pages, tombstones, transcriptions) empties, the shares go both
@@ -409,7 +409,7 @@ Setting it up (the Google OAuth clients, the stacks, the variables):
   Android builds compile with sync set up.
 - Not yet verified: a real sign-in and sync, which needs the Google OAuth
   clients and the deployed stacks; a real account deletion, which also
-  needs the updated `tabscan-user-data` (CORS) and `tabscan-share-api`
+  needs the updated `tabcam-user-data` (CORS) and `tabcam-share-api`
   stacks; a real Sign in with Apple, which also needs the paid Apple
   Developer Program, the App ID's capability and the stacks deployed with
   `AppleClientId` ([app stores](app-stores.md#status)).

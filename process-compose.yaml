@@ -9,8 +9,8 @@ processes:
       - FLUTTER_WEB_PORT=${FLUTTER_WEB_PORT:-2012}
       - FLOCI_PORT=${FLOCI_PORT:-2014}
       - FLOCI_HTTPS_PORT=${FLOCI_HTTPS_PORT:-2443}
-      - TABSCANNER_CDN_ALIAS=${TABSCANNER_CDN_ALIAS:-tabscan.localhost}
-      - TABSCANNER_PUBLIC_HOST=${TABSCANNER_PUBLIC_HOST:-local.tabscan.nu01.com}
+      - TABCAM_CDN_ALIAS=${TABCAM_CDN_ALIAS:-tabcam.localhost}
+      - TABCAM_PUBLIC_HOST=${TABCAM_PUBLIC_HOST:-local.tabcam.nu01.com}
     # Start logging once every service passes its readiness probe, so the
     # first status line reflects a fully started stack.
     depends_on:
@@ -48,14 +48,14 @@ processes:
       backoff_seconds: 5
 
   4-floci:
-    # Floci as the local CloudFront, over HTTP and HTTPS (tabscan_floci/).
+    # Floci as the local CloudFront, over HTTP and HTTPS (tabcam_floci/).
     # The mkcert certificate is generated first, when missing or stale.
-    command: bash scripts/local-certs.sh && docker compose -f tabscan_floci/compose.yaml up floci
+    command: bash scripts/local-certs.sh && docker compose -f tabcam_floci/compose.yaml up floci
     environment:
       - FLOCI_PORT=${FLOCI_PORT:-2014}
       - FLOCI_HTTPS_PORT=${FLOCI_HTTPS_PORT:-2443}
     shutdown:
-      command: docker compose -f tabscan_floci/compose.yaml down; true
+      command: docker compose -f tabcam_floci/compose.yaml down; true
       timeout_seconds: 30
     readiness_probe:
       exec:
@@ -73,10 +73,10 @@ processes:
       backoff_seconds: 5
 
   5-index:
-    # The site root (tabscan_index/site), which redirects to /app/. Floci's
+    # The site root (tabcam_index/site), which redirects to /app/. Floci's
     # distribution uses it as the default origin.
-    # TABSCANNER_BIND_HOST: see scripts/flutter-web.sh.
-    command: python3 -m http.server ${INDEX_PORT:-2013} --bind ${TABSCANNER_BIND_HOST:-127.0.0.1} --directory tabscan_index/site
+    # TABCAM_BIND_HOST: see scripts/flutter-web.sh.
+    command: python3 -m http.server ${INDEX_PORT:-2013} --bind ${TABCAM_BIND_HOST:-127.0.0.1} --directory tabcam_index/site
     readiness_probe:
       http_get:
         host: localhost

@@ -2,7 +2,7 @@
 
 As in Presence: a **bottom navigation bar** flips between full-screen
 tabs, and a compact **app bar** on top names the open one
-([lib/screens/home_screen.dart](../tabscan_app/lib/screens/home_screen.dart)).
+([lib/screens/home_screen.dart](../tabcam_app/lib/screens/home_screen.dart)).
 
 - **Bottom navigation bar** (a Material `NavigationBar`): one destination
   per tab, an icon over its label, in order:
@@ -19,7 +19,7 @@ tabs, and a compact **app bar** on top names the open one
   - Signed in only (signed out, there's only the welcome, below); tabs
     keep their state (the list's scroll) while another is open.
 - **App bar**: the open tab's name on the left, bold (22 sp, weight 700):
-  "TabScan" on Home, "Capture", "Profile". No buttons: what was there
+  "TabCam" on Home, "Capture", "Profile". No buttons: what was there
   (Import photos, About, the cloud button) is on the tabs.
 - An event opens over the tabs as its own screen ([event screen](event-screen.md)),
   with a back button.
@@ -27,12 +27,12 @@ tabs, and a compact **app bar** on top names the open one
 ## Signed out: the welcome
 
 In a build with sign-in, a user who isn't signed in sees only the
-**welcome** ([lib/screens/welcome_screen.dart](../tabscan_app/lib/screens/welcome_screen.dart)):
-TabScan's name, what it does and that signing in starts it ("your
+**welcome** ([lib/screens/welcome_screen.dart](../tabcam_app/lib/screens/welcome_screen.dart)):
+TabCam's name, what it does and that signing in starts it ("your
 captures are kept on every device you sign in on"), the sign-in buttons
 (Google's, and Apple's where it's offered), a sign-in error under them,
 a progress line while a saved session is restored at launch, and
-**Privacy policy**. No tabs, no Capture, no Profile: TabScan's features
+**Privacy policy**. No tabs, no Capture, no Profile: TabCam's features
 are for signed-in users, except a capture's link with its key: it opens
 that capture, read only, instead of the welcome, with **Sign in** to go to
 the welcome ([opening a link](sharing.md#opening-a-link)). Signing in opens
@@ -47,7 +47,7 @@ was, on the device only.
 A reload (the web) or a restart (the apps) opens where the user was:
 the tab, and the event that was open over it, on its Text view or its
 list of files, and the file open over that, if one was
-([lib/screens/place.dart](../tabscan_app/lib/screens/place.dart)).
+([lib/screens/place.dart](../tabcam_app/lib/screens/place.dart)).
 The place is kept on the device (the library's `place` meta file, not
 synced), saved half a second after each move: switching tabs, opening
 or closing an event, switching Files and Text, opening or closing a
@@ -59,7 +59,7 @@ opened.
 
 - **Scan**, a large button: the camera, through the
   [document scanner](scanning.md) (it finds, straightens and cleans the
-  page, several in a row; on the web, TabScan's camera screen), with a
+  page, several in a row; on the web, TabCam's camera screen), with a
   line saying so. Document opens the file chooser for PDFs, Photos &
   videos the photo album, Files the file chooser, Link the link dialog.
 - **Add**, for uploads, each a card:
@@ -83,7 +83,7 @@ saying how many.
 tab makes a new event of them, as **Files** does: while they're over it,
 it's outlined with "Drop files to add"; dropped folders are left out
 with the others. On the web, macOS, Windows, Linux and Android
-(`desktop_drop`; [FileDropArea](../tabscan_app/lib/screens/file_drop_area.dart)),
+(`desktop_drop`; [FileDropArea](../tabcam_app/lib/screens/file_drop_area.dart)),
 not iOS.
 
 ## Profile
@@ -94,7 +94,7 @@ their [profile](profiles.md#in-the-app): "Profile: huge_wavy_darter",
 its roles, and **Linked accounts**; without profiles, the role, "Role:
 Premium" or "Role: Free"), the sync status, **Sync now**
 and **Sign out** ([sign-in and cloud sync](cloud-sync.md#signing-in)),
-and with Premium set up the **TabScan Premium** card
+and with Premium set up the **TabCam Premium** card
 ([cloud OCR](cloud-ocr.md)), then **Delete account**, which asks first
 and deletes the account in the cloud and on the device
 ([cloud sync](cloud-sync.md#deleting-the-account)); opening the tab checks
@@ -105,5 +105,5 @@ a build without sign-in, a line says so. Then **Language**
 ([localization](localization.md)): the device's language (the default),
 English, Español or Português; the app changes at once. Then **About**: the app's name
 and version (X.Y.Z, or "(development build)"), what it does,
-**Privacy policy** (opens https://tabscan.nu01.com/privacy in the browser,
+**Privacy policy** (opens https://tabcam.nu01.com/privacy in the browser,
 [privacy](privacy.md)) and **Licenses**.

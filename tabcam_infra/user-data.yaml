@@ -1,0 +1,92 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  tabcam-user-data: the bucket for signed-in users' events. The app syncs
+  each user's events here, under their Cognito identity ID
+  (<identityId>/events/<event id>/event.json and the pages' files), straight
+  from the device with the temporary credentials from identity.yaml. Shared
+  by production and the release candidate.
+
+Parameters:
+  AllowedOrigins:
+    Type: CommaDelimitedList
+    Default: https://tabcam.nu01.com,https://rc.tabcam.nu01.com,http://localhost:2012,https://local.tabcam.nu01.com:2443
+    Description: Web origins the app runs on (browser requests need CORS)
+
+Resources:
+  UserDataBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      # Not tabcam-*: the GitHub deploy roles may manage tabcam-* buckets,
+      # and must never reach users' events.
+      BucketName: !Sub nu01-tabcam-user-data-${AWS::AccountId}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      # A deletion or an app bug can't destroy an event for good: old versions
+      # stay for 30 days.
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: expire-old-versions
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+            ExpiredObjectDeleteMarker: true
+          - Id: abort-incomplete-uploads
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+      # Object events go to EventBridge, where tabcam-ocr (ocr.yaml) picks
+      # up page uploads to transcribe for premium users.
+      NotificationConfiguration:
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins: !Ref AllowedOrigins
+            # POST: DeleteObjects (?delete), when a user deletes their account.
+            AllowedMethods: [GET, PUT, HEAD, DELETE, POST]
+            AllowedHeaders: ['*']
+            ExposedHeaders: [ETag]
+            MaxAge: 3600
+
+  UserDataBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref UserDataBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: '*'
+            Action: s3:*
+            Resource:
+              - !GetAtt UserDataBucket.Arn
+              - !Sub ${UserDataBucket.Arn}/*
+            Condition:
+              Bool:
+                aws:SecureTransport: 'false'
+
+Outputs:
+  UserDataBucketName:
+    Description: The app's TABCAM_USER_DATA_BUCKET
+    Value: !Ref UserDataBucket
+    Export:
+      Name: tabcam-user-data-bucket
+  UserDataBucketArn:
+    Value: !GetAtt UserDataBucket.Arn
+    Export:
+      Name: tabcam-user-data-bucket-arn

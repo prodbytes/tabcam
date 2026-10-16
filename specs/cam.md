@@ -2,7 +2,7 @@
 
 **Cam**, a tool on the [event screen](event-screen.md), lets a guitarist
 record themselves playing along with the capture's tab. It opens the
-camera view ([`PlayAlongScreen`](../tabscan_app/lib/capture/play_along_screen.dart)):
+camera view ([`PlayAlongScreen`](../tabcam_app/lib/capture/play_along_screen.dart)):
 
 - **The camera** fills the screen, the **front** one first (it faces the
   player); **Flip camera** in the app bar moves to the next one (not
@@ -11,7 +11,7 @@ camera view ([`PlayAlongScreen`](../tabscan_app/lib/capture/play_along_screen.da
 - **The tab**, along the bottom, one **neckline** at a time: a staff
   (a run of string lines) with the lines right above it, such as chord
   names and a section name
-  ([`necklines`](../tabscan_app/lib/recognition/necklines.dart)). Text
+  ([`necklines`](../tabcam_app/lib/recognition/necklines.dart)). Text
   that isn't over a staff (lyrics under it, notes at the end) is left
   out; a tab with no string lines at all (chords only) shows its
   blocks between blank lines. The neckline is in the monospace font,

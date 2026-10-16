@@ -7,12 +7,12 @@
 # Settings, from the environment:
 #   PRIVATE_DIR  the setec-astronomy clone (default ../setec-astronomy,
 #                relative to this repo, which makes relative links)
-#   TENANT       the tenant directory in it (default tabscan.nu01)
+#   TENANT       the tenant directory in it (default tabcam.nu01)
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 PRIVATE_DIR="${PRIVATE_DIR:-../setec-astronomy}"
-TENANT="${TENANT:-tabscan.nu01}"
+TENANT="${TENANT:-tabcam.nu01}"
 src="$PRIVATE_DIR/$TENANT"
 
 if [[ ! -d "$src" ]]; then

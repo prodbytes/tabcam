@@ -12,7 +12,7 @@ to where they were, with nothing added.
 
 On Android the scanner runs in ML Kit's base mode: no filters to pick,
 and no ML clean-up (stain and finger removal); cropping, rotating and
-reordering pages remain. TabScan applies its own Tab filter. VisionKit
+reordering pages remain. TabCam applies its own Tab filter. VisionKit
 offers no such option, so the iOS scanner keeps its filters. Neither
 scanner lets the app set the shutter: both start on auto capture, and
 the user can switch to manual in the scanner.
@@ -23,13 +23,13 @@ cache is emptied. The new event shows at the top of the list (see
 
 Needs Android 7.0 (API 24) or later; iOS 15.5 or later (ML Kit text
 recognition's minimum). iOS asks for the camera
-(`NSCameraUsageDescription`: "TabScan uses the camera to scan guitar
+(`NSCameraUsageDescription`: "TabCam uses the camera to scan guitar
 tabs.") the first time the scanner opens it.
 
 ## Web
 
-No document scanner: **Scan** opens TabScan's own camera screen
-([lib/capture/camera_capture_screen.dart](../tabscan_app/lib/capture/camera_capture_screen.dart)),
+No document scanner: **Scan** opens TabCam's own camera screen
+([lib/capture/camera_capture_screen.dart](../tabcam_app/lib/capture/camera_capture_screen.dart)),
 the device's camera through the browser (`camera`, getUserMedia; the
 browser asks for it the first time), the back camera first:
 
@@ -40,7 +40,7 @@ browser asks for it the first time), the back camera first:
   page) adds them; **Cancel** (×, or back) asks "Discard N pages?" first
   when there are any;
 - without a camera ("No camera found.") or with it refused ("The camera
-  isn't allowed: let TabScan use it in the browser's site settings."), it
+  isn't allowed: let TabCam use it in the browser's site settings."), it
   says so and offers **Choose photos instead** (the photo picker).
 
 Pages are then cropped to the page in them, as photos added by hand are
@@ -84,9 +84,9 @@ are kept as picked.
 
 A photo added by hand (Photos & videos, Files; from Capture or an
 event's Add), or taken with the web's camera screen, isn't straightened
-by a scanner, so TabScan crops it to the
+by a scanner, so TabCam crops it to the
 page itself, when one stands out, so what's under the page (a table, a
-lap) doesn't show ([lib/processing/page_crop.dart](../tabscan_app/lib/processing/page_crop.dart),
+lap) doesn't show ([lib/processing/page_crop.dart](../tabcam_app/lib/processing/page_crop.dart),
 off the UI isolate where there are isolates):
 
 1. at 400 px (the longest side), in gray, the photo is split into bright

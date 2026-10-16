@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Creates the Android upload key, which signs the release builds uploaded to
 # Google Play (Play re-signs them with its own app signing key), and writes
-# its settings to the git-ignored tabscan_app/android/key.properties, which
+# its settings to the git-ignored tabcam_app/android/key.properties, which
 # the Gradle build reads. Run it once, by hand:
 #
 #   bash scripts/android-keystore.sh [keystore path]
 #
-# The keystore defaults to ~/.android-keys/tabscan-upload.jks, outside the
+# The keystore defaults to ~/.android-keys/tabcam-upload.jks, outside the
 # repo; keep it and its password backed up (losing them means asking Google
 # for an upload key reset). It asks for the password and the name on the
 # certificate. If key.properties already points to a keystore, it only
@@ -14,7 +14,7 @@
 # client, the SHA-256 for assetlinks.json.
 set -euo pipefail
 
-cd "$(dirname "$0")/../tabscan_app/android"
+cd "$(dirname "$0")/../tabcam_app/android"
 props=key.properties
 alias=upload
 
@@ -37,7 +37,7 @@ if [[ -f "$props" ]]; then
   exit 0
 fi
 
-ks="${1:-$HOME/.android-keys/tabscan-upload.jks}"
+ks="${1:-$HOME/.android-keys/tabcam-upload.jks}"
 if [[ -e "$ks" ]]; then
   echo "error: $ks exists already; pass another path, or write $props for it by hand" >&2
   exit 1
@@ -79,5 +79,5 @@ keyAlias=$alias
 keyPassword=$password
 EOF
 )
-echo "Wrote tabscan_app/android/$props; release builds are now signed with $ks"
+echo "Wrote tabcam_app/android/$props; release builds are now signed with $ks"
 fingerprints "$ks" "$password"

@@ -4,12 +4,12 @@ A signed-in user can share any capture (event) of their own with other
 people by **email address**, to **edit** (the default, "Can edit": they
 change it as the owner does, and the owner sees their changes) or **read
 only** (they see it, and get its updates, but can't change it). No email
-is sent: someone sees what's shared with them when they sign in to TabScan
+is sent: someone sees what's shared with them when they sign in to TabCam
 with that address (with Google, or with Apple on iOS). To share a capture with other people than the
 original's, [clone](library.md#events) it and share the copy.
 
 A build has sharing only with [sign-in and cloud sync](cloud-sync.md) and
-`TABSCANNER_SHARE_API_URL` set.
+`TABCAM_SHARE_API_URL` set.
 
 ## Sharing
 
@@ -18,7 +18,7 @@ the user's own events (signed in first, in a build with sharing), opens a
 sheet:
 
 - what it does ("People you add find this capture when they sign in to
-  TabScan with that email address. No email is sent.");
+  TabCam with that email address. No email is sent.");
 - **Email** and the role (**Can edit**, the default, or **Read only**),
   and **Add**, which checks the address looks like one ("Enter an email
   address"), grants it and syncs the capture, so it's in the cloud;
@@ -72,7 +72,7 @@ The capture stays in its owner's folder,
 [profile](profiles.md)'s: the owner is the profile, and a grant to any of
 the profile's addresses reaches every account linked to it. The same API
 keeps the profiles (`/profile` routes, [profiles](profiles.md#api)). The **share API**
-([tabscan_api/shares/index.py](../tabscan_api/shares/index.py), Python
+([tabcam_api/shares/index.py](../tabcam_api/shares/index.py), Python
 3.13 on Lambda) behind an HTTP API keeps the grants and hands out
 credentials:
 
@@ -102,7 +102,7 @@ reading any token, with nothing but the key to go on.
     tokens: no sharing in local web builds);
   - **Apple's** under `/apple`, only when the stack has `AppleClientId`:
     the `apple` authorizer, issuer `https://appleid.apple.com`, audience
-    the bundle ID `com.nu01.tabscan`. The app sends an Apple token there
+    the bundle ID `com.nu01.tabcam`. The app sends an Apple token there
     (it reads the token's issuer).
 
   The function checks the token's issuer (`iss`) is its path's, or answers
@@ -110,7 +110,7 @@ reading any token, with nothing but the key to go on.
   paths alike. Only verified addresses are used: `email_verified` must be
   true (Apple sends it as the string `"true"`, Google as a boolean), and a
   token without an email is refused (403). Apple's private relay
-  addresses count as verified: each is the user's, for TabScan, and is
+  addresses count as verified: each is the user's, for TabCam, and is
   what others share with. The owner's folder is their Cognito identity,
   found from the same token (`GetId`, with the token under its issuer's
   `Logins` key: `accounts.google.com` or `appleid.apple.com`), so a user
@@ -127,7 +127,7 @@ reading any token, with nothing but the key to go on.
   by email lists what's shared with someone, and one by owner (keys only)
   the grants someone made, for deleting their account. Queries follow
   every page.
-- **Credentials**: the function assumes the `tabscan-share-access` role
+- **Credentials**: the function assumes the `tabcam-share-access` role
   for an hour with a session policy that allows only
   `<bucket>/<owner>/events/<capture id>/*` (get; put and delete too to
   edit) and listing that prefix. The role itself allows at most the
@@ -143,7 +143,7 @@ reading any token, with nothing but the key to go on.
   `<region>:<uuid>`, emails, roles, link keys (`[A-Za-z0-9_-]{32,64}`). The API is throttled (10 requests a
   second, bursts of 20).
 
-In the app ([lib/cloud/share_api.dart](../tabscan_app/lib/cloud/share_api.dart)),
+In the app ([lib/cloud/share_api.dart](../tabcam_app/lib/cloud/share_api.dart)),
 each sync pass, after the user's own folder: lists `GET /shared`, removes
 the local copies of captures no longer listed, then syncs each listed
 capture as a folder of one, with its credentials (reused until five
@@ -153,22 +153,22 @@ never upload. A failing share is logged and skipped; the others go on.
 
 ## Infrastructure
 
-[tabscan_infra/share-api.yaml](../tabscan_infra/share-api.yaml), stack
-`tabscan-share-api`: the table, the function (its code uploaded by
+[tabcam_infra/share-api.yaml](../tabcam_infra/share-api.yaml), stack
+`tabcam-share-api`: the table, the function (its code uploaded by
 `scripts/deploy-share-api.sh`), its role, the access role, the HTTP API
 (CORS for the web app's origins) and its log group (30 days). An
-administrator deploys it, after `tabscan-user-data` and
-`tabscan-identity`: see [tabscan_infra/README.md](../tabscan_infra/README.md).
+administrator deploys it, after `tabcam-user-data` and
+`tabcam-identity`: see [tabcam_infra/README.md](../tabcam_infra/README.md).
 The function may get, put, delete and query grants, call `GetId` and
-`DeleteIdentities` on the identity pool, and, when the `tabscan-ocr`
+`DeleteIdentities` on the identity pool, and, when the `tabcam-ocr`
 stack is deployed (the script finds its `AccountsTable`, the
 `AccountsTableName` parameter), delete items of the accounts table.
-The script prints `TABSCANNER_SHARE_API_URL`.
+The script prints `TABCAM_SHARE_API_URL`.
 
 ## Verified
 
 - The function's tests (`python3 -m unittest discover -s
-  tabscan_api/shares`, with in-memory DynamoDB, Cognito and STS): a grant
+  tabcam_api/shares`, with in-memory DynamoDB, Cognito and STS): a grant
   defaults to edit and is listed; read-only grants; bad emails, roles,
   IDs and one's own address are refused; unverified addresses are
   refused; the grantee lists, gets credentials narrowed to the capture's
