@@ -1334,3 +1334,10 @@ spec.
       [sharing](sharing.md), [event screen](event-screen.md),
       [Cam](cam.md), [cloud sync](cloud-sync.md) and the
       [library](library.md) updated.
+35. **In the Text view, when the user taps a red (suspicious) note, or
+    right to its left or right, remove the red marker.** A tap that puts
+    the cursor in a red note or one character beside it, on its line,
+    drops that doubt from the event (`doubtAt`), saved and synced; the
+    hint under the tools now says to tap a note once it's checked (en,
+    es, pt). Not on a capture shared to read. See
+    [tab recognition](tab-recognition.md).

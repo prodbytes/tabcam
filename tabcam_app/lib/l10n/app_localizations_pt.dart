@@ -1054,7 +1054,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get textViewDoubts =>
-      'As notas em vermelho foram lidas com pouca confiança e podem estar erradas: confira-as com a página.';
+      'As notas em vermelho foram lidas com pouca confiança e podem estar erradas: confira-as com a página e toque em cada uma depois de conferir.';
 
   @override
   String get textViewOvertype => 'Sobrescrever';

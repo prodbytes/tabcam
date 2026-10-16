@@ -160,6 +160,28 @@ class _TabTextViewState extends State<TabTextView> {
     );
   }
 
+  /// A tap on a red note, or right beside it: the user has looked at it,
+  /// so it's no longer marked doubtful (saved right away).
+  void _tapped() {
+    final selection = _text.selection;
+    if (!selection.isValid || !selection.isCollapsed) return;
+    final event = widget.library.byId(widget.eventId);
+    if (event == null || event.readOnly || _doubts.isEmpty) return;
+    final doubt = doubtAt(_text.text, _text.doubts, selection.baseOffset);
+    if (doubt == null) return;
+    _saveSoon?.cancel();
+    _save();
+    final now = widget.library.byId(widget.eventId) ?? event;
+    widget.library.update(
+      now.copyWith(
+        tabTextDoubts: [
+          for (final d in now.tabTextDoubts)
+            if (d != doubt) d,
+        ],
+      ),
+    );
+  }
+
   /// Marks the text tab correct, or no longer correct; saved right away.
   Future<void> _toggleCorrect() async {
     _save();
@@ -519,6 +541,7 @@ class _TabTextViewState extends State<TabTextView> {
         controller: _text,
         readOnly: !editable,
         onChanged: _changed,
+        onTap: editable ? _tapped : null,
         maxLines: null,
         keyboardType: TextInputType.multiline,
         // Tabs aren't prose: no suggestions, and dashes stay dashes.
