@@ -1,11 +1,10 @@
-import 'package:tabcam_app/capture/media.dart';
-import 'package:cross_file/cross_file.dart';
-
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tabcam_app/capture/media.dart';
 import 'package:tabcam_app/cloud/cloud_sync.dart';
 import 'package:tabcam_app/cloud/cognito.dart';
 import 'package:tabcam_app/cloud/share_api.dart';

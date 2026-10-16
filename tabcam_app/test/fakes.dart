@@ -56,6 +56,7 @@ class FakeBucket implements ObjectStore {
     required AwsCredentials credentials,
   }) async {
     _request('LIST $prefix');
+    await holdList?.future;
     return {
       for (final MapEntry(:key, :value) in objects.entries)
         if (key.startsWith(prefix)) key: md5.convert(value).toString(),
@@ -88,6 +89,9 @@ class FakeBucket implements ObjectStore {
     }
     return Stream.value(await get(key, credentials: credentials));
   }
+
+  /// While set, listings don't come until it completes.
+  Completer<void>? holdList;
 
   /// While set, page files don't come until it completes.
   Completer<void>? holdFiles;

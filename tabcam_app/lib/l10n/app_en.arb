@@ -1043,6 +1043,18 @@
   "@homeLibraryEmpty": {
     "description": "Home with no events: the title"
   },
+  "homeLibraryLoading": "Loading your captures…",
+  "@homeLibraryLoading": {
+    "description": "Home: signed in, the first sync is bringing the captures"
+  },
+  "homeLibraryLoadFailed": "Your captures couldn't be loaded",
+  "@homeLibraryLoadFailed": {
+    "description": "Home: nothing here and the first sync failed"
+  },
+  "homeLibraryTryAgain": "Try again",
+  "@homeLibraryTryAgain": {
+    "description": "Home: retry loading the captures"
+  },
   "homeLibraryEmptyDetail": "Go to Capture to scan a tab with the camera (the page is found, straightened and cleaned up for you), or to add photos, videos, files and links.",
   "@homeLibraryEmptyDetail": {
     "description": "Home with no events: what to do"

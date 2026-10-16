@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../cloud/cloud_ocr.dart';
@@ -75,12 +77,23 @@ class _LibraryViewState extends State<LibraryView> {
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: Listenable.merge([library, _search]),
+    listenable: Listenable.merge([library, _search, ?widget.sync]),
     builder: (context, _) {
       if (!library.loaded) {
         return const Center(child: CircularProgressIndicator());
       }
-      if (library.events.isEmpty) return const _Empty();
+      if (library.events.isEmpty) {
+        final sync = widget.sync;
+        // Signed in, the user's captures may not have come down yet.
+        if (sync != null && !sync.firstPassDone) return const _Loading();
+        if (sync?.state == SyncState.failed) {
+          return _LoadFailed(
+            message: sync!.message,
+            onRetry: () => unawaited(sync.syncNow()),
+          );
+        }
+        return const _Empty();
+      }
       final l10n = context.l10n;
       final query = _query;
       final searching = query.isNotEmpty;
@@ -260,6 +273,63 @@ Future<void> openEvent(
         ? p.copyWith(eventId: () => null, text: false, fileId: () => null)
         : p,
   );
+}
+
+/// Signed in, while the first pass brings the user's captures.
+class _Loading extends StatelessWidget {
+  const _Loading();
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Column(
+      key: const Key('library-loading'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const CircularProgressIndicator(),
+        const SizedBox(height: 16),
+        Text(context.l10n.homeLibraryLoading),
+      ],
+    ),
+  );
+}
+
+/// Nothing here, and the captures couldn't be brought: why, and Try again.
+class _LoadFailed extends StatelessWidget {
+  const _LoadFailed({required this.message, required this.onRetry});
+
+  final String? message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off_outlined, size: 48),
+            const SizedBox(height: 16),
+            Text(
+              l10n.homeLibraryLoadFailed,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            if (message case final message?) ...[
+              const SizedBox(height: 8),
+              Text(message, textAlign: TextAlign.center),
+            ],
+            const SizedBox(height: 16),
+            FilledButton.tonal(
+              onPressed: onRetry,
+              child: Text(l10n.homeLibraryTryAgain),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _Empty extends StatelessWidget {
