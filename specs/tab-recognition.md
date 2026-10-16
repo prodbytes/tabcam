@@ -228,7 +228,8 @@ page." (en, es, pt). They're kept on the event and sync with it
 note is red only while it's still where it was read and the same, a whole
 note (not part of a longer one): once the user changes it, it's black, and
 saving drops it; moving it (inserting before it on its line) does too.
-Marking the text **Verified** shows none (the user checked it). A read on
+Marking the text **Verified** shows none (the user checked it); **Rescan**
+clears them with the text, and the new reading brings its own. A read on
 the device says nothing of how sure it is: its text has none
 ([lib/recognition/tab_doubts.dart](../tabcam_app/lib/recognition/tab_doubts.dart)).
 
