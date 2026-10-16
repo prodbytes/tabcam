@@ -1,29 +1,34 @@
-TabCam is a scanner app made for guitar and bass tablature. Point your phone at a tab and TabCam finds the page, straightens it and cleans it up. Then it reads the tab into plain-text tab you can edit, keep in sync and share.
+TabCam is a scanner app made for guitar and bass tablature. Point your phone at a tab and TabCam finds the page, straightens it and cleans it up. Then it reads the tab into plain-text tab you can edit, play along with and share.
 
 SCAN LIKE A DOCUMENT SCANNER
 • The system document scanner finds the page's edges and straightens it, several pages at a time.
-• Add photos and videos from your library, files, or a link (a lesson video, a backing track).
-• The Tab filter turns each page into crisp black ink on white; switch to the Original photo any time.
-• Swipe and zoom through the pages, rotate them, add more or delete them.
+• Add PDFs, photos and videos from your library, files, recordings, or a link (a lesson video, a backing track).
+• The Tab filter turns each scanned page into crisp black ink on white; switch a page back to the Original photo any time.
+• Zoom into pages, rotate them, reorder, rename or delete files, and add more.
 
 READ TABS INTO TEXT
-• Every capture is read by itself into plain-text tab, on your phone.
+• Every capture is read by itself into plain-text tab, on your phone, with the page's chord names, lyrics and section names where they were.
 • Works with tabs printed from the web (e|--0--3--|) and with typeset tab staves from books and printouts, for six-string guitar and four-string bass.
-• Fix what the reading got wrong right in the Text view, copy it, and mark it correct once you've checked it. Your edits are never overwritten.
+• Correct the reading in the Text view, with tools made for tab: overtype, raise or lower a fret, move a note to another string. Fix lines the strings and bars up. Copy the tab, and tap Verified once you've checked it. Your edits and verified tabs are never overwritten.
 • TabCam Premium subscribers also get their pages transcribed in the cloud as they sync.
 
+PLAY ALONG WITH CAM
+• Cam shows the camera with the tab under it, one line of the staff at a time. Go to the next line with a tap, any key, a Bluetooth page-turner pedal or a nod of your head.
+• Record yourself playing along: each take is saved to the capture, with the tab in the video.
+• Play one of the capture's recordings, videos or links above the camera while you play.
+
 ORGANIZE AND SYNC
-• Your captures are events in a grid, newest first, with a title and artist. Rename, clone or delete them.
-• Sign in with Google to sync your events across your phones and the web app, deletions included.
-• Hide a capture's photos so only the text tab, videos and links show.
+• Your captures show in a grid, newest first, with a title and artist. Search them by title, artist or the tab's text. Rename, clone or delete them.
+• Your captures sync across your phones and the web app, deletions included.
+• Download a whole capture as a zip, or any file on its own.
 
 SHARE
-• Share a capture as a link, a PDF, plain text, or a zip of all its files.
-• Share a capture with people by their email address, to edit together or read only. They find it in "Shared with me" when they sign in. A link opens only for the people you shared with.
+• Share copies the capture's link: whoever has it can see the capture, read only.
+• Share with people by their email address, to edit together or read only. They find it in "Shared with me" when they sign in with that address. No email is sent.
 
-PRIVATE BY DEFAULT
-• You can scan without an account: signed out, everything stays on your device.
-• Reading tabs, syncing and sharing need you signed in with Google.
-• No ads, no tracking. You can delete your account and its cloud data from the Profile tab.
+YOUR ACCOUNT
+• Sign in with Google to start: your captures are kept on every device you sign in on.
+• No ads, no tracking. Delete your account and its cloud data from the Profile tab at any time.
+• In English, Spanish and Portuguese.
 
 TabCam is for your own tabs: your notes, lesson sheets, books and printouts you own.

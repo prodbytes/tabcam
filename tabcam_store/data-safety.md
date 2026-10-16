@@ -1,7 +1,7 @@
 # Data safety, privacy labels, rating and audience (draft answers)
 
 Draft answers for the stores' forms, derived from the code and the specs
-([privacy](../specs/privacy.md) once pull request #46 is merged,
+([privacy](../specs/privacy.md),
 [cloud sync](../specs/cloud-sync.md),
 [shared captures](../specs/shared-captures.md),
 [cloud OCR](../specs/cloud-ocr.md)). Keep them in step with the privacy
@@ -11,18 +11,23 @@ others change too.
 
 ## What TabCam does with data, in short
 
-- **Signed out**: nothing leaves the device (captures are kept in the
-  app's documents; on the web, in memory).
-- **Signed in with Google**: the app gets the Google account's name,
-  email, photo and ID. The **email** and the **identity ID** (Cognito)
-  reach TabCam's servers; the name and photo are only shown in the app.
-  The user's **captures** (scanned pages, photos, videos, files, text
-  tabs, titles, artists, links) sync to their own folder in AWS S3. When
+- **Signed out**: the app is only a welcome with the sign-in buttons;
+  nothing can be captured and nothing leaves the device.
+- **Signed in** (with Google; on iOS, with Apple too): the app gets the
+  Google account's name, email, photo and ID, or the Apple ID's name and
+  email (Apple's private relay address if the user hides theirs) and
+  user ID. The **email** and the **identity ID** (Cognito) reach TabCam's
+  servers; the name and photo are only shown in the app. The user's
+  **captures** (scanned pages, photos, videos, Cam's takes with their
+  sound, recordings, PDFs and other files, text tabs, titles, artists,
+  links) sync to their own folder in AWS S3. When
   they share a capture, the **grantee's email** and role are stored. For
   Premium, the email is checked with rbacr (the maintainer's own role
   service); Premium pages are transcribed in AWS Lambda.
 - **Processors**: AWS (S3, DynamoDB, Cognito, Lambda; us-east-1),
-  encrypted at rest; HTTPS only. Google for sign-in.
+  encrypted at rest; HTTPS only. Google, and Apple on iOS, for sign-in.
+- **Cam's head gestures**: ML Kit face detection on the device; only the
+  head's angles are used, nothing about the face is kept or sent.
 - **No** ads, analytics, crash reporting or tracking SDKs; no data sold
   or shared for advertising.
 - **ML Kit** (on-device text recognition and, on Android, the document
@@ -31,8 +36,8 @@ others change too.
   it: https://developers.google.com/ml-kit/android-data-disclosure. The
   maintainer should confirm the answers below against that page before
   submitting.
-- **Deletion**: Profile → Delete account deletes the account's cloud data
-  (pull request #47); deleted files linger up to 30 days in bucket
+- **Deletion**: Profile → Delete account deletes the account's cloud data;
+  deleted files linger up to 30 days in bucket
   versions, DynamoDB backups 35 days, Lambda logs 30 days.
 
 ## Google Play: Data safety
@@ -45,13 +50,13 @@ others change too.
 | Is all of the user data collected by your app encrypted in transit? | Yes |
 | Do you provide a way for users to request that their data is deleted? | Yes: in the app (Profile → Delete account) and by the URL below |
 | Account deletion URL (App content → Data deletion) | https://tabcam.nu01.com/app/ (sign in, open Profile, tap Delete account) |
-| Can users create an account? | Yes, with Google sign-in (OAuth) |
+| Can users create an account? | Yes, with Google sign-in (OAuth); the app needs one |
 
 **Data types** (collected = sent off the device; none is **shared**: AWS
 and Google sign-in are service providers acting for TabCam, which Play
-doesn't count as sharing). All are **optional**: the app works signed
-out, and they're collected only when the user signs in. None is
-processed ephemerally only.
+doesn't count as sharing). They're **required**: signed out the app is
+only the welcome, so every user signs in (the diagnostics row aside). None
+is processed ephemerally only.
 
 | Category → type | Collected | Purposes | Notes |
 |---|---|---|---|
@@ -59,12 +64,13 @@ processed ephemerally only.
 | Personal info → User IDs | Yes | App functionality, Account management | Cognito identity ID; Google account ID in the sign-in token |
 | Personal info → Name | Yes (conservative) | App functionality | Shown in the app only, not stored on servers. Strictly not "collected" under Play's definition; declared to match the iOS manifest. The maintainer may answer No |
 | Photos and videos → Photos, Videos | Yes | App functionality | Scans, photos and videos synced to the user's folder |
-| Files and docs | Yes | App functionality | Files added to captures |
+| Audio → Music files, Other audio files | Yes | App functionality | Recordings added to captures, and Cam's takes' sound (in their videos) |
+| Files and docs | Yes | App functionality | PDFs and files added to captures |
 | App activity → Other user-generated content | Yes | App functionality | Text tabs, titles, artists, links |
 | App info and performance → Diagnostics | Yes, if ML Kit's disclosure says so | Analytics (by Google ML Kit) | Anonymous ML Kit metrics; collected also signed out; confirm against Google's ML Kit page |
 
 Not collected: location, financial info (Premium is paid through Stripe
-via Substack, outside the app), health, messages, audio, contacts,
+via Substack, outside the app), health, messages, voice recordings, contacts,
 calendar, web browsing, device IDs, app interactions, crash logs.
 
 ## Apple: App Privacy labels
@@ -77,16 +83,21 @@ used for tracking):
 
 | Apple category → type | Notes |
 |---|---|
-| Contact Info → Email Address | Account email; shared-with emails |
+| Contact Info → Email Address | Account email (Google's, or Apple's, maybe a private relay address); shared-with emails |
 | Contact Info → Name | Shown only; declared to match `PrivacyInfo.xcprivacy` |
-| Identifiers → User ID | Cognito identity ID, Google account ID |
-| User Content → Photos or Videos | Scans, photos, videos |
-| User Content → Other User Content | Files, text tabs, titles, links |
+| Identifiers → User ID | Cognito identity ID, Google account ID, Apple user ID |
+| User Content → Photos or Videos | Scans, photos, videos, Cam's takes |
+| User Content → Audio Data | Recordings added to captures; Cam's takes record sound. Not in `PrivacyInfo.xcprivacy` yet: add it there (a new build) to match |
+| User Content → Other User Content | PDFs and files, text tabs, titles, links |
+
+App Store Connect takes these answers in its web UI (App Privacy); the
+App Store Connect API key used by `scripts/store-upload-ios.sh` can't set
+them.
 
 **Data not linked to the user** (only if ML Kit's disclosure requires
 it): Diagnostics → Other Diagnostic Data, for **Analytics** (third-party
 SDK). If declared, add it to `PrivacyInfo.xcprivacy` as well (the
-manifest in pull request #46 doesn't list it).
+app's own manifest doesn't list it; GoogleDataTransport's does).
 
 ## Content rating (IARC questionnaire, Play; Apple's age rating)
 
@@ -95,17 +106,29 @@ manifest in pull request #46 doesn't list it).
 - Violence, fear, sexuality, nudity, profanity or crude humor, drugs,
   alcohol, tobacco, gambling, simulated gambling: **No** to all.
 - **Users can interact or exchange content**: **Yes**: a user can share
-  their captures with specific people by email (to edit or read only);
-  there's no chat, no public feed, no profile browsing, and a link gives
-  no access by itself. No user location is shared.
+  their captures with specific people by email (to edit or read only),
+  and copy a capture's link, which lets whoever they give it to see that
+  capture, read only; there's no chat, no public feed, no search for
+  other users' captures, no profile browsing. No user location is shared.
 - **Digital purchases**: **No** (no in-app purchases; Premium is not sold
   in the app).
 - **Unrestricted web access**: **No**: links open in the external
-  browser, not an in-app web view.
+  browser. The one in-app web view is Cam's play-along frame, which
+  shows a link the user added to the capture (a YouTube video in its
+  embedded player, or that page) with no address bar or browsing.
+  Arguable, since the page itself can be any link the user typed: if
+  Apple counts it, the answer is Yes (and the rating goes up).
+- **Messaging or chat**: **No**. **Advertising**: **No**. **Social
+  media**: **No**. **Parental controls, age assurance**: **No**.
+  **Health or wellness topics**: **No**. **Loot boxes, contests**: **No**.
+- **User-generated content** (Apple's question): **Yes**: captures are
+  the user's own, shared only with the people the owner picks, or with
+  whoever they give the capture's read-only link.
 - Expected result: **Everyone / PEGI 3 / USK 0** on Play; **4+** on the
-  App Store (answer "None" throughout Apple's questionnaire; under its
-  user-generated content questions, content is shared only with people
-  the owner picks).
+  App Store ("None" throughout Apple's questionnaire, the answers above
+  for its yes/no questions;
+  [age-rating.json](ios/age-rating.json), which
+  `scripts/store-upload-ios.sh` uploads).
 
 ## Target audience and content (Play)
 
@@ -117,7 +140,7 @@ manifest in pull request #46 doesn't list it).
 - **Ads**: The app contains no ads.
 - **News app**: No. **Government app**: No. **Health**: No. **Financial
   features**: None.
-- **App access**: some features need sign-in; provide the Google test
+- **App access**: everything needs sign-in; provide the Google test
   account and steps (see [ios/REVIEW_NOTES.md](ios/REVIEW_NOTES.md)).
 
 ## Category

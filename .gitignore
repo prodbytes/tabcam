@@ -98,5 +98,11 @@ tabcam_app/ios/Flutter/Private.xcconfig
 tabcam_floci/certs
 
 # Store review contact and sign-in details (never committed)
-tabcam_store/ios/review_information/*
-!tabcam_store/ios/review_information/notes.txt
+tabcam_store/ios/metadata/review_information/*
+!tabcam_store/ios/metadata/review_information/notes.txt
+
+# fastlane run output
+tabcam_store/fastlane/README.md
+tabcam_store/fastlane/report.xml
+tabcam_store/fastlane/Preview.html
+tabcam_store/fastlane/test_output/
