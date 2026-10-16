@@ -1022,3 +1022,11 @@ spec.
    fails to come is asked for again at the next pass
    ([cloud sync](cloud-sync.md#listed-first-files-after),
    [platforms](platforms.md)).
+12. **Home shows no tabs though there are some: show a loading icon while
+   a signed-in user's captures load, or just the welcome without features
+   signed out.** Signed in with nothing on the device, Home now shows
+   "Loading your captures…" with a spinner until the first sync pass since
+   signing in ends (`CloudSync.firstPassDone`), then the captures (or "No
+   tabs yet" if there are truly none); a failed first pass says so, with
+   Try again. Signed out was already only the welcome and sign-in
+   ([library](library.md)).

@@ -48,6 +48,14 @@ the [welcome](navigation.md#signed-out-the-welcome) alone.
   **Shared with me** (captures [shared](shared-captures.md) with the
   user), each newest first. With nothing shared, the grid has no
   headings.
+- **Loading**: signed in, with nothing on the device yet, until the
+  first [sync](cloud-sync.md) pass since signing in ends: a spinner and
+  "Loading your captures…" (not "No tabs yet": the captures may just not
+  have come down). The captures show as soon as that pass lists them,
+  their files after ([listed first](cloud-sync.md#listed-first-files-after)).
+  If that pass fails with nothing here: "Your captures couldn't be
+  loaded", why, and **Try again** (another pass). Signed out, the app is
+  only the welcome and sign-in ([navigation](navigation.md)).
 - **Empty**: a music icon, "No tabs yet", and a line pointing to
   Capture (to scan, or add photos, videos, files and links).
 - New events come from the [Capture](navigation.md#capture) tab: each

@@ -103,6 +103,12 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
   String? _message;
 
   DateTime? get lastSynced => _lastSynced;
+
+  /// Whether a pass has ended (synced or failed) since the user signed
+  /// in; true signed out. Until then, an empty library may just not have
+  /// come down yet (Home says it's loading).
+  bool get firstPassDone => _token == null || _passed;
+  bool _passed = false;
   DateTime? _lastSynced;
 
   String? _token;
@@ -159,6 +165,7 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
     _userId = auth.user?.id;
     final wasSignedIn = _token != null;
     _token = token;
+    if (!wasSignedIn || token == null) _passed = false;
     if (token == null) {
       _paused = false;
       credentials.clear();
@@ -276,6 +283,9 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
   void _set(SyncState state, String? message) {
     // A pass that ends after dispose (the app closing) has no one to tell.
     if (_disposed) return;
+    if (state == SyncState.synced || state == SyncState.failed) {
+      _passed = true;
+    }
     _state = state;
     _message = message;
     notifyListeners();

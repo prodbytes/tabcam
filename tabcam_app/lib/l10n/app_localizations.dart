@@ -1318,6 +1318,24 @@ abstract class AppLocalizations {
   /// **'No tabs yet'**
   String get homeLibraryEmpty;
 
+  /// Home: signed in, the first sync is bringing the captures
+  ///
+  /// In en, this message translates to:
+  /// **'Loading your captures…'**
+  String get homeLibraryLoading;
+
+  /// Home: nothing here and the first sync failed
+  ///
+  /// In en, this message translates to:
+  /// **'Your captures couldn\'t be loaded'**
+  String get homeLibraryLoadFailed;
+
+  /// Home: retry loading the captures
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get homeLibraryTryAgain;
+
   /// Home with no events: what to do
   ///
   /// In en, this message translates to:

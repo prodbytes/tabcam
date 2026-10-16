@@ -792,6 +792,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeLibraryEmpty => 'No tabs yet';
 
   @override
+  String get homeLibraryLoading => 'Loading your captures…';
+
+  @override
+  String get homeLibraryLoadFailed => 'Your captures couldn\'t be loaded';
+
+  @override
+  String get homeLibraryTryAgain => 'Try again';
+
+  @override
   String get homeLibraryEmptyDetail =>
       'Go to Capture to scan a tab with the camera (the page is found, straightened and cleaned up for you), or to add photos, videos, files and links.';
 

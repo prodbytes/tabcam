@@ -815,6 +815,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get homeLibraryEmpty => 'Aún no hay tablaturas';
 
   @override
+  String get homeLibraryLoading => 'Cargando tus capturas…';
+
+  @override
+  String get homeLibraryLoadFailed => 'No se pudieron cargar tus capturas';
+
+  @override
+  String get homeLibraryTryAgain => 'Reintentar';
+
+  @override
   String get homeLibraryEmptyDetail =>
       'Ve a Capturar para escanear una tablatura con la cámara (se detecta la página, se endereza y se limpia por ti), o para agregar fotos, videos, archivos y enlaces.';
 
