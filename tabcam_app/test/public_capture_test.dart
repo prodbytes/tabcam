@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:tabcam_app/cloud/cloud_sync.dart';
 import 'package:tabcam_app/cloud/public_capture.dart';
+import 'package:tabcam_app/cloud/share_api.dart';
 import 'package:tabcam_app/export/capture_link.dart';
 import 'package:tabcam_app/export/incoming_links.dart';
 import 'package:tabcam_app/library/capture_event.dart';
@@ -195,8 +196,10 @@ void main() {
     expect(find.byKey(const Key('welcome')), findsOneWidget);
   });
 
-  testWidgets('signed in, not shared with them: the link opens it read only', (
-    tester,
+  /// Ana's device, signed in, opening the capture's link with [shares].
+  Future<(Library, CloudSync)> anaOpens(
+    WidgetTester tester,
+    FakeShareApi shares,
   ) async {
     await tester.runAsync(ownerShares);
     final mine = Library(PlatformEventStore(), null, (_) async => null);
@@ -207,7 +210,7 @@ void main() {
       auth: auth,
       bucket: bucket,
       credentials: FakeCredentials('us-east-1:ana'),
-      shares: FakeShareApi({}, email: 'ana@example.com', identity: 'ana'),
+      shares: shares,
       period: const Duration(days: 1),
     );
     addTearDown(sync.dispose);
@@ -222,12 +225,34 @@ void main() {
     await tester.pumpWidget(
       TabCamApp(library: mine, auth: auth, sync: sync, captures: captures()),
     );
-    for (var i = 0; i < 5; i++) {
+    for (var i = 0; i < 8; i++) {
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 50)),
       );
       await frames(tester);
     }
+    return (mine, sync);
+  }
+
+  testWidgets('signed in, not shared with them: the link joins it', (
+    tester,
+  ) async {
+    final (mine, _) = await anaOpens(
+      tester,
+      FakeShareApi({}, email: 'ana@example.com', identity: 'us-east-1:ana'),
+    );
+    // In her library from then on, shared to see and add her own files.
+    final joined = mine.byId(id)!;
+    expect(joined.contributes, isTrue);
+    expect(find.byType(PublicCaptureScreen), findsNothing);
+    expect(find.byKey(const Key('link-banner')), findsNothing);
+    expect(find.textContaining('Can view and add'), findsOneWidget);
+  });
+
+  testWidgets("signed in, when joining fails: it opens by its link", (
+    tester,
+  ) async {
+    final (mine, _) = await anaOpens(tester, _NoJoining());
     expect(find.byType(PublicCaptureScreen), findsOneWidget);
     expect(find.byKey(const Key('link-banner')), findsOneWidget);
     // Signed in: no Sign in, and Back goes Home.
@@ -237,4 +262,16 @@ void main() {
     await frames(tester);
     expect(find.byType(PublicCaptureScreen), findsNothing);
   });
+}
+
+/// A share API from before joining by link (or offline): it refuses.
+class _NoJoining extends FakeShareApi {
+  _NoJoining() : super({}, email: 'ana@example.com', identity: 'ana');
+
+  @override
+  Future<JoinedCapture> joinLink(
+    String token,
+    String captureId,
+    String key,
+  ) async => throw ShareApiException(404, 'No such route');
 }

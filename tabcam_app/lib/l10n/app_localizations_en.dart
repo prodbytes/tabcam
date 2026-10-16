@@ -178,7 +178,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountPeopleCanEdit => 'Can edit';
 
   @override
-  String get accountPeopleReadOnly => 'Read only';
+  String get accountPeopleReadOnly => 'Can view and add';
 
   @override
   String get accountSignInToShare => 'Sign in to share';
@@ -455,7 +455,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get eventReadOnly => 'Read only';
+  String get eventReadOnly => 'Can view and add';
 
   @override
   String get eventByLink => 'Opened by its link · Read only';
@@ -1462,4 +1462,43 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get deleteAccountAppleOtherId =>
       'That\'s another Apple ID: confirm with the Apple ID you signed in with.';
+
+  @override
+  String get eventYourFiles => 'Your files';
+
+  @override
+  String eventYourFilesDetail(String owner) {
+    return 'Only you and $owner see these';
+  }
+
+  @override
+  String eventFilesFrom(String person) {
+    return 'From $person';
+  }
+
+  @override
+  String get eventSomeone => 'someone';
+
+  @override
+  String get eventPublishHint => 'Only you see these until you publish them';
+
+  @override
+  String get eventPublish => 'Publish: everyone sees it';
+
+  @override
+  String get eventUnpublish => 'Published: tap to take it back';
+
+  @override
+  String get eventPublished => 'Published';
+
+  @override
+  String eventPublishedSnack(String name) {
+    return '$name published: everyone sees it now';
+  }
+
+  @override
+  String get eventCouldntPublish => 'Couldn\'t publish';
+
+  @override
+  String get accountPeopleViaLink => 'Joined by the link';
 }

@@ -379,7 +379,7 @@ abstract class AppLocalizations {
   /// Share role: read only
   ///
   /// In en, this message translates to:
-  /// **'Read only'**
+  /// **'Can view and add'**
   String get accountPeopleReadOnly;
 
   /// Share error: signed out
@@ -850,10 +850,10 @@ abstract class AppLocalizations {
   /// **'Shared by {owner} · {access}'**
   String eventSharedBy(String owner, String access);
 
-  /// Event banner: shared read only
+  /// Event banner: shared to read (see the owner's files, add one's own)
   ///
   /// In en, this message translates to:
-  /// **'Read only'**
+  /// **'Can view and add'**
   String get eventReadOnly;
 
   /// Banner on a capture opened by its link by someone it isn't shared with
@@ -2451,6 +2451,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'That\'s another Apple ID: confirm with the Apple ID you signed in with.'**
   String get deleteAccountAppleOtherId;
+
+  /// Event screen, a capture shared with the user to read: the heading of what they added
+  ///
+  /// In en, this message translates to:
+  /// **'Your files'**
+  String get eventYourFiles;
+
+  /// Event screen: under eventYourFiles, who sees the reader's own files
+  ///
+  /// In en, this message translates to:
+  /// **'Only you and {owner} see these'**
+  String eventYourFilesDetail(String owner);
+
+  /// Event screen, the owner's capture: the heading of what one person added
+  ///
+  /// In en, this message translates to:
+  /// **'From {person}'**
+  String eventFilesFrom(String person);
+
+  /// Event screen: eventFilesFrom's person, when their address isn't known yet
+  ///
+  /// In en, this message translates to:
+  /// **'someone'**
+  String get eventSomeone;
+
+  /// Event screen, the owner's capture: under eventFilesFrom
+  ///
+  /// In en, this message translates to:
+  /// **'Only you see these until you publish them'**
+  String get eventPublishHint;
+
+  /// Event screen: tooltip of the button that publishes someone's file into the capture
+  ///
+  /// In en, this message translates to:
+  /// **'Publish: everyone sees it'**
+  String get eventPublish;
+
+  /// Event screen: tooltip of a published file's button, which takes it back out of the capture
+  ///
+  /// In en, this message translates to:
+  /// **'Published: tap to take it back'**
+  String get eventUnpublish;
+
+  /// Event screen: under a person's file that's published into the capture
+  ///
+  /// In en, this message translates to:
+  /// **'Published'**
+  String get eventPublished;
+
+  /// Event screen: a person's file was published
+  ///
+  /// In en, this message translates to:
+  /// **'{name} published: everyone sees it now'**
+  String eventPublishedSnack(String name);
+
+  /// Event screen: publishing (or taking back) a person's file failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t publish'**
+  String get eventCouldntPublish;
+
+  /// People sheet: under someone who joined by opening the capture's link, signed in
+  ///
+  /// In en, this message translates to:
+  /// **'Joined by the link'**
+  String get accountPeopleViaLink;
 }
 
 class _AppLocalizationsDelegate

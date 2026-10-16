@@ -68,22 +68,57 @@ void main() {
     );
   });
 
-  testWidgets('a capture shared read only takes no drops', (tester) async {
+  testWidgets(
+    "files dropped on a capture shared to read are the reader's own",
+    (tester) async {
+      final library = Library(PlatformEventStore(), null, (_) async => null);
+      late String id;
+      await tester.runAsync(() async {
+        await library.load();
+        final made = await library.create([jpeg]);
+        id = made.id;
+        await library.applyRemote(
+          made.copyWith(sharedBy: 'olga@example.com', readOnly: true),
+        );
+      });
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: EventScreen(library: library, eventId: id),
+        ),
+      );
+      await _frames(tester);
+      expect(tester.widget<DropTarget>(find.byType(DropTarget)).enable, isTrue);
+
+      await _drop(tester, [
+        DropItemFile.fromData(jpeg, name: 'riff.jpg', mimeType: 'image/jpeg'),
+      ]);
+
+      // The owner's capture is as it was; the photo is the reader's.
+      final event = library.byId(id)!;
+      expect(event.pages, hasLength(1));
+      expect(event.myContribution!.pages, hasLength(1));
+      expect(find.text('Your files'), findsOneWidget);
+      expect(
+        find.text('Only you and olga@example.com see these'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('a capture opened by its link takes no drops', (tester) async {
     final library = Library(PlatformEventStore(), null, (_) async => null);
     late String id;
     await tester.runAsync(() async {
       await library.load();
-      final made = await library.create([jpeg]);
-      id = made.id;
-      await library.applyRemote(
-        made.copyWith(sharedBy: 'olga@example.com', readOnly: true),
-      );
+      id = (await library.create([jpeg])).id;
     });
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: EventScreen(library: library, eventId: id),
+        home: EventScreen(library: library, eventId: id, byLink: true),
       ),
     );
     await _frames(tester);

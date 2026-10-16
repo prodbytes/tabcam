@@ -12,7 +12,8 @@ enum ShareRole {
   /// Change it, as its owner can (the default).
   edit,
 
-  /// Only see it.
+  /// See the owner's files, and add their own (a contribution only they
+  /// and the owner see).
   read;
 
   static ShareRole byName(String? name) => name == 'read' ? read : edit;
@@ -24,10 +25,31 @@ enum ShareRole {
 
 /// One person a capture is shared with.
 class Grant {
-  const Grant(this.email, this.role);
+  const Grant(this.email, this.role, {this.identity, this.viaLink = false});
 
   final String email;
   final ShareRole role;
+
+  /// Their identity (their contribution's folder), once they've synced it.
+  final String? identity;
+
+  /// They joined by opening the capture's link, signed in.
+  final bool viaLink;
+}
+
+/// What joining a capture by its link gave ([ShareApi.joinLink]).
+class JoinedCapture {
+  const JoinedCapture({
+    required this.owner,
+    required this.captureId,
+    this.own = false,
+  });
+
+  final String owner;
+  final String captureId;
+
+  /// It's the user's own capture: nothing to join.
+  final bool own;
 }
 
 /// A capture someone shared with the signed-in user.
@@ -48,10 +70,14 @@ class SharedCapture {
 
 /// Credentials for one shared capture's folder, and what they allow.
 class ShareCredentials {
-  const ShareCredentials(this.credentials, this.role);
+  const ShareCredentials(this.credentials, this.role, {this.contribPrefix});
 
   final AwsCredentials credentials;
   final ShareRole role;
+
+  /// A reader's own contribution's folder
+  /// (`<owner>/contrib/<capture id>/<identity>/`), which they may write too.
+  final String? contribPrefix;
 }
 
 /// Read-only credentials for a capture anyone with its link may open, and
@@ -305,6 +331,28 @@ class ShareApi {
     return ShareCredentials(
       _credentials(c),
       ShareRole.byName(c['role'] as String?),
+      contribPrefix: c['contribPrefix'] as String?,
+    );
+  }
+
+  /// Joins the capture a link names ([captureId] and its [key]), signed in:
+  /// shared with the user to read from then on, unless it's theirs or
+  /// shared with them already.
+  Future<JoinedCapture> joinLink(
+    String token,
+    String captureId,
+    String key,
+  ) async {
+    final body = await _call(
+      token,
+      'POST',
+      ['links', captureId, 'join'],
+      body: {'key': key},
+    );
+    return JoinedCapture(
+      owner: body['owner'] as String,
+      captureId: body['captureId'] as String? ?? captureId,
+      own: body['own'] == true,
     );
   }
 
@@ -341,6 +389,8 @@ class ShareApi {
       Grant(
         (g as Map)['email'] as String,
         ShareRole.byName(g['role'] as String?),
+        identity: g['identity'] as String?,
+        viaLink: g['via'] == 'link',
       ),
   ];
 

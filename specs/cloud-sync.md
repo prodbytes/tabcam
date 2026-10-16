@@ -149,7 +149,12 @@ the share API (local web builds) use the sign-in's own identity instead:
 | `<identity>/events/<event id>/<page id>.<extension>` | each page's file, as stored on the device, with its MIME type by extension (`image/jpeg` for scanned pages, `video/mp4`, `audio/mpeg`, `application/pdf`, ...) |
 
 Links are in `event.json` only: they have no file.
-Beside `events/`, the user's folder has `ocr/`: the transcriptions the
+Beside `events/`, the user's folder has `contrib/`: what people a capture
+is shared with to read added to it, a folder each
+(`<identity>/contrib/<event id>/<their identity>/`), which only they and
+the owner reach; see [contributions](contributions.md).
+
+It also has `ocr/`: the transcriptions the
 [cloud OCR](cloud-ocr.md) service writes for premium users
 (`<identity>/ocr/<event id>/<page id>.json`). Sync doesn't touch them;
 `CloudOcr` reads them.
@@ -225,10 +230,13 @@ simply deleted.
 the device when another signs in, shown but never uploaded to the new
 account. Events made signed out go up to whoever signs in next.
 
-**Shared captures**: after the user's own folder, each pass syncs the
-captures shared with them, each in its owner's folder, the same way (but
-never uploading a read-only one); see
-[shared captures](shared-captures.md#how-it-works).
+**Shared captures**: after the user's own folder, each pass lists the
+contributions to the user's own captures (one listing) and brings what
+changed, then syncs the captures shared with them, each in its owner's
+folder, the same way (but never uploading one shared to read), and on
+those shared to read, the user's own contribution, both ways; see
+[shared captures](shared-captures.md#how-it-works) and
+[contributions](contributions.md#how-its-stored-and-synced).
 
 ## Deleting the account
 

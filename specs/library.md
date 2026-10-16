@@ -11,7 +11,7 @@ the [welcome](navigation.md#signed-out-the-welcome) alone.
   recording, PDF and link counts (if any), "text"
   once the tab has been read, and "shared by <email>" for a capture
   someone [shared](shared-captures.md) with the user (whose menu has
-  **Remove** instead of Delete, and no Rename when read only). Tapping a
+  **Remove** instead of Delete, and no Rename when shared to read). Tapping a
   card opens the [event screen](event-screen.md); its ⋮ menu has **Rename**,
   **Share** ([sharing](sharing.md)), **Clone** (below) and **Delete** (after a confirmation,
   which says the pages and text tab go too). Long-pressing a card renames

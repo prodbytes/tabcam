@@ -20,11 +20,12 @@ class EventPage {
     this.extension = 'img',
     this.url,
     this.title,
+    this.from,
   });
 
   /// A link page to [url] (checked with [checkUrl]), with an optional
   /// [title].
-  EventPage.link({required this.id, required Uri url, String? title})
+  EventPage.link({required this.id, required Uri url, String? title, this.from})
     : filter = PageFilter.original,
       kind = PageKind.link,
       extension = 'url',
@@ -47,6 +48,10 @@ class EventPage {
   /// The page's name, as the user gave it (any kind: a link, a file, a
   /// photo); null shows its kind and number, or a link's address.
   final String? title;
+
+  /// For a page the owner published from someone's [Contribution]: the ID
+  /// of the page it's a copy of there.
+  final String? from;
 
   bool get isVideo => kind == PageKind.video;
   bool get isImage => kind == PageKind.image;
@@ -90,6 +95,7 @@ class EventPage {
         extension: extension,
         url: url,
         title: title == null ? this.title : title(),
+        from: from,
       );
 
   Map<String, Object?> toJson() => {
@@ -99,16 +105,22 @@ class EventPage {
     'extension': extension,
     if (url != null) 'url': url.toString(),
     if (title != null) 'title': title,
+    if (from != null) 'from': from,
   };
 
   factory EventPage.fromJson(Map<String, Object?> json) {
     final id = checkId(json['id'] as String);
+    final from = switch (json['from']) {
+      final String f => checkId(f),
+      _ => null,
+    };
     // Events also come from the cloud: a link is checked again here.
     if (json['kind'] == 'link') {
       return EventPage.link(
         id: id,
         url: Uri.parse(json['url'] as String),
         title: json['title'] as String?,
+        from: from,
       );
     }
     return EventPage(
@@ -125,6 +137,7 @@ class EventPage {
       // The name the user gave the file: kept, on the device and coming
       // down from the cloud, as a link's is.
       title: json['title'] as String?,
+      from: from,
     );
   }
 }
@@ -153,6 +166,64 @@ class EventShare {
   int get hashCode => Object.hash(email, readOnly);
 }
 
+/// What one person a capture is shared with to read added to it: their
+/// own files and links, which only they and the capture's owner see, kept
+/// in a folder of their own beside the capture's
+/// (`<owner>/contrib/<capture id>/<their identity>/`). The owner publishes
+/// one by copying it into the capture's pages: then everyone sees it.
+class Contribution {
+  const Contribution({
+    this.by,
+    required this.updated,
+    this.pages = const [],
+    this.email,
+  });
+
+  /// Whose it is: their Cognito identity (their folder's name). Null for
+  /// the user's own until it first syncs.
+  final String? by;
+
+  /// When it last changed, on any of its person's devices.
+  final DateTime updated;
+  final List<EventPage> pages;
+
+  /// Who they are, as the share API knows them (on the owner's devices,
+  /// once known); never in the cloud copy.
+  final String? email;
+
+  Contribution copyWith({
+    String? by,
+    DateTime? updated,
+    List<EventPage>? pages,
+    String? email,
+  }) => Contribution(
+    by: by ?? this.by,
+    updated: updated ?? this.updated,
+    pages: pages ?? this.pages,
+    email: email ?? this.email,
+  );
+
+  /// As saved: on the device with [by] and [email]; the cloud copy
+  /// ([local] false, `contrib.json`) leaves them out (its folder says
+  /// whose it is).
+  Map<String, Object?> toJson({bool local = true}) => {
+    'updated': updated.toUtc().toIso8601String(),
+    'pages': [for (final p in pages) p.toJson()],
+    if (local && by != null) 'by': by,
+    if (local && email != null) 'email': email,
+  };
+
+  factory Contribution.fromJson(Map<String, Object?> json) => Contribution(
+    by: json['by'] as String?,
+    updated: DateTime.parse(json['updated'] as String).toLocal(),
+    pages: [
+      for (final p in json['pages'] as List? ?? const [])
+        EventPage.fromJson((p as Map).cast<String, Object?>()),
+    ],
+    email: json['email'] as String?,
+  );
+}
+
 /// An event: what the user captured of a tab (scanned pages, photos,
 /// videos, links), what it's called, and the text tab read from it (if it
 /// was read).
@@ -175,6 +246,7 @@ class CaptureEvent {
     this.sharedBy,
     this.readOnly = false,
     this.linkKey,
+    this.contributions = const [],
   }) : updated = updated ?? created;
 
   /// What's left of [event] once deleted: a tombstone, so the deletion
@@ -250,8 +322,39 @@ class CaptureEvent {
   final String? sharedBy;
   bool get isShared => sharedBy != null;
 
-  /// Shared read only: the user can see it, not change it.
+  /// Shared to read: the user sees the owner's files, can't change them,
+  /// and adds their own instead ([contributes]).
   final bool readOnly;
+
+  /// Shared with the user to read: what they add (files, links, Cam's
+  /// takes) is their [Contribution], not the owner's capture.
+  bool get contributes => isShared && readOnly;
+
+  /// What people added ([Contribution]): on the owner's devices, everyone's
+  /// who did; on a reader's, their own (one at most). Kept on the device
+  /// (each syncs with its own folder), never in the capture's event.json.
+  final List<Contribution> contributions;
+
+  /// The user's own contribution, on a capture they [contributes] to.
+  Contribution? get myContribution =>
+      contributes ? contributions.firstOrNull : null;
+
+  /// Whether [page] (a contribution's) is published: copied into the
+  /// capture's own pages.
+  bool isPublished(EventPage page) => publishedCopy(page) != null;
+
+  /// The capture's copy of [page], a contribution's, once published.
+  EventPage? publishedCopy(EventPage page) =>
+      pages.where((p) => p.from == page.id).firstOrNull;
+
+  /// Every page whose file is kept with the event: its own and the
+  /// contributions'.
+  Iterable<EventPage> get allPages sync* {
+    yield* pages;
+    for (final c in contributions) {
+      yield* c.pages;
+    }
+  }
 
   /// The key in the capture's link (`…/app/?c=<id>&k=<key>`), made the first
   /// time its owner copies the link: with it, anyone holding the link may
@@ -283,6 +386,7 @@ class CaptureEvent {
     String? sharedBy,
     bool? readOnly,
     String? linkKey,
+    List<Contribution>? contributions,
   }) => CaptureEvent(
     id: id,
     title: title ?? this.title,
@@ -301,6 +405,7 @@ class CaptureEvent {
     sharedBy: sharedBy ?? this.sharedBy,
     readOnly: readOnly ?? this.readOnly,
     linkKey: linkKey ?? this.linkKey,
+    contributions: contributions ?? this.contributions,
   );
 
   /// The event as saved: with its [owner] and [shares]; on the device
@@ -325,6 +430,8 @@ class CaptureEvent {
     if (linkKey != null) 'linkKey': linkKey,
     if (local && sharedBy != null) 'sharedBy': sharedBy,
     if (local && readOnly) 'readOnly': true,
+    if (local && contributions.isNotEmpty)
+      'contributions': [for (final c in contributions) c.toJson()],
   };
 
   factory CaptureEvent.fromJson(Map<String, Object?> json) {
@@ -362,6 +469,10 @@ class CaptureEvent {
         final String k when isLinkKey(k) => k,
         _ => null,
       },
+      contributions: [
+        for (final c in json['contributions'] as List? ?? const [])
+          Contribution.fromJson((c as Map).cast<String, Object?>()),
+      ],
     );
   }
 }

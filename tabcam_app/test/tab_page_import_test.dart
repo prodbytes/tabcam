@@ -201,6 +201,27 @@ void main() {
       },
     );
 
+    test("a reader's print is their own, as the link is", () async {
+      await library.applyRemote(
+        event.copyWith(sharedBy: 'julio@example.com', readOnly: true),
+      );
+      final shared = await library.addLink(library.byId(event.id)!, _ug);
+      final done = await importer(
+        () => http.Response(
+          _ugPage(),
+          200,
+          headers: {'content-type': 'text/html; charset=utf-8'},
+        ),
+      ).addTo(library, shared, _ug);
+      expect(done!.outcome, TabImportOutcome.imported);
+      final now = library.byId(event.id)!;
+      expect(now.pages, isEmpty);
+      expect(now.myContribution!.pages.map((p) => p.kind), [
+        PageKind.link,
+        PageKind.pdf,
+      ]);
+    });
+
     test('on the web, without Premium, nothing is fetched', () async {
       final done = await TabPageImporter(
         client: MockClient((request) async {

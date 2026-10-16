@@ -174,8 +174,14 @@ class S3:
         self.keys = []
 
     def list_objects_v2(self, Bucket, Prefix, MaxKeys):
-        found = [k for k in self.keys if k.startswith(Prefix)][:MaxKeys]
-        return {"Contents": [{"Key": k} for k in found]} if found else {}
+        # At most two keys a page, to list more than once.
+        found = [k for k in self.keys if k.startswith(Prefix)]
+        page = found[:min(MaxKeys, 2)]
+        return {**({"Contents": [{"Key": k} for k in page]} if page else {}),
+                "IsTruncated": len(found) > len(page)}
+
+    def delete_object(self, Bucket, Key):
+        self.keys.remove(Key)
 
 
 class NoSuchKey(Exception):
@@ -395,7 +401,7 @@ class ShareApiTest(unittest.TestCase):
         status, body = self.call("DELETE /account", "julio@example.com")
         self.assertEqual(status, 200)
         self.assertEqual(body, {"grantsMade": 2, "grantsToMe": 1, "links": 0,
-                                "appleTokensRevoked": False})
+                                "contributions": 0, "appleTokensRevoked": False})
         # Olga's share with Ana stays; everything of Julio's is gone.
         self.assertEqual(self.grants_left(), [(f"{OTHER}#xyz", "ana@example.com")])
         self.assertEqual(self.clients["cognito"].deleted, [OWNER])
@@ -792,6 +798,105 @@ class ShareApiTest(unittest.TestCase):
         self.assertEqual(self.publish(capture="xyz")[0], 409)
         self.assertEqual(self.publish(token="other-token", email="olga@example.com")[0], 409)
         self.assertEqual(self.publish(key="bad key")[0], 400)
+
+    # --- contributions ------------------------------------------------------
+
+    def reader_credentials(self, email="bo@example.com", token="bo"):
+        return self.call("POST /shared/{owner}/{captureId}/credentials", email,
+                         token=token, path={"owner": OWNER, "captureId": "abc"})
+
+    def test_a_readers_credentials_add_their_own_contribution_alone(self):
+        self.grant("bo@example.com", "read")
+        status, creds = self.reader_credentials()
+        self.assertEqual(status, 200)
+        bo = self.clients["cognito"].identities[next(
+            p for p, _ in self.clients["cognito"].identities.items()
+            if p not in ("brave_calm_otter", "quiet_bold_heron", "shy_tall_lynx"))]
+        mine = f"{OWNER}/contrib/abc/{bo}/"
+        self.assertEqual(creds["contribPrefix"], mine)
+        statements = json.loads(self.clients["sts"].calls[-1]["Policy"])["Statement"]
+        # The owner's files: read only. Their own folder: read and write.
+        self.assertEqual(statements[0]["Action"], ["s3:GetObject"])
+        self.assertEqual(statements[1]["Resource"], f"arn:aws:s3:::nu01-user-events-1/{mine}*")
+        self.assertIn("s3:PutObject", statements[1]["Action"])
+        listed = statements[2]["Condition"]["StringLike"]["s3:prefix"]
+        self.assertEqual(listed, [f"{OWNER}/events/abc/", f"{OWNER}/events/abc/*", mine, f"{mine}*"])
+        # No other reader's folder, nor the contributions' root.
+        self.assertFalse(any(f"{OWNER}/contrib/abc/*" == r or r.endswith("/contrib/*")
+                             for st in statements for r in [st["Resource"]]))
+        # The owner learns whose folder it is.
+        _, body = self.call("GET /shares/{captureId}", "julio@example.com", path={"captureId": "abc"})
+        self.assertEqual(body["grants"][0]["identity"], bo)
+        # A role change keeps it.
+        _, body = self.grant("bo@example.com", "read")
+        self.assertEqual(body["grants"][0]["identity"], bo)
+
+    def test_editors_change_the_capture_and_have_no_contribution(self):
+        self.grant("ana@example.com")
+        _, creds = self.reader_credentials("ana@example.com", "ana")
+        self.assertNotIn("contribPrefix", creds)
+        statements = json.loads(self.clients["sts"].calls[-1]["Policy"])["Statement"]
+        self.assertEqual(len(statements), 2)
+
+    def join(self, email="kim@example.com", token="kim", key=None, capture="abc"):
+        return self.call("POST /links/{captureId}/join", email, token=token,
+                         path={"captureId": capture}, body={"key": key or self.KEY})
+
+    def test_signed_in_people_join_by_the_link_as_readers(self):
+        self.publish()
+        status, body = self.join()
+        self.assertEqual(status, 200)
+        self.assertEqual(body, {"owner": OWNER, "captureId": "abc",
+                                "ownerEmail": "julio@example.com", "role": "read"})
+        self.assertEqual(self.join()[1]["role"], "read")  # again: the same
+        _, shared = self.call("GET /shared", "kim@example.com", token="kim")
+        self.assertEqual(shared["shared"], [{"owner": OWNER, "captureId": "abc",
+                                             "ownerEmail": "julio@example.com", "role": "read"}])
+        _, creds = self.reader_credentials("kim@example.com", "kim")
+        self.assertIn("/contrib/abc/", creds["contribPrefix"])
+        _, grants = self.call("GET /shares/{captureId}", "julio@example.com", path={"captureId": "abc"})
+        self.assertEqual(grants["grants"][0]["via"], "link")
+
+    def test_joining_keeps_what_the_owner_and_editors_have(self):
+        self.publish()
+        self.assertEqual(self.join("julio@example.com", "owner-token")[1]["own"], True)
+        self.grant("ana@example.com")
+        self.assertEqual(self.join("ana@example.com", "ana")[1]["role"], "edit")
+        self.assertEqual(len(self.clients["table"].items), 1)
+
+    def test_a_wrong_link_joins_nothing(self):
+        self.publish()
+        self.assertEqual(self.join(key="riffkey-wrong-0123456789abcdefghijklmn")[0], 404)
+        self.assertEqual(self.join(capture="xyz")[0], 404)
+        self.assertEqual(self.join(key="short")[0], 400)
+        self.assertEqual(self.clients["table"].items, {})
+
+    def test_people_who_joined_dont_count_toward_the_email_limit(self):
+        self.publish()
+        old_grants, old_joins = index.MAX_GRANTS, index.MAX_JOINS
+        index.MAX_GRANTS, index.MAX_JOINS = 1, 2
+        try:
+            self.join("kim@example.com", "kim")
+            self.join("lee@example.com", "lee")
+            self.assertEqual(self.join("max@example.com", "max")[0], 409)
+            self.assertEqual(self.grant("ana@example.com")[0], 200)
+            self.assertEqual(self.grant("bo@example.com")[0], 400)
+        finally:
+            index.MAX_GRANTS, index.MAX_JOINS = old_grants, old_joins
+
+    def test_deleting_the_account_deletes_its_contributions_alone(self):
+        self.publish()
+        self.join()
+        _, creds = self.reader_credentials("kim@example.com", "kim")
+        mine = creds["contribPrefix"]
+        theirs = f"{OWNER}/contrib/abc/us-east-1:99999999-0000-0000-0000-000000000000/"
+        self.clients["s3"].keys = [f"{mine}contrib.json", f"{mine}a.mp4", f"{mine}b.jpg",
+                                   f"{theirs}contrib.json", f"{OWNER}/events/abc/event.json"]
+        status, body = self.call("DELETE /account", "kim@example.com", token="kim")
+        self.assertEqual(status, 200)
+        self.assertEqual(body["contributions"], 3)
+        self.assertEqual(self.clients["s3"].keys,
+                         [f"{theirs}contrib.json", f"{OWNER}/events/abc/event.json"])
 
     def test_deleting_the_account_deletes_its_links(self):
         self.publish()

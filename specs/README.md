@@ -81,10 +81,15 @@ the cloud as they sync.
   key, wrapped with the profile's public key; the API unwraps it for the
   owner, the people it's shared with and its link's holders.
 - [Shared captures](shared-captures.md): share a capture of one's own
-  by email, to edit (the default) or read only; no email is sent, people
+  by email, to edit (the default) or read (see and add one's own files); no email is sent, people
   find it when they sign in. A share API (Lambda, DynamoDB, an HTTP API
   with Google and Apple JWT authorizers) keeps the grants and hands out
   credentials for just that capture's folder.
+- [Contributions](contributions.md): who sees which files of a shared
+  capture. Readers, and people who join by its link signed in, add files
+  of their own that only they and the owner see; the owner publishes the
+  ones they like into the capture, for everyone; signed out, a link shows
+  the owner's files only.
 - [TabCam Premium: cloud OCR](cloud-ocr.md): premium users' pages
   transcribed in AWS Lambda as they sync (Tesseract, PaddleOCR and
   RapidOCR per string line, voted), the text tab filled in by itself;

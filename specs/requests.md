@@ -1304,3 +1304,33 @@ spec.
       line's gap, or the first string's name coming back), which merged
       into one before.
     See [tab site links](tab-site-links.md).
+34. **When a capture is shared: its owner sees all files; signed out, the
+    person opening the link sees only the owner's; signed in, they add
+    their own files and recordings and see only theirs and the owner's,
+    not other sharees'; the owner sees everyone's and can publish them.
+    (A teacher publishes a tab and resources; students upload videos and
+    links without seeing each other's; the teacher publishes the ones they
+    like.)** Added [contributions](contributions.md):
+    - Someone signed in who opens a capture's link joins it (`POST
+      /links/{captureId}/join`), with a read grant of their own, so it's
+      in their Shared with me; the owner's people sheet says "Joined by
+      the link". Up to 500 may join, apart from the 50 email grants.
+    - The **read** role is now "Can view and add": readers (by email or
+      by the link) see the owner's files and add their own (Add, dropped
+      files, Cam's takes) to a contribution in its own folder,
+      `<owner>/contrib/<capture>/<their identity>/`, which their
+      credentials alone reach besides the capture's (the
+      `tabcam-share-access` role now allows `contrib/` too). Editors are
+      as before and don't see contributions.
+    - The owner's devices list `contrib/` each pass and show each
+      reader's files under "From <email>" (the grants now record each
+      reader's identity); **Publish** copies one into the capture (a new
+      page whose `from` names theirs), for everyone (its link too), and
+      tapping again takes it back.
+    - Deleting an account deletes what it contributed to others'
+      captures (the share API may now delete under `*/contrib/*`).
+    - Event screen, file screen, Cam and Home changed to match; strings in
+      English, Spanish and Portuguese. [Shared captures](shared-captures.md),
+      [sharing](sharing.md), [event screen](event-screen.md),
+      [Cam](cam.md), [cloud sync](cloud-sync.md) and the
+      [library](library.md) updated.

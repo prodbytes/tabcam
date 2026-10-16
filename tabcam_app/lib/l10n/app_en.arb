@@ -248,7 +248,7 @@
   "@accountPeopleCanEdit": {
     "description": "Share role: edit"
   },
-  "accountPeopleReadOnly": "Read only",
+  "accountPeopleReadOnly": "Can view and add",
   "@accountPeopleReadOnly": {
     "description": "Share role: read only"
   },
@@ -618,9 +618,9 @@
       }
     }
   },
-  "eventReadOnly": "Read only",
+  "eventReadOnly": "Can view and add",
   "@eventReadOnly": {
-    "description": "Event banner: shared read only"
+    "description": "Event banner: shared to read (see the owner's files, add one's own)"
   },
   "eventByLink": "Opened by its link · Read only",
   "@eventByLink": {
@@ -1986,5 +1986,64 @@
   },
   "@deleteAccountAppleOtherId": {
     "description": "Deleting the account, signed in with Apple: Apple's sheet confirmed with another Apple ID"
+  },
+  "eventYourFiles": "Your files",
+  "@eventYourFiles": {
+    "description": "Event screen, a capture shared with the user to read: the heading of what they added"
+  },
+  "eventYourFilesDetail": "Only you and {owner} see these",
+  "@eventYourFilesDetail": {
+    "description": "Event screen: under eventYourFiles, who sees the reader's own files",
+    "placeholders": {
+      "owner": {
+        "type": "String"
+      }
+    }
+  },
+  "eventFilesFrom": "From {person}",
+  "@eventFilesFrom": {
+    "description": "Event screen, the owner's capture: the heading of what one person added",
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "eventSomeone": "someone",
+  "@eventSomeone": {
+    "description": "Event screen: eventFilesFrom's person, when their address isn't known yet"
+  },
+  "eventPublishHint": "Only you see these until you publish them",
+  "@eventPublishHint": {
+    "description": "Event screen, the owner's capture: under eventFilesFrom"
+  },
+  "eventPublish": "Publish: everyone sees it",
+  "@eventPublish": {
+    "description": "Event screen: tooltip of the button that publishes someone's file into the capture"
+  },
+  "eventUnpublish": "Published: tap to take it back",
+  "@eventUnpublish": {
+    "description": "Event screen: tooltip of a published file's button, which takes it back out of the capture"
+  },
+  "eventPublished": "Published",
+  "@eventPublished": {
+    "description": "Event screen: under a person's file that's published into the capture"
+  },
+  "eventPublishedSnack": "{name} published: everyone sees it now",
+  "@eventPublishedSnack": {
+    "description": "Event screen: a person's file was published",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "eventCouldntPublish": "Couldn't publish",
+  "@eventCouldntPublish": {
+    "description": "Event screen: publishing (or taking back) a person's file failed"
+  },
+  "accountPeopleViaLink": "Joined by the link",
+  "@accountPeopleViaLink": {
+    "description": "People sheet: under someone who joined by opening the capture's link, signed in"
   }
 }

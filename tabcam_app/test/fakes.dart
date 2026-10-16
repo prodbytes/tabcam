@@ -255,11 +255,15 @@ class FakeShareApi extends ShareApi {
   /// Owners' emails, by identity.
   static final Map<String, String> emails = {};
 
+  /// Readers' identities, by email, once they've asked for credentials
+  /// (the API records them on their grants).
+  static final Map<String, String> identities = {};
+
   int credentialRequests = 0;
 
   List<Grant> _of(String key) => [
     for (final MapEntry(:key, :value) in (grantsBy[key] ?? {}).entries)
-      Grant(key, value),
+      Grant(key, value, identity: identities[key]),
   ];
 
   @override
@@ -430,6 +434,7 @@ class FakeShareApi extends ShareApi {
     credentialRequests++;
     final role = grantsBy['$owner/$captureId']?[email];
     if (role == null) throw ShareApiException(404, 'Not shared with you');
+    if (role == ShareRole.read) identities[email] = identity;
     return ShareCredentials(
       AwsCredentials(
         accessKeyId: 'ASIA',
@@ -437,6 +442,27 @@ class FakeShareApi extends ShareApi {
         expiration: DateTime.now().toUtc().add(const Duration(hours: 1)),
       ),
       role,
+      contribPrefix: role == ShareRole.read
+          ? '$owner/contrib/$captureId/$identity/'
+          : null,
     );
+  }
+
+  @override
+  Future<JoinedCapture> joinLink(
+    String token,
+    String captureId,
+    String key,
+  ) async {
+    final found = links[key];
+    if (found == null || found.split('/').last != captureId) {
+      throw ShareApiException(404, 'No such link');
+    }
+    final owner = found.split('/').first;
+    if (owner == identity) {
+      return JoinedCapture(owner: owner, captureId: captureId, own: true);
+    }
+    (grantsBy[found] ??= {}).putIfAbsent(email, () => ShareRole.read);
+    return JoinedCapture(owner: owner, captureId: captureId);
   }
 }
