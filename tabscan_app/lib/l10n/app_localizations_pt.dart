@@ -551,6 +551,47 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventFlipCamera => 'Trocar câmera';
 
   @override
+  String get eventCam => 'Câmera';
+
+  @override
+  String get camRec => 'Gravar';
+
+  @override
+  String get camStop => 'Parar';
+
+  @override
+  String get camPlay => 'Tocar';
+
+  @override
+  String get camPrevious => 'Linha anterior';
+
+  @override
+  String get camNext => 'Próxima linha';
+
+  @override
+  String get camNoTab =>
+      'Ainda não há tablatura em texto: leia a tablatura da captura para tocar junto.';
+
+  @override
+  String camTake(int number) {
+    return 'Take $number';
+  }
+
+  @override
+  String camSaved(String name) {
+    return '$name adicionado à captura';
+  }
+
+  @override
+  String camCouldntRecord(String error) {
+    return 'Não foi possível gravar: $error';
+  }
+
+  @override
+  String get camNotAllowed =>
+      'A câmera ou o microfone não estão permitidos: deixe o TabScan usá-los nas configurações.';
+
+  @override
   String get eventDone => 'Concluir';
 
   @override

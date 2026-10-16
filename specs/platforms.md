@@ -6,6 +6,7 @@
 | Scan | System document scanner (ML Kit, base mode: no filters): edges, straightening, several pages | System document scanner (VisionKit) | TabScan's camera screen (the browser's camera): several pages, cropped to the page when one stands out |
 | Add photos & videos, files | Photo picker; system file picker | Photo library; Files app | Browser file picker (both) |
 | Play videos | From the file | From the file | From memory |
+| [Cam](cam.md) takes | MP4 | MOV | WebM (the browser's camera and microphone) |
 | Open links, YouTube's too (`url_launcher`, outside the app) | The browser, or the app for the link (YouTube) | Safari, or the app for the link (YouTube) | A new tab |
 | Reading tabs (by itself) | ✅ ML Kit on the device | ✅ ML Kit on the device | Premium only (else the Text view says it needs the app) |
 | Library | Files in the app's documents | Files in the app's documents | Memory, until the tab closes |

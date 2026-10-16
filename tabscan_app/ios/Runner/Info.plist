@@ -24,6 +24,8 @@
 	<string>TabScan</string>
 	<key>NSCameraUsageDescription</key>
 	<string>TabScan uses the camera to scan guitar tabs.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>TabScan records sound with the video when you record yourself playing along with a tab.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>TabScan imports photos of guitar tabs you choose.</string>
 	<key>CFBundlePackageType</key>

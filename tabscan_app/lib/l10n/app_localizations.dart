@@ -952,6 +952,72 @@ abstract class AppLocalizations {
   /// **'Flip camera'**
   String get eventFlipCamera;
 
+  /// Capture screen tool: record yourself playing along with the tab
+  ///
+  /// In en, this message translates to:
+  /// **'Cam'**
+  String get eventCam;
+
+  /// Cam: start recording
+  ///
+  /// In en, this message translates to:
+  /// **'Rec'**
+  String get camRec;
+
+  /// Cam: stop recording or playing
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get camStop;
+
+  /// Cam: play the last take back
+  ///
+  /// In en, this message translates to:
+  /// **'Play'**
+  String get camPlay;
+
+  /// Cam: previous neckline tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Previous line'**
+  String get camPrevious;
+
+  /// Cam: next neckline tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Next line'**
+  String get camNext;
+
+  /// Cam: the capture has no text tab
+  ///
+  /// In en, this message translates to:
+  /// **'No text tab yet: read the capture\'s tab to play along with it.'**
+  String get camNoTab;
+
+  /// Cam: a recording's name
+  ///
+  /// In en, this message translates to:
+  /// **'Take {number}'**
+  String camTake(int number);
+
+  /// Cam: a take was saved
+  ///
+  /// In en, this message translates to:
+  /// **'{name} added to the capture'**
+  String camSaved(String name);
+
+  /// Cam: recording failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t record: {error}'**
+  String camCouldntRecord(String error);
+
+  /// Cam: permission denied
+  ///
+  /// In en, this message translates to:
+  /// **'The camera or microphone isn\'t allowed: let TabScan use them in the settings.'**
+  String get camNotAllowed;
+
   /// Camera screen: finish
   ///
   /// In en, this message translates to:

@@ -716,6 +716,65 @@
   "@eventFlipCamera": {
     "description": "Camera screen tooltip"
   },
+  "eventCam": "Cam",
+  "@eventCam": {
+    "description": "Capture screen tool: record yourself playing along with the tab"
+  },
+  "camRec": "Rec",
+  "@camRec": {
+    "description": "Cam: start recording"
+  },
+  "camStop": "Stop",
+  "@camStop": {
+    "description": "Cam: stop recording or playing"
+  },
+  "camPlay": "Play",
+  "@camPlay": {
+    "description": "Cam: play the last take back"
+  },
+  "camPrevious": "Previous line",
+  "@camPrevious": {
+    "description": "Cam: previous neckline tooltip"
+  },
+  "camNext": "Next line",
+  "@camNext": {
+    "description": "Cam: next neckline tooltip"
+  },
+  "camNoTab": "No text tab yet: read the capture's tab to play along with it.",
+  "@camNoTab": {
+    "description": "Cam: the capture has no text tab"
+  },
+  "camTake": "Take {number}",
+  "@camTake": {
+    "description": "Cam: a recording's name",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "camSaved": "{name} added to the capture",
+  "@camSaved": {
+    "description": "Cam: a take was saved",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "camCouldntRecord": "Couldn't record: {error}",
+  "@camCouldntRecord": {
+    "description": "Cam: recording failed",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "camNotAllowed": "The camera or microphone isn't allowed: let TabScan use them in the settings.",
+  "@camNotAllowed": {
+    "description": "Cam: permission denied"
+  },
   "eventDone": "Done",
   "@eventDone": {
     "description": "Camera screen: finish"
