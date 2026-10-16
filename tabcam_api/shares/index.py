@@ -68,6 +68,7 @@ import re
 import time
 
 import apple_revoke
+import cdn
 import keys as pkeys
 import profiles as prof
 import sealed
@@ -141,6 +142,9 @@ def _clients():
         # Sign in with Apple's key, read when an Apple account is deleted.
         "apple_key": lambda: apple_revoke.Key.load(boto3.client("ssm", region_name=region)),
         "apple_open": None,
+        # CloudFront signed URLs for the folders it hands out (cdn.py).
+        "cdn": lambda: cdn.load(boto3.client("ssm", region_name=region)),
+        "cloudfront": boto3.client("cloudfront"),
     }
 
 
@@ -219,6 +223,28 @@ def query_all(table, **kwargs):
         kwargs["ExclusiveStartKey"] = page["LastEvaluatedKey"]
 
 
+def cdn_signer(clients):
+    """The CloudFront signer (cdn.py), loaded once; None without one, or
+    when it can't be loaded (the app then reads S3 directly)."""
+    if "cdn_signer" not in clients:
+        try:
+            load = clients.get("cdn")
+            clients["cdn_signer"] = load() if load else None
+        except Exception as e:  # tried again by the next cold start
+            print(f"cdn signer: {e}")
+            clients["cdn_signer"] = None
+    return clients["cdn_signer"]
+
+
+def with_cdn(clients, body):
+    """[body] (folder credentials, with their prefix) and a CloudFront
+    grant for the same prefix, when the API has a signer."""
+    signer = cdn_signer(clients)
+    if signer is not None:
+        body["cdn"] = signer.grant(body["prefix"])
+    return body
+
+
 def folder_credentials(sts, owner, capture_id, role):
     """Credentials for the capture's folder alone: get and list, plus put
     and delete to edit."""
@@ -271,7 +297,7 @@ def public_credentials(event, clients):
         raise ApiError(404, "No such link")
     owner = item["owner"]
     creds = folder_credentials(clients["sts"], owner, capture_id, "read")
-    body = {"owner": owner, **creds}
+    body = with_cdn(clients, {"owner": owner, **creds})
     content_key = _content_key(clients, owner, capture_id, creds)
     if content_key is not None:
         body["contentKey"] = content_key
@@ -564,8 +590,10 @@ class Api:
     def profile_credentials(self):
         profile = self._profile()
         result = self._developer_token(profile)
-        return {"profileId": profile["id"], "identityId": result["IdentityId"],
-                "token": result["Token"]}
+        identity = result["IdentityId"]
+        body = {"profileId": profile["id"], "identityId": identity,
+                "token": result["Token"], "prefix": f"{identity}/"}
+        return with_cdn(self.clients, body)
 
     def link_code(self):
         profile = self._profile()
@@ -720,7 +748,7 @@ class Api:
         owner, capture_id, item = self._my_grant()
         if item is None:
             raise ApiError(404, "Not shared with you")
-        return folder_credentials(self.sts, owner, capture_id, item["role"])
+        return with_cdn(self.clients, folder_credentials(self.sts, owner, capture_id, item["role"]))
 
     def content_key(self):
         """An encrypted capture's content key, for its owner's profile or
@@ -794,6 +822,10 @@ class Api:
                 self.links.delete_item(Key={"keyHash": item["keyHash"]})
         if self.accounts is not None:
             self.accounts.delete_item(Key={"identityId": owner})
+        # CloudFront's copies of the folder go too (the app has emptied it).
+        cloudfront = self.clients.get("cloudfront")
+        if cloudfront is not None:
+            cdn.invalidate(cloudfront, f"{owner}/")
         result = self.cognito.delete_identities(IdentityIdsToDelete=[owner])
         if result.get("UnprocessedIdentityIds"):
             raise ApiError(502, "Couldn't delete your identity: try again")

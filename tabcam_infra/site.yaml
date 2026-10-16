@@ -30,8 +30,23 @@ Parameters:
       permanent redirect to the same path and query there, so links
       already shared keep working.
 
+  CdnKeyGroupId:
+    Type: String
+    Default: ''
+    Description: >
+      The share API's CloudFront key group (tabcam-share-api's
+      CdnKeyGroupId output, TABCAM_CDN_KEY_GROUP_ID). With it, the site
+      also serves the user-data bucket's folders at their keys' paths
+      (/<identity>/...), to signed URLs only (tabcam_api/shares/cdn.py),
+      cached as the objects' Cache-Control says.
+  IdentityRegion:
+    Type: String
+    Default: us-east-1
+    Description: The identity pool's region, which starts every folder's name (<region>:<uuid>)
+
 Conditions:
   HasPreviews: !Not [!Equals [!Ref ShareApiDomain, '']]
+  HasCdn: !Not [!Equals [!Ref CdnKeyGroupId, '']]
   IsRedirect: !Not [!Equals [!Ref RedirectTo, '']]
 
 Resources:
@@ -70,6 +85,31 @@ Resources:
         OriginAccessControlOriginType: s3
         SigningBehavior: always
         SigningProtocol: sigv4
+
+  # Users' folders: each object kept as long as its Cache-Control says
+  # (pages and videos a year, written once; event.json and OCR results
+  # revalidated every time), not at all without one. The key is the path
+  # alone: the signature's query string is checked, then left out, so
+  # everyone allowed to read an object shares one copy.
+  UserDataCachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Condition: HasCdn
+    Properties:
+      CachePolicyConfig:
+        Name: !Sub ${AWS::StackName}-user-data
+        Comment: Users' folders, cached as their Cache-Control says
+        MinTTL: 0
+        DefaultTTL: 0
+        MaxTTL: 31536000
+        ParametersInCacheKeyAndForwardedToOrigin:
+          EnableAcceptEncodingGzip: true
+          EnableAcceptEncodingBrotli: true
+          HeadersConfig:
+            HeaderBehavior: none
+          CookiesConfig:
+            CookieBehavior: none
+          QueryStringsConfig:
+            QueryStringBehavior: none
 
   SiteBucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -203,6 +243,18 @@ Resources:
                 - HeaderName: x-tabcam-site
                   HeaderValue: !Ref DomainName
             - !Ref AWS::NoValue
+          # Users' folders (tabcam-user-data's bucket, whose policy names
+          # this distribution).
+          - !If
+            - HasCdn
+            - Id: user-data
+              DomainName: !Sub
+                - ${Bucket}.s3.${AWS::Region}.amazonaws.com
+                - Bucket: !ImportValue tabcam-user-data-bucket
+              OriginAccessControlId: !GetAtt SiteOriginAccessControl.Id
+              S3OriginConfig:
+                OriginAccessIdentity: ''
+            - !Ref AWS::NoValue
         # The index page at / (redirects to /app/)
         DefaultCacheBehavior:
           TargetOriginId: site
@@ -244,6 +296,21 @@ Resources:
               CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 # Managed-CachingOptimized
               ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03 # Managed-SecurityHeadersPolicy
             - !Ref AWS::NoValue
+          # A user's folder, at its keys' paths (every folder is a Cognito
+          # identity ID, <region>:<uuid>): signed URLs only, one folder's
+          # each. Same origin as the web app, so no CORS.
+          - !If
+            - HasCdn
+            - PathPattern: !Sub /${IdentityRegion}:*
+              TargetOriginId: user-data
+              ViewerProtocolPolicy: https-only
+              Compress: true
+              AllowedMethods: [GET, HEAD]
+              CachedMethods: [GET, HEAD]
+              TrustedKeyGroups: [!Ref CdnKeyGroupId]
+              CachePolicyId: !Ref UserDataCachePolicy
+              ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03 # Managed-SecurityHeadersPolicy
+            - !Ref AWS::NoValue
 
   DnsRecordA:
     Type: AWS::Route53::RecordSet
@@ -275,5 +342,8 @@ Outputs:
     Value: !Ref SiteBucket
   DistributionId:
     Value: !Ref Distribution
+  DistributionArn:
+    Description: For tabcam-user-data's CdnDistributionArns
+    Value: !Sub arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${Distribution}
   DistributionDomainName:
     Value: !GetAtt Distribution.DomainName

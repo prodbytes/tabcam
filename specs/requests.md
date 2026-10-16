@@ -1243,3 +1243,22 @@ spec.
     the store apps still show no purchase information. The charge itself
     is Substack's paid-subscription setting, set there
     ([cloud OCR](cloud-ocr.md#who-is-premium)).
+29. **Set cache headers on user data, fetch and cache it through
+    CloudFront, and cache it on the device by the same headers** (signed
+    URLs chosen over keeping S3 only, or waiting for encryption).
+    - Every object says how to cache it: pages a year (`immutable`),
+      `event.json` and OCR results `no-cache` (the app's uploads, and the
+      OCR service's results).
+    - The sites' distributions serve the user-data bucket at `/us-east-1:*`
+      to signed URLs only (the share API's new key group, `tabcam-user-data`,
+      its key in SSM via `scripts/make-cdn-key.sh`), cached as the objects
+      say; the bucket policy names the two distributions alone. The share
+      API signs a grant per folder with each set of credentials (profile,
+      shared capture, link), one policy per site, and invalidates a
+      deleted account's folder.
+    - The app reads granted keys through CloudFront and a device cache
+      (`HttpCache`: files on phones, IndexedDB on the web, 512 MB),
+      falling back to S3; the cache empties on sign-out.
+    - The privacy policy names CloudFront, where it caches and for how
+      long, the device cache, and that deleting an account drops
+      CloudFront's copies. See [caching users' files](cdn.md).

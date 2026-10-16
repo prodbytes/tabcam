@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../auth/auth_service.dart';
 import '../l10n/language.dart';
+import 'cdn.dart';
 import 'sigv4.dart';
 
 /// What a person may do with a capture shared with them.
@@ -141,11 +142,15 @@ class ProfileToken {
     required this.profileId,
     required this.identityId,
     required this.token,
+    this.cdn,
   });
 
   final String profileId;
   final String identityId;
   final String token;
+
+  /// Reading the profile's folder through CloudFront (none without one).
+  final CdnGrant? cdn;
 }
 
 /// Why the share API refused.
@@ -263,6 +268,7 @@ class ShareApi {
       profileId: body['profileId'] as String,
       identityId: body['identityId'] as String,
       token: body['token'] as String,
+      cdn: CdnGrant.fromJson(body['cdn']),
     );
   }
 
@@ -327,6 +333,7 @@ class ShareApi {
       (c['expiration'] as num).toInt() * 1000,
       isUtc: true,
     ),
+    cdn: CdnGrant.fromJson(c['cdn']),
   );
 
   static List<Grant> _grants(Map<String, Object?> body) => [

@@ -70,6 +70,22 @@ if [[ -n "$apple_client" && "$(aws ssm describe-parameters --parameter-filters "
   echo "warning: SSM SecureString $apple_key_param not found: deleting an Apple account won't revoke its Apple tokens until it's made (tabcam_api/shares/apple_revoke.py)" >&2
 fi
 
+# CloudFront signed URLs of users' folders (cdn.py): the key's public half,
+# from scripts/make-cdn-key.sh (none yet: the app keeps reading S3), and the
+# sites' distributions, whose caches a deleted account's folder leaves.
+cdn_public_key="$(aws ssm get-parameter --name "${CDN_PUBLIC_KEY_PARAMETER:-/tabcam/cdn-public-key}" \
+  --query Parameter.Value --output text 2>/dev/null || true)"
+if [[ "$cdn_public_key" != "-----BEGIN PUBLIC KEY-----"* ]]; then
+  echo "warning: no CloudFront signing key yet (bash scripts/make-cdn-key.sh): the app reads S3 directly" >&2
+  cdn_public_key=""
+fi
+cdn_distributions=""
+for site in tabcam-web tabcam-rc-web; do
+  id="$(aws cloudformation describe-stacks --stack-name "$site" \
+    --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" --output text 2>/dev/null || true)"
+  [[ "$id" =~ ^E[A-Z0-9]+$ ]] && cdn_distributions="${cdn_distributions:+$cdn_distributions,}$id"
+done
+
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 
@@ -98,11 +114,12 @@ aws cloudformation deploy --stack-name tabcam-share-api \
     "RbacrTokenParameterName=$rbacr_param" \
     "AppleSignInKeyParameterName=$apple_key_param" \
     DeveloperProviderName=login.tabcam.profiles \
+    "CdnPublicKey=$cdn_public_key" "CdnDistributionIds=$cdn_distributions" \
   --no-fail-on-empty-changeset
 
 echo "==> uploading the code"
 mkdir "$work/package"
-files=(index.py profiles.py keys.py sealed.py apple_revoke.py adjectives.txt animals.txt)
+files=(index.py profiles.py keys.py sealed.py apple_revoke.py cdn.py adjectives.txt animals.txt)
 for f in "${files[@]}"; do cp "tabcam_api/shares/$f" "$work/package/"; done
 "$work/venv/bin/pip" install --quiet --only-binary=:all: --require-hashes \
   --platform manylinux_2_28_aarch64 --platform manylinux_2_17_aarch64 \
@@ -116,6 +133,9 @@ aws lambda wait function-updated --function-name tabcam-share-api
 url="$(aws cloudformation describe-stacks --stack-name tabcam-share-api \
   --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" --output text)"
 echo "==> TABCAM_SHARE_API_URL=$url"
+key_group="$(aws cloudformation describe-stacks --stack-name tabcam-share-api \
+  --query "Stacks[0].Outputs[?OutputKey=='CdnKeyGroupId'].OutputValue" --output text 2>/dev/null || true)"
+[[ -n "$key_group" && "$key_group" != None ]] && echo "==> TABCAM_CDN_KEY_GROUP_ID=$key_group"
 # Without a token the authorizer answers 401: the API is up.
 status="$(curl -s -o /dev/null -w '%{http_code}' "$url/shared")"
 [[ "$status" == 401 ]] || { echo "error: $url/shared answered $status, not 401" >&2; exit 1; }

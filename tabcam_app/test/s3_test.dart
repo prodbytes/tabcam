@@ -87,6 +87,7 @@ void main() {
       headers: {
         'host': 'b.s3.us-east-1.amazonaws.com',
         'content-type': 'video/mp4',
+        'cache-control': 'public, max-age=31536000, immutable',
         'x-amz-storage-class': 'INTELLIGENT_TIERING',
       },
       payloadHash: SigV4Signer.unsignedPayload,

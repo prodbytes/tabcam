@@ -154,9 +154,15 @@
     profile, the sharing grants, the capture links and the Premium
     account record in Amazon DynamoDB, the keys that encrypt your
     captures in AWS KMS, sign-in credentials through Amazon Cognito, and
-    the sharing and OCR services on AWS Lambda. Everything is in the AWS
+    the sharing and OCR services on AWS Lambda. All of it is in the AWS
     US East (N. Virginia) region, in the United States, encrypted at rest
-    and sent only over HTTPS.</li>
+    and sent only over HTTPS. <strong>Amazon CloudFront</strong>, which
+    serves TabCam's site, also delivers your captures' files to the apps:
+    it keeps copies of them in its locations in the United States, Canada,
+    Europe and Israel, for up to a year for pages, photos and videos
+    (which never change) and not at all for a capture's details or its
+    transcriptions. Only links signed for you, or for someone you share a
+    capture with, open them, and each signature lasts an hour.</li>
     <li><strong>Google</strong> provides sign-in with Google, and ML Kit.
     Google's privacy policy applies to your Google account:
     <a href="https://policies.google.com/privacy">policies.google.com/privacy</a>.</li>
@@ -183,11 +189,15 @@
     subscription's status reach rbacr, to grant Premium.</li>
   </ul>
   <p>If you're outside the United States, your data is transferred to and
-  stored in the United States.</p>
+  stored in the United States, and cached by CloudFront as above.</p>
 
   <h2>On your device</h2>
   <p>The phone apps keep your captures in the app's own storage. The web
-  app keeps captures only in memory and remembers your sign-in (your name,
+  app keeps captures only in memory. Both keep copies of the files they
+  download from the cloud, up to 512 MB, in a cache (the phone app's cache
+  folder; the browser's storage for the site), for as long as the files
+  themselves say, so they aren't downloaded again; signing out or
+  deleting the account empties it. The web app remembers your sign-in (your name,
   email, photo address and Google's sign-in token) in the browser's local
   storage until you sign out. The iOS app keeps a Sign in with Apple
   session (your name, email and Apple's sign-in token) in its private
@@ -235,7 +245,8 @@
     the web app, from any browser), deletes your TabCam account and the
     data stored for it: your captures and their transcriptions in the
     cloud and on that device, your sharing grants, your profile and your
-    Premium account record. If you signed in with Apple, it also revokes
+    Premium account record, and CloudFront's copies of your files. If you
+    signed in with Apple, it also revokes
     TabCam's Apple sign-in tokens, so TabCam leaves your Apple ID's list
     of apps using Sign in with Apple. Copies in the 30-day file history
     and 35-day backups expire on that schedule. It doesn't cancel a

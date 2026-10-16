@@ -174,9 +174,13 @@ class ProfileCredentials extends CognitoCredentials {
       return current;
     }
     final profile = await shares.profileToken(idToken);
-    final session = await _credentialsFor(profile.identityId, {
+    final cognito = await _credentialsFor(profile.identityId, {
       'cognito-identity.amazonaws.com': profile.token,
     });
+    final session = CognitoSession(
+      identityId: cognito.identityId,
+      credentials: cognito.credentials.withCdn(profile.cdn),
+    );
     _session = session;
     _sessionToken = idToken;
     return session;

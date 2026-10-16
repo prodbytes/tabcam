@@ -132,6 +132,10 @@ quietly for a new one.
 
 ## What's synced, and where
 
+Reads of files go through the site's CloudFront and a device cache when
+the share API grants it, and each upload says how to cache it
+([caching users' files](cdn.md)); listings, writes and deletes go to S3.
+
 Everything is under the user's **Cognito identity ID**
 (`us-east-1:<uuid>`), in the user-data bucket: their
 [profile](profiles.md)'s, the same on every device and for every account

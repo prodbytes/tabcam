@@ -67,8 +67,34 @@ Parameters:
     Type: CommaDelimitedList
     Default: https://tabcam.nu01.com,https://rc.tabcam.nu01.com,http://localhost:2012,https://local.tabcam.nu01.com:2443
     Description: Web origins the app runs on (CORS)
+  CdnPublicKey:
+    Type: String
+    Default: ''
+    Description: >
+      The public half (PEM) of the key that signs CloudFront URLs for
+      reading users' folders through the sites (tabcam_api/shares/cdn.py;
+      made by scripts/make-cdn-key.sh). Empty: no signed URLs, the app
+      reads S3 directly.
+  CdnSigningKeyParameterName:
+    Type: String
+    Default: /tabcam/cdn-signing-key
+    AllowedPattern: '/[A-Za-z0-9_./-]+'
+    Description: The SSM SecureString parameter (aws/ssm key) with its private half (PEM)
+  CdnHosts:
+    Type: String
+    Default: tabcam.nu01.com,rc.tabcam.nu01.com
+    Description: The sites a grant is signed for, one policy each
+  CdnDistributionIds:
+    Type: String
+    Default: ''
+    Description: >
+      The sites' distribution IDs (tabcam-web's, tabcam-rc-web's),
+      separated by commas: DELETE /account invalidates the user's folder
+      on each. Empty: none.
 
 Conditions:
+  HasCdn: !Not [!Equals [!Ref CdnPublicKey, '']]
+  HasCdnDistributions: !Not [!Equals [!Ref CdnDistributionIds, '']]
   HasLocalClient: !Not [!Equals [!Ref GoogleLocalWebClientId, '']]
   HasApple: !Not [!Equals [!Ref AppleClientId, '']]
   HasAccountsTable: !Not [!Equals [!Ref AccountsTableName, '']]
@@ -367,6 +393,42 @@ Resources:
                   Action: dynamodb:DeleteItem
                   Resource: !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${AccountsTableName}
                 - !Ref AWS::NoValue
+              # The CloudFront URL signing key (cdn.py).
+              - !If
+                - HasCdn
+                - Effect: Allow
+                  Action: ssm:GetParameter
+                  Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${CdnSigningKeyParameterName}
+                - !Ref AWS::NoValue
+              # A deleted account's folder, out of the sites' caches.
+              - !If
+                - HasCdnDistributions
+                - Effect: Allow
+                  Action: cloudfront:CreateInvalidation
+                  # Only invalidations: the function asks the sites' alone.
+                  Resource: !Sub arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/*
+                - !Ref AWS::NoValue
+
+  # The key CloudFront checks signed URLs of users' folders with, in the
+  # group the sites' /<identity>/* behavior trusts (tabcam_infra/site.yaml).
+  CdnKey:
+    Type: AWS::CloudFront::PublicKey
+    Condition: HasCdn
+    Properties:
+      PublicKeyConfig:
+        Name: tabcam-user-data
+        CallerReference: tabcam-user-data
+        Comment: Signs URLs of users' folders (tabcam_api/shares/cdn.py)
+        EncodedKey: !Ref CdnPublicKey
+
+  CdnKeyGroup:
+    Type: AWS::CloudFront::KeyGroup
+    Condition: HasCdn
+    Properties:
+      KeyGroupConfig:
+        Name: tabcam-user-data
+        Comment: Signed URLs of users' folders
+        Items: [!Ref CdnKey]
 
   FunctionLogs:
     Type: AWS::Logs::LogGroup
@@ -408,6 +470,10 @@ Resources:
           RBACR_SYSTEM: tabcam
           APPLE_CLIENT_ID: !Ref AppleClientId
           APPLE_SIGN_IN_KEY_PARAMETER: !Ref AppleSignInKeyParameterName
+          CDN_KEY_PAIR_ID: !If [HasCdn, !Ref CdnKey, '']
+          CDN_SIGNING_KEY_PARAMETER: !Ref CdnSigningKeyParameterName
+          CDN_HOSTS: !Ref CdnHosts
+          CDN_DISTRIBUTIONS: !Ref CdnDistributionIds
       # A placeholder: scripts/deploy-share-api.sh uploads the real code.
       Code:
         ZipFile: |
@@ -580,3 +646,7 @@ Outputs:
     Value: !Ref ProfileKeysTable
     Export:
       Name: tabcam-profile-keys-table
+  CdnKeyGroupId:
+    Condition: HasCdn
+    Description: The sites' TABCAM_CDN_KEY_GROUP_ID (site.yaml's CdnKeyGroupId)
+    Value: !Ref CdnKeyGroup
