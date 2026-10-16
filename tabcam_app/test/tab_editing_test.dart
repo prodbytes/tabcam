@@ -91,4 +91,42 @@ void main() {
       expect(bumpNumber(_at('e|-123--|', 4), 1), isNull);
     });
   });
+
+  group('++ and −−', () {
+    const staff = 'Am\ne|--5--|\nB|-----|\nG|--7--|';
+    // The 5 on e, at column 4 of line 1 (offset 3 + 4).
+    final five = _at(staff, 7);
+
+    test('down a string, dashes left behind, the cursor follows', () {
+      final (:moved, :failure) = moveNote(five, 1);
+      expect(failure, isNull);
+      expect(moved!.text, 'Am\ne|-----|\nB|--5--|\nG|--7--|');
+      expect(moved.selection.baseOffset, 'Am\ne|-----|\n'.length + 4);
+    });
+
+    test('a string with a note there is skipped', () {
+      final (:moved, failure: _) = moveNote(
+        _at('e|--5--|\nB|-----|\nG|--7--|', 4),
+        -1,
+      );
+      // Up from e cycles to G, taken, so to B.
+      expect(moved!.text, 'e|-----|\nB|--5--|\nG|--7--|');
+    });
+
+    test('cycles from the last string to the first, two digits too', () {
+      final (:moved, failure: _) = moveNote(_at('e|------|\nB|--12--|', 14), 1);
+      expect(moved!.text, 'e|--12--|\nB|------|');
+      expect(moved.selection.baseOffset, 4);
+    });
+
+    test('nothing to move, or no room', () {
+      expect(moveNote(_at(staff, 1), 1).failure, MoveNoteFailure.noNote);
+      expect(moveNote(_at('e|------|', 3), 1).failure, MoveNoteFailure.noNote);
+      expect(
+        moveNote(_at('e|--5--|\nB|--7--|', 4), 1).failure,
+        MoveNoteFailure.noRoom,
+      );
+      expect(moveNote(_at('e|--5--|', 4), 1).failure, MoveNoteFailure.noRoom);
+    });
+  });
 }

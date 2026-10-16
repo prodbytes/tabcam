@@ -25,7 +25,8 @@ import 'mono_font.dart';
 /// user to accept or reject; **Rescan**, reading the tab from the pages
 /// again; and **Verified**, a toggle marking the text checked (the event
 /// then opens on its Text view, and no read replaces it). Editing tools,
-/// outlined: **−** and **+** change the fret under the cursor, and the
+/// outlined: **−** and **+** change the fret under the cursor, **++** and
+/// **−−** move its note to the string above or below, and the
 /// **Overtype** toggle (on by default) makes typing replace characters
 /// instead of pushing the line right.
 class TabTextView extends StatefulWidget {
@@ -156,6 +157,21 @@ class _TabTextViewState extends State<TabTextView> {
     }
     _text.value = value;
     _changed(value.text);
+  }
+
+  /// ++ and −−: the note under the cursor up or down a string.
+  void _move(int delta) {
+    final (:moved, :failure) = moveNote(_text.value, delta);
+    if (moved == null) {
+      _say(
+        failure == MoveNoteFailure.noRoom
+            ? context.l10n.textViewNoStringFree
+            : context.l10n.textViewPutCursorOnNote,
+      );
+      return;
+    }
+    _text.value = moved;
+    _changed(moved.text);
   }
 
   /// Fix: asks which song this is, then for its corrections.
@@ -363,7 +379,8 @@ class _TabTextViewState extends State<TabTextView> {
   }
 
   /// The editing tools, outlined so they read as buttons: − and + on the
-  /// fret under the cursor, and Overtype, a toggle (filled while on).
+  /// fret under the cursor, ++ and −− moving its note up or down a string,
+  /// and Overtype, a toggle (filled while on).
   Widget _tools() {
     final enabled = !_checking;
     final scheme = Theme.of(context).colorScheme;
@@ -385,6 +402,18 @@ class _TabTextViewState extends State<TabTextView> {
               tooltip: context.l10n.textViewFretUp,
               onPressed: enabled ? () => _bump(1) : null,
               icon: const Icon(Icons.add),
+            ),
+            const SizedBox(width: 8),
+            IconButton.outlined(
+              tooltip: context.l10n.textViewNoteUp,
+              onPressed: enabled ? () => _move(-1) : null,
+              icon: const Text('++'),
+            ),
+            const SizedBox(width: 8),
+            IconButton.outlined(
+              tooltip: context.l10n.textViewNoteDown,
+              onPressed: enabled ? () => _move(1) : null,
+              icon: const Text('−−'),
             ),
             const SizedBox(width: 8),
             Tooltip(

@@ -1588,6 +1588,30 @@ abstract class AppLocalizations {
   /// **'Fret up (the number under the cursor)'**
   String get textViewFretUp;
 
+  /// Tooltip of ++: the note under the cursor to the string above
+  ///
+  /// In en, this message translates to:
+  /// **'Note up a string (cycles round)'**
+  String get textViewNoteUp;
+
+  /// Tooltip of −−: the note under the cursor to the string below
+  ///
+  /// In en, this message translates to:
+  /// **'Note down a string (cycles round)'**
+  String get textViewNoteDown;
+
+  /// Snackbar when ++ or −− finds no note under the cursor
+  ///
+  /// In en, this message translates to:
+  /// **'Put the cursor on a note on a string line'**
+  String get textViewPutCursorOnNote;
+
+  /// Snackbar when ++ or −− finds no string with room for the note
+  ///
+  /// In en, this message translates to:
+  /// **'No other string has room for this note there'**
+  String get textViewNoStringFree;
+
   /// Tooltip of Overtype while on
   ///
   /// In en, this message translates to:
