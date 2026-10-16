@@ -4,7 +4,7 @@
 app binaries with `make` and publishes them as a GitHub release.
 
 - **Triggers:**
-  - A pushed tag matching `*QA` or `*RC*` (e.g. `0.1.202610101200-RC`) is
+  - A pushed tag matching `*QA` or `*RC*` (e.g. `0.2.202610101200-RC`) is
     released as a **prerelease**. `*RC*` tags are also
     [deployed](deploy.md) to https://rc.tabcam.nu01.com.
   - A pushed tag matching `*GA` is released as a full release (GitHub's
@@ -55,7 +55,7 @@ testers install a release on a phone until the app is in the stores:
 ## Versioning
 
 The version is `X.Y.Z`: X and Y from [version.X.txt](../version.X.txt) and
-[version.Y.txt](../version.Y.txt) (now 0.1), Z the build time as
+[version.Y.txt](../version.Y.txt) (now 0.2), Z the build time as
 `YYYYMMDDHHMM` (UTC). The build number (Android's versionCode, iOS's
 CFBundleVersion) is the same time in Unix seconds. `scripts/version.sh`
 works these out; `VERSION_Z` and `BUILD_NUMBER` override them. A tag that
