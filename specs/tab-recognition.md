@@ -22,14 +22,15 @@ a read writes only the text, onto the event as it is then
 (the title, the view, the text) don't read, nor do events another device
 changed (that device reads them), nor the events there were at launch.
 
-- **Read again**: the Text view's **Read again**, **Read** or
-  **Rescan**, or the
+- **Read again**: the Text view's **Read again** or **Read**, or the
   [Text tool](event-screen.md) tapped while the Text view shows a tab
   (it asks "Read the tab again?" first), reads the event now
   (`readSoon(id, again: true)`), replacing the text an earlier read left;
   with Premium the cloud reads every page again.
-- **A text the user edited is never replaced**, nor one marked correct,
-  not even by Read again. A read fills an empty text tab, or replaces one
+- **Rescan** (the Text view's, below) reads every page again into an
+  emptied text tab: it replaces any text, the user's too.
+- **A text the user edited is never replaced** otherwise, nor one marked
+  correct, not even by Read again. A read fills an empty text tab, or replaces one
   an earlier read left (`tabTextAuto`, synced: set by a read on the
   device or in the cloud, cleared by an edit).
 - **Signed out** (in a build with sign-in): it waits, and reads when the
@@ -227,10 +228,17 @@ wrapped):
   every string ending together), for everyone; then, with Premium,
   [auto-correct](autocorrect.md): the song's tab found online proposes
   corrections, which the user reviews per note.
-- **Rescan**: [Read again](#reading-by-itself), as the Text tool tapped
-  again: it saves the edits so far, asks "Read the tab again?", then
-  reads the pages now. Shown only when the event has photos or PDFs to
-  read and the app can read them, and not on an event shared read only.
+- **Rescan**: replaces the text with a new reading of every photo and
+  PDF in the capture. It asks "Rescan the pages?" ("The current text is
+  deleted, even if you edited it or marked it verified, and every photo
+  and PDF is read again to replace it.", **Cancel** / **Rescan**), then
+  empties the text tab, clears Verified, and reads every page again
+  (`readSoon(id, again: true)`; with Premium, in the cloud), as a read
+  of its own (`tabTextAuto`), so the new reading fills it. Until the new
+  text comes, the Text view says how the read stands ("Reading the
+  tab…", no tab found, failed…, with Read again). Shown only when the
+  event has photos or PDFs to read and the app can read them, and not on
+  an event shared read only.
 - **Verified**: a toggle marking the reading correct once the user has
   checked it: tonal like Copy while off, filled and ticked while on;
   tapping it again unmarks it. Saved at once. The mark is kept on the

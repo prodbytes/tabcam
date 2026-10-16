@@ -302,6 +302,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'The text read before is replaced, unless you edited it or marked it correct.';
 
   @override
+  String get eventRescanTitle => 'Rescan the pages?';
+
+  @override
+  String get eventRescanBody =>
+      'The current text is deleted, even if you edited it or marked it verified, and every photo and PDF is read again to replace it.';
+
+  @override
   String get eventReadFailed => 'Reading the tab failed.';
 
   @override

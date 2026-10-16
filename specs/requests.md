@@ -1064,3 +1064,12 @@ spec.
    cycling within its staff, leaving dashes behind (`moveNote` in
    `lib/screens/tab_editing.dart`;
    [tab recognition](tab-recognition.md#text-view)).
+17. **The Rescan button doesn't seem to work: when pressed, re-scan all the
+   original PDFs and images in the capture, delete the current content and
+   replace it with the new content.** Rescan ran Read again, which keeps
+   a text the user edited (Fix counts) or marked verified, so it seldom
+   changed anything. It now asks "Rescan the pages?", empties the text
+   tab and clears Verified, then reads every photo and PDF again (on the
+   device, or every page in the cloud with Premium), and the new reading
+   fills it; meanwhile the Text view shows how the read stands
+   ([tab recognition](tab-recognition.md#text-view)).
