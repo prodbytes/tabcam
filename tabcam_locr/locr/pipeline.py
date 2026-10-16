@@ -3,7 +3,8 @@
 The pipeline that read tabs best in the OCR bench:
 
 1. prepare: find the page (photos; scans already are one) and flatten it,
-   drop red ink (the red channel), even out the light, scale to WIDTH.
+   drop red ink (the red channel, then what's still red becomes paper),
+   even out the light, level it (deskew), scale to WIDTH.
 2. find_lines: each tab string line is a row of dashes (small, flat ink
    marks at one height); lines a pitch apart make a staff.
 3. Each line is cut into a strip and read by several engines (engines.py).
@@ -95,6 +96,33 @@ def _page(img):
     return cv2.warpPerspective(img, m, (w, h), flags=cv2.INTER_CUBIC)
 
 
+def skew(gray):
+    """The page's tilt in degrees: the angle (within 4 either way) at which
+    its rows of ink are sharpest (staff lines and text lines straight
+    across)."""
+    small = cv2.resize(gray, (700, max(int(gray.shape[0] * 700 / gray.shape[1]), 1)),
+                       interpolation=cv2.INTER_AREA)
+    ink = (small < 160).astype(np.float32)
+    h, w = ink.shape
+    best, angle = -1.0, 0.0
+    for a in np.arange(-4, 4.01, 0.1):
+        m = cv2.getRotationMatrix2D((w / 2, h / 2), a, 1)
+        rows = cv2.warpAffine(ink, m, (w, h)).sum(1)
+        if rows.var() > best:
+            best, angle = rows.var(), float(a)
+    return angle
+
+
+def deskew(gray):
+    """[gray] turned level (skew), on white; as is when nearly level."""
+    angle = skew(gray)
+    if abs(angle) < 0.5:  # turning blurs fine strokes: only when it pays
+        return gray
+    h, w = gray.shape
+    m = cv2.getRotationMatrix2D((w / 2, h / 2), angle, 1)
+    return cv2.warpAffine(gray, m, (w, h), flags=cv2.INTER_CUBIC, borderValue=255)
+
+
 def prepare(img):
     """Grayscale page WIDTH wide: red ink gone, light even."""
     page = _page(img)
@@ -104,9 +132,19 @@ def prepare(img):
     scale = half / page.shape[1]
     page = cv2.resize(page, None, fx=scale, fy=scale,
                       interpolation=cv2.INTER_CUBIC if scale > 1 else cv2.INTER_AREA)
-    gray = page[..., 2].copy()  # red ink is as bright as paper here
+    gray = page[..., 2].copy()  # red ink is nearly as bright as paper here
     bg = cv2.GaussianBlur(cv2.dilate(gray, np.ones((21, 21), np.uint8)), (0, 0), 25)
     gray = cv2.normalize(cv2.divide(gray, bg, scale=255), None, 0, 255, cv2.NORM_MINMAX)
+    # Nearly: what's left of it is a grey ghost over the notes. Where the ink
+    # is red (red well above green and blue, and not dark: black ink under
+    # it stays), it becomes paper.
+    bgr = page.astype(np.int16)
+    red = (bgr[..., 2] - bgr[..., :2].max(2) > 30) & (bgr[..., 2] > 120)
+    # Its edges blend into the paper; a wider margin than 2 px would take
+    # the edges of the black digits it crosses too.
+    red = cv2.dilate(red.astype(np.uint8), np.ones((2, 2), np.uint8)) > 0
+    gray[red] = np.maximum(gray[red], np.percentile(gray, 80))
+    gray = deskew(gray)
     return cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
 
 
@@ -134,6 +172,11 @@ def find_lines(gray):
         sel = dash & (np.abs(cent[1:, 1] - cy) < 8)
         xs = np.sort(x[sel])
         cw = float(np.median(np.diff(xs))) if len(xs) > 1 else 25.0
+        # A tab line's dashes come a column apart; a drawn line broken up by
+        # a poor scan or photo gives flat marks too, but not evenly spaced.
+        steps = np.diff(xs)
+        if ((steps > 0.8 * cw) & (steps < 1.2 * cw)).sum() < MIN_DASHES:
+            continue
         x_end = int((x[sel] + w[sel]).max())
         lines.append(Line(
             y0=max(int(cy - 0.5 * pitch), 0), y1=min(int(cy + 0.5 * pitch), gray.shape[0]),
@@ -202,6 +245,51 @@ def rebuild(text, label, width):
     line = line.replace(" ", "-")
     line += "-" * max(width - len(line), 0)
     return f"{label}|{line}|"
+
+
+def note_spans(strip, line):
+    """Where a string line's notes are, from the ink itself: [(x0, x1)] in
+    page x, left to right. Engines drop and double dashes, so the columns
+    they imply drift; the image doesn't. The dashes (flat, filled marks on
+    the line), the label and bar before the first dash, the bar after the
+    last and specks are left out; the rest is grouped by gaps of most of
+    a column (within a number the gaps are narrower, even around a 1)."""
+    ink = (strip < 140).astype(np.uint8)
+    n, _, st, cen = cv2.connectedComponentsWithStats(ink, connectivity=8)
+    cy, half = line.cy - line.y0, (line.y1 - line.y0) / 2
+    spans = []
+    for i in range(1, n):
+        x, y, w, h, area = (int(v) for v in st[i])
+        x += line.x0
+        if max(w, h) < 0.4 * line.cw or x + w <= line.dash_x0 - 0.3 * line.cw or x >= line.x1 - 32:
+            continue
+        if w >= 1.8 * h and h <= 0.35 * line.cw and w <= 1.2 * line.cw and abs(cen[i][1] - cy) < 8:
+            continue  # a dash
+        if abs(y + h / 2 - cy) > 0.6 * half:
+            continue  # a neighbour line's ink
+        spans.append([x, x + w])
+    spans.sort()
+    out = []
+    for s in spans:
+        if out and s[0] - out[-1][1] < 0.9 * line.cw:
+            out[-1][1] = max(out[-1][1], s[1])
+        else:
+            out.append(s)
+    return [tuple(s) for s in out]
+
+
+def place_tokens(reading, spans, line, width):
+    """[reading] (a rebuilt tab line) with its tokens moved to the columns
+    the ink says ([spans], note_spans), when there are as many of each;
+    else as read."""
+    toks = tokens(reading)
+    if not toks or len(toks) != len(spans):
+        return reading
+    body = ""
+    for tok, (x0, _) in zip(toks, spans):
+        col = max(round((x0 - line.dash_x0) / line.cw), len(body) + (1 if body else 0))
+        body = body.ljust(col, "-") + tok
+    return f"{reading[:reading.index('|')]}|{body.ljust(width, '-')}|"
 
 
 def vote(readings):
@@ -411,7 +499,9 @@ def transcribe_image(img, engines, read_page=None, vision=None, read_crop=None):
     """transcribe, for an image already decoded (BGR)."""
     start = time.monotonic()
     gray = prepare(img)
-    groups = [align(g) for g in staves(find_lines(gray))]
+    # Fewer than four lines isn't a staff (as in the app): stray rows of
+    # dashes, or drawn lines in pieces.
+    groups = [align(g) for g in staves(find_lines(gray)) if len(g) >= 4]
     jobs = [(line, gray[line.y0:line.y1, line.x0:line.x1]) for g in groups for line in g]
     if not jobs and read_crop is not None:
         # No dash lines: frets on drawn staff lines (handwritten, typeset)?
@@ -449,7 +539,9 @@ def transcribe_image(img, engines, read_page=None, vision=None, read_crop=None):
         block = []
         for j, _ in enumerate(g):
             label = labels[j] if labels else ""
-            options = [rebuild(raw[name][i], label, width) for name in engines]
+            spans = note_spans(jobs[i][1], jobs[i][0])
+            options = [place_tokens(rebuild(raw[name][i], label, width), spans, jobs[i][0], width)
+                       for name in engines]
             for name, o in zip(engines, options):
                 readings[name].append(o)
             block.append(vote(options))

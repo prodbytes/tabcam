@@ -70,3 +70,8 @@ def test_columns_line_up():
 def test_a_page_without_staves_or_numbers_has_none():
     blank = np.full((1200, 900), 255, np.uint8)
     assert staves.read(blank, lambda c: "5") == ([], [])
+
+
+def test_frets_around_a_bracketed_one_and_more_misreadings():
+    assert [f for _, f in staves.frets("$(6)5", 0, 30)] == ["5", "(6)", "5"]
+    assert staves.fret("C") == "6" and staves.fret("$") == "5"
