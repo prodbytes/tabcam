@@ -6,7 +6,9 @@ abstract final class AppleConfig {
   /// capability, the entitlement) and the identity pool trusts Apple, so
   /// iOS offers Sign in with Apple. Off by default: a build without the
   /// capability would show a button that can only fail.
-  static const String _flag = String.fromEnvironment('TABCAM_APPLE_SIGN_IN');
+  static const String _flag = String.fromEnvironment(
+    'TABCAM_APPLE_SIGN_IN',
+  );
 
   static bool get enabled => _flag == '1' || _flag.toLowerCase() == 'true';
 

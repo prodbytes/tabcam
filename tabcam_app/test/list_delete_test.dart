@@ -36,9 +36,7 @@ void main() {
       id = event.id;
     });
     await tester.pumpWidget(
-      MaterialApp(
-        home: EventScreen(library: library, eventId: id),
-      ),
+      MaterialApp(home: EventScreen(library: library, eventId: id)),
     );
     await frames(tester);
     return id;
