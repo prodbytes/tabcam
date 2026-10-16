@@ -531,6 +531,47 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventFlipCamera => 'Flip camera';
 
   @override
+  String get eventCam => 'Cam';
+
+  @override
+  String get camRec => 'Rec';
+
+  @override
+  String get camStop => 'Stop';
+
+  @override
+  String get camPlay => 'Play';
+
+  @override
+  String get camPrevious => 'Previous line';
+
+  @override
+  String get camNext => 'Next line';
+
+  @override
+  String get camNoTab =>
+      'No text tab yet: read the capture\'s tab to play along with it.';
+
+  @override
+  String camTake(int number) {
+    return 'Take $number';
+  }
+
+  @override
+  String camSaved(String name) {
+    return '$name added to the capture';
+  }
+
+  @override
+  String camCouldntRecord(String error) {
+    return 'Couldn\'t record: $error';
+  }
+
+  @override
+  String get camNotAllowed =>
+      'The camera or microphone isn\'t allowed: let TabScan use them in the settings.';
+
+  @override
   String get eventDone => 'Done';
 
   @override

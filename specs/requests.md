@@ -885,3 +885,26 @@ spec.
    models in an arm64 build
    ([deploy](deploy.md), [cloud OCR](cloud-ocr.md), [profiles](profiles.md),
    [tabscan_infra/README.md](../tabscan_infra/README.md)).
+
+## 2026-10-16
+
+1. **Add a "cam" feature: from the capture view, open the camera with the
+   tab's OCR text along the bottom, one line of the neck (a "neckline")
+   at a time, with Rec and Play, so guitarists can record themselves
+   playing along. Any key moves to the next neckline; Backspace, back
+   and up to the one before.** The event screen has a fourth tool,
+   **Cam**, opening the camera view
+   ([`PlayAlongScreen`](../tabscan_app/lib/capture/play_along_screen.dart)):
+   the front camera first, the text tab cut into necklines (each staff
+   with the chords and labels right above it,
+   [`necklines`](../tabscan_app/lib/recognition/necklines.dart)) shown
+   one at a time, shrunk to the screen's width. Any key goes to the next
+   neckline; Backspace, ←, ↑ and Page Up to the one before (modifiers and
+   Escape alone do nothing); a tap and the arrows beside it too. **Rec**
+   records video and sound and adds the take to the capture as a video
+   named "Take N"; **Play** plays the last take back with the necklines
+   turning where they did while recording. Off on captures shared read
+   only or opened by link. iOS got `NSMicrophoneUsageDescription`; the
+   strings are in English, Spanish and Portuguese
+   ([Cam](cam.md), [event screen](event-screen.md),
+   [platforms](platforms.md)).

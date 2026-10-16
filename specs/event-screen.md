@@ -83,6 +83,10 @@ it opens on the Text view; otherwise on the list.
   - **Add**: more files, [scanned or picked](scanning.md#adding-to-an-event):
     Scan pages, Document, Photos & videos, Files, or a **Link**. The list
     then shows, scrolled to what was added.
+  - **Cam**, last: the camera with the tab under it, one neckline at a
+    time, to record the user playing along; takes are added as videos
+    ([Cam](cam.md)). Off on a capture shared read only or opened by its
+    link.
   - **Dragging files** onto the screen adds them too, as Files does
     (outlined with "Drop files to add" while they're over it; folders and
     files that aren't pages are left out, with the message saying how

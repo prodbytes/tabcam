@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../capture/media.dart';
 import '../capture/page_source.dart';
+import '../capture/play_along_screen.dart';
 import '../l10n/language.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
@@ -29,8 +30,9 @@ import 'mini_player.dart';
 /// One event (a capture): the list of its files (images, videos,
 /// recordings, PDFs and links), each with a preview, a tap opening it alone
 /// on a [FileScreen]; and the tools along the bottom: Files (the list),
-/// Text (the tab read from them, in place of the list) and Add (scan,
-/// a document, photos and videos, files, a link). Rename, Clone and Share
+/// Text (the tab read from them, in place of the list), Add (scan,
+/// a document, photos and videos, files, a link) and Cam (recording the
+/// user playing along with the tab, [PlayAlongScreen]). Rename, Clone and Share
 /// are in the app bar. Editable, with more than one file, the list reorders
 /// in place, each file dragged by its handle. The tab is read by itself
 /// ([AutoReader]): there's no Read tab button. With its images hidden, the
@@ -254,6 +256,19 @@ class _EventScreenState extends State<EventScreen> {
       }
       _showAdded(event, before, images: link == null);
     });
+  }
+
+  /// Cam: the camera, with the tab under it, to record playing along
+  /// ([PlayAlongScreen]); its takes are added to the list.
+  Future<void> _cam() async {
+    await _player.stop();
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            PlayAlongScreen(library: _library, eventId: widget.eventId),
+      ),
+    );
   }
 
   /// Files the user dragged onto the screen ([FileDropArea]): added, as
@@ -648,6 +663,12 @@ class _EventScreenState extends State<EventScreen> {
                     icon: Icons.add_circle_outline,
                     label: l10n.eventAdd,
                     onPressed: _busy || !editable ? null : () => _add(event),
+                  ),
+                  EventTool(
+                    key: const Key('cam'),
+                    icon: Icons.videocam_outlined,
+                    label: l10n.eventCam,
+                    onPressed: _busy || !editable ? null : _cam,
                   ),
                 ],
               ),
