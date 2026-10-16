@@ -574,6 +574,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get camAddingTab => 'Adding the tab to the video…';
+
+  @override
+  String get camNoOverlay => 'The take was saved without the tab.';
+
+  @override
   String get camHeadsOn =>
       'Head gestures on: nod up or right for the next line, down or left for the one before';
 

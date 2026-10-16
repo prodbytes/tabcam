@@ -129,7 +129,7 @@ class WebHeadTracker implements HeadTracking {
     final landmarker = _landmarker;
     if (_closed || !_active || landmarker == null) return;
     final at = _clock.elapsed;
-    final video = _video = _cameraVideo(_video);
+    final video = _video = cameraVideo(_video);
     (double, double)? angles;
     if (video != null &&
         video.readyState >= 2 && // HAVE_CURRENT_DATA: a frame to read
@@ -168,36 +168,6 @@ class WebHeadTracker implements HeadTracking {
     if (gesture != null) onGesture(gesture);
   }
 
-  /// The camera preview's `<video>`: [known] while it still shows the
-  /// camera, otherwise looked up. camera_web gives it no id or class: it
-  /// creates a bare `<video>` (in a `<div>`) playing the camera's
-  /// MediaStream through `srcObject`, and Flutter puts that in a
-  /// `<flt-platform-view>` once the preview is built. So: a `<video>` in
-  /// the page playing a live camera stream (video_player's videos play a
-  /// `src` instead), one in a platform view first.
-  static web.HTMLVideoElement? _cameraVideo(web.HTMLVideoElement? known) {
-    if (known != null && known.isConnected && _live(known)) return known;
-    final videos = web.document.querySelectorAll('video');
-    web.HTMLVideoElement? found;
-    for (var i = 0; i < videos.length; i++) {
-      final node = videos.item(i);
-      if (node == null || !node.isA<web.HTMLVideoElement>()) continue;
-      final video = node as web.HTMLVideoElement;
-      if (!_live(video)) continue;
-      if (video.closest('flt-platform-view') != null) return video;
-      found ??= video;
-    }
-    return found;
-  }
-
-  /// Whether [video] plays a camera's live MediaStream.
-  static bool _live(web.HTMLVideoElement video) {
-    final source = video.srcObject;
-    if (source == null || !source.isA<web.MediaStream>()) return false;
-    final tracks = (source as web.MediaStream).getVideoTracks().toDart;
-    return tracks.any((t) => t.readyState == 'live');
-  }
-
   @override
   void dispose() {
     _closed = true;
@@ -207,6 +177,36 @@ class WebHeadTracker implements HeadTracking {
     _landmarker = null;
     face.dispose();
   }
+}
+
+/// The camera preview's `<video>`: [known] while it still shows the
+/// camera, otherwise looked up. camera_web gives it no id or class: it
+/// creates a bare `<video>` (in a `<div>`) playing the camera's
+/// MediaStream through `srcObject`, and Flutter puts that in a
+/// `<flt-platform-view>` once the preview is built. So: a `<video>` in
+/// the page playing a live camera stream (video_player's videos play a
+/// `src` instead), one in a platform view first.
+web.HTMLVideoElement? cameraVideo(web.HTMLVideoElement? known) {
+  if (known != null && known.isConnected && _live(known)) return known;
+  final videos = web.document.querySelectorAll('video');
+  web.HTMLVideoElement? found;
+  for (var i = 0; i < videos.length; i++) {
+    final node = videos.item(i);
+    if (node == null || !node.isA<web.HTMLVideoElement>()) continue;
+    final video = node as web.HTMLVideoElement;
+    if (!_live(video)) continue;
+    if (video.closest('flt-platform-view') != null) return video;
+    found ??= video;
+  }
+  return found;
+}
+
+/// Whether [video] plays a camera's live MediaStream.
+bool _live(web.HTMLVideoElement video) {
+  final source = video.srcObject;
+  if (source == null || !source.isA<web.MediaStream>()) return false;
+  final tracks = (source as web.MediaStream).getVideoTracks().toDart;
+  return tracks.any((t) => t.readyState == 'live');
 }
 
 // MediaPipe Tasks Vision's API, as much of it as is used

@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:tabcam_app/capture/head_gestures.dart';
 import 'package:tabcam_app/capture/play_along_screen.dart';
+import 'package:tabcam_app/capture/take_overlay.dart';
 import 'package:tabcam_app/l10n/app_localizations.dart';
 import 'package:tabcam_app/library/capture_event.dart';
 import 'package:tabcam_app/library/event_store_memory.dart';
@@ -100,6 +101,24 @@ void main() {
     home: home,
   );
 
+  /// Pumps until [done] (a take saved, say), for up to a few seconds.
+  Future<void> until(WidgetTester tester, bool Function() done) async {
+    for (var i = 0; i < 50 && !done(); i++) {
+      await frames(tester);
+    }
+    expect(done(), isTrue);
+  }
+
+  /// Whether Rec is back (the take saved).
+  bool recReady(WidgetTester tester) {
+    final rec = find.descendant(
+      of: find.byKey(const Key('cam-rec')),
+      matching: find.byType(IconButton),
+    );
+    final button = tester.widget<IconButton>(rec);
+    return button.tooltip == 'Rec' && button.onPressed != null;
+  }
+
   String shown(WidgetTester tester) =>
       tester.widget<Text>(find.byKey(const Key('neckline'))).data!;
 
@@ -151,16 +170,24 @@ void main() {
     expect(find.text('1 / 3'), findsOneWidget);
   });
 
-  testWidgets('Rec records a take into the capture; Play plays it back', (
-    tester,
-  ) async {
+  testWidgets('Rec records a take, the tab burned in, into the capture; '
+      'Play plays it back', (tester) async {
     final (library, id) = await capture(tester, tab: _tab);
+    final burned = <List<(TabBand, Uint8List)>>[];
     await tester.pumpWidget(
       app(
         PlayAlongScreen(
           library: library,
           eventId: id,
           cameras: () async => [_back, _front],
+          burn: (take, bands) async {
+            burned.add(bands);
+            return XFile.fromData(
+              Uint8List.fromList([7, 7]),
+              name: 'burned.mp4',
+              mimeType: 'video/mp4',
+            );
+          },
         ),
       ),
     );
@@ -184,19 +211,32 @@ void main() {
     expect(camera.recording, isTrue);
     await tester.sendKeyEvent(LogicalKeyboardKey.space);
     await tester.tap(find.byTooltip('Stop'));
-    await frames(tester);
+    await until(tester, () => recReady(tester));
     expect(camera.recording, isFalse);
     expect(find.text('Take 1 added to the capture'), findsOneWidget);
     var pages = library.byId(id)!.pages;
     expect(pages, hasLength(2));
     expect(pages.last.kind, PageKind.video);
     expect(pages.last.title, 'Take 1');
+    // The tab burned in: the first neckline, then the second.
+    final bands = burned.single;
+    expect([for (final (b, _) in bands) b.line], [0, 1]);
+    expect(bands.first.$1.start, Duration.zero);
+    expect(bands.first.$1.end, bands.last.$1.start);
+    expect(bands.last.$1.end, isNull);
+    expect(bands.first.$2, isNotEmpty);
+    // What's saved is the take with the tab.
+    late Uint8List saved;
+    await tester.runAsync(
+      () async => saved = await library.original(library.byId(id)!, pages.last),
+    );
+    expect(saved, [7, 7]);
 
     // A second take is Take 2.
     await tester.tap(find.byTooltip('Rec'));
     await frames(tester);
     await tester.tap(find.byTooltip('Stop'));
-    await frames(tester);
+    await until(tester, () => recReady(tester));
     pages = library.byId(id)!.pages;
     expect(pages.last.title, 'Take 2');
 
@@ -260,7 +300,7 @@ void main() {
     await tester.pump();
     expect(find.text('3 / 3'), findsOneWidget);
     await tester.tap(find.byTooltip('Stop'));
-    await frames(tester);
+    await until(tester, () => recReady(tester));
     expect(camera.streaming, isTrue);
 
     // Off: no frames, and a gesture does nothing.
@@ -304,7 +344,7 @@ void main() {
     await tester.pump();
     expect(find.text('2 / 3'), findsOneWidget);
     await tester.tap(find.byTooltip('Stop'));
-    await frames(tester);
+    await until(tester, () => recReady(tester));
     expect(camera.recordings, 1);
 
     await tester.tap(find.byKey(const Key('cam-heads')));
@@ -345,9 +385,9 @@ void main() {
     await tester.tap(find.byTooltip('Rec'));
     await frames(tester);
     await tester.tap(find.byTooltip('Stop'));
-    await frames(tester);
-    // Saved before going back.
-    expect(find.text('Take 1 added to the capture'), findsOneWidget);
+    await until(tester, () => recReady(tester));
+    // Saved before going back (here without the tab: no native code).
+    expect(library.byId(id)!.pages, hasLength(2));
     await tester.pageBack();
     await tester.pump();
     await frames(tester);

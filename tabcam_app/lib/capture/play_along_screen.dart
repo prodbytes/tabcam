@@ -14,6 +14,7 @@ import '../screens/mono_font.dart';
 import '../screens/video_page.dart';
 import 'head_gestures.dart';
 import 'media.dart';
+import 'take_overlay.dart';
 
 /// Cam: the guitarist records themselves playing along with the capture's
 /// tab. The camera (the front one first: it faces the player) fills the
@@ -33,6 +34,8 @@ class PlayAlongScreen extends StatefulWidget {
     required this.eventId,
     this.cameras = availableCameras,
     this.headTracking = HeadTracking.start,
+    this.takeRecorder = TakeRecorder.forPlatform,
+    this.burn = TakeOverlay.burn,
   });
 
   final Library library;
@@ -47,6 +50,14 @@ class PlayAlongScreen extends StatefulWidget {
     void Function(HeadGesture) onGesture,
   )
   headTracking;
+
+  /// Records takes with the tab in them as they go (the web); null where
+  /// the tab is burned in after ([TakeOverlay]). Tests pass their own.
+  final TakeRecorder? Function() takeRecorder;
+
+  /// Burns the tab into a take ([TakeOverlay.burn]); tests pass their own.
+  final Future<XFile?> Function(XFile take, List<(TabBand, Uint8List)> bands)
+  burn;
 
   @override
   State<PlayAlongScreen> createState() => _PlayAlongScreenState();
@@ -78,6 +89,15 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   /// whether the user has them on.
   HeadTracking? _heads;
   bool _headsOn = true;
+
+  /// Records takes with the tab in them, where the camera can't.
+  late final TakeRecorder? _recorder = widget.takeRecorder();
+
+  /// Burning the tab into the take just recorded.
+  bool _burning = false;
+
+  /// Whether this take is [_recorder]'s (else the camera's own).
+  bool _recordingTab = false;
 
   @override
   void initState() {
@@ -236,13 +256,25 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       if (controller.value.isStreamingImages) {
         await controller.stopImageStream();
       }
-      // Its frames still go to the head gestures while it records (not
-      // on the web: it streams none, and the tracker reads the preview).
-      await controller.startVideoRecording(
-        onAvailable: _heads == null || !controller.supportsImageStreaming()
-            ? null
-            : _frame,
-      );
+      _recordingTab = false;
+      if (_recorder case final recorder?) {
+        // The tab recorded in as it goes; failing that, the camera alone.
+        try {
+          await recorder.start(() => _lines.isEmpty ? null : _lines[_line]);
+          _recordingTab = true;
+        } on Object catch (e) {
+          debugPrint('TabCam: cam: recording without the tab: $e');
+        }
+      }
+      if (!_recordingTab) {
+        // Its frames still go to the head gestures while it records (not
+        // on the web: it streams none, and the tracker reads the preview).
+        await controller.startVideoRecording(
+          onAvailable: _heads == null || !controller.supportsImageStreaming()
+              ? null
+              : _frame,
+        );
+      }
     } on Object catch (e) {
       debugPrint('TabCam: cam: $e');
       if (mounted) _snack(context.l10n.camCouldntRecord('$e'));
@@ -267,8 +299,13 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     _clock.stop();
     final marks = _marks;
     try {
-      final file = await controller.stopVideoRecording();
+      var file = await (_recordingTab
+          ? _recorder!.stop()
+          : controller.stopVideoRecording());
       unawaited(_stream());
+      if (!_recordingTab && _lines.isNotEmpty && TakeOverlay.supported) {
+        file = await _burn(file, marks) ?? file;
+      }
       final known = Media.of(file);
       final media = known?.kind == PageKind.video
           ? known!
@@ -293,6 +330,26 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       if (mounted) _snack(l10n.camCouldntRecord('$e'));
     } finally {
       if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  /// [take] with the tab burned in where it showed ([marks]); null when it
+  /// couldn't be (the take is kept as it is, and a message says so).
+  Future<XFile?> _burn(XFile take, List<(Duration, int)> marks) async {
+    final l10n = context.l10n;
+    setState(() => _burning = true);
+    try {
+      final pngs = <int, Uint8List>{};
+      final bands = <(TabBand, Uint8List)>[];
+      for (final band in bandsOf(marks)) {
+        final png = pngs[band.line] ??= await renderBand(_lines[band.line]);
+        bands.add((band, png));
+      }
+      final burned = await widget.burn(take, bands);
+      if (burned == null && mounted) _snack(l10n.camNoOverlay);
+      return burned;
+    } finally {
+      if (mounted) setState(() => _burning = false);
     }
   }
 
@@ -352,6 +409,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
 
   @override
   void dispose() {
+    _recorder?.dispose();
     _controller?.dispose();
     _heads?.dispose();
     _player?.removeListener(_follow);
@@ -517,7 +575,37 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
           ),
           body: Column(
             children: [
-              Expanded(child: Center(child: _view())),
+              Expanded(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Center(child: _view()),
+                    if (_burning)
+                      Card(
+                        color: Colors.black87,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox.square(
+                                dimension: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                l10n.camAddingTab,
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
               ColoredBox(color: Colors.black87, child: _neckline()),
               SafeArea(
                 top: false,

@@ -1024,6 +1024,18 @@ abstract class AppLocalizations {
   /// **'Couldn\'t record: {error}'**
   String camCouldntRecord(String error);
 
+  /// Cam: the tab is being burned into the take
+  ///
+  /// In en, this message translates to:
+  /// **'Adding the tab to the video…'**
+  String get camAddingTab;
+
+  /// Cam: burning the tab into the take failed
+  ///
+  /// In en, this message translates to:
+  /// **'The take was saved without the tab.'**
+  String get camNoOverlay;
+
   /// Cam: head gestures toggle, on
   ///
   /// In en, this message translates to:
