@@ -1221,19 +1221,27 @@
   "@textViewFix": {
     "description": "Button that corrects the tab from the song's tab online"
   },
+  "textViewRescan": "Rescan",
+  "@textViewRescan": {
+    "description": "Button reading the tab from the pages again"
+  },
+  "textViewRescanTip": "Read the tab from the pages again",
+  "@textViewRescanTip": {
+    "description": "Tooltip of the Rescan button"
+  },
   "textViewLookingOnline": "Looking for the song's tab online…",
   "@textViewLookingOnline": {
     "description": "Progress text while Fix runs"
   },
-  "textViewCorrect": "Correct",
+  "textViewCorrect": "Verified",
   "@textViewCorrect": {
     "description": "Toggle marking the text tab correct"
   },
-  "textViewMarkedCorrect": "Marked correct: the event opens on its text",
+  "textViewMarkedCorrect": "Verified: the event opens on its text",
   "@textViewMarkedCorrect": {
     "description": "Tooltip of the Correct toggle while on"
   },
-  "textViewMarkCorrect": "Mark the reading correct",
+  "textViewMarkCorrect": "Mark the reading verified",
   "@textViewMarkCorrect": {
     "description": "Tooltip of the Correct toggle while off"
   },

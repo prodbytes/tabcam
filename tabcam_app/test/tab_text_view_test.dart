@@ -105,4 +105,83 @@ void main() {
     final field = tester.widget<TextField>(find.byType(TextField));
     expect(field.controller!.text, 'G|--5--|');
   });
+
+  testWidgets('Copy, Fix, Rescan and Verified on one line, on a phone', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final library = Library(PlatformEventStore());
+    await library.load();
+    final event = await library.update(
+      (await library.create(const [])).copyWith(tabText: 'e|--0--|'),
+    );
+    var rescans = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TabTextView(
+            library: library,
+            eventId: event.id,
+            onRescan: () => rescans++,
+          ),
+        ),
+      ),
+    );
+
+    final labels = ['Copy', 'Fix', 'Rescan', 'Verified'];
+    final tops = {for (final l in labels) tester.getCenter(find.text(l)).dy};
+    expect(tops, hasLength(1));
+    final lefts = [for (final l in labels) tester.getCenter(find.text(l)).dx];
+    expect(lefts, orderedEquals([...lefts]..sort()));
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.text('Rescan'));
+    expect(rescans, 1);
+  });
+
+  testWidgets('no Rescan without anything to read', (tester) async {
+    final library = Library(PlatformEventStore());
+    await library.load();
+    final event = await library.update(
+      (await library.create(const [])).copyWith(tabText: 'e|--0--|'),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TabTextView(library: library, eventId: event.id),
+        ),
+      ),
+    );
+    expect(find.text('Rescan'), findsNothing);
+  });
+
+  testWidgets('the tools are outlined, Overtype a toggle', (tester) async {
+    final library = Library(PlatformEventStore());
+    await library.load();
+    final event = await library.update(
+      (await library.create(const [])).copyWith(tabText: 'e|--0--|'),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TabTextView(library: library, eventId: event.id),
+        ),
+      ),
+    );
+    expect(find.byIcon(Icons.check_box), findsNothing);
+    final overtype = find.widgetWithText(OutlinedButton, 'Overtype');
+    expect(overtype, findsOneWidget);
+    bool? toggled() => tester
+        .widget<Semantics>(
+          find.ancestor(of: overtype, matching: find.byType(Semantics)).first,
+        )
+        .properties
+        .toggled;
+    expect(toggled(), isTrue);
+    await tester.tap(overtype);
+    await tester.pump();
+    expect(toggled(), isFalse);
+  });
 }

@@ -1047,3 +1047,13 @@ spec.
    `tabcam_infra/ocr.yaml`, so the next deploy keeps it; the spec's
    timeout (15 min) and per-page time were corrected too
    ([cloud OCR](cloud-ocr.md#memory)).
+15. **In the text edit screen make the buttons be Copy, Fix, Rescan and
+   "Verified" on the first line; on the second line, add borders to make
+   clear those are buttons, and make the checkbox a toggle button.** The
+   Text view's top line is now **Copy**, **Fix**, **Rescan** (new: Read
+   again from the Text view, as the Text tool tapped again) and
+   **Verified** (was Correct; the same `tabTextCorrect` mark), compact and
+   on one line, scaled down rather than wrapped on a narrow phone. The
+   editing tools under it are outlined: − and + as outlined icon buttons,
+   and Overtype, which was a checkbox, a toggle button, filled while on
+   ([tab recognition](tab-recognition.md#text-view)).
