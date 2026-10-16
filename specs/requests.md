@@ -1147,3 +1147,21 @@ spec.
    an App Store Connect API key). The first upload waits for the app's
    App Store Connect record ([app stores](app-stores.md#ios-distribution),
    [release](release.md#make)).
+24. **Produce all the store graphics needed to publish: Play's icon,
+   feature graphic and phone screenshots; the App Store's 6.9" iPhone
+   screenshots, and the 13" iPad's if the app runs on iPads. The real app's
+   UI with made-up riffs only.** The app runs on iPads
+   (`TARGETED_DEVICE_FAMILY` 1,2), so both sets are there. A widget test
+   outside `flutter test`'s folder
+   ([store_screenshots_test.dart](../tabcam_app/screenshots/store_screenshots_test.dart),
+   run by `bash scripts/store-screenshots.sh`) pumps the real app, signed in
+   with a fake account (`ana@example.com`, shared with
+   `sam@example.com` and `lee@example.com`), over ten made-up captures
+   (printed pages of made-up riffs, drawn by the test), with real fonts
+   (Roboto; San Francisco for iOS) and a drawn status bar, and writes six
+   screens per device at the stores' pixel sizes, RGB without alpha: the
+   Text view, a page with the Tab filter, Home, Capture, Cam (a drawn
+   guitar neck as the camera's picture) and Share with people; plus Play's
+   512 px icon (RGBA) and a 1024 x 500 feature graphic.
+   `scripts/store-metadata-check.sh` now also checks each image's size and
+   alpha ([app stores](app-stores.md#store-graphics)).

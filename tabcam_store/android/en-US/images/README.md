@@ -1,15 +1,16 @@
-# Google Play images (to add)
+# Google Play images
 
-Laid out as `fastlane supply` reads them. Images must show **made-up riffs
-only**, never tabs of published songs, and no real people's email
-addresses.
+Laid out as `fastlane supply` reads them, rendered by
+`bash scripts/store-screenshots.sh` from the real app with made-up
+captures ([app stores](../../../../specs/app-stores.md#store-graphics)).
+They show **made-up riffs only**, never tabs of published songs, and no
+real people's email addresses (only `example.com` ones).
 
-| File | Size | Notes |
+| File | Size | Shows |
 |---|---|---|
-| `icon.png` | 512 x 512 px, 32-bit PNG with alpha, up to 1 MB | From the [app icon](../../../../specs/app-icon.md) |
-| `featureGraphic.png` | 1024 x 500 px, JPEG or 24-bit PNG (no alpha) | Shown above the listing |
-| `phoneScreenshots/1.png` … | 2 to 8; 16:9 or 9:16; each side 320 to 3840 px (1080 x 1920 or larger recommended) | Suggested: the scanner on a page, the Tab filter, the Text view with a read tab, the Home grid, the share sheet, Share with people |
-| `sevenInchScreenshots/`, `tenInchScreenshots/` | Optional (tablets) | Only if tablet layouts are checked |
+| `icon.png` | 512 x 512 px, 32-bit PNG with alpha | The [app icon](../../../../specs/app-icon.md) |
+| `featureGraphic.png` | 1024 x 500 px, 24-bit PNG (no alpha) | The icon, the name, what it does, a page of tab |
+| `phoneScreenshots/1.png` … `6.png` | 1080 x 1920 px, 24-bit PNG | The Text view, a page with the Tab filter, Home, Capture, Cam, Share with people |
 
-Take them from a release build on a phone, signed in with a test account
-(not a personal one).
+Tablet screenshots (`sevenInchScreenshots/`, `tenInchScreenshots/`) are
+optional and not made.

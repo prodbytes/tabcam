@@ -20,7 +20,8 @@ publish to production.
 | App Store distribution build (`make ipa`) and its upload (`scripts/ios-upload.sh`) | Done ([below](#ios-distribution)): 0.1.202610161805 built and signed 2026-10-16; its upload waits for the App Store Connect record |
 | App Store Connect record, TestFlight | To do (maintainer: the record for `com.nu01.tabcam`) |
 | Listings: descriptions, data safety, privacy labels, rating, category | Drafts done ([below](#store-listings)) |
-| Listings: screenshots, feature graphic, the review test account | To do (maintainer) |
+| Listings: icon, feature graphic, screenshots (Play phone, 6.9" iPhone, 13" iPad) | Done ([below](#store-graphics)) |
+| Listings: the review test account | To do (maintainer) |
 | Review submission | To do |
 
 ## iOS distribution
@@ -96,14 +97,14 @@ Store), so they can be uploaded later; fastlane itself isn't set up yet.
 
 - `android/en-US/`: `title.txt` (TabCam: Guitar Tab Scanner),
   `short_description.txt`, `full_description.txt`,
-  `changelogs/default.txt`; `images/` waits for the icon (512 x 512),
-  feature graphic (1024 x 500) and phone screenshots, its README says
-  what's needed.
+  `changelogs/default.txt`; `images/`: `icon.png`, `featureGraphic.png`
+  and `phoneScreenshots/1.png` … `6.png` ([below](#store-graphics)).
 - `ios/en-US/`: `name.txt` (as the Play title), `subtitle.txt` (Scan tabs
   into editable text), `description.txt` (the Play full description),
   `keywords.txt`, `promotional_text.txt`, `release_notes.txt`, the
   support and marketing URLs (https://tabcam.nu01.com/) and the privacy
-  URL (https://tabcam.nu01.com/privacy). `ios/review_information/notes.txt`
+  URL (https://tabcam.nu01.com/privacy); `ios/screenshots/en-US/`, the
+  screenshots ([below](#store-graphics)). `ios/review_information/notes.txt`
   is App Review's notes (how to sign in, what to try);
   [REVIEW_NOTES.md](../tabcam_store/ios/REVIEW_NOTES.md) says what the
   maintainer must add: contact details and a Google test account, kept
@@ -121,8 +122,36 @@ Store), so they can be uploaded later; fastlane itself isn't set up yet.
 
 The text claims only what the app does and never offers to buy Premium
 (the store apps don't sell it); it says Premium subscribers get cloud
-transcription. Screenshots are to show made-up riffs only.
+transcription.
 `bash scripts/store-metadata-check.sh [dir]` checks each file is there
 and within its store's limit (title and name 30, subtitle 30, short
 description 80, descriptions 4000, keywords 100 bytes, promotional text
 170, URLs https), and exits non-zero otherwise.
+
+## Store graphics
+
+`bash scripts/store-screenshots.sh` renders them all into `tabcam_store/`
+and checks them. A widget test,
+[store_screenshots_test.dart](../tabcam_app/screenshots/store_screenshots_test.dart)
+(in `tabcam_app/screenshots/`, so `flutter test` leaves it out, and
+nothing of it ships), pumps the real app (`TabCamApp`), signed in with a
+fake account (`ana@example.com`) and its fake cloud (the test fakes), over
+ten made-up captures: printed pages of made-up riffs that the test draws,
+each with its text tab. Only made-up riffs and `example.com` addresses
+show. Text is in Roboto (from the Flutter SDK) and, for iOS, San Francisco
+(the Mac's system font, as iOS shows it), with the Material icons; a
+status bar is drawn over the top; the camera's picture in Cam is a drawn
+guitar neck.
+
+| Store | Files | Size |
+|---|---|---|
+| Play | `android/en-US/images/icon.png` | 512 x 512, RGBA (the [app icon](app-icon.md)) |
+| Play | `android/en-US/images/featureGraphic.png` | 1024 x 500, RGB: the icon, "TabCam", "Scan guitar tabs into editable text", a page of tab |
+| Play | `android/en-US/images/phoneScreenshots/1.png` … `6.png` | 1080 x 1920 (411 x 731 dp at 2.625) |
+| App Store | `ios/screenshots/en-US/iphone69_1.png` … `6.png` | 1320 x 2868, the 6.9" iPhone (440 x 956 pt at 3x) |
+| App Store | `ios/screenshots/en-US/ipad13_1.png` … `6.png` | 2064 x 2752, the 13" iPad (1032 x 1376 pt at 2x): the app runs on iPads (`TARGETED_DEVICE_FAMILY` 1,2), so Apple asks for them |
+
+Screenshots are RGB PNGs, without alpha. The six, in order: the Text view
+of a read tab; its page with the Tab filter; Home; Capture; Cam; Share with
+people (two people added). `scripts/store-metadata-check.sh` checks each
+image's size and whether it has alpha.
