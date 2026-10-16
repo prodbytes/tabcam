@@ -24,6 +24,22 @@ camera view ([`PlayAlongScreen`](../tabcam_app/lib/capture/play_along_screen.dar
   Meta, Caps Lock, Fn and Escape pressed alone do nothing. A tap on the
   neckline goes to the next; the arrows beside it (**Previous line**,
   **Next line**) to either side. It stops at the first and the last.
+- <a id="head-gestures"></a>**Head gestures** (Android and iOS): a nod
+  **up**, or a turn of the head to the user's **right**, goes to the next
+  neckline; a nod **down** or a turn to the **left**, to the one before
+  ([`head_gestures.dart`](../tabcam_app/lib/capture/head_gestures.dart)).
+  Only a strong, deliberate gesture counts, so playing doesn't turn the
+  tab: the head must move at least 20° up or down, or 25° sideways, from
+  where it rests, and come back to rest (within 8°) within a second; the
+  strongest direction wins. Held away longer, such as looking down at
+  the fretboard, it's no gesture, and after 3 s there the head rests
+  there. After a gesture, the next waits 0.8 s. The camera's frames
+  (about 10 a second, while recording too) go to ML Kit's face detector
+  (`google_mlkit_face_detection`, accurate mode, on the device, the
+  nearest face); its angles never leave the phone. A face icon in the
+  app bar switches them on (the default) and off, green while it sees a
+  face. While a take plays back, gestures do nothing. The web has no
+  head gestures (no ML Kit there), nor the icon.
 - **Rec** records video and sound (`camera`, `ResolutionPreset.high`)
   from the neckline showing, until **Stop**. The take is then added to
   the capture as a video, at the end of its files, named "Take 1",

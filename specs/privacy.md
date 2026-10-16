@@ -35,6 +35,7 @@ app, and the iOS privacy declarations.
 | Grantee emails and roles, no email sent | [shared captures](shared-captures.md) |
 | Email checked with rbacr for Premium; identity → email in `tabcam-accounts` | [cloud OCR](cloud-ocr.md#who-is-premium) |
 | On-device reading with ML Kit; ML Kit may send Google anonymous metrics | [tab recognition](tab-recognition.md); ML Kit pulls in GoogleDataTransport |
+| Head gestures: ML Kit face detection on the device, only the head's angle used; nothing about the face saved, sent or used to identify anyone; can be switched off | [Cam](cam.md#head-gestures) |
 | Premium pages transcribed in AWS Lambda, results in the user's folder | [cloud OCR](cloud-ocr.md#transcription) |
 | AWS (S3, DynamoDB, Cognito, Lambda), us-east-1, encrypted at rest, HTTPS only | [tabcam_infra/](../tabcam_infra): SSE-S3, TLS-only bucket policy |
 | Substack and Stripe for subscriptions; no payment details reach TabCam | [cloud OCR](cloud-ocr.md#who-is-premium) |

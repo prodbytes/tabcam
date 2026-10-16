@@ -771,6 +771,14 @@
       }
     }
   },
+  "camHeadsOn": "Head gestures on: nod up or right for the next line, down or left for the one before",
+  "@camHeadsOn": {
+    "description": "Cam: head gestures toggle, on"
+  },
+  "camHeadsOff": "Head gestures off",
+  "@camHeadsOff": {
+    "description": "Cam: head gestures toggle, off"
+  },
   "camNotAllowed": "The camera or microphone isn't allowed: let TabCam use them in the settings.",
   "@camNotAllowed": {
     "description": "Cam: permission denied"

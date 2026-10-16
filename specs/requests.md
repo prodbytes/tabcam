@@ -908,3 +908,17 @@ spec.
    strings are in English, Spanish and Portuguese
    ([Cam](cam.md), [event screen](event-screen.md),
    [platforms](platforms.md)).
+2. **Let the user turn the tab with head gestures: nod up or right for the
+   next neckline, down or left for the one before; make it a strong
+   gesture so it doesn't trigger by accident.** Cam's frames go to ML
+   Kit's face detector (`google_mlkit_face_detection`, on the device;
+   Android and iOS). A `NodDetector` counts a gesture only when the head
+   swings at least 20° up or down, or 25° sideways, from where it rests,
+   and returns to rest within a second (held away longer, like looking at
+   the fretboard, it's no gesture), with 0.8 s between gestures. A face
+   icon in Cam's app bar switches them on (the default) and off, green
+   while a face is seen. Not on the web. The privacy policy now says
+   faces are detected on the device, only the head's angle used, nothing
+   saved or sent
+   ([Cam](cam.md#head-gestures), [platforms](platforms.md),
+   [privacy](privacy.md)).

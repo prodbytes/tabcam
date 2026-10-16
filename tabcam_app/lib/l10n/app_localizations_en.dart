@@ -568,6 +568,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get camHeadsOn =>
+      'Head gestures on: nod up or right for the next line, down or left for the one before';
+
+  @override
+  String get camHeadsOff => 'Head gestures off';
+
+  @override
   String get camNotAllowed =>
       'The camera or microphone isn\'t allowed: let TabCam use them in the settings.';
 

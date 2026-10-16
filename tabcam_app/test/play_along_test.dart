@@ -1,8 +1,10 @@
 import 'package:camera_platform_interface/camera_platform_interface.dart';
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
+import 'package:tabcam_app/capture/head_gestures.dart';
 import 'package:tabcam_app/capture/play_along_screen.dart';
 import 'package:tabcam_app/l10n/app_localizations.dart';
 import 'package:tabcam_app/library/capture_event.dart';
@@ -13,6 +15,27 @@ import 'package:video_player_platform_interface/video_player_platform_interface.
 
 import 'fake_camera.dart';
 import 'mini_player_test.dart' show FakeVideoPlatform;
+
+/// Head gestures, faked: the test makes them.
+class FakeHeads implements HeadTracking {
+  FakeHeads(this.onGesture);
+
+  final void Function(HeadGesture) onGesture;
+  int frames = 0;
+  bool disposed = false;
+
+  @override
+  void onImage(CameraImage image) => frames++;
+
+  @override
+  final ValueNotifier<bool> face = ValueNotifier(true);
+
+  @override
+  set camera(CameraController camera) {}
+
+  @override
+  void dispose() => disposed = true;
+}
 
 const _back = CameraDescription(
   name: 'back',
@@ -198,5 +221,74 @@ void main() {
     await frames(tester);
     expect(find.textContaining('No text tab yet'), findsOneWidget);
     expect(find.byKey(const Key('neckline')), findsNothing);
+  });
+
+  testWidgets('a nod turns the tab; head gestures switch off', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    FakeHeads? heads;
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, onGesture) => heads = FakeHeads(onGesture),
+        ),
+      ),
+    );
+    await frames(tester);
+    // The camera's frames go to it.
+    expect(camera.streaming, isTrue);
+    expect(find.byTooltip(RegExp('^Head gestures on')), findsOneWidget);
+
+    heads!.onGesture(HeadGesture.next);
+    await tester.pump();
+    expect(find.text('2 / 3'), findsOneWidget);
+    heads!.onGesture(HeadGesture.next);
+    heads!.onGesture(HeadGesture.previous);
+    await tester.pump();
+    expect(find.text('2 / 3'), findsOneWidget);
+
+    // Recording, the frames still go to it.
+    await tester.tap(find.byTooltip('Rec'));
+    await frames(tester);
+    expect(camera.streaming, isTrue);
+    heads!.onGesture(HeadGesture.next);
+    await tester.pump();
+    expect(find.text('3 / 3'), findsOneWidget);
+    await tester.tap(find.byTooltip('Stop'));
+    await frames(tester);
+    expect(camera.streaming, isTrue);
+
+    // Off: no frames, and a gesture does nothing.
+    await tester.tap(find.byKey(const Key('cam-heads')));
+    await frames(tester);
+    expect(find.byTooltip('Head gestures off'), findsOneWidget);
+    expect(camera.streaming, isFalse);
+    heads!.onGesture(HeadGesture.previous);
+    await tester.pump();
+    expect(find.text('3 / 3'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+    expect(heads!.disposed, isTrue);
+  });
+
+  testWidgets('where head gestures can\'t work, there\'s no switch', (
+    tester,
+  ) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+        ),
+      ),
+    );
+    await frames(tester);
+    expect(find.byKey(const Key('cam-heads')), findsNothing);
+    expect(camera.streaming, isFalse);
   });
 }
