@@ -9,21 +9,41 @@ Android and iOS only (below).
 ## Reading by itself
 
 `AutoReader` ([lib/recognition/auto_reader.dart](../tabcam_app/lib/recognition/auto_reader.dart))
-watches the library: whenever the user adds or changes an event's image
-or PDF pages (a new capture, pages added, rotated, deleted or reordered), that event
-is read, one event at a time ([PDFs](#pdfs) below). Pages changed while it
-was read are read again; a read writes only the text, onto the event as
-it is then (`Library.patch`), so pages added meanwhile aren't lost. Other changes (the title, the view, the text)
-don't read again, nor do events another device changed (that device reads
-them), nor the events there were at launch.
+watches the library and reads only the tabs not read yet: when the user
+adds or changes the image or PDF pages of an event **without a text tab**
+(a new capture, pages added to one with none, rotated, deleted or
+reordered), that event is read, one event at a time ([PDFs](#pdfs)
+below). An event that has a text tab (from a read, on the device or in
+the cloud, or written by the user; a blank one counts as none) isn't
+read again by itself when its pages change: only when the user asks
+(**Read again** below). Pages changed while it was read are read again;
+a read writes only the text, onto the event as it is then
+(`Library.patch`), so pages added meanwhile aren't lost. Other changes
+(the title, the view, the text) don't read, nor do events another device
+changed (that device reads them), nor the events there were at launch.
 
-- **A text the user edited is never replaced.** A read fills an empty
-  text tab, or replaces one an earlier read left (`tabTextAuto`, synced:
-  set by a read on the device or in the cloud, cleared by an edit).
+- **Read again**: the Text view's **Read again** or **Read**, or the
+  [Text tool](event-screen.md) tapped while the Text view shows a tab
+  (it asks "Read the tab again?" first), reads the event now
+  (`readSoon(id, again: true)`), replacing the text an earlier read left;
+  with Premium the cloud reads every page again.
+- **A text the user edited is never replaced**, nor one marked correct,
+  not even by Read again. A read fills an empty text tab, or replaces one
+  an earlier read left (`tabTextAuto`, synced: set by a read on the
+  device or in the cloud, cleared by an edit).
 - **Signed out** (in a build with sign-in): it waits, and reads when the
   user signs in ([signed out](cloud-sync.md#signed-out)).
 - **Premium**: the pages go to the cloud transcription; the text comes
-  with sync.
+  with sync. Reading ends once it does (any library change, sync's too,
+  that brings the event a text tab), or when the cloud's results are
+  collected (`CloudOcr.collected`: a tab, or "No tab found").
+- **Given up**: a read still on the device, or still waiting on the
+  cloud, after `cloudReadTimeout` (three times the OCR worker's Lambda
+  timeout, `Timeout: 900` in `tabcam_infra/ocr.yaml`: 45 minutes) fails
+  ("Reading the tab failed.", with Read again). The timer is the
+  reader's, so it runs while the user is away from the capture; a text
+  that comes later still fills in, and then the failure is gone.
+- **Gone**: a deleted event's reading state is dropped.
 - **Neither** (the web without Premium): it says it can't read here.
 
 The Text view says how it stands when there's no text yet: "Reading the

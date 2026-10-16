@@ -101,12 +101,7 @@ void main() {
       });
       final l10n = lookupAppLocalizations(Locale(code));
       await tester.pumpWidget(
-        TabCamApp(
-          library: library,
-          auth: auth,
-          sync: sync,
-          language: language,
-        ),
+        TabCamApp(library: library, auth: auth, sync: sync, language: language),
       );
       await frames(tester);
       // Signed out: the welcome, alone.

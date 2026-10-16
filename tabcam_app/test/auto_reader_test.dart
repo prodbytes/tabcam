@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -51,43 +52,117 @@ void main() {
     expect(r.stateOf(event.id), isNull);
   });
 
-  test('pages added: read again, replacing what a read left', () async {
-    reader();
+  test(
+    'an event with a text tab isn\'t read again when its pages change',
+    () async {
+      final r = reader();
+      await settle();
+      final event = await library.create([page(), page()]);
+      await settle();
+      expect(reads, [2]);
+      var now = library.byId(event.id)!;
+      await library.reorderPages(now.id, [now.pages[1].id, now.pages[0].id]);
+      await settle();
+      now = library.byId(event.id)!;
+      await library.rotatePage(now, now.pages[0]);
+      await settle();
+      now = library.byId(event.id)!;
+      await library.addPages(now, [page()]);
+      await settle();
+      now = library.byId(event.id)!;
+      await library.deletePage(now, now.pages[0]);
+      await settle();
+      expect(reads, [2]);
+      expect(library.byId(event.id)!.tabText, riff(2));
+      expect(r.stateOf(event.id), isNull);
+    },
+  );
+
+  test('pages added to an event without a text tab are read', () async {
+    var found = false;
+    final r = reader(text: (pages) => found ? riff(pages) : null);
     await settle();
     final event = await library.create([page()]);
     await settle();
+    expect(r.stateOf(event.id), ReadState.noTab);
+    found = true;
     await library.addPages(library.byId(event.id)!, [page()]);
     await settle();
     expect(reads, [1, 2]);
     expect(library.byId(event.id)!.tabText, riff(2));
+    expect(r.stateOf(event.id), isNull);
+  });
+
+  test('Read again replaces the text a read left', () async {
+    var lines = 1;
+    final r = reader(text: (_) => riff(lines));
+    await settle();
+    final event = await library.create([page()]);
+    await settle();
+    lines = 3;
+    r.readSoon(event.id, again: true);
+    expect(r.stateOf(event.id), ReadState.reading);
+    await settle();
+    expect(reads, [1, 1]);
+    expect(library.byId(event.id)!.tabText, riff(3));
+    expect(r.stateOf(event.id), isNull);
   });
 
   test('a text the user edited is never replaced', () async {
-    reader();
+    final r = reader();
     await settle();
     final event = await library.create([page()]);
     await settle();
     await library.update(
       library.byId(event.id)!.copyWith(tabText: 'mine', tabTextAuto: false),
     );
-    await library.addPages(library.byId(event.id)!, [page()]);
+    r.readSoon(event.id, again: true);
     await settle();
-    expect(reads, [1, 2]);
+    expect(reads, [1, 1]);
     expect(library.byId(event.id)!.tabText, 'mine');
+    expect(r.stateOf(event.id), isNull);
   });
 
   test('a text marked correct is never replaced', () async {
-    reader();
+    final r = reader(text: (_) => riff(reads.length));
     await settle();
     final event = await library.create([page()]);
     await settle();
     await library.update(
       library.byId(event.id)!.copyWith(tabTextCorrect: true),
     );
-    await library.addPages(library.byId(event.id)!, [page()]);
+    r.readSoon(event.id, again: true);
     await settle();
-    expect(reads, [1, 2]);
+    expect(reads, [1, 1]);
     expect(library.byId(event.id)!.tabText, riff(1));
+  });
+
+  test('a read that never ends fails after the timeout', () async {
+    final hang = Completer<String?>();
+    final r = AutoReader(
+      library: library,
+      supported: true,
+      read: (_) => hang.future,
+      cloudTimeout: const Duration(milliseconds: 50),
+    )..start();
+    await settle();
+    final event = await library.create([page()]);
+    await settle();
+    expect(r.stateOf(event.id), ReadState.reading);
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    expect(r.stateOf(event.id), ReadState.failed);
+    r.dispose();
+  });
+
+  test('a deleted event has nothing more to say', () async {
+    final r = reader(text: (_) => null);
+    await settle();
+    final event = await library.create([page()]);
+    await settle();
+    expect(r.stateOf(event.id), ReadState.noTab);
+    await library.delete(library.byId(event.id)!);
+    await settle();
+    expect(r.stateOf(event.id), isNull);
   });
 
   test('changes that aren\'t to the image pages don\'t read again', () async {

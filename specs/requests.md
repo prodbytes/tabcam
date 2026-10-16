@@ -982,3 +982,24 @@ spec.
    a failure keeps the take as recorded ([Cam](cam.md#the-tab-in-the-take),
    [platforms](platforms.md)). Also: the iOS `Podfile.lock` was brought up
    to date with the face detection pod head gestures added.
+9. **"The spinner icon is showing for a tab that was already read. Only
+   read tabs that were not yet read or that were forced to re-read by
+   clicking the icon when it is already ready."** Then: **"icon seems to
+   be spinning forever, make it sure it fails after 2x the lambda
+   timeout"**, **"make it 3x"**. The cause: with Premium, `AutoReader`
+   set `inCloud` and nothing ever cleared it, as the cloud's text comes
+   with sync, which it didn't watch, so the Text tool spun on a read tab.
+   Now the reader watches every library change (sync's too) and drops the
+   state once the event has a text tab or is gone, and `CloudOcr`
+   tells it when an event's results are collected (`collected`). Pages
+   reordered, rotated, added or deleted no longer re-read an event that
+   has a text tab; events without one are read as before. Tapping the
+   Text tool on the Text view with a tab asks "Read the tab again?"
+   (Cancel / Read again; en, es, pt) and reads it again with the
+   spinner. Read again in the cloud now waits for every page's new
+   result (by ETag) and replaces an auto text, on-device ones too (it
+   used to skip events whose pages it had filled). A read still waiting
+   after `cloudReadTimeout`, 3 x the OCR Lambda's 15-minute timeout
+   (45 minutes), fails, with Read again; a text that comes later still
+   fills in ([tab recognition](tab-recognition.md#reading-by-itself),
+   [event screen](event-screen.md), [cloud OCR](cloud-ocr.md)).

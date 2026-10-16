@@ -32,9 +32,18 @@ enum ReadState {
   failed,
 }
 
-/// Reads every event's tab by itself: whenever the user adds or changes an
-/// event's image or PDF pages (a new capture, pages added, rotated or
-/// deleted), its pages are read into its text tab, one event at a time.
+/// How long a read may wait (on the cloud's transcription, mostly) before
+/// it's given up as [ReadState.failed]: three times the OCR worker's
+/// timeout, `Timeout: 900` (15 minutes) of `OcrFunction` in
+/// `tabcam_infra/ocr.yaml`. A text that comes later still fills in.
+const Duration cloudReadTimeout = Duration(minutes: 3 * 15);
+
+/// Reads the tab of every event that has none yet, by itself: when the
+/// user adds or changes the image or PDF pages of an event without a text
+/// tab (a new capture, pages added, rotated or deleted), its pages are
+/// read into its text tab, one event at a time. An event that has a text
+/// tab (read, or written by the user) is only read again when asked
+/// ([readSoon] with `again`, the Text tool's Read the tab again).
 /// With TabCam Premium the cloud transcribes image pages ([CloudOcr]);
 /// otherwise ML Kit on the device ([TabReader]). PDFs are read on the
 /// device: their text where they have one (every platform, the web too),
@@ -57,7 +66,9 @@ class AutoReader extends ChangeNotifier {
     )?
     readPdf,
     bool? supported,
-  }) : _ocr = ocr ?? (() => null),
+    Duration cloudTimeout = cloudReadTimeout,
+  }) : _timeout = cloudTimeout,
+       _ocr = ocr ?? (() => null),
        _read = read ?? TabReader.read,
        _readPdf = readPdf ?? ((pdf, ocr) => PdfTabReader.read(pdf, ocr: ocr)),
        _supported = supported ?? TabReader.supported;
@@ -73,6 +84,24 @@ class AutoReader extends ChangeNotifier {
   _readPdf;
   final bool _supported;
 
+  /// How long a read may wait before it fails ([cloudReadTimeout]).
+  final Duration _timeout;
+
+  /// Gives up on reads the cloud hasn't answered ([ReadState.inCloud]).
+  final Map<String, Timer> _timers = {};
+
+  /// Each event's text tab when it was last asked to be read: a different
+  /// one (the read's, by sync too, or the user's) ends what it said.
+  final Map<String, String?> _textAt = {};
+
+  /// Each event's latest read, so an earlier cloud read's answer doesn't
+  /// speak for it.
+  final Map<String, int> _reads = {};
+
+  /// The cloud's answer when it came before the read was set in the cloud
+  /// (true: a tab found).
+  final Map<String, bool> _early = {};
+
   /// Events whose next read reads every page again (Read again).
   final Set<String> _again = {};
 
@@ -86,7 +115,8 @@ class AutoReader extends ChangeNotifier {
   bool _disposed = false;
 
   /// Where reading [eventId] stands; null when there's nothing to say (not
-  /// read by this run, or read with a tab found).
+  /// read by this run, or read with a tab found: on the device, or by the
+  /// cloud once its text arrives).
   ReadState? stateOf(String eventId) => _states[eventId];
 
   /// Starts watching the library, once it has loaded: the events there
@@ -100,6 +130,7 @@ class AutoReader extends ChangeNotifier {
       _seen[e.id] = _imagesOf(e);
     }
     library.localChanges.addListener(_onChange);
+    library.addListener(_onLibrary);
     auth?.addListener(_onAuth);
   }
 
@@ -114,13 +145,34 @@ class AutoReader extends ChangeNotifier {
       if (p.isImage || p.isPdf) p.fileName,
   ].join(',');
 
+  static bool _hasText(CaptureEvent e) => e.tabText?.trim().isNotEmpty ?? false;
+
+  /// The user changed pages: events without a text tab yet are read.
   void _onChange() {
     for (final e in library.events) {
       final images = _imagesOf(e);
       if (_seen[e.id] == images) continue;
       _seen[e.id] = images;
       if (images.isEmpty || e.readOnly) continue;
+      if (_hasText(e)) {
+        _log('event ${e.id}: pages changed, already has a text tab');
+        continue;
+      }
       readSoon(e.id);
+    }
+  }
+
+  /// Any change, cloud sync's too: an event gone, or one whose text tab
+  /// came (the cloud's reading, say), has nothing more to say.
+  void _onLibrary() {
+    for (final MapEntry(:key, :value) in [..._states.entries]) {
+      final e = library.byId(key);
+      if (e == null ||
+          (value != ReadState.reading &&
+              _hasText(e) &&
+              e.tabText != _textAt[key])) {
+        _set(key, null);
+      }
     }
   }
 
@@ -140,6 +192,9 @@ class AutoReader extends ChangeNotifier {
   void readSoon(String eventId, {bool again = false}) {
     if (again) _again.add(eventId);
     if (_disposed || _queue.contains(eventId)) return;
+    _textAt[eventId] = library.byId(eventId)?.tabText;
+    _reads[eventId] = (_reads[eventId] ?? 0) + 1;
+    _early.remove(eventId);
     _queue.add(eventId);
     _set(eventId, ReadState.reading);
     unawaited(_drain());
@@ -153,7 +208,7 @@ class AutoReader extends ChangeNotifier {
         final id = _queue.removeAt(0);
         final before = _pagesNow(id);
         try {
-          _set(id, await _readOne(id));
+          _set(id, await _readOne(id).timeout(_timeout));
         } on Object catch (e) {
           _log('event $id: failed: $e');
           _set(id, ReadState.failed);
@@ -198,8 +253,30 @@ class AutoReader extends ChangeNotifier {
           return _write(id, parts.join('\n\n'));
         }
       }
+      // Its text comes with sync: then it's read (or no tab was found).
+      final read = _reads[id];
+      final collected = ocr.collected(id);
       final queued = await ocr.transcribe(event, again: _again.remove(id));
       _log('event $id: in the cloud, $queued pages queued');
+      unawaited(
+        collected.then((found) {
+          if (_reads[id] != read) return;
+          if (_states[id] == ReadState.reading) {
+            _early[id] = found; // before it's set in the cloud
+            return;
+          }
+          if (!const [
+            ReadState.inCloud,
+            ReadState.failed,
+          ].contains(_states[id])) {
+            return;
+          }
+          _log(
+            'event $id: the cloud\'s reading came, ${found ? 'a tab' : 'no tab'}',
+          );
+          _set(id, found ? null : ReadState.noTab);
+        }),
+      );
       return ReadState.inCloud;
     }
     // Without OCR here (the web), only PDFs' text can be read.
@@ -270,6 +347,20 @@ class AutoReader extends ChangeNotifier {
 
   void _set(String id, ReadState? state) {
     if (_disposed) return;
+    if (state == ReadState.inCloud) {
+      if (_early.remove(id) case final found?) {
+        state = found ? null : ReadState.noTab;
+      }
+    }
+    _timers.remove(id)?.cancel();
+    if (state == ReadState.inCloud) {
+      _timers[id] = Timer(_timeout, () {
+        _timers.remove(id);
+        if (_states[id] != ReadState.inCloud) return;
+        _log('event $id: no reading from the cloud in $_timeout, failed');
+        _set(id, ReadState.failed);
+      });
+    }
     if (state == null) {
       _states.remove(id);
     } else {
@@ -285,7 +376,12 @@ class AutoReader extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    for (final t in _timers.values) {
+      t.cancel();
+    }
+    _timers.clear();
     library.localChanges.removeListener(_onChange);
+    library.removeListener(_onLibrary);
     auth?.removeListener(_onAuth);
     super.dispose();
   }
