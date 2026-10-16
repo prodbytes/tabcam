@@ -177,7 +177,7 @@
       }
     }
   },
-  "accountPremiumOffer": "Have every scan transcribed automatically in the cloud, more accurately than on the phone, and read tabs on the web too. Subscribe with {email}.",
+  "accountPremiumOffer": "Have every scan transcribed automatically in the cloud, more accurately than on the phone, and read tabs on the web too. $10 a month or $100 a year: subscribe with {email}.",
   "@accountPremiumOffer": {
     "description": "Premium card: the upgrade offer",
     "placeholders": {

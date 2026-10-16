@@ -295,7 +295,7 @@ abstract class AppLocalizations {
   /// Premium card: the upgrade offer
   ///
   /// In en, this message translates to:
-  /// **'Have every scan transcribed automatically in the cloud, more accurately than on the phone, and read tabs on the web too. Subscribe with {email}.'**
+  /// **'Have every scan transcribed automatically in the cloud, more accurately than on the phone, and read tabs on the web too. \$10 a month or \$100 a year: subscribe with {email}.'**
   String accountPremiumOffer(String email);
 
   /// Premium card: upgrade button

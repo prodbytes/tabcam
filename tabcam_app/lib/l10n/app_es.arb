@@ -31,7 +31,7 @@
   "accountPremiumActive": "Tus escaneos se transcriben en la nube mientras se sincronizan: la tablatura en texto aparece sola en el evento.",
   "accountPremiumUntil": "Premium hasta el {date}.",
   "accountPremiumInactive": "TabCam Premium no está activo para {email}.",
-  "accountPremiumOffer": "Transcribe cada escaneo automáticamente en la nube, con más precisión que en el teléfono, y lee tablaturas también en la web. Suscríbete con {email}.",
+  "accountPremiumOffer": "Transcribe cada escaneo automáticamente en la nube, con más precisión que en el teléfono, y lee tablaturas también en la web. US$10 al mes o US$100 al año: suscríbete con {email}.",
   "accountPremiumUpgrade": "Mejorar",
   "accountPremiumVoucher": "Canjear un cupón",
   "accountPremiumCheckAgain": "Verificar de nuevo",

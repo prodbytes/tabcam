@@ -143,7 +143,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String accountPremiumOffer(String email) {
-    return 'Tenha cada digitalização transcrita automaticamente na nuvem, com mais precisão do que no celular, e leia tablaturas na web também. Assine com $email.';
+    return 'Tenha cada digitalização transcrita automaticamente na nuvem, com mais precisão do que no celular, e leia tablaturas na web também. US\$ 10 por mês ou US\$ 100 por ano: assine com $email.';
   }
 
   @override

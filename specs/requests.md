@@ -1237,3 +1237,9 @@ spec.
     - Specs ([auto-correct](autocorrect.md#hidden-for-now),
       [tab recognition](tab-recognition.md), [app stores](app-stores.md))
       and the store descriptions no longer offer Fix.
+28. **Set Premium's price to $10 a month or $100 a year.** The web's
+    upgrade offer on the Premium card now gives the price ("$10 a month
+    or $100 a year: subscribe with …", US$ in Spanish and Portuguese);
+    the store apps still show no purchase information. The charge itself
+    is Substack's paid-subscription setting, set there
+    ([cloud OCR](cloud-ocr.md#who-is-premium)).
