@@ -264,6 +264,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
           _recordingTab = true;
         } on Object catch (e) {
           debugPrint('TabCam: cam: recording without the tab: $e');
+          if (mounted) _snack(context.l10n.camRecordingNoTab('$e'));
         }
       }
       if (!_recordingTab) {
@@ -346,7 +347,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         bands.add((band, png));
       }
       final burned = await widget.burn(take, bands);
-      if (burned == null && mounted) _snack(l10n.camNoOverlay);
+      if (burned == null && mounted) {
+        _snack(l10n.camNoOverlay(TakeOverlay.lastError ?? '?'));
+      }
       return burned;
     } finally {
       if (mounted) setState(() => _burning = false);

@@ -791,9 +791,23 @@
   "@camAddingTab": {
     "description": "Cam: the tab is being burned into the take"
   },
-  "camNoOverlay": "The take was saved without the tab.",
+  "camNoOverlay": "The take was saved without the tab: {reason}",
   "@camNoOverlay": {
-    "description": "Cam: burning the tab into the take failed"
+    "description": "Cam: burning the tab into the take failed, and why",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "camRecordingNoTab": "Recording without the tab: {reason}",
+  "@camRecordingNoTab": {
+    "description": "Cam (web): the tab couldn't be recorded in, and why",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
   },
   "camHeadsOn": "Head gestures on: nod up or right for the next line, down or left for the one before",
   "@camHeadsOn": {
