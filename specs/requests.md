@@ -1105,3 +1105,6 @@ spec.
    the note or marks the text Verified. On-device reads have none
    ([cloud OCR](cloud-ocr.md#doubtful-notes),
    [tab recognition](tab-recognition.md#text-view)).
+19. **Make the head icon in the camera view use the primary theme colour,
+   not green.** Cam's head gestures icon is now in the theme's primary
+   colour (was green) while it sees a face ([cam](cam.md#head-gestures)).

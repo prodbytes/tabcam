@@ -552,8 +552,11 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
                   builder: (context, face, _) => IconButton(
                     key: const Key('cam-heads'),
                     tooltip: _headsOn ? l10n.camHeadsOn : l10n.camHeadsOff,
-                    // On, green while it sees the user's face.
-                    color: _headsOn && face ? Colors.greenAccent : null,
+                    // On, the theme's primary colour while it sees the
+                    // user's face.
+                    color: _headsOn && face
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
                     icon: Icon(
                       _headsOn ? Icons.face : Icons.face_retouching_off,
                     ),
