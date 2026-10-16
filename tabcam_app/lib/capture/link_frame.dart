@@ -7,27 +7,33 @@ import 'link_frame_io.dart'
     if (dart.library.js_interop) 'link_frame_web.dart'
     as platform;
 
-/// What a [linkFrameFor] shows, and its play / pause where it can be told:
-/// a YouTube video (its embedded player, over its iframe API's messages),
-/// and on Android and iOS a page's first video or sound. Another site's
-/// page on the web can't be: [canToggle] is false.
+/// What a link frame is told to do.
+enum LinkCommand { play, pause, stop }
+
+/// What a [linkFrameFor] shows, and its play / pause / stop where it can
+/// be told: a YouTube video (its embedded player, over its iframe API's
+/// messages), and on Android and iOS a page's first video or sound.
+/// Another site's page on the web can't be: [canToggle] is false.
 class LinkFrameController extends ChangeNotifier {
-  LinkFrameController(this.url);
+  LinkFrameController(this.url, {this.autoplay = true}) : _playing = autoplay;
 
   final Uri url;
+
+  /// Whether a YouTube video starts playing as it loads (else paused).
+  final bool autoplay;
 
   /// The YouTube video [url] is for, or null.
   late final String? youTubeId = youTubeVideoId(url);
 
-  /// Whether it plays, as far as the app knows: it starts playing; the
-  /// user may also pause it in the frame itself.
+  /// Whether it plays, as far as the app knows: it starts playing if
+  /// [autoplay]; the user may also play or pause it in the frame itself.
   bool get playing => _playing;
-  bool _playing = true;
+  bool _playing;
 
-  Future<void> Function(bool play)? _command;
+  Future<void> Function(LinkCommand command)? _command;
 
-  /// Set by the frame showing it: how to play (true) or pause it.
-  set command(Future<void> Function(bool play)? command) {
+  /// Set by the frame showing it: how to tell it what to do.
+  set command(Future<void> Function(LinkCommand command)? command) {
     _command = command;
     // Set while the frame builds or goes: said after it.
     scheduleMicrotask(() {
@@ -50,11 +56,20 @@ class LinkFrameController extends ChangeNotifier {
     if (command == null) return;
     _playing = !_playing;
     notifyListeners();
-    await command(_playing);
+    await command(_playing ? LinkCommand.play : LinkCommand.pause);
   }
 
   Future<void> pause() async {
     if (_playing) await toggle();
+  }
+
+  /// Pauses it, back at its start.
+  Future<void> stop() async {
+    final command = _command;
+    if (command == null) return;
+    _playing = false;
+    notifyListeners();
+    await command(LinkCommand.stop);
   }
 }
 
@@ -65,13 +80,25 @@ Widget linkFrameFor(LinkFrameController controller) =>
     platform.buildLinkFrame(controller);
 
 /// YouTube's embedded player for [id] (checked by [youTubeVideoId]),
-/// playing, its iframe API on, for [origin].
-Uri youTubeEmbed(String id, String origin) => Uri.https(
-  'www.youtube-nocookie.com',
-  '/embed/$id',
-  {'enablejsapi': '1', 'autoplay': '1', 'playsinline': '1', 'origin': origin},
-);
+/// playing if [autoplay], its iframe API on, for [origin].
+Uri youTubeEmbed(String id, String origin, {bool autoplay = true}) =>
+    Uri.https('www.youtube-nocookie.com', '/embed/$id', {
+      'enablejsapi': '1',
+      'autoplay': autoplay ? '1' : '0',
+      'playsinline': '1',
+      'origin': origin,
+    });
 
-/// The iframe API's message playing (true) or pausing the video.
-String youTubeCommand(bool play) =>
-    '{"event":"command","func":"${play ? 'playVideo' : 'pauseVideo'}","args":""}';
+/// The iframe API's messages for [command]: stop pauses, then goes back
+/// to the start.
+List<String> youTubeCommands(LinkCommand command) => switch (command) {
+  LinkCommand.play => [_youTube('playVideo', '""')],
+  LinkCommand.pause => [_youTube('pauseVideo', '""')],
+  LinkCommand.stop => [
+    _youTube('pauseVideo', '""'),
+    _youTube('seekTo', '[0,true]'),
+  ],
+};
+
+String _youTube(String func, String args) =>
+    '{"event":"command","func":"$func","args":$args}';

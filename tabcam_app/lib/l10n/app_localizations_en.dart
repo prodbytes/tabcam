@@ -628,6 +628,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camAlongPause => 'Pause (space)';
 
   @override
+  String get camAlongStop => 'Stop';
+
+  @override
   String get camAlongClose => 'Close';
 
   @override

@@ -853,6 +853,10 @@
   "@camAlongPause": {
     "description": "Cam backing track: pause; the space bar does it too"
   },
+  "camAlongStop": "Stop",
+  "@camAlongStop": {
+    "description": "Cam: stops the file playing along, back at its start."
+  },
   "camAlongClose": "Close",
   "@camAlongClose": {
     "description": "Cam backing track: close its frame"

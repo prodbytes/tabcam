@@ -1120,6 +1120,12 @@ abstract class AppLocalizations {
   /// **'Pause (space)'**
   String get camAlongPause;
 
+  /// Cam: stops the file playing along, back at its start.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get camAlongStop;
+
   /// Cam backing track: close its frame
   ///
   /// In en, this message translates to:

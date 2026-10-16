@@ -111,21 +111,23 @@ camera view ([`PlayAlongScreen`](../tabcam_app/lib/capture/play_along_screen.dar
   turned while it was recorded (the take has the tab in it too).
 
 <a id="playing-along-with-a-file"></a>**Playing along with a file**:
-when the capture has recordings, videos or links, **Play along** (♫ in
-the app bar, in the primary colour while open) opens a sidebar on the
-right listing them in the capture's order (its takes too), each with
-its icon and name. A tap on one plays it in a frame **above the
-camera** (`BackingTrack`,
+when the capture has recordings, videos or links, Cam opens with a
+sidebar on the right listing them in the capture's order (its takes
+too), each with its icon and name, and the first of them loaded in a
+frame **above the camera** (`BackingTrack`,
 [`backing_track.dart`](../tabcam_app/lib/capture/backing_track.dart)),
-taking the place of the one before; a tap on the one playing pauses or
-plays it. The user plays along, and records as usual: Rec doesn't stop
+paused. **Play along** (♫ in the app bar, in the primary colour while
+open) hides and shows the sidebar. A capture with none of them has no
+sidebar and no ♫. A tap on one plays it in the frame, taking the place
+of the one before; a tap on the one in the frame pauses or plays it. The user plays along, and records as usual: Rec doesn't stop
 it, so the microphone records it too (iOS mixes its sound with the
 recording's: `mixWithOthers`).
 
 - **The frame**, at most a third of the screen's height: a video above
   a progress bar to scrub; a recording only the progress bar; under
-  them its icon and name, **Pause** / **Play** and **Close**. The one
-  playing is marked in the sidebar.
+  them its icon and name, **Play** / **Pause**, **Stop** (pauses it,
+  back at its start) and **Close**. The one in the frame is marked in
+  the sidebar.
 - **The space bar** pauses and plays it (a key down; held, it doesn't
   repeat), and doesn't turn the tab; once closed, space turns the tab
   again. A tap in the sidebar or the frame gives the keys back to Cam.
@@ -135,18 +137,20 @@ recording's: `mixWithOthers`).
   Any other link shows in the frame
   ([`link_frame.dart`](../tabcam_app/lib/capture/link_frame.dart)):
   - **A YouTube video** in YouTube's embedded player (privacy-enhanced,
-    `youtube-nocookie.com/embed/<id>`, with its iframe API on and
-    autoplay), told to play and pause by the iframe API's messages
-    (`playVideo` / `pauseVideo`). On Android and iOS it's in a web view
+    `youtube-nocookie.com/embed/<id>`, with its iframe API on, autoplay
+    off when it opens paused with Cam), told to play, pause and stop by
+    the iframe API's messages (`playVideo`, `pauseVideo`; stop is
+    `pauseVideo` then `seekTo` 0). On Android and iOS it's in a web view
     (`webview_flutter`), in a page of its own from
     `https://tabcam.nu01.com/` (YouTube wants to know the site that
     embeds it), with media playing inline and without a tap first; on
     the web, an iframe.
   - **Another page**: on Android and iOS loaded in the web view, its
-    first `<video>` or `<audio>` played and paused by the space bar; on
-    the web in an iframe, which another site's page can't be told to
-    play or pause (no Pause / Play), and which some sites refuse to be
-    shown in.
+    first `<video>` or `<audio>` played and paused by the space bar
+    (and paused once the page loads, when it opens paused); on the web
+    in an iframe, which another site's page can't be told to play,
+    pause or stop (no Play / Pause or Stop), and which some sites
+    refuse to be shown in.
   - A click inside the frame gives it the keyboard (on the web, the
     page in it gets the space bar) until the user taps Cam again.
 - **Play** (the last take) pauses it first. Leaving Cam stops it.

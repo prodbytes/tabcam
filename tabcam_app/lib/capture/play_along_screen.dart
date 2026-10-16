@@ -123,6 +123,14 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   void initState() {
     super.initState();
     _start();
+    // The sidebar opens with the capture's first recording, video or
+    // link loaded, paused; with none, it stays hidden.
+    final event = widget.library.byId(widget.eventId);
+    final first = event?.pages.where(BackingTrack.plays).firstOrNull;
+    if (event != null && first != null) {
+      _sidebar = true;
+      unawaited(_track.choose(event, first, play: false));
+    }
   }
 
   Future<void> _start() async {
@@ -657,6 +665,10 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
           linkFrame: widget.linkFrame,
           onClose: () {
             _focus.requestFocus();
+            _track.close();
+          },
+          onStop: () {
+            _focus.requestFocus();
             _track.stop();
           },
           onToggle: () {
@@ -766,8 +778,8 @@ class _Control extends StatelessWidget {
   }
 }
 
-/// The backing track's frame, above the camera: its name, play / pause
-/// and close, over the video or link playing (a recording shows its
+/// The backing track's frame, above the camera: its name, play / pause,
+/// stop and close, over the video or link playing (a recording shows its
 /// progress only). Nothing while there's none.
 class _BackingFrame extends StatelessWidget {
   const _BackingFrame({
@@ -776,6 +788,7 @@ class _BackingFrame extends StatelessWidget {
     required this.linkFrame,
     required this.onClose,
     required this.onToggle,
+    required this.onStop,
   });
 
   final String eventId;
@@ -783,6 +796,7 @@ class _BackingFrame extends StatelessWidget {
   final Widget Function(LinkFrameController controller) linkFrame;
   final VoidCallback onClose;
   final VoidCallback onToggle;
+  final VoidCallback onStop;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -848,7 +862,7 @@ class _BackingFrame extends StatelessWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                   )
-                else if (track.canToggle)
+                else if (track.canToggle) ...[
                   IconButton(
                     key: const Key('cam-along-toggle'),
                     tooltip: track.playing
@@ -858,6 +872,14 @@ class _BackingFrame extends StatelessWidget {
                     icon: Icon(track.playing ? Icons.pause : Icons.play_arrow),
                     onPressed: onToggle,
                   ),
+                  IconButton(
+                    key: const Key('cam-along-stop'),
+                    tooltip: l10n.camAlongStop,
+                    color: Colors.white,
+                    icon: const Icon(Icons.stop),
+                    onPressed: onStop,
+                  ),
+                ],
                 IconButton(
                   key: const Key('cam-along-close'),
                   tooltip: l10n.camAlongClose,

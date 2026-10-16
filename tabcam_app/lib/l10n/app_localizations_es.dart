@@ -650,6 +650,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get camAlongPause => 'Pausa (espacio)';
 
   @override
+  String get camAlongStop => 'Detener';
+
+  @override
   String get camAlongClose => 'Cerrar';
 
   @override

@@ -1262,3 +1262,11 @@ spec.
     - The privacy policy names CloudFront, where it caches and for how
       long, the device cache, and that deleting an account drops
       CloudFront's copies. See [caching users' files](cdn.md).
+30. **In Cam, open the play-along sidebar by default, with the first file
+    that isn't a tab, paused; hide it when there's none; give the player
+    Stop and Play.** Cam now opens with the sidebar showing and the
+    capture's first recording, video or link loaded in the frame,
+    paused (a YouTube video's embed doesn't autoplay; a page that plays
+    by itself is paused once loaded). With none, no sidebar and no ♫.
+    The frame has **Stop** (pause, back to the start) beside Pause /
+    Play. See [Cam](cam.md#playing-along-with-a-file).
