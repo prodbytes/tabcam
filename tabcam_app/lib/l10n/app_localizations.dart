@@ -2397,6 +2397,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drop files to add'**
   String get dropFilesToAdd;
+
+  /// Deleting the account (Profile > Delete account), signed in with Apple: the user canceled Apple's sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Your files in the cloud were deleted, but not your account: Apple\'s confirmation was canceled. Delete your account again to finish.'**
+  String get deleteAccountAppleCanceled;
+
+  /// Deleting the account, signed in with Apple: Apple's sheet confirmed with another Apple ID
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s another Apple ID: confirm with the Apple ID you signed in with.'**
+  String get deleteAccountAppleOtherId;
 }
 
 class _AppLocalizationsDelegate

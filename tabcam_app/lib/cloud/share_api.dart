@@ -273,9 +273,17 @@ class ShareApi {
   /// Deletes what the API keeps about the user, when they delete their
   /// account: the grants of their captures, the grants to their address,
   /// and their Cognito identity (last: their folder must be emptied
-  /// first, with its credentials).
-  Future<void> deleteAccount(String token) =>
-      _call(token, 'DELETE', ['account']);
+  /// first, with its credentials). Signed in with Apple,
+  /// [appleAuthorizationCode] lets it revoke their Apple tokens first.
+  Future<void> deleteAccount(String token, {String? appleAuthorizationCode}) =>
+      _call(
+        token,
+        'DELETE',
+        ['account'],
+        body: appleAuthorizationCode == null
+            ? null
+            : {'appleAuthorizationCode': appleAuthorizationCode},
+      );
 
   Future<ShareCredentials> credentials(
     String token,

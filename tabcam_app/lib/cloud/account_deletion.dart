@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../auth/auth_service.dart';
 import '../l10n/language.dart';
 import 'cloud_ocr.dart';
 import 'cloud_sync.dart';
@@ -112,9 +113,27 @@ class AccountDeletion {
       }
       if (sync.shares case final shares?) {
         report(DeletionStep.shares);
+        // Signed in with Apple: Apple's sheet, for a code the share API
+        // revokes the user's Apple tokens with (it's valid five minutes, so
+        // asked for here, after the folder).
+        final String? appleCode;
+        try {
+          appleCode = await auth.deletionAuthorization();
+        } on DeletionAuthorizationCanceled {
+          throw AccountDeletionException(appL10n.deleteAccountAppleCanceled);
+        } on StateError catch (e) {
+          throw AccountDeletionException(e.message);
+        } on Object catch (e) {
+          throw AccountDeletionException(
+            appL10n.deleteAccountSharesFailedBecause('$e'),
+          );
+        }
         try {
           // A token refreshed meanwhile is the same user's.
-          await shares.deleteAccount(auth.idToken ?? token);
+          await shares.deleteAccount(
+            auth.idToken ?? token,
+            appleAuthorizationCode: appleCode,
+          );
         } on ShareApiException catch (e) {
           throw AccountDeletionException(
             appL10n.deleteAccountSharesFailed(

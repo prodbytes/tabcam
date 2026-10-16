@@ -72,6 +72,12 @@ class AuthUser {
 
 /// Signing in and out. The app owns one; the account sheet and cloud sync
 /// read it.
+/// The user canceled the sheet that confirms deleting their account with
+/// their provider ([AuthService.deletionAuthorization]).
+class DeletionAuthorizationCanceled implements Exception {
+  const DeletionAuthorizationCanceled();
+}
+
 abstract class AuthService extends ChangeNotifier {
   /// The signed-in user, or null.
   AuthUser? get user;
@@ -106,6 +112,13 @@ abstract class AuthService extends ChangeNotifier {
   Future<void> signIn([AuthProvider provider = AuthProvider.google]);
 
   Future<void> signOut();
+
+  /// When the account is being deleted: what lets the share API revoke the
+  /// sign-in's tokens with its provider. Signed in with Apple, a fresh
+  /// authorization code from Apple's sheet (App Store guideline 5.1.1(v));
+  /// null for the others, which have nothing to revoke. Throws
+  /// [DeletionAuthorizationCanceled] when the user cancels the sheet.
+  Future<String?> deletionAuthorization() async => null;
 
   /// [provider]'s own sign-in button, where the platform requires one
   /// (Google on web); null to use the app's button, which calls [signIn].

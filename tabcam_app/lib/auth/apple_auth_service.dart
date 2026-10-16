@@ -44,6 +44,11 @@ abstract interface class AppleSignIn {
   /// False once the user has stopped using Apple ID with the app (Settings
   /// → Apple ID → Sign in with Apple), or it was never set up.
   Future<bool> stillAuthorized(String userId);
+
+  /// Apple's sheet again, asking for nothing: a fresh authorization code
+  /// (valid five minutes, once) and whose it is. Null when the user
+  /// cancels.
+  Future<({String userId, String code})?> authorize();
 }
 
 /// [AppleSignIn] with the `sign_in_with_apple` package
@@ -81,6 +86,22 @@ class PackageAppleSignIn implements AppleSignIn {
       givenName: c.givenName,
       familyName: c.familyName,
     );
+  }
+
+  @override
+  Future<({String userId, String code})?> authorize() async {
+    final AuthorizationCredentialAppleID c;
+    try {
+      c = await SignInWithApple.getAppleIDCredential(scopes: const []);
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (e.code == AuthorizationErrorCode.canceled) return null;
+      rethrow;
+    }
+    final userId = c.userIdentifier;
+    if (userId == null || c.authorizationCode.isEmpty) {
+      throw StateError('Apple returned no authorization code');
+    }
+    return (userId: userId, code: c.authorizationCode);
   }
 
   @override
@@ -285,6 +306,21 @@ class AppleAuthService extends AuthService {
     // name and email Apple sent once are kept, for the next sign-in.
     await _forget();
     notifyListeners();
+  }
+
+  /// Apple's sheet once more, so the share API can revoke TabCam's Apple
+  /// tokens when the account is deleted (it trades the code for them). The
+  /// code must be the signed-in user's.
+  @override
+  Future<String?> deletionAuthorization() async {
+    final user = _user;
+    if (user == null) return null;
+    final got = await _apple.authorize();
+    if (got == null) throw const DeletionAuthorizationCanceled();
+    if (got.userId != user.id) {
+      throw StateError(appL10n.deleteAccountAppleOtherId);
+    }
+    return got.code;
   }
 
   /// Signs out when [token] expires: Apple can't renew it quietly.

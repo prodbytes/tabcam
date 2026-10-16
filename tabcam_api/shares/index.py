@@ -33,7 +33,9 @@ Routes (each also under /apple, for Apple's tokens):
   GET    /shared                                  what's shared with me
   DELETE /shared/{owner}/{captureId}              leave a share
   POST   /shared/{owner}/{captureId}/credentials  credentials for it
-  DELETE /account                                 delete my profile (its owner)
+  DELETE /account                                 delete my profile (its owner);
+                                                  under /apple, {appleAuthorizationCode}
+                                                  revokes my Apple tokens too
   PUT    /links/{captureId}                       {key}: anyone with the link
                                                   (…/app/?c=<id>&k=<key>) may
                                                   read the capture (owner)
@@ -65,6 +67,7 @@ import os
 import re
 import time
 
+import apple_revoke
 import keys as pkeys
 import profiles as prof
 import sealed
@@ -135,6 +138,9 @@ def _clients():
             keys=keys,
         ),
         "rbacr": prof.Rbacr(),
+        # Sign in with Apple's key, read when an Apple account is deleted.
+        "apple_key": lambda: apple_revoke.Key.load(boto3.client("ssm", region_name=region)),
+        "apple_open": None,
     }
 
 
@@ -760,6 +766,7 @@ class Api:
         profile = self._profile()
         if profile.get("ownerSubject") != self.subject:
             raise ApiError(409, "Only the profile's owner can delete it: unlink this account instead")
+        apple_revoked = self._revoke_apple()
         owner = self._me()
         made = self._query(
             IndexName="byOwner",
@@ -793,4 +800,36 @@ class Api:
         for s in self.store.linked(profile["id"]):
             self.store.unlink(s["subject"])
         self.store.delete_profile(profile["id"])
-        return {"grantsMade": len(made), "grantsToMe": len(to_me), "links": len(links)}
+        return {"grantsMade": len(made), "grantsToMe": len(to_me), "links": len(links),
+                "appleTokensRevoked": apple_revoked}
+
+    def _revoke_apple(self):
+        """Signed in with Apple: revokes the caller's Apple tokens with the
+        authorization code the app just got from Apple (App Store guideline
+        5.1.1(v)), before anything is deleted, so a refusal can be retried
+        with a new code. True once revoked; False with nothing to revoke
+        with (Google, no code, or no Sign in with Apple key set up yet)."""
+        if self.provider != "apple":
+            return False
+        code = self._body().get("appleAuthorizationCode")
+        if code is None:
+            print("delete_account: no Apple authorization code, nothing revoked")
+            return False
+        if not isinstance(code, str) or not re.fullmatch(r"[A-Za-z0-9._-]{1,512}", code):
+            raise ApiError(400, "That isn't an Apple authorization code")
+        client_id = os.environ.get("APPLE_CLIENT_ID")
+        load = self.clients.get("apple_key")
+        key = load() if (client_id and load) else None
+        if key is None:
+            print("delete_account: no Sign in with Apple key set up, nothing revoked")
+            return False
+        try:
+            apple_revoke.revoke(key, client_id, code, self.subject.split("#", 1)[1],
+                                opener=self.clients.get("apple_open"))
+        except apple_revoke.RevokeError as e:
+            print(f"delete_account: revoking the Apple tokens failed: {e}")
+            raise ApiError(502, f"{e}: try again") from e
+        except OSError as e:
+            print(f"delete_account: Apple didn't answer: {e}")
+            raise ApiError(502, "Apple didn't answer: try again") from e
+        return True

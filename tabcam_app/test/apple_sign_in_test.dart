@@ -66,6 +66,16 @@ class FakeApple implements AppleSignIn {
 
   @override
   Future<bool> stillAuthorized(String userId) async => authorized;
+
+  /// What Apple's sheet answers when the account is being deleted (null:
+  /// canceled).
+  ({String userId, String code})? authorization = (
+    userId: 'apple.user.1',
+    code: 'c0de',
+  );
+
+  @override
+  Future<({String userId, String code})?> authorize() async => authorization;
 }
 
 class MemoryAppleStore implements AppleStore {
@@ -278,6 +288,59 @@ void main() {
       expect(auth.available, isFalse);
       final both = MultiAuthService([auth, FakeAuth()]);
       expect(both.providers, [AuthProvider.google]);
+    });
+  });
+
+  group('deleting an Apple account', () {
+    FakeApple fake() => FakeApple(
+      (nonce) => AppleCredential(
+        userId: 'apple.user.1',
+        identityToken: appleToken(nonce: nonce),
+        email: 'riff@example.com',
+      ),
+    );
+
+    test('asks Apple for a fresh code, the signed-in Apple ID\'s', () async {
+      final f = fake();
+      final auth = apple(f, MemoryAppleStore());
+      final both = MultiAuthService([auth, FakeAuth()]);
+      await both.init();
+      await both.signIn(AuthProvider.apple);
+      expect(await auth.deletionAuthorization(), 'c0de');
+      expect(await both.deletionAuthorization(), 'c0de');
+
+      f.authorization = null;
+      await expectLater(
+        auth.deletionAuthorization(),
+        throwsA(isA<DeletionAuthorizationCanceled>()),
+      );
+      f.authorization = (userId: 'apple.user.2', code: 'other');
+      await expectLater(auth.deletionAuthorization(), throwsStateError);
+      both.dispose();
+    });
+
+    test('Google has nothing to revoke', () async {
+      final google = FakeAuth()..signInAs('ana', googleToken());
+      expect(await google.deletionAuthorization(), isNull);
+    });
+
+    test('the share API gets the code with DELETE /apple/account', () async {
+      final sent = <http.Request>[];
+      final api = ShareApi(
+        baseUrl: Uri.parse('https://api.example'),
+        client: MockClient((request) async {
+          sent.add(request);
+          return http.Response('{}', 200);
+        }),
+      );
+      await api.deleteAccount(appleToken(), appleAuthorizationCode: 'c0de');
+      await api.deleteAccount(googleToken());
+      expect(sent.map((r) => '${r.method} ${r.url.path}'), [
+        'DELETE /apple/account',
+        'DELETE /account',
+      ]);
+      expect(jsonDecode(sent.first.body), {'appleAuthorizationCode': 'c0de'});
+      expect(sent.last.body, isEmpty);
     });
   });
 

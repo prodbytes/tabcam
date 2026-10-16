@@ -381,5 +381,7 @@
   "textViewFixAlreadyLinedUp": "Las cuerdas de la tablatura ya están alineadas",
   "textViewFixLinedUpPremium": "Tablatura alineada. Revisarla con la canción en línea es parte de TabCam Premium.",
   "welcomeBody": "Escanea tablaturas de guitarra, léelas como texto y compártelas. Inicia sesión para empezar: tus capturas quedan en cada dispositivo donde inicies sesión.",
-  "dropFilesToAdd": "Suelta los archivos para agregarlos"
+  "dropFilesToAdd": "Suelta los archivos para agregarlos",
+  "deleteAccountAppleCanceled": "Se borraron tus archivos en la nube, pero no tu cuenta: se canceló la confirmación de Apple. Vuelve a borrar tu cuenta para terminar.",
+  "deleteAccountAppleOtherId": "Ese es otro Apple ID: confirma con el Apple ID con el que iniciaste sesión."
 }

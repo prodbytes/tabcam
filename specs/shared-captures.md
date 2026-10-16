@@ -86,7 +86,7 @@ credentials:
 | `POST /shared/{owner}/{captureId}/credentials` | the grantee | temporary credentials for that capture's folder |
 | `PUT /links/{captureId}` | the owner | records the capture's link key (`{key}`): anyone with the link may read it ([sharing](sharing.md)) |
 | `POST /public/{captureId}/credentials` | anyone, no token | `{key}`: read-only credentials for the capture's folder, and its owner; a wrong or unknown key is a 404 |
-| `DELETE /account` | anyone | [deletes their account](cloud-sync.md#deleting-the-account): the grants of their captures, the grants to their address, their record in the cloud OCR service's accounts table, then their Cognito identity |
+| `DELETE /account` | anyone | [deletes their account](cloud-sync.md#deleting-the-account): the grants of their captures, the grants to their address, their record in the cloud OCR service's accounts table, then their Cognito identity. Under `/apple`, with `{appleAuthorizationCode}`, it first revokes their Sign in with Apple tokens ([below](cloud-sync.md#revoking-apples-tokens)) |
 
 Each route is also under `/apple` (`GET /apple/shared`, …,
 `DELETE /apple/account`), for Sign in with Apple's tokens, except

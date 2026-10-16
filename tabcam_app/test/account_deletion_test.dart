@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tabcam_app/auth/auth_service.dart';
 import 'package:tabcam_app/cloud/account_deletion.dart';
 import 'package:tabcam_app/cloud/cloud_sync.dart';
 import 'package:tabcam_app/cloud/share_api.dart';
@@ -222,6 +223,30 @@ void main() {
 
     await AccountDeletion(phone.sync).run();
     expect(phone.shares.deletedAccounts, [me]);
+    expect(phone.auth.user, isNull);
+  });
+
+  test('signed in with Apple, the share API gets a fresh Apple code; '
+      'canceling Apple\'s sheet stops it before the shares', () async {
+    await fill();
+    phone.auth.deletionAnswer = () async =>
+        throw const DeletionAuthorizationCanceled();
+    await expectLater(
+      AccountDeletion(phone.sync).run(),
+      throwsA(
+        isA<AccountDeletionException>().having(
+          (e) => e.message,
+          'message',
+          contains("Apple's confirmation was canceled"),
+        ),
+      ),
+    );
+    expect(phone.shares.deletedAccounts, isEmpty);
+    expect(phone.auth.user, isNotNull);
+
+    phone.auth.deletionAnswer = () async => 'c0de';
+    await AccountDeletion(phone.sync).run();
+    expect(phone.shares.appleCodes, ['c0de']);
     expect(phone.auth.user, isNull);
   });
 

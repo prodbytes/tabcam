@@ -394,7 +394,8 @@ class ShareApiTest(unittest.TestCase):
         self.share_both_ways()
         status, body = self.call("DELETE /account", "julio@example.com")
         self.assertEqual(status, 200)
-        self.assertEqual(body, {"grantsMade": 2, "grantsToMe": 1, "links": 0})
+        self.assertEqual(body, {"grantsMade": 2, "grantsToMe": 1, "links": 0,
+                                "appleTokensRevoked": False})
         # Olga's share with Ana stays; everything of Julio's is gone.
         self.assertEqual(self.grants_left(), [(f"{OTHER}#xyz", "ana@example.com")])
         self.assertEqual(self.clients["cognito"].deleted, [OWNER])
@@ -458,6 +459,58 @@ class ShareApiTest(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(body["grantsMade"], 1)
         self.assertEqual(self.clients["cognito"].deleted, [APPLE_OWNER])
+
+    def apple_revoking(self, apple):
+        from test_apple_revoke import made_up_key
+        _, key = made_up_key()
+        self.clients["apple_key"] = lambda: key
+        self.clients["apple_open"] = apple
+        os.environ["APPLE_CLIENT_ID"] = "com.nu01.tabcam"
+        self.addCleanup(os.environ.pop, "APPLE_CLIENT_ID", None)
+
+    def test_deleting_an_apple_account_revokes_its_apple_tokens(self):
+        from test_apple_revoke import FakeApple
+        apple = FakeApple(sub="apple-owner-token")
+        self.apple_revoking(apple)
+        status, body = self.call("DELETE /apple/account", "riff@example.com",
+                                 token="apple-owner-token",
+                                 body={"appleAuthorizationCode": "c0de.1"})
+        self.assertEqual(status, 200)
+        self.assertTrue(body["appleTokensRevoked"])
+        self.assertEqual([u for u, _ in apple.calls],
+                         ["https://appleid.apple.com/auth/token",
+                          "https://appleid.apple.com/auth/revoke"])
+        self.assertEqual(self.clients["cognito"].deleted, [APPLE_OWNER])
+
+    def test_apple_refusing_to_revoke_deletes_nothing(self):
+        from test_apple_revoke import FakeApple
+        self.apple_revoking(FakeApple(sub="apple-owner-token", token_status=400))
+        status, _ = self.call("DELETE /apple/account", "riff@example.com",
+                              token="apple-owner-token",
+                              body={"appleAuthorizationCode": "c0de"})
+        self.assertEqual(status, 502)
+        self.assertEqual(self.clients["cognito"].deleted, [])
+
+    def test_another_apple_ids_code_deletes_nothing(self):
+        from test_apple_revoke import FakeApple
+        self.apple_revoking(FakeApple(sub="someone-else"))
+        status, _ = self.call("DELETE /apple/account", "riff@example.com",
+                              token="apple-owner-token",
+                              body={"appleAuthorizationCode": "c0de"})
+        self.assertEqual(status, 502)
+        self.assertEqual(self.clients["cognito"].deleted, [])
+
+    def test_without_the_apple_key_the_account_is_deleted_unrevoked(self):
+        self.clients["apple_key"] = lambda: None
+        status, body = self.call("DELETE /apple/account", "riff@example.com",
+                                 token="apple-owner-token",
+                                 body={"appleAuthorizationCode": "c0de"})
+        self.assertEqual(status, 200)
+        self.assertFalse(body["appleTokensRevoked"])
+        status, _ = self.call("DELETE /apple/account", "riff@example.com",
+                              token="apple-owner-token",
+                              body={"appleAuthorizationCode": "not a code!"})
+        self.assertEqual(status, 400)
 
     def test_apple_users_get_what_is_shared_with_their_address(self):
         self.grant("x7k2@privaterelay.appleid.com", "read")

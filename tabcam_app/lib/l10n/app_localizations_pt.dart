@@ -1456,4 +1456,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dropFilesToAdd => 'Solte os arquivos para adicioná-los';
+
+  @override
+  String get deleteAccountAppleCanceled =>
+      'Seus arquivos na nuvem foram apagados, mas não sua conta: a confirmação da Apple foi cancelada. Apague sua conta de novo para terminar.';
+
+  @override
+  String get deleteAccountAppleOtherId =>
+      'Esse é outro Apple ID: confirme com o Apple ID com que você entrou.';
 }

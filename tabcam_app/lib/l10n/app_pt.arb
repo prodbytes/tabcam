@@ -381,5 +381,7 @@
   "textViewFixAlreadyLinedUp": "As cordas da tablatura já estão alinhadas",
   "textViewFixLinedUpPremium": "Tablatura alinhada. Conferir com a música online faz parte do TabCam Premium.",
   "welcomeBody": "Digitalize tablaturas de violão, leia-as como texto e compartilhe-as. Entre para começar: suas capturas ficam em todos os dispositivos em que você entrar.",
-  "dropFilesToAdd": "Solte os arquivos para adicioná-los"
+  "dropFilesToAdd": "Solte os arquivos para adicioná-los",
+  "deleteAccountAppleCanceled": "Seus arquivos na nuvem foram apagados, mas não sua conta: a confirmação da Apple foi cancelada. Apague sua conta de novo para terminar.",
+  "deleteAccountAppleOtherId": "Esse é outro Apple ID: confirme com o Apple ID com que você entrou."
 }
