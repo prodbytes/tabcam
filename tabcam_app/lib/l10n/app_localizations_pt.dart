@@ -588,6 +588,13 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get camHeadsOn =>
+      'Gestos de cabeça ligados: acene para cima ou à direita para a próxima linha, para baixo ou à esquerda para a anterior';
+
+  @override
+  String get camHeadsOff => 'Gestos de cabeça desligados';
+
+  @override
   String get camNotAllowed =>
       'A câmera ou o microfone não estão permitidos: deixe o TabCam usá-los nas configurações.';
 

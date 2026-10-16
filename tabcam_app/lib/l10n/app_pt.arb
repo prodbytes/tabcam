@@ -151,6 +151,8 @@
   "camTake": "Take {number}",
   "camSaved": "{name} adicionado à captura",
   "camCouldntRecord": "Não foi possível gravar: {error}",
+  "camHeadsOn": "Gestos de cabeça ligados: acene para cima ou à direita para a próxima linha, para baixo ou à esquerda para a anterior",
+  "camHeadsOff": "Gestos de cabeça desligados",
   "camNotAllowed": "A câmera ou o microfone não estão permitidos: deixe o TabCam usá-los nas configurações.",
   "eventDone": "Concluir",
   "eventTakePicture": "Tirar foto",

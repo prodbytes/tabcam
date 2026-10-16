@@ -908,18 +908,32 @@ spec.
    strings are in English, Spanish and Portuguese
    ([Cam](cam.md), [event screen](event-screen.md),
    [platforms](platforms.md)).
-96. **Rename to "tabcam" everywhere: TabScan is gone. Files, dirs,
-    domains, repo, everything.** The app is TabCam: the code and docs
-    (directories `tabcam_*`, the `tabcam_app` package, `TABCAM_` settings,
-    `com.nu01.tabcam` on Android and iOS), the repository
-    (`prodbytes/tabcam`), the domains (`tabcam.nu01.com`, its own zone),
-    a new Google Cloud project (`tabcam-nu01`) with its own sign-in
-    clients, and every AWS stack made again under `tabcam-` names: a new
-    bucket, identity pool (provider `login.tabcam.profiles`), share API
-    (and KMS key), OCR service and deploy roles. Each profile's folder
-    moved to its identity in the new pool, with the tables
-    ([migrate-to-tabcam.py](../scripts/migrate-to-tabcam.py)); rbacr has a
-    `tabcam` system mirroring `tabscan`. The old domains redirect
-    ([deploy](deploy.md#the-old-domains)). Apps installed as TabScan don't
-    update to TabCam: it's installed anew (what synced comes back at
-    sign-in).
+2. **Rename to "tabcam" everywhere: TabScan is gone. Files, dirs,
+   domains, repo, everything.** The app is TabCam: the code and docs
+   (directories `tabcam_*`, the `tabcam_app` package, `TABCAM_` settings,
+   `com.nu01.tabcam` on Android and iOS), the repository
+   (`prodbytes/tabcam`), the domains (`tabcam.nu01.com`, its own zone),
+   a new Google Cloud project (`tabcam-nu01`) with its own sign-in
+   clients, and every AWS stack made again under `tabcam-` names: a new
+   bucket, identity pool (provider `login.tabcam.profiles`), share API
+   (and KMS key), OCR service and deploy roles. Each profile's folder
+   moved to its identity in the new pool, with the tables
+   ([migrate-to-tabcam.py](../scripts/migrate-to-tabcam.py)); rbacr has a
+   `tabcam` system mirroring `tabscan`. The old domains redirect
+   ([deploy](deploy.md#the-old-domains)). Apps installed as TabScan don't
+   update to TabCam: it's installed anew (what synced comes back at
+   sign-in).
+3. **Let the user turn the tab with head gestures: nod up or right for the
+   next neckline, down or left for the one before; make it a strong
+   gesture so it doesn't trigger by accident.** Cam's frames go to ML
+   Kit's face detector (`google_mlkit_face_detection`, on the device;
+   Android and iOS). A `NodDetector` counts a gesture only when the head
+   swings at least 20° up or down, or 25° sideways, from where it rests,
+   and returns to rest within a second (held away longer, like looking at
+   the fretboard, it's no gesture), with 0.8 s between gestures. A face
+   icon in Cam's app bar switches them on (the default) and off, green
+   while a face is seen. Not on the web. The privacy policy now says
+   faces are detected on the device, only the head's angle used, nothing
+   saved or sent
+   ([Cam](cam.md#head-gestures), [platforms](platforms.md),
+   [privacy](privacy.md)).

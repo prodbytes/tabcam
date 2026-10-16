@@ -37,7 +37,8 @@ the cloud as they sync.
   its view (Original or Scan), Rotate and Delete.
 - [Cam](cam.md): record yourself playing along with the tab: the camera,
   the tab under it one neckline (staff) at a time, any key to the next
-  and Backspace / ← / ↑ to the one before; Rec adds each take to the
+  and Backspace / ← / ↑ to the one before, or a strong nod up / right and
+  down / left (Android, iOS); Rec adds each take to the
   capture, Play plays it back with the tab turning as it did.
 - [Hidden images](hidden-images.md): the owner hides a capture's photos
   and scans, for everyone; it then shows only the text tab, videos and

@@ -1012,6 +1012,18 @@ abstract class AppLocalizations {
   /// **'Couldn\'t record: {error}'**
   String camCouldntRecord(String error);
 
+  /// Cam: head gestures toggle, on
+  ///
+  /// In en, this message translates to:
+  /// **'Head gestures on: nod up or right for the next line, down or left for the one before'**
+  String get camHeadsOn;
+
+  /// Cam: head gestures toggle, off
+  ///
+  /// In en, this message translates to:
+  /// **'Head gestures off'**
+  String get camHeadsOff;
+
   /// Cam: permission denied
   ///
   /// In en, this message translates to:

@@ -86,13 +86,36 @@ class FakeCameraPlatform extends CameraPlatform
   int recordings = 0;
   bool recording = false;
 
+  /// Frames streamed to the app (none come: whether it listens counts).
+  late final _frames = StreamController<CameraImageData>.broadcast(
+    onListen: () => streaming = true,
+    onCancel: () => streaming = false,
+  );
+  bool streaming = false;
+
+  @override
+  bool supportsImageStreaming() => true;
+
+  @override
+  Stream<CameraImageData> onStreamedFrameAvailable(
+    int cameraId, {
+    CameraImageStreamOptions? options,
+  }) => _frames.stream;
+
   @override
   Future<void> startVideoCapturing(VideoCaptureOptions options) async {
     recording = true;
+    if (options.streamCallback case final callback?) {
+      _recordingFrames = _frames.stream.listen(callback);
+    }
   }
+
+  StreamSubscription<CameraImageData>? _recordingFrames;
 
   @override
   Future<XFile> stopVideoRecording(int cameraId) async {
+    await _recordingFrames?.cancel();
+    _recordingFrames = null;
     recording = false;
     recordings++;
     return XFile.fromData(

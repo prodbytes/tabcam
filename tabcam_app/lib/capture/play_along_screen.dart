@@ -12,6 +12,7 @@ import '../library/library.dart';
 import '../recognition/necklines.dart';
 import '../screens/mono_font.dart';
 import '../screens/video_page.dart';
+import 'head_gestures.dart';
 import 'media.dart';
 
 /// Cam: the guitarist records themselves playing along with the capture's
@@ -19,7 +20,9 @@ import 'media.dart';
 /// screen, with the tab under it one neckline at a time ([necklines]).
 /// Any key moves to the next neckline (a page-turner pedal, a keyboard);
 /// Backspace, ← , ↑ and Page Up to the one before; a tap on the neckline
-/// or its arrows too. **Rec** records (video and sound) until it's
+/// or its arrows too; on Android and iOS, a strong nod up or turn to the
+/// right too, a nod down or turn to the left to the one before
+/// ([HeadTracking]). **Rec** records (video and sound) until it's
 /// tapped again, and adds the take to the capture as a video ("Take 1",
 /// "Take 2"…). **Play** plays the last take back, the necklines turning
 /// where they turned while it was recorded.
@@ -29,6 +32,7 @@ class PlayAlongScreen extends StatefulWidget {
     required this.library,
     required this.eventId,
     this.cameras = availableCameras,
+    this.headTracking = HeadTracking.start,
   });
 
   final Library library;
@@ -36,6 +40,13 @@ class PlayAlongScreen extends StatefulWidget {
 
   /// The cameras there are; tests pass their own.
   final Future<List<CameraDescription>> Function() cameras;
+
+  /// Watches for head gestures; null where it can't. Tests pass their own.
+  final HeadTracking? Function(
+    CameraController camera,
+    void Function(HeadGesture) onGesture,
+  )
+  headTracking;
 
   @override
   State<PlayAlongScreen> createState() => _PlayAlongScreenState();
@@ -62,6 +73,11 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   EventPage? _take;
   List<(Duration, int)> _takeMarks = const [];
   VideoPlayerController? _player;
+
+  /// Head gestures: what watches for them (null where it can't), and
+  /// whether the user has them on.
+  HeadTracking? _heads;
+  bool _headsOn = true;
 
   @override
   void initState() {
@@ -95,7 +111,12 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       _error = null;
     });
     await old?.dispose();
-    final controller = CameraController(_cameras[index], ResolutionPreset.high);
+    final controller = CameraController(
+      _cameras[index],
+      ResolutionPreset.high,
+      // As the face detector reads them.
+      imageFormatGroup: HeadTracking.imageFormat,
+    );
     try {
       await controller.initialize();
     } on Object catch (e) {
@@ -108,6 +129,48 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       return;
     }
     setState(() => _controller = controller);
+    _heads ??= widget.headTracking(controller, _gesture);
+    _heads?.camera = controller;
+    await _stream();
+  }
+
+  /// With head gestures on, the camera's frames go to [_heads].
+  Future<void> _stream() async {
+    final controller = _controller;
+    if (_heads == null || !_headsOn || controller == null) return;
+    final v = controller.value;
+    if (!controller.supportsImageStreaming() ||
+        v.isStreamingImages ||
+        v.isRecordingVideo) {
+      return;
+    }
+    try {
+      await controller.startImageStream(_frame);
+    } on Object catch (e) {
+      debugPrint('TabCam: head gestures: $e');
+    }
+  }
+
+  void _frame(CameraImage image) {
+    if (_headsOn) _heads?.onImage(image);
+  }
+
+  /// A nod or turn: the next neckline or the one before (not while a take
+  /// plays: it turns them itself).
+  void _gesture(HeadGesture gesture) {
+    if (!mounted || !_headsOn || _player != null) return;
+    _show(_line + (gesture == HeadGesture.next ? 1 : -1));
+  }
+
+  Future<void> _toggleHeads() async {
+    setState(() => _headsOn = !_headsOn);
+    final controller = _controller;
+    if (_headsOn) return _stream();
+    if (controller != null &&
+        controller.value.isStreamingImages &&
+        !controller.value.isRecordingVideo) {
+      await controller.stopImageStream();
+    }
   }
 
   static String _describe(Object e) => switch (e) {
@@ -167,7 +230,13 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     if (controller == null || _saving) return;
     await _stopPlaying();
     try {
-      await controller.startVideoRecording();
+      if (controller.value.isStreamingImages) {
+        await controller.stopImageStream();
+      }
+      // Its frames still go to the head gestures while it records.
+      await controller.startVideoRecording(
+        onAvailable: _heads == null ? null : _frame,
+      );
     } on Object catch (e) {
       debugPrint('TabCam: cam: $e');
       if (mounted) _snack(context.l10n.camCouldntRecord('$e'));
@@ -193,6 +262,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     final marks = _marks;
     try {
       final file = await controller.stopVideoRecording();
+      unawaited(_stream());
       final known = Media.of(file);
       final media = known?.kind == PageKind.video
           ? known!
@@ -277,6 +347,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   @override
   void dispose() {
     _controller?.dispose();
+    _heads?.dispose();
     _player?.removeListener(_follow);
     _player?.dispose();
     super.dispose();
@@ -408,6 +479,20 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
               overflow: TextOverflow.ellipsis,
             ),
             actions: [
+              if (_heads case final heads?)
+                ValueListenableBuilder(
+                  valueListenable: heads.face,
+                  builder: (context, face, _) => IconButton(
+                    key: const Key('cam-heads'),
+                    tooltip: _headsOn ? l10n.camHeadsOn : l10n.camHeadsOff,
+                    // On, green while it sees the user's face.
+                    color: _headsOn && face ? Colors.greenAccent : null,
+                    icon: Icon(
+                      _headsOn ? Icons.face : Icons.face_retouching_off,
+                    ),
+                    onPressed: _toggleHeads,
+                  ),
+                ),
               if (_cameras.length > 1 && controller != null)
                 IconButton(
                   tooltip: l10n.eventFlipCamera,
