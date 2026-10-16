@@ -1093,7 +1093,7 @@ spec.
    42.9% → 88.1%. Strip contrast (CLAHE), sharpening, Sauvola
    binarization, upscaling, dash erasure, label cropping and other page
    sizes were tried and scored worse ([cloud OCR](cloud-ocr.md#verified)).
-17. **"Could we highlight in red the notes that were identified with low
+19. **"Could we highlight in red the notes that were identified with low
    confidence and likely wrong?"** The cloud OCR now says which notes it
    was unsure of (`doubts` in each page's result): on tab lines, a note
    neither other engine read the same; on drawn staves, a number

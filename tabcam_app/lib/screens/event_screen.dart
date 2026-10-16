@@ -493,8 +493,12 @@ class _EventScreenState extends State<EventScreen> {
     setState(() => _rescanned = true);
     await _library.patch(
       event.id,
-      (now) =>
-          now.copyWith(tabText: '', tabTextAuto: true, tabTextCorrect: false),
+      (now) => now.copyWith(
+        tabText: '',
+        tabTextAuto: true,
+        tabTextCorrect: false,
+        tabTextDoubts: const [],
+      ),
     );
     if (mounted) reader.readSoon(event.id, again: true);
   }
