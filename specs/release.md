@@ -75,6 +75,7 @@ already; `DRY_RUN=1` only prints the tag.
 ## Make
 
 `make` builds every platform this host can; `make web|android|ios` one,
-`make appbundle` the Android App Bundle (`scripts/make.sh`). `MODE=release|profile|debug` (release by default),
+`make appbundle` the Android App Bundle, `make ipa` the signed App Store
+build ([app stores](app-stores.md#ios-distribution)) (`scripts/make.sh`). `MODE=release|profile|debug` (release by default),
 `IOS_CODESIGN=1` signs iOS, `WEB_BASE_HREF` sets the web base (`/app/` for
 the site). `make clean` runs `flutter clean`.

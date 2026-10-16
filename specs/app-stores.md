@@ -17,10 +17,35 @@ publish to production.
 | Sign in with Apple (App Store guideline 4.8) | Done ([cloud sync](cloud-sync.md#sign-in-with-apple-ios)): `tabcam-identity`, `tabcam-share-api` and `tabcam-ocr` deployed with `AppleClientId=com.nu01.tabcam` (2026-10-16), `TABCAM_APPLE_SIGN_IN=1` and the paid team in the maintainer's `.env`. To do: try it on a phone |
 | Privacy policy page; iOS privacy manifest and encryption declaration | Done ([privacy](privacy.md)); the contact email is still to be added |
 | Play internal testing, then the 14-day closed test | To do |
-| App Store Connect record, TestFlight | To do |
+| App Store distribution build (`make ipa`) and its upload (`scripts/ios-upload.sh`) | Done ([below](#ios-distribution)): 0.1.202610161805 built and signed 2026-10-16; its upload waits for the App Store Connect record |
+| App Store Connect record, TestFlight | To do (maintainer: the record for `com.nu01.tabcam`) |
 | Listings: descriptions, data safety, privacy labels, rating, category | Drafts done ([below](#store-listings)) |
 | Listings: screenshots, feature graphic, the review test account | To do (maintainer) |
 | Review submission | To do |
+
+## iOS distribution
+
+The App Store build is signed by the maintainer's paid team
+(`TABCAM_IOS_DEVELOPMENT_TEAM` in `.env`), with automatic signing:
+
+- `make ipa` (macOS) archives a release build with `.env`'s settings
+  (Sign in with Apple's entitlement among them, [cloud sync](cloud-sync.md#sign-in-with-apple-ios))
+  and exports it for the App Store (`flutter build ipa --export-method
+  app-store`): `tabcam_app/build/ios/archive/Runner.xcarchive` and
+  `tabcam_app/build/ios/ipa/TabCam.ipa`. Xcode makes the Apple
+  Distribution certificate and the App Store profile itself
+  (`-allowProvisioningUpdates`, as the Apple account signed in to Xcode),
+  and keeps the App ID's capabilities in step with the entitlements. The
+  version and build number are the release's ([release](release.md#versioning)).
+- `bash scripts/ios-upload.sh [archive]` uploads that archive to App
+  Store Connect (`xcodebuild -exportArchive`, destination `upload`, the
+  build number left as it is), as the account signed in to Xcode, or with
+  an App Store Connect API key when `ASC_KEY_ID`, `ASC_ISSUER_ID` and
+  `ASC_KEY_PATH` are set. The app's record must exist first ("App record
+  with bundle identifier com.nu01.tabcam not found" otherwise), and each
+  upload needs a new build (`make ipa` again).
+- Not in CI: the Release workflow's iOS build stays unsigned
+  ([release](release.md)).
 
 ## Android signing
 

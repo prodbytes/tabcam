@@ -3,8 +3,9 @@
 # or directly: `bash scripts/make.sh <target>...`.
 #
 # Targets: web, android (APK), appbundle (Android App Bundle, for Google
-# Play), ios, all (every platform this host can build: web, android, ios),
-# clean. Android release builds are signed with the upload key when
+# Play), ios, ipa (the signed App Store build, for App Store Connect;
+# scripts/ios-upload.sh uploads it), all (every platform this host can
+# build: web, android, ios), clean. Android release builds are signed with the upload key when
 # tabcam_app/android/key.properties exists (scripts/android-keystore.sh),
 # else with the debug key. Settings, from the environment or `make VAR=value`:
 #   MODE          release (default), profile or debug
@@ -37,7 +38,7 @@ BUILD_ARGS=(--build-name "$VERSION" --build-number "$BUILD_NUMBER" ${DART_DEFINE
 # can_build <target>: whether this host's OS can build the target.
 can_build() {
   case "$1" in
-    ios) [[ "$(uname -s)" == Darwin ]] ;;
+    ios | ipa) [[ "$(uname -s)" == Darwin ]] ;;
     *) return 0 ;;
   esac
 }
@@ -70,13 +71,25 @@ build() {
       flutter build ios "--$MODE" "$sign" "${BUILD_ARGS[@]}"
       echo "==> ios: tabcam_app/build/ios/iphoneos/Runner.app"
       ;;
+    ipa)
+      # Archived and exported for the App Store, signed automatically with
+      # the team in .env (TABCAM_IOS_DEVELOPMENT_TEAM): Xcode makes the
+      # distribution certificate and profile (-allowProvisioningUpdates,
+      # with the team's account signed in to Xcode).
+      if [[ "$MODE" != release ]]; then
+        echo "error: the ipa is a release build (MODE=release)" >&2
+        return 1
+      fi
+      flutter build ipa --release --export-method app-store "${BUILD_ARGS[@]}"
+      echo "==> ipa: tabcam_app/build/ios/ipa/ (archive: tabcam_app/build/ios/archive/Runner.xcarchive)"
+      ;;
   esac
 }
 
 [[ $# -gt 0 ]] || set -- all
 for arg in "$@"; do
   case "$arg" in
-    web | android | appbundle | ios) build "$arg" ;;
+    web | android | appbundle | ios | ipa) build "$arg" ;;
     all)
       for target in web android ios; do
         if can_build "$target"; then
@@ -87,6 +100,6 @@ for arg in "$@"; do
       done
       ;;
     clean) flutter clean ;;
-    *) echo "error: unknown target '$arg' (web, android, appbundle, ios, all, clean)" >&2; exit 2 ;;
+    *) echo "error: unknown target '$arg' (web, android, appbundle, ios, ipa, all, clean)" >&2; exit 2 ;;
   esac
 done
