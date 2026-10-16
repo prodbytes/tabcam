@@ -1118,3 +1118,6 @@ spec.
    file plays in the app. The privacy policy now says a link chosen in
    Cam shows inside TabCam ([cam](cam.md#playing-along-with-a-file),
    [privacy](privacy.md)).
+21. **Make the head icon in the camera view use the primary theme colour,
+   not green.** Cam's head gestures icon is now in the theme's primary
+   colour (was green) while it sees a face ([cam](cam.md#head-gestures)).
