@@ -955,6 +955,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get textViewFretUp => 'Fret up (the number under the cursor)';
 
   @override
+  String get textViewNoteUp => 'Note up a string (cycles round)';
+
+  @override
+  String get textViewNoteDown => 'Note down a string (cycles round)';
+
+  @override
+  String get textViewPutCursorOnNote =>
+      'Put the cursor on a note on a string line';
+
+  @override
+  String get textViewNoStringFree =>
+      'No other string has room for this note there';
+
+  @override
   String get textViewOvertypeOn =>
       'Overtype: typing replaces characters, columns stay put';
 

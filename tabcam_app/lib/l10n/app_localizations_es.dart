@@ -984,6 +984,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get textViewFretUp => 'Subir traste (el número bajo el cursor)';
 
   @override
+  String get textViewNoteUp => 'Nota una cuerda arriba (da la vuelta)';
+
+  @override
+  String get textViewNoteDown => 'Nota una cuerda abajo (da la vuelta)';
+
+  @override
+  String get textViewPutCursorOnNote =>
+      'Pon el cursor en una nota de una cuerda';
+
+  @override
+  String get textViewNoStringFree =>
+      'Ninguna otra cuerda tiene sitio para esta nota ahí';
+
+  @override
   String get textViewOvertypeOn =>
       'Sobrescribir: lo que escribes reemplaza caracteres, las columnas no se mueven';
 

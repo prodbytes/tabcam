@@ -50,7 +50,7 @@ the cloud as they sync.
   (on-device OCR, or Premium's cloud), for text tabs
   and typeset tab staves, never over the user's edits or a reading marked
   correct; the Text view, a tab editor (Copy, Fix, Rescan and Verified
-  on one line; overtype, − and + on a fret) where a reading is marked
+  on one line; overtype, − and + on a fret, ++ and −− moving a note across strings) where a reading is marked
   verified (the event then opens on it).
 - [Auto-correct](autocorrect.md): Fix, for Premium: Claude finds the
   song's tab online (tab sites first) and proposes corrections, which the

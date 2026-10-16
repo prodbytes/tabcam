@@ -1057,6 +1057,13 @@ spec.
    editing tools under it are outlined: − and + as outlined icon buttons,
    and Overtype, which was a checkbox, a toggle button, filled while on
    ([tab recognition](tab-recognition.md#text-view)).
+16. **Add ++ and −− buttons to move the note up / down one line (string),
+   cycling round past the first or last line.** The Text view's editing
+   tools have **++** (up a string) and **−−** (down), after − and +: the
+   note under the cursor moves to the next string with room at its column,
+   cycling within its staff, leaving dashes behind (`moveNote` in
+   `lib/screens/tab_editing.dart`;
+   [tab recognition](tab-recognition.md#text-view)).
 17. **The Rescan button doesn't seem to work: when pressed, re-scan all the
    original PDFs and images in the capture, delete the current content and
    replace it with the new content.** Rescan ran Read again, which keeps
