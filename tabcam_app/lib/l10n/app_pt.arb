@@ -169,6 +169,7 @@
   "camAlongTitle": "Tocar junto",
   "camAlongPlay": "Tocar (espaço)",
   "camAlongPause": "Pausar (espaço)",
+  "camAlongStop": "Parar",
   "camAlongClose": "Fechar",
   "camHeadsOn": "Gestos de cabeça ligados: acene para cima ou à direita para a próxima linha, para baixo ou à esquerda para a anterior",
   "camHeadsOff": "Gestos de cabeça desligados",

@@ -7,8 +7,9 @@ import 'link_frame.dart';
 
 /// Android's and iOS's link frame: a web view. A YouTube video's is its
 /// embedded player in a page of its own (from the site's address, which
-/// YouTube wants to see), told to play and pause with messages; another
-/// page's first video or sound is played and paused itself.
+/// YouTube wants to see), told to play, pause and stop with messages;
+/// another page's first video or sound is played, paused and stopped
+/// itself.
 Widget buildLinkFrame(LinkFrameController controller) =>
     WebViewPlatform.instance == null
     ? const SizedBox.shrink()
@@ -48,7 +49,7 @@ class _WebViewFrameState extends State<_WebViewFrame> {
     }
     final id = c.youTubeId;
     if (id != null) {
-      final src = youTubeEmbed(id, _site);
+      final src = youTubeEmbed(id, _site, autoplay: c.autoplay);
       _web.loadHtmlString(
         '<!doctype html><html><head>'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
@@ -58,16 +59,33 @@ class _WebViewFrameState extends State<_WebViewFrame> {
         'picture-in-picture" allowfullscreen></iframe></body></html>',
         baseUrl: '$_site/',
       );
-      c.command = (play) => _web.runJavaScript(
-        "document.getElementById('player').contentWindow"
-        ".postMessage('${youTubeCommand(play)}', '*')",
-      );
+      c.command = (command) async {
+        for (final message in youTubeCommands(command)) {
+          await _web.runJavaScript(
+            "document.getElementById('player').contentWindow"
+            ".postMessage('$message', '*')",
+          );
+        }
+      };
     } else {
-      _web.loadRequest(c.url);
-      c.command = (play) => _web.runJavaScript(
+      Future<void> run(LinkCommand command) => _web.runJavaScript(
         "(function(){var m=document.querySelector('video,audio');"
-        "if(m){${play ? 'm.play()' : 'm.pause()'}}})()",
+        "if(m){${switch (command) {
+          LinkCommand.play => 'm.play()',
+          LinkCommand.pause => 'm.pause()',
+          LinkCommand.stop => 'm.pause();m.currentTime=0',
+        }}}})()",
       );
+      // Opened paused: a page that plays by itself is paused once loaded.
+      _web.setNavigationDelegate(
+        NavigationDelegate(
+          onPageFinished: (_) {
+            if (!c.playing) run(LinkCommand.pause);
+          },
+        ),
+      );
+      _web.loadRequest(c.url);
+      c.command = run;
     }
   }
 

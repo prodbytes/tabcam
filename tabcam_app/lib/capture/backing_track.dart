@@ -57,17 +57,23 @@ class BackingTrack extends ChangeNotifier {
   /// Whether it plays, as far as the app knows.
   bool get playing => _media?.value.isPlaying ?? _link?.playing ?? false;
 
-  /// Plays [page] in place of what played; [page] again plays or pauses it.
-  Future<void> choose(CaptureEvent event, EventPage page) async {
+  /// Plays [page] in place of what played (or, without [play], loads it
+  /// paused); [page] again plays or pauses it.
+  Future<void> choose(
+    CaptureEvent event,
+    EventPage page, {
+    bool play = true,
+  }) async {
     if (_page?.id == page.id) return toggle();
-    await stop();
+    await close();
     _page = page;
     _loading = true;
     notifyListeners();
     try {
       final url = page.url;
       if (url != null && !isMediaUrl(url)) {
-        _link = LinkFrameController(url)..addListener(notifyListeners);
+        _link = LinkFrameController(url, autoplay: play)
+          ..addListener(notifyListeners);
         return;
       }
       final media = url != null
@@ -89,7 +95,7 @@ class BackingTrack extends ChangeNotifier {
         return;
       }
       _media = media..addListener(notifyListeners);
-      await media.play();
+      if (play) await media.play();
     } on Object catch (e) {
       debugPrint('TabCam: cam: ${page.fileName} can\'t play here: $e');
       if (_page?.id == page.id) _error = e;
@@ -118,8 +124,17 @@ class BackingTrack extends ChangeNotifier {
     await _link?.pause();
   }
 
-  /// Stops it, and lets go of it.
+  /// Pauses it, back at its start.
   Future<void> stop() async {
+    if (_media case final media?) {
+      await media.pause();
+      return media.seekTo(Duration.zero);
+    }
+    await _link?.stop();
+  }
+
+  /// Stops it, and lets go of it.
+  Future<void> close() async {
     final (media, link) = (_media, _link);
     _media = null;
     _link = null;

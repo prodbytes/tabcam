@@ -7,7 +7,7 @@ import 'package:web/web.dart' as web;
 import 'link_frame.dart';
 
 /// The web's link frame: an iframe. A YouTube video's is its embedded
-/// player, told to play and pause with messages; another site's page
+/// player, told to play, pause and stop with messages; another site's page
 /// can't be told anything.
 Widget buildLinkFrame(LinkFrameController controller) =>
     _IframeFrame(controller: controller);
@@ -33,7 +33,11 @@ class _IframeFrameState extends State<_IframeFrame> {
     final id = c.youTubeId;
     final iframe = web.HTMLIFrameElement()
       ..src = id != null
-          ? youTubeEmbed(id, web.window.location.origin).toString()
+          ? youTubeEmbed(
+              id,
+              web.window.location.origin,
+              autoplay: c.autoplay,
+            ).toString()
           : c.url.toString()
       ..allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen'
       ..referrerPolicy = 'strict-origin-when-cross-origin';
@@ -43,10 +47,11 @@ class _IframeFrameState extends State<_IframeFrame> {
       ..height = '100%';
     ui_web.platformViewRegistry.registerViewFactory(_view, (_) => iframe);
     if (id != null) {
-      c.command = (play) async => iframe.contentWindow?.postMessage(
-        youTubeCommand(play).toJS,
-        '*'.toJS,
-      );
+      c.command = (command) async {
+        for (final message in youTubeCommands(command)) {
+          iframe.contentWindow?.postMessage(message.toJS, '*'.toJS);
+        }
+      };
     }
   }
 
