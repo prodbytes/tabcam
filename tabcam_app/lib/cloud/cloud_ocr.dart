@@ -83,6 +83,24 @@ class CloudOcr extends ChangeNotifier {
   SyncState? _lastSyncState;
   final Set<String> _requested = {};
 
+  /// Events read again (Read again): each page's result ETag when it was
+  /// asked for (null until listed). The earlier results aren't the new
+  /// reading: the event waits until every page's result is rewritten.
+  final Map<String, Map<String, String>?> _again = {};
+
+  /// Who waits for an event's transcription to be collected ([collected]).
+  final Map<String, Completer<bool>> _waiting = {};
+
+  /// Completes once [eventId]'s transcription is collected: true when a
+  /// tab was found (the text tab filled, or kept as the user left it),
+  /// false when no page had one. Ask before [transcribe], so a quick
+  /// result isn't missed.
+  Future<bool> collected(String eventId) =>
+      (_waiting[eventId] ??= Completer<bool>()).future;
+
+  void _collected(String eventId, bool found) =>
+      _waiting.remove(eventId)?.complete(found);
+
   void start() {
     if (_started) return;
     _started = true;
@@ -100,6 +118,7 @@ class CloudOcr extends ChangeNotifier {
       _status = null;
       _error = null;
       _requested.clear();
+      _again.clear();
       notifyListeners();
     }
     _userId = user;
@@ -157,6 +176,20 @@ class CloudOcr extends ChangeNotifier {
       return 0;
     }
     _requested.add(event.id);
+    if (again) {
+      _again[event.id] = null;
+      try {
+        final session = await credentials.session(token);
+        _again[event.id] = await bucket.listETags(
+          '${session.identityId}/ocr/${event.id}/',
+          credentials: session.credentials,
+        );
+      } on Object catch (e) {
+        // Then any result there counts as the new reading.
+        debugPrint('TabCam: cloud OCR: listing ${event.id}\'s results: $e');
+        _again[event.id] = const {};
+      }
+    }
     return api.transcribe(token, event.id, again: again);
   }
 
@@ -199,10 +232,8 @@ class CloudOcr extends ChangeNotifier {
     final creds = session.credentials;
     final prefix = '$identity/ocr/';
     final done = <String, Set<String>>{};
-    for (final key in (await bucket.listETags(
-      prefix,
-      credentials: creds,
-    )).keys) {
+    final etags = await bucket.listETags(prefix, credentials: creds);
+    for (final key in etags.keys) {
       final parts = key.substring(prefix.length).split('/');
       if (parts.length != 2 || !parts[1].endsWith('.json')) continue;
       (done[parts[0]] ??= {}).add(parts[1].substring(0, parts[1].length - 5));
@@ -243,7 +274,25 @@ class CloudOcr extends ChangeNotifier {
       }
       final signature = pages.map((p) => p.id).join(',');
       final last = state.events[event.id];
-      if (last?.signature == signature) continue;
+      // Read again: only once every page's result is a new one.
+      final again = _again.containsKey(event.id);
+      if (again) {
+        final before = _again[event.id];
+        if (before == null ||
+            pages.any((p) {
+              final key = '$prefix${event.id}/${p.id}.json';
+              return before[key] != null && before[key] == etags[key];
+            })) {
+          debugPrint(
+            'TabCam: cloud OCR: ${event.id} waits for its new reading',
+          );
+          continue;
+        }
+        _again.remove(event.id);
+      } else if (last?.signature == signature) {
+        _collected(event.id, last?.text != null);
+        continue;
+      }
       final texts = <String>[];
       for (final p in pages) {
         final bytes = await bucket.get(
@@ -268,9 +317,13 @@ class CloudOcr extends ChangeNotifier {
       // an on-device reading, or a text tab the user marked correct.
       final current = library.byId(event.id);
       if (current == null) continue;
+      // Read again also replaces a text another read left (an on-device
+      // one too).
       final ours =
           !current.tabTextCorrect &&
-          (current.tabText == null || current.tabText == last?.text);
+          (current.tabText == null ||
+              current.tabText == last?.text ||
+              (again && current.tabTextAuto));
       if (text != null && ours && current.tabText != text) {
         await library.update(
           current.copyWith(tabText: text, tabTextAuto: true),
@@ -286,6 +339,7 @@ class CloudOcr extends ChangeNotifier {
       );
       state.events[event.id] = _Filled(signature, ours ? text : last?.text);
       changed = true;
+      _collected(event.id, text != null);
     }
     if (changed) await state.save(library);
   }

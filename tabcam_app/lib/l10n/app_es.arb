@@ -76,6 +76,8 @@
   "eventInCloud": "Transcribiendo en la nube. El texto aparecerá aquí cuando termine.",
   "eventNoTab": "No se encontró tablatura en las páginas. Escanea más cerca y con la hoja más plana.",
   "eventReadAgain": "Leer de nuevo",
+  "eventReadAgainTitle": "¿Leer la tablatura de nuevo?",
+  "eventReadAgainBody": "Se reemplaza el texto leído antes, salvo que lo hayas editado o marcado como correcto.",
   "eventReadFailed": "No se pudo leer la tablatura.",
   "eventReadUnsupported": "Para leer tablaturas necesitas la app de Android o iOS, o TabCam Premium.",
   "eventReadNeedsSignIn": "Para leer tablaturas tienes que iniciar sesión.",

@@ -295,6 +295,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventReadAgain => 'Read again';
 
   @override
+  String get eventReadAgainTitle => 'Read the tab again?';
+
+  @override
+  String get eventReadAgainBody =>
+      'The text read before is replaced, unless you edited it or marked it correct.';
+
+  @override
   String get eventReadFailed => 'Reading the tab failed.';
 
   @override

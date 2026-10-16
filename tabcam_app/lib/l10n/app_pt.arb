@@ -76,6 +76,8 @@
   "eventInCloud": "Transcrevendo na nuvem. O texto aparece aqui quando terminar.",
   "eventNoTab": "Nenhuma tablatura encontrada nas páginas. Digitalize mais perto e com a folha mais plana.",
   "eventReadAgain": "Ler de novo",
+  "eventReadAgainTitle": "Ler a tablatura de novo?",
+  "eventReadAgainBody": "O texto lido antes é substituído, a não ser que você o tenha editado ou marcado como correto.",
   "eventReadFailed": "Falha ao ler a tablatura.",
   "eventReadUnsupported": "Para ler tablaturas, use o app para Android ou iOS, ou o TabCam Premium.",
   "eventReadNeedsSignIn": "Para ler tablaturas, você precisa entrar.",

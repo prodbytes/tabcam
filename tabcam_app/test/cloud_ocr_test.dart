@@ -260,6 +260,145 @@ void main() {
     },
   );
 
+  test('Premium: once the cloud\'s text arrives, it isn\'t reading', () async {
+    final s = _Setup(premium: true);
+    await s.start();
+    await s.signIn();
+    final reader = AutoReader(
+      library: s.library,
+      auth: s.auth,
+      ocr: () => s.ocr,
+      supported: true,
+      read: (_) async => fail('read in the cloud'),
+    )..start();
+    final created = await _twoPages(s.library);
+    await _until(() => reader.stateOf(created.id) == ReadState.inCloud);
+
+    await s.sync.syncNow();
+    final event = s.library.byId(created.id)!;
+    s.result(event, event.pages[0], 'ok', _riffA);
+    s.result(event, event.pages[1], 'ok', _riffB);
+    await s.ocr.collect();
+    await _until(() => s.library.byId(event.id)!.tabText != null);
+    await _until(() => reader.stateOf(event.id) == null);
+
+    // Read: pages put in another order aren't read again.
+    final read = s.library.byId(event.id)!;
+    await s.library.reorderPages(read.id, [read.pages[1].id, read.pages[0].id]);
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    expect(reader.stateOf(event.id), isNull);
+    expect(s.api.transcribed, [event.id]);
+    reader.dispose();
+    s.dispose();
+  });
+
+  test('Premium: Read again replaces the text an earlier read left', () async {
+    final s = _Setup(premium: true);
+    await s.start();
+    await s.signIn();
+    final reader = AutoReader(
+      library: s.library,
+      auth: s.auth,
+      ocr: () => s.ocr,
+      supported: true,
+      read: (_) async => fail('read in the cloud'),
+    )..start();
+    final created = await _twoPages(s.library);
+    await _until(() => reader.stateOf(created.id) == ReadState.inCloud);
+    await s.sync.syncNow();
+    var event = s.library.byId(created.id)!;
+    s.result(event, event.pages[0], 'ok', _riffA);
+    s.result(event, event.pages[1], 'ok', _riffA);
+    await s.ocr.collect();
+    await _until(() => reader.stateOf(event.id) == null);
+    final first = s.library.byId(event.id)!.tabText;
+    expect(first, isNotNull);
+
+    reader.readSoon(event.id, again: true);
+    await _until(() => reader.stateOf(event.id) == ReadState.inCloud);
+    expect(s.api.transcribedAgain, [event.id]);
+    // The earlier results are still there: they aren't the new reading.
+    await s.ocr.collect();
+    expect(s.library.byId(event.id)!.tabText, first);
+    expect(reader.stateOf(event.id), ReadState.inCloud);
+
+    // The new reading, page by page.
+    event = s.library.byId(event.id)!;
+    s.result(event, event.pages[0], 'ok', _riffB);
+    await s.ocr.collect();
+    expect(s.library.byId(event.id)!.tabText, first);
+    s.result(event, event.pages[1], 'ok', _riffB);
+    await s.ocr.collect();
+    await _until(() => reader.stateOf(event.id) == null);
+    expect(
+      s.library.byId(event.id)!.tabText,
+      '${_riffB.trim()}\n\n${_riffB.trim()}\n',
+    );
+    reader.dispose();
+    s.dispose();
+  });
+
+  test('Premium: the same text read again isn\'t reading forever', () async {
+    final s = _Setup(premium: true);
+    await s.start();
+    await s.signIn();
+    final reader = AutoReader(
+      library: s.library,
+      auth: s.auth,
+      ocr: () => s.ocr,
+      supported: true,
+      read: (_) async => fail('read in the cloud'),
+    )..start();
+    final created = await _twoPages(s.library);
+    await _until(() => reader.stateOf(created.id) == ReadState.inCloud);
+    await s.sync.syncNow();
+    final event = s.library.byId(created.id)!;
+    s.result(event, event.pages[0], 'ok', _riffA);
+    s.result(event, event.pages[1], 'ok', _riffB);
+    await s.ocr.collect();
+    await _until(() => reader.stateOf(event.id) == null);
+
+    reader.readSoon(event.id, again: true);
+    await _until(() => reader.stateOf(event.id) == ReadState.inCloud);
+    // Rewritten (each result has the time it was made), the same text.
+    s.bucket.objects.updateAll(
+      (key, value) =>
+          key.contains('/ocr/') ? Uint8List.fromList([...value, 0x20]) : value,
+    );
+    await s.ocr.collect();
+    await _until(() => reader.stateOf(event.id) == null);
+    reader.dispose();
+    s.dispose();
+  });
+
+  test('Premium: a read the cloud never answers gives up, and the text '
+      'still fills in when it comes later', () async {
+    final s = _Setup(premium: true);
+    await s.start();
+    await s.signIn();
+    final reader = AutoReader(
+      library: s.library,
+      auth: s.auth,
+      ocr: () => s.ocr,
+      supported: true,
+      read: (_) async => fail('read in the cloud'),
+      cloudTimeout: const Duration(milliseconds: 100),
+    )..start();
+    final created = await _twoPages(s.library);
+    await _until(() => reader.stateOf(created.id) == ReadState.inCloud);
+    await _until(() => reader.stateOf(created.id) == ReadState.failed);
+
+    await s.sync.syncNow();
+    final event = s.library.byId(created.id)!;
+    s.result(event, event.pages[0], 'ok', _riffA);
+    s.result(event, event.pages[1], 'ok', _riffB);
+    await s.ocr.collect();
+    await _until(() => s.library.byId(event.id)!.tabText != null);
+    await _until(() => reader.stateOf(event.id) == null);
+    reader.dispose();
+    s.dispose();
+  });
+
   test('a free user gets nothing from the cloud', () async {
     final s = _Setup();
     await s.start();

@@ -313,6 +313,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventReadAgain => 'Leer de nuevo';
 
   @override
+  String get eventReadAgainTitle => '¿Leer la tablatura de nuevo?';
+
+  @override
+  String get eventReadAgainBody =>
+      'Se reemplaza el texto leído antes, salvo que lo hayas editado o marcado como correcto.';
+
+  @override
   String get eventReadFailed => 'No se pudo leer la tablatura.';
 
   @override
