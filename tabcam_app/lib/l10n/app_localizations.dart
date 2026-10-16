@@ -700,6 +700,18 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get eventDelete;
 
+  /// Capture screen: a file's delete button in the list
+  ///
+  /// In en, this message translates to:
+  /// **'Delete file'**
+  String get eventDeleteFile;
+
+  /// Capture screen: deleting a file failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t delete'**
+  String get eventCouldntDelete;
+
   /// Event file list: a file's drag handle, to change the files' order
   ///
   /// In en, this message translates to:

@@ -505,6 +505,14 @@
   "@eventDelete": {
     "description": "Event tool: delete the page"
   },
+  "eventDeleteFile": "Delete file",
+  "@eventDeleteFile": {
+    "description": "Capture screen: a file's delete button in the list"
+  },
+  "eventCouldntDelete": "Couldn't delete",
+  "@eventCouldntDelete": {
+    "description": "Capture screen: deleting a file failed"
+  },
   "eventReorder": "Reorder",
   "@eventReorder": {
     "description": "Event file list: a file's drag handle, to change the files' order"

@@ -99,6 +99,8 @@
   "eventRotate": "Rotar",
   "eventCouldntRotate": "No se pudo rotar",
   "eventDelete": "Eliminar",
+  "eventDeleteFile": "Eliminar archivo",
+  "eventCouldntDelete": "No se pudo eliminar",
   "eventReorder": "Reordenar",
   "eventCouldntReorder": "No se pudo reordenar",
   "eventViewOriginal": "Original",
