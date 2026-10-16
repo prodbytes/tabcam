@@ -1090,6 +1090,42 @@ abstract class AppLocalizations {
   /// **'Recording without the tab: {reason}'**
   String camRecordingNoTab(String reason);
 
+  /// Cam app bar: shows the sidebar of recordings, videos and links to play along with
+  ///
+  /// In en, this message translates to:
+  /// **'Play along with a file'**
+  String get camAlong;
+
+  /// Cam app bar: hides that sidebar
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the files to play along'**
+  String get camAlongHide;
+
+  /// Cam sidebar heading
+  ///
+  /// In en, this message translates to:
+  /// **'Play along'**
+  String get camAlongTitle;
+
+  /// Cam backing track: play; the space bar does it too
+  ///
+  /// In en, this message translates to:
+  /// **'Play (space)'**
+  String get camAlongPlay;
+
+  /// Cam backing track: pause; the space bar does it too
+  ///
+  /// In en, this message translates to:
+  /// **'Pause (space)'**
+  String get camAlongPause;
+
+  /// Cam backing track: close its frame
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get camAlongClose;
+
   /// Cam: head gestures toggle, on
   ///
   /// In en, this message translates to:

@@ -613,6 +613,24 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get camAlong => 'Play along with a file';
+
+  @override
+  String get camAlongHide => 'Hide the files to play along';
+
+  @override
+  String get camAlongTitle => 'Play along';
+
+  @override
+  String get camAlongPlay => 'Play (space)';
+
+  @override
+  String get camAlongPause => 'Pause (space)';
+
+  @override
+  String get camAlongClose => 'Close';
+
+  @override
   String get camHeadsOn =>
       'Head gestures on: nod up or right for the next line, down or left for the one before';
 

@@ -635,6 +635,24 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get camAlong => 'Tocar junto con un archivo';
+
+  @override
+  String get camAlongHide => 'Ocultar los archivos para tocar junto';
+
+  @override
+  String get camAlongTitle => 'Tocar junto';
+
+  @override
+  String get camAlongPlay => 'Reproducir (espacio)';
+
+  @override
+  String get camAlongPause => 'Pausa (espacio)';
+
+  @override
+  String get camAlongClose => 'Cerrar';
+
+  @override
   String get camHeadsOn =>
       'Gestos de cabeza activados: asiente hacia arriba o a la derecha para la línea siguiente, hacia abajo o a la izquierda para la anterior';
 
