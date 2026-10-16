@@ -3,7 +3,7 @@
 | | Android | iOS | Web |
 |---|---|---|---|
 | Minimum | 7.0 (API 24) | 15.5 | A current browser |
-| Scan | System document scanner (ML Kit, base mode: no filters): edges, straightening, several pages | System document scanner (VisionKit) | TabScan's camera screen (the browser's camera): several pages, cropped to the page when one stands out |
+| Scan | System document scanner (ML Kit, base mode: no filters): edges, straightening, several pages | System document scanner (VisionKit) | TabCam's camera screen (the browser's camera): several pages, cropped to the page when one stands out |
 | Add photos & videos, files | Photo picker; system file picker | Photo library; Files app | Browser file picker (both) |
 | Play videos | From the file | From the file | From memory |
 | [Cam](cam.md) takes | MP4 | MOV | WebM (the browser's camera and microphone) |
@@ -12,18 +12,18 @@
 | Library | Files in the app's documents | Files in the app's documents | Memory, until the tab closes |
 | Share | Copies the link | Copies the link | Copies the link |
 | Capture links ([opening](sharing.md#opening-a-link)) | App Links: the site's links open in the app | In Safari (the web app) | The web app |
-| Sign-in ([cloud sync](cloud-sync.md)) | Credential Manager | Google Sign-In SDK; Sign in with Apple too, with `TABSCANNER_APPLE_SIGN_IN=1` | Google's button (FedCM); the session kept in `localStorage` |
-| TabScan Premium ([cloud OCR](cloud-ocr.md#in-the-app)) | Works if bought on the web; no purchase links | Works if bought on the web; no purchase links | Upgrade offer: Upgrade, Redeem a voucher, the event screen hint |
+| Sign-in ([cloud sync](cloud-sync.md)) | Credential Manager | Google Sign-In SDK; Sign in with Apple too, with `TABCAM_APPLE_SIGN_IN=1` | Google's button (FedCM); the session kept in `localStorage` |
+| TabCam Premium ([cloud OCR](cloud-ocr.md#in-the-app)) | Works if bought on the web; no purchase links | Works if bought on the web; no purchase links | Upgrade offer: Upgrade, Redeem a voucher, the event screen hint |
 | Synced events | Kept in the app's documents | Kept in the app's documents | Downloaded again on each visit |
 
 **iOS signing**: automatic, with each developer's own team:
-`TABSCANNER_IOS_DEVELOPMENT_TEAM` in `.env` (a free Personal Team works) is written by
+`TABCAM_IOS_DEVELOPMENT_TEAM` in `.env` (a free Personal Team works) is written by
 `scripts/dart-defines.sh` to the git-ignored
-`tabscan_app/ios/Flutter/Private.xcconfig`, which `Debug.xcconfig` and
+`tabcam_app/ios/Flutter/Private.xcconfig`, which `Debug.xcconfig` and
 `Release.xcconfig` include; no team is committed. The same file gets
-`GOOGLE_REVERSED_CLIENT_ID`, from `TABSCANNER_GOOGLE_IOS_CLIENT_ID`: the URL scheme
+`GOOGLE_REVERSED_CLIENT_ID`, from `TABCAM_GOOGLE_IOS_CLIENT_ID`: the URL scheme
 in `Info.plist` that Google sign-in returns to; and, with
-`TABSCANNER_APPLE_SIGN_IN=1`, `CODE_SIGN_ENTITLEMENTS=Runner/Runner.entitlements`,
+`TABCAM_APPLE_SIGN_IN=1`, `CODE_SIGN_ENTITLEMENTS=Runner/Runner.entitlements`,
 the Sign in with Apple entitlement (`com.apple.developer.applesignin`).
 That entitlement needs a paid Apple Developer Program team with the
 capability on the App ID: a free Personal Team can't sign it, so the
@@ -66,12 +66,12 @@ holds two copies, and iOS warns at launch ("Class … is implemented in
 both … may cause spurious casting failures and mysterious crashes"). No
 failure has been traced to it so far.
 
-App IDs: `com.nu01.tabscan` (Android application ID and iOS bundle ID).
+App IDs: `com.nu01.tabcam` (Android application ID and iOS bundle ID).
 Google's Android OAuth client matches the app by that ID and the SHA-1 of
 its signing key: release builds are signed with the upload key when
-`tabscan_app/android/key.properties` is set up, else with the debug key
+`tabcam_app/android/key.properties` is set up, else with the debug key
 ([app stores](app-stores.md#android-signing)).
-The app is named **TabScan** everywhere.
+The app is named **TabCam** everywhere.
 
-The web build is deployed to https://tabscan.nu01.com/app/
+The web build is deployed to https://tabcam.nu01.com/app/
 ([deploy](deploy.md)).

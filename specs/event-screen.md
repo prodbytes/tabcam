@@ -38,7 +38,7 @@ it opens on the Text view; otherwise on the list.
 
   **Playing from the list**: a video's or recording's row has a **play /
   pause** button (before the rename pencil); it plays the file right
-  there ([`ListPlayer`](../tabscan_app/lib/screens/mini_player.dart),
+  there ([`ListPlayer`](../tabcam_app/lib/screens/mini_player.dart),
   `video_player`), a video in its thumbnail's place, with a scrubbable
   progress bar and the time ("0:12 / 3:04") under its name. One plays at
   a time: playing another stops the first; opening a file (its own

@@ -1,19 +1,19 @@
-# TabScan Premium: cloud OCR
+# TabCam Premium: cloud OCR
 
 Premium users' scans are **transcribed in the cloud as they sync**: the
 event's text tab appears by itself, read more accurately than on the
 phone, and on the web too. Free users keep [on-device reading](tab-recognition.md)
 and, on the web, are offered the upgrade. The service is
-[tabscan_locr/](../tabscan_locr/README.md), two AWS Lambda functions.
+[tabcam_locr/](../tabcam_locr/README.md), two AWS Lambda functions.
 
 A build has Premium only with [cloud sync](cloud-sync.md) set up and
-`TABSCANNER_OCR_URL` (the service's function URL) set. Without it the app is
+`TABCAM_OCR_URL` (the service's function URL) set. Without it the app is
 as before.
 
 ## Who is premium
 
 [rbacr](https://github.com/prodbytes/rbacr) decides: the role `premium`
-in its `tabscan` system (`premium` implies `free`), for the user's verified
+in its `tabcam` system (`premium` implies `free`), for the user's verified
 addresses: every account linked to their [profile](profiles.md#roles)
 (Google, or Apple on iOS); premium if any of them is. The service finds
 the request's profile in the share API's tables (`PROFILES_TABLE`,
@@ -22,7 +22,7 @@ and for uploads checks those addresses; a sign-in without a profile is
 checked by its own address, as before. People get it by:
 
 - **Subscribing** to prodbytes.substack.com with the same Google address:
-  rbacr's Stripe sync grants the `tabscan` system's subscriber role,
+  rbacr's Stripe sync grants the `tabcam` system's subscriber role,
   `premium`, for the paid period.
 - **A voucher**, redeemed on rbacr's own page (https://rbacr.nu01.com/me,
   signing in with Google).
@@ -39,7 +39,7 @@ verified (Apple's `email_verified` is the string `"true"`).
 
 The service asks rbacr (`POST /api/check`) with a root-owned API token kept
 in SSM Parameter Store (the standard-tier SecureString
-`/tabscan/rbacr-token`, under the AWS-managed `aws/ssm` key), never in the
+`/tabcam/rbacr-token`, under the AWS-managed `aws/ssm` key), never in the
 app; each container reads it once. If rbacr
 can't answer, the user is not premium for now. A "yes" is trusted for at
 most 5 minutes (less if the grant ends sooner), a "no" for 1 minute.
@@ -48,11 +48,11 @@ most 5 minutes (less if the grant ends sooner), a "no" for 1 minute.
 
 1. Cloud sync uploads a page image (`.img`, `.jpg`, `.jpeg`, `.png`,
    `.webp`) or a PDF (`.pdf`) to `<identity>/events/<event id>/`. The bucket sends the
-   upload to EventBridge, which calls `tabscan-ocr-api`.
+   upload to EventBridge, which calls `tabcam-ocr-api`.
 2. It looks up the identity's verified address (recorded by `/account`,
-   below), asks rbacr, and for premium users invokes `tabscan-ocr`.
+   below), asks rbacr, and for premium users invokes `tabcam-ocr`.
    Free users' pages stop there.
-3. `tabscan-ocr` reads the page and writes
+3. `tabcam-ocr` reads the page and writes
    `<identity>/ocr/<event id>/<page id>.json`:
    `{page, status, text, staves, lines, seconds, engines, version, created}`,
    `status` being `ok`, `no-tab` or `error`.
@@ -79,7 +79,7 @@ its photo too.
 
 **Tabs on drawn staff lines** (handwritten, or typeset: books, Guitar Pro
 printouts), where the frets sit on the lines and there are no dashes, are
-read by the same engines another way ([locr/staves.py](../tabscan_locr/locr/staves.py)),
+read by the same engines another way ([locr/staves.py](../tabcam_locr/locr/staves.py)),
 when a page has no dash lines:
 
 1. Long horizontal strokes are the staff lines (a slightly skewed line,
@@ -107,10 +107,10 @@ a made-up riff set on drawn lines back, every note); handwriting about two
 in three notes right, in order and on the right string, so the text is
 worth checking against the page.
 
-Claude (vision, [locr/vision.py](../tabscan_locr/locr/vision.py)) can
+Claude (vision, [locr/vision.py](../tabcam_locr/locr/vision.py)) can
 read the pages nothing else does, but it's **off**: on only with
 `VISION_FALLBACK=1` on the function and the Claude API key
-(`tabscan/anthropic-api-key`), neither set.
+(`tabcam/anthropic-api-key`), neither set.
 
 **Notations**: the rest of the page, with the staves blanked out, is read
 by RapidOCR at half size (1400 px). Its words (confidence 0.5 or more) are
@@ -124,15 +124,15 @@ with text but no tab is still `no-tab`.
 
 ## In the app
 
-`CloudOcr` ([lib/cloud/cloud_ocr.dart](../tabscan_app/lib/cloud/cloud_ocr.dart)):
+`CloudOcr` ([lib/cloud/cloud_ocr.dart](../tabcam_app/lib/cloud/cloud_ocr.dart)):
 
 - **Status**: at sign-in, and each time the Profile tab (or the account
   sheet, from an event's Upgrade on the web) opens, the app
   calls `POST /account` with the user's ID token. The service checks the
-  token, by its issuer: Google's (signed by Google, issued for TabScan's
+  token, by its issuer: Google's (signed by Google, issued for TabCam's
   web client or the local web client) or, with `APPLE_CLIENT_ID` set,
   Apple's (signed by Apple's keys, `https://appleid.apple.com/auth/keys`,
-  issued for the bundle ID `com.nu01.tabscan`); either way unexpired, with
+  issued for the bundle ID `com.nu01.tabcam`); either way unexpired, with
   a verified address. It asks the main identity pool for the token's
   identity ID, under the issuer's `Logins` key (so local web builds, whose
   identities are in the local pool, get 401), records identity → address,
@@ -163,24 +163,24 @@ with text but no tab is still `no-tab`.
 **Upgrade offer** (on the web; the store apps leave it out, below):
 
 - The account, on the [Profile](navigation.md#profile) tab, shows the
-  user's role in the `tabscan` system under their name: **Role: Premium**,
+  user's role in the `tabcam` system under their name: **Role: Premium**,
   or **Role: Free** (everyone signed in; `premium` implies `free`), "Free
   (couldn't check)" when rbacr didn't answer, and "Checking…" before the
   first answer. It comes from the same status check as the card; builds
   without the service show no role.
 - It also has a
-  **TabScan Premium** card. For premium users: transcription is automatic, and until when.
+  **TabCam Premium** card. For premium users: transcription is automatic, and until when.
   For others: what Premium does, "Subscribe with <their address>",
   **Upgrade** (the Substack subscribe page), **Redeem a voucher** (rbacr's
   page) and **Check again**. Signed out, it says Premium comes with
   signing in.
-- The [event screen](event-screen.md) shows a dismissible hint, "TabScan
+- The [event screen](event-screen.md) shows a dismissible hint, "TabCam
   Premium transcribes your scans automatically", with **Upgrade** (it opens
   the account, the Profile tab's panel, in a sheet), on events without a text tab, for users without
   Premium (signed out included).
 
 **In the store apps** (Android and iOS: `storeApp` in
-[premium_card.dart](../tabscan_app/lib/screens/premium_card.dart), not on
+[premium_card.dart](../tabcam_app/lib/screens/premium_card.dart), not on
 the web): App Store guidelines 3.1.1 and 3.1.3(b) and Google Play's
 payments policy don't let an app point to buying a digital feature
 outside the store, and Premium is sold on the web. So the apps show no
@@ -188,23 +188,23 @@ way to buy it: no Upgrade, no "Subscribe with <address>", no Redeem a
 voucher and no event screen hint. Premium bought on the web still works
 in them (multiplatform services): the role line, and for premium users
 the card's "transcribed automatically" and until when, are as on the
-web. A free user's card only says "TabScan Premium isn't active for
+web. A free user's card only says "TabCam Premium isn't active for
 <address>.", with **Check again**. The account panel, the card and the
 event screen take a `store` flag (null: the platform's), which the tests
 set to check both.
 - On the web without Premium, the Text view says reading tabs needs the
-  Android or iOS app, or TabScan Premium.
+  Android or iOS app, or TabCam Premium.
 
 ## Troubleshooting log
 
 - **App**: every call to the service is logged
-  (`TabScan: OCR API: POST <url>`, then its status, time and answer, or
-  the error); `TabScan: cloud OCR:` lines say when a read can't ask (no
+  (`TabCam: OCR API: POST <url>`, then its status, time and answer, or
+  the error); `TabCam: cloud OCR:` lines say when a read can't ask (no
   ID token, not premium), and, per sync pass, how many results were found,
   which events wait for which pages, each result's status, and whether the
   text tab was filled or kept.
-- **Service** (CloudWatch, `aws logs tail /aws/lambda/tabscan-ocr-api
-  --follow`, and `.../tabscan-ocr`): one JSON line per event. `http`: the
+- **Service** (CloudWatch, `aws logs tail /aws/lambda/tabcam-ocr-api
+  --follow`, and `.../tabcam-ocr`): one JSON line per event. `http`: the
   path, status, time, identity, premium and the answer (the address left
   out), why a token was refused or a body was bad. `transcribe`: the
   event's files, those already transcribed, how many were queued and which
@@ -216,30 +216,30 @@ set to check both.
 
 ## Infrastructure
 
-- **`ocr-repo.yaml`**, stack `tabscan-ocr-repo`: the ECR repository
-  `tabscan-ocr` (immutable tags, scanned on push, the last 10 images
+- **`ocr-repo.yaml`**, stack `tabcam-ocr-repo`: the ECR repository
+  `tabcam-ocr` (immutable tags, scanned on push, the last 10 images
   kept).
-- **`ocr.yaml`**, stack `tabscan-ocr`:
-  - the table `tabscan-accounts` (identity ID → address; on demand,
+- **`ocr.yaml`**, stack `tabcam-ocr`:
+  - the table `tabcam-accounts` (identity ID → address; on demand,
     point-in-time recovery); a user's item is deleted with their account,
     by the share API ([deleting the account](cloud-sync.md#deleting-the-account));
-  - `tabscan-ocr` (x86_64, like `tabscan-ocr-api`: one image, and
+  - `tabcam-ocr` (x86_64, like `tabcam-ocr-api`: one image, and
     PaddlePaddle has no working Linux ARM build of its version; 3008 MB, the account's current cap; 5 min, one retry): it may get page images and put
     results;
-  - `tabscan-ocr-api` (512 MB, 300 s for [auto-correct](autocorrect.md)'s
+  - `tabcam-ocr-api` (512 MB, 300 s for [auto-correct](autocorrect.md)'s
     `/autocorrect`; the other requests take a second or two): it may read
     and write the table, read the rbacr token's parameter (and the Claude
-    API key's secret, when set), invoke `tabscan-ocr`, list the bucket and delete results;
+    API key's secret, when set), invoke `tabcam-ocr`, list the bucket and delete results;
   - its function URL (no IAM auth: each request carries an ID token,
     Google's or Apple's (`AppleClientId`, the function's `APPLE_CLIENT_ID`);
     CORS for the web app's origins, the local HTTPS one included);
-  - the EventBridge rule `tabscan-ocr-pages` (page images created or
+  - the EventBridge rule `tabcam-ocr-pages` (page images created or
     deleted in the user-data bucket).
 - **`user-data.yaml`** sends the bucket's events to EventBridge.
 - Deployed by an administrator with
-  [tabscan_locr/scripts/deploy.sh](../tabscan_locr/scripts/deploy.sh); its
-  output URL is the app's `TABSCANNER_OCR_URL`. It passes the Claude API
-  key's secret (`tabscan/anthropic-api-key`) when it exists.
+  [tabcam_locr/scripts/deploy.sh](../tabcam_locr/scripts/deploy.sh); its
+  output URL is the app's `TABCAM_OCR_URL`. It passes the Claude API
+  key's secret (`tabcam/anthropic-api-key`) when it exists.
 
 ## Verified
 

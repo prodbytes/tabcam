@@ -1,14 +1,14 @@
 # Tab recognition
 
 Every capture's tab is read **by itself** into its text tab, shown in the
-[event screen](event-screen.md)'s **Text** view. With [TabScan
+[event screen](event-screen.md)'s **Text** view. With [TabCam
 Premium](cloud-ocr.md) the cloud transcribes it as the pages sync;
 otherwise ML Kit text recognition (Latin script) reads it on the device,
 Android and iOS only (below).
 
 ## Reading by itself
 
-`AutoReader` ([lib/recognition/auto_reader.dart](../tabscan_app/lib/recognition/auto_reader.dart))
+`AutoReader` ([lib/recognition/auto_reader.dart](../tabcam_app/lib/recognition/auto_reader.dart))
 watches the library: whenever the user adds or changes an event's image
 or PDF pages (a new capture, pages added, rotated, deleted or reordered), that event
 is read, one event at a time ([PDFs](#pdfs) below). Pages changed while it
@@ -31,9 +31,9 @@ tab…" (with a spinner); "Transcribing in the cloud. The text appears here
 when it's done."; "No tab found in the pages. Try rescanning closer and
 flatter." or "Reading the tab failed.", with **Read again**; "Reading
 tabs needs you signed in.", with **Sign in**; "Reading tabs needs the
-Android or iOS app, or TabScan Premium."; "Nothing to read: add a scan or
+Android or iOS app, or TabCam Premium."; "Nothing to read: add a scan or
 a photo."; or, for an event never read (from before), "Not read yet."
-with **Read**. Its log lines start with `TabScan: read tab:`.
+with **Read**. Its log lines start with `TabCam: read tab:`.
 
 ## On the device
 
@@ -140,12 +140,12 @@ Text tabs are tried first; typeset layout runs when no text tab is found.
 ## PDFs
 
 A PDF page (Capture → Document, or Files) is read like a photo, into the
-text tab ([lib/recognition/pdf_reader.dart](../tabscan_app/lib/recognition/pdf_reader.dart)):
+text tab ([lib/recognition/pdf_reader.dart](../tabcam_app/lib/recognition/pdf_reader.dart)):
 
 1. **Its text**, where it has one (a tab printed from a website, a
    typeset book): each page's text and every character's box, from PDFium
    (`pdfrx`, on every platform, the web too), become lines with their
-   words and positions ([lib/recognition/pdf_lines.dart](../tabscan_app/lib/recognition/pdf_lines.dart)),
+   words and positions ([lib/recognition/pdf_lines.dart](../tabcam_app/lib/recognition/pdf_lines.dart)),
    laid out as a text tab is ([text tabs](#text-tabs), with its
    [notations](#notations-around-the-tab): chord names at their columns,
    lyrics, titles).
@@ -156,10 +156,10 @@ text tab ([lib/recognition/pdf_reader.dart](../tabscan_app/lib/recognition/pdf_r
 The event's pages are read in their order: each run of photos together,
 each PDF on its own; the texts are joined by a blank line. On the web, a
 PDF's text is read though photos can't be; a scanned PDF there says that
-reading it needs the Android or iOS app, or TabScan Premium (not "no tab
+reading it needs the Android or iOS app, or TabCam Premium (not "no tab
 found").
 
-With **TabScan Premium**, PDFs are read as if their pages were
+With **TabCam Premium**, PDFs are read as if their pages were
 photographed, everywhere: an event of PDFs only first tries their text on
 the device (exact, at once); a scanned PDF, or an event with photos, goes
 to the [cloud](cloud-ocr.md#transcription), which renders each PDF page
@@ -168,7 +168,7 @@ a scan, a photo or a PDF.
 
 ## Troubleshooting log
 
-Reading logs each step, in lines starting `TabScan: read tab:` (on
+Reading logs each step, in lines starting `TabCam: read tab:` (on
 Android: `devbox run android-log`; on the web: the browser's console):
 the event's pages and whether the user is signed in; which reading it
 takes (cloud for Premium, with the premium status, else on the device and
@@ -181,15 +181,15 @@ well as shown. Tokens are never logged.
 ## Text view
 
 Tabs show in **Roboto Mono**, a fixed-width font shipped with the app
-(SIL Open Font License, [assets/fonts/](../tabscan_app/assets/fonts/RobotoMono-OFL.txt);
-[`monoFont`](../tabscan_app/lib/screens/mono_font.dart)), so a staff's
+(SIL Open Font License, [assets/fonts/](../tabcam_app/assets/fonts/RobotoMono-OFL.txt);
+[`monoFont`](../tabcam_app/lib/screens/mono_font.dart)), so a staff's
 strings of the same length end together everywhere, the web included
 (it has no system monospace font to use: before, it fell back to a
 proportional one and the strings came out ragged). The Text view's tab is
 15 px, the review's lines 17 px; the cards' and the list's previews use the
 same font.
 
-The event screen's Text view ([lib/screens/tab_text_view.dart](../tabscan_app/lib/screens/tab_text_view.dart)):
+The event screen's Text view ([lib/screens/tab_text_view.dart](../tabcam_app/lib/screens/tab_text_view.dart)):
 the read tab, unwrapped (long lines scroll sideways), in a
 text editor to fix what OCR got wrong. Edits are saved a second after the
 last one, and on leaving, and make the text the user's (no read replaces
@@ -215,7 +215,7 @@ a phone's width:
   [auto-correct](autocorrect.md): the song's tab found online proposes
   corrections, which the user reviews per note.
 
-**Editing tools**, under them ([lib/screens/tab_editing.dart](../tabscan_app/lib/screens/tab_editing.dart)):
+**Editing tools**, under them ([lib/screens/tab_editing.dart](../tabcam_app/lib/screens/tab_editing.dart)):
 
 - **−** and **+**: the fret number under the cursor (or just before it),
   one or two digits, goes down or up by one (15 + → 16, 5 + → 6), from 0

@@ -13,8 +13,8 @@ It comes in three stages; **stage 1 is done**.
 
 ## Keys (stage 1: done)
 
-- **One KMS key**, `alias/tabscan-profile-keys` (the share API's stack,
-  [share-api.yaml](../tabscan_infra/share-api.yaml)): symmetric, rotated
+- **One KMS key**, `alias/tabcam-profile-keys` (the share API's stack,
+  [share-api.yaml](../tabcam_infra/share-api.yaml)): symmetric, rotated
   yearly, kept if the stack goes, 30 days to undo deleting it. It never
   encrypts data itself: it wraps profiles' private keys. About $1 a month
   whatever the number of users.
@@ -30,7 +30,7 @@ It comes in three stages; **stage 1 is done**.
 - **`GET /profile`** returns the public key (`publicKey`, base64) and
   `keyAlgorithm` (`RSA-OAEP-256`), for the profile's devices to wrap
   captures' keys with.
-- **The private key never leaves the API** ([keys.py](../tabscan_api/shares/keys.py)):
+- **The private key never leaves the API** ([keys.py](../tabcam_api/shares/keys.py)):
   it's opened in the function with KMS (and kept in memory there for 5
   minutes) only to unwrap captures' keys:
   - **`POST /keys/{owner}/{captureId}`** (signed in): the capture's content
@@ -42,22 +42,22 @@ It comes in three stages; **stage 1 is done**.
 
   The wrapped key is always read from the capture's own `event.json` (with
   that capture's read-only credentials), never taken from the caller, and
-  it's bound to its capture (the OAEP label is `tabscan:<capture id>`): an
+  it's bound to its capture (the OAEP label is `tabcam:<capture id>`): an
   editor of one capture can't have another's key unwrapped.
 - The function's role may use the KMS key only with a `profile`
   encryption context. Its one library beyond boto3, `cryptography` (with
   `cffi` and `pycparser`), is pinned with hashes
-  ([requirements.txt](../tabscan_api/shares/requirements.txt)) and bundled
+  ([requirements.txt](../tabcam_api/shares/requirements.txt)) and bundled
   by [deploy-share-api.sh](../scripts/deploy-share-api.sh), which deploys
   the key and the table with the rest of the stack.
 
 ## Formats
 
-[sealed.py](../tabscan_api/shares/sealed.py) is the reference.
+[sealed.py](../tabcam_api/shares/sealed.py) is the reference.
 
 - **A capture's content key**: 32 random bytes made on the device that
   creates the capture (AES-256-GCM), wrapped with the owner profile's
-  public key (RSA-OAEP, SHA-256, label `tabscan:<capture id>`).
+  public key (RSA-OAEP, SHA-256, label `tabcam:<capture id>`).
 - **`event.json`**, encrypted: in the clear only what sync and the API
   need, `{"v": 1, "id", "updated", "owner", "key": {"alg": "RSA-OAEP-256",
   "wrapped"}, "sealed"}`; `sealed` is a 12-byte nonce, then the whole
@@ -66,7 +66,7 @@ It comes in three stages; **stage 1 is done**.
 - **A file** (a page): `TSE1`, the chunk size (4 bytes, big endian, 64 KiB
   by default), a 7-byte random nonce prefix, then the chunks: each
   AES-256-GCM with its 16-byte tag, nonce = prefix, chunk number (4 bytes)
-  and 1 for the last chunk (else 0), AAD `tabscan:<capture id>/<file
+  and 1 for the last chunk (else 0), AAD `tabcam:<capture id>/<file
   name>`. Read and written a chunk at a time (videos never whole in
   memory); chunks can't be dropped, reordered or moved between files.
 

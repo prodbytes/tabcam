@@ -5,10 +5,10 @@
 # Only the names below are passed: anything given to Flutter is compiled
 # into the app (readable in the web bundle), so secrets in .env must never
 # be listed here. Add public identifiers only.
-_allowed=(TABSCANNER_STAGE TABSCANNER_GOOGLE_WEB_CLIENT_ID
-  TABSCANNER_GOOGLE_IOS_CLIENT_ID AWS_REGION TABSCANNER_COGNITO_IDENTITY_POOL_ID
-  TABSCANNER_USER_DATA_BUCKET TABSCANNER_SHARE_API_URL TABSCANNER_OCR_URL
-  TABSCANNER_STATUS_URL TABSCANNER_APPLE_SIGN_IN)
+_allowed=(TABCAM_STAGE TABCAM_GOOGLE_WEB_CLIENT_ID
+  TABCAM_GOOGLE_IOS_CLIENT_ID AWS_REGION TABCAM_COGNITO_IDENTITY_POOL_ID
+  TABCAM_USER_DATA_BUCKET TABCAM_SHARE_API_URL TABCAM_OCR_URL
+  TABCAM_STATUS_URL TABCAM_APPLE_SIGN_IN)
 _env="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/.env"
 DART_DEFINES=()
 for _name in "${_allowed[@]}"; do
@@ -22,31 +22,31 @@ done
 # iOS settings that aren't dart-defines go to a git-ignored xcconfig that
 # Debug.xcconfig and Release.xcconfig include, so nothing personal or
 # project-specific is committed:
-# - the developer's own signing team (TABSCANNER_IOS_DEVELOPMENT_TEAM);
-# - the reversed iOS client ID (TABSCANNER_GOOGLE_IOS_CLIENT_ID), Google
+# - the developer's own signing team (TABCAM_IOS_DEVELOPMENT_TEAM);
+# - the reversed iOS client ID (TABCAM_GOOGLE_IOS_CLIENT_ID), Google
 #   sign-in's return URL scheme in Info.plist;
-# - with TABSCANNER_APPLE_SIGN_IN=1, the Sign in with Apple entitlement
+# - with TABCAM_APPLE_SIGN_IN=1, the Sign in with Apple entitlement
 #   (CODE_SIGN_ENTITLEMENTS=Runner/Runner.entitlements). Only a paid Apple
 #   Developer Program team can sign it, so it's off unless asked for: free
 #   Personal Team and unsigned (CI) builds have no entitlements.
-_ios="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/tabscan_app/ios/Flutter/Private.xcconfig"
+_ios="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/tabcam_app/ios/Flutter/Private.xcconfig"
 _lines=()
-_value="${TABSCANNER_IOS_DEVELOPMENT_TEAM:-}"
-[[ -z "$_value" && -f "$_env" ]] && _value="$(sed -n 's/^TABSCANNER_IOS_DEVELOPMENT_TEAM=//p' "$_env" | tail -1)"
+_value="${TABCAM_IOS_DEVELOPMENT_TEAM:-}"
+[[ -z "$_value" && -f "$_env" ]] && _value="$(sed -n 's/^TABCAM_IOS_DEVELOPMENT_TEAM=//p' "$_env" | tail -1)"
 if [[ "$_value" =~ ^[A-Z0-9]{10}$ ]]; then
   _lines+=("DEVELOPMENT_TEAM=$_value")
 elif [[ -n "$_value" ]]; then
-  echo "warning: TABSCANNER_IOS_DEVELOPMENT_TEAM isn't a 10-character team ID; iOS stays unsigned" >&2
+  echo "warning: TABCAM_IOS_DEVELOPMENT_TEAM isn't a 10-character team ID; iOS stays unsigned" >&2
 fi
-_value="${TABSCANNER_GOOGLE_IOS_CLIENT_ID:-}"
-[[ -z "$_value" && -f "$_env" ]] && _value="$(sed -n 's/^TABSCANNER_GOOGLE_IOS_CLIENT_ID=//p' "$_env" | tail -1)"
+_value="${TABCAM_GOOGLE_IOS_CLIENT_ID:-}"
+[[ -z "$_value" && -f "$_env" ]] && _value="$(sed -n 's/^TABCAM_GOOGLE_IOS_CLIENT_ID=//p' "$_env" | tail -1)"
 if [[ "$_value" =~ ^[0-9]+-[0-9a-z]+\.apps\.googleusercontent\.com$ ]]; then
   _lines+=("GOOGLE_REVERSED_CLIENT_ID=com.googleusercontent.apps.${_value%.apps.googleusercontent.com}")
 elif [[ -n "$_value" ]]; then
-  echo "warning: TABSCANNER_GOOGLE_IOS_CLIENT_ID isn't a Google client ID; iOS sign-in won't return to the app" >&2
+  echo "warning: TABCAM_GOOGLE_IOS_CLIENT_ID isn't a Google client ID; iOS sign-in won't return to the app" >&2
 fi
-_value="${TABSCANNER_APPLE_SIGN_IN:-}"
-[[ -z "$_value" && -f "$_env" ]] && _value="$(sed -n 's/^TABSCANNER_APPLE_SIGN_IN=//p' "$_env" | tail -1)"
+_value="${TABCAM_APPLE_SIGN_IN:-}"
+[[ -z "$_value" && -f "$_env" ]] && _value="$(sed -n 's/^TABCAM_APPLE_SIGN_IN=//p' "$_env" | tail -1)"
 if [[ "$_value" == 1 || "$_value" == true ]]; then
   _lines+=("CODE_SIGN_ENTITLEMENTS=Runner/Runner.entitlements")
 fi

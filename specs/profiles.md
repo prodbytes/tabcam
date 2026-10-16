@@ -1,6 +1,6 @@
 # Profiles
 
-What a TabScan user's data belongs to, as in Presence: a **profile**, not a
+What a TabCam user's data belongs to, as in Presence: a **profile**, not a
 sign-in. The ways its owner signs in (Google, Apple; several accounts) are
 linked to it, and each reaches the same captures. The profile's **roles**
 are every linked account's rbacr roles together.
@@ -10,8 +10,8 @@ are every linked account's rbacr roles together.
 - Two different adjectives and an animal, lowercase, joined by `_`:
   `huge_wavy_darter`.
 - The words are Presence's lists
-  ([adjectives.txt](../tabscan_api/shares/adjectives.txt), 1053;
-  [animals.txt](../tabscan_api/shares/animals.txt), 1031): a-z only, each
+  ([adjectives.txt](../tabcam_api/shares/adjectives.txt), 1053;
+  [animals.txt](../tabcam_api/shares/animals.txt), 1031): a-z only, each
   unique, no insults. About 1.1 billion IDs.
 - Made by the share API only, with a cryptographic random source
   (`secrets.SystemRandom`), on a conditional write; a taken ID is skipped
@@ -55,9 +55,9 @@ are every linked account's rbacr roles together.
 ## Roles
 
 - rbacr's `POST /api/roles` for each linked account's address (a root's
-  token, from the SSM SecureString `/tabscan/rbacr-token`, read once per
+  token, from the SSM SecureString `/tabcam/rbacr-token`, read once per
   container), cached a minute, failing closed (no
-  roles): the profile's roles are the union of the `tabscan` system's
+  roles): the profile's roles are the union of the `tabcam` system's
   roles (`free`, `premium`, `admin`; rbacr's answer already includes the
   implied ones), and `globalRoles` too. **Premium** if any linked account
   is premium.
@@ -71,7 +71,7 @@ are every linked account's rbacr roles together.
   made at its first request, deleted with it.
 
 - The profile's folder is its **Cognito developer identity** in the main
-  pool (developer provider `login.tabscan.profiles`, the profile ID as the
+  pool (developer provider `login.tabcam.profiles`, the profile ID as the
   user identifier): `POST /profile/credentials` gets an OpenID token for
   it (`GetOpenIdTokenForDeveloperIdentity`, 1 hour) and the app exchanges
   it with `GetCredentialsForIdentity` (`Logins:
@@ -100,7 +100,7 @@ each route also under `/apple` for Apple's tokens:
 | `POST /profile/unlink` `{id}` | the profile after, or `{unlinked: true}` for oneself |
 | `POST /profile/credentials` | `{profileId, identityId, token}` |
 
-Tables (`tabscan-share-api`): **profiles** (`id`; `ownerSubject`,
+Tables (`tabcam-share-api`): **profiles** (`id`; `ownerSubject`,
 `ownerEmail`, `identityId`, `createdAt`, `lastSignInAt`; index
 `byIdentity`), **subjects** (`subject`; `profileId`, `email`,
 `provider`, `linkedAt`; indexes `byProfile`, `byEmail`), **link codes**

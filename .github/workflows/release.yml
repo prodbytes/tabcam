@@ -35,7 +35,7 @@ on:
     paths:
       - .github/workflows/release.yml
       - Makefile
-      - tabscan_app/android/app/build.gradle.kts
+      - tabcam_app/android/app/build.gradle.kts
       - scripts/make.sh
       - scripts/dart-defines.sh
       - scripts/version.sh
@@ -142,12 +142,12 @@ jobs:
       VERSION_Z: ${{ needs.prepare.outputs.version_z }}
       BUILD_NUMBER: ${{ needs.prepare.outputs.build_number }}
       # Sign-in and cloud sync (public identifiers; empty turns them off).
-      TABSCANNER_GOOGLE_WEB_CLIENT_ID: ${{ vars.TABSCANNER_GOOGLE_WEB_CLIENT_ID }}
-      TABSCANNER_GOOGLE_IOS_CLIENT_ID: ${{ vars.TABSCANNER_GOOGLE_IOS_CLIENT_ID }}
-      TABSCANNER_COGNITO_IDENTITY_POOL_ID: ${{ vars.TABSCANNER_COGNITO_IDENTITY_POOL_ID }}
-      TABSCANNER_USER_DATA_BUCKET: ${{ vars.TABSCANNER_USER_DATA_BUCKET }}
-      TABSCANNER_SHARE_API_URL: ${{ vars.TABSCANNER_SHARE_API_URL }}
-      TABSCANNER_OCR_URL: ${{ vars.TABSCANNER_OCR_URL }}
+      TABCAM_GOOGLE_WEB_CLIENT_ID: ${{ vars.TABCAM_GOOGLE_WEB_CLIENT_ID }}
+      TABCAM_GOOGLE_IOS_CLIENT_ID: ${{ vars.TABCAM_GOOGLE_IOS_CLIENT_ID }}
+      TABCAM_COGNITO_IDENTITY_POOL_ID: ${{ vars.TABCAM_COGNITO_IDENTITY_POOL_ID }}
+      TABCAM_USER_DATA_BUCKET: ${{ vars.TABCAM_USER_DATA_BUCKET }}
+      TABCAM_SHARE_API_URL: ${{ vars.TABCAM_SHARE_API_URL }}
+      TABCAM_OCR_URL: ${{ vars.TABCAM_OCR_URL }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -185,7 +185,7 @@ jobs:
           base64 --decode > "$keystore" <<< "$KEYSTORE_BASE64"
           printf 'storeFile=%s\nstorePassword=%s\nkeyAlias=upload\nkeyPassword=%s\n' \
             "$keystore" "$KEYSTORE_PASSWORD" "$KEYSTORE_PASSWORD" \
-            > tabscan_app/android/key.properties
+            > tabcam_app/android/key.properties
 
       - name: make ${{ matrix.make }}
         # Word splitting is wanted: MAKE_TARGETS is the matrix's list.
@@ -195,28 +195,28 @@ jobs:
         run: |
           dist="$PWD/dist"
           mkdir -p "$dist"
-          cd tabscan_app/build
+          cd tabcam_app/build
           case "$TARGET" in
             web)
-              (cd web && zip -qr "$dist/tabscan-$TAG-web.zip" .)
+              (cd web && zip -qr "$dist/tabcam-$TAG-web.zip" .)
               ;;
             android)
-              cp app/outputs/flutter-apk/app-release.apk "$dist/tabscan-$TAG-android.apk"
-              cp app/outputs/bundle/release/app-release.aab "$dist/tabscan-$TAG-android.aab"
+              cp app/outputs/flutter-apk/app-release.apk "$dist/tabcam-$TAG-android.apk"
+              cp app/outputs/bundle/release/app-release.aab "$dist/tabcam-$TAG-android.aab"
               ;;
             ios)
-              ditto -c -k --keepParent ios/iphoneos/Runner.app "$dist/tabscan-$TAG-ios-unsigned.zip"
+              ditto -c -k --keepParent ios/iphoneos/Runner.app "$dist/tabcam-$TAG-ios-unsigned.zip"
               ;;
           esac
           ls -l "$dist"
 
       - if: always() && matrix.target == 'android'
         name: Remove the upload key
-        run: rm -f "$RUNNER_TEMP/upload.jks" tabscan_app/android/key.properties
+        run: rm -f "$RUNNER_TEMP/upload.jks" tabcam_app/android/key.properties
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: tabscan-${{ matrix.name }}
+          name: tabcam-${{ matrix.name }}
           path: dist/*
           if-no-files-found: error
           retention-days: 14
@@ -230,7 +230,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          pattern: tabscan-*
+          pattern: tabcam-*
           path: dist
           merge-multiple: true
 
@@ -242,7 +242,7 @@ jobs:
           PRERELEASE: ${{ (github.event_name == 'push' && !endsWith(github.ref_name, 'GA')) || (github.event_name != 'push' && inputs.prerelease) }}
         run: |
           ls -l dist
-          title="tabscan-$TAG"
+          title="tabcam-$TAG"
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" dist/* --clobber
             gh release edit "$TAG" --title "$title"

@@ -8,7 +8,7 @@ every commit and push:
 - **Correctness**: verify the change does what it claims — run the relevant
   code path (build, script, or service), not just a syntax check. For this
   repo that typically means `flutter analyze` and `flutter test` pass in
-  `tabscan_app/`, the devcontainer image still builds, and
+  `tabcam_app/`, the devcontainer image still builds, and
   `devbox services up` still starts the services and health check cleanly.
 - **Security**: check for hardcoded secrets or tokens, unsafe shell patterns
   (unquoted variables, `curl | bash` of unpinned sources, world-writable
@@ -24,11 +24,11 @@ Do not commit or push code that has not passed both checks.
 - `devbox services up` starts the processes in
   [process-compose.yaml](process-compose.yaml) (the Flutter web app, the
   index page and Floci as the local CloudFront, see
-  [tabscan_floci/](tabscan_floci/README.md)) plus the health monitor
+  [tabcam_floci/](tabcam_floci/README.md)) plus the health monitor
   ([scripts/health-check.sh](scripts/health-check.sh)); stop with
   `devbox services stop`. In non-interactive contexts pass
   `--pcflags "--tui=false"`.
-- The app is in [tabscan_app/](tabscan_app); `make` builds it (see the
+- The app is in [tabcam_app/](tabcam_app); `make` builds it (see the
   [Makefile](Makefile)).
 - The devcontainer build is documented in the [README](README.md).
 - Tests and examples use made-up riffs, never tabs of published songs.

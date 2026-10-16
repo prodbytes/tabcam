@@ -1,4 +1,4 @@
-# TabScan — software specification
+# TabCam — software specification
 
 The current specification of the product, one file per feature. Update the
 feature files a request changes, and add a file when a request adds a
@@ -7,15 +7,15 @@ it.
 
 ## Product
 
-TabScan is a camera app for guitar tabs, in the style of document scanner
+TabCam is a camera app for guitar tabs, in the style of document scanner
 apps (Adobe Scan, CamScanner), made for tablature. Point the phone at a tab
-and it finds the page, straightens it and cleans it up. TabScan can then
+and it finds the page, straightens it and cleans it up. TabCam can then
 read the tab into editable plain text and share it as a link, a PDF,
 text or a zip of its files. Signed out, the app is a welcome and the
 sign-in buttons only; everything else is for signed-in users (with
 Google, or with Apple on iOS). Signing in
 also syncs the user's events with the cloud, so they're on every device
-the user signs in on. With TabScan Premium, scans are also transcribed in
+the user signs in on. With TabCam Premium, scans are also transcribed in
 the cloud as they sync.
 
 ## Features
@@ -72,10 +72,10 @@ the cloud as they sync.
   find it when they sign in. A share API (Lambda, DynamoDB, an HTTP API
   with Google and Apple JWT authorizers) keeps the grants and hands out
   credentials for just that capture's folder.
-- [TabScan Premium: cloud OCR](cloud-ocr.md): premium users' pages
+- [TabCam Premium: cloud OCR](cloud-ocr.md): premium users' pages
   transcribed in AWS Lambda as they sync (Tesseract, PaddleOCR and
   RapidOCR per string line, voted), the text tab filled in by itself;
-  premium is rbacr's `tabscan/premium` role (Substack subscription or
+  premium is rbacr's `tabcam/premium` role (Substack subscription or
   voucher); the upgrade offer for everyone else, on the web only (the
   store apps show no purchase links).
 - [Localization](localization.md): the app in English, Spanish and
@@ -85,7 +85,7 @@ the cloud as they sync.
   numbers, in scanner corners; how the platform icons are generated.
 - [Platforms](platforms.md): Android, iOS and the web, and what each can do.
 - [Privacy](privacy.md): the privacy policy at
-  https://tabscan.nu01.com/privacy (linked from the index page and About),
+  https://tabcam.nu01.com/privacy (linked from the index page and About),
   what it says and what it's based on; the iOS privacy manifest and
   export compliance declaration.
 - [Maintenance mode](maintenance-mode.md): administrators switch it on
@@ -98,6 +98,6 @@ the cloud as they sync.
 - [Release builds](release.md): versions, tags and the Release workflow.
 - [App stores](app-stores.md): publishing to Google Play and the App
   Store under personal accounts: the status of each step, the Android
-  upload key and App Bundle, the store listings drafts in `tabscan_store/`.
-- [Deploy](deploy.md): the web app at https://tabscan.nu01.com and the
-  release candidate at https://rc.tabscan.nu01.com.
+  upload key and App Bundle, the store listings drafts in `tabcam_store/`.
+- [Deploy](deploy.md): the web app at https://tabcam.nu01.com and the
+  release candidate at https://rc.tabcam.nu01.com.

@@ -43,7 +43,7 @@ if [[ "${DRY_RUN:-}" == 1 ]]; then
   echo "Dry run: not tagged."
   exit 0
 fi
-git tag --annotate "$tag" --message "tabscan $tag"
+git tag --annotate "$tag" --message "tabcam $tag"
 git push --quiet origin "refs/tags/$tag"
-echo "Pushed $tag. The Release workflow publishes it as tabscan-$tag:"
+echo "Pushed $tag. The Release workflow publishes it as tabcam-$tag:"
 echo "  $(git remote get-url origin | sed -e 's#^git@github.com:#https://github.com/#' -e 's#\.git$##')/actions/workflows/release.yml"

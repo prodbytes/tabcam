@@ -5,7 +5,7 @@
 # Targets: web, android (APK), appbundle (Android App Bundle, for Google
 # Play), ios, all (every platform this host can build: web, android, ios),
 # clean. Android release builds are signed with the upload key when
-# tabscan_app/android/key.properties exists (scripts/android-keystore.sh),
+# tabcam_app/android/key.properties exists (scripts/android-keystore.sh),
 # else with the debug key. Settings, from the environment or `make VAR=value`:
 #   MODE          release (default), profile or debug
 #   IOS_CODESIGN  1 to sign the iOS build (needs a signing team in Xcode);
@@ -27,12 +27,12 @@ case "$MODE" in
   *) echo "error: MODE must be release, profile or debug (got '$MODE')" >&2; exit 2 ;;
 esac
 
-cd "$(dirname "$0")/../tabscan_app"
+cd "$(dirname "$0")/../tabcam_app"
 source ../scripts/dart-defines.sh
 source ../scripts/version.sh
-# TABSCANNER_VERSION: X.Y.Z, shown in the About dialog.
+# TABCAM_VERSION: X.Y.Z, shown in the About dialog.
 BUILD_ARGS=(--build-name "$VERSION" --build-number "$BUILD_NUMBER" ${DART_DEFINES[@]+"${DART_DEFINES[@]}"}
-  --dart-define="TABSCANNER_VERSION=$VERSION")
+  --dart-define="TABCAM_VERSION=$VERSION")
 
 # can_build <target>: whether this host's OS can build the target.
 can_build() {
@@ -54,21 +54,21 @@ build() {
       local base=()
       [[ -n "${WEB_BASE_HREF:-}" ]] && base=(--base-href "$WEB_BASE_HREF")
       flutter build web "--$MODE" ${base[@]+"${base[@]}"} "${BUILD_ARGS[@]}"
-      echo "==> web: tabscan_app/build/web/"
+      echo "==> web: tabcam_app/build/web/"
       ;;
     android)
       flutter build apk "--$MODE" "${BUILD_ARGS[@]}"
-      echo "==> android: tabscan_app/build/app/outputs/flutter-apk/app-$MODE.apk"
+      echo "==> android: tabcam_app/build/app/outputs/flutter-apk/app-$MODE.apk"
       ;;
     appbundle)
       flutter build appbundle "--$MODE" "${BUILD_ARGS[@]}"
-      echo "==> appbundle: tabscan_app/build/app/outputs/bundle/$MODE/app-$MODE.aab"
+      echo "==> appbundle: tabcam_app/build/app/outputs/bundle/$MODE/app-$MODE.aab"
       ;;
     ios)
       local sign=--no-codesign
       [[ "${IOS_CODESIGN:-}" == 1 ]] && sign=--codesign
       flutter build ios "--$MODE" "$sign" "${BUILD_ARGS[@]}"
-      echo "==> ios: tabscan_app/build/ios/iphoneos/Runner.app"
+      echo "==> ios: tabcam_app/build/ios/iphoneos/Runner.app"
       ;;
   esac
 }

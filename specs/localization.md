@@ -18,18 +18,18 @@ The app speaks **English**, **Spanish** (neutral Latin American) and
 ## The texts
 
 - Every text the app shows is in the ARB files in
-  [tabscan_app/lib/l10n/](../tabscan_app/lib/l10n): `app_en.arb` (the
+  [tabcam_app/lib/l10n/](../tabcam_app/lib/l10n): `app_en.arb` (the
   template, each text with a description), `app_es.arb`, `app_pt.arb`.
-  Flutter's gen-l10n ([l10n.yaml](../tabscan_app/l10n.yaml)) generates
+  Flutter's gen-l10n ([l10n.yaml](../tabcam_app/l10n.yaml)) generates
   `AppLocalizations` from them on `flutter pub get` and builds; the
   generated files are committed beside them.
 - Widgets read them with `context.l10n` (English when a test pumps a
   widget without localizations); code without a widget (services' messages
   shown later) uses `appL10n`, the language the app last showed
-  ([lib/l10n/language.dart](../tabscan_app/lib/l10n/language.dart)).
+  ([lib/l10n/language.dart](../tabcam_app/lib/l10n/language.dart)).
 - Counts use ICU plurals; names, addresses and dates go in as
   placeholders.
-- Kept as they are: the product names (TabScan, TabScan Premium), what's
+- Kept as they are: the product names (TabCam, TabCam Premium), what's
   saved or synced (event titles, file names), tab text, and the log.
 - The maintenance message follows the device's language.
 

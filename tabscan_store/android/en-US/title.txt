@@ -1,1 +1,0 @@
-TabScan: Guitar Tab Scanner

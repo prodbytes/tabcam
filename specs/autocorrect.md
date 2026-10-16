@@ -8,7 +8,7 @@ changes until they do).
 
 ## Lining the tab up
 
-`reformatTab` ([lib/recognition/tab_layout.dart](../tabscan_app/lib/recognition/tab_layout.dart)),
+`reformatTab` ([lib/recognition/tab_layout.dart](../tabcam_app/lib/recognition/tab_layout.dart)),
 on the text as it is, saved as the user's edit:
 
 - Two or more tab lines in a row are a staff; every other line (title,
@@ -55,15 +55,15 @@ on the text as it is, saved as the user's edit:
    it, a shorter or removed one leaves dashes. A correction whose note
    isn't where it was any more is skipped.
 
-`CloudOcr.autocorrect` ([lib/cloud/cloud_ocr.dart](../tabscan_app/lib/cloud/cloud_ocr.dart))
-calls `POST /autocorrect` ([lib/cloud/ocr_api.dart](../tabscan_app/lib/cloud/ocr_api.dart))
+`CloudOcr.autocorrect` ([lib/cloud/cloud_ocr.dart](../tabcam_app/lib/cloud/cloud_ocr.dart))
+calls `POST /autocorrect` ([lib/cloud/ocr_api.dart](../tabcam_app/lib/cloud/ocr_api.dart))
 with the user's Google ID token and waits up to 5 minutes. The app's log
 leaves the text out of the request line.
 
 ## The service
 
 `POST /autocorrect {eventId, song, text}` on the cloud OCR service's
-function URL ([tabscan_locr/locr/autocorrect.py](../tabscan_locr/locr/autocorrect.py)):
+function URL ([tabcam_locr/locr/autocorrect.py](../tabcam_locr/locr/autocorrect.py)):
 a signed-in user's Google ID token, Premium only (402 otherwise), a text
 of up to 20,000 characters and a song name of up to 200 (400 otherwise).
 
@@ -95,16 +95,16 @@ of up to 20,000 characters and a song name of up to 200 (400 otherwise).
    notes}`. 503 when no API key is configured, 502 when Claude or the
    web fails.
 
-The Claude API key is in Secrets Manager (`tabscan/anthropic-api-key`);
-[tabscan_infra/ocr.yaml](../tabscan_infra/ocr.yaml) gives
-`tabscan-ocr-api` read access to it when `AnthropicKeySecretArn` is set
+The Claude API key is in Secrets Manager (`tabcam/anthropic-api-key`);
+[tabcam_infra/ocr.yaml](../tabcam_infra/ocr.yaml) gives
+`tabcam-ocr-api` read access to it when `AnthropicKeySecretArn` is set
 (the deploy script finds it by name; without it, Fix answers 503).
 
 ## Troubleshooting log
 
-- **App**: `TabScan: OCR API: POST .../autocorrect` with the event and
+- **App**: `TabCam: OCR API: POST .../autocorrect` with the event and
   song (not the text), then its status, time and answer;
-  `TabScan: auto-correct failed:` with the error.
+  `TabCam: auto-correct failed:` with the error.
 - **Service**: the `http` line (path, status, identity, premium, the
   answer), and an `autocorrect` line: event, found, the notes parsed,
   corrections proposed and kept, and token and search usage.

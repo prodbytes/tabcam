@@ -8,8 +8,8 @@ build without sign-in) it copies on the tap itself, before anything else
 pass comes after); "Link copied" says it's done. Signed out, it asks to
 sign in first ([signed out](cloud-sync.md#signed-out)), then copies.
 
-- The link is `https://tabscan.nu01.com/app/?c=<capture id>&k=<key>`
-  ([`CaptureLink`](../tabscan_app/lib/export/capture_link.dart)): the
+- The link is `https://tabcam.nu01.com/app/?c=<capture id>&k=<key>`
+  ([`CaptureLink`](../tabcam_app/lib/export/capture_link.dart)): the
   capture's ID, and its **link key**, which lets anyone holding the link
   see the capture, read only ([opening a link](#opening-a-link)). On the
   web it's to the site the app runs on (the RC's, or a local one); in the
@@ -50,8 +50,8 @@ those [shared with them](shared-captures.md). If it isn't there yet:
 - in a build without cloud sync, it says the capture isn't on this
   device.
 
-**By its link** ([PublicCaptureScreen](../tabscan_app/lib/screens/public_capture_screen.dart),
-[PublicCaptures](../tabscan_app/lib/cloud/public_capture.dart)): the app
+**By its link** ([PublicCaptureScreen](../tabcam_app/lib/screens/public_capture_screen.dart),
+[PublicCaptures](../tabcam_app/lib/cloud/public_capture.dart)): the app
 asks the share API, without signing in, for read-only credentials to the
 capture's folder (`POST /public/{captureId}/credentials` with the key),
 then downloads its `event.json` and files into a library of its own, in
@@ -80,46 +80,46 @@ people the owner shares it with ([Share with people](shared-captures.md)).
 Chat apps (WhatsApp, iMessage, Slack, Telegram, Discord, Teams, X,
 LinkedIn, Facebook...) preview a link by fetching it with their own
 crawler, which reads the page's Open Graph tags and never runs the app.
-So a capture's link previews as the capture, not as "TabScan":
+So a capture's link previews as the capture, not as "TabCam":
 
-- The site's CloudFront function ([site.yaml](../tabscan_infra/site.yaml))
+- The site's CloudFront function ([site.yaml](../tabcam_infra/site.yaml))
   sends a known crawler (by its user agent) asking for
   `/app/?c=<id>&k=<key>` (ID and key well formed) to
   `/preview/<id>/<key>` (a 302). People always get the app; so does any
   other request.
 - `/preview/*` comes from the share API (`GET /preview/{captureId}/{key}`,
-  no sign-in; [index.py](../tabscan_api/shares/index.py)), cached by
+  no sign-in; [index.py](../tabcam_api/shares/index.py)), cached by
   CloudFront for 5 minutes. For a key that opens the capture, it reads
   its `event.json` with the link's own read-only credentials and answers
   a small page: the title ("<title> – <artist>"), a description of what
   it holds ("<artist> · 2 pages, 1 PDF, 1 link, a text tab. Shared with
-  TabScan."; images left out when hidden), the link itself as `og:url`
+  TabCam."; images left out when hidden), the link itself as `og:url`
   and the app's icon as the image. A wrong key, a deleted capture or a
-  malformed link: TabScan's own title and description. Someone who lands
+  malformed link: TabCam's own title and description. Someone who lands
   on the page goes on to the app (a script; crawlers don't run it).
-- The site names itself to the API (`x-tabscan-site`, the RC's or
+- The site names itself to the API (`x-tabcam-site`, the RC's or
   production's), so the preview links back to the same site. It's on when
   the site is deployed with the share API's domain (`ShareApiDomain`,
-  from `TABSCANNER_SHARE_API_URL`; [deploy](deploy.md)).
+  from `TABCAM_SHARE_API_URL`; [deploy](deploy.md)).
 
 A rename shows in new previews within 5 minutes (chat apps keep their
 own copy of a preview already shown).
 
 ## Android App Links
 
-On Android, `https://tabscan.nu01.com/app…` and
-`https://rc.tabscan.nu01.com/app…` open in the TabScan app instead of
+On Android, `https://tabcam.nu01.com/app…` and
+`https://rc.tabcam.nu01.com/app…` open in the TabCam app instead of
 the browser (an `autoVerify` intent filter; every web app address, not
 only capture links: without `?c=` the app just opens). A link that
 launches the app, or reaches it while it runs, goes to `IncomingLinks`
-([lib/export/incoming_links.dart](../tabscan_app/lib/export/incoming_links.dart)),
+([lib/export/incoming_links.dart](../tabcam_app/lib/export/incoming_links.dart)),
 a binding observer added before `runApp`, so the Navigator never takes
 the link for a named route; Home then opens the capture as above. The
 app's initial route is always `/`.
 
 Android opens them in the app only when the site vouches for the app's
 signing key: `https://<site>/.well-known/assetlinks.json` (from
-[tabscan_index/site/.well-known/](../tabscan_index/site/.well-known/assetlinks.json),
+[tabcam_index/site/.well-known/](../tabcam_index/site/.well-known/assetlinks.json),
 uploaded by every deploy, both sites) lists the SHA-256 fingerprints of
 the keys allowed. It lists the maintainer's debug key (builds without the
 upload key) and the upload key, which signs release builds: those

@@ -1,0 +1,279 @@
+import 'dart:io';
+
+import 'package:cross_file/cross_file.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
+import 'package:tabcam_app/capture/media.dart';
+import 'package:tabcam_app/library/library.dart';
+import 'package:tabcam_app/library/capture_event.dart';
+import 'package:tabcam_app/library/event_store_io.dart';
+import 'package:tabcam_app/processing/page_filter.dart';
+
+Uint8List _jpeg(int width, int height) => img.encodeJpg(
+  img.Image(width: width, height: height)..clear(img.ColorRgb8(240, 240, 240)),
+);
+
+void main() {
+  late Directory root;
+
+  setUp(() async => root = await Directory.systemTemp.createTemp('tabcam'));
+  tearDown(() => root.delete(recursive: true));
+
+  test('events survive a restart, with pages, filters and text', () async {
+    final library = Library(PlatformEventStore(root));
+    await library.load();
+    var event = await library.create([_jpeg(40, 60), _jpeg(40, 60)]);
+    event = await library.update(
+      event.copyWith(
+        title: 'My riff',
+        artist: 'Me',
+        tabText: 'e|--0--|',
+        pages: [
+          event.pages.first.copyWith(filter: PageFilter.original),
+          event.pages.last,
+        ],
+      ),
+    );
+
+    final reopened = Library(PlatformEventStore(root));
+    await reopened.load();
+    final loaded = reopened.byId(event.id)!;
+    expect(loaded.title, 'My riff');
+    expect(loaded.artist, 'Me');
+    expect(loaded.tabText, 'e|--0--|');
+    expect(loaded.pages.map((p) => p.filter), [
+      PageFilter.original,
+      PageFilter.tab,
+    ]);
+    expect(await reopened.original(loaded, loaded.pages.first), isNotEmpty);
+  });
+
+  test('deleting a page or an event removes its files', () async {
+    final library = Library(PlatformEventStore(root));
+    await library.load();
+    var event = await library.create([_jpeg(10, 10), _jpeg(10, 10)]);
+    event = await library.deletePage(event, event.pages.first);
+    expect(event.pages, hasLength(1));
+    expect(Directory('${root.path}/${event.id}').listSync(), hasLength(2));
+
+    await library.delete(event);
+    expect(library.events, isEmpty);
+    expect(Directory('${root.path}/${event.id}').existsSync(), isFalse);
+  });
+
+  test('rotating a page turns it a quarter turn, as a new page', () async {
+    final library = Library(PlatformEventStore(root));
+    await library.load();
+    final event = await library.create([_jpeg(40, 60)]);
+    final before = event.pages.single;
+    final rotated = await library.rotatePage(event, before);
+    final after = rotated.pages.single;
+    // Page files never change once written (cloud sync relies on it).
+    expect(after.id, isNot(before.id));
+    expect(after.filter, before.filter);
+    expect(await library.hasPage(event.id, before), isFalse);
+    final page = img.decodeImage(await library.original(rotated, after))!;
+    expect((page.width, page.height), (60, 40));
+  });
+
+  test('an event that never synced is deleted outright', () async {
+    final library = Library(PlatformEventStore(root));
+    await library.load();
+    final event = await library.create([_jpeg(40, 60)]);
+    await library.delete(event);
+    expect(library.all, isEmpty);
+    final reopened = Library(PlatformEventStore(root));
+    await reopened.load();
+    expect(reopened.all, isEmpty);
+  });
+
+  test('a synced event leaves a tombstone, without its pages', () async {
+    final library = Library(PlatformEventStore(root));
+    await library.load();
+    final event = await library.create([_jpeg(40, 60)]);
+    await library.setOwner(event, 'us-east-1:me');
+    await library.delete(library.all.single);
+    expect(library.events, isEmpty);
+    final reopened = Library(PlatformEventStore(root));
+    await reopened.load();
+    expect(reopened.events, isEmpty);
+    final tombstone = reopened.all.single;
+    expect(tombstone.isDeleted, isTrue);
+    expect(tombstone.owner, 'us-east-1:me');
+    expect(await reopened.hasPage(event.id, event.pages.single), isFalse);
+  });
+
+  test('changes bump updated and count as local changes', () async {
+    var now = DateTime(2026, 10, 10, 12);
+    final library = Library(PlatformEventStore(root), () => now);
+    await library.load();
+    final event = await library.create([_jpeg(40, 60)]);
+    final changes = library.localChanges.value;
+    now = now.add(const Duration(minutes: 1));
+    final renamed = await library.update(event.copyWith(title: 'Riff'));
+    expect(renamed.updated, now);
+    expect(library.localChanges.value, changes + 1);
+  });
+
+  test('IDs that could name other files are refused', () {
+    expect(() => checkId('../etc'), throwsFormatException);
+    expect(
+      () => CaptureEvent.fromJson({
+        'id': '../x',
+        'created': '2026-01-01T00:00:00Z',
+      }),
+      throwsFormatException,
+    );
+  });
+
+  test('the Tab filter makes a black-and-white page', () async {
+    final page = img.Image(width: 120, height: 80)
+      ..clear(img.ColorRgb8(200, 190, 170));
+    img.drawLine(
+      page,
+      x1: 10,
+      y1: 40,
+      x2: 110,
+      y2: 40,
+      color: img.ColorRgb8(30, 30, 30),
+      thickness: 2,
+    );
+    final out = img.decodePng(
+      await applyFilter(img.encodeJpg(page), PageFilter.tab),
+    )!;
+    expect(out.getPixel(60, 40).r, 0);
+    expect(out.getPixel(60, 10).r, 255);
+  });
+
+  test('photos and videos are added as pages, videos as they are', () async {
+    final library = Library(PlatformEventStore(root));
+    await library.load();
+    var event = await library.create([_jpeg(10, 10)]);
+    final video = Uint8List.fromList(List.generate(64, (i) => i));
+    final pick = MediaPick.of([
+      XFile.fromData(_jpeg(20, 10), path: 'chord.JPG'),
+      XFile.fromData(video, path: 'lesson.mov'),
+      XFile.fromData(Uint8List(4), path: 'notes.txt'),
+    ]);
+    expect(pick.skipped, 1);
+    event = await library.addMedia(event, pick.media);
+
+    expect(event.pages.map((p) => (p.kind, p.extension)), [
+      (PageKind.image, 'img'),
+      (PageKind.image, 'jpg'),
+      (PageKind.video, 'mov'),
+    ]);
+    final saved = event.pages.last;
+    expect(await library.original(event, saved), video);
+    expect(await library.filtered(event, saved), video);
+    expect(await library.path(event, saved), endsWith('/${saved.fileName}'));
+
+    // They survive a restart.
+    final reopened = Library(PlatformEventStore(root));
+    await reopened.load();
+    expect(reopened.byId(event.id)!.pages.last.isVideo, isTrue);
+  });
+
+  test('an added photo is cropped to its page; videos and photos without '
+      'one are kept as picked', () async {
+    final cropped = Uint8List.fromList([9, 9, 9]);
+    final seen = <int>[];
+    final library = Library(PlatformEventStore(root), null, (photo) async {
+      seen.add(photo.length);
+      // The first photo has a page to crop to, the second hasn't.
+      return seen.length == 1 ? cropped : null;
+    });
+    await library.load();
+    var event = await library.create(const []);
+    final second = _jpeg(30, 20);
+    final video = Uint8List.fromList(List.generate(16, (i) => i));
+    event = await library.addMedia(
+      event,
+      MediaPick.of([
+        XFile.fromData(_jpeg(20, 10), path: 'riff.png'),
+        XFile.fromData(second, path: 'chord.jpeg'),
+        XFile.fromData(video, path: 'lesson.mov'),
+      ]).media,
+    );
+    // Photos only go to the cropper, not videos.
+    expect(seen, hasLength(2));
+    final [first, kept, clip] = event.pages;
+    expect((first.kind, first.extension), (PageKind.image, 'jpg'));
+    expect(await library.original(event, first), cropped);
+    expect((kept.kind, kept.extension), (PageKind.image, 'jpeg'));
+    expect(await library.original(event, kept), second);
+    expect(await library.original(event, clip), video);
+  });
+
+  test('a crop that fails keeps the photo as picked', () async {
+    final library = Library(
+      PlatformEventStore(root),
+      null,
+      (_) async => throw StateError('no'),
+    );
+    await library.load();
+    final photo = _jpeg(20, 10);
+    final event = await library.addMedia(
+      await library.create(const []),
+      MediaPick.of([XFile.fromData(photo, path: 'riff.jpg')]).media,
+    );
+    expect(await library.original(event, event.pages.single), photo);
+  });
+
+  test('media is recognized by extension, then by MIME type', () {
+    expect(Media.of(XFile('a/clip.MP4'))!.kind, PageKind.video);
+    expect(Media.of(XFile('a/page.heic'))!.extension, 'heic');
+    expect(
+      Media.of(XFile('a/upload', mimeType: 'video/quicktime'))!.extension,
+      'mov',
+    );
+    expect(Media.of(XFile('a/notes.docx')), isNull);
+  });
+
+  test('events saved before videos load as image pages', () {
+    final page = EventPage.fromJson({'id': 'abc', 'filter': 'original'});
+    expect((page.kind, page.extension), (PageKind.image, 'img'));
+  });
+
+  test('extensions that could name other files are refused', () {
+    expect(
+      () => EventPage.fromJson({'id': 'abc', 'extension': '../x'}),
+      throwsFormatException,
+    );
+  });
+
+  test('a clone is a new event of its own, with copies of the pages', () async {
+    final library = Library(PlatformEventStore(root));
+    await library.load();
+    var event = await library.create([_jpeg(40, 60)]);
+    event = await library.addLink(event, Uri.parse('https://example.com/a'));
+    event = await library.update(
+      event.copyWith(title: 'My riff', artist: 'Me', tabText: 'e|--0--|'),
+    );
+    await library.setOwner(event, 'us-east-1:me');
+
+    final copy = await library.clone(library.byId(event.id)!);
+    expect(copy.id, isNot(event.id));
+    expect(copy.title, 'My riff (copy)');
+    expect(copy.artist, 'Me');
+    expect(copy.tabText, 'e|--0--|');
+    expect(copy.owner, isNull);
+    expect(copy.pages.map((p) => p.kind), [PageKind.image, PageKind.link]);
+    expect(copy.pages.first.id, isNot(event.pages.first.id));
+    expect(copy.pages.last.url.toString(), 'https://example.com/a');
+    expect(
+      await library.original(copy, copy.pages.first),
+      await library.original(event, event.pages.first),
+    );
+    expect(library.events.first.id, copy.id);
+
+    // The original goes; the copy keeps its pages.
+    await library.delete(library.byId(event.id)!);
+    final reopened = Library(PlatformEventStore(root));
+    await reopened.load();
+    final kept = reopened.events.single;
+    expect(kept.id, copy.id);
+    expect(await reopened.hasPage(kept.id, kept.pages.first), isTrue);
+  });
+}

@@ -1,5 +1,5 @@
 {
-  "name": "TabScan",
+  "name": "TabCam",
   "build": {
     "dockerfile": "Containerfile",
     "context": ".."
@@ -14,7 +14,7 @@
   // address, not loopback: the dev servers must listen on every interface
   // for its CloudFront to reach them (only the container sees them).
   "containerEnv": {
-    "TABSCANNER_BIND_HOST": "0.0.0.0"
+    "TABCAM_BIND_HOST": "0.0.0.0"
   },
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}

@@ -12,23 +12,23 @@
 set -euo pipefail
 
 source "$(dirname "$0")/android-device.sh"
-package=com.nu01.tabscan
+package=com.nu01.tabcam
 adb_s() { "$adb" -s "$serial" "$@"; }
 
-cd "$(dirname "$0")/../tabscan_app"
+cd "$(dirname "$0")/../tabcam_app"
 source ../scripts/dart-defines.sh
 source ../scripts/version.sh
 # The version code stays the pubspec's, as `flutter run` builds it, so
 # either can install over the other without uninstalling (losing data).
 flutter build apk --release ${DART_DEFINES[@]+"${DART_DEFINES[@]}"} \
-  --dart-define="TABSCANNER_VERSION=$VERSION"
+  --dart-define="TABCAM_VERSION=$VERSION"
 
 echo "Installing $VERSION on $serial" >&2
 if ! out="$(adb_s install -r build/app/outputs/flutter-apk/app-release.apk 2>&1)"; then
   echo "$out" >&2
   if [[ "$out" == *INSTALL_FAILED_UPDATE_INCOMPATIBLE* ]]; then
     # Another key signed the installed app (the debug key, or Google Play's).
-    echo "error: the installed TabScan is signed with another key; uninstall it" \
+    echo "error: the installed TabCam is signed with another key; uninstall it" \
       "(adb uninstall $package: its events on the phone go, synced ones come back" \
       "at sign-in) and run this again" >&2
   fi
@@ -42,7 +42,7 @@ adb_s shell am start -f 0x10008000 -n "$package/.MainActivity" >/dev/null
 for _ in $(seq 1 20); do
   pid="$(adb_s shell pidof "$package" | tr -d '\r' || true)"
   if [[ -n "$pid" ]]; then
-    echo "TabScan $VERSION is running on $serial (process $pid)" >&2
+    echo "TabCam $VERSION is running on $serial (process $pid)" >&2
     exit 0
   fi
   sleep 1

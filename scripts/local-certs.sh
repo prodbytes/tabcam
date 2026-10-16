@@ -7,16 +7,16 @@
 #
 # The certificate is signed by mkcert's local CA (`mkcert -CAROOT`). mkcert
 # creates the CA on first use; browsers trust it only after a one-time
-# `mkcert -install` (see tabscan_floci/README.md). The files live in
-# tabscan_floci/certs/, which git ignores: never commit the key.
+# `mkcert -install` (see tabcam_floci/README.md). The files live in
+# tabcam_floci/certs/, which git ignores: never commit the key.
 set -euo pipefail
 
-CERT_DIR="$(cd "$(dirname "$0")/.." && pwd)/tabscan_floci/certs"
-CERT="$CERT_DIR/tabscan.pem"
-KEY="$CERT_DIR/tabscan-key.pem"
-# local.tabscan.nu01.com is a public name that resolves to 127.0.0.1 (Route 53,
-# zone tabscan.nu01.com), for OAuth origins that must end in a public TLD.
-NAMES=("${TABSCANNER_PUBLIC_HOST:-local.tabscan.nu01.com}" tabscan.localhost '*.tabscan.localhost' localhost 127.0.0.1 ::1)
+CERT_DIR="$(cd "$(dirname "$0")/.." && pwd)/tabcam_floci/certs"
+CERT="$CERT_DIR/tabcam.pem"
+KEY="$CERT_DIR/tabcam-key.pem"
+# local.tabcam.nu01.com is a public name that resolves to 127.0.0.1 (Route 53,
+# zone tabcam.nu01.com), for OAuth origins that must end in a public TLD.
+NAMES=("${TABCAM_PUBLIC_HOST:-local.tabcam.nu01.com}" tabcam.localhost '*.tabcam.localhost' localhost 127.0.0.1 ::1)
 
 if ! command -v mkcert >/dev/null 2>&1; then
     echo "local-certs: 'mkcert' is not on PATH; run inside devbox (devbox shell / devbox services up)" >&2

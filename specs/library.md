@@ -1,6 +1,6 @@
 # Library
 
-The **Home** tab ([navigation](navigation.md)), titled **TabScan**.
+The **Home** tab ([navigation](navigation.md)), titled **TabCam**.
 
 Home, like the whole app, is for signed-in users: signed out, the app is
 the [welcome](navigation.md#signed-out-the-welcome) alone.
@@ -34,7 +34,7 @@ the [welcome](navigation.md#signed-out-the-welcome) alone.
   down yet).
 - **Search**: a field above the cards, "Search captures" (a magnifier;
   an ✕, "Clear search", once something is typed), keeps only the
-  captures that match as the user types ([lib/library/search.dart](../tabscan_app/lib/library/search.dart)):
+  captures that match as the user types ([lib/library/search.dart](../tabcam_app/lib/library/search.dart)):
   every word typed must be somewhere in the title, the artist, the text
   tab, the files' names, the links (title and address) or who shared it,
   case and accents aside ("cancion" finds "Canción"). The sections stay,

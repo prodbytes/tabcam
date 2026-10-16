@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Checks the store listings in tabscan_store/ against Google Play's and
+# Checks the store listings in tabcam_store/ against Google Play's and
 # the App Store's limits: each file exists, isn't empty and fits its
 # length (characters, or bytes for the iOS keywords; a trailing newline
 # isn't counted). Exits 1 if any check fails.
 #
-#   bash scripts/store-metadata-check.sh [store dir]   default: tabscan_store
+#   bash scripts/store-metadata-check.sh [store dir]   default: tabcam_store
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
-store="${1:-tabscan_store}"
+store="${1:-tabcam_store}"
 # Count characters, not bytes, in UTF-8.
 export LC_ALL=en_US.UTF-8
 
