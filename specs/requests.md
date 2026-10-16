@@ -1038,3 +1038,12 @@ spec.
    show the system's "save as" (`file_picker`). On a phone narrower than
    600 px, Rename, Download and Delete move into a ⋮ menu on each row
    ([event screen](event-screen.md)).
+14. **Optimize the OCR Lambda: increase its memory and scan until it stops
+   improving, to find the sweet spot of cost and performance.** Measured
+   `tabcam-ocr` on a made-up riff page at 2048, 2560 and 3008 MB (the
+   account's cap): 144 s, 106 s and 97 s a page warm, $4.79, $4.40 and
+   $4.77 per 1000 pages. It now has **2560 MB** (was 3008 MB): the
+   cheapest, 8% slower than the cap. Set live with the CLI and in
+   `tabcam_infra/ocr.yaml`, so the next deploy keeps it; the spec's
+   timeout (15 min) and per-page time were corrected too
+   ([cloud OCR](cloud-ocr.md#memory)).
