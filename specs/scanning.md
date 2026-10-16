@@ -71,7 +71,8 @@ Add menu scrolls on a small phone):
   `https` addresses with a host that has a dot (or `localhost`) are
   taken, anything else (`javascript:`, `file:`, `mailto:`, plain words)
   says "Enter a web address (https://…)". The title is trimmed; empty
-  means none.
+  means none. A link to a known tab site also adds a PDF print of its
+  page, read for tab ([tab site links](tab-site-links.md)).
 
 Picked files are recognized by extension, or else MIME type: images `jpg`,
 `jpeg`, `png`, `heic`, `heif`, `webp`, `gif`; videos `mp4`, `mov`, `m4v`,

@@ -8,6 +8,65 @@ String? _ascii(List<String> lines) =>
 
 void main() {
   group('asciiTab', () {
+    const staffA = [
+      'e|-0-----3-|',
+      'B|-1-----0-|',
+      'G|-2-----0-|',
+      'D|-2-----0-|',
+      'A|-0-----2-|',
+      'E|-------3-|',
+    ];
+    const staffB = [
+      'e|-5-----7-|',
+      'B|-5-----8-|',
+      'G|-6-----7-|',
+      'D|-7-----9-|',
+      'A|-7-----9-|',
+      'E|-5-----7-|',
+    ];
+
+    test('staves one under another, named, are two staves', () {
+      expect(
+        _ascii([...staffA, ...staffB]),
+        '${staffA.join('\n')}\n\n${staffB.join('\n')}',
+      );
+    });
+
+    test('a bass staff (four strings) and the next', () {
+      const bass = ['G|-0---|', 'D|-2---|', 'A|-2---|', 'E|-0---|'];
+      expect(
+        _ascii([...bass, ...bass]),
+        '${bass.join('\n')}\n\n${bass.join('\n')}',
+      );
+    });
+
+    test('high and low strings both named E stay one staff', () {
+      const lines = [
+        'E|-0-----3-|',
+        'B|-1-----0-|',
+        'G|-2-----0-|',
+        'D|-2-----0-|',
+        'A|-0-----2-|',
+        'E|-------3-|',
+      ];
+      expect(_ascii(lines)!.split('\n'), hasLength(6));
+    });
+
+    test('unnamed staves a blank line apart (a PDF) are two staves', () {
+      final lines = [
+        for (final (i, l) in [...staffA, ...staffB].indexed)
+          OcrLine(
+            l.substring(1),
+            left: 10,
+            right: 110,
+            // 12 apart, and a blank line's 12 more between the staves.
+            top: i * 12.0 + (i >= 6 ? 12 : 0),
+            bottom: i * 12.0 + (i >= 6 ? 12 : 0) + 10,
+          ),
+      ];
+      expect(asciiTab(lines)!.split('\n\n'), hasLength(2));
+    });
+
     test('keeps a clean text tab as it is, its title too', () {
       const lines = [
         'Verse riff',

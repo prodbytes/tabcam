@@ -17,6 +17,8 @@ api (tabcam-ocr-api), light: it never loads the OCR engines.
       POST /autocorrect {"eventId", "song", "text"}: checks a text tab
                         against the song's tab found online (autocorrect.py)
                         and answers with per-note corrections
+      POST /page        {"url"}: a tab site's page, for the web app, which
+                        can't fetch other sites' pages (pages.py)
 
 ocr (tabcam-ocr), heavy: reads one page and writes its transcription,
 <identity>/ocr/<event id>/<page id>.json, which the app reads.
@@ -218,6 +220,8 @@ def on_http(event):
         raise
     body = json.loads(reply["body"])
     body.pop("email", None)
+    if "html" in body:  # a fetched page: its size only
+        body["html"] = len(body["html"])
     log("http", **request, status=reply["statusCode"],
         ms=round((time.monotonic() - start) * 1000), reply=body)
     return reply
@@ -225,7 +229,7 @@ def on_http(event):
 
 def _on_http(event, method, path, request):
     from .auth import Unauthorized, Unsupported
-    if method != "POST" or path not in ("/account", "/transcribe", "/autocorrect"):
+    if method != "POST" or path not in ("/account", "/transcribe", "/autocorrect", "/page"):
         return _reply(404, {"error": "not found"})
     auth = {k.lower(): v for k, v in (event.get("headers") or {}).items()}.get("authorization", "")
     if not auth.lower().startswith("bearer "):
@@ -267,10 +271,12 @@ def _on_http(event, method, path, request):
         if event.get("isBase64Encoded"):
             body = base64.b64decode(body)
         body = json.loads(body)
-        event_id = keys.check_id(body.get("eventId"))
+        event_id = None if path == "/page" else keys.check_id(body.get("eventId"))
     except (ValueError, AttributeError) as e:
         request["bad_body"] = f"{type(e).__name__}: {e}"
         return _reply(400, {"error": "eventId needed"})
+    if path == "/page":
+        return _page(body, request)
     request["event"] = event_id
     if path == "/autocorrect":
         return _autocorrect(body, request)
@@ -280,6 +286,25 @@ def _on_http(event, method, path, request):
     again = body.get("again") is True
     request["again"] = again
     return _reply(200, {"queued": _transcribe_missing(identity, event_id, again)})
+
+
+def _page(body, request):
+    from .pages import FetchFailed, NotATabSite, check, fetch
+    try:
+        url = check(body.get("url") if isinstance(body, dict) else None)
+    except NotATabSite as e:
+        request["bad_body"] = str(e)
+        return _reply(400, {"error": "a tab site's page needed"})
+    request["url"] = url
+    try:
+        page = fetch(url)
+    except NotATabSite as e:  # redirected off the tab sites
+        request["redirected"] = str(e)
+        return _reply(502, {"error": "couldn't fetch the page"})
+    except FetchFailed as e:
+        request["failed"] = str(e)
+        return _reply(502, {"error": "couldn't fetch the page"})
+    return _reply(200, page)
 
 
 def _premium(emails):

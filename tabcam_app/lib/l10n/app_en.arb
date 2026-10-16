@@ -626,6 +626,46 @@
   "@eventByLink": {
     "description": "Banner on a capture opened by its link by someone it isn't shared with"
   },
+  "linkTabImporting": "Importing the page from {site}…",
+  "@linkTabImporting": {
+    "description": "While a tab site's link is imported as a PDF of its page",
+    "placeholders": {
+      "site": {
+        "type": "String",
+        "example": "Ultimate Guitar"
+      }
+    }
+  },
+  "linkTabImported": "The page from {site} was added as a PDF, to read its tab.",
+  "@linkTabImported": {
+    "description": "A tab site's page was imported as a PDF beside its link",
+    "placeholders": {
+      "site": {
+        "type": "String",
+        "example": "Ultimate Guitar"
+      }
+    }
+  },
+  "linkTabPremium": "Link added. On the web, importing the page from {site} needs TabCam Premium.",
+  "@linkTabPremium": {
+    "description": "On the web without Premium, a tab site's page isn't imported",
+    "placeholders": {
+      "site": {
+        "type": "String",
+        "example": "Ultimate Guitar"
+      }
+    }
+  },
+  "linkTabFailed": "Link added. Couldn't import the page from {site}.",
+  "@linkTabFailed": {
+    "description": "A tab site's page couldn't be fetched or had no tab text",
+    "placeholders": {
+      "site": {
+        "type": "String",
+        "example": "Ultimate Guitar"
+      }
+    }
+  },
   "linkSignIn": "Sign in",
   "@linkSignIn": {
     "description": "Button: leave a capture opened by its link, to sign in"

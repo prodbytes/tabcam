@@ -225,6 +225,16 @@ class CloudOcr extends ChangeNotifier {
     return api.autocorrect(token, eventId: event.id, song: song, text: text);
   }
 
+  /// Fetches a tab site's page for the web, where the browser can't
+  /// ([TabPageImporter]). Throws [OcrApiException] (402) for users without
+  /// Premium, 401 signed out.
+  Future<FetchedPage> fetchPage(Uri url) async {
+    final token = _token;
+    if (token == null) throw OcrApiException(401, 'sign in');
+    if (!premium) throw OcrApiException(402, 'premium only');
+    return api.page(token, url);
+  }
+
   /// A page the service reads: an image, or a PDF.
   static bool isImage(EventPage page) =>
       (page.isImage || page.isPdf) && imageExtensions.contains(page.extension);

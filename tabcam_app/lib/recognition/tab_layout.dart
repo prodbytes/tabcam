@@ -136,6 +136,7 @@ String? asciiTab(List<OcrLine> lines) {
 
   for (final raw in lines) {
     if (_tabBody(raw.text) != null) {
+      if (_startsStaff(staff, raw)) close();
       staff.add(raw);
       continue;
     }
@@ -168,6 +169,30 @@ String? asciiTab(List<OcrLine> lines) {
     }
   }
   return _join(pieces);
+}
+
+/// Whether [line], a tab line right under [staff], is a new staff's
+/// first: staves one under the other, with no chords or lyrics between
+/// them (a page printed from a tab site). It is when it's further below
+/// than the staff's strings are apart (a blank line), or when it has the
+/// staff's first string's name after a whole staff of strings (four, six
+/// or seven: bass, guitar, seven-string).
+bool _startsStaff(List<OcrLine> staff, OcrLine line) {
+  if (staff.isEmpty) return false;
+  String? name(OcrLine l) => _prefix.firstMatch(l.text)?.group(1);
+  final first = name(staff.first);
+  if (first != null &&
+      name(line) == first &&
+      const {4, 6, 7}.contains(staff.length)) {
+    return true;
+  }
+  if (staff.length < 2 || !line.located || !staff.every((l) => l.located)) {
+    return false;
+  }
+  final pitch = _median([
+    for (var i = 1; i < staff.length; i++) staff[i].y - staff[i - 1].y,
+  ]);
+  return pitch > 0 && line.y - staff.last.y > 1.6 * pitch;
 }
 
 /// A staff laid out by where OCR saw each character: its text, the center

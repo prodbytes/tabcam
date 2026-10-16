@@ -128,6 +128,15 @@ class AutocorrectResult {
   }
 }
 
+/// A tab site's page as the service fetched it, for the web
+/// ([TabPageImporter]).
+class FetchedPage {
+  const FetchedPage({required this.body, this.contentType});
+
+  final String body;
+  final String? contentType;
+}
+
 class OcrApiException implements Exception {
   OcrApiException(this.statusCode, this.message);
 
@@ -164,6 +173,10 @@ abstract interface class OcrApi {
     required String song,
     required String text,
   });
+
+  /// Fetches [url], a tab site's page ([tabSites]), for the web, where the
+  /// browser can't. Premium only.
+  Future<FetchedPage> page(String idToken, Uri url);
 }
 
 class HttpOcrApi implements OcrApi {
@@ -178,6 +191,7 @@ class HttpOcrApi implements OcrApi {
     String idToken, [
     Map<String, Object?>? body,
     Duration timeout = const Duration(seconds: 30),
+    bool quiet = false,
   ]) async {
     final watch = Stopwatch()..start();
     final url = baseUrl.resolve(path);
@@ -206,7 +220,8 @@ class HttpOcrApi implements OcrApi {
     }
     debugPrint(
       'TabCam: OCR API: POST $path -> ${r.statusCode} in '
-      '${watch.elapsedMilliseconds} ms: ${r.body}',
+      '${watch.elapsedMilliseconds} ms: '
+      '${quiet ? '${r.body.length} characters' : r.body}',
     );
     Map<String, Object?> json;
     try {
@@ -255,4 +270,19 @@ class HttpOcrApi implements OcrApi {
       const Duration(minutes: 5),
     ),
   );
+
+  @override
+  Future<FetchedPage> page(String idToken, Uri url) async {
+    final json = await _post(
+      '/page',
+      idToken,
+      {'url': '$url'},
+      const Duration(seconds: 30),
+      true,
+    );
+    return FetchedPage(
+      body: json['html'] as String? ?? '',
+      contentType: json['contentType'] as String?,
+    );
+  }
 }
