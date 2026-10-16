@@ -52,6 +52,9 @@ class Result:
     seconds: float = 0.0
     readings: dict = field(default_factory=dict)  # engine -> its lines
     timings: dict = field(default_factory=dict)  # engine -> seconds
+    # Notes read with little confidence, likely wrong: [line, column, note]
+    # in text (lines and columns from 0).
+    doubts: list = field(default_factory=list)
 
 
 class TooLarge(ValueError):
@@ -292,6 +295,60 @@ def place_tokens(reading, spans, line, width):
     return f"{reading[:reading.index('|')]}|{body.ljust(width, '-')}|"
 
 
+# While a text is put together, a doubtful note is wrapped in these (they
+# never come from OCR: private use), then unmark takes them out.
+OPEN, CLOSE = "\ue000", "\ue001"
+
+
+def doubtful(winner, readings):
+    """Per token of [winner] (one of [readings], the vote's pick): True
+    when no other reading has it (tokens aligned by edits): the engines
+    don't agree on it. Nothing is doubtful with one reading only."""
+    toks = tokens(winner)
+    others = list(readings)
+    others.remove(winner)
+    if not others:
+        return [False] * len(toks)
+    support = [0] * len(toks)
+    for other in others:
+        for op in Levenshtein.opcodes(toks, tokens(other)):
+            if op.tag == "equal":
+                for k in range(op.src_start, op.src_end):
+                    support[k] += 1
+    return [s == 0 for s in support]
+
+
+def mark(line, flags):
+    """A tab line with its flagged tokens (flags, per token) wrapped in
+    OPEN and CLOSE."""
+    head = line.index("|") + 1
+    out, at, k = line[:head], head, 0
+    for m in re.finditer(r"[^-|]+", line[head:]):
+        s, e = m.start() + head, m.end() + head
+        out += line[at:s]
+        out += f"{OPEN}{m.group()}{CLOSE}" if k < len(flags) and flags[k] else m.group()
+        at, k = e, k + 1
+    return out + line[at:]
+
+
+def unmark(text):
+    """[text] without OPEN and CLOSE, and where the notes between them are:
+    [[line, column, note]]."""
+    lines, doubts = [], []
+    for i, line in enumerate(text.split("\n")):
+        out = ""
+        while OPEN in line:
+            s = line.index(OPEN)
+            e = line.index(CLOSE, s)
+            out += line[:s]
+            note = line[s + 1:e]
+            doubts.append([i, len(out), note])
+            out += note
+            line = line[e + 1:]
+        lines.append(out + line)
+    return "\n".join(lines), doubts
+
+
 def vote(readings):
     """The reading closest to all the others (fewest token edits); ties go
     to the first engine."""
@@ -457,9 +514,13 @@ def transcribe_pdf(data, engines, read_page=None, vision=None, read_crop=None):
     for r in results:
         for k, v in r.timings.items():
             timings[k] = round(timings.get(k, 0) + v, 2)
+    doubts, top = [], 0
+    for r in found:
+        doubts += [[line + top, col, note] for line, col, note in r.doubts]
+        top += r.text.count("\n") + 1  # and the blank line between pages
     return Result("\n".join(r.text for r in found), staves=sum(r.staves for r in results),
                   lines=sum(r.lines for r in results), seconds=round(time.monotonic() - start, 2),
-                  timings=timings)
+                  timings=timings, doubts=doubts)
 
 
 def transcribe(data, engines, read_page=None, vision=None, read_crop=None):
@@ -492,7 +553,8 @@ def _drawn(gray, read_crop, read_page):
                                                       pad=0)]
     pieces.sort(key=lambda p: p[0])
     lines = sum(len(f[0]) for f in found)
-    return Result(join([(k, t) for _, k, t in pieces]) + "\n", staves=len(blocks), lines=lines)
+    text, doubts = unmark(join([(k, t) for _, k, t in pieces]) + "\n")
+    return Result(text, staves=len(blocks), lines=lines, doubts=doubts)
 
 
 def transcribe_image(img, engines, read_page=None, vision=None, read_crop=None):
@@ -536,7 +598,7 @@ def transcribe_image(img, engines, read_page=None, vision=None, read_crop=None):
     for g in groups:
         labels = LABELS.get(len(g), "")
         width = max(l.cols for l in g)
-        block = []
+        block, flags = [], []
         for j, _ in enumerate(g):
             label = labels[j] if labels else ""
             spans = note_spans(jobs[i][1], jobs[i][0])
@@ -545,14 +607,16 @@ def transcribe_image(img, engines, read_page=None, vision=None, read_crop=None):
             for name, o in zip(engines, options):
                 readings[name].append(o)
             block.append(vote(options))
+            flags.append(doubtful(block[-1], options))
             i += 1
-        blocks.append((g[0].y0, "staff", "\n".join(even(block, width))))
+        lines = [mark(line, f) for line, f in zip(even(block, width), flags)]
+        blocks.append((g[0].y0, "staff", "\n".join(lines)))
     if read_page:
         t = time.monotonic()
         blocks += [(y, "text", text) for y, text in page_text(gray, groups, read_page)]
         timings["page"] = round(time.monotonic() - t, 2)
     blocks.sort(key=lambda b: b[0])
-    text = join([(kind, text) for _, kind, text in blocks])
-    return Result(text + "\n", staves=len(groups), lines=len(jobs),
+    text, doubts = unmark(join([(kind, text) for _, kind, text in blocks]) + "\n")
+    return Result(text, staves=len(groups), lines=len(jobs),
                   seconds=round(time.monotonic() - start, 2), readings=readings,
-                  timings=timings)
+                  timings=timings, doubts=doubts)

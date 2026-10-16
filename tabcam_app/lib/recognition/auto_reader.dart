@@ -339,7 +339,12 @@ class AutoReader extends ChangeNotifier {
       // Only the text: pages added meanwhile stay.
       await library.patch(
         id,
-        (now) => now.copyWith(tabText: text, tabTextAuto: true),
+        // The device's OCR says nothing of how sure it is: no doubts.
+        (now) => now.copyWith(
+          tabText: text,
+          tabTextAuto: true,
+          tabTextDoubts: const [],
+        ),
       );
     }
     return null;

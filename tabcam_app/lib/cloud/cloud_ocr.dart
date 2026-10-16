@@ -7,6 +7,7 @@ import '../auth/auth_service.dart';
 import '../l10n/language.dart';
 import '../library/capture_event.dart';
 import '../library/library.dart';
+import '../recognition/tab_doubts.dart';
 import 'cloud_sync.dart';
 import 'cognito.dart';
 import 'ocr_api.dart';
@@ -294,6 +295,11 @@ class CloudOcr extends ChangeNotifier {
         continue;
       }
       final texts = <String>[];
+      // The notes the cloud wasn't sure of, at their lines in the joined
+      // text: each page's lines come after the pages before it and a
+      // blank line.
+      final doubts = <TabDoubt>[];
+      var top = 0;
       for (final p in pages) {
         final bytes = await bucket.get(
           '$prefix${event.id}/${p.id}.json',
@@ -309,7 +315,18 @@ class CloudOcr extends ChangeNotifier {
         );
         if (result['status'] == 'ok' && result['text'] is String) {
           final text = (result['text'] as String).trimRight();
-          if (text.isNotEmpty) texts.add(text);
+          if (text.isNotEmpty) {
+            texts.add(text);
+            for (final d in result['doubts'] as List? ?? const []) {
+              final doubt = TabDoubt.fromJson(d);
+              if (doubt != null) {
+                doubts.add(
+                  TabDoubt(doubt.line + top, doubt.column, doubt.note),
+                );
+              }
+            }
+            top += '\n'.allMatches(text).length + 2;
+          }
         }
       }
       final text = texts.isEmpty ? null : '${texts.join('\n\n')}\n';
@@ -324,9 +341,17 @@ class CloudOcr extends ChangeNotifier {
           (current.tabText == null ||
               current.tabText == last?.text ||
               (again && current.tabTextAuto));
-      if (text != null && ours && current.tabText != text) {
+      final standing = text == null ? doubts : standingDoubts(text, doubts);
+      if (text != null &&
+          ours &&
+          (current.tabText != text ||
+              !listEquals(current.tabTextDoubts, standing))) {
         await library.update(
-          current.copyWith(tabText: text, tabTextAuto: true),
+          current.copyWith(
+            tabText: text,
+            tabTextAuto: true,
+            tabTextDoubts: standing,
+          ),
         );
       }
       debugPrint(

@@ -384,7 +384,7 @@ def ocr(event, context=None):
                  read_crop=engines.read_crop,
                  vision=_vision if os.environ.get("VISION_FALLBACK") == "1" else None)
         result.update(status="ok" if r.text else "no-tab", text=r.text,
-                      staves=r.staves, lines=r.lines, timings=r.timings)
+                      doubts=r.doubts, staves=r.staves, lines=r.lines, timings=r.timings)
         if "claude" in r.timings:
             result["engines"] = ["claude"]
     except services.s3.exceptions.NoSuchKey:

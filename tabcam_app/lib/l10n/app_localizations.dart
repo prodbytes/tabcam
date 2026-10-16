@@ -1636,6 +1636,12 @@ abstract class AppLocalizations {
   /// **'Insert: typing pushes the line right'**
   String get textViewOvertypeOff;
 
+  /// Under the Text view's tools, while some notes are shown in red because OCR was unsure of them
+  ///
+  /// In en, this message translates to:
+  /// **'Notes in red were read with low confidence and may be wrong: check them against the page.'**
+  String get textViewDoubts;
+
   /// Checkbox button toggling overtype mode
   ///
   /// In en, this message translates to:

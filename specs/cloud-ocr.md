@@ -54,8 +54,10 @@ most 5 minutes (less if the grant ends sooner), a "no" for 1 minute.
    Free users' pages stop there.
 3. `tabcam-ocr` reads the page and writes
    `<identity>/ocr/<event id>/<page id>.json`:
-   `{page, status, text, staves, lines, seconds, engines, version, created}`,
-   `status` being `ok`, `no-tab` or `error`.
+   `{page, status, text, doubts, staves, lines, seconds, engines, version,
+   created}`, `status` being `ok`, `no-tab` or `error`; `doubts` the notes
+   read with little confidence, likely wrong, `[[line, column, note]]` in
+   `text` (lines and columns from 0; see [doubtful notes](#doubtful-notes)).
 4. Deleting a page (or its event) in the bucket deletes its transcription.
 
 **Reading a page**: the page is found and flattened if it's a photo; red
@@ -118,6 +120,26 @@ when a page has no dash lines:
 5. Numbers about the same x are one column (a chord); columns get dashes
    before them by their distance, as the app lays out a typeset tab.
 
+### Doubtful notes
+
+Each result says which of its notes were read with little confidence,
+likely wrong (`doubts`), for the app to show them in red:
+
+- **Tab lines** (dashes): a note of the winning reading that neither other
+  engine has (their tokens aligned by edits) is doubtful: the engines
+  don't agree on it. With one engine only, nothing is.
+- **Drawn staves**: a number is doubtful when PaddleOCR's score for it is
+  under 0.8 (`CROP_SURE`), or when only RapidOCR read it as a fret. Also
+  asking the two to agree flagged more right notes (RapidOCR reads
+  handwritten 6s and 8s as letters) and no more wrong ones.
+- A PDF's doubts count the lines of the pages before (and the blank line
+  between them).
+
+On the bench's three pages (158 notes) 21 notes were doubtful, 9 of them
+wrong; of the 16 wrong notes, 9 were doubtful. Of the 7 not flagged, 4 only
+had a vibrato of another length (`5~~` for `5~`), and 3 were numbers lost
+or joined before reading (a circle touching a fret), which no score sees.
+
 The title, section names and chord names around the staves are read at
 full size, each strip between staves on its own and the whole page too
 (each finds words the other misses), and placed as for text tabs; scanner
@@ -168,6 +190,10 @@ with text but no tab is still `no-tab`.
   writes the text tab only while it's empty or still the text it wrote
   (kept in `cloudocr.json`), and not marked correct, so it never replaces
   the user's edits, an on-device reading or a checked text tab. New pages update it the same way.
+  The pages' `doubts` come with it, moved down by the lines of the pages
+  before and the blank lines between them, as the event's
+  `tabTextDoubts`; a doubt whose note isn't at its place in the text is
+  dropped.
 - **Read again** (the Text view, or the Text tool tapped on it; also while
   the text is on its way from the cloud): `POST /transcribe {eventId,
   again: true}` reads every page again, results or not. The app first
