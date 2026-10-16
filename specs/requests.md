@@ -1138,3 +1138,12 @@ spec.
    deleted without revoking ([cloud sync](cloud-sync.md#revoking-apples-tokens),
    [shared captures](shared-captures.md#how-it-works),
    [app stores](app-stores.md#status)).
+23. **Produce an App Store distribution build and upload it to App Store
+   Connect.** `make ipa` archives and exports the signed App Store build
+   (automatic signing for the paid team; Xcode made the Apple Distribution
+   certificate and the App Store profile, with Sign in with Apple), and
+   `scripts/ios-upload.sh` uploads the archive with `xcodebuild
+   -exportArchive` (destination `upload`, as Xcode's signed-in account or
+   an App Store Connect API key). The first upload waits for the app's
+   App Store Connect record ([app stores](app-stores.md#ios-distribution),
+   [release](release.md#make)).
