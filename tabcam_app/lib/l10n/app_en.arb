@@ -401,6 +401,14 @@
   "@eventReadAgainBody": {
     "description": "Event: what reading the tab again does"
   },
+  "eventRescanTitle": "Rescan the pages?",
+  "@eventRescanTitle": {
+    "description": "Event: asked when tapping Rescan on the Text view"
+  },
+  "eventRescanBody": "The current text is deleted, even if you edited it or marked it verified, and every photo and PDF is read again to replace it.",
+  "@eventRescanBody": {
+    "description": "Event: what Rescan does"
+  },
   "eventReadFailed": "Reading the tab failed.",
   "@eventReadFailed": {
     "description": "Event Text view: reading failed"

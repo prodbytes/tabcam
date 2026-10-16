@@ -320,6 +320,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'O texto lido antes é substituído, a não ser que você o tenha editado ou marcado como correto.';
 
   @override
+  String get eventRescanTitle => 'Reescanear as páginas?';
+
+  @override
+  String get eventRescanBody =>
+      'O texto atual é apagado, mesmo que você o tenha editado ou marcado como verificado, e cada foto e PDF é lido de novo para substituí-lo.';
+
+  @override
   String get eventReadFailed => 'Falha ao ler a tablatura.';
 
   @override

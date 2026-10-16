@@ -78,6 +78,8 @@
   "eventReadAgain": "Ler de novo",
   "eventReadAgainTitle": "Ler a tablatura de novo?",
   "eventReadAgainBody": "O texto lido antes é substituído, a não ser que você o tenha editado ou marcado como correto.",
+  "eventRescanTitle": "Reescanear as páginas?",
+  "eventRescanBody": "O texto atual é apagado, mesmo que você o tenha editado ou marcado como verificado, e cada foto e PDF é lido de novo para substituí-lo.",
   "eventReadFailed": "Falha ao ler a tablatura.",
   "eventReadUnsupported": "Para ler tablaturas, use o app para Android ou iOS, ou o TabCam Premium.",
   "eventReadNeedsSignIn": "Para ler tablaturas, você precisa entrar.",

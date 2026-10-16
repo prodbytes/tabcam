@@ -574,6 +574,18 @@ abstract class AppLocalizations {
   /// **'The text read before is replaced, unless you edited it or marked it correct.'**
   String get eventReadAgainBody;
 
+  /// Event: asked when tapping Rescan on the Text view
+  ///
+  /// In en, this message translates to:
+  /// **'Rescan the pages?'**
+  String get eventRescanTitle;
+
+  /// Event: what Rescan does
+  ///
+  /// In en, this message translates to:
+  /// **'The current text is deleted, even if you edited it or marked it verified, and every photo and PDF is read again to replace it.'**
+  String get eventRescanBody;
+
   /// Event Text view: reading failed
   ///
   /// In en, this message translates to:

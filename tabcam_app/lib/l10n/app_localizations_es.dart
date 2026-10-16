@@ -320,6 +320,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Se reemplaza el texto leído antes, salvo que lo hayas editado o marcado como correcto.';
 
   @override
+  String get eventRescanTitle => '¿Reescanear las páginas?';
+
+  @override
+  String get eventRescanBody =>
+      'El texto actual se borra, aunque lo hayas editado o marcado como verificado, y cada foto y PDF se lee de nuevo para reemplazarlo.';
+
+  @override
   String get eventReadFailed => 'No se pudo leer la tablatura.';
 
   @override
