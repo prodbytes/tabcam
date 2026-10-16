@@ -91,7 +91,7 @@ it opens on the Text view; otherwise on the list.
     then shows, scrolled to what was added.
   - **Cam**, last: the camera with the tab under it, one neckline at a
     time, to record the user playing along; takes are added as videos
-    ([Cam](cam.md)). Off on a capture shared read only or opened by its
+    ([Cam](cam.md)), and back from it the list shows, scrolled to them. Off on a capture shared read only or opened by its
     link.
   - **Dragging files** onto the screen adds them too, as Files does
     (outlined with "Drop files to add" while they're over it; folders and

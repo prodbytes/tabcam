@@ -259,16 +259,20 @@ class _EventScreenState extends State<EventScreen> {
   }
 
   /// Cam: the camera, with the tab under it, to record playing along
-  /// ([PlayAlongScreen]); its takes are added to the list.
+  /// ([PlayAlongScreen]); back from it, the takes it added show, at the
+  /// end of the list.
   Future<void> _cam() async {
     await _player.stop();
     if (!mounted) return;
+    final before = _library.byId(widget.eventId)?.pages.length ?? 0;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) =>
             PlayAlongScreen(library: _library, eventId: widget.eventId),
       ),
     );
+    final event = _library.byId(widget.eventId);
+    if (mounted && event != null) _showAdded(event, before, images: false);
   }
 
   /// Files the user dragged onto the screen ([FileDropArea]): added, as

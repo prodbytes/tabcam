@@ -945,3 +945,7 @@ spec.
    usual icon with a text tab, and is greyed out without one. It stays
    tappable when greyed, so the Text view can still say why and offer
    Read again or Sign in ([event screen](event-screen.md)).
+5. **Show the recorded videos on the capture page by themselves.** Back
+   from Cam with new takes, the capture shows its file list (even if it
+   was on the Text view), scrolled to the end, where the takes are
+   ([Cam](cam.md), [event screen](event-screen.md)).
