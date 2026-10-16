@@ -985,6 +985,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Insertar: lo que escribes empuja la línea a la derecha';
 
   @override
+  String get textViewDoubts =>
+      'Las notas en rojo se leyeron con poca confianza y pueden estar mal: compruébalas con la página.';
+
+  @override
   String get textViewOvertype => 'Sobrescribir';
 
   @override

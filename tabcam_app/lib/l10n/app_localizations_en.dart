@@ -955,6 +955,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get textViewOvertypeOff => 'Insert: typing pushes the line right';
 
   @override
+  String get textViewDoubts =>
+      'Notes in red were read with low confidence and may be wrong: check them against the page.';
+
+  @override
   String get textViewOvertype => 'Overtype';
 
   @override

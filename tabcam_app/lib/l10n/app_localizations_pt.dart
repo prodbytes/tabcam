@@ -983,6 +983,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Inserir: digitar empurra a linha para a direita';
 
   @override
+  String get textViewDoubts =>
+      'As notas em vermelho foram lidas com pouca confiança e podem estar erradas: confira-as com a página.';
+
+  @override
   String get textViewOvertype => 'Sobrescrever';
 
   @override

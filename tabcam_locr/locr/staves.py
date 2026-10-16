@@ -193,7 +193,9 @@ def numbers(ink, staff):
 
 
 def layout(n_strings, notes, unit):
-    """[(string, x, fret)] as one staff's text lines (typesetTab's way)."""
+    """[(string, x, fret, doubtful)] as one staff's text lines (typesetTab's
+    way), doubtful frets wrapped in pipeline.OPEN and CLOSE."""
+    from .pipeline import OPEN, CLOSE
     notes = sorted(notes, key=lambda n: n[1])
     columns = []
     for n in notes:
@@ -209,8 +211,8 @@ def layout(n_strings, notes, unit):
         spacing = 1 if last is None else int(min(max(round((x - last) / unit), 1), 8))
         last = x
         cells = ["-" * width] * n_strings
-        for s, _, f in col:
-            cells[s] = f.ljust(width, "-")
+        for s, _, f, doubt in col:
+            cells[s] = (f"{OPEN}{f}{CLOSE}" if doubt else f) + "-" * (width - len(f))
         rows = [r + "-" * spacing + c for r, c in zip(rows, cells)]
     labels = LABELS.get(n_strings, " " * n_strings)
     return [f"{labels[i]}|{rows[i]}--|" for i in range(n_strings)]
@@ -233,7 +235,8 @@ def stroke(marks, found):
 def read(gray, read_crop):
     """The tab on [gray]'s drawn staves: (blocks [(top y, staff text)],
     staves) — blocks empty when no number is read. [read_crop]: a number's
-    ink crop (1 = ink) -> its text."""
+    ink crop (1 = ink) -> its text, or (text, sure): an unsure read's frets
+    are doubtful."""
     found, mask = find_staves(gray)
     if not found:
         return [], []
@@ -248,8 +251,10 @@ def read(gray, read_crop):
         for string, x0, x1, crop in nums:
             if thin:  # a fine pen's digits read better a little bolder
                 crop = cv2.dilate(crop, np.ones((2, 2), np.uint8))
-            for x, f in frets(read_crop(crop), x0, x1):
-                notes.append((string, x, f))
+            said = read_crop(crop)
+            text, sure = said if isinstance(said, tuple) else (said, True)
+            for x, f in frets(text, x0, x1):
+                notes.append((string, x, f, not sure))
         if notes:
             blocks.append((ys[0], "\n".join(layout(len(ys), notes, gap))))
     return blocks, found

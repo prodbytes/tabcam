@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import '../processing/page_filter.dart';
+import '../recognition/tab_doubts.dart';
 
 /// What a page is: a picture of the tab, a video (someone playing it, a
 /// lesson), a recording, a PDF (the tab as a document), or a link (a lesson
@@ -166,6 +167,7 @@ class CaptureEvent {
     this.tabText,
     this.tabTextAuto = false,
     this.tabTextCorrect = false,
+    this.tabTextDoubts = const [],
     this.hideImages = false,
     this.deleted,
     this.owner,
@@ -210,6 +212,10 @@ class CaptureEvent {
   /// The user marked [tabText] as a correct reading: the event then opens
   /// on its Text view, and no read replaces it.
   final bool tabTextCorrect;
+
+  /// The notes of [tabText] the read wasn't sure of (likely wrong), shown
+  /// in red; those the user changed since drop out (standingDoubts).
+  final List<TabDoubt> tabTextDoubts;
 
   /// Whether its owner hid the photos and scans: it then shows only the
   /// text tab and the other pages (videos and links), to everyone it's
@@ -269,6 +275,7 @@ class CaptureEvent {
     String? tabText,
     bool? tabTextAuto,
     bool? tabTextCorrect,
+    List<TabDoubt>? tabTextDoubts,
     bool? hideImages,
     DateTime? updated,
     String? owner,
@@ -286,6 +293,7 @@ class CaptureEvent {
     tabText: tabText ?? this.tabText,
     tabTextAuto: tabTextAuto ?? this.tabTextAuto,
     tabTextCorrect: tabTextCorrect ?? this.tabTextCorrect,
+    tabTextDoubts: tabTextDoubts ?? this.tabTextDoubts,
     hideImages: hideImages ?? this.hideImages,
     deleted: deleted,
     owner: owner ?? this.owner,
@@ -308,6 +316,8 @@ class CaptureEvent {
     if (tabText != null) 'tabText': tabText,
     if (tabTextAuto) 'tabTextAuto': true,
     if (tabTextCorrect) 'tabTextCorrect': true,
+    if (tabTextDoubts.isNotEmpty)
+      'tabTextDoubts': [for (final d in tabTextDoubts) d.toJson()],
     if (hideImages) 'hideImages': true,
     if (deleted != null) 'deleted': deleted!.toUtc().toIso8601String(),
     if (owner != null) 'owner': owner,
@@ -335,6 +345,10 @@ class CaptureEvent {
       tabText: json['tabText'] as String?,
       tabTextAuto: json['tabTextAuto'] == true,
       tabTextCorrect: json['tabTextCorrect'] == true,
+      tabTextDoubts: [
+        for (final d in json['tabTextDoubts'] as List? ?? const [])
+          ?TabDoubt.fromJson(d),
+      ],
       hideImages: json['hideImages'] == true,
       deleted: time('deleted'),
       owner: json['owner'] as String?,

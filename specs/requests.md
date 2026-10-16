@@ -1077,3 +1077,15 @@ spec.
    42.9% → 88.1%. Strip contrast (CLAHE), sharpening, Sauvola
    binarization, upscaling, dash erasure, label cropping and other page
    sizes were tried and scored worse ([cloud OCR](cloud-ocr.md#verified)).
+17. **"Could we highlight in red the notes that were identified with low
+   confidence and likely wrong?"** The cloud OCR now says which notes it
+   was unsure of (`doubts` in each page's result): on tab lines, a note
+   neither other engine read the same; on drawn staves, a number
+   PaddleOCR scored under 0.8, or only RapidOCR read. Measured on the
+   bench: 21 of 158 notes doubtful, 9 of them wrong, catching 9 of the 16
+   wrong notes (most of the rest only a vibrato's length). The app keeps
+   them with the text tab (`tabTextDoubts`, synced) and the Text view shows
+   them in red, with a line saying what red means, until the user changes
+   the note or marks the text Verified. On-device reads have none
+   ([cloud OCR](cloud-ocr.md#doubtful-notes),
+   [tab recognition](tab-recognition.md#text-view)).
