@@ -309,7 +309,8 @@ class _FileScreenState extends State<FileScreen> {
 }
 
 /// A tool along the bottom of the capture and file screens: an icon over
-/// its label, highlighted when [selected].
+/// its label, highlighted when [selected]; a spinner in the icon's place
+/// while [working]; greyed out (still tappable) when [dimmed].
 class EventTool extends StatelessWidget {
   const EventTool({
     super.key,
@@ -317,16 +318,27 @@ class EventTool extends StatelessWidget {
     required this.label,
     this.onPressed,
     this.selected = false,
+    this.working = false,
+    this.dimmed = false,
+    this.tooltip,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback? onPressed;
   final bool selected;
+  final bool working;
+  final bool dimmed;
+
+  /// What the tooltip says, when it's more than [label].
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final grey = dimmed && !selected
+        ? theme.colorScheme.onSurface.withValues(alpha: 0.38)
+        : null;
     // An equal share of the bar; a label longer than it (some languages')
     // shrinks to fit.
     return Expanded(
@@ -334,8 +346,20 @@ class EventTool extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
-            tooltip: label,
-            icon: Icon(icon),
+            tooltip: tooltip ?? label,
+            icon: working
+                ? SizedBox.square(
+                    dimension: 24,
+                    child: Padding(
+                      padding: const EdgeInsets.all(2),
+                      child: CircularProgressIndicator(
+                        key: const Key('tool-working'),
+                        strokeWidth: 2.5,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  )
+                : Icon(icon, color: grey),
             isSelected: selected,
             style: selected
                 ? IconButton.styleFrom(
@@ -352,6 +376,7 @@ class EventTool extends StatelessWidget {
               maxLines: 1,
               style: theme.textTheme.labelSmall?.copyWith(
                 fontWeight: selected ? FontWeight.bold : null,
+                color: grey,
               ),
             ),
           ),
