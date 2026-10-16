@@ -404,6 +404,18 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventDeleteFile => 'Eliminar archivo';
 
   @override
+  String get eventDownload => 'Descargar';
+
+  @override
+  String get eventDownloadAll => 'Descargar todo';
+
+  @override
+  String get eventCouldntDownload => 'No se pudo descargar';
+
+  @override
+  String get eventFileMore => 'Más';
+
+  @override
   String get eventCouldntDelete => 'No se pudo eliminar';
 
   @override

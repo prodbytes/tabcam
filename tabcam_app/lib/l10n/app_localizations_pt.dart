@@ -404,6 +404,18 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventDeleteFile => 'Excluir arquivo';
 
   @override
+  String get eventDownload => 'Baixar';
+
+  @override
+  String get eventDownloadAll => 'Baixar tudo';
+
+  @override
+  String get eventCouldntDownload => 'Não foi possível baixar';
+
+  @override
+  String get eventFileMore => 'Mais';
+
+  @override
   String get eventCouldntDelete => 'Não foi possível excluir';
 
   @override

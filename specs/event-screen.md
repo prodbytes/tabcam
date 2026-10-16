@@ -10,6 +10,12 @@ it opens on the Text view; otherwise on the list.
   [library](library.md#events)). **Clone** copies the event and opens the
   copy ([library](library.md#events)). There's no Reorder button: the
   [files list](#reordering) reorders in place.
+  **Download all** (a download arrow) saves the whole capture as
+  `<title>.zip`: every file listed (named as in the list; the images
+  left out when [hidden](hidden-images.md)), the text tab as
+  `<title> tab.txt` and the links, one a line, as `links.txt` (names
+  that repeat get " (2)"…); files still coming down
+  ([sync](cloud-sync.md#listed-first-files-after)) are waited for.
   **Share** (a link icon) copies the capture's link ([sharing](sharing.md));
   **Share with people** (people with a plus,
   [shared captures](shared-captures.md)) is beside it for the user's own
@@ -52,7 +58,14 @@ it opens on the Text view; otherwise on the list.
   pickers name them at random). **Rename file** (a pencil on each row, or
   a long press) asks for the name, prefilled; saving it empty goes back
   to the default name. The name is the page's `title`, synced with the
-  event. **Delete file** (a bin on each row, after the pencil) asks
+  event. **Download** (a download arrow, after the pencil) saves the
+  file under its name in the list, with its extension (a scanned page,
+  kept as `img`, downloads as `.jpg`): a download in the browser, the
+  system's "save as" on Android and iOS (`file_picker` `saveFile`); a
+  link has none. Downloading is offered read only too. On a phone
+  narrower than 600 px, Rename, Download and Delete are in a **More**
+  menu (⋮) on each row instead of buttons, so the name keeps its room.
+  **Delete file** (a bin on each row, after Download) asks
   "Delete "<name>"?" (Cancel, Delete) and deletes the file (stopping it
   if it plays in the list); the last file can't be deleted (the message
   says to delete the event instead), and a failure shows "Couldn't

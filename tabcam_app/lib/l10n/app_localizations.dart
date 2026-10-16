@@ -718,6 +718,30 @@ abstract class AppLocalizations {
   /// **'Delete file'**
   String get eventDeleteFile;
 
+  /// Capture screen: download one file
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get eventDownload;
+
+  /// Capture screen: download every file as a zip
+  ///
+  /// In en, this message translates to:
+  /// **'Download all'**
+  String get eventDownloadAll;
+
+  /// Capture screen: a download failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t download'**
+  String get eventCouldntDownload;
+
+  /// Capture screen: a file's menu (rename, download, delete) on a narrow phone
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get eventFileMore;
+
   /// Capture screen: deleting a file failed
   ///
   /// In en, this message translates to:

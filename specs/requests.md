@@ -1030,3 +1030,11 @@ spec.
    tabs yet" if there are truly none); a failed first pass says so, with
    Try again. Signed out was already only the welcome and sign-in
    ([library](library.md)).
+13. **Add a button to download each file, and one to download all, on
+   top.** Each file row has **Download** (its file under its name in the
+   list; scanned `img` pages as `.jpg`), and the app bar **Download
+   all**: `<title>.zip` with every file, the text tab and the links
+   (`lib/export/download.dart`). The browser downloads; Android and iOS
+   show the system's "save as" (`file_picker`). On a phone narrower than
+   600 px, Rename, Download and Delete move into a ⋮ menu on each row
+   ([event screen](event-screen.md)).
