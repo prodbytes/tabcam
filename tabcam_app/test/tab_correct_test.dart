@@ -54,15 +54,15 @@ void main() {
       ),
     );
 
-    await tester.runAsync(() => tester.tap(find.text('Correct')));
+    await tester.runAsync(() => tester.tap(find.text('Verified')));
     await tester.pump();
     expect(library.byId(event.id)!.tabTextCorrect, isTrue);
-    expect(find.text('Correct'), findsOneWidget);
+    expect(find.text('Verified'), findsOneWidget);
 
-    await tester.runAsync(() => tester.tap(find.text('Correct')));
+    await tester.runAsync(() => tester.tap(find.text('Verified')));
     await tester.pump();
     expect(library.byId(event.id)!.tabTextCorrect, isFalse);
-    expect(find.text('Correct'), findsOneWidget);
+    expect(find.text('Verified'), findsOneWidget);
   });
 
   testWidgets('read only, the mark is shown but not changed', (tester) async {
@@ -74,7 +74,7 @@ void main() {
         ),
       ),
     );
-    expect(find.text('Correct'), findsNothing);
+    expect(find.text('Verified'), findsNothing);
 
     (library, event) = await _event(tester, readOnly: true, correct: true);
     await tester.pumpWidget(
@@ -85,7 +85,7 @@ void main() {
         ),
       ),
     );
-    await tester.tap(find.text('Correct'));
+    await tester.tap(find.text('Verified'));
     await tester.pump();
     expect(library.byId(event.id)!.tabTextCorrect, isTrue);
   });

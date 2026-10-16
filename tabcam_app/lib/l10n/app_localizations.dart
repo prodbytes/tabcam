@@ -1540,6 +1540,18 @@ abstract class AppLocalizations {
   /// **'Fix'**
   String get textViewFix;
 
+  /// Button reading the tab from the pages again
+  ///
+  /// In en, this message translates to:
+  /// **'Rescan'**
+  String get textViewRescan;
+
+  /// Tooltip of the Rescan button
+  ///
+  /// In en, this message translates to:
+  /// **'Read the tab from the pages again'**
+  String get textViewRescanTip;
+
   /// Progress text while Fix runs
   ///
   /// In en, this message translates to:
@@ -1549,19 +1561,19 @@ abstract class AppLocalizations {
   /// Toggle marking the text tab correct
   ///
   /// In en, this message translates to:
-  /// **'Correct'**
+  /// **'Verified'**
   String get textViewCorrect;
 
   /// Tooltip of the Correct toggle while on
   ///
   /// In en, this message translates to:
-  /// **'Marked correct: the event opens on its text'**
+  /// **'Verified: the event opens on its text'**
   String get textViewMarkedCorrect;
 
   /// Tooltip of the Correct toggle while off
   ///
   /// In en, this message translates to:
-  /// **'Mark the reading correct'**
+  /// **'Mark the reading verified'**
   String get textViewMarkCorrect;
 
   /// Tooltip of the − button

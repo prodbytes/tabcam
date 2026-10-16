@@ -22,7 +22,8 @@ a read writes only the text, onto the event as it is then
 (the title, the view, the text) don't read, nor do events another device
 changed (that device reads them), nor the events there were at launch.
 
-- **Read again**: the Text view's **Read again** or **Read**, or the
+- **Read again**: the Text view's **Read again**, **Read** or
+  **Rescan**, or the
   [Text tool](event-screen.md) tapped while the Text view shows a tab
   (it asks "Read the tab again?" first), reads the event now
   (`readSoon(id, again: true)`), replacing the text an earlier read left;
@@ -217,11 +218,20 @@ it). A read that ends while the view shows fills it in, unless the user
 has started editing. Read only for an event shared read only (no editing
 tools, no Fix). Sharing is the event screen's **Share** in the app bar.
 
-Above the text, three buttons of one kind, with short labels so they fit
-a phone's width:
+Above the text, on one line, four compact buttons of one kind, in this
+order (on a screen too narrow for them the line is scaled down, never
+wrapped):
 
 - **Copy**: the text, to the clipboard.
-- **Correct**: a toggle marking the reading correct once the user has
+- **Fix**: lines the tab up (each staff's strings named, bars lined up,
+  every string ending together), for everyone; then, with Premium,
+  [auto-correct](autocorrect.md): the song's tab found online proposes
+  corrections, which the user reviews per note.
+- **Rescan**: [Read again](#reading-by-itself), as the Text tool tapped
+  again: it saves the edits so far, asks "Read the tab again?", then
+  reads the pages now. Shown only when the event has photos or PDFs to
+  read and the app can read them, and not on an event shared read only.
+- **Verified**: a toggle marking the reading correct once the user has
   checked it: tonal like Copy while off, filled and ticked while on;
   tapping it again unmarks it. Saved at once. The mark is kept on the
   event and syncs with it (`tabTextCorrect`), and a clone keeps it. An
@@ -230,12 +240,9 @@ a phone's width:
   or in the [cloud](cloud-ocr.md), replaces a text tab marked correct. On
   an event shared read only the mark is shown (when set) but can't be
   changed.
-- **Fix**: lines the tab up (each staff's strings named, bars lined up,
-  every string ending together), for everyone; then, with Premium,
-  [auto-correct](autocorrect.md): the song's tab found online proposes
-  corrections, which the user reviews per note.
 
-**Editing tools**, under them ([lib/screens/tab_editing.dart](../tabcam_app/lib/screens/tab_editing.dart)):
+**Editing tools**, on the line under them, outlined so they read as
+buttons (scaled down, like the line above, if too wide) ([lib/screens/tab_editing.dart](../tabcam_app/lib/screens/tab_editing.dart)):
 
 - **−** and **+**: the fret number under the cursor (or just before it),
   one or two digits, goes down or up by one (15 + → 16, 5 + → 6), from 0
@@ -243,7 +250,8 @@ a phone's width:
   one, so the notes after it keep their columns. The cursor stays on the
   number, for the next press. With no number there, it says to put the
   cursor on one.
-- **Overtype** (on by default; tap to switch to insert): typing replaces
+- **Overtype**, a toggle button (on by default, filled while on and
+  outlined while off; tap to switch to insert): typing replaces
   the characters after the cursor on its line instead of pushing them
   right, and backspace on a string line leaves a dash, so the columns
   stay lined up. Enter still breaks the line.

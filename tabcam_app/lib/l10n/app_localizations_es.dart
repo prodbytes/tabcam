@@ -952,18 +952,23 @@ class AppLocalizationsEs extends AppLocalizations {
   String get textViewFix => 'Arreglar';
 
   @override
+  String get textViewRescan => 'Reescanear';
+
+  @override
+  String get textViewRescanTip => 'Leer de nuevo la tablatura de las páginas';
+
+  @override
   String get textViewLookingOnline =>
       'Buscando la tablatura de la canción en línea…';
 
   @override
-  String get textViewCorrect => 'Correcto';
+  String get textViewCorrect => 'Verificado';
 
   @override
-  String get textViewMarkedCorrect =>
-      'Marcado como correcto: el evento abre en su texto';
+  String get textViewMarkedCorrect => 'Verificado: el evento abre en su texto';
 
   @override
-  String get textViewMarkCorrect => 'Marcar la lectura como correcta';
+  String get textViewMarkCorrect => 'Marcar la lectura como verificada';
 
   @override
   String get textViewFretDown => 'Bajar traste (el número bajo el cursor)';

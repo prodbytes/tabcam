@@ -924,17 +924,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get textViewFix => 'Fix';
 
   @override
+  String get textViewRescan => 'Rescan';
+
+  @override
+  String get textViewRescanTip => 'Read the tab from the pages again';
+
+  @override
   String get textViewLookingOnline => 'Looking for the song\'s tab online…';
 
   @override
-  String get textViewCorrect => 'Correct';
+  String get textViewCorrect => 'Verified';
 
   @override
-  String get textViewMarkedCorrect =>
-      'Marked correct: the event opens on its text';
+  String get textViewMarkedCorrect => 'Verified: the event opens on its text';
 
   @override
-  String get textViewMarkCorrect => 'Mark the reading correct';
+  String get textViewMarkCorrect => 'Mark the reading verified';
 
   @override
   String get textViewFretDown => 'Fret down (the number under the cursor)';
