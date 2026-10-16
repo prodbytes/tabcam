@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!-- TabCam's own privacy manifest (specs/privacy.md; the policy is
-     https://tabcam.nu01.com/privacy). Plugins and SDKs ship their own.
-     Collected only when signed in, to sync, share and transcribe:
-     the Google account's email and name, the Cognito identity ID, and the
-     captures (photos, videos, files, links, text). No tracking. The app's
-     own code uses no required-reason APIs. -->
+     https://tabcam.nu01.com/privacy). Plugins and SDKs ship their own:
+     ML Kit's (MLKitCommon, MLKitFaceDetection, GoogleDataTransport)
+     declare its device ID, performance and diagnostic data, not linked,
+     for analytics, so they're not repeated here.
+     Collected once signed in (the app needs it), to sync, share and
+     transcribe: the Google or Apple account's email and name, the user
+     IDs (Cognito identity, Google's, Apple's), and the captures (photos,
+     videos, Cam's takes with their sound and audio recordings, files,
+     links, text). No tracking. The app's own code uses no required-reason
+     APIs. -->
 <plist version="1.0">
 <dict>
 	<key>NSPrivacyTracking</key>
@@ -53,6 +58,18 @@
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypePhotosorVideos</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeAudioData</string>
 			<key>NSPrivacyCollectedDataTypeLinked</key>
 			<true/>
 			<key>NSPrivacyCollectedDataTypeTracking</key>
