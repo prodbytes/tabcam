@@ -5,6 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 
+import 'web_head_tracker_stub.dart'
+    if (dart.library.js_interop) 'web_head_tracker.dart';
+
 /// What a head gesture asks for: the next neckline or the one before.
 enum HeadGesture { next, previous }
 
@@ -110,11 +113,41 @@ class NodDetector {
   }
 }
 
-/// Watches the camera's frames for head gestures ([NodDetector]) with
-/// ML Kit's face detector, on Android and iOS; [start] gives null
-/// elsewhere (the web has no ML Kit).
+/// The head's pitch (up positive) and yaw (to the user's own right
+/// positive), in degrees, from MediaPipe's facial transformation matrix
+/// [m]: 4x4, column-major (the entry at row r, column c is `m[c * 4 + r]`),
+/// null if it isn't one. Pure Dart, tested without a browser
+/// (test/head_gestures_test.dart); [WebHeadTracker] uses it.
+///
+/// The matrix takes the canonical face model, which looks along its +Z,
+/// into the camera's space: X to the right of the frame, Y up, Z out of
+/// the screen towards the user (the camera looks along -Z). Its third
+/// column is so where the face looks, in that space: facing the camera,
+/// (0, 0, 1).
+/// - Nodding up turns that towards +Y: pitch is its angle above the X-Z
+///   plane, positive up.
+/// - The frames are the camera's own, not mirrored (camera_web mirrors
+///   the front camera's preview with CSS only, and MediaPipe reads the
+///   video element's frames): the user is seen as someone facing them
+///   sees them, their right on the frame's left. Turning to their own
+///   right so turns the face towards -X: yaw is the angle of -X from +Z.
+(double, double)? headAngles(List<double> m) {
+  if (m.length != 16) return null;
+  final (x, y, z) = (m[8], m[9], m[10]);
+  if (![x, y, z].every((v) => v.isFinite)) return null;
+  final flat = sqrt(x * x + z * z);
+  if (flat == 0 && y == 0) return null;
+  const degrees = 180 / pi;
+  return (atan2(y, flat) * degrees, atan2(-x, z) * degrees);
+}
+
+/// Watches the camera for head gestures ([NodDetector]): from its frames
+/// with ML Kit's face detector on Android and iOS ([HeadTracker]); in the
+/// browser, from the preview's video with MediaPipe's Face Landmarker
+/// ([WebHeadTracker]). [start] gives null elsewhere.
 abstract class HeadTracking {
-  /// A frame from the camera.
+  /// A frame from the camera (none come on the web: it reads the preview
+  /// itself).
   void onImage(CameraImage image);
 
   /// Whether a face is in view.
@@ -123,6 +156,9 @@ abstract class HeadTracking {
   /// The camera the frames come from (it and how the device is held set
   /// how they're turned).
   set camera(CameraController camera);
+
+  /// Whether the user has head gestures on: off, it watches nothing.
+  set active(bool active);
 
   void dispose();
 
@@ -136,7 +172,7 @@ abstract class HeadTracking {
     CameraController camera,
     void Function(HeadGesture) onGesture,
   ) {
-    if (kIsWeb) return null;
+    if (kIsWeb) return webHeadTracking(onGesture);
     return switch (defaultTargetPlatform) {
       TargetPlatform.android ||
       TargetPlatform.iOS => HeadTracker(camera, onGesture),
@@ -174,11 +210,18 @@ class HeadTracker implements HeadTracking {
     _nods.reset();
   }
 
+  /// Off, the screen stops the frames too; these ignore any on the way.
+  @override
+  bool active = true;
+
   @override
   void onImage(CameraImage image) {
     final at = _clock.elapsed;
     // One frame at a time, about 10 a second.
-    if (_busy || _closed || at - _last < const Duration(milliseconds: 100)) {
+    if (!active ||
+        _busy ||
+        _closed ||
+        at - _last < const Duration(milliseconds: 100)) {
       return;
     }
     final input = _input(image);

@@ -949,3 +949,20 @@ spec.
    from Cam with new takes, the capture shows its file list (even if it
    was on the Text view), scrolled to the end, where the takes are
    ([Cam](cam.md), [event screen](event-screen.md)).
+6. **Make Cam's head gestures work in the web build (the user tried it in
+   the browser and nothing happened).** The web now has a
+   `WebHeadTracker` (`web_head_tracker.dart`, conditionally imported):
+   MediaPipe Tasks Vision's Face Landmarker (`@mediapipe/tasks-vision`
+   0.10.21 from jsDelivr, the `face_landmarker.task` model from Google's
+   storage), loaded only when Cam opens with gestures on, reads the
+   camera preview's `<video>` about 10 times a second; the head's pitch
+   and yaw come from its facial transformation matrix (`headAngles`,
+   tested with made-up matrices) and feed the same `NodDetector`, so the
+   gesture stays as strong. If MediaPipe can't load, it's logged and Cam
+   works on without gestures. Recording on the web no longer asks the
+   camera for frames it can't stream, and the face icon now also stops
+   the tracker's own watching. The privacy policy (dated October 16,
+   2026) says the web detects faces in the browser with MediaPipe, its
+   code and model downloaded from jsDelivr and Google
+   ([Cam](cam.md#head-gestures), [platforms](platforms.md),
+   [privacy](privacy.md)).

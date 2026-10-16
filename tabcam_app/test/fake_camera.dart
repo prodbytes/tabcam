@@ -93,8 +93,11 @@ class FakeCameraPlatform extends CameraPlatform
   );
   bool streaming = false;
 
+  /// Whether it streams frames (the web's camera doesn't).
+  bool imageStreaming = true;
+
   @override
-  bool supportsImageStreaming() => true;
+  bool supportsImageStreaming() => imageStreaming;
 
   @override
   Stream<CameraImageData> onStreamedFrameAvailable(
@@ -104,6 +107,10 @@ class FakeCameraPlatform extends CameraPlatform
 
   @override
   Future<void> startVideoCapturing(VideoCaptureOptions options) async {
+    if (!imageStreaming && options.streamCallback != null) {
+      // As camera_web does.
+      throw UnimplementedError('Streaming is not currently supported on web');
+    }
     recording = true;
     if (options.streamCallback case final callback?) {
       _recordingFrames = _frames.stream.listen(callback);
