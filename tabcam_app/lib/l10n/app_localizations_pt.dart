@@ -975,6 +975,20 @@ class AppLocalizationsPt extends AppLocalizations {
   String get textViewFretUp => 'Subir traste (o número sob o cursor)';
 
   @override
+  String get textViewNoteUp => 'Nota uma corda acima (dá a volta)';
+
+  @override
+  String get textViewNoteDown => 'Nota uma corda abaixo (dá a volta)';
+
+  @override
+  String get textViewPutCursorOnNote =>
+      'Coloque o cursor numa nota de uma corda';
+
+  @override
+  String get textViewNoStringFree =>
+      'Nenhuma outra corda tem espaço para esta nota ali';
+
+  @override
   String get textViewOvertypeOn =>
       'Sobrescrever: digitar substitui caracteres, as colunas não se movem';
 

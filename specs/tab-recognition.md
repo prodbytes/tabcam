@@ -250,6 +250,14 @@ buttons (scaled down, like the line above, if too wide) ([lib/screens/tab_editin
   one, so the notes after it keep their columns. The cursor stays on the
   number, for the next press. With no number there, it says to put the
   cursor on one.
+- **++** and **−−**: the note under the cursor (or just before it) moves
+  to the string above (++) or below (−−), in the same column, cycling
+  within its staff (the string lines next to each other): up from the
+  first string is the last, down from the last the first. A string whose
+  spot holds another note is skipped. Dashes fill the room it leaves, a
+  string line too short to reach the column is lengthened with dashes,
+  and the cursor follows the note. With no note there it says to put the
+  cursor on one; with no other string free there, it says so.
 - **Overtype**, a toggle button (on by default, filled while on and
   outlined while off; tap to switch to insert): typing replaces
   the characters after the cursor on its line instead of pushing them

@@ -1253,6 +1253,22 @@
   "@textViewFretUp": {
     "description": "Tooltip of the + button"
   },
+  "textViewNoteUp": "Note up a string (cycles round)",
+  "@textViewNoteUp": {
+    "description": "Tooltip of ++: the note under the cursor to the string above"
+  },
+  "textViewNoteDown": "Note down a string (cycles round)",
+  "@textViewNoteDown": {
+    "description": "Tooltip of −−: the note under the cursor to the string below"
+  },
+  "textViewPutCursorOnNote": "Put the cursor on a note on a string line",
+  "@textViewPutCursorOnNote": {
+    "description": "Snackbar when ++ or −− finds no note under the cursor"
+  },
+  "textViewNoStringFree": "No other string has room for this note there",
+  "@textViewNoStringFree": {
+    "description": "Snackbar when ++ or −− finds no string with room for the note"
+  },
   "textViewOvertypeOn": "Overtype: typing replaces characters, columns stay put",
   "@textViewOvertypeOn": {
     "description": "Tooltip of Overtype while on"
