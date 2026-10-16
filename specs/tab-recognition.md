@@ -233,12 +233,13 @@ clears them with the text, and the new reading brings its own. A read on
 the device says nothing of how sure it is: its text has none
 ([lib/recognition/tab_doubts.dart](../tabcam_app/lib/recognition/tab_doubts.dart)).
 
-Above the text, on one line, four compact buttons of one kind, in this
-order (on a screen too narrow for them the line is scaled down, never
+Above the text, on one line, three compact buttons of one kind (four in
+a build that shows Fix), in this order (on a screen too narrow for them the line is scaled down, never
 wrapped):
 
 - **Copy**: the text, to the clipboard.
-- **Fix**: lines the tab up (each staff's strings named, bars lined up,
+- **Fix**, hidden for now (shown only in a build with `TABCAM_FIX=true`,
+  see [auto-correct](autocorrect.md#hidden-for-now)): lines the tab up (each staff's strings named, bars lined up,
   every string ending together), for everyone; then, with Premium,
   [auto-correct](autocorrect.md): the song's tab found online proposes
   corrections, which the user reviews per note.

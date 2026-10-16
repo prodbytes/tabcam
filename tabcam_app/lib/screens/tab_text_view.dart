@@ -24,9 +24,10 @@ import 'mono_font.dart';
 /// read that ends while it shows fills it in, unless the user has started
 /// editing. Read only for an event shared read only.
 ///
-/// Above it, in one row: **Copy**; **Fix** (Premium), auto-correct: the
-/// song's tab found online proposes corrections, shown per note for the
-/// user to accept or reject; **Rescan**, reading the tab from the pages
+/// Above it, in one row: **Copy**; **Fix** (off for now, see [showFix]):
+/// lines the tab up, then with Premium auto-correct: the song's tab found
+/// online proposes corrections, shown per note for the user to accept or
+/// reject; **Rescan**, reading the tab from the pages
 /// again; and **Verified**, a toggle marking the text checked (the event
 /// then opens on its Text view, and no read replaces it). Editing tools,
 /// outlined: **−** and **+** change the fret under the cursor, **++** and
@@ -41,7 +42,12 @@ class TabTextView extends StatefulWidget {
     this.ocr,
     this.onUpgrade,
     this.onRescan,
+    this.showFix = fixEnabled,
   });
+
+  /// `TABCAM_FIX=true`: the build shows Fix. Off by default while its
+  /// Claude cost per user is unmeasured and uncapped (specs/autocorrect.md).
+  static const bool fixEnabled = bool.fromEnvironment('TABCAM_FIX');
 
   final Library library;
   final String eventId;
@@ -56,6 +62,9 @@ class TabTextView extends StatefulWidget {
   /// Reads the tab from the pages again (null: nothing to read, or no
   /// reader: no Rescan).
   final VoidCallback? onRescan;
+
+  /// Whether the Fix button shows ([fixEnabled] unless a test says).
+  final bool showFix;
 
   @override
   State<TabTextView> createState() => _TabTextViewState();
@@ -320,7 +329,7 @@ class _TabTextViewState extends State<TabTextView> {
                   ),
                   // Fix lines the strings up for everyone; with Premium, it
                   // also checks the tab against the song online.
-                  if (editable)
+                  if (editable && widget.showFix)
                     FilledButton.tonalIcon(
                       onPressed: _checking || review != null
                           ? null

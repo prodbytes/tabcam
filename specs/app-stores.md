@@ -132,11 +132,11 @@ upload yet.
 
 The text claims only what the app does as it is now (App Store guideline
 2.3): signing in first (signed out there's only the welcome), scanning
-and adding, reading tabs on the device, the Text view's tools (Fix lining
-the tab up, Copy, Verified), Cam, the zip download, Share copying a
+and adding, reading tabs on the device, the Text view's tools (Copy,
+Verified; not Fix, hidden for now), Cam, the zip download, Share copying a
 read-only link, Share with people. It never offers to buy Premium (the
 store apps don't sell it); it says Premium subscribers get cloud
-transcription, and leaves out Fix's online check (Premium's).
+transcription.
 `bash scripts/store-metadata-check.sh [dir]` checks each file is there
 and within its store's limit (title and name 30, subtitle 30, short
 description 80, descriptions 4000, keywords 100 bytes, promotional text
