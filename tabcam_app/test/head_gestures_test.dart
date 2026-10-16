@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tabcam_app/capture/head_gestures.dart';
 
@@ -69,5 +71,88 @@ void main() {
     nods.reset();
     // Its first angles are where it rests.
     expect(hold(30, 0, 500), isEmpty);
+  });
+
+  group('headAngles', () {
+    /// A made-up facial transformation matrix, column-major as MediaPipe
+    /// gives it: the face turned by [rotation] (rows of a 3x3 matrix),
+    /// [away] centimetres in front of the camera.
+    List<double> matrix(List<List<double>> rotation, {double away = 40}) => [
+      for (var c = 0; c < 4; c++)
+        for (var r = 0; r < 4; r++)
+          c < 3 && r < 3
+              ? rotation[r][c]
+              : c == 3
+              ? [0.0, 0.0, -away, 1.0][r]
+              : 0.0,
+    ];
+
+    /// Turned about the camera's X axis (right) and Y axis (up).
+    List<List<double>> aboutX(double degrees) {
+      final a = degrees * pi / 180;
+      return [
+        [1, 0, 0],
+        [0, cos(a), -sin(a)],
+        [0, sin(a), cos(a)],
+      ];
+    }
+
+    List<List<double>> aboutY(double degrees) {
+      final a = degrees * pi / 180;
+      return [
+        [cos(a), 0, sin(a)],
+        [0, 1, 0],
+        [-sin(a), 0, cos(a)],
+      ];
+    }
+
+    void expectAngles(List<double> m, double pitch, double yaw) {
+      final (p, y) = headAngles(m)!;
+      expect(p, closeTo(pitch, 1e-9));
+      expect(y, closeTo(yaw, 1e-9));
+    }
+
+    test('facing the camera, the head is level and straight', () {
+      expectAngles(matrix(aboutX(0)), 0, 0);
+    });
+
+    test('nodding up is positive pitch, down negative', () {
+      // Up: where the face looks swings from +Z towards +Y, which is a
+      // turn of minus that angle about +X.
+      expectAngles(matrix(aboutX(-30)), 30, 0);
+      expectAngles(matrix(aboutX(25)), -25, 0);
+    });
+
+    test('turning to the user\'s right is positive yaw, left negative', () {
+      // The frame isn't mirrored: the user's right is the camera's -X, so
+      // turning that way swings the face from +Z towards -X: a turn of
+      // minus that angle about +Y.
+      expectAngles(matrix(aboutY(-40)), 0, 40);
+      expectAngles(matrix(aboutY(35)), 0, -35);
+    });
+
+    test('where the face is doesn\'t matter, only where it looks', () {
+      expectAngles(matrix(aboutX(-20), away: 90), 20, 0);
+    });
+
+    test('a nod and a turn at once give both', () {
+      // Turned right 30 degrees, then nodding up 20.
+      final y = aboutY(-30), x = aboutX(-20);
+      final both = [
+        for (var r = 0; r < 3; r++)
+          [
+            for (var c = 0; c < 3; c++)
+              y[r][0] * x[0][c] + y[r][1] * x[1][c] + y[r][2] * x[2][c],
+          ],
+      ];
+      expectAngles(matrix(both), 20, 30);
+    });
+
+    test('anything but a 4x4 matrix of numbers is none', () {
+      expect(headAngles(const []), isNull);
+      expect(headAngles(List.filled(9, 0)), isNull);
+      expect(headAngles(List.filled(16, 0)), isNull);
+      expect(headAngles(matrix(aboutX(0))..[10] = double.nan), isNull);
+    });
   });
 }

@@ -51,7 +51,7 @@
 <main>
   <p><a class="brand" href="/app/">TabCam</a></p>
   <h1>Privacy Policy</h1>
-  <p class="muted">Last updated: October 13, 2026</p>
+  <p class="muted">Last updated: October 16, 2026</p>
 
   <p>TabCam scans guitar tabs, reads them into text, and shares them. It
   runs as an Android app, an iOS app and a web app at
@@ -112,9 +112,13 @@
     metrics about how its features perform, as described in
     <a href="https://developers.google.com/ml-kit/terms">Google's ML Kit terms</a>.</li>
     <li><strong>Head gestures:</strong> while you record yourself playing
-    along (Cam), the Android and iOS apps can turn the tab when you nod.
-    For this, Google's ML Kit face detection finds your face in the
-    camera's picture on the device, and only the angle of your head is
+    along (Cam), TabCam can turn the tab when you nod. For this, it finds
+    your face in the camera's picture on your device: in the Android and
+    iOS apps with Google's ML Kit face detection, and on the web with
+    Google's MediaPipe face landmarker, running in your browser. On the
+    web, Cam downloads MediaPipe's code from jsDelivr and its face model
+    from Google when it opens; the camera's picture is not sent with
+    those downloads or anywhere else. Only the angle of your head is
     used. Nothing about your face is saved, sent anywhere or used to
     identify you. You can switch head gestures off in Cam.</li>
     <li><strong>TabCam Premium:</strong> pages that sync to your cloud

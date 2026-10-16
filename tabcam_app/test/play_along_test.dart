@@ -25,6 +25,9 @@ class FakeHeads implements HeadTracking {
   bool disposed = false;
 
   @override
+  bool active = true;
+
+  @override
   void onImage(CameraImage image) => frames++;
 
   @override
@@ -265,12 +268,51 @@ void main() {
     await frames(tester);
     expect(find.byTooltip('Head gestures off'), findsOneWidget);
     expect(camera.streaming, isFalse);
+    expect(heads!.active, isFalse);
     heads!.onGesture(HeadGesture.previous);
     await tester.pump();
     expect(find.text('3 / 3'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());
     expect(heads!.disposed, isTrue);
+  });
+
+  testWidgets('with a camera that streams no frames (the web\'s), head '
+      'gestures still work, and it records', (tester) async {
+    camera.imageStreaming = false;
+    final (library, id) = await capture(tester, tab: _tab);
+    FakeHeads? heads;
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, onGesture) => heads = FakeHeads(onGesture),
+        ),
+      ),
+    );
+    await frames(tester);
+    expect(camera.streaming, isFalse);
+    expect(heads!.active, isTrue);
+    expect(find.byKey(const Key('cam-heads')), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Rec'));
+    await frames(tester);
+    expect(camera.recording, isTrue);
+    heads!.onGesture(HeadGesture.next);
+    await tester.pump();
+    expect(find.text('2 / 3'), findsOneWidget);
+    await tester.tap(find.byTooltip('Stop'));
+    await frames(tester);
+    expect(camera.recordings, 1);
+
+    await tester.tap(find.byKey(const Key('cam-heads')));
+    await frames(tester);
+    expect(heads!.active, isFalse);
+    heads!.onGesture(HeadGesture.next);
+    await tester.pump();
+    expect(find.text('2 / 3'), findsOneWidget);
   });
 
   testWidgets('where head gestures can\'t work, there\'s no switch', (

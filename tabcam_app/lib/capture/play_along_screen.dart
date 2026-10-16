@@ -20,8 +20,8 @@ import 'media.dart';
 /// screen, with the tab under it one neckline at a time ([necklines]).
 /// Any key moves to the next neckline (a page-turner pedal, a keyboard);
 /// Backspace, ← , ↑ and Page Up to the one before; a tap on the neckline
-/// or its arrows too; on Android and iOS, a strong nod up or turn to the
-/// right too, a nod down or turn to the left to the one before
+/// or its arrows too; on Android, iOS and the web, a strong nod up or turn
+/// to the right too, a nod down or turn to the left to the one before
 /// ([HeadTracking]). **Rec** records (video and sound) until it's
 /// tapped again, and adds the take to the capture as a video ("Take 1",
 /// "Take 2"…). **Play** plays the last take back, the necklines turning
@@ -130,7 +130,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     }
     setState(() => _controller = controller);
     _heads ??= widget.headTracking(controller, _gesture);
-    _heads?.camera = controller;
+    _heads
+      ?..camera = controller
+      ..active = _headsOn;
     await _stream();
   }
 
@@ -164,6 +166,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
 
   Future<void> _toggleHeads() async {
     setState(() => _headsOn = !_headsOn);
+    _heads?.active = _headsOn;
     final controller = _controller;
     if (_headsOn) return _stream();
     if (controller != null &&
@@ -233,9 +236,12 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       if (controller.value.isStreamingImages) {
         await controller.stopImageStream();
       }
-      // Its frames still go to the head gestures while it records.
+      // Its frames still go to the head gestures while it records (not
+      // on the web: it streams none, and the tracker reads the preview).
       await controller.startVideoRecording(
-        onAvailable: _heads == null ? null : _frame,
+        onAvailable: _heads == null || !controller.supportsImageStreaming()
+            ? null
+            : _frame,
       );
     } on Object catch (e) {
       debugPrint('TabCam: cam: $e');
