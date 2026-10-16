@@ -461,19 +461,61 @@ class _EventScreenState extends State<EventScreen> {
     if (sure == true && mounted) reader.readSoon(event.id, again: true);
   }
 
+  /// Rescan emptied the text tab: until a reading fills it, the Text view
+  /// says how the read stands.
+  bool _rescanned = false;
+
+  /// The Text view's Rescan: asks, then deletes the text tab (and its
+  /// Verified mark) and reads every photo and PDF again into it. Emptied
+  /// and left to the reader, it's replaced on the device and by the cloud.
+  Future<void> _rescan(CaptureEvent event) async {
+    final reader = AutoReaderScope.of(context);
+    if (reader == null) return;
+    final l10n = context.l10n;
+    final sure = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.eventRescanTitle),
+        content: Text(l10n.eventRescanBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.eventCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.textViewRescan),
+          ),
+        ],
+      ),
+    );
+    if (sure != true || !mounted) return;
+    setState(() => _rescanned = true);
+    await _library.patch(
+      event.id,
+      (now) =>
+          now.copyWith(tabText: '', tabTextAuto: true, tabTextCorrect: false),
+    );
+    if (mounted) reader.readSoon(event.id, again: true);
+  }
+
   /// The Text view: the tab, or why there's none yet.
   Widget _textView(CaptureEvent event) {
-    if (event.tabText != null) {
+    final reader = AutoReaderScope.of(context);
+    final state = reader?.stateOf(event.id);
+    // Emptied by Rescan: how the read stands (reading, no tab found,
+    // failed…), until its text comes.
+    final rescanning =
+        _rescanned && (event.tabText?.trim().isEmpty ?? false) && state != null;
+    if (event.tabText != null && !rescanning) {
       return TabTextView(
         key: ValueKey('text-${event.id}'),
         library: _library,
         eventId: event.id,
         ocr: widget.ocr,
-        // Rescan: the pages read again, as the Text tool tapped again.
-        onRescan:
-            AutoReaderScope.of(context) != null &&
-                event.pages.any((p) => p.isImage || p.isPdf)
-            ? () => _readAgain(event)
+        // Rescan: the text replaced by a new reading of the pages.
+        onRescan: reader != null && event.pages.any((p) => p.isImage || p.isPdf)
+            ? () => _rescan(event)
             : null,
         // Store apps can't point to buying Premium.
         onUpgrade: switch ((
@@ -491,12 +533,11 @@ class _EventScreenState extends State<EventScreen> {
         },
       );
     }
-    final reader = AutoReaderScope.of(context);
     final l10n = context.l10n;
     // What a read reads: photos and PDFs.
     final images = event.pages.any((p) => p.isImage || p.isPdf);
     void again() => reader?.readSoon(event.id, again: true);
-    final (message, action) = switch (reader?.stateOf(event.id)) {
+    final (message, action) = switch (state) {
       _ when !images => (l10n.eventNothingToRead, null),
       ReadState.reading => (l10n.eventReadingTab, null),
       // The cloud may find no tab: Read again asks it again.

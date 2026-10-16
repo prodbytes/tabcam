@@ -302,6 +302,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'The text read before is replaced, unless you edited it or marked it correct.';
 
   @override
+  String get eventRescanTitle => 'Rescan the pages?';
+
+  @override
+  String get eventRescanBody =>
+      'The current text is deleted, even if you edited it or marked it verified, and every photo and PDF is read again to replace it.';
+
+  @override
   String get eventReadFailed => 'Reading the tab failed.';
 
   @override
@@ -946,6 +953,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get textViewFretUp => 'Fret up (the number under the cursor)';
+
+  @override
+  String get textViewNoteUp => 'Note up a string (cycles round)';
+
+  @override
+  String get textViewNoteDown => 'Note down a string (cycles round)';
+
+  @override
+  String get textViewPutCursorOnNote =>
+      'Put the cursor on a note on a string line';
+
+  @override
+  String get textViewNoStringFree =>
+      'No other string has room for this note there';
 
   @override
   String get textViewOvertypeOn =>

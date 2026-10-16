@@ -320,6 +320,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'O texto lido antes é substituído, a não ser que você o tenha editado ou marcado como correto.';
 
   @override
+  String get eventRescanTitle => 'Reescanear as páginas?';
+
+  @override
+  String get eventRescanBody =>
+      'O texto atual é apagado, mesmo que você o tenha editado ou marcado como verificado, e cada foto e PDF é lido de novo para substituí-lo.';
+
+  @override
   String get eventReadFailed => 'Falha ao ler a tablatura.';
 
   @override
@@ -973,6 +980,20 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get textViewFretUp => 'Subir traste (o número sob o cursor)';
+
+  @override
+  String get textViewNoteUp => 'Nota uma corda acima (dá a volta)';
+
+  @override
+  String get textViewNoteDown => 'Nota uma corda abaixo (dá a volta)';
+
+  @override
+  String get textViewPutCursorOnNote =>
+      'Coloque o cursor numa nota de uma corda';
+
+  @override
+  String get textViewNoStringFree =>
+      'Nenhuma outra corda tem espaço para esta nota ali';
 
   @override
   String get textViewOvertypeOn =>
