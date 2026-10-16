@@ -86,7 +86,8 @@ class TabPageImporter {
     if (page == null) return done(TabImportOutcome.failed);
     final pdf = await tabPagePdf(page);
     final name = page.title.isEmpty ? site.name : page.title;
-    final before = {for (final p in event.pages) p.id};
+    // A reader's print is their contribution's, as the link is.
+    final before = {for (final p in Library.addedPages(event)) p.id};
     event = await library.addMedia(event, [
       Media(
         XFile.fromData(pdf, name: '$name.pdf', mimeType: 'application/pdf'),
@@ -95,7 +96,8 @@ class TabPageImporter {
       ),
     ]);
     // Named after the page (a file from bytes has no name everywhere).
-    final added = event.pages.lastWhere((p) => !before.contains(p.id));
+    final added = Library.addedPages(event)
+        .lastWhere((p) => !before.contains(p.id));
     event = await library.renamePage(event.id, added.id, name) ?? event;
     _log('$url: ${page.text.length} characters, a PDF of ${pdf.length} bytes');
     return done(TabImportOutcome.imported, page);

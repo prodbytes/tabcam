@@ -38,8 +38,9 @@ apart from the 50 it can be shared with by email.
 
 On a capture shared with them to read, the [event screen](event-screen.md)
 says "Shared by <email> · Can view and add". Add (scan, a document, photos
-& videos, files, a link), dragging files onto it and [Cam](cam.md)'s takes
-go to the reader's **contribution**, not the owner's capture. Below the
+& videos, files, a link, with a [tab site](tab-site-links.md)'s PDF print),
+dragging files onto it and [Cam](cam.md)'s takes go to the reader's
+**contribution**, not the owner's capture. Below the
 capture's files the list shows **Your files** ("Only you and <owner> see
 these"), each with Delete (after a confirmation), playable in the list and
 opening alone on the file screen (shown as it is: no Rename, Rotate or
