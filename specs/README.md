@@ -49,8 +49,9 @@ the cloud as they sync.
   into plain-text tab with the page's chords, lyrics and section names
   (on-device OCR, or Premium's cloud), for text tabs
   and typeset tab staves, never over the user's edits or a reading marked
-  correct; the Text view, a tab editor (overtype, − and + on a fret)
-  where a reading is marked correct (the event then opens on it).
+  correct; the Text view, a tab editor (Copy, Fix, Rescan and Verified
+  on one line; overtype, − and + on a fret) where a reading is marked
+  verified (the event then opens on it).
 - [Auto-correct](autocorrect.md): Fix, for Premium: Claude finds the
   song's tab online (tab sites first) and proposes corrections, which the
   user accepts or rejects note by note.

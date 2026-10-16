@@ -469,6 +469,12 @@ class _EventScreenState extends State<EventScreen> {
         library: _library,
         eventId: event.id,
         ocr: widget.ocr,
+        // Rescan: the pages read again, as the Text tool tapped again.
+        onRescan:
+            AutoReaderScope.of(context) != null &&
+                event.pages.any((p) => p.isImage || p.isPdf)
+            ? () => _readAgain(event)
+            : null,
         // Store apps can't point to buying Premium.
         onUpgrade: switch ((
           widget.sync,

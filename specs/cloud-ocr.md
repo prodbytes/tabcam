@@ -254,8 +254,9 @@ set to check both.
     point-in-time recovery); a user's item is deleted with their account,
     by the share API ([deleting the account](cloud-sync.md#deleting-the-account));
   - `tabcam-ocr` (x86_64, like `tabcam-ocr-api`: one image, and
-    PaddlePaddle has no working Linux ARM build of its version; 3008 MB, the account's current cap; 5 min, one retry): it may get page images and put
-    results;
+    PaddlePaddle has no working Linux ARM build of its version; 2560 MB,
+    chosen by [measuring](#memory); 15 min, one retry): it may get page
+    images and put results;
   - `tabcam-ocr-api` (512 MB, 300 s for [auto-correct](autocorrect.md)'s
     `/autocorrect`; the other requests take a second or two): it may read
     and write the table, read the rbacr token's parameter (and the Claude
@@ -270,6 +271,31 @@ set to check both.
   [tabcam_locr/scripts/deploy.sh](../tabcam_locr/scripts/deploy.sh); its
   output URL is the app's `TABCAM_OCR_URL`. It passes the Claude API
   key's secret (`tabcam/anthropic-api-key`) when it exists.
+
+### Memory
+
+`tabcam-ocr`'s memory was measured on 2026-10-16 by invoking it directly
+on the image build's made-up riff photo (`selftest.page_photo()`, two
+staves) under a made-up identity: at each size one cold invoke, then 3
+to 6 warm ones (image `51473691cf23`, x86_64, us-east-1). The three
+engines run side by side, so a page is CPU bound, and Lambda's CPU grows
+with memory. The account caps a function's memory at 3008 MB, so the
+sweep stops there; a page peaks at about 2 GB, so less than 2048 MB
+isn't an option.
+
+| Memory | Warm (median) | Cold invoke (init) | Billed GB-s | Per 1000 pages |
+|---|---|---|---|---|
+| 2048 MB | 143.7 s | 160.7 s (0.55 s) | 287.5 | $4.79 |
+| **2560 MB** | **105.5 s** | 128.8 s (0.11 s) | **263.8** | **$4.40** |
+| 3008 MB | 97.5 s | 106.2 s (0.21 s) | 286.3 | $4.77 |
+
+Cold invoke: the first after a configuration change, which loads the
+engines' models; init: Lambda's Init Duration. Cost: $0.0000166667 per
+GB-s plus $0.20 per million requests. **2560 MB** is the sweet spot: the
+cheapest per page, 8% less than 3008 MB for 8% more time (under the 10%
+a step up must buy); 2048 MB is both slower and dearer, its ~1.95 GB
+peak close to its limit. Measure again if the quota is raised: up to
+10240 MB brings up to 6 vCPUs.
 
 ## Verified
 
@@ -327,6 +353,7 @@ set to check both.
 - No concurrency is reserved (the account's limit is 10); a burst of
   uploads queues.
 - Results arrive at the next sync pass after they're written (up to a
-  minute, plus about 30 s of OCR per page).
+  minute, plus about 105 s of OCR per page, [measured](#memory) on a
+  two-staff page).
 - Transcriptions of events deleted in the bucket by other means than the
   app (whole folders) stay until their pages' deletions reach the rule.

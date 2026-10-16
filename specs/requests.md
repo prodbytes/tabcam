@@ -1038,7 +1038,26 @@ spec.
    show the system's "save as" (`file_picker`). On a phone narrower than
    600 px, Rename, Download and Delete move into a ⋮ menu on each row
    ([event screen](event-screen.md)).
-14. **"The text recognition is still not accurate. Research and test
+14. **Optimize the OCR Lambda: increase its memory and scan until it stops
+   improving, to find the sweet spot of cost and performance.** Measured
+   `tabcam-ocr` on a made-up riff page at 2048, 2560 and 3008 MB (the
+   account's cap): 144 s, 106 s and 97 s a page warm, $4.79, $4.40 and
+   $4.77 per 1000 pages. It now has **2560 MB** (was 3008 MB): the
+   cheapest, 8% slower than the cap. Set live with the CLI and in
+   `tabcam_infra/ocr.yaml`, so the next deploy keeps it; the spec's
+   timeout (15 min) and per-page time were corrected too
+   ([cloud OCR](cloud-ocr.md#memory)).
+15. **In the text edit screen make the buttons be Copy, Fix, Rescan and
+   "Verified" on the first line; on the second line, add borders to make
+   clear those are buttons, and make the checkbox a toggle button.** The
+   Text view's top line is now **Copy**, **Fix**, **Rescan** (new: Read
+   again from the Text view, as the Text tool tapped again) and
+   **Verified** (was Correct; the same `tabTextCorrect` mark), compact and
+   on one line, scaled down rather than wrapped on a narrow phone. The
+   editing tools under it are outlined: − and + as outlined icon buttons,
+   and Overtype, which was a checkbox, a toggle button, filled while on
+   ([tab recognition](tab-recognition.md#text-view)).
+16. **"The text recognition is still not accurate. Research and test
    pre-processing techniques to make it as accurate as possible. Test with
    the two songs already uploaded."** Then: **"try this one too, black
    magic woman intro by santana"**. The cloud OCR was measured on the

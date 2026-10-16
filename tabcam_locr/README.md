@@ -44,7 +44,7 @@ app syncs a page ──► user-data bucket ──S3 event──► EventBridge 
     [specs](../specs/autocorrect.md)). Premium only (402); 503 without the
     Claude API key. It can take a few minutes, so the function's timeout
     is 300 s.
-- **tabcam-ocr** (3008 MB, the account's cap; 5 min) reads one page and writes
+- **tabcam-ocr** (2560 MB, measured: [cloud OCR](../specs/cloud-ocr.md#memory); 15 min) reads one page and writes
   `{page, status: ok|no-tab|error, text, staves, lines, seconds, engines,
   version, created}`.
 - **Premium** comes from rbacr, asked with a root-owned API token kept in
