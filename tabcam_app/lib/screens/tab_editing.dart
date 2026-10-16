@@ -3,7 +3,8 @@ import 'package:flutter/services.dart';
 import '../cloud/ocr_api.dart';
 
 /// Edits to a text tab that keep its columns lined up: overtype, + and −
-/// on a fret, and auto-correct's corrections.
+/// on a fret, ++ and −− moving a note across strings, and auto-correct's
+/// corrections.
 
 /// A string line: dashes are what's between its notes.
 bool isTabLine(String line) => '-'.allMatches(line).length >= 3;
@@ -111,6 +112,25 @@ class OvertypeFormatter extends TextInputFormatter {
 /// next press works on it too.
 TextEditingValue? bumpNumber(TextEditingValue value, int delta) {
   final text = value.text;
+  final number = _numberAt(value);
+  if (number == null) return null;
+  final (start, end) = number;
+  final n = int.parse(text.substring(start, end)) + delta;
+  if (n < 0 || n > 99) return null;
+  final line = _lineAt(text, start);
+  final row = text.substring(line.start, line.end);
+  final column = start - line.start;
+  final changed = _put(row, column, end - start, '$n');
+  return TextEditingValue(
+    text: text.replaceRange(line.start, line.end, changed),
+    selection: TextSelection.collapsed(offset: start),
+  );
+}
+
+/// The number (one or two digits) at the cursor, or just before it, as
+/// its start and end offsets; null when there's none.
+(int, int)? _numberAt(TextEditingValue value) {
+  final text = value.text;
   final at = value.selection.isValid ? value.selection.baseOffset : -1;
   if (at < 0) return null;
   bool digit(int i) =>
@@ -126,14 +146,79 @@ TextEditingValue? bumpNumber(TextEditingValue value, int delta) {
     end++;
   }
   if (end - start > 2) return null;
-  final n = int.parse(text.substring(start, end)) + delta;
-  if (n < 0 || n > 99) return null;
-  final line = _lineAt(text, start);
-  final row = text.substring(line.start, line.end);
-  final column = start - line.start;
-  final changed = _put(row, column, end - start, '$n');
-  return TextEditingValue(
-    text: text.replaceRange(line.start, line.end, changed),
-    selection: TextSelection.collapsed(offset: start),
-  );
+  return (start, end);
+}
+
+/// Why [moveNote] couldn't move a note.
+enum MoveNoteFailure {
+  /// The cursor isn't on a fret number on a string line.
+  noNote,
+
+  /// No other string of the staff has room for it at its column.
+  noRoom,
+}
+
+/// ++ and −−: the note under the cursor moves to the string above
+/// ([delta] −1) or below (+1), in the same column, cycling within its
+/// staff (the string lines around it): up from the first string is the
+/// last. A string whose spot holds another note is skipped. Dashes fill
+/// the room it leaves, so the columns stay lined up, and the cursor
+/// follows the note. [failure] says why when it can't move.
+({TextEditingValue? moved, MoveNoteFailure? failure}) moveNote(
+  TextEditingValue value,
+  int delta,
+) {
+  const noNote = (moved: null, failure: MoveNoteFailure.noNote);
+  final number = _numberAt(value);
+  if (number == null) return noNote;
+  final (start, end) = number;
+  final text = value.text;
+  final lines = text.split('\n');
+  // The note's line and column.
+  var row = 0, offset = 0;
+  while (offset + lines[row].length < start) {
+    offset += lines[row].length + 1;
+    row++;
+  }
+  if (!isTabLine(lines[row])) return noNote;
+  final column = start - offset;
+  final width = end - start;
+  // The staff: the string lines next to each other around it.
+  var first = row, last = row;
+  while (first > 0 && isTabLine(lines[first - 1])) {
+    first--;
+  }
+  while (last < lines.length - 1 && isTabLine(lines[last + 1])) {
+    last++;
+  }
+  final strings = last - first + 1;
+  bool free(String line) {
+    for (var i = column; i < column + width; i++) {
+      if (i < line.length && line[i] != '-') return false;
+    }
+    return true;
+  }
+
+  for (var step = 1; step < strings; step++) {
+    final to = first + (row - first + delta * step) % strings;
+    final target = lines[to];
+    if (!free(target)) continue;
+    final note = text.substring(start, end);
+    lines[row] = _put(lines[row], column, width, '');
+    // A short string line is lengthened with dashes to reach the column.
+    final padded = target.padRight(column + width, '-');
+    lines[to] = padded.replaceRange(column, column + width, note);
+    var at = column;
+    for (var i = 0; i < to; i++) {
+      at += lines[i].length + 1;
+    }
+    return (
+      moved: TextEditingValue(
+        text: lines.join('\n'),
+        selection: TextSelection.collapsed(offset: at),
+      ),
+      failure: null,
+    );
+  }
+  return (moved: null, failure: MoveNoteFailure.noRoom);
 }

@@ -574,6 +574,18 @@ abstract class AppLocalizations {
   /// **'The text read before is replaced, unless you edited it or marked it correct.'**
   String get eventReadAgainBody;
 
+  /// Event: asked when tapping Rescan on the Text view
+  ///
+  /// In en, this message translates to:
+  /// **'Rescan the pages?'**
+  String get eventRescanTitle;
+
+  /// Event: what Rescan does
+  ///
+  /// In en, this message translates to:
+  /// **'The current text is deleted, even if you edited it or marked it verified, and every photo and PDF is read again to replace it.'**
+  String get eventRescanBody;
+
   /// Event Text view: reading failed
   ///
   /// In en, this message translates to:
@@ -1587,6 +1599,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fret up (the number under the cursor)'**
   String get textViewFretUp;
+
+  /// Tooltip of ++: the note under the cursor to the string above
+  ///
+  /// In en, this message translates to:
+  /// **'Note up a string (cycles round)'**
+  String get textViewNoteUp;
+
+  /// Tooltip of −−: the note under the cursor to the string below
+  ///
+  /// In en, this message translates to:
+  /// **'Note down a string (cycles round)'**
+  String get textViewNoteDown;
+
+  /// Snackbar when ++ or −− finds no note under the cursor
+  ///
+  /// In en, this message translates to:
+  /// **'Put the cursor on a note on a string line'**
+  String get textViewPutCursorOnNote;
+
+  /// Snackbar when ++ or −− finds no string with room for the note
+  ///
+  /// In en, this message translates to:
+  /// **'No other string has room for this note there'**
+  String get textViewNoStringFree;
 
   /// Tooltip of Overtype while on
   ///

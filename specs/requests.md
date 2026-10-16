@@ -1057,7 +1057,23 @@ spec.
    editing tools under it are outlined: − and + as outlined icon buttons,
    and Overtype, which was a checkbox, a toggle button, filled while on
    ([tab recognition](tab-recognition.md#text-view)).
-16. **"The text recognition is still not accurate. Research and test
+16. **Add ++ and −− buttons to move the note up / down one line (string),
+   cycling round past the first or last line.** The Text view's editing
+   tools have **++** (up a string) and **−−** (down), after − and +: the
+   note under the cursor moves to the next string with room at its column,
+   cycling within its staff, leaving dashes behind (`moveNote` in
+   `lib/screens/tab_editing.dart`;
+   [tab recognition](tab-recognition.md#text-view)).
+17. **The Rescan button doesn't seem to work: when pressed, re-scan all the
+   original PDFs and images in the capture, delete the current content and
+   replace it with the new content.** Rescan ran Read again, which keeps
+   a text the user edited (Fix counts) or marked verified, so it seldom
+   changed anything. It now asks "Rescan the pages?", empties the text
+   tab and clears Verified, then reads every photo and PDF again (on the
+   device, or every page in the cloud with Premium), and the new reading
+   fills it; meanwhile the Text view shows how the read stands
+   ([tab recognition](tab-recognition.md#text-view)).
+18. **"The text recognition is still not accurate. Research and test
    pre-processing techniques to make it as accurate as possible. Test with
    the two songs already uploaded."** Then: **"try this one too, black
    magic woman intro by santana"**. The cloud OCR was measured on the
