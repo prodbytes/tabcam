@@ -21,7 +21,9 @@ the request's profile in the share API's tables (`PROFILES_TABLE`,
 and for uploads checks those addresses; a sign-in without a profile is
 checked by its own address, as before. People get it by:
 
-- **Subscribing** to prodbytes.substack.com with the same Google address:
+- **Subscribing** to prodbytes.substack.com, at **US$10 a month or US$100
+  a year** (the prices are set in Substack's payment settings, not in
+  code), with the same Google address:
   rbacr's Stripe sync grants the `tabcam` system's subscriber role,
   `premium`, for the paid period.
 - **A voucher**, redeemed on rbacr's own page (https://rbacr.nu01.com/me,
@@ -226,7 +228,9 @@ with text but no tab is still `no-tab`.
   without the service show no role.
 - It also has a
   **TabCam Premium** card. For premium users: transcription is automatic, and until when.
-  For others: what Premium does, "Subscribe with <their address>",
+  For others: what Premium does, its price and "subscribe with <their
+  address>" ("$10 a month or $100 a year: subscribe with …"; US$ in es
+  and pt),
   **Upgrade** (the Substack subscribe page), **Redeem a voucher** (rbacr's
   page) and **Check again**. Signed out, it says Premium comes with
   signing in.

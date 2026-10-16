@@ -143,7 +143,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String accountPremiumOffer(String email) {
-    return 'Transcribe cada escaneo automáticamente en la nube, con más precisión que en el teléfono, y lee tablaturas también en la web. Suscríbete con $email.';
+    return 'Transcribe cada escaneo automáticamente en la nube, con más precisión que en el teléfono, y lee tablaturas también en la web. US\$10 al mes o US\$100 al año: suscríbete con $email.';
   }
 
   @override

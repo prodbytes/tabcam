@@ -130,7 +130,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String accountPremiumOffer(String email) {
-    return 'Have every scan transcribed automatically in the cloud, more accurately than on the phone, and read tabs on the web too. Subscribe with $email.';
+    return 'Have every scan transcribed automatically in the cloud, more accurately than on the phone, and read tabs on the web too. \$10 a month or \$100 a year: subscribe with $email.';
   }
 
   @override

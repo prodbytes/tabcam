@@ -506,7 +506,9 @@ void main() {
     expect(find.text('Upgrade'), findsOneWidget);
     expect(find.text('Redeem a voucher'), findsOneWidget);
     expect(
-      find.textContaining('Subscribe with ana@example.com'),
+      find.textContaining(
+        '\$10 a month or \$100 a year: subscribe with ana@example.com',
+      ),
       findsOneWidget,
     );
 
