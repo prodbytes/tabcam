@@ -102,6 +102,7 @@ the cloud as they sync.
 - [Release builds](release.md): versions, tags and the Release workflow.
 - [App stores](app-stores.md): publishing to Google Play and the App
   Store under personal accounts: the status of each step, the Android
-  upload key and App Bundle, the store listings drafts in `tabcam_store/`.
+  upload key and App Bundle, the store listings in `tabcam_store/` and
+  their upload to App Store Connect with fastlane, TestFlight.
 - [Deploy](deploy.md): the web app at https://tabcam.nu01.com and the
   release candidate at https://rc.tabcam.nu01.com.

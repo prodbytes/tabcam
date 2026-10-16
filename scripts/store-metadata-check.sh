@@ -91,16 +91,16 @@ for n in 1 2 3 4 5 6; do
 done
 
 # App Store (fastlane deliver layout)
-check ios/en-US/name.txt 30
-check ios/en-US/subtitle.txt 30
-check ios/en-US/description.txt 4000
-check ios/en-US/keywords.txt 100 bytes
-check ios/en-US/promotional_text.txt 170
-check ios/en-US/release_notes.txt 4000
-check_url ios/en-US/support_url.txt
-check_url ios/en-US/marketing_url.txt
-check_url ios/en-US/privacy_url.txt
-check ios/review_information/notes.txt 4000
+check ios/metadata/en-US/name.txt 30
+check ios/metadata/en-US/subtitle.txt 30
+check ios/metadata/en-US/description.txt 4000
+check ios/metadata/en-US/keywords.txt 100 bytes
+check ios/metadata/en-US/promotional_text.txt 170
+check ios/metadata/en-US/release_notes.txt 4000
+check_url ios/metadata/en-US/support_url.txt
+check_url ios/metadata/en-US/marketing_url.txt
+check_url ios/metadata/en-US/privacy_url.txt
+check ios/metadata/review_information/notes.txt 4000
 # Screenshots: the 6.9" iPhone and, as the app runs on iPads, the 13" iPad.
 for n in 1 2 3 4 5 6; do
   check_png "ios/screenshots/en-US/iphone69_$n.png" 1320 2868 rgb
@@ -108,7 +108,7 @@ for n in 1 2 3 4 5 6; do
 done
 
 # Keywords: comma-separated, no spaces around the commas, no empty ones.
-keywords="$store/ios/en-US/keywords.txt"
+keywords="$store/ios/metadata/en-US/keywords.txt"
 if [[ -f "$keywords" ]]; then
   kw="$(<"$keywords")"
   if [[ "$kw" =~ (^|,)[[:space:]]|[[:space:]](,|$)|,, ]]; then

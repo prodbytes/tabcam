@@ -17,11 +17,11 @@ publish to production.
 | Sign in with Apple (App Store guideline 4.8) | Done ([cloud sync](cloud-sync.md#sign-in-with-apple-ios)): `tabcam-identity`, `tabcam-share-api` and `tabcam-ocr` deployed with `AppleClientId=com.nu01.tabcam` (2026-10-16), `TABCAM_APPLE_SIGN_IN=1` and the paid team in the maintainer's `.env`. To do: try it on a phone |
 | Privacy policy page; iOS privacy manifest and encryption declaration | Done ([privacy](privacy.md)); the contact email is still to be added |
 | Play internal testing, then the 14-day closed test | To do |
-| App Store distribution build (`make ipa`) and its upload (`scripts/ios-upload.sh`) | Done ([below](#ios-distribution)): 0.1.202610161805 built and signed 2026-10-16; its upload waits for the App Store Connect record |
-| App Store Connect record, TestFlight | To do (maintainer: the record for `com.nu01.tabcam`) |
-| Listings: descriptions, data safety, privacy labels, rating, category | Drafts done ([below](#store-listings)) |
+| App Store distribution build (`make ipa`) and its upload (`scripts/ios-upload.sh`) | Done ([below](#ios-distribution)): 0.1.202610161805 (build 1792173901) built, signed and uploaded 2026-10-16 |
+| App Store Connect record, TestFlight | Done: "TabCam: Guitar Tab Scanner", Apple ID 6823729635, team LMX88986F3. Build 1792173901 processed, no non-exempt encryption (from `Info.plist`), in the internal TestFlight group **Internal** with the account holder (2026-10-16, [below](#uploading-the-app-store-listing)); no external testers |
+| Listings: descriptions, data safety, privacy labels, rating, category | Done for the App Store, uploaded 2026-10-16 to version 0.1.202610161805 ([below](#uploading-the-app-store-listing)): description, keywords, promotional text, URLs, name, subtitle, review notes, screenshots, Music and Productivity, copyright, age rating. To do (maintainer): the App Privacy labels in App Store Connect's web UI ([data-safety.md](../tabcam_store/data-safety.md); the API key can't set them), the price (free) and availability. Play: drafts ([below](#store-listings)) |
 | Listings: icon, feature graphic, screenshots (Play phone, 6.9" iPhone, 13" iPad) | Done ([below](#store-graphics)) |
-| Listings: the review test account | To do (maintainer) |
+| Listings: App Review's contact details and, if wanted, a demo account | To do (maintainer; [REVIEW_NOTES.md](../tabcam_store/ios/REVIEW_NOTES.md)) |
 | Review submission | To do |
 
 ## iOS distribution
@@ -91,42 +91,90 @@ and release → App integrity) once the app is on Play.
 
 ## Store listings
 
-[tabcam_store/](../tabcam_store) holds the listings, drafted in the
-layout fastlane reads (`fastlane supply` for Play, `deliver` for the App
-Store), so they can be uploaded later; fastlane itself isn't set up yet.
+[tabcam_store/](../tabcam_store) holds the listings, in the layout
+fastlane reads (`fastlane supply` for Play, `deliver` for the App Store).
+The App Store's are uploaded with `scripts/store-upload-ios.sh`
+([below](#uploading-the-app-store-listing)); Play's aren't set up for
+upload yet.
 
 - `android/en-US/`: `title.txt` (TabCam: Guitar Tab Scanner),
   `short_description.txt`, `full_description.txt`,
   `changelogs/default.txt`; `images/`: `icon.png`, `featureGraphic.png`
   and `phoneScreenshots/1.png` … `6.png` ([below](#store-graphics)).
-- `ios/en-US/`: `name.txt` (as the Play title), `subtitle.txt` (Scan tabs
-  into editable text), `description.txt` (the Play full description),
+- `ios/metadata/en-US/`: `name.txt` (as the Play title), `subtitle.txt` (Scan tabs
+  into editable text), `description.txt` (the Play full description,
+  but for its sign-in line: Apple or Google on iOS, Google on Play),
   `keywords.txt`, `promotional_text.txt`, `release_notes.txt`, the
   support and marketing URLs (https://tabcam.nu01.com/) and the privacy
   URL (https://tabcam.nu01.com/privacy); `ios/screenshots/en-US/`, the
-  screenshots ([below](#store-graphics)). `ios/review_information/notes.txt`
-  is App Review's notes (how to sign in, what to try);
+  screenshots ([below](#store-graphics)). `ios/metadata/review_information/notes.txt`
+  is App Review's notes (the welcome's Sign in with Apple and Google, any
+  Apple ID or Google account working; what to try: Scan, the Text view
+  and Verified, Cam, Share and Share with people, Add, Delete account);
   [REVIEW_NOTES.md](../tabcam_store/ios/REVIEW_NOTES.md) says what the
-  maintainer must add: contact details and a Google test account, kept
-  out of git (`.gitignore` ignores the folder's other files).
+  maintainer must add: contact details and, if wanted, a Google test
+  account, kept out of git (`.gitignore` ignores the folder's other
+  files). `ios/age-rating.json` is the age rating. The metadata is in
+  `ios/metadata/`, not `ios/`, since `deliver` takes every folder of its
+  metadata path for a language, and `ios/screenshots/` isn't one.
 - [data-safety.md](../tabcam_store/data-safety.md): draft answers for
   Play's Data safety form and Apple's App Privacy labels (email, user ID,
   name, photos and videos, files, other user content; only when signed
   in; encrypted in transit; deletable in the app; nothing shared, nor
-  used for ads or tracking; ML Kit's anonymous diagnostics to confirm),
-  the content rating (no objectionable content; users share captures
-  with people they pick), target audience (not children), category
+  used for ads or tracking; ML Kit's anonymous diagnostics to confirm;
+  required, since the app needs signing in), the content rating (no
+  objectionable content; users share captures with people they pick or
+  by a read-only link; no chat; Cam's play-along web view, answered as
+  no unrestricted web access), target audience (not children), category
   (Music & Audio on Play, Music on the App Store) and Play's account
   deletion URL (https://tabcam.nu01.com/app/: sign in, Profile, Delete
   account).
 
-The text claims only what the app does and never offers to buy Premium
-(the store apps don't sell it); it says Premium subscribers get cloud
-transcription.
+The text claims only what the app does as it is now (App Store guideline
+2.3): signing in first (signed out there's only the welcome), scanning
+and adding, reading tabs on the device, the Text view's tools (Fix lining
+the tab up, Copy, Verified), Cam, the zip download, Share copying a
+read-only link, Share with people. It never offers to buy Premium (the
+store apps don't sell it); it says Premium subscribers get cloud
+transcription, and leaves out Fix's online check (Premium's).
 `bash scripts/store-metadata-check.sh [dir]` checks each file is there
 and within its store's limit (title and name 30, subtitle 30, short
 description 80, descriptions 4000, keywords 100 bytes, promotional text
 170, URLs https), and exits non-zero otherwise.
+
+## Uploading the App Store listing
+
+`bash scripts/store-upload-ios.sh` runs fastlane
+([tabcam_store/fastlane/](../tabcam_store/fastlane/Fastfile), from
+`tabcam_store/`; `brew install fastlane`) with an App Store Connect API
+key, as `scripts/ios-upload.sh` takes one: `ASC_KEY_ID`, `ASC_ISSUER_ID`
+and `ASC_KEY_PATH` (the `.p8`, outside the repo; the maintainer's is an
+App Manager key in `~/.apple-keys/`).
+
+- `metadata [app version]`: `scripts/store-metadata-check.sh`, then
+  `deliver` for `com.nu01.tabcam`: the metadata (`ios/metadata`), the
+  screenshots (`ios/screenshots`, replacing those there: `deliver` tells
+  the display type by the size, 1320 x 2868 the 6.9" iPhone,
+  `APP_IPHONE_67`, and 2064 x 2752 the 13" iPad,
+  `APP_IPAD_PRO_3GEN_129`), primary category Music and secondary
+  Productivity, the copyright "2026 Julio Machado Faerman" and the age
+  rating (`ios/age-rating.json`: "None" throughout; no unrestricted web
+  access, messaging, ads, social media, gambling, loot boxes, health
+  topics, parental controls or age assurance; user-generated content
+  yes). With a version (the build's, `0.1.202610161805`), the version
+  App Store Connect prepares is renamed to it first, so the build can
+  go with it. No binary, no submission for review, manual release.
+  `deliver` skips `release_notes.txt` on the app's first version (Apple
+  takes none), and uploads the contact and demo account files only when
+  they're there.
+- `testflight <build number> [emails]`: once the build is processed,
+  sets its export compliance if App Store Connect still asks (the
+  build's `Info.plist` already answers: no non-exempt encryption), makes
+  the internal group **Internal** if missing (by the API itself:
+  fastlane's `create_beta_group` sends public link attributes App Store
+  Connect refuses for internal groups), adds the build to it, and adds
+  the team users given, or else the account holder, as its testers. No
+  external testers.
 
 ## Store graphics
 

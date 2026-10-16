@@ -1,0 +1,107 @@
+# fastlane for the App Store listing and TestFlight, run through
+# scripts/store-upload-ios.sh (which says what it needs). Authenticates with
+# an App Store Connect API key from the environment, never from the repo:
+#   ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_PATH (the AuthKey_<ID>.p8 file)
+# Paths are relative to tabcam_store/, where fastlane runs.
+default_platform(:ios)
+
+APP_ID = "com.nu01.tabcam"
+
+def asc_api_key
+  %w[ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_PATH].each do |name|
+    UI.user_error!("#{name} isn't set") if ENV[name].to_s.empty?
+  end
+  app_store_connect_api_key(
+    key_id: ENV["ASC_KEY_ID"],
+    issuer_id: ENV["ASC_ISSUER_ID"],
+    key_filepath: ENV["ASC_KEY_PATH"]
+  )
+end
+
+platform :ios do
+  # The listing: metadata, screenshots, categories, copyright, age rating.
+  # Never uploads a binary, never submits for review.
+  # app_version: the App Store version to fill in, renamed to it if need be
+  # (the build's version, e.g. 0.1.202610161805); default: the version
+  # App Store Connect is preparing.
+  lane :metadata do |options|
+    deliver(
+      api_key: asc_api_key,
+      app_identifier: APP_ID,
+      app_version: options[:app_version],
+      metadata_path: "ios/metadata",
+      screenshots_path: "ios/screenshots",
+      overwrite_screenshots: true,
+      skip_binary_upload: true,
+      skip_app_version_update: options[:app_version].to_s.empty?,
+      submit_for_review: false,
+      automatic_release: false,
+      force: true,
+      run_precheck_before_submit: false,
+      primary_category: "MUSIC",
+      secondary_category: "PRODUCTIVITY",
+      copyright: "2026 Julio Machado Faerman",
+      app_rating_config_path: "ios/age-rating.json"
+    )
+  end
+
+  # TestFlight: a build (by its build number) gets the export compliance
+  # answer of the app's Info.plist (ITSAppUsesNonExemptEncryption false: no
+  # non-exempt encryption) and goes to the internal group "Internal" (made
+  # if missing), with testers: the team's App Store Connect users given
+  # (testers:a@x,b@y), or else the account holder.
+  # No external testers.
+  lane :testflight_internal do |options|
+    build_number = options[:build].to_s
+    UI.user_error!("build:<build number> is needed") if build_number.empty?
+    emails = options[:testers].to_s.split(",").map(&:strip).reject(&:empty?)
+    asc_api_key # also authorizes Spaceship::ConnectAPI
+    app = Spaceship::ConnectAPI::App.find(APP_ID) or UI.user_error!("No app #{APP_ID}")
+    build = Spaceship::ConnectAPI::Build.all(app_id: app.id, build_number: build_number).first
+    UI.user_error!("No build #{build_number} yet") unless build
+    UI.user_error!("Build #{build_number} is #{build.processing_state}") unless build.processed?
+
+    if build.uses_non_exempt_encryption.nil?
+      build.update(attributes: { usesNonExemptEncryption: false })
+      UI.message("Build #{build_number}: export compliance set (no non-exempt encryption)")
+    else
+      UI.message("Build #{build_number}: usesNonExemptEncryption is #{build.uses_non_exempt_encryption}")
+    end
+
+    group = app.get_beta_groups(filter: { name: "Internal" }).find { |g| g.name == "Internal" }
+    unless group
+      # Not app.create_beta_group: it sends public link attributes, which
+      # App Store Connect refuses for an internal group (fastlane #29556).
+      body = { data: { type: "betaGroups",
+                       attributes: { name: "Internal", isInternalGroup: true, hasAccessToAllBuilds: false },
+                       relationships: { app: { data: { type: "apps", id: app.id } } } } }
+      Spaceship::ConnectAPI.client.test_flight_request_client.post("v1/betaGroups", body)
+      group = app.get_beta_groups(filter: { name: "Internal" }).find { |g| g.name == "Internal" }
+      UI.message("Made the internal group Internal")
+    end
+    UI.user_error!("Group Internal isn't internal") unless group.is_internal_group
+    build.add_beta_groups(beta_groups: [group])
+    UI.message("Build #{build_number} added to Internal")
+
+    # Default: the team's account holder.
+    users = if emails.empty?
+              Spaceship::ConnectAPI::User.all.select { |u| Array(u.roles).include?("ACCOUNT_HOLDER") }
+            else
+              emails.map { |e| Spaceship::ConnectAPI::User.find(email: e).first || UI.user_error!("#{e} isn't a user of the team") }
+            end
+    UI.user_error!("No testers to add") if users.empty?
+    users.each do |user|
+      email = user.email.to_s.empty? ? user.username : user.email # the API often gives only the username
+      tester = Spaceship::ConnectAPI::BetaTester.find(email: email)
+      if tester
+        group.add_beta_testers(beta_tester_ids: [tester.id])
+      else
+        Spaceship::ConnectAPI.post_beta_tester_assignment(
+          beta_group_ids: [group.id],
+          attributes: { email: email, firstName: user.first_name, lastName: user.last_name }
+        )
+      end
+      UI.message("#{email} is in Internal")
+    end
+  end
+end

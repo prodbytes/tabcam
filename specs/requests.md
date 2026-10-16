@@ -1165,3 +1165,37 @@ spec.
    512 px icon (RGBA) and a 1024 x 500 feature graphic.
    `scripts/store-metadata-check.sh` now also checks each image's size and
    alpha ([app stores](app-stores.md#store-graphics)).
+25. **Make the store copy accurate to the app (App Store guideline 2.3),
+    set up fastlane, and upload the App Store listing and the TestFlight
+    build.**
+    - The copy ([tabcam_store/](../tabcam_store)): signing in first
+      (Apple or Google on iOS, Google on Play; no scanning signed out),
+      Verified (not "Mark correct"), Fix lining the tab up, the tab
+      editing tools, Cam (the tab under the camera, takes, playing
+      along), search, the zip download, Share copying a read-only link
+      (no PDF, text or zip sharing; the link does give access), Share
+      with people; dropped: hiding photos (no control any more),
+      swiping pages, a link opening only for the people shared with.
+      Premium only as cloud transcription, never offered for sale. The
+      review notes: the welcome's Sign in with Apple and Google, any
+      account working, no sample page attached, Cam among the steps.
+      [data-safety.md](../tabcam_store/data-safety.md): data required
+      (the app needs signing in), Sign in with Apple's data, audio
+      (recordings, Cam's takes), the read-only link, Cam's play-along web
+      view (no unrestricted web access, with the caveat), Apple's newer
+      age rating questions.
+    - The App Store metadata moved to `tabcam_store/ios/metadata/` (deliver
+      takes every folder of its metadata path for a language);
+      `scripts/store-metadata-check.sh` and `.gitignore` follow.
+    - fastlane ([tabcam_store/fastlane/](../tabcam_store/fastlane/Fastfile),
+      `scripts/store-upload-ios.sh`) with the App Store Connect API key
+      from the environment: `metadata` (deliver: metadata, screenshots,
+      categories, copyright, age rating, `ios/age-rating.json`; no
+      binary, no submission) and `testflight` (export compliance, the
+      internal group Internal, the account holder).
+    - Run against App Store Connect: version 0.1.202610161805 has the
+      listing, the 6 iPhone 6.9" and 6 iPad 13" screenshots, Music and
+      Productivity, the copyright and the age rating; build 1792173901 is
+      in Internal, with the account holder, testing internally. Still to
+      do before submitting: App Privacy labels, price and availability,
+      review contact details ([app stores](app-stores.md#status)).
