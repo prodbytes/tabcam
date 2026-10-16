@@ -583,8 +583,14 @@ abstract class AppLocalizations {
   /// Event: what Rescan does
   ///
   /// In en, this message translates to:
-  /// **'The current text is deleted, even if you edited it or marked it verified, and every photo and PDF is read again to replace it.'**
+  /// **'Every photo and PDF is read again. A tab found replaces the current text, even if you edited it or marked it verified; if none is found, the text is kept.'**
   String get eventRescanBody;
+
+  /// Event: Rescan found no tab, or failed: why, and that the text is as it was
+  ///
+  /// In en, this message translates to:
+  /// **'{reason} The text was kept.'**
+  String eventRescanKept(String reason);
 
   /// Event Text view: reading failed
   ///
@@ -1605,6 +1611,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Read the tab from the pages again'**
   String get textViewRescanTip;
+
+  /// Text view: shown while Rescan reads the pages
+  ///
+  /// In en, this message translates to:
+  /// **'Rescanning the pages…'**
+  String get textViewRescanning;
 
   /// Progress text while Fix runs
   ///

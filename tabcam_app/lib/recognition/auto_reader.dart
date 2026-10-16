@@ -105,6 +105,9 @@ class AutoReader extends ChangeNotifier {
   /// Events whose next read reads every page again (Read again).
   final Set<String> _again = {};
 
+  /// Events whose next read replaces any text, the user's too (Rescan).
+  final Set<String> _replace = {};
+
   final Map<String, ReadState> _states = {};
 
   /// Each event's image pages, as last seen: a read is due when they change.
@@ -189,8 +192,13 @@ class AutoReader extends ChangeNotifier {
   ///
   /// With [again] (the Text view's Read again), the cloud reads every page
   /// again, not only those it hasn't read.
-  void readSoon(String eventId, {bool again = false}) {
-    if (again) _again.add(eventId);
+  ///
+  /// With [replace] (the Text view's Rescan), a tab found replaces the
+  /// text even if the user edited it or marked it correct (and clears the
+  /// mark); a read that finds none, or fails, leaves the text as it is.
+  void readSoon(String eventId, {bool again = false, bool replace = false}) {
+    if (again || replace) _again.add(eventId);
+    if (replace) _replace.add(eventId);
     if (_disposed || _queue.contains(eventId)) return;
     _textAt[eventId] = library.byId(eventId)?.tabText;
     _reads[eventId] = (_reads[eventId] ?? 0) + 1;
@@ -219,6 +227,8 @@ class AutoReader extends ChangeNotifier {
           _log('event $id: pages changed while reading, reading again');
           _queue.add(id);
           _set(id, ReadState.reading);
+        } else if (!_queue.contains(id)) {
+          _replace.remove(id);
         }
       }
     } finally {
@@ -256,7 +266,11 @@ class AutoReader extends ChangeNotifier {
       // Its text comes with sync: then it's read (or no tab was found).
       final read = _reads[id];
       final collected = ocr.collected(id);
-      final queued = await ocr.transcribe(event, again: _again.remove(id));
+      final queued = await ocr.transcribe(
+        event,
+        again: _again.remove(id),
+        replace: _replace.contains(id),
+      );
       _log('event $id: in the cloud, $queued pages queued');
       unawaited(
         collected.then((found) {
@@ -325,17 +339,21 @@ class AutoReader extends ChangeNotifier {
   }
 
   /// Writes [text], read, as [id]'s text tab, unless the user edited it or
-  /// marked it correct.
+  /// marked it correct (and this isn't a Rescan).
   Future<ReadState?> _write(String id, String text) async {
+    final replace = _replace.contains(id);
     // As it is now: the user may have edited the text meanwhile.
     final current = library.byId(id);
     if (current == null) return null;
-    if (current.tabText != null &&
+    if (!replace &&
+        current.tabText != null &&
         (!current.tabTextAuto || current.tabTextCorrect)) {
       _log('event $id: kept the text (edited, or marked correct)');
       return null;
     }
-    if (current.tabText != text) {
+    if (current.tabText != text ||
+        !current.tabTextAuto ||
+        (replace && current.tabTextCorrect)) {
       // Only the text: pages added meanwhile stay.
       await library.patch(
         id,
@@ -343,6 +361,7 @@ class AutoReader extends ChangeNotifier {
         (now) => now.copyWith(
           tabText: text,
           tabTextAuto: true,
+          tabTextCorrect: replace ? false : null,
           tabTextDoubts: const [],
         ),
       );

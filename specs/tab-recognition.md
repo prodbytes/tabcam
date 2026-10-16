@@ -27,8 +27,9 @@ changed (that device reads them), nor the events there were at launch.
   (it asks "Read the tab again?" first), reads the event now
   (`readSoon(id, again: true)`), replacing the text an earlier read left;
   with Premium the cloud reads every page again.
-- **Rescan** (the Text view's, below) reads every page again into an
-  emptied text tab: it replaces any text, the user's too.
+- **Rescan** (the Text view's, below) reads every page again
+  (`readSoon(id, replace: true)`): a tab found replaces any text, the
+  user's too; none found, or a failure, keeps the text as it was.
 - **A text the user edited is never replaced** otherwise, nor one marked
   correct, not even by Read again. A read fills an empty text tab, or replaces one
   an earlier read left (`tabTextAuto`, synced: set by a read on the
@@ -228,8 +229,9 @@ page." (en, es, pt). They're kept on the event and sync with it
 note is red only while it's still where it was read and the same, a whole
 note (not part of a longer one): once the user changes it, it's black, and
 saving drops it; moving it (inserting before it on its line) does too.
-Marking the text **Verified** shows none (the user checked it); **Rescan**
-clears them with the text, and the new reading brings its own. A read on
+Marking the text **Verified** shows none (the user checked it); a **Rescan**
+that finds a tab replaces them with the text, and the new reading
+brings its own. A read on
 the device says nothing of how sure it is: its text has none
 ([lib/recognition/tab_doubts.dart](../tabcam_app/lib/recognition/tab_doubts.dart)).
 
@@ -244,16 +246,20 @@ wrapped):
   [auto-correct](autocorrect.md): the song's tab found online proposes
   corrections, which the user reviews per note.
 - **Rescan**: replaces the text with a new reading of every photo and
-  PDF in the capture. It asks "Rescan the pages?" ("The current text is
-  deleted, even if you edited it or marked it verified, and every photo
-  and PDF is read again to replace it.", **Cancel** / **Rescan**), then
-  empties the text tab, clears Verified, and reads every page again
-  (`readSoon(id, again: true)`; with Premium, in the cloud), as a read
-  of its own (`tabTextAuto`), so the new reading fills it. Until the new
-  text comes, the Text view says how the read stands ("Reading the
-  tab…", no tab found, failed…, with Read again). Shown only when the
-  event has photos or PDFs to read and the app can read them, and not on
-  an event shared read only.
+  PDF in the capture. It asks "Rescan the pages?" ("Every photo and PDF
+  is read again. A tab found replaces the current text, even if you
+  edited it or marked it verified; if none is found, the text is
+  kept.", **Cancel** / **Rescan**), then reads every page again
+  (`readSoon(id, replace: true)`, which reads again too; with Premium,
+  in the cloud). The text stays until the read ends: meanwhile the Text
+  view spins (a progress bar, "Rescanning the pages…"), and the text,
+  Fix, Rescan and Verified wait. Only once a tab is found does it
+  replace the text, as a read of its own (`tabTextAuto`), clearing
+  Verified and the old doubts. If the read finds no tab, fails, or
+  can't run (signed out, no OCR here), nothing changes and a message
+  says why, ending "The text was kept.". Shown only when the event has
+  photos or PDFs to read and the app can read them, and not on an event
+  shared read only.
 - **Verified**: a toggle marking the reading correct once the user has
   checked it: tonal like Copy while off, filled and ticked while on;
   tapping it again unmarks it. Saved at once. The mark is kept on the

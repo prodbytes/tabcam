@@ -42,6 +42,7 @@ class TabTextView extends StatefulWidget {
     this.ocr,
     this.onUpgrade,
     this.onRescan,
+    this.rescanning = false,
     this.showFix = fixEnabled,
   });
 
@@ -63,6 +64,10 @@ class TabTextView extends StatefulWidget {
   /// reader: no Rescan).
   final VoidCallback? onRescan;
 
+  /// Rescan is reading the pages: it spins, and the text and its buttons
+  /// wait (the text stays until a tab found replaces it).
+  final bool rescanning;
+
   /// Whether the Fix button shows ([fixEnabled] unless a test says).
   final bool showFix;
 
@@ -80,6 +85,9 @@ class _TabTextViewState extends State<TabTextView> {
 
   /// Fix is asking the service.
   bool _checking = false;
+
+  /// Fix is looking online, or Rescan reading: the text can't be edited.
+  bool get _busy => _checking || widget.rescanning;
 
   /// Fix's answer, while the user reviews it.
   _Review? _review;
@@ -331,9 +339,7 @@ class _TabTextViewState extends State<TabTextView> {
                   // also checks the tab against the song online.
                   if (editable && widget.showFix)
                     FilledButton.tonalIcon(
-                      onPressed: _checking || review != null
-                          ? null
-                          : _autocorrect,
+                      onPressed: _busy || review != null ? null : _autocorrect,
                       icon: const Icon(Icons.auto_fix_high),
                       label: Text(context.l10n.textViewFix),
                     ),
@@ -341,13 +347,16 @@ class _TabTextViewState extends State<TabTextView> {
                     Tooltip(
                       message: context.l10n.textViewRescanTip,
                       child: FilledButton.tonalIcon(
-                        onPressed: _checking || review != null ? null : _rescan,
+                        onPressed: _busy || review != null ? null : _rescan,
                         icon: const Icon(Icons.document_scanner_outlined),
                         label: Text(context.l10n.textViewRescan),
                       ),
                     ),
                   if (editable || correct)
-                    _correctToggle(correct, editable && review == null),
+                    _correctToggle(
+                      correct,
+                      editable && review == null && !widget.rescanning,
+                    ),
                 ],
               ),
             ),
@@ -355,17 +364,21 @@ class _TabTextViewState extends State<TabTextView> {
         ),
         if (editable && review == null) _tools(),
         if (review == null) _doubtsNote(),
-        if (_checking) ...[
+        if (_busy) ...[
           const SizedBox(height: 8),
           const LinearProgressIndicator(),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Text(context.l10n.textViewLookingOnline),
+            child: Text(
+              _checking
+                  ? context.l10n.textViewLookingOnline
+                  : context.l10n.textViewRescanning,
+            ),
           ),
         ],
         Expanded(
           child: review == null
-              ? _editor(context, editable && !_checking)
+              ? _editor(context, editable && !_busy)
               : _ReviewView(
                   review: review,
                   onChanged: () => setState(() {}),
@@ -410,7 +423,7 @@ class _TabTextViewState extends State<TabTextView> {
   /// fret under the cursor, ++ and −− moving its note up or down a string,
   /// and Overtype, a toggle (filled while on).
   Widget _tools() {
-    final enabled = !_checking;
+    final enabled = !_busy;
     final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),

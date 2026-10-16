@@ -89,6 +89,10 @@ class CloudOcr extends ChangeNotifier {
   /// reading: the event waits until every page's result is rewritten.
   final Map<String, Map<String, String>?> _again = {};
 
+  /// Events rescanned (Rescan): their new reading replaces any text tab,
+  /// the user's too, and clears its Verified mark.
+  final Set<String> _replace = {};
+
   /// Who waits for an event's transcription to be collected ([collected]).
   final Map<String, Completer<bool>> _waiting = {};
 
@@ -120,6 +124,7 @@ class CloudOcr extends ChangeNotifier {
       _error = null;
       _requested.clear();
       _again.clear();
+      _replace.clear();
       notifyListeners();
     }
     _userId = user;
@@ -167,7 +172,14 @@ class CloudOcr extends ChangeNotifier {
   /// users):
   /// its synced pages that have no transcription yet. How many were queued.
   /// With [again] (Read again), every page, read before or not.
-  Future<int> transcribe(CaptureEvent event, {bool again = false}) async {
+  ///
+  /// With [replace] (Rescan, which reads [again] too), the reading replaces
+  /// the text tab even if the user edited it or marked it correct.
+  Future<int> transcribe(
+    CaptureEvent event, {
+    bool again = false,
+    bool replace = false,
+  }) async {
     final token = _token;
     if (token == null || !premium) {
       debugPrint(
@@ -177,6 +189,11 @@ class CloudOcr extends ChangeNotifier {
       return 0;
     }
     _requested.add(event.id);
+    if (replace) {
+      _replace.add(event.id);
+    } else {
+      _replace.remove(event.id);
+    }
     if (again) {
       _again[event.id] = null;
       try {
@@ -336,20 +353,26 @@ class CloudOcr extends ChangeNotifier {
       if (current == null) continue;
       // Read again also replaces a text another read left (an on-device
       // one too).
+      // Rescan replaces any text, the user's too.
+      final replace = _replace.remove(event.id);
       final ours =
+          replace ||
           !current.tabTextCorrect &&
-          (current.tabText == null ||
-              current.tabText == last?.text ||
-              (again && current.tabTextAuto));
+              (current.tabText == null ||
+                  current.tabText == last?.text ||
+                  (again && current.tabTextAuto));
       final standing = text == null ? doubts : standingDoubts(text, doubts);
       if (text != null &&
           ours &&
           (current.tabText != text ||
+              !current.tabTextAuto ||
+              current.tabTextCorrect ||
               !listEquals(current.tabTextDoubts, standing))) {
         await library.update(
           current.copyWith(
             tabText: text,
             tabTextAuto: true,
+            tabTextCorrect: false,
             tabTextDoubts: standing,
           ),
         );

@@ -1270,3 +1270,14 @@ spec.
     by itself is paused once loaded). With none, no sidebar and no ♫.
     The frame has **Stop** (pause, back to the start) beside Pause /
     Play. See [Cam](cam.md#playing-along-with-a-file).
+31. **Rescan: wait until the reading is done to remove the existing text,
+    and only on success; on failure, only a message; keep spinning
+    meanwhile.** Rescan no longer empties the text tab first. It reads
+    with `readSoon(id, replace: true)` (the cloud's collection and the
+    device's write replace the text, edited or verified, only when a
+    tab is found), the Text view spins with "Rescanning the pages…" and
+    the text, Fix, Rescan and Verified waiting, and a read that finds no
+    tab, fails or can't run leaves the text and Verified as they were,
+    with a message ending "The text was kept.". The confirmation's text
+    says so (en, es, pt). See [tab recognition](tab-recognition.md) and
+    [cloud OCR](cloud-ocr.md).
