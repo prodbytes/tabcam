@@ -908,3 +908,18 @@ spec.
    strings are in English, Spanish and Portuguese
    ([Cam](cam.md), [event screen](event-screen.md),
    [platforms](platforms.md)).
+96. **Rename to "tabcam" everywhere: TabScan is gone. Files, dirs,
+    domains, repo, everything.** The app is TabCam: the code and docs
+    (directories `tabcam_*`, the `tabcam_app` package, `TABCAM_` settings,
+    `com.nu01.tabcam` on Android and iOS), the repository
+    (`prodbytes/tabcam`), the domains (`tabcam.nu01.com`, its own zone),
+    a new Google Cloud project (`tabcam-nu01`) with its own sign-in
+    clients, and every AWS stack made again under `tabcam-` names: a new
+    bucket, identity pool (provider `login.tabcam.profiles`), share API
+    (and KMS key), OCR service and deploy roles. Each profile's folder
+    moved to its identity in the new pool, with the tables
+    ([migrate-to-tabcam.py](../scripts/migrate-to-tabcam.py)); rbacr has a
+    `tabcam` system mirroring `tabscan`. The old domains redirect
+    ([deploy](deploy.md#the-old-domains)). Apps installed as TabScan don't
+    update to TabCam: it's installed anew (what synced comes back at
+    sign-in).
