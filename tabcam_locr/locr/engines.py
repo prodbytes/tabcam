@@ -82,20 +82,29 @@ def rapid(strip, line):
 
 def read_crop(ink):
     """One number on drawn staff lines ([ink]: 1 = ink, the number alone),
-    read by RapidOCR's recognizer (no detection: the crop is the text)."""
+    read by PaddleOCR's recognizer, which read handwritten digits best in
+    the OCR bench, or RapidOCR's (no detection: the crop is the text) when
+    that isn't a fret. (text, sure): sure when PaddleOCR read frets with a
+    score of CROP_SURE or more."""
+    from .staves import frets
     padded = cv2.copyMakeBorder((255 - ink * 255).astype("uint8"), 12, 12, 12, 12,
                                 cv2.BORDER_CONSTANT, value=255)
     bgr = cv2.cvtColor(padded, cv2.COLOR_GRAY2BGR)
+    res = _paddle().predict(bgr)[0]
+    text = "".join(res["rec_texts"])
+    if frets(text, 0, 1):
+        return text, min(res["rec_scores"], default=0.0) >= CROP_SURE
+    # A second opinion: RapidOCR's, on the same number.
     found, _ = _rapid()(bgr, use_det=False, use_cls=False, use_rec=True)
-    text = found[0][0] if found else ""
-    from .staves import fret
-    if fret(text) is None:
-        # A second opinion: PaddleOCR's, on the same number.
-        res = _paddle().predict(bgr)[0]
-        other = "".join(res["rec_texts"])
-        if fret(other) is not None:
-            return other
-    return text
+    other = found[0][0] if found else ""
+    return (other, False) if frets(other, 0, 1) else (text, False)
+
+
+# PaddleOCR's score under which a number on drawn lines is doubtful. On the
+# bench's handwriting it flagged 6 of 9 wrong notes and 11 of 69 right ones;
+# also asking RapidOCR to agree flagged more right ones (it reads
+# handwritten 6s and 8s as letters), and no more wrong ones.
+CROP_SURE = 0.8
 
 
 def read_page(gray):

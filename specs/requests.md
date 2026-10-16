@@ -1073,7 +1073,39 @@ spec.
    device, or every page in the cloud with Premium), and the new reading
    fills it; meanwhile the Text view shows how the read stands
    ([tab recognition](tab-recognition.md#text-view)).
-18. **In the camera view add a sidebar to play one of the audio, video or
+18. **"The text recognition is still not accurate. Research and test
+   pre-processing techniques to make it as accurate as possible. Test with
+   the two songs already uploaded."** Then: **"try this one too, black
+   magic woman intro by santana"**. The cloud OCR was measured on the
+   bench's three pages (a photographed printed tab with red ink, a
+   scanned handwritten page, a handwritten intro in fine pen), scoring
+   each note by string, order and column, and changed where a technique
+   paid: what's still red after the red channel becomes paper; a page
+   tilted half a degree or more is levelled; rows of flat marks that
+   aren't evenly spaced aren't dash lines, and fewer than four lines
+   aren't a staff (a broken drawn line had sent a handwritten page down
+   the text-tab path); each note's column comes from its ink on the strip,
+   not from the dashes the engines read; on drawn staves, broken lines are
+   bridged, the band reaches higher above the staff, cut digits are joined,
+   flat strokes and string numbers are left out, PaddleOCR reads the
+   crops first, a fine pen's crops are made bolder, and `$`, `C` and
+   "5(6)5" are read. Notes read: 77.5% → 90%, 0% → 82.9% and
+   42.9% → 88.1%. Strip contrast (CLAHE), sharpening, Sauvola
+   binarization, upscaling, dash erasure, label cropping and other page
+   sizes were tried and scored worse ([cloud OCR](cloud-ocr.md#verified)).
+19. **"Could we highlight in red the notes that were identified with low
+   confidence and likely wrong?"** The cloud OCR now says which notes it
+   was unsure of (`doubts` in each page's result): on tab lines, a note
+   neither other engine read the same; on drawn staves, a number
+   PaddleOCR scored under 0.8, or only RapidOCR read. Measured on the
+   bench: 21 of 158 notes doubtful, 9 of them wrong, catching 9 of the 16
+   wrong notes (most of the rest only a vibrato's length). The app keeps
+   them with the text tab (`tabTextDoubts`, synced) and the Text view shows
+   them in red, with a line saying what red means, until the user changes
+   the note or marks the text Verified. On-device reads have none
+   ([cloud OCR](cloud-ocr.md#doubtful-notes),
+   [tab recognition](tab-recognition.md#text-view)).
+20. **In the camera view add a sidebar to play one of the audio, video or
    link files in the capture while recording; the space bar pauses and
    plays the file or link, in a separate frame above, so the user can
    play while recording.** Cam has **Play along** in the app bar: a

@@ -219,6 +219,20 @@ it). A read that ends while the view shows fills it in, unless the user
 has started editing. Read only for an event shared read only (no editing
 tools, no Fix). Sharing is the event screen's **Share** in the app bar.
 
+**Doubtful notes in red**: the notes the [cloud](cloud-ocr.md#doubtful-notes)
+read with little confidence, likely wrong, are in red, bold, on a light
+red background, and under the editing tools a line says so: "Notes in red
+were read with low confidence and may be wrong: check them against the
+page." (en, es, pt). They're kept on the event and sync with it
+(`tabTextDoubts`: `[[line, column, note]]`), and a clone keeps them. A
+note is red only while it's still where it was read and the same, a whole
+note (not part of a longer one): once the user changes it, it's black, and
+saving drops it; moving it (inserting before it on its line) does too.
+Marking the text **Verified** shows none (the user checked it); **Rescan**
+clears them with the text, and the new reading brings its own. A read on
+the device says nothing of how sure it is: its text has none
+([lib/recognition/tab_doubts.dart](../tabcam_app/lib/recognition/tab_doubts.dart)).
+
 Above the text, on one line, four compact buttons of one kind, in this
 order (on a screen too narrow for them the line is scaled down, never
 wrapped):

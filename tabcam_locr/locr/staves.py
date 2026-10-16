@@ -1,21 +1,24 @@
 """Tabs on drawn staff lines: handwritten, or typeset (books, Guitar Pro
 printouts), where the frets sit on the lines and there are no dashes.
 
-1. find_staves: long horizontal strokes are staff lines (a line slightly
-   skewed shows as two rows a few pixels apart: one line); lines about a
-   gap apart, six of them (four for bass, five when the page cuts the
-   last), are a staff.
+1. find_staves: long horizontal strokes (gaps in them bridged: a scan's
+   thin lines come dotted) are staff lines (a line slightly skewed shows
+   as rows a few pixels apart: one line); lines about a gap apart, six of
+   them (four for bass, five when the page cuts the last), are a staff.
 2. erase_lines: the lines' pixels go, but not where a pen stroke crosses
    them (ink just above and below), so the numbers stay whole.
-3. numbers: the ink left near each staff, in marks (connected components)
-   of a digit's size; marks side by side at about the same height are one
-   number (10, 12, (9)), on the string nearest its middle. Marks at the
-   staff's very start (handwritten string numbers, the TAB clef) are left
-   out.
-4. Each number's crop is read by a recognizer (read_crop: RapidOCR's, no
-   detection), and kept if, with the usual misreadings fixed (S 5, g 9,
-   o 0, l 1, B 8, ...), it's a fret: one or two digits, maybe in brackets,
-   or x.
+3. numbers: the ink left near each staff (handwritten frets often sit
+   above their line, so the band reaches further up), in marks
+   (connected components) of a digit's size; pieces of a digit the line
+   cut through (a 3's middle) are one mark again; flat strokes (slurs,
+   braces' tails) are left out. Marks side by side at about the same
+   height are one number (10, 12, (9)), on the string nearest its middle.
+   Marks at the staff's very start (handwritten string numbers, the TAB
+   clef) are left out.
+4. Each number's crop (made a little bolder when the pen is fine) is read
+   by a recognizer (read_crop: PaddleOCR's, then RapidOCR's), and kept
+   if, with the usual misreadings fixed (S 5, g 9, o 0, l 1, B 8, C 6,
+   ...), it's a fret: one or two digits, maybe in brackets, or x.
 5. layout: numbers about the same x are one column (a chord); columns go
    left to right with dashes before each, by the distance from the last,
    as the app lays out a typeset tab (tab_layout.dart typesetTab).
@@ -27,9 +30,9 @@ import numpy as np
 
 LABELS = {6: "eBGDAE", 5: "eBGDA", 4: "GDAE"}
 # OCR's usual misreadings of handwritten digits.
-FIX = str.maketrans({"S": "5", "s": "5", "g": "9", "q": "9", "o": "0", "O": "0", "D": "0",
+FIX = str.maketrans({"S": "5", "s": "5", "$": "5", "g": "9", "q": "9", "o": "0", "O": "0", "D": "0",
                      "l": "1", "I": "1", "i": "1", "|": "1", "!": "1", "Z": "2", "z": "2",
-                     "B": "8", "&": "8", "b": "6", "G": "6", "A": "4", "T": "7", "?": "7",
+                     "B": "8", "&": "8", "b": "6", "G": "6", "C": "6", "A": "4", "T": "7", "?": "7",
                      "（": "(", "）": ")", "[": "(", "]": ")", "X": "x"})
 FRET = re.compile(r"^(\(?\d{1,2}\)?|x)$")
 
@@ -49,6 +52,8 @@ def frets(text, x0, x1):
     of the crop's width. A "number" past the last fret (55, 97) is two
     frets side by side."""
     parts = [p for p in re.split(r"[\s\-_~/]+", (text or "").translate(FIX)) if p]
+    # Frets written together around a bracketed one: "5(6)5".
+    parts = [q for p in parts for q in (re.findall(r"\(\d{1,2}\)|[^()]+", p) or [p])]
     out = []
     for p in parts:
         f = fret(p)
@@ -69,9 +74,13 @@ def find_staves(gray):
     """[(ys of the lines, x0, x1)] of each staff, top to bottom."""
     h, w = gray.shape
     ink = (gray < 160).astype(np.uint8)
-    mask = cv2.morphologyEx(ink, cv2.MORPH_OPEN,
-                            cv2.getStructuringElement(cv2.MORPH_RECT, (max(w // 10, 20), 1)))
-    rows = np.where(mask.sum(1) > 0.3 * w)[0]
+    # A scan's thin lines come broken up (dotted, faded): the gaps are
+    # bridged before the long strokes are kept, and only ink is a line.
+    bridged = cv2.morphologyEx(ink, cv2.MORPH_CLOSE,
+                               cv2.getStructuringElement(cv2.MORPH_RECT, (15, 1)))
+    mask = cv2.morphologyEx(bridged, cv2.MORPH_OPEN,
+                            cv2.getStructuringElement(cv2.MORPH_RECT, (max(w // 10, 20), 1))) & ink
+    rows = np.where(mask.sum(1) > 0.15 * w)[0]
     runs = []
     for y in rows:
         if runs and y - runs[-1][-1] <= 3:
@@ -126,15 +135,37 @@ def numbers(ink, staff):
     """[(string index, x0, x1, crop)] of the numbers on [staff]."""
     ys, x0, x1 = staff
     gap = (ys[-1] - ys[0]) / (len(ys) - 1)
-    top, bottom = int(max(ys[0] - gap * 0.8, 0)), int(ys[-1] + gap * 0.8)
+    # Handwritten frets often sit above their line, not on it: the band
+    # reaches higher above the top line, so they're whole, than below the
+    # bottom one (where the next staff's top frets are).
+    top, bottom = int(max(ys[0] - gap * 1.2, 0)), int(ys[-1] + gap * 0.8)
     band = ink[top:bottom]
     n, _, stats, _ = cv2.connectedComponentsWithStats(band, connectivity=8)
+    # A line through a digit's horizontal stroke (a 3's middle, a 5's top)
+    # takes the stroke with it, leaving the digit in pieces one above the
+    # other: they're one mark again.
+    parts = sorted([int(v) for v in stats[i][:4]] for i in range(1, n) if stats[i][4] >= gap * 0.3)
+    pieces = []
+    for x, y, cw, ch in parts:
+        box = [x, y, x + cw, y + ch]
+        for p in pieces:
+            over = min(p[2], box[2]) - max(p[0], box[0])
+            apart = max(p[1], box[1]) - min(p[3], box[3])
+            small = max(p[3] - p[1], box[3] - box[1]) < gap * 0.6  # neither a digit
+            if small and over > 0.5 * min(p[2] - p[0], box[2] - box[0]) and apart < gap * 0.25:
+                p[:] = [min(p[0], box[0]), min(p[1], box[1]), max(p[2], box[2]), max(p[3], box[3])]
+                break
+        else:
+            pieces.append(box)
     marks = []
-    for i in range(1, n):
-        x, y, cw, ch, area = (int(v) for v in stats[i])
+    for x0_, y0_, x1_, y1_ in pieces:
+        x, y, cw, ch = x0_, y0_, x1_ - x0_, y1_ - y0_
+        area = int(band[y:y1_, x:x1_].sum())
         if ch < gap * 0.3 or ch > gap * 1.6 or cw > gap * 2.5 or area < gap * 0.6:
             continue
-        if x + cw < x0 + (x1 - x0) * 0.03:  # string numbers, the clef
+        if x + cw / 2 < x0 + gap * 1.2:  # string numbers, the clef
+            continue
+        if cw > 1.6 * ch and ch < gap * 0.6:  # a flat stroke: a slur, a brace's tail
             continue
         marks.append([x, y, x + cw, y + ch])
     marks.sort()
@@ -162,7 +193,9 @@ def numbers(ink, staff):
 
 
 def layout(n_strings, notes, unit):
-    """[(string, x, fret)] as one staff's text lines (typesetTab's way)."""
+    """[(string, x, fret, doubtful)] as one staff's text lines (typesetTab's
+    way), doubtful frets wrapped in pipeline.OPEN and CLOSE."""
+    from .pipeline import OPEN, CLOSE
     notes = sorted(notes, key=lambda n: n[1])
     columns = []
     for n in notes:
@@ -178,29 +211,50 @@ def layout(n_strings, notes, unit):
         spacing = 1 if last is None else int(min(max(round((x - last) / unit), 1), 8))
         last = x
         cells = ["-" * width] * n_strings
-        for s, _, f in col:
-            cells[s] = f.ljust(width, "-")
+        for s, _, f, doubt in col:
+            cells[s] = (f"{OPEN}{f}{CLOSE}" if doubt else f) + "-" * (width - len(f))
         rows = [r + "-" * spacing + c for r, c in zip(rows, cells)]
     labels = LABELS.get(n_strings, " " * n_strings)
     return [f"{labels[i]}|{rows[i]}--|" for i in range(n_strings)]
 
 
+def stroke(marks, found):
+    """The pen's stroke width on the page, in line gaps: twice the mean
+    distance from ink to paper, the median over the numbers ([marks], per
+    staff of [found])."""
+    widths = []
+    for nums, (ys, _, _) in zip(marks, found):
+        gap = (ys[-1] - ys[0]) / (len(ys) - 1)
+        for *_, crop in nums:
+            d = cv2.distanceTransform(crop.astype(np.uint8), cv2.DIST_L2, 3)
+            if (d > 0).any():
+                widths.append(2 * d[d > 0].mean() / gap)
+    return float(np.median(widths)) if widths else 1.0
+
+
 def read(gray, read_crop):
     """The tab on [gray]'s drawn staves: (blocks [(top y, staff text)],
     staves) — blocks empty when no number is read. [read_crop]: a number's
-    ink crop (1 = ink) -> its text."""
+    ink crop (1 = ink) -> its text, or (text, sure): an unsure read's frets
+    are doubtful."""
     found, mask = find_staves(gray)
     if not found:
         return [], []
     ink = erase_lines(gray, mask)
+    marks = [numbers(ink, staff) for staff in found]
+    thin = stroke(marks, found) < 0.1
     blocks = []
-    for staff in found:
+    for staff, nums in zip(found, marks):
         ys = staff[0]
         gap = (ys[-1] - ys[0]) / (len(ys) - 1)
         notes = []
-        for string, x0, x1, crop in numbers(ink, staff):
-            for x, f in frets(read_crop(crop), x0, x1):
-                notes.append((string, x, f))
+        for string, x0, x1, crop in nums:
+            if thin:  # a fine pen's digits read better a little bolder
+                crop = cv2.dilate(crop, np.ones((2, 2), np.uint8))
+            said = read_crop(crop)
+            text, sure = said if isinstance(said, tuple) else (said, True)
+            for x, f in frets(text, x0, x1):
+                notes.append((string, x, f, not sure))
         if notes:
             blocks.append((ys[0], "\n".join(layout(len(ys), notes, gap))))
     return blocks, found

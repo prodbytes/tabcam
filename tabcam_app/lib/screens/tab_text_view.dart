@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../cloud/cloud_ocr.dart';
 import '../cloud/ocr_api.dart';
 import '../library/library.dart';
+import '../recognition/tab_doubts.dart';
 import '../recognition/tab_layout.dart';
 import 'tab_editing.dart';
 import '../l10n/language.dart';
@@ -15,8 +17,10 @@ import 'mono_font.dart';
 
 /// The event screen's Text view: the tab read from the event's pages, to
 /// check against them and fix, monospaced and unwrapped (long lines scroll
-/// sideways). Edits are saved as they're made (after a second's pause) and
-/// on leaving, and make the text the user's: no later read replaces it. A
+/// sideways). The notes the read wasn't sure of (likely wrong) are in red,
+/// until the user changes them or marks the text Verified. Edits are saved
+/// as they're made (after a second's pause) and on leaving, and make the
+/// text the user's: no later read replaces it. A
 /// read that ends while it shows fills it in, unless the user has started
 /// editing. Read only for an event shared read only.
 ///
@@ -58,7 +62,7 @@ class TabTextView extends StatefulWidget {
 }
 
 class _TabTextViewState extends State<TabTextView> {
-  final _text = TextEditingController();
+  final _text = DoubtController();
 
   /// The text as last loaded or saved: what's on screen unless edited.
   String? _known;
@@ -73,10 +77,18 @@ class _TabTextViewState extends State<TabTextView> {
 
   String? get _stored => widget.library.byId(widget.eventId)?.tabText;
 
+  /// The doubtful notes to show in red: none once the text is Verified.
+  List<TabDoubt> get _doubts {
+    final event = widget.library.byId(widget.eventId);
+    if (event == null || event.tabTextCorrect) return const [];
+    return event.tabTextDoubts;
+  }
+
   @override
   void initState() {
     super.initState();
     _known = _stored;
+    _text.doubts = _doubts;
     _text.text = _known ?? '';
     widget.library.addListener(_onLibrary);
     widget.ocr?.addListener(_onPremium);
@@ -90,6 +102,7 @@ class _TabTextViewState extends State<TabTextView> {
   /// A read (or another device) changed the text: shown, if the user
   /// hasn't edited it here.
   void _onLibrary() {
+    _text.doubts = _doubts;
     final stored = _stored;
     if (stored == _known) return;
     if (_text.text == (_known ?? '') && _review == null && !_checking) {
@@ -121,7 +134,12 @@ class _TabTextViewState extends State<TabTextView> {
     }
     _known = _text.text;
     widget.library.update(
-      event.copyWith(tabText: _text.text, tabTextAuto: false),
+      event.copyWith(
+        tabText: _text.text,
+        tabTextAuto: false,
+        // The notes the user changed aren't doubtful any more.
+        tabTextDoubts: standingDoubts(_text.text, event.tabTextDoubts),
+      ),
     );
   }
 
@@ -327,6 +345,7 @@ class _TabTextViewState extends State<TabTextView> {
           ),
         ),
         if (editable && review == null) _tools(),
+        if (review == null) _doubtsNote(),
         if (_checking) ...[
           const SizedBox(height: 8),
           const LinearProgressIndicator(),
@@ -445,6 +464,32 @@ class _TabTextViewState extends State<TabTextView> {
     );
   }
 
+  /// Says what the red notes are, while there are any.
+  Widget _doubtsNote() => ListenableBuilder(
+    listenable: _text,
+    builder: (context, _) {
+      if (doubtRanges(_text.text, _text.doubts).isEmpty) {
+        return const SizedBox.shrink();
+      }
+      final scheme = Theme.of(context).colorScheme;
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+        child: Row(
+          spacing: 8,
+          children: [
+            Icon(Icons.error_outline, size: 18, color: scheme.error),
+            Expanded(
+              child: Text(
+                context.l10n.textViewDoubts,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+
   /// The tab text, unwrapped: long lines scroll sideways.
   Widget _editor(BuildContext context, bool editable) {
     return _Unwrapped(
@@ -467,6 +512,50 @@ class _TabTextViewState extends State<TabTextView> {
         ),
       ),
     );
+  }
+}
+
+/// The Text view's text, its doubtful notes ([doubts], where they still
+/// stand: doubtRanges) drawn in red.
+class DoubtController extends TextEditingController {
+  List<TabDoubt> _doubts = const [];
+  List<TabDoubt> get doubts => _doubts;
+  set doubts(List<TabDoubt> doubts) {
+    if (listEquals(doubts, _doubts)) return;
+    _doubts = doubts;
+    notifyListeners();
+  }
+
+  @override
+  TextSpan buildTextSpan({
+    required BuildContext context,
+    TextStyle? style,
+    required bool withComposing,
+  }) {
+    final ranges = doubtRanges(text, doubts);
+    // While a word is being composed, the platform's underline matters more.
+    if (ranges.isEmpty || (withComposing && value.isComposingRangeValid)) {
+      return super.buildTextSpan(
+        context: context,
+        style: style,
+        withComposing: withComposing,
+      );
+    }
+    final scheme = Theme.of(context).colorScheme;
+    final doubtful = TextStyle(
+      color: scheme.error,
+      backgroundColor: scheme.errorContainer,
+      fontWeight: FontWeight.bold,
+    );
+    final spans = <TextSpan>[];
+    var at = 0;
+    for (final (start, end) in ranges) {
+      if (start > at) spans.add(TextSpan(text: text.substring(at, start)));
+      spans.add(TextSpan(text: text.substring(start, end), style: doubtful));
+      at = end;
+    }
+    if (at < text.length) spans.add(TextSpan(text: text.substring(at)));
+    return TextSpan(style: style, children: spans);
   }
 }
 

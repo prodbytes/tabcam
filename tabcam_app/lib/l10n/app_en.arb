@@ -1309,6 +1309,10 @@
   "@textViewOvertypeOff": {
     "description": "Tooltip of Overtype while off"
   },
+  "textViewDoubts": "Notes in red were read with low confidence and may be wrong: check them against the page.",
+  "@textViewDoubts": {
+    "description": "Under the Text view's tools, while some notes are shown in red because OCR was unsure of them"
+  },
   "textViewOvertype": "Overtype",
   "@textViewOvertype": {
     "description": "Checkbox button toggling overtype mode"

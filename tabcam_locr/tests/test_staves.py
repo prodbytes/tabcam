@@ -61,7 +61,8 @@ def test_misreadings_are_fixed_and_runs_split():
 
 
 def test_columns_line_up():
-    rows = staves.layout(6, [(0, 10, "3"), (1, 11, "1"), (5, 40, "12")], unit=10)
+    rows = staves.layout(6, [(0, 10, "3", False), (1, 11, "1", False), (5, 40, "12", False)],
+                         unit=10)
     assert rows[0].index("3") == rows[1].index("1")
     assert len({len(r) for r in rows}) == 1
     assert rows[5].startswith("E|") and "12" in rows[5]
@@ -70,3 +71,18 @@ def test_columns_line_up():
 def test_a_page_without_staves_or_numbers_has_none():
     blank = np.full((1200, 900), 255, np.uint8)
     assert staves.read(blank, lambda c: "5") == ([], [])
+
+
+def test_frets_around_a_bracketed_one_and_more_misreadings():
+    assert [f for _, f in staves.frets("$(6)5", 0, 30)] == ["5", "(6)", "5"]
+    assert staves.fret("C") == "6" and staves.fret("$") == "5"
+
+
+def test_an_unsure_read_s_frets_are_doubtful():
+    said = iter(expected_numbers())
+    r = pipeline.transcribe(selftest.drawn_page(), {"a": lambda s, l: ""},
+                            read_crop=lambda crop: (next(said), False))
+    assert selftest.score(selftest.DRAWN_RIFF, r.text) == 1.0
+    lines = r.text.splitlines()
+    assert len(r.doubts) == len(expected_numbers())
+    assert all(lines[l][c:c + len(n)] == n for l, c, n in r.doubts)

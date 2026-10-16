@@ -13,6 +13,7 @@ import 'package:tabcam_app/cloud/ocr_api.dart';
 import 'package:tabcam_app/library/capture_event.dart';
 import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
+import 'package:tabcam_app/recognition/tab_doubts.dart';
 import 'package:tabcam_app/screens/account_panel.dart';
 import 'package:tabcam_app/screens/event_screen.dart';
 import 'package:tabcam_app/screens/premium_card.dart';
@@ -112,10 +113,18 @@ class _Setup {
     await _until(() => sync.state == SyncState.synced && !ocr.checking);
   }
 
-  void result(CaptureEvent event, EventPage page, String status, String text) {
+  void result(
+    CaptureEvent event,
+    EventPage page,
+    String status,
+    String text, {
+    List<List<Object>> doubts = const [],
+  }) {
     bucket.objects['us-east-1:me/ocr/${event.id}/${page.id}.json'] =
         Uint8List.fromList(
-          utf8.encode(jsonEncode({'status': status, 'text': text})),
+          utf8.encode(
+            jsonEncode({'status': status, 'text': text, 'doubts': doubts}),
+          ),
         );
   }
 
@@ -158,6 +167,45 @@ void main() {
         s.library.byId(event.id)!.tabText,
         '${_riffA.trim()}\n\n${_riffB.trim()}\n',
       );
+      s.dispose();
+    },
+  );
+
+  test(
+    'the cloud\'s doubtful notes come with the text, at their lines',
+    () async {
+      final s = _Setup(premium: true);
+      await s.start();
+      var event = await _twoPages(s.library);
+      await s.signIn();
+      event = s.library.byId(event.id)!;
+      s.result(
+        event,
+        event.pages[0],
+        'ok',
+        _riffA,
+        doubts: [
+          [0, 5, '0'],
+        ],
+      );
+      s.result(
+        event,
+        event.pages[1],
+        'ok',
+        _riffB,
+        doubts: [
+          [0, 7, '2b4r2'],
+          [5, 0, 'gone'], // no such line: dropped
+        ],
+      );
+      await s.ocr.collect();
+      final filled = s.library.byId(event.id)!;
+      // The second page's lines come after the first's two and a blank line.
+      expect(filled.tabTextDoubts, const [
+        TabDoubt(0, 5, '0'),
+        TabDoubt(3, 7, '2b4r2'),
+      ]);
+      expect(filled.tabText!.split('\n')[3].substring(7, 12), '2b4r2');
       s.dispose();
     },
   );
