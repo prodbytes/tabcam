@@ -562,18 +562,6 @@ abstract class AppLocalizations {
   /// **'Read again'**
   String get eventReadAgain;
 
-  /// Event: asked when tapping the Text tool again while the Text view shows a tab
-  ///
-  /// In en, this message translates to:
-  /// **'Read the tab again?'**
-  String get eventReadAgainTitle;
-
-  /// Event: what reading the tab again does
-  ///
-  /// In en, this message translates to:
-  /// **'The text read before is replaced, unless you edited it or marked it correct.'**
-  String get eventReadAgainBody;
-
   /// Event: asked when tapping Rescan on the Text view
   ///
   /// In en, this message translates to:

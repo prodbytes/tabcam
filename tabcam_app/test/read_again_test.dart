@@ -9,10 +9,12 @@ import 'package:tabcam_app/library/library.dart';
 import 'package:tabcam_app/recognition/auto_reader.dart';
 import 'package:tabcam_app/screens/event_screen.dart';
 
-/// Tapping the Text tool on the Text view, with a tab there, asks to read
-/// it again; from the Files view it only opens the Text view.
+/// The Text tool only opens the Text view: tapped again there, it doesn't
+/// read the tab again (that's the Text view's Rescan).
 void main() {
-  testWidgets('the Text tool reads the tab again, once asked', (tester) async {
+  testWidgets('the Text tool opens the Text view, and reads nothing again', (
+    tester,
+  ) async {
     var reading = Completer<String?>();
     var reads = 0;
     late Library library;
@@ -72,37 +74,14 @@ void main() {
     expect(find.text('Read the tab again?'), findsNothing);
     expect(find.text('e|--0--3--|'), findsWidgets);
 
-    // Again: asked; Cancel reads nothing.
+    // Again: nothing asked, nothing read.
     await tester.tap(tool);
     await tester.pumpAndSettle();
-    expect(find.text('Read the tab again?'), findsOneWidget);
-    expect(
-      find.text(
-        'The text read before is replaced, unless you edited it or marked '
-        'it correct.',
-      ),
-      findsOneWidget,
-    );
-    await tester.tap(find.text('Cancel'));
-    await tester.pumpAndSettle();
     await settle();
+    expect(find.byType(AlertDialog), findsNothing);
     expect(reads, 1);
     expect(spinner, findsNothing);
-
-    // Read again: a spinner while it reads, then the new text.
-    reading = Completer<String?>();
-    await tester.tap(tool);
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Read again'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-    await settle();
-    expect(reads, 2);
-    expect(spinner, findsOneWidget);
-    reading.complete('A|--2--5--|');
-    await settle();
-    expect(spinner, findsNothing);
-    expect(library.byId(id)!.tabText, 'A|--2--5--|');
+    expect(find.text('e|--0--3--|'), findsWidgets);
 
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 5));

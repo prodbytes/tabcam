@@ -393,14 +393,6 @@
   "@eventReadAgain": {
     "description": "Event Text view: button to read again"
   },
-  "eventReadAgainTitle": "Read the tab again?",
-  "@eventReadAgainTitle": {
-    "description": "Event: asked when tapping the Text tool again while the Text view shows a tab"
-  },
-  "eventReadAgainBody": "The text read before is replaced, unless you edited it or marked it correct.",
-  "@eventReadAgainBody": {
-    "description": "Event: what reading the tab again does"
-  },
   "eventRescanTitle": "Rescan the pages?",
   "@eventRescanTitle": {
     "description": "Event: asked when tapping Rescan on the Text view"

@@ -43,7 +43,7 @@ const Duration cloudReadTimeout = Duration(minutes: 3 * 15);
 /// tab (a new capture, pages added, rotated or deleted), its pages are
 /// read into its text tab, one event at a time. An event that has a text
 /// tab (read, or written by the user) is only read again when asked
-/// ([readSoon] with `again`, the Text tool's Read the tab again).
+/// ([readSoon] with `again`, the Text view's Read again).
 /// With TabCam Premium the cloud transcribes image pages ([CloudOcr]);
 /// otherwise ML Kit on the device ([TabReader]). PDFs are read on the
 /// device: their text where they have one (every platform, the web too),

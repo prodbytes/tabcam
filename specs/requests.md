@@ -1414,3 +1414,10 @@ spec.
    Text view's text now takes the view's width, not the screen's. See
    [Cam](cam.md#playing-along-with-a-file) and
    [event screen](event-screen.md).
+9. **Remove "read again" from the Text tool in the nav bar; leave it
+   only in the Text view's button, which is clearer.** Tapping the Text
+   tool on the Text view no longer asks "Read the tab again?" (the
+   dialog and its strings are gone); it only opens the Text view.
+   Reading again is the Text view's Rescan (or Read again, when there's
+   no tab). See [event screen](event-screen.md) and
+   [tab recognition](tab-recognition.md).
