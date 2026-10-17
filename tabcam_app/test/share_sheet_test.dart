@@ -8,7 +8,6 @@ import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
 import 'package:tabcam_app/main.dart';
 import 'package:tabcam_app/screens/event_screen.dart';
-import 'package:tabcam_app/screens/people_sheet.dart';
 
 import 'fakes.dart';
 
@@ -126,17 +125,16 @@ void main() {
     await frames(tester);
   });
 
-  testWidgets('Share with people has its own button', (tester) async {
+  testWidgets('Share is the only sharing button', (tester) async {
     await open(tester);
-    await tester.tap(find.byTooltip('Share with people'));
-    await frames(tester);
-    expect(find.byType(PeopleSheet), findsOneWidget);
-    expect(copied, isNull);
+    expect(find.byTooltip('Share'), findsOneWidget);
+    expect(find.byIcon(Icons.group_add_outlined), findsNothing);
   });
 
-  testWidgets('a build without sharing: no Share with people', (tester) async {
+  testWidgets('a build without sharing: Share copies an owner-only link', (
+    tester,
+  ) async {
     await open(tester, sharing: false);
-    expect(find.byTooltip('Share with people'), findsNothing);
     await tester.tap(find.byTooltip('Share'));
     await frames(tester);
     // No share API, no key: the link opens it for its owner only.

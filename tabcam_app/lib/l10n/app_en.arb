@@ -207,43 +207,6 @@
       }
     }
   },
-  "accountPeopleTitle": "Share with people",
-  "@accountPeopleTitle": {
-    "description": "People sheet title"
-  },
-  "accountPeopleIntro": "People you add find this capture when they sign in to TabCam with that email address. No email is sent.",
-  "@accountPeopleIntro": {
-    "description": "People sheet: how sharing works"
-  },
-  "accountPeopleEmail": "Email",
-  "@accountPeopleEmail": {
-    "description": "People sheet: email field label"
-  },
-  "accountPeopleAdd": "Add",
-  "@accountPeopleAdd": {
-    "description": "People sheet: add button"
-  },
-  "accountPeopleEnterEmail": "Enter an email address",
-  "@accountPeopleEnterEmail": {
-    "description": "People sheet: invalid email error"
-  },
-  "accountPeopleNone": "Not shared yet.",
-  "@accountPeopleNone": {
-    "description": "People sheet: no one yet"
-  },
-  "accountPeopleRemove": "Remove {email}",
-  "@accountPeopleRemove": {
-    "description": "People sheet: remove tooltip",
-    "placeholders": {
-      "email": {
-        "type": "String"
-      }
-    }
-  },
-  "accountPeopleRoleTooltip": "What they can do",
-  "@accountPeopleRoleTooltip": {
-    "description": "People sheet: role menu tooltip"
-  },
   "accountPeopleCanEdit": "Can edit",
   "@accountPeopleCanEdit": {
     "description": "Share role: edit"
@@ -446,10 +409,6 @@
   "@eventRename": {
     "description": "Event app bar tooltip, rename dialog title, and the file screen tool (beside Delete) that renames the file"
   },
-  "eventShareWithPeople": "Share with people",
-  "@eventShareWithPeople": {
-    "description": "Event app bar tooltip"
-  },
   "eventClone": "Clone",
   "@eventClone": {
     "description": "Event app bar tooltip"
@@ -457,10 +416,6 @@
   "eventShare": "Share",
   "@eventShare": {
     "description": "Event app bar tooltip"
-  },
-  "eventShareWithPeopleDetail": "By email, to edit or read only",
-  "@eventShareWithPeopleDetail": {
-    "description": "Share sheet: what Share with people does"
   },
   "eventFiles": "Files",
   "@eventFiles": {
@@ -2046,7 +2001,6 @@
   "@eventCouldntPublish": {
     "description": "Event screen: publishing (or taking back) a person's file failed"
   },
-  "accountPeopleViaLink": "Joined by the link",
   "@accountPeopleViaLink": {
     "description": "People sheet: under someone who joined by opening the capture's link, signed in"
   }

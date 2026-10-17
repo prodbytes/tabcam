@@ -110,7 +110,7 @@ The App Store's are uploaded with `scripts/store-upload-ios.sh`
   screenshots ([below](#store-graphics)). `ios/metadata/review_information/notes.txt`
   is App Review's notes (the welcome's Sign in with Apple and Google, any
   Apple ID or Google account working; what to try: Scan, the Text view
-  and Verified, Cam, Share and Share with people, Add, Delete account);
+  and Verified, Cam, Share, Add, Delete account);
   [REVIEW_NOTES.md](../tabcam_store/ios/REVIEW_NOTES.md) says what the
   maintainer must add: contact details and, if wanted, a Google test
   account, kept out of git (`.gitignore` ignores the folder's other
@@ -134,7 +134,7 @@ The text claims only what the app does as it is now (App Store guideline
 2.3): signing in first (signed out there's only the welcome), scanning
 and adding, reading tabs on the device, the Text view's tools (Copy,
 Verified; not Fix, hidden for now), Cam, the zip download, Share copying a
-read-only link, Share with people. It never offers to buy Premium (the
+read-only link (signed in, kept in Shared with me). It never offers to buy Premium (the
 store apps don't sell it); it says Premium subscribers get cloud
 transcription.
 `bash scripts/store-metadata-check.sh [dir]` checks each file is there
@@ -226,6 +226,8 @@ guitar neck.
 | App Store | `ios/screenshots/en-US/ipad13_1.png` … `6.png` | 2064 x 2752, the 13" iPad (1032 x 1376 pt at 2x): the app runs on iPads (`TARGETED_DEVICE_FAMILY` 1,2), so Apple asks for them |
 
 Screenshots are RGB PNGs, without alpha. The six, in order: the Text view
-of a read tab; its page with the Tab filter; Home; Capture; Cam; Share with
-people (two people added). `scripts/store-metadata-check.sh` checks each
+of a read tab; its page with the Tab filter; Home; Capture; Cam; Share
+("Link copied"). The repo's screenshots and listing text are ahead of
+what's uploaded (the 0.2 listing, in review, still shows Share with
+people): they go up with the next version. `scripts/store-metadata-check.sh` checks each
 image's size and whether it has alpha.

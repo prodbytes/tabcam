@@ -322,54 +322,6 @@ abstract class AppLocalizations {
   /// **'Couldn\'t open {url}'**
   String accountPremiumCouldntOpen(String url);
 
-  /// People sheet title
-  ///
-  /// In en, this message translates to:
-  /// **'Share with people'**
-  String get accountPeopleTitle;
-
-  /// People sheet: how sharing works
-  ///
-  /// In en, this message translates to:
-  /// **'People you add find this capture when they sign in to TabCam with that email address. No email is sent.'**
-  String get accountPeopleIntro;
-
-  /// People sheet: email field label
-  ///
-  /// In en, this message translates to:
-  /// **'Email'**
-  String get accountPeopleEmail;
-
-  /// People sheet: add button
-  ///
-  /// In en, this message translates to:
-  /// **'Add'**
-  String get accountPeopleAdd;
-
-  /// People sheet: invalid email error
-  ///
-  /// In en, this message translates to:
-  /// **'Enter an email address'**
-  String get accountPeopleEnterEmail;
-
-  /// People sheet: no one yet
-  ///
-  /// In en, this message translates to:
-  /// **'Not shared yet.'**
-  String get accountPeopleNone;
-
-  /// People sheet: remove tooltip
-  ///
-  /// In en, this message translates to:
-  /// **'Remove {email}'**
-  String accountPeopleRemove(String email);
-
-  /// People sheet: role menu tooltip
-  ///
-  /// In en, this message translates to:
-  /// **'What they can do'**
-  String get accountPeopleRoleTooltip;
-
   /// Share role: edit
   ///
   /// In en, this message translates to:
@@ -637,12 +589,6 @@ abstract class AppLocalizations {
   /// Event app bar tooltip
   ///
   /// In en, this message translates to:
-  /// **'Share with people'**
-  String get eventShareWithPeople;
-
-  /// Event app bar tooltip
-  ///
-  /// In en, this message translates to:
   /// **'Clone'**
   String get eventClone;
 
@@ -651,12 +597,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Share'**
   String get eventShare;
-
-  /// Share sheet: what Share with people does
-  ///
-  /// In en, this message translates to:
-  /// **'By email, to edit or read only'**
-  String get eventShareWithPeopleDetail;
 
   /// Event tool: the list of the capture's files
   ///
@@ -2517,12 +2457,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t publish'**
   String get eventCouldntPublish;
-
-  /// People sheet: under someone who joined by opening the capture's link, signed in
-  ///
-  /// In en, this message translates to:
-  /// **'Joined by the link'**
-  String get accountPeopleViaLink;
 }
 
 class _AppLocalizationsDelegate

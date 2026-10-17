@@ -23,9 +23,8 @@ sign in first ([signed out](cloud-sync.md#signed-out)), then copies.
   a build without the share API, the link is `?c=<capture id>` alone,
   which opens it only for its owner and the people it's shared with.
   Copying it starts a sync pass, so the capture is in the cloud.
-- **Share with people** has its own button beside it (people with a
-  plus), on the user's own captures in a build with sharing: it opens the
-  [people sheet](shared-captures.md#sharing).
+- It's the only way to share: there's no Share with people any more
+  ([shared captures](shared-captures.md)).
 - There's no PDF, text or zip export any more.
 
 Files are named from the title and artist (`My riff - Me.pdf`,
@@ -66,7 +65,7 @@ the owner's edits reach whoever has the link open within seconds. A
 failed look (offline) keeps what shows. It shows
 "Opening the capture…" meanwhile, then the event screen, read only, with
 a banner "Opened by its link · Read only": no Rename, Add, Reorder,
-editing or Clone (it isn't in the user's library), no Share with people;
+editing or Clone (it isn't in the user's library);
 Share copies the same link. Signed out, the banner (and the screen when
 it fails) has **Sign in**, which goes to the welcome; the link stays
 waiting, so once signed in Home opens it (the user's, shared with them,
@@ -77,8 +76,9 @@ again**.
 So the link is what gives access: whoever holds a link with its key can
 see the capture's own files (never change them, nor see what people
 [contributed](contributions.md) until the owner publishes it); signed in,
-it also lets them add files of their own. Edit access is still only for
-the people the owner shares it with ([Share with people](shared-captures.md)).
+it also lets them add files of their own. Edit access is only for the
+people the owner shared it with by email before that was removed
+([shared captures](shared-captures.md)).
 
 ## Link previews
 

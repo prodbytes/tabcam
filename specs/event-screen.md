@@ -20,10 +20,8 @@ going to it, or to Cam, pauses what plays along.
   `<title> tab.txt` and the links, one a line, as `links.txt` (names
   that repeat get " (2)"…); files still coming down
   ([sync](cloud-sync.md#listed-first-files-after)) are waited for.
-  **Share** (a link icon) copies the capture's link ([sharing](sharing.md));
-  **Share with people** (people with a plus,
-  [shared captures](shared-captures.md)) is beside it for the user's own
-  events, in a build with sharing. There's no Hide images
+  **Share** (a link icon) copies the capture's link, the one way to share
+  it ([sharing](sharing.md)). There's no Hide images
   button (captures already [hidden](hidden-images.md) stay hidden).
 - **Shared with the user**: a line under the app bar, "Shared by <email>
   · Can edit" or "· Can view and add". Shared to read, Rename, reordering,
