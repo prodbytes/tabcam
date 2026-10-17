@@ -1429,3 +1429,17 @@ spec.
     files or 1 GB) is counted as left out. The Files picker offers
     `.zip`. Fixed on the way: files made from bytes now carry their name
     on Android and iOS too. See [scanning](scanning.md).
+11. **No separate "Share with people" and "Share": just Share, which
+    copies the link to send to other people; make sure it works.** The
+    Share with people button and its people sheet are gone (with their
+    strings); Share is the one way to share: it copies the read-only
+    link, and someone signed in who opens it joins the capture to read.
+    Captures shared by email before stay shared; the owner can no
+    longer list or remove people in the app. Checked live: a link copied
+    in the app opened without signing in (the share API's public
+    credentials, then `event.json` through tabcam.nu01.com and
+    rc.tabcam.nu01.com). Store screenshot 6 is now Share's "Link
+    copied", and the listing text, review notes and data-safety answers
+    say Share by link only, for the next upload (0.2's listing is in
+    review). See [sharing](sharing.md) and
+    [shared captures](shared-captures.md).

@@ -29,10 +29,9 @@ Joining again changes nothing; the owner, and someone shared with to edit,
 keep what they have. If joining fails (an old share API, offline), the
 link opens the capture by its link, read only, as before.
 
-The owner's people sheet lists who joined, "Joined by the link", with the
-people they shared it with by email; the owner changes their role or
-removes them there. Up to 500 people may join one capture by its link,
-apart from the 50 it can be shared with by email.
+The app doesn't list who joined (there's no people sheet any more,
+[shared captures](shared-captures.md)). Up to 500 people may join one
+capture by its link.
 
 ## What a reader adds
 

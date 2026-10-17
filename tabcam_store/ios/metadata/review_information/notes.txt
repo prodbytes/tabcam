@@ -6,7 +6,7 @@ What to try:
 1. Capture tab > Scan: point the camera at any printed guitar tab. The system document scanner finds and straightens the page. The new capture is first on Home.
 2. Open the capture: tap a page to see it, switch Original / Scan, Rotate. The Text tool shows the tab, read on the device in a few seconds: edit it (overtype, - and + on a fret), Copy it, and tap Verified.
 3. Cam (the last tool): the camera with the tab under it, one line at a time; tap the line, or nod, to go to the next. Rec records a take, added to the capture as a video. The app asks for the camera and microphone here.
-4. Share (the link icon) copies the capture's link. Share with people (the people icon) gives another email address edit or read-only access; no email is sent.
+4. Share (the link icon) copies the capture's link. Opened anywhere, signed in or not, it shows the capture, read only.
 5. Capture tab > Document, Photos & videos, Files or Link makes a capture from them.
 6. Profile > Delete account deletes the account and its cloud data, and signs out.
 

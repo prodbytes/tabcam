@@ -23,8 +23,7 @@ ORGANIZE AND SYNC
 • Download a whole capture as a zip, or any file on its own.
 
 SHARE
-• Share copies the capture's link: whoever has it can see the capture, read only.
-• Share with people by their email address, to edit together or read only. They find it in "Shared with me" when they sign in with that address. No email is sent.
+• Share copies the capture's link, to send to anyone: whoever has it can see the capture, read only. Signed in, it stays with them, in "Shared with me".
 
 YOUR ACCOUNT
 • Sign in with Google to start: your captures are kept on every device you sign in on.

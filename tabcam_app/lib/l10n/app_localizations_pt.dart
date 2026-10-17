@@ -161,33 +161,6 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get accountPeopleTitle => 'Compartilhar com pessoas';
-
-  @override
-  String get accountPeopleIntro =>
-      'As pessoas que você adicionar encontram esta captura ao entrar no TabCam com esse e-mail. Nenhum e-mail é enviado.';
-
-  @override
-  String get accountPeopleEmail => 'E-mail';
-
-  @override
-  String get accountPeopleAdd => 'Adicionar';
-
-  @override
-  String get accountPeopleEnterEmail => 'Digite um endereço de e-mail';
-
-  @override
-  String get accountPeopleNone => 'Ainda não compartilhado.';
-
-  @override
-  String accountPeopleRemove(String email) {
-    return 'Remover $email';
-  }
-
-  @override
-  String get accountPeopleRoleTooltip => 'O que podem fazer';
-
-  @override
   String get accountPeopleCanEdit => 'Pode editar';
 
   @override
@@ -355,17 +328,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventRename => 'Renomear';
 
   @override
-  String get eventShareWithPeople => 'Compartilhar com pessoas';
-
-  @override
   String get eventClone => 'Clonar';
 
   @override
   String get eventShare => 'Compartilhar';
-
-  @override
-  String get eventShareWithPeopleDetail =>
-      'Por e-mail, para editar ou só leitura';
 
   @override
   String get eventFiles => 'Arquivos';
@@ -1533,7 +1499,4 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get eventCouldntPublish => 'Não foi possível publicar';
-
-  @override
-  String get accountPeopleViaLink => 'Entrou pelo link';
 }

@@ -36,14 +36,6 @@
   "accountPremiumVoucher": "Resgatar um cupom",
   "accountPremiumCheckAgain": "Verificar novamente",
   "accountPremiumCouldntOpen": "Não foi possível abrir {url}",
-  "accountPeopleTitle": "Compartilhar com pessoas",
-  "accountPeopleIntro": "As pessoas que você adicionar encontram esta captura ao entrar no TabCam com esse e-mail. Nenhum e-mail é enviado.",
-  "accountPeopleEmail": "E-mail",
-  "accountPeopleAdd": "Adicionar",
-  "accountPeopleEnterEmail": "Digite um endereço de e-mail",
-  "accountPeopleNone": "Ainda não compartilhado.",
-  "accountPeopleRemove": "Remover {email}",
-  "accountPeopleRoleTooltip": "O que podem fazer",
   "accountPeopleCanEdit": "Pode editar",
   "accountPeopleReadOnly": "Pode ver e adicionar",
   "accountSignInToShare": "Entre para compartilhar",
@@ -88,10 +80,8 @@
   "eventRead": "Ler",
   "eventKeepOnePage": "Uma captura mantém pelo menos uma página; exclua a captura.",
   "eventRename": "Renomear",
-  "eventShareWithPeople": "Compartilhar com pessoas",
   "eventClone": "Clonar",
   "eventShare": "Compartilhar",
-  "eventShareWithPeopleDetail": "Por e-mail, para editar ou só leitura",
   "eventFiles": "Arquivos",
   "eventFilePage": "Página {number}",
   "eventFileVideo": "Vídeo {number}",
@@ -401,6 +391,5 @@
   "eventUnpublish": "Publicado: toque para retirar",
   "eventPublished": "Publicado",
   "eventPublishedSnack": "{name} publicado: agora todos veem",
-  "eventCouldntPublish": "Não foi possível publicar",
-  "accountPeopleViaLink": "Entrou pelo link"
+  "eventCouldntPublish": "Não foi possível publicar"
 }

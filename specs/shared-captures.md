@@ -1,44 +1,33 @@
 # Shared captures
 
-A signed-in user can share any capture (event) of their own with other
-people by **email address**, to **edit** (the default, "Can edit": they
-change it as the owner does, and the owner sees their changes) or **read**
-("Can view and add": they see the owner's files and get its updates, can't
-change them, and add files of their own that only they and the owner see:
-[contributions](contributions.md)). Someone signed in who opens its link
-joins it to read too. No email
-is sent: someone sees what's shared with them when they sign in to TabCam
-with that address (with Google, or with Apple on iOS). To share a capture with other people than the
-original's, [clone](library.md#events) it and share the copy.
+A capture (event) is shared with other people by its **link**: the
+owner's [Share](sharing.md) copies it, and someone signed in who opens it
+**joins** it to read ("Can view and add": they see the owner's files and
+get its updates, can't change them, and add files of their own that only
+they and the owner see: [contributions](contributions.md)). There's no
+sharing by email address in the app any more, nor a list of people: the
+Share with people button and its sheet were removed (2026-10-17), so the
+owner can't see, change or remove who has joined. Captures shared by
+email before stay shared, **to edit** ("Can edit": they change it as the
+owner does, and the owner sees their changes) or **to read**, as they
+were. No email is sent: someone sees what's shared with them when they
+sign in to TabCam (with Google, or with Apple on iOS). To share a
+capture with other people than the original's, [clone](library.md#events)
+it and share the copy's link.
 
 A build has sharing only with [sign-in and cloud sync](cloud-sync.md) and
 `TABCAM_SHARE_API_URL` set.
 
-## Sharing
+## The share API's grants
 
-**Share with people**, a button of its own in the capture's app bar for
-the user's own events (signed in first, in a build with sharing), opens a
-sheet:
-
-- what it does ("People you add find this capture when they sign in to
-  TabCam with that email address. No email is sent.");
-- **Email** and the role (**Can edit**, the default, or **Can view and add**),
-  and **Add**, which checks the address looks like one ("Enter an email
-  address"), grants it and syncs the capture, so it's in the cloud;
-- the people it's shared with ("Not shared yet." when nobody), each with
-  their role, to change, and **Remove** (×); those who joined by its link
-  say "Joined by the link".
-
-Addresses are compared in lower case. One's own address, and more than
-50 people per capture, are refused, with the API's message (people who
-joined by its link don't count; up to 500 may).
-
-The owner's app records the people and roles on the event (`shares`:
-`[{email, role}]`, `role` `edit` or `read`) each time it lists, adds,
-changes or removes them, so they sync with the capture
-([event.json](cloud-sync.md#whats-synced-and-where)). The grants in the
-share API are what count: `shares` only says who they were when last
-recorded (and an editor could change it in their copy).
+The share API still keeps who a capture is shared with (by email, to edit
+or read; one's own address and more than 50 people per capture refused;
+up to 500 more by its link), and `CloudSync` still has its client
+(`grants`, `grant`, `revoke`), which only tests use now. The owner's app
+recorded the people and roles on the event (`shares`: `[{email, role}]`,
+`role` `edit` or `read`) when it listed or changed them, so they synced
+with the capture ([event.json](cloud-sync.md#whats-synced-and-where));
+the grants in the share API are what count.
 
 ## Shared with me
 
@@ -49,8 +38,7 @@ own (**My captures**), with "shared by <their email>" on its card. Its
 event screen says **"Shared by <email> · Can edit"** or **"· Can view and
 add"** under the app bar.
 
-- **Can edit**: everything works as for the user's own, except Share with
-  people (only the owner shares). Changes go up to the owner's folder,
+- **Can edit**: everything works as for the user's own. Changes go up to the owner's folder,
   and the owner's changes come down; the later one wins, as between one's
   own devices.
 - **Read** ("Can view and add"): Rename, Rotate, Delete (a page) and

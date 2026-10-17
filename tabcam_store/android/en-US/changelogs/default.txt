@@ -1,1 +1,1 @@
-First release of TabCam: scan guitar and bass tabs, read them into editable text, play along with them in Cam, sync them across your devices and share them by link or with people.
+First release of TabCam: scan guitar and bass tabs, read them into editable text, play along with them in Cam, sync them across your devices and share them by link.

@@ -23,7 +23,6 @@ import 'link_page.dart';
 import 'premium_card.dart';
 import 'rename_dialog.dart';
 import 'share_sheet.dart';
-import 'people_sheet.dart';
 import 'place.dart';
 import 'sign_in_gate.dart';
 import 'tab_text_view.dart';
@@ -196,15 +195,6 @@ class _EventScreenState extends State<EventScreen> {
   /// in).
   Future<void> _share(CaptureEvent event) =>
       shareCapture(context, event, sync: widget.sync);
-
-  /// Share with people: who it's shared with, by email.
-  Future<void> _people(CaptureEvent event) async {
-    final sync = widget.sync;
-    if (sync == null) return;
-    if (await requireSignIn(context, sync.auth, Gated.share) && mounted) {
-      await showPeopleSheet(context, sync, event);
-    }
-  }
 
   /// Clones the event and opens the copy in this one's place.
   Future<void> _clone(CaptureEvent event) async {
@@ -957,13 +947,6 @@ class _EventScreenState extends State<EventScreen> {
                   tooltip: l10n.eventClone,
                   icon: const Icon(Icons.copy_all_outlined),
                   onPressed: _busy ? null : () => _clone(event),
-                ),
-              if (widget.sync case final sync?
-                  when sync.canShare && !event.isShared)
-                IconButton(
-                  tooltip: l10n.eventShareWithPeople,
-                  icon: const Icon(Icons.group_add_outlined),
-                  onPressed: _busy ? null : () => _people(event),
                 ),
               IconButton(
                 key: const Key('download-all'),

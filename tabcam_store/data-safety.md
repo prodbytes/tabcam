@@ -122,10 +122,9 @@ them App Review expects.
   game, not reference/news, not social).
 - Violence, fear, sexuality, nudity, profanity or crude humor, drugs,
   alcohol, tobacco, gambling, simulated gambling: **No** to all.
-- **Users can interact or exchange content**: **Yes**: a user can share
-  their captures with specific people by email (to edit or read only),
-  and copy a capture's link, which lets whoever they give it to see that
-  capture, read only; there's no chat, no public feed, no search for
+- **Users can interact or exchange content**: **Yes**: a user can copy
+  a capture's link, which lets whoever they give it to see that capture,
+  read only (captures shared by email before stay shared); there's no chat, no public feed, no search for
   other users' captures, no profile browsing. No user location is shared.
 - **Digital purchases**: **No** (no in-app purchases; Premium is not sold
   in the app).
@@ -139,8 +138,8 @@ them App Review expects.
   media**: **No**. **Parental controls, age assurance**: **No**.
   **Health or wellness topics**: **No**. **Loot boxes, contests**: **No**.
 - **User-generated content** (Apple's question): **Yes**: captures are
-  the user's own, shared only with the people the owner picks, or with
-  whoever they give the capture's read-only link.
+  the user's own, shared only with whoever they give the capture's
+  read-only link.
 - Expected result: **Everyone / PEGI 3 / USK 0** on Play; **4+** on the
   App Store ("None" throughout Apple's questionnaire, the answers above
   for its yes/no questions;

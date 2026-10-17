@@ -312,10 +312,10 @@ void main() {
         await shots.settle(rounds: 20);
         await shots.save(5);
 
-        // 6. Share with people, by email.
+        // 6. Share: the capture's link copied, to send to anyone.
         await shots.home();
         await shots.openCapture('Amber Lane');
-        await tester.tap(find.byTooltip('Share with people'));
+        await tester.tap(find.byTooltip('Share'));
         await shots.settle(rounds: 20);
         await shots.save(6);
       } finally {
