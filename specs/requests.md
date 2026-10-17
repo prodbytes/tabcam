@@ -1421,3 +1421,11 @@ spec.
    Reading again is the Text view's Rescan (or Read again, when there's
    no tab). See [event screen](event-screen.md) and
    [tab recognition](tab-recognition.md).
+10. **When a zip file is added, add all files inside it.** A zip picked
+    with Files (Capture's or an event's Add) or dragged onto the app is
+    unzipped on the device and its files added in its place, in order,
+    folders flattened, a nested zip too; macOS's metadata files are left
+    out; a zip that can't be read, is empty or is too big (over 1000
+    files or 1 GB) is counted as left out. The Files picker offers
+    `.zip`. Fixed on the way: files made from bytes now carry their name
+    on Android and iOS too. See [scanning](scanning.md).
