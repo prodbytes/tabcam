@@ -142,6 +142,26 @@ void main() {
     expect(rescans, 1);
   });
 
+  testWidgets('on a screen wider than 1600, the tab shows', (tester) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final library = Library(PlatformEventStore());
+    await library.load();
+    final event = await library.update(
+      (await library.create(const [])).copyWith(tabText: 'e|--0--|'),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TabTextView(library: library, eventId: event.id),
+        ),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+    expect(find.textContaining('e|--0--|'), findsWidgets);
+  });
+
   testWidgets('no Rescan without anything to read', (tester) async {
     final library = Library(PlatformEventStore());
     await library.load();

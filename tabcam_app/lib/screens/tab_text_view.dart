@@ -659,12 +659,15 @@ class _Unwrapped extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: ConstrainedBox(
+        // At least the screen's width; at most 1600, or the screen's on
+        // one wider than that.
         constraints: BoxConstraints(
-          minWidth: MediaQuery.sizeOf(context).width,
-          maxWidth: 1600,
+          minWidth: width,
+          maxWidth: width > 1600 ? width : 1600,
         ),
         child: SingleChildScrollView(child: child),
       ),

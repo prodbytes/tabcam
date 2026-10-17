@@ -1397,3 +1397,8 @@ spec.
    Waiting for Review (manual release), free in all 175 territories,
    with the review contact, the age rating and the content rights set.
    See [app stores](app-stores.md#status).
+7. **A box constraints error in the Text view.** On screens wider than
+   1600 px (a 1920 px browser window) the Text view showed Flutter's red
+   error: its text asked to be at least the screen's width and at most
+   1600 px. It now goes up to the screen's width on such screens. See
+   [tab recognition](tab-recognition.md).
