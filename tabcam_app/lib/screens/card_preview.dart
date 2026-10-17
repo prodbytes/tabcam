@@ -114,8 +114,14 @@ class _Icon extends StatelessWidget {
   final IconData icon;
 
   @override
-  Widget build(BuildContext context) =>
-      Center(child: Icon(icon, size: 48, color: Colors.black54));
+  Widget build(BuildContext context) => Center(
+    child: Icon(
+      icon,
+      // A little smaller on a phone.
+      size: MediaQuery.sizeOf(context).width < 600 ? 40 : 48,
+      color: Colors.black54,
+    ),
+  );
 }
 
 /// [child] with a small round [badge] in its bottom right corner.
@@ -143,7 +149,11 @@ class _Badged extends StatelessWidget {
             ),
             child: Padding(
               padding: const EdgeInsets.all(4),
-              child: Icon(badge, size: 16, color: Colors.white),
+              child: Icon(
+                badge,
+                size: MediaQuery.sizeOf(context).width < 600 ? 14 : 16,
+                color: Colors.white,
+              ),
             ),
           ),
         ),

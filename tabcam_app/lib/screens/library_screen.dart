@@ -453,6 +453,11 @@ class _EventCard extends StatelessWidget {
     final pdfs = count((p) => p.isPdf);
     final links = count((p) => p.isLink);
     final pages = count((p) => p.isImage);
+    // On a phone, the text and the ⋮ a little smaller.
+    final narrow = MediaQuery.sizeOf(context).width < 600;
+    TextStyle? smaller(TextStyle? style) => narrow && style?.fontSize != null
+        ? style!.copyWith(fontSize: style.fontSize! - 1)
+        : style;
     return Card(
       clipBehavior: Clip.antiAlias,
       shape: fresh
@@ -488,7 +493,7 @@ class _EventCard extends StatelessWidget {
                           event.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall,
+                          style: smaller(theme.textTheme.titleSmall),
                         ),
                         Text(
                           [
@@ -507,13 +512,14 @@ class _EventCard extends StatelessWidget {
                           ].join(' · '),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall,
+                          style: smaller(theme.textTheme.bodySmall),
                         ),
                       ],
                     ),
                   ),
                   PopupMenuButton<_CardAction>(
                     tooltip: l10n.homeLibraryMore,
+                    iconSize: narrow ? 20 : null,
                     onSelected: (a) => _action(context, a),
                     itemBuilder: (_) => [
                       if (!event.readOnly)

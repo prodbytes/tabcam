@@ -15,7 +15,9 @@ the [welcome](navigation.md#signed-out-the-welcome) alone.
   card opens the [event screen](event-screen.md); its ⋮ menu has **Rename**,
   **Share** ([sharing](sharing.md)), **Clone** (below) and **Delete** (after a confirmation,
   which says the pages and text tab go too). Long-pressing a card renames
-  it.
+  it. On a phone (narrower than 600 dp) the card's text is a point
+  smaller, its ⋮ 20 dp instead of 24, and the preview's icon 40 dp
+  instead of 48 (its badge 14 instead of 16).
 - **Previews**: a card shows, in order of preference, the first image
   page's thumbnail (with its [filter](page-filters.md); never when the
   images are [hidden](hidden-images.md)); else the first PDF's first page,
