@@ -30,6 +30,22 @@ void main() {
       expect(CaptureLink.idIn(link), 'abc123');
     });
 
+    test("a file's link adds its ID, found again by fileIn", () {
+      final link = CaptureLink.of(
+        event,
+        file: event.pages.first,
+        app: Uri.parse('https://tabcam.nu01.com/app/'),
+      );
+      expect(link.queryParameters['c'], 'abc123');
+      expect(link.queryParameters['f'], event.pages.first.id);
+      expect(CaptureLink.fileIn(link), event.pages.first.id);
+      expect(CaptureLink.fileIn(Uri.parse('https://x/app/?c=abc123')), isNull);
+      expect(
+        CaptureLink.fileIn(Uri.parse('https://x/app/?c=abc123&f=../x')),
+        isNull,
+      );
+    });
+
     test('finds no ID in other links, or a bad one', () {
       expect(
         CaptureLink.idIn(Uri.parse('https://tabcam.nu01.com/app/')),

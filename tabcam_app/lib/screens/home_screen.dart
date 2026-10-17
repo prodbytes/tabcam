@@ -179,7 +179,12 @@ class _HomeScreenState extends State<HomeScreen> {
     if (id == null || !mounted || !library.loaded) return;
     if (library.byId(id) case final event?) {
       _stopLink();
-      openEvent(context, library, event, widget.sync, widget.ocr);
+      // A file's link opens it over the capture's list.
+      final file = switch (_link) {
+        final link? => CaptureLink.fileIn(link),
+        null => null,
+      };
+      openEvent(context, library, event, widget.sync, widget.ocr, file);
       return;
     }
     final sync = widget.sync;

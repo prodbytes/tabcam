@@ -8,6 +8,11 @@ build without sign-in) it copies on the tap itself, before anything else
 pass comes after); "Link copied" says it's done. Signed out, it asks to
 sign in first ([signed out](cloud-sync.md#signed-out)), then copies.
 
+- A file's link adds `&f=<file id>` (`CaptureLink.of(event, file:)`,
+  the [file names](event-screen.md) in the list): it opens the capture
+  with that file open on the file screen over its list (Back goes to the
+  list), signed in, signed out by its key, or after joining; an unknown
+  or bad file ID opens just the capture.
 - The link is `https://tabcam.nu01.com/app/?c=<capture id>&k=<key>`
   ([`CaptureLink`](../tabcam_app/lib/export/capture_link.dart)): the
   capture's ID, and its **link key**, which lets anyone holding the link

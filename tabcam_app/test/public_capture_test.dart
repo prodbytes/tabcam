@@ -12,6 +12,7 @@ import 'package:tabcam_app/library/capture_event.dart';
 import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
 import 'package:tabcam_app/main.dart';
+import 'package:tabcam_app/screens/file_screen.dart';
 import 'package:tabcam_app/screens/public_capture_screen.dart';
 
 import 'fakes.dart';
@@ -29,6 +30,7 @@ void main() {
   late FakeBucket bucket;
   late Uri link;
   late String id;
+  late String pageId;
 
   /// The owner's device: a capture with a page and a tab, its link copied
   /// (a key, recorded) and synced to the cloud.
@@ -50,6 +52,7 @@ void main() {
       img.encodeJpg(img.Image(width: 8, height: 8)),
     ]);
     id = made.id;
+    pageId = made.pages.single.id;
     final keyed = await library.patch(
       id,
       (e) => e.copyWith(tabText: riff, linkKey: newLinkKey()),
@@ -174,6 +177,33 @@ void main() {
     expect(find.byKey(const Key('welcome')), findsOneWidget);
     // Still waiting: once signed in, Home opens it.
     expect(IncomingLinks.instance.pending, link);
+  });
+
+  testWidgets("signed out, a file's link opens that file over the capture", (
+    tester,
+  ) async {
+    await tester.runAsync(ownerShares);
+    final mine = Library(PlatformEventStore());
+    await tester.runAsync(mine.load);
+    final fileLink = link.replace(
+      queryParameters: {...link.queryParameters, 'f': pageId},
+    );
+    await IncomingLinks.instance.didPushRouteInformation(
+      RouteInformation(uri: fileLink),
+    );
+    await tester.pumpWidget(
+      TabCamApp(library: mine, auth: FakeAuth(), captures: captures()),
+    );
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await frames(tester);
+    expect(find.byType(FileScreen), findsOneWidget);
+    // Back: the capture's list, opened by its link.
+    await tester.pageBack();
+    await frames(tester);
+    expect(find.byType(FileScreen), findsNothing);
+    expect(find.byKey(const Key('link-banner')), findsOneWidget);
   });
 
   testWidgets('a wrong key says so, signed out', (tester) async {

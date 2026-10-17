@@ -1,12 +1,16 @@
 import 'dart:async';
 
 import 'package:cross_file/cross_file.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/link.dart';
 
 import '../capture/media.dart';
 import '../capture/page_source.dart';
 import '../capture/play_along_screen.dart';
 import '../capture/play_along_sidebar.dart';
+import '../export/capture_link.dart';
 import '../export/download.dart';
 import '../import/tab_page_import.dart';
 import '../l10n/language.dart';
@@ -689,6 +693,42 @@ class _EventScreenState extends State<EventScreen> {
     );
   }
 
+  /// A file's name in the list, as a link (on the web, a real one: Cmd
+  /// or Ctrl-click, a middle click or the browser's menu opens it in a new
+  /// tab): the file's own link ([CaptureLink], with `f`), or a link file's
+  /// address. A plain tap opens it here, as the row does.
+  Widget _fileName(CaptureEvent event, EventPage page) {
+    final name = Text(
+      fileLabel(context.l10n, event, page),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+    final url = page.isLink ? page.url : CaptureLink.of(event, file: page);
+    if (url == null) return name;
+    return Link(
+      uri: url,
+      target: LinkTarget.blank,
+      builder: (context, followLink) => GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          // With a modifier the browser opens it (a new tab, a window).
+          final keys = HardwareKeyboard.instance;
+          if (kIsWeb &&
+              (keys.isMetaPressed ||
+                  keys.isControlPressed ||
+                  keys.isShiftPressed)) {
+            followLink?.call();
+          } else if (page.isLink) {
+            openLink(context, url);
+          } else {
+            _openFile(page);
+          }
+        },
+        child: name,
+      ),
+    );
+  }
+
   /// One contribution's file: on the owner's capture with Publish (or
   /// Published, to take back); on the reader's with Delete.
   Widget _contributionTile(CaptureEvent event, EventPage page, bool mine) {
@@ -707,11 +747,7 @@ class _EventScreenState extends State<EventScreen> {
       leading: page.kind == PageKind.video
           ? MiniVideo(player: _player, page: page, thumbnail: thumbnail)
           : thumbnail,
-      title: Text(
-        fileLabel(l10n, event, page),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
+      title: _fileName(event, page),
       subtitle: published
           ? Text(l10n.eventPublished)
           : page.url != null
@@ -811,11 +847,7 @@ class _EventScreenState extends State<EventScreen> {
           leading: page.kind == PageKind.video
               ? MiniVideo(player: _player, page: page, thumbnail: thumbnail)
               : thumbnail,
-          title: Text(
-            fileLabel(l10n, event, page),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+          title: _fileName(event, page),
           subtitle: page.url != null
               ? Text(
                   '${page.url}',

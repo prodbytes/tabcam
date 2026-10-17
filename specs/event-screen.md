@@ -80,7 +80,13 @@ going to it, or to Cam, pauses what plays along.
   a tap opens the link itself, outside the app, as the file screen's
   **Open** does (a new tab on the web; the browser, or the app for it
   such as YouTube, on Android and iOS). A link's chevron (**Details**)
-  opens it on the file screen, for Copy and Delete. With the images [hidden](hidden-images.md), the list
+  opens it on the file screen, for Copy and Delete. **Each file's name is
+  a link** (`Link`, `url_launcher`): the file's own link, the capture's
+  ([sharing](sharing.md)) with `&f=<file id>`, or a link file's address.
+  On the web it's a real one, for a new tab: Cmd, Ctrl or Shift-click, a
+  middle click, or the browser's menu (Open link in new tab, Copy link
+  address); a plain click opens it here, as the row does. Contributions'
+  files are links too. With the images [hidden](hidden-images.md), the list
   is the **text tab** first (its first line, or "No text tab yet"; a tap
   goes to the Text view), then the other files.
 - <a id="reordering"></a>**Reordering**: in the user's own events or
