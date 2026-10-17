@@ -1,3 +1,4 @@
+import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
@@ -51,8 +52,9 @@ class Media {
     'pdf': PageKind.pdf,
   };
 
-  /// The extensions the Files picker offers.
-  static final List<String> extensions = _kinds.keys.toList();
+  /// The extensions the Files picker offers: the pages', and zips (whose
+  /// files are added, [MediaPick.from]).
+  static final List<String> extensions = [..._kinds.keys, 'zip'];
 
   static const Map<String, String> _byMime = {
     'image/jpeg': 'jpg',
@@ -79,7 +81,7 @@ class Media {
 abstract final class MediaSource {
   /// Photos and videos from the device's photo library.
   static Future<MediaPick> library() async =>
-      MediaPick.of(await ImagePicker().pickMultipleMedia());
+      MediaPick.from(await ImagePicker().pickMultipleMedia());
 
   /// PDF documents, from the Files app (iOS), the system file picker
   /// (Android) or the browser.
@@ -88,17 +90,17 @@ abstract final class MediaSource {
       type: FileType.custom,
       allowedExtensions: const ['pdf'],
     );
-    return MediaPick.of([for (final f in files) f.xFile]);
+    return MediaPick.from([for (final f in files) f.xFile]);
   }
 
-  /// Image, video, audio and PDF files, from the Files app (iOS), the
+  /// Image, video, audio and PDF files, and zips of them, from the Files app (iOS), the
   /// system file picker (Android) or the browser.
   static Future<MediaPick> files() async {
     final files = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: Media.extensions,
     );
-    return MediaPick.of([for (final f in files) f.xFile]);
+    return MediaPick.from([for (final f in files) f.xFile]);
   }
 }
 
@@ -110,16 +112,85 @@ class MediaPick {
   final List<Media> media;
   final int skipped;
 
-  factory MediaPick.of(List<XFile> files) {
+  /// [files] as media. A zip's files take its place, in its order, its
+  /// folders flattened (a zip in it too, one level down); macOS's
+  /// `__MACOSX` folder and hidden files are left out. Files of other
+  /// kinds, in a zip or not, are counted in [skipped], as is a zip that
+  /// can't be read or is too big ([maxZipEntries], [maxZipBytes]).
+  static Future<MediaPick> from(List<XFile> files) async {
     final media = <Media>[];
-    for (final f in files) {
-      final m = Media.of(f);
-      if (m != null) {
+    var skipped = 0;
+    Future<void> add(XFile file, int depth) async {
+      if (depth < 2 && isZip(file)) {
+        final inside = await unzip(file);
+        if (inside == null) {
+          skipped++;
+          return;
+        }
+        for (final f in inside) {
+          await add(f, depth + 1);
+        }
+        return;
+      }
+      if (Media.of(file) case final m?) {
         media.add(m);
       } else {
-        debugPrint('Not a page: ${f.name}');
+        debugPrint('Not a page: ${file.name}');
+        skipped++;
       }
     }
-    return MediaPick(media, files.length - media.length);
+
+    for (final f in files) {
+      await add(f, 0);
+    }
+    return MediaPick(media, skipped);
+  }
+
+  /// At most this many files in a zip, and this many bytes unzipped: a
+  /// bigger one (a zip bomb, say) isn't opened.
+  static const maxZipEntries = 1000;
+  static const maxZipBytes = 1024 * 1024 * 1024;
+
+  /// Whether [file] is a zip, by its extension or MIME type.
+  static bool isZip(XFile file) =>
+      file.name.toLowerCase().endsWith('.zip') ||
+      const {
+        'application/zip',
+        'application/x-zip-compressed',
+      }.contains(file.mimeType);
+
+  /// [zip]'s files, or null when it can't be read (or has nothing in it)
+  /// or is too big.
+  static Future<List<XFile>?> unzip(XFile zip) async {
+    try {
+      final archive = ZipDecoder().decodeBytes(await zip.readAsBytes());
+      // Bytes that aren't a zip decode to nothing, rather than failing.
+      if (archive.isEmpty) return null;
+      final entries = [
+        for (final e in archive.files)
+          if (e.isFile && _kept(e.name)) e,
+      ];
+      final bytes = entries.fold<int>(0, (sum, e) => sum + e.size);
+      if (entries.length > maxZipEntries || bytes > maxZipBytes) {
+        debugPrint('TabCam: ${zip.name}: too big to unzip');
+        return null;
+      }
+      return [
+        for (final e in entries)
+          if (e.name.split('/').last case final name)
+            // The name is the path's on Android and iOS, the name on the web.
+            XFile.fromData(e.content, name: name, path: name),
+      ];
+    } on Object catch (e) {
+      debugPrint('TabCam: ${zip.name} can\'t be unzipped: $e');
+      return null;
+    }
+  }
+
+  /// Whether a zip's [path] is a file to add: not in macOS's `__MACOSX`
+  /// folder, nor hidden (`.DS_Store`, `._x`).
+  static bool _kept(String path) {
+    final parts = path.split('/');
+    return !parts.contains('__MACOSX') && !parts.last.startsWith('.');
   }
 }

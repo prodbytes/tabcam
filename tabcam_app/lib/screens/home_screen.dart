@@ -354,7 +354,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // Files dragged onto Capture make a new capture of them.
           FileDropArea(
             onFiles: (files, skipped) => _addMedia(() async {
-              final pick = MediaPick.of(files);
+              final pick = await MediaPick.from(files);
               return MediaPick(pick.media, pick.skipped + skipped);
             }),
             child: CaptureView(

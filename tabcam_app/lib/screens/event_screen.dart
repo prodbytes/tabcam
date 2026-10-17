@@ -379,9 +379,11 @@ class _EventScreenState extends State<EventScreen> {
     List<XFile> files,
     int skipped,
   ) => _run(context.l10n.eventCouldntAdd, () async {
-    final pick = MediaPick.of(files);
+    final l10n = context.l10n;
+    final pick = await MediaPick.from(files);
+    if (!mounted) return;
     final notPages = pick.skipped + skipped;
-    if (notPages > 0) _snack(context.l10n.eventSkippedFiles(notPages));
+    if (notPages > 0) _snack(l10n.eventSkippedFiles(notPages));
     if (pick.media.isEmpty) return;
     final before = Library.addedPages(event).length;
     await _library.addMedia(event, pick.media);

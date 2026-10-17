@@ -62,9 +62,9 @@ Add menu scrolls on a small phone):
 - **Document**: PDF files (the file picker offering only `.pdf`).
 - **Photos & videos**: several photos and videos from the photo library
   (`image_picker`'s multiple media picker).
-- **Files**: image, video, audio and PDF files (`file_picker`, offering
-  the extensions below): the Files app on iOS, the system picker on
-  Android, the browser's on the web.
+- **Files**: image, video, audio and PDF files, and zips of them
+  (`file_picker`, offering the extensions below and `zip`): the Files
+  app on iOS, the system picker on Android, the browser's on the web.
 - **Link**: asks for the **Link** and an optional **Title** ("Lesson,
   recording…"). The address is trimmed and gets `https://` when it has no
   scheme (`youtu.be/abc` is `https://youtu.be/abc`); only `http` and
@@ -80,6 +80,16 @@ Picked files are recognized by extension, or else MIME type: images `jpg`,
 `opus`, `flac`; and `pdf`. Anything else is left out, and a message says
 how many. Photos get the Tab filter, as scanned pages do; the other files
 are kept as picked.
+
+**A zip** (`.zip`, or `application/zip`), picked or dragged onto the app,
+is unzipped on the device (`MediaPick.from`,
+[lib/capture/media.dart](../tabcam_app/lib/capture/media.dart)): its files
+are added in its place, in its order, its folders flattened (each keeps
+its own name), and a zip inside it too, one level down. macOS's
+`__MACOSX` folder and hidden files (`.DS_Store`) are left out without a
+word; its other files that aren't pages count among those left out, as
+does a zip that can't be read, is empty, or is too big (over 1000 files
+or 1 GB unzipped, by its directory).
 
 ### Cropping photos to the page
 

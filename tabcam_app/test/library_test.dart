@@ -151,7 +151,7 @@ void main() {
     await library.load();
     var event = await library.create([_jpeg(10, 10)]);
     final video = Uint8List.fromList(List.generate(64, (i) => i));
-    final pick = MediaPick.of([
+    final pick = await MediaPick.from([
       XFile.fromData(_jpeg(20, 10), path: 'chord.JPG'),
       XFile.fromData(video, path: 'lesson.mov'),
       XFile.fromData(Uint8List(4), path: 'notes.txt'),
@@ -190,11 +190,11 @@ void main() {
     final video = Uint8List.fromList(List.generate(16, (i) => i));
     event = await library.addMedia(
       event,
-      MediaPick.of([
+      (await MediaPick.from([
         XFile.fromData(_jpeg(20, 10), path: 'riff.png'),
         XFile.fromData(second, path: 'chord.jpeg'),
         XFile.fromData(video, path: 'lesson.mov'),
-      ]).media,
+      ])).media,
     );
     // Photos only go to the cropper, not videos.
     expect(seen, hasLength(2));
@@ -216,7 +216,7 @@ void main() {
     final photo = _jpeg(20, 10);
     final event = await library.addMedia(
       await library.create(const []),
-      MediaPick.of([XFile.fromData(photo, path: 'riff.jpg')]).media,
+      (await MediaPick.from([XFile.fromData(photo, path: 'riff.jpg')])).media,
     );
     expect(await library.original(event, event.pages.single), photo);
   });
