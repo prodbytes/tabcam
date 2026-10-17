@@ -1392,3 +1392,8 @@ spec.
    [app stores](app-stores.md#status).
    The `testflight` lane no longer fails when a tester is already in
    **Internal**.
+6. **Check whether App Store Connect's remaining steps are done.**
+   Checked over the API: 0.2.202610171102 with build 1792234961 is
+   Waiting for Review (manual release), free in all 175 territories,
+   with the review contact, the age rating and the content rights set.
+   See [app stores](app-stores.md#status).
