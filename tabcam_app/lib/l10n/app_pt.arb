@@ -176,6 +176,8 @@
   "camAlongPause": "Pausar (espaço)",
   "camAlongBack": "Voltar 10 segundos",
   "camAlongForward": "Avançar 10 segundos",
+  "camAlongRepeatOn": "Repetir ligado: recomeça ao terminar",
+  "camAlongRepeatOff": "Repetir desligado",
   "camAlongStop": "Parar",
   "camHeadsOn": "Gestos de cabeça ligados: acene para cima ou à direita para a próxima linha, para baixo ou à esquerda para a anterior",
   "camHeadsOff": "Gestos de cabeça desligados",

@@ -681,6 +681,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get camAlongForward => 'Adelante 10 segundos';
 
   @override
+  String get camAlongRepeatOn =>
+      'Repetir activado: vuelve a empezar al terminar';
+
+  @override
+  String get camAlongRepeatOff => 'Repetir desactivado';
+
+  @override
   String get camAlongStop => 'Detener';
 
   @override

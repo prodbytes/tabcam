@@ -31,6 +31,15 @@ class LinkFrameController extends ChangeNotifier {
   bool get playing => _playing;
   bool _playing;
 
+  /// Whether it starts over at its end (its frame sees to it).
+  bool get repeat => _repeat;
+  bool _repeat = true;
+  set repeat(bool on) {
+    if (on == _repeat) return;
+    _repeat = on;
+    notifyListeners();
+  }
+
   Future<void> Function(LinkCommand command)? _command;
 
   /// Set by the frame showing it: how to tell it what to do.
@@ -127,6 +136,26 @@ num _skipTo(double at, bool back) {
 /// The message asking a YouTube embed to say how it plays (its
 /// "infoDelivery" messages, with its current time).
 const youTubeListening = '{"event":"listening","id":"tabcam"}';
+
+/// The iframe API's messages that play a video from its start.
+final youTubeRestart = [
+  _youTube('seekTo', '[0,true]'),
+  _youTube('playVideo', '""'),
+];
+
+/// Whether a YouTube embed's [message] says its video ended.
+bool youTubeEnded(Object? message) {
+  if (message is! String) return false;
+  try {
+    final data = jsonDecode(message);
+    if (data is! Map) return false;
+    final info = data['info'];
+    return (data['event'] == 'onStateChange' && info == 0) ||
+        (info is Map && info['playerState'] == 0);
+  } on FormatException {
+    return false;
+  }
+}
 
 /// The current time, in seconds, a YouTube embed's [message] says, or
 /// null if it says none.

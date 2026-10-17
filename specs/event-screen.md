@@ -3,7 +3,11 @@
 One event (a capture), opened from the [library](library.md): the list of
 its files, each opening alone on the [file screen](#file-screen). If its
 text tab is marked correct ([tab recognition](tab-recognition.md#text-view)),
-it opens on the Text view; otherwise on the list.
+it opens on the Text view; otherwise on the list. When the capture has
+recordings, videos or links, the Text view has the play-along sidebar
+beside it, open, and **Play along** (♫) in the app bar, as in
+[Cam](cam.md#playing-along-with-a-file); the Files view has neither, and
+going to it, or to Cam, pauses what plays along.
 
 - **App bar**: the title (and the artist under it, if set); tapping it, or
   **Rename** (pencil), renames the event (see
@@ -146,7 +150,9 @@ The file is shown whole, as what it is:
 - **Images** are pinch-zoomable (up to 5×), as the view says.
 - **PDFs** show the document itself (`pdfrx`, PDFium; WASM on the web,
   loaded when a PDF is first shown), its pages scrolling down, zoomable.
-  A PDF that can't be read says so.
+  A PDF that can't be read says so. When the capture has recordings,
+  videos or links, the play-along sidebar is beside it, open, with **Play
+  along** (♫) in the app bar, as in [Cam](cam.md#playing-along-with-a-file).
 - **Videos** show a play button; tapped, they play in place, looping,
   with a bar at the bottom: a **play / pause** button and a scrubbable
   progress bar. A tap on the video also pauses and resumes. A video that

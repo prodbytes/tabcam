@@ -111,9 +111,15 @@ camera view ([`PlayAlongScreen`](../tabcam_app/lib/capture/play_along_screen.dar
   turned while it was recorded (the take has the tab in it too).
 
 <a id="playing-along-with-a-file"></a>**Playing along with a file**:
-when the capture has recordings, videos or links, Cam opens with a
-sidebar on the right (40% of the screen's width, from 120 to 280 px):
-at its top a compact **player frame**, always there, with the first of
+when the capture has recordings, videos or links, Cam has a sidebar on
+the right (40% of the screen's width, from 120 to 280 px), open by
+default: it opens by itself the first time the capture has one, when Cam
+opens or when one arrives later (a sync, the first take), and once the
+user hides it, it stays hidden. The same sidebar is beside the
+[Text view](event-screen.md) and a [PDF](event-screen.md#file-screen)
+(`PlayAlong`, `PlayAlongSidebar`,
+[`play_along_sidebar.dart`](../tabcam_app/lib/capture/play_along_sidebar.dart)).
+At its top a compact **player frame**, always there, with the first of
 them loaded in it, paused (`BackingTrack`,
 [`backing_track.dart`](../tabcam_app/lib/capture/backing_track.dart)),
 and under it the list of them in the capture's order (its takes too),
@@ -130,8 +136,13 @@ recording's: `mixWithOthers`).
 - **The frame**, as wide as the sidebar and at most a third of the
   screen's height: a video (or a link's page, 16:9) above a progress bar
   to scrub; a recording only the progress bar; under them its icon and
-  name in small type, then **Play** / **Pause** and **Stop** (pauses
-  it, back at its start). It has no Close: something is always loaded.
+  name in small type, then **«** (10 seconds back, not before the
+  start), **Play** / **Pause**, **Stop** (pauses it, back at its start),
+  **»** (10 seconds forward) and **Repeat** (on by default, in the
+  primary colour while on: at its end it starts over; a recording or
+  video loops, a YouTube video is started over when it says it ended, a
+  page's first video or sound loops). It has no Close: something is
+  always loaded.
   The one in the frame is marked in the list.
 - **The space bar** pauses and plays it while the sidebar shows (a key
   down; held, it doesn't repeat), and doesn't turn the tab; with the
@@ -146,17 +157,19 @@ recording's: `mixWithOthers`).
     `youtube-nocookie.com/embed/<id>`, with its iframe API on, autoplay
     off when it opens paused with Cam), told to play, pause and stop by
     the iframe API's messages (`playVideo`, `pauseVideo`; stop is
-    `pauseVideo` then `seekTo` 0). On Android and iOS it's in a web view
+    `pauseVideo` then `seekTo` 0). Asked to (`listening`), it says its
+    current time, from which « and » `seekTo` 10 seconds back or on, and
+    when it ends, for Repeat. On Android and iOS it's in a web view
     (`webview_flutter`), in a page of its own from
     `https://tabcam.nu01.com/` (YouTube wants to know the site that
     embeds it), with media playing inline and without a tap first; on
     the web, an iframe.
   - **Another page**: on Android and iOS loaded in the web view, its
-    first `<video>` or `<audio>` played and paused by the space bar
-    (and paused once the page loads, when it opens paused); on the web
-    in an iframe, which another site's page can't be told to play,
-    pause or stop (no Play / Pause or Stop), and which some sites
-    refuse to be shown in.
+    first `<video>` or `<audio>` played and paused by the space bar,
+    moved by « and », looped by Repeat (and paused once the page loads,
+    when it opens paused); on the web in an iframe, which another site's
+    page can't be told to play, pause or stop (no controls), and which
+    some sites refuse to be shown in.
   - A click inside the frame gives it the keyboard (on the web, the
     page in it gets the space bar) until the user taps Cam again.
 - **Play** (the last take) pauses it first. Leaving Cam stops it.

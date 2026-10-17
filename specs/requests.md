@@ -1402,3 +1402,15 @@ spec.
    error: its text asked to be at least the screen's width and at most
    1600 px. It now goes up to the screen's width on such screens. See
    [tab recognition](tab-recognition.md).
+8. **The play-along sidebar should be open by default whenever there are
+   playable files; add « and » to its mini player; open it in the PDF
+   and text viewers too; add a repeat button, on by default.** The
+   sidebar already opened when Cam did; it now also opens when a
+   recording, video or link arrives later (a sync, the first take),
+   unless the user has hidden it. The frame has « and » (10 seconds back
+   and forward; a YouTube video's from the time it says) and Repeat (on
+   by default). The sidebar moved out of Cam (`PlayAlong`,
+   `PlayAlongSidebar`) and is beside the Text view and a PDF too; the
+   Text view's text now takes the view's width, not the screen's. See
+   [Cam](cam.md#playing-along-with-a-file) and
+   [event screen](event-screen.md).

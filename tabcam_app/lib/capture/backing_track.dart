@@ -42,6 +42,18 @@ class BackingTrack extends ChangeNotifier {
   LinkFrameController? get link => _link;
   LinkFrameController? _link;
 
+  /// Whether it starts over at its end; on by default.
+  bool get repeat => _repeat;
+  bool _repeat = true;
+
+  /// Turns [repeat] on or off, for what plays now and what's chosen next.
+  Future<void> setRepeat(bool on) async {
+    _repeat = on;
+    _link?.repeat = on;
+    notifyListeners();
+    await _media?.setLooping(on);
+  }
+
   bool get loading => _loading;
   bool _loading = false;
 
@@ -73,6 +85,7 @@ class BackingTrack extends ChangeNotifier {
       final url = page.url;
       if (url != null && !isMediaUrl(url)) {
         _link = LinkFrameController(url, autoplay: play)
+          ..repeat = _repeat
           ..addListener(notifyListeners);
         return;
       }
@@ -95,6 +108,7 @@ class BackingTrack extends ChangeNotifier {
         return;
       }
       _media = media..addListener(notifyListeners);
+      await media.setLooping(_repeat);
       if (play) await media.play();
     } on Object catch (e) {
       debugPrint('TabCam: cam: ${page.fileName} can\'t play here: $e');

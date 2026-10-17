@@ -49,6 +49,13 @@ class FakeVideoPlatform extends VideoPlatformBase {
   Future<Duration> getPosition(int playerId) async =>
       const Duration(seconds: 12);
 
+  /// Whether each player loops.
+  final looping = <int, bool>{};
+
+  @override
+  Future<void> setLooping(int playerId, bool looping) async =>
+      this.looping[playerId] = looping;
+
   /// Where each seek went.
   final seeks = <Duration>[];
 

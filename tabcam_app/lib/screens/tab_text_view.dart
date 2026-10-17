@@ -658,21 +658,27 @@ class _Unwrapped extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: ConstrainedBox(
-        // At least the screen's width; at most 1600, or the screen's on
-        // one wider than that.
-        constraints: BoxConstraints(
-          minWidth: width,
-          maxWidth: width > 1600 ? width : 1600,
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, box) {
+      // The view's width (the play-along sidebar may take some of the
+      // screen's), or the screen's where unbounded.
+      final width = box.hasBoundedWidth
+          ? box.maxWidth
+          : MediaQuery.sizeOf(context).width;
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          // At least the view's width; at most 1600, or the view's when
+          // wider than that.
+          constraints: BoxConstraints(
+            minWidth: width,
+            maxWidth: width > 1600 ? width : 1600,
+          ),
+          child: SingleChildScrollView(child: child),
         ),
-        child: SingleChildScrollView(child: child),
-      ),
-    );
-  }
+      );
+    },
+  );
 }
 
 /// Fix's corrections under review: each one accepted, rejected, or not

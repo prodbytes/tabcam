@@ -53,11 +53,16 @@ class _IframeFrameState extends State<_IframeFrame> {
             iframe.contentWindow?.postMessage(youTubeListening.toJS, '*'.toJS),
       );
       _onMessage = (web.MessageEvent event) {
-        if (event.source != iframe.contentWindow) return;
+        // JS's ===: Dart's == reads the cross-origin window, which throws.
+        if (!event.source.strictEquals(iframe.contentWindow).toDart) return;
         final data = event.data;
-        if (youTubeTime(data.isA<JSString>() ? (data as JSString).toDart : null)
-            case final time?) {
-          _time = time;
+        final message = data.isA<JSString>() ? (data as JSString).toDart : null;
+        if (youTubeTime(message) case final time?) _time = time;
+        // Repeat: at its end, it starts over.
+        if (c.repeat && youTubeEnded(message)) {
+          for (final m in youTubeRestart) {
+            iframe.contentWindow?.postMessage(m.toJS, '*'.toJS);
+          }
         }
       }.toJS;
       web.window.addEventListener('message', _onMessage);

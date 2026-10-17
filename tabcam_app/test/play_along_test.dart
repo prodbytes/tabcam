@@ -477,6 +477,16 @@ void main() {
     expect(video.playing, isEmpty);
     expect(find.byKey(const Key('cam-along-stop')), findsOneWidget);
 
+    // Repeat is on: it loops; tapped, it doesn't.
+    expect(video.looping.values.single, isTrue);
+    await tester.tap(find.byKey(const Key('cam-along-repeat')));
+    await frames(tester);
+    expect(video.looping.values.single, isFalse);
+    expect(find.byTooltip('Repeat off'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('cam-along-repeat')));
+    await frames(tester);
+    expect(video.looping.values.single, isTrue);
+
     // » and « go 10 seconds forward and back, not before the start.
     await tester.tap(find.byKey(const Key('cam-along-forward')));
     await frames(tester);

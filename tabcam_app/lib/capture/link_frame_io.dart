@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
@@ -47,6 +49,7 @@ class _WebViewFrameState extends State<_WebViewFrame> {
     if (_web.platform case final AndroidWebViewController android) {
       android.setMediaPlaybackRequiresUserGesture(false);
     }
+    c.addListener(_changed);
     final id = c.youTubeId;
     if (id != null) {
       final src = youTubeEmbed(id, _site, autoplay: c.autoplay);
@@ -58,11 +61,15 @@ class _WebViewFrameState extends State<_WebViewFrame> {
         '<iframe id="player" src="$src" allow="autoplay; encrypted-media; '
         'picture-in-picture" allowfullscreen></iframe>'
         // The video's time, for « and »: it says it once asked to.
-        '<script>var t=0,p=document.getElementById("player");'
+        '<script>var t=0,r=${c.repeat},p=document.getElementById("player");'
         "p.onload=function(){p.contentWindow.postMessage('$youTubeListening','*')};"
         'addEventListener("message",function(e){if(e.source!==p.contentWindow)return;'
         'try{var d=JSON.parse(e.data);if(d.info&&typeof d.info.currentTime=="number")'
-        't=d.info.currentTime}catch(_){}});</script></body></html>',
+        't=d.info.currentTime;'
+        // Repeat: at its end, it starts over.
+        'if(r&&((d.event=="onStateChange"&&d.info===0)||(d.info&&d.info.playerState===0)))'
+        "{${youTubeRestart.map((m) => "p.contentWindow.postMessage('$m','*');").join()}}"
+        '}catch(_){}});</script></body></html>',
         baseUrl: '$_site/',
       );
       c.command = (command) async {
@@ -98,6 +105,7 @@ class _WebViewFrameState extends State<_WebViewFrame> {
         NavigationDelegate(
           onPageFinished: (_) {
             if (!c.playing) run(LinkCommand.pause);
+            _loop();
           },
         ),
       );
@@ -106,8 +114,31 @@ class _WebViewFrameState extends State<_WebViewFrame> {
     }
   }
 
+  /// Repeat as last told to the page.
+  late bool _repeat = widget.controller.repeat;
+
+  /// Tells the page about Repeat: a YouTube video's frame starts it over
+  /// at its end (r); a page's first video or sound loops.
+  void _loop() {
+    final on = widget.controller.repeat;
+    _repeat = on;
+    unawaited(
+      _web.runJavaScript(
+        widget.controller.youTubeId != null
+            ? 'r=$on'
+            : "(function(){var m=document.querySelector('video,audio');"
+                  'if(m)m.loop=$on})()',
+      ),
+    );
+  }
+
+  void _changed() {
+    if (widget.controller.repeat != _repeat) _loop();
+  }
+
   @override
   void dispose() {
+    widget.controller.removeListener(_changed);
     widget.controller.command = null;
     super.dispose();
   }

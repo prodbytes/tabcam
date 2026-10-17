@@ -1162,6 +1162,18 @@ abstract class AppLocalizations {
   /// **'Forward 10 seconds'**
   String get camAlongForward;
 
+  /// Cam: the file playing along repeats; tapping turns it off.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat on: it starts over at its end'**
+  String get camAlongRepeatOn;
+
+  /// Cam: the file playing along stops at its end; tapping turns repeat on.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat off'**
+  String get camAlongRepeatOff;
+
   /// Cam: stops the file playing along, back at its start.
   ///
   /// In en, this message translates to:

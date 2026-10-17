@@ -65,4 +65,25 @@ void main() {
     expect(sent, [LinkCommand.forward, LinkCommand.back]);
     c.dispose();
   });
+
+  test('a YouTube video that ends says so; repeat starts it over', () {
+    expect(youTubeEnded('{"event":"onStateChange","info":0}'), isTrue);
+    expect(
+      youTubeEnded('{"event":"infoDelivery","info":{"playerState":0}}'),
+      isTrue,
+    );
+    expect(
+      youTubeEnded('{"event":"infoDelivery","info":{"playerState":1}}'),
+      isFalse,
+    );
+    expect(youTubeEnded('{"event":"onStateChange","info":2}'), isFalse);
+    expect(youTubeEnded(null), isFalse);
+    expect(youTubeRestart, [
+      '{"event":"command","func":"seekTo","args":[0,true]}',
+      '{"event":"command","func":"playVideo","args":""}',
+    ]);
+    final c = LinkFrameController(Uri.parse('https://x'));
+    expect(c.repeat, isTrue);
+    c.dispose();
+  });
 }

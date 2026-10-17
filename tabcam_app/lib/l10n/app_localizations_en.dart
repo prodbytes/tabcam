@@ -659,6 +659,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camAlongForward => 'Forward 10 seconds';
 
   @override
+  String get camAlongRepeatOn => 'Repeat on: it starts over at its end';
+
+  @override
+  String get camAlongRepeatOff => 'Repeat off';
+
+  @override
   String get camAlongStop => 'Stop';
 
   @override

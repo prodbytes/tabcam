@@ -155,6 +155,10 @@ class PlayAlongBeside extends StatelessWidget {
                 onUse?.call();
                 unawaited(along.track.skip(by));
               },
+              onRepeat: () {
+                onUse?.call();
+                unawaited(along.track.setRepeat(!along.track.repeat));
+              },
             ),
           ),
       ],
@@ -164,7 +168,8 @@ class PlayAlongBeside extends StatelessWidget {
 
 /// The backing track's frame, compact, at the top of the sidebar and as
 /// wide: the video or link playing (a recording shows its progress only),
-/// its name, play / pause and stop. Nothing while there's none.
+/// its name, « (10 seconds back), play / pause, stop, » (10 forward) and
+/// repeat (on by default). Nothing while there's none.
 class _BackingFrame extends StatelessWidget {
   const _BackingFrame({
     required this.eventId,
@@ -173,6 +178,7 @@ class _BackingFrame extends StatelessWidget {
     required this.onToggle,
     required this.onStop,
     required this.onSkip,
+    required this.onRepeat,
   });
 
   final String eventId;
@@ -181,6 +187,7 @@ class _BackingFrame extends StatelessWidget {
   final VoidCallback onToggle;
   final VoidCallback onStop;
   final void Function(Duration by) onSkip;
+  final VoidCallback onRepeat;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -296,6 +303,19 @@ class _BackingFrame extends StatelessWidget {
                             icon: const Icon(Icons.fast_forward),
                             onPressed: () => onSkip(skipBy),
                           ),
+                          IconButton(
+                            key: const Key('cam-along-repeat'),
+                            tooltip: track.repeat
+                                ? l10n.camAlongRepeatOn
+                                : l10n.camAlongRepeatOff,
+                            isSelected: track.repeat,
+                            visualDensity: compact,
+                            color: track.repeat
+                                ? Theme.of(context).colorScheme.primary
+                                : Colors.white54,
+                            icon: const Icon(Icons.repeat),
+                            onPressed: onRepeat,
+                          ),
                         ],
                       ],
                     ),
@@ -321,6 +341,7 @@ class PlayAlongSidebar extends StatelessWidget {
     required this.onToggle,
     required this.onStop,
     required this.onSkip,
+    required this.onRepeat,
   });
 
   final Library library;
@@ -331,6 +352,7 @@ class PlayAlongSidebar extends StatelessWidget {
   final VoidCallback onToggle;
   final VoidCallback onStop;
   final void Function(Duration by) onSkip;
+  final VoidCallback onRepeat;
 
   @override
   Widget build(BuildContext context) {
@@ -352,6 +374,7 @@ class PlayAlongSidebar extends StatelessWidget {
               onToggle: onToggle,
               onStop: onStop,
               onSkip: onSkip,
+              onRepeat: onRepeat,
             ),
             Expanded(child: _list(context, l10n)),
           ],
