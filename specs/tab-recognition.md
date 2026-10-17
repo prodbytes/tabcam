@@ -220,7 +220,7 @@ same font.
 
 The event screen's Text view ([lib/screens/tab_text_view.dart](../tabcam_app/lib/screens/tab_text_view.dart)):
 the read tab, unwrapped (long lines scroll sideways; the text is at
-least the screen's width, and at most 1600 px or the screen's, if wider), in a
+least the view's width, and at most 1600 px or the view's, if wider), in a
 text editor to fix what OCR got wrong. Edits are saved a second after the
 last one, and on leaving, and make the text the user's (no read replaces
 it). A read that ends while the view shows fills it in, unless the user

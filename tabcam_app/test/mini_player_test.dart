@@ -8,6 +8,7 @@ import 'package:tabcam_app/library/capture_event.dart';
 import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
 import 'package:tabcam_app/screens/event_screen.dart';
+import 'package:tabcam_app/screens/file_screen.dart';
 import 'package:video_player/video_player.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 
@@ -47,6 +48,20 @@ class FakeVideoPlatform extends VideoPlatformBase {
   @override
   Future<Duration> getPosition(int playerId) async =>
       const Duration(seconds: 12);
+
+  /// Whether each player loops.
+  final looping = <int, bool>{};
+
+  @override
+  Future<void> setLooping(int playerId, bool looping) async =>
+      this.looping[playerId] = looping;
+
+  /// Where each seek went.
+  final seeks = <Duration>[];
+
+  @override
+  Future<void> seekTo(int playerId, Duration position) async =>
+      seeks.add(position);
 
   @override
   Widget buildViewWithOptions(VideoViewOptions options) =>
@@ -151,5 +166,103 @@ void main() {
       () => Future<void>.delayed(const Duration(milliseconds: 50)),
     );
     expect(platform.disposed, contains(recording));
+  });
+
+  /// A capture with [kinds]' files (ids k0, k1…) and, if [tab], a text tab.
+  Future<(Library, String)> captureWith(
+    WidgetTester tester,
+    List<(PageKind, String)> kinds, {
+    bool tab = false,
+  }) async {
+    final library = Library(PlatformEventStore(), null, (_) async => null);
+    late String id;
+    await tester.runAsync(() async {
+      await library.load();
+      var event = await library.create(const []);
+      for (final (i, (kind, ext)) in kinds.indexed) {
+        final page = EventPage(id: 'k$i', kind: kind, extension: ext);
+        await library.putPageStream(
+          event.id,
+          page,
+          Stream.value(Uint8List.fromList([1, 2, 3])),
+        );
+        event = event.copyWith(pages: [...event.pages, page]);
+      }
+      if (tab) event = event.copyWith(tabText: 'e|--0--3--|');
+      await library.update(event);
+      id = event.id;
+    });
+    return (library, id);
+  }
+
+  Widget host(Widget home) => MaterialApp(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: home,
+  );
+
+  testWidgets('the Text view has the play-along sidebar, open, with the '
+      'recording loaded; the Files view has none, and pauses it', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final (library, id) = await captureWith(tester, [
+      (PageKind.image, 'jpg'),
+      (PageKind.audio, 'm4a'),
+    ], tab: true);
+    await tester.pumpWidget(host(EventScreen(library: library, eventId: id)));
+    await _frames(tester);
+    await tester.tap(find.byKey(const Key('text')));
+    await _frames(tester);
+    expect(find.byKey(const Key('cam-along')), findsOneWidget);
+    expect(find.byKey(const Key('cam-along-sidebar')), findsOneWidget);
+    expect(find.byKey(const Key('cam-along-frame')), findsOneWidget);
+    expect(platform.playing, isEmpty);
+
+    await tester.tap(find.byKey(const Key('cam-along-toggle')));
+    await _frames(tester);
+    expect(platform.playing, hasLength(1));
+
+    await tester.tap(find.byKey(const Key('files')));
+    await _frames(tester);
+    expect(find.byKey(const Key('cam-along-sidebar')), findsNothing);
+    expect(find.byKey(const Key('cam-along')), findsNothing);
+    expect(platform.playing, isEmpty);
+  });
+
+  testWidgets('a PDF has the play-along sidebar; an image has none', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final (library, id) = await captureWith(tester, [
+      (PageKind.pdf, 'pdf'),
+      (PageKind.image, 'jpg'),
+      (PageKind.audio, 'm4a'),
+    ]);
+    await tester.pumpWidget(
+      host(FileScreen(library: library, eventId: id, pageId: 'k0')),
+    );
+    await _frames(tester);
+    expect(find.byKey(const Key('cam-along')), findsOneWidget);
+    expect(find.byKey(const Key('cam-along-sidebar')), findsOneWidget);
+    expect(find.byKey(const Key('cam-along-frame')), findsOneWidget);
+
+    await tester.pumpWidget(
+      host(
+        FileScreen(
+          key: const Key('k1'),
+          library: library,
+          eventId: id,
+          pageId: 'k1',
+        ),
+      ),
+    );
+    await _frames(tester);
+    expect(find.byKey(const Key('cam-along')), findsNothing);
+    expect(find.byKey(const Key('cam-along-sidebar')), findsNothing);
   });
 }

@@ -902,6 +902,22 @@
   "@camAlongPause": {
     "description": "Cam backing track: pause; the space bar does it too"
   },
+  "camAlongBack": "Back 10 seconds",
+  "@camAlongBack": {
+    "description": "Cam: the file playing along goes 10 seconds back («)."
+  },
+  "camAlongForward": "Forward 10 seconds",
+  "@camAlongForward": {
+    "description": "Cam: the file playing along goes 10 seconds forward (»)."
+  },
+  "camAlongRepeatOn": "Repeat on: it starts over at its end",
+  "@camAlongRepeatOn": {
+    "description": "Cam: the file playing along repeats; tapping turns it off."
+  },
+  "camAlongRepeatOff": "Repeat off",
+  "@camAlongRepeatOff": {
+    "description": "Cam: the file playing along stops at its end; tapping turns repeat on."
+  },
   "camAlongStop": "Stop",
   "@camAlongStop": {
     "description": "Cam: stops the file playing along, back at its start."

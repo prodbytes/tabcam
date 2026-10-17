@@ -47,16 +47,42 @@ class _IframeFrameState extends State<_IframeFrame> {
       ..height = '100%';
     ui_web.platformViewRegistry.registerViewFactory(_view, (_) => iframe);
     if (id != null) {
+      // The video's time, for « and »: it says it once asked to.
+      iframe.onLoad.listen(
+        (_) =>
+            iframe.contentWindow?.postMessage(youTubeListening.toJS, '*'.toJS),
+      );
+      _onMessage = (web.MessageEvent event) {
+        // JS's ===: Dart's == reads the cross-origin window, which throws.
+        if (!event.source.strictEquals(iframe.contentWindow).toDart) return;
+        final data = event.data;
+        final message = data.isA<JSString>() ? (data as JSString).toDart : null;
+        if (youTubeTime(message) case final time?) _time = time;
+        // Repeat: at its end, it starts over.
+        if (c.repeat && youTubeEnded(message)) {
+          for (final m in youTubeRestart) {
+            iframe.contentWindow?.postMessage(m.toJS, '*'.toJS);
+          }
+        }
+      }.toJS;
+      web.window.addEventListener('message', _onMessage);
       c.command = (command) async {
-        for (final message in youTubeCommands(command)) {
+        for (final message in youTubeCommands(command, at: _time)) {
           iframe.contentWindow?.postMessage(message.toJS, '*'.toJS);
         }
       };
     }
   }
 
+  /// The YouTube video's time, in seconds, as it last said.
+  double _time = 0;
+  JSFunction? _onMessage;
+
   @override
   void dispose() {
+    if (_onMessage case final listener?) {
+      web.window.removeEventListener('message', listener);
+    }
     widget.controller.command = null;
     super.dispose();
   }

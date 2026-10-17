@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../capture/play_along_sidebar.dart';
 import '../l10n/language.dart';
 import 'rename_dialog.dart';
 import '../library/library.dart';
@@ -250,6 +251,19 @@ class _FileScreenState extends State<FileScreen> {
     });
   }
 
+  Widget _besidePdf(EventPage page, Widget child) =>
+      page.isPdf ? PlayAlongBeside(along: _along, child: child) : child;
+
+  /// Playing along beside a PDF, made when one first shows.
+  PlayAlong? _alongOrNull;
+  PlayAlong get _along => _alongOrNull ??= PlayAlong(_library, widget.eventId);
+
+  @override
+  void dispose() {
+    _alongOrNull?.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -265,6 +279,7 @@ class _FileScreenState extends State<FileScreen> {
         final original = filter == PageFilter.original;
         return Scaffold(
           appBar: AppBar(
+            actions: [if (page.isPdf) PlayAlongButton(along: _along)],
             // Tapping the name renames the file (when the user can edit).
             title: InkWell(
               onTap: _fixed(event, page) ? null : () => _rename(event, page),
@@ -280,14 +295,18 @@ class _FileScreenState extends State<FileScreen> {
                   )
                 : null,
           ),
-          // The whole body: an image fits it, not its own size.
-          body: Padding(
-            padding: const EdgeInsets.all(16),
-            child: SizedBox.expand(
-              child: FilePreview(
-                library: _library,
-                event: event,
-                page: page.isImage ? page.copyWith(filter: filter) : page,
+          // The whole body: an image fits it, not its own size. A PDF
+          // has the play-along sidebar beside it.
+          body: _besidePdf(
+            page,
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: SizedBox.expand(
+                child: FilePreview(
+                  library: _library,
+                  event: event,
+                  page: page.isImage ? page.copyWith(filter: filter) : page,
+                ),
               ),
             ),
           ),

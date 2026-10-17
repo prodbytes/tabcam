@@ -68,6 +68,19 @@ e|--12-10-|
 B|--13-12-|
 ''';
 
+/// The bar's Stop (Rec's or Play's), not the sidebar's: a take opens the
+/// sidebar, whose frame has a Stop too.
+final _camStop = find.byElementPredicate((e) {
+  final w = e.widget;
+  if (w is! Tooltip || w.message != 'Stop') return false;
+  var inSidebar = false;
+  e.visitAncestorElements((a) {
+    inSidebar = a.widget.key == const Key('cam-along-sidebar');
+    return !inSidebar;
+  });
+  return !inSidebar;
+});
+
 void main() {
   late FakeCameraPlatform camera;
   late FakeVideoPlatform video;
@@ -213,7 +226,7 @@ void main() {
     await frames(tester);
     expect(camera.recording, isTrue);
     await tester.sendKeyEvent(LogicalKeyboardKey.space);
-    await tester.tap(find.byTooltip('Stop'));
+    await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
     expect(camera.recording, isFalse);
     expect(find.text('Take 1 added to the capture'), findsOneWidget);
@@ -238,7 +251,7 @@ void main() {
     // A second take is Take 2.
     await tester.tap(find.byTooltip('Rec'));
     await frames(tester);
-    await tester.tap(find.byTooltip('Stop'));
+    await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
     pages = library.byId(id)!.pages;
     expect(pages.last.title, 'Take 2');
@@ -247,7 +260,7 @@ void main() {
     await frames(tester);
     expect(video.playing, hasLength(1));
     expect(find.byKey(const Key('preview')), findsNothing);
-    await tester.tap(find.byTooltip('Stop'));
+    await tester.tap(_camStop);
     await frames(tester);
     expect(video.playing, isEmpty);
     expect(find.byKey(const Key('preview')), findsOneWidget);
@@ -308,7 +321,7 @@ void main() {
     heads!.onGesture(HeadGesture.next);
     await tester.pump();
     expect(find.text('3 / 3'), findsOneWidget);
-    await tester.tap(find.byTooltip('Stop'));
+    await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
     expect(camera.streaming, isTrue);
 
@@ -352,7 +365,7 @@ void main() {
     heads!.onGesture(HeadGesture.next);
     await tester.pump();
     expect(find.text('2 / 3'), findsOneWidget);
-    await tester.tap(find.byTooltip('Stop'));
+    await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
     expect(camera.recordings, 1);
 
@@ -393,7 +406,7 @@ void main() {
     await frames(tester);
     await tester.tap(find.byTooltip('Rec'));
     await frames(tester);
-    await tester.tap(find.byTooltip('Stop'));
+    await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
     // Saved before going back (here without the tab: no native code).
     expect(library.byId(id)!.pages, hasLength(2));
@@ -463,6 +476,36 @@ void main() {
     expect(find.text('Backing track'), findsOneWidget);
     expect(video.playing, isEmpty);
     expect(find.byKey(const Key('cam-along-stop')), findsOneWidget);
+
+    // Repeat is on: it loops; tapped, it doesn't.
+    expect(video.looping.values.single, isTrue);
+    await tester.tap(find.byKey(const Key('cam-along-repeat')));
+    await frames(tester);
+    expect(video.looping.values.single, isFalse);
+    expect(find.byTooltip('Repeat off'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('cam-along-repeat')));
+    await frames(tester);
+    expect(video.looping.values.single, isTrue);
+
+    // » and « go 10 seconds forward and back, not before the start.
+    await tester.tap(find.byKey(const Key('cam-along-forward')));
+    await frames(tester);
+    await tester.tap(find.byKey(const Key('cam-along-forward')));
+    await frames(tester);
+    await tester.tap(find.byKey(const Key('cam-along-back')));
+    await frames(tester);
+    await tester.tap(find.byKey(const Key('cam-along-back')));
+    await frames(tester);
+    await tester.tap(find.byKey(const Key('cam-along-back')));
+    await frames(tester);
+    expect(video.seeks, const [
+      Duration(seconds: 10),
+      Duration(seconds: 20),
+      Duration(seconds: 10),
+      Duration.zero,
+      Duration.zero,
+    ]);
+    video.seeks.clear();
 
     // Play, then Stop.
     await tester.tap(find.byKey(const Key('cam-along-toggle')));
@@ -543,5 +586,54 @@ void main() {
     expect(find.byKey(const Key('cam-along')), findsNothing);
     expect(find.byKey(const Key('cam-along-sidebar')), findsNothing);
     expect(find.byKey(const Key('cam-along-frame')), findsNothing);
+  });
+
+  testWidgets('Play along opens when a file to play along with arrives '
+      'after Cam opens, and stays hidden once hidden', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+        ),
+      ),
+    );
+    await frames(tester);
+    expect(find.byKey(const Key('cam-along-sidebar')), findsNothing);
+
+    // A recording arrives (a sync, say): the sidebar opens, with it
+    // loaded, paused.
+    await tester.runAsync(
+      () => library.addMedia(library.byId(id)!, [
+        Media(
+          XFile.fromData(Uint8List.fromList([1]), name: 'riff.m4a'),
+          PageKind.audio,
+          'm4a',
+        ),
+      ]),
+    );
+    await frames(tester);
+    expect(find.byKey(const Key('cam-along-sidebar')), findsOneWidget);
+    expect(find.byKey(const Key('cam-along-frame')), findsOneWidget);
+    expect(video.playing, isEmpty);
+
+    // Hidden by the user, another arriving doesn't open it again.
+    await tester.tap(find.byKey(const Key('cam-along')));
+    await frames(tester);
+    await tester.runAsync(
+      () => library.addMedia(library.byId(id)!, [
+        Media(
+          XFile.fromData(Uint8List.fromList([2]), name: 'riff2.m4a'),
+          PageKind.audio,
+          'm4a',
+        ),
+      ]),
+    );
+    await frames(tester);
+    expect(find.byKey(const Key('cam-along-sidebar')), findsNothing);
   });
 }
