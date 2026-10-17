@@ -1,7 +1,8 @@
-# fastlane for the App Store listing and TestFlight, run through
-# scripts/store-upload-ios.sh (which says what it needs). Authenticates with
-# an App Store Connect API key from the environment, never from the repo:
-#   ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_PATH (the AuthKey_<ID>.p8 file)
+# fastlane for the store listings and builds, run through
+# scripts/store-upload-ios.sh and scripts/store-upload-android.sh (which say
+# what they need). Authenticates from the environment, never from the repo:
+#   App Store: ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_PATH (the AuthKey_<ID>.p8 file)
+#   Google Play: PLAY_JSON_KEY_PATH (a service account's JSON key)
 # Paths are relative to tabcam_store/, where fastlane runs.
 default_platform(:ios)
 
@@ -103,5 +104,49 @@ platform :ios do
       end
       UI.message("#{email} is in Internal")
     end
+  end
+end
+
+platform :android do
+  def play_json_key
+    path = ENV["PLAY_JSON_KEY_PATH"].to_s
+    UI.user_error!("PLAY_JSON_KEY_PATH isn't set") if path.empty?
+    path
+  end
+
+  # The Play listing: title, descriptions, icon, feature graphic, phone
+  # screenshots (android/en-US). Never uploads a build.
+  lane :metadata do
+    upload_to_play_store(
+      json_key: play_json_key,
+      package_name: APP_ID,
+      metadata_path: "android",
+      skip_upload_aab: true,
+      skip_upload_apk: true,
+      skip_upload_changelogs: true
+    )
+  end
+
+  # A signed App Bundle (aab:<path>) to a testing track (track:, default
+  # internal), with android/en-US/changelogs/default.txt as its notes.
+  # status: draft (the default, and all Play takes before the app's first
+  # review) or completed (rolled out to the track's testers).
+  # Never the production track.
+  lane :upload do |options|
+    aab = options[:aab].to_s
+    UI.user_error!("aab:<path> is needed") if aab.empty?
+    track = (options[:track] || "internal").to_s
+    UI.user_error!("No production uploads from here") if track == "production"
+    upload_to_play_store(
+      json_key: play_json_key,
+      package_name: APP_ID,
+      aab: aab,
+      track: track,
+      release_status: (options[:status] || "draft").to_s,
+      metadata_path: "android",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
   end
 end

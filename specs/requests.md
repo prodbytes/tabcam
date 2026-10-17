@@ -1371,3 +1371,13 @@ spec.
    details line are a point smaller, the ⋮ is 20 dp (24 elsewhere), and
    the preview's icon 40 dp (48) with a 14 dp badge (16). See
    [library](library.md).
+4. **Release on the Android store too.** The Play Console account
+   exists but can't publish yet: Google is verifying the maintainer's
+   identity, and the contact phone is verified after. Added
+   `scripts/store-upload-android.sh` and the Fastfile's Android lanes
+   (`supply`): the Play listing, and a signed App Bundle (a path or a
+   release tag's) to a testing track, as a draft by default, never to
+   production. The `0.2.202610171036-GA` App Bundle is checked as signed
+   with the upload key. Making the app in Play Console, its first upload
+   by hand and the service account wait on the verification. See
+   [app stores](app-stores.md#uploading-to-google-play).

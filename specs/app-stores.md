@@ -10,13 +10,13 @@ publish to production.
 
 | Step | State |
 |---|---|
-| Developer accounts | Apple: the maintainer has one; Google Play Console: to do (maintainer) |
+| Developer accounts | Apple: the maintainer has one; Google Play Console: made (personal, account 5720098115371031326); Google is verifying the maintainer's identity (documents uploaded), and the contact phone is verified after that. Play won't publish until both are done |
 | Android upload key and signed App Bundle | Done (below); the upload key's OAuth client is to do |
 | Store builds: hide the Premium purchase links | Done ([cloud OCR](cloud-ocr.md#in-the-app)) |
 | Store builds: in-app account deletion (Profile, Delete account; the web app as the deletion URL) | Done ([cloud sync](cloud-sync.md#deleting-the-account)), stacks deployed. Deleting an Apple account revokes its Apple tokens through Apple's REST API ([cloud sync](cloud-sync.md#revoking-apples-tokens)); its Sign in with Apple key is in the SSM parameter `/tabcam/apple-sign-in-key` (set 2026-10-16, [tabcam_infra](../tabcam_infra/README.md)) |
 | Sign in with Apple (App Store guideline 4.8) | Done ([cloud sync](cloud-sync.md#sign-in-with-apple-ios)): `tabcam-identity`, `tabcam-share-api` and `tabcam-ocr` deployed with `AppleClientId=com.nu01.tabcam` (2026-10-16), `TABCAM_APPLE_SIGN_IN=1` and the paid team in the maintainer's `.env`. To do: try it on a phone |
 | Privacy policy page; iOS privacy manifest and encryption declaration | Done ([privacy](privacy.md)), contact privacy@nu01.com |
-| Play internal testing, then the 14-day closed test | To do |
+| Play internal testing, then the 14-day closed test | Ready ([below](#uploading-to-google-play)): the `0.2.202610171036-GA` App Bundle is signed with the upload key. To do, once the account is verified: the app in Play Console (TabCam: Guitar Tab Scanner, `com.nu01.tabcam`, free), its first App Bundle uploaded by hand to internal testing, a service account for the uploads, then the closed test |
 | App Store distribution build (`make ipa`) and its upload (`scripts/ios-upload.sh`) | Done ([below](#ios-distribution)): 0.2.202610171036 (build 1792233362, the `0.2.202610171036-GA` release's commit) built, signed and uploaded 2026-10-17; the first, 0.1.202610161805 (build 1792173901), 2026-10-16 |
 | App Store Connect record, TestFlight | Done: "TabCam: Guitar Tab Scanner", Apple ID 6823729635, team LMX88986F3. Build 1792173901 processed, no non-exempt encryption (from `Info.plist`), in the internal TestFlight group **Internal** with the account holder (2026-10-16, [below](#uploading-the-app-store-listing)); no external testers. To do: build 1792233362 on TestFlight, and the listing's version renamed to 0.2.202610171036 (`store-upload-ios.sh metadata 0.2.202610171036`), with the API key |
 | Listings: descriptions, data safety, privacy labels, rating, category | Done for the App Store, uploaded 2026-10-16 to version 0.1.202610161805 ([below](#uploading-the-app-store-listing)): description, keywords, promotional text, URLs, name, subtitle, review notes, screenshots, Music and Productivity, copyright, age rating. To do (maintainer): the App Privacy labels in App Store Connect's web UI ([data-safety.md](../tabcam_store/data-safety.md); the API key can't set them), the price (free) and availability. Play: drafts ([below](#store-listings)) |
@@ -94,8 +94,8 @@ and release → App integrity) once the app is on Play.
 [tabcam_store/](../tabcam_store) holds the listings, in the layout
 fastlane reads (`fastlane supply` for Play, `deliver` for the App Store).
 The App Store's are uploaded with `scripts/store-upload-ios.sh`
-([below](#uploading-the-app-store-listing)); Play's aren't set up for
-upload yet.
+([below](#uploading-the-app-store-listing)), Play's with
+`scripts/store-upload-android.sh` ([below](#uploading-to-google-play)).
 
 - `android/en-US/`: `title.txt` (TabCam: Guitar Tab Scanner),
   `short_description.txt`, `full_description.txt`,
@@ -175,6 +175,32 @@ App Manager key in `~/.apple-keys/`).
   Connect refuses for internal groups), adds the build to it, and adds
   the team users given, or else the account holder, as its testers. No
   external testers.
+
+## Uploading to Google Play
+
+`bash scripts/store-upload-android.sh` runs fastlane `supply`
+([tabcam_store/fastlane/](../tabcam_store/fastlane/Fastfile), from
+`tabcam_store/`) with a Google Cloud service account's JSON key, kept
+outside the repo, at `PLAY_JSON_KEY_PATH`; the service account is invited
+in Play Console (Users and permissions) with access to the app.
+
+- `metadata`: `scripts/store-metadata-check.sh`, then the listing in
+  `android/en-US/` (title, short and full descriptions, icon, feature
+  graphic, phone screenshots). No build.
+- `upload [aab | release tag] [track] [draft|completed]`: a signed App
+  Bundle to a testing track, with `changelogs/default.txt` as its notes.
+  The bundle is `make appbundle`'s, a path, or a release tag's
+  (`tabcam-<tag>-android.aab`, downloaded with `gh`, signed by the
+  Release workflow with the upload key). The track defaults to
+  `internal`, the status to `draft` (all Play takes before the app's
+  first review); `completed` rolls it out to the track's testers. The
+  script and the lane refuse the production track.
+
+Play's API can't make the app: it's made in Play Console (as are the
+Data safety, content rating, target audience and app access forms, from
+[data-safety.md](../tabcam_store/data-safety.md)), and its first App
+Bundle is uploaded there by hand. Each upload needs a new versionCode
+(the release's build number, [release](release.md#versioning)).
 
 ## Store graphics
 
