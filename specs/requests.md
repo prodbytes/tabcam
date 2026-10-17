@@ -1381,3 +1381,14 @@ spec.
    with the upload key. Making the app in Play Console, its first upload
    by hand and the service account wait on the verification. See
    [app stores](app-stores.md#uploading-to-google-play).
+5. **TestFlight build 0.1 tested, all good: merge everything and ship
+   the latest.** The app PRs were merged already; draft #90 (the DNS
+   zone merge) stays open, gated on its migration. Cut
+   `0.2.202610171102-RC` and `-GA` at the tip of `main`, built and
+   uploaded that App Store build (1792234961), added it to TestFlight's
+   **Internal** group and renamed the listing's version to it, ready for
+   review once the maintainer finishes App Store Connect's web-only
+   steps. Sign in with Apple is marked tried on a phone. See
+   [app stores](app-stores.md#status).
+   The `testflight` lane no longer fails when a tester is already in
+   **Internal**.

@@ -14,11 +14,11 @@ publish to production.
 | Android upload key and signed App Bundle | Done (below); the upload key's OAuth client is to do |
 | Store builds: hide the Premium purchase links | Done ([cloud OCR](cloud-ocr.md#in-the-app)) |
 | Store builds: in-app account deletion (Profile, Delete account; the web app as the deletion URL) | Done ([cloud sync](cloud-sync.md#deleting-the-account)), stacks deployed. Deleting an Apple account revokes its Apple tokens through Apple's REST API ([cloud sync](cloud-sync.md#revoking-apples-tokens)); its Sign in with Apple key is in the SSM parameter `/tabcam/apple-sign-in-key` (set 2026-10-16, [tabcam_infra](../tabcam_infra/README.md)) |
-| Sign in with Apple (App Store guideline 4.8) | Done ([cloud sync](cloud-sync.md#sign-in-with-apple-ios)): `tabcam-identity`, `tabcam-share-api` and `tabcam-ocr` deployed with `AppleClientId=com.nu01.tabcam` (2026-10-16), `TABCAM_APPLE_SIGN_IN=1` and the paid team in the maintainer's `.env`. To do: try it on a phone |
+| Sign in with Apple (App Store guideline 4.8) | Done ([cloud sync](cloud-sync.md#sign-in-with-apple-ios)): `tabcam-identity`, `tabcam-share-api` and `tabcam-ocr` deployed with `AppleClientId=com.nu01.tabcam` (2026-10-16), `TABCAM_APPLE_SIGN_IN=1` and the paid team in the maintainer's `.env`. Tried on the maintainer's iPhone with TestFlight build 1792173901 (2026-10-17) |
 | Privacy policy page; iOS privacy manifest and encryption declaration | Done ([privacy](privacy.md)), contact privacy@nu01.com |
 | Play internal testing, then the 14-day closed test | Ready ([below](#uploading-to-google-play)): the `0.2.202610171036-GA` App Bundle is signed with the upload key. To do, once the account is verified: the app in Play Console (TabCam: Guitar Tab Scanner, `com.nu01.tabcam`, free), its first App Bundle uploaded by hand to internal testing, a service account for the uploads, then the closed test |
-| App Store distribution build (`make ipa`) and its upload (`scripts/ios-upload.sh`) | Done ([below](#ios-distribution)): 0.2.202610171036 (build 1792233362, the `0.2.202610171036-GA` release's commit) built, signed and uploaded 2026-10-17; the first, 0.1.202610161805 (build 1792173901), 2026-10-16 |
-| App Store Connect record, TestFlight | Done: "TabCam: Guitar Tab Scanner", Apple ID 6823729635, team LMX88986F3. Build 1792173901 processed, no non-exempt encryption (from `Info.plist`), in the internal TestFlight group **Internal** with the account holder (2026-10-16, [below](#uploading-the-app-store-listing)); no external testers. To do: build 1792233362 on TestFlight, and the listing's version renamed to 0.2.202610171036 (`store-upload-ios.sh metadata 0.2.202610171036`), with the API key |
+| App Store distribution build (`make ipa`) and its upload (`scripts/ios-upload.sh`) | Done ([below](#ios-distribution)): 0.2.202610171102 (build 1792234961, the `0.2.202610171102-GA` release's commit), the one to submit, built, signed and uploaded 2026-10-17; before it 0.2.202610171036 (build 1792233362) and the first, 0.1.202610161805 (build 1792173901, 2026-10-16) |
+| App Store Connect record, TestFlight | Done: "TabCam: Guitar Tab Scanner", Apple ID 6823729635, team LMX88986F3. Build 1792173901 processed, no non-exempt encryption (from `Info.plist`), in the internal TestFlight group **Internal** with the account holder (2026-10-16, [below](#uploading-the-app-store-listing)), and tested on the maintainer's iPhone, all working (2026-10-17); no external testers. Build 1792234961 added to **Internal** and the listing's version renamed to 0.2.202610171102 (`store-upload-ios.sh metadata 0.2.202610171102`), 2026-10-17 |
 | Listings: descriptions, data safety, privacy labels, rating, category | Done for the App Store, uploaded 2026-10-16 to version 0.1.202610161805 ([below](#uploading-the-app-store-listing)): description, keywords, promotional text, URLs, name, subtitle, review notes, screenshots, Music and Productivity, copyright, age rating. To do (maintainer): the App Privacy labels in App Store Connect's web UI ([data-safety.md](../tabcam_store/data-safety.md); the API key can't set them), the price (free) and availability. Play: drafts ([below](#store-listings)) |
 | Listings: icon, feature graphic, screenshots (Play phone, 6.9" iPhone, 13" iPad) | Done ([below](#store-graphics)) |
 | Listings: App Review's contact details and, if wanted, a demo account | To do (maintainer; [REVIEW_NOTES.md](../tabcam_store/ios/REVIEW_NOTES.md)) |
@@ -173,8 +173,8 @@ App Manager key in `~/.apple-keys/`).
   the internal group **Internal** if missing (by the API itself:
   fastlane's `create_beta_group` sends public link attributes App Store
   Connect refuses for internal groups), adds the build to it, and adds
-  the team users given, or else the account holder, as its testers. No
-  external testers.
+  the team users given, or else the account holder, as its testers (one already in the group
+  is left as it is, so the lane can run again). No external testers.
 
 ## Uploading to Google Play
 
