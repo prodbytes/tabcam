@@ -1390,3 +1390,5 @@ spec.
    review once the maintainer finishes App Store Connect's web-only
    steps. Sign in with Apple is marked tried on a phone. See
    [app stores](app-stores.md#status).
+   The `testflight` lane no longer fails when a tester is already in
+   **Internal**.

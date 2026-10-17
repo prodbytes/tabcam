@@ -95,7 +95,12 @@ platform :ios do
       email = user.email.to_s.empty? ? user.username : user.email # the API often gives only the username
       tester = Spaceship::ConnectAPI::BetaTester.find(email: email)
       if tester
-        group.add_beta_testers(beta_tester_ids: [tester.id])
+        begin
+          group.add_beta_testers(beta_tester_ids: [tester.id])
+        rescue Spaceship::UnexpectedResponse => e
+          # A tester already in the group "cannot be assigned" again.
+          raise unless e.message.include?("cannot be assigned")
+        end
       else
         Spaceship::ConnectAPI.post_beta_tester_assignment(
           beta_group_ids: [group.id],

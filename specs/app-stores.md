@@ -173,8 +173,8 @@ App Manager key in `~/.apple-keys/`).
   the internal group **Internal** if missing (by the API itself:
   fastlane's `create_beta_group` sends public link attributes App Store
   Connect refuses for internal groups), adds the build to it, and adds
-  the team users given, or else the account holder, as its testers. No
-  external testers.
+  the team users given, or else the account holder, as its testers (one already in the group
+  is left as it is, so the lane can run again). No external testers.
 
 ## Uploading to Google Play
 
