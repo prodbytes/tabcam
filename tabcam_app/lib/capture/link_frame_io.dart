@@ -56,10 +56,25 @@ class _WebViewFrameState extends State<_WebViewFrame> {
         '<style>html,body{margin:0;height:100%;background:#000}'
         'iframe{border:0;width:100%;height:100%}</style></head><body>'
         '<iframe id="player" src="$src" allow="autoplay; encrypted-media; '
-        'picture-in-picture" allowfullscreen></iframe></body></html>',
+        'picture-in-picture" allowfullscreen></iframe>'
+        // The video's time, for « and »: it says it once asked to.
+        '<script>var t=0,p=document.getElementById("player");'
+        "p.onload=function(){p.contentWindow.postMessage('$youTubeListening','*')};"
+        'addEventListener("message",function(e){if(e.source!==p.contentWindow)return;'
+        'try{var d=JSON.parse(e.data);if(d.info&&typeof d.info.currentTime=="number")'
+        't=d.info.currentTime}catch(_){}});</script></body></html>',
         baseUrl: '$_site/',
       );
       c.command = (command) async {
+        if (command == LinkCommand.back || command == LinkCommand.forward) {
+          // The time is the page's (t), so the seek is worked out there.
+          final by = (command == LinkCommand.back ? -1 : 1) * skipBy.inSeconds;
+          await _web.runJavaScript(
+            "p.contentWindow.postMessage(JSON.stringify({event:'command',"
+            "func:'seekTo',args:[Math.max(0,t+($by)),true]}),'*')",
+          );
+          return;
+        }
         for (final message in youTubeCommands(command)) {
           await _web.runJavaScript(
             "document.getElementById('player').contentWindow"
@@ -74,6 +89,8 @@ class _WebViewFrameState extends State<_WebViewFrame> {
           LinkCommand.play => 'm.play()',
           LinkCommand.pause => 'm.pause()',
           LinkCommand.stop => 'm.pause();m.currentTime=0',
+          LinkCommand.back => 'm.currentTime=Math.max(0,m.currentTime-${skipBy.inSeconds})',
+          LinkCommand.forward => 'm.currentTime+=${skipBy.inSeconds}',
         }}}})()",
       );
       // Opened paused: a page that plays by itself is paused once loaded.

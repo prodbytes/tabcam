@@ -174,6 +174,8 @@
   "camAlongTitle": "Tocar junto",
   "camAlongPlay": "Reproducir (espacio)",
   "camAlongPause": "Pausa (espacio)",
+  "camAlongBack": "Atrás 10 segundos",
+  "camAlongForward": "Adelante 10 segundos",
   "camAlongStop": "Detener",
   "camHeadsOn": "Gestos de cabeza activados: asiente hacia arriba o a la derecha para la línea siguiente, hacia abajo o a la izquierda para la anterior",
   "camHeadsOff": "Gestos de cabeza desactivados",

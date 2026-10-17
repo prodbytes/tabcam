@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../capture/media.dart';
 import '../capture/page_source.dart';
 import '../capture/play_along_screen.dart';
+import '../capture/play_along_sidebar.dart';
 import '../export/download.dart';
 import '../import/tab_page_import.dart';
 import '../l10n/language.dart';
@@ -150,8 +151,13 @@ class _EventScreenState extends State<EventScreen> {
     _stopFollowing();
     _list.dispose();
     _player.dispose();
+    _alongOrNull?.dispose();
     super.dispose();
   }
+
+  /// Playing along beside the Text view, made when it first shows.
+  PlayAlong? _alongOrNull;
+  PlayAlong get _along => _alongOrNull ??= PlayAlong(_library, widget.eventId);
 
   /// Plays videos and recordings from the list, one at a time.
   late final ListPlayer _player = ListPlayer(_library);
@@ -281,6 +287,7 @@ class _EventScreenState extends State<EventScreen> {
   /// end of the list.
   Future<void> _cam() async {
     await _player.stop();
+    await _alongOrNull?.track.pause();
     if (!mounted) return;
     final before = switch (_library.byId(widget.eventId)) {
       final event? => Library.addedPages(event).length,
@@ -962,6 +969,7 @@ class _EventScreenState extends State<EventScreen> {
               ),
             ),
             actions: [
+              if (text) PlayAlongButton(along: _along),
               if (editable)
                 IconButton(
                   tooltip: l10n.eventRename,
@@ -1011,7 +1019,11 @@ class _EventScreenState extends State<EventScreen> {
                 else if (event.sharedBy case final owner?)
                   _SharedBanner(owner: owner, readOnly: event.readOnly),
                 ?_premiumHint(event),
-                Expanded(child: text ? _textView(event) : _fileList(event)),
+                Expanded(
+                  child: text
+                      ? PlayAlongBeside(along: _along, child: _textView(event))
+                      : _fileList(event),
+                ),
               ],
             ),
           ),
@@ -1026,9 +1038,14 @@ class _EventScreenState extends State<EventScreen> {
                     icon: Icons.folder_copy_outlined,
                     label: l10n.eventFiles,
                     selected: !text,
+                    // The Files view has no sidebar: what plays along
+                    // pauses.
                     onPressed: _busy
                         ? null
-                        : () => setState(() => _text = false),
+                        : () {
+                            unawaited(_alongOrNull?.track.pause());
+                            setState(() => _text = false);
+                          },
                   ),
                   EventTool(
                     key: const Key('text'),

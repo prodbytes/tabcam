@@ -118,6 +118,18 @@ class BackingTrack extends ChangeNotifier {
     await _link?.toggle();
   }
 
+  /// Goes [by] forward (back, negative), within its start and end.
+  Future<void> skip(Duration by) async {
+    if (_media case final media?) {
+      final v = media.value;
+      var to = v.position + by;
+      if (to < Duration.zero) to = Duration.zero;
+      if (v.duration > Duration.zero && to > v.duration) to = v.duration;
+      return media.seekTo(to);
+    }
+    await _link?.skip(by);
+  }
+
   /// Pauses it (a take plays back).
   Future<void> pause() async {
     await _media?.pause();

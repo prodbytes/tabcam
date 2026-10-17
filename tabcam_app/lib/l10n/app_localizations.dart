@@ -1150,6 +1150,18 @@ abstract class AppLocalizations {
   /// **'Pause (space)'**
   String get camAlongPause;
 
+  /// Cam: the file playing along goes 10 seconds back («).
+  ///
+  /// In en, this message translates to:
+  /// **'Back 10 seconds'**
+  String get camAlongBack;
+
+  /// Cam: the file playing along goes 10 seconds forward (»).
+  ///
+  /// In en, this message translates to:
+  /// **'Forward 10 seconds'**
+  String get camAlongForward;
+
   /// Cam: stops the file playing along, back at its start.
   ///
   /// In en, this message translates to:

@@ -477,6 +477,26 @@ void main() {
     expect(video.playing, isEmpty);
     expect(find.byKey(const Key('cam-along-stop')), findsOneWidget);
 
+    // » and « go 10 seconds forward and back, not before the start.
+    await tester.tap(find.byKey(const Key('cam-along-forward')));
+    await frames(tester);
+    await tester.tap(find.byKey(const Key('cam-along-forward')));
+    await frames(tester);
+    await tester.tap(find.byKey(const Key('cam-along-back')));
+    await frames(tester);
+    await tester.tap(find.byKey(const Key('cam-along-back')));
+    await frames(tester);
+    await tester.tap(find.byKey(const Key('cam-along-back')));
+    await frames(tester);
+    expect(video.seeks, const [
+      Duration(seconds: 10),
+      Duration(seconds: 20),
+      Duration(seconds: 10),
+      Duration.zero,
+      Duration.zero,
+    ]);
+    video.seeks.clear();
+
     // Play, then Stop.
     await tester.tap(find.byKey(const Key('cam-along-toggle')));
     await frames(tester);
