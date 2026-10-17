@@ -906,10 +906,6 @@
   "@camAlongStop": {
     "description": "Cam: stops the file playing along, back at its start."
   },
-  "camAlongClose": "Close",
-  "@camAlongClose": {
-    "description": "Cam backing track: close its frame"
-  },
   "camHeadsOn": "Head gestures on: nod up or right for the next line, down or left for the one before",
   "@camHeadsOn": {
     "description": "Cam: head gestures toggle, on"

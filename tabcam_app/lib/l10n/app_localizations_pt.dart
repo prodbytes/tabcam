@@ -676,9 +676,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get camAlongStop => 'Parar';
 
   @override
-  String get camAlongClose => 'Fechar';
-
-  @override
   String get camHeadsOn =>
       'Gestos de cabeça ligados: acene para cima ou à direita para a próxima linha, para baixo ou à esquerda para a anterior';
 

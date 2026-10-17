@@ -112,25 +112,31 @@ camera view ([`PlayAlongScreen`](../tabcam_app/lib/capture/play_along_screen.dar
 
 <a id="playing-along-with-a-file"></a>**Playing along with a file**:
 when the capture has recordings, videos or links, Cam opens with a
-sidebar on the right listing them in the capture's order (its takes
-too), each with its icon and name, and the first of them loaded in a
-frame **above the camera** (`BackingTrack`,
+sidebar on the right (40% of the screen's width, from 120 to 280 px):
+at its top a compact **player frame**, always there, with the first of
+them loaded in it, paused (`BackingTrack`,
 [`backing_track.dart`](../tabcam_app/lib/capture/backing_track.dart)),
-paused. **Play along** (♫ in the app bar, in the primary colour while
-open) hides and shows the sidebar. A capture with none of them has no
-sidebar and no ♫. A tap on one plays it in the frame, taking the place
-of the one before; a tap on the one in the frame pauses or plays it. The user plays along, and records as usual: Rec doesn't stop
+and under it the list of them in the capture's order (its takes too),
+each with its icon and name; the list scrolls, the frame stays.
+**Play along** (♫ in the app bar, in the primary colour while open)
+hides and shows the sidebar, frame and all; hiding it pauses what plays
+(kept offstage, so a link's page isn't reloaded). A capture with none of
+them has no sidebar and no ♫. A tap on one plays it in the frame, taking
+the place of the one before; a tap on the one in the frame pauses or
+plays it. The user plays along, and records as usual: Rec doesn't stop
 it, so the microphone records it too (iOS mixes its sound with the
 recording's: `mixWithOthers`).
 
-- **The frame**, at most a third of the screen's height: a video above
-  a progress bar to scrub; a recording only the progress bar; under
-  them its icon and name, **Play** / **Pause**, **Stop** (pauses it,
-  back at its start) and **Close**. The one in the frame is marked in
-  the sidebar.
-- **The space bar** pauses and plays it (a key down; held, it doesn't
-  repeat), and doesn't turn the tab; once closed, space turns the tab
-  again. A tap in the sidebar or the frame gives the keys back to Cam.
+- **The frame**, as wide as the sidebar and at most a third of the
+  screen's height: a video (or a link's page, 16:9) above a progress bar
+  to scrub; a recording only the progress bar; under them its icon and
+  name in small type, then **Play** / **Pause** and **Stop** (pauses
+  it, back at its start). It has no Close: something is always loaded.
+  The one in the frame is marked in the list.
+- **The space bar** pauses and plays it while the sidebar shows (a key
+  down; held, it doesn't repeat), and doesn't turn the tab; with the
+  sidebar hidden, space turns the tab again. A tap in the sidebar or the
+  frame gives the keys back to Cam.
 - **A link** straight to a sound or video file (its path ends in `.mp3`,
   `.m4a`, `.aac`, `.wav`, `.ogg`, `.oga`, `.opus`, `.flac`, `.mp4`,
   `.m4v`, `.mov` or `.webm`) plays in the app like a recording or video.
