@@ -33,7 +33,8 @@ import 'take_overlay.dart';
 /// where they turned while it was recorded.
 ///
 /// **Play along** (the app bar's, when the capture has recordings, videos
-/// or links) shows and hides a sidebar of them, open from the start: the
+/// or links) shows and hides a sidebar of them, open from the first time
+/// there's one (when Cam opens, or when one arrives later): the
 /// one tapped plays in a compact frame at the sidebar's top, above the
 /// list ([BackingTrack]), while the user plays and records; the space bar
 /// pauses and plays it.
@@ -117,6 +118,10 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   late final BackingTrack _track = BackingTrack(widget.library);
   bool _sidebar = false;
 
+  /// Whether the sidebar has opened by itself yet: it does once, the
+  /// first time the capture has something to play along with.
+  bool _alongOpened = false;
+
   /// The keys' focus, taken back after a tap in the sidebar or the frame.
   final _focus = FocusNode();
 
@@ -124,14 +129,29 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   void initState() {
     super.initState();
     _start();
-    // The sidebar opens with the capture's first recording, video or
-    // link loaded, paused; with none, it stays hidden.
+    _openAlong();
+    widget.library.addListener(_libraryChanged);
+  }
+
+  /// Opens the sidebar with the capture's first recording, video or link
+  /// loaded, paused, the first time there is one: when Cam opens, or when
+  /// one arrives later (a sync, a take). With none, it stays hidden; hidden
+  /// by the user, it isn't opened again.
+  void _openAlong() {
+    if (_alongOpened) return;
     final event = widget.library.byId(widget.eventId);
     final first = event?.pages.where(BackingTrack.plays).firstOrNull;
-    if (event != null && first != null) {
-      _sidebar = true;
+    if (event == null || first == null) return;
+    _alongOpened = true;
+    _sidebar = true;
+    if (_track.page == null) {
       unawaited(_track.choose(event, first, play: false));
     }
+  }
+
+  void _libraryChanged() {
+    if (_alongOpened || !mounted) return;
+    setState(_openAlong);
   }
 
   Future<void> _start() async {
@@ -448,6 +468,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
 
   /// Shows or hides the sidebar; hidden, what plays along pauses.
   void _toggleSidebar() {
+    _alongOpened = true;
     setState(() => _sidebar = !_sidebar);
     if (!_sidebar) unawaited(_track.pause());
   }
@@ -462,6 +483,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
 
   @override
   void dispose() {
+    widget.library.removeListener(_libraryChanged);
     _track.dispose();
     _focus.dispose();
     _recorder?.dispose();
