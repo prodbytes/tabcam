@@ -143,4 +143,40 @@ void main() {
     ]);
     expect(find.byIcon(Icons.music_note), findsOneWidget);
   });
+
+  testWidgets('on a phone, the card\'s text and icons are a little smaller', (
+    tester,
+  ) async {
+    addTearDown(tester.view.reset);
+    tester.view.devicePixelRatio = 1;
+    Future<(double?, double?, double?)> sizes(Size size) async {
+      tester.view.physicalSize = size;
+      await _home(tester, const [
+        EventPage(id: 'p1', kind: PageKind.audio, extension: 'mp3'),
+      ]);
+      // The music note leaves the title the card's first text.
+      final title = tester.widget<Text>(
+        find
+            .descendant(of: find.byType(Card), matching: find.byType(Text))
+            .first,
+      );
+      return (
+        tester.widget<Icon>(find.byIcon(Icons.music_note)).size,
+        tester
+            .widget<PopupMenuButton<Object?>>(
+              find.byWidgetPredicate((w) => w is PopupMenuButton),
+            )
+            .iconSize,
+        title.style?.fontSize,
+      );
+    }
+
+    final (wideIcon, wideMore, wideTitle) = await sizes(const Size(1200, 900));
+    final (icon, more, title) = await sizes(const Size(400, 800));
+    expect(wideIcon, 48);
+    expect(icon, 40);
+    expect(wideMore, isNull);
+    expect(more, 20);
+    expect(title, wideTitle! - 1);
+  });
 }

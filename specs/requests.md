@@ -1366,3 +1366,8 @@ spec.
    labels, price and availability, App Review's contact, trying Sign in
    with Apple on a phone) and the submission. See
    [app stores](app-stores.md).
+3. **Reduce the font and icons on the capture list on mobile, just a
+   little.** On screens narrower than 600 dp, the Home cards' title and
+   details line are a point smaller, the ⋮ is 20 dp (24 elsewhere), and
+   the preview's icon 40 dp (48) with a 14 dp badge (16). See
+   [library](library.md).
