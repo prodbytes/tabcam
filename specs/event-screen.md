@@ -114,12 +114,9 @@ going to it, or to Cam, pauses what plays along.
     tab; **greyed out** without one (no tab found, not read, the text
     deleted or blank, reading failed or not possible here). Greyed out,
     it still opens the Text view, which says why and offers Read again
-    or Sign in. From the Files view a tap opens the Text view; **tapped
-    on the Text view with a tab there** (not while it reads, nor on a
-    capture shared read only), it asks "Read the tab again?" ("The text
-    read before is replaced, unless you edited it or marked it
-    correct.", **Cancel** / **Read again**); Read again reads it now,
-    with the spinner while it reads.
+    or Sign in. A tap opens the Text view; tapped on the Text view, it
+    does nothing more: reading the tab again is the Text view's
+    **Rescan**.
   - **Add**: more files, [scanned or picked](scanning.md#adding-to-an-event):
     Scan pages, Document, Photos & videos, Files, or a **Link**. The list
     then shows, scrolled to what was added.

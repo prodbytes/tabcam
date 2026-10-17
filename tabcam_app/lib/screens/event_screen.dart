@@ -464,32 +464,6 @@ class _EventScreenState extends State<EventScreen> {
   /// Whether the Text view shows, in place of the pages.
   bool _text = false;
 
-  /// The Text tool tapped on the Text view: asks, then reads the tab again
-  /// (a text the user edited or marked correct is kept).
-  Future<void> _readAgain(CaptureEvent event) async {
-    final reader = AutoReaderScope.of(context);
-    if (reader == null) return;
-    final l10n = context.l10n;
-    final sure = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.eventReadAgainTitle),
-        content: Text(l10n.eventReadAgainBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.eventCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.eventReadAgain),
-          ),
-        ],
-      ),
-    );
-    if (sure == true && mounted) reader.readSoon(event.id, again: true);
-  }
-
   /// Rescan is reading the pages: the Text view spins, its text kept.
   bool get _rescanning => _unfollow != null;
 
@@ -1056,11 +1030,9 @@ class _EventScreenState extends State<EventScreen> {
                     working: reading,
                     dimmed: !reading && !hasText,
                     tooltip: reading ? l10n.eventReadingTab : null,
-                    // Again on the Text view, with a tab: read it again.
+                    // Reading again is the Text view's Rescan.
                     onPressed: _busy
                         ? null
-                        : text && hasText && editable && !reading
-                        ? () => _readAgain(event)
                         : () => setState(() => _text = true),
                   ),
                   EventTool(

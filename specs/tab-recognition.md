@@ -22,9 +22,8 @@ a read writes only the text, onto the event as it is then
 (the title, the view, the text) don't read, nor do events another device
 changed (that device reads them), nor the events there were at launch.
 
-- **Read again**: the Text view's **Read again** or **Read**, or the
-  [Text tool](event-screen.md) tapped while the Text view shows a tab
-  (it asks "Read the tab again?" first), reads the event now
+- **Read again**: the Text view's **Read again** or **Read** (shown
+  when there's no tab yet) reads the event now
   (`readSoon(id, again: true)`), replacing the text an earlier read left;
   with Premium the cloud reads every page again.
 - **Rescan** (the Text view's, below) reads every page again

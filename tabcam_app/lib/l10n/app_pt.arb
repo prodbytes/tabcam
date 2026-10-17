@@ -76,8 +76,6 @@
   "eventInCloud": "Transcrevendo na nuvem. O texto aparece aqui quando terminar.",
   "eventNoTab": "Nenhuma tablatura encontrada nas páginas. Digitalize mais perto e com a folha mais plana.",
   "eventReadAgain": "Ler de novo",
-  "eventReadAgainTitle": "Ler a tablatura de novo?",
-  "eventReadAgainBody": "O texto lido antes é substituído, a não ser que você o tenha editado ou marcado como correto.",
   "eventRescanTitle": "Reescanear as páginas?",
   "eventRescanBody": "Cada foto e PDF é lido de novo. Se uma tablatura for encontrada, ela substitui o texto atual, mesmo que você o tenha editado ou marcado como verificado; se não, o texto é mantido.",
   "eventRescanKept": "{reason} O texto foi mantido.",
