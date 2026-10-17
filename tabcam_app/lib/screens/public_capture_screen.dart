@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../cloud/public_capture.dart';
+import '../export/capture_link.dart';
 import '../l10n/language.dart';
 import '../library/capture_event.dart';
 import '../library/event_store_memory.dart' as memory;
@@ -92,6 +93,7 @@ class _PublicCaptureScreenState extends State<PublicCaptureScreen>
           return EventScreen(
             library: _library,
             eventId: event.id,
+            initialFile: CaptureLink.fileIn(widget.link),
             byLink: true,
             onSignIn: widget.onSignIn,
           );

@@ -1443,3 +1443,13 @@ spec.
     say Share by link only, for the next upload (0.2's listing is in
     review). See [sharing](sharing.md) and
     [shared captures](shared-captures.md).
+12. **Make the file names links with proper params, so a file can be
+    opened in a new tab.** A file's link is the capture's with
+    `&f=<file id>`; it opens the capture with that file open (signed
+    in, signed out by its key, or after joining). In the list each file
+    name is a link to it (a link file's, to its address): on the web a
+    real anchor, so Cmd/Ctrl/Shift-click, a middle click or the
+    browser's menu opens it in a new tab, while a plain click opens it
+    in place. Checked in the local web app: plain click in place, and a
+    file's link loaded fresh opens that file. See
+    [event screen](event-screen.md) and [sharing](sharing.md).
