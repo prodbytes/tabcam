@@ -1355,3 +1355,14 @@ spec.
    gone (the frame is always there; its string was dropped in en, es,
    pt). ♫ hides the whole sidebar, which pauses what plays; while it's
    hidden, space turns the tab. See [Cam](cam.md).
+2. **Merge and check all changes, verify the app is ready for the App
+   Store and help release it there.** Merged the Cam sidebar PR (#130;
+   the zone merge, #90, stays a draft until its DNS wait is over), with
+   `flutter analyze` and `flutter test` passing; released
+   `0.2.202610171036` (RC and GA, live on both sites); built the App Store
+   build from that commit (build 1792233362) and uploaded it. The App
+   Store status is brought up to date: the Sign in with Apple key and the
+   privacy contact are done; what's left is the maintainer's (App Privacy
+   labels, price and availability, App Review's contact, trying Sign in
+   with Apple on a phone) and the submission. See
+   [app stores](app-stores.md).
