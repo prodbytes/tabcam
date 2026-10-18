@@ -22,7 +22,7 @@ publish to production.
 | Listings: descriptions, data safety, privacy labels, rating, category | Done for the App Store: the metadata uploaded 2026-10-16 ([below](#uploading-the-app-store-listing)): description, keywords, promotional text, URLs, name, subtitle, review notes, screenshots, Music and Productivity, copyright, age rating; by the maintainer in App Store Connect's web UI: the App Privacy labels ([data-safety.md](../tabcam_store/data-safety.md)), free, all 175 territories (new ones too), the content rights (no third-party content). Play: drafts ([below](#store-listings)) |
 | Listings: icon, feature graphic, screenshots (Play phone, 6.9" iPhone, 13" iPad) | Done ([below](#store-graphics)) |
 | Listings: App Review's contact details | Done (maintainer, 2026-10-17; [REVIEW_NOTES.md](../tabcam_store/ios/REVIEW_NOTES.md)) |
-| Review submission | App Store: 0.2.202610171102 (build 1792234961) submitted 2026-10-17, Waiting for Review, manual release (the maintainer releases it once approved). Play: to do |
+| Review submission | App Store: 0.2.202610171415 (build 1792246500, single Share and file links) submitted 2026-10-18, Waiting for Review, manual release; it replaced 0.2.202610171102 (build 1792234961), withdrawn before review started, the version renamed and its listing and screenshots uploaded again. Play: to do (Google is still verifying the maintainer's identity; no app in Play Console yet) |
 
 ## iOS distribution
 
@@ -202,6 +202,23 @@ Data safety, content rating, target audience and app access forms, from
 Bundle is uploaded there by hand. Each upload needs a new versionCode
 (the release's build number, [release](release.md#versioning)).
 
+## Submitting for review
+
+`bash scripts/store-submit-ios.sh` (fastlane lanes `withdraw` and `submit`
+in [tabcam_store/fastlane/](../tabcam_store/fastlane/Fastfile), with the
+App Store Connect API key, as the upload scripts):
+
+- `withdraw`: cancels the submission waiting for review (App Store
+  Connect refuses one already in review); the version can change again.
+- `submit <app version> <build number>`: refuses while a submission is
+  in review; attaches the processed build to that version, then makes a
+  review submission (or reuses one being put together) with the version
+  and submits it. Released by hand once approved.
+
+To swap the build of a version waiting for review: `withdraw`, then
+`store-upload-ios.sh metadata <new version>` (renames the version and
+uploads the listing), then `submit`.
+
 ## Store graphics
 
 `bash scripts/store-screenshots.sh` renders them all into `tabcam_store/`
@@ -227,7 +244,5 @@ guitar neck.
 
 Screenshots are RGB PNGs, without alpha. The six, in order: the Text view
 of a read tab; its page with the Tab filter; Home; Capture; Cam; Share
-("Link copied"). The repo's screenshots and listing text are ahead of
-what's uploaded (the 0.2 listing, in review, still shows Share with
-people): they go up with the next version. `scripts/store-metadata-check.sh` checks each
+("Link copied"). They're uploaded (2026-10-18, with 0.2.202610171415). `scripts/store-metadata-check.sh` checks each
 image's size and whether it has alpha.
