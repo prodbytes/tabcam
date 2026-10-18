@@ -1453,3 +1453,10 @@ spec.
     in place. Checked in the local web app: plain click in place, and a
     file's link loaded fresh opens that file. See
     [event screen](event-screen.md) and [sharing](sharing.md).
+13. **Swap the build waiting for App Review for the latest.** Added
+    `scripts/store-submit-ios.sh` (fastlane `withdraw` and `submit`):
+    withdrew 0.2.202610171102 (build 1792234961) before review started,
+    renamed the version to 0.2.202610171415 and uploaded its listing and
+    screenshots (Share by link only), and submitted it with build
+    1792246500: Waiting for Review. Google Play: still verifying the
+    maintainer's identity. See [app stores](app-stores.md#submitting-for-review).
