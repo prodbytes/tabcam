@@ -3,7 +3,7 @@
 | | Android | iOS | Web |
 |---|---|---|---|
 | Minimum | 7.0 (API 24) | 15.5 | A current browser |
-| Scan | System document scanner (ML Kit, base mode: no filters): edges, straightening, several pages | System document scanner (VisionKit) | TabCam's camera screen (the browser's camera): several pages, cropped to the page when one stands out |
+| Scan | System document camera (ML Kit, base mode: no filters): edges, straightening, several pages | System document camera (VisionKit) | TabCam's camera screen (the browser's camera): several pages, cropped to the page when one stands out |
 | Add photos & videos, files | Photo picker; system file picker | Photo library; Files app | Browser file picker (both) |
 | Play videos | From the file | From the file | From memory |
 | [Cam](cam.md) takes, [the tab in them](cam.md#the-tab-in-the-take) | MP4, the tab burned in after (Media3 Transformer) | MP4, the tab burned in after (AVFoundation) | WebM (MP4 on Safari), the tab recorded in as it goes (canvas and MediaRecorder) |
@@ -61,7 +61,7 @@ through Swift Package Manager, its versions pinned in the committed
 `Package.resolved` files (`ios/Runner.xcworkspace/xcshareddata/swiftpm/`
 and the same under `Runner.xcodeproj/project.xcworkspace/`), so every
 build resolves the same ones; ML Kit (text recognition, the document
-scanner) through CocoaPods, which doesn't support Swift Package Manager
+camera) through CocoaPods, which doesn't support Swift Package Manager
 yet. Both bring Google's `GoogleUtilities` and `FBLPromises`, so the app
 holds two copies, and iOS warns at launch ("Class … is implemented in
 both … may cause spurious casting failures and mysterious crashes"). No

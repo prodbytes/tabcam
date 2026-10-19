@@ -149,7 +149,7 @@ or joined before reading (a circle touching a fret), which no score sees.
 
 The title, section names and chord names around the staves are read at
 full size, each strip between staves on its own and the whole page too
-(each finds words the other misses), and placed as for text tabs; scanner
+(each finds words the other misses), and placed as for text tabs; other apps'
 watermarks ("Digitalizado com CamScanner", "Scanned with ...") are left
 out, in the app too. Printed numbers read exactly (the image's build reads
 a made-up riff set on drawn lines back, every note); handwriting from

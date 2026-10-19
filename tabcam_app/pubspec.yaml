@@ -132,7 +132,7 @@ flutter:
 
 # App icons for every platform, generated from assets/icon/ by
 # `dart run flutter_launcher_icons`. The masters are SVGs rendered to PNG:
-# a scanned page with a tab staff, framed by scanner corners.
+# a scanned page with a tab staff, framed by camera corners.
 flutter_launcher_icons:
   image_path: assets/icon/icon.png
   android: launcher_icon

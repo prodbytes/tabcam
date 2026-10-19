@@ -1560,3 +1560,12 @@ spec.
    TestFlight group **Internal**. The App Store review submission
    (0.2.202610171415) was left as it is. See
    [app stores](app-stores.md#status).
+9. **Say "cam" or "camera", never "scanner" (add to memory and
+   CLAUDE.md).** CLAUDE.md's design guidelines now say so. The store
+   listings are now "TabCam: Guitar Tab Camera", "a camera app made for
+   guitar and bass tablature", with a "POINT, SHOOT, DONE" section; the
+   READMEs, the privacy page, the data safety notes, the App Review notes
+   and the specs call the system's document scanner "the system document
+   camera". Code identifiers and third-party names (`cunning_document_scanner`,
+   CamScanner) keep theirs. See [app stores](app-stores.md) and
+   [scanning](scanning.md).

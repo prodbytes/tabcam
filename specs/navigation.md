@@ -58,7 +58,7 @@ opened.
 ## Capture
 
 - **Scan**, a large button: the camera, through the
-  [document scanner](scanning.md) (it finds, straightens and cleans the
+  [document camera](scanning.md) (it finds, straightens and cleans the
   page, several in a row; on the web, TabCam's camera screen), with a
   line saying so. Document opens the file chooser for PDFs, Photos &
   videos the photo album, Files the file chooser, Link the link dialog.

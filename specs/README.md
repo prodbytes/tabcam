@@ -7,7 +7,7 @@ it.
 
 ## Product
 
-TabCam is a camera app for guitar tabs, in the style of document scanner
+TabCam is a camera app for guitar tabs, in the style of document camera
 apps (Adobe Scan, CamScanner), made for tablature. Point the phone at a tab
 and it finds the page, straightens it and cleans it up. TabCam can then
 read the tab into editable plain text and share it as a read-only link
@@ -27,7 +27,7 @@ the cloud as they sync.
   document (PDF), photos & videos, files or a link) and Profile (the account, About).
 - [Library](library.md): the Home tab, a grid of events (newest first),
   in My captures and Shared with me sections once something is shared, with Rename, Share, Clone and Delete; how events are stored.
-- [Scanning](scanning.md): the system document scanner (edge detection,
+- [Scanning](scanning.md): the system document camera (edge detection,
   straightening, several pages), and adding pages, photos, videos, files
   and links.
 - [Tab site links](tab-site-links.md): a link to a known tab site
@@ -100,7 +100,7 @@ the cloud as they sync.
   Portuguese, the device's language by default or one picked on the
   Profile tab.
 - [App icon](app-icon.md): a scanned tab page with a staff and fret
-  numbers, in scanner corners; how the platform icons are generated.
+  numbers, in camera corners; how the platform icons are generated.
 - [Platforms](platforms.md): Android, iOS and the web, and what each can do.
 - [Privacy](privacy.md): the privacy policy at
   https://tabcam.nu01.com/privacy (linked from the index page and About),

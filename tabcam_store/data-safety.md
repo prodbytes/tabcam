@@ -32,7 +32,7 @@ others change too.
   TabCam's own (ML Kit's, below, aside); no data sold or shared for
   advertising.
 - **ML Kit** (on-device text recognition and, on Android, the document
-  scanner) may send Google anonymous diagnostics and usage metrics about
+  camera) may send Google anonymous diagnostics and usage metrics about
   the ML Kit APIs (GoogleDataTransport). Google's guidance on declaring
   it: https://developers.google.com/ml-kit/android-data-disclosure. The
   maintainer should confirm the answers below against that page before
