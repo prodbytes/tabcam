@@ -1,1 +1,1 @@
-TabCam: Guitar Tab Scanner
+TabCam: Guitar Tab Camera

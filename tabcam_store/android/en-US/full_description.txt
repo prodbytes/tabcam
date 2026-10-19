@@ -1,7 +1,7 @@
-TabCam is a scanner app made for guitar and bass tablature. Point your phone at a tab and TabCam finds the page, straightens it and cleans it up. Then it reads the tab into plain-text tab you can edit, play along with and share.
+TabCam is a camera app made for guitar and bass tablature. Point your phone at a tab and TabCam finds the page, straightens it and cleans it up. Then it reads the tab into plain-text tab you can edit, play along with and share.
 
-SCAN LIKE A DOCUMENT SCANNER
-• The system document scanner finds the page's edges and straightens it, several pages at a time.
+POINT, SHOOT, DONE
+• The system document camera finds the page's edges and straightens it, several pages at a time.
 • Add PDFs, photos and videos from your library, files, recordings, or a link (a lesson video, a backing track).
 • The Tab filter turns each scanned page into crisp black ink on white; switch a page back to the Original photo any time.
 • Zoom into pages, rotate them, reorder, rename or delete files, and add more.

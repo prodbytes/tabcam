@@ -3,7 +3,7 @@
 A scanned tab: a cream page (`#FBF7EF`) with a title stub and a six-line
 tab staff, three amber fret numbers (3, 5, 7, rising across the strings)
 breaking the lines the way typeset tab does, framed by four amber
-(`#E0A030`) scanner corner brackets, on a dark warm background
+(`#E0A030`) camera corner brackets, on a dark warm background
 (`#1E1A15`).
 
 - **Masters**: `tabcam_app/assets/icon/icon.svg` (the full icon) and

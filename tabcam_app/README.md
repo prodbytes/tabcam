@@ -6,7 +6,7 @@ what it does is specified in [specs/](../specs/README.md).
 
 | Folder | Holds |
 |---|---|
-| [lib/capture/](lib/capture) | Getting pages: the system document scanner, or photos |
+| [lib/capture/](lib/capture) | Getting pages: the system document camera, or photos |
 | [lib/library/](lib/library) | Scans and where they're kept |
 | [lib/processing/](lib/processing) | Page filters (the black-and-white Tab look) and rotation |
 | [lib/recognition/](lib/recognition) | Reading tabs: ML Kit OCR, staff-line detection, text layout |

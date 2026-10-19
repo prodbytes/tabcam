@@ -3,30 +3,30 @@
 ## Android and iOS
 
 **Scan** (the [Capture](navigation.md#capture) tab, or Add → Scan pages
-on an event) opens the system document scanner, through
+on an event) opens the system document camera, through
 `cunning_document_scanner`: Google ML Kit's on Android, Apple VisionKit's on
 iOS. It finds the page's edges in the camera image, lets the user adjust
 the corners, straightens the page (perspective correction) and takes
 several pages in a row; the user confirms when done. Cancelling returns
 to where they were, with nothing added.
 
-On Android the scanner runs in ML Kit's base mode: no filters to pick,
+On Android the camera runs in ML Kit's base mode: no filters to pick,
 and no ML clean-up (stain and finger removal); cropping, rotating and
 reordering pages remain. TabCam applies its own Tab filter. VisionKit
-offers no such option, so the iOS scanner keeps its filters. Neither
-scanner lets the app set the shutter: both start on auto capture, and
-the user can switch to manual in the scanner.
+offers no such option, so the iOS camera keeps its filters. Neither
+camera lets the app set the shutter: both start on auto capture, and
+the user can switch to manual in the camera.
 
-The scanner's files are copied into the [library](library.md), then its
+The camera's files are copied into the [library](library.md), then its
 cache is emptied. The new event shows at the top of the list (see
 [library](library.md)); it isn't opened.
 
 Needs Android 7.0 (API 24) or later; iOS 15.5 or later (ML Kit text
 recognition's minimum). iOS asks for the camera
 (`NSCameraUsageDescription`: "TabCam uses the camera to scan guitar
-tabs.") the first time the scanner opens it.
+tabs.") the first time the camera opens it.
 
-On Android, ML Kit's scanner needs no permission of TabCam's. Where it
+On Android, ML Kit's camera needs no permission of TabCam's. Where it
 isn't there (no Google Play services), the plugin falls back to its own
 cropper over a photo from the system camera app, which Android won't open
 while TabCam's camera permission (declared for [Cam](cam.md)) isn't
@@ -36,7 +36,7 @@ scan: the camera isn't allowed. Let TabCam use it in the settings."
 
 ## Web
 
-No document scanner: **Scan** opens TabCam's own camera screen
+No document camera: **Scan** opens TabCam's own camera screen
 ([lib/capture/camera_capture_screen.dart](../tabcam_app/lib/capture/camera_capture_screen.dart)),
 the device's camera through the browser (`camera`, getUserMedia; the
 browser asks for it the first time), the back camera first:
@@ -58,7 +58,7 @@ input with a camera hint, which desktop browsers show as a file chooser.
 
 Photos already on the device are added as they are, with Capture's or an
 event's **Photos & videos** or **Files** (below), not through the
-scanner.
+camera.
 
 ## Adding to an event
 
@@ -66,7 +66,7 @@ The [event screen](event-screen.md)'s **Add** asks where from, and adds the
 new pages at the end, then shows the list of files scrolled to them (the
 Add menu scrolls on a small phone):
 
-- **Scan pages**: more tab pages with the document scanner (as above).
+- **Scan pages**: more tab pages with the document camera (as above).
 - **Document**: PDF files (the file picker offering only `.pdf`).
 - **Photos & videos**: several photos and videos from the photo library
   (`image_picker`'s multiple media picker).
@@ -103,7 +103,7 @@ or 1 GB unzipped, by its directory).
 
 A photo added by hand (Photos & videos, Files; from Capture or an
 event's Add), or taken with the web's camera screen, isn't straightened
-by a scanner, so TabCam crops it to the
+by the document camera, so TabCam crops it to the
 page itself, when one stands out, so what's under the page (a table, a
 lap) doesn't show ([lib/processing/page_crop.dart](../tabcam_app/lib/processing/page_crop.dart),
 off the UI isolate where there are isolates):
@@ -123,4 +123,4 @@ off the UI isolate where there are isolates):
 When any of that fails (no clear page, the page already fills the photo,
 a format the decoder can't read such as HEIC, or an error), the photo is
 kept exactly as picked. Videos are never touched, nor are scanned pages
-(the document scanner crops them already).
+(the document camera crops them already).

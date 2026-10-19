@@ -1,11 +1,11 @@
 # TabCam
 
 Scan guitar tabs with your phone's camera, read them as text, and share
-them: like a document scanner app, made for tablature.
+them: like a document camera app, made for tablature.
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/prodbytes/tabcam)
 
-- **Scan**: the system document scanner finds the page, straightens it and
+- **Scan**: the system document camera finds the page, straightens it and
   takes several pages in a row (Android: ML Kit; iOS: VisionKit).
 - **Clean up**: the Tab filter turns each page into crisp black ink on
   white, without shadows or paper tint.
