@@ -291,6 +291,32 @@ void main() {
     });
   });
 
+  group('appleUserId', () {
+    AuthorizationCredentialAppleID credential({String? id, String? token}) =>
+        AuthorizationCredentialAppleID(
+          userIdentifier: id,
+          givenName: null,
+          familyName: null,
+          email: null,
+          authorizationCode: 'c0de',
+          identityToken: token,
+          state: null,
+        );
+
+    test("iOS gives it; Android's web flow has only the token's subject", () {
+      expect(
+        appleUserId(credential(id: 'ios.user', token: appleToken())),
+        'ios.user',
+      );
+      expect(
+        appleUserId(credential(token: appleToken(sub: 'web.user'))),
+        'web.user',
+      );
+      expect(appleUserId(credential()), isNull);
+      expect(appleUserId(credential(token: 'not a jwt')), isNull);
+    });
+  });
+
   group('deleting an Apple account', () {
     FakeApple fake() => FakeApple(
       (nonce) => AppleCredential(

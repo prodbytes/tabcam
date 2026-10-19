@@ -32,11 +32,13 @@ Parameters:
     Type: String
     Default: ''
     Description: >
-      Sign in with Apple: the audience of Apple's ID tokens, the app's
-      bundle ID (com.nu01.tabcam) for native sign-in on iOS. Its tokens' verified
-      address is checked for Premium like a Google one. Empty: Apple tokens
-      are refused with "google sign-in needed".
-    AllowedPattern: '([A-Za-z0-9-]+\.)+[A-Za-z0-9-]+|'
+      Sign in with Apple: the audiences of Apple's ID tokens, separated by
+      commas: the app's bundle ID (com.nu01.tabcam) for native sign-in on
+      iOS, and the Services ID (com.nu01.tabcam.signin) of the web flow on
+      Android. Its tokens' verified address is checked for Premium like a
+      Google one. Empty: Apple tokens are refused with "google sign-in
+      needed".
+    AllowedPattern: '(([A-Za-z0-9-]+\.)+[A-Za-z0-9-]+)(,([A-Za-z0-9-]+\.)+[A-Za-z0-9-]+)*|'
   IdentityPoolId:
     Type: String
     Default: ''

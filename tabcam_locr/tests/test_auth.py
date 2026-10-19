@@ -73,6 +73,14 @@ def test_apple_tokens_must_be_verified_signed_by_apple_and_for_the_bundle():
         verifier(apple_keys=Keys(OTHER_KEY)).verify(apple_token(key=KEY))
 
 
+def test_apple_tokens_for_the_services_id_are_taken_beside_the_bundles():
+    both = verifier(apple=f"{BUNDLE},com.nu01.tabcam.signin")
+    assert both.verify(apple_token(aud="com.nu01.tabcam.signin"))[1] == "appleid.apple.com"
+    assert both.verify(apple_token())[1] == "appleid.apple.com"
+    with pytest.raises(Unauthorized):
+        verifier().verify(apple_token(aud="com.nu01.tabcam.signin"))
+
+
 def test_apple_tokens_without_an_apple_client_are_unsupported():
     with pytest.raises(Unsupported):
         verifier(apple="").verify(apple_token())

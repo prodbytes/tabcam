@@ -28,7 +28,7 @@ app, and the iOS privacy declarations.
 | Statement | Based on |
 |---|---|
 | Sign-in is required: signed out the app is only the welcome, nothing captured or sent (but for opening a capture's link) | [cloud sync](cloud-sync.md#signed-out), [navigation](navigation.md#signed-out-the-welcome) |
-| Google (name, email, photo, account ID) or, in the iOS app, Sign in with Apple (name, email or Apple's private relay address, user ID); emails and IDs stored on servers, name and photo only shown | `AuthUser`, `SavedSession`, [Sign in with Apple](cloud-sync.md#sign-in-with-apple-ios); the share API and OCR service store emails, subjects and identity IDs |
+| Google (name, email, photo, account ID) or, in the iOS and Android apps, Sign in with Apple (name, email or Apple's private relay address, user ID); emails and IDs stored on servers, name and photo only shown | `AuthUser`, `SavedSession`, [Sign in with Apple](cloud-sync.md#sign-in-with-apple-ios-and-android); the share API and OCR service store emails, subjects and identity IDs |
 | A profile (random ID, linked accounts' emails and IDs, link times) | [profiles](profiles.md) |
 | Captures (pages, photos, videos, audio recordings, Cam's takes with their sound, PDFs and files, links, titles, artists, text tabs) synced to the user's own S3 folder | [cloud sync](cloud-sync.md#whats-synced-and-where), [Cam](cam.md) |
 | Camera to scan and record in Cam; microphone for Cam's sound; photos and files only as picked | `NSCameraUsageDescription`, `NSMicrophoneUsageDescription`, `NSPhotoLibraryUsageDescription`; [Cam](cam.md) |

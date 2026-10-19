@@ -104,8 +104,9 @@ builds and pushes the image, and deploys `tabcam-ocr` with the image's
 digest. `TABCAM_GOOGLE_WEB_CLIENT_ID` and `TABCAM_COGNITO_IDENTITY_POOL_ID` (environment
 or `.env`) set up the function URL; without them, page OCR still runs but
 the URL refuses every request. With `TABCAM_APPLE_SIGN_IN=1` it also
-passes `AppleClientId=com.nu01.tabcam`, so Sign in with Apple's tokens are
-taken. The script prints the URL: set it as the
+passes `AppleClientId=com.nu01.tabcam,com.nu01.tabcam.signin`, so Sign in
+with Apple's tokens are taken, iOS's (the bundle ID) and Android's (the
+Services ID). The script prints the URL: set it as the
 app's `TABCAM_OCR_URL` (`.env`, and the repository variable for deploys
 and releases).
 

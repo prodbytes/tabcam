@@ -34,6 +34,14 @@ Parameters:
       bundle ID (com.nu01.tabcam) for native sign-in on iOS. Empty: Google
       only.
     AllowedPattern: '([A-Za-z0-9-]+\.)+[A-Za-z0-9-]+|'
+  AppleServicesId:
+    Type: String
+    Default: ''
+    Description: >
+      With AppleClientId: the Services ID (com.nu01.tabcam.signin) whose
+      tokens Sign in with Apple's web flow (on Android) gives, trusted like
+      the bundle ID's. Empty: the bundle ID only.
+    AllowedPattern: '([A-Za-z0-9-]+\.)+[A-Za-z0-9-]+|'
   AccountsTableName:
     Type: String
     Default: ''
@@ -97,6 +105,7 @@ Conditions:
   HasCdnDistributions: !Not [!Equals [!Ref CdnDistributionIds, '']]
   HasLocalClient: !Not [!Equals [!Ref GoogleLocalWebClientId, '']]
   HasApple: !Not [!Equals [!Ref AppleClientId, '']]
+  HasAppleServicesId: !Not [!Equals [!Ref AppleServicesId, '']]
   HasAccountsTable: !Not [!Equals [!Ref AccountsTableName, '']]
 
 Resources:
@@ -482,6 +491,7 @@ Resources:
           RBACR_TOKEN_PARAMETER: !Ref RbacrTokenParameterName
           RBACR_SYSTEM: tabcam
           APPLE_CLIENT_ID: !Ref AppleClientId
+          APPLE_SERVICES_ID: !Ref AppleServicesId
           APPLE_SIGN_IN_KEY_PARAMETER: !Ref AppleSignInKeyParameterName
           CDN_KEY_PAIR_ID: !If [HasCdn, !Ref CdnKey, '']
           CDN_SIGNING_KEY_PARAMETER: !Ref CdnSigningKeyParameterName
@@ -531,7 +541,10 @@ Resources:
       IdentitySource: [$request.header.Authorization]
       JwtConfiguration:
         Issuer: https://appleid.apple.com
-        Audience: [!Ref AppleClientId]
+        Audience: !If
+          - HasAppleServicesId
+          - [!Ref AppleClientId, !Ref AppleServicesId]
+          - [!Ref AppleClientId]
 
   Integration:
     Type: AWS::ApiGatewayV2::Integration
@@ -582,10 +595,21 @@ Resources:
       AuthorizationType: NONE
       Target: !Sub integrations/${Integration}
 
+  # Sign in with Apple on Android: Apple posts its reply here (the
+  # Services ID's return URL), and the function sends it back to the app.
+  # No token yet, so no authorizer; nothing is kept.
+  RouteAppleCallback:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Api
+      RouteKey: POST /apple/callback
+      AuthorizationType: NONE
+      Target: !Sub integrations/${Integration}
+
   Stage:
     Type: AWS::ApiGatewayV2::Stage
     # Its route settings name these routes: they must exist first.
-    DependsOn: [RouteLink, RouteLinkCode, RoutePublic, RoutePreview]
+    DependsOn: [RouteLink, RouteLinkCode, RoutePublic, RoutePreview, RouteAppleCallback]
     Properties:
       ApiId: !Ref Api
       StageName: $default
@@ -607,6 +631,10 @@ Resources:
           ThrottlingRateLimit: 5
         # Crawlers, behind CloudFront's cache (5 minutes a link).
         GET /preview/{captureId}/{key}:
+          ThrottlingBurstLimit: 10
+          ThrottlingRateLimit: 5
+        # Android Apple sign-ins: people, not crawlers.
+        POST /apple/callback:
           ThrottlingBurstLimit: 10
           ThrottlingRateLimit: 5
 

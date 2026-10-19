@@ -14,7 +14,7 @@ publish to production.
 | Android upload key and signed App Bundle | Done (below); the upload key's OAuth client is to do |
 | Store builds: hide the Premium purchase links | Done ([cloud OCR](cloud-ocr.md#in-the-app)) |
 | Store builds: in-app account deletion (Profile, Delete account, in the app or the web app; the privacy page, which says how, as Play's deletion URL) | Done ([cloud sync](cloud-sync.md#deleting-the-account)), stacks deployed. Deleting an Apple account revokes its Apple tokens through Apple's REST API ([cloud sync](cloud-sync.md#revoking-apples-tokens)); its Sign in with Apple key is in the SSM parameter `/tabcam/apple-sign-in-key` (set 2026-10-16, [tabcam_infra](../tabcam_infra/README.md)) |
-| Sign in with Apple (App Store guideline 4.8) | Done ([cloud sync](cloud-sync.md#sign-in-with-apple-ios)): `tabcam-identity`, `tabcam-share-api` and `tabcam-ocr` deployed with `AppleClientId=com.nu01.tabcam` (2026-10-16), `TABCAM_APPLE_SIGN_IN=1` and the paid team in the maintainer's `.env`. Tried on the maintainer's iPhone with TestFlight build 1792173901 (2026-10-17) |
+| Sign in with Apple (App Store guideline 4.8) | Done ([cloud sync](cloud-sync.md#sign-in-with-apple-ios-and-android)): `tabcam-identity`, `tabcam-share-api` and `tabcam-ocr` deployed with `AppleClientId=com.nu01.tabcam` (2026-10-16), `TABCAM_APPLE_SIGN_IN=1` and the paid team in the maintainer's `.env`. Tried on the maintainer's iPhone with TestFlight build 1792173901 (2026-10-17) |
 | Privacy policy page; iOS privacy manifest and encryption declaration | Done ([privacy](privacy.md)), contact privacy@nu01.com |
 | Play internal testing, then the 14-day closed test | The app is in Play Console (2026-10-19): TabCam: Guitar Tab Camera, `com.nu01.tabcam`, app ID 4975838614790670668, free, en-US, Play App Signing. Its first App Bundle, `0.2.202610171415-GA`'s (versionCode 1792246557), uploaded by hand to an internal testing release, rolled out to the internal tester list **Internal** (the maintainer's account; opt-in link https://play.google.com/apps/internaltest/4701188091177325656) with `changelogs/default.txt` as its notes. Then `0.2.202610191330-GA`'s (versionCode 1792416626, the camera's camera permission fix), uploaded by hand and rolled out to **Internal** (2026-10-19). To do: a service account for the uploads, then the closed test |
 | App Store distribution build (`make ipa`) and its upload (`scripts/ios-upload.sh`) | Done ([below](#ios-distribution)): 0.2.202610191330 (build 1792417537, the `0.2.202610191330-GA` release's commit), uploaded 2026-10-19 for TestFlight; 0.2.202610171102 (build 1792234961, the `0.2.202610171102-GA` release's commit), the one to submit, built, signed and uploaded 2026-10-17; before it 0.2.202610171036 (build 1792233362) and the first, 0.1.202610161805 (build 1792173901, 2026-10-16) |
@@ -30,7 +30,7 @@ The App Store build is signed by the maintainer's paid team
 (`TABCAM_IOS_DEVELOPMENT_TEAM` in `.env`), with automatic signing:
 
 - `make ipa` (macOS) archives a release build with `.env`'s settings
-  (Sign in with Apple's entitlement among them, [cloud sync](cloud-sync.md#sign-in-with-apple-ios))
+  (Sign in with Apple's entitlement among them, [cloud sync](cloud-sync.md#sign-in-with-apple-ios-and-android))
   and exports it for the App Store (`flutter build ipa --export-method
   app-store`): `tabcam_app/build/ios/archive/Runner.xcarchive` and
   `tabcam_app/build/ios/ipa/TabCam.ipa`. Xcode makes the Apple

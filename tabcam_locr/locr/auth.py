@@ -4,8 +4,9 @@ The app sends the signed-in user's ID token (the one it gives Cognito):
 
 - Google's, signed by Google, for TabCam's web client (every platform's
   token is issued for it) or the local web client (local web builds);
-- or, with APPLE_CLIENT_ID set, Apple's (Sign in with Apple on iOS), signed
-  by Apple, for the app's bundle ID.
+- or, with APPLE_CLIENT_ID set, Apple's (Sign in with Apple), signed by
+  Apple, for one of its client IDs, separated by commas: the app's bundle ID
+  (iOS) or the Services ID (the web flow, on Android).
 
 It must be unexpired, with a verified e-mail (Apple sends email_verified as
 "true", a string; its private relay addresses are verified too, and simply

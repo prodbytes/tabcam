@@ -63,9 +63,19 @@ Parameters:
       bundle ID (com.nu01.tabcam) for native sign-in on iOS. Empty: Google
       only.
     AllowedPattern: '([A-Za-z0-9-]+\.)+[A-Za-z0-9-]+|'
+  AppleServicesId:
+    Type: String
+    Default: ''
+    Description: >
+      With AppleClientId: the Services ID (com.nu01.tabcam.signin) of Sign
+      in with Apple's web flow (on Android), trusted beside the bundle ID.
+      Cognito takes both separated by a semicolon. Empty: the bundle ID
+      only.
+    AllowedPattern: '([A-Za-z0-9-]+\.)+[A-Za-z0-9-]+|'
 
 Conditions:
   HasApple: !Not [!Equals [!Ref AppleClientId, '']]
+  HasAppleServicesId: !Not [!Equals [!Ref AppleServicesId, '']]
   HasDeveloperProvider: !Not [!Equals [!Ref DeveloperProviderName, '']]
   MakesGoogleProvider: !Equals [!Ref GoogleProviderArn, '']
   HasAppClients: !Not [!Equals [!Ref GoogleAppClientIds, '']]
@@ -101,7 +111,10 @@ Resources:
         - !If [MakesGoogleProvider, !Ref GoogleProvider, !Ref GoogleProviderArn]
       SupportedLoginProviders: !If
         - HasApple
-        - appleid.apple.com: !Ref AppleClientId
+        - appleid.apple.com: !If
+            - HasAppleServicesId
+            - !Sub '${AppleClientId};${AppleServicesId}'
+            - !Ref AppleClientId
         - !Ref AWS::NoValue
 
   AuthenticatedRole:
