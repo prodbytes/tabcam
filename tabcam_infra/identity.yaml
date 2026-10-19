@@ -77,6 +77,10 @@ Resources:
   GoogleProvider:
     Type: AWS::IAM::OIDCProvider
     Condition: MakesGoogleProvider
+    # The account's one accounts.google.com provider (the local pool's
+    # too): never deleted with the stack.
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       Url: https://accounts.google.com
       ClientIdList: !If
