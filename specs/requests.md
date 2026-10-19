@@ -1524,3 +1524,14 @@ spec.
    Target audience and submitting Data safety), and the Android OAuth
    clients for Play's and the upload key's SHA-1 (Google Cloud asks for
    the password again). See [app stores](app-stores.md#android-signing).
+4. **Delete everything of TabScan and recreate only what's needed, with
+   tabcam names; the outage is fine.** Added `scripts/retire-tabscan.sh`
+   for an administrator to run (the deletions are for good, so not run
+   by the agent): it keeps the `accounts.google.com` OIDC provider
+   (Retain), deletes every `tabscan-*` stack with its data, the old
+   secret, parameter, log groups, `local.tabscan.nu01.com` and the old
+   GitHub variables, imports the provider into `tabcam-identity`
+   (TabCam's 3 Google clients only, the old project's 5 dropped), and
+   redeploys the old domains' redirects as `tabcam-old-domain` and
+   `tabcam-rc-old-domain`. `identity.yaml` keeps the provider on
+   deletion. See [deploy](deploy.md#the-old-domains).

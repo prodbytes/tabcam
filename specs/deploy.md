@@ -15,12 +15,24 @@ CLI; no stack owns it.
 
 ## The old domains
 
-TabCam was TabScan: `tabscan.nu01.com` and `rc.tabscan.nu01.com` (the
-`tabscan-web` and `tabscan-rc-web` stacks, zone `Z10277161AEN9OU2H73PJ`)
-are kept as permanent redirects (301) to the same path and query on
-`tabcam.nu01.com` and `rc.tabcam.nu01.com` ([site.yaml](../tabcam_infra/site.yaml)
-with `RedirectTo`), so links shared before the rename still open, and
-still preview as the capture. Deploy them again only to change that.
+TabCam was TabScan: `tabscan.nu01.com` and `rc.tabscan.nu01.com` (zone
+`Z10277161AEN9OU2H73PJ`, kept for them) are permanent redirects (301) to
+the same path and query on `tabcam.nu01.com` and `rc.tabcam.nu01.com`,
+so links shared before the rename still open, and still preview as the
+capture: the `tabcam-old-domain` and `tabcam-rc-old-domain` stacks
+([site.yaml](../tabcam_infra/site.yaml) with `RedirectTo`). Deploy them
+again only to change that.
+
+Nothing else of TabScan is left: `bash scripts/retire-tabscan.sh` (run
+once by an administrator) deleted every `tabscan-*` stack and its data
+(the old user data bucket, tables, identity pools, OCR images, deploy
+roles), the old secret, parameter, log groups and GitHub variables, and
+moved what's still needed under tabcam names: the redirects (above) and
+the account's `accounts.google.com` OIDC provider, which
+`tabscan-identity` owned and `tabcam-identity` now does (imported,
+`DeletionPolicy: Retain`, trusting TabCam's Google clients only;
+`tabcam-identity-local` uses it by its ARN). rbacr's `tabscan` system is
+separate and stays until Presence's vouchers name `tabcam`.
 
 ## Production
 
