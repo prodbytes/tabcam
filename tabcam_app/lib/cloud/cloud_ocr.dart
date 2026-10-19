@@ -34,7 +34,7 @@ class CloudOcr extends ChangeNotifier {
     required this.bucket,
     required this.credentials,
     required this.api,
-    this.backfillAfter = const Duration(minutes: 2),
+    this.backfillAfter = const Duration(minutes: 20),
     DateTime Function()? now,
   }) : _now = now ?? DateTime.now;
 
@@ -188,12 +188,17 @@ class CloudOcr extends ChangeNotifier {
       );
       return 0;
     }
-    _requested.add(event.id);
     if (replace) {
       _replace.add(event.id);
     } else {
       _replace.remove(event.id);
     }
+    // A new page's upload already starts its reading in the cloud (the
+    // bucket's event): asking too would read pages being read a second
+    // time. Pages that still have none later are asked for by the
+    // backfill ([backfillAfter]).
+    if (!again) return 0;
+    _requested.add(event.id);
     if (again) {
       _again[event.id] = null;
       try {

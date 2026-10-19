@@ -335,8 +335,9 @@ void main() {
 
       pdfText = null; // scanned: no text
       final scanned = await addPdf();
-      await _until(() => s.api.transcribed.contains(scanned.id));
-      expect(reader.stateOf(scanned.id), ReadState.inCloud);
+      // Its upload starts the cloud's reading: nothing is asked for.
+      await _until(() => reader.stateOf(scanned.id) == ReadState.inCloud);
+      expect(s.api.transcribed, isEmpty);
       expect(s.api.transcribedAgain, isEmpty);
 
       // Read again: the cloud reads every page again.
@@ -382,7 +383,8 @@ void main() {
     await s.library.reorderPages(read.id, [read.pages[1].id, read.pages[0].id]);
     await Future<void>.delayed(const Duration(milliseconds: 20));
     expect(reader.stateOf(event.id), isNull);
-    expect(s.api.transcribed, [event.id]);
+    // The uploads started the readings: the app never asked for them.
+    expect(s.api.transcribed, isEmpty);
     reader.dispose();
     s.dispose();
   });
@@ -512,7 +514,7 @@ void main() {
   test('pages that waited too long are asked for, once', () async {
     final s = _Setup(
       premium: true,
-      now: DateTime.now().add(const Duration(minutes: 5)),
+      now: DateTime.now().add(const Duration(minutes: 25)),
     );
     await s.start();
     final event = await _twoPages(s.library);

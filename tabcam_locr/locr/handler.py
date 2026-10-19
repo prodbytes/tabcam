@@ -192,8 +192,32 @@ def _on_s3(event):
         return "not premium"
     if not _premium(emails).premium:
         return "not premium"
+    if _from_cache(page, detail.get("object", {}).get("etag")):
+        return "cached"
     _queue(page)
     return "queued"
+
+
+def _from_cache(page, etag):
+    """Writes [page]'s transcription from an earlier reading of the same
+    image (a clone, a published contribution, the same file added again),
+    if there's one: no second reading. Read again never comes here."""
+    key = keys.cache_key(page.identity, etag, VERSION)
+    if key is None:
+        return False
+    try:
+        cached = json.loads(services.s3.get_object(Bucket=services.bucket, Key=key)["Body"].read())
+    except services.s3.exceptions.NoSuchKey:
+        return False
+    except Exception as e:  # a cache that can't be read: read the page
+        log("ocr cache unreadable", key=key, error=f"{type(e).__name__}: {e}")
+        return False
+    cached.update(page=page.page_id, created=_now(), cached=True)
+    services.s3.put_object(Bucket=services.bucket, Key=page.result_key,
+                           Body=json.dumps(cached).encode(), ContentType="application/json",
+                           CacheControl="no-cache")
+    log("ocr from cache", key=page.key, cache=key)
+    return True
 
 
 def _queue(page):
@@ -427,6 +451,12 @@ def ocr(event, context=None):
     services.s3.put_object(Bucket=services.bucket, Key=page.result_key,
                            Body=json.dumps(result).encode(), ContentType="application/json",
                            CacheControl="no-cache")
+    # Kept by the image's content too, so a copy of it isn't read again
+    # (a failed reading isn't: the next one tries again).
+    cache = keys.cache_key(page.identity, obj.get("ETag"), VERSION)
+    if cache and result["status"] in ("ok", "no-tab"):
+        services.s3.put_object(Bucket=services.bucket, Key=cache,
+                               Body=json.dumps(result).encode(), ContentType="application/json")
     log("ocr done", key=page.key, status=result["status"], error=result.get("error"),
         staves=result.get("staves"), lines=result.get("lines"), timings=result.get("timings"),
         seconds=result["seconds"])
