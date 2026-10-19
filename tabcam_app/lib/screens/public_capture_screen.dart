@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../cloud/public_capture.dart';
+import '../cloud/share_api.dart';
 import '../export/capture_link.dart';
 import '../l10n/language.dart';
 import '../library/capture_event.dart';
@@ -15,15 +16,16 @@ import 'event_screen.dart';
 /// signed in but not one of the people it's shared with. It's kept in
 /// memory only, apart from the user's library, and goes when this does.
 /// While it shows, it looks for the owner's changes every [refreshEvery]
-/// and as the app comes back to the front, so a rename or a file added
-/// shows within seconds.
+/// while in front (none behind, a hidden tab say) and as the app comes
+/// back to the front; a link that's gone for good (a wrong key, the
+/// capture deleted) stops looking.
 class PublicCaptureScreen extends StatefulWidget {
   const PublicCaptureScreen({
     super.key,
     required this.link,
     required this.captures,
     this.onSignIn,
-    this.refreshEvery = const Duration(seconds: 10),
+    this.refreshEvery = const Duration(minutes: 5),
   });
 
   final Uri link;
@@ -47,17 +49,30 @@ class _PublicCaptureScreenState extends State<PublicCaptureScreen>
   );
   Timer? _refresh;
   bool _refreshing = false;
+  bool _foreground = true;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _refresh = Timer.periodic(widget.refreshEvery, (_) => _refreshNow());
+    _refresh = Timer.periodic(widget.refreshEvery, (_) {
+      if (_foreground) _refreshNow();
+    });
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _refreshNow();
+    switch (state) {
+      case AppLifecycleState.resumed:
+        _foreground = true;
+        _refreshNow();
+      case AppLifecycleState.hidden ||
+          AppLifecycleState.paused ||
+          AppLifecycleState.detached:
+        _foreground = false;
+      case AppLifecycleState.inactive:
+        break;
+    }
   }
 
   /// Brings in the owner's changes, once the capture shows. A failed look
@@ -68,12 +83,22 @@ class _PublicCaptureScreenState extends State<PublicCaptureScreen>
     try {
       await _opening;
       await widget.captures.refresh(widget.link, _library);
+    } on LinkUnavailable catch (e) {
+      // Gone for good: no more looks. Else (offline, say) the next tries.
+      if (_gone(e.reason)) _refresh?.cancel();
     } on Object {
       // Not open yet, or this look failed: nothing changes.
     } finally {
       _refreshing = false;
     }
   }
+
+  /// Whether a look failed for good: the capture deleted, or the share
+  /// API refusing the key (the link taken back, the capture gone).
+  static bool _gone(Object reason) =>
+      reason == 'deleted' ||
+      (reason is ShareApiException &&
+          (reason.statusCode == 403 || reason.statusCode == 404));
 
   @override
   void dispose() {

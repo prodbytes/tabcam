@@ -82,7 +82,9 @@ Whose it is is the folder's name, never what `contrib.json` says.
   `contrib.json`, then the files it no longer has are deleted), changed
   only there it comes down, changed in both the later `updated` wins. So
   it reaches the reader's other devices.
-- **The owner's devices** list `<owner>/contrib/` once per pass, bring
+- **The owner's devices** list `<owner>/contrib/` once per pass (only
+  when one of their captures has a link key, recorded shares or
+  contributions: no other can have any), bring
   each contribution whose `contrib.json` changed and its files, and forget
   one whose folder is gone. The owner never writes them. Readers' email
   addresses come from the share API's grants, which record each reader's

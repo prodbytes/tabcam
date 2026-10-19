@@ -50,10 +50,11 @@ enum SyncState {
 /// down, and one changed in both keeps the later `updated`. Events that
 /// synced with another account stay on the device, untouched.
 ///
-/// Passes run at sign-in, a moment after each change, every
-/// [CloudSync.period] while the app is in front (every
-/// [CloudSync.backgroundPeriod] behind), as it comes back to the front,
-/// and on [syncNow]: another device's change shows within seconds.
+/// Passes run at sign-in (so on startup), a moment after each change made
+/// here, every [CloudSync.period] while the app is in front (none while
+/// it's behind), as it comes back to the front, and on [syncNow]: another
+/// device's change shows within [CloudSync.period], or at once on coming
+/// back to the app. Few passes keep the cloud's cost down.
 class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
   CloudSync({
     required this.library,
@@ -61,8 +62,7 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
     required this.bucket,
     required this.credentials,
     this.shares,
-    this.period = const Duration(seconds: 10),
-    this.backgroundPeriod = const Duration(minutes: 1),
+    this.period = const Duration(minutes: 5),
     this.debounce = const Duration(seconds: 2),
   });
 
@@ -82,15 +82,8 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
   /// the app is in front. A pass with nothing new is one listing.
   final Duration period;
 
-  /// How often it looks while the app is behind (a hidden tab, a phone
-  /// app in the background, while it still runs).
-  final Duration backgroundPeriod;
-
   /// Whether the app is in front, as the platform last said.
   bool _foreground = true;
-
-  /// When the last pass started.
-  DateTime? _lastPass;
 
   /// How long after a change its pass starts, so a burst is one pass.
   final Duration debounce;
@@ -148,13 +141,10 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  /// The periodic look, in front only: behind (a hidden tab, a phone app
+  /// in the background) there's none, and coming back looks at once.
   void _tick() {
-    final last = _lastPass;
-    if (!_foreground &&
-        last != null &&
-        DateTime.now().difference(last) < backgroundPeriod) {
-      return;
-    }
+    if (!_foreground) return;
     unawaited(syncNow());
   }
 
@@ -231,7 +221,6 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> _pass() async {
     final token = _token;
     if (token == null) return;
-    _lastPass = DateTime.now();
     _set(SyncState.syncing, null);
     // Rejected credentials and a skewed clock are worth one more try: new
     // credentials, and the clock S3 just corrected.
@@ -695,6 +684,19 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
     _SyncState state,
     String token,
   ) async {
+    // People can add only to a capture shared by its link (a key) or with
+    // them (shares), or that has contributions already: with none such,
+    // there's nothing to list.
+    final open = library.all.any(
+      (e) =>
+          !e.isShared &&
+          e.owner == identity &&
+          !e.isDeleted &&
+          (e.linkKey != null ||
+              e.shares.isNotEmpty ||
+              e.contributions.isNotEmpty),
+    );
+    if (!open) return 0;
     final base = '$identity/contrib/';
     final listing = await bucket.listETags(base, credentials: creds);
     _check(token);

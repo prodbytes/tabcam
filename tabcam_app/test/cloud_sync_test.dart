@@ -281,7 +281,7 @@ void main() {
     expect(tablet.library.byId(event.id)!.pages.single.title, 'Tablature');
   });
 
-  test('in front, a device looks for changes every few seconds', () {
+  test('in front, a device looks for changes every 5 minutes', () {
     final device = Device(bucket);
     final sync = CloudSync(
       library: device.library,
@@ -289,8 +289,31 @@ void main() {
       bucket: bucket,
       credentials: device.credentials,
     );
-    expect(sync.period, lessThanOrEqualTo(const Duration(seconds: 10)));
-    expect(sync.backgroundPeriod, greaterThan(sync.period));
+    expect(sync.period, const Duration(minutes: 5));
+  });
+
+  test('contributions are listed only when a capture can have them', () async {
+    final phone = Device(
+      bucket,
+      shares: FakeShareApi(
+        {},
+        email: 'me@example.com',
+        identity: 'us-east-1:me',
+      ),
+    );
+    await phone.start();
+    final event = await phone.library.create(const []);
+    await phone.settle();
+    expect(bucket.requests, isNot(contains('LIST us-east-1:me/contrib/')));
+
+    // Shared by its link: people may add to it, so it's listed.
+    await phone.library.patch(
+      event.id,
+      (e) => e.copyWith(linkKey: newLinkKey()),
+    );
+    bucket.requests.clear();
+    await phone.settle();
+    expect(bucket.requests, contains('LIST us-east-1:me/contrib/'));
   });
 
   test('changed on both: the later change wins', () async {

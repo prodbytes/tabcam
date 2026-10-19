@@ -1460,3 +1460,22 @@ spec.
     screenshots (Share by link only), and submitted it with build
     1792246500: Waiting for Review. Google Play: still verifying the
     maintainer's identity. See [app stores](app-stores.md#submitting-for-review).
+
+## 2026-10-19
+
+1. **Cost review, then: syncing every 10 seconds is too frequent; on
+   startup and every 5 minutes is fine; go ahead with the other cost
+   changes that don't hurt quality, usability or performance.** This
+   change, the app's side:
+   - Sync passes run on startup, 2 seconds after a change here, every 5
+     minutes while the app is in front (was 10 seconds), none while it's
+     behind (was every minute), and at once on coming back to it.
+   - The owner's devices list `contrib/` only when a capture can have
+     contributions (a link key, recorded shares, or some already).
+   - The link viewer looks for the owner's changes every 5 minutes in
+     front (was 10 seconds), not while hidden, and stops on a link gone
+     for good (404, deleted).
+   - The maintenance check pauses while the app is behind.
+   See [cloud sync](cloud-sync.md#when-and-how), [sharing](sharing.md),
+   [contributions](contributions.md),
+   [maintenance mode](maintenance-mode.md).
