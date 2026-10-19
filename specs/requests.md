@@ -1550,3 +1550,13 @@ spec.
    (Cam does) without it granted. Scan now asks for the camera then and
    tries again; refused, it says the camera isn't allowed. See
    [scanning](scanning.md#android-and-ios).
+8. **Update the app store releases and give the link to install the
+   test version.** `0.2.202610191330-GA` went to both testing tracks:
+   on Play, its App Bundle (versionCode 1792416626) to internal testing,
+   uploaded by hand (no service account yet; the browser tool takes files
+   under 10 MB only), rolled out to **Internal**, installed from the opt-in
+   link; on the App Store, `make ipa` and `scripts/ios-upload.sh` (build
+   1792417537), then `store-upload-ios.sh testflight 1792417537` into the
+   TestFlight group **Internal**. The App Store review submission
+   (0.2.202610171415) was left as it is. See
+   [app stores](app-stores.md#status).
