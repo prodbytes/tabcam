@@ -1502,3 +1502,16 @@ spec.
      repository is public: Actions minutes are free).
    See [auto-correct](autocorrect.md), [cloud OCR](cloud-ocr.md),
    [profiles](profiles.md).
+4. **Publish the app on Google Play and the App Store.** App Store:
+   0.2.202610171415 is still Waiting for Review (nothing to do until
+   it's approved; released by hand). Google Play: the account is
+   verified, so the app was made in Play Console (app ID
+   4975838614790670668), the GA App Bundle uploaded to an internal
+   testing draft, and the store listing, store settings, privacy policy,
+   content rating and most App content declarations filled in from
+   [data-safety.md](../tabcam_store/data-safety.md) (Data safety as a
+   draft, with voice or sound recordings added, and the privacy page as
+   the deletion URL). Left for the maintainer: a Google test account for
+   Play's Sign in details, then Target audience and submitting Data
+   safety, the internal testers and rollout, and the closed test. See
+   [app stores](app-stores.md#status).

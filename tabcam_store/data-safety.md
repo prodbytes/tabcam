@@ -50,7 +50,7 @@ others change too.
 | Does your app collect or share any of the required user data types? | Yes |
 | Is all of the user data collected by your app encrypted in transit? | Yes |
 | Do you provide a way for users to request that their data is deleted? | Yes: in the app (Profile → Delete account) and by the URL below |
-| Account deletion URL (App content → Data deletion) | https://tabcam.nu01.com/app/ (sign in, open Profile, tap Delete account) |
+| Account deletion URL (App content → Data deletion) | https://tabcam.nu01.com/privacy (it says how: Profile → Delete account, in the app or the web app at https://tabcam.nu01.com/app/, and what's deleted); also as the URL for deleting some data (captures) without the account |
 | Can users create an account? | Yes, with Google sign-in (OAuth); the app needs one |
 
 **Data types** (collected = sent off the device; none is **shared**: AWS
@@ -65,14 +65,14 @@ is processed ephemerally only.
 | Personal info → User IDs | Yes | App functionality, Account management | Cognito identity ID; Google account ID in the sign-in token |
 | Personal info → Name | Yes (conservative) | App functionality | Shown in the app only, not stored on servers. Strictly not "collected" under Play's definition; declared to match the iOS manifest. The maintainer may answer No |
 | Photos and videos → Photos, Videos | Yes | App functionality | Scans, photos and videos synced to the user's folder |
-| Audio → Music files, Other audio files | Yes | App functionality | Recordings added to captures, and Cam's takes' sound (in their videos) |
+| Audio → Voice or sound recordings, Music files, Other audio files | Yes | App functionality | Recordings added to captures, and Cam's takes' sound (in their videos) |
 | Files and docs | Yes | App functionality | PDFs and files added to captures |
 | App activity → Other user-generated content | Yes | App functionality | Text tabs, titles, artists, links |
 | App info and performance → Diagnostics | Yes, if ML Kit's disclosure says so | Analytics (by Google ML Kit) | Anonymous ML Kit metrics; collected also signed out; confirm against Google's ML Kit page |
 | Device or other IDs | Yes, if ML Kit's disclosure says so | Analytics (by Google ML Kit) | The installation identifier ML Kit's metrics carry; not linked to the account |
 
 Not collected: location, financial info (Premium is paid through Stripe
-via Substack, outside the app), health, messages, voice recordings, contacts,
+via Substack, outside the app), health, messages, contacts,
 calendar, web browsing, app interactions, crash logs.
 
 ## Apple: App Privacy labels
