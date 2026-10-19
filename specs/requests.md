@@ -1515,3 +1515,12 @@ spec.
    Play's Sign in details, then Target audience and submitting Data
    safety, the internal testers and rollout, and the closed test. See
    [app stores](app-stores.md#status).
+5. **Do the rest of the Play setup.** The internal testing release
+   (versionCode 1792246557) is rolled out to the **Internal** list (the
+   maintainer's account); Play warned the Unix-seconds versionCode nears
+   its 2,100,000,000 limit (about 2036; codes can switch to +1 then).
+   Play's app signing key is in assetlinks.json. Not done, as they need
+   the maintainer: the Google test account for Sign in details (and so
+   Target audience and submitting Data safety), and the Android OAuth
+   clients for Play's and the upload key's SHA-1 (Google Cloud asks for
+   the password again). See [app stores](app-stores.md#android-signing).
