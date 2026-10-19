@@ -108,7 +108,64 @@ keeps who, the provider and the ID token.
   that entitlement, so without the flag (free Personal Team builds, CI's
   unsigned builds) there are no entitlements and no Apple button
   ([platforms](platforms.md)).
-- Not on Android or the web, where Google is the only sign-in.
+- Not on Android or the web yet, where Google is the only sign-in; Android
+  is planned (below).
+
+### Sign in with Apple on Android (planned, not built)
+
+Apple has no Android SDK: `sign_in_with_apple` runs Apple's web flow in a
+Chrome Custom Tab. The plan, for review before building:
+
+1. **Apple Developer**: a Services ID, `com.nu01.tabcam.signin`, with
+   Sign in with Apple, primary App ID `com.nu01.tabcam` (so Apple gives
+   the same user ID, `sub`, as on iOS), domain `tabcam.nu01.com` and one
+   return URL (step 2). The existing Sign in with Apple key
+   (`G3KM3762G4`) covers it: it belongs to the primary App ID.
+2. **The return URL**: asking for the name and email makes Apple POST the
+   reply (`form_post`), which the static site can't take (CloudFront in
+   front of S3 refuses POST). So a route on the share API,
+   `POST /apple/callback` (no authorizer, just the redirect), answers with
+   a redirect to
+   `intent://callback?<Apple's fields>#Intent;package=com.nu01.tabcam;scheme=signinwithapple;end`,
+   which reopens the app. That's one tiny Lambda call per Android Apple
+   sign-in, for everyone, not just Premium: an exception to "server side
+   only for Premium" that needs the maintainer's OK. Without the name and
+   email, Apple can answer in the URL fragment to a static page, with no
+   Lambda, but the token then has no email: no sharing to that address,
+   and no Premium, which goes by email.
+3. **Two audiences**: Android's tokens are issued for the Services ID,
+   iOS's for the bundle ID. Each place that checks them takes both:
+   - the identity pool: `appleid.apple.com` set to
+     `com.nu01.tabcam;com.nu01.tabcam.signin`. Cognito accepts that value
+     (tried on a throwaway pool, 2026-10-19), but nothing documents the
+     semicolon as a list of client IDs, so the first step of the build is
+     signing in with a real Android token against the local pool. If it
+     doesn't work, Apple moves to an IAM OpenID Connect provider listing
+     both, as Google did, but only after checking that existing iOS Apple
+     users keep their identity IDs (their folders are keyed by them);
+   - the share API's `apple` JWT authorizer (its audience is a list) and
+     its function's `APPLE_CLIENT_ID` check; the OCR function's check;
+   - account deletion's token revocation (`apple_revoke.py`): the
+     `client_id` (and the client secret's `sub`) are the revoked token's
+     audience, not always the bundle ID.
+   `AppleClientId` becomes a list in `identity.yaml`, `share-api.yaml` and
+   `ocr.yaml`.
+4. **The app**: `AppleAuthService` on Android too, with
+   `webAuthenticationOptions` (the Services ID, the return URL), the same
+   nonce check, the session kept in the same private file; the
+   `SignInWithAppleCallback` activity added to the manifest for the
+   `signinwithapple` scheme; the button beside Google's in the sign-in
+   sheet when `TABCAM_APPLE_SIGN_IN=1` (no entitlement on Android). Not
+   on the web for now.
+5. **Same account on both phones**: since the Services ID is grouped under
+   the App ID, an Apple user gets the same `sub` and, with the pool's key
+   still `appleid.apple.com`, the same identity and folder on Android as
+   on iOS. To be checked in the build.
+
+Verification: unit tests for the Android path (the sheet's options, the
+callback, the nonce) and for the two audiences in the API's tests; then a
+real Apple sign-in on the Android phone, then on the iPhone with the same
+Apple ID, showing the same events.
 
 ### Google's token
 

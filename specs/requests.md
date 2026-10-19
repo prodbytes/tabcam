@@ -1569,3 +1569,12 @@ spec.
    camera". Code identifiers and third-party names (`cunning_document_scanner`,
    CamScanner) keep theirs. See [app stores](app-stores.md) and
    [scanning](scanning.md).
+9. **Sign-in stopped working in the Play build; offer Sign in with Apple
+   there too.** Google: the Play app signing key's Android OAuth client
+   exists (`TabCam Android - Play signing`, made 2026-10-19), but neither
+   it nor the debug key's client is in `tabcam-identity`'s
+   `GoogleAppClientIds`, and AWS checks a Google token's `azp` against
+   that list. Adding them is a stack deploy for the maintainer. Apple on
+   Android: planned first, as asked: the plan is in
+   [cloud sync](cloud-sync.md#sign-in-with-apple-on-android-planned-not-built),
+   to approve before building.
