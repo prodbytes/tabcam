@@ -1543,3 +1543,10 @@ spec.
    Families policy to any group under 18 in some countries. The review
    submission waits for Play's key's Android OAuth client. See
    [app stores](app-stores.md#status).
+7. **Scan failed on a test device: "Permission Denial … with revoked
+   permission android.permission.CAMERA".** Where ML Kit's scanner isn't
+   there (no Google Play services), the scanner falls back to the system
+   camera app, and Android won't open it for an app that declares CAMERA
+   (Cam does) without it granted. Scan now asks for the camera then and
+   tries again; refused, it says the camera isn't allowed. See
+   [scanning](scanning.md#android-and-ios).

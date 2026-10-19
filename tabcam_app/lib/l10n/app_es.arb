@@ -183,6 +183,7 @@
   "homeSaved": "Se guardó \"{title}\" ({contents})",
   "homeOpen": "Abrir",
   "homeScanFailed": "No se pudo escanear: {error}",
+  "scanCameraNotAllowed": "la cámara no está permitida. Deja que TabCam la use en la configuración.",
   "homeAddFailed": "No se pudo agregar: {error}",
   "homeSkipped": "{count, plural, =1{1 archivo no es una foto ni un video, así que no se agregó.} other{{count} archivos no son fotos ni videos, así que no se agregaron.}}",
   "homePages": "{count, plural, =1{1 página} other{{count} páginas}}",

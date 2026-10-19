@@ -708,6 +708,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get scanCameraNotAllowed =>
+      'la cámara no está permitida. Deja que TabCam la use en la configuración.';
+
+  @override
   String homeAddFailed(String error) {
     return 'No se pudo agregar: $error';
   }
