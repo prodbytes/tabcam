@@ -40,7 +40,8 @@ what it wrote.
 - **At start** the app checks the status before showing anything (a blank
   dark screen, for at most 4 seconds). The library, sign-in and sync start
   only once the status says the system is up.
-- **While running** it checks again every 2 minutes and whenever the app
+- **While running** it checks again every 2 minutes while the app is in
+  front (not while it's behind, a hidden tab say) and whenever the app
   comes back to the foreground. If maintenance mode starts, the app is
   replaced by the sorry message and sync (and Premium's cloud OCR)
   stops; when it ends, the app comes back and they start again.

@@ -168,14 +168,16 @@ Uploads use S3 Intelligent-Tiering.
 
 ## When, and how
 
-A **pass** runs at sign-in, 2 seconds after the user changes an event (a
-burst of changes is one pass), every 10 seconds while signed in and the
-app is in front (to bring other devices' changes; a pass with nothing new
-is one listing; every minute while the app is behind, as long as it
-runs; again after signing out and back in), at once when the app comes
-back to the front (a tab shown again, the phone app reopened), and on
-**Sync now**. So a change on one device (a rename, a file added or
-moved) shows on the others within seconds. One pass runs at a time; a
+A **pass** runs at sign-in (so on startup), 2 seconds after the user
+changes an event (a burst of changes is one pass), every 5 minutes while
+signed in and the app is in front (to bring other devices' changes; a
+pass with nothing new is one listing), none while the app is behind
+(a hidden tab, the phone app in the background), again after signing out
+and back in, at once when the app comes back to the front (a tab shown
+again, the phone app reopened), and on **Sync now**. So a change on one
+device (a rename, a file added or moved) shows on another within 5
+minutes, or at once when that one is opened or comes back to the front.
+Few passes keep the cloud's cost down. One pass runs at a time; a
 request during one runs another right after. Passes wait for the library
 to load.
 

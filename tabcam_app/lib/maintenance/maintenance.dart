@@ -60,18 +60,33 @@ class MaintenanceCheck extends ChangeNotifier with WidgetsBindingObserver {
   bool _started = false;
   bool _disposed = false;
 
-  /// Checks now, then every [period] and on resume.
+  /// Whether the app is in front: behind (a hidden tab), no checks.
+  bool _foreground = true;
+
+  /// Checks now, then every [period] while in front, and on resume.
   void start() {
     if (_started) return;
     _started = true;
     WidgetsBinding.instance.addObserver(this);
     unawaited(check());
-    _periodic = Timer.periodic(period, (_) => unawaited(check()));
+    _periodic = Timer.periodic(period, (_) {
+      if (_foreground) unawaited(check());
+    });
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) unawaited(check());
+    switch (state) {
+      case AppLifecycleState.resumed:
+        _foreground = true;
+        unawaited(check());
+      case AppLifecycleState.hidden ||
+          AppLifecycleState.paused ||
+          AppLifecycleState.detached:
+        _foreground = false;
+      case AppLifecycleState.inactive:
+        break;
+    }
   }
 
   /// Reads the status. A failed read keeps what was known (the app runs
