@@ -183,6 +183,7 @@
   "homeSaved": "\"{title}\" salvo ({contents})",
   "homeOpen": "Abrir",
   "homeScanFailed": "Não foi possível digitalizar: {error}",
+  "scanCameraNotAllowed": "a câmera não está permitida. Deixe o TabCam usá-la nas configurações.",
   "homeAddFailed": "Não foi possível adicionar: {error}",
   "homeSkipped": "{count, plural, =1{1 arquivo não é foto nem vídeo, então não foi adicionado.} other{{count} arquivos não são fotos nem vídeos, então não foram adicionados.}}",
   "homePages": "{count, plural, =1{1 página} other{{count} páginas}}",

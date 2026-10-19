@@ -1204,6 +1204,12 @@ abstract class AppLocalizations {
   /// **'Couldn\'t scan: {error}'**
   String homeScanFailed(String error);
 
+  /// Scan: the camera permission was refused (follows "Couldn't scan:")
+  ///
+  /// In en, this message translates to:
+  /// **'the camera isn\'t allowed. Let TabCam use it in the settings.'**
+  String get scanCameraNotAllowed;
+
   /// Message: adding media or a link failed
   ///
   /// In en, this message translates to:

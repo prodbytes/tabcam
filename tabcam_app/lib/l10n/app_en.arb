@@ -951,6 +951,10 @@
       }
     }
   },
+  "scanCameraNotAllowed": "the camera isn't allowed. Let TabCam use it in the settings.",
+  "@scanCameraNotAllowed": {
+    "description": "Scan: the camera permission was refused (follows \"Couldn't scan:\")"
+  },
   "homeAddFailed": "Couldn't add: {error}",
   "@homeAddFailed": {
     "description": "Message: adding media or a link failed",
