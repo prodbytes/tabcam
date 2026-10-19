@@ -99,7 +99,7 @@ aws secretsmanager create-secret --name tabcam/anthropic-api-key \
 bash tabcam_locr/scripts/deploy.sh
 ```
 
-It deploys `tabcam-ocr-repo` (ECR, immutable tags, last 10 images kept),
+It deploys `tabcam-ocr-repo` (ECR, immutable tags, last 3 images kept),
 builds and pushes the image, and deploys `tabcam-ocr` with the image's
 digest. `TABCAM_GOOGLE_WEB_CLIENT_ID` and `TABCAM_COGNITO_IDENTITY_POOL_ID` (environment
 or `.env`) set up the function URL; without them, page OCR still runs but

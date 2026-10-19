@@ -101,7 +101,8 @@ each route also under `/apple` for Apple's tokens:
 | `POST /profile/credentials` | `{profileId, identityId, token}` |
 
 Tables (`tabcam-share-api`): **profiles** (`id`; `ownerSubject`,
-`ownerEmail`, `identityId`, `createdAt`, `lastSignInAt`; index
+`ownerEmail`, `identityId`, `createdAt`, `lastSignInAt` (to the hour:
+saved when the profile changes, else at most hourly); index
 `byIdentity`), **subjects** (`subject`; `profileId`, `email`,
 `provider`, `linkedAt`; indexes `byProfile`, `byEmail`), **link codes**
 (`code` = SHA-256; `profileId`, `createdBy`, `expiresAt` with TTL). The

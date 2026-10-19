@@ -243,5 +243,30 @@ class RbacrTest(unittest.TestCase):
         self.assertEqual(heard, ["Bearer from-ssm"] * 2)
 
 
+
+class SignInTimeTest(unittest.TestCase):
+    def test_the_sign_in_time_is_saved_at_most_hourly(self):
+        from test_index import KeyTable
+        clock = [1_800_000_000]
+        st = profiles.Store(
+            KeyTable("id", {"byIdentity": "identityId"}),
+            KeyTable("subject", {"byProfile": "profileId", "byEmail": "email"}),
+            KeyTable("code"), now=lambda: clock[0], keys=KeyTable("profileId"))
+        p = profiles.Profiles(st)
+        first = p.of("g1", "ana@example.com", "google")
+        writes = []
+        save = st.save_profile
+        st.save_profile = lambda profile: (writes.append(dict(profile)), save(profile))
+        clock[0] += 60
+        p.of("g1", "ana@example.com", "google")
+        self.assertEqual(writes, [])  # a minute later: nothing to write
+        clock[0] += 3600
+        p.of("g1", "ana@example.com", "google")
+        self.assertEqual(len(writes), 1)  # an hour later: the time
+        self.assertEqual(int(writes[0]["lastSignInAt"]), clock[0])
+        p.of("g1", "ana@new.example.com", "google")
+        self.assertEqual(len(writes), 2)  # the address changed: at once
+        self.assertEqual(first["id"], writes[1]["id"])
+
 if __name__ == "__main__":
     unittest.main()

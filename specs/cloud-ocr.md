@@ -305,8 +305,8 @@ with `CloudOcr.fetchPage` (`OcrApi.page`), its log line the size only.
 ## Infrastructure
 
 - **`ocr-repo.yaml`**, stack `tabcam-ocr-repo`: the ECR repository
-  `tabcam-ocr` (immutable tags, scanned on push, the last 10 images
-  kept).
+  `tabcam-ocr` (immutable tags, scanned on push, the last 3 images
+  kept: each is several GB).
 - **`ocr.yaml`**, stack `tabcam-ocr`:
   - the table `tabcam-accounts` (identity ID → address; on demand,
     point-in-time recovery); a user's item is deleted with their account,
