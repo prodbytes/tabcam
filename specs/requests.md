@@ -1535,3 +1535,11 @@ spec.
    redeploys the old domains' redirects as `tabcam-old-domain` and
    `tabcam-rc-old-domain`. `identity.yaml` keeps the provider on
    deletion. See [deploy](deploy.md#the-old-domains).
+6. **Next Play steps; keep 18+.** Sign in details saved (the maintainer
+   entered the reviewers' Google account, nu01test@gmail.com), Target
+   audience 18 and over, Data safety submitted, and the closed testing
+   track Alpha set up with the bundle, all countries and the Internal
+   list. Younger groups were considered and left out: Play applies its
+   Families policy to any group under 18 in some countries. The review
+   submission waits for Play's key's Android OAuth client. See
+   [app stores](app-stores.md#status).
