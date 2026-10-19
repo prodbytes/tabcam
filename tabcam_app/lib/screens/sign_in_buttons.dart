@@ -5,7 +5,7 @@ import '../auth/auth_service.dart';
 import '../l10n/language.dart';
 
 /// A sign-in button for each of [auth]'s providers, one under the other:
-/// Sign in with Apple first where it's offered (iOS), drawn per Apple's
+/// Sign in with Apple first where it's offered (iOS, Android), drawn per Apple's
 /// Human Interface Guidelines (black on light, white on dark, the same size
 /// as Google's button), then Google's (on the web, Google's own button).
 class SignInButtons extends StatelessWidget {

@@ -4,11 +4,13 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../l10n/language.dart';
+import 'apple_config.dart';
 import 'auth_service.dart';
 import 'jwt.dart';
 import 'saved_session.dart';
@@ -51,13 +53,27 @@ abstract interface class AppleSignIn {
   Future<({String userId, String code})?> authorize();
 }
 
-/// [AppleSignIn] with the `sign_in_with_apple` package
-/// (AuthenticationServices on iOS).
+/// [AppleSignIn] with the `sign_in_with_apple` package: AuthenticationServices
+/// on iOS; on Android, Apple's web flow in a Chrome Custom Tab, for the
+/// Services ID, its reply sent back to the app by the share API
+/// ([AppleConfig.webRedirectUri]).
 class PackageAppleSignIn implements AppleSignIn {
   const PackageAppleSignIn();
 
+  static bool get _web => defaultTargetPlatform == TargetPlatform.android;
+
+  static WebAuthenticationOptions? get _webOptions {
+    final redirect = AppleConfig.webRedirectUri;
+    if (!_web || redirect == null) return null;
+    return WebAuthenticationOptions(
+      clientId: AppleConfig.servicesId,
+      redirectUri: redirect,
+    );
+  }
+
   @override
-  Future<bool> isAvailable() => SignInWithApple.isAvailable();
+  Future<bool> isAvailable() async =>
+      _web ? _webOptions != null : await SignInWithApple.isAvailable();
 
   @override
   Future<AppleCredential?> signIn({required String nonce}) async {
@@ -68,13 +84,14 @@ class PackageAppleSignIn implements AppleSignIn {
           AppleIDAuthorizationScopes.email,
           AppleIDAuthorizationScopes.fullName,
         ],
+        webAuthenticationOptions: _webOptions,
         nonce: nonce,
       );
     } on SignInWithAppleAuthorizationException catch (e) {
       if (e.code == AuthorizationErrorCode.canceled) return null;
       rethrow;
     }
-    final userId = c.userIdentifier;
+    final userId = appleUserId(c);
     final token = c.identityToken;
     if (userId == null || token == null) {
       throw StateError('Apple returned no identity token');
@@ -92,22 +109,40 @@ class PackageAppleSignIn implements AppleSignIn {
   Future<({String userId, String code})?> authorize() async {
     final AuthorizationCredentialAppleID c;
     try {
-      c = await SignInWithApple.getAppleIDCredential(scopes: const []);
+      c = await SignInWithApple.getAppleIDCredential(
+        scopes: const [],
+        webAuthenticationOptions: _webOptions,
+      );
     } on SignInWithAppleAuthorizationException catch (e) {
       if (e.code == AuthorizationErrorCode.canceled) return null;
       rethrow;
     }
-    final userId = c.userIdentifier;
+    final userId = appleUserId(c);
     if (userId == null || c.authorizationCode.isEmpty) {
       throw StateError('Apple returned no authorization code');
     }
     return (userId: userId, code: c.authorizationCode);
   }
 
+  /// Only Apple's platforms can tell; elsewhere the session lasts until
+  /// its token expires.
   @override
   Future<bool> stillAuthorized(String userId) async =>
+      _web ||
       await SignInWithApple.getCredentialState(userId) ==
-      CredentialState.authorized;
+          CredentialState.authorized;
+}
+
+/// Apple's user ID in [c]: on iOS the credential's; the web flow (Android)
+/// has none, so the ID token's subject.
+@visibleForTesting
+String? appleUserId(AuthorizationCredentialAppleID c) {
+  if (c.userIdentifier case final id?) return id;
+  final sub = switch (c.identityToken) {
+    final token? => jwtClaims(token)?['sub'],
+    null => null,
+  };
+  return sub is String && sub.isNotEmpty ? sub : null;
 }
 
 /// Where the Apple session is kept: [FileAppleStore], or memory in tests.
@@ -148,8 +183,8 @@ class FileAppleStore implements AppleStore {
   }
 }
 
-/// Sign in with Apple (iOS), the privacy-focused sign-in the App Store asks
-/// for beside Google's (guideline 4.8).
+/// Sign in with Apple (iOS and Android), the privacy-focused sign-in the App
+/// Store asks for beside Google's (guideline 4.8).
 ///
 /// - Apple's sheet asks for the name and email. It sends them only the
 ///   first time the user signs in to the app, so they're kept (by Apple's
@@ -163,7 +198,7 @@ class FileAppleStore implements AppleStore {
 ///   of TabCam's own, so the session (user and token) is kept in
 ///   [AppleStore] and lasts until the token expires; then the user is
 ///   signed out, and asked to sign in again. At launch, a user who stopped
-///   using Apple ID with the app is signed out.
+///   using Apple ID with the app is signed out (iOS: Android can't tell).
 class AppleAuthService extends AuthService {
   AppleAuthService({
     this._apple = const PackageAppleSignIn(),

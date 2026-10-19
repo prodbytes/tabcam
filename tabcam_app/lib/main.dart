@@ -84,12 +84,15 @@ class AppServices {
   late final AutoReader reader;
   late final LanguageSetting language;
 
-  /// Google everywhere; on iOS, in a build with the capability
-  /// (`TABCAM_APPLE_SIGN_IN`), Sign in with Apple too.
+  /// Google everywhere; on iOS and Android, in a build with
+  /// `TABCAM_APPLE_SIGN_IN`, Sign in with Apple too (on Android through the
+  /// share API, which takes Apple's reply).
   static AuthService _signIn() =>
       !kIsWeb &&
-          defaultTargetPlatform == TargetPlatform.iOS &&
-          AppleConfig.enabled
+          AppleConfig.enabled &&
+          (defaultTargetPlatform == TargetPlatform.iOS ||
+              (defaultTargetPlatform == TargetPlatform.android &&
+                  AppleConfig.webRedirectUri != null))
       ? MultiAuthService([AppleAuthService(), GoogleAuthService()])
       : GoogleAuthService();
 

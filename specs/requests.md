@@ -528,7 +528,7 @@ spec.
     (the web would need a Services ID, a domain and a return URL: a
     follow-up). Needs the paid Apple Developer Program, the App ID's
     capability and the stacks redeployed
-    ([cloud sync](cloud-sync.md#sign-in-with-apple-ios),
+    ([cloud sync](cloud-sync.md#sign-in-with-apple-ios-and-android),
     [shared captures](shared-captures.md#how-it-works),
     [cloud OCR](cloud-ocr.md#who-is-premium), [platforms](platforms.md),
     [app stores](app-stores.md), [tabcam_infra](../tabcam_infra/README.md)).
@@ -1569,3 +1569,18 @@ spec.
    camera". Code identifiers and third-party names (`cunning_document_scanner`,
    CamScanner) keep theirs. See [app stores](app-stores.md) and
    [scanning](scanning.md).
+9. **Sign-in stopped working in the Play build; offer Sign in with Apple
+   there too.**
+   - Google: the Play app signing key's Android OAuth client exists
+     (`TabCam Android - Play signing`, made 2026-10-19), but neither it
+     nor the debug key's client is in `tabcam-identity`'s
+     `GoogleAppClientIds`, which AWS checks a Google token's `azp`
+     against. Adding them is a stack deploy for the maintainer.
+   - Apple on Android, planned first and approved with the share API
+     route: the Services ID `com.nu01.tabcam.signin` made, the share
+     API's `POST /apple/callback` redirect, both audiences in the
+     identity pool, share API, OCR and token revocation, and the app's
+     web flow on Android. The maintainer agreed that cheap server-side
+     parts may serve everyone; only the expensive features are Premium
+     (CLAUDE.md's design guideline says so now). See
+     [cloud sync](cloud-sync.md#android-the-web-flow).

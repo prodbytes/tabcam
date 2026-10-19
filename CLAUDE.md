@@ -6,10 +6,12 @@
   browser) wherever it can be done there, and spend as little as possible
   of the server side's resources (Lambda time, storage, transfer, paid
   APIs).
-- **Server side only when needed, and then Premium only.** When a feature
-  truly needs the server (the device can't do it, or the web can't, e.g.
-  for CORS), add it there, but make that server-side part available to
-  TabCam Premium users only ([specs/cloud-ocr.md](specs/cloud-ocr.md)).
+- **Server side only when needed, and the expensive parts Premium only.**
+  When a feature truly needs the server (the device can't do it, or the
+  web can't, e.g. for CORS), add it there. Server-side parts that cost
+  little per use (sign-in, sync, sharing) may serve everyone; the
+  expensive ones (paid APIs, heavy Lambda work such as cloud OCR and Fix)
+  are for TabCam Premium users only ([specs/cloud-ocr.md](specs/cloud-ocr.md)).
 - **"Cam" or "camera", never "scanner".** In labels, descriptions, store
   listings, docs and specs, call TabCam and its capture "cam" or
   "camera" (e.g. "the system document camera"), not "scanner". Keep

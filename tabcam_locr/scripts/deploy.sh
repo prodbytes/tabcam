@@ -31,7 +31,8 @@ TABCAM_WEB_ORIGINS="https://tabcam.nu01.com,https://rc.tabcam.nu01.com,http://lo
 rbacr_param="${RBACR_TOKEN_PARAMETER:-/tabcam/rbacr-token}"
 apple_client=""
 if [[ "${TABCAM_APPLE_SIGN_IN:-}" == 1 || "${TABCAM_APPLE_SIGN_IN:-}" == true ]]; then
-  apple_client=com.nu01.tabcam
+  # The bundle ID (iOS) and the Services ID (the web flow, on Android).
+  apple_client=com.nu01.tabcam,com.nu01.tabcam.signin
 fi
 version="$(git rev-parse --short=12 HEAD)$(git diff --quiet HEAD -- tabcam_locr || echo -dirty)"
 tag="${version}-$(date -u +%Y%m%d%H%M%S)"

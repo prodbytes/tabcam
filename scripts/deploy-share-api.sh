@@ -11,7 +11,9 @@
 #                optional: the local web builds' client, trusted too
 #   TABCAM_APPLE_SIGN_IN
 #                optional: 1 to take Sign in with Apple's tokens too (for
-#                the bundle ID com.nu01.tabcam), under /apple
+#                the bundle ID com.nu01.tabcam, and the Services ID
+#                com.nu01.tabcam.signin of the web flow on Android), under
+#                /apple
 #   APPLE_SIGN_IN_KEY_PARAMETER
 #                default /tabcam/apple-sign-in-key: with TABCAM_APPLE_SIGN_IN,
 #                the SSM SecureString with the Sign in with Apple key, to
@@ -36,8 +38,10 @@ if [[ -z "${TABCAM_APPLE_SIGN_IN:-}" && -f .env ]]; then
   TABCAM_APPLE_SIGN_IN="$(sed -n 's/^TABCAM_APPLE_SIGN_IN=//p' .env | tail -1)"
 fi
 apple_client=""
+apple_services=""
 if [[ "${TABCAM_APPLE_SIGN_IN:-}" == 1 || "${TABCAM_APPLE_SIGN_IN:-}" == true ]]; then
   apple_client=com.nu01.tabcam
+  apple_services=com.nu01.tabcam.signin
 fi
 # Passed every time: deploy would keep the stack's old origins otherwise.
 origins="https://tabcam.nu01.com,https://rc.tabcam.nu01.com,http://localhost:2012,https://local.tabcam.nu01.com:2443"
@@ -108,7 +112,7 @@ aws cloudformation deploy --stack-name tabcam-share-api \
   --tags project=tabcam tenancy=shared \
   --parameter-overrides "GoogleWebClientId=$TABCAM_GOOGLE_WEB_CLIENT_ID" \
     "GoogleLocalWebClientId=${TABCAM_GOOGLE_LOCAL_WEB_CLIENT_ID:-}" \
-    "AppleClientId=$apple_client" \
+    "AppleClientId=$apple_client" "AppleServicesId=$apple_services" \
     "AllowedOrigins=$origins" \
     "AccountsTableName=$accounts" \
     "RbacrTokenParameterName=$rbacr_param" \

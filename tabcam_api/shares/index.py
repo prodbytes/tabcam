@@ -54,7 +54,7 @@ Routes (each also under /apple, for Apple's tokens):
                                                   (its owner, or someone it's
                                                   shared with; keys.py)
 
-And two routes without a token (no authorizer), for anyone holding a link:
+And routes without a token (no authorizer): for anyone holding a link,
   POST   /public/{captureId}/credentials          {key}: read-only credentials
                                                   for that capture's folder,
                                                   and its content key when
@@ -65,6 +65,10 @@ And two routes without a token (no authorizer), for anyone holding a link:
                                                   apps' link previews (the
                                                   site sends their crawlers
                                                   here)
+and for Sign in with Apple on Android:
+  POST   /apple/callback                          Apple's reply (form_post),
+                                                  sent back to the app as an
+                                                  intent:// redirect
 
 Every route acts on the caller's profile alone: as an owner, on its
 Cognito identity; as a grantee, on its verified addresses.
@@ -77,6 +81,7 @@ import json
 import os
 import re
 import time
+import urllib.parse
 
 import apple_revoke
 import cdn
@@ -94,6 +99,11 @@ IDENTITY = re.compile(r"^[a-z]{2}(-[a-z]+)+-\d:[0-9a-f-]{36}$")
 LINK_KEY = re.compile(r"^[A-Za-z0-9_-]{32,64}$")
 PUBLIC_ROUTE = "POST /public/{captureId}/credentials"
 PREVIEW_ROUTE = "GET /preview/{captureId}/{key}"
+APPLE_CALLBACK_ROUTE = "POST /apple/callback"
+# What Apple posts back that the app reads (sign_in_with_apple's
+# callback); anything else is dropped.
+APPLE_CALLBACK_FIELDS = ("code", "id_token", "state", "user", "error")
+ANDROID_PACKAGE = "com.nu01.tabcam"
 # The sites a preview may name (the site's CloudFront sends its own in
 # x-tabcam-site); production's by default.
 SITES = ("tabcam.nu01.com", "rc.tabcam.nu01.com")
@@ -174,9 +184,49 @@ def handler(event, context, clients=None):
             return _json(200, public_credentials(event, clients))
         if event.get("routeKey") == PREVIEW_ROUTE:
             return preview(event, clients)
+        if event.get("routeKey") == APPLE_CALLBACK_ROUTE:
+            return apple_callback(event)
         return _json(200, Api(event, clients).route())
     except ApiError as e:
         return _json(e.status, {"message": e.message})
+
+
+def apple_callback(event):
+    """Sign in with Apple's web flow (Android) ends with Apple posting its
+    reply here (form_post: a browser can't hand a POST to an app). The
+    reply goes back to the app in the redirect sign_in_with_apple's
+    callback activity opens: its fields, encoded again, so nothing in the
+    body can add to the intent. Nothing is checked or kept here: the ID
+    token is checked where it's used (the app, Cognito, the authorizers)."""
+    raw = event.get("body") or ""
+    if event.get("isBase64Encoded"):
+        try:
+            raw = base64.b64decode(raw).decode("utf-8")
+        except (ValueError, UnicodeDecodeError):
+            raise ApiError(400, "That isn't Apple's reply")
+    if len(raw) > 16384:
+        raise ApiError(413, "That isn't Apple's reply")
+    fields = [(k, v) for k, v in urllib.parse.parse_qsl(raw)
+              if k in APPLE_CALLBACK_FIELDS]
+    if not fields:
+        raise ApiError(400, "That isn't Apple's reply")
+    query = urllib.parse.urlencode(fields, quote_via=urllib.parse.quote)
+    return {
+        "statusCode": 303,
+        "headers": {
+            "location": f"intent://callback?{query}#Intent;package={ANDROID_PACKAGE};"
+                        "scheme=signinwithapple;end",
+            "cache-control": "no-store",
+        },
+        "body": "",
+    }
+
+
+def apple_audiences():
+    """The audiences Apple's tokens may have: the bundle ID (iOS) and, when
+    set, the Services ID (the web flow, on Android)."""
+    return [a for a in (os.environ.get("APPLE_CLIENT_ID", ""),
+                        os.environ.get("APPLE_SERVICES_ID", "")) if a]
 
 
 def _json(status, body):
@@ -516,6 +566,8 @@ class Api:
             raise ApiError(401, "Sign in again")
         # The sign-in, never the email: an address can change hands.
         self.subject = f"{issuer}#{claims['sub']}"
+        # Whose the token is: for Apple, the bundle ID or the Services ID.
+        self.audience = claims.get("aud")
         self.route_key = f"{method} {path[len(PREFIXES[issuer]):]}"
         # Only a verified address can be granted, or use a grant. Apple sends
         # email_verified as a string ("true"), Google as a boolean. Apple's
@@ -959,7 +1011,11 @@ class Api:
             return False
         if not isinstance(code, str) or not re.fullmatch(r"[A-Za-z0-9._-]{1,512}", code):
             raise ApiError(400, "That isn't an Apple authorization code")
-        client_id = os.environ.get("APPLE_CLIENT_ID")
+        # The code is for the client the user signed in with (the token's
+        # audience: the bundle ID on iOS, the Services ID on Android).
+        audiences = apple_audiences()
+        client_id = self.audience if self.audience in audiences else (
+            audiences[0] if audiences else None)
         load = self.clients.get("apple_key")
         key = load() if (client_id and load) else None
         if key is None:

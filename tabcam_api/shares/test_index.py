@@ -1,6 +1,7 @@
 """Tests for the share API, with in-memory stand-ins for DynamoDB, Cognito
 and STS. Run: python3 -m unittest discover -s tabcam_api/shares"""
 
+import base64
 import datetime
 import json
 import os
@@ -293,12 +294,14 @@ class ShareApiTest(unittest.TestCase):
         seed(self.clients, APPLE, "apple-owner-token", "riff@example.com", "shy_tall_lynx", APPLE_OWNER)
 
     def call(self, route, email, token="owner-token", path=None, query=None,
-             body=None, verified="true", iss=None):
+             body=None, verified="true", iss=None, aud=None):
         # The issuer the route's authorizer takes, unless the test says.
         if iss is None:
             apple = route.split(" ", 1)[1].startswith("/apple/")
             iss = "https://appleid.apple.com" if apple else "https://accounts.google.com"
         claims = {"iss": iss, "email_verified": verified, "sub": token}
+        if aud is not None:
+            claims["aud"] = aud
         if email is not None:
             claims["email"] = email
         event = {
@@ -487,6 +490,29 @@ class ShareApiTest(unittest.TestCase):
                          ["https://appleid.apple.com/auth/token",
                           "https://appleid.apple.com/auth/revoke"])
         self.assertEqual(self.clients["cognito"].deleted, [APPLE_OWNER])
+
+    def test_an_android_apple_account_revokes_with_the_services_id(self):
+        from test_apple_revoke import FakeApple
+        apple = FakeApple(sub="apple-owner-token")
+        self.apple_revoking(apple)
+        os.environ["APPLE_SERVICES_ID"] = "com.nu01.tabcam.signin"
+        self.addCleanup(os.environ.pop, "APPLE_SERVICES_ID", None)
+        status, body = self.call("DELETE /apple/account", "riff@example.com",
+                                 token="apple-owner-token", aud="com.nu01.tabcam.signin",
+                                 body={"appleAuthorizationCode": "c0de.1"})
+        self.assertEqual(status, 200)
+        self.assertTrue(body["appleTokensRevoked"])
+        self.assertEqual({f["client_id"] for _, f in apple.calls}, {"com.nu01.tabcam.signin"})
+
+    def test_an_unknown_audience_revokes_with_the_bundle_id(self):
+        from test_apple_revoke import FakeApple
+        apple = FakeApple(sub="apple-owner-token")
+        self.apple_revoking(apple)
+        status, _ = self.call("DELETE /apple/account", "riff@example.com",
+                              token="apple-owner-token", aud="com.example.other",
+                              body={"appleAuthorizationCode": "c0de.1"})
+        self.assertEqual(status, 200)
+        self.assertEqual({f["client_id"] for _, f in apple.calls}, {"com.nu01.tabcam"})
 
     def test_apple_refusing_to_revoke_deletes_nothing(self):
         from test_apple_revoke import FakeApple
@@ -907,6 +933,44 @@ class ShareApiTest(unittest.TestCase):
         self.assertEqual(self.open_link()[0], 404)
         status, _ = self.open_link(capture="xyz", key="olgakey-0123456789abcdefghijklmnopqrstu")
         self.assertEqual(status, 200)
+
+
+class AppleCallbackTest(unittest.TestCase):
+    """Sign in with Apple on Android: Apple's form_post reply, back to the
+    app as an intent:// redirect."""
+
+    def call(self, body, b64=False):
+        if b64:
+            body = base64.b64encode(body.encode()).decode()
+        return index.handler({"routeKey": index.APPLE_CALLBACK_ROUTE, "body": body,
+                              "isBase64Encoded": b64}, None, {})
+
+    def test_the_reply_goes_back_to_the_app(self):
+        r = self.call("code=c0de&id_token=h.p.s&state=st&user=%7B%22email%22%3A%22a%40b.c%22%7D",
+                      b64=True)
+        self.assertEqual(r["statusCode"], 303)
+        location = r["headers"]["location"]
+        self.assertEqual(
+            location,
+            "intent://callback?code=c0de&id_token=h.p.s&state=st&user=%7B%22email%22%3A%22a%40b.c%22%7D"
+            "#Intent;package=com.nu01.tabcam;scheme=signinwithapple;end")
+
+    def test_other_fields_and_intent_tricks_are_dropped(self):
+        r = self.call("code=a%23Intent%3Bpackage%3Devil%3Bend&extra=1")
+        location = r["headers"]["location"]
+        self.assertEqual(location.count("#"), 1)
+        self.assertNotIn("extra", location)
+        self.assertTrue(location.endswith("#Intent;package=com.nu01.tabcam;scheme=signinwithapple;end"))
+
+    def test_a_canceled_sign_in_still_goes_back(self):
+        r = self.call("error=user_cancelled_authorize")
+        self.assertEqual(r["statusCode"], 303)
+        self.assertIn("error=user_cancelled_authorize", r["headers"]["location"])
+
+    def test_not_apples_reply(self):
+        self.assertEqual(self.call("")["statusCode"], 400)
+        self.assertEqual(self.call("x=1")["statusCode"], 400)
+        self.assertEqual(self.call("code=" + "a" * 20000)["statusCode"], 413)
 
 
 if __name__ == "__main__":

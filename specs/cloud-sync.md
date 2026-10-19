@@ -65,7 +65,7 @@ Google sign-in (`google_sign_in`,
   returns to the app through the reversed iOS client ID, a URL scheme in
   `Info.plist` filled from `Private.xcconfig` ([platforms](platforms.md)).
 
-### Sign in with Apple (iOS)
+### Sign in with Apple (iOS and Android)
 
 The App Store asks apps that offer Google sign-in to offer an equally
 private one too (guideline 4.8), so iOS has **Sign in with Apple**
@@ -108,7 +108,56 @@ keeps who, the provider and the ID token.
   that entitlement, so without the flag (free Personal Team builds, CI's
   unsigned builds) there are no entitlements and no Apple button
   ([platforms](platforms.md)).
-- Not on Android or the web, where Google is the only sign-in.
+- **Android** (Apple has no SDK there): Apple's web flow in a Chrome
+  Custom Tab (below), the same sheet, nonce check and session file. It
+  can't tell whether the user stopped using Apple ID with TabCam, so the
+  session lasts until its token expires.
+- Not on the web, where Google is the only sign-in.
+
+#### Android: the web flow
+
+- **The Services ID** `com.nu01.tabcam.signin` (Apple Developer, team
+  LMX88986F3, made 2026-10-19) has Sign in with Apple with primary App ID
+  `com.nu01.tabcam`, so Apple gives a user the same user ID (`sub`) as on
+  iOS: with the pool's key still `appleid.apple.com`, the same Cognito
+  identity and folder on both phones. Its domain is the share API's,
+  `e3jdqe13vl.execute-api.us-east-1.amazonaws.com`, and its return URL
+  `https://e3jdqe13vl.execute-api.us-east-1.amazonaws.com/apple/callback`.
+  The existing Sign in with Apple key (`G3KM3762G4`) covers it.
+- **The flow**: `sign_in_with_apple` opens Apple's authorize page for the
+  Services ID ([apple_config.dart](../tabcam_app/lib/auth/apple_config.dart):
+  `servicesId`, `webRedirectUri`, the build's `TABCAM_SHARE_API_URL` plus
+  `/apple/callback`), asking for the name and email, with the nonce. Apple
+  posts its reply (`form_post`) to the share API's `POST /apple/callback`
+  (no authorizer, nothing kept), which answers 303 to
+  `intent://callback?<code, id_token, state, user, error>#Intent;package=com.nu01.tabcam;scheme=signinwithapple;end`,
+  its fields encoded again so the body can't add to the intent. The
+  package's `SignInWithAppleCallback` activity (in the manifest, scheme
+  `signinwithapple`) hands it to the app. The web flow gives no user ID,
+  so it's the ID token's `sub`. Closing the tab without finishing leaves
+  the sign-in waiting (the package never answers); tapping the button
+  again starts over.
+- **The cost**: one small Lambda call per Android Apple sign-in, for
+  everyone. Sign-in is cheap enough to give everyone; only the expensive
+  features (cloud OCR, Fix) are Premium.
+- **The audiences**: Android's tokens are issued for the Services ID,
+  iOS's for the bundle ID, and each place that checks them takes both:
+  the identity pool (`appleid.apple.com` set to
+  `com.nu01.tabcam;com.nu01.tabcam.signin`: identity.yaml's
+  `AppleServicesId`), the share API's `apple` JWT authorizer (its
+  `AppleServicesId`), the OCR function (`AppleClientId`, both, separated
+  by a comma). Deleting an account revokes Apple's tokens for the client
+  the user signed in with (the token's audience). The build turns it on
+  with `TABCAM_APPLE_SIGN_IN=1` and a share API; the Release workflow
+  passes the repository variable `TABCAM_APPLE_SIGN_IN` to its Android
+  build only (CI's iOS build is unsigned and can't carry the entitlement).
+- **Not verified yet**: Cognito takes the semicolon-separated value (tried
+  on a throwaway pool, 2026-10-19), but nothing documents it as a list of
+  client IDs. Before the main pool gets it, a real Android token and a
+  real iOS token are tried on a throwaway pool with both IDs; if either
+  is refused, Apple moves to an IAM OpenID Connect provider listing both,
+  as Google did, once it's checked that existing iOS Apple users keep
+  their identity IDs.
 
 ### Google's token
 
