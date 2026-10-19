@@ -15,7 +15,12 @@ unmeasured and has no per-user cap (an estimate put it at about $0.65 a
 run, most of a Premium user's cost), so it stays hidden until it's
 measured and capped. Lining the tab up goes with it, as it's the same
 button. The code, the service's `/autocorrect` route and the tests stay
-(the tests turn the button on with `showFix: true`).
+(the tests turn the button on with `showFix: true`). The route is off on
+the server too: it answers 503 ("auto-correct isn't set up") unless the
+`tabcam-ocr` stack is deployed with `AutocorrectEnabled=1`
+(`AUTOCORRECT_ENABLED`), so the Claude key existing (for reading pages)
+doesn't turn it on. Each run's fetched pages are capped at 30,000 tokens
+(`web_fetch`'s `max_content_tokens`).
 
 ## Lining the tab up
 

@@ -182,7 +182,10 @@ SUBMIT = {
 
 TOOLS = [
     {"type": "web_search_20260209", "name": "web_search", "max_uses": 6},
-    {"type": "web_fetch_20260209", "name": "web_fetch", "max_uses": 6},
+    # A page's content is capped: a tab page fits, a huge one doesn't fill
+    # every later turn's input.
+    {"type": "web_fetch_20260209", "name": "web_fetch", "max_uses": 6,
+     "max_content_tokens": 30000},
     SUBMIT,
 ]
 

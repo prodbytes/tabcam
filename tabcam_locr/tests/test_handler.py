@@ -282,3 +282,19 @@ def test_transcribe_again_reads_every_page(svc):
     r = handler.api(http("/transcribe", body={"eventId": "ev1", "again": True}))
     assert json.loads(r["body"]) == {"queued": 1}
     assert svc.lam.invoked == [f"{ID}/events/ev1/p1.pdf"]
+
+
+def test_the_account_record_is_not_rewritten_on_every_request():
+    class Table:
+        def __init__(self):
+            self.puts = []
+
+        def put_item(self, Item):
+            self.puts.append(Item)
+    table = Table()
+    accounts = handler.Accounts(table=table)
+    accounts.put(ID, ["ana@example.com"])
+    accounts.put(ID, ["ana@example.com"])
+    assert len(table.puts) == 1
+    accounts.put(ID, ["ana@example.com", "ana@work.example.com"])  # changed: written
+    assert len(table.puts) == 2

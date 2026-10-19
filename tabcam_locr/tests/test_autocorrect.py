@@ -123,7 +123,8 @@ def test_correct_without_tab_lines_does_not_ask():
     assert claude.calls == []
 
 
-def test_autocorrect_route(svc):  # noqa: F811
+def test_autocorrect_route(svc, monkeypatch):  # noqa: F811
+    monkeypatch.setenv("AUTOCORRECT_ENABLED", "1")
     claude = FakeClaude(message("tool_use", submit()))
     svc._made["corrector"] = Corrector(client=claude)
     body = {"eventId": "ev1", "song": "Made-up Riff", "text": RIFF}
@@ -138,13 +139,25 @@ def test_autocorrect_route(svc):  # noqa: F811
 
 
 def test_autocorrect_not_set_up(svc, monkeypatch):  # noqa: F811
+    monkeypatch.setenv("AUTOCORRECT_ENABLED", "1")
     monkeypatch.delenv("ANTHROPIC_KEY_SECRET", raising=False)
     svc._made["rbacr"] = FakeRbacr({"ana@example.com"})
     reply = handler.api(http("/autocorrect", body={"eventId": "ev1", "text": RIFF}))
     assert reply["statusCode"] == 503
 
 
-def test_autocorrect_failure_is_a_502(svc):  # noqa: F811
+def test_autocorrect_is_off_unless_switched_on(svc, monkeypatch):  # noqa: F811
+    monkeypatch.delenv("AUTOCORRECT_ENABLED", raising=False)
+    claude = FakeClaude(message("tool_use", submit()))
+    svc._made["corrector"] = Corrector(client=claude)
+    svc._made["rbacr"] = FakeRbacr({"ana@example.com"})
+    reply = handler.api(http("/autocorrect", body={"eventId": "ev1", "text": RIFF}))
+    assert reply["statusCode"] == 503
+    assert claude.calls == []
+
+
+def test_autocorrect_failure_is_a_502(svc, monkeypatch):  # noqa: F811
+    monkeypatch.setenv("AUTOCORRECT_ENABLED", "1")
     class Broken:
         def correct(self, text, song):
             raise RuntimeError("overloaded")

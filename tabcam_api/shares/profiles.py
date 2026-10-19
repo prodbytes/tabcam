@@ -221,10 +221,15 @@ class Profiles:
             if profile is None:  # the row went missing: make it again
                 profile = {"id": link["profileId"], "createdAt": int(self.store.now()),
                            "ownerSubject": subject, "ownerEmail": email}
-            profile["lastSignInAt"] = int(self.store.now())
+            # Saved when something changed, or at most hourly for the time
+            # (every request comes here: a write each would cost).
+            now = int(self.store.now())
+            before = dict(profile)
             if profile.get("ownerSubject") == subject and email:
                 profile["ownerEmail"] = email
-            self.store.save_profile(profile)
+            if profile != before or now - int(profile.get("lastSignInAt") or 0) >= 3600:
+                profile["lastSignInAt"] = now
+                self.store.save_profile(profile)
             if email and link.get("email") != email:
                 self.store.relink(subject, profile["id"], email, provider)
             return profile

@@ -134,14 +134,23 @@ class Accounts:
     """Identity ID -> verified e-mail addresses (a profile's), in DynamoDB.
     Only /account and /transcribe write it, from a checked ID token."""
 
+    # What this container wrote last, and when: the same again within an
+    # hour isn't written again (every request would, otherwise).
+    REWRITE_AFTER = 3600
+
     def __init__(self, table=None):
         import boto3
         self.table = table or boto3.resource("dynamodb").Table(os.environ["ACCOUNTS_TABLE"])
+        self._written = {}
 
     def put(self, identity, emails):
         emails = [emails] if isinstance(emails, str) else list(emails)
+        last = self._written.get(identity)
+        if last and last[0] == emails and time.monotonic() - last[1] < self.REWRITE_AFTER:
+            return
         self.table.put_item(Item={"identityId": identity, "email": emails[0], "emails": emails,
                                   "updatedAt": _now()})
+        self._written[identity] = (emails, time.monotonic())
 
     def emails(self, identity):
         item = self.table.get_item(Key={"identityId": identity}).get("Item") or {}
@@ -348,6 +357,11 @@ def _autocorrect(body, request):
             or not isinstance(song, str) or len(song) > MAX_SONG:
         request["bad_body"] = "text or song"
         return _reply(400, {"error": f"text (up to {MAX_TEXT} characters) needed"})
+    # Off unless switched on (AUTOCORRECT_ENABLED=1): the app hides Fix, and
+    # the Claude key being there (for other uses) mustn't turn it on.
+    if os.environ.get("AUTOCORRECT_ENABLED") != "1":
+        request["not_set_up"] = "switched off"
+        return _reply(503, {"error": "auto-correct isn't set up"})
     try:
         result = services.corrector.correct(text, song)
     except NotSetUp as e:

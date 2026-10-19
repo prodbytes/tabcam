@@ -1487,3 +1487,18 @@ spec.
    `ok`/`no-tab` reading by the image's ETag too, and an upload of an
    image read before (a clone, a published contribution, the same file)
    copies it instead of reading again. See [cloud OCR](cloud-ocr.md).
+3. **Cost: server caps and fewer writes.**
+   - `/autocorrect` is off on the server unless `AutocorrectEnabled=1`
+     (it answers 503 as when the Claude key is missing), and its fetched
+     pages are capped at 30,000 tokens.
+   - The OCR API writes an identity's account record once an hour at
+     most when nothing changed (it wrote on every request); the share
+     API saves a profile's `lastSignInAt` at most hourly (it wrote on
+     every request, every sync pass).
+   - The OCR image repository keeps 3 images (was 10).
+   - Not done: reserved concurrency for OCR (the account's Lambda limit
+     is 10, all of which must stay unreserved; it already caps every
+     function at 10 at once), and reusing the RC's iOS build in CI (the
+     repository is public: Actions minutes are free).
+   See [auto-correct](autocorrect.md), [cloud OCR](cloud-ocr.md),
+   [profiles](profiles.md).

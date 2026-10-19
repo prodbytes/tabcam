@@ -60,6 +60,13 @@ Parameters:
       reading pages the OCR engines can't (handwritten, drawn staff lines).
       Read by name, so it works as soon as the secret exists.
     AllowedPattern: '[A-Za-z0-9/_+=.@-]+'
+  AutocorrectEnabled:
+    Type: String
+    Default: '0'
+    AllowedValues: ['0', '1']
+    Description: >
+      1 turns /autocorrect on (Claude with web search, ~$0.65 a run). Off
+      by default, as the app hides Fix: the Claude key alone doesn't.
   ProfilesTableName:
     Type: String
     Default: ''
@@ -294,6 +301,7 @@ Resources:
           COGNITO_IDENTITY_POOL_ID: !Ref IdentityPoolId
           RBACR_URL: !Ref RbacrUrl
           RBACR_TOKEN_PARAMETER: !Ref RbacrTokenParameterName
+          AUTOCORRECT_ENABLED: !Ref AutocorrectEnabled
           RBACR_SYSTEM: tabcam
           RBACR_ROLE: premium
           UPGRADE_URL: !Ref UpgradeUrl
