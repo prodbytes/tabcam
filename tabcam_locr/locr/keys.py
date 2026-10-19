@@ -2,6 +2,8 @@
 
     <identity>/events/<event id>/<page id>.<extension>   a page (the app)
     <identity>/ocr/<event id>/<page id>.json             its transcription (here)
+    <identity>/ocrcache/<ETag>-<version>.json            a reading by the image's
+                                                         content (here), for copies
 
 Keys come from S3 events and requests, so everything is checked: an
 identity is a Cognito identity ID, IDs and extensions are the app's own
@@ -55,6 +57,18 @@ def parse_page(key):
 
 def result_key(identity, event_id, page_id):
     return f"{identity}/ocr/{event_id}/{page_id}.json"
+
+
+ETAG = re.compile(r"^[0-9a-f]{32}(-[0-9]{1,5})?$")
+
+
+def cache_key(identity, etag, version):
+    """Where a reading of the image with [etag] (S3's, quotes or not) is
+    kept for [identity] by OCR [version]; None for an ETag that isn't one."""
+    etag = (etag or "").strip('"')
+    if not ETAG.match(etag) or not re.match(r"^[A-Za-z0-9._-]{1,64}$", version or ""):
+        return None
+    return f"{identity}/ocrcache/{etag}-{version}.json"
 
 
 def check_identity(identity):

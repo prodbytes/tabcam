@@ -1479,3 +1479,11 @@ spec.
    See [cloud sync](cloud-sync.md#when-and-how), [sharing](sharing.md),
    [contributions](contributions.md),
    [maintenance mode](maintenance-mode.md).
+2. **Cost: Premium pages read once.** The app no longer asks
+   `/transcribe` when pages are added (their uploads already start the
+   reading, so pages being read were read again); only Read again and
+   Rescan ask. The backfill for pages without results waits 20 minutes
+   (was 2), past the OCR worker's timeout. `tabcam-ocr` keeps each
+   `ok`/`no-tab` reading by the image's ETag too, and an upload of an
+   image read before (a clone, a published contribution, the same file)
+   copies it instead of reading again. See [cloud OCR](cloud-ocr.md).

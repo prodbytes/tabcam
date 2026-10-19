@@ -53,7 +53,12 @@ most 5 minutes (less if the grant ends sooner), a "no" for 1 minute.
    upload to EventBridge, which calls `tabcam-ocr-api`.
 2. It looks up the identity's verified address (recorded by `/account`,
    below), asks rbacr, and for premium users invokes `tabcam-ocr`.
-   Free users' pages stop there.
+   Free users' pages stop there. An image read before (the same content:
+   a clone, a published contribution, the same file added again) isn't
+   read again: the reading kept by its S3 ETag
+   (`<identity>/ocrcache/<ETag>-<version>.json`, written by `tabcam-ocr`
+   for `ok` and `no-tab` readings) is copied as the page's result, with
+   `cached: true`. Read again never uses it.
 3. `tabcam-ocr` reads the page and writes
    `<identity>/ocr/<event id>/<page id>.json`:
    `{page, status, text, doubts, staves, lines, seconds, engines, version,
@@ -213,12 +218,15 @@ with text but no tab is still `no-tab`.
   results are applied (a tab found, or none), so the reader stops saying
   it's in the cloud.
 - **Pages from before upgrading**: an event whose pages still lack results
-  two minutes after its last change is sent to `POST /transcribe
-  {eventId}` (once per event per session), which queues its untranscribed
-  pages.
+  20 minutes after its last change (past the OCR worker's 15-minute
+  timeout, so pages still being read aren't queued again) is sent to
+  `POST /transcribe {eventId}` (once per event per session), which queues
+  its untranscribed pages.
 - **Reading by itself** ([tab recognition](tab-recognition.md#reading-by-itself)),
-  for premium users, asks for the event's transcription (`/transcribe`)
-  when an event without a text tab gets new pages; the Text view says
+  for premium users, waits for the event's transcription when an event
+  without a text tab gets new pages: their uploads start it (step 1), so
+  the app doesn't ask `/transcribe` too (that read pages being read a
+  second time); the Text view says
   it's on its way until the text comes, or for at most three times the
   OCR worker's timeout, when it says reading failed. What the cloud writes counts as an automatic
   read (`tabTextAuto`): a text the user edited is never replaced.

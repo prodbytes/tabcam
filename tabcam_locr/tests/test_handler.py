@@ -18,9 +18,23 @@ class FakeS3:
     def __init__(self, objects=()):
         self.objects = dict.fromkeys(objects, b"")
         self.deleted = []
+        self.put = {}
 
     def delete_object(self, Bucket, Key):
         self.deleted.append(Key)
+
+    def get_object(self, Bucket, Key):
+        if Key not in self.objects:
+            raise self.exceptions.NoSuchKey(Key)
+        body = self.objects[Key]
+
+        class Body:
+            def read(self):
+                return body
+        return {"Body": Body(), "ContentLength": len(body)}
+
+    def put_object(self, Bucket, Key, Body, **_):
+        self.put[Key] = Body
 
     def list_objects_v2(self, Bucket, Prefix, **_):
         return {"Contents": [{"Key": k} for k in sorted(self.objects) if k.startswith(Prefix)]}
@@ -114,9 +128,12 @@ def svc(monkeypatch):
     return s
 
 
-def s3_event(key, kind="Object Created", bucket=BUCKET, size=1000):
+def s3_event(key, kind="Object Created", bucket=BUCKET, size=1000, etag=None):
+    obj = {"key": key, "size": size}
+    if etag:
+        obj["etag"] = etag
     return {"source": "aws.s3", "detail-type": kind,
-            "detail": {"bucket": {"name": bucket}, "object": {"key": key, "size": size}}}
+            "detail": {"bucket": {"name": bucket}, "object": obj}}
 
 
 def http(path, token="good-token", body=None):
@@ -133,6 +150,29 @@ def test_a_premium_users_page_is_queued(svc):
     svc._made["rbacr"] = FakeRbacr({"ana@example.com"})
     assert handler.api(s3_event(PAGE)) == "queued"
     assert svc.lam.invoked == [PAGE]
+
+
+ETAG = "0123456789abcdef0123456789abcdef"
+
+
+def test_a_copy_of_a_page_read_before_is_not_read_again(svc):
+    svc._made["accounts"] = FakeAccounts({ID: "ana@example.com"})
+    svc._made["rbacr"] = FakeRbacr({"ana@example.com"})
+    cache = f"{ID}/ocrcache/{ETAG}-{handler.VERSION}.json"
+    svc._made["s3"] = FakeS3()
+    svc.s3.objects[cache] = json.dumps({"page": "p0", "status": "ok", "text": "e|--3--|"}).encode()
+    assert handler.api(s3_event(PAGE, etag=ETAG)) == "cached"
+    assert svc.lam.invoked == []
+    written = json.loads(svc.s3.put[f"{ID}/ocr/ev1/p1.json"])
+    assert written["page"] == "p1" and written["text"] == "e|--3--|" and written["cached"]
+
+
+def test_a_page_not_read_before_is_queued(svc):
+    svc._made["accounts"] = FakeAccounts({ID: "ana@example.com"})
+    svc._made["rbacr"] = FakeRbacr({"ana@example.com"})
+    assert handler.api(s3_event(PAGE, etag=ETAG)) == "queued"
+    assert svc.lam.invoked == [PAGE]
+    assert svc.s3.put == {}
 
 
 def test_a_free_users_page_is_not(svc):
