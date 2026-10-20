@@ -1619,3 +1619,11 @@ spec.
    resubmits that submission, marking its rejected item resolved:
    0.2.202610201114 (build 1792494901) is Waiting for Review. See
    [app stores](app-stores.md#submitting-for-review).
+4. **Sign in with Apple's web flow: Continue and Cancel did nothing.**
+   Apple's authorize call answered 403, with no reason, for the return
+   URL on the share API's `execute-api.us-east-1.amazonaws.com` address.
+   The return URL is now on TabCam's own domain,
+   `https://tabcam.nu01.com/apple/callback`, which the site's CloudFront
+   passes to the share API (`site.yaml`), and the Services ID was renamed
+   "TabCam" (Apple shows it on the sign-in page). See
+   [cloud sync](cloud-sync.md#android-the-web-flow).

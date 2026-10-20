@@ -120,15 +120,19 @@ keeps who, the provider and the ID token.
   LMX88986F3, made 2026-10-19) has Sign in with Apple with primary App ID
   `com.nu01.tabcam`, so Apple gives a user the same user ID (`sub`) as on
   iOS: with the pool's key still `appleid.apple.com`, the same Cognito
-  identity and folder on both phones. Its domain is the share API's,
-  `e3jdqe13vl.execute-api.us-east-1.amazonaws.com`, and its return URL
-  `https://e3jdqe13vl.execute-api.us-east-1.amazonaws.com/apple/callback`.
+  identity and folder on both phones. Its domain is `tabcam.nu01.com`
+  and its return URL `https://tabcam.nu01.com/apple/callback`, which the
+  site's CloudFront passes to the share API (POST, never cached). Apple
+  refused the share API's own address
+  (`e3jdqe13vl.execute-api.us-east-1.amazonaws.com`): its authorize call
+  answered 403 with no reason when the user pressed Continue.
   The existing Sign in with Apple key (`G3KM3762G4`) covers it.
 - **The flow**: `sign_in_with_apple` opens Apple's authorize page for the
   Services ID ([apple_config.dart](../tabcam_app/lib/auth/apple_config.dart):
-  `servicesId`, `webRedirectUri`, the build's `TABCAM_SHARE_API_URL` plus
-  `/apple/callback`), asking for the name and email, with the nonce. Apple
-  posts its reply (`form_post`) to the share API's `POST /apple/callback`
+  `servicesId`, `webRedirectUri`, `https://tabcam.nu01.com/apple/callback`
+  in builds with a share API), asking for the name and email, with the
+  nonce. Apple posts its reply (`form_post`) there, to the share API's
+  `POST /apple/callback`
   (no authorizer, nothing kept), which answers 303 to
   `intent://callback?<code, id_token, state, user, error>#Intent;package=com.nu01.tabcam;scheme=signinwithapple;end`,
   its fields encoded again so the body can't add to the intent. The
