@@ -1627,3 +1627,7 @@ spec.
    passes to the share API (`site.yaml`), and the Services ID was renamed
    "TabCam" (Apple shows it on the sign-in page). See
    [cloud sync](cloud-sync.md#android-the-web-flow).
+5. **`/apple/callback` answered 403 on the site.** CloudFront takes the
+   first matching path, and `/app*` (the web app, GET only) matched
+   `/apple/callback` first; the Apple route now comes before it in
+   `site.yaml`.
