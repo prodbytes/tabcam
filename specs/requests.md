@@ -1602,3 +1602,14 @@ spec.
      (`tabscan-511213`); it has to be in `tabcam-nu01`, with the web
      client. To do, in the Google Cloud Console. See
      [app stores](app-stores.md#android-signing).
+2. **App Review rejected 0.2.202610171415 (guidelines 2.3.10 and
+   2.1(b)).** The iOS screenshots' status bar drew Android's (Material)
+   icons: it now draws Apple's glyphs, the iPad's with the date and no
+   signal. And App Review took the Premium card ("TabCam Premium isn't
+   active", Check again) and the listing's "TabCam Premium subscribers"
+   for a subscription it couldn't buy (there are no in-app purchase
+   products): in the store apps free users now see no word of Premium,
+   the App Store and Play descriptions no longer mention it, and the
+   review notes say there are no in-app purchases or subscriptions. See
+   [cloud OCR](cloud-ocr.md#in-the-app) and
+   [app stores](app-stores.md#store-graphics).

@@ -144,9 +144,11 @@ The text claims only what the app does as it is now (App Store guideline
 2.3): signing in first (signed out there's only the welcome), scanning
 and adding, reading tabs on the device, the Text view's tools (Copy,
 Verified; not Fix, hidden for now), Cam, the zip download, Share copying a
-read-only link (signed in, kept in Shared with me). It never offers to buy Premium (the
-store apps don't sell it); it says Premium subscribers get cloud
-transcription.
+read-only link (signed in, kept in Shared with me). It doesn't mention
+Premium: the store apps don't sell it, and App Review took a mention of a
+subscription it couldn't buy as a broken in-app purchase (guideline
+2.1(b), 2026-10-20). The review notes say the app has no in-app
+purchases or subscriptions.
 `bash scripts/store-metadata-check.sh [dir]` checks each file is there
 and within its store's limit (title and name 30, subtitle 30, short
 description 80, descriptions 4000, keywords 100 bytes, promotional text
@@ -241,7 +243,11 @@ ten made-up captures: printed pages of made-up riffs that the test draws,
 each with its text tab. Only made-up riffs and `example.com` addresses
 show. Text is in Roboto (from the Flutter SDK) and, for iOS, San Francisco
 (the Mac's system font, as iOS shows it), with the Material icons; a
-status bar is drawn over the top; the camera's picture in Cam is a drawn
+status bar is drawn over the top, each platform's own: Material's
+signal, Wi-Fi and battery icons on Android, and on iOS Apple's glyphs,
+drawn (signal bars, Wi-Fi fan, battery), the iPad's with the date and no
+signal (App Review refused Android status bars on iOS screenshots,
+guideline 2.3.10, 2026-10-20); the camera's picture in Cam is a drawn
 guitar neck.
 
 | Store | Files | Size |

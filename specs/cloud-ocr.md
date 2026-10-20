@@ -258,13 +258,16 @@ the web): App Store guidelines 3.1.1 and 3.1.3(b) and Google Play's
 payments policy don't let an app point to buying a digital feature
 outside the store, and Premium is sold on the web. So the apps show no
 way to buy it: no Upgrade, no "Subscribe with <address>", no Redeem a
-voucher and no event screen hint. Premium bought on the web still works
-in them (multiplatform services): the role line, and for premium users
-the card's "transcribed automatically" and until when, are as on the
-web. A free user's card only says "TabCam Premium isn't active for
-<address>.", with **Check again**. The account panel, the card and the
-event screen take a `store` flag (null: the platform's), which the tests
-set to check both.
+voucher and no event screen hint. And free users see no word of Premium
+at all: no role line or roles, no Premium card, no "Premium transcribes
+your scans" before signing in, and no subscription note when deleting
+the account (App Review took the card's "TabCam Premium isn't active"
+for a subscription it couldn't buy, guideline 2.1(b), 2026-10-20).
+Premium bought on the web still works in them (multiplatform services):
+for premium users the role line and the card ("transcribed
+automatically", until when) are as on the web. The account panel, the
+card and the event screen take a `store` flag (null: the platform's),
+which the tests set to check both.
 - On the web without Premium, the Text view says reading tabs needs the
   Android or iOS app, or TabCam Premium.
 
