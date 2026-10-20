@@ -1613,3 +1613,9 @@ spec.
    review notes say there are no in-app purchases or subscriptions. See
    [cloud OCR](cloud-ocr.md#in-the-app) and
    [app stores](app-stores.md#store-graphics).
+3. **Resubmitting after the rejection.** The `submit` lane refused while
+   the rejected submission was open (Unresolved Issues), then Apple
+   refused it while its item was still marked rejected. The lane now
+   resubmits that submission, marking its rejected item resolved:
+   0.2.202610201114 (build 1792494901) is Waiting for Review. See
+   [app stores](app-stores.md#submitting-for-review).
