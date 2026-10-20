@@ -55,6 +55,8 @@ class _Device {
   final String dir, prefix;
 
   bool get ios => platform == TargetPlatform.iOS;
+
+  bool get ipad => name.startsWith('iPad');
 }
 
 const _devices = [
@@ -619,7 +621,10 @@ class _FeatureGraphic extends StatelessWidget {
   );
 }
 
-/// The phone's status bar: the time, the signal, Wi-Fi and the battery.
+/// The device's status bar, as its system draws it: on Android the time and
+/// Material's signal, Wi-Fi and battery icons; on iOS the time and Apple's
+/// own glyphs (App Review refuses screenshots with another platform's), the
+/// iPad with the date and no cellular signal.
 class _StatusBar extends StatelessWidget {
   const _StatusBar({required this.device});
 
@@ -627,13 +632,13 @@ class _StatusBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ios = device.ios;
     final style = TextStyle(
-      fontFamily: device.ios ? 'CupertinoSystemText' : 'Roboto',
+      fontFamily: ios ? 'CupertinoSystemText' : 'Roboto',
       color: Colors.white,
-      fontSize: 15,
+      fontSize: ios ? 17 : 15,
       fontWeight: FontWeight.w600,
     );
-    final ios = device.ios;
     return Align(
       alignment: Alignment.topCenter,
       child: SizedBox(
@@ -642,23 +647,161 @@ class _StatusBar extends StatelessWidget {
           padding: EdgeInsets.symmetric(horizontal: ios ? 36 : 16),
           child: Row(
             children: [
-              Text(ios ? '9:41' : '12:30', style: style),
+              Text(
+                !ios
+                    ? '12:30'
+                    : device.ipad
+                    ? '9:41  Tue Oct 20'
+                    : '9:41',
+                style: style,
+              ),
               const Spacer(),
-              for (final icon in [
-                Icons.signal_cellular_alt,
-                Icons.wifi,
-                Icons.battery_full,
-              ])
-                Padding(
-                  padding: const EdgeInsets.only(left: 4),
-                  child: Icon(icon, color: Colors.white, size: 17),
+              if (ios) ...[
+                if (!device.ipad) ...[
+                  const CustomPaint(
+                    size: Size(18, 12),
+                    painter: _IosSignalPainter(),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                const CustomPaint(
+                  size: Size(17, 12),
+                  painter: _IosWifiPainter(),
                 ),
+                const SizedBox(width: 6),
+                const CustomPaint(
+                  size: Size(27, 13),
+                  painter: _IosBatteryPainter(),
+                ),
+              ] else
+                for (final icon in [
+                  Icons.signal_cellular_alt,
+                  Icons.wifi,
+                  Icons.battery_full,
+                ])
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: Icon(icon, color: Colors.white, size: 17),
+                  ),
             ],
           ),
         ),
       ),
     );
   }
+}
+
+/// iOS's cellular signal: four rounded bars, rising, all full.
+class _IosSignalPainter extends CustomPainter {
+  const _IosSignalPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.white;
+    const bars = 4, gap = 1.5;
+    final w = (size.width - gap * (bars - 1)) / bars;
+    for (var i = 0; i < bars; i++) {
+      final h = size.height * (i + 1) / bars;
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(i * (w + gap), size.height - h, w, h),
+          const Radius.circular(1.2),
+        ),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// iOS's Wi-Fi: three arcs over a dot, as a fan from the bottom.
+class _IosWifiPainter extends CustomPainter {
+  const _IosWifiPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height);
+    const sweep = math.pi / 2;
+    const start = -math.pi / 2 - sweep / 2;
+    final paint = Paint()..color = Colors.white;
+    // The wedge, then two gaps cut out of it: three bands.
+    final r = size.height;
+    for (final (outer, inner) in [(r, r * 0.74), (r * 0.6, r * 0.36)]) {
+      final path = Path()
+        ..moveTo(center.dx, center.dy)
+        ..arcTo(
+          Rect.fromCircle(center: center, radius: outer),
+          start,
+          sweep,
+          false,
+        )
+        ..close();
+      final hole = Path()
+        ..moveTo(center.dx, center.dy)
+        ..arcTo(
+          Rect.fromCircle(center: center, radius: inner),
+          start,
+          sweep,
+          false,
+        )
+        ..close();
+      canvas.drawPath(
+        Path.combine(PathOperation.difference, path, hole),
+        paint,
+      );
+    }
+    final dot = Path()
+      ..moveTo(center.dx, center.dy)
+      ..arcTo(
+        Rect.fromCircle(center: center, radius: r * 0.24),
+        start,
+        sweep,
+        false,
+      )
+      ..close();
+    canvas.drawPath(dot, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// iOS's battery: a rounded outline, full inside, with its cap.
+class _IosBatteryPainter extends CustomPainter {
+  const _IosBatteryPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final body = Rect.fromLTWH(0, 0, size.width - 2.5, size.height);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(body.deflate(0.5), const Radius.circular(3.8)),
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.4)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(body.deflate(2), const Radius.circular(2.4)),
+      Paint()..color = Colors.white,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          size.width - 1.5,
+          size.height * 0.33,
+          1.5,
+          size.height * 0.34,
+        ),
+        const Radius.circular(1),
+      ),
+      Paint()..color = Colors.white.withValues(alpha: 0.4),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 /// The camera, faked, with a picture in its preview: a guitar's neck.

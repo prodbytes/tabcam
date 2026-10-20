@@ -14,8 +14,10 @@ import '../l10n/language.dart';
 bool get storeApp => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
 
 /// TabCam Premium in the account sheet: what it does, and for free users
-/// the upgrade offer (subscribe, redeem a voucher, check again after); in
-/// a [storeApp], only that it isn't active, and Check again.
+/// the upgrade offer (subscribe, redeem a voucher, check again after). A
+/// [storeApp] shows it to Premium users only ([AccountPanel]); with
+/// [store] set for a free user, only that it isn't active, and Check
+/// again.
 class PremiumCard extends StatelessWidget {
   const PremiumCard({
     super.key,

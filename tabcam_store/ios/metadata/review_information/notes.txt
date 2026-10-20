@@ -10,4 +10,4 @@ What to try:
 5. Capture tab > Document, Photos & videos, Files or Link makes a capture from them.
 6. Profile > Delete account deletes the account and its cloud data, and signs out.
 
-The app has no in-app purchases and no links or buttons to buy anything. Some accounts have TabCam Premium (cloud transcription), a subscription not sold in the app; everything above works without it.
+The app has no in-app purchases, no subscriptions, and no links or buttons to buy anything: everything above is free.

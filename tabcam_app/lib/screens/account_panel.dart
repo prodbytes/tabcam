@@ -37,8 +37,10 @@ Future<void> showAccountSheet(
 
 /// The Profile tab's account: signing in, and once signed in, who it is,
 /// how sync stands, Sync now and Sign out; with Premium set up ([ocr]),
-/// the user's role ([roleLabel]) and the Premium card too (without the
-/// upgrade offer in a [storeApp]); last, Delete account.
+/// the user's role ([roleLabel]) and the Premium card too; last, Delete
+/// account. A [storeApp] can't sell Premium (it's sold on the web), so it
+/// only mentions Premium to users who have it: no role line, roles or card
+/// for the others, and no upgrade offer.
 class AccountPanel extends StatelessWidget {
   const AccountPanel({
     super.key,
@@ -52,8 +54,15 @@ class AccountPanel extends StatelessWidget {
   final CloudSync sync;
   final CloudOcr? ocr;
 
-  /// Whether to leave out the upgrade offer (null: [storeApp]).
+  /// Whether Premium is only shown to users who have it (null:
+  /// [storeApp]).
   final bool? store;
+
+  bool get _store => store ?? storeApp;
+
+  /// Whether to mention Premium to this user: everywhere on the web; in a
+  /// store app, only once they have it.
+  bool _showsPremium(CloudOcr ocr) => !_store || ocr.premium;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -72,7 +81,7 @@ class AccountPanel extends StatelessWidget {
         Text(l10n.accountSignIn, style: theme.textTheme.titleLarge),
         const SizedBox(height: 8),
         Text(l10n.accountSignInIntro),
-        if (ocr != null) ...[
+        if (ocr != null && !_store) ...[
           const SizedBox(height: 8),
           Text(l10n.accountSignInPremium),
         ],
@@ -112,8 +121,8 @@ class AccountPanel extends StatelessWidget {
           },
         ),
         if (sync.profiles case final profiles?)
-          _ProfileLines(profiles: profiles)
-        else if (ocr case final ocr?)
+          _ProfileLines(profiles: profiles, store: _store)
+        else if (ocr case final ocr? when _showsPremium(ocr))
           if (roleLabel(ocr, l10n) case final role?)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -145,7 +154,7 @@ class AccountPanel extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(l10n.accountSignOutNote, style: theme.textTheme.bodySmall),
-        if (ocr case final ocr?) ...[
+        if (ocr case final ocr? when _showsPremium(ocr)) ...[
           const SizedBox(height: 16),
           PremiumCard(
             ocr: ocr,
@@ -167,7 +176,7 @@ class AccountPanel extends StatelessWidget {
             onPressed: () => deleteAccount(
               context,
               sync,
-              premium: ocr != null,
+              premium: ocr != null && _showsPremium(ocr!),
               store: store,
             ),
             icon: const Icon(Icons.delete_forever_outlined),
@@ -183,9 +192,12 @@ class AccountPanel extends StatelessWidget {
 /// The profile: its ID, its roles (every linked account's), and
 /// **Linked accounts**.
 class _ProfileLines extends StatelessWidget {
-  const _ProfileLines({required this.profiles});
+  const _ProfileLines({required this.profiles, required this.store});
 
   final ProfileService profiles;
+
+  /// A store app: the roles only once they include Premium.
+  final bool store;
 
   @override
   Widget build(BuildContext context) {
@@ -213,10 +225,11 @@ class _ProfileLines extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SelectableText(l10n.profileId(p.id), key: const Key('profile')),
-              Text(
-                l10n.profileRoles(p.roles.join(', ')),
-                key: const Key('role'),
-              ),
+              if (!store || p.premium)
+                Text(
+                  l10n.profileRoles(p.roles.join(', ')),
+                  key: const Key('role'),
+                ),
               TextButton.icon(
                 style: TextButton.styleFrom(padding: EdgeInsets.zero),
                 onPressed: () => showLinkedAccounts(context, profiles),

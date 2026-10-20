@@ -595,7 +595,8 @@ void main() {
               auth: s.auth,
               sync: s.sync,
               ocr: s.ocr,
-              store: true,
+              // The web: free users see the Premium card there.
+              store: false,
             ),
           ),
         ),
@@ -658,7 +659,7 @@ void main() {
     s.dispose();
   });
 
-  testWidgets('in a store app, the Premium card offers no purchase', (
+  testWidgets('in a store app, only Premium users see Premium', (
     tester,
   ) async {
     final s = _Setup();
@@ -681,16 +682,13 @@ void main() {
         ),
       ),
     );
-    expect(find.text('Role: Free'), findsOneWidget);
-    expect(find.text('TabCam Premium'), findsOneWidget);
-    expect(
-      find.text('TabCam Premium isn\'t active for ana@example.com.'),
-      findsOneWidget,
-    );
+    // A free user: no word of Premium, which the app can't sell.
+    expect(find.textContaining('Role'), findsNothing);
+    expect(find.textContaining('Premium'), findsNothing);
     expect(find.text('Upgrade'), findsNothing);
     expect(find.text('Redeem a voucher'), findsNothing);
     expect(find.textContaining('Subscribe'), findsNothing);
-    expect(find.text('Check again'), findsOneWidget);
+    expect(find.text('Check again'), findsNothing);
 
     // Premium bought on the web still works, and says until when.
     s.api.premium = true;
