@@ -122,8 +122,9 @@ keeps who, the provider and the ID token.
   iOS: with the pool's key still `appleid.apple.com`, the same Cognito
   identity and folder on both phones. Its domain is `tabcam.nu01.com`
   and its return URL `https://tabcam.nu01.com/apple/callback`, which the
-  site's CloudFront passes to the share API (POST, never cached; listed
-  before `/app*`, which matches it too). Apple
+  site's CloudFront passes to the share API (POST, never cached; the
+  web app's routes are `/app/*` and `/app`, not the prefix `/app*`, which
+  caught `/apple/callback` first). Apple
   refused the share API's own address
   (`e3jdqe13vl.execute-api.us-east-1.amazonaws.com`): its authorize call
   answered 403 with no reason when the user pressed Continue.

@@ -21,7 +21,7 @@
     [maintenance](maintenance-mode.md) switch, `/status.json`
     (`{"maintenance": false}`).
   - `4-floci`: [Floci](https://floci.io/), a local AWS emulator, as the
-    CloudFront distribution in front of both, as deployed: `/app*` goes to
+    CloudFront distribution in front of both, as deployed: `/app/*` and `/app` go to
     the app and everything else to the index
     ([tabcam_floci/](../tabcam_floci/README.md)). It serves HTTP on
     http://tabcam.localhost:2014/ (`FLOCI_PORT`) and HTTPS on
