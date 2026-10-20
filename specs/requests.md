@@ -1584,3 +1584,21 @@ spec.
      parts may serve everyone; only the expensive features are Premium
      (CLAUDE.md's design guideline says so now). See
      [cloud sync](cloud-sync.md#android-the-web-flow).
+
+## 2026-10-20
+
+1. **Google sign-in picks the account but doesn't get into the app (the
+   Play build).** The phone's log: "Android clients and Web clients
+   (server client ID) must be in the same project" (28444). Two causes:
+   - On 2026-10-19 `retire-tabscan.sh`'s last step redeployed
+     `tabcam-identity` with that stack's own Google parameters, which were
+     still TabScan's: the Google provider lost TabCam's five clients (web,
+     iOS, local web and two Android) and kept TabScan's, so AWS refused
+     every TabCam Google sign-in, on every platform. They were put back
+     (`GoogleWebClientId` and `GoogleAppClientIds` with TabCam's
+     `tabcam-nu01` IDs), and the script now redeploys only right after the
+     import, with the provider's clients and the web client from `.env`.
+   - Play's Android OAuth client was made in the old TabScan project
+     (`tabscan-511213`); it has to be in `tabcam-nu01`, with the web
+     client. To do, in the Google Cloud Console. See
+     [app stores](app-stores.md#android-signing).
