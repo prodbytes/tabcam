@@ -273,8 +273,7 @@ Resources:
         CacheBehaviors:
           # Sign in with Apple's web flow (Android) posts its reply here,
           # the Services ID's return URL on TabCam's own domain; the share
-          # API sends it back to the app. Never cached. Before /app*, which
-          # matches /apple… too (the first matching path wins).
+          # API sends it back to the app. Never cached.
           - !If
             - HasPreviews
             - PathPattern: /apple/callback
@@ -286,8 +285,21 @@ Resources:
               OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac # Managed-AllViewerExceptHostHeader
               ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03 # Managed-SecurityHeadersPolicy
             - !Ref AWS::NoValue
-          # The Flutter web app, built with --base-href /app/
-          - PathPattern: /app*
+          # The Flutter web app, built with --base-href /app/: /app/* and
+          # /app itself (which the function redirects to /app/), never a
+          # prefix match, so /apple… and the like aren't the app's.
+          - PathPattern: /app/*
+            TargetOriginId: site
+            ViewerProtocolPolicy: redirect-to-https
+            Compress: true
+            AllowedMethods: [GET, HEAD, OPTIONS]
+            CachedMethods: [GET, HEAD]
+            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 # Managed-CachingOptimized
+            ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03 # Managed-SecurityHeadersPolicy
+            FunctionAssociations:
+              - EventType: viewer-request
+                FunctionARN: !GetAtt AppIndexFunction.FunctionMetadata.FunctionARN
+          - PathPattern: /app
             TargetOriginId: site
             ViewerProtocolPolicy: redirect-to-https
             Compress: true

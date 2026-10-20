@@ -8,7 +8,7 @@ app, and the iOS privacy declarations.
 - **Where**: https://tabcam.nu01.com/privacy (and the RC's
   https://rc.tabcam.nu01.com/privacy), from
   [tabcam_index/site/privacy/index.html](../tabcam_index/site/privacy/index.html).
-  CloudFront rewrites directory URIs only under `/app*`, so
+  CloudFront rewrites directory URIs only under `/app/`, so
   [deploy](deploy.md) uploads the file as the S3 object `privacy`
   (`text/html`), and its smoke test checks `/privacy` serves it. The local
   index server (`python3 -m http.server`, port 2013, and Floci in front of

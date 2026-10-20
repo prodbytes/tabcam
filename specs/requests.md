@@ -1631,3 +1631,7 @@ spec.
    first matching path, and `/app*` (the web app, GET only) matched
    `/apple/callback` first; the Apple route now comes before it in
    `site.yaml`.
+6. **Match the web app as `/app/*` so it isn't ambiguous.** The site's
+   web app routes are now `/app/*` and `/app` (redirected to `/app/` by
+   the function), not the prefix `/app*`, deployed and in the local
+   Floci CloudFront alike.

@@ -31,7 +31,7 @@ tags): `GA` for `tabcam-web`, `RC` for `tabcam-rc-web`, `dev` for
 | Path | Origin |
 |---|---|
 | default (`/`) | S3 `index.html`, the [index page](../tabcam_index) that redirects to `/app/` |
-| `/app*` | S3 `app/`, the Flutter web build (`--base-href /app/`). A CloudFront Function redirects `/app` to `/app/` and maps directory URIs to `index.html` |
+| `/app/*`, `/app` | S3 `app/`, the Flutter web build (`--base-href /app/`). A CloudFront Function redirects `/app` to `/app/` and maps directory URIs to `index.html` |
 
 Every file is uploaded with `Cache-Control: no-cache`, because Flutter's web
 files aren't content-hashed. Each deploy also invalidates `/*`.

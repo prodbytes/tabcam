@@ -2,7 +2,7 @@
 # Creates the TabCam CloudFront distribution in Floci. It only routes, as
 # the deployed CloudFront would; the index and the app run on their own dev
 # servers:
-#   /app*   -> Flutter dev server  (http://$TABCAM_ORIGIN_HOST:$FLUTTER_WEB_PORT)
+#   /app/*, /app -> Flutter dev server  (http://$TABCAM_ORIGIN_HOST:$FLUTTER_WEB_PORT)
 #   *       -> tabcam_index       (http://$TABCAM_ORIGIN_HOST:$INDEX_PORT),
 #              whose / redirects to /app/
 # Paths are forwarded as is (CloudFront can't strip a prefix), so the app is
@@ -68,8 +68,9 @@ distribution=$(aws cloudfront create-distribution \
     \"Aliases\": {\"Quantity\": 2, \"Items\": [\"$ALIAS\", \"$PUBLIC_HOST\"]},
     \"Origins\": {\"Quantity\": 2, \"Items\": [$(origin app "$WEB_PORT"), $(origin index "$INDEX_PORT")]},
     \"DefaultCacheBehavior\": {$(behavior index)},
-    \"CacheBehaviors\": {\"Quantity\": 1, \"Items\": [
-      {\"PathPattern\": \"/app*\", $(behavior app)}
+    \"CacheBehaviors\": {\"Quantity\": 2, \"Items\": [
+      {\"PathPattern\": \"/app/*\", $(behavior app)},
+      {\"PathPattern\": \"/app\", $(behavior app)}
     ]}
   }")
 
