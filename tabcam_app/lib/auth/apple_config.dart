@@ -20,10 +20,12 @@ abstract final class AppleConfig {
   /// same Apple user ID on both).
   static const String servicesId = 'com.nu01.tabcam.signin';
 
-  /// Where Apple posts the web flow's reply: the share API, which sends it
-  /// back to the app. The Services ID's return URL. Null without a share
-  /// API: then there's no Sign in with Apple on Android.
+  /// Where Apple posts the web flow's reply: the site's `/apple/callback`,
+  /// which CloudFront passes to the share API, which sends it back to the
+  /// app. The Services ID's return URL, on TabCam's own domain (Apple
+  /// refused the share API's own `execute-api` address). Null without a
+  /// share API: then there's no Sign in with Apple on Android.
   static Uri? get webRedirectUri => ShareConfig.apiUrl.isEmpty
       ? null
-      : Uri.parse('${ShareConfig.apiUrl}/apple/callback');
+      : Uri.parse('https://tabcam.nu01.com/apple/callback');
 }
