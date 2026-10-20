@@ -78,8 +78,12 @@ what's uploaded; TabCam's builds are signed with an **upload key**.
 Each key that signs installed apps needs, for sign-in and
 [App Links](sharing.md#android-app-links):
 
-- an **Android OAuth client** in Google Cloud for `com.nu01.tabcam` and
-  the key's SHA-1, added to `tabcam-identity`'s `GoogleAppClientIds`
+- an **Android OAuth client** in TabCam's Google Cloud project,
+  `tabcam-nu01` (project number 91614266636, the web client's: Google
+  refuses an Android client in another project with "Android clients and
+  Web clients (server client ID) must be in the same project", error
+  28444), for `com.nu01.tabcam` and the key's SHA-1, added to
+  `tabcam-identity`'s `GoogleAppClientIds`
   (the identity pool refuses tokens of a client it doesn't list,
   [cloud sync](cloud-sync.md#googles-token));
 - its SHA-256 in
@@ -88,10 +92,12 @@ Each key that signs installed apps needs, for sign-in and
 That's the debug key, the upload key and Play's app signing key (Play
 Console → Protected with Play → App signing; SHA-1
 1E:12:2A:0C:D1:E9:26:B0:08:CD:9B:79:12:30:E1:D2:D4:34:97:47). All three
-SHA-256s are in assetlinks.json; the upload key's and Play's OAuth clients
-are to do (Google Cloud Console → Clients, Android, `com.nu01.tabcam` and
-the SHA-1), and until Play's exists, Google sign-in fails in the app
-installed from Play.
+SHA-256s are in assetlinks.json. Play's OAuth client was first made in
+the old TabScan project (`tabscan-511213`, 1061413485511) by mistake, so
+Google still refuses it; Play's and the upload key's clients in
+`tabcam-nu01` are to do (Google Cloud Console → Clients, Android,
+`com.nu01.tabcam` and the SHA-1), and until Play's exists, Google sign-in
+fails in the app installed from Play.
 
 ## Store listings
 

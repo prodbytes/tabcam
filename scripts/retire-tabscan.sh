@@ -202,18 +202,20 @@ PY
     --change-set-name import-google-provider
   aws cloudformation wait stack-import-complete --stack-name tabcam-identity
   echo "    imported"
+  # Then the repo's template, making it (GoogleProviderArn empty), with the
+  # provider's clients as they are. Not the stack's own Google parameters:
+  # on 2026-10-19 they were still TabScan's, and deploying them replaced
+  # TabCam's clients with TabScan's (Google sign-in failed everywhere until
+  # they were put back). The clients change only by deploying identity.yaml
+  # with TabCam's IDs (tabcam_infra/README.md).
+  web="${TABCAM_GOOGLE_WEB_CLIENT_ID:-$(sed -n 's/^TABCAM_GOOGLE_WEB_CLIENT_ID=//p' .env | tail -1)}"
+  apps="$(python3 -c 'import json,sys; print(",".join(c for c in json.load(open(sys.argv[1])) if c != sys.argv[2]))' \
+    "$WORK/clients.json" "$web")"
+  aws cloudformation deploy --stack-name tabcam-identity \
+    --template-file tabcam_infra/identity.yaml --capabilities CAPABILITY_IAM \
+    --no-fail-on-empty-changeset \
+    --parameter-overrides GoogleProviderArn= "GoogleWebClientId=$web" "GoogleAppClientIds=$apps"
 fi
-# Then the repo's template, making it (GoogleProviderArn empty): TabCam's
-# Google clients only.
-overrides=()
-while IFS=$'\t' read -r k v; do overrides+=("$k=$v"); done < <(
-  aws cloudformation describe-stacks --stack-name tabcam-identity \
-    --query "Stacks[0].Parameters[?ParameterKey!='GoogleProviderArn'].[ParameterKey,ParameterValue]" \
-    --output text)
-aws cloudformation deploy --stack-name tabcam-identity \
-  --template-file tabcam_infra/identity.yaml --capabilities CAPABILITY_IAM \
-  --no-fail-on-empty-changeset \
-  --parameter-overrides GoogleProviderArn= "${overrides[@]}"
 echo "    clients: $(aws iam get-open-id-connect-provider --open-id-connect-provider-arn "$PROVIDER_ARN" \
   --query 'length(ClientIDList)' --output text)"
 
