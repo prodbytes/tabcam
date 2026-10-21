@@ -6,7 +6,9 @@ The app sends the signed-in user's ID token (the one it gives Cognito):
   token is issued for it) or the local web client (local web builds);
 - or, with APPLE_CLIENT_ID set, Apple's (Sign in with Apple), signed by
   Apple, for one of its client IDs, separated by commas: the app's bundle ID
-  (iOS) or the Services ID (the web flow, on Android).
+  (iOS) or the Services ID (the web flow, on Android);
+- or, with EMAIL_ISSUER and EMAIL_CLIENT_ID set, the tabcam-email user
+  pool's (sign in with email), for its app client.
 
 It must be unexpired, with a verified e-mail (Apple sends email_verified as
 "true", a string; its private relay addresses are verified too, and simply
@@ -57,15 +59,25 @@ APPLE_ISSUERS = ("https://appleid.apple.com",)
 
 
 class TokenVerifier:
-    def __init__(self, client_id=None, jwks=None, apple_client_id=None, apple_jwks=None):
+    def __init__(self, client_id=None, jwks=None, apple_client_id=None, apple_jwks=None,
+                 email_issuer=None, email_client_id=None, email_jwks=None):
         google = client_id if client_id is not None else os.environ.get("GOOGLE_WEB_CLIENT_ID", "")
         apple = apple_client_id if apple_client_id is not None else os.environ.get("APPLE_CLIENT_ID", "")
+        email_issuer = (email_issuer if email_issuer is not None
+                        else os.environ.get("EMAIL_ISSUER", ""))
+        email = email_client_id if email_client_id is not None else os.environ.get("EMAIL_CLIENT_ID", "")
         self.providers = [
             Provider("google", "https://www.googleapis.com/oauth2/v3/certs", GOOGLE_ISSUERS,
                      "accounts.google.com", _ids(google), jwks),
             Provider("apple", "https://appleid.apple.com/auth/keys", APPLE_ISSUERS,
                      "appleid.apple.com", _ids(apple), apple_jwks),
         ]
+        # Sign in with email: the tabcam-email user pool (its Logins key is
+        # its issuer without the scheme).
+        if email_issuer:
+            self.providers.append(
+                Provider("email", f"{email_issuer}/.well-known/jwks.json", (email_issuer,),
+                         email_issuer.removeprefix("https://"), _ids(email), email_jwks))
 
     def _provider(self, token):
         """The provider the token says issued it (unverified: only to pick
@@ -106,8 +118,7 @@ class TokenVerifier:
         `<issuer>#<sub>`, as the share API's profiles know it."""
         email, login = self.verify(token)
         claims = jwt.decode(token, options={"verify_signature": False})
-        issuer = {"accounts.google.com": "https://accounts.google.com",
-                  "appleid.apple.com": "https://appleid.apple.com"}[login]
+        issuer = {p.login: p.issuers[-1] for p in self.providers}[login]
         return email, login, f"{issuer}#{claims.get('sub', '')}"
 
     def email(self, token):

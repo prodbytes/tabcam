@@ -50,6 +50,18 @@ if [[ ! "${TABCAM_GOOGLE_WEB_CLIENT_ID:-}" =~ ^[0-9]+-[0-9a-z]+\.apps\.googleuse
   exit 1
 fi
 
+# Sign in with email, when tabcam-email-signin is deployed: its tokens'
+# issuer and audience (the /email routes).
+email_issuer="$(aws cloudformation describe-stacks --stack-name tabcam-email-signin \
+  --query "Stacks[0].Outputs[?OutputKey=='Issuer'].OutputValue" --output text 2>/dev/null || true)"
+email_client="$(aws cloudformation describe-stacks --stack-name tabcam-email-signin \
+  --query "Stacks[0].Outputs[?OutputKey=='ClientId'].OutputValue" --output text 2>/dev/null || true)"
+if [[ ! "$email_issuer" =~ ^https://cognito-idp\.[a-z0-9-]+\.amazonaws\.com/[A-Za-z0-9_-]+$ \
+      || ! "$email_client" =~ ^[a-z0-9]+$ ]]; then
+  email_issuer=""
+  email_client=""
+fi
+
 # The cloud OCR service's accounts table, when tabcam-ocr is deployed:
 # DELETE /account deletes the user's record there too.
 accounts="$(aws cloudformation describe-stacks --stack-name tabcam-ocr \
@@ -113,6 +125,7 @@ aws cloudformation deploy --stack-name tabcam-share-api \
   --parameter-overrides "GoogleWebClientId=$TABCAM_GOOGLE_WEB_CLIENT_ID" \
     "GoogleLocalWebClientId=${TABCAM_GOOGLE_LOCAL_WEB_CLIENT_ID:-}" \
     "AppleClientId=$apple_client" "AppleServicesId=$apple_services" \
+    "EmailIssuer=$email_issuer" "EmailClientId=$email_client" \
     "AllowedOrigins=$origins" \
     "AccountsTableName=$accounts" \
     "RbacrTokenParameterName=$rbacr_param" \

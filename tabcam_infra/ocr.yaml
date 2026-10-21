@@ -39,6 +39,19 @@ Parameters:
       Google one. Empty: Apple tokens are refused with "google sign-in
       needed".
     AllowedPattern: '(([A-Za-z0-9-]+\.)+[A-Za-z0-9-]+)(,([A-Za-z0-9-]+\.)+[A-Za-z0-9-]+)*|'
+  EmailIssuer:
+    Type: String
+    Default: ''
+    Description: >
+      Sign in with email: the tabcam-email user pool's issuer
+      (tabcam-email-signin's Issuer); its tokens are checked like Google's.
+      Empty: none.
+    AllowedPattern: '(https://cognito-idp\.[a-z0-9-]+\.amazonaws\.com/[A-Za-z0-9_-]+)?'
+  EmailClientId:
+    Type: String
+    Default: ''
+    Description: With EmailIssuer, the user pool's app client (the tokens' audience)
+    AllowedPattern: '[a-z0-9]*'
   IdentityPoolId:
     Type: String
     Default: ''
@@ -300,6 +313,8 @@ Resources:
             - !Ref GoogleWebClientId
           # Sign in with Apple's audience (the bundle ID); empty: Google only.
           APPLE_CLIENT_ID: !Ref AppleClientId
+          EMAIL_ISSUER: !Ref EmailIssuer
+          EMAIL_CLIENT_ID: !Ref EmailClientId
           COGNITO_IDENTITY_POOL_ID: !Ref IdentityPoolId
           RBACR_URL: !Ref RbacrUrl
           RBACR_TOKEN_PARAMETER: !Ref RbacrTokenParameterName
