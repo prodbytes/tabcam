@@ -8,12 +8,15 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../cloud/cloud_ocr.dart';
 import '../cloud/ocr_api.dart';
+import '../library/capture_event.dart';
 import '../library/library.dart';
 import '../recognition/tab_doubts.dart';
 import '../recognition/tab_layout.dart';
 import 'tab_editing.dart';
 import '../l10n/language.dart';
 import 'mono_font.dart';
+import 'page_image.dart';
+import 'pdf_page.dart';
 
 /// The event screen's Text view: the tab read from the event's pages, to
 /// check against them and fix, monospaced and unwrapped (long lines scroll
@@ -24,7 +27,9 @@ import 'mono_font.dart';
 /// read that ends while it shows fills it in, unless the user has started
 /// editing. Read only for an event shared read only.
 ///
-/// Above it, in one row: **Copy**; **Fix** (off for now, see [showFix]):
+/// Above it, in one row: **Copy**; **Review**, a toggle showing the
+/// scanned pages (photos and PDFs) beside the text, to check the reading
+/// against them ([_Scans]); **Fix** (off for now, see [showFix]):
 /// lines the tab up, then with Premium auto-correct: the song's tab found
 /// online proposes corrections, shown per note for the user to accept or
 /// reject; **Rescan**, reading the tab from the pages
@@ -91,6 +96,12 @@ class _TabTextViewState extends State<TabTextView> {
 
   /// Fix's answer, while the user reviews it.
   _Review? _review;
+
+  /// Review: the scanned pages show beside the text.
+  bool _sideBySide = false;
+
+  /// Which scanned page Review shows.
+  int _scan = 0;
 
   String? get _stored => widget.library.byId(widget.eventId)?.tabText;
 
@@ -357,6 +368,7 @@ class _TabTextViewState extends State<TabTextView> {
                     icon: const Icon(Icons.copy),
                     label: Text(context.l10n.textViewCopy),
                   ),
+                  if (_scans(event).isNotEmpty) _reviewToggle(),
                   // Fix lines the strings up for everyone; with Premium, it
                   // also checks the tab against the song online.
                   if (editable && widget.showFix)
@@ -399,7 +411,7 @@ class _TabTextViewState extends State<TabTextView> {
         ],
         Expanded(
           child: review == null
-              ? _editor(context, editable && !_busy)
+              ? _withScans(event, _editor(context, editable && !_busy))
               : _ReviewView(
                   review: review,
                   onChanged: () => setState(() {}),
@@ -407,6 +419,69 @@ class _TabTextViewState extends State<TabTextView> {
                 ),
         ),
       ],
+    );
+  }
+
+  /// The pages the tab was read from: photos and PDFs.
+  List<EventPage> _scans(CaptureEvent? event) => [
+    ...?event?.pages.where((p) => p.isImage || p.isPdf),
+  ];
+
+  /// Review, a toggle shaped like Copy: tonal while off, filled while on.
+  Widget _reviewToggle() {
+    final label = Text(context.l10n.textViewReview);
+    void onPressed() => setState(() => _sideBySide = !_sideBySide);
+    return Tooltip(
+      message: context.l10n.textViewReviewTip,
+      child: Semantics(
+        toggled: _sideBySide,
+        child: _sideBySide
+            ? FilledButton.icon(
+                key: const Key('text-review'),
+                onPressed: onPressed,
+                icon: const Icon(Icons.vertical_split),
+                label: label,
+              )
+            : FilledButton.tonalIcon(
+                key: const Key('text-review'),
+                onPressed: onPressed,
+                icon: const Icon(Icons.vertical_split_outlined),
+                label: label,
+              ),
+      ),
+    );
+  }
+
+  /// With Review on, [text] beside the scanned pages: side by side on a
+  /// wide screen, the page above the text on a phone held upright.
+  Widget _withScans(CaptureEvent? event, Widget text) {
+    final scans = _scans(event);
+    if (!_sideBySide || event == null || scans.isEmpty) return text;
+    final at = _scan.clamp(0, scans.length - 1);
+    final pane = _Scans(
+      library: widget.library,
+      event: event,
+      pages: scans,
+      at: at,
+      onPage: (i) => setState(() => _scan = i),
+    );
+    return LayoutBuilder(
+      builder: (context, box) {
+        final wide = box.maxWidth >= 600 || box.maxWidth > box.maxHeight;
+        final divider = wide
+            ? const VerticalDivider(width: 1)
+            : const Divider(height: 1);
+        return Flex(
+          key: const Key('text-review-split'),
+          direction: wide ? Axis.horizontal : Axis.vertical,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(child: pane),
+            divider,
+            Expanded(child: text),
+          ],
+        );
+      },
     );
   }
 
@@ -972,4 +1047,74 @@ class _ReviewView extends StatelessWidget {
   /// The string a line is for, from its label ("e|---"), if it has one.
   static String? _stringName(String line) =>
       RegExp(r'^\s*([A-Ga-g][#b]?)\s*[|:]').firstMatch(line)?.group(1);
+}
+
+/// Review's pane: one scanned page (a photo, zoomable, or a PDF), and with
+/// several, a button for each to switch between them.
+class _Scans extends StatelessWidget {
+  const _Scans({
+    required this.library,
+    required this.event,
+    required this.pages,
+    required this.at,
+    required this.onPage,
+  });
+
+  final Library library;
+  final CaptureEvent event;
+  final List<EventPage> pages;
+  final int at;
+  final void Function(int index) onPage;
+
+  @override
+  Widget build(BuildContext context) {
+    final page = pages[at];
+    final scheme = Theme.of(context).colorScheme;
+    return ColoredBox(
+      key: const Key('text-review-scans'),
+      color: scheme.surfaceContainerHighest,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (pages.length > 1)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+              child: Row(
+                spacing: 4,
+                children: [
+                  for (final (i, _) in pages.indexed)
+                    ChoiceChip(
+                      key: ValueKey('text-review-page-$i'),
+                      tooltip: context.l10n.textViewReviewPage(i + 1),
+                      label: Text('${i + 1}'),
+                      selected: i == at,
+                      visualDensity: VisualDensity.compact,
+                      onSelected: (_) => onPage(i),
+                    ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: page.isPdf
+                ? PdfPage(
+                    key: ValueKey('review-${page.id}'),
+                    library: library,
+                    event: event,
+                    page: page,
+                  )
+                : InteractiveViewer(
+                    key: ValueKey('review-${page.id}'),
+                    maxScale: 5,
+                    child: PageImage(
+                      library: library,
+                      event: event,
+                      page: page,
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
 }
