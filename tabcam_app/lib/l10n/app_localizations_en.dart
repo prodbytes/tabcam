@@ -958,6 +958,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get textViewReview => 'Review';
+
+  @override
+  String get textViewReviewTip => 'Show the scanned pages beside the text';
+
+  @override
+  String textViewReviewPage(int number) {
+    return 'Page $number';
+  }
+
+  @override
   String get textViewCopy => 'Copy';
 
   @override

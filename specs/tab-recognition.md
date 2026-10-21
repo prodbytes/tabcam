@@ -244,11 +244,20 @@ brings its own. A read on
 the device says nothing of how sure it is: its text has none
 ([lib/recognition/tab_doubts.dart](../tabcam_app/lib/recognition/tab_doubts.dart)).
 
-Above the text, on one line, three compact buttons of one kind (four in
-a build that shows Fix), in this order (on a screen too narrow for them the line is scaled down, never
-wrapped):
+Above the text, on one line, four compact buttons of one kind (three
+when the capture has no scanned pages, one more in a build that shows
+Fix), in this order (on a screen too narrow for them the line is scaled
+down, never wrapped):
 
 - **Copy**: the text, to the clipboard.
+- **Review**, a toggle shaped like Copy (tonal while off, filled while
+  on), shown when the capture has scanned pages (photos or PDFs, what a
+  read reads): it shows them beside the text, to check the reading
+  against them, side by side on a wide screen (600 px or wider, or wider
+  than tall) and the page above the text on a phone held upright, each
+  half the space. The page is a photo (filtered, zoomable) or a PDF; with
+  several, numbered buttons switch between them. The text stays editable
+  meanwhile (Fix's review replaces both).
 - **Fix**, hidden for now (shown only in a build with `TABCAM_FIX=true`,
   see [auto-correct](autocorrect.md#hidden-for-now)): lines the tab up (each staff's strings named, bars lined up,
   every string ending together), for everyone; then, with Premium,

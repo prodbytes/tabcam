@@ -1673,3 +1673,9 @@ spec.
    confidence: it's obvious.** The line under the editing tools is gone
    (and its string, en, es, pt); the notes are still red. See
    [tab recognition](tab-recognition.md).
+6. **In the Text view, a Review button opening the scanned tab side by
+   side, to review the misses easily.** Review (a toggle beside Copy, when
+   the capture has photos or PDFs) shows the scanned page beside the
+   editable text: side by side on a wide screen, above it on a phone held
+   upright; numbered buttons switch pages. See
+   [tab recognition](tab-recognition.md).

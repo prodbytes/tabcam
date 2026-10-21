@@ -983,6 +983,18 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get textViewReview => 'Revisar';
+
+  @override
+  String get textViewReviewTip =>
+      'Mostrar as páginas digitalizadas ao lado do texto';
+
+  @override
+  String textViewReviewPage(int number) {
+    return 'Página $number';
+  }
+
+  @override
   String get textViewCopy => 'Copiar';
 
   @override
