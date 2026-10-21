@@ -65,7 +65,7 @@
   "eventNotNow": "Agora não",
   "eventNothingToRead": "Nada para ler: adicione uma digitalização, uma foto ou um PDF.",
   "eventReadingTab": "Lendo a tablatura…",
-  "eventInCloud": "Transcrevendo na nuvem. O texto aparece aqui quando terminar.",
+  "eventInCloud": "Transcrevendo na nuvem: de 1 a 3 minutos por página. O texto aparece aqui quando terminar, mesmo se você sair.",
   "eventNoTab": "Nenhuma tablatura encontrada nas páginas. Digitalize mais perto e com a folha mais plana.",
   "eventReadAgain": "Ler de novo",
   "eventRescanTitle": "Reescanear as páginas?",

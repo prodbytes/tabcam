@@ -49,8 +49,8 @@ changed (that device reads them), nor the events there were at launch.
 - **Neither** (the web without Premium): it says it can't read here.
 
 The Text view says how it stands when there's no text yet: "Reading the
-tab…" (with a spinner); "Transcribing in the cloud. The text appears here
-when it's done."; "No tab found in the pages. Try rescanning closer and
+tab…" (with a spinner); "Transcribing in the cloud: about 1 to 3 minutes
+a page. The text appears here when it's done, even if you leave."; "No tab found in the pages. Try rescanning closer and
 flatter." or "Reading the tab failed.", with **Read again**; "Reading
 tabs needs you signed in.", with **Sign in**; "Reading tabs needs the
 Android or iOS app, or TabCam Premium."; "Nothing to read: add a scan or

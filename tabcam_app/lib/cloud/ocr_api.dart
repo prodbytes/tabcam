@@ -165,6 +165,10 @@ abstract interface class OcrApi {
   /// how many were queued.
   Future<int> transcribe(String idToken, String eventId, {bool again = false});
 
+  /// Has a reader load its engines now, ahead of pages about to come (the
+  /// camera opening); whether one was started. Premium only.
+  Future<bool> warm(String idToken);
+
   /// Checks [text], [eventId]'s text tab, against [song]'s tab found
   /// online; the corrections, per note. Premium only.
   Future<AutocorrectResult> autocorrect(
@@ -254,6 +258,16 @@ class HttpOcrApi implements OcrApi {
           }))['queued']
           as int? ??
       0;
+
+  @override
+  Future<bool> warm(String idToken) async =>
+      (await _post(
+        '/warm',
+        idToken,
+        null,
+        const Duration(seconds: 10),
+      ))['warming'] ==
+      true;
 
   @override
   Future<AutocorrectResult> autocorrect(

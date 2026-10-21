@@ -1702,3 +1702,19 @@ spec.
    pool sends through Cognito's own mail (50 a day) until it's granted
    (`Sender` in `email-signin.yaml`). See
    [cloud sync](cloud-sync.md#sign-in-with-email).
+10. **The cloud OCR keeps spinning and shows nothing: troubleshoot it,
+    it's the app's most important part; and can the cold start be
+    improved (a ping as the app opens, or keeping state)?** The page was
+    read correctly, in 200 to 245 s: the first page after a deploy (80
+    to 120 s of it the new image's cold start). Meanwhile Read again had
+    started a second reading of it, and the page was deleted before
+    either finished, which still wrote its result. Fixed: a page being
+    read has a `.reading` marker, and isn't queued again while it's
+    there; a page deleted while read gets no result; each deploy warms
+    the worker. Measured where the time goes (the reading itself, 60 to
+    200 s, not the cold start, 6 to 14 s); keeping a worker warm (about
+    $27 a month) wasn't done; the account's Lambda limits (10
+    concurrent, 3008 MB) were asked to be raised. Opening the camera, a
+    premium user's app has a worker warm up (`POST /warm`, at most every
+    5 minutes), and the Text view says the cloud takes about 1 to 3
+    minutes a page. See [cloud OCR](cloud-ocr.md#speed).

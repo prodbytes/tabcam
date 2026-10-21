@@ -180,6 +180,17 @@ Resources:
                   - !Sub
                     - ${BucketArn}/*/ocrcache/*
                     - BucketArn: !ImportValue tabcam-user-data-bucket-arn
+              # The page's "being read" marker, removed once it's read.
+              - Effect: Allow
+                Action: s3:DeleteObject
+                Resource: !Sub
+                  - ${BucketArn}/*/ocr/*.reading
+                  - BucketArn: !ImportValue tabcam-user-data-bucket-arn
+              # A page deleted while it was read answers 404 (without
+              # ListBucket, S3 says 403 for a missing key): no result then.
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource: !ImportValue tabcam-user-data-bucket-arn
               - Effect: Allow
                 Action: [logs:CreateLogStream, logs:PutLogEvents]
                 Resource: !Sub ${OcrLogs.Arn}:*

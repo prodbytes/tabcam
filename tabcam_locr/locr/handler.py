@@ -13,7 +13,11 @@ api (tabcam-ocr-api), light: it never loads the OCR engines.
                         whether the user is premium, with the upgrade links
       POST /transcribe  {"eventId", "again"?}: transcribes the event's pages
                         that have no transcription yet (pages from before
-                        upgrading); with "again", every page (Read again)
+                        upgrading); with "again", every page (Read again);
+                        never a page being read already
+      POST /warm        loads the engines in an ocr function ahead of a
+                        page (the app, as the camera opens), at most once
+                        every few minutes per user
       POST /autocorrect {"eventId", "song", "text"}: checks a text tab
                         against the song's tab found online (autocorrect.py)
                         and answers with per-note corrections
@@ -21,7 +25,8 @@ api (tabcam-ocr-api), light: it never loads the OCR engines.
                         can't fetch other sites' pages (pages.py)
 
 ocr (tabcam-ocr), heavy: reads one page and writes its transcription,
-<identity>/ocr/<event id>/<page id>.json, which the app reads.
+<identity>/ocr/<event id>/<page id>.json, which the app reads; not when
+the page was deleted meanwhile. {"warm": true} only loads the engines.
 """
 import base64
 import json
@@ -34,6 +39,13 @@ from . import keys
 
 MAX_BYTES = 25 * 1024 * 1024
 MAX_PAGES = 50
+# A page being read has a marker beside its transcription (.reading), so
+# asking again doesn't start a second reading while the first is under
+# way; one older than the ocr function's timeout (15 min) is stale.
+READING_FOR = 15 * 60
+# A user's warm-up asks: at most one per this many seconds (per api
+# container), about as long as an idle ocr function stays warm.
+WARM_EVERY = 5 * 60
 VERSION = os.environ.get("LOCR_VERSION", "dev")
 
 
@@ -192,6 +204,7 @@ def _on_s3(event):
         return "not a page"
     if event.get("detail-type") == "Object Deleted":
         services.s3.delete_object(Bucket=services.bucket, Key=page.result_key)
+        services.s3.delete_object(Bucket=services.bucket, Key=page.reading_key)
         return "deleted"
     if detail.get("object", {}).get("size", 0) > MAX_BYTES:
         return "too large"
@@ -230,6 +243,8 @@ def _from_cache(page, etag):
 
 
 def _queue(page):
+    services.s3.put_object(Bucket=services.bucket, Key=page.reading_key,
+                           Body=_now().encode(), ContentType="text/plain")
     services.lam.invoke(FunctionName=services.ocr_function, InvocationType="Event",
                         Payload=json.dumps({"key": page.key}).encode())
 
@@ -262,7 +277,8 @@ def on_http(event):
 
 def _on_http(event, method, path, request):
     from .auth import Unauthorized, Unsupported
-    if method != "POST" or path not in ("/account", "/transcribe", "/autocorrect", "/page"):
+    if method != "POST" or path not in ("/account", "/transcribe", "/autocorrect", "/page",
+                                        "/warm"):
         return _reply(404, {"error": "not found"})
     auth = {k.lower(): v for k, v in (event.get("headers") or {}).items()}.get("authorization", "")
     if not auth.lower().startswith("bearer "):
@@ -299,6 +315,8 @@ def _on_http(event, method, path, request):
         })
     if not answer.premium:
         return _reply(402, {"error": "premium only", "upgradeUrl": os.environ.get("UPGRADE_URL", "")})
+    if path == "/warm":
+        return _reply(200, {"warming": _warm(identity or email)})
     try:
         body = event.get("body") or "{}"
         if event.get("isBase64Encoded"):
@@ -376,35 +394,60 @@ def _autocorrect(body, request):
     return _reply(200, result)
 
 
-def _list(prefix):
-    names, token = [], None
+_warmed = {}  # who asked for a warm-up -> when (monotonic)
+
+
+def _warm(who):
+    """An ocr function loading its engines, unless this user asked lately."""
+    now = time.monotonic()
+    if now - _warmed.get(who, -WARM_EVERY) < WARM_EVERY:
+        return False
+    _warmed[who] = now
+    services.lam.invoke(FunctionName=services.ocr_function, InvocationType="Event",
+                        Payload=json.dumps({"warm": True}).encode())
+    return True
+
+
+def _objects(prefix):
+    found, token = [], None
     while True:
         args = {"Bucket": services.bucket, "Prefix": prefix}
         if token:
             args["ContinuationToken"] = token
         r = services.s3.list_objects_v2(**args)
-        names += [o["Key"] for o in r.get("Contents", [])]
+        found += r.get("Contents", [])
         if not r.get("IsTruncated"):
-            return names
+            return found
         token = r["NextContinuationToken"]
 
 
+def _list(prefix):
+    return [o["Key"] for o in _objects(prefix)]
+
+
 def _transcribe_missing(identity, event_id, again=False):
-    done = set() if again else {
-        k.rsplit("/", 1)[-1].removesuffix(".json") for k in _list(f"{identity}/ocr/{event_id}/")}
+    results = _objects(f"{identity}/ocr/{event_id}/")
+    names = {o["Key"].rsplit("/", 1)[-1]: o for o in results}
+    done = set() if again else {n.removesuffix(".json") for n in names if n.endswith(".json")}
+    now = datetime.now(timezone.utc)
+    reading = {n.removesuffix(".reading") for n, o in names.items()
+               if n.endswith(".reading")
+               and (now - o["LastModified"]).total_seconds() < READING_FOR}
     files = _list(f"{identity}/events/{event_id}/")
-    queued, skipped = 0, []
+    queued, skipped, busy = 0, [], 0
     for key in files:
         page = keys.parse_page(key)
         if page is None:
             skipped.append(key.rsplit("/", 1)[-1])  # not a page image (event.json, a video)
         elif page.page_id in done:
             continue
+        elif page.page_id in reading:
+            busy += 1  # its reading is under way: it'll be written
         elif queued < MAX_PAGES:
             _queue(page)
             queued += 1
     log("transcribe", identity=identity, event=event_id, files=len(files), done=len(done),
-        queued=queued, not_pages=skipped)
+        reading=busy, queued=queued, not_pages=skipped)
     return queued
 
 
@@ -426,16 +469,58 @@ def _vision(img):
         return ""
 
 
-def ocr(event, context=None):
+def _load_engines():
+    """The engines and their models, loaded once per container, and run
+    once on a blank image (their first run sets more up)."""
     global _engines
+    if _engines is not None:
+        return False
+    import numpy as np
+    from . import engines
+    found = engines.default()
+    blank = np.full((48, 160, 3), 255, np.uint8)
+    engines._paddle().predict(blank)
+    engines._rapid()(blank)
+    _engines = found
+    return True
+
+
+def _still_there(page):
+    """Whether [page] is still in the bucket (not deleted while read)."""
+    try:
+        services.s3.head_object(Bucket=services.bucket, Key=page.key)
+        return True
+    except Exception as e:
+        code = getattr(e, "response", {}).get("Error", {}).get("Code")
+        if code in ("404", "NoSuchKey", "NotFound"):
+            return False
+        raise
+
+
+def ocr(event, context=None):
+    if event.get("warm") is True:
+        start = time.monotonic()
+        loaded = _load_engines()
+        log("ocr warm", loaded=loaded, seconds=round(time.monotonic() - start, 2))
+        return "warm"
     page = keys.parse_page(event.get("key", ""))
     if page is None:
         log("ocr bad key", key=event.get("key"))
         return None
     log("ocr start", key=page.key, engines_loaded=_engines is not None)
+    try:
+        return _read(page)
+    finally:
+        # Read (or failed: Lambda's retry is queued already): a new ask may
+        # read it again.
+        services.s3.delete_object(Bucket=services.bucket, Key=page.reading_key)
+
+
+def _read(page):
     from . import engines, pipeline
-    if _engines is None:
-        _engines = engines.default()
+    t = time.monotonic()
+    if _load_engines():
+        log("ocr engines loaded", seconds=round(time.monotonic() - t, 2))
     result = {"page": page.page_id, "version": VERSION, "created": None}
     start = time.monotonic()
     try:
@@ -461,6 +546,10 @@ def ocr(event, context=None):
         raise
     result.update(seconds=round(time.monotonic() - start, 2), created=_now())
     result.setdefault("engines", list(_engines))
+    if not _still_there(page):
+        # Deleted while it was read: its transcription would outlive it.
+        log("ocr page gone", key=page.key, seconds=result["seconds"])
+        return "gone"
     # Rewritten by a new reading: readers revalidate it (its ETag) each time.
     services.s3.put_object(Bucket=services.bucket, Key=page.result_key,
                            Body=json.dumps(result).encode(), ContentType="application/json",

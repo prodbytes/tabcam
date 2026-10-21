@@ -107,3 +107,18 @@ aws cloudformation deploy --region "$region" --stack-name tabcam-ocr \
 url="$(aws cloudformation describe-stacks --region "$region" --stack-name tabcam-ocr \
   --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" --output text)"
 echo "Deployed $version. The app's TABCAM_OCR_URL: $url"
+
+# A new image's first page waits for Lambda to fetch it and load the
+# models (80-120 s more, measured): one warm-up now takes that wait.
+ocr_function="$(aws cloudformation describe-stack-resources --region "$region" \
+  --stack-name tabcam-ocr --logical-resource-id OcrFunction \
+  --query "StackResources[0].PhysicalResourceId" --output text)"
+warm_out="$(mktemp)"
+if aws lambda invoke --region "$region" --function-name "$ocr_function" \
+    --cli-read-timeout 300 --payload '{"warm": true}' \
+    --cli-binary-format raw-in-base64-out "$warm_out" >/dev/null; then
+  echo "Warmed $ocr_function: $(cat "$warm_out")"
+else
+  echo "Warming $ocr_function failed (the first page will be slower)" >&2
+fi
+rm -f "$warm_out"

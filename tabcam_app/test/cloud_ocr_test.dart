@@ -49,6 +49,14 @@ class FakeOcrApi implements OcrApi {
     );
   }
 
+  int warmed = 0;
+
+  @override
+  Future<bool> warm(String idToken) async {
+    warmed++;
+    return true;
+  }
+
   @override
   Future<int> transcribe(
     String idToken,
@@ -193,6 +201,30 @@ void main() {
       s.dispose();
     });
   });
+
+  test(
+    'the camera opening warms a reader up, for premium users only',
+    () async {
+      final free = _Setup();
+      await free.start();
+      await free.signIn();
+      free.ocr.warm();
+      await pumpEventQueue();
+      expect(free.api.warmed, 0);
+      free.dispose();
+
+      final s = _Setup(premium: true);
+      await s.start();
+      s.ocr.warm(); // not signed in yet
+      await pumpEventQueue();
+      expect(s.api.warmed, 0);
+      await s.signIn();
+      s.ocr.warm();
+      await pumpEventQueue();
+      expect(s.api.warmed, 1);
+      s.dispose();
+    },
+  );
 
   test(
     'a premium user\'s event gets its text tab once every page is read',
@@ -659,9 +691,7 @@ void main() {
     s.dispose();
   });
 
-  testWidgets('in a store app, only Premium users see Premium', (
-    tester,
-  ) async {
+  testWidgets('in a store app, only Premium users see Premium', (tester) async {
     final s = _Setup();
     await tester.runAsync(() async {
       await s.start(syncing: false);

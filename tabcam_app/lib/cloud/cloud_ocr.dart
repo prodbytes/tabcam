@@ -168,6 +168,25 @@ class CloudOcr extends ChangeNotifier {
     if (premium && sync.state == SyncState.synced) await collect();
   }
 
+  /// The camera is opening: for premium users, a reader in the cloud
+  /// loads its engines now, so the pages about to come don't wait for it
+  /// (a cold start, 6 to 14 s, more after a deploy). The service asks at
+  /// most once every few minutes per user; failing is fine.
+  void warm() {
+    final token = _token;
+    if (token == null || !premium) return;
+    unawaited(
+      api
+          .warm(token)
+          .then(
+            (_) {},
+            onError: (Object e) {
+              debugPrint('TabCam: cloud OCR: warming up failed: $e');
+            },
+          ),
+    );
+  }
+
   /// Transcribes [event] in the cloud now (reading by itself, for premium
   /// users):
   /// its synced pages that have no transcription yet. How many were queued.

@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -17,11 +18,20 @@ class FakeS3:
 
     def __init__(self, objects=()):
         self.objects = dict.fromkeys(objects, b"")
+        self.modified = {}
         self.deleted = []
         self.put = {}
 
     def delete_object(self, Bucket, Key):
         self.deleted.append(Key)
+        self.objects.pop(Key, None)
+
+    def head_object(self, Bucket, Key):
+        if Key not in self.objects:
+            error = Exception("Not Found")
+            error.response = {"Error": {"Code": "404"}}
+            raise error
+        return {}
 
     def get_object(self, Bucket, Key):
         if Key not in self.objects:
@@ -35,9 +45,12 @@ class FakeS3:
 
     def put_object(self, Bucket, Key, Body, **_):
         self.put[Key] = Body
+        self.objects[Key] = Body
 
     def list_objects_v2(self, Bucket, Prefix, **_):
-        return {"Contents": [{"Key": k} for k in sorted(self.objects) if k.startswith(Prefix)]}
+        now = datetime.now(timezone.utc)
+        return {"Contents": [{"Key": k, "LastModified": self.modified.get(k, now)}
+                             for k in sorted(self.objects) if k.startswith(Prefix)]}
 
 
 class FakeLambda:
@@ -46,7 +59,8 @@ class FakeLambda:
 
     def invoke(self, FunctionName, InvocationType, Payload):
         assert InvocationType == "Event"
-        self.invoked.append(json.loads(Payload)["key"])
+        payload = json.loads(Payload)
+        self.invoked.append(payload.get("key") or payload)
 
 
 class FakeAccounts:
@@ -172,7 +186,7 @@ def test_a_page_not_read_before_is_queued(svc):
     svc._made["rbacr"] = FakeRbacr({"ana@example.com"})
     assert handler.api(s3_event(PAGE, etag=ETAG)) == "queued"
     assert svc.lam.invoked == [PAGE]
-    assert svc.s3.put == {}
+    assert list(svc.s3.put) == [f"{ID}/ocr/ev1/p1.reading"]  # no transcription
 
 
 def test_a_free_users_page_is_not(svc):
@@ -194,7 +208,7 @@ def test_other_objects_and_buckets_are_ignored(svc):
 
 def test_a_deleted_page_loses_its_transcription(svc):
     assert handler.api(s3_event(PAGE, kind="Object Deleted")) == "deleted"
-    assert svc.s3.deleted == [f"{ID}/ocr/ev1/p1.json"]
+    assert svc.s3.deleted == [f"{ID}/ocr/ev1/p1.json", f"{ID}/ocr/ev1/p1.reading"]
 
 
 def test_account_records_the_identity_and_says_who_is_premium(svc):
@@ -298,3 +312,97 @@ def test_the_account_record_is_not_rewritten_on_every_request():
     assert len(table.puts) == 1
     accounts.put(ID, ["ana@example.com", "ana@work.example.com"])  # changed: written
     assert len(table.puts) == 2
+
+
+READING = f"{ID}/ocr/ev1/p1.reading"
+
+
+def premium(svc):
+    svc._made["accounts"] = FakeAccounts({ID: "ana@example.com"})
+    svc._made["rbacr"] = FakeRbacr({"ana@example.com"})
+
+
+def test_a_queued_page_is_marked_as_being_read(svc):
+    premium(svc)
+    assert handler.api(s3_event(PAGE)) == "queued"
+    assert READING in svc.s3.put
+
+
+def test_asking_again_while_a_page_is_read_doesnt_read_it_twice(svc):
+    premium(svc)
+    svc._made["s3"] = FakeS3([PAGE, f"{ID}/events/ev1/p2.img", READING])
+    r = handler.api(http("/transcribe", body={"eventId": "ev1", "again": True}))
+    assert json.loads(r["body"]) == {"queued": 1}
+    assert svc.lam.invoked == [f"{ID}/events/ev1/p2.img"]
+    # A marker older than the reading's timeout is stale: read it.
+    svc.s3.modified[READING] = datetime.now(timezone.utc) - timedelta(minutes=20)
+    svc.lam.invoked.clear()
+    r = handler.api(http("/transcribe", body={"eventId": "ev1", "again": True}))
+    assert json.loads(r["body"]) == {"queued": 1}
+    assert svc.lam.invoked == [PAGE]
+
+
+def test_warm_is_premium_only_and_once_in_a_while(svc, monkeypatch):
+    monkeypatch.setattr(handler, "_warmed", {})
+    assert handler.api(http("/warm"))["statusCode"] == 402
+    svc._made["rbacr"] = FakeRbacr({"ana@example.com"})
+    r = handler.api(http("/warm"))
+    assert json.loads(r["body"]) == {"warming": True}
+    assert svc.lam.invoked == [{"warm": True}]
+    r = handler.api(http("/warm"))
+    assert json.loads(r["body"]) == {"warming": False}
+    assert len(svc.lam.invoked) == 1
+
+
+class FakeResult:
+    text, doubts, staves, lines, timings = "e|--3--|", [], 1, 6, {"drawn": 1.0}
+
+
+@pytest.fixture
+def worker(svc, monkeypatch):
+    """The ocr function with made-up engines and reading."""
+    import sys
+    import types
+    engines = types.SimpleNamespace(read_page=None, read_crop=None)
+    pipeline = types.SimpleNamespace(
+        TooLarge=type("TooLarge", (Exception,), {}),
+        transcribe=lambda data, *_, **__: FakeResult(),
+        transcribe_pdf=lambda data, *_, **__: FakeResult())
+    monkeypatch.setitem(sys.modules, "locr.engines", engines)
+    monkeypatch.setitem(sys.modules, "locr.pipeline", pipeline)
+    import locr
+    monkeypatch.setattr(locr, "engines", engines, raising=False)
+    monkeypatch.setattr(locr, "pipeline", pipeline, raising=False)
+    monkeypatch.setattr(handler, "_engines", {"tesseract": None})
+    return pipeline
+
+
+def test_a_read_page_is_written_and_unmarked(svc, worker):
+    svc._made["s3"] = FakeS3([PAGE, READING])
+    assert handler.ocr({"key": PAGE}) == "ok"
+    assert json.loads(svc.s3.put[f"{ID}/ocr/ev1/p1.json"])["text"] == "e|--3--|"
+    assert READING in svc.s3.deleted
+
+
+def test_a_page_deleted_while_read_gets_no_transcription(svc, worker):
+    svc._made["s3"] = FakeS3([PAGE, READING])
+
+    def read_then_delete(data, *_, **__):
+        svc.s3.objects.pop(PAGE)  # the user deletes it meanwhile
+        return FakeResult()
+    worker.transcribe = read_then_delete
+    assert handler.ocr({"key": PAGE}) == "gone"
+    assert f"{ID}/ocr/ev1/p1.json" not in svc.s3.put
+    assert READING in svc.s3.deleted
+
+
+def test_a_failed_reading_is_unmarked_and_retried(svc, worker):
+    svc._made["s3"] = FakeS3([PAGE, READING])
+
+    def fail(data, *_, **__):
+        raise RuntimeError("engine crashed")
+    worker.transcribe = fail
+    with pytest.raises(RuntimeError):
+        handler.ocr({"key": PAGE})
+    assert READING in svc.s3.deleted
+
