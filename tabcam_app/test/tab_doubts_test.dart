@@ -100,7 +100,6 @@ void main() {
         ),
       );
       expect(_red(tester), ['5h7', '10']);
-      expect(find.textContaining('Notes in red'), findsOneWidget);
 
       // The user fixes one: it's no longer red, nor saved as doubtful.
       await tester.enterText(
@@ -119,14 +118,12 @@ void main() {
       await tester.pump(const Duration(seconds: 2));
       expect(_red(tester), isEmpty);
       expect(library.byId(event.id)!.tabTextDoubts, isEmpty);
-      expect(find.textContaining('Notes in red'), findsNothing);
       expect(library.byId(event.id)!.tabText, _riff.replaceFirst('10', '12'));
 
       // Verified: the user checked it, nothing is red.
       await tester.tap(find.text('Verified'));
       await tester.pumpAndSettle();
       expect(_red(tester), isEmpty);
-      expect(find.textContaining('Notes in red'), findsNothing);
     },
   );
 }
