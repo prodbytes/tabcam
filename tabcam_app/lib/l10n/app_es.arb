@@ -398,5 +398,21 @@
   "eventUnpublish": "Publicado: toca para retirarlo",
   "eventPublished": "Publicado",
   "eventPublishedSnack": "{name} publicado: ahora todos lo ven",
-  "eventCouldntPublish": "No se pudo publicar"
+  "eventCouldntPublish": "No se pudo publicar",
+  "emailSignInButton": "Entrar con email",
+  "emailSignInTitle": "Entrar con email",
+  "emailSignInIntro": "Escribe tu dirección de email: te enviaremos un código para entrar. Sin contraseña.",
+  "emailSignInAddress": "Dirección de email",
+  "emailSignInSend": "Enviar código",
+  "emailSignInSent": "Enviamos un código a {email}. Escríbelo aquí, o toca el enlace del email.",
+  "emailSignInCode": "Código",
+  "emailSignInVerify": "Entrar",
+  "emailSignInResend": "Enviar un código nuevo",
+  "emailSignInOther": "Usar otra dirección",
+  "emailSignInBadAddress": "Eso no es una dirección de email.",
+  "emailSignInBadCode": "Ese código no es correcto o caducó: revísalo o envía uno nuevo.",
+  "emailSignInTooMany": "Demasiados intentos: espera unos minutos y vuelve a intentarlo.",
+  "emailSignInFailed": "No se pudo entrar: {error}",
+  "emailSignInExpired": "Tu sesión con email caducó: vuelve a entrar.",
+  "emailSignInUnavailable": "Entrar con email no está configurado en esta versión."
 }

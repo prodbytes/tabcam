@@ -149,6 +149,8 @@ jobs:
       TABCAM_SHARE_API_URL: ${{ vars.TABCAM_SHARE_API_URL }}
       TABCAM_OCR_URL: ${{ vars.TABCAM_OCR_URL }}
       TABCAM_CDN_URL: ${{ vars.TABCAM_CDN_URL }}
+      TABCAM_EMAIL_USER_POOL_ID: ${{ vars.TABCAM_EMAIL_USER_POOL_ID }}
+      TABCAM_EMAIL_CLIENT_ID: ${{ vars.TABCAM_EMAIL_CLIENT_ID }}
       # Sign in with Apple: Android's web flow only. CI's iOS build is
       # unsigned, so it can't carry the entitlement the flag adds.
       TABCAM_APPLE_SIGN_IN: ${{ matrix.target == 'android' && vars.TABCAM_APPLE_SIGN_IN || '' }}

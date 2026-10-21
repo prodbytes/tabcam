@@ -1686,9 +1686,19 @@ spec.
    infrastructure: `email.yaml` (SES identity, DKIM, MAIL FROM, DMARC;
    production access requested) and `email-signin.yaml` (the user pool,
    its app client, the function writing the emails), both deployed. See
-   [cloud sync](cloud-sync.md#sign-in-with-email-being-built).
+   [cloud sync](cloud-sync.md#sign-in-with-email).
 8. **Sign in with email, part 2: trusted like Google and Apple.** The
    share API takes the user pool's tokens under `/email` and deletes an
    email account's pool user with the account; the cloud OCR service and
    the identity pool trust the pool. Deployed. See
-   [cloud sync](cloud-sync.md#sign-in-with-email-being-built).
+   [cloud sync](cloud-sync.md#sign-in-with-email).
+9. **Sign in with email, part 3: the app.** Sign in with email on every
+   platform: the address, a code emailed (with a link that fills it in),
+   signed in like Google or Apple; the waiting sign-in and the session
+   are kept, the token renewed, the refresh token revoked on sign-out.
+   The build settings `TABCAM_EMAIL_USER_POOL_ID` and
+   `TABCAM_EMAIL_CLIENT_ID` (`.env`, the repo's variables, the Release
+   and Deploy workflows). AWS denied SES production access, so the user
+   pool sends through Cognito's own mail (50 a day) until it's granted
+   (`Sender` in `email-signin.yaml`). See
+   [cloud sync](cloud-sync.md#sign-in-with-email).

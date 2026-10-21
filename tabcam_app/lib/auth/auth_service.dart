@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../l10n/language.dart';
+import 'email_config.dart';
 import 'jwt.dart';
 
 /// Who vouches for the user: the OpenID Connect provider whose ID token the
@@ -10,12 +11,16 @@ enum AuthProvider {
   google('Google', 'https://accounts.google.com', 'accounts.google.com'),
 
   /// Sign in with Apple: iOS, where the App Store asks for it next to
-  /// Google (guideline 4.8).
-  apple('Apple', 'https://appleid.apple.com', 'appleid.apple.com');
+  /// Google (guideline 4.8), and Android.
+  apple('Apple', 'https://appleid.apple.com', 'appleid.apple.com'),
+
+  /// Sign in with email: a code emailed to the address (the tabcam-email
+  /// user pool), every platform.
+  email('Email', EmailConfig.issuer, EmailConfig.loginsKey);
 
   const AuthProvider(this.label, this.issuer, this.loginsKey);
 
-  /// "Google", "Apple".
+  /// "Google", "Apple", "Email".
   final String label;
 
   /// The ID tokens' `iss` claim.
@@ -25,13 +30,20 @@ enum AuthProvider {
   final String loginsKey;
 
   /// The provider named [name] (as saved), Google for anything else.
-  static AuthProvider byName(String? name) =>
-      name == apple.name ? apple : google;
+  static AuthProvider byName(String? name) => switch (name) {
+    'apple' => apple,
+    'email' => email,
+    _ => google,
+  };
 
   /// Who issued [idToken] (its `iss` claim, unverified: only to pick where
   /// to send it, and the services check it). Google when it can't be read.
-  static AuthProvider ofToken(String idToken) =>
-      jwtClaims(idToken)?['iss'] == apple.issuer ? apple : google;
+  static AuthProvider ofToken(String idToken) {
+    final issuer = jwtClaims(idToken)?['iss'];
+    if (issuer == apple.issuer) return apple;
+    if (issuer == email.issuer) return email;
+    return google;
+  }
 }
 
 /// Who is signed in.

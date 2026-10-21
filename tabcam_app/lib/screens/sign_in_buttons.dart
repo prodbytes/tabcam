@@ -68,6 +68,8 @@ class SignInButtons extends StatelessWidget {
         icon: const Icon(Icons.login),
         label: Text(context.l10n.accountSignInWithGoogle),
       ),
+      // Email's button is its own (it opens its dialog).
+      AuthProvider.email => const SizedBox.shrink(),
     };
   }
 }

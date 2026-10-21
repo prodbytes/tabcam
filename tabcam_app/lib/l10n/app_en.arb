@@ -2044,5 +2044,79 @@
   },
   "@accountPeopleViaLink": {
     "description": "People sheet: under someone who joined by opening the capture's link, signed in"
+  },
+  "emailSignInButton": "Sign in with email",
+  "@emailSignInButton": {
+    "description": "Button: sign in with a code emailed to the address."
+  },
+  "emailSignInTitle": "Sign in with email",
+  "@emailSignInTitle": {
+    "description": "Email sign-in dialog's title."
+  },
+  "emailSignInIntro": "Type your email address: we'll send you a code to sign in with. No password.",
+  "@emailSignInIntro": {
+    "description": "Email sign-in: asking for the address."
+  },
+  "emailSignInAddress": "Email address",
+  "@emailSignInAddress": {
+    "description": "Email sign-in: the address field."
+  },
+  "emailSignInSend": "Send code",
+  "@emailSignInSend": {
+    "description": "Email sign-in: sends the code."
+  },
+  "emailSignInSent": "We sent a code to {email}. Type it here, or tap the link in the email.",
+  "@emailSignInSent": {
+    "description": "Email sign-in: the code was sent.",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "emailSignInCode": "Code",
+  "@emailSignInCode": {
+    "description": "Email sign-in: the code field."
+  },
+  "emailSignInVerify": "Sign in",
+  "@emailSignInVerify": {
+    "description": "Email sign-in: signs in with the code."
+  },
+  "emailSignInResend": "Send a new code",
+  "@emailSignInResend": {
+    "description": "Email sign-in: sends another code to the same address."
+  },
+  "emailSignInOther": "Use another address",
+  "@emailSignInOther": {
+    "description": "Email sign-in: back to the address."
+  },
+  "emailSignInBadAddress": "That isn't an email address.",
+  "@emailSignInBadAddress": {
+    "description": "Email sign-in: the address isn't valid."
+  },
+  "emailSignInBadCode": "That code isn't right, or it expired: check it, or send a new one.",
+  "@emailSignInBadCode": {
+    "description": "Email sign-in: wrong or expired code."
+  },
+  "emailSignInTooMany": "Too many tries: wait a few minutes and try again.",
+  "@emailSignInTooMany": {
+    "description": "Email sign-in: rate limited."
+  },
+  "emailSignInFailed": "Couldn't sign in: {error}",
+  "@emailSignInFailed": {
+    "description": "Email sign-in: another error.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "emailSignInExpired": "Your email sign-in expired: sign in again.",
+  "@emailSignInExpired": {
+    "description": "Email sign-in: the session ended."
+  },
+  "emailSignInUnavailable": "Sign in with email isn't set up in this build.",
+  "@emailSignInUnavailable": {
+    "description": "Email sign-in: not configured."
   }
 }

@@ -1492,4 +1492,60 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventCouldntPublish => 'Couldn\'t publish';
+
+  @override
+  String get emailSignInButton => 'Sign in with email';
+
+  @override
+  String get emailSignInTitle => 'Sign in with email';
+
+  @override
+  String get emailSignInIntro =>
+      'Type your email address: we\'ll send you a code to sign in with. No password.';
+
+  @override
+  String get emailSignInAddress => 'Email address';
+
+  @override
+  String get emailSignInSend => 'Send code';
+
+  @override
+  String emailSignInSent(String email) {
+    return 'We sent a code to $email. Type it here, or tap the link in the email.';
+  }
+
+  @override
+  String get emailSignInCode => 'Code';
+
+  @override
+  String get emailSignInVerify => 'Sign in';
+
+  @override
+  String get emailSignInResend => 'Send a new code';
+
+  @override
+  String get emailSignInOther => 'Use another address';
+
+  @override
+  String get emailSignInBadAddress => 'That isn\'t an email address.';
+
+  @override
+  String get emailSignInBadCode =>
+      'That code isn\'t right, or it expired: check it, or send a new one.';
+
+  @override
+  String get emailSignInTooMany =>
+      'Too many tries: wait a few minutes and try again.';
+
+  @override
+  String emailSignInFailed(String error) {
+    return 'Couldn\'t sign in: $error';
+  }
+
+  @override
+  String get emailSignInExpired => 'Your email sign-in expired: sign in again.';
+
+  @override
+  String get emailSignInUnavailable =>
+      'Sign in with email isn\'t set up in this build.';
 }

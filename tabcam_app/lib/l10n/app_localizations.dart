@@ -2499,6 +2499,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t publish'**
   String get eventCouldntPublish;
+
+  /// Button: sign in with a code emailed to the address.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with email'**
+  String get emailSignInButton;
+
+  /// Email sign-in dialog's title.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with email'**
+  String get emailSignInTitle;
+
+  /// Email sign-in: asking for the address.
+  ///
+  /// In en, this message translates to:
+  /// **'Type your email address: we\'ll send you a code to sign in with. No password.'**
+  String get emailSignInIntro;
+
+  /// Email sign-in: the address field.
+  ///
+  /// In en, this message translates to:
+  /// **'Email address'**
+  String get emailSignInAddress;
+
+  /// Email sign-in: sends the code.
+  ///
+  /// In en, this message translates to:
+  /// **'Send code'**
+  String get emailSignInSend;
+
+  /// Email sign-in: the code was sent.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a code to {email}. Type it here, or tap the link in the email.'**
+  String emailSignInSent(String email);
+
+  /// Email sign-in: the code field.
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get emailSignInCode;
+
+  /// Email sign-in: signs in with the code.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get emailSignInVerify;
+
+  /// Email sign-in: sends another code to the same address.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a new code'**
+  String get emailSignInResend;
+
+  /// Email sign-in: back to the address.
+  ///
+  /// In en, this message translates to:
+  /// **'Use another address'**
+  String get emailSignInOther;
+
+  /// Email sign-in: the address isn't valid.
+  ///
+  /// In en, this message translates to:
+  /// **'That isn\'t an email address.'**
+  String get emailSignInBadAddress;
+
+  /// Email sign-in: wrong or expired code.
+  ///
+  /// In en, this message translates to:
+  /// **'That code isn\'t right, or it expired: check it, or send a new one.'**
+  String get emailSignInBadCode;
+
+  /// Email sign-in: rate limited.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many tries: wait a few minutes and try again.'**
+  String get emailSignInTooMany;
+
+  /// Email sign-in: another error.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t sign in: {error}'**
+  String emailSignInFailed(String error);
+
+  /// Email sign-in: the session ended.
+  ///
+  /// In en, this message translates to:
+  /// **'Your email sign-in expired: sign in again.'**
+  String get emailSignInExpired;
+
+  /// Email sign-in: not configured.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with email isn\'t set up in this build.'**
+  String get emailSignInUnavailable;
 }
 
 class _AppLocalizationsDelegate

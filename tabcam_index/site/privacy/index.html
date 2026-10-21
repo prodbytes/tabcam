@@ -48,7 +48,7 @@
 <main>
   <p><a class="brand" href="/app/">TabCam</a></p>
   <h1>Privacy Policy</h1>
-  <p class="muted">Last updated: October 16, 2026</p>
+  <p class="muted">Last updated: October 21, 2026</p>
 
   <p>TabCam scans guitar tabs, reads them into text, records you playing
   along, and shares them. It runs as an Android app, an iOS app and a web
@@ -57,7 +57,8 @@
   "me"). This policy says what TabCam does with your information.</p>
 
   <p><strong>In short:</strong> TabCam needs an account: you sign in with
-  Google, or on iPhone and iPad with Apple too. What you capture is stored
+  Google, with your email address (a code emailed to you), or in the
+  iPhone, iPad and Android apps with Apple too. What you capture is stored
   in your own private cloud folder so it's on all your devices, and is
   shared only with the people you choose and with whoever you give a
   capture's link. There are no ads and no tracking, and your data is never
@@ -68,8 +69,10 @@
   <p>Without signing in, the app shows only a welcome screen with the
   sign-in buttons: nothing can be captured, read or shared, and nothing is
   sent to me. (The one exception is opening a capture's link someone gave
-  you, below.) To use TabCam you sign in with your Google account, or, in
-  the iOS app, with Sign in with Apple.</p>
+  you, below.) To use TabCam you sign in with your Google account, with
+  your email address (TabCam emails you a one-time code, and a link that
+  fills it in), or, in the iOS and Android apps, with Sign in with
+  Apple.</p>
 
   <h2>What is collected</h2>
   <div class="table">
@@ -78,7 +81,8 @@
     <tr><td>From Google: your account's name, email address, profile photo
       and account ID. From Apple: your name and email address (Apple's
       private relay address, if you choose to hide yours) and Apple's user
-      ID</td>
+      ID. Signing in with email: your email address, and the user ID it
+      gets in TabCam's sign-in service (Amazon Cognito)</td>
       <td>To show who is signed in (Profile tab), to give you your own
       cloud folder, to let people share captures with your email address,
       to link your Google and Apple accounts to one TabCam profile, and to
@@ -166,7 +170,8 @@
     <li><strong>Google</strong> provides sign-in with Google, and ML Kit.
     Google's privacy policy applies to your Google account:
     <a href="https://policies.google.com/privacy">policies.google.com/privacy</a>.</li>
-    <li><strong>Apple</strong> provides Sign in with Apple in the iOS app.
+    <li><strong>Apple</strong> provides Sign in with Apple in the iOS and
+    Android apps.
     Apple's privacy policy applies to your Apple ID:
     <a href="https://www.apple.com/legal/privacy/">apple.com/legal/privacy</a>.</li>
     <li><strong>Anthropic</strong> runs Claude, used by Fix for TabCam
@@ -201,7 +206,10 @@
   email, photo address and Google's sign-in token) in the browser's local
   storage until you sign out. The iOS app keeps a Sign in with Apple
   session (your name, email and Apple's sign-in token) in its private
-  storage until you sign out or it expires. Signing out keeps your
+  storage until you sign out or it expires. Signed in with email, the app
+  (or the browser's local storage, on the web) keeps your email address
+  and the sign-in's tokens until you sign out, or for 30 days unused.
+  Signing out keeps your
   captures on the device; uninstalling the app removes them from it.</p>
 
   <h2>Sharing</h2>
@@ -248,7 +256,8 @@
     Premium account record, and CloudFront's copies of your files. If you
     signed in with Apple, it also revokes
     TabCam's Apple sign-in tokens, so TabCam leaves your Apple ID's list
-    of apps using Sign in with Apple. Copies in the 30-day file history
+    of apps using Sign in with Apple. If you signed in with email, your
+    address is deleted from TabCam's sign-in service. Copies in the 30-day file history
     and 35-day backups expire on that schedule. It doesn't cancel a
     Premium subscription, which you manage where you bought it.</li>
     <li>You can also ask me to delete your data, or for a copy of it, by
