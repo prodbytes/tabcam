@@ -1648,3 +1648,10 @@ spec.
    `appleid.apple.com` listing both IDs (`identity.yaml`), as Google did.
    Folders stay: they're the profiles', found by the sign-in's
    `issuer#sub`. See [cloud sync](cloud-sync.md#android-the-web-flow).
+2. **Get TabCam out in the stores.** Apple: 0.2.202610201114 is in
+   review (manual release once approved). Play: the listing changes
+   (title, description) sent for review; production needs the closed test
+   on Alpha to have 12 opted-in testers for 14 days (Play's rule for new
+   personal accounts; 1 so far). Android's Apple-enabled build
+   0.2.202610210617 to upload to Internal and Alpha. See
+   [app stores](app-stores.md#status).
