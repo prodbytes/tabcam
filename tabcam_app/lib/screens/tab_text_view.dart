@@ -385,7 +385,6 @@ class _TabTextViewState extends State<TabTextView> {
           ),
         ),
         if (editable && review == null) _tools(),
-        if (review == null) _doubtsNote(),
         if (_busy) ...[
           const SizedBox(height: 8),
           const LinearProgressIndicator(),
@@ -507,32 +506,6 @@ class _TabTextViewState extends State<TabTextView> {
       ),
     );
   }
-
-  /// Says what the red notes are, while there are any.
-  Widget _doubtsNote() => ListenableBuilder(
-    listenable: _text,
-    builder: (context, _) {
-      if (doubtRanges(_text.text, _text.doubts).isEmpty) {
-        return const SizedBox.shrink();
-      }
-      final scheme = Theme.of(context).colorScheme;
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-        child: Row(
-          spacing: 8,
-          children: [
-            Icon(Icons.error_outline, size: 18, color: scheme.error),
-            Expanded(
-              child: Text(
-                context.l10n.textViewDoubts,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
-          ],
-        ),
-      );
-    },
-  );
 
   /// The tab text, unwrapped: long lines scroll sideways.
   Widget _editor(BuildContext context, bool editable) {

@@ -264,7 +264,6 @@
   "textViewNoStringFree": "Ninguna otra cuerda tiene sitio para esta nota ahí",
   "textViewOvertypeOn": "Sobrescribir: lo que escribes reemplaza caracteres, las columnas no se mueven",
   "textViewOvertypeOff": "Insertar: lo que escribes empuja la línea a la derecha",
-  "textViewDoubts": "Las notas en rojo se leyeron con poca confianza y pueden estar mal: compruébalas con la página y toca cada una cuando esté comprobada.",
   "textViewOvertype": "Sobrescribir",
   "textViewSongDialogTitle": "Arreglar con la tablatura de la canción",
   "textViewSongLabel": "Canción y artista",

@@ -1669,3 +1669,7 @@ spec.
    tenth of a second), start / end it where it plays now, and Play all of
    it. At the section's end it goes back to its start (Repeat) or pauses
    there. Links have none. See [Cam](cam.md).
+5. **Drop the Text view's warning about notes in red being low
+   confidence: it's obvious.** The line under the editing tools is gone
+   (and its string, en, es, pt); the notes are still red. See
+   [tab recognition](tab-recognition.md).

@@ -228,9 +228,8 @@ tools, no Fix). Sharing is the event screen's **Share** in the app bar.
 
 **Doubtful notes in red**: the notes the [cloud](cloud-ocr.md#doubtful-notes)
 read with little confidence, likely wrong, are in red, bold, on a light
-red background, and under the editing tools a line says so: "Notes in red
-were read with low confidence and may be wrong: check them against the
-page, and tap one once it's checked." (en, es, pt). They're kept on the event and sync with it
+red background, with no line explaining them (red is clear enough; the
+explanation was dropped 2026-10-21). They're kept on the event and sync with it
 (`tabTextDoubts`: `[[line, column, note]]`), and a clone keeps them. A
 note is red only while it's still where it was read and the same, a whole
 note (not part of a longer one): once the user changes it, it's black, and
