@@ -69,7 +69,22 @@ Parameters:
       by the Apple provider. Empty: the bundle ID only.
     AllowedPattern: '([A-Za-z0-9-]+\.)+[A-Za-z0-9-]+|'
 
+  EmailProviderName:
+    Type: String
+    Default: ''
+    Description: >
+      Sign in with email: the tabcam-email user pool as the pool's provider
+      (tabcam-email-signin's ProviderName, the app's Logins key). Empty:
+      none.
+    AllowedPattern: '(cognito-idp\.[a-z0-9-]+\.amazonaws\.com/[A-Za-z0-9_-]+)?'
+  EmailClientId:
+    Type: String
+    Default: ''
+    Description: With EmailProviderName, the user pool's app client
+    AllowedPattern: '[a-z0-9]*'
+
 Conditions:
+  HasEmail: !Not [!Equals [!Ref EmailProviderName, '']]
   HasApple: !Not [!Equals [!Ref AppleClientId, '']]
   HasAppleServicesId: !Not [!Equals [!Ref AppleServicesId, '']]
   HasDeveloperProvider: !Not [!Equals [!Ref DeveloperProviderName, '']]
@@ -121,6 +136,12 @@ Resources:
       DeveloperProviderName: !If [HasDeveloperProvider, !Ref DeveloperProviderName, !Ref AWS::NoValue]
       # Each provider's users are their own identities (folders): the same
       # person signed in with Google and with Apple has two.
+      CognitoIdentityProviders: !If
+        - HasEmail
+        - - ProviderName: !Ref EmailProviderName
+            ClientId: !Ref EmailClientId
+            ServerSideTokenCheck: false
+        - !Ref AWS::NoValue
       OpenIdConnectProviderARNs: !If
         - HasApple
         - - !If [MakesGoogleProvider, !Ref GoogleProvider, !Ref GoogleProviderArn]

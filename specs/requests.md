@@ -1687,3 +1687,8 @@ spec.
    production access requested) and `email-signin.yaml` (the user pool,
    its app client, the function writing the emails), both deployed. See
    [cloud sync](cloud-sync.md#sign-in-with-email-being-built).
+8. **Sign in with email, part 2: trusted like Google and Apple.** The
+   share API takes the user pool's tokens under `/email` and deletes an
+   email account's pool user with the account; the cloud OCR service and
+   the identity pool trust the pool. Deployed. See
+   [cloud sync](cloud-sync.md#sign-in-with-email-being-built).

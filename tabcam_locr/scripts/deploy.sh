@@ -29,6 +29,17 @@ region="${AWS_REGION:-us-east-1}"
 # Passed every time: deploy would keep the stack's old origins otherwise.
 TABCAM_WEB_ORIGINS="https://tabcam.nu01.com,https://rc.tabcam.nu01.com,http://localhost:2012,https://local.tabcam.nu01.com:2443"
 rbacr_param="${RBACR_TOKEN_PARAMETER:-/tabcam/rbacr-token}"
+# Sign in with email, when tabcam-email-signin is deployed: its tokens'
+# issuer and audience.
+email_issuer="$(aws cloudformation describe-stacks --region "$region" --stack-name tabcam-email-signin \
+  --query "Stacks[0].Outputs[?OutputKey=='Issuer'].OutputValue" --output text 2>/dev/null || true)"
+email_client="$(aws cloudformation describe-stacks --region "$region" --stack-name tabcam-email-signin \
+  --query "Stacks[0].Outputs[?OutputKey=='ClientId'].OutputValue" --output text 2>/dev/null || true)"
+if [[ ! "$email_issuer" =~ ^https://cognito-idp\.[a-z0-9-]+\.amazonaws\.com/[A-Za-z0-9_-]+$ \
+      || ! "$email_client" =~ ^[a-z0-9]+$ ]]; then
+  email_issuer=""
+  email_client=""
+fi
 apple_client=""
 if [[ "${TABCAM_APPLE_SIGN_IN:-}" == 1 || "${TABCAM_APPLE_SIGN_IN:-}" == true ]]; then
   # The bundle ID (iOS) and the Services ID (the web flow, on Android).
@@ -84,6 +95,7 @@ aws cloudformation deploy --region "$region" --stack-name tabcam-ocr \
     "GoogleWebClientId=${TABCAM_GOOGLE_WEB_CLIENT_ID:-}" \
     "GoogleLocalWebClientId=${TABCAM_GOOGLE_LOCAL_WEB_CLIENT_ID:-}" \
     "AppleClientId=$apple_client" \
+    "EmailIssuer=$email_issuer" "EmailClientId=$email_client" \
     "AllowedOrigins=$TABCAM_WEB_ORIGINS" \
     "IdentityPoolId=${TABCAM_COGNITO_IDENTITY_POOL_ID:-}" \
     "RbacrTokenParameterName=$rbacr_param" \

@@ -14,6 +14,8 @@ os.environ.update(
     BUCKET="nu01-user-events-1",
     IDENTITY_POOL_ID="us-east-1:pool",
     ACCESS_ROLE_ARN="arn:aws:iam::1:role/tabcam-share-access",
+    EMAIL_ISSUER="https://cognito-idp.us-east-1.amazonaws.com/us-east-1_Email",
+    EMAIL_USER_POOL_ID="us-east-1_Email",
 )
 
 import index  # noqa: E402
@@ -114,6 +116,7 @@ def store():
 
 GOOGLE = "https://accounts.google.com"
 APPLE = "https://appleid.apple.com"
+EMAIL_ISSUER = "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_Email"
 
 
 class Accounts:
@@ -297,8 +300,9 @@ class ShareApiTest(unittest.TestCase):
              body=None, verified="true", iss=None, aud=None):
         # The issuer the route's authorizer takes, unless the test says.
         if iss is None:
-            apple = route.split(" ", 1)[1].startswith("/apple/")
-            iss = "https://appleid.apple.com" if apple else "https://accounts.google.com"
+            where = route.split(" ", 1)[1]
+            iss = (APPLE if where.startswith("/apple/") else
+                   EMAIL_ISSUER if where.startswith("/email/") else GOOGLE)
         claims = {"iss": iss, "email_verified": verified, "sub": token}
         if aud is not None:
             claims["aud"] = aud
@@ -578,6 +582,46 @@ class ShareApiTest(unittest.TestCase):
             self.assertEqual(status, 401, (route, iss))
         self.assertEqual(self.clients["cognito"].tokens, [])
         self.assertEqual(len(self.clients["store"].subjects.items), 3)
+
+    def test_email_sign_ins_use_the_email_routes_with_the_pools_tokens(self):
+        # A first request makes the email sign-in's profile, as Google's.
+        status, body = self.call("GET /email/profile", "Mia@Example.com", token="email-mia",
+                                 verified=True)
+        self.assertEqual(status, 200)
+        subject = f"{EMAIL_ISSUER}#email-mia"
+        self.assertIn(subject, self.clients["store"].subjects.items)
+        # A Google token on an email path, or the pool's on a Google one: no.
+        for route, iss in (("GET /email/shared", GOOGLE),
+                           ("GET /shared", EMAIL_ISSUER),
+                           ("GET /email/shared", APPLE)):
+            status, _ = self.call(route, "mia@example.com", token="email-mia", iss=iss)
+            self.assertEqual(status, 401, (route, iss))
+
+    def test_deleting_an_email_account_deletes_its_pool_user(self):
+        deleted = []
+
+        class Idp:
+            def admin_delete_user(self, UserPoolId, Username):
+                deleted.append((UserPoolId, Username))
+
+        self.clients["cognito_idp"] = Idp()
+        status, _ = self.call("GET /email/profile", "mia@example.com", token="email-mia")
+        self.assertEqual(status, 200)
+        status, _ = self.call("DELETE /email/account", "mia@example.com", token="email-mia")
+        self.assertEqual(status, 200)
+        self.assertEqual(deleted, [("us-east-1_Email", "email-mia")])
+
+    def test_deleting_a_google_account_deletes_no_pool_user(self):
+        deleted = []
+
+        class Idp:
+            def admin_delete_user(self, UserPoolId, Username):
+                deleted.append(Username)
+
+        self.clients["cognito_idp"] = Idp()
+        status, _ = self.call("DELETE /account", "julio@example.com")
+        self.assertEqual(status, 200)
+        self.assertEqual(deleted, [])
 
     def test_an_apple_token_without_an_email_is_refused(self):
         status, body = self.call("GET /apple/shared", None, token="apple-ana")

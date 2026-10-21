@@ -17,8 +17,10 @@ into the capture.
 
 Behind an HTTP API with JWT authorizers, so every request carries a
 verified ID token: Google's (for the TabCam web client) at the routes
-below, or Apple's (Sign in with Apple, for the app's bundle ID) at the same
-routes under /apple. Each path has the authorizer of its issuer, and the
+below, Apple's (Sign in with Apple, for the app's bundle ID or Services
+ID) at the same routes under /apple, or the tabcam-email user pool's (sign
+in with email, EMAIL_ISSUER) under /email. Each path has the authorizer
+of its issuer, and the
 function checks the token's issuer matches the path. The caller's Cognito
 identity (their folder) comes from that token too (GetId, with the token
 under its issuer's Logins key: Google and Apple sign-ins are different
@@ -29,7 +31,7 @@ it's seen: the profile's Cognito identity (a developer identity) is the
 folder, shared by every sign-in linked to it, and its addresses are all
 those sign-ins' verified ones.
 
-Routes (each also under /apple, for Apple's tokens):
+Routes (each also under /apple and /email, for Apple's and email's tokens):
   GET    /profile                                 my profile: ID, accounts, roles
   POST   /profile/link-code                       a code to link another sign-in
   POST   /profile/link                            {code}: join that profile
@@ -113,9 +115,12 @@ EMAIL = re.compile(r"^[^@\s]{1,64}@[A-Za-z0-9.-]{1,189}\.[A-Za-z]{2,}$")
 # and the token's key in Cognito's Logins.
 GOOGLE = "https://accounts.google.com"
 APPLE = "https://appleid.apple.com"
-PREFIXES = {GOOGLE: "", APPLE: "/apple"}
-LOGINS = {GOOGLE: "accounts.google.com", APPLE: "appleid.apple.com"}
-PROVIDERS = {GOOGLE: "google", APPLE: "apple"}
+# Sign in with email: the tabcam-email user pool's issuer (empty: none).
+EMAIL_SIGNIN = os.environ.get("EMAIL_ISSUER", "")
+PREFIXES = {GOOGLE: "", APPLE: "/apple", EMAIL_SIGNIN: "/email"}
+LOGINS = {GOOGLE: "accounts.google.com", APPLE: "appleid.apple.com",
+          EMAIL_SIGNIN: EMAIL_SIGNIN.removeprefix("https://")}
+PROVIDERS = {GOOGLE: "google", APPLE: "apple", EMAIL_SIGNIN: "email"}
 # The identity pool's developer provider: a profile's Cognito identity is
 # the developer identity of its ID.
 DEVELOPER = os.environ.get("DEVELOPER_PROVIDER", "login.tabcam.profiles")
@@ -164,6 +169,8 @@ def _clients():
         "rbacr": prof.Rbacr(),
         # Sign in with Apple's key, read when an Apple account is deleted.
         "apple_key": lambda: apple_revoke.Key.load(boto3.client("ssm", region_name=region)),
+        # Deleting an account deletes its email sign-ins from the user pool.
+        "cognito_idp": boto3.client("cognito-idp", region_name=region),
         "apple_open": None,
         # CloudFront signed URLs for the folders it hands out (cdn.py).
         "cdn": lambda: cdn.load(boto3.client("ssm", region_name=region)),
@@ -557,8 +564,13 @@ class Api:
         # issuer is the path's too, so a token is never taken as another
         # provider's.
         method, _, path = (event.get("routeKey") or "").partition(" ")
-        issuer = APPLE if path.startswith("/apple/") else GOOGLE
-        if claims.get("iss") != issuer:
+        if path.startswith("/apple/"):
+            issuer = APPLE
+        elif path.startswith("/email/"):
+            issuer = EMAIL_SIGNIN
+        else:
+            issuer = GOOGLE
+        if not issuer or claims.get("iss") != issuer:
             raise ApiError(401, "Sign in again")
         self.login = LOGINS[issuer]
         self.provider = PROVIDERS[issuer]
@@ -976,9 +988,13 @@ class Api:
         result = self.cognito.delete_identities(IdentityIdsToDelete=[owner])
         if result.get("UnprocessedIdentityIds"):
             raise ApiError(502, "Couldn't delete your identity: try again")
-        for s in self.store.linked(profile["id"]):
+        linked = list(self.store.linked(profile["id"]))
+        for s in linked:
             self.store.unlink(s["subject"])
         self.store.delete_profile(profile["id"])
+        # Its email sign-ins' addresses leave the user pool too: nothing of
+        # the account is kept.
+        self._delete_email_users([s["subject"] for s in linked] + [self.subject])
         return {"grantsMade": len(made), "grantsToMe": len(to_me), "links": len(links),
                 "contributions": contributions, "appleTokensRevoked": apple_revoked}
 
@@ -996,6 +1012,24 @@ class Api:
                 deleted += 1
             if not found or not page.get("IsTruncated"):
                 return deleted
+
+    def _delete_email_users(self, subjects):
+        """Deletes the user pool's users of [subjects] that are email
+        sign-ins (the pool's username is the token's sub). One already gone
+        is no error."""
+        pool = os.environ.get("EMAIL_USER_POOL_ID")
+        idp = self.clients.get("cognito_idp")
+        if not (EMAIL_SIGNIN and pool and idp):
+            return
+        for subject in dict.fromkeys(subjects):
+            issuer, _, sub = subject.partition("#")
+            if issuer != EMAIL_SIGNIN or not sub:
+                continue
+            try:
+                idp.admin_delete_user(UserPoolId=pool, Username=sub)
+            except Exception as e:  # noqa: BLE001: gone already, or retried later by hand
+                if "UserNotFoundException" not in type(e).__name__ + str(e):
+                    print(f"delete_account: the email sign-in wasn't deleted: {e}")
 
     def _revoke_apple(self):
         """Signed in with Apple: revokes the caller's Apple tokens with the

@@ -98,3 +98,31 @@ def test_other_issuers_and_garbage_are_refused():
 def test_the_subject_is_the_sign_in_as_profiles_know_it():
     email, login, subject = verifier().verify_subject(apple_token())
     assert (login, subject) == ("appleid.apple.com", "https://appleid.apple.com#000123.abc")
+
+
+POOL = "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_Email"
+
+
+def email_token(aud="emailclient", iss=POOL):
+    return jwt.encode({"iss": iss, "aud": aud, "exp": int(time.time()) + 600, "sub": "mia-sub",
+                       "token_use": "id", "email": "Mia@Example.com", "email_verified": True},
+                      KEY, algorithm="RS256")
+
+
+def email_verifier():
+    return TokenVerifier(client_id=WEB, jwks=Keys(), apple_client_id=BUNDLE, apple_jwks=Keys(),
+                         email_issuer=POOL, email_client_id="emailclient", email_jwks=Keys())
+
+
+def test_email_sign_in_tokens_are_taken_for_the_pools_client():
+    email, login, subject = email_verifier().verify_subject(email_token())
+    assert email == "mia@example.com"
+    assert login == "cognito-idp.us-east-1.amazonaws.com/us-east-1_Email"
+    assert subject == f"{POOL}#mia-sub"
+    with pytest.raises(Unauthorized):
+        email_verifier().verify(email_token(aud="another-client"))
+
+
+def test_without_the_pool_set_up_email_tokens_are_refused():
+    with pytest.raises(Unauthorized):
+        verifier().verify(email_token())

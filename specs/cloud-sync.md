@@ -201,8 +201,20 @@ sign-in, its folder, Premium by address, sharing).
   was requested on 2026-10-21 (pending: until AWS grants it, SES only
   sends to verified addresses). Cost: SES $0.10 per 1,000 emails; the
   function's calls are within Lambda's free tier.
-- To come: the identity pool, the share API and the cloud OCR service
-  trusting its tokens, and the app's sign-in.
+- **Trusted** like Google's and Apple's tokens: the share API's routes
+  under `/email` (an `email` JWT authorizer for the pool's issuer and app
+  client; `EmailIssuer`, `EmailClientId`, read from
+  `tabcam-email-signin` by `deploy-share-api.sh`); the cloud OCR service
+  (`EMAIL_ISSUER`, `EMAIL_CLIENT_ID`, the pool's JWKS); the identity pool
+  (the user pool as a Cognito provider, `EmailProviderName`,
+  `EmailClientId`; the app's Logins key is
+  `cognito-idp.us-east-1.amazonaws.com/us-east-1_KwBmbR5yh`). An email
+  sign-in's subject is `<the pool's issuer>#<sub>`, its provider `email`;
+  its profile, folder, Premium (by address) and sharing are as with
+  Google. **Deleting the account** also deletes the address from the
+  user pool (`AdminDeleteUser`, for each email sign-in linked to the
+  profile), so nothing of it is kept.
+- To come: the app's sign-in.
 
 ### Google's token
 
