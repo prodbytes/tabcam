@@ -647,6 +647,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get camAlongRepeatOff => 'Repetir desactivado';
 
   @override
+  String camAlongSection(String start, String end) {
+    return 'Sección $start–$end';
+  }
+
+  @override
+  String get camAlongSectionStart => 'Empezar la sección aquí';
+
+  @override
+  String get camAlongSectionEnd => 'Terminar la sección aquí';
+
+  @override
+  String get camAlongSectionClear => 'Reproducir todo';
+
+  @override
   String get camAlongStop => 'Detener';
 
   @override

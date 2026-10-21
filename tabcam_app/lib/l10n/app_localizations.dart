@@ -1102,6 +1102,30 @@ abstract class AppLocalizations {
   /// **'Repeat off'**
   String get camAlongRepeatOff;
 
+  /// Cam: the part of the file playing along that repeats, from start to end (times like 0:12).
+  ///
+  /// In en, this message translates to:
+  /// **'Section {start}–{end}'**
+  String camAlongSection(String start, String end);
+
+  /// Cam: sets the repeated section's start where it plays now.
+  ///
+  /// In en, this message translates to:
+  /// **'Start the section here'**
+  String get camAlongSectionStart;
+
+  /// Cam: sets the repeated section's end where it plays now.
+  ///
+  /// In en, this message translates to:
+  /// **'End the section here'**
+  String get camAlongSectionEnd;
+
+  /// Cam: drops the section; the whole file plays again.
+  ///
+  /// In en, this message translates to:
+  /// **'Play all of it'**
+  String get camAlongSectionClear;
+
   /// Cam: stops the file playing along, back at its start.
   ///
   /// In en, this message translates to:

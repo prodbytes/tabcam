@@ -865,6 +865,30 @@
   "@camAlongRepeatOff": {
     "description": "Cam: the file playing along stops at its end; tapping turns repeat on."
   },
+  "camAlongSection": "Section {start}–{end}",
+  "@camAlongSection": {
+    "description": "Cam: the part of the file playing along that repeats, from start to end (times like 0:12).",
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "camAlongSectionStart": "Start the section here",
+  "@camAlongSectionStart": {
+    "description": "Cam: sets the repeated section's start where it plays now."
+  },
+  "camAlongSectionEnd": "End the section here",
+  "@camAlongSectionEnd": {
+    "description": "Cam: sets the repeated section's end where it plays now."
+  },
+  "camAlongSectionClear": "Play all of it",
+  "@camAlongSectionClear": {
+    "description": "Cam: drops the section; the whole file plays again."
+  },
   "camAlongStop": "Stop",
   "@camAlongStop": {
     "description": "Cam: stops the file playing along, back at its start."

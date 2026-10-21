@@ -45,9 +45,11 @@ class FakeVideoPlatform extends VideoPlatformBase {
     disposed.add(playerId);
   }
 
+  /// Where the players are (tests move it).
+  var position = const Duration(seconds: 12);
+
   @override
-  Future<Duration> getPosition(int playerId) async =>
-      const Duration(seconds: 12);
+  Future<Duration> getPosition(int playerId) async => position;
 
   /// Whether each player loops.
   final looping = <int, bool>{};
