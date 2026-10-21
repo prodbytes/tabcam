@@ -1655,3 +1655,11 @@ spec.
    personal accounts; 1 so far). Android's Apple-enabled build
    0.2.202610210617 to upload to Internal and Alpha. See
    [app stores](app-stores.md#status).
+3. **Testers by link: a Google Group, nu01-testers, for all apps.**
+   nu01.com's Workspace didn't let outside accounts join groups, so its
+   Groups sharing settings now allow public groups and external members;
+   `nu01-testers@nu01.com` (anyone can join; members see conversations,
+   only the owner posts, only managers see members) replaced Alpha's
+   **Internal** email list, whose testers were added to it. Alpha has
+   0.2.202610210617, sent for review with the testers change. See
+   [app stores](app-stores.md#status).
