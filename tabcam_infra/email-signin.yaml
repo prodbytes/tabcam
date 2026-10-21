@@ -1,0 +1,196 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  tabcam-email-signin: sign-in with email. A Cognito user pool (Essentials
+  tier: free up to 10,000 monthly active users) whose only sign-in is a
+  one-time code emailed to the address (EMAIL_OTP; no passwords): a new
+  address signs up and confirms with a code, a known one gets a code each
+  time. The emails go out through SES as tabcam.nu01.com (tabcam-email
+  stack), written by a small function (CustomMessage): the code and a
+  link that fills it in, in the app's language (English, Spanish or
+  Portuguese). Its ID tokens (email, email_verified, sub) are trusted by
+  the identity pool, the share API and the cloud OCR service like
+  Google's and Apple's. Deploy in us-east-1.
+
+Parameters:
+  FromAddress:
+    Type: String
+    Default: TabCam <signin@tabcam.nu01.com>
+    Description: The sign-in emails' sender (an address at the SES identity's domain)
+  Sites:
+    Type: String
+    Default: https://tabcam.nu01.com,https://rc.tabcam.nu01.com,https://local.tabcam.nu01.com:2443
+    Description: >
+      The sites a sign-in link may point to (the app says which, in the
+      call's ClientMetadata); any other gets the first.
+
+Resources:
+  # Writes the code emails: subject and body in the asked language, the
+  # code and a link (<site>/app/?signin-code=<code>) that fills it in.
+  MessageFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: tabcam-email-signin-message
+      Description: TabCam's sign-in code emails (Cognito CustomMessage)
+      Runtime: python3.13
+      Architectures: [arm64]
+      Handler: index.handler
+      MemorySize: 128
+      Timeout: 5
+      Role: !GetAtt MessageRole.Arn
+      Environment:
+        Variables:
+          SITES: !Ref Sites
+      Code:
+        ZipFile: |
+          import html
+          import os
+
+          TEXT = {
+              "en": ("Your TabCam sign-in code: {code}",
+                     "Your TabCam sign-in code is",
+                     "Sign in to TabCam",
+                     "Or type the code in TabCam. It works once, for a few minutes. "
+                     "If you didn't ask to sign in, ignore this email."),
+              "es": ("Tu código para entrar en TabCam: {code}",
+                     "Tu código para entrar en TabCam es",
+                     "Entrar en TabCam",
+                     "O escribe el código en TabCam. Sirve una vez, durante unos minutos. "
+                     "Si no pediste entrar, ignora este correo."),
+              "pt": ("Seu código para entrar no TabCam: {code}",
+                     "Seu código para entrar no TabCam é",
+                     "Entrar no TabCam",
+                     "Ou digite o código no TabCam. Ele vale uma vez, por alguns minutos. "
+                     "Se você não pediu para entrar, ignore este e-mail."),
+          }
+
+
+          def handler(event, context):
+              source = event.get("triggerSource", "")
+              if source not in ("CustomMessage_SignUp", "CustomMessage_ResendCode",
+                                "CustomMessage_Authentication"):
+                  return event
+              meta = event["request"].get("clientMetadata") or {}
+              lang = (meta.get("lang") or "en")[:2].lower()
+              subject, lead, button, note = TEXT.get(lang, TEXT["en"])
+              sites = [s for s in os.environ.get("SITES", "").split(",") if s]
+              site = meta.get("site") if meta.get("site") in sites else sites[0]
+              code = event["request"]["codeParameter"]  # Cognito puts the code here
+              link = f"{site}/app/?signin-code={code}"
+              response = event["response"]
+              response["emailSubject"] = subject.format(code=code)
+              response["emailMessage"] = (
+                  '<div style="font-family:sans-serif;font-size:16px;line-height:1.5">'
+                  f"<p>{html.escape(lead)}</p>"
+                  f'<p style="font-size:32px;font-weight:bold;letter-spacing:6px">{code}</p>'
+                  f'<p><a href="{link}" style="background:#f0bd6b;color:#1c1408;'
+                  'padding:10px 18px;border-radius:20px;text-decoration:none">'
+                  f"{html.escape(button)}</a></p>"
+                  f'<p style="color:#666;font-size:13px">{html.escape(note)}</p></div>'
+              )
+              return event
+
+  MessageRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: {Service: lambda.amazonaws.com}
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  MessageLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/tabcam-email-signin-message
+      RetentionInDays: 14
+
+  MessagePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref MessageFunction
+      Action: lambda:InvokeFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !GetAtt UserPool.Arn
+
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      UserPoolName: tabcam-email
+      UserPoolTier: ESSENTIALS
+      DeletionProtection: ACTIVE
+      UsernameAttributes: [email]
+      AutoVerifiedAttributes: [email]
+      UsernameConfiguration:
+        CaseSensitive: false
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Required: true
+          Mutable: true
+      # Codes only: a password is never set (sign-up takes none), so
+      # PASSWORD, which Cognito always lists, is never usable.
+      Policies:
+        SignInPolicy:
+          AllowedFirstAuthFactors: [PASSWORD, EMAIL_OTP]
+        PasswordPolicy:
+          MinimumLength: 16
+          RequireLowercase: true
+          RequireUppercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+      EmailConfiguration:
+        EmailSendingAccount: DEVELOPER
+        SourceArn: !ImportValue tabcam-email-identity-arn
+        From: !Ref FromAddress
+      LambdaConfig:
+        CustomMessage: !GetAtt MessageFunction.Arn
+      UserPoolTags:
+        project: tabcam
+        tenancy: shared
+
+  # The app's client: public (no secret), choice-based sign-in (USER_AUTH,
+  # EMAIL_OTP) and refresh. Unknown addresses look like known ones.
+  AppClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientName: tabcam-app
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      PreventUserExistenceErrors: ENABLED
+      EnableTokenRevocation: true
+      AuthSessionValidity: 15
+      IdTokenValidity: 60
+      AccessTokenValidity: 60
+      RefreshTokenValidity: 30
+      TokenValidityUnits:
+        IdToken: minutes
+        AccessToken: minutes
+        RefreshToken: days
+
+Outputs:
+  UserPoolId:
+    Description: The app's TABCAM_EMAIL_USER_POOL_ID
+    Value: !Ref UserPool
+  ClientId:
+    Description: The app's TABCAM_EMAIL_CLIENT_ID (the ID tokens' audience)
+    Value: !Ref AppClient
+  Issuer:
+    Description: The ID tokens' issuer
+    Value: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}
+  ProviderName:
+    Description: The identity pool's provider name (the app's Logins key)
+    Value: !Sub cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}
