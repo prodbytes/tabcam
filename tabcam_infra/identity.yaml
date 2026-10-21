@@ -1,20 +1,17 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  A Cognito identity pool that trusts Google sign-in (through an IAM OpenID
-  Connect provider for accounts.google.com, which takes every TabCam
-  Google client) and, when AppleClientId is set, Sign in with Apple for the
-  app's bundle ID. The app
-  exchanges the signed-in user's ID token for temporary AWS
-  credentials of the authenticated role, which may only read, write and
-  delete that user's own folder in the user-data bucket (tabcam-user-data
-  stack). Guests (unauthenticated identities) aren't allowed. Deployed
-  twice: tabcam-identity (pool tabcam, the web client: every build but
-  local web ones) and tabcam-identity-local (pool tabcam-local, the local
-  web client). The pool's built-in Google login takes one client ID, but
-  an app's token names its own client too (iOS: aud is the web client, azp
-  the iOS client), which that login refuses; the OpenID Connect provider
-  takes a list. An account has one provider per URL: tabcam-identity
-  makes it, tabcam-identity-local uses it (GoogleProviderArn).
+  A Cognito identity pool that trusts Google sign-in and, with
+  AppleClientId, Sign in with Apple, each through an IAM OpenID Connect
+  provider that takes every TabCam client (Google's web, iOS and Android
+  clients; Apple's bundle ID and Services ID): the pools' built-in logins
+  take one client ID. The app exchanges the signed-in user's ID token for
+  temporary AWS credentials of the authenticated role, which may only
+  read, write and delete that user's own folder in the user-data bucket
+  (tabcam-user-data stack). Guests aren't allowed. Deployed twice:
+  tabcam-identity (pool tabcam) and tabcam-identity-local (pool
+  tabcam-local, the local web client). An account has one provider per
+  URL: tabcam-identity makes them, tabcam-identity-local uses Google's
+  (GoogleProviderArn).
 
 Parameters:
   GoogleWebClientId:
@@ -68,9 +65,8 @@ Parameters:
     Default: ''
     Description: >
       With AppleClientId: the Services ID (com.nu01.tabcam.signin) of Sign
-      in with Apple's web flow (on Android), trusted beside the bundle ID.
-      Cognito takes both separated by a semicolon. Empty: the bundle ID
-      only.
+      in with Apple's web flow (on Android), trusted beside the bundle ID
+      by the Apple provider. Empty: the bundle ID only.
     AllowedPattern: '([A-Za-z0-9-]+\.)+[A-Za-z0-9-]+|'
 
 Conditions:
@@ -98,6 +94,24 @@ Resources:
         - !Split [',', !Sub '${GoogleWebClientId},${GoogleAppClientIds}']
         - [!Ref GoogleWebClientId]
 
+  # Sign in with Apple, for the bundle ID (iOS) and the Services ID (the web
+  # flow, on Android). The pool's built-in Apple login takes one client ID
+  # (a semicolon-separated value is taken literally: tried 2026-10-21), so
+  # Apple goes through an OpenID Connect provider too. The app's Logins key
+  # stays appleid.apple.com. Folders are the profiles' (the share API finds
+  # a profile by the sign-in's issuer and sub), so the move kept them.
+  AppleProvider:
+    Type: AWS::IAM::OIDCProvider
+    Condition: HasApple
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Url: https://appleid.apple.com
+      ClientIdList: !If
+        - HasAppleServicesId
+        - [!Ref AppleClientId, !Ref AppleServicesId]
+        - [!Ref AppleClientId]
+
   IdentityPool:
     Type: AWS::Cognito::IdentityPool
     Properties:
@@ -107,15 +121,11 @@ Resources:
       DeveloperProviderName: !If [HasDeveloperProvider, !Ref DeveloperProviderName, !Ref AWS::NoValue]
       # Each provider's users are their own identities (folders): the same
       # person signed in with Google and with Apple has two.
-      OpenIdConnectProviderARNs:
-        - !If [MakesGoogleProvider, !Ref GoogleProvider, !Ref GoogleProviderArn]
-      SupportedLoginProviders: !If
+      OpenIdConnectProviderARNs: !If
         - HasApple
-        - appleid.apple.com: !If
-            - HasAppleServicesId
-            - !Sub '${AppleClientId};${AppleServicesId}'
-            - !Ref AppleClientId
-        - !Ref AWS::NoValue
+        - - !If [MakesGoogleProvider, !Ref GoogleProvider, !Ref GoogleProviderArn]
+          - !Ref AppleProvider
+        - - !If [MakesGoogleProvider, !Ref GoogleProvider, !Ref GoogleProviderArn]
 
   AuthenticatedRole:
     Type: AWS::IAM::Role
