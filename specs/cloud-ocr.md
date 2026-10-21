@@ -404,9 +404,18 @@ pages:
 - **Keeping a worker always warm** (provisioned concurrency) costs about
   $27 a month per 2560 MB worker, against the [design
   guideline](../CLAUDE.md) of spending little on servers: not done.
-- **Faster reading** needs more CPU (Lambda's memory, capped at 3008 MB
-  on this account until its limits are raised; 10240 MB brings 6
-  vCPUs) or oneDNN working: to measure.
+- **Measured in Lambda** ([bench.sh](../tabcam_locr/scripts/bench.sh):
+  a temporary function from the image reads pages already in the
+  bucket, writing nothing; 2560 MB, warm), on three handwritten pages:
+  PaddleOCR with its default 8 threads, 59, 131 and 90 s; with one
+  thread per CPU (2), **48, 90 and 65 s, the same text**: now the
+  default (`cpu_threads`, the CPU count; `LOCR_CPU_THREADS` overrides
+  it). oneDNN (`LOCR_MKLDNN=1`) still fails in Lambda
+  ("ConvertPirAttribute2RuntimeAttribute not support"), with
+  `FLAGS_enable_pir_api=0` too: it stays off.
+- **More CPU** (Lambda's memory, capped at 3008 MB on this account until
+  its limits are raised; 10240 MB brings 6 vCPUs): to measure once the
+  limit is raised.
 
 ## Verified
 

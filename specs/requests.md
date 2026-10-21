@@ -1718,3 +1718,10 @@ spec.
     premium user's app has a worker warm up (`POST /warm`, at most every
     5 minutes), and the Text view says the cloud takes about 1 to 3
     minutes a page. See [cloud OCR](cloud-ocr.md#speed).
+11. **Speed up the cloud OCR (the plan agreed: measure oneDNN and more
+    CPU).** A bench (`tabcam_locr/scripts/bench.sh`, `locr/bench.py`)
+    runs a temporary Lambda function on pages in the bucket. oneDNN
+    still fails in Lambda; PaddleOCR with one thread per CPU instead of
+    8 read the same three pages 18-31% faster with the same text, and is
+    now the default. More memory waits for the account's limits. See
+    [cloud OCR](cloud-ocr.md#speed).

@@ -56,10 +56,16 @@ def tesseract(strip, line):
 def _paddle():
     from paddleocr import PaddleOCR
     # oneDNN off: on x86 Linux, Paddle 3.3's new executor fails with it
-    # ("ConvertPirAttribute2RuntimeAttribute not support").
+    # ("ConvertPirAttribute2RuntimeAttribute not support"; in Lambda too,
+    # and with FLAGS_enable_pir_api=0). One thread per CPU (Lambda gives 2
+    # at 2560 MB): Paddle's default 8 read the same pages 18-31% slower
+    # (measured 2026-10-21, locr/bench.py). LOCR_MKLDNN and
+    # LOCR_CPU_THREADS are for measuring.
+    threads = int(os.environ.get("LOCR_CPU_THREADS") or os.cpu_count() or 1)
     return PaddleOCR(lang="en", use_doc_orientation_classify=False,
                      use_doc_unwarping=False, use_textline_orientation=False,
-                     enable_mkldnn=False)
+                     enable_mkldnn=os.environ.get("LOCR_MKLDNN") == "1",
+                     cpu_threads=threads)
 
 
 def paddle(strip, line):
