@@ -230,8 +230,14 @@ ACM validation names.
         --capabilities CAPABILITY_IAM \
         --tags project=tabcam tenancy=shared \
         --parameter-overrides PoolName=tabcam \
-          DeveloperProviderName=login.tabcam.profiles AppleClientId=com.nu01.tabcam
+          DeveloperProviderName=login.tabcam.profiles AppleClientId=com.nu01.tabcam \
+          AppleServicesId=com.nu01.tabcam.signin
       ```
+
+      Apple goes through an IAM OpenID Connect provider for
+      `appleid.apple.com` that the stack makes (one per account, kept if
+      the stack goes), listing the bundle ID and the Services ID (Android's
+      web flow); the pool's built-in Apple login took one.
 
       `deploy` keeps the Google parameters left out (the stack uses the
       account's existing provider, `GoogleProviderArn`, so they're unused

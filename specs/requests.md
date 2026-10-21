@@ -1635,3 +1635,16 @@ spec.
    web app routes are now `/app/*` and `/app` (redirected to `/app/` by
    the function), not the prefix `/app*`, deployed and in the local
    Floci CloudFront alike.
+
+## 2026-10-21
+
+1. **Sign in with Apple on Android: verify and fix.** Apple's side works:
+   the web flow returns a token for the Services ID, and the "Continue
+   does nothing" was a desktop artifact (the first press worked; the
+   `intent://` redirect does nothing on a computer, and later presses get
+   403). On throwaway pools, Cognito's built-in Apple login took
+   `com.nu01.tabcam;com.nu01.tabcam.signin` literally and refused the
+   token; so Apple moves to an IAM OpenID Connect provider for
+   `appleid.apple.com` listing both IDs (`identity.yaml`), as Google did.
+   Folders stay: they're the profiles', found by the sign-in's
+   `issuer#sub`. See [cloud sync](cloud-sync.md#android-the-web-flow).
