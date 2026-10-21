@@ -65,7 +65,7 @@
   "eventNotNow": "Ahora no",
   "eventNothingToRead": "Nada que leer: agrega un escaneo, una foto o un PDF.",
   "eventReadingTab": "Leyendo la tablatura…",
-  "eventInCloud": "Transcribiendo en la nube. El texto aparecerá aquí cuando termine.",
+  "eventInCloud": "Transcribiendo en la nube: de 1 a 3 minutos por página. El texto aparecerá aquí cuando termine, aunque salgas.",
   "eventNoTab": "No se encontró tablatura en las páginas. Escanea más cerca y con la hoja más plana.",
   "eventReadAgain": "Leer de nuevo",
   "eventRescanTitle": "¿Reescanear las páginas?",

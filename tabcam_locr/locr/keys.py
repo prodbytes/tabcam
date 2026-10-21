@@ -2,6 +2,7 @@
 
     <identity>/events/<event id>/<page id>.<extension>   a page (the app)
     <identity>/ocr/<event id>/<page id>.json             its transcription (here)
+    <identity>/ocr/<event id>/<page id>.reading          it's being read (here)
     <identity>/ocrcache/<ETag>-<version>.json            a reading by the image's
                                                          content (here), for copies
 
@@ -39,6 +40,10 @@ class PageKey:
     def result_key(self):
         return result_key(self.identity, self.event_id, self.page_id)
 
+    @property
+    def reading_key(self):
+        return reading_key(self.identity, self.event_id, self.page_id)
+
 
 def parse_page(key):
     """The image or PDF page [key] names, or None (event.json, videos,
@@ -57,6 +62,10 @@ def parse_page(key):
 
 def result_key(identity, event_id, page_id):
     return f"{identity}/ocr/{event_id}/{page_id}.json"
+
+
+def reading_key(identity, event_id, page_id):
+    return f"{identity}/ocr/{event_id}/{page_id}.reading"
 
 
 ETAG = re.compile(r"^[0-9a-f]{32}(-[0-9]{1,5})?$")

@@ -296,6 +296,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _scan() =>
       _capture((l10n, e) => l10n.homeScanFailed(e), () async {
+        widget.ocr?.warm();
         final pages = await PageSource.scan(context);
         return pages.isEmpty ? null : library.create(pages);
       });

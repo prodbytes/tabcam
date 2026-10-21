@@ -257,6 +257,7 @@ class _EventScreenState extends State<EventScreen> {
           _snack(tabImportMessage(l10n, imported));
         }
       } else if (source == _AddSource.scan) {
+        widget.ocr?.warm();
         final pages = await PageSource.scan(context);
         if (pages.isEmpty) return;
         await _library.addPages(event, pages);

@@ -276,7 +276,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get eventInCloud =>
-      'Transcribiendo en la nube. El texto aparecerá aquí cuando termine.';
+      'Transcribiendo en la nube: de 1 a 3 minutos por página. El texto aparecerá aquí cuando termine, aunque salgas.';
 
   @override
   String get eventNoTab =>

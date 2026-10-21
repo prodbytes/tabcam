@@ -58,14 +58,21 @@ most 5 minutes (less if the grant ends sooner), a "no" for 1 minute.
    read again: the reading kept by its S3 ETag
    (`<identity>/ocrcache/<ETag>-<version>.json`, written by `tabcam-ocr`
    for `ok` and `no-tab` readings) is copied as the page's result, with
-   `cached: true`. Read again never uses it.
+   `cached: true`. Read again never uses it. Queueing a page also writes
+   a marker beside its result, `<identity>/ocr/<event id>/<page
+   id>.reading`: while it's younger than the worker's 15-minute timeout,
+   `/transcribe` (Read again too) doesn't queue the page a second time.
 3. `tabcam-ocr` reads the page and writes
    `<identity>/ocr/<event id>/<page id>.json`:
    `{page, status, text, doubts, staves, lines, seconds, engines, version,
    created}`, `status` being `ok`, `no-tab` or `error`; `doubts` the notes
    read with little confidence, likely wrong, `[[line, column, note]]` in
    `text` (lines and columns from 0; see [doubtful notes](#doubtful-notes)).
-4. Deleting a page (or its event) in the bucket deletes its transcription.
+   A page deleted while it was read gets no result (the worker checks it's
+   still there before writing). Read, gone or failed, the marker is
+   removed.
+4. Deleting a page (or its event) in the bucket deletes its transcription
+   and its marker.
 
 **Reading a page**: the page is found and flattened if it's a photo; red
 ink is dropped (the red channel, then whatever is still red, not dark,
@@ -214,6 +221,13 @@ with text but no tab is still `no-tab`.
   edits and a verified one too (`transcribe(event, again: true,
   replace: true)`), clearing Verified. A reading with no tab on any page
   leaves the text as it was.
+- **Warm-up**: opening the camera (Scan, on Home or in an event), a
+  premium user's app calls `POST /warm`, and the service has a worker
+  load its engines (`{"warm": true}`), so the pages about to come skip
+  the cold start ([speed](#speed)). At most one per user every 5
+  minutes (per service container), Premium only (402 otherwise); a
+  failure is only logged. Each costs about 15 s of the worker (a few
+  hundredths of a cent).
 - **Collected**: `CloudOcr.collected(eventId)` completes once an event's
   results are applied (a tab found, or none), so the reader stops saying
   it's in the cloud.
@@ -304,6 +318,11 @@ with `CloudOcr.fetchPage` (`OcrApi.page`), its log line the size only.
   answer and its ttl, or why the check failed (HTTP status). `ocr start`,
   `ocr done` (status, staves, lines, engine timings, seconds) and
   `ocr failed` (the exception and traceback, before Lambda retries).
+  `transcribe` also counts the pages left alone because they're being
+  read (`reading`). `ocr engines loaded` (seconds: a cold start), `ocr
+  warm` (a warm-up: whether it loaded the engines, and how long it
+  took), and `ocr page gone` (deleted before or while it was read: no
+  result written).
 
 ## Infrastructure
 
@@ -317,7 +336,8 @@ with `CloudOcr.fetchPage` (`OcrApi.page`), its log line the size only.
   - `tabcam-ocr` (x86_64, like `tabcam-ocr-api`: one image, and
     PaddlePaddle has no working Linux ARM build of its version; 2560 MB,
     chosen by [measuring](#memory); 15 min, one retry): it may get page
-    images and put results;
+    images, put results, delete `.reading` markers and list the bucket
+    (so a page deleted meanwhile answers 404, not 403);
   - `tabcam-ocr-api` (512 MB, 300 s for [auto-correct](autocorrect.md)'s
     `/autocorrect`; the other requests take a second or two, `/page` up to
     15 s): it may read
@@ -332,7 +352,10 @@ with `CloudOcr.fetchPage` (`OcrApi.page`), its log line the size only.
 - Deployed by an administrator with
   [tabcam_locr/scripts/deploy.sh](../tabcam_locr/scripts/deploy.sh); its
   output URL is the app's `TABCAM_OCR_URL`. It passes the Claude API
-  key's secret (`tabcam/anthropic-api-key`) when it exists.
+  key's secret (`tabcam/anthropic-api-key`) when it exists. Deployed, it
+  invokes `tabcam-ocr` once with `{"warm": true}` (see
+  [speed](#speed)), so the first page after a deploy doesn't wait for
+  the new image.
 
 ### Memory
 
@@ -358,6 +381,32 @@ cheapest per page, 8% less than 3008 MB for 8% more time (under the 10%
 a step up must buy); 2048 MB is both slower and dearer, its ~1.95 GB
 peak close to its limit. Measure again if the quota is raised: up to
 10240 MB brings up to 6 vCPUs.
+
+### Speed
+
+Measured on 2026-10-21 from the worker's logs (33 readings, 2026-10-16
+to 10-21) and a local profile of three of the developer's handwritten
+pages:
+
+- **A page takes 60 to 200 s**, warm or cold: almost all of it is the
+  reading. On drawn staves (handwriting), about 60% is the fret numbers
+  (80 to 210 per page, each read by PaddleOCR's recognizer, RapidOCR's
+  when that isn't a fret) and 30% the words around the staves (RapidOCR,
+  about 10 calls per page). Lambda reads about 5 times slower than an
+  Apple M-series laptop: about 1.5 vCPUs at 2560 MB, and Paddle's oneDNN
+  acceleration off (it fails on x86 with Paddle 3.3).
+- **A cold start** (a new worker loading the models) adds 6 to 14 s; the
+  first after a new image adds 80 to 120 s (Lambda fetching the image),
+  hence the warm-up after each deploy.
+- Reading the numbers with PaddleOCR's recognizer alone, in batches (no
+  detection), was tried: no faster (51 s vs 55 s for 430 numbers, the
+  model itself is the cost), and 46 of them read differently. Not taken.
+- **Keeping a worker always warm** (provisioned concurrency) costs about
+  $27 a month per 2560 MB worker, against the [design
+  guideline](../CLAUDE.md) of spending little on servers: not done.
+- **Faster reading** needs more CPU (Lambda's memory, capped at 3008 MB
+  on this account until its limits are raised; 10240 MB brings 6
+  vCPUs) or oneDNN working: to measure.
 
 ## Verified
 
@@ -418,10 +467,9 @@ peak close to its limit. Measure again if the quota is raised: up to
 
 - Handwritten numbers written into each other ("12" touching "10") are
   read as one; a section letter's circle touching a fret takes it.
-- No concurrency is reserved (the account's limit is 10); a burst of
-  uploads queues.
+- No concurrency is reserved, and the account's limit is 10 (an increase
+  to 1000 was requested on 2026-10-21); a burst of uploads queues.
 - Results arrive at the next sync pass after they're written (up to a
-  minute, plus about 105 s of OCR per page, [measured](#memory) on a
-  two-staff page).
+  minute), plus 60 to 200 s of OCR per page ([speed](#speed)).
 - Transcriptions of events deleted in the bucket by other means than the
   app (whole folders) stay until their pages' deletions reach the rule.

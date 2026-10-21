@@ -258,7 +258,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventInCloud =>
-      'Transcribing in the cloud. The text appears here when it\'s done.';
+      'Transcribing in the cloud: about 1 to 3 minutes a page. The text appears here when it\'s done, even if you leave.';
 
   @override
   String get eventNoTab =>
