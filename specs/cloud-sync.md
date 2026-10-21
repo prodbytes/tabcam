@@ -172,7 +172,7 @@ keeps who, the provider and the ID token.
   (403, "Your request could not be completed"): the first press had
   worked.
 
-### Sign in with email (being built)
+### Sign in with email
 
 For people without (or not wanting) Google or Apple: they type their
 email address and get a one-time code, by email, with a link that fills
@@ -189,6 +189,21 @@ sign-in, its folder, Premium by address, sharing).
   the session's 15 minutes; unknown addresses look like known ones
   (PreventUserExistenceErrors). ID tokens last an hour, refresh tokens
   30 days.
+- **In the app** (every platform, in builds with
+  `TABCAM_EMAIL_USER_POOL_ID` and `TABCAM_EMAIL_CLIENT_ID`): **Sign in
+  with email**, under Google (and Apple), opens a dialog: the address and
+  **Send code**, then the code, **Sign in**, **Send a new code** and **Use
+  another address**; it closes signed in. Errors are said in words (not
+  an address, a wrong or expired code, too many tries). The app talks to
+  the pool directly (its public JSON API, the app client only;
+  `email_auth_service.dart`). A sign-in waiting for its code is kept for
+  the pool's 15 minutes (a file in the app's private folder, or the
+  browser's localStorage), so the email's link (`…/app/?signin-code=…`,
+  opened in the app or on the web) finishes it, even after the app was
+  closed; a link with no sign-in waiting does nothing. Signed in, the
+  session is kept the same way, the ID token renewed from the refresh
+  token five minutes before it expires; a refused refresh signs out.
+  Signing out revokes the refresh token.
 - **The emails** go out through Amazon SES as `tabcam.nu01.com`
   ([email.yaml](../tabcam_infra/email.yaml), stack `tabcam-email`: Easy
   DKIM, MAIL FROM `mail.tabcam.nu01.com` with SPF, DMARC `p=none`), from
@@ -197,10 +212,14 @@ sign-in, its folder, Premium by address, sharing).
   sign-up, a resent code and sign-in): the code, large, and a link to
   `<site>/app/?signin-code=<code>`, in English, Spanish or Portuguese.
   The app passes `lang` and `site` (one of TabCam's sites; any other gets
-  tabcam.nu01.com) in the calls' ClientMetadata. SES production access
-  was requested on 2026-10-21 (pending: until AWS grants it, SES only
-  sends to verified addresses). Cost: SES $0.10 per 1,000 emails; the
-  function's calls are within Lambda's free tier.
+  tabcam.nu01.com) in the calls' ClientMetadata. AWS **denied** SES
+  production access on 2026-10-21 (case 179257941000946; without it SES
+  only sends to verified addresses), so for now the pool sends through
+  Cognito's own mail (`Sender=COGNITO`: from
+  `no-reply@verificationemail.com`, at most 50 emails a day); once SES
+  is granted, deploying with `Sender=SES` switches back. Cost: SES $0.10
+  per 1,000 emails; the function's calls are within Lambda's free
+  tier.
 - **Trusted** like Google's and Apple's tokens: the share API's routes
   under `/email` (an `email` JWT authorizer for the pool's issuer and app
   client; `EmailIssuer`, `EmailClientId`, read from
@@ -214,7 +233,6 @@ sign-in, its folder, Premium by address, sharing).
   Google. **Deleting the account** also deletes the address from the
   user pool (`AdminDeleteUser`, for each email sign-in linked to the
   profile), so nothing of it is kept.
-- To come: the app's sign-in.
 
 ### Google's token
 

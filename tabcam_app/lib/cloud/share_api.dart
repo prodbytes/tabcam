@@ -406,8 +406,13 @@ class ShareApi {
     final uri = baseUrl.replace(
       pathSegments: [
         ...baseUrl.pathSegments.where((s) => s.isNotEmpty),
-        if (token != null && AuthProvider.ofToken(token) == AuthProvider.apple)
-          'apple',
+        // Apple's and email's tokens go to the routes under their own name.
+        if (token != null)
+          ...switch (AuthProvider.ofToken(token)) {
+            AuthProvider.apple => ['apple'],
+            AuthProvider.email => ['email'],
+            AuthProvider.google => const <String>[],
+          },
         ...path,
       ],
       queryParameters: query,

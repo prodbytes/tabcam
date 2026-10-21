@@ -98,5 +98,7 @@ jobs:
           TABCAM_USER_DATA_BUCKET: ${{ vars.TABCAM_USER_DATA_BUCKET }}
           TABCAM_SHARE_API_URL: ${{ vars.TABCAM_SHARE_API_URL }}
           TABCAM_OCR_URL: ${{ vars.TABCAM_OCR_URL }}
+          TABCAM_EMAIL_USER_POOL_ID: ${{ vars.TABCAM_EMAIL_USER_POOL_ID }}
+          TABCAM_EMAIL_CLIENT_ID: ${{ vars.TABCAM_EMAIL_CLIENT_ID }}
           TABCAM_CDN_KEY_GROUP_ID: ${{ vars.TABCAM_CDN_KEY_GROUP_ID }}
         run: bash scripts/deploy.sh

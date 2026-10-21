@@ -1529,4 +1529,61 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get eventCouldntPublish => 'No se pudo publicar';
+
+  @override
+  String get emailSignInButton => 'Entrar con email';
+
+  @override
+  String get emailSignInTitle => 'Entrar con email';
+
+  @override
+  String get emailSignInIntro =>
+      'Escribe tu dirección de email: te enviaremos un código para entrar. Sin contraseña.';
+
+  @override
+  String get emailSignInAddress => 'Dirección de email';
+
+  @override
+  String get emailSignInSend => 'Enviar código';
+
+  @override
+  String emailSignInSent(String email) {
+    return 'Enviamos un código a $email. Escríbelo aquí, o toca el enlace del email.';
+  }
+
+  @override
+  String get emailSignInCode => 'Código';
+
+  @override
+  String get emailSignInVerify => 'Entrar';
+
+  @override
+  String get emailSignInResend => 'Enviar un código nuevo';
+
+  @override
+  String get emailSignInOther => 'Usar otra dirección';
+
+  @override
+  String get emailSignInBadAddress => 'Eso no es una dirección de email.';
+
+  @override
+  String get emailSignInBadCode =>
+      'Ese código no es correcto o caducó: revísalo o envía uno nuevo.';
+
+  @override
+  String get emailSignInTooMany =>
+      'Demasiados intentos: espera unos minutos y vuelve a intentarlo.';
+
+  @override
+  String emailSignInFailed(String error) {
+    return 'No se pudo entrar: $error';
+  }
+
+  @override
+  String get emailSignInExpired =>
+      'Tu sesión con email caducó: vuelve a entrar.';
+
+  @override
+  String get emailSignInUnavailable =>
+      'Entrar con email no está configurado en esta versión.';
 }

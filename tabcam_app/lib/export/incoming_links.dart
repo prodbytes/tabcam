@@ -22,6 +22,23 @@ class IncomingLinks extends ChangeNotifier with WidgetsBindingObserver {
         ? Uri.base
         : Uri.tryParse(PlatformDispatcher.instance.defaultRouteName);
     if (launch != null && CaptureLink.idIn(launch) != null) _pending = launch;
+    if (launch != null) _signInCode = signInCodeIn(launch);
+  }
+
+  String? _signInCode;
+
+  /// A sign-in email's code (its link, `…/app/?signin-code=<code>`), if the
+  /// app was opened with one; it's then no longer waiting.
+  String? takeSignInCode() {
+    final code = _signInCode;
+    _signInCode = null;
+    return code;
+  }
+
+  /// The code in a sign-in email's link, or null.
+  static String? signInCodeIn(Uri link) {
+    final code = link.queryParameters['signin-code'];
+    return code != null && RegExp(r'^\d{6,8}$').hasMatch(code) ? code : null;
   }
 
   /// The link waiting to be opened, if any, left waiting.
@@ -39,6 +56,11 @@ class IncomingLinks extends ChangeNotifier with WidgetsBindingObserver {
     RouteInformation routeInformation,
   ) async {
     final link = routeInformation.uri;
+    if (signInCodeIn(link) case final code?) {
+      _signInCode = code;
+      notifyListeners();
+      return true;
+    }
     if (CaptureLink.idIn(link) == null) return false;
     _pending = link;
     notifyListeners();

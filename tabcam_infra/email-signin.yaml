@@ -7,11 +7,21 @@ Description: >
   time. The emails go out through SES as tabcam.nu01.com (tabcam-email
   stack), written by a small function (CustomMessage): the code and a
   link that fills it in, in the app's language (English, Spanish or
-  Portuguese). Its ID tokens (email, email_verified, sub) are trusted by
+  Portuguese). Sender=COGNITO sends through Cognito's own mail instead
+  (50 a day) while SES production access is pending. Its ID tokens (email, email_verified, sub) are trusted by
   the identity pool, the share API and the cloud OCR service like
   Google's and Apple's. Deploy in us-east-1.
 
 Parameters:
+  Sender:
+    Type: String
+    Default: COGNITO
+    AllowedValues: [SES, COGNITO]
+    Description: >
+      Who sends the emails: SES as tabcam.nu01.com (needs SES production
+      access, or it only reaches verified addresses), or Cognito's own
+      mail (no-reply@verificationemail.com, at most 50 a day), while SES
+      production access is pending.
   FromAddress:
     Type: String
     Default: TabCam <signin@tabcam.nu01.com>
@@ -22,6 +32,9 @@ Parameters:
     Description: >
       The sites a sign-in link may point to (the app says which, in the
       call's ClientMetadata); any other gets the first.
+
+Conditions:
+  ViaSes: !Equals [!Ref Sender, SES]
 
 Resources:
   # Writes the code emails: subject and body in the asked language, the
@@ -149,10 +162,12 @@ Resources:
             Priority: 1
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: false
-      EmailConfiguration:
-        EmailSendingAccount: DEVELOPER
-        SourceArn: !ImportValue tabcam-email-identity-arn
-        From: !Ref FromAddress
+      EmailConfiguration: !If
+        - ViaSes
+        - EmailSendingAccount: DEVELOPER
+          SourceArn: !ImportValue tabcam-email-identity-arn
+          From: !Ref FromAddress
+        - EmailSendingAccount: COGNITO_DEFAULT
       LambdaConfig:
         CustomMessage: !GetAtt MessageFunction.Arn
       UserPoolTags:

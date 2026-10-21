@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'app_version.dart';
 import 'auth/apple_auth_service.dart';
 import 'auth/apple_config.dart';
+import 'auth/email_auth_service.dart';
+import 'auth/email_config.dart';
 import 'auth/auth_service.dart';
 import 'auth/google_auth_service.dart';
 import 'auth/google_config.dart';
@@ -86,15 +88,39 @@ class AppServices {
 
   /// Google everywhere; on iOS and Android, in a build with
   /// `TABCAM_APPLE_SIGN_IN`, Sign in with Apple too (on Android through the
-  /// share API, which takes Apple's reply).
-  static AuthService _signIn() =>
-      !kIsWeb &&
-          AppleConfig.enabled &&
-          (defaultTargetPlatform == TargetPlatform.iOS ||
-              (defaultTargetPlatform == TargetPlatform.android &&
-                  AppleConfig.webRedirectUri != null))
-      ? MultiAuthService([AppleAuthService(), GoogleAuthService()])
-      : GoogleAuthService();
+  /// share API, which takes Apple's reply); everywhere, in a build with the
+  /// email user pool (`TABCAM_EMAIL_USER_POOL_ID`), sign in with email,
+  /// whose emailed link finishes a sign-in waiting here ([IncomingLinks]).
+  static AuthService _signIn() {
+    final apple =
+        !kIsWeb &&
+        AppleConfig.enabled &&
+        (defaultTargetPlatform == TargetPlatform.iOS ||
+            (defaultTargetPlatform == TargetPlatform.android &&
+                AppleConfig.webRedirectUri != null));
+    final email = EmailConfig.enabled
+        ? EmailAuthService(site: kIsWeb ? Uri.base.origin : null)
+        : null;
+    if (email != null) {
+      void link() {
+        if (IncomingLinks.instance.takeSignInCode() case final code?) {
+          unawaited(email.completeWithLink(code));
+        }
+      }
+
+      IncomingLinks.instance.addListener(link);
+      // A link the app was opened with: once the waiting sign-in is back.
+      email.addListener(() {
+        if (!email.checking) link();
+      });
+    }
+    if (!apple && email == null) return GoogleAuthService();
+    return MultiAuthService([
+      if (apple) AppleAuthService(),
+      GoogleAuthService(),
+      ?email,
+    ]);
+  }
 
   static bool get _cloud =>
       CloudConfig.enabled && GoogleConfig.webClientId.isNotEmpty;
