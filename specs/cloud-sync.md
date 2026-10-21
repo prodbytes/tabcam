@@ -172,6 +172,38 @@ keeps who, the provider and the ID token.
   (403, "Your request could not be completed"): the first press had
   worked.
 
+### Sign in with email (being built)
+
+For people without (or not wanting) Google or Apple: they type their
+email address and get a one-time code, by email, with a link that fills
+it in; signed in, they're like any other user (a profile found by the
+sign-in, its folder, Premium by address, sharing).
+
+- **The service**: a Cognito user pool, `tabcam-email`
+  ([email-signin.yaml](../tabcam_infra/email-signin.yaml), stack
+  `tabcam-email-signin`, pool `us-east-1_KwBmbR5yh`, app client
+  `4g9obolo8sqftgr2brjtpcavg4`, Essentials tier: free up to 10,000
+  monthly active users). Its only sign-in is an emailed code (EMAIL_OTP):
+  a new address signs up (no password) and confirms with a code, a known
+  one asks for a code (USER_AUTH, EMAIL_OTP). Codes are good once, for
+  the session's 15 minutes; unknown addresses look like known ones
+  (PreventUserExistenceErrors). ID tokens last an hour, refresh tokens
+  30 days.
+- **The emails** go out through Amazon SES as `tabcam.nu01.com`
+  ([email.yaml](../tabcam_infra/email.yaml), stack `tabcam-email`: Easy
+  DKIM, MAIL FROM `mail.tabcam.nu01.com` with SPF, DMARC `p=none`), from
+  `TabCam <signin@tabcam.nu01.com>`, written by
+  `tabcam-email-signin-message` (Cognito's CustomMessage trigger, for
+  sign-up, a resent code and sign-in): the code, large, and a link to
+  `<site>/app/?signin-code=<code>`, in English, Spanish or Portuguese.
+  The app passes `lang` and `site` (one of TabCam's sites; any other gets
+  tabcam.nu01.com) in the calls' ClientMetadata. SES production access
+  was requested on 2026-10-21 (pending: until AWS grants it, SES only
+  sends to verified addresses). Cost: SES $0.10 per 1,000 emails; the
+  function's calls are within Lambda's free tier.
+- To come: the identity pool, the share API and the cloud OCR service
+  trusting its tokens, and the app's sign-in.
+
 ### Google's token
 
 Every platform's ID token is issued for the **web client** (the server

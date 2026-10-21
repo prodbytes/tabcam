@@ -1,0 +1,92 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  tabcam-email: Amazon SES sending as tabcam.nu01.com, for sign-in
+  emails (the email sign-in's codes, sent by the tabcam-email-signin user
+  pool). The domain is verified with Easy DKIM (three CNAMEs in its own
+  zone), mail comes from mail.tabcam.nu01.com (MX and SPF to SES), and a
+  DMARC record asks receivers to report (p=none). nu01.com's own mail
+  (Google Workspace) isn't touched. Deploy in us-east-1, where the user
+  pool is.
+
+Parameters:
+  DomainName:
+    Type: String
+    Default: tabcam.nu01.com
+  HostedZoneId:
+    Type: AWS::Route53::HostedZone::Id
+    Description: The public zone of DomainName (TABCAM_HOSTED_ZONE_ID)
+
+Resources:
+  Identity:
+    Type: AWS::SES::EmailIdentity
+    Properties:
+      EmailIdentity: !Ref DomainName
+      DkimAttributes:
+        SigningEnabled: true
+      DkimSigningAttributes:
+        NextSigningKeyLength: RSA_2048_BIT
+      MailFromAttributes:
+        MailFromDomain: !Sub mail.${DomainName}
+        BehaviorOnMxFailure: USE_DEFAULT_VALUE
+      FeedbackAttributes:
+        EmailForwardingEnabled: false
+
+  Dkim1:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !GetAtt Identity.DkimDNSTokenName1
+      Type: CNAME
+      TTL: '1800'
+      ResourceRecords: [!GetAtt Identity.DkimDNSTokenValue1]
+  Dkim2:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !GetAtt Identity.DkimDNSTokenName2
+      Type: CNAME
+      TTL: '1800'
+      ResourceRecords: [!GetAtt Identity.DkimDNSTokenValue2]
+  Dkim3:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !GetAtt Identity.DkimDNSTokenName3
+      Type: CNAME
+      TTL: '1800'
+      ResourceRecords: [!GetAtt Identity.DkimDNSTokenValue3]
+
+  # The custom MAIL FROM: bounces go to SES, and SPF passes for the
+  # domain's own subdomain.
+  MailFromMx:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Sub mail.${DomainName}
+      Type: MX
+      TTL: '1800'
+      ResourceRecords: [!Sub '10 feedback-smtp.${AWS::Region}.amazonses.com']
+  MailFromSpf:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Sub mail.${DomainName}
+      Type: TXT
+      TTL: '1800'
+      ResourceRecords: ['"v=spf1 include:amazonses.com ~all"']
+
+  Dmarc:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Sub _dmarc.${DomainName}
+      Type: TXT
+      TTL: '1800'
+      ResourceRecords: ['"v=DMARC1; p=none"']
+
+Outputs:
+  IdentityArn:
+    Description: The SES identity the user pool sends as
+    Value: !Sub arn:${AWS::Partition}:ses:${AWS::Region}:${AWS::AccountId}:identity/${DomainName}
+    Export:
+      Name: tabcam-email-identity-arn

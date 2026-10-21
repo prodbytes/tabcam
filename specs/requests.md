@@ -1679,3 +1679,11 @@ spec.
    editable text: side by side on a wide screen, above it on a phone held
    upright; numbered buttons switch pages. See
    [tab recognition](tab-recognition.md).
+7. **Sign in with email: the address typed, a sign-in link with a code
+   emailed; signed in like with Google or Apple, the email address
+   identifying the profile.** Decided: Amazon SES from tabcam.nu01.com,
+   and a Cognito user pool with email codes (EMAIL_OTP). Part 1, the
+   infrastructure: `email.yaml` (SES identity, DKIM, MAIL FROM, DMARC;
+   production access requested) and `email-signin.yaml` (the user pool,
+   its app client, the function writing the emails), both deployed. See
+   [cloud sync](cloud-sync.md#sign-in-with-email-being-built).
