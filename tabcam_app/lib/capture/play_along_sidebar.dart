@@ -159,6 +159,18 @@ class PlayAlongBeside extends StatelessWidget {
                 onUse?.call();
                 unawaited(along.track.setRepeat(!along.track.repeat));
               },
+              onSection: (start, end) {
+                onUse?.call();
+                unawaited(along.track.setSection(start, end));
+              },
+              onSectionHere: ({required bool end}) {
+                onUse?.call();
+                unawaited(along.track.sectionHere(end: end));
+              },
+              onSectionClear: () {
+                onUse?.call();
+                unawaited(along.track.clearSection());
+              },
             ),
           ),
       ],
@@ -169,7 +181,8 @@ class PlayAlongBeside extends StatelessWidget {
 /// The backing track's frame, compact, at the top of the sidebar and as
 /// wide: the video or link playing (a recording shows its progress only),
 /// its name, « (10 seconds back), play / pause, stop, » (10 forward) and
-/// repeat (on by default). Nothing while there's none.
+/// repeat (on by default); for a recording or video of the capture's own,
+/// the section that repeats ([_SectionBar]). Nothing while there's none.
 class _BackingFrame extends StatelessWidget {
   const _BackingFrame({
     required this.eventId,
@@ -179,6 +192,9 @@ class _BackingFrame extends StatelessWidget {
     required this.onStop,
     required this.onSkip,
     required this.onRepeat,
+    required this.onSection,
+    required this.onSectionHere,
+    required this.onSectionClear,
   });
 
   final String eventId;
@@ -188,6 +204,9 @@ class _BackingFrame extends StatelessWidget {
   final VoidCallback onStop;
   final void Function(Duration by) onSkip;
   final VoidCallback onRepeat;
+  final void Function(Duration start, Duration end) onSection;
+  final void Function({required bool end}) onSectionHere;
+  final VoidCallback onSectionClear;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -237,6 +256,13 @@ class _BackingFrame extends StatelessWidget {
                 media,
                 allowScrubbing: true,
                 padding: const EdgeInsets.symmetric(vertical: 4),
+              ),
+            if (track.canSection)
+              _SectionBar(
+                track: track,
+                onSection: onSection,
+                onSectionHere: onSectionHere,
+                onSectionClear: onSectionClear,
               ),
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
@@ -342,6 +368,9 @@ class PlayAlongSidebar extends StatelessWidget {
     required this.onStop,
     required this.onSkip,
     required this.onRepeat,
+    required this.onSection,
+    required this.onSectionHere,
+    required this.onSectionClear,
   });
 
   final Library library;
@@ -353,6 +382,9 @@ class PlayAlongSidebar extends StatelessWidget {
   final VoidCallback onStop;
   final void Function(Duration by) onSkip;
   final VoidCallback onRepeat;
+  final void Function(Duration start, Duration end) onSection;
+  final void Function({required bool end}) onSectionHere;
+  final VoidCallback onSectionClear;
 
   @override
   Widget build(BuildContext context) {
@@ -375,6 +407,9 @@ class PlayAlongSidebar extends StatelessWidget {
               onStop: onStop,
               onSkip: onSkip,
               onRepeat: onRepeat,
+              onSection: onSection,
+              onSectionHere: onSectionHere,
+              onSectionClear: onSectionClear,
             ),
             Expanded(child: _list(context, l10n)),
           ],
@@ -433,3 +468,119 @@ IconData _icon(EventPage page) => switch (page) {
     Icons.smart_display_outlined,
   _ => Icons.link,
 };
+
+/// The section of a recording or video that repeats: a range over the
+/// whole file (dragging either end sets it), its times, and buttons to
+/// start or end it where it plays now, or to play all of it again.
+class _SectionBar extends StatelessWidget {
+  const _SectionBar({
+    required this.track,
+    required this.onSection,
+    required this.onSectionHere,
+    required this.onSectionClear,
+  });
+
+  final BackingTrack track;
+  final void Function(Duration start, Duration end) onSection;
+  final void Function({required bool end}) onSectionHere;
+  final VoidCallback onSectionClear;
+
+  /// m:ss.t: a section's ends are set to the tenth of a second.
+  static String time(Duration d) {
+    final tenths = d.inMilliseconds ~/ 100;
+    final s = (tenths ~/ 10) % 60;
+    return '${tenths ~/ 600}:${s.toString().padLeft(2, '0')}.${tenths % 10}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final media = track.media!;
+    final length = media.value.duration;
+    final range = track.section;
+    final start = range?.start ?? Duration.zero;
+    final end = range?.end ?? length;
+    final ms = length.inMilliseconds.toDouble();
+    const compact = VisualDensity(horizontal: -4, vertical: -4);
+    final primary = Theme.of(context).colorScheme.primary;
+    return Column(
+      key: const Key('cam-along-section'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            trackHeight: 2,
+            rangeThumbShape: const RoundRangeSliderThumbShape(
+              enabledThumbRadius: 7,
+            ),
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+            activeTrackColor: range == null ? Colors.white24 : primary,
+            inactiveTrackColor: Colors.white12,
+            thumbColor: range == null ? Colors.white70 : primary,
+          ),
+          child: SizedBox(
+            height: 28,
+            child: RangeSlider(
+              key: const Key('cam-along-section-range'),
+              min: 0,
+              max: ms,
+              values: RangeValues(
+                start.inMilliseconds.clamp(0, ms).toDouble(),
+                end.inMilliseconds.clamp(0, ms).toDouble(),
+              ),
+              onChanged: (v) => onSection(
+                Duration(milliseconds: v.start.round()),
+                Duration(milliseconds: v.end.round()),
+              ),
+            ),
+          ),
+        ),
+        Row(
+          children: [
+            IconButton(
+              key: const Key('cam-along-section-start'),
+              tooltip: l10n.camAlongSectionStart,
+              visualDensity: compact,
+              color: Colors.white70,
+              iconSize: 18,
+              icon: const Icon(Icons.first_page),
+              onPressed: () => onSectionHere(end: false),
+            ),
+            Expanded(
+              child: Text(
+                l10n.camAlongSection(time(start), time(end)),
+                key: const Key('cam-along-section-times'),
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: range == null ? Colors.white54 : primary,
+                  fontSize: 11,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+            if (range != null)
+              IconButton(
+                key: const Key('cam-along-section-clear'),
+                tooltip: l10n.camAlongSectionClear,
+                visualDensity: compact,
+                color: Colors.white70,
+                iconSize: 16,
+                icon: const Icon(Icons.close),
+                onPressed: onSectionClear,
+              ),
+            IconButton(
+              key: const Key('cam-along-section-end'),
+              tooltip: l10n.camAlongSectionEnd,
+              visualDensity: compact,
+              color: Colors.white70,
+              iconSize: 18,
+              icon: const Icon(Icons.last_page),
+              onPressed: () => onSectionHere(end: true),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}

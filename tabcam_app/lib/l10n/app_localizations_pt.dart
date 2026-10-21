@@ -644,6 +644,20 @@ class AppLocalizationsPt extends AppLocalizations {
   String get camAlongRepeatOff => 'Repetir desligado';
 
   @override
+  String camAlongSection(String start, String end) {
+    return 'Trecho $start–$end';
+  }
+
+  @override
+  String get camAlongSectionStart => 'Começar o trecho aqui';
+
+  @override
+  String get camAlongSectionEnd => 'Terminar o trecho aqui';
+
+  @override
+  String get camAlongSectionClear => 'Tocar tudo';
+
+  @override
   String get camAlongStop => 'Parar';
 
   @override

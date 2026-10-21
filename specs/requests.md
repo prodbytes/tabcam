@@ -1663,3 +1663,9 @@ spec.
    **Internal** email list, whose testers were added to it. Alpha has
    0.2.202610210617, sent for review with the testers change. See
    [app stores](app-stores.md#status).
+4. **In the play-along sidebar's mini player, a range with a start and an
+   end, to repeat a section; local recordings and videos only.** Under
+   the frame's progress bar: a range slider, the section's times (to the
+   tenth of a second), start / end it where it plays now, and Play all of
+   it. At the section's end it goes back to its start (Repeat) or pauses
+   there. Links have none. See [Cam](cam.md).

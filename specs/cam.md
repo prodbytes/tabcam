@@ -143,6 +143,19 @@ recording's: `mixWithOthers`).
   video loops, a YouTube video is started over when it says it ended, a
   page's first video or sound loops). It has no Close: something is
   always loaded.
+- **The section** (a recording or video of the capture's own, not a
+  link: a link can't be held to the split second): under the progress
+  bar, a range over the whole file whose two ends set the part that
+  plays, its times (`Section 0:12.3–0:45.0`, to the tenth of a second,
+  in the primary colour once set), **|◀** and **▶|** (start or end it
+  where it plays now) and, once set, **✕** (play all of it again). While
+  one is set the player's own looping is off and its position is checked
+  every 100 ms: at the section's end it goes back to the section's
+  start, playing on with Repeat, paused without. Play from outside it
+  starts at its start, Stop goes back to its start, « and » stay within
+  it. A section is at least half a second long; covering the whole file,
+  it's none. Each file keeps its own while the screen is open
+  ([`backing_track.dart`](../tabcam_app/lib/capture/backing_track.dart)).
   The one in the frame is marked in the list.
 - **The space bar** pauses and plays it while the sidebar shows (a key
   down; held, it doesn't repeat), and doesn't turn the tab; with the
