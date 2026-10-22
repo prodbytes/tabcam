@@ -26,8 +26,7 @@ bool importsTabSites =
 
 /// The tab site [url] is on, when this build imports its pages
 /// ([importsTabSites]); null otherwise.
-TabSite? importableTabSite(Uri url) =>
-    importsTabSites ? tabSiteOf(url) : null;
+TabSite? importableTabSite(Uri url) => importsTabSites ? tabSiteOf(url) : null;
 
 /// How importing a tab site's page went.
 enum TabImportOutcome {

@@ -203,7 +203,7 @@
   "homeAddFiles": "Archivos",
   "homeAddFilesDetail": "Archivos de imagen y video",
   "homeAddLink": "Enlace",
-  "homeAddLinkDetail": "Una lección, una grabación, la canción en línea",
+  "homeAddLinkDetail": "Una lección, una pista de acompañamiento, un video",
   "homeNoSignIn": "El inicio de sesión no está configurado en esta versión: tus eventos se quedan en este dispositivo.",
   "homeAbout": "Acerca de",
   "homeDevelopmentBuild": "(versión de desarrollo)",
@@ -414,5 +414,6 @@
   "emailSignInTooMany": "Demasiados intentos: espera unos minutos y vuelve a intentarlo.",
   "emailSignInFailed": "No se pudo entrar: {error}",
   "emailSignInExpired": "Tu sesión con email caducó: vuelve a entrar.",
-  "emailSignInUnavailable": "Entrar con email no está configurado en esta versión."
+  "emailSignInUnavailable": "Entrar con email no está configurado en esta versión.",
+  "ownTabsNote": "TabCam es para músicos que practican con sus propias tablaturas. Agrega solo lo que tengas derecho a usar: tablaturas que escribiste, las de tu profesor, las que compraste o las de libre uso."
 }

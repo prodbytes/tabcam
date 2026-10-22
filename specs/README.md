@@ -18,6 +18,15 @@ also syncs the user's events with the cloud, so they're on every device
 the user signs in on. With TabCam Premium, scans are also transcribed in
 the cloud as they sync.
 
+**Who it's for**: musicians practicing with their own tabs (tabs they
+wrote, their teacher's lesson sheets, books and printouts they bought,
+tabs free to share). TabCam comes with no songs, tabs, sheet music or
+lyrics and fetches none: everything in it is what its users capture or
+add, in their own accounts, and they must have the right to use it. The
+app says so where content is added ([library](library.md),
+[Capture](navigation.md#capture)), and so do the store listings and
+review notes ([app stores](app-stores.md)).
+
 ## Features
 
 **App**

@@ -60,6 +60,9 @@ the [welcome](navigation.md#signed-out-the-welcome) alone.
   only the welcome and sign-in ([navigation](navigation.md)).
 - **Empty**: a music icon, "No tabs yet", and a line pointing to
   Capture (to scan, or add photos, videos, files and links).
+- **Whose tabs**: under the empty state's line, and under the captures
+  (after the last section), a muted note with an info icon: "TabCam is for musicians practicing with their own tabs. Only add what you have the right to use: tabs you wrote, your teacher's, ones you bought, or ones free to share."
+  (`OwnTabsNote`; also on [Capture](navigation.md#capture)).
 - New events come from the [Capture](navigation.md#capture) tab: each
   lands at the top of the list, which scrolls up to it, outlined in the
   theme's primary color for 3 seconds, and a message confirms it

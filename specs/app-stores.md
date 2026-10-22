@@ -147,8 +147,18 @@ Verified; not Fix, hidden for now), Cam, the zip download, Share copying a
 read-only link (signed in, kept in Shared with me). It doesn't mention
 Premium: the store apps don't sell it, and App Review took a mention of a
 subscription it couldn't buy as a broken in-app purchase (guideline
-2.1(b), 2026-10-20). The review notes say the app has no in-app
-purchases or subscriptions, and that it comes with no content: no
+2.1(b), 2026-10-20). The listings say who the app is for, musicians
+practicing with their own tabs: the description's first line (a
+practice tool for the tabs you write, learn from and own) and its last
+section, **YOUR TABS, YOUR RIGHTS** (no songs, tabs, sheet music or
+lyrics come with it; made for your own material; make sure you have the
+right to use what you add), the same on Play; the promotional text
+starts "For musicians practicing with their own tabs"; no "sheet" among
+the keywords. The screenshots show the in-app note (the iPad's Home,
+Capture). The review notes say the app has no in-app
+purchases or subscriptions, that it's for musicians practicing with
+their own tabs and says so in the app (quoting the note), and that it
+comes with no content: no
 songs, tabs, sheet music or lyrics, everything in it captured or added
 by its users from their own material, the screenshots' tab a riff made
 up for them, and no tab site's page fetched into the app (App Review

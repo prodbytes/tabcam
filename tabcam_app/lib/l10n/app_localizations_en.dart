@@ -800,7 +800,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeAddLink => 'Link';
 
   @override
-  String get homeAddLinkDetail => 'A lesson, a recording, the song online';
+  String get homeAddLinkDetail => 'A lesson, a backing track, a video';
 
   @override
   String get homeNoSignIn =>
@@ -1548,4 +1548,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get emailSignInUnavailable =>
       'Sign in with email isn\'t set up in this build.';
+
+  @override
+  String get ownTabsNote =>
+      'TabCam is for musicians practicing with their own tabs. Only add what you have the right to use: tabs you wrote, your teacher\'s, ones you bought, or ones free to share.';
 }

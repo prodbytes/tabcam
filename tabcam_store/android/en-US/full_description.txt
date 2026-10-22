@@ -1,4 +1,4 @@
-TabCam is a camera app made for guitar and bass tablature. Point your phone at a tab and TabCam finds the page, straightens it and cleans it up. Then it reads the tab into plain-text tab you can edit, play along with and share.
+TabCam is a practice tool for guitar and bass players: a camera app for the tabs you write, learn from and own. Point your phone at your tab and TabCam finds the page, straightens it and cleans it up. Then it reads the tab into plain-text tab you can edit, play along with and share.
 
 POINT, SHOOT, DONE
 • The system document camera finds the page's edges and straightens it, several pages at a time.
@@ -29,4 +29,7 @@ YOUR ACCOUNT
 • No ads, no tracking. Delete your account and its cloud data from the Profile tab at any time.
 • In English, Spanish and Portuguese.
 
-TabCam is for your own tabs: your notes, lesson sheets, books and printouts you own.
+YOUR TABS, YOUR RIGHTS
+• TabCam comes with no songs, tabs, sheet music or lyrics: everything in it is what you capture or add yourself, kept in your own private account.
+• It's made for musicians practicing with their own material: tabs you wrote, your teacher's lesson sheets, books and printouts you bought, or tabs that are free to share.
+• Make sure you have the right to use what you add.

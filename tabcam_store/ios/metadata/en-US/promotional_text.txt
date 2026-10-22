@@ -1,1 +1,1 @@
-Point your phone at a guitar or bass tab: TabCam finds the page, straightens it, cleans it up and reads it into plain-text tab you can edit, sync and share.
+For musicians practicing with their own tabs: point your phone at your guitar or bass tab and TabCam reads it into plain-text tab to edit and play along with.
