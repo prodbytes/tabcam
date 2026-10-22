@@ -1,45 +1,57 @@
 #!/usr/bin/env bash
-# Uploads to Google Play with fastlane supply (tabcam_store/fastlane/Fastfile):
-# the listing in tabcam_store/android/ (title, descriptions, icon, feature
-# graphic, phone screenshots), or a signed App Bundle to a testing track.
-# Never the production track, never a submission for review.
+# Uploads to Google Play through the Android Publisher API
+# (scripts/play_publish.py): the listing in tabcam_store/android/en-US/
+# (title, descriptions, icon, feature graphic, phone screenshots), or a
+# signed App Bundle to a testing track. Never the production track.
 #
-#   bash scripts/store-upload-android.sh metadata
-#   bash scripts/store-upload-android.sh upload [aab path | release tag] [track] [draft|completed]
+#   bash scripts/store-upload-android.sh metadata [--review]
+#   bash scripts/store-upload-android.sh upload [aab path | release tag] [track] [draft|completed] [--review]
 #
 # The bundle defaults to make appbundle's
 # (tabcam_app/build/app/outputs/bundle/release/app-release.aab); a release
-# tag (e.g. 0.2.202610171036-GA) downloads that GitHub release's
+# tag (e.g. 0.2.202610221407-GA) downloads that GitHub release's
 # tabcam-<tag>-android.aab, signed with the upload key. The track defaults
-# to internal, the status to draft (all Play takes before the app's first
-# review).
+# to internal (the closed test is Alpha), the status to draft. The
+# changes are committed without being sent for review, unless --review:
+# then Play reviews them (Publishing overview shows them either way).
 #
-# Needs fastlane (brew install fastlane) and a Google Cloud service account
-# with access to the app in Play Console (Users and permissions), its JSON
-# key kept outside the repo:
-#   PLAY_JSON_KEY_PATH  the service account's JSON key
+# Keyless: nu01.com's Google Cloud forbids service account keys
+# (iam.disableServiceAccountKeyCreation), so the gcloud user signed in
+# (julio@nu01.com, with Token Creator on it) gets an hour's token for the
+# service account tabcam-play-upload@tabcam-nu01.iam.gserviceaccount.com,
+# which Play Console lets release to testing tracks and edit the listing
+# (Users and permissions). Needs gcloud, signed in (gcloud auth login).
 # Play's API can't create the app: it must exist in Play Console, with its
 # first App Bundle uploaded there by hand.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
-command -v fastlane >/dev/null || { echo "error: fastlane not found (brew install fastlane)" >&2; exit 1; }
-[[ -n "${PLAY_JSON_KEY_PATH:-}" ]] || { echo "error: PLAY_JSON_KEY_PATH isn't set" >&2; exit 1; }
-[[ -f "$PLAY_JSON_KEY_PATH" ]] || { echo "error: no key at $PLAY_JSON_KEY_PATH" >&2; exit 1; }
-PLAY_JSON_KEY_PATH="$(cd "$(dirname "$PLAY_JSON_KEY_PATH")" && pwd)/$(basename "$PLAY_JSON_KEY_PATH")"
-export PLAY_JSON_KEY_PATH
+PLAY_SERVICE_ACCOUNT="${PLAY_SERVICE_ACCOUNT:-tabcam-play-upload@tabcam-nu01.iam.gserviceaccount.com}"
+command -v gcloud >/dev/null || { echo "error: gcloud not found" >&2; exit 1; }
+token() {
+  gcloud auth print-access-token --impersonate-service-account="$PLAY_SERVICE_ACCOUNT" \
+    --scopes=https://www.googleapis.com/auth/androidpublisher 2>/dev/null \
+    || { echo "error: no token for $PLAY_SERVICE_ACCOUNT (gcloud auth login?)" >&2; exit 1; }
+}
 
-export FASTLANE_SKIP_UPDATE_CHECK=1 FASTLANE_HIDE_CHANGELOG=1 FASTLANE_OPT_OUT_USAGE=1
+review=()
+args=()
+for a in "$@"; do
+  if [[ "$a" == --review ]]; then review=(--review); else args+=("$a"); fi
+done
+set -- "${args[@]+"${args[@]}"}"
+
 case "${1:-}" in
   metadata)
     bash scripts/store-metadata-check.sh >/dev/null
-    cd tabcam_store && fastlane android metadata
+    PLAY_ACCESS_TOKEN="$(token)" python3 scripts/play_publish.py listing \
+      tabcam_store/android/en-US "${review[@]+"${review[@]}"}"
     ;;
   upload)
     src="${2:-tabcam_app/build/app/outputs/bundle/release/app-release.aab}"
     track="${3:-internal}"
     status="${4:-draft}"
-    [[ "$track" =~ ^[a-z0-9:_-]+$ && "$track" != production ]] || { echo "error: bad track '$track'" >&2; exit 1; }
+    [[ "$track" =~ ^[A-Za-z0-9:_-]+$ && "$track" != production ]] || { echo "error: bad track '$track'" >&2; exit 1; }
     [[ "$status" == draft || "$status" == completed ]] || { echo "error: status is draft or completed" >&2; exit 1; }
     if [[ "$src" =~ ^[0-9]+\.[0-9]+\.[0-9]{12}-(RC|GA)$ ]]; then
       dir="$(mktemp -d)"
@@ -50,11 +62,11 @@ case "${1:-}" in
       aab="$src"
     fi
     [[ -f "$aab" ]] || { echo "error: no App Bundle at $aab (make appbundle)" >&2; exit 1; }
-    aab="$(cd "$(dirname "$aab")" && pwd)/$(basename "$aab")"
-    cd tabcam_store && fastlane android upload "aab:$aab" "track:$track" "status:$status"
+    PLAY_ACCESS_TOKEN="$(token)" python3 scripts/play_publish.py bundle "$aab" "$track" "$status" \
+      --notes tabcam_store/android/en-US/changelogs/default.txt "${review[@]+"${review[@]}"}"
     ;;
   *)
-    sed -n '2,22p' "$0" >&2
+    sed -n '2,25p' "$0" >&2
     exit 1
     ;;
 esac

@@ -1755,3 +1755,14 @@ spec.
    who it's for. 0.2.202610221407 (build 1792678057) resubmitted,
    Waiting for Review. See [README](README.md),
    [library](library.md), [app stores](app-stores.md).
+3. **Open the Play Console page to upload the Android bundle, or better,
+   add a Play service account; update the Play listing.** The Play
+   listing got the new full description and phone screenshots 1 and 4
+   (saved for review). A service account,
+   `tabcam-play-upload@tabcam-nu01.iam.gserviceaccount.com`, was made;
+   nu01.com forbids service account keys, so (decided: keyless) the
+   upload script gets a short-lived token for it through the signed-in
+   gcloud user, and calls the Android Publisher API itself
+   (`scripts/play_publish.py`), in place of fastlane's key-file login.
+   See [app stores](app-stores.md#uploading-to-google-play).
+
