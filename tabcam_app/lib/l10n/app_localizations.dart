@@ -1327,7 +1327,7 @@ abstract class AppLocalizations {
   /// Capture tab: Link's detail
   ///
   /// In en, this message translates to:
-  /// **'A lesson, a recording, the song online'**
+  /// **'A lesson, a backing track, a video'**
   String get homeAddLinkDetail;
 
   /// Profile tab in a build without sign-in
@@ -2595,6 +2595,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sign in with email isn\'t set up in this build.'**
   String get emailSignInUnavailable;
+
+  /// Home and Capture: who the app is for, and that users must have the right to the tabs they add
+  ///
+  /// In en, this message translates to:
+  /// **'TabCam is for musicians practicing with their own tabs. Only add what you have the right to use: tabs you wrote, your teacher\'s, ones you bought, or ones free to share.'**
+  String get ownTabsNote;
 }
 
 class _AppLocalizationsDelegate

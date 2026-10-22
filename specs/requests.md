@@ -1739,3 +1739,19 @@ spec.
    with no content. 0.2.202610221321 (build 1792675277) resubmitted,
    Waiting for Review. See [tab site links](tab-site-links.md) and
    [app stores](app-stores.md).
+2. **Make it evident in the spec, the descriptions and the submissions
+   that the app is for musicians practicing and scanning their own tabs
+   ("make sure you have the right to the content you upload"); add the
+   disclaimer on Home and on the empty capture list; fix the copyright
+   issues and resubmit.** Home (empty, and under the captures) and
+   Capture show "TabCam is for musicians practicing with their own tabs.
+   Only add what you have the right to use: tabs you wrote, your
+   teacher's, ones you bought, or ones free to share." (en, es, pt).
+   Link's line no longer says "the song online" ("A lesson, a backing
+   track, a video"). The App Store and Play descriptions start with who
+   it's for and end with YOUR TABS, YOUR RIGHTS; new promotional text;
+   "sheet" left out of the keywords; screenshots rendered again (the
+   note shows); the review notes quote the note. The product spec says
+   who it's for. Resubmitted. See [README](README.md),
+   [library](library.md), [app stores](app-stores.md).
+

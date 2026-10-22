@@ -1074,7 +1074,7 @@
   "@homeAddLink": {
     "description": "Capture tab: add a link"
   },
-  "homeAddLinkDetail": "A lesson, a recording, the song online",
+  "homeAddLinkDetail": "A lesson, a backing track, a video",
   "@homeAddLinkDetail": {
     "description": "Capture tab: Link's detail"
   },
@@ -2118,5 +2118,9 @@
   "emailSignInUnavailable": "Sign in with email isn't set up in this build.",
   "@emailSignInUnavailable": {
     "description": "Email sign-in: not configured."
+  },
+  "ownTabsNote": "TabCam is for musicians practicing with their own tabs. Only add what you have the right to use: tabs you wrote, your teacher's, ones you bought, or ones free to share.",
+  "@ownTabsNote": {
+    "description": "Home and Capture: who the app is for, and that users must have the right to the tabs they add"
   }
 }

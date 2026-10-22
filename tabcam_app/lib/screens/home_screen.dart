@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'file_drop_area.dart';
+import 'own_tabs_note.dart';
 
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -569,6 +570,8 @@ class CaptureView extends StatelessWidget {
                   detail: l10n.homeAddLinkDetail,
                   onTap: onLink,
                 ),
+                const SizedBox(height: 8),
+                const OwnTabsNote(),
               ],
             ),
           ),

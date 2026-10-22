@@ -820,7 +820,8 @@ class AppLocalizationsPt extends AppLocalizations {
   String get homeAddLink => 'Link';
 
   @override
-  String get homeAddLinkDetail => 'Uma aula, uma gravação, a música online';
+  String get homeAddLinkDetail =>
+      'Uma aula, uma base para tocar junto, um vídeo';
 
   @override
   String get homeNoSignIn =>
@@ -1582,4 +1583,8 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get emailSignInUnavailable =>
       'Entrar com e-mail não está configurado nesta versão.';
+
+  @override
+  String get ownTabsNote =>
+      'O TabCam é para músicos praticando com suas próprias tablaturas. Adicione só o que você tem direito de usar: tablaturas que você escreveu, as do seu professor, as que comprou ou as de uso livre.';
 }
