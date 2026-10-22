@@ -1736,6 +1736,6 @@ spec.
    capture as a PDF of their tab. Decided: the iOS and Android store apps
    no longer import them (a tab site's link is a plain link); the web
    app and desktops still do. The review notes now say the app comes
-   with no content. See [tab site links](tab-site-links.md) and
+   with no content. 0.2.202610221321 (build 1792675277) resubmitted,
+   Waiting for Review. See [tab site links](tab-site-links.md) and
    [app stores](app-stores.md).
-
