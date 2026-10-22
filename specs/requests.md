@@ -1752,6 +1752,6 @@ spec.
    it's for and end with YOUR TABS, YOUR RIGHTS; new promotional text;
    "sheet" left out of the keywords; screenshots rendered again (the
    note shows); the review notes quote the note. The product spec says
-   who it's for. Resubmitted. See [README](README.md),
+   who it's for. 0.2.202610221407 (build 1792678057) resubmitted,
+   Waiting for Review. See [README](README.md),
    [library](library.md), [app stores](app-stores.md).
-
