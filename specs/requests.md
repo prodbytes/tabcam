@@ -1725,3 +1725,17 @@ spec.
     8 read the same three pages 18-31% faster with the same text, and is
     now the default. More memory waits for the account's limits. See
     [cloud OCR](cloud-ocr.md#speed).
+
+## 2026-10-22
+
+1. **App Review rejected the iOS app under 5.2.1 (third-party lyrics or
+   sheet music): check it; in the next submission, explain the app has
+   no content, it's all user generated.** The app ships no songs, and the
+   screenshots' tab ("Amber Lane") is made up; but the reviewed build
+   imported tab sites' pages (Ultimate Guitar, Songsterr…) into a
+   capture as a PDF of their tab. Decided: the iOS and Android store apps
+   no longer import them (a tab site's link is a plain link); the web
+   app and desktops still do. The review notes now say the app comes
+   with no content. See [tab site links](tab-site-links.md) and
+   [app stores](app-stores.md).
+

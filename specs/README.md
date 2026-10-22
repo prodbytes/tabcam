@@ -30,7 +30,8 @@ the cloud as they sync.
 - [Scanning](scanning.md): the system document camera (edge detection,
   straightening, several pages), and adding pages, photos, videos, files
   and links.
-- [Tab site links](tab-site-links.md): a link to a known tab site
+- [Tab site links](tab-site-links.md): in the web app and on desktops
+  (not the store apps), a link to a known tab site
   (Ultimate Guitar, Songsterr, Cifra Club, LaCuerda...) is also imported
   as a PDF print of its page, read for tab; fetched on the device (on the
   web, by the cloud, for Premium only).

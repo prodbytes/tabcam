@@ -157,7 +157,9 @@ void main() {
       await library.load();
       event = await library.create(const []);
       fetched = [];
+      importsTabSites = true; // the web app and desktops
     });
+    tearDown(() => importsTabSites = false);
 
     TabPageImporter importer(http.Response Function() answer) =>
         TabPageImporter(
@@ -181,6 +183,18 @@ void main() {
       final pdf = library.byId(event.id)!.pages.single;
       expect(pdf.kind, PageKind.pdf);
       expect(pdf.title, 'Made Up Riff by Nobody');
+    });
+
+    test('the store apps (iOS, Android) leave a tab site\'s link a link: '
+        'nothing fetched', () async {
+      importsTabSites = false;
+      final done = await importer(() => http.Response(_ugPage(), 200))
+          .addTo(library, event, _ug);
+      expect(done, isNull);
+      expect(fetched, isEmpty);
+      expect(library.byId(event.id)!.pages, isEmpty);
+      expect(importableTabSite(_ug), isNull);
+      expect(tabSiteOf(_ug)?.name, 'Ultimate Guitar');
     });
 
     test('any other link is left alone: nothing fetched', () async {

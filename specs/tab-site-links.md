@@ -6,6 +6,14 @@ a PDF print of the page**, added after the link, and then read for tab as
 any PDF is ([PDFs](tab-recognition.md#pdfs)). The link stays, to open the
 page itself. Links to any other site are only links: nothing is fetched.
 
+**Only in the web app and on desktops.** The iOS and Android store apps
+don't import tab sites' pages (`importsTabSites`, `importableTabSite`):
+there a tab site's link is a link like any other, opened in the
+browser, and no one's tab is fetched into the app. App Review rejected
+0.2.202610201114 under guideline 5.2.1 (third-party lyrics or sheet
+music without authorization, 2026-10-22); the store apps hold only what
+their users capture or add themselves.
+
 ## The tab sites
 
 The most popular tab sites in the app's languages
@@ -38,9 +46,9 @@ is the same list; the two are kept the same by hand.
 Following the [design guidelines](../CLAUDE.md#design-guidelines), the
 device does the work ([lib/import/tab_page_import.dart](../tabcam_app/lib/import/tab_page_import.dart)):
 
-- **Android, iOS (and desktops)**: the app fetches the page itself, as a
-  mobile browser (its User-Agent), up to 20 s and 5 MB; no server is
-  involved, for everyone.
+- **Desktops**: the app fetches the page itself, as a mobile browser
+  (its User-Agent), up to 20 s and 5 MB; no server is involved, for
+  everyone. (Android and iOS: not imported, above.)
 - **The web**: the browser can't fetch other sites' pages (CORS), so the
   cloud OCR service's `POST /page` fetches it, for **TabCam Premium**
   users only ([cloud OCR](cloud-ocr.md#tab-sites-pages-for-the-web)).
