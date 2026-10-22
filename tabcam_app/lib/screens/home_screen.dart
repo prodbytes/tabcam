@@ -315,7 +315,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final link = await askForLink(context);
     if (link == null || !mounted) return;
     final (url, title) = link;
-    final site = tabSiteOf(url);
+    final site = importableTabSite(url);
     if (site != null) _snack(context.l10n.linkTabImporting(site.name));
     TabImport? imported;
     await _capture((l10n, e) => l10n.homeAddFailed(e), () async {

@@ -246,7 +246,7 @@ class _EventScreenState extends State<EventScreen> {
       final before = Library.addedPages(event).length;
       if (link != null) {
         final url = link.$1;
-        final site = tabSiteOf(url);
+        final site = importableTabSite(url);
         if (site != null) _snack(l10n.linkTabImporting(site.name));
         final added = await _library.addLink(event, url, title: link.$2);
         // A tab site's page, printed as a PDF beside the link, to read.

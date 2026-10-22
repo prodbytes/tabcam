@@ -15,6 +15,20 @@ import 'tab_sites.dart';
 
 export 'tab_sites.dart' show TabSite, tabSiteOf;
 
+/// Whether this build imports tab sites' pages: the web app and desktops,
+/// not the iOS and Android store apps. There a tab site's link stays a
+/// link, opened in the browser, and no one's tab is fetched into the app
+/// (App Review, guideline 5.2.1: third-party sheet music). Tests set it.
+bool importsTabSites =
+    kIsWeb ||
+    (defaultTargetPlatform != TargetPlatform.android &&
+        defaultTargetPlatform != TargetPlatform.iOS);
+
+/// The tab site [url] is on, when this build imports its pages
+/// ([importsTabSites]); null otherwise.
+TabSite? importableTabSite(Uri url) =>
+    importsTabSites ? tabSiteOf(url) : null;
+
 /// How importing a tab site's page went.
 enum TabImportOutcome {
   /// The page's tab was added, as a PDF.
@@ -68,10 +82,11 @@ class TabPageImporter {
     'Accept': 'text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.8',
   };
 
-  /// Adds [url]'s page to [event] as a PDF, when [url] is on a tab site;
-  /// null when it isn't (nothing is fetched).
+  /// Adds [url]'s page to [event] as a PDF, when [url] is on a tab site
+  /// and this build imports them ([importsTabSites]); null otherwise
+  /// (nothing is fetched).
   Future<TabImport?> addTo(Library library, CaptureEvent event, Uri url) async {
-    final site = tabSiteOf(url);
+    final site = importableTabSite(url);
     if (site == null) return null;
     TabImport done(TabImportOutcome outcome, [TabPage? page]) =>
         (site: site, outcome: outcome, event: event, page: page);

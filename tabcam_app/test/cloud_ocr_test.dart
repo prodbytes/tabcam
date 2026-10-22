@@ -167,6 +167,9 @@ Future<CaptureEvent> _twoPages(Library library) =>
 void main() {
   _fixTests();
   group('a tab site\'s page on the web', () {
+    setUp(() => importsTabSites = true);
+    tearDown(() => importsTabSites = false);
+
     final url = Uri.parse('https://www.azchords.com/n/nobody-tabs/riff.html');
     const html =
         '<html><title>Riff</title><pre>e|-0-----3-|\nB|-1-----0-|</pre></html>';

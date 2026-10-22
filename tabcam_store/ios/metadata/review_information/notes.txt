@@ -1,5 +1,7 @@
 TabCam scans guitar and bass tabs and reads them into editable plain-text tab.
 
+About guideline 5.2.1 (third-party lyrics and sheet music): TabCam comes with no content of its own. It has no catalog, no songs, no tabs, no sheet music and no lyrics, and it doesn't download or fetch any. Everything in the app is user generated: what each user captures with the camera or adds from their own device (their notes, lesson sheets, books and printouts), kept in their own private account. A link a user adds is only a link, opened in the browser; this version no longer fetches pages from tab websites into the app. The tab in the screenshots and in the steps below ("Amber Lane") is a riff made up for them, not a published song.
+
 Signing in: the app opens on a welcome screen with Sign in with Apple and Sign in with Google; scanning and everything else need signing in. Sign in with Apple works with any Apple ID, and Google sign-in with any Google account; there's nothing else to set up.
 
 What to try:

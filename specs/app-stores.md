@@ -148,7 +148,13 @@ read-only link (signed in, kept in Shared with me). It doesn't mention
 Premium: the store apps don't sell it, and App Review took a mention of a
 subscription it couldn't buy as a broken in-app purchase (guideline
 2.1(b), 2026-10-20). The review notes say the app has no in-app
-purchases or subscriptions.
+purchases or subscriptions, and that it comes with no content: no
+songs, tabs, sheet music or lyrics, everything in it captured or added
+by its users from their own material, the screenshots' tab a riff made
+up for them, and no tab site's page fetched into the app (App Review
+rejected 0.2.202610201114 under guideline 5.2.1, third-party sheet
+music, 2026-10-22; the store apps stopped importing [tab site
+links](tab-site-links.md)).
 `bash scripts/store-metadata-check.sh [dir]` checks each file is there
 and within its store's limit (title and name 30, subtitle 30, short
 description 80, descriptions 4000, keywords 100 bytes, promotional text
