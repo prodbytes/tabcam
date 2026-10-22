@@ -1772,4 +1772,11 @@ spec.
    1792678049); Play sends this app's changes for review by itself, so
    the uploader commits that way when the unreviewed commit is refused.
    See [app stores](app-stores.md#uploading-to-google-play).
+5. **No need to say "First release"; anything else to do for the store
+   publication?** The release notes (Play's `changelogs/default.txt`,
+   the App Store's `release_notes.txt`) now say what TabCam does and how
+   to sign in; the descriptions' sign-in line names Google, Apple and
+   email. Play's listing uploaded (in review); the App Store's goes with
+   its next version (it can't change while in review); Alpha's notes
+   with its next upload.
 

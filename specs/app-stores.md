@@ -114,7 +114,8 @@ The App Store's are uploaded with `scripts/store-upload-ios.sh`
   and `phoneScreenshots/1.png` … `6.png` ([below](#store-graphics)).
 - `ios/metadata/en-US/`: `name.txt` (as the Play title), `subtitle.txt` (Scan tabs
   into editable text), `description.txt` (the Play full description,
-  but for its sign-in line: Apple or Google on iOS, Google on Play),
+  but for its sign-in line's order: Apple, Google or the email address
+  on iOS; Google, Apple or the email address on Play),
   `keywords.txt`, `promotional_text.txt`, `release_notes.txt`, the
   support and marketing URLs (https://tabcam.nu01.com/) and the privacy
   URL (https://tabcam.nu01.com/privacy); `ios/screenshots/en-US/`, the

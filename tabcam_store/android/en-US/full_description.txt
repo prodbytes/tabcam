@@ -25,7 +25,7 @@ SHARE
 • Share copies the capture's link, to send to anyone: whoever has it can see the capture, read only. Signed in, it stays with them, in "Shared with me".
 
 YOUR ACCOUNT
-• Sign in with Google to start: your captures are kept on every device you sign in on.
+• Sign in with Google, Apple or your email address to start: your captures are kept on every device you sign in on.
 • No ads, no tracking. Delete your account and its cloud data from the Profile tab at any time.
 • In English, Spanish and Portuguese.
 
