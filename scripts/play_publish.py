@@ -9,7 +9,8 @@ testing track. Never the production track.
 Authenticates with an OAuth access token in PLAY_ACCESS_TOKEN (the script
 gets one for the service account from gcloud: no key file). Changes are
 committed without being sent for review unless --review is given (Play
-Console's Publishing overview sends them otherwise).
+Console's Publishing overview sends them otherwise); an app without
+managed publishing takes no such commit, and its changes go to review.
 """
 import argparse
 import json
@@ -25,7 +26,11 @@ UPLOAD = f"https://androidpublisher.googleapis.com/upload/androidpublisher/v3/ap
 LANGUAGE = "en-US"
 
 
-def call(method, url, body=None, data=None, content_type=None):
+class PlayError(Exception):
+    pass
+
+
+def call(method, url, body=None, data=None, content_type=None, fail=True):
     headers = {"Authorization": f"Bearer {os.environ['PLAY_ACCESS_TOKEN']}"}
     if body is not None:
         data = json.dumps(body).encode()
@@ -42,7 +47,10 @@ def call(method, url, body=None, data=None, content_type=None):
             detail = json.loads(detail)["error"]["message"]
         except (ValueError, KeyError, TypeError):
             pass
-        sys.exit(f"error: {method} {url.split(PACKAGE)[-1]}: HTTP {e.code}: {detail}")
+        message = f"{method} {url.split(PACKAGE)[-1]}: HTTP {e.code}: {detail}"
+        if not fail:
+            raise PlayError(message) from None
+        sys.exit(f"error: {message}")
     return json.loads(raw) if raw else {}
 
 
@@ -114,10 +122,20 @@ def main():
         listing(edit, args.folder)
     else:
         bundle(edit, args.aab, args.track, args.status, args.notes)
-    query = "" if args.review else "?changesNotSentForReview=true"
-    call("POST", f"{API}/edits/{edit}:commit{query}")
-    print("committed" + (", sent for review" if args.review
-                         else ": send it for review in Play Console's Publishing overview"))
+    if args.review:
+        call("POST", f"{API}/edits/{edit}:commit")
+        print("committed, sent for review")
+        return
+    try:
+        call("POST", f"{API}/edits/{edit}:commit?changesNotSentForReview=true", fail=False)
+        print("committed: send it for review in Play Console's Publishing overview")
+    except PlayError as e:
+        # Apps without managed publishing take no unreviewed commits: Play
+        # sends every change for review.
+        if "changesNotSentForReview must not be set" not in str(e):
+            sys.exit(f"error: {e}")
+        call("POST", f"{API}/edits/{edit}:commit")
+        print("committed, sent for review (Play sends this app's changes automatically)")
 
 
 if __name__ == "__main__":

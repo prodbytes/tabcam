@@ -1765,4 +1765,11 @@ spec.
    gcloud user, and calls the Android Publisher API itself
    (`scripts/play_publish.py`), in place of fastlane's key-file login.
    See [app stores](app-stores.md#uploading-to-google-play).
+4. **Go ahead, do it all.** The service account was invited in Play
+   Console (TabCam only: testing tracks, tester lists, store presence).
+   `store-upload-android.sh metadata` uploaded the listing and `upload
+   0.2.202610221407-GA alpha completed` the bundle (versionCode
+   1792678049); Play sends this app's changes for review by itself, so
+   the uploader commits that way when the unreviewed commit is refused.
+   See [app stores](app-stores.md#uploading-to-google-play).
 
