@@ -258,6 +258,46 @@ void main() {
     expect(platform.playing, isEmpty);
   });
 
+  testWidgets('the Text view lists the PDFs to follow, as Cam does: the '
+      'sidebar opens for a PDF alone; tapped, it shows in a pane on the '
+      'left of the text, and hides tapped again', (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final (library, id) = await captureWith(tester, [
+      (PageKind.pdf, 'pdf'),
+    ], tab: true);
+    final pdf = library.byId(id)!.pages.single.id;
+    await tester.pumpWidget(host(EventScreen(library: library, eventId: id)));
+    await _frames(tester);
+    await tester.tap(find.byKey(const Key('text')));
+    await _frames(tester);
+    // Nothing to play: no frame, but the sidebar, for the PDF.
+    final sidebar = find.byKey(const Key('cam-along-sidebar'));
+    expect(sidebar, findsOneWidget);
+    expect(find.byKey(const Key('cam-along-frame')), findsNothing);
+    expect(find.text('Follow a PDF'), findsOneWidget);
+    expect(find.byKey(const Key('text-notation')), findsOneWidget);
+    expect(find.byKey(const Key('text-review')), findsNothing);
+    final pane = find.byKey(const Key('cam-pdf-pane'));
+    expect(pane, findsNothing);
+
+    final tile = find.byKey(ValueKey('cam-along-$pdf'));
+    await tester.tap(tile);
+    await _frames(tester);
+    expect(pane, findsOneWidget);
+    expect(tester.widget<ListTile>(tile).selected, isTrue);
+    expect(
+      tester.getTopLeft(pane).dx,
+      lessThan(tester.getTopLeft(find.byType(TextField)).dx),
+    );
+    expect(find.byKey(const Key('cam-pdf-split')), findsOneWidget);
+
+    await tester.tap(tile);
+    await _frames(tester);
+    expect(pane, findsNothing);
+  });
+
   testWidgets('a PDF has the play-along sidebar; an image has none', (
     tester,
   ) async {

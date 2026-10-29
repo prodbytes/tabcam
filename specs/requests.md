@@ -1847,3 +1847,12 @@ spec.
    buttons' line, left-aligned, the other buttons right-aligned (two
    fifths and three fifths of the line, each side scaled down if too
    wide). See [tab recognition](tab-recognition.md#text-view).
+9. **Remove the Review button; instead, let the user pick the PDF to open
+   in the sidebar, in the right sidebar's mini player bar, exactly as in
+   Cam.** The Text view's play-along sidebar now lists the capture's PDFs
+   under "Follow a PDF", as Cam's does, and opens by itself when the
+   capture has one; a tap shows the PDF in a pane on the left of the
+   text, with the draggable separator, its name and ✕. Review (and its
+   split with the scanned photos) is gone, with its strings. See
+   [tab recognition](tab-recognition.md#text-view) and
+   [Cam](cam.md#following-a-pdf).

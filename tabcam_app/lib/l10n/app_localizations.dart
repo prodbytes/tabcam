@@ -1642,24 +1642,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 correction applied} other{{count} corrections applied}}'**
   String textViewApplied(int count);
 
-  /// Text view: a toggle showing the scanned pages beside the text, to check the reading against them.
-  ///
-  /// In en, this message translates to:
-  /// **'Review'**
-  String get textViewReview;
-
-  /// Text view: the Review toggle's tooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Show the scanned pages beside the text'**
-  String get textViewReviewTip;
-
-  /// Text view, Review: the button switching to one scanned page.
-  ///
-  /// In en, this message translates to:
-  /// **'Page {number}'**
-  String textViewReviewPage(int number);
-
   /// Button copying the text tab
   ///
   /// In en, this message translates to:

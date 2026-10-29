@@ -1321,23 +1321,6 @@
       }
     }
   },
-  "textViewReview": "Review",
-  "@textViewReview": {
-    "description": "Text view: a toggle showing the scanned pages beside the text, to check the reading against them."
-  },
-  "textViewReviewTip": "Show the scanned pages beside the text",
-  "@textViewReviewTip": {
-    "description": "Text view: the Review toggle's tooltip."
-  },
-  "textViewReviewPage": "Page {number}",
-  "@textViewReviewPage": {
-    "description": "Text view, Review: the button switching to one scanned page.",
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
   "textViewCopy": "Copy",
   "@textViewCopy": {
     "description": "Button copying the text tab"

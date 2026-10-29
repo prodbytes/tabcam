@@ -245,25 +245,12 @@ the device says nothing of how sure it is: its text has none
 ([lib/recognition/tab_doubts.dart](../tabcam_app/lib/recognition/tab_doubts.dart)).
 
 Above the text, **one line of buttons**: the [editing tools](#editing-tools)
-on its left, and on its right four compact buttons of one kind (three
-when the capture has no scanned pages, one more in a build that shows
-Fix), in this order (each side is scaled down on a screen too narrow for
+on its left, and on its right three compact buttons of one kind (one more in a build
+that shows Fix), in this order (each side is scaled down on a screen too narrow for
 it, never wrapped; the right side has three fifths of the line, the
 tools two):
 
 - **Copy**: the text, to the clipboard.
-- **Review**, a toggle shaped like Copy (tonal while off, filled while
-  on), shown when the capture has scanned pages (photos or PDFs, what a
-  read reads): it shows them beside the text, to check the reading
-  against them, side by side on a wide screen (600 px or wider, or wider
-  than tall) and the page above the text on a phone held upright, each
-  half the space at first. A **separator** between them (`SplitHandle`,
-  a line with a grip, 12 px thick to take a finger) drags to give the
-  page or the text more of it, neither below 120 px; a double tap makes
-  it half and half again. The share is kept while the Text view is open.
-  The page is a photo (filtered, zoomable) or a PDF; with
-  several, numbered buttons switch between them. The text stays editable
-  meanwhile (Fix's review replaces both).
 - **Fix**, hidden for now (shown only in a build with `TABCAM_FIX=true`,
   see [auto-correct](autocorrect.md#hidden-for-now)): lines the tab up (each staff's strings named, bars lined up,
   every string ending together), for everyone; then, with Premium,
@@ -296,7 +283,7 @@ tools two):
 
 <a id="editing-tools"></a>**Editing tools**, on the left of the same
 line, outlined so they read as buttons (scaled down if too wide; none
-while Review shows, or on a capture shared read only)
+while Fix's review shows, or on a capture shared read only)
 ([lib/screens/tab_editing.dart](../tabcam_app/lib/screens/tab_editing.dart)):
 
 - **−** and **+**: the fret number under the cursor (or just before it),
@@ -321,8 +308,18 @@ while Review shows, or on a capture shared read only)
 - The keyboard offers no suggestions or autocorrection, and dashes and
   quotes aren't made "smart".
 
-**Notation sheet**: when the capture has recordings, videos or links, the
-play-along sidebar beside the text ([Cam](cam.md#playing-along-with-a-file))
+**Following a PDF**: the play-along sidebar beside the text
+([Cam](cam.md#playing-along-with-a-file)) lists the capture's PDFs under
+**Follow a PDF**, exactly as [Cam's](cam.md#following-a-pdf) does: a tap
+opens the PDF in a pane on the left of the text, with the draggable
+separator, its name and ✕; tapped again, or ✕, hides it. It's how the
+reading is checked against the page (the Review button, which showed
+the scanned photos and PDFs beside the text, was dropped 2026-10-29).
+The sidebar, and ♫, are there whenever the capture has a PDF, playable
+files or not; the capture's photos aren't listed.
+
+**Notation sheet**: when the capture has recordings, videos, links or
+PDFs, the play-along sidebar beside the text
 ends, under the mini player and the list of files, in a quick sheet of
 how techniques are written in tab, each symbol in the tab's font with
 what it is: `5h7` hammer-on, `7p5` pull-off, `5/7 7\5` slide up, down,

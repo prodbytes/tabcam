@@ -22,8 +22,8 @@ import 'link_frame.dart';
 ///
 /// In Cam ([withPdfs]) the sidebar lists the capture's PDFs too, to
 /// follow one beside the camera: the one chosen ([pdf]) shows in a pane
-/// on the other side ([PlayAlongBeside]), as the Text view's Review shows
-/// the scanned pages beside the text.
+/// on the other side ([PlayAlongBeside]); the Text view's sidebar lists
+/// them too, to check the reading against the page.
 class PlayAlong extends ChangeNotifier {
   PlayAlong(
     this.library,
