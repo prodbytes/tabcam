@@ -194,11 +194,16 @@ class PlayAlongBeside extends StatelessWidget {
     this.linkFrame = linkFrameFor,
     this.pdfView = pdfViewFor,
     this.onUse,
+    this.footer,
   });
 
   final PlayAlong along;
   final Widget child;
   final Widget Function(LinkFrameController controller) linkFrame;
+
+  /// Under the sidebar's list, if anything (the Text view's notation
+  /// sheet).
+  final Widget? footer;
 
   /// Shows a PDF in its pane; tests pass their own.
   final Widget Function(Library library, CaptureEvent event, EventPage page)
@@ -267,6 +272,7 @@ class PlayAlongBeside extends StatelessWidget {
                   linkFrame: linkFrame,
                   pdfs: along.pdfs,
                   pdf: along.pdf,
+                  footer: footer,
                   onPdf: (page) {
                     onUse?.call();
                     along.showPdf(page);
@@ -583,7 +589,8 @@ class _BackingFrame extends StatelessWidget {
 /// under it the capture's recordings, videos and links, the one playing
 /// along marked; a tap plays one along. Then its [pdfs], if any, under a
 /// heading of their own, the one followed ([pdf]) marked; a tap shows it
-/// beside the screen, or hides it, tapped again.
+/// beside the screen, or hides it, tapped again. At the bottom, [footer],
+/// if any, out of the scrolling list.
 class PlayAlongSidebar extends StatelessWidget {
   const PlayAlongSidebar({
     super.key,
@@ -595,6 +602,7 @@ class PlayAlongSidebar extends StatelessWidget {
     this.pdfs = const [],
     this.pdf,
     this.onPdf,
+    this.footer,
     required this.onToggle,
     required this.onStop,
     required this.onSkip,
@@ -613,6 +621,7 @@ class PlayAlongSidebar extends StatelessWidget {
   final List<EventPage> pdfs;
   final EventPage? pdf;
   final void Function(EventPage page)? onPdf;
+  final Widget? footer;
   final VoidCallback onToggle;
   final VoidCallback onStop;
   final void Function(Duration by) onSkip;
@@ -651,6 +660,7 @@ class PlayAlongSidebar extends StatelessWidget {
               onSpeed: onSpeed,
             ),
             Expanded(child: _list(context, l10n)),
+            ?footer,
           ],
         ),
       ),

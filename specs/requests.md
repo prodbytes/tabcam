@@ -1833,3 +1833,11 @@ spec.
    the text each keep at least 120 px. See
    [Cam](cam.md#following-a-pdf) and
    [tab recognition](tab-recognition.md#text-view).
+7. **In the Text view, below the mini player, at the bottom of the right
+   sidebar, add a quick sheet showing the tablature reference for
+   hammer-ons, pull-offs, slides and bends.** The Text view's play-along
+   sidebar ends in a notation sheet: `5h7` hammer-on, `7p5` pull-off,
+   `5/7 7\5` slide up, down, `7b9 r7` bend, r release, each symbol in
+   the tab's font with its name, in English, Spanish and Portuguese.
+   Cam's and the file screen's sidebars don't have it. See
+   [tab recognition](tab-recognition.md#text-view).

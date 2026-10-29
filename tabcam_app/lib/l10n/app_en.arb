@@ -1406,6 +1406,26 @@
   "@textViewOvertypeOff": {
     "description": "Tooltip of Overtype while off"
   },
+  "textViewNotation": "Tab notation",
+  "@textViewNotation": {
+    "description": "Text view sidebar: the notation sheet's heading"
+  },
+  "textViewNotationHammerOn": "hammer-on",
+  "@textViewNotationHammerOn": {
+    "description": "Notation sheet: 5h7"
+  },
+  "textViewNotationPullOff": "pull-off",
+  "@textViewNotationPullOff": {
+    "description": "Notation sheet: 7p5"
+  },
+  "textViewNotationSlide": "slide up, down",
+  "@textViewNotationSlide": {
+    "description": "Notation sheet: 5/7 7\\5"
+  },
+  "textViewNotationBend": "bend (to the pitch of 9), r release",
+  "@textViewNotationBend": {
+    "description": "Notation sheet: 7b9 r7"
+  },
   "textViewOvertype": "Overtype",
   "@textViewOvertype": {
     "description": "Checkbox button toggling overtype mode"
