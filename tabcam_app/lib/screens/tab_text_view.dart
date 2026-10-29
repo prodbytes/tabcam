@@ -28,18 +28,18 @@ import 'split_handle.dart';
 /// read that ends while it shows fills it in, unless the user has started
 /// editing. Read only for an event shared read only.
 ///
-/// Above it, in one row: **Copy**; **Review**, a toggle showing the
-/// scanned pages (photos and PDFs) beside the text, to check the reading
-/// against them ([_Scans]); **Fix** (off for now, see [showFix]):
-/// lines the tab up, then with Premium auto-correct: the song's tab found
-/// online proposes corrections, shown per note for the user to accept or
-/// reject; **Rescan**, reading the tab from the pages
+/// Above it, in one row, on the right: **Copy**; **Review**, a toggle
+/// showing the scanned pages (photos and PDFs) beside the text, to check
+/// the reading against them ([_Scans]); **Fix** (off for now, see
+/// [showFix]): lines the tab up, then with Premium auto-correct: the
+/// song's tab found online proposes corrections, shown per note for the
+/// user to accept or reject; **Rescan**, reading the tab from the pages
 /// again; and **Verified**, a toggle marking the text checked (the event
-/// then opens on its Text view, and no read replaces it). Editing tools,
-/// outlined: **−** and **+** change the fret under the cursor, **++** and
-/// **−−** move its note to the string above or below, and the
-/// **Overtype** toggle (on by default) makes typing replace characters
-/// instead of pushing the line right.
+/// then opens on its Text view, and no read replaces it). On the row's
+/// left, the editing tools, outlined: **−** and **+** change the fret
+/// under the cursor, **++** and **−−** move its note to the string above
+/// or below, and the **Overtype** toggle (on by default) makes typing
+/// replace characters instead of pushing the line right.
 class TabTextView extends StatefulWidget {
   const TabTextView({
     super.key,
@@ -349,7 +349,8 @@ class _TabTextViewState extends State<TabTextView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // One line: compact buttons, scaled down on a screen too narrow.
+        // One line: the editing tools on the left, the other buttons on
+        // the right, each side scaled down on a screen too narrow.
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           child: Theme(
@@ -361,47 +362,68 @@ class _TabTextViewState extends State<TabTextView> {
                 ),
               ),
             ),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                spacing: 8,
-                children: [
-                  FilledButton.tonalIcon(
-                    onPressed: _copy,
-                    icon: const Icon(Icons.copy),
-                    label: Text(context.l10n.textViewCopy),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: editable && review == null
+                        ? _tools()
+                        : const SizedBox.shrink(),
                   ),
-                  if (_scans(event).isNotEmpty) _reviewToggle(),
-                  // Fix lines the strings up for everyone; with Premium, it
-                  // also checks the tab against the song online.
-                  if (editable && widget.showFix)
-                    FilledButton.tonalIcon(
-                      onPressed: _busy || review != null ? null : _autocorrect,
-                      icon: const Icon(Icons.auto_fix_high),
-                      label: Text(context.l10n.textViewFix),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  flex: 3,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      spacing: 8,
+                      children: [
+                        FilledButton.tonalIcon(
+                          onPressed: _copy,
+                          icon: const Icon(Icons.copy),
+                          label: Text(context.l10n.textViewCopy),
+                        ),
+                        if (_scans(event).isNotEmpty) _reviewToggle(),
+                        // Fix lines the strings up for everyone; with Premium, it
+                        // also checks the tab against the song online.
+                        if (editable && widget.showFix)
+                          FilledButton.tonalIcon(
+                            onPressed: _busy || review != null
+                                ? null
+                                : _autocorrect,
+                            icon: const Icon(Icons.auto_fix_high),
+                            label: Text(context.l10n.textViewFix),
+                          ),
+                        if (editable && widget.onRescan != null)
+                          Tooltip(
+                            message: context.l10n.textViewRescanTip,
+                            child: FilledButton.tonalIcon(
+                              onPressed: _busy || review != null
+                                  ? null
+                                  : _rescan,
+                              icon: const Icon(Icons.document_scanner_outlined),
+                              label: Text(context.l10n.textViewRescan),
+                            ),
+                          ),
+                        if (editable || correct)
+                          _correctToggle(
+                            correct,
+                            editable && review == null && !widget.rescanning,
+                          ),
+                      ],
                     ),
-                  if (editable && widget.onRescan != null)
-                    Tooltip(
-                      message: context.l10n.textViewRescanTip,
-                      child: FilledButton.tonalIcon(
-                        onPressed: _busy || review != null ? null : _rescan,
-                        icon: const Icon(Icons.document_scanner_outlined),
-                        label: Text(context.l10n.textViewRescan),
-                      ),
-                    ),
-                  if (editable || correct)
-                    _correctToggle(
-                      correct,
-                      editable && review == null && !widget.rescanning,
-                    ),
-                ],
-              ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-        if (editable && review == null) _tools(),
         if (_busy) ...[
           const SizedBox(height: 8),
           const LinearProgressIndicator(),
@@ -545,70 +567,61 @@ class _TabTextViewState extends State<TabTextView> {
     );
   }
 
-  /// The editing tools, outlined so they read as buttons: − and + on the
-  /// fret under the cursor, ++ and −− moving its note up or down a string,
-  /// and Overtype, a toggle (filled while on).
+  /// The editing tools, outlined so they read as buttons, on the left of
+  /// the line: − and + on the fret under the cursor, ++ and −− moving its
+  /// note up or down a string, and Overtype, a toggle (filled while on).
   Widget _tools() {
     final enabled = !_busy;
     final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        alignment: Alignment.centerLeft,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton.outlined(
-              tooltip: context.l10n.textViewFretDown,
-              onPressed: enabled ? () => _bump(-1) : null,
-              icon: const Icon(Icons.remove),
-            ),
-            const SizedBox(width: 8),
-            IconButton.outlined(
-              tooltip: context.l10n.textViewFretUp,
-              onPressed: enabled ? () => _bump(1) : null,
-              icon: const Icon(Icons.add),
-            ),
-            const SizedBox(width: 8),
-            IconButton.outlined(
-              tooltip: context.l10n.textViewNoteUp,
-              onPressed: enabled ? () => _move(-1) : null,
-              icon: const Text('++'),
-            ),
-            const SizedBox(width: 8),
-            IconButton.outlined(
-              tooltip: context.l10n.textViewNoteDown,
-              onPressed: enabled ? () => _move(1) : null,
-              icon: const Text('−−'),
-            ),
-            const SizedBox(width: 8),
-            Tooltip(
-              message: _overtype
-                  ? context.l10n.textViewOvertypeOn
-                  : context.l10n.textViewOvertypeOff,
-              child: Semantics(
-                toggled: _overtype,
-                child: OutlinedButton.icon(
-                  onPressed: enabled
-                      ? () => setState(() => _overtype = !_overtype)
-                      : null,
-                  style: _overtype
-                      ? OutlinedButton.styleFrom(
-                          backgroundColor: scheme.secondaryContainer,
-                          foregroundColor: scheme.onSecondaryContainer,
-                        )
-                      : null,
-                  icon: Icon(
-                    _overtype ? Icons.keyboard : Icons.keyboard_outlined,
-                  ),
-                  label: Text(context.l10n.textViewOvertype),
-                ),
-              ),
-            ),
-          ],
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton.outlined(
+          tooltip: context.l10n.textViewFretDown,
+          onPressed: enabled ? () => _bump(-1) : null,
+          icon: const Icon(Icons.remove),
         ),
-      ),
+        const SizedBox(width: 8),
+        IconButton.outlined(
+          tooltip: context.l10n.textViewFretUp,
+          onPressed: enabled ? () => _bump(1) : null,
+          icon: const Icon(Icons.add),
+        ),
+        const SizedBox(width: 8),
+        IconButton.outlined(
+          tooltip: context.l10n.textViewNoteUp,
+          onPressed: enabled ? () => _move(-1) : null,
+          icon: const Text('++'),
+        ),
+        const SizedBox(width: 8),
+        IconButton.outlined(
+          tooltip: context.l10n.textViewNoteDown,
+          onPressed: enabled ? () => _move(1) : null,
+          icon: const Text('−−'),
+        ),
+        const SizedBox(width: 8),
+        Tooltip(
+          message: _overtype
+              ? context.l10n.textViewOvertypeOn
+              : context.l10n.textViewOvertypeOff,
+          child: Semantics(
+            toggled: _overtype,
+            child: OutlinedButton.icon(
+              onPressed: enabled
+                  ? () => setState(() => _overtype = !_overtype)
+                  : null,
+              style: _overtype
+                  ? OutlinedButton.styleFrom(
+                      backgroundColor: scheme.secondaryContainer,
+                      foregroundColor: scheme.onSecondaryContainer,
+                    )
+                  : null,
+              icon: Icon(_overtype ? Icons.keyboard : Icons.keyboard_outlined),
+              label: Text(context.l10n.textViewOvertype),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

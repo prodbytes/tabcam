@@ -1841,3 +1841,9 @@ spec.
    the tab's font with its name, in English, Spanish and Portuguese.
    Cam's and the file screen's sidebars don't have it. See
    [tab recognition](tab-recognition.md#text-view).
+8. **In the Text view, a single row of buttons at the top: −, +, ++, −−
+   and Overtype on the left, and Copy, Review, Rescan and Verified on
+   the right, on the same row.** The editing tools moved up onto the
+   buttons' line, left-aligned, the other buttons right-aligned (two
+   fifths and three fifths of the line, each side scaled down if too
+   wide). See [tab recognition](tab-recognition.md#text-view).

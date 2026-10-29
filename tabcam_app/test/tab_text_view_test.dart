@@ -222,5 +222,21 @@ void main() {
     await tester.tap(overtype);
     await tester.pump();
     expect(toggled(), isFalse);
+    // On one line with the other buttons: the tools to the left of Copy.
+    final copy = find.widgetWithText(FilledButton, 'Copy');
+    expect(
+      tester.getCenter(overtype).dy,
+      closeTo(tester.getCenter(copy).dy, 1),
+    );
+    expect(
+      tester.getTopRight(overtype).dx,
+      lessThan(tester.getTopLeft(copy).dx),
+    );
+    expect(
+      tester.getTopRight(copy).dx,
+      lessThan(
+        tester.getTopLeft(find.widgetWithText(FilledButton, 'Verified')).dx,
+      ),
+    );
   });
 }
