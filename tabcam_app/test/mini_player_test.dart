@@ -229,6 +229,23 @@ void main() {
     expect(find.byKey(const Key('cam-along-sidebar')), findsOneWidget);
     expect(find.byKey(const Key('cam-along-frame')), findsOneWidget);
     expect(platform.playing, isEmpty);
+    // The notation sheet, at the bottom of the sidebar.
+    final sheet = find.byKey(const Key('text-notation'));
+    expect(sheet, findsOneWidget);
+    expect(
+      find.descendant(of: sheet, matching: find.text('5h7')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: sheet, matching: find.text('7b9 r7')),
+      findsOneWidget,
+    );
+    expect(
+      tester.getBottomLeft(sheet).dy,
+      greaterThan(
+        tester.getBottomLeft(find.byKey(const Key('cam-along-frame'))).dy,
+      ),
+    );
 
     await tester.tap(find.byKey(const Key('cam-along-toggle')));
     await _frames(tester);

@@ -1082,6 +1082,21 @@ class AppLocalizationsEs extends AppLocalizations {
       'Insertar: lo que escribes empuja la línea a la derecha';
 
   @override
+  String get textViewNotation => 'Notación de tablatura';
+
+  @override
+  String get textViewNotationHammerOn => 'ligado ascendente (hammer-on)';
+
+  @override
+  String get textViewNotationPullOff => 'ligado descendente (pull-off)';
+
+  @override
+  String get textViewNotationSlide => 'deslizar arriba, abajo';
+
+  @override
+  String get textViewNotationBend => 'bend (hasta la nota del 9), r soltar';
+
+  @override
   String get textViewOvertype => 'Sobrescribir';
 
   @override

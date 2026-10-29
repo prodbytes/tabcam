@@ -6,8 +6,10 @@ text tab is marked correct ([tab recognition](tab-recognition.md#text-view)),
 it opens on the Text view; otherwise on the list. When the capture has
 recordings, videos or links, the Text view has the play-along sidebar
 beside it, open, and **Play along** (♫) in the app bar, as in
-[Cam](cam.md#playing-along-with-a-file); the Files view has neither, and
-going to it, or to Cam, pauses what plays along.
+[Cam](cam.md#playing-along-with-a-file), with a quick sheet of tab
+notation at its bottom ([tab recognition](tab-recognition.md#text-view));
+the Files view has neither, and going to it, or to Cam, pauses what
+plays along.
 
 - **App bar**: the title (and the artist under it, if set, and the
   [study](studies.md), muted, with a folder icon); tapping it, or

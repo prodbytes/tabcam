@@ -1080,6 +1080,21 @@ class AppLocalizationsPt extends AppLocalizations {
       'Inserir: digitar empurra a linha para a direita';
 
   @override
+  String get textViewNotation => 'Notação de tablatura';
+
+  @override
+  String get textViewNotationHammerOn => 'ligado ascendente (hammer-on)';
+
+  @override
+  String get textViewNotationPullOff => 'ligado descendente (pull-off)';
+
+  @override
+  String get textViewNotationSlide => 'deslizar para cima, para baixo';
+
+  @override
+  String get textViewNotationBend => 'bend (até a nota do 9), r soltar';
+
+  @override
   String get textViewOvertype => 'Sobrescrever';
 
   @override

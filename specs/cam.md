@@ -123,7 +123,9 @@ the right (40% of the screen's width, from 120 to 280 px), open by
 default: it opens by itself the first time the capture has one, when Cam
 opens or when one arrives later (a sync, the first take), and once the
 user hides it, it stays hidden. The same sidebar is beside the
-[Text view](event-screen.md) and a [PDF](event-screen.md#file-screen)
+[Text view](event-screen.md) (there with a notation sheet at its bottom,
+[tab recognition](tab-recognition.md#text-view)) and a
+[PDF](event-screen.md#file-screen)
 (`PlayAlong`, `PlayAlongSidebar`,
 [`play_along_sidebar.dart`](../tabcam_app/lib/capture/play_along_sidebar.dart)).
 At its top a compact **player frame**, there whenever there's something

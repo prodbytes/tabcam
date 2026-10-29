@@ -29,6 +29,7 @@ import 'rename_dialog.dart';
 import 'share_sheet.dart';
 import 'place.dart';
 import 'sign_in_gate.dart';
+import 'tab_notation.dart';
 import 'tab_text_view.dart';
 import 'mono_font.dart';
 import 'mini_player.dart';
@@ -1038,7 +1039,11 @@ class _EventScreenState extends State<EventScreen> {
                 ?_premiumHint(event),
                 Expanded(
                   child: text
-                      ? PlayAlongBeside(along: _along, child: _textView(event))
+                      ? PlayAlongBeside(
+                          along: _along,
+                          footer: const NotationSheet(),
+                          child: _textView(event),
+                        )
                       : _fileList(event),
                 ),
               ],

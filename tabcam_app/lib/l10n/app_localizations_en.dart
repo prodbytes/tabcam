@@ -1050,6 +1050,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get textViewOvertypeOff => 'Insert: typing pushes the line right';
 
   @override
+  String get textViewNotation => 'Tab notation';
+
+  @override
+  String get textViewNotationHammerOn => 'hammer-on';
+
+  @override
+  String get textViewNotationPullOff => 'pull-off';
+
+  @override
+  String get textViewNotationSlide => 'slide up, down';
+
+  @override
+  String get textViewNotationBend => 'bend (to the pitch of 9), r release';
+
+  @override
   String get textViewOvertype => 'Overtype';
 
   @override

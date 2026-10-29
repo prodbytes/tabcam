@@ -1762,6 +1762,36 @@ abstract class AppLocalizations {
   /// **'Insert: typing pushes the line right'**
   String get textViewOvertypeOff;
 
+  /// Text view sidebar: the notation sheet's heading
+  ///
+  /// In en, this message translates to:
+  /// **'Tab notation'**
+  String get textViewNotation;
+
+  /// Notation sheet: 5h7
+  ///
+  /// In en, this message translates to:
+  /// **'hammer-on'**
+  String get textViewNotationHammerOn;
+
+  /// Notation sheet: 7p5
+  ///
+  /// In en, this message translates to:
+  /// **'pull-off'**
+  String get textViewNotationPullOff;
+
+  /// Notation sheet: 5/7 7\5
+  ///
+  /// In en, this message translates to:
+  /// **'slide up, down'**
+  String get textViewNotationSlide;
+
+  /// Notation sheet: 7b9 r7
+  ///
+  /// In en, this message translates to:
+  /// **'bend (to the pitch of 9), r release'**
+  String get textViewNotationBend;
+
   /// Checkbox button toggling overtype mode
   ///
   /// In en, this message translates to:

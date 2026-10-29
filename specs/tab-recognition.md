@@ -316,3 +316,12 @@ buttons (scaled down, like the line above, if too wide) ([lib/screens/tab_editin
   stay lined up. Enter still breaks the line.
 - The keyboard offers no suggestions or autocorrection, and dashes and
   quotes aren't made "smart".
+
+**Notation sheet**: when the capture has recordings, videos or links, the
+play-along sidebar beside the text ([Cam](cam.md#playing-along-with-a-file))
+ends, under the mini player and the list of files, in a quick sheet of
+how techniques are written in tab, each symbol in the tab's font with
+what it is: `5h7` hammer-on, `7p5` pull-off, `5/7 7\5` slide up, down,
+and `7b9 r7` bend (to the pitch of 9), r release
+(`NotationSheet`, [lib/screens/tab_notation.dart](../tabcam_app/lib/screens/tab_notation.dart)).
+It's the Text view's only: Cam's and a PDF's sidebars have none.
