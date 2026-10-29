@@ -1818,3 +1818,9 @@ spec.
    (a recording, video or media link; not a page in a frame), the speed
    beside it, and a tap on the speed back to 1×. The pitch stays; the
    speed is kept for the next file. See [Cam](cam.md#playing-along-with-a-file).
+5. **In the bottom part of the cam view, beside Rec and Play, add a
+   button to show or hide the text tab overlay.** Cam's bottom row has a
+   third control, **Hide tab** / **Show tab**, that takes the tab off
+   the screen and puts it back. Hidden, the tab still turns and is
+   still burned into takes; it shows again each time Cam opens. See
+   [Cam](cam.md).

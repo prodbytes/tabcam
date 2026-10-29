@@ -186,6 +186,30 @@ void main() {
     expect(find.text('1 / 3'), findsOneWidget);
   });
 
+  testWidgets('Tab hides the tab from the screen and shows it again; '
+      'hidden, keys still turn it', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    await tester.pumpWidget(app(EventScreen(library: library, eventId: id)));
+    await frames(tester);
+    await tester.tap(find.byKey(const Key('cam')));
+    await frames(tester);
+    expect(find.byKey(const Key('neckline')), findsOneWidget);
+    expect(find.text('Hide tab'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('cam-tab')));
+    await tester.pump();
+    expect(find.byKey(const Key('neckline')), findsNothing);
+    expect(find.text('Show tab'), findsOneWidget);
+
+    // Hidden, a key still turns it (the keys came back to Cam).
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('cam-tab')));
+    await tester.pump();
+    expect(find.text('2 / 3'), findsOneWidget);
+    expect(find.text('Hide tab'), findsOneWidget);
+  });
+
   testWidgets('Rec records a take, the tab burned in, into the capture; '
       'Play plays it back', (tester) async {
     final (library, id) = await capture(tester, tab: _tab);

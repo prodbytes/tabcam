@@ -109,6 +109,12 @@ camera view ([`PlayAlongScreen`](../tabcam_app/lib/capture/play_along_screen.dar
 - **Play** plays the last take of this visit back in the camera's place,
   until **Stop** or its end; the necklines under it turn where they
   turned while it was recorded (the take has the tab in it too).
+- **Tab** (beside Rec and Play: **Hide tab** with the tab showing,
+  **Show tab** with it hidden) hides the tab along the bottom, leaving
+  the camera more of the screen, and shows it again. Hidden, it still
+  turns (keys, taps, head gestures, a take playing back) and a take
+  still gets it burned in where it showed; it's only off the screen.
+  It shows again each time Cam opens.
 
 <a id="playing-along-with-a-file"></a>**Playing along with a file**:
 when the capture has recordings, videos or links (or, in Cam, PDFs to

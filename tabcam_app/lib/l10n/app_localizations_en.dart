@@ -566,6 +566,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camPlay => 'Play';
 
   @override
+  String get camHideTab => 'Hide tab';
+
+  @override
+  String get camShowTab => 'Show tab';
+
+  @override
   String get camPrevious => 'Previous line';
 
   @override
