@@ -1824,3 +1824,12 @@ spec.
    the screen and puts it back. Hidden, the tab still turns and is
    still burned into takes; it shows again each time Cam opens. See
    [Cam](cam.md).
+6. **In the PDF sidebars, in Review in the Text view and in Cam, add a
+   separator to slide, to resize and show a bigger PDF, even if the cam
+   gets smaller.** Cam's PDF pane and the Text view's Review split have
+   a draggable separator (a line with a grip, a resize cursor on a
+   computer; a double tap resets it). In Cam the PDF widens down to a
+   96 px camera, its width kept for the next PDF; in Review the page and
+   the text each keep at least 120 px. See
+   [Cam](cam.md#following-a-pdf) and
+   [tab recognition](tab-recognition.md#text-view).

@@ -149,7 +149,13 @@ text tab along the bottom is still wrong, as the Text view's
 [Review](tab-recognition.md#text-view) shows the scanned pages beside
 the text. A tap on one opens a **PDF pane** on the **left** of the
 camera (`PlayAlong.pdf`, `_PdfPane`; 40% of the screen's width, from 160
-to 480 px, so the page reads): the PDF's name and **Hide the PDF** (✕)
+to 480 px, so the page reads), with a **separator** between it and the
+camera (`SplitHandle`, a line with a grip, 12 px wide to take a finger,
+a resize cursor on a computer): dragged right, the PDF gets wider and the
+camera smaller, down to 96 px; dragged left, the PDF down to 120 px; a
+double tap puts the default width back. The width is kept while Cam is
+open, for the next PDF shown too. The pane has the PDF's name and
+**Hide the PDF** (✕)
 at its top, the document under them, its pages scrolling down, zoomable
 (`PdfPage`, as the [file screen](event-screen.md#file-screen) shows it).
 The one showing is marked in the list (a split icon); tapping it again,

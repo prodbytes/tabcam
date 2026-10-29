@@ -9,6 +9,7 @@ import '../library/library.dart';
 import '../screens/file_screen.dart';
 import '../screens/pdf_page.dart';
 import '../screens/youtube_link.dart';
+import '../screens/split_handle.dart';
 import 'backing_track.dart';
 import 'link_frame.dart';
 
@@ -68,6 +69,26 @@ class PlayAlong extends ChangeNotifier {
   /// Shows [page] (a PDF) beside the screen, or hides it, chosen again.
   void showPdf(EventPage page) {
     _pdf = _pdf?.id == page.id ? null : page;
+    notifyListeners();
+  }
+
+  /// How wide the PDF's pane is, once the user has dragged its edge;
+  /// null: its default ([PdfPaneWidth.of]). Kept while the screen is
+  /// open, for the next PDF too.
+  double? get pdfWidth => _pdfWidth;
+  double? _pdfWidth;
+
+  /// Sets the PDF pane's width (kept within the screen by its layout).
+  void setPdfWidth(double width) {
+    if (width == _pdfWidth) return;
+    _pdfWidth = width;
+    notifyListeners();
+  }
+
+  /// Puts the PDF pane back to its default width.
+  void resetPdfWidth() {
+    if (_pdfWidth == null) return;
+    _pdfWidth = null;
     notifyListeners();
   }
 
@@ -162,7 +183,9 @@ Widget pdfViewFor(Library library, CaptureEvent event, EventPage page) =>
 /// [along]'s sidebar, beside [child]: kept while hidden (offstage), so a
 /// link's page isn't reloaded; nothing when there's nothing to play along
 /// with. On the other side, the PDF followed ([PlayAlong.pdf]), when one
-/// is, in a pane of its own ([_PdfPane]).
+/// is, in a pane of its own ([_PdfPane]), with a separator to drag
+/// ([SplitHandle]) between it and [child]: wider, the page reads better;
+/// [child] (the camera) gets smaller, down to [minChild].
 class PlayAlongBeside extends StatelessWidget {
   const PlayAlongBeside({
     super.key,
@@ -184,90 +207,129 @@ class PlayAlongBeside extends StatelessWidget {
   /// After each tap in the sidebar (Cam takes the keys back).
   final VoidCallback? onUse;
 
+  /// The narrowest [child] gets when the PDF's pane is dragged wider.
+  static const minChild = 96.0;
+
+  /// The narrowest the PDF's pane gets dragged.
+  static const minPdf = 120.0;
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: along,
-    builder: (context, _) => Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (along.pdf case final pdf?)
-          if (along.library.byId(along.eventId) case final event?)
-            _PdfPane(
-              event: event,
-              page: pdf,
-              view: pdfView(along.library, event, pdf),
-              onUse: onUse,
-              onClose: () {
-                onUse?.call();
-                along.hidePdf();
-              },
-            ),
-        Expanded(child: child),
-        if (along.available)
-          Offstage(
-            offstage: !along.open,
-            child: PlayAlongSidebar(
-              library: along.library,
-              eventId: along.eventId,
-              track: along.track,
-              linkFrame: linkFrame,
-              pdfs: along.pdfs,
-              pdf: along.pdf,
-              onPdf: (page) {
-                onUse?.call();
-                along.showPdf(page);
-              },
-              onChoose: (page) {
-                onUse?.call();
-                unawaited(along.choose(page));
-              },
-              onStop: () {
-                onUse?.call();
-                unawaited(along.track.stop());
-              },
-              onToggle: () {
-                onUse?.call();
-                unawaited(along.track.toggle());
-              },
-              onSkip: (by) {
-                onUse?.call();
-                unawaited(along.track.skip(by));
-              },
-              onRepeat: () {
-                onUse?.call();
-                unawaited(along.track.setRepeat(!along.track.repeat));
-              },
-              onSection: (start, end) {
-                onUse?.call();
-                unawaited(along.track.setSection(start, end));
-              },
-              onSectionHere: ({required bool end}) {
-                onUse?.call();
-                unawaited(along.track.sectionHere(end: end));
-              },
-              onSectionClear: () {
-                onUse?.call();
-                unawaited(along.track.clearSection());
-              },
-              onSpeed: (speed) {
-                onUse?.call();
-                unawaited(along.track.setSpeed(speed));
-              },
-            ),
-          ),
-      ],
+    builder: (context, _) => LayoutBuilder(
+      builder: (context, box) {
+        final screen = MediaQuery.sizeOf(context).width;
+        final sidebar = along.available && along.open
+            ? PlayAlongSidebar.widthFor(screen)
+            : 0.0;
+        // What's left for the pane, the separator and [child].
+        final room = box.maxWidth - sidebar - SplitHandle.thickness;
+        final max = room - minChild;
+        double clamp(double w) =>
+            max <= minPdf ? max.clamp(0.0, room) : w.clamp(minPdf, max);
+        final pdfWidth = clamp(along.pdfWidth ?? PdfPaneWidth.of(screen));
+        final event = along.library.byId(along.eventId);
+        final pdf = event == null ? null : along.pdf;
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (pdf != null) ...[
+              _PdfPane(
+                event: event!,
+                page: pdf,
+                width: pdfWidth,
+                view: pdfView(along.library, event, pdf),
+                onUse: onUse,
+                onClose: () {
+                  onUse?.call();
+                  along.hidePdf();
+                },
+              ),
+              SplitHandle(
+                key: const Key('cam-pdf-split'),
+                axis: Axis.horizontal,
+                color: Colors.white38,
+                background: Colors.black,
+                // From the width now: updates come faster than frames.
+                onDrag: (dx) =>
+                    along.setPdfWidth(clamp((along.pdfWidth ?? pdfWidth) + dx)),
+                onReset: along.resetPdfWidth,
+              ),
+            ],
+            Expanded(child: child),
+            if (along.available)
+              Offstage(
+                offstage: !along.open,
+                child: PlayAlongSidebar(
+                  library: along.library,
+                  eventId: along.eventId,
+                  track: along.track,
+                  linkFrame: linkFrame,
+                  pdfs: along.pdfs,
+                  pdf: along.pdf,
+                  onPdf: (page) {
+                    onUse?.call();
+                    along.showPdf(page);
+                  },
+                  onChoose: (page) {
+                    onUse?.call();
+                    unawaited(along.choose(page));
+                  },
+                  onStop: () {
+                    onUse?.call();
+                    unawaited(along.track.stop());
+                  },
+                  onToggle: () {
+                    onUse?.call();
+                    unawaited(along.track.toggle());
+                  },
+                  onSkip: (by) {
+                    onUse?.call();
+                    unawaited(along.track.skip(by));
+                  },
+                  onRepeat: () {
+                    onUse?.call();
+                    unawaited(along.track.setRepeat(!along.track.repeat));
+                  },
+                  onSection: (start, end) {
+                    onUse?.call();
+                    unawaited(along.track.setSection(start, end));
+                  },
+                  onSectionHere: ({required bool end}) {
+                    onUse?.call();
+                    unawaited(along.track.sectionHere(end: end));
+                  },
+                  onSectionClear: () {
+                    onUse?.call();
+                    unawaited(along.track.clearSection());
+                  },
+                  onSpeed: (speed) {
+                    onUse?.call();
+                    unawaited(along.track.setSpeed(speed));
+                  },
+                ),
+              ),
+          ],
+        );
+      },
     ),
   );
 }
 
+/// The PDF pane's width before it's dragged: 40% of the screen's width,
+/// from 160 to 480 px, so the page reads.
+abstract final class PdfPaneWidth {
+  static double of(double screen) => (screen * 0.4).clamp(160.0, 480.0);
+}
+
 /// The PDF followed, beside the screen: its name and **Close** at the top,
-/// the document under them, scrolling and zoomable ([PdfPage]). As wide
-/// as the sidebar is, and more on a wide screen (40% of the screen's
-/// width, from 160 to 480 px), so the page reads.
+/// the document under them, scrolling and zoomable ([PdfPage]), [width]
+/// wide ([PdfPaneWidth], or as the user dragged it).
 class _PdfPane extends StatelessWidget {
   const _PdfPane({
     required this.event,
     required this.page,
+    required this.width,
     required this.view,
     required this.onClose,
     this.onUse,
@@ -275,6 +337,7 @@ class _PdfPane extends StatelessWidget {
 
   final CaptureEvent event;
   final EventPage page;
+  final double width;
   final Widget view;
   final VoidCallback onClose;
   final VoidCallback? onUse;
@@ -282,10 +345,9 @@ class _PdfPane extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final width = MediaQuery.sizeOf(context).width;
     return SizedBox(
       key: const Key('cam-pdf-pane'),
-      width: (width * 0.4).clamp(160.0, 480.0),
+      width: width,
       child: Listener(
         onPointerDown: (_) => onUse?.call(),
         child: Material(
@@ -560,14 +622,16 @@ class PlayAlongSidebar extends StatelessWidget {
   final VoidCallback onSectionClear;
   final void Function(double speed) onSpeed;
 
+  /// Its width on a screen [screen] wide: 40% of it, from 120 to 280 px
+  /// (a third of a phone held upright).
+  static double widthFor(double screen) => (screen * 0.4).clamp(120.0, 280.0);
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final width = MediaQuery.sizeOf(context).width;
     return SizedBox(
       key: const Key('cam-along-sidebar'),
-      // A third of a phone held upright; at most 280 px.
-      width: (width * 0.4).clamp(120.0, 280.0),
+      width: widthFor(MediaQuery.sizeOf(context).width),
       child: Material(
         color: const Color(0xFF1C1C1C),
         child: Column(
@@ -821,8 +885,8 @@ class _SpeedBar extends StatelessWidget {
     final speed = track.speed;
     final normal = (speed - 1).abs() < step / 2;
     final primary = Theme.of(context).colorScheme.primary;
-    final divisions =
-        ((BackingTrack.maxSpeed - BackingTrack.minSpeed) / step).round();
+    final divisions = ((BackingTrack.maxSpeed - BackingTrack.minSpeed) / step)
+        .round();
     return Padding(
       key: const Key('cam-along-speed'),
       padding: const EdgeInsets.only(left: 8),
