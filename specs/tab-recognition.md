@@ -244,10 +244,12 @@ brings its own. A read on
 the device says nothing of how sure it is: its text has none
 ([lib/recognition/tab_doubts.dart](../tabcam_app/lib/recognition/tab_doubts.dart)).
 
-Above the text, on one line, four compact buttons of one kind (three
+Above the text, **one line of buttons**: the [editing tools](#editing-tools)
+on its left, and on its right four compact buttons of one kind (three
 when the capture has no scanned pages, one more in a build that shows
-Fix), in this order (on a screen too narrow for them the line is scaled
-down, never wrapped):
+Fix), in this order (each side is scaled down on a screen too narrow for
+it, never wrapped; the right side has three fifths of the line, the
+tools two):
 
 - **Copy**: the text, to the clipboard.
 - **Review**, a toggle shaped like Copy (tonal while off, filled while
@@ -292,8 +294,10 @@ down, never wrapped):
   an event shared read only the mark is shown (when set) but can't be
   changed.
 
-**Editing tools**, on the line under them, outlined so they read as
-buttons (scaled down, like the line above, if too wide) ([lib/screens/tab_editing.dart](../tabcam_app/lib/screens/tab_editing.dart)):
+<a id="editing-tools"></a>**Editing tools**, on the left of the same
+line, outlined so they read as buttons (scaled down if too wide; none
+while Review shows, or on a capture shared read only)
+([lib/screens/tab_editing.dart](../tabcam_app/lib/screens/tab_editing.dart)):
 
 - **−** and **+**: the fret number under the cursor (or just before it),
   one or two digits, goes down or up by one (15 + → 16, 5 + → 6), from 0
