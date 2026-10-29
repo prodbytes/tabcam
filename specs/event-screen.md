@@ -4,9 +4,10 @@ One event (a capture), opened from the [library](library.md): the list of
 its files, each opening alone on the [file screen](#file-screen). If its
 text tab is marked correct ([tab recognition](tab-recognition.md#text-view)),
 it opens on the Text view; otherwise on the list. When the capture has
-recordings, videos or links, the Text view has the play-along sidebar
-beside it, open, and **Play along** (♫) in the app bar, as in
-[Cam](cam.md#playing-along-with-a-file), with a quick sheet of tab
+recordings, videos, links or PDFs, the Text view has the play-along
+sidebar beside it, open, and **Play along** (♫) in the app bar, as in
+[Cam](cam.md#playing-along-with-a-file), its PDFs listed to
+[follow](cam.md#following-a-pdf) beside the text, with a quick sheet of tab
 notation at its bottom ([tab recognition](tab-recognition.md#text-view));
 the Files view has neither, and going to it, or to Cam, pauses what
 plays along.

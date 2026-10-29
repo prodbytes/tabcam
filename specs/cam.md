@@ -143,13 +143,12 @@ plays it. The user plays along, and records as usual: Rec doesn't stop
 it, so the microphone records it too (iOS mixes its sound with the
 recording's: `mixWithOthers`).
 
-<a id="following-a-pdf"></a>**Following a PDF**: in Cam only, the
+<a id="following-a-pdf"></a>**Following a PDF**: in Cam and in the
+[Text view](tab-recognition.md#text-view) (not beside a PDF), the
 sidebar also lists the capture's PDFs, under **Follow a PDF** (after the
 files to play along, with a PDF icon; the capture's photos aren't
 listed), so the guitarist can read the tab from the page itself when the
-text tab along the bottom is still wrong, as the Text view's
-[Review](tab-recognition.md#text-view) shows the scanned pages beside
-the text. A tap on one opens a **PDF pane** on the **left** of the
+text tab is still wrong. A tap on one opens a **PDF pane** on the **left** of the
 camera (`PlayAlong.pdf`, `_PdfPane`; 40% of the screen's width, from 160
 to 480 px, so the page reads), with a **separator** between it and the
 camera (`SplitHandle`, a line with a grip, 12 px wide to take a finger,
