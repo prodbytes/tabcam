@@ -10,7 +10,6 @@ import '../library/search.dart';
 import '../l10n/language.dart';
 import 'card_preview.dart';
 import 'clone.dart';
-import 'own_tabs_note.dart';
 import 'rename_dialog.dart';
 import 'event_screen.dart';
 import 'place.dart';
@@ -128,7 +127,6 @@ class _LibraryViewState extends State<LibraryView> {
               _section(shared),
             ],
           ],
-          const SliverToBoxAdapter(child: OwnTabsNote()),
         ],
       );
     },
@@ -360,8 +358,6 @@ class _Empty extends StatelessWidget {
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium,
             ),
-            const SizedBox(height: 16),
-            const OwnTabsNote(),
           ],
         ),
       ),

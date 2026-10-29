@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../l10n/language.dart';
 
 /// Who TabCam is for, and whose tabs go in it: musicians practicing with
-/// their own tabs, who must have the right to what they add (Home, its
-/// empty list, and Capture).
+/// their own tabs, who must have the right to what they add (on Capture,
+/// where they add it).
 class OwnTabsNote extends StatelessWidget {
   const OwnTabsNote({super.key});
 

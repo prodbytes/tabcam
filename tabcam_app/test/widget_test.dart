@@ -23,13 +23,9 @@ void main() {
     expect(find.text('TabCam'), findsOneWidget);
     expect(find.text('No tabs yet'), findsOneWidget);
     expect(find.textContaining('Go to Capture'), findsOneWidget);
-    // Who it's for, and that what's added must be the user's to use.
+    // Who it's for is said on Capture, not Home.
     const note = Key('own-tabs-note');
-    expect(find.byKey(note), findsOneWidget);
-    expect(
-      find.textContaining('for musicians practicing with their own tabs'),
-      findsOneWidget,
-    );
+    expect(find.byKey(note), findsNothing);
 
     await tester.tap(find.descendant(of: bar, matching: find.text('Capture')));
     await tester.pumpAndSettle();
@@ -42,8 +38,13 @@ void main() {
     final ys = [for (final add in adds) tester.getTopLeft(find.text(add)).dy];
     expect(ys, [...ys]..sort());
     expect(find.text('PDF files'), findsOneWidget);
+    // Who it's for, and that what's added must be the user's to use.
     await tester.scrollUntilVisible(find.byKey(note), 100);
     expect(find.byKey(note), findsOneWidget);
+    expect(
+      find.textContaining('for musicians practicing with their own tabs'),
+      findsOneWidget,
+    );
 
     await tester.tap(find.descendant(of: bar, matching: find.text('Profile')));
     await tester.pumpAndSettle();
@@ -100,8 +101,8 @@ void main() {
     await tester.pumpAndSettle();
     // Nothing shared yet: just the grid, without headings.
     expect(find.text('My riff'), findsOneWidget);
-    // Under the captures, who TabCam is for.
-    expect(find.byKey(const Key('own-tabs-note')), findsOneWidget);
+    // Who TabCam is for is on Capture, not under the captures.
+    expect(find.byKey(const Key('own-tabs-note')), findsNothing);
     expect(find.text('My captures'), findsNothing);
     expect(find.text('Shared with me'), findsNothing);
 
