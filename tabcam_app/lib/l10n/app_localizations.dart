@@ -862,6 +862,18 @@ abstract class AppLocalizations {
   /// **'Name'**
   String get eventName;
 
+  /// Rename dialog: the optional field for the study (a group of related captures, such as 'Jazz chords') the capture is in; Home filters by it
+  ///
+  /// In en, this message translates to:
+  /// **'Study'**
+  String get eventStudy;
+
+  /// Rename dialog: the line under the Study field
+  ///
+  /// In en, this message translates to:
+  /// **'Optional: groups related captures'**
+  String get eventStudyHelp;
+
   /// Rename dialog button; camera close tooltip
   ///
   /// In en, this message translates to:

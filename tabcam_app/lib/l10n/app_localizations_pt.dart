@@ -489,6 +489,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventName => 'Nome';
 
   @override
+  String get eventStudy => 'Estudo';
+
+  @override
+  String get eventStudyHelp => 'Opcional: agrupa capturas relacionadas';
+
+  @override
   String get eventCancel => 'Cancelar';
 
   @override

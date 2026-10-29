@@ -1791,3 +1791,13 @@ spec.
    still show it on Home until they're rendered again. See
    [navigation](navigation.md#capture), [library](library.md),
    [app stores](app-stores.md).
+2. **Add a property to captures to group them, studies; set it when a
+   capture is open, discreetly, since it's rarely used.** A capture has
+   an optional `study`, synced with it and kept by Clone. The open
+   capture's rename dialog (its title or pencil; also a card's Rename)
+   has an optional Study field under Name, suggesting the user's studies;
+   the study shows muted under the title. Home shows study chips under
+   the search only once a study exists, each filtering to its captures;
+   search finds the study. Shared captures' studies are the owner's and
+   not shown. See [studies](studies.md), [library](library.md),
+   [event screen](event-screen.md).

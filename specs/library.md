@@ -37,13 +37,18 @@ the [welcome](navigation.md#signed-out-the-welcome) alone.
 - **Search**: a field above the cards, "Search captures" (a magnifier;
   an ✕, "Clear search", once something is typed), keeps only the
   captures that match as the user types ([lib/library/search.dart](../tabcam_app/lib/library/search.dart)):
-  every word typed must be somewhere in the title, the artist, the text
+  every word typed must be somewhere in the title, the artist, the
+  [study](studies.md), the text
   tab, the files' names, the links (title and address) or who shared it,
   case and accents aside ("cancion" finds "Canción"). The sections stay,
   each only with its matches (a section with none is left out). Nothing
   matching: a search icon, "No captures match "<search>"", and **Clear
   search**. A new capture clears the search, so it shows. Not shown on an
   empty library.
+- **Studies**: once any of the user's captures is in a
+  [study](studies.md), a row of study chips under the search; choosing
+  one shows only its captures, choosing it again all of them. None
+  until a study is set.
 - **Sections**: once something is shared with the user, Home has two
   headed sections, **My captures** (the user's own, or "Nothing of your
   own yet: go to Capture to add some." when there are none) and below it
@@ -73,7 +78,8 @@ the [welcome](navigation.md#signed-out-the-welcome) alone.
 ## Events
 
 An **event** (`CaptureEvent` in the code; called a scan before it could
-hold more than scanned pages) has an ID, a title, an artist (optional), when it was created,
+hold more than scanned pages) has an ID, a title, an artist (optional), a [study](studies.md)
+(optional), when it was created,
 when it last changed (`updated`: every change the user makes sets it;
 older events count their creation), its pages, and the text tab once read.
 Once it has synced it also has an `owner`, the Cognito identity it syncs
@@ -87,15 +93,17 @@ only, checked again whenever an event is loaded, since events also come
 from the cloud) and an optional `title`. A new event is titled `Tab YYYY-MM-DD HH:MM` (its local time).
 
 **Rename** (a card's menu or long-press, or the event screen's title or
-pencil) asks for one **Name**, prefilled with the title and selected so
-typing replaces it. Whatever the user types becomes the title, as typed
+pencil) asks for a **Name**, prefilled with the title and selected so
+typing replaces it, and, on the user's own events, an optional
+**Study** below it ([studies](studies.md)). Saving an empty Study leaves
+the event in none. Whatever the user types becomes the title, as typed
 (no song or artist format), and the artist is cleared so nothing shows
 beside it. Saving an empty name keeps the title. Exports are named from
 the new title ([sharing](sharing.md)).
 
 **Clone** (a card's menu, or the event screen's app bar, which then opens
 the copy) makes a copy that is a new event of the user's own: titled
-"<title> (copy)", with the same artist, text tab and pages, each page a
+"<title> (copy)", with the same artist, study, text tab and pages, each page a
 new page with its file copied (links copied as they are), created now,
 and never synced or shared yet. So it can be changed, or shared with
 other people, apart from the original. A message says "Cloned as

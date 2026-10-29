@@ -47,6 +47,9 @@ class _LibraryViewState extends State<LibraryView> {
   /// What the search field holds: the events shown match it.
   String get _query => _search.text.trim();
 
+  /// The study chosen above the list: only the user's events in it show.
+  String? _study;
+
   Library get library => widget.library;
 
   @override
@@ -55,6 +58,7 @@ class _LibraryViewState extends State<LibraryView> {
     if (widget.fresh != null && widget.fresh != old.fresh) {
       // A new event shows, whatever was searched.
       _search.clear();
+      _study = null;
       // New events are first: after this frame, the list scrolls up.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_grid.hasClients) {
@@ -96,10 +100,14 @@ class _LibraryViewState extends State<LibraryView> {
       }
       final l10n = context.l10n;
       final query = _query;
-      final searching = query.isNotEmpty;
+      final studies = library.studies;
+      final study = studies.contains(_study) ? _study : null;
+      final searching = query.isNotEmpty || study != null;
       final found = [
         for (final e in library.events)
-          if (matchesSearch(e, query)) e,
+          if (matchesSearch(e, query) &&
+              (study == null || (!e.isShared && e.study == study)))
+            e,
       ];
       final mine = found.where((e) => !e.isShared).toList();
       final shared = found.where((e) => e.isShared).toList();
@@ -110,8 +118,16 @@ class _LibraryViewState extends State<LibraryView> {
         controller: _grid,
         slivers: [
           SliverToBoxAdapter(child: _searchField(l10n)),
+          if (studies.isNotEmpty)
+            SliverToBoxAdapter(child: _studyChips(studies, study)),
           if (found.isEmpty)
-            _NoMatch(query, onClear: _search.clear)
+            _NoMatch(
+              query,
+              onClear: () => setState(() {
+                _search.clear();
+                _study = null;
+              }),
+            )
           else if (plain)
             _section(mine)
           else ...[
@@ -153,6 +169,32 @@ class _LibraryViewState extends State<LibraryView> {
       ),
     ),
   );
+
+  /// The user's studies, one chip each: choosing one shows only its
+  /// events; choosing it again, all of them.
+  Widget _studyChips(List<String> studies, String? chosen) =>
+      SingleChildScrollView(
+        key: const Key('home-studies'),
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+        child: Row(
+          children: [
+            for (final s in studies)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(end: 8),
+                child: FilterChip(
+                  avatar: chosen == s
+                      ? null
+                      : const Icon(Icons.folder_outlined, size: 16),
+                  label: Text(s),
+                  selected: chosen == s,
+                  visualDensity: VisualDensity.compact,
+                  onSelected: (on) => setState(() => _study = on ? s : null),
+                ),
+              ),
+          ],
+        ),
+      );
 
   Widget _section(List<CaptureEvent> events) => SliverPadding(
     padding: const EdgeInsets.all(12),

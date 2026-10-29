@@ -44,6 +44,9 @@ review notes ([app stores](app-stores.md)).
   (Ultimate Guitar, Songsterr, Cifra Club, LaCuerda...) is also imported
   as a PDF print of its page, read for tab; fetched on the device (on the
   web, by the cloud, for Premium only).
+- [Studies](studies.md): an optional study per capture, to group related
+  ones, set from the open capture's rename dialog; Home's study chips
+  (only once one is set) show one study's captures.
 - [Event screen](event-screen.md): one event's files (images, videos,
   recordings, PDFs and links) as a list with previews, Files, Text and
   Add and Cam (the list reorders in place by drag handles), plus Rename,

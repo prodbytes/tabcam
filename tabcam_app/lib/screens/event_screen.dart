@@ -964,6 +964,31 @@ class _EventScreenState extends State<EventScreen> {
                       event.artist,
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
+                  if (event.study.isNotEmpty && !event.isShared)
+                    Row(
+                      key: const Key('event-study-line'),
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.folder_outlined,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            event.study,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
                 ],
               ),
             ),

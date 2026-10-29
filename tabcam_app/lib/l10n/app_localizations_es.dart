@@ -490,6 +490,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventName => 'Nombre';
 
   @override
+  String get eventStudy => 'Estudio';
+
+  @override
+  String get eventStudyHelp => 'Opcional: agrupa capturas relacionadas';
+
+  @override
   String get eventCancel => 'Cancelar';
 
   @override

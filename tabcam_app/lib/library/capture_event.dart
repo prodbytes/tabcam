@@ -234,6 +234,7 @@ class CaptureEvent {
     required this.created,
     DateTime? updated,
     this.artist = '',
+    this.study = '',
     this.pages = const [],
     this.tabText,
     this.tabTextAuto = false,
@@ -266,6 +267,10 @@ class CaptureEvent {
   final String id;
   final String title;
   final String artist;
+
+  /// The study it's in, a group of related captures the user named
+  /// ("Jazz chords"); empty for none. Home filters by it.
+  final String study;
   final DateTime created;
 
   /// When it last changed on any device (cloud sync keeps the latest).
@@ -374,6 +379,7 @@ class CaptureEvent {
   CaptureEvent copyWith({
     String? title,
     String? artist,
+    String? study,
     List<EventPage>? pages,
     String? tabText,
     bool? tabTextAuto,
@@ -391,6 +397,7 @@ class CaptureEvent {
     id: id,
     title: title ?? this.title,
     artist: artist ?? this.artist,
+    study: study ?? this.study,
     created: created,
     updated: updated ?? this.updated,
     pages: pages ?? this.pages,
@@ -415,6 +422,7 @@ class CaptureEvent {
     'id': id,
     'title': title,
     'artist': artist,
+    if (study.isNotEmpty) 'study': study,
     'created': created.toUtc().toIso8601String(),
     'updated': updated.toUtc().toIso8601String(),
     'pages': [for (final p in pages) p.toJson()],
@@ -443,6 +451,7 @@ class CaptureEvent {
       id: checkId(json['id'] as String),
       title: json['title'] as String? ?? '',
       artist: json['artist'] as String? ?? '',
+      study: (json['study'] as String? ?? '').trim(),
       created: time('created')!,
       updated: time('updated'),
       pages: [

@@ -7,6 +7,7 @@ import '../processing/page_crop.dart';
 import '../processing/page_filter.dart';
 import 'capture_event.dart';
 import 'event_store.dart';
+import 'search.dart';
 
 /// The user's events, kept in a [EventStore]; screens listen to it, and so
 /// does cloud sync ([localChanges]).
@@ -40,6 +41,16 @@ class Library extends ChangeNotifier {
 
   /// The events to show, newest first (not the deleted ones).
   List<CaptureEvent> get events => _scans;
+
+  /// The studies the user's own events are in, sorted (case and accents
+  /// aside); none until one is set.
+  List<String> get studies {
+    final names = {
+      for (final e in _scans)
+        if (!e.isShared && e.study.isNotEmpty) e.study,
+    }.toList();
+    return names..sort((a, b) => fold(a).compareTo(fold(b)));
+  }
 
   /// Every event, deleted ones' tombstones included, for cloud sync.
   List<CaptureEvent> get all => _all;
@@ -95,7 +106,7 @@ class Library extends ChangeNotifier {
   }
 
   /// A copy of [event], as a new event of the user's own: "<title>
-  /// (copy)", the same artist, text tab and pages (each a new page, its
+  /// (copy)", the same artist, study, text tab and pages (each a new page, its
   /// file copied), created now. It's never synced or shared, so it can be
   /// shared with other people than the original.
   Future<CaptureEvent> clone(CaptureEvent event) async {
@@ -124,6 +135,7 @@ class Library extends ChangeNotifier {
       id: id,
       title: '${event.title} (copy)',
       artist: event.artist,
+      study: event.study,
       created: now,
       pages: pages,
       tabText: event.tabText,

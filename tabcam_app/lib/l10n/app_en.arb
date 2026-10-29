@@ -655,6 +655,14 @@
   "@eventName": {
     "description": "Rename dialog: the capture's name field"
   },
+  "eventStudy": "Study",
+  "@eventStudy": {
+    "description": "Rename dialog: the optional field for the study (a group of related captures, such as 'Jazz chords') the capture is in; Home filters by it"
+  },
+  "eventStudyHelp": "Optional: groups related captures",
+  "@eventStudyHelp": {
+    "description": "Rename dialog: the line under the Study field"
+  },
   "eventCancel": "Cancel",
   "@eventCancel": {
     "description": "Rename dialog button; camera close tooltip"

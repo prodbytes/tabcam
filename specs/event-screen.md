@@ -9,9 +9,10 @@ beside it, open, and **Play along** (♫) in the app bar, as in
 [Cam](cam.md#playing-along-with-a-file); the Files view has neither, and
 going to it, or to Cam, pauses what plays along.
 
-- **App bar**: the title (and the artist under it, if set); tapping it, or
-  **Rename** (pencil), renames the event (see
-  [library](library.md#events)). **Clone** copies the event and opens the
+- **App bar**: the title (and the artist under it, if set, and the
+  [study](studies.md), muted, with a folder icon); tapping it, or
+  **Rename** (pencil), renames the event and, on the user's own, sets its
+  study (see [library](library.md#events) and [studies](studies.md)). **Clone** copies the event and opens the
   copy ([library](library.md#events)). There's no Reorder button: the
   [files list](#reordering) reorders in place.
   **Download all** (a download arrow) saves the whole capture as

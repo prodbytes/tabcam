@@ -1,7 +1,7 @@
 import 'capture_event.dart';
 
 /// Whether [event] matches what the user typed in Home's search: every
-/// word of [query] is somewhere in its title, artist, text tab, file
+/// word of [query] is somewhere in its title, artist, study, text tab, file
 /// names, links (title and address) or who shared it. Case and accents
 /// don't matter ("canción" finds "Cancion"); an empty query matches all.
 bool matchesSearch(CaptureEvent event, String query) {
@@ -11,6 +11,7 @@ bool matchesSearch(CaptureEvent event, String query) {
     [
       event.title,
       event.artist,
+      event.study,
       event.tabText,
       event.sharedBy,
       for (final page in event.pages) ...[page.title, page.url?.toString()],
