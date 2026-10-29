@@ -70,8 +70,8 @@ opened.
   - **Link** ("A lesson, a backing track, a video"): an address and an
     optional title, which then also names the event
     ([adding](scanning.md#adding-to-an-event) has the details).
-- Under them, the note on whose tabs go in TabCam, as on
-  [Home](library.md): "TabCam is for musicians practicing with their own tabs. Only add what you have the right to use: tabs you wrote, your teacher's, ones you bought, or ones free to share."
+- Under them, the note on whose tabs go in TabCam (`OwnTabsNote`, only
+  here, where tabs are added; not on Home): "TabCam is for musicians practicing with their own tabs. Only add what you have the right to use: tabs you wrote, your teacher's, ones you bought, or ones free to share."
 
 Each makes a new event (titled `Tab YYYY-MM-DD HH:MM`, or a link's
 title) and goes to **Home**, where it's first in the list, scrolled to

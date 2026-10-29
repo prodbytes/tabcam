@@ -1780,3 +1780,14 @@ spec.
    its next version (it can't change while in review); Alpha's notes
    with its next upload.
 
+## 2026-10-29
+
+1. **Move the copyright disclaimer to the capture page.** The note on
+   whose tabs go in TabCam ("TabCam is for musicians practicing with
+   their own tabs. Only add what you have the right to use…") is now
+   only on Capture, under the Add cards; Home no longer shows it (not
+   under the empty state, not under the captures). The App Store review
+   notes say Capture shows it. The store screenshots, rendered before,
+   still show it on Home until they're rendered again. See
+   [navigation](navigation.md#capture), [library](library.md),
+   [app stores](app-stores.md).

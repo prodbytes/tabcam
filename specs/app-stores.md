@@ -156,8 +156,9 @@ section, **YOUR TABS, YOUR RIGHTS** (no songs, tabs, sheet music or
 lyrics come with it; made for your own material; make sure you have the
 right to use what you add), the same on Play; the promotional text
 starts "For musicians practicing with their own tabs"; no "sheet" among
-the keywords. The screenshots show the in-app note (the iPad's Home,
-Capture). The review notes say the app has no in-app
+the keywords. The screenshots show the in-app note (the iPad's Home and
+Capture, rendered when Home had it too; the app now shows it on Capture
+only). The review notes say the app has no in-app
 purchases or subscriptions, that it's for musicians practicing with
 their own tabs and says so in the app (quoting the note), and that it
 comes with no content: no
