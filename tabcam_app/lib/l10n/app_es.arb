@@ -150,6 +150,8 @@
   "camRec": "Grabar",
   "camStop": "Detener",
   "camPlay": "Reproducir",
+  "camHideTab": "Ocultar tablatura",
+  "camShowTab": "Mostrar tablatura",
   "camPrevious": "Línea anterior",
   "camNext": "Línea siguiente",
   "camNoTab": "Aún no hay tablatura en texto: lee la tablatura de la captura para tocar con ella.",

@@ -587,6 +587,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get camPlay => 'Reproducir';
 
   @override
+  String get camHideTab => 'Ocultar tablatura';
+
+  @override
+  String get camShowTab => 'Mostrar tablatura';
+
+  @override
   String get camPrevious => 'Línea anterior';
 
   @override

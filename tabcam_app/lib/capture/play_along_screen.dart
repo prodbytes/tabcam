@@ -29,7 +29,8 @@ import 'take_overlay.dart';
 /// ([HeadTracking]). **Rec** records (video and sound) until it's
 /// tapped again, and adds the take to the capture as a video ("Take 1",
 /// "Take 2"…). **Play** plays the last take back, the necklines turning
-/// where they turned while it was recorded.
+/// where they turned while it was recorded. **Tab** hides the tab from
+/// the screen, and shows it again.
 ///
 /// **Play along** (the app bar's, when the capture has recordings, videos,
 /// links or PDFs) shows and hides a sidebar of them, open from the first
@@ -93,6 +94,10 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     widget.library.byId(widget.eventId)?.tabText ?? '',
   );
   int _line = 0;
+
+  /// Whether the tab shows along the bottom; hidden, it still turns (and
+  /// is still burned into a take), it just isn't on the screen.
+  bool _tabShown = true;
 
   /// While recording: when it started, and when each neckline showed.
   final _clock = Stopwatch();
@@ -633,7 +638,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     );
   }
 
-  /// The camera, the neckline and Rec and Play.
+  /// The camera, the neckline and Rec, Play and Tab.
   Widget _main(CameraController? controller, bool playing) {
     final l10n = context.l10n;
     return Column(
@@ -667,7 +672,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
             ],
           ),
         ),
-        ColoredBox(color: Colors.black87, child: _neckline()),
+        if (_tabShown) ColoredBox(color: Colors.black87, child: _neckline()),
         SafeArea(
           top: false,
           child: Padding(
@@ -693,6 +698,16 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
                       ? null
                       : _play,
                 ),
+                _Control(
+                  key: const Key('cam-tab'),
+                  icon: _tabShown ? Icons.subtitles : Icons.subtitles_off,
+                  color: Colors.white,
+                  label: _tabShown ? l10n.camHideTab : l10n.camShowTab,
+                  onPressed: () {
+                    setState(() => _tabShown = !_tabShown);
+                    _focus.requestFocus();
+                  },
+                ),
               ],
             ),
           ),
@@ -702,7 +717,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   }
 }
 
-/// Rec or Play: an icon over its label, on black.
+/// Rec, Play or Tab: an icon over its label, on black.
 class _Control extends StatelessWidget {
   const _Control({
     super.key,
@@ -720,22 +735,27 @@ class _Control extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final on = onPressed != null;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton(
-          tooltip: label,
-          iconSize: 36,
-          color: color,
-          disabledColor: Colors.white24,
-          icon: Icon(icon),
-          onPressed: onPressed,
-        ),
-        Text(
-          label,
-          style: TextStyle(color: on ? Colors.white : Colors.white38),
-        ),
-      ],
+    // Narrow (a PDF beside the camera), the labels shorten, not overflow.
+    return Flexible(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            tooltip: label,
+            iconSize: 36,
+            color: color,
+            disabledColor: Colors.white24,
+            icon: Icon(icon),
+            onPressed: onPressed,
+          ),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: on ? Colors.white : Colors.white38),
+          ),
+        ],
+      ),
     );
   }
 }

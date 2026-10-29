@@ -1006,6 +1006,18 @@ abstract class AppLocalizations {
   /// **'Play'**
   String get camPlay;
 
+  /// Cam: hides the text tab along the bottom of the screen (it still turns and is still in takes)
+  ///
+  /// In en, this message translates to:
+  /// **'Hide tab'**
+  String get camHideTab;
+
+  /// Cam: shows the hidden text tab along the bottom of the screen again
+  ///
+  /// In en, this message translates to:
+  /// **'Show tab'**
+  String get camShowTab;
+
   /// Cam: previous neckline tooltip
   ///
   /// In en, this message translates to:

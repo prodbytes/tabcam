@@ -776,6 +776,14 @@
   "@camPlay": {
     "description": "Cam: play the last take back"
   },
+  "camHideTab": "Hide tab",
+  "@camHideTab": {
+    "description": "Cam: hides the text tab along the bottom of the screen (it still turns and is still in takes)"
+  },
+  "camShowTab": "Show tab",
+  "@camShowTab": {
+    "description": "Cam: shows the hidden text tab along the bottom of the screen again"
+  },
   "camPrevious": "Previous line",
   "@camPrevious": {
     "description": "Cam: previous neckline tooltip"
