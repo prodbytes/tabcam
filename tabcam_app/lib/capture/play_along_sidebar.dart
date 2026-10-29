@@ -249,6 +249,10 @@ class PlayAlongBeside extends StatelessWidget {
                 onUse?.call();
                 unawaited(along.track.clearSection());
               },
+              onSpeed: (speed) {
+                onUse?.call();
+                unawaited(along.track.setSpeed(speed));
+              },
             ),
           ),
       ],
@@ -337,7 +341,8 @@ class _PdfPane extends StatelessWidget {
 /// wide: the video or link playing (a recording shows its progress only),
 /// its name, « (10 seconds back), play / pause, stop, » (10 forward) and
 /// repeat (on by default); for a recording or video of the capture's own,
-/// the section that repeats ([_SectionBar]). Nothing while there's none.
+/// the section that repeats ([_SectionBar]), and for anything playing in
+/// the app, its speed ([_SpeedBar]). Nothing while there's none.
 class _BackingFrame extends StatelessWidget {
   const _BackingFrame({
     required this.eventId,
@@ -350,6 +355,7 @@ class _BackingFrame extends StatelessWidget {
     required this.onSection,
     required this.onSectionHere,
     required this.onSectionClear,
+    required this.onSpeed,
   });
 
   final String eventId;
@@ -362,6 +368,7 @@ class _BackingFrame extends StatelessWidget {
   final void Function(Duration start, Duration end) onSection;
   final void Function({required bool end}) onSectionHere;
   final VoidCallback onSectionClear;
+  final void Function(double speed) onSpeed;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -419,6 +426,8 @@ class _BackingFrame extends StatelessWidget {
                 onSectionHere: onSectionHere,
                 onSectionClear: onSectionClear,
               ),
+            if (media != null && track.error == null)
+              _SpeedBar(track: track, onSpeed: onSpeed),
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
               child: Row(
@@ -531,6 +540,7 @@ class PlayAlongSidebar extends StatelessWidget {
     required this.onSection,
     required this.onSectionHere,
     required this.onSectionClear,
+    required this.onSpeed,
   });
 
   final Library library;
@@ -548,6 +558,7 @@ class PlayAlongSidebar extends StatelessWidget {
   final void Function(Duration start, Duration end) onSection;
   final void Function({required bool end}) onSectionHere;
   final VoidCallback onSectionClear;
+  final void Function(double speed) onSpeed;
 
   @override
   Widget build(BuildContext context) {
@@ -573,6 +584,7 @@ class PlayAlongSidebar extends StatelessWidget {
               onSection: onSection,
               onSectionHere: onSectionHere,
               onSectionClear: onSectionClear,
+              onSpeed: onSpeed,
             ),
             Expanded(child: _list(context, l10n)),
           ],
@@ -777,6 +789,103 @@ class _SectionBar extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// How fast a recording or video plays, under the section: a slider from
+/// a quarter of its speed to one and a half times it, in steps of 5 %,
+/// and the speed (`0.75×`, in the primary colour once changed; a tap on
+/// it goes back to 1×).
+class _SpeedBar extends StatelessWidget {
+  const _SpeedBar({required this.track, required this.onSpeed});
+
+  final BackingTrack track;
+  final void Function(double speed) onSpeed;
+
+  /// 5 % steps, so a speed is easy to come back to.
+  static const step = 0.05;
+
+  /// `0.75×`, `1×`, `1.25×`.
+  static String label(double speed) {
+    final percent = (speed * 100).round();
+    final text = percent % 100 == 0
+        ? '${percent ~/ 100}'
+        : (percent / 100).toStringAsFixed(2).replaceFirst(RegExp(r'0$'), '');
+    return '$text×';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final speed = track.speed;
+    final normal = (speed - 1).abs() < step / 2;
+    final primary = Theme.of(context).colorScheme.primary;
+    final divisions =
+        ((BackingTrack.maxSpeed - BackingTrack.minSpeed) / step).round();
+    return Padding(
+      key: const Key('cam-along-speed'),
+      padding: const EdgeInsets.only(left: 8),
+      child: Row(
+        children: [
+          Tooltip(
+            message: l10n.camAlongSpeed,
+            child: const Icon(
+              Icons.slow_motion_video,
+              color: Colors.white70,
+              size: 16,
+            ),
+          ),
+          Expanded(
+            child: SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                trackHeight: 2,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                activeTrackColor: normal ? Colors.white24 : primary,
+                inactiveTrackColor: Colors.white12,
+                thumbColor: normal ? Colors.white70 : primary,
+                // No value bubble: the speed shows beside the slider.
+                showValueIndicator: ShowValueIndicator.never,
+              ),
+              child: SizedBox(
+                height: 28,
+                child: Slider(
+                  key: const Key('cam-along-speed-slider'),
+                  min: BackingTrack.minSpeed,
+                  max: BackingTrack.maxSpeed,
+                  divisions: divisions,
+                  value: speed.clamp(
+                    BackingTrack.minSpeed,
+                    BackingTrack.maxSpeed,
+                  ),
+                  semanticFormatterCallback: label,
+                  onChanged: onSpeed,
+                ),
+              ),
+            ),
+          ),
+          Tooltip(
+            message: l10n.camAlongSpeedNormal,
+            child: InkWell(
+              key: const Key('cam-along-speed-label'),
+              onTap: normal ? null : () => onSpeed(1),
+              child: SizedBox(
+                width: 44,
+                child: Text(
+                  label(speed),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: normal ? Colors.white54 : primary,
+                    fontSize: 11,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

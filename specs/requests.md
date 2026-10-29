@@ -1811,3 +1811,10 @@ spec.
    name and ✕ at the top; tapped again, or ✕, hides it; hiding the
    sidebar keeps it. The Text view's and file screen's sidebars are
    unchanged. See [cam](cam.md#following-a-pdf).
+4. **On the mini player for audio and video files, a slowdowner right
+   below the slider for repeat, to slow the playback down by any amount.**
+   The play-along sidebar's frame has, under the section range, a speed
+   slider from 0.25× to 1.5× (5 % steps) for anything playing in the app
+   (a recording, video or media link; not a page in a frame), the speed
+   beside it, and a tap on the speed back to 1×. The pitch stays; the
+   speed is kept for the next file. See [Cam](cam.md#playing-along-with-a-file).

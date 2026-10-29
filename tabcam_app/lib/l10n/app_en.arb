@@ -909,6 +909,14 @@
   "@camAlongSectionClear": {
     "description": "Cam: drops the section; the whole file plays again."
   },
+  "camAlongSpeed": "Speed: slower to the left, faster to the right",
+  "@camAlongSpeed": {
+    "description": "Cam: the slider that slows down (or speeds up) the file playing along; the pitch stays."
+  },
+  "camAlongSpeedNormal": "Normal speed (1×)",
+  "@camAlongSpeedNormal": {
+    "description": "Cam: the speed shown beside the slider (0.75×); tapping it goes back to normal speed."
+  },
   "camAlongStop": "Stop",
   "@camAlongStop": {
     "description": "Cam: stops the file playing along, back at its start."

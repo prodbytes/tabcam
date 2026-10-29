@@ -1156,6 +1156,18 @@ abstract class AppLocalizations {
   /// **'Play all of it'**
   String get camAlongSectionClear;
 
+  /// Cam: the slider that slows down (or speeds up) the file playing along; the pitch stays.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed: slower to the left, faster to the right'**
+  String get camAlongSpeed;
+
+  /// Cam: the speed shown beside the slider (0.75×); tapping it goes back to normal speed.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal speed (1×)'**
+  String get camAlongSpeedNormal;
+
   /// Cam: stops the file playing along, back at its start.
   ///
   /// In en, this message translates to:

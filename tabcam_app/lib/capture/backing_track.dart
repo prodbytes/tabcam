@@ -13,7 +13,8 @@ import 'link_frame.dart';
 /// records). A recording or video plays in the app ([media]); so does a
 /// link straight to a sound or video file; any other link shows in a
 /// frame ([link]). A recording or video of the capture's own can play
-/// just a [section] of itself, over and over.
+/// just a [section] of itself, over and over; what plays in the app can
+/// play slower (or faster), at a [speed].
 class BackingTrack extends ChangeNotifier {
   BackingTrack(this.library, {this.open = _open});
 
@@ -55,6 +56,26 @@ class BackingTrack extends ChangeNotifier {
     _link?.repeat = on;
     notifyListeners();
     await _media?.setLooping(on && section == null);
+  }
+
+  /// How fast a recording or video plays, 1 being as recorded: slower
+  /// to learn a part (the pitch stays). Kept for what's chosen next.
+  double get speed => _speed;
+  double _speed = 1;
+
+  /// The slowest and fastest it plays: the browsers mute the sound below
+  /// a quarter, and above that few parts are worth learning faster.
+  static const minSpeed = 0.25;
+  static const maxSpeed = 1.5;
+
+  /// Plays at [speed] (kept between [minSpeed] and [maxSpeed]), for what
+  /// plays now and what's chosen next. A link in a frame keeps its own.
+  Future<void> setSpeed(double speed) async {
+    speed = speed.clamp(minSpeed, maxSpeed);
+    if (speed == _speed) return;
+    _speed = speed;
+    notifyListeners();
+    await _media?.setPlaybackSpeed(speed);
   }
 
   /// Whether a [section] can be set: a recording or video of the capture's
@@ -213,6 +234,7 @@ class BackingTrack extends ChangeNotifier {
         return;
       }
       _media = media..addListener(notifyListeners);
+      if (_speed != 1) await media.setPlaybackSpeed(_speed);
       if (section != null) {
         await _sectionChanged(media);
       } else {

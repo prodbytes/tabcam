@@ -654,6 +654,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camAlongSectionClear => 'Play all of it';
 
   @override
+  String get camAlongSpeed => 'Speed: slower to the left, faster to the right';
+
+  @override
+  String get camAlongSpeedNormal => 'Normal speed (1×)';
+
+  @override
   String get camAlongStop => 'Stop';
 
   @override
