@@ -323,6 +323,7 @@ PDFs, the play-along sidebar beside the text
 ends, under the mini player and the list of files, in a quick sheet of
 how techniques are written in tab, each symbol in the tab's font with
 what it is: `5h7` hammer-on, `7p5` pull-off, `5/7 7\5` slide up, down,
-and `7b9 r7` bend (to the pitch of 9), r release
+`7b9 r7` bend (to the pitch of 9), r release, `7~` vibrato and `(5)`
+a ghost note (played softly)
 (`NotationSheet`, [lib/screens/tab_notation.dart](../tabcam_app/lib/screens/tab_notation.dart)).
 It's the Text view's only: Cam's and a PDF's sidebars have none.
