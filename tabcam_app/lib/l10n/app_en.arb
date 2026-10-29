@@ -849,6 +849,18 @@
   "@camAlongTitle": {
     "description": "Cam sidebar heading"
   },
+  "camAlongPdfs": "Follow a PDF",
+  "@camAlongPdfs": {
+    "description": "Cam sidebar heading over the capture's PDFs; tapping one shows it beside the camera"
+  },
+  "camAlongPdfShow": "Show the PDF beside the camera",
+  "@camAlongPdfShow": {
+    "description": "Cam sidebar: tooltip of a PDF not showing"
+  },
+  "camAlongPdfHide": "Hide the PDF",
+  "@camAlongPdfHide": {
+    "description": "Cam: tooltip of the PDF showing, and of its Close"
+  },
   "camAlongPlay": "Play (space)",
   "@camAlongPlay": {
     "description": "Cam backing track: play; the space bar does it too"

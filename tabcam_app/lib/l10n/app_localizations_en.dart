@@ -613,6 +613,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camAlongTitle => 'Play along';
 
   @override
+  String get camAlongPdfs => 'Follow a PDF';
+
+  @override
+  String get camAlongPdfShow => 'Show the PDF beside the camera';
+
+  @override
+  String get camAlongPdfHide => 'Hide the PDF';
+
+  @override
   String get camAlongPlay => 'Play (space)';
 
   @override

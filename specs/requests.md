@@ -1801,3 +1801,13 @@ spec.
    search finds the study. Shared captures' studies are the owner's and
    not shown. See [studies](studies.md), [library](library.md),
    [event screen](event-screen.md).
+3. **In the cam view, also show the PDF files; a PDF clicked shows to the
+   left of the screen in a separate sidebar, like Review on the edit
+   page, to follow either the text at the bottom or the PDF if the tab
+   is still inaccurate.** Cam's play-along sidebar now lists the
+   capture's PDFs too, under "Follow a PDF" (and opens by itself when
+   the capture has one, playable files or not); a tap shows that PDF in
+   a pane on the left of the camera, scrolling and zoomable, with its
+   name and ✕ at the top; tapped again, or ✕, hides it; hiding the
+   sidebar keeps it. The Text view's and file screen's sidebars are
+   unchanged. See [cam](cam.md#following-a-pdf).
