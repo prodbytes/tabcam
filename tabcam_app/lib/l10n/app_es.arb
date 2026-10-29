@@ -278,6 +278,8 @@
   "textViewNotationPullOff": "ligado descendente (pull-off)",
   "textViewNotationSlide": "deslizar arriba, abajo",
   "textViewNotationBend": "bend (hasta la nota del 9), r soltar",
+  "textViewNotationVibrato": "vibrato",
+  "textViewNotationGhost": "nota fantasma (tocada suave)",
   "textViewOvertype": "Sobrescribir",
   "textViewSongDialogTitle": "Arreglar con la tablatura de la canción",
   "textViewSongLabel": "Canción y artista",

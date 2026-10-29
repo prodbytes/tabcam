@@ -1856,3 +1856,7 @@ spec.
    split with the scanned photos) is gone, with its strings. See
    [tab recognition](tab-recognition.md#text-view) and
    [Cam](cam.md#following-a-pdf).
+10. **Tab notation seems to be missing parenthesis () and tilde ~.**
+    The Text view sidebar's notation sheet now also shows `7~` vibrato
+    and `(5)` a ghost note (played softly), after the bend. See
+    [tab recognition](tab-recognition.md#text-view).

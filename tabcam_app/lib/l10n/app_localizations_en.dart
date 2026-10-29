@@ -1054,6 +1054,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get textViewNotationBend => 'bend (to the pitch of 9), r release';
 
   @override
+  String get textViewNotationVibrato => 'vibrato';
+
+  @override
+  String get textViewNotationGhost => 'ghost note (played softly)';
+
+  @override
   String get textViewOvertype => 'Overtype';
 
   @override

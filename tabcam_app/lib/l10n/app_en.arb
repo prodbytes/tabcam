@@ -1409,6 +1409,14 @@
   "@textViewNotationBend": {
     "description": "Notation sheet: 7b9 r7"
   },
+  "textViewNotationVibrato": "vibrato",
+  "@textViewNotationVibrato": {
+    "description": "Notation sheet: 7~"
+  },
+  "textViewNotationGhost": "ghost note (played softly)",
+  "@textViewNotationGhost": {
+    "description": "Notation sheet: (5)"
+  },
   "textViewOvertype": "Overtype",
   "@textViewOvertype": {
     "description": "Checkbox button toggling overtype mode"

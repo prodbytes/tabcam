@@ -1774,6 +1774,18 @@ abstract class AppLocalizations {
   /// **'bend (to the pitch of 9), r release'**
   String get textViewNotationBend;
 
+  /// Notation sheet: 7~
+  ///
+  /// In en, this message translates to:
+  /// **'vibrato'**
+  String get textViewNotationVibrato;
+
+  /// Notation sheet: (5)
+  ///
+  /// In en, this message translates to:
+  /// **'ghost note (played softly)'**
+  String get textViewNotationGhost;
+
   /// Checkbox button toggling overtype mode
   ///
   /// In en, this message translates to:
