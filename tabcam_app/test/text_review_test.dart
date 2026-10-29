@@ -91,6 +91,43 @@ void main() {
     expect(find.byKey(const ValueKey('text-review-page-0')), findsNothing);
   });
 
+  testWidgets('the separator between the page and the text drags, side '
+      'by side and one above the other; a double tap: half and half', (
+    tester,
+  ) async {
+    final (library, id) = await capture(tester, 1);
+    await show(tester, library, id, const Size(1200, 800));
+    await tester.tap(find.byKey(const Key('text-review')));
+    await tester.pump();
+    final scans = find.byKey(const Key('text-review-scans'));
+    final handle = find.byKey(const Key('text-review-handle'));
+    final before = tester.getSize(scans).width;
+    await tester.drag(handle, const Offset(200, 0));
+    await tester.pump();
+    expect(tester.getSize(scans).width, closeTo(before + 200, 1));
+    // Not past the text's smallest: it stays at least 120 px.
+    await tester.drag(handle, const Offset(2000, 0));
+    await tester.pump();
+    expect(
+      tester.getSize(find.byType(TextField)).width,
+      greaterThanOrEqualTo(100),
+    );
+    await tester.tap(handle);
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(handle);
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(tester.getSize(scans).width, closeTo(before, 1));
+
+    // On a phone held upright, the page above: dragged down, taller.
+    await show(tester, library, id, const Size(400, 850));
+    final height = tester.getSize(scans).height;
+    await tester.drag(handle, const Offset(0, 150));
+    await tester.pump();
+    expect(tester.getSize(scans).height, greaterThan(height + 100));
+    // The double tap's wait, over.
+    await tester.pump(const Duration(milliseconds: 400));
+  });
+
   testWidgets('without scanned pages, no Review', (tester) async {
     final (library, id) = await capture(tester, 0);
     await show(tester, library, id, const Size(1200, 800));

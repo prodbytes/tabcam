@@ -255,7 +255,11 @@ down, never wrapped):
   read reads): it shows them beside the text, to check the reading
   against them, side by side on a wide screen (600 px or wider, or wider
   than tall) and the page above the text on a phone held upright, each
-  half the space. The page is a photo (filtered, zoomable) or a PDF; with
+  half the space at first. A **separator** between them (`SplitHandle`,
+  a line with a grip, 12 px thick to take a finger) drags to give the
+  page or the text more of it, neither below 120 px; a double tap makes
+  it half and half again. The share is kept while the Text view is open.
+  The page is a photo (filtered, zoomable) or a PDF; with
   several, numbered buttons switch between them. The text stays editable
   meanwhile (Fix's review replaces both).
 - **Fix**, hidden for now (shown only in a build with `TABCAM_FIX=true`,

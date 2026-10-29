@@ -17,6 +17,7 @@ import '../l10n/language.dart';
 import 'mono_font.dart';
 import 'page_image.dart';
 import 'pdf_page.dart';
+import 'split_handle.dart';
 
 /// The event screen's Text view: the tab read from the event's pages, to
 /// check against them and fix, monospaced and unwrapped (long lines scroll
@@ -99,6 +100,10 @@ class _TabTextViewState extends State<TabTextView> {
 
   /// Review: the scanned pages show beside the text.
   bool _sideBySide = false;
+
+  /// With Review on, the scanned page's share of the space, as the user
+  /// dragged the separator; half by default.
+  double _scanShare = 0.5;
 
   /// Which scanned page Review shows.
   int _scan = 0;
@@ -453,7 +458,9 @@ class _TabTextViewState extends State<TabTextView> {
   }
 
   /// With Review on, [text] beside the scanned pages: side by side on a
-  /// wide screen, the page above the text on a phone held upright.
+  /// wide screen, the page above the text on a phone held upright, a
+  /// separator between them to drag ([SplitHandle]; a double tap: half
+  /// and half again).
   Widget _withScans(CaptureEvent? event, Widget text) {
     final scans = _scans(event);
     if (!_sideBySide || event == null || scans.isEmpty) return text;
@@ -468,22 +475,45 @@ class _TabTextViewState extends State<TabTextView> {
     return LayoutBuilder(
       builder: (context, box) {
         final wide = box.maxWidth >= 600 || box.maxWidth > box.maxHeight;
-        final divider = wide
-            ? const VerticalDivider(width: 1)
-            : const Divider(height: 1);
+        final axis = wide ? Axis.horizontal : Axis.vertical;
+        final room =
+            (wide ? box.maxWidth : box.maxHeight) - SplitHandle.thickness;
+        // Neither the page nor the text goes below [_minPane] (or a
+        // tenth, on a tiny screen).
+        final min = room <= 2 * _minPane ? room * 0.1 : _minPane;
+        double clamp(double share) =>
+            room <= 0 ? 0.5 : (share * room).clamp(min, room - min) / room;
+        final share = clamp(_scanShare);
+        final extent = room <= 0 ? 0.0 : share * room;
         return Flex(
           key: const Key('text-review-split'),
-          direction: wide ? Axis.horizontal : Axis.vertical,
+          direction: axis,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(child: pane),
-            divider,
+            SizedBox(
+              width: wide ? extent : null,
+              height: wide ? null : extent,
+              child: pane,
+            ),
+            SplitHandle(
+              key: const Key('text-review-handle'),
+              axis: axis,
+              onDrag: (by) =>
+                  // From the share now: updates come faster than frames.
+                  setState(
+                    () => _scanShare = clamp(clamp(_scanShare) + by / room),
+                  ),
+              onReset: () => setState(() => _scanShare = 0.5),
+            ),
             Expanded(child: text),
           ],
         );
       },
     );
   }
+
+  /// The smallest the page or the text gets, dragging the separator.
+  static const _minPane = 120.0;
 
   /// Rescan: the edits so far saved first, then the event screen asks.
   void _rescan() {

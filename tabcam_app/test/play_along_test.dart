@@ -9,6 +9,7 @@ import 'package:tabcam_app/capture/head_gestures.dart';
 import 'package:tabcam_app/capture/link_frame.dart';
 import 'package:tabcam_app/capture/media.dart';
 import 'package:tabcam_app/capture/play_along_screen.dart';
+import 'package:tabcam_app/capture/play_along_sidebar.dart';
 import 'package:tabcam_app/capture/take_overlay.dart';
 import 'package:tabcam_app/l10n/app_localizations.dart';
 import 'package:tabcam_app/library/capture_event.dart';
@@ -716,6 +717,41 @@ void main() {
       lessThan(tester.getTopLeft(find.byKey(const Key('neckline'))).dx),
     );
     expect(tester.getTopLeft(pane).dx, lessThan(tester.getTopLeft(sidebar).dx));
+
+    // Its separator dragged: narrower to the left, wider to the right
+    // (a smaller camera); kept for the next time it shows; a double tap:
+    // back to its width.
+    final width = tester.getSize(pane).width;
+    final split = find.byKey(const Key('cam-pdf-split'));
+    await tester.drag(split, const Offset(-100, 0));
+    await tester.pump();
+    expect(tester.getSize(pane).width, closeTo(width - 100, 1));
+    await tester.drag(split, const Offset(50, 0));
+    await tester.pump();
+    expect(tester.getSize(pane).width, closeTo(width - 50, 1));
+    // Not past the camera's narrowest.
+    await tester.drag(split, const Offset(5000, 0));
+    await tester.pump();
+    expect(
+      tester.getTopLeft(sidebar).dx - tester.getTopRight(pane).dx,
+      greaterThanOrEqualTo(PlayAlongBeside.minChild),
+    );
+    await tester.drag(split, const Offset(-5000, 0));
+    await tester.pump();
+    expect(tester.getSize(pane).width, PlayAlongBeside.minPdf);
+    await tester.drag(split, const Offset(150, 0));
+    await tester.pump();
+    final dragged = tester.getSize(pane).width;
+    await tester.tap(tile);
+    await tester.pump();
+    await tester.tap(tile);
+    await tester.pump();
+    expect(tester.getSize(pane).width, dragged);
+    await tester.tap(split);
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(split);
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(tester.getSize(pane).width, width);
 
     // Tapped again: hidden.
     await tester.tap(tile);
