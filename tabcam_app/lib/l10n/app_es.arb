@@ -175,6 +175,8 @@
   "camAlongSectionStart": "Empezar la sección aquí",
   "camAlongSectionEnd": "Terminar la sección aquí",
   "camAlongSectionClear": "Reproducir todo",
+  "camAlongSpeed": "Velocidad: más lento a la izquierda, más rápido a la derecha",
+  "camAlongSpeedNormal": "Velocidad normal (1×)",
   "camAlongStop": "Detener",
   "camHeadsOn": "Gestos de cabeza activados: asiente hacia arriba o a la derecha para la línea siguiente, hacia abajo o a la izquierda para la anterior",
   "camHeadsOff": "Gestos de cabeza desactivados",

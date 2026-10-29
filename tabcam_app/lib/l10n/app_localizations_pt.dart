@@ -673,6 +673,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get camAlongSectionClear => 'Tocar tudo';
 
   @override
+  String get camAlongSpeed =>
+      'Velocidade: mais devagar à esquerda, mais rápido à direita';
+
+  @override
+  String get camAlongSpeedNormal => 'Velocidade normal (1×)';
+
+  @override
   String get camAlongStop => 'Parar';
 
   @override

@@ -178,6 +178,13 @@ sidebars don't list PDFs.
   it's none. Each file keeps its own while the screen is open
   ([`backing_track.dart`](../tabcam_app/lib/capture/backing_track.dart)).
   The one in the frame is marked in the list.
+- **The speed** (a recording, video or link playing in the app, not a
+  page in a frame): under the section, a slider from 0.25× to 1.5× in
+  steps of 5 %, and the speed beside it (`0.75×`, in the primary colour
+  once changed; a tap on it goes back to 1×). The pitch stays, so a part
+  can be learnt slowly (the players keep the pitch: ExoPlayer, AVPlayer
+  and the browsers' `playbackRate`). The speed is kept for the next file
+  chosen while the screen is open; a section plays at it too.
 - **The space bar** pauses and plays it while the sidebar shows (a key
   down; held, it doesn't repeat), and doesn't turn the tab; with the
   sidebar hidden, space turns the tab again. A tap in the sidebar or the

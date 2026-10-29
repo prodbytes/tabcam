@@ -61,6 +61,13 @@ class FakeVideoPlatform extends VideoPlatformBase {
   /// Where each seek went.
   final seeks = <Duration>[];
 
+  /// Each player's speed, once set.
+  final speeds = <int, double>{};
+
+  @override
+  Future<void> setPlaybackSpeed(int playerId, double speed) async =>
+      speeds[playerId] = speed;
+
   @override
   Future<void> seekTo(int playerId, Duration position) async =>
       seeks.add(position);

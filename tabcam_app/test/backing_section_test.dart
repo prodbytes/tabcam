@@ -210,6 +210,7 @@ void main() {
                   calls.add('clear');
                   track.clearSection();
                 },
+                onSpeed: (_) {},
               ),
             ],
           ),
