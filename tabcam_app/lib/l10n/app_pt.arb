@@ -126,6 +126,8 @@
   "eventClonedAs": "Clonado como \"{title}\"",
   "eventCouldntClone": "Não foi possível clonar: {error}",
   "eventName": "Nome",
+  "eventStudy": "Estudo",
+  "eventStudyHelp": "Opcional: agrupa capturas relacionadas",
   "eventCancel": "Cancelar",
   "eventSave": "Salvar",
   "eventGateReadTabTitle": "Entre para ler tablaturas",

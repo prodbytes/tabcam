@@ -14,11 +14,14 @@ Future<void> _frames(WidgetTester tester) async {
 }
 
 void main() {
-  // The rename dialog's field (Home has its search field too).
-  final nameField = find.descendant(
-    of: find.byType(AlertDialog),
-    matching: find.byType(TextField),
-  );
+  // The rename dialog's Name field (Home has its search field too, and
+  // the dialog a Study field below it).
+  final nameField = find
+      .descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(TextField),
+      )
+      .first;
 
   testWidgets('an event is renamed from its card in the list', (tester) async {
     final library = Library(PlatformEventStore());
@@ -36,7 +39,7 @@ void main() {
     await tester.tap(find.text('Rename'));
     await _frames(tester);
 
-    // One Name field, its text selected, so typing replaces it.
+    // The Name field, its text selected, so typing replaces it.
     expect(nameField, findsOneWidget);
     final name = tester.widget<TextField>(nameField);
     expect(

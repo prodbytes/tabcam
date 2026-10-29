@@ -470,6 +470,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventName => 'Name';
 
   @override
+  String get eventStudy => 'Study';
+
+  @override
+  String get eventStudyHelp => 'Optional: groups related captures';
+
+  @override
   String get eventCancel => 'Cancel';
 
   @override
