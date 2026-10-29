@@ -1078,6 +1078,24 @@ abstract class AppLocalizations {
   /// **'Play along'**
   String get camAlongTitle;
 
+  /// Cam sidebar heading over the capture's PDFs; tapping one shows it beside the camera
+  ///
+  /// In en, this message translates to:
+  /// **'Follow a PDF'**
+  String get camAlongPdfs;
+
+  /// Cam sidebar: tooltip of a PDF not showing
+  ///
+  /// In en, this message translates to:
+  /// **'Show the PDF beside the camera'**
+  String get camAlongPdfShow;
+
+  /// Cam: tooltip of the PDF showing, and of its Close
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the PDF'**
+  String get camAlongPdfHide;
+
   /// Cam backing track: play; the space bar does it too
   ///
   /// In en, this message translates to:

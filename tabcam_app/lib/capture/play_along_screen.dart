@@ -31,12 +31,13 @@ import 'take_overlay.dart';
 /// "Take 2"…). **Play** plays the last take back, the necklines turning
 /// where they turned while it was recorded.
 ///
-/// **Play along** (the app bar's, when the capture has recordings, videos
-/// or links) shows and hides a sidebar of them, open from the first time
-/// there's one (when Cam opens, or when one arrives later): the
+/// **Play along** (the app bar's, when the capture has recordings, videos,
+/// links or PDFs) shows and hides a sidebar of them, open from the first
+/// time there's one (when Cam opens, or when one arrives later): the
 /// one tapped plays in a compact frame at the sidebar's top, above the
 /// list ([BackingTrack]), while the user plays and records; the space bar
-/// pauses and plays it.
+/// pauses and plays it. A PDF tapped there shows on the screen's other
+/// side, to follow the tab on it ([PlayAlong.pdf]).
 class PlayAlongScreen extends StatefulWidget {
   const PlayAlongScreen({
     super.key,
@@ -47,6 +48,7 @@ class PlayAlongScreen extends StatefulWidget {
     this.takeRecorder = TakeRecorder.forPlatform,
     this.burn = TakeOverlay.burn,
     this.linkFrame = linkFrameFor,
+    this.pdfView = pdfViewFor,
   });
 
   final Library library;
@@ -72,6 +74,10 @@ class PlayAlongScreen extends StatefulWidget {
 
   /// Shows a link in the backing track's frame; tests pass their own.
   final Widget Function(LinkFrameController controller) linkFrame;
+
+  /// Shows the PDF followed beside the camera; tests pass their own.
+  final Widget Function(Library library, CaptureEvent event, EventPage page)
+  pdfView;
 
   @override
   State<PlayAlongScreen> createState() => _PlayAlongScreenState();
@@ -114,7 +120,11 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   bool _recordingTab = false;
 
   /// What plays along, and whether the sidebar to choose it shows.
-  late final PlayAlong _along = PlayAlong(widget.library, widget.eventId);
+  late final PlayAlong _along = PlayAlong(
+    widget.library,
+    widget.eventId,
+    withPdfs: true,
+  );
   BackingTrack get _track => _along.track;
 
   /// The keys' focus, taken back after a tap in the sidebar or the frame.
@@ -614,6 +624,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
           body: PlayAlongBeside(
             along: _along,
             linkFrame: widget.linkFrame,
+            pdfView: widget.pdfView,
             onUse: _focus.requestFocus,
             child: _main(controller, playing),
           ),

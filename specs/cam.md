@@ -111,7 +111,8 @@ camera view ([`PlayAlongScreen`](../tabcam_app/lib/capture/play_along_screen.dar
   turned while it was recorded (the take has the tab in it too).
 
 <a id="playing-along-with-a-file"></a>**Playing along with a file**:
-when the capture has recordings, videos or links, Cam has a sidebar on
+when the capture has recordings, videos or links (or, in Cam, PDFs to
+[follow](#following-a-pdf)), Cam has a sidebar on
 the right (40% of the screen's width, from 120 to 280 px), open by
 default: it opens by itself the first time the capture has one, when Cam
 opens or when one arrives later (a sync, the first take), and once the
@@ -119,11 +120,12 @@ user hides it, it stays hidden. The same sidebar is beside the
 [Text view](event-screen.md) and a [PDF](event-screen.md#file-screen)
 (`PlayAlong`, `PlayAlongSidebar`,
 [`play_along_sidebar.dart`](../tabcam_app/lib/capture/play_along_sidebar.dart)).
-At its top a compact **player frame**, always there, with the first of
-them loaded in it, paused (`BackingTrack`,
+At its top a compact **player frame**, there whenever there's something
+to play, with the first of them loaded in it, paused (`BackingTrack`,
 [`backing_track.dart`](../tabcam_app/lib/capture/backing_track.dart)),
 and under it the list of them in the capture's order (its takes too),
-each with its icon and name; the list scrolls, the frame stays.
+under **Play along**, each with its icon and name; the list scrolls, the
+frame stays.
 **Play along** (♫ in the app bar, in the primary colour while open)
 hides and shows the sidebar, frame and all; hiding it pauses what plays
 (kept offstage, so a link's page isn't reloaded). A capture with none of
@@ -132,6 +134,25 @@ the place of the one before; a tap on the one in the frame pauses or
 plays it. The user plays along, and records as usual: Rec doesn't stop
 it, so the microphone records it too (iOS mixes its sound with the
 recording's: `mixWithOthers`).
+
+<a id="following-a-pdf"></a>**Following a PDF**: in Cam only, the
+sidebar also lists the capture's PDFs, under **Follow a PDF** (after the
+files to play along, with a PDF icon; the capture's photos aren't
+listed), so the guitarist can read the tab from the page itself when the
+text tab along the bottom is still wrong, as the Text view's
+[Review](tab-recognition.md#text-view) shows the scanned pages beside
+the text. A tap on one opens a **PDF pane** on the **left** of the
+camera (`PlayAlong.pdf`, `_PdfPane`; 40% of the screen's width, from 160
+to 480 px, so the page reads): the PDF's name and **Hide the PDF** (✕)
+at its top, the document under them, its pages scrolling down, zoomable
+(`PdfPage`, as the [file screen](event-screen.md#file-screen) shows it).
+The one showing is marked in the list (a split icon); tapping it again,
+or ✕, hides the pane. Only one PDF shows at a time: tapping another
+takes its place. The pane is apart from the sidebar: hiding the sidebar
+(♫) keeps the PDF, and the keys and gestures still turn the tab (a tap
+in the pane gives the keys back to Cam). A PDF deleted or synced away
+while it shows closes the pane. The Text view's and the file screen's
+sidebars don't list PDFs.
 
 - **The frame**, as wide as the sidebar and at most a third of the
   screen's height: a video (or a link's page, 16:9) above a progress bar

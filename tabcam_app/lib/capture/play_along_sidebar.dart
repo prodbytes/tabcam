@@ -7,6 +7,7 @@ import '../l10n/language.dart';
 import '../library/capture_event.dart';
 import '../library/library.dart';
 import '../screens/file_screen.dart';
+import '../screens/pdf_page.dart';
 import '../screens/youtube_link.dart';
 import 'backing_track.dart';
 import 'link_frame.dart';
@@ -17,9 +18,18 @@ import 'link_frame.dart';
 /// of them loaded, paused, the first time the capture has one (when the
 /// screen opens, or when one arrives: a sync, a take); hidden by the user
 /// ([toggle]), it isn't opened again.
+///
+/// In Cam ([withPdfs]) the sidebar lists the capture's PDFs too, to
+/// follow one beside the camera: the one chosen ([pdf]) shows in a pane
+/// on the other side ([PlayAlongBeside]), as the Text view's Review shows
+/// the scanned pages beside the text.
 class PlayAlong extends ChangeNotifier {
-  PlayAlong(this.library, this.eventId, {BackingTrack? track})
-    : track = track ?? BackingTrack(library) {
+  PlayAlong(
+    this.library,
+    this.eventId, {
+    BackingTrack? track,
+    this.withPdfs = false,
+  }) : track = track ?? BackingTrack(library) {
     library.addListener(_changed);
     _changed();
   }
@@ -28,6 +38,13 @@ class PlayAlong extends ChangeNotifier {
   final String eventId;
   final BackingTrack track;
 
+  /// Whether the sidebar lists the capture's PDFs, to follow one.
+  final bool withPdfs;
+
+  /// The PDF followed beside the screen, if one is.
+  EventPage? get pdf => _pdf;
+  EventPage? _pdf;
+
   /// Whether the sidebar shows.
   bool get open => _open;
   bool _open = false;
@@ -35,9 +52,31 @@ class PlayAlong extends ChangeNotifier {
   /// Whether it has opened by itself yet (or the user has toggled it).
   bool _opened = false;
 
-  /// Whether the capture has anything to play along with.
-  bool get available =>
-      library.byId(eventId)?.pages.any(BackingTrack.plays) ?? false;
+  /// Whether the capture has anything to play along with (or, with
+  /// [withPdfs], a PDF to follow).
+  bool get available => library.byId(eventId)?.pages.any(_listed) ?? false;
+
+  /// Whether the sidebar lists [page].
+  bool _listed(EventPage page) =>
+      BackingTrack.plays(page) || (withPdfs && page.isPdf);
+
+  /// The capture's PDFs, when the sidebar lists them.
+  List<EventPage> get pdfs => [
+    if (withPdfs) ...?library.byId(eventId)?.pages.where((p) => p.isPdf),
+  ];
+
+  /// Shows [page] (a PDF) beside the screen, or hides it, chosen again.
+  void showPdf(EventPage page) {
+    _pdf = _pdf?.id == page.id ? null : page;
+    notifyListeners();
+  }
+
+  /// Hides the PDF beside the screen.
+  void hidePdf() {
+    if (_pdf == null) return;
+    _pdf = null;
+    notifyListeners();
+  }
 
   /// Shows or hides the sidebar; hidden, what plays pauses.
   void toggle() {
@@ -54,13 +93,19 @@ class PlayAlong extends ChangeNotifier {
   }
 
   void _changed() {
-    if (_opened) return;
     final event = library.byId(eventId);
-    final first = event?.pages.where(BackingTrack.plays).firstOrNull;
-    if (event == null || first == null) return;
+    // The PDF followed, deleted (or synced away): the pane closes.
+    if (_pdf case final pdf?
+        when event?.pages.any((p) => p.id == pdf.id) != true) {
+      _pdf = null;
+      notifyListeners();
+    }
+    if (_opened) return;
+    if (event == null || !event.pages.any(_listed)) return;
     _opened = true;
     _open = true;
-    if (track.page == null) {
+    final first = event.pages.where(BackingTrack.plays).firstOrNull;
+    if (track.page == null && first != null) {
       unawaited(track.choose(event, first, play: false));
     }
     notifyListeners();
@@ -105,21 +150,36 @@ class PlayAlongButton extends StatelessWidget {
   );
 }
 
+/// A PDF's view for [PlayAlongBeside]'s pane ([PdfPage]).
+Widget pdfViewFor(Library library, CaptureEvent event, EventPage page) =>
+    PdfPage(
+      key: ValueKey('cam-pdf-${page.id}'),
+      library: library,
+      event: event,
+      page: page,
+    );
+
 /// [along]'s sidebar, beside [child]: kept while hidden (offstage), so a
 /// link's page isn't reloaded; nothing when there's nothing to play along
-/// with.
+/// with. On the other side, the PDF followed ([PlayAlong.pdf]), when one
+/// is, in a pane of its own ([_PdfPane]).
 class PlayAlongBeside extends StatelessWidget {
   const PlayAlongBeside({
     super.key,
     required this.along,
     required this.child,
     this.linkFrame = linkFrameFor,
+    this.pdfView = pdfViewFor,
     this.onUse,
   });
 
   final PlayAlong along;
   final Widget child;
   final Widget Function(LinkFrameController controller) linkFrame;
+
+  /// Shows a PDF in its pane; tests pass their own.
+  final Widget Function(Library library, CaptureEvent event, EventPage page)
+  pdfView;
 
   /// After each tap in the sidebar (Cam takes the keys back).
   final VoidCallback? onUse;
@@ -130,6 +190,18 @@ class PlayAlongBeside extends StatelessWidget {
     builder: (context, _) => Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (along.pdf case final pdf?)
+          if (along.library.byId(along.eventId) case final event?)
+            _PdfPane(
+              event: event,
+              page: pdf,
+              view: pdfView(along.library, event, pdf),
+              onUse: onUse,
+              onClose: () {
+                onUse?.call();
+                along.hidePdf();
+              },
+            ),
         Expanded(child: child),
         if (along.available)
           Offstage(
@@ -139,6 +211,12 @@ class PlayAlongBeside extends StatelessWidget {
               eventId: along.eventId,
               track: along.track,
               linkFrame: linkFrame,
+              pdfs: along.pdfs,
+              pdf: along.pdf,
+              onPdf: (page) {
+                onUse?.call();
+                along.showPdf(page);
+              },
               onChoose: (page) {
                 onUse?.call();
                 unawaited(along.choose(page));
@@ -176,6 +254,83 @@ class PlayAlongBeside extends StatelessWidget {
       ],
     ),
   );
+}
+
+/// The PDF followed, beside the screen: its name and **Close** at the top,
+/// the document under them, scrolling and zoomable ([PdfPage]). As wide
+/// as the sidebar is, and more on a wide screen (40% of the screen's
+/// width, from 160 to 480 px), so the page reads.
+class _PdfPane extends StatelessWidget {
+  const _PdfPane({
+    required this.event,
+    required this.page,
+    required this.view,
+    required this.onClose,
+    this.onUse,
+  });
+
+  final CaptureEvent event;
+  final EventPage page;
+  final Widget view;
+  final VoidCallback onClose;
+  final VoidCallback? onUse;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final width = MediaQuery.sizeOf(context).width;
+    return SizedBox(
+      key: const Key('cam-pdf-pane'),
+      width: (width * 0.4).clamp(160.0, 480.0),
+      child: Listener(
+        onPointerDown: (_) => onUse?.call(),
+        child: Material(
+          color: const Color(0xFF1C1C1C),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.picture_as_pdf_outlined,
+                      color: Colors.white70,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        fileLabel(l10n, event, page),
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      key: const Key('cam-pdf-close'),
+                      tooltip: l10n.camAlongPdfHide,
+                      visualDensity: const VisualDensity(
+                        horizontal: -4,
+                        vertical: -4,
+                      ),
+                      color: Colors.white70,
+                      iconSize: 18,
+                      icon: const Icon(Icons.close),
+                      onPressed: onClose,
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(child: view),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// The backing track's frame, compact, at the top of the sidebar and as
@@ -355,7 +510,9 @@ class _BackingFrame extends StatelessWidget {
 
 /// The sidebar: the backing track's frame at its top, always there, and
 /// under it the capture's recordings, videos and links, the one playing
-/// along marked; a tap plays one along.
+/// along marked; a tap plays one along. Then its [pdfs], if any, under a
+/// heading of their own, the one followed ([pdf]) marked; a tap shows it
+/// beside the screen, or hides it, tapped again.
 class PlayAlongSidebar extends StatelessWidget {
   const PlayAlongSidebar({
     super.key,
@@ -364,6 +521,9 @@ class PlayAlongSidebar extends StatelessWidget {
     required this.track,
     required this.linkFrame,
     required this.onChoose,
+    this.pdfs = const [],
+    this.pdf,
+    this.onPdf,
     required this.onToggle,
     required this.onStop,
     required this.onSkip,
@@ -378,6 +538,9 @@ class PlayAlongSidebar extends StatelessWidget {
   final BackingTrack track;
   final Widget Function(LinkFrameController controller) linkFrame;
   final void Function(EventPage page) onChoose;
+  final List<EventPage> pdfs;
+  final EventPage? pdf;
+  final void Function(EventPage page)? onPdf;
   final VoidCallback onToggle;
   final VoidCallback onStop;
   final void Function(Duration by) onSkip;
@@ -418,23 +581,27 @@ class PlayAlongSidebar extends StatelessWidget {
     );
   }
 
-  /// The files to play along, under the frame.
+  /// A heading in the list, small and muted.
+  static Widget _heading(String text) => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+    child: Text(
+      text,
+      style: const TextStyle(color: Colors.white54, fontSize: 12),
+    ),
+  );
+
+  /// The files to play along, under the frame, then the PDFs to follow.
   Widget _list(BuildContext context, AppLocalizations l10n) =>
       ListenableBuilder(
         listenable: Listenable.merge([library, track]),
         builder: (context, _) {
           final event = library.byId(eventId);
           final pages = [...?event?.pages.where(BackingTrack.plays)];
+          final primary = Theme.of(context).colorScheme.primary;
           return ListView(
             padding: EdgeInsets.zero,
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                child: Text(
-                  l10n.camAlongTitle,
-                  style: const TextStyle(color: Colors.white54, fontSize: 12),
-                ),
-              ),
+              if (pages.isNotEmpty) _heading(l10n.camAlongTitle),
               for (final page in pages)
                 ListTile(
                   key: ValueKey('cam-along-${page.id}'),
@@ -454,14 +621,43 @@ class PlayAlongSidebar extends StatelessWidget {
                       : null,
                   onTap: () => onChoose(page),
                 ),
+              if (pdfs.isNotEmpty && event != null) ...[
+                _heading(l10n.camAlongPdfs),
+                for (final page in pdfs)
+                  Tooltip(
+                    message: pdf?.id == page.id
+                        ? l10n.camAlongPdfHide
+                        : l10n.camAlongPdfShow,
+                    child: ListTile(
+                      key: ValueKey('cam-along-${page.id}'),
+                      dense: true,
+                      selected: pdf?.id == page.id,
+                      selectedColor: primary,
+                      textColor: Colors.white,
+                      iconColor: Colors.white70,
+                      leading: Icon(_icon(page)),
+                      title: Text(
+                        fileLabel(l10n, event, page),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: pdf?.id == page.id
+                          ? const Icon(Icons.vertical_split, size: 18)
+                          : null,
+                      onTap: () => onPdf?.call(page),
+                    ),
+                  ),
+              ],
             ],
           );
         },
       );
 }
 
-/// A recording's, video's or link's icon (a YouTube video's as a video).
+/// A recording's, video's, link's or PDF's icon (a YouTube video's as a
+/// video).
 IconData _icon(EventPage page) => switch (page) {
+  EventPage(isPdf: true) => Icons.picture_as_pdf_outlined,
   EventPage(isAudio: true) => Icons.audiotrack,
   EventPage(isVideo: true) => Icons.movie_outlined,
   EventPage(:final url?) when youTubeVideoId(url) != null =>

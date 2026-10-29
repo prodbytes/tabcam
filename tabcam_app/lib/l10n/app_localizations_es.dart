@@ -634,6 +634,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get camAlongTitle => 'Tocar junto';
 
   @override
+  String get camAlongPdfs => 'Seguir un PDF';
+
+  @override
+  String get camAlongPdfShow => 'Mostrar el PDF junto a la cámara';
+
+  @override
+  String get camAlongPdfHide => 'Ocultar el PDF';
+
+  @override
   String get camAlongPlay => 'Reproducir (espacio)';
 
   @override

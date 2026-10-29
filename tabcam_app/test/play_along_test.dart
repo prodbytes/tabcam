@@ -636,4 +636,97 @@ void main() {
     await frames(tester);
     expect(find.byKey(const Key('cam-along-sidebar')), findsNothing);
   });
+
+  testWidgets('a PDF is listed in the sidebar to follow; tapped, it shows '
+      'in a pane on the left of the camera, and hides tapped again or '
+      'closed; hiding the sidebar keeps it', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    late String pdf;
+    await tester.runAsync(() async {
+      final event = await library.addMedia(library.byId(id)!, [
+        Media(
+          XFile.fromData(Uint8List.fromList([1]), name: 'sheet.pdf'),
+          PageKind.pdf,
+          'pdf',
+        ),
+      ]);
+      pdf = event.pages.last.id;
+      await library.renamePage(id, pdf, 'Sheet');
+    });
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          pdfView: (_, _, page) =>
+              SizedBox(key: ValueKey('fake-pdf-${page.id}')),
+        ),
+      ),
+    );
+    await frames(tester);
+    // The sidebar opens for the PDF alone: nothing to play, so no frame.
+    final sidebar = find.byKey(const Key('cam-along-sidebar'));
+    expect(sidebar, findsOneWidget);
+    expect(find.byKey(const Key('cam-along-frame')), findsNothing);
+    expect(find.text('Follow a PDF'), findsOneWidget);
+    expect(find.text('Play along'), findsNothing);
+    final tile = find.byKey(ValueKey('cam-along-$pdf'));
+    expect(
+      find.descendant(of: tile, matching: find.text('Sheet')),
+      findsOneWidget,
+    );
+    final pane = find.byKey(const Key('cam-pdf-pane'));
+    expect(pane, findsNothing);
+
+    // Tapped: the PDF in a pane on the left, the tile marked.
+    await tester.tap(tile);
+    await tester.pump();
+    expect(pane, findsOneWidget);
+    expect(find.byKey(ValueKey('fake-pdf-$pdf')), findsOneWidget);
+    expect(tester.widget<ListTile>(tile).selected, isTrue);
+    expect(
+      tester.getTopLeft(pane).dx,
+      lessThan(tester.getTopLeft(find.byKey(const Key('neckline'))).dx),
+    );
+    expect(tester.getTopLeft(pane).dx, lessThan(tester.getTopLeft(sidebar).dx));
+
+    // Tapped again: hidden.
+    await tester.tap(tile);
+    await tester.pump();
+    expect(pane, findsNothing);
+    expect(tester.widget<ListTile>(tile).selected, isFalse);
+
+    // Closed from the pane.
+    await tester.tap(tile);
+    await tester.pump();
+    expect(pane, findsOneWidget);
+    await tester.tap(find.byKey(const Key('cam-pdf-close')));
+    await tester.pump();
+    expect(pane, findsNothing);
+
+    // The sidebar hidden keeps the PDF showing; the keys still turn the tab.
+    await tester.tap(tile);
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('cam-along')));
+    await tester.pump();
+    expect(sidebar, findsNothing);
+    expect(pane, findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pump();
+    expect(find.text('2 / 3'), findsOneWidget);
+
+    // The PDF deleted: the pane closes.
+    await tester.runAsync(() {
+      final event = library.byId(id)!;
+      return library.deletePage(
+        event,
+        event.pages.singleWhere((p) => p.id == pdf),
+      );
+    });
+    await frames(tester);
+    expect(pane, findsNothing);
+  });
 }
