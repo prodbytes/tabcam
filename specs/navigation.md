@@ -73,12 +73,17 @@ opened.
 - Under them, the note on whose tabs go in TabCam (`OwnTabsNote`, only
   here, where tabs are added; not on Home): "TabCam is for musicians practicing with their own tabs. Only add what you have the right to use: tabs you wrote, your teacher's, ones you bought, or ones free to share."
 
-Each makes a new event. Its title: a Document or
-Files upload (or files dropped on Capture), the first file's name without
-its extension (`Riff in E.pdf` is "Riff in E"; a zip's own name, not its
-files'); a Link, its title; a Scan, and Photos & videos (the photo
-library makes names up, `image_picker_…`), `Tab YYYY-MM-DD HH:MM`. It
-goes to **Home**, where it's first in the list, scrolled to
+Each makes a new event. Its title: an upload (Document, Photos &
+videos, Files, or files dropped on Capture), the name of the first file
+picked that has a real one, without its extension (`Lesson 3 - alternate
+picking.mp4` is "Lesson 3 - alternate picking"; a zip's own name, not its
+files'); a Link, its title; else (a Scan, or only made-up names)
+`Tab YYYY-MM-DD HH:MM`. A made-up name is a picker's or a camera's
+(`MediaPick.madeUpName`): `image_picker_…` (photos from the iOS photo
+library), `IMG_1234`, `VID_20261030_101500`, `VID-…-WA0001`, `PXL_…`,
+`Screenshot … at …`, a date and time, digits, a UUID. A video from the
+photo library keeps its name on Android, iOS and the web, so a lesson's
+names its capture. It goes to **Home**, where it's first in the list, scrolled to
 and outlined for 3 seconds, with a message, "Saved "<title>" (2 pages)"
 (or "1 video, 1 link", ...), and **Open**, which goes by itself after 6
 seconds, as every message does (Flutter would otherwise keep a message

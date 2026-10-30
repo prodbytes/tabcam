@@ -65,6 +65,41 @@ void main() {
     expect(zipped.fileName, 'Riff.zip');
   });
 
+  test('a made-up name (a picker\'s, a camera\'s) names nothing; the first '
+      'real one does', () async {
+    for (final name in [
+      'image_picker_3F2A9C1B-1D2E-4F5A-9B8C-7D6E5F4A3B2C.jpg',
+      'IMG_1234.MOV',
+      'IMG_1234 (2).jpg',
+      'VID_20261030_101500.mp4',
+      'VID-20261030-WA0001.mp4',
+      'PXL_20261030_101500123.mp4',
+      'Screenshot 2026-10-30 at 10.15.00.png',
+      '20261030_101500.mp4',
+      '3f2a9c1b-1d2e-4f5a-9b8c-7d6e5f4a3b2c.mov',
+    ]) {
+      expect(MediaPick.madeUpName(name), isTrue, reason: name);
+    }
+    for (final name in [
+      'Lesson 3 - alternate picking.mp4',
+      'Riff in E.pdf',
+      'Image of the riff.jpg',
+      'Videos and more.mov',
+    ]) {
+      expect(MediaPick.madeUpName(name), isFalse, reason: name);
+    }
+    final pick = await MediaPick.from([
+      XFile.fromData(Uint8List(3), path: 'image_picker_ABC.jpg'),
+      XFile.fromData(Uint8List(3), path: 'Lesson 3 - alternate picking.mp4'),
+    ]);
+    expect(pick.media, hasLength(2));
+    expect(pick.fileName, 'Lesson 3 - alternate picking.mp4');
+    final camera = await MediaPick.from([
+      XFile.fromData(Uint8List(3), path: 'IMG_1234.MOV'),
+    ]);
+    expect(camera.fileName, isNull);
+  });
+
   test('a zip by its MIME type is unzipped too', () async {
     final pick = await MediaPick.from([
       XFile.fromData(

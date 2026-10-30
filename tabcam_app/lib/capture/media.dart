@@ -80,12 +80,11 @@ class Media {
 /// Files of other kinds are left out, and counted in [MediaPick.skipped].
 abstract final class MediaSource {
   /// Photos and videos from the device's photo library.
-  /// Their names are made up by the picker (`image_picker_…`), so they
-  /// don't name anything ([MediaPick.fileName] is null).
-  static Future<MediaPick> library() async {
-    final pick = await MediaPick.from(await ImagePicker().pickMultipleMedia());
-    return MediaPick(pick.media, pick.skipped);
-  }
+  /// A video keeps its name (a lesson's is usually what it teaches);
+  /// photos on iOS get made-up ones, which name nothing
+  /// ([MediaPick.fileName]).
+  static Future<MediaPick> library() async =>
+      MediaPick.from(await ImagePicker().pickMultipleMedia());
 
   /// PDF documents, from the Files app (iOS), the system file picker
   /// (Android) or the browser.
@@ -116,9 +115,30 @@ class MediaPick {
   final List<Media> media;
   final int skipped;
 
-  /// The first file picked's name (a zip's own, not its files'), to name
-  /// a capture made of them; null when the picker makes names up.
+  /// The name of the first file picked that has a real one (a zip's own,
+  /// not its files'), to name a capture made of them; null when none has
+  /// ([madeUpName]).
   final String? fileName;
+
+  /// Whether [name] was made up by a picker or a camera, not given by
+  /// someone: `image_picker_…`, `IMG_1234.jpg`, `VID_20261030_101500.mp4`,
+  /// `PXL_…`, a date and time, a UUID, digits alone.
+  static bool madeUpName(String name) {
+    final base = name.split(RegExp(r'[/\\]')).last;
+    final dot = base.lastIndexOf('.');
+    final stem = (dot > 0 ? base.substring(0, dot) : base).trim();
+    return stem.isEmpty || _madeUp.hasMatch(stem);
+  }
+
+  static final _madeUp = RegExp(
+    r'^(?:(?:flutter_)?image_picker.*'
+    r'|scaled_.*'
+    r'|(?:IMG|VID|MOV|DSC|DSCN|DCIM|PXL|MVIMG|Screenshot|Screen Recording)'
+    r'[ _-]?[\d_ .-]*(?:(?:at|WA)[\d_ .-]*)?(?:~\d+|\(\d+\))?'
+    r'|[\d_ .:-]+'
+    r'|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}.*)$',
+    caseSensitive: false,
+  );
 
   /// [files] as media. A zip's files take its place, in its order, its
   /// folders flattened (a zip in it too, one level down); macOS's
@@ -151,7 +171,8 @@ class MediaPick {
     for (final f in files) {
       await add(f, 0);
     }
-    return MediaPick(media, skipped, fileName: files.firstOrNull?.name);
+    final named = files.where((f) => !madeUpName(f.name)).firstOrNull;
+    return MediaPick(media, skipped, fileName: named?.name);
   }
 
   /// At most this many files in a zip, and this many bytes unzipped: a
