@@ -1879,3 +1879,10 @@ spec.
    since the release's iOS app is unsigned). Only outside the store apps,
    which go to the stores and can't point to other installs. In English,
    Spanish and Portuguese. See [navigation](navigation.md#profile).
+3. **Same for video files, usually named after their content in
+   teaching.** Photos & videos names the new capture too, after the
+   first file picked with a real name: a video keeps its name in the
+   photo picker. Names a picker or a camera made up (`image_picker_…`,
+   `IMG_1234`, `VID_20261030_…`, `PXL_…`, screenshots, dates, UUIDs)
+   are skipped, in every upload; with none left, the date and time. See
+   [navigation](navigation.md#capture).
