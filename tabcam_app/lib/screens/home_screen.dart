@@ -309,7 +309,10 @@ class _HomeScreenState extends State<HomeScreen> {
           _snack(context.l10n.homeSkipped(pick.skipped));
         }
         if (pick.media.isEmpty) return null;
-        return library.addMedia(await library.create(const []), pick.media);
+        // Named after the file uploaded, without its extension.
+        final name = pick.fileName == null ? null : nameOfFile(pick.fileName!);
+        final event = await library.create(const [], title: name);
+        return library.addMedia(event, pick.media);
       });
 
   Future<void> _addLink() async {
@@ -362,7 +365,11 @@ class _HomeScreenState extends State<HomeScreen> {
           FileDropArea(
             onFiles: (files, skipped) => _addMedia(() async {
               final pick = await MediaPick.from(files);
-              return MediaPick(pick.media, pick.skipped + skipped);
+              return MediaPick(
+                pick.media,
+                pick.skipped + skipped,
+                fileName: pick.fileName,
+              );
             }),
             child: CaptureView(
               onScan: _scan,

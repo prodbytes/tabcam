@@ -80,8 +80,12 @@ class Media {
 /// Files of other kinds are left out, and counted in [MediaPick.skipped].
 abstract final class MediaSource {
   /// Photos and videos from the device's photo library.
-  static Future<MediaPick> library() async =>
-      MediaPick.from(await ImagePicker().pickMultipleMedia());
+  /// Their names are made up by the picker (`image_picker_…`), so they
+  /// don't name anything ([MediaPick.fileName] is null).
+  static Future<MediaPick> library() async {
+    final pick = await MediaPick.from(await ImagePicker().pickMultipleMedia());
+    return MediaPick(pick.media, pick.skipped);
+  }
 
   /// PDF documents, from the Files app (iOS), the system file picker
   /// (Android) or the browser.
@@ -104,13 +108,17 @@ abstract final class MediaSource {
   }
 }
 
-/// What a picker returned: the media to add, and how many files were of
-/// other kinds.
+/// What a picker returned: the media to add, how many files were of
+/// other kinds, and the name of the first file picked.
 class MediaPick {
-  const MediaPick(this.media, this.skipped);
+  const MediaPick(this.media, this.skipped, {this.fileName});
 
   final List<Media> media;
   final int skipped;
+
+  /// The first file picked's name (a zip's own, not its files'), to name
+  /// a capture made of them; null when the picker makes names up.
+  final String? fileName;
 
   /// [files] as media. A zip's files take its place, in its order, its
   /// folders flattened (a zip in it too, one level down); macOS's
@@ -143,7 +151,7 @@ class MediaPick {
     for (final f in files) {
       await add(f, 0);
     }
-    return MediaPick(media, skipped);
+    return MediaPick(media, skipped, fileName: files.firstOrNull?.name);
   }
 
   /// At most this many files in a zip, and this many bytes unzipped: a

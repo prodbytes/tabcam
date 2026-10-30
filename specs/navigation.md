@@ -73,8 +73,12 @@ opened.
 - Under them, the note on whose tabs go in TabCam (`OwnTabsNote`, only
   here, where tabs are added; not on Home): "TabCam is for musicians practicing with their own tabs. Only add what you have the right to use: tabs you wrote, your teacher's, ones you bought, or ones free to share."
 
-Each makes a new event (titled `Tab YYYY-MM-DD HH:MM`, or a link's
-title) and goes to **Home**, where it's first in the list, scrolled to
+Each makes a new event. Its title: a Document or
+Files upload (or files dropped on Capture), the first file's name without
+its extension (`Riff in E.pdf` is "Riff in E"; a zip's own name, not its
+files'); a Link, its title; a Scan, and Photos & videos (the photo
+library makes names up, `image_picker_…`), `Tab YYYY-MM-DD HH:MM`. It
+goes to **Home**, where it's first in the list, scrolled to
 and outlined for 3 seconds, with a message, "Saved "<title>" (2 pages)"
 (or "1 video, 1 link", ...), and **Open**, which goes by itself after 6
 seconds, as every message does (Flutter would otherwise keep a message
