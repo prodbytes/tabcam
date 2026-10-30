@@ -114,3 +114,22 @@ English, Español or Português; the app changes at once. Then **About**: the ap
 and version (X.Y.Z, or "(development build)"), what it does,
 **Privacy policy** (opens https://tabcam.nu01.com/privacy in the browser,
 [privacy](privacy.md)) and **Licenses**.
+Last, until TabCam is in the app stores, **Get the phone app**: "TabCam
+isn't in the app stores yet", and **iPhone** and **Android** links, each
+opening a sheet with how to install it from GitHub
+([release](release.md#installing-a-release)):
+
+- **Android**: on the phone, open the latest release, download its
+  `-android.apk`, allow the browser to install apps the first time, and
+  Install (or Update, keeping the events); Google sign-in doesn't work in
+  these builds yet. **Open the release on GitHub** opens
+  https://github.com/prodbytes/tabcam/releases/latest.
+- **iPhone**: the release's iOS app is unsigned, so it's built on a Mac
+  with Xcode and Flutter and signed with the user's own Apple account
+  (Developer Mode on, trusting the developer the first time; a free
+  account's build stops opening after 7 days). **Open the guide on
+  GitHub** opens the README's iOS steps.
+
+Only on the web and desktop: the store apps leave it out (the same
+binaries go to the stores, which don't allow pointing to other installs).
+[install_links.dart](../tabcam_app/lib/screens/install_links.dart).

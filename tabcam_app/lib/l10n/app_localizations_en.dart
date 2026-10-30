@@ -1589,4 +1589,37 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get ownTabsNote =>
       'TabCam is for musicians practicing with their own tabs. Only add what you have the right to use: tabs you wrote, your teacher\'s, ones you bought, or ones free to share.';
+
+  @override
+  String get installTitle => 'Get the phone app';
+
+  @override
+  String get installIntro =>
+      'TabCam isn\'t in the app stores yet. Install it on your phone from GitHub:';
+
+  @override
+  String get installIphone => 'iPhone';
+
+  @override
+  String get installAndroid => 'Android';
+
+  @override
+  String get installIphoneTitle => 'Install on iPhone';
+
+  @override
+  String get installIphoneSteps =>
+      'An iPhone only installs apps from the App Store or signed by an Apple developer, and the release on GitHub isn\'t signed. Build it on a Mac with Xcode and Flutter instead, signed with your own Apple account (a free one works):\n\n1. Get TabCam\'s code from GitHub and set your Apple team, as the guide says.\n2. Connect the iPhone to the Mac by USB and turn on Developer Mode on it (Settings → Privacy & Security → Developer Mode).\n3. Build and install the release with the guide\'s command. It installs over TabCam and keeps your events.\n4. The first time, trust the developer on the iPhone: Settings → General → VPN & Device Management.\n\nWith a free Apple account, the app stops opening after 7 days: install it again.';
+
+  @override
+  String get installAndroidTitle => 'Install on Android';
+
+  @override
+  String get installAndroidSteps =>
+      '1. On the phone, open TabCam\'s latest release on GitHub (the button below).\n2. Under Assets, tap the file ending in -android.apk to download it.\n3. Open the downloaded file. The first time, Android asks you to allow your browser to install apps: allow it (Settings → Apps → Special app access → Install unknown apps).\n4. Tap Install, or Update if TabCam is already installed. Updating keeps your events.\n\nGoogle sign-in doesn\'t work in these builds yet.';
+
+  @override
+  String get installOpenRelease => 'Open the release on GitHub';
+
+  @override
+  String get installOpenGuide => 'Open the guide on GitHub';
 }
