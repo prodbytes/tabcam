@@ -1870,3 +1870,12 @@ spec.
    extension (a zip's own name). Scan, Photos & videos (whose names the
    photo library makes up) and a link without a title keep the date and
    time. See [navigation](navigation.md#capture).
+2. **At the end of the Profile section, add "iPhone" and "Android" links
+   that open instructions on how to download (from GitHub) and install
+   the app on the phone while it isn't in the app stores.** The Profile
+   tab ends with **Get the phone app**: iPhone and Android links, each
+   opening a sheet with the install steps and a button to GitHub (the
+   latest release for Android, the README's iOS build guide for iPhone,
+   since the release's iOS app is unsigned). Only outside the store apps,
+   which go to the stores and can't point to other installs. In English,
+   Spanish and Portuguese. See [navigation](navigation.md#profile).

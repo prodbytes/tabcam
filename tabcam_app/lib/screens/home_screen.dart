@@ -20,6 +20,8 @@ import '../import/tab_page_import.dart';
 import '../library/capture_event.dart';
 import '../library/library.dart';
 import 'account_panel.dart';
+import 'install_links.dart';
+import 'premium_card.dart' show storeApp;
 import 'library_screen.dart';
 import 'place.dart';
 import 'public_capture_screen.dart';
@@ -665,13 +667,18 @@ class _LanguagePicker extends StatelessWidget {
 }
 
 /// The Profile tab: the account (in a build with sign-in), the language,
-/// then About.
+/// About, then, outside a store app, how to install the phone app
+/// ([InstallLinks]).
 class ProfileView extends StatelessWidget {
-  const ProfileView({super.key, this.auth, this.sync, this.ocr});
+  const ProfileView({super.key, this.auth, this.sync, this.ocr, this.store});
 
   final AuthService? auth;
   final CloudSync? sync;
   final CloudOcr? ocr;
+
+  /// Whether this is a store app, which leaves out [InstallLinks] (null:
+  /// [storeApp]).
+  final bool? store;
 
   @override
   Widget build(BuildContext context) {
@@ -719,6 +726,10 @@ class ProfileView extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (!(store ?? storeApp)) ...[
+                  const Divider(height: 48),
+                  const InstallLinks(),
+                ],
               ],
             ),
           ),

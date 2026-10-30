@@ -40,7 +40,9 @@ app binaries with `make` and publishes them as a GitHub release.
 ## Installing a release
 
 The [README](../README.md#installing-a-release-on-a-phone) says how
-testers install a release on a phone until the app is in the stores:
+testers install a release on a phone until the app is in the stores
+(the web app's Profile tab has the same steps, under **iPhone** and
+**Android**, [navigation](navigation.md#profile)):
 
 - **Android**: the release's APK, opened on the phone or installed with
   `adb install -r`. It installs over earlier releases, but over a build

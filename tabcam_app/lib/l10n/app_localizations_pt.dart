@@ -1624,4 +1624,37 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get ownTabsNote =>
       'O TabCam é para músicos praticando com suas próprias tablaturas. Adicione só o que você tem direito de usar: tablaturas que você escreveu, as do seu professor, as que comprou ou as de uso livre.';
+
+  @override
+  String get installTitle => 'Instale o app no celular';
+
+  @override
+  String get installIntro =>
+      'O TabCam ainda não está nas lojas de apps. Instale-o no celular pelo GitHub:';
+
+  @override
+  String get installIphone => 'iPhone';
+
+  @override
+  String get installAndroid => 'Android';
+
+  @override
+  String get installIphoneTitle => 'Instalar no iPhone';
+
+  @override
+  String get installIphoneSteps =>
+      'O iPhone só instala apps da App Store ou assinados por um desenvolvedor da Apple, e a versão do GitHub não é assinada. Compile-a num Mac com Xcode e Flutter, assinada com a sua própria conta Apple (uma gratuita serve):\n\n1. Baixe o código do TabCam do GitHub e configure o seu time da Apple, como diz o guia.\n2. Conecte o iPhone ao Mac por USB e ative o Modo de Desenvolvedor (Ajustes → Privacidade e Segurança → Modo de Desenvolvedor).\n3. Compile e instale a versão com o comando do guia. Ela é instalada sobre o TabCam e mantém os seus eventos.\n4. Na primeira vez, confie no desenvolvedor no iPhone: Ajustes → Geral → VPN e Gerenciamento de Dispositivos.\n\nCom uma conta Apple gratuita, o app para de abrir depois de 7 dias: instale-o de novo.';
+
+  @override
+  String get installAndroidTitle => 'Instalar no Android';
+
+  @override
+  String get installAndroidSteps =>
+      '1. No celular, abra a versão mais recente do TabCam no GitHub (o botão abaixo).\n2. Em Assets, toque no arquivo que termina em -android.apk para baixá-lo.\n3. Abra o arquivo baixado. Na primeira vez, o Android pede para permitir que o navegador instale apps: permita (Configurações → Apps → Acesso especial a apps → Instalar apps desconhecidos).\n4. Toque em Instalar, ou Atualizar se o TabCam já estiver instalado. Atualizar mantém os seus eventos.\n\nEntrar com o Google ainda não funciona nessas versões.';
+
+  @override
+  String get installOpenRelease => 'Abrir a versão no GitHub';
+
+  @override
+  String get installOpenGuide => 'Abrir o guia no GitHub';
 }

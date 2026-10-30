@@ -428,5 +428,15 @@
   "emailSignInFailed": "Não foi possível entrar: {error}",
   "emailSignInExpired": "Sua sessão com e-mail expirou: entre de novo.",
   "emailSignInUnavailable": "Entrar com e-mail não está configurado nesta versão.",
-  "ownTabsNote": "O TabCam é para músicos praticando com suas próprias tablaturas. Adicione só o que você tem direito de usar: tablaturas que você escreveu, as do seu professor, as que comprou ou as de uso livre."
+  "ownTabsNote": "O TabCam é para músicos praticando com suas próprias tablaturas. Adicione só o que você tem direito de usar: tablaturas que você escreveu, as do seu professor, as que comprou ou as de uso livre.",
+  "installTitle": "Instale o app no celular",
+  "installIntro": "O TabCam ainda não está nas lojas de apps. Instale-o no celular pelo GitHub:",
+  "installIphone": "iPhone",
+  "installAndroid": "Android",
+  "installIphoneTitle": "Instalar no iPhone",
+  "installIphoneSteps": "O iPhone só instala apps da App Store ou assinados por um desenvolvedor da Apple, e a versão do GitHub não é assinada. Compile-a num Mac com Xcode e Flutter, assinada com a sua própria conta Apple (uma gratuita serve):\n\n1. Baixe o código do TabCam do GitHub e configure o seu time da Apple, como diz o guia.\n2. Conecte o iPhone ao Mac por USB e ative o Modo de Desenvolvedor (Ajustes → Privacidade e Segurança → Modo de Desenvolvedor).\n3. Compile e instale a versão com o comando do guia. Ela é instalada sobre o TabCam e mantém os seus eventos.\n4. Na primeira vez, confie no desenvolvedor no iPhone: Ajustes → Geral → VPN e Gerenciamento de Dispositivos.\n\nCom uma conta Apple gratuita, o app para de abrir depois de 7 dias: instale-o de novo.",
+  "installAndroidTitle": "Instalar no Android",
+  "installAndroidSteps": "1. No celular, abra a versão mais recente do TabCam no GitHub (o botão abaixo).\n2. Em Assets, toque no arquivo que termina em -android.apk para baixá-lo.\n3. Abra o arquivo baixado. Na primeira vez, o Android pede para permitir que o navegador instale apps: permita (Configurações → Apps → Acesso especial a apps → Instalar apps desconhecidos).\n4. Toque em Instalar, ou Atualizar se o TabCam já estiver instalado. Atualizar mantém os seus eventos.\n\nEntrar com o Google ainda não funciona nessas versões.",
+  "installOpenRelease": "Abrir a versão no GitHub",
+  "installOpenGuide": "Abrir o guia no GitHub"
 }

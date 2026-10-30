@@ -2679,6 +2679,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'TabCam is for musicians practicing with their own tabs. Only add what you have the right to use: tabs you wrote, your teacher\'s, ones you bought, or ones free to share.'**
   String get ownTabsNote;
+
+  /// Profile, last section: title of the phone install links
+  ///
+  /// In en, this message translates to:
+  /// **'Get the phone app'**
+  String get installTitle;
+
+  /// Profile, phone app section: intro before the iPhone and Android links
+  ///
+  /// In en, this message translates to:
+  /// **'TabCam isn\'t in the app stores yet. Install it on your phone from GitHub:'**
+  String get installIntro;
+
+  /// Profile, phone app section: link to the iPhone install steps
+  ///
+  /// In en, this message translates to:
+  /// **'iPhone'**
+  String get installIphone;
+
+  /// Profile, phone app section: link to the Android install steps
+  ///
+  /// In en, this message translates to:
+  /// **'Android'**
+  String get installAndroid;
+
+  /// iPhone install steps: title
+  ///
+  /// In en, this message translates to:
+  /// **'Install on iPhone'**
+  String get installIphoneTitle;
+
+  /// iPhone install steps: how to build and install the app from GitHub
+  ///
+  /// In en, this message translates to:
+  /// **'An iPhone only installs apps from the App Store or signed by an Apple developer, and the release on GitHub isn\'t signed. Build it on a Mac with Xcode and Flutter instead, signed with your own Apple account (a free one works):\n\n1. Get TabCam\'s code from GitHub and set your Apple team, as the guide says.\n2. Connect the iPhone to the Mac by USB and turn on Developer Mode on it (Settings → Privacy & Security → Developer Mode).\n3. Build and install the release with the guide\'s command. It installs over TabCam and keeps your events.\n4. The first time, trust the developer on the iPhone: Settings → General → VPN & Device Management.\n\nWith a free Apple account, the app stops opening after 7 days: install it again.'**
+  String get installIphoneSteps;
+
+  /// Android install steps: title
+  ///
+  /// In en, this message translates to:
+  /// **'Install on Android'**
+  String get installAndroidTitle;
+
+  /// Android install steps: how to download and install the APK from GitHub
+  ///
+  /// In en, this message translates to:
+  /// **'1. On the phone, open TabCam\'s latest release on GitHub (the button below).\n2. Under Assets, tap the file ending in -android.apk to download it.\n3. Open the downloaded file. The first time, Android asks you to allow your browser to install apps: allow it (Settings → Apps → Special app access → Install unknown apps).\n4. Tap Install, or Update if TabCam is already installed. Updating keeps your events.\n\nGoogle sign-in doesn\'t work in these builds yet.'**
+  String get installAndroidSteps;
+
+  /// Android install steps: button that opens the latest GitHub release
+  ///
+  /// In en, this message translates to:
+  /// **'Open the release on GitHub'**
+  String get installOpenRelease;
+
+  /// iPhone install steps: button that opens the install guide on GitHub
+  ///
+  /// In en, this message translates to:
+  /// **'Open the guide on GitHub'**
+  String get installOpenGuide;
 }
 
 class _AppLocalizationsDelegate
