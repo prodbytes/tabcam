@@ -51,6 +51,18 @@ void main() {
     expect(await pick.media[2].file.readAsBytes(), [2]);
     // notes.txt; macOS's files aren't counted.
     expect(pick.skipped, 1);
+    // The first file picked names it.
+    expect(pick.fileName, 'cover.jpg');
+    final zipped = await MediaPick.from([
+      XFile.fromData(
+        _zip({
+          'riff/tab.pdf': [4],
+        }),
+        path: 'Riff.zip',
+      ),
+    ]);
+    // A zip: its own name, not its files'.
+    expect(zipped.fileName, 'Riff.zip');
   });
 
   test('a zip by its MIME type is unzipped too', () async {

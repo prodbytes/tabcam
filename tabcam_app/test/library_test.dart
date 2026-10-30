@@ -49,6 +49,18 @@ void main() {
     expect(await reopened.original(loaded, loaded.pages.first), isNotEmpty);
   });
 
+  test('a new event is titled as asked (a file uploaded), else with its '
+      'date and time', () async {
+    final library = Library(PlatformEventStore(root));
+    await library.load();
+    final named = await library.create(const [], title: ' Riff in E ');
+    expect(named.title, 'Riff in E');
+    final dated = await library.create(const [], title: '  ');
+    expect(dated.title, startsWith('Tab '));
+    expect((await library.create(const [])).title, startsWith('Tab '));
+    expect(nameOfFile('Riff in E.final.pdf'), 'Riff in E.final');
+  });
+
   test('deleting a page or an event removes its files', () async {
     final library = Library(PlatformEventStore(root));
     await library.load();

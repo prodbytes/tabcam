@@ -91,12 +91,13 @@ class Library extends ChangeNotifier {
     ];
   }
 
-  /// A new event of [pages], titled with its date and time.
-  Future<CaptureEvent> create(List<Uint8List> pages) async {
+  /// A new event of [pages], titled [title], or with its date and time.
+  Future<CaptureEvent> create(List<Uint8List> pages, {String? title}) async {
     final now = _now();
+    final name = title?.trim() ?? '';
     var event = CaptureEvent(
       id: newId(),
-      title: defaultTitle(now),
+      title: name.isEmpty ? defaultTitle(now) : name,
       created: now,
     );
     event = await _addPages(event, pages);

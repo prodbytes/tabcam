@@ -1860,3 +1860,13 @@ spec.
     The Text view sidebar's notation sheet now also shows `7~` vibrato
     and `(5)` a ghost note (played softly), after the bend. See
     [tab recognition](tab-recognition.md#text-view).
+
+## 2026-10-30
+
+1. **When a capture is started by file upload (as opposed to scan), use
+   the file name (without extension) as the capture's name instead of
+   "Tab $TIMESTAMP".** Document and Files on Capture, and files dropped
+   on it, name the new capture after the first file picked, without its
+   extension (a zip's own name). Scan, Photos & videos (whose names the
+   photo library makes up) and a link without a title keep the date and
+   time. See [navigation](navigation.md#capture).
