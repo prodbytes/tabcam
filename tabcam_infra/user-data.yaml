@@ -51,6 +51,17 @@ Resources:
         Status: Enabled
       LifecycleConfiguration:
         Rules:
+          # The app uploads as Intelligent-Tiering; this catches what the
+          # servers write (OCR results) and anything copied in. S3 leaves
+          # objects under 128 KB in Standard, where tiering wouldn't help.
+          - Id: intelligent-tiering
+            Status: Enabled
+            Transitions:
+              - StorageClass: INTELLIGENT_TIERING
+                TransitionInDays: 0
+            NoncurrentVersionTransitions:
+              - StorageClass: INTELLIGENT_TIERING
+                TransitionInDays: 0
           - Id: expire-old-versions
             Status: Enabled
             NoncurrentVersionExpiration:
