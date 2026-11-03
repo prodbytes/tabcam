@@ -7,6 +7,7 @@ import 'package:tabcam_app/capture/media.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tabcam_app/auth/auth_service.dart';
+import 'package:tabcam_app/capture/play_along_screen.dart';
 import 'package:tabcam_app/cloud/cloud_ocr.dart';
 import 'package:tabcam_app/cloud/cloud_sync.dart';
 import 'package:tabcam_app/cloud/ocr_api.dart';
@@ -14,6 +15,7 @@ import 'package:tabcam_app/import/tab_page_import.dart';
 import 'package:tabcam_app/library/capture_event.dart';
 import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
+import 'package:tabcam_app/main.dart';
 import 'package:tabcam_app/recognition/tab_doubts.dart';
 import 'package:tabcam_app/screens/account_panel.dart';
 import 'package:tabcam_app/screens/event_screen.dart';
@@ -150,6 +152,13 @@ class _Setup {
   void dispose() {
     ocr.dispose();
     sync.dispose();
+  }
+}
+
+/// Lets animations run a while; not pumpAndSettle (spinners never settle).
+Future<void> _frames(WidgetTester tester) async {
+  for (var i = 0; i < 20; i++) {
+    await tester.pump(const Duration(milliseconds: 50));
   }
 }
 
@@ -582,7 +591,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: PremiumCard(ocr: s.ocr, email: 'ana@example.com', store: false),
+          body: PremiumCard(ocr: s.ocr, email: 'ana@example.com'),
         ),
       ),
     );
@@ -626,13 +635,7 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: SingleChildScrollView(
-            child: AccountPanel(
-              auth: s.auth,
-              sync: s.sync,
-              ocr: s.ocr,
-              // The web: free users see the Premium card there.
-              store: false,
-            ),
+            child: AccountPanel(auth: s.auth, sync: s.sync, ocr: s.ocr),
           ),
         ),
       ),
@@ -671,12 +674,7 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: SingleChildScrollView(
-            child: AccountPanel(
-              auth: s.auth,
-              sync: s.sync,
-              ocr: s.ocr,
-              store: false,
-            ),
+            child: AccountPanel(auth: s.auth, sync: s.sync, ocr: s.ocr),
           ),
         ),
       ),
@@ -694,7 +692,197 @@ void main() {
     s.dispose();
   });
 
-  testWidgets('in a store app, only Premium users see Premium', (tester) async {
+  testWidgets('without Premium, Text and Cam are locked: Text opens a '
+      'preview of the view under the Premium card', (tester) async {
+    final s = _Setup();
+    late String id;
+    await tester.runAsync(() async {
+      await s.start(syncing: false);
+      id = (await _twoPages(s.library)).id;
+      s.auth.signInAs('ana');
+      await _until(() => s.ocr.status != null);
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        home: EventScreen(
+          library: s.library,
+          eventId: id,
+          sync: s.sync,
+          ocr: s.ocr,
+        ),
+      ),
+    );
+    await tester.pump();
+    // No hint any more: the tools say it, with a lock each.
+    expect(find.byKey(const Key('tool-locked')), findsNWidgets(2));
+    expect(find.byKey(const Key('premium-gate')), findsNothing);
+    expect(find.byTooltip('Text: TabCam Premium'), findsOneWidget);
+    expect(find.byTooltip('Cam: TabCam Premium'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('text')));
+    await tester.pump();
+    expect(find.byKey(const Key('premium-gate')), findsOneWidget);
+    expect(
+      find.textContaining('Text is part of TabCam Premium'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('subscribe with ana@example.com'),
+      findsOneWidget,
+    );
+    expect(find.text('Upgrade'), findsOneWidget);
+    expect(find.text('Redeem a voucher'), findsOneWidget);
+    // No text tab yet: the preview shows a sample, said to be one.
+    expect(find.text('A preview with a sample tab'), findsOneWidget);
+    expect(find.textContaining('e|--0---0---1---1---|'), findsOneWidget);
+    // Nothing in the preview works.
+    expect(
+      tester
+          .widget<IgnorePointer>(
+            find
+                .ancestor(
+                  of: find.byType(TabTextView),
+                  matching: find.byType(IgnorePointer),
+                )
+                .first,
+          )
+          .ignoring,
+      isTrue,
+    );
+
+    // Not now (the card scrolls on a small screen): back to the files.
+    await tester.ensureVisible(find.byKey(const Key('premium-not-now')));
+    await tester.tap(find.byKey(const Key('premium-not-now')));
+    await tester.pump();
+    expect(find.byKey(const Key('premium-gate')), findsNothing);
+    expect(find.text('Page 1'), findsOneWidget);
+
+    // Premium: the locks go, and Text is the view itself.
+    s.api.premium = true;
+    await tester.runAsync(() async {
+      await s.ocr.refresh();
+      await _until(() => s.ocr.premium);
+    });
+    await tester.pump();
+    expect(find.byKey(const Key('tool-locked')), findsNothing);
+    await tester.tap(find.byKey(const Key('text')));
+    await tester.pump();
+    expect(find.byKey(const Key('premium-gate')), findsNothing);
+    expect(find.text('A preview with a sample tab'), findsNothing);
+    await tester.pump(const Duration(seconds: 1)); // the place is remembered
+    await tester.pumpWidget(const SizedBox());
+    s.dispose();
+  });
+
+  testWidgets('without Premium, Cam opens as a preview: no camera, the tab '
+      'along the bottom, and the Premium card', (tester) async {
+    final s = _Setup();
+    late String id;
+    await tester.runAsync(() async {
+      await s.start(syncing: false);
+      id = (await _twoPages(s.library)).id;
+      s.auth.signInAs('ana');
+      await _until(() => s.ocr.status != null);
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        home: EventScreen(
+          library: s.library,
+          eventId: id,
+          sync: s.sync,
+          ocr: s.ocr,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('cam')));
+    await _frames(tester);
+    expect(find.byType(PlayAlongScreen), findsOneWidget);
+    expect(find.byKey(const Key('premium-gate')), findsOneWidget);
+    expect(
+      find.textContaining('Cam is part of TabCam Premium'),
+      findsOneWidget,
+    );
+    expect(find.text('Upgrade'), findsOneWidget);
+    // No camera was asked for: a placeholder in its place.
+    expect(find.byKey(const Key('cam-preview')), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    // The sample tab's first neckline.
+    expect(find.byKey(const Key('neckline')), findsOneWidget);
+    expect(find.text('1 / 2'), findsOneWidget);
+
+    await tester.ensureVisible(find.byKey(const Key('premium-not-now')));
+    await tester.tap(find.byKey(const Key('premium-not-now')));
+    await _frames(tester);
+    expect(find.byType(PlayAlongScreen), findsNothing);
+    expect(find.byKey(const Key('cam')), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    s.dispose();
+  });
+
+  testWidgets('a capture opened by its link, signed out, says to sign in '
+      'to subscribe', (tester) async {
+    final s = _Setup();
+    late String id;
+    await tester.runAsync(() async {
+      await s.start(syncing: false);
+      id = (await _twoPages(s.library)).id;
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        home: EventScreen(
+          library: s.library,
+          eventId: id,
+          sync: s.sync,
+          ocr: s.ocr,
+          byLink: true,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('text')));
+    await tester.pump();
+    expect(find.byKey(const Key('premium-gate')), findsOneWidget);
+    expect(find.byKey(const Key('premium-sign-in')), findsOneWidget);
+    expect(find.text('Upgrade'), findsNothing);
+    await tester.pump(const Duration(seconds: 1)); // the place is remembered
+    await tester.pumpWidget(const SizedBox());
+    s.dispose();
+  });
+
+  test('without Premium, nothing is read until it comes', () async {
+    final s = _Setup();
+    await s.start();
+    await s.signIn();
+    var reads = 0;
+    final reader = AutoReader(
+      library: s.library,
+      auth: s.auth,
+      ocr: () => s.ocr,
+      supported: true,
+      read: (_) async {
+        reads++;
+        return _riffA;
+      },
+    )..start();
+    final created = await _twoPages(s.library);
+    await _until(() => reader.stateOf(created.id) == ReadState.needsPremium);
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    expect(reads, 0);
+    expect(s.api.transcribed, isEmpty);
+    expect(s.library.byId(created.id)!.tabText, isNull);
+
+    // Premium: the event that waited goes to the cloud.
+    s.api.premium = true;
+    await s.ocr.refresh();
+    await _until(() => reader.stateOf(created.id) == ReadState.inCloud);
+    expect(reads, 0);
+    reader.dispose();
+    s.dispose();
+  });
+
+  testWidgets('Home tells a signed-in user without Premium that text tabs '
+      'and Cam are Premium\'s, until they close it', (tester) async {
     final s = _Setup();
     await tester.runAsync(() async {
       await s.start(syncing: false);
@@ -702,73 +890,31 @@ void main() {
       await _until(() => s.ocr.status != null);
     });
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: AccountPanel(
-              auth: s.auth,
-              sync: s.sync,
-              ocr: s.ocr,
-              store: true,
-            ),
-          ),
-        ),
-      ),
+      TabCamApp(library: s.library, auth: s.auth, sync: s.sync, ocr: s.ocr),
     );
-    // A free user: no word of Premium, which the app can't sell.
-    expect(find.textContaining('Role'), findsNothing);
-    expect(find.textContaining('Premium'), findsNothing);
-    expect(find.text('Upgrade'), findsNothing);
-    expect(find.text('Redeem a voucher'), findsNothing);
-    expect(find.textContaining('Subscribe'), findsNothing);
-    expect(find.text('Check again'), findsNothing);
+    await _frames(tester);
+    final banner = find.byKey(const Key('premium-banner'));
+    expect(banner, findsOneWidget);
+    expect(
+      find.text('Text tabs and Cam are TabCam Premium features.'),
+      findsOneWidget,
+    );
+    // Upgrade opens the account sheet, with the offer.
+    await tester.tap(find.text('Upgrade'));
+    await _frames(tester);
+    expect(
+      find.textContaining('subscribe with ana@example.com'),
+      findsOneWidget,
+    );
+    await tester.tapAt(const Offset(5, 5)); // closes the sheet
+    await _frames(tester);
 
-    // Premium bought on the web still works, and says until when.
-    s.api.premium = true;
-    await tester.runAsync(() async {
-      await s.ocr.refresh();
-      await _until(() => s.ocr.premium);
-    });
+    await tester.tap(find.byTooltip('Not now'));
     await tester.pump();
-    expect(find.text('Role: Premium'), findsOneWidget);
-    expect(find.textContaining('Premium until 2027-03-01.'), findsOneWidget);
-    expect(find.textContaining('transcribed in the cloud'), findsOneWidget);
+    expect(banner, findsNothing);
+    await tester.pumpWidget(const SizedBox());
     s.dispose();
   });
-
-  for (final store in [false, true]) {
-    testWidgets(
-      'the event\'s Premium hint ${store ? 'is hidden in a store app' : 'shows on the web'}',
-      (tester) async {
-        final s = _Setup();
-        late String id;
-        await tester.runAsync(() async {
-          await s.start(syncing: false);
-          id = (await _twoPages(s.library)).id;
-          s.auth.signInAs('ana');
-          await _until(() => s.ocr.status != null);
-        });
-        await tester.pumpWidget(
-          MaterialApp(
-            home: EventScreen(
-              library: s.library,
-              eventId: id,
-              sync: s.sync,
-              ocr: s.ocr,
-              store: store,
-            ),
-          ),
-        );
-        await tester.pump();
-        final hint = find.text(
-          'TabCam Premium transcribes your scans automatically.',
-        );
-        expect(hint, store ? findsNothing : findsOneWidget);
-        expect(find.text('Upgrade'), store ? findsNothing : findsOneWidget);
-        s.dispose();
-      },
-    );
-  }
 }
 
 void _fixTests() {
@@ -876,7 +1022,7 @@ void _fixTests() {
     expect(s.api.checked, isEmpty);
     await tester.pumpWidget(const SizedBox());
 
-    // A store app can't offer the upgrade: Fix only lines the tab up.
+    // Without an upgrade offer (no sign-in), Fix only lines the tab up.
     await tester.pumpWidget(
       MaterialApp(
         key: UniqueKey(),

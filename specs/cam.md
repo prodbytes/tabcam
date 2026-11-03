@@ -1,8 +1,14 @@
 # Cam: playing along
 
 **Cam**, a tool on the [event screen](event-screen.md), lets a guitarist
-record themselves playing along with the capture's tab. It opens the
-camera view ([`PlayAlongScreen`](../tabcam_app/lib/capture/play_along_screen.dart)):
+record themselves playing along with the capture's tab. It's TabCam
+Premium's ([cloud OCR](cloud-ocr.md#in-the-app)): without Premium it opens
+as a **preview** (`PlayAlongScreen` with `gate` set): no camera is opened
+(a camera icon where the preview would be), no key, nod or tap does
+anything, Rec and Play are dead, the tab along the bottom is the
+capture's or a made-up sample, and the Premium card lies over it all,
+its **Not now** leaving. With Premium it opens the camera view
+([`PlayAlongScreen`](../tabcam_app/lib/capture/play_along_screen.dart)):
 
 - **The camera** fills the screen, the **front** one first (it faces the
   player); **Flip camera** in the app bar moves to the next one (not

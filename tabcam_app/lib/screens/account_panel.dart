@@ -38,31 +38,19 @@ Future<void> showAccountSheet(
 /// The Profile tab's account: signing in, and once signed in, who it is,
 /// how sync stands, Sync now and Sign out; with Premium set up ([ocr]),
 /// the user's role ([roleLabel]) and the Premium card too; last, Delete
-/// account. A [storeApp] can't sell Premium (it's sold on the web), so it
-/// only mentions Premium to users who have it: no role line, roles or card
-/// for the others, and no upgrade offer.
+/// account. The offer is the same on every platform, the store apps
+/// included.
 class AccountPanel extends StatelessWidget {
   const AccountPanel({
     super.key,
     required this.auth,
     required this.sync,
     this.ocr,
-    this.store,
   });
 
   final AuthService auth;
   final CloudSync sync;
   final CloudOcr? ocr;
-
-  /// Whether Premium is only shown to users who have it (null:
-  /// [storeApp]).
-  final bool? store;
-
-  bool get _store => store ?? storeApp;
-
-  /// Whether to mention Premium to this user: everywhere on the web; in a
-  /// store app, only once they have it.
-  bool _showsPremium(CloudOcr ocr) => !_store || ocr.premium;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -81,7 +69,7 @@ class AccountPanel extends StatelessWidget {
         Text(l10n.accountSignIn, style: theme.textTheme.titleLarge),
         const SizedBox(height: 8),
         Text(l10n.accountSignInIntro),
-        if (ocr != null && !_store) ...[
+        if (ocr != null) ...[
           const SizedBox(height: 8),
           Text(l10n.accountSignInPremium),
         ],
@@ -121,8 +109,8 @@ class AccountPanel extends StatelessWidget {
           },
         ),
         if (sync.profiles case final profiles?)
-          _ProfileLines(profiles: profiles, store: _store)
-        else if (ocr case final ocr? when _showsPremium(ocr))
+          _ProfileLines(profiles: profiles)
+        else if (ocr case final ocr?)
           if (roleLabel(ocr, l10n) case final role?)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -154,13 +142,12 @@ class AccountPanel extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(l10n.accountSignOutNote, style: theme.textTheme.bodySmall),
-        if (ocr case final ocr? when _showsPremium(ocr)) ...[
+        if (ocr case final ocr?) ...[
           const SizedBox(height: 16),
           PremiumCard(
             ocr: ocr,
             email: user.email,
             privateEmail: user.privateEmail,
-            store: store,
           ),
         ],
         const SizedBox(height: 16),
@@ -173,12 +160,7 @@ class AccountPanel extends StatelessWidget {
               foregroundColor: theme.colorScheme.error,
               padding: EdgeInsets.zero,
             ),
-            onPressed: () => deleteAccount(
-              context,
-              sync,
-              premium: ocr != null && _showsPremium(ocr!),
-              store: store,
-            ),
+            onPressed: () => deleteAccount(context, sync, premium: ocr != null),
             icon: const Icon(Icons.delete_forever_outlined),
             label: Text(l10n.deleteAccountButton),
           ),
@@ -192,12 +174,9 @@ class AccountPanel extends StatelessWidget {
 /// The profile: its ID, its roles (every linked account's), and
 /// **Linked accounts**.
 class _ProfileLines extends StatelessWidget {
-  const _ProfileLines({required this.profiles, required this.store});
+  const _ProfileLines({required this.profiles});
 
   final ProfileService profiles;
-
-  /// A store app: the roles only once they include Premium.
-  final bool store;
 
   @override
   Widget build(BuildContext context) {
@@ -225,11 +204,10 @@ class _ProfileLines extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SelectableText(l10n.profileId(p.id), key: const Key('profile')),
-              if (!store || p.premium)
-                Text(
-                  l10n.profileRoles(p.roles.join(', ')),
-                  key: const Key('role'),
-                ),
+              Text(
+                l10n.profileRoles(p.roles.join(', ')),
+                key: const Key('role'),
+              ),
               TextButton.icon(
                 style: TextButton.styleFrom(padding: EdgeInsets.zero),
                 onPressed: () => showLinkedAccounts(context, profiles),

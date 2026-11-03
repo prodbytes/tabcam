@@ -110,9 +110,9 @@ and with Premium set up the **TabCam Premium** card
 ([cloud OCR](cloud-ocr.md)), then **Delete account**, which asks first
 and deletes the account in the cloud and on the device
 ([cloud sync](cloud-sync.md#deleting-the-account)); opening the tab checks
-again whether the user is premium (the store apps leave out the card's
-upgrade offer, [cloud OCR](cloud-ocr.md#in-the-app)). The same panel opens
-in a sheet from an event's Premium **Upgrade** (on the web). In
+again whether the user is premium (the offer is the same in the store
+apps, [cloud OCR](cloud-ocr.md#in-the-store-apps)). The same panel opens
+in a sheet from Home's Premium banner's **Upgrade**. In
 a build without sign-in, a line says so. Then **Language**
 ([localization](localization.md)): the device's language (the default),
 English, Español or Português; the app changes at once. Then **About**: the app's name

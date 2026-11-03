@@ -43,7 +43,10 @@ import 'mini_player.dart';
 /// are in the app bar. Editable, with more than one file, the list reorders
 /// in place, each file dragged by its handle. The tab is read by itself
 /// ([AutoReader]): there's no Read tab button. With its images hidden, the
-/// list is the text tab, then the other files.
+/// list is the text tab, then the other files. In a build with Premium set
+/// up ([ocr]), Text and Cam are Premium's ([premiumLocked]): for the
+/// others, each tool shows its screen as a preview, greyed out and taking
+/// nothing, under the Premium card ([PremiumGate]).
 ///
 /// Below them, what people added ([Contribution]): on the owner's capture,
 /// each person's files, which the owner publishes into the capture (or
@@ -56,7 +59,6 @@ class EventScreen extends StatefulWidget {
     required this.eventId,
     this.sync,
     this.ocr,
-    this.store,
     this.initialFile,
     this.initialText,
     this.byLink = false,
@@ -83,12 +85,10 @@ class EventScreen extends StatefulWidget {
   /// Cloud sync, for sharing the event with people (null: no sharing).
   final CloudSync? sync;
 
-  /// TabCam Premium: the text tab comes from the cloud by itself; without
-  /// it, a hint offers it on the web (null: not set up).
+  /// TabCam Premium: Text and Cam, and the text tab from the cloud by
+  /// itself; without it, each offers Premium (null: not set up, and
+  /// nothing is locked).
   final CloudOcr? ocr;
-
-  /// Whether to leave out the Premium hint (null: [storeApp]).
-  final bool? store;
 
   @override
   State<EventScreen> createState() => _EventScreenState();
@@ -108,7 +108,10 @@ class _EventScreenState extends State<EventScreen> {
     final event = _library.byId(widget.eventId);
     _text =
         widget.initialText ??
-        (event != null && event.tabText != null && event.tabTextCorrect);
+        (!_locked &&
+            event != null &&
+            event.tabText != null &&
+            event.tabTextCorrect);
     // A reload: the file the user had open, over the list again.
     final file = event?.allPages.where((p) => p.id == widget.initialFile);
     if (file?.firstOrNull case final page?) {
@@ -117,6 +120,12 @@ class _EventScreenState extends State<EventScreen> {
       });
     }
   }
+
+  /// Whether Text and Cam are Premium's and the user has no Premium.
+  bool get _locked => premiumLocked(widget.ocr);
+
+  /// Who to subscribe as (null signed out, or in a build without sign-in).
+  String? get _email => widget.sync?.auth.user?.email;
 
   /// Remembers the view, for a reload ([PlaceMemory]).
   void _remember() => PlaceMemory.of(_library)
@@ -291,10 +300,16 @@ class _EventScreenState extends State<EventScreen> {
       final event? => Library.addedPages(event).length,
       null => 0,
     };
+    // Without Premium, Cam opens as a preview: no camera, nothing works,
+    // the Premium card over it.
+    final gate = _locked ? (ocr: widget.ocr!, email: _email) : null;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) =>
-            PlayAlongScreen(library: _library, eventId: widget.eventId),
+        builder: (_) => PlayAlongScreen(
+          library: _library,
+          eventId: widget.eventId,
+          gate: gate,
+        ),
       ),
     );
     final event = _library.byId(widget.eventId);
@@ -427,40 +442,6 @@ class _EventScreenState extends State<EventScreen> {
     }
   }
 
-  bool _hintClosed = false;
-
-  /// The upgrade hint, for users without Premium where it's set up; never
-  /// in a [storeApp], which can't point to buying it.
-  Widget? _premiumHint(CaptureEvent event) {
-    final (ocr, sync) = (widget.ocr, widget.sync);
-    if (ocr == null || sync == null || ocr.premium) return null;
-    if (widget.store ?? storeApp) return null;
-    if (event.tabText != null || event.readOnly || _hintClosed) return null;
-    final l10n = context.l10n;
-    return Material(
-      color: Theme.of(context).colorScheme.secondaryContainer,
-      child: ListTile(
-        dense: true,
-        leading: const Icon(Icons.auto_awesome),
-        title: Text(l10n.eventPremiumHint),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextButton(
-              onPressed: () => showAccountSheet(context, sync.auth, sync, ocr),
-              child: Text(l10n.eventUpgrade),
-            ),
-            IconButton(
-              tooltip: l10n.eventNotNow,
-              icon: const Icon(Icons.close),
-              onPressed: () => setState(() => _hintClosed = true),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   /// Whether the Text view shows, in place of the pages.
   bool _text = false;
 
@@ -527,10 +508,42 @@ class _EventScreenState extends State<EventScreen> {
     _unfollow = null;
   }
 
-  /// The Text view: the tab, or why there's none yet.
+  /// The Text view: the tab, or why there's none yet. Locked, a preview of
+  /// it (the event's text, or a sample tab) under the Premium card.
   Widget _textView(CaptureEvent event) {
     final reader = AutoReaderScope.of(context);
     final state = reader?.stateOf(event.id);
+    if (_locked) {
+      final l10n = context.l10n;
+      final sample = event.tabText == null;
+      return PremiumGate(
+        ocr: widget.ocr!,
+        email: _email,
+        lead: l10n.premiumTextFeature,
+        onClose: () => setState(() => _text = false),
+        child: Column(
+          children: [
+            if (sample)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: Text(
+                  l10n.premiumSamplePreview,
+                  key: const Key('premium-sample'),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            Expanded(
+              child: TabTextView(
+                key: ValueKey('text-preview-${event.id}'),
+                library: _library,
+                eventId: event.id,
+                sample: sample ? premiumSampleTab : null,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     if (event.tabText != null) {
       return TabTextView(
         key: ValueKey('text-${event.id}'),
@@ -542,13 +555,8 @@ class _EventScreenState extends State<EventScreen> {
             ? () => _rescan(event)
             : null,
         rescanning: _rescanning,
-        // Store apps can't point to buying Premium.
-        onUpgrade: switch ((
-          widget.sync,
-          widget.ocr,
-          widget.store ?? storeApp,
-        )) {
-          (final sync?, final ocr?, false) => () => showAccountSheet(
+        onUpgrade: switch ((widget.sync, widget.ocr)) {
+          (final sync?, final ocr?) => () => showAccountSheet(
             context,
             sync.auth,
             sync,
@@ -570,6 +578,7 @@ class _EventScreenState extends State<EventScreen> {
       ReadState.noTab => (l10n.eventNoTab, (l10n.eventReadAgain, again)),
       ReadState.failed => (l10n.eventReadFailed, (l10n.eventReadAgain, again)),
       ReadState.unsupported => (l10n.eventReadUnsupported, null),
+      ReadState.needsPremium => (l10n.homePremiumBanner, null),
       ReadState.needsSignIn => (
         l10n.eventReadNeedsSignIn,
         (
@@ -938,7 +947,7 @@ class _EventScreenState extends State<EventScreen> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: _library,
+      listenable: Listenable.merge([_library, ?widget.ocr]),
       builder: (context, _) {
         final event = _library.byId(widget.eventId);
         if (event == null) return const Scaffold();
@@ -947,6 +956,7 @@ class _EventScreenState extends State<EventScreen> {
         final editable = !event.readOnly;
         final canAdd = !widget.byLink && (editable || event.contributes);
         final text = _text;
+        final locked = _locked;
         final l10n = context.l10n;
         final hasText = event.tabText?.trim().isNotEmpty ?? false;
         final reading = switch (AutoReaderScope.of(context)
@@ -996,7 +1006,7 @@ class _EventScreenState extends State<EventScreen> {
               ),
             ),
             actions: [
-              if (text) PlayAlongButton(along: _along),
+              if (text && !locked) PlayAlongButton(along: _along),
               if (editable)
                 IconButton(
                   tooltip: l10n.eventRename,
@@ -1038,15 +1048,17 @@ class _EventScreenState extends State<EventScreen> {
                   _LinkBanner(onSignIn: widget.onSignIn)
                 else if (event.sharedBy case final owner?)
                   _SharedBanner(owner: owner, readOnly: event.readOnly),
-                ?_premiumHint(event),
                 Expanded(
-                  child: text
-                      ? PlayAlongBeside(
+                  // Locked, the preview has no sidebar (nothing plays).
+                  child: !text
+                      ? _fileList(event)
+                      : locked
+                      ? _textView(event)
+                      : PlayAlongBeside(
                           along: _along,
                           footer: const NotationSheet(),
                           child: _textView(event),
-                        )
-                      : _fileList(event),
+                        ),
                 ),
               ],
             ),
@@ -1079,7 +1091,12 @@ class _EventScreenState extends State<EventScreen> {
                     // How the tab stands: being read, there, or not.
                     working: reading,
                     dimmed: !reading && !hasText,
-                    tooltip: reading ? l10n.eventReadingTab : null,
+                    locked: locked,
+                    tooltip: locked
+                        ? l10n.eventPremiumTool(l10n.eventText)
+                        : reading
+                        ? l10n.eventReadingTab
+                        : null,
                     // Reading again is the Text view's Rescan.
                     onPressed: _busy
                         ? null
@@ -1094,6 +1111,10 @@ class _EventScreenState extends State<EventScreen> {
                     key: const Key('cam'),
                     icon: Icons.videocam_outlined,
                     label: l10n.eventCam,
+                    locked: locked,
+                    tooltip: locked
+                        ? l10n.eventPremiumTool(l10n.eventCam)
+                        : null,
                     onPressed: _busy || !canAdd ? null : _cam,
                   ),
                 ],

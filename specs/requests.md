@@ -1900,6 +1900,30 @@ spec.
    tap on the speed does. In English, Spanish and Portuguese. See
    [event screen](event-screen.md#file-screen) and
    [Cam](cam.md#playing-along-with-a-file).
+2. **Handwritten recognition: are the AWS requests through?** No code
+   change. Both Bedrock quota requests for Claude Opus 5.5 (filed
+   2026-10-29) are still pending, every Claude tokens-per-minute quota
+   is 0 and no Claude model answers, so the vision work stays blocked;
+   AWS support case 179372611300700 (Service limit increase, free on
+   Basic Support) was opened from the console asking for them.
+3. **Make the Text and Cam features Premium only; a user without
+   Premium is told so when they open the app, and how to subscribe
+   (the App Store or the Stripe link); tapping Text or Cam shows a
+   preview of the screen, all disabled, with an overlay explaining the
+   feature and how to subscribe.** In a build with Premium set up, Text
+   and Cam carry a lock, and each opens its screen as a greyed-out
+   preview that takes nothing (the Text view with the capture's text or
+   a sample tab; Cam with no camera) under the Premium card: what the
+   feature is, the offer with the Substack/Stripe subscribe link, Redeem
+   a voucher, Check again, Not now. Nothing is read by itself without
+   Premium (the reading waits for it). Home opens with a banner, "Text
+   tabs and Cam are TabCam Premium features.", with Upgrade. The offer
+   now shows in the store apps too (the `store` flag is gone; in-app
+   purchases through the App Store aren't built, so the link is the
+   Stripe-backed one), which is a review risk noted in the spec. In
+   English, Spanish and Portuguese. See
+   [cloud OCR](cloud-ocr.md#in-the-app), [event screen](event-screen.md),
+   [Cam](cam.md) and [tab recognition](tab-recognition.md#reading-by-itself).
 4. **With Repeat on in the play-along player, playback must repeat at
    the song's end or at the section's end; it stopped at the song's end
    when the two coincided.** A section ending at the file's end (or near

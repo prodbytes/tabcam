@@ -1,10 +1,13 @@
 # Tab recognition
 
 Every capture's tab is read **by itself** into its text tab, shown in the
-[event screen](event-screen.md)'s **Text** view. With [TabCam
-Premium](cloud-ocr.md) the cloud transcribes it as the pages sync;
-otherwise ML Kit text recognition (Latin script) reads it on the device,
-Android and iOS only (below).
+[event screen](event-screen.md)'s **Text** view. Text tabs are [TabCam
+Premium](cloud-ocr.md)'s: in a build with Premium set up, a user without
+it gets no reading, and Text opens as a preview under the Premium card
+([in the app](cloud-ocr.md#in-the-app)). With Premium the cloud
+transcribes the pages as they sync; in a build without the service, ML
+Kit text recognition (Latin script) reads them on the device, Android
+and iOS only (below).
 
 ## Reading by itself
 
@@ -35,6 +38,10 @@ changed (that device reads them), nor the events there were at launch.
   device or in the cloud, cleared by an edit).
 - **Signed out** (in a build with sign-in): it waits, and reads when the
   user signs in ([signed out](cloud-sync.md#signed-out)).
+- **Without Premium** (in a build with Premium set up): nothing is read,
+  on the device either; the reading waits (`ReadState.needsPremium`) and
+  starts, in the cloud, once the user has Premium (the reader watches
+  `CloudOcr`).
 - **Premium**: the pages go to the cloud transcription; the text comes
   with sync. Reading ends once it does (any library change, sync's too,
   that brings the event a text tab), or when the cloud's results are
