@@ -8,9 +8,11 @@ import 'package:video_player/video_player.dart';
 
 import '../l10n/language.dart';
 import '../library/capture_event.dart';
+import '../cloud/cloud_ocr.dart';
 import '../library/library.dart';
 import '../recognition/necklines.dart';
 import '../screens/mono_font.dart';
+import '../screens/premium_card.dart';
 import '../screens/video_page.dart';
 import 'backing_track.dart';
 import 'head_gestures.dart';
@@ -50,10 +52,17 @@ class PlayAlongScreen extends StatefulWidget {
     this.burn = TakeOverlay.burn,
     this.linkFrame = linkFrameFor,
     this.pdfView = pdfViewFor,
+    this.gate,
   });
 
   final Library library;
   final String eventId;
+
+  /// Set for a user without Premium: the screen is a preview, greyed out
+  /// under the Premium card ([PremiumGate]). No camera opens, no key or
+  /// tap does anything, and the tab along the bottom is the capture's, or
+  /// a sample where it has none.
+  final ({CloudOcr ocr, String? email})? gate;
 
   /// The cameras there are; tests pass their own.
   final Future<List<CameraDescription>> Function() cameras;
@@ -90,9 +99,12 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   int _camera = 0;
   String? _error;
 
-  late final List<String> _lines = necklines(
-    widget.library.byId(widget.eventId)?.tabText ?? '',
-  );
+  late final List<String> _lines = necklines(switch (widget.library
+      .byId(widget.eventId)
+      ?.tabText) {
+    final text? => text,
+    null => widget.gate == null ? '' : premiumSampleTab,
+  });
   int _line = 0;
 
   /// Whether the tab shows along the bottom; hidden, it still turns (and
@@ -138,7 +150,8 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   @override
   void initState() {
     super.initState();
-    _start();
+    // A preview opens no camera.
+    if (widget.gate == null) _start();
   }
 
   Future<void> _start() async {
@@ -276,7 +289,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   };
 
   KeyEventResult _key(FocusNode _, KeyEvent event) {
-    if (event is KeyUpEvent) return KeyEventResult.ignored;
+    if (event is KeyUpEvent || widget.gate != null) {
+      return KeyEventResult.ignored;
+    }
     final key = event.logicalKey;
     if (_modifiers.contains(key)) return KeyEventResult.ignored;
     // Space: the backing track's play / pause, while its sidebar shows.
@@ -494,6 +509,12 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         ),
       ),
       (_, final controller?) => CameraPreview(controller),
+      _ when widget.gate != null => const Icon(
+        key: Key('cam-preview'),
+        Icons.videocam_outlined,
+        color: Colors.white24,
+        size: 96,
+      ),
       _ => const CircularProgressIndicator(),
     };
   }
@@ -572,6 +593,14 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     final controller = _controller;
     final event = widget.library.byId(widget.eventId);
     final playing = _player != null;
+    final gate = widget.gate;
+    final body = PlayAlongBeside(
+      along: _along,
+      linkFrame: widget.linkFrame,
+      pdfView: widget.pdfView,
+      onUse: _focus.requestFocus,
+      child: _main(controller, playing),
+    );
     return PopScope(
       // Leaving while recording keeps the take.
       canPop: !_recording && !_saving,
@@ -592,7 +621,8 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
               overflow: TextOverflow.ellipsis,
             ),
             actions: [
-              PlayAlongButton(along: _along, onPressed: _focus.requestFocus),
+              if (gate == null)
+                PlayAlongButton(along: _along, onPressed: _focus.requestFocus),
               if (_heads case final heads?)
                 ValueListenableBuilder(
                   valueListenable: heads.face,
@@ -626,13 +656,15 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
                   )
                 : null,
           ),
-          body: PlayAlongBeside(
-            along: _along,
-            linkFrame: widget.linkFrame,
-            pdfView: widget.pdfView,
-            onUse: _focus.requestFocus,
-            child: _main(controller, playing),
-          ),
+          body: gate == null
+              ? body
+              : PremiumGate(
+                  ocr: gate.ocr,
+                  email: gate.email,
+                  lead: l10n.premiumCamFeature,
+                  onClose: () => Navigator.of(context).pop(),
+                  child: body,
+                ),
         ),
       ),
     );

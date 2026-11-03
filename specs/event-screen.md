@@ -3,7 +3,12 @@
 One event (a capture), opened from the [library](library.md): the list of
 its files, each opening alone on the [file screen](#file-screen). If its
 text tab is marked correct ([tab recognition](tab-recognition.md#text-view)),
-it opens on the Text view; otherwise on the list. When the capture has
+it opens on the Text view (unless Text is locked, below); otherwise on
+the list. **Text and Cam are TabCam Premium's**
+([cloud OCR](cloud-ocr.md#in-the-app)): in a build with Premium set up, a
+user without it sees both tools with a lock on the icon, and each opens
+its screen as a greyed-out preview that takes nothing, under the Premium
+card (what the feature is, the offer, **Not now**). When the capture has
 recordings, videos, links or PDFs, the Text view has the play-along
 sidebar beside it, open, and **Play along** (♫) in the app bar, as in
 [Cam](cam.md#playing-along-with-a-file), its PDFs listed to
@@ -124,7 +129,10 @@ plays along.
     it still opens the Text view, which says why and offers Read again
     or Sign in. A tap opens the Text view; tapped on the Text view, it
     does nothing more: reading the tab again is the Text view's
-    **Rescan**.
+    **Rescan**. **Locked** (no Premium): a lock on the icon, tooltip
+    "Text: TabCam Premium"; it opens the view as a preview (the
+    capture's text, or a sample tab) under the Premium card, with no
+    sidebar or Play along ([cloud OCR](cloud-ocr.md#in-the-app)).
   - **Add**: more files, [scanned or picked](scanning.md#adding-to-an-event):
     Scan pages, Document, Photos & videos, Files, or a **Link**. The list
     then shows, scrolled to what was added.
@@ -132,7 +140,10 @@ plays along.
     time, to record the user playing along; takes are added as videos
     ([Cam](cam.md)), and back from it the list shows, scrolled to them.
     On a capture shared to read, takes are the user's own contribution's.
-    Off on a capture opened by its link.
+    Off on a capture opened by its link. **Locked** (no Premium): a lock
+    on the icon, tooltip "Cam: TabCam Premium"; it opens Cam as a
+    preview, no camera, under the Premium card
+    ([cloud OCR](cloud-ocr.md#in-the-app)).
   - **Dragging files** onto the screen adds them too, as Files does
     (outlined with "Drop files to add" while they're over it; folders and
     files that aren't pages are left out, with the message saying how

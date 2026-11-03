@@ -354,34 +354,47 @@ class _HomeScreenState extends State<HomeScreen> {
           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
         ),
       ),
-      body: IndexedStack(
-        index: _tab.index,
+      body: Column(
         children: [
-          LibraryView(
-            library: library,
-            sync: widget.sync,
-            ocr: widget.ocr,
-            fresh: _fresh,
-          ),
-          // Files dragged onto Capture make a new capture of them.
-          FileDropArea(
-            onFiles: (files, skipped) => _addMedia(() async {
-              final pick = await MediaPick.from(files);
-              return MediaPick(
-                pick.media,
-                pick.skipped + skipped,
-                fileName: pick.fileName,
-              );
-            }),
-            child: CaptureView(
-              onScan: _scan,
-              onDocuments: () => _addMedia(MediaSource.documents),
-              onPhotos: () => _addMedia(MediaSource.library),
-              onFiles: () => _addMedia(MediaSource.files),
-              onLink: _addLink,
+          if ((widget.sync, widget.ocr) case (final sync?, final ocr?)
+              when _tab == HomeTab.home)
+            _PremiumBanner(sync: sync, ocr: ocr),
+          Expanded(
+            child: IndexedStack(
+              index: _tab.index,
+              children: [
+                LibraryView(
+                  library: library,
+                  sync: widget.sync,
+                  ocr: widget.ocr,
+                  fresh: _fresh,
+                ),
+                // Files dragged onto Capture make a new capture of them.
+                FileDropArea(
+                  onFiles: (files, skipped) => _addMedia(() async {
+                    final pick = await MediaPick.from(files);
+                    return MediaPick(
+                      pick.media,
+                      pick.skipped + skipped,
+                      fileName: pick.fileName,
+                    );
+                  }),
+                  child: CaptureView(
+                    onScan: _scan,
+                    onDocuments: () => _addMedia(MediaSource.documents),
+                    onPhotos: () => _addMedia(MediaSource.library),
+                    onFiles: () => _addMedia(MediaSource.files),
+                    onLink: _addLink,
+                  ),
+                ),
+                ProfileView(
+                  auth: widget.auth,
+                  sync: widget.sync,
+                  ocr: widget.ocr,
+                ),
+              ],
             ),
           ),
-          ProfileView(auth: widget.auth, sync: widget.sync, ocr: widget.ocr),
         ],
       ),
       bottomNavigationBar: DecoratedBox(
@@ -664,6 +677,71 @@ class _LanguagePicker extends StatelessWidget {
       ],
     );
   }
+}
+
+/// On Home, for a signed-in user without Premium: that text tabs and Cam
+/// are Premium's, with **Upgrade** (the account sheet, where the offer
+/// is) and a close that keeps it away until the app restarts.
+class _PremiumBanner extends StatefulWidget {
+  const _PremiumBanner({required this.sync, required this.ocr});
+
+  final CloudSync sync;
+  final CloudOcr ocr;
+
+  @override
+  State<_PremiumBanner> createState() => _PremiumBannerState();
+}
+
+class _PremiumBannerState extends State<_PremiumBanner> {
+  /// Closed once for the run (static: the screen is rebuilt on sign-in).
+  static bool closed = false;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: Listenable.merge([widget.sync.auth, widget.ocr]),
+    builder: (context, _) {
+      final ocr = widget.ocr;
+      if (closed ||
+          widget.sync.auth.user == null ||
+          ocr.premium ||
+          (ocr.status == null && ocr.checking)) {
+        return const SizedBox.shrink();
+      }
+      final l10n = context.l10n;
+      final theme = Theme.of(context);
+      return Material(
+        key: const Key('premium-banner'),
+        color: theme.colorScheme.secondaryContainer,
+        child: ListTile(
+          dense: true,
+          leading: Icon(
+            Icons.lock_outline,
+            color: theme.colorScheme.onSecondaryContainer,
+          ),
+          title: Text(l10n.homePremiumBanner),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextButton(
+                onPressed: () => showAccountSheet(
+                  context,
+                  widget.sync.auth,
+                  widget.sync,
+                  ocr,
+                ),
+                child: Text(l10n.eventUpgrade),
+              ),
+              IconButton(
+                tooltip: l10n.eventNotNow,
+                icon: const Icon(Icons.close),
+                onPressed: () => setState(() => closed = true),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
 
 /// The Profile tab: the account (in a build with sign-in), the language,

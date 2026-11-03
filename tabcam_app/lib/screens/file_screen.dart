@@ -355,7 +355,9 @@ class _FileScreenState extends State<FileScreen> {
 
 /// A tool along the bottom of the capture and file screens: an icon over
 /// its label, highlighted when [selected]; a spinner in the icon's place
-/// while [working]; greyed out (still tappable) when [dimmed].
+/// while [working]; greyed out (still tappable) when [dimmed]; with a
+/// small lock on the icon when [locked] (Premium's, for a user without
+/// it: it opens a preview).
 class EventTool extends StatelessWidget {
   const EventTool({
     super.key,
@@ -365,6 +367,7 @@ class EventTool extends StatelessWidget {
     this.selected = false,
     this.working = false,
     this.dimmed = false,
+    this.locked = false,
     this.tooltip,
   });
 
@@ -374,6 +377,7 @@ class EventTool extends StatelessWidget {
   final bool selected;
   final bool working;
   final bool dimmed;
+  final bool locked;
 
   /// What the tooltip says, when it's more than [label].
   final String? tooltip;
@@ -403,6 +407,14 @@ class EventTool extends StatelessWidget {
                         color: theme.colorScheme.primary,
                       ),
                     ),
+                  )
+                : locked
+                ? Badge(
+                    key: const Key('tool-locked'),
+                    backgroundColor: theme.colorScheme.primary,
+                    textColor: theme.colorScheme.onPrimary,
+                    label: const Icon(Icons.lock, size: 10),
+                    child: Icon(icon, color: grey),
                   )
                 : Icon(icon, color: grey),
             isSelected: selected,
