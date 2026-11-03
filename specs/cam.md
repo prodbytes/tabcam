@@ -192,7 +192,11 @@ sidebars don't list PDFs.
   where it plays now) and, once set, **✕** (play all of it again). While
   one is set the player's own looping is off and its position is checked
   every 100 ms: at the section's end it goes back to the section's
-  start, playing on with Repeat, paused without. Play from outside it
+  start, playing on with Repeat, paused without. A section that ends at
+  the file's end (or near enough for the player to get there first)
+  completes the player, which pauses itself at the end: that counts as
+  the section's end too, so with Repeat it starts the section over, and
+  without it it's paused at the section's start. Play from outside it
   starts at its start, Stop goes back to its start, « and » stay within
   it. A section is at least half a second long; covering the whole file,
   it's none. Each file keeps its own while the screen is open
