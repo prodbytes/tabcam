@@ -16,7 +16,7 @@
   "@accountSignInIntro": {
     "description": "Account: why to sign in"
   },
-  "accountSignInPremium": "Signed in, TabCam Premium transcribes your scans in the cloud as they sync.",
+  "accountSignInPremium": "Signed in, TabCam Premium reads your scans into text tabs, transcribed in the cloud as they sync, and records you playing along with Cam.",
   "@accountSignInPremium": {
     "description": "Account: Premium note when signed out"
   },
@@ -154,7 +154,7 @@
   "@accountPremiumTitle": {
     "description": "Premium card title (product name)"
   },
-  "accountPremiumActive": "Your scans are transcribed in the cloud as they sync: the text tab appears on the event by itself.",
+  "accountPremiumActive": "Text tabs and Cam are yours: your scans are transcribed in the cloud as they sync, and the text tab appears on the event by itself.",
   "@accountPremiumActive": {
     "description": "Premium card: what Premium does, for premium users"
   },
@@ -168,16 +168,7 @@
       }
     }
   },
-  "accountPremiumInactive": "TabCam Premium isn't active for {email}.",
-  "@accountPremiumInactive": {
-    "description": "Premium card in store apps: not active",
-    "placeholders": {
-      "email": {
-        "type": "String"
-      }
-    }
-  },
-  "accountPremiumOffer": "Have every scan transcribed automatically in the cloud, more accurately than on the phone, and read tabs on the web too. $10 a month or $100 a year: subscribe with {email}.",
+  "accountPremiumOffer": "Read your scans into text tabs, transcribed automatically in the cloud, and record yourself playing along with Cam. $10 a month or $100 a year: subscribe with {email}.",
   "@accountPremiumOffer": {
     "description": "Premium card: the upgrade offer",
     "placeholders": {
@@ -197,6 +188,36 @@
   "accountPremiumCheckAgain": "Check again",
   "@accountPremiumCheckAgain": {
     "description": "Premium card: re-check button"
+  },
+  "premiumSignInToSubscribe": "Sign in, then subscribe to TabCam Premium from your profile.",
+  "@premiumSignInToSubscribe": {
+    "description": "Premium card over a locked feature, signed out (a capture opened by its link)"
+  },
+  "premiumTextFeature": "Text is part of TabCam Premium: your scans read into a text tab you can edit, copy, verify, download and play along with. With Premium they're transcribed in the cloud as they sync, more accurately than on the phone.",
+  "@premiumTextFeature": {
+    "description": "Premium card over the locked Text view: what the feature is"
+  },
+  "premiumCamFeature": "Cam is part of TabCam Premium: record yourself playing along with the tab under the camera, one line at a time, turned by a key, a pedal or a nod of your head; play each take back with the tab turning as it did.",
+  "@premiumCamFeature": {
+    "description": "Premium card over the locked Cam: what the feature is"
+  },
+  "premiumSamplePreview": "A preview with a sample tab",
+  "@premiumSamplePreview": {
+    "description": "Locked Text view preview: caption over the made-up sample tab"
+  },
+  "homePremiumBanner": "Text tabs and Cam are TabCam Premium features.",
+  "@homePremiumBanner": {
+    "description": "Home: banner for signed-in users without Premium"
+  },
+  "eventPremiumTool": "{feature}: TabCam Premium",
+  "@eventPremiumTool": {
+    "description": "Event: tooltip of the locked Text or Cam tool",
+    "placeholders": {
+      "feature": {
+        "type": "String",
+        "example": "Text"
+      }
+    }
   },
   "accountPremiumCouldntOpen": "Couldn't open {url}",
   "@accountPremiumCouldntOpen": {
@@ -324,17 +345,13 @@
   "@eventAddedHidden": {
     "description": "Event: snackbar after adding to a capture with hidden images"
   },
-  "eventPremiumHint": "TabCam Premium transcribes your scans automatically.",
-  "@eventPremiumHint": {
-    "description": "Event: Premium upgrade hint"
-  },
   "eventUpgrade": "Upgrade",
   "@eventUpgrade": {
-    "description": "Event: Premium hint button"
+    "description": "Home: the Premium banner's button (opens the account sheet)"
   },
   "eventNotNow": "Not now",
   "@eventNotNow": {
-    "description": "Event: close the Premium hint (tooltip)"
+    "description": "Premium: closes the banner or the locked feature's card"
   },
   "eventNothingToRead": "Nothing to read: add a scan, a photo or a PDF.",
   "@eventNothingToRead": {
@@ -1671,10 +1688,6 @@
   },
   "deleteAccountPremiumWeb": "A TabCam Premium subscription isn't cancelled: cancel it on Substack, where you subscribed.",
   "@deleteAccountPremiumWeb": {
-    "description": "Deleting the account (Profile > Delete account)"
-  },
-  "deleteAccountPremiumStore": "A TabCam Premium subscription isn't cancelled: it's managed where you bought it.",
-  "@deleteAccountPremiumStore": {
     "description": "Deleting the account (Profile > Delete account)"
   },
   "deleteAccountOtherDevices": "If TabCam is signed in on your other devices, sign out there first, so they don't upload their events again.",

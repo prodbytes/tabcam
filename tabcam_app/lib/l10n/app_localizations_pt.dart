@@ -24,7 +24,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get accountSignInPremium =>
-      'Com a sessão iniciada, o TabCam Premium transcreve suas digitalizações na nuvem enquanto sincronizam.';
+      'Com a sessão iniciada, o TabCam Premium lê suas digitalizações como tablaturas em texto, transcritas na nuvem enquanto sincronizam, e grava você tocando com o Cam.';
 
   @override
   String get accountSignInWithGoogle => 'Entrar com o Google';
@@ -129,7 +129,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get accountPremiumActive =>
-      'Suas digitalizações são transcritos na nuvem enquanto sincronizam: a tablatura em texto aparece sozinha no evento.';
+      'As tablaturas em texto e o Cam são seus: suas digitalizações são transcritas na nuvem enquanto sincronizam, e a tablatura em texto aparece sozinha no evento.';
 
   @override
   String accountPremiumUntil(String date) {
@@ -137,13 +137,8 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String accountPremiumInactive(String email) {
-    return 'O TabCam Premium não está ativo para $email.';
-  }
-
-  @override
   String accountPremiumOffer(String email) {
-    return 'Tenha cada digitalização transcrita automaticamente na nuvem, com mais precisão do que no celular, e leia tablaturas na web também. US\$ 10 por mês ou US\$ 100 por ano: assine com $email.';
+    return 'Leia suas digitalizações como tablaturas em texto, transcritas automaticamente na nuvem, e grave você tocando com o Cam. US\$ 10 por mês ou US\$ 100 por ano: assine com $email.';
   }
 
   @override
@@ -154,6 +149,30 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get accountPremiumCheckAgain => 'Verificar novamente';
+
+  @override
+  String get premiumSignInToSubscribe =>
+      'Inicie a sessão e depois assine o TabCam Premium no seu perfil.';
+
+  @override
+  String get premiumTextFeature =>
+      'Texto faz parte do TabCam Premium: suas digitalizações lidas como uma tablatura em texto que você pode editar, copiar, verificar, baixar e acompanhar enquanto toca. Com o Premium, elas são transcritas na nuvem enquanto sincronizam, com mais precisão do que no celular.';
+
+  @override
+  String get premiumCamFeature =>
+      'O Cam faz parte do TabCam Premium: grave você tocando com a tablatura sob a câmera, uma linha de cada vez, virada com uma tecla, um pedal ou um aceno de cabeça; reproduza cada take com a tablatura virando como virou.';
+
+  @override
+  String get premiumSamplePreview => 'Uma prévia com uma tablatura de exemplo';
+
+  @override
+  String get homePremiumBanner =>
+      'As tablaturas em texto e o Cam são recursos do TabCam Premium.';
+
+  @override
+  String eventPremiumTool(String feature) {
+    return '$feature: TabCam Premium';
+  }
 
   @override
   String accountPremiumCouldntOpen(String url) {
@@ -256,10 +275,6 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get eventAddedHidden =>
       'Adicionado. As imagens estão ocultas nesta captura.';
-
-  @override
-  String get eventPremiumHint =>
-      'O TabCam Premium transcreve suas digitalizações automaticamente.';
 
   @override
   String get eventUpgrade => 'Assinar';
@@ -1267,10 +1282,6 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get deleteAccountPremiumWeb =>
       'Uma assinatura do TabCam Premium não é cancelada: cancele-a no Substack, onde você assinou.';
-
-  @override
-  String get deleteAccountPremiumStore =>
-      'Uma assinatura do TabCam Premium não é cancelada: ela é gerenciada onde você a comprou.';
 
   @override
   String get deleteAccountOtherDevices =>

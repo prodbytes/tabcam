@@ -9,12 +9,12 @@
 | [Cam](cam.md) takes, [the tab in them](cam.md#the-tab-in-the-take) | MP4, the tab burned in after (Media3 Transformer) | MP4, the tab burned in after (AVFoundation) | WebM (MP4 on Safari), the tab recorded in as it goes (canvas and MediaRecorder) |
 | [Cam's head gestures](cam.md#head-gestures) | ✅ ML Kit face detection | ✅ ML Kit face detection | ✅ MediaPipe Face Landmarker, in the browser (library and model from jsDelivr and Google when Cam opens) |
 | Open links, YouTube's too (`url_launcher`, outside the app) | The browser, or the app for the link (YouTube) | Safari, or the app for the link (YouTube) | A new tab |
-| Reading tabs (by itself) | ✅ ML Kit on the device | ✅ ML Kit on the device | Premium only (else the Text view says it needs the app) |
+| Reading tabs (by itself), Premium only where Premium is set up | ✅ Premium's cloud (ML Kit on the device in builds without the service) | ✅ Premium's cloud (ML Kit on the device in builds without the service) | Premium's cloud (else the Text view says it needs the app) |
 | Library | Files in the app's documents | Files in the app's documents | Memory, until the tab closes |
 | Share | Copies the link | Copies the link | Copies the link |
 | Capture links ([opening](sharing.md#opening-a-link)) | App Links: the site's links open in the app | In Safari (the web app) | The web app |
 | Sign-in ([cloud sync](cloud-sync.md)) | Credential Manager | Google Sign-In SDK; Sign in with Apple too, with `TABCAM_APPLE_SIGN_IN=1` | Google's button (FedCM); the session kept in `localStorage` |
-| TabCam Premium ([cloud OCR](cloud-ocr.md#in-the-app)) | Works if bought on the web; no purchase links | Works if bought on the web; no purchase links | Upgrade offer: Upgrade, Redeem a voucher, the event screen hint |
+| TabCam Premium ([cloud OCR](cloud-ocr.md#in-the-app)) | Text and Cam locked without it (previews under the card); Upgrade, Redeem a voucher, Home's banner | Same | Same |
 | Synced events | Kept in the app's documents | Kept in the app's documents | Downloaded again on each visit: listed first, files after ([cloud sync](cloud-sync.md#listed-first-files-after)) |
 
 **iOS signing**: automatic, with each developer's own team:

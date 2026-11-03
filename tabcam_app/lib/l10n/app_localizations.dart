@@ -127,7 +127,7 @@ abstract class AppLocalizations {
   /// Account: Premium note when signed out
   ///
   /// In en, this message translates to:
-  /// **'Signed in, TabCam Premium transcribes your scans in the cloud as they sync.'**
+  /// **'Signed in, TabCam Premium reads your scans into text tabs, transcribed in the cloud as they sync, and records you playing along with Cam.'**
   String get accountSignInPremium;
 
   /// Account: sign-in button
@@ -277,7 +277,7 @@ abstract class AppLocalizations {
   /// Premium card: what Premium does, for premium users
   ///
   /// In en, this message translates to:
-  /// **'Your scans are transcribed in the cloud as they sync: the text tab appears on the event by itself.'**
+  /// **'Text tabs and Cam are yours: your scans are transcribed in the cloud as they sync, and the text tab appears on the event by itself.'**
   String get accountPremiumActive;
 
   /// Premium card: expiry date (YYYY-MM-DD)
@@ -286,16 +286,10 @@ abstract class AppLocalizations {
   /// **'Premium until {date}.'**
   String accountPremiumUntil(String date);
 
-  /// Premium card in store apps: not active
-  ///
-  /// In en, this message translates to:
-  /// **'TabCam Premium isn\'t active for {email}.'**
-  String accountPremiumInactive(String email);
-
   /// Premium card: the upgrade offer
   ///
   /// In en, this message translates to:
-  /// **'Have every scan transcribed automatically in the cloud, more accurately than on the phone, and read tabs on the web too. \$10 a month or \$100 a year: subscribe with {email}.'**
+  /// **'Read your scans into text tabs, transcribed automatically in the cloud, and record yourself playing along with Cam. \$10 a month or \$100 a year: subscribe with {email}.'**
   String accountPremiumOffer(String email);
 
   /// Premium card: upgrade button
@@ -315,6 +309,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Check again'**
   String get accountPremiumCheckAgain;
+
+  /// Premium card over a locked feature, signed out (a capture opened by its link)
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in, then subscribe to TabCam Premium from your profile.'**
+  String get premiumSignInToSubscribe;
+
+  /// Premium card over the locked Text view: what the feature is
+  ///
+  /// In en, this message translates to:
+  /// **'Text is part of TabCam Premium: your scans read into a text tab you can edit, copy, verify, download and play along with. With Premium they\'re transcribed in the cloud as they sync, more accurately than on the phone.'**
+  String get premiumTextFeature;
+
+  /// Premium card over the locked Cam: what the feature is
+  ///
+  /// In en, this message translates to:
+  /// **'Cam is part of TabCam Premium: record yourself playing along with the tab under the camera, one line at a time, turned by a key, a pedal or a nod of your head; play each take back with the tab turning as it did.'**
+  String get premiumCamFeature;
+
+  /// Locked Text view preview: caption over the made-up sample tab
+  ///
+  /// In en, this message translates to:
+  /// **'A preview with a sample tab'**
+  String get premiumSamplePreview;
+
+  /// Home: banner for signed-in users without Premium
+  ///
+  /// In en, this message translates to:
+  /// **'Text tabs and Cam are TabCam Premium features.'**
+  String get homePremiumBanner;
+
+  /// Event: tooltip of the locked Text or Cam tool
+  ///
+  /// In en, this message translates to:
+  /// **'{feature}: TabCam Premium'**
+  String eventPremiumTool(String feature);
 
   /// Snackbar: a link didn't open
   ///
@@ -466,19 +496,13 @@ abstract class AppLocalizations {
   /// **'Added. Images are hidden on this capture.'**
   String get eventAddedHidden;
 
-  /// Event: Premium upgrade hint
-  ///
-  /// In en, this message translates to:
-  /// **'TabCam Premium transcribes your scans automatically.'**
-  String get eventPremiumHint;
-
-  /// Event: Premium hint button
+  /// Home: the Premium banner's button (opens the account sheet)
   ///
   /// In en, this message translates to:
   /// **'Upgrade'**
   String get eventUpgrade;
 
-  /// Event: close the Premium hint (tooltip)
+  /// Premium: closes the banner or the locked feature's card
   ///
   /// In en, this message translates to:
   /// **'Not now'**
@@ -2109,12 +2133,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A TabCam Premium subscription isn\'t cancelled: cancel it on Substack, where you subscribed.'**
   String get deleteAccountPremiumWeb;
-
-  /// Deleting the account (Profile > Delete account)
-  ///
-  /// In en, this message translates to:
-  /// **'A TabCam Premium subscription isn\'t cancelled: it\'s managed where you bought it.'**
-  String get deleteAccountPremiumStore;
 
   /// Deleting the account (Profile > Delete account)
   ///

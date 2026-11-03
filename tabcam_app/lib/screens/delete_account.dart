@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../cloud/account_deletion.dart';
 import '../cloud/cloud_sync.dart';
 import '../l10n/language.dart';
-import 'premium_card.dart';
 
 /// Profile's **Delete account**: asks first ([confirmAccountDeletion]),
 /// then deletes it ([AccountDeletion]) in a dialog that shows how far it
@@ -12,13 +11,10 @@ Future<void> deleteAccount(
   BuildContext context,
   CloudSync sync, {
   bool premium = false,
-  bool? store,
 }) async {
   final messenger = ScaffoldMessenger.maybeOf(context);
   final done = context.l10n.deleteAccountDone;
-  if (!await confirmAccountDeletion(context, premium: premium, store: store)) {
-    return;
-  }
+  if (!await confirmAccountDeletion(context, premium: premium)) return;
   if (!context.mounted) return;
   final deleted = await showDialog<bool>(
     context: context,
@@ -32,12 +28,10 @@ Future<void> deleteAccount(
 
 /// Whether the user confirms deleting their account, having been told what
 /// goes, that it can't be undone, and what it doesn't touch (their Google
-/// account; with Premium set up, a subscription, managed where it was
-/// bought: no purchase links in a [storeApp], [store] when null).
+/// account; with Premium set up, a subscription, cancelled on Substack).
 Future<bool> confirmAccountDeletion(
   BuildContext context, {
   bool premium = false,
-  bool? store,
 }) async {
   final theme = Theme.of(context);
   final l10n = context.l10n;
@@ -74,11 +68,7 @@ Future<bool> confirmAccountDeletion(
             Text(l10n.deleteAccountGoogleKept),
             if (premium) ...[
               const SizedBox(height: 8),
-              Text(
-                !(store ?? storeApp)
-                    ? l10n.deleteAccountPremiumWeb
-                    : l10n.deleteAccountPremiumStore,
-              ),
+              Text(l10n.deleteAccountPremiumWeb),
             ],
             const SizedBox(height: 8),
             Text(l10n.deleteAccountOtherDevices),

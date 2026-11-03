@@ -12,7 +12,7 @@ publish to production.
 |---|---|
 | Developer accounts | Apple: the maintainer has one; Google Play Console: personal, account 5720098115371031326, verified (2026-10-19) |
 | Android upload key and signed App Bundle | Done (below); the upload key's OAuth client is to do |
-| Store builds: hide the Premium purchase links | Done ([cloud OCR](cloud-ocr.md#in-the-app)) |
+| Store builds and Premium | Hidden the purchase links and, for free users, Premium itself, after the 2026-10-20 rejection; since 2026-11-03 the apps show the offer again, Text and Cam locked without Premium ([cloud OCR](cloud-ocr.md#in-the-store-apps)). Before the next submission: App Store and Play Billing subscriptions, or the link hidden in store builds, and the review notes revised |
 | Store builds: in-app account deletion (Profile, Delete account, in the app or the web app; the privacy page, which says how, as Play's deletion URL) | Done ([cloud sync](cloud-sync.md#deleting-the-account)), stacks deployed. Deleting an Apple account revokes its Apple tokens through Apple's REST API ([cloud sync](cloud-sync.md#revoking-apples-tokens)); its Sign in with Apple key is in the SSM parameter `/tabcam/apple-sign-in-key` (set 2026-10-16, [tabcam_infra](../tabcam_infra/README.md)) |
 | Sign in with Apple (App Store guideline 4.8) | Done ([cloud sync](cloud-sync.md#sign-in-with-apple-ios-and-android)): `tabcam-identity`, `tabcam-share-api` and `tabcam-ocr` deployed with `AppleClientId=com.nu01.tabcam` (2026-10-16), `TABCAM_APPLE_SIGN_IN=1` and the paid team in the maintainer's `.env`. Tried on the maintainer's iPhone with TestFlight build 1792173901 (2026-10-17) |
 | Privacy policy page; iOS privacy manifest and encryption declaration | Done ([privacy](privacy.md)), contact privacy@nu01.com |
@@ -147,9 +147,12 @@ The text claims only what the app does as it is now (App Store guideline
 and adding, reading tabs on the device, the Text view's tools (Copy,
 Verified; not Fix, hidden for now), Cam, the zip download, Share copying a
 read-only link (signed in, kept in Shared with me). It doesn't mention
-Premium: the store apps don't sell it, and App Review took a mention of a
-subscription it couldn't buy as a broken in-app purchase (guideline
-2.1(b), 2026-10-20). The listings say who the app is for, musicians
+Premium: when they were written the store apps didn't sell it, and App
+Review had taken a mention of a subscription it couldn't buy as a broken
+in-app purchase (guideline 2.1(b), 2026-10-20). Since 2026-11-03 the apps
+do show Premium (Text and Cam locked without it, the subscribe link in
+the card, [cloud OCR](cloud-ocr.md#in-the-store-apps)), so the notes and
+the listing need revisiting before the next submission. The listings say who the app is for, musicians
 practicing with their own tabs: the description's first line (a
 practice tool for the tabs you write, learn from and own) and its last
 section, **YOUR TABS, YOUR RIGHTS** (no songs, tabs, sheet music or

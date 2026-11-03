@@ -51,7 +51,8 @@ review notes ([app stores](app-stores.md)).
   recordings, PDFs and links) as a list with previews, Files, Text and
   Add and Cam (the list reorders in place by drag handles), plus Rename,
   Clone and one Share; a tap opens a file alone, with
-  its view (Original or Scan), Rotate and Delete.
+  its view (Original or Scan), Rotate and Delete. Text and Cam are
+  Premium's: locked, each opens as a preview under the Premium card.
 - [Cam](cam.md): record yourself playing along with the tab: the camera,
   the tab under it one neckline (staff) at a time, any key to the next
   and Backspace / ← / ↑ to the one before, or a strong nod up / right and
@@ -66,7 +67,8 @@ review notes ([app stores](app-stores.md)).
   by adaptive thresholding), the default.
 - [Tab recognition](tab-recognition.md): every capture read by itself
   into plain-text tab with the page's chords, lyrics and section names
-  (on-device OCR, or Premium's cloud), for text tabs
+  (Premium's cloud; on-device OCR in builds without the service; nothing
+  without Premium), for text tabs
   and typeset tab staves, never over the user's edits or a reading marked
   correct; the Text view, a tab editor (Copy, Rescan and Verified
   on one line; overtype, − and + on a fret, ++ and −− moving a note across strings) where a reading is marked
@@ -103,12 +105,14 @@ review notes ([app stores](app-stores.md)).
   of their own that only they and the owner see; the owner publishes the
   ones they like into the capture, for everyone; signed out, a link shows
   the owner's files only.
-- [TabCam Premium: cloud OCR](cloud-ocr.md): premium users' pages
+- [TabCam Premium: Text, Cam and cloud OCR](cloud-ocr.md): Text and
+  Cam are Premium's (locked, they open as previews under the Premium
+  card, with the offer); premium users' pages
   transcribed in AWS Lambda as they sync (Tesseract, PaddleOCR and
   RapidOCR per string line, voted), the text tab filled in by itself;
   premium is rbacr's `tabcam/premium` role (Substack subscription or
-  voucher); the upgrade offer for everyone else, on the web only (the
-  store apps show no purchase links).
+  voucher); the offer, Home's banner and the card on every platform, the
+  store apps included.
 - [Localization](localization.md): the app in English, Spanish and
   Portuguese, the device's language by default or one picked on the
   Profile tab.

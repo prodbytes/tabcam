@@ -24,7 +24,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountSignInPremium =>
-      'Signed in, TabCam Premium transcribes your scans in the cloud as they sync.';
+      'Signed in, TabCam Premium reads your scans into text tabs, transcribed in the cloud as they sync, and records you playing along with Cam.';
 
   @override
   String get accountSignInWithGoogle => 'Sign in with Google';
@@ -116,7 +116,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountPremiumActive =>
-      'Your scans are transcribed in the cloud as they sync: the text tab appears on the event by itself.';
+      'Text tabs and Cam are yours: your scans are transcribed in the cloud as they sync, and the text tab appears on the event by itself.';
 
   @override
   String accountPremiumUntil(String date) {
@@ -124,13 +124,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String accountPremiumInactive(String email) {
-    return 'TabCam Premium isn\'t active for $email.';
-  }
-
-  @override
   String accountPremiumOffer(String email) {
-    return 'Have every scan transcribed automatically in the cloud, more accurately than on the phone, and read tabs on the web too. \$10 a month or \$100 a year: subscribe with $email.';
+    return 'Read your scans into text tabs, transcribed automatically in the cloud, and record yourself playing along with Cam. \$10 a month or \$100 a year: subscribe with $email.';
   }
 
   @override
@@ -141,6 +136,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountPremiumCheckAgain => 'Check again';
+
+  @override
+  String get premiumSignInToSubscribe =>
+      'Sign in, then subscribe to TabCam Premium from your profile.';
+
+  @override
+  String get premiumTextFeature =>
+      'Text is part of TabCam Premium: your scans read into a text tab you can edit, copy, verify, download and play along with. With Premium they\'re transcribed in the cloud as they sync, more accurately than on the phone.';
+
+  @override
+  String get premiumCamFeature =>
+      'Cam is part of TabCam Premium: record yourself playing along with the tab under the camera, one line at a time, turned by a key, a pedal or a nod of your head; play each take back with the tab turning as it did.';
+
+  @override
+  String get premiumSamplePreview => 'A preview with a sample tab';
+
+  @override
+  String get homePremiumBanner =>
+      'Text tabs and Cam are TabCam Premium features.';
+
+  @override
+  String eventPremiumTool(String feature) {
+    return '$feature: TabCam Premium';
+  }
 
   @override
   String accountPremiumCouldntOpen(String url) {
@@ -238,10 +257,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventAddedHidden => 'Added. Images are hidden on this capture.';
-
-  @override
-  String get eventPremiumHint =>
-      'TabCam Premium transcribes your scans automatically.';
 
   @override
   String get eventUpgrade => 'Upgrade';
@@ -1237,10 +1252,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get deleteAccountPremiumWeb =>
       'A TabCam Premium subscription isn\'t cancelled: cancel it on Substack, where you subscribed.';
-
-  @override
-  String get deleteAccountPremiumStore =>
-      'A TabCam Premium subscription isn\'t cancelled: it\'s managed where you bought it.';
 
   @override
   String get deleteAccountOtherDevices =>

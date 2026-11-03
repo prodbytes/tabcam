@@ -1,14 +1,23 @@
-# TabCam Premium: cloud OCR
+# TabCam Premium: Text, Cam and cloud OCR
 
-Premium users' scans are **transcribed in the cloud as they sync**: the
-event's text tab appears by itself, read more accurately than on the
-phone, and on the web too. Free users keep [on-device reading](tab-recognition.md)
-and, on the web, are offered the upgrade. The service is
+TabCam Premium is the [event screen](event-screen.md)'s **Text** and
+**Cam**: the text tab ([tab recognition](tab-recognition.md), the pages
+read into it by itself, on the device or in the cloud) and recording
+oneself playing along ([Cam](cam.md)). Premium users' scans are
+**transcribed in the cloud as they sync**: the event's text tab appears
+by itself, read more accurately than on the phone, and on the web too.
+Without Premium, nothing is read, and Text and Cam open as **previews**
+(the screen as it would be, greyed out, taking nothing) under the
+Premium card, which says what the feature is and how to subscribe
+([in the app](#in-the-app)). The service is
 [tabcam_locr/](../tabcam_locr/README.md), two AWS Lambda functions.
 
 A build has Premium only with [cloud sync](cloud-sync.md) set up and
 `TABCAM_OCR_URL` (the service's function URL) set. Without it the app is
-as before.
+as before, and nothing is locked: Text and Cam are open to everyone
+(local builds without the service, and the tests). `premiumLocked(ocr)` in
+[premium_card.dart](../tabcam_app/lib/screens/premium_card.dart) is the
+rule: the service is set up and the user isn't premium.
 
 ## Who is premium
 
@@ -245,7 +254,37 @@ with text but no tab is still `no-tab`.
   OCR worker's timeout, when it says reading failed. What the cloud writes counts as an automatic
   read (`tabTextAuto`): a text the user edited is never replaced.
 
-**Upgrade offer** (on the web; the store apps leave it out, below):
+<a id="in-the-app"></a>**In the app** (the same on every platform, the store apps
+included):
+
+- **Locked tools**: without Premium, the event screen's **Text** and
+  **Cam** tools carry a small lock on their icon (tooltip "Text: TabCam
+  Premium", "Cam: TabCam Premium"). Each still opens: Text shows the
+  [Text view](tab-recognition.md#text-view) as a **preview**, the
+  capture's own text if it has one, else a made-up sample tab (captioned
+  "A preview with a sample tab"), greyed out and taking no tap or key,
+  with no play-along sidebar; Cam opens its screen the same way, with no
+  camera (a camera icon in its place), the capture's tab or the sample
+  along the bottom, and Rec, Play and the arrows dead. Over the preview,
+  centred, the **Premium card** (`PremiumGate`): the lock, "TabCam
+  Premium", what the feature is ("Text is part of TabCam Premium: your
+  scans read into a text tab you can edit, copy, verify, download and
+  play along with…"; "Cam is part of TabCam Premium: record yourself
+  playing along…"), the offer and its buttons (below), and **Not now**,
+  which goes back to the files (or leaves Cam). Signed out (a capture
+  opened by its link), the card says to sign in, then subscribe from the
+  profile, with no buttons. A capture whose text is marked correct opens
+  on the files, not the Text view, for a locked user.
+- **Home's banner**: signed in without Premium, Home starts with "Text
+  tabs and Cam are TabCam Premium features." with **Upgrade** (the
+  account sheet, with the card) and a close that keeps it away until the
+  app restarts. It waits for the first Premium check, so premium users
+  never see it flash.
+- **Nothing is read** by itself without Premium ([tab
+  recognition](tab-recognition.md#reading-by-itself)): the reading waits
+  and starts once the user has it.
+
+**Upgrade offer** (everywhere, the store apps included):
 
 - The account, on the [Profile](navigation.md#profile) tab, shows the
   user's role in the `tabcam` system under their name: **Role: Premium**,
@@ -254,36 +293,33 @@ with text but no tab is still `no-tab`.
   first answer. It comes from the same status check as the card; builds
   without the service show no role.
 - It also has a
-  **TabCam Premium** card. For premium users: transcription is automatic, and until when.
-  For others: what Premium does, its price and "subscribe with <their
-  address>" ("$10 a month or $100 a year: subscribe with …"; US$ in es
-  and pt),
-  **Upgrade** (the Substack subscribe page), **Redeem a voucher** (rbacr's
-  page) and **Check again**. Signed out, it says Premium comes with
-  signing in.
-- The [event screen](event-screen.md) shows a dismissible hint, "TabCam
-  Premium transcribes your scans automatically", with **Upgrade** (it opens
-  the account, the Profile tab's panel, in a sheet), on events without a text tab, for users without
-  Premium (signed out included).
+  **TabCam Premium** card (`PremiumCard`), the same card the locked tools
+  show over their previews. For premium users: "Text tabs and Cam are
+  yours: your scans are transcribed in the cloud as they sync…", and
+  until when. For others: the offer, "Read your scans into text tabs,
+  transcribed automatically in the cloud, and record yourself playing
+  along with Cam. $10 a month or $100 a year: subscribe with <their
+  address>." (US$ in es and pt), **Upgrade** (the service's `upgradeUrl`:
+  the Substack subscribe page, whose checkout is Stripe's), **Redeem a
+  voucher** (rbacr's page) and **Check again**. Signed out, the account
+  says Premium comes with signing in.
 
-**In the store apps** (Android and iOS: `storeApp` in
-[premium_card.dart](../tabcam_app/lib/screens/premium_card.dart), not on
-the web): App Store guidelines 3.1.1 and 3.1.3(b) and Google Play's
-payments policy don't let an app point to buying a digital feature
-outside the store, and Premium is sold on the web. So the apps show no
-way to buy it: no Upgrade, no "Subscribe with <address>", no Redeem a
-voucher and no event screen hint. And free users see no word of Premium
-at all: no role line or roles, no Premium card, no "Premium transcribes
-your scans" before signing in, and no subscription note when deleting
-the account (App Review took the card's "TabCam Premium isn't active"
-for a subscription it couldn't buy, guideline 2.1(b), 2026-10-20).
-Premium bought on the web still works in them (multiplatform services):
-for premium users the role line and the card ("transcribed
-automatically", until when) are as on the web. The account panel, the
-card and the event screen take a `store` flag (null: the platform's),
-which the tests set to check both.
-- On the web without Premium, the Text view says reading tabs needs the
-  Android or iOS app, or TabCam Premium.
+<a id="in-the-store-apps"></a>**In the store apps** (Android and iOS): since 2026-11-03 the
+offer is the same as on the web (the user's decision: the apps say what
+is Premium and how to subscribe, by the Stripe-backed link, as in-app
+purchases through the App Store or Google Play aren't built). Before,
+the apps hid every purchase link and, for free users, every mention of
+Premium (App Review had taken "TabCam Premium isn't active" for a broken
+in-app purchase, guideline 2.1(b), 2026-10-20), and the account panel,
+the card and the event screen took a `store` flag; that flag is gone
+(`storeApp` now only hides the install links, [navigation](navigation.md#profile)).
+**Review risk**: an iOS app that links to buying a digital feature
+outside the App Store is under guideline 3.1.1 (external purchase links
+are allowed in the US storefront after the 2025 Epic ruling, and in the
+EU under the alternative terms, not elsewhere), and Google Play's
+payments policy has the same rule, so the next store submissions may
+need App Store and Play Billing subscriptions, or the link hidden again
+in those builds ([app stores](app-stores.md)).
 
 ### Tab sites' pages for the web
 

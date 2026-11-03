@@ -25,6 +25,10 @@ enum ReadState {
   /// Signed out: reading needs signing in (it reads once signed in).
   needsSignIn,
 
+  /// Text tabs are TabCam Premium's, and the user has no Premium (it reads
+  /// once they do).
+  needsPremium,
+
   /// Neither the device (the web) nor Premium can read it here.
   unsupported,
 
@@ -52,7 +56,9 @@ const Duration cloudReadTimeout = Duration(minutes: 3 * 15);
 /// read left ([CaptureEvent.tabTextAuto], [CaptureEvent.tabTextCorrect]).
 ///
 /// Reading needs signing in, in a build with sign-in: signed out, it waits
-/// ([ReadState.needsSignIn]) and reads once the user signs in. Events
+/// ([ReadState.needsSignIn]) and reads once the user signs in. In a build
+/// with Premium set up, text tabs are Premium's: without it, reading waits
+/// ([ReadState.needsPremium]) and starts once the user has it. Events
 /// another device changed (cloud sync) are that device's to read.
 class AutoReader extends ChangeNotifier {
   AutoReader({
@@ -135,6 +141,26 @@ class AutoReader extends ChangeNotifier {
     library.localChanges.addListener(_onChange);
     library.addListener(_onLibrary);
     auth?.addListener(_onAuth);
+    _watchPremium();
+  }
+
+  /// Premium's status, watched once the service is there (it's made after
+  /// sign-in).
+  CloudOcr? _watched;
+
+  void _watchPremium() {
+    final ocr = _ocr();
+    if (ocr == null || identical(ocr, _watched)) return;
+    _watched?.removeListener(_onPremium);
+    _watched = ocr..addListener(_onPremium);
+  }
+
+  /// Premium came: the events that waited for it are read now.
+  void _onPremium() {
+    if (!(_watched?.premium ?? false)) return;
+    for (final MapEntry(:key, :value) in [..._states.entries]) {
+      if (value == ReadState.needsPremium) readSoon(key);
+    }
   }
 
   String? _pagesNow(String id) => switch (library.byId(id)) {
@@ -247,7 +273,12 @@ class AutoReader extends ChangeNotifier {
     final images = event.pages.where((p) => p.isImage).length;
     final pdfs = event.pages.where((p) => p.isPdf).length;
     final ocr = _ocr();
-    if (ocr != null && ocr.premium) {
+    _watchPremium();
+    if (ocr != null && !ocr.premium) {
+      _log('event $id: text tabs are Premium\'s, waiting for it');
+      return ReadState.needsPremium;
+    }
+    if (ocr != null) {
       // PDFs only: their text, read here, is exact and at once; a scanned
       // one (no text) goes to the cloud, which reads its pages as photos.
       if (images == 0) {
@@ -407,6 +438,7 @@ class AutoReader extends ChangeNotifier {
     library.localChanges.removeListener(_onChange);
     library.removeListener(_onLibrary);
     auth?.removeListener(_onAuth);
+    _watched?.removeListener(_onPremium);
     super.dispose();
   }
 }

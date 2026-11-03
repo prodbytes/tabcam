@@ -46,6 +46,7 @@ class TabTextView extends StatefulWidget {
     this.onRescan,
     this.rescanning = false,
     this.showFix = fixEnabled,
+    this.sample,
   });
 
   /// `TABCAM_FIX=true`: the build shows Fix. Off by default while its
@@ -58,8 +59,8 @@ class TabTextView extends StatefulWidget {
   /// Auto-correct's service (null: a build without it, no Fix).
   final CloudOcr? ocr;
 
-  /// Opens the upgrade offer, for Fix without Premium. Null (a store app,
-  /// which can't point to buying it): Fix shows for Premium users only.
+  /// Opens the upgrade offer, for Fix without Premium. Null (no sign-in
+  /// to offer it with): Fix only lines the tab up for them.
   final VoidCallback? onUpgrade;
 
   /// Reads the tab from the pages again (null: nothing to read, or no
@@ -72,6 +73,11 @@ class TabTextView extends StatefulWidget {
 
   /// Whether the Fix button shows ([fixEnabled] unless a test says).
   final bool showFix;
+
+  /// A text shown in the event's place and never saved: the preview of
+  /// the view for a user without Premium ([PremiumGate]), where the
+  /// event has no text tab.
+  final String? sample;
 
   @override
   State<TabTextView> createState() => _TabTextViewState();
@@ -94,7 +100,8 @@ class _TabTextViewState extends State<TabTextView> {
   /// Fix's answer, while the user reviews it.
   _Review? _review;
 
-  String? get _stored => widget.library.byId(widget.eventId)?.tabText;
+  String? get _stored =>
+      widget.sample ?? widget.library.byId(widget.eventId)?.tabText;
 
   /// The doubtful notes to show in red: none once the text is Verified.
   List<TabDoubt> get _doubts {
@@ -148,7 +155,10 @@ class _TabTextViewState extends State<TabTextView> {
 
   void _save() {
     final event = widget.library.byId(widget.eventId);
-    if (event == null || event.readOnly || _text.text == (_known ?? '')) {
+    if (event == null ||
+        event.readOnly ||
+        widget.sample != null ||
+        _text.text == (_known ?? '')) {
       return;
     }
     _known = _text.text;
