@@ -79,7 +79,9 @@ void main() {
   });
 
   testWidgets('the sidebar shows the speed under the section: the slider '
-      'and the speed, which goes back to 1× tapped', (tester) async {
+      'and the speed, which goes back to 1× tapped, as does the icon', (
+    tester,
+  ) async {
     final (track, event) = await loaded(tester);
     final calls = <double>[];
     await tester.pumpWidget(
@@ -139,6 +141,16 @@ void main() {
     await tester.tap(find.byKey(const Key('cam-along-speed-label')));
     await tester.pump();
     expect(calls.last, 1);
+    expect(find.text('1×'), findsOneWidget);
+
+    // So does a tap on the speed icon, left of the slider.
+    await tester.runAsync(() => track.setSpeed(0.5));
+    await tester.pump();
+    expect(find.text('0.5×'), findsOneWidget);
+    calls.clear();
+    await tester.tap(find.byKey(const Key('cam-along-speed-icon')));
+    await tester.pump();
+    expect(calls, [1]);
     expect(find.text('1×'), findsOneWidget);
     track.dispose();
   });

@@ -322,6 +322,8 @@
   "textViewPlay": "Reproduzir",
   "textViewPause": "Pausar",
   "textViewCantShowPdf": "Este PDF não pode ser exibido aqui",
+  "pdfZoomIn": "Aumentar zoom",
+  "pdfZoomOut": "Diminuir zoom",
   "homePrivacyPolicy": "Política de privacidade",
   "deleteAccountDone": "Sua conta do TabCam foi excluída.",
   "deleteAccountTitle": "Excluir sua conta?",

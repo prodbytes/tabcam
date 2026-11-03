@@ -631,9 +631,9 @@ class PlayAlongSidebar extends StatelessWidget {
   final VoidCallback onSectionClear;
   final void Function(double speed) onSpeed;
 
-  /// Its width on a screen [screen] wide: 40% of it, from 120 to 280 px
-  /// (a third of a phone held upright).
-  static double widthFor(double screen) => (screen * 0.4).clamp(120.0, 280.0);
+  /// Its width on a screen [screen] wide: 44% of it, from 132 to 310 px
+  /// (a bit over a third of a phone held upright).
+  static double widthFor(double screen) => (screen * 0.44).clamp(132.0, 310.0);
 
   @override
   Widget build(BuildContext context) {
@@ -870,7 +870,7 @@ class _SectionBar extends StatelessWidget {
 /// How fast a recording or video plays, under the section: a slider from
 /// a quarter of its speed to one and a half times it, in steps of 5 %,
 /// and the speed (`0.75×`, in the primary colour once changed; a tap on
-/// it goes back to 1×).
+/// it, or on the speed icon before the slider, goes back to 1×).
 class _SpeedBar extends StatelessWidget {
   const _SpeedBar({required this.track, required this.onSpeed});
 
@@ -899,15 +899,22 @@ class _SpeedBar extends StatelessWidget {
         .round();
     return Padding(
       key: const Key('cam-along-speed'),
-      padding: const EdgeInsets.only(left: 8),
+      padding: const EdgeInsets.only(left: 4),
       child: Row(
         children: [
           Tooltip(
-            message: l10n.camAlongSpeed,
-            child: const Icon(
-              Icons.slow_motion_video,
-              color: Colors.white70,
-              size: 16,
+            message: normal ? l10n.camAlongSpeed : l10n.camAlongSpeedNormal,
+            child: InkWell(
+              key: const Key('cam-along-speed-icon'),
+              onTap: normal ? null : () => onSpeed(1),
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Icon(
+                  Icons.slow_motion_video,
+                  color: normal ? Colors.white70 : primary,
+                  size: 16,
+                ),
+              ),
             ),
           ),
           Expanded(
