@@ -1199,6 +1199,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get textViewCantShowPdf => 'This PDF can\'t be shown here';
 
   @override
+  String get pdfZoomIn => 'Zoom in';
+
+  @override
+  String get pdfZoomOut => 'Zoom out';
+
+  @override
   String get homePrivacyPolicy => 'Privacy policy';
 
   @override

@@ -2038,6 +2038,18 @@ abstract class AppLocalizations {
   /// **'This PDF can\'t be shown here'**
   String get textViewCantShowPdf;
 
+  /// A PDF's view (file screen, Cam's PDF pane): the button that makes the page bigger.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get pdfZoomIn;
+
+  /// A PDF's view (file screen, Cam's PDF pane): the button that makes the page smaller.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get pdfZoomOut;
+
   /// Profile, About: opens the privacy policy
   ///
   /// In en, this message translates to:

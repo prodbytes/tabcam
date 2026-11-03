@@ -119,7 +119,7 @@ camera view ([`PlayAlongScreen`](../tabcam_app/lib/capture/play_along_screen.dar
 <a id="playing-along-with-a-file"></a>**Playing along with a file**:
 when the capture has recordings, videos or links (or, in Cam, PDFs to
 [follow](#following-a-pdf)), Cam has a sidebar on
-the right (40% of the screen's width, from 120 to 280 px), open by
+the right (44% of the screen's width, from 132 to 310 px), open by
 default: it opens by itself the first time the capture has one, when Cam
 opens or when one arrives later (a sync, the first take), and once the
 user hides it, it stays hidden. The same sidebar is beside the
@@ -158,6 +158,7 @@ double tap puts the default width back. The width is kept while Cam is
 open, for the next PDF shown too. The pane has the PDF's name and
 **Hide the PDF** (✕)
 at its top, the document under them, its pages scrolling down, zoomable
+by pinching or with its **Zoom in** and **Zoom out** buttons
 (`PdfPage`, as the [file screen](event-screen.md#file-screen) shows it).
 The one showing is marked in the list (a split icon); tapping it again,
 or ✕, hides the pane. Only one PDF shows at a time: tapping another
@@ -194,7 +195,8 @@ sidebars don't list PDFs.
 - **The speed** (a recording, video or link playing in the app, not a
   page in a frame): under the section, a slider from 0.25× to 1.5× in
   steps of 5 %, and the speed beside it (`0.75×`, in the primary colour
-  once changed; a tap on it goes back to 1×). The pitch stays, so a part
+  once changed; a tap on it, or on the speed icon left of the slider,
+  in the primary colour too once changed, goes back to 1×). The pitch stays, so a part
   can be learnt slowly (the players keep the pitch: ExoPlayer, AVPlayer
   and the browsers' `playbackRate`). The speed is kept for the next file
   chosen while the screen is open; a section plays at it too.

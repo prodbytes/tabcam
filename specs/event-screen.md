@@ -154,7 +154,11 @@ The file is shown whole, as what it is:
 
 - **Images** are pinch-zoomable (up to 5×), as the view says.
 - **PDFs** show the document itself (`pdfrx`, PDFium; WASM on the web,
-  loaded when a PDF is first shown), its pages scrolling down, zoomable.
+  loaded when a PDF is first shown), its pages scrolling down, zoomable:
+  by pinching, or with **Zoom in** (+) and **Zoom out** (−) at its bottom
+  right, one over the other, each going to the viewer's next zoom step.
+  Every PDF view has them: this screen's, and the PDF pane beside Cam
+  and the Text view.
   A PDF that can't be read says so. When the capture has recordings,
   videos or links, the play-along sidebar is beside it, open, with **Play
   along** (♫) in the app bar, as in [Cam](cam.md#playing-along-with-a-file).

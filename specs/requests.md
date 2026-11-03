@@ -1886,3 +1886,17 @@ spec.
    `IMG_1234`, `VID_20261030_…`, `PXL_…`, screenshots, dates, UUIDs)
    are skipped, in every upload; with none left, the date and time. See
    [navigation](navigation.md#capture).
+
+## 2026-11-03
+
+1. **Zoom in and out buttons on every PDF view (the PDF page and the
+   PDF beside the camera); the play-along player a little wider; the
+   speed icon resets the speed.** Every PDF view (`PdfPage`: the file
+   screen's, and the pane beside Cam and the Text view) has **Zoom in**
+   and **Zoom out** at its bottom right, besides pinching. The
+   play-along sidebar, with its player at the top, is 44% of the
+   screen's width, from 132 to 310 px (was 40%, from 120 to 280 px). A
+   tap on the speed icon left of the speed slider goes back to 1×, as a
+   tap on the speed does. In English, Spanish and Portuguese. See
+   [event screen](event-screen.md#file-screen) and
+   [Cam](cam.md#playing-along-with-a-file).

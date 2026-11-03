@@ -1625,6 +1625,14 @@
   "@textViewCantShowPdf": {
     "description": "PDF page when the PDF can't be shown"
   },
+  "pdfZoomIn": "Zoom in",
+  "@pdfZoomIn": {
+    "description": "A PDF's view (file screen, Cam's PDF pane): the button that makes the page bigger."
+  },
+  "pdfZoomOut": "Zoom out",
+  "@pdfZoomOut": {
+    "description": "A PDF's view (file screen, Cam's PDF pane): the button that makes the page smaller."
+  },
   "homePrivacyPolicy": "Privacy policy",
   "@homePrivacyPolicy": {
     "description": "Profile, About: opens the privacy policy"

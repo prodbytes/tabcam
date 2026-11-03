@@ -1,6 +1,7 @@
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pdfrx/pdfrx.dart' show PdfViewerController;
 import 'package:tabcam_app/capture/media.dart';
 import 'package:tabcam_app/cloud/cloud_sync.dart';
 import 'package:tabcam_app/l10n/app_localizations_en.dart';
@@ -87,6 +88,29 @@ void main() {
     await tester.runAsync(() => Future<void>.delayed(Duration.zero));
     await tester.pump();
     expect(find.text('This PDF can\'t be shown here'), findsOneWidget);
+    // No document, no zoom buttons.
+    expect(find.byType(PdfZoomButtons), findsNothing);
+  });
+
+  testWidgets('a PDF has Zoom in and Zoom out, harmless before it\'s ready', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: PdfZoomButtons(controller: PdfViewerController())),
+      ),
+    );
+    expect(find.byTooltip('Zoom in'), findsOneWidget);
+    expect(find.byTooltip('Zoom out'), findsOneWidget);
+    // Above Zoom out.
+    expect(
+      tester.getCenter(find.byKey(const Key('pdf-zoom-in'))).dy,
+      lessThan(tester.getCenter(find.byKey(const Key('pdf-zoom-out'))).dy),
+    );
+    await tester.tap(find.byKey(const Key('pdf-zoom-in')));
+    await tester.tap(find.byKey(const Key('pdf-zoom-out')));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
   });
 
   Future<void> tapOpen(WidgetTester tester) async {
