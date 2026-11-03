@@ -18,20 +18,37 @@ class FakeVideoPlatform extends VideoPlatformBase {
   final disposed = <int>[];
   var _next = 0;
 
+  /// The last player made.
+  int get lastPlayer => _next - 1;
+
   @override
   Future<void> init() async {}
 
   @override
   Future<int?> createWithOptions(VideoCreationOptions options) async => _next++;
 
+  /// Each player's events: initialized at once, then what a test sends
+  /// ([complete]).
+  final _events = <int, StreamController<VideoEvent>>{};
+
   @override
-  Stream<VideoEvent> videoEventsFor(int playerId) => Stream.value(
-    VideoEvent(
-      eventType: VideoEventType.initialized,
-      duration: const Duration(minutes: 3),
-      size: const Size(320, 240),
-    ),
-  );
+  Stream<VideoEvent> videoEventsFor(int playerId) =>
+      (_events[playerId] ??= StreamController<VideoEvent>()
+            ..add(
+              VideoEvent(
+                eventType: VideoEventType.initialized,
+                duration: const Duration(minutes: 3),
+                size: const Size(320, 240),
+              ),
+            ))
+          .stream;
+
+  /// The player reached its end (video_player then pauses it and seeks to
+  /// the end by itself).
+  void complete(int playerId) {
+    position = const Duration(minutes: 3);
+    _events[playerId]!.add(VideoEvent(eventType: VideoEventType.completed));
+  }
 
   @override
   Future<void> play(int playerId) async => playing.add(playerId);

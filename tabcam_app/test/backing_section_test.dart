@@ -136,6 +136,45 @@ void main() {
     track.dispose();
   });
 
+  testWidgets('a section ending at the file\'s end: the player completes, '
+      'and it still starts over with repeat, pauses at the start without', (
+    tester,
+  ) async {
+    final (track, _, _) = await loaded(tester);
+    await tester.runAsync(
+      () => track.setSection(
+        const Duration(minutes: 2, seconds: 50),
+        const Duration(minutes: 3), // the file's end
+      ),
+    );
+    expect(track.section?.end, const Duration(minutes: 3));
+    video.seeks.clear();
+    await tester.runAsync(() => track.toggle());
+    expect(track.playing, isTrue);
+
+    // The file ends: the player pauses itself at the end. With repeat on,
+    // back to the section's start, playing.
+    await tester.runAsync(() async {
+      video.complete(video.lastPlayer);
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+    });
+    expect(video.seeks, contains(const Duration(minutes: 2, seconds: 50)));
+    expect(video.playing, isNotEmpty);
+    expect(track.playing, isTrue);
+
+    // Without repeat: back to the section's start, paused there.
+    await tester.runAsync(() => track.setRepeat(false));
+    video.seeks.clear();
+    await tester.runAsync(() async {
+      video.complete(video.lastPlayer);
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+    });
+    expect(video.seeks, contains(const Duration(minutes: 2, seconds: 50)));
+    expect(video.playing, isEmpty);
+    expect(track.playing, isFalse);
+    track.dispose();
+  });
+
   testWidgets('Stop, skips and Play stay in the section; each file keeps '
       'its own; a link has none', (tester) async {
     final (track, event, page) = await loaded(tester);

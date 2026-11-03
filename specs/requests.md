@@ -1900,3 +1900,12 @@ spec.
    tap on the speed does. In English, Spanish and Portuguese. See
    [event screen](event-screen.md#file-screen) and
    [Cam](cam.md#playing-along-with-a-file).
+4. **With Repeat on in the play-along player, playback must repeat at
+   the song's end or at the section's end; it stopped at the song's end
+   when the two coincided.** A section ending at the file's end (or near
+   enough for the player to reach it first) completed the player, which
+   paused itself at the end, and the section's end check only ran while
+   it played. Now a player paused at the file's end counts as reaching
+   the section's end: with Repeat it goes back to the section's start
+   and plays on, without it it's paused at the section's start. See
+   [Cam](cam.md#playing-along-with-a-file).

@@ -159,18 +159,33 @@ class BackingTrack extends ChangeNotifier {
   bool _checking = false;
 
   /// At the section's end: back to its start, playing on with [repeat],
-  /// paused without.
+  /// paused without. The file's own end counts as the section's: a
+  /// section that ends at the file's end (or close enough for the player
+  /// to get there first) completes the player, which pauses itself at
+  /// the end, so that's watched too, not only the position while it
+  /// plays.
   Future<void> _keepInSection() async {
     final (media, range) = (_media, section);
     if (_checking || media == null || range == null) return;
-    if (!media.value.isPlaying) return;
+    final v = media.value;
+    // Completed: the player has paused and seeked to the end (its own
+    // doing, video_player's `completed`; the seek landing is waited for,
+    // so a seek of ours isn't undone by it).
+    final ended =
+        !v.isPlaying && v.duration > Duration.zero && v.position >= v.duration;
+    if (!v.isPlaying && !ended) return;
     _checking = true;
     try {
-      final at = await media.position ?? media.value.position;
+      final at = ended
+          ? v.position
+          : (await media.position ?? media.value.position);
       if (_media != media || section != range) return;
-      if (at >= range.end || at < range.start - const Duration(seconds: 1)) {
+      if (ended ||
+          at >= range.end ||
+          at < range.start - const Duration(seconds: 1)) {
         if (!_repeat && at >= range.end) await media.pause();
         await media.seekTo(range.start);
+        if (ended && _repeat) await media.play();
       }
     } finally {
       _checking = false;
