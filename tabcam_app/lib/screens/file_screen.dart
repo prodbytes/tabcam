@@ -156,7 +156,9 @@ class FilePreview extends StatelessWidget {
 
 /// One file of a capture, opened from its list on its own screen: the
 /// file, and its tools: the view (Original or Scan, for an image), Rotate
-/// (an image) and Delete.
+/// (an image) and Delete. An image and a PDF have the play-along sidebar
+/// beside them; a recording opens in it, loaded in its frame, with the
+/// capture's pages and PDFs listed to follow one beside it.
 class FileScreen extends StatefulWidget {
   const FileScreen({
     super.key,
@@ -251,12 +253,35 @@ class _FileScreenState extends State<FileScreen> {
     });
   }
 
-  Widget _besidePdf(EventPage page, Widget child) =>
-      page.isPdf ? PlayAlongBeside(along: _along, child: child) : child;
+  /// Whether [page] opens in the sidebar: a recording of the capture's
+  /// own (a contribution's isn't listed there: it plays on its page).
+  static bool _inSidebar(CaptureEvent event, EventPage page) =>
+      page.isAudio && event.pages.contains(page);
 
-  /// Playing along beside a PDF, made when one first shows.
+  /// Whether [page] has the play-along sidebar beside it.
+  static bool _withSidebar(CaptureEvent event, EventPage page) =>
+      page.isPdf || page.isImage || _inSidebar(event, page);
+
+  Widget _beside(CaptureEvent event, EventPage page, Widget child) =>
+      _withSidebar(event, page)
+      ? PlayAlongBeside(along: _alongFor(event, page), child: child)
+      : child;
+
+  /// Playing along beside the file, made when it first shows: for a
+  /// recording, with the recording itself in the frame and the capture's
+  /// pages and PDFs to follow.
   PlayAlong? _alongOrNull;
-  PlayAlong get _along => _alongOrNull ??= PlayAlong(_library, widget.eventId);
+  PlayAlong _alongFor(CaptureEvent event, EventPage page) {
+    if (_alongOrNull case final along?) return along;
+    final recording = _inSidebar(event, page);
+    return _alongOrNull = PlayAlong(
+      _library,
+      widget.eventId,
+      withPdfs: recording,
+      withImages: recording,
+      startId: recording ? page.id : null,
+    );
+  }
 
   @override
   void dispose() {
@@ -277,9 +302,12 @@ class _FileScreenState extends State<FileScreen> {
         final editable = !_busy && !_fixed(event, page);
         final filter = _shown ?? page.filter;
         final original = filter == PageFilter.original;
+        final sidebar = _withSidebar(event, page);
         return Scaffold(
           appBar: AppBar(
-            actions: [if (page.isPdf) PlayAlongButton(along: _along)],
+            actions: [
+              if (sidebar) PlayAlongButton(along: _alongFor(event, page)),
+            ],
             // Tapping the name renames the file (when the user can edit).
             title: InkWell(
               onTap: _fixed(event, page) ? null : () => _rename(event, page),
@@ -295,18 +323,24 @@ class _FileScreenState extends State<FileScreen> {
                   )
                 : null,
           ),
-          // The whole body: an image fits it, not its own size. A PDF
-          // has the play-along sidebar beside it.
-          body: _besidePdf(
+          // The whole body: an image fits it, not its own size. An image
+          // and a PDF have the play-along sidebar beside them; a recording
+          // plays in it.
+          body: _beside(
+            event,
             page,
             Padding(
               padding: const EdgeInsets.all(16),
               child: SizedBox.expand(
-                child: FilePreview(
-                  library: _library,
-                  event: event,
-                  page: page.isImage ? page.copyWith(filter: filter) : page,
-                ),
+                child: _inSidebar(event, page)
+                    ? const _RecordingAside()
+                    : FilePreview(
+                        library: _library,
+                        event: event,
+                        page: page.isImage
+                            ? page.copyWith(filter: filter)
+                            : page,
+                      ),
               ),
             ),
           ),
@@ -349,6 +383,47 @@ class _FileScreenState extends State<FileScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+/// A recording's screen, beside the sidebar it plays in: a card saying
+/// so, and that a page or PDF picked there shows beside it.
+class _RecordingAside extends StatelessWidget {
+  const _RecordingAside();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 320),
+        child: Card(
+          key: const Key('recording-aside'),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.music_note,
+                  size: 56,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  l10n.textViewAudio,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                Text(l10n.fileAudioInSidebar, textAlign: TextAlign.center),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

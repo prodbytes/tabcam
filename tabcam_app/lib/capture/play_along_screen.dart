@@ -40,7 +40,7 @@ import 'take_overlay.dart';
 /// one tapped plays in a compact frame at the sidebar's top, above the
 /// list ([BackingTrack]), while the user plays and records; the space bar
 /// pauses and plays it. A PDF tapped there shows on the screen's other
-/// side, to follow the tab on it ([PlayAlong.pdf]).
+/// side, to follow the tab on it ([PlayAlong.followed]).
 class PlayAlongScreen extends StatefulWidget {
   const PlayAlongScreen({
     super.key,

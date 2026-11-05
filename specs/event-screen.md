@@ -163,7 +163,10 @@ or the name the user gave it); tapping it renames the file, as does the
 **Rename** tool beside Delete.
 The file is shown whole, as what it is:
 
-- **Images** are pinch-zoomable (up to 5×), as the view says.
+- **Images** are pinch-zoomable (up to 5×), as the view says. When the
+  capture has recordings, videos or links, the play-along sidebar is
+  beside the image, open, with **Play along** (♫) in the app bar, as
+  beside a PDF.
 - **PDFs** show the document itself (`pdfrx`, PDFium; WASM on the web,
   loaded when a PDF is first shown), its pages scrolling down, zoomable:
   by pinching, or with **Zoom in** (+) and **Zoom out** (−) at its bottom
@@ -173,15 +176,31 @@ The file is shown whole, as what it is:
   A PDF that can't be read says so. When the capture has recordings,
   videos or links, the play-along sidebar is beside it, open, with **Play
   along** (♫) in the app bar, as in [Cam](cam.md#playing-along-with-a-file).
+  Beside an image or a PDF the sidebar lists only what plays along,
+  nothing to follow.
 - **Videos** show a play button; tapped, they play in place, looping,
   with a bar at the bottom: a **play / pause** button and a scrubbable
   progress bar. A tap on the video also pauses and resumes. A video that
   can't play says so.
-- **Recordings** (audio) show as a card with a music note, "Recording"
-  and a **play** button; tapped, it loads and plays, with **play /
-  pause**, a scrubbable progress bar and the time ("0:12 / 3:04"). At the
-  end, play starts it over. A recording that can't play says so. They
-  play through `video_player`, as videos do.
+- **Recordings** (audio) of the capture's own open in the play-along
+  sidebar, as usual: it opens with the recording loaded in its player
+  frame, paused, marked in its list (not the first file to play, as
+  elsewhere), with the frame's controls, section and speed
+  ([Cam](cam.md#playing-along-with-a-file)); ♫ hides the sidebar and
+  pauses it. The screen itself shows a card with a music note,
+  "Recording" and "It plays in the sidebar. Pick a page or PDF there to
+  follow along." Under the files to play along, the sidebar lists the
+  capture's **images and PDFs** under **Follow a page or PDF**: a tap
+  shows one in a pane on the left, as Cam
+  [follows a PDF](cam.md#following-a-pdf) (an image pinch-zoomable, a
+  PDF scrolling, with the separator to drag; **Hide the page** / **Hide
+  the PDF** closes it; tapped again, or another tapped, it goes or is
+  replaced). A recording that can't play says so in the frame. A
+  contribution's recording (not listed in the sidebar) still shows as a
+  card with a **play** button; tapped, it loads and plays, with **play /
+  pause**, a scrubbable progress bar and the time ("0:12 / 3:04"), and at
+  the end play starts it over. They play through `video_player`, as
+  videos do.
 - **Links** show as a card with a link icon, the title (or the address's
   host), the address (selectable), **Open** and **Copy** (to the
   clipboard). **Open** opens the link outside the app: on the web in a

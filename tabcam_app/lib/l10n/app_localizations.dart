@@ -1132,6 +1132,24 @@ abstract class AppLocalizations {
   /// **'Hide the PDF'**
   String get camAlongPdfHide;
 
+  /// Sidebar heading over the capture's images and PDFs (a recording's file screen); tapping one shows it beside
+  ///
+  /// In en, this message translates to:
+  /// **'Follow a page or PDF'**
+  String get camAlongFollow;
+
+  /// Sidebar: tooltip of an image not showing
+  ///
+  /// In en, this message translates to:
+  /// **'Show the page beside it'**
+  String get camAlongPageShow;
+
+  /// Sidebar: tooltip of the image showing, and of its Close
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the page'**
+  String get camAlongPageHide;
+
   /// Cam backing track: play; the space bar does it too
   ///
   /// In en, this message translates to:
@@ -2037,6 +2055,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recording'**
   String get textViewAudio;
+
+  /// A recording's file screen, beside the play-along sidebar it plays in
+  ///
+  /// In en, this message translates to:
+  /// **'It plays in the sidebar. Pick a page or PDF there to follow along.'**
+  String get fileAudioInSidebar;
 
   /// Audio page when the recording can't play
   ///

@@ -130,8 +130,9 @@ default: it opens by itself the first time the capture has one, when Cam
 opens or when one arrives later (a sync, the first take), and once the
 user hides it, it stays hidden. The same sidebar is beside the
 [Text view](event-screen.md) (there with a notation sheet at its bottom,
-[tab recognition](tab-recognition.md#text-view)) and a
-[PDF](event-screen.md#file-screen)
+[tab recognition](tab-recognition.md#text-view)) and a PDF or an image
+on the [file screen](event-screen.md#file-screen), and a recording
+opened there plays in it
 (`PlayAlong`, `PlayAlongSidebar`,
 [`play_along_sidebar.dart`](../tabcam_app/lib/capture/play_along_sidebar.dart)).
 At its top a compact **player frame**, there whenever there's something
@@ -171,8 +172,12 @@ or ✕, hides the pane. Only one PDF shows at a time: tapping another
 takes its place. The pane is apart from the sidebar: hiding the sidebar
 (♫) keeps the PDF, and the keys and gestures still turn the tab (a tap
 in the pane gives the keys back to Cam). A PDF deleted or synced away
-while it shows closes the pane. The Text view's and the file screen's
-sidebars don't list PDFs.
+while it shows closes the pane. The Text view's sidebar lists PDFs
+too; on the file screen, a PDF's and an image's sidebar lists nothing
+to follow, and a recording's lists the capture's **images and PDFs**,
+under **Follow a page or PDF** (an image shows in the pane
+pinch-zoomable, as the file screen shows it; its tooltips say **Show
+the page beside it** / **Hide the page**).
 
 - **The frame**, as wide as the sidebar and at most a third of the
   screen's height: a video (or a link's page, 16:9) above a progress bar

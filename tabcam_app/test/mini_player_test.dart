@@ -321,9 +321,8 @@ void main() {
     expect(pane, findsNothing);
   });
 
-  testWidgets('a PDF has the play-along sidebar; an image has none', (
-    tester,
-  ) async {
+  testWidgets('a PDF and an image have the play-along sidebar, with the '
+      'recording loaded; neither lists anything to follow', (tester) async {
     tester.view.physicalSize = const Size(1200, 800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -332,26 +331,109 @@ void main() {
       (PageKind.image, 'jpg'),
       (PageKind.audio, 'm4a'),
     ]);
-    await tester.pumpWidget(
-      host(FileScreen(library: library, eventId: id, pageId: 'k0')),
-    );
-    await _frames(tester);
-    expect(find.byKey(const Key('cam-along')), findsOneWidget);
-    expect(find.byKey(const Key('cam-along-sidebar')), findsOneWidget);
-    expect(find.byKey(const Key('cam-along-frame')), findsOneWidget);
-
-    await tester.pumpWidget(
-      host(
-        FileScreen(
-          key: const Key('k1'),
-          library: library,
-          eventId: id,
-          pageId: 'k1',
+    for (final file in ['k0', 'k1']) {
+      await tester.pumpWidget(
+        host(
+          FileScreen(
+            key: Key(file),
+            library: library,
+            eventId: id,
+            pageId: file,
+          ),
         ),
+      );
+      await _frames(tester);
+      expect(find.byKey(const Key('cam-along')), findsOneWidget);
+      expect(find.byKey(const Key('cam-along-sidebar')), findsOneWidget);
+      expect(find.byKey(const Key('cam-along-frame')), findsOneWidget);
+      expect(find.byKey(const Key('cam-along-k2')), findsOneWidget);
+      expect(find.textContaining('Follow'), findsNothing);
+      expect(find.byKey(const Key('cam-along-k0')), findsNothing);
+      expect(find.byKey(const Key('cam-along-k1')), findsNothing);
+    }
+    // The image itself, pinch-zoomable, beside the sidebar.
+    expect(find.byType(InteractiveViewer), findsOneWidget);
+    expect(
+      tester.getTopRight(find.byType(InteractiveViewer)).dx,
+      lessThanOrEqualTo(
+        tester.getTopLeft(find.byKey(const Key('cam-along-sidebar'))).dx,
       ),
     );
+  });
+
+  testWidgets('a recording opens in the sidebar: loaded in its frame, '
+      'paused, with the pages and PDFs listed to follow; one tapped shows '
+      'in a pane beside it', (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final (library, id) = await captureWith(tester, [
+      (PageKind.pdf, 'pdf'),
+      (PageKind.image, 'jpg'),
+      (PageKind.video, 'mp4'),
+      (PageKind.audio, 'm4a'),
+    ]);
+    await tester.pumpWidget(
+      host(FileScreen(library: library, eventId: id, pageId: 'k3')),
+    );
     await _frames(tester);
-    expect(find.byKey(const Key('cam-along')), findsNothing);
-    expect(find.byKey(const Key('cam-along-sidebar')), findsNothing);
+    final sidebar = find.byKey(const Key('cam-along-sidebar'));
+    expect(sidebar, findsOneWidget);
+    expect(find.byKey(const Key('cam-along')), findsOneWidget);
+    expect(find.byKey(const Key('cam-along-frame')), findsOneWidget);
+    // The recording, not the video before it, and paused.
+    expect(
+      tester.widget<ListTile>(find.byKey(const Key('cam-along-k3'))).selected,
+      isTrue,
+    );
+    expect(
+      tester.widget<ListTile>(find.byKey(const Key('cam-along-k2'))).selected,
+      isFalse,
+    );
+    expect(platform.playing, isEmpty);
+    // No player of its own: the card says it plays in the sidebar.
+    expect(find.byKey(const Key('play-pause')), findsNothing);
+    expect(find.byKey(const Key('recording-aside')), findsOneWidget);
+    expect(find.textContaining('plays in the sidebar'), findsOneWidget);
+    // The pages and PDFs to follow, under their heading.
+    expect(find.text('Follow a page or PDF'), findsOneWidget);
+    final pdf = find.byKey(const Key('cam-along-k0'));
+    final image = find.byKey(const Key('cam-along-k1'));
+    expect(pdf, findsOneWidget);
+    expect(image, findsOneWidget);
+    final pane = find.byKey(const Key('cam-pdf-pane'));
+    expect(pane, findsNothing);
+
+    await tester.tap(find.byKey(const Key('cam-along-toggle')));
+    await _frames(tester);
+    expect(platform.playing, hasLength(1));
+
+    // The image, in a pane on the left, zoomable; the recording plays on.
+    await tester.tap(image);
+    await _frames(tester);
+    expect(pane, findsOneWidget);
+    expect(find.byKey(const Key('cam-image-k1')), findsOneWidget);
+    expect(tester.widget<ListTile>(image).selected, isTrue);
+    expect(
+      tester.getTopLeft(pane).dx,
+      lessThan(tester.getTopLeft(find.byKey(const Key('recording-aside'))).dx),
+    );
+    expect(platform.playing, hasLength(1));
+
+    // The PDF takes its place; tapped again, the pane goes.
+    await tester.tap(pdf);
+    await _frames(tester);
+    expect(find.byKey(const Key('cam-image-k1')), findsNothing);
+    expect(tester.widget<ListTile>(pdf).selected, isTrue);
+    expect(tester.widget<ListTile>(image).selected, isFalse);
+    await tester.tap(pdf);
+    await _frames(tester);
+    expect(pane, findsNothing);
+
+    // Hiding the sidebar pauses the recording.
+    await tester.tap(find.byKey(const Key('cam-along')));
+    await _frames(tester);
+    expect(sidebar, findsNothing);
+    expect(platform.playing, isEmpty);
   });
 }

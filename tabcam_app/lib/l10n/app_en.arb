@@ -886,6 +886,18 @@
   "@camAlongPdfHide": {
     "description": "Cam: tooltip of the PDF showing, and of its Close"
   },
+  "camAlongFollow": "Follow a page or PDF",
+  "@camAlongFollow": {
+    "description": "Sidebar heading over the capture's images and PDFs (a recording's file screen); tapping one shows it beside"
+  },
+  "camAlongPageShow": "Show the page beside it",
+  "@camAlongPageShow": {
+    "description": "Sidebar: tooltip of an image not showing"
+  },
+  "camAlongPageHide": "Hide the page",
+  "@camAlongPageHide": {
+    "description": "Sidebar: tooltip of the image showing, and of its Close"
+  },
   "camAlongPlay": "Play (space)",
   "@camAlongPlay": {
     "description": "Cam backing track: play; the space bar does it too"
@@ -1625,6 +1637,10 @@
   "textViewAudio": "Recording",
   "@textViewAudio": {
     "description": "Audio page label"
+  },
+  "fileAudioInSidebar": "It plays in the sidebar. Pick a page or PDF there to follow along.",
+  "@fileAudioInSidebar": {
+    "description": "A recording's file screen, beside the play-along sidebar it plays in"
   },
   "textViewCantPlayAudio": "This recording can't be played here",
   "@textViewCantPlayAudio": {

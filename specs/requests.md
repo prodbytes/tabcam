@@ -1933,3 +1933,22 @@ spec.
    the section's end: with Repeat it goes back to the section's start
    and plays on, without it it's paused at the section's start. See
    [Cam](cam.md#playing-along-with-a-file).
+
+## 2026-11-05
+
+1. **When an image file is opened, also open the mini player sidebar.
+   When an audio file is opened, open it in the mini player sidebar, as
+   usual, and open images and documents to the side, as in the other
+   views.** On the file screen an image now has the play-along sidebar
+   beside it, open, with ♫ in the app bar, as a PDF has. A recording of
+   the capture's own opens in the sidebar: it opens with that recording
+   loaded in its frame, paused (not the first file to play), and lists
+   the capture's images and PDFs under **Follow a page or PDF**; a tap
+   shows one in the pane on the left, as Cam and the Text view follow a
+   PDF (an image pinch-zoomable; **Show the page beside it** / **Hide
+   the page**). The screen itself is a card saying the recording plays
+   in the sidebar; the old player card stays only for a contribution's
+   recording, which the sidebar doesn't list. Cam's and the Text view's
+   sidebars still list PDFs only. In English, Spanish and Portuguese.
+   See [event screen](event-screen.md#file-screen) and
+   [Cam](cam.md#following-a-pdf).
