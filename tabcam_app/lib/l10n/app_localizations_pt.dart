@@ -662,6 +662,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String get camAlongPdfHide => 'Ocultar o PDF';
 
   @override
+  String get camAlongFollow => 'Seguir uma página ou um PDF';
+
+  @override
+  String get camAlongPageShow => 'Mostrar a página ao lado';
+
+  @override
+  String get camAlongPageHide => 'Ocultar a página';
+
+  @override
   String get camAlongPlay => 'Tocar (espaço)';
 
   @override
@@ -1229,6 +1238,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get textViewAudio => 'Gravação';
+
+  @override
+  String get fileAudioInSidebar =>
+      'Toca na barra lateral. Escolha lá uma página ou um PDF para acompanhar.';
 
   @override
   String get textViewCantPlayAudio =>

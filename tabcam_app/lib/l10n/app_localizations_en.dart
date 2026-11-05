@@ -643,6 +643,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camAlongPdfHide => 'Hide the PDF';
 
   @override
+  String get camAlongFollow => 'Follow a page or PDF';
+
+  @override
+  String get camAlongPageShow => 'Show the page beside it';
+
+  @override
+  String get camAlongPageHide => 'Hide the page';
+
+  @override
   String get camAlongPlay => 'Play (space)';
 
   @override
@@ -1200,6 +1209,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get textViewAudio => 'Recording';
+
+  @override
+  String get fileAudioInSidebar =>
+      'It plays in the sidebar. Pick a page or PDF there to follow along.';
 
   @override
   String get textViewCantPlayAudio => 'This recording can\'t be played here';

@@ -51,7 +51,9 @@ review notes ([app stores](app-stores.md)).
   recordings, PDFs and links) as a list with previews, Files, Text and
   Add and Cam (the list reorders in place by drag handles), plus Rename,
   Clone and one Share; a tap opens a file alone, with
-  its view (Original or Scan), Rotate and Delete. Text and Cam are
+  its view (Original or Scan), Rotate and Delete, the play-along
+  sidebar beside an image or a PDF, and a recording playing in it with
+  the capture's pages and PDFs to follow beside. Text and Cam are
   Premium's: locked, each opens as a preview under the Premium card.
 - [Cam](cam.md): record yourself playing along with the tab: the camera,
   the tab under it one neckline (staff) at a time, any key to the next

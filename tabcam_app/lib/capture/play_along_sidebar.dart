@@ -7,6 +7,7 @@ import '../l10n/language.dart';
 import '../library/capture_event.dart';
 import '../library/library.dart';
 import '../screens/file_screen.dart';
+import '../screens/page_image.dart';
 import '../screens/pdf_page.dart';
 import '../screens/youtube_link.dart';
 import '../screens/split_handle.dart';
@@ -21,15 +22,19 @@ import 'link_frame.dart';
 /// ([toggle]), it isn't opened again.
 ///
 /// In Cam ([withPdfs]) the sidebar lists the capture's PDFs too, to
-/// follow one beside the camera: the one chosen ([pdf]) shows in a pane
-/// on the other side ([PlayAlongBeside]); the Text view's sidebar lists
-/// them too, to check the reading against the page.
+/// follow one beside the camera: the one chosen ([followed]) shows in a
+/// pane on the other side ([PlayAlongBeside]); the Text view's sidebar
+/// lists them too, to check the reading against the page; a recording's
+/// file screen lists its pages as well ([withImages]), to follow one
+/// while it plays.
 class PlayAlong extends ChangeNotifier {
   PlayAlong(
     this.library,
     this.eventId, {
     BackingTrack? track,
     this.withPdfs = false,
+    this.withImages = false,
+    this.startId,
   }) : track = track ?? BackingTrack(library) {
     library.addListener(_changed);
     _changed();
@@ -42,9 +47,16 @@ class PlayAlong extends ChangeNotifier {
   /// Whether the sidebar lists the capture's PDFs, to follow one.
   final bool withPdfs;
 
-  /// The PDF followed beside the screen, if one is.
-  EventPage? get pdf => _pdf;
-  EventPage? _pdf;
+  /// Whether the sidebar lists the capture's images, to follow one.
+  final bool withImages;
+
+  /// The file the screen opened on (a recording), loaded in the frame
+  /// when the sidebar opens by itself, instead of the first to play.
+  final String? startId;
+
+  /// The page or PDF followed beside the screen, if one is.
+  EventPage? get followed => _followed;
+  EventPage? _followed;
 
   /// Whether the sidebar shows.
   bool get open => _open;
@@ -58,44 +70,48 @@ class PlayAlong extends ChangeNotifier {
   bool get available => library.byId(eventId)?.pages.any(_listed) ?? false;
 
   /// Whether the sidebar lists [page].
-  bool _listed(EventPage page) =>
-      BackingTrack.plays(page) || (withPdfs && page.isPdf);
+  bool _listed(EventPage page) => BackingTrack.plays(page) || follows(page);
 
-  /// The capture's PDFs, when the sidebar lists them.
-  List<EventPage> get pdfs => [
-    if (withPdfs) ...?library.byId(eventId)?.pages.where((p) => p.isPdf),
+  /// Whether the sidebar lists [page] to follow beside the screen.
+  bool follows(EventPage page) =>
+      (withPdfs && page.isPdf) || (withImages && page.isImage);
+
+  /// The capture's PDFs and images the sidebar lists, to follow one.
+  List<EventPage> get toFollow => [
+    ...?library.byId(eventId)?.pages.where(follows),
   ];
 
-  /// Shows [page] (a PDF) beside the screen, or hides it, chosen again.
-  void showPdf(EventPage page) {
-    _pdf = _pdf?.id == page.id ? null : page;
+  /// Shows [page] (a PDF or an image) beside the screen, or hides it,
+  /// chosen again.
+  void follow(EventPage page) {
+    _followed = _followed?.id == page.id ? null : page;
     notifyListeners();
   }
 
-  /// How wide the PDF's pane is, once the user has dragged its edge;
+  /// How wide the pane followed is, once the user has dragged its edge;
   /// null: its default ([PdfPaneWidth.of]). Kept while the screen is
-  /// open, for the next PDF too.
-  double? get pdfWidth => _pdfWidth;
-  double? _pdfWidth;
+  /// open, for the next file followed too.
+  double? get paneWidth => _paneWidth;
+  double? _paneWidth;
 
-  /// Sets the PDF pane's width (kept within the screen by its layout).
-  void setPdfWidth(double width) {
-    if (width == _pdfWidth) return;
-    _pdfWidth = width;
+  /// Sets the pane's width (kept within the screen by its layout).
+  void setPaneWidth(double width) {
+    if (width == _paneWidth) return;
+    _paneWidth = width;
     notifyListeners();
   }
 
-  /// Puts the PDF pane back to its default width.
-  void resetPdfWidth() {
-    if (_pdfWidth == null) return;
-    _pdfWidth = null;
+  /// Puts the pane back to its default width.
+  void resetPaneWidth() {
+    if (_paneWidth == null) return;
+    _paneWidth = null;
     notifyListeners();
   }
 
-  /// Hides the PDF beside the screen.
-  void hidePdf() {
-    if (_pdf == null) return;
-    _pdf = null;
+  /// Hides what's followed beside the screen.
+  void unfollow() {
+    if (_followed == null) return;
+    _followed = null;
     notifyListeners();
   }
 
@@ -115,17 +131,22 @@ class PlayAlong extends ChangeNotifier {
 
   void _changed() {
     final event = library.byId(eventId);
-    // The PDF followed, deleted (or synced away): the pane closes.
-    if (_pdf case final pdf?
-        when event?.pages.any((p) => p.id == pdf.id) != true) {
-      _pdf = null;
+    // The file followed, deleted (or synced away): the pane closes.
+    if (_followed case final followed?
+        when event?.pages.any((p) => p.id == followed.id) != true) {
+      _followed = null;
       notifyListeners();
     }
     if (_opened) return;
     if (event == null || !event.pages.any(_listed)) return;
     _opened = true;
     _open = true;
-    final first = event.pages.where(BackingTrack.plays).firstOrNull;
+    // The file the screen opened on, if it plays; else the first that does.
+    final first =
+        event.pages
+            .where((p) => p.id == startId && BackingTrack.plays(p))
+            .firstOrNull ??
+        event.pages.where(BackingTrack.plays).firstOrNull;
     if (track.page == null && first != null) {
       unawaited(track.choose(event, first, play: false));
     }
@@ -180,12 +201,22 @@ Widget pdfViewFor(Library library, CaptureEvent event, EventPage page) =>
       page: page,
     );
 
+/// An image's view for [PlayAlongBeside]'s pane: the page, pinch-zoomable,
+/// as the file screen shows it.
+Widget imageViewFor(Library library, CaptureEvent event, EventPage page) =>
+    InteractiveViewer(
+      key: ValueKey('cam-image-${page.id}'),
+      maxScale: 5,
+      child: PageImage(library: library, event: event, page: page),
+    );
+
 /// [along]'s sidebar, beside [child]: kept while hidden (offstage), so a
 /// link's page isn't reloaded; nothing when there's nothing to play along
-/// with. On the other side, the PDF followed ([PlayAlong.pdf]), when one
-/// is, in a pane of its own ([_PdfPane]), with a separator to drag
-/// ([SplitHandle]) between it and [child]: wider, the page reads better;
-/// [child] (the camera) gets smaller, down to [minChild].
+/// with. On the other side, the PDF or image followed
+/// ([PlayAlong.followed]), when one is, in a pane of its own
+/// ([_FollowPane]), with a separator to drag ([SplitHandle]) between it
+/// and [child]: wider, the page reads better; [child] (the camera) gets
+/// smaller, down to [minChild].
 class PlayAlongBeside extends StatelessWidget {
   const PlayAlongBeside({
     super.key,
@@ -205,7 +236,8 @@ class PlayAlongBeside extends StatelessWidget {
   /// sheet).
   final Widget? footer;
 
-  /// Shows a PDF in its pane; tests pass their own.
+  /// Shows a PDF in its pane; tests pass their own. An image shows as
+  /// [imageViewFor].
   final Widget Function(Library library, CaptureEvent event, EventPage page)
   pdfView;
 
@@ -232,22 +264,24 @@ class PlayAlongBeside extends StatelessWidget {
         final max = room - minChild;
         double clamp(double w) =>
             max <= minPdf ? max.clamp(0.0, room) : w.clamp(minPdf, max);
-        final pdfWidth = clamp(along.pdfWidth ?? PdfPaneWidth.of(screen));
+        final paneWidth = clamp(along.paneWidth ?? PdfPaneWidth.of(screen));
         final event = along.library.byId(along.eventId);
-        final pdf = event == null ? null : along.pdf;
+        final followed = event == null ? null : along.followed;
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (pdf != null) ...[
-              _PdfPane(
+            if (followed != null) ...[
+              _FollowPane(
                 event: event!,
-                page: pdf,
-                width: pdfWidth,
-                view: pdfView(along.library, event, pdf),
+                page: followed,
+                width: paneWidth,
+                view: followed.isPdf
+                    ? pdfView(along.library, event, followed)
+                    : imageViewFor(along.library, event, followed),
                 onUse: onUse,
                 onClose: () {
                   onUse?.call();
-                  along.hidePdf();
+                  along.unfollow();
                 },
               ),
               SplitHandle(
@@ -256,9 +290,10 @@ class PlayAlongBeside extends StatelessWidget {
                 color: Colors.white38,
                 background: Colors.black,
                 // From the width now: updates come faster than frames.
-                onDrag: (dx) =>
-                    along.setPdfWidth(clamp((along.pdfWidth ?? pdfWidth) + dx)),
-                onReset: along.resetPdfWidth,
+                onDrag: (dx) => along.setPaneWidth(
+                  clamp((along.paneWidth ?? paneWidth) + dx),
+                ),
+                onReset: along.resetPaneWidth,
               ),
             ],
             Expanded(child: child),
@@ -270,12 +305,12 @@ class PlayAlongBeside extends StatelessWidget {
                   eventId: along.eventId,
                   track: along.track,
                   linkFrame: linkFrame,
-                  pdfs: along.pdfs,
-                  pdf: along.pdf,
+                  toFollow: along.toFollow,
+                  followed: along.followed,
                   footer: footer,
-                  onPdf: (page) {
+                  onFollow: (page) {
                     onUse?.call();
-                    along.showPdf(page);
+                    along.follow(page);
                   },
                   onChoose: (page) {
                     onUse?.call();
@@ -328,11 +363,12 @@ abstract final class PdfPaneWidth {
   static double of(double screen) => (screen * 0.4).clamp(160.0, 480.0);
 }
 
-/// The PDF followed, beside the screen: its name and **Close** at the top,
-/// the document under them, scrolling and zoomable ([PdfPage]), [width]
-/// wide ([PdfPaneWidth], or as the user dragged it).
-class _PdfPane extends StatelessWidget {
-  const _PdfPane({
+/// The PDF or image followed, beside the screen: its name and **Close**
+/// at the top, the document under them, scrolling and zoomable
+/// ([PdfPage], [imageViewFor]), [width] wide ([PdfPaneWidth], or as the
+/// user dragged it).
+class _FollowPane extends StatelessWidget {
+  const _FollowPane({
     required this.event,
     required this.page,
     required this.width,
@@ -365,11 +401,7 @@ class _PdfPane extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.picture_as_pdf_outlined,
-                      color: Colors.white70,
-                      size: 16,
-                    ),
+                    Icon(_icon(page), color: Colors.white70, size: 16),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -383,7 +415,9 @@ class _PdfPane extends StatelessWidget {
                     ),
                     IconButton(
                       key: const Key('cam-pdf-close'),
-                      tooltip: l10n.camAlongPdfHide,
+                      tooltip: page.isPdf
+                          ? l10n.camAlongPdfHide
+                          : l10n.camAlongPageHide,
                       visualDensity: const VisualDensity(
                         horizontal: -4,
                         vertical: -4,
@@ -587,10 +621,10 @@ class _BackingFrame extends StatelessWidget {
 
 /// The sidebar: the backing track's frame at its top, always there, and
 /// under it the capture's recordings, videos and links, the one playing
-/// along marked; a tap plays one along. Then its [pdfs], if any, under a
-/// heading of their own, the one followed ([pdf]) marked; a tap shows it
-/// beside the screen, or hides it, tapped again. At the bottom, [footer],
-/// if any, out of the scrolling list.
+/// along marked; a tap plays one along. Then the PDFs and images
+/// [toFollow], if any, under a heading of their own, the one [followed]
+/// marked; a tap shows it beside the screen, or hides it, tapped again.
+/// At the bottom, [footer], if any, out of the scrolling list.
 class PlayAlongSidebar extends StatelessWidget {
   const PlayAlongSidebar({
     super.key,
@@ -599,9 +633,9 @@ class PlayAlongSidebar extends StatelessWidget {
     required this.track,
     required this.linkFrame,
     required this.onChoose,
-    this.pdfs = const [],
-    this.pdf,
-    this.onPdf,
+    this.toFollow = const [],
+    this.followed,
+    this.onFollow,
     this.footer,
     required this.onToggle,
     required this.onStop,
@@ -618,9 +652,9 @@ class PlayAlongSidebar extends StatelessWidget {
   final BackingTrack track;
   final Widget Function(LinkFrameController controller) linkFrame;
   final void Function(EventPage page) onChoose;
-  final List<EventPage> pdfs;
-  final EventPage? pdf;
-  final void Function(EventPage page)? onPdf;
+  final List<EventPage> toFollow;
+  final EventPage? followed;
+  final void Function(EventPage page)? onFollow;
   final Widget? footer;
   final VoidCallback onToggle;
   final VoidCallback onStop;
@@ -707,17 +741,26 @@ class PlayAlongSidebar extends StatelessWidget {
                       : null,
                   onTap: () => onChoose(page),
                 ),
-              if (pdfs.isNotEmpty && event != null) ...[
-                _heading(l10n.camAlongPdfs),
-                for (final page in pdfs)
+              if (toFollow.isNotEmpty && event != null) ...[
+                // "Follow a PDF" while only PDFs are listed.
+                _heading(
+                  toFollow.any((p) => p.isImage)
+                      ? l10n.camAlongFollow
+                      : l10n.camAlongPdfs,
+                ),
+                for (final page in toFollow)
                   Tooltip(
-                    message: pdf?.id == page.id
-                        ? l10n.camAlongPdfHide
-                        : l10n.camAlongPdfShow,
+                    message: followed?.id == page.id
+                        ? (page.isPdf
+                              ? l10n.camAlongPdfHide
+                              : l10n.camAlongPageHide)
+                        : (page.isPdf
+                              ? l10n.camAlongPdfShow
+                              : l10n.camAlongPageShow),
                     child: ListTile(
                       key: ValueKey('cam-along-${page.id}'),
                       dense: true,
-                      selected: pdf?.id == page.id,
+                      selected: followed?.id == page.id,
                       selectedColor: primary,
                       textColor: Colors.white,
                       iconColor: Colors.white70,
@@ -727,10 +770,10 @@ class PlayAlongSidebar extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      trailing: pdf?.id == page.id
+                      trailing: followed?.id == page.id
                           ? const Icon(Icons.vertical_split, size: 18)
                           : null,
-                      onTap: () => onPdf?.call(page),
+                      onTap: () => onFollow?.call(page),
                     ),
                   ),
               ],
@@ -740,10 +783,11 @@ class PlayAlongSidebar extends StatelessWidget {
       );
 }
 
-/// A recording's, video's, link's or PDF's icon (a YouTube video's as a
-/// video).
+/// A recording's, video's, link's, PDF's or image's icon (a YouTube
+/// video's as a video).
 IconData _icon(EventPage page) => switch (page) {
   EventPage(isPdf: true) => Icons.picture_as_pdf_outlined,
+  EventPage(isImage: true) => Icons.image_outlined,
   EventPage(isAudio: true) => Icons.audiotrack,
   EventPage(isVideo: true) => Icons.movie_outlined,
   EventPage(:final url?) when youTubeVideoId(url) != null =>
