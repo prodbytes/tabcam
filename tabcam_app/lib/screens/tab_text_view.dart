@@ -346,76 +346,84 @@ class _TabTextViewState extends State<TabTextView> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // One line: the editing tools on the left, the other buttons on
-        // the right, each side scaled down on a screen too narrow.
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: Theme(
-            data: Theme.of(context).copyWith(
-              filledButtonTheme: FilledButtonThemeData(
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  visualDensity: VisualDensity.compact,
+        // the right, each side scaled down on a screen too narrow. Part of
+        // the text field's tap region: a press on a button keeps the
+        // keyboard focus, and the cursor, in the text (on a computer a tap
+        // outside the field would unfocus it, and the keys would go
+        // nowhere until the text is clicked again).
+        TextFieldTapRegion(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                filledButtonTheme: FilledButtonThemeData(
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    visualDensity: VisualDensity.compact,
+                  ),
                 ),
               ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: editable && review == null
-                        ? _tools()
-                        : const SizedBox.shrink(),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  flex: 3,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerRight,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      spacing: 8,
-                      children: [
-                        FilledButton.tonalIcon(
-                          onPressed: _copy,
-                          icon: const Icon(Icons.copy),
-                          label: Text(context.l10n.textViewCopy),
-                        ),
-                        // Fix lines the strings up for everyone; with Premium, it
-                        // also checks the tab against the song online.
-                        if (editable && widget.showFix)
-                          FilledButton.tonalIcon(
-                            onPressed: _busy || review != null
-                                ? null
-                                : _autocorrect,
-                            icon: const Icon(Icons.auto_fix_high),
-                            label: Text(context.l10n.textViewFix),
-                          ),
-                        if (editable && widget.onRescan != null)
-                          Tooltip(
-                            message: context.l10n.textViewRescanTip,
-                            child: FilledButton.tonalIcon(
-                              onPressed: _busy || review != null
-                                  ? null
-                                  : _rescan,
-                              icon: const Icon(Icons.document_scanner_outlined),
-                              label: Text(context.l10n.textViewRescan),
-                            ),
-                          ),
-                        if (editable || correct)
-                          _correctToggle(
-                            correct,
-                            editable && review == null && !widget.rescanning,
-                          ),
-                      ],
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: editable && review == null
+                          ? _tools()
+                          : const SizedBox.shrink(),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 16),
+                  Expanded(
+                    flex: 3,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        spacing: 8,
+                        children: [
+                          FilledButton.tonalIcon(
+                            onPressed: _copy,
+                            icon: const Icon(Icons.copy),
+                            label: Text(context.l10n.textViewCopy),
+                          ),
+                          // Fix lines the strings up for everyone; with Premium, it
+                          // also checks the tab against the song online.
+                          if (editable && widget.showFix)
+                            FilledButton.tonalIcon(
+                              onPressed: _busy || review != null
+                                  ? null
+                                  : _autocorrect,
+                              icon: const Icon(Icons.auto_fix_high),
+                              label: Text(context.l10n.textViewFix),
+                            ),
+                          if (editable && widget.onRescan != null)
+                            Tooltip(
+                              message: context.l10n.textViewRescanTip,
+                              child: FilledButton.tonalIcon(
+                                onPressed: _busy || review != null
+                                    ? null
+                                    : _rescan,
+                                icon: const Icon(
+                                  Icons.document_scanner_outlined,
+                                ),
+                                label: Text(context.l10n.textViewRescan),
+                              ),
+                            ),
+                          if (editable || correct)
+                            _correctToggle(
+                              correct,
+                              editable && review == null && !widget.rescanning,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

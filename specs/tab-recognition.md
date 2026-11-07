@@ -314,6 +314,11 @@ while Fix's review shows, or on a capture shared read only)
   stay lined up. Enter still breaks the line.
 - The keyboard offers no suggestions or autocorrection, and dashes and
   quotes aren't made "smart".
+- The arrow keys move the cursor as in any editor, and pressing a tool
+  (or Copy, Rescan, Verified) keeps the keyboard focus, and the cursor,
+  in the text: the whole line of buttons is part of the text field's
+  tap region (`TextFieldTapRegion`), so on a computer, where a click
+  outside the field unfocuses it, the next keys still go to the text.
 
 **Following a PDF**: the play-along sidebar beside the text
 ([Cam](cam.md#playing-along-with-a-file)) lists the capture's PDFs under
