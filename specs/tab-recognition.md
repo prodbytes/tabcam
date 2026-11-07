@@ -251,11 +251,13 @@ brings its own. A read on
 the device says nothing of how sure it is: its text has none
 ([lib/recognition/tab_doubts.dart](../tabcam_app/lib/recognition/tab_doubts.dart)).
 
-Above the text, **one line of buttons**: the [editing tools](#editing-tools)
-on its left, and on its right three compact buttons of one kind (one more in a build
-that shows Fix), in this order (each side is scaled down on a screen too narrow for
-it, never wrapped; the right side has three fifths of the line, the
-tools two):
+Above the text, **the editing tools**, on a line of their own
+([editing tools](#editing-tools)). **In the app bar**, right of the
+title, three buttons of one kind (one more in a build that shows Fix):
+labelled compact buttons, or on a screen narrower than 600 px icons
+with their tooltips (Verified a check, filled and in the primary colour
+while on), and there the event screen's other buttons go in a menu
+([event screen](event-screen.md)). In this order:
 
 - **Copy**: the text, to the clipboard.
 - **Fix**, hidden for now (shown only in a build with `TABCAM_FIX=true`,
@@ -288,9 +290,13 @@ tools two):
   an event shared read only the mark is shown (when set) but can't be
   changed.
 
-<a id="editing-tools"></a>**Editing tools**, on the left of the same
-line, outlined so they read as buttons (scaled down if too wide; none
-while Fix's review shows, or on a capture shared read only)
+<a id="editing-tools"></a>**Editing tools**, on their own line above
+the text, outlined so they read as buttons (none while Fix's review
+shows, or on a capture shared read only). They're scaled down only if
+still too wide; on a screen narrower than 600 px they sit closer (4 px
+apart) and each one's tap area is its 40 px button, so all eight fit a
+phone at full size. The locked preview keeps Copy and Verified on this
+line, on its right, greyed under the Premium card
 ([lib/screens/tab_editing.dart](../tabcam_app/lib/screens/tab_editing.dart)):
 
 - **−** and **+**: the fret number under the cursor (or just before it),
@@ -330,7 +336,8 @@ while Fix's review shows, or on a capture shared read only)
   dashes or more, or a string's name and a bar (`B|-5|`, too short for
   three dashes).
 - **Overtype**, a toggle button (on by default, filled while on and
-  outlined while off; tap to switch to insert): typing replaces
+  outlined while off; tap to switch to insert; on a screen narrower than
+  600 px an icon alone, its tooltip saying which mode): typing replaces
   the characters after the cursor on its line instead of pushing them
   right, and backspace on a string line leaves a dash, so the columns
   stay lined up. Enter still breaks the line.

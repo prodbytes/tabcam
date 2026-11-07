@@ -47,6 +47,7 @@ class TabTextView extends StatefulWidget {
     this.rescanning = false,
     this.showFix = fixEnabled,
     this.sample,
+    this.actions,
   });
 
   /// `TABCAM_FIX=true`: the build shows Fix. Off by default while its
@@ -79,8 +80,40 @@ class TabTextView extends StatefulWidget {
   /// event has no text tab.
   final String? sample;
 
+  /// Where Copy, Fix, Rescan and Verified go: the event screen's app bar
+  /// builds them from it ([TabTextActions.build]), and the line above the
+  /// text has the editing tools alone. Null (the locked preview, tests):
+  /// they're on that line, on its right.
+  final TabTextActions? actions;
+
   @override
   State<TabTextView> createState() => _TabTextViewState();
+}
+
+/// The Text view's Copy, Fix, Rescan and Verified, for the event screen's
+/// app bar: the view shown with it ([TabTextView.actions]) builds them,
+/// and it notifies whenever they change (Verified toggled, Rescan or Fix
+/// working).
+class TabTextActions extends ChangeNotifier {
+  _TabTextViewState? _view;
+
+  /// The buttons, icons only when [compact] (a phone); none until the
+  /// view shows.
+  List<Widget> build(BuildContext context, {required bool compact}) =>
+      _view?._actions(context, compact: compact) ?? const [];
+
+  void _attach(_TabTextViewState? view) {
+    _view = view;
+    _changed();
+  }
+
+  /// Notified after the frame: the view changes while it builds, and the
+  /// app bar mustn't be marked to rebuild then.
+  void _changed() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (hasListeners) notifyListeners();
+    });
+  }
 }
 
 class _TabTextViewState extends State<TabTextView> {
@@ -113,6 +146,7 @@ class _TabTextViewState extends State<TabTextView> {
   @override
   void initState() {
     super.initState();
+    widget.actions?._attach(this);
     _known = _stored;
     _text.doubts = _doubts;
     _text.text = _known ?? '';
@@ -128,6 +162,7 @@ class _TabTextViewState extends State<TabTextView> {
   /// A read (or another device) changed the text: shown, if the user
   /// hasn't edited it here.
   void _onLibrary() {
+    widget.actions?._changed();
     _text.doubts = _doubts;
     final stored = _stored;
     if (stored == _known) return;
@@ -138,7 +173,27 @@ class _TabTextViewState extends State<TabTextView> {
   }
 
   @override
+  void didUpdateWidget(TabTextView old) {
+    super.didUpdateWidget(old);
+    if (old.actions != widget.actions) {
+      if (old.actions?._view == this) old.actions!._attach(null);
+      widget.actions?._attach(this);
+    } else {
+      // Rescan may have started or ended.
+      widget.actions?._changed();
+    }
+  }
+
+  // Every change here shows in the app bar's buttons too.
+  @override
+  void setState(VoidCallback fn) {
+    super.setState(fn);
+    widget.actions?._changed();
+  }
+
+  @override
   void dispose() {
+    if (widget.actions?._view == this) widget.actions!._attach(null);
     widget.library.removeListener(_onLibrary);
     widget.ocr?.removeListener(_onPremium);
     _saveSoon?.cancel();
@@ -372,92 +427,54 @@ class _TabTextViewState extends State<TabTextView> {
   @override
   Widget build(BuildContext context) {
     final event = widget.library.byId(widget.eventId);
-    final correct = event?.tabTextCorrect ?? false;
     final editable = !(event?.readOnly ?? false);
     final review = _review;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // One line: the editing tools on the left, the other buttons on
-        // the right, each side scaled down on a screen too narrow. Part of
-        // the text field's tap region: a press on a button keeps the
-        // keyboard focus, and the cursor, in the text (on a computer a tap
-        // outside the field would unfocus it, and the keys would go
-        // nowhere until the text is clicked again).
+        // The editing tools; Copy, Fix, Rescan and Verified on their
+        // right, or in the app bar ([TabTextView.actions]). Part of the
+        // text field's tap region: a press on a button keeps the keyboard
+        // focus, and the cursor, in the text (on a computer a tap outside
+        // the field would unfocus it, and the keys would go nowhere until
+        // the text is clicked again).
         TextFieldTapRegion(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Theme(
-              data: Theme.of(context).copyWith(
-                filledButtonTheme: FilledButtonThemeData(
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: editable && review == null
-                          ? _tools()
-                          : const SizedBox.shrink(),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    flex: 3,
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerRight,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        spacing: 8,
-                        children: [
-                          FilledButton.tonalIcon(
-                            onPressed: _copy,
-                            icon: const Icon(Icons.copy),
-                            label: Text(context.l10n.textViewCopy),
-                          ),
-                          // Fix lines the strings up for everyone; with Premium, it
-                          // also checks the tab against the song online.
-                          if (editable && widget.showFix)
-                            FilledButton.tonalIcon(
-                              onPressed: _busy || review != null
-                                  ? null
-                                  : _autocorrect,
-                              icon: const Icon(Icons.auto_fix_high),
-                              label: Text(context.l10n.textViewFix),
-                            ),
-                          if (editable && widget.onRescan != null)
-                            Tooltip(
-                              message: context.l10n.textViewRescanTip,
-                              child: FilledButton.tonalIcon(
-                                onPressed: _busy || review != null
-                                    ? null
-                                    : _rescan,
-                                icon: const Icon(
-                                  Icons.document_scanner_outlined,
-                                ),
-                                label: Text(context.l10n.textViewRescan),
-                              ),
-                            ),
-                          if (editable || correct)
-                            _correctToggle(
-                              correct,
-                              editable && review == null && !widget.rescanning,
-                            ),
-                        ],
+            child: widget.actions != null
+                ? FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: editable && review == null
+                        ? _tools()
+                        : const SizedBox.shrink(),
+                  )
+                : Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: editable && review == null
+                              ? _tools()
+                              : const SizedBox.shrink(),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        flex: 3,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: _actions(context, compact: false),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
           ),
         ),
         if (_busy) ...[
@@ -492,10 +509,108 @@ class _TabTextViewState extends State<TabTextView> {
     widget.onRescan!();
   }
 
+  /// Copy, Fix (when shown), Rescan (when there's something to read) and
+  /// Verified: labelled buttons, or icons with their tooltips when
+  /// [compact]. In the text field's tap region, so a press keeps the
+  /// cursor in the text.
+  List<Widget> _actions(BuildContext context, {required bool compact}) {
+    final l10n = context.l10n;
+    final event = widget.library.byId(widget.eventId);
+    final correct = event?.tabTextCorrect ?? false;
+    final editable = !(event?.readOnly ?? false);
+    final review = _review;
+    final idle = !_busy && review == null;
+    final buttons = <Widget>[
+      if (compact)
+        IconButton(
+          tooltip: l10n.textViewCopy,
+          onPressed: _copy,
+          icon: const Icon(Icons.copy),
+        )
+      else
+        FilledButton.tonalIcon(
+          onPressed: _copy,
+          icon: const Icon(Icons.copy),
+          label: Text(l10n.textViewCopy),
+        ),
+      // Fix lines the strings up for everyone; with Premium, it also
+      // checks the tab against the song online.
+      if (editable && widget.showFix)
+        compact
+            ? IconButton(
+                tooltip: l10n.textViewFix,
+                onPressed: idle ? _autocorrect : null,
+                icon: const Icon(Icons.auto_fix_high),
+              )
+            : FilledButton.tonalIcon(
+                onPressed: idle ? _autocorrect : null,
+                icon: const Icon(Icons.auto_fix_high),
+                label: Text(l10n.textViewFix),
+              ),
+      if (editable && widget.onRescan != null)
+        compact
+            ? IconButton(
+                tooltip: l10n.textViewRescanTip,
+                onPressed: idle ? _rescan : null,
+                icon: const Icon(Icons.document_scanner_outlined),
+              )
+            : Tooltip(
+                message: l10n.textViewRescanTip,
+                child: FilledButton.tonalIcon(
+                  onPressed: idle ? _rescan : null,
+                  icon: const Icon(Icons.document_scanner_outlined),
+                  label: Text(l10n.textViewRescan),
+                ),
+              ),
+      if (editable || correct)
+        _correctToggle(
+          correct,
+          editable && review == null && !widget.rescanning,
+          compact: compact,
+        ),
+    ];
+    return [
+      TextFieldTapRegion(
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            filledButtonTheme: FilledButtonThemeData(
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: compact ? 0 : 8,
+            children: buttons,
+          ),
+        ),
+      ),
+    ];
+  }
+
   /// Verified, a toggle shaped like Copy: tonal while off, filled while on.
-  Widget _correctToggle(bool correct, bool enabled) {
+  /// [compact]: a check icon, filled and in the primary colour while on.
+  Widget _correctToggle(bool correct, bool enabled, {bool compact = false}) {
     final onPressed = enabled ? _toggleCorrect : null;
     final label = Text(context.l10n.textViewCorrect);
+    if (compact) {
+      return Semantics(
+        toggled: correct,
+        child: IconButton(
+          key: const Key('text-verified'),
+          tooltip: correct
+              ? context.l10n.textViewMarkedCorrect
+              : context.l10n.textViewMarkCorrect,
+          isSelected: correct,
+          color: correct ? Theme.of(context).colorScheme.primary : null,
+          onPressed: onPressed,
+          icon: const Icon(Icons.check_circle_outline),
+          selectedIcon: const Icon(Icons.check_circle),
+        ),
+      );
+    }
     final button = correct
         ? FilledButton.icon(
             onPressed: onPressed,
@@ -523,73 +638,99 @@ class _TabTextViewState extends State<TabTextView> {
   Widget _tools() {
     final enabled = !_busy;
     final scheme = Theme.of(context).colorScheme;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton.outlined(
-          tooltip: context.l10n.textViewFretDown,
-          onPressed: enabled ? () => _bump(-1) : null,
-          icon: const Icon(Icons.remove),
-        ),
-        const SizedBox(width: 8),
-        IconButton.outlined(
-          tooltip: context.l10n.textViewFretUp,
-          onPressed: enabled ? () => _bump(1) : null,
-          icon: const Icon(Icons.add),
-        ),
-        const SizedBox(width: 8),
-        IconButton.outlined(
-          tooltip: context.l10n.textViewNoteUp,
-          onPressed: enabled ? () => _move(-1) : null,
-          icon: const Text('++'),
-        ),
-        const SizedBox(width: 8),
-        IconButton.outlined(
-          tooltip: context.l10n.textViewNoteDown,
-          onPressed: enabled ? () => _move(1) : null,
-          icon: const Text('−−'),
-        ),
-        const SizedBox(width: 8),
-        IconButton.outlined(
-          tooltip: context.l10n.textViewBar,
-          onPressed: enabled ? _bar : null,
-          icon: const Text('|'),
-        ),
-        const SizedBox(width: 8),
-        IconButton.outlined(
-          tooltip: context.l10n.textViewAlignEnds,
-          onPressed: enabled ? _alignEnds : null,
-          icon: const Text('||'),
-        ),
-        const SizedBox(width: 8),
-        IconButton.outlined(
-          tooltip: context.l10n.textViewNewStaff,
-          onPressed: enabled ? _newStaff : null,
-          icon: const Text('='),
-        ),
-        const SizedBox(width: 8),
-        Tooltip(
-          message: _overtype
-              ? context.l10n.textViewOvertypeOn
-              : context.l10n.textViewOvertypeOff,
-          child: Semantics(
-            toggled: _overtype,
-            child: OutlinedButton.icon(
-              onPressed: enabled
-                  ? () => setState(() => _overtype = !_overtype)
-                  : null,
-              style: _overtype
-                  ? OutlinedButton.styleFrom(
-                      backgroundColor: scheme.secondaryContainer,
-                      foregroundColor: scheme.onSecondaryContainer,
+    // On a phone, with the line to themselves, closer together and
+    // Overtype an icon (its tooltip says which mode), so all of them fit
+    // at their full size.
+    final phone = MediaQuery.sizeOf(context).width < 600;
+    final gap = SizedBox(width: phone ? 4 : 8);
+    final overtypeStyle = _overtype
+        ? OutlinedButton.styleFrom(
+            backgroundColor: scheme.secondaryContainer,
+            foregroundColor: scheme.onSecondaryContainer,
+          )
+        : null;
+    final overtypeIcon = Icon(
+      _overtype ? Icons.keyboard : Icons.keyboard_outlined,
+    );
+    void toggleOvertype() => setState(() => _overtype = !_overtype);
+    // On a phone each tool's tap area is its 40 px button, not 48: eight
+    // fit across the screen.
+    return Theme(
+      data: phone
+          ? Theme.of(
+              context,
+            ).copyWith(materialTapTargetSize: MaterialTapTargetSize.shrinkWrap)
+          : Theme.of(context),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton.outlined(
+            tooltip: context.l10n.textViewFretDown,
+            onPressed: enabled ? () => _bump(-1) : null,
+            icon: const Icon(Icons.remove),
+          ),
+          gap,
+          IconButton.outlined(
+            tooltip: context.l10n.textViewFretUp,
+            onPressed: enabled ? () => _bump(1) : null,
+            icon: const Icon(Icons.add),
+          ),
+          gap,
+          IconButton.outlined(
+            tooltip: context.l10n.textViewNoteUp,
+            onPressed: enabled ? () => _move(-1) : null,
+            icon: const Text('++'),
+          ),
+          gap,
+          IconButton.outlined(
+            tooltip: context.l10n.textViewNoteDown,
+            onPressed: enabled ? () => _move(1) : null,
+            icon: const Text('−−'),
+          ),
+          gap,
+          IconButton.outlined(
+            tooltip: context.l10n.textViewBar,
+            onPressed: enabled ? _bar : null,
+            icon: const Text('|'),
+          ),
+          gap,
+          IconButton.outlined(
+            tooltip: context.l10n.textViewAlignEnds,
+            onPressed: enabled ? _alignEnds : null,
+            icon: const Text('||'),
+          ),
+          gap,
+          IconButton.outlined(
+            tooltip: context.l10n.textViewNewStaff,
+            onPressed: enabled ? _newStaff : null,
+            icon: const Text('='),
+          ),
+          gap,
+          Tooltip(
+            message: _overtype
+                ? context.l10n.textViewOvertypeOn
+                : context.l10n.textViewOvertypeOff,
+            child: Semantics(
+              toggled: _overtype,
+              child: phone
+                  ? IconButton.outlined(
+                      key: const Key('text-overtype'),
+                      onPressed: enabled ? toggleOvertype : null,
+                      isSelected: _overtype,
+                      style: overtypeStyle,
+                      icon: overtypeIcon,
                     )
-                  : null,
-              icon: Icon(_overtype ? Icons.keyboard : Icons.keyboard_outlined),
-              label: Text(context.l10n.textViewOvertype),
+                  : OutlinedButton.icon(
+                      key: const Key('text-overtype'),
+                      onPressed: enabled ? toggleOvertype : null,
+                      style: overtypeStyle,
+                      icon: overtypeIcon,
+                      label: Text(context.l10n.textViewOvertype),
+                    ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

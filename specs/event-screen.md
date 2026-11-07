@@ -35,6 +35,12 @@ plays along.
   First of all of them, in every view (the locked previews too),
   **Dictionary** (a book icon) opens the chord and scale
   [dictionary](dictionary.md).
+  In the Text view, with its tab shown, the Text view's **Copy**,
+  **Rescan** and **Verified** (and Fix, in a build that shows it) come
+  first, right of the title ([tab recognition](tab-recognition.md#text-view)).
+  On a screen narrower than 600 px they're icons, and Dictionary, Play
+  along, Rename, Clone, Download all and Share go in a **More** menu (⋮)
+  after them, so the title keeps its room.
 - **Shared with the user**: a line under the app bar, "Shared by <email>
   · Can edit" or "· Can view and add". Shared to read, Rename, reordering,
   Rotate, Delete and editing the text tab are off for the owner's files

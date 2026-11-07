@@ -2037,3 +2037,18 @@ spec.
    `7(9)`, a bend too, the pitch in parentheses after the note (after
    `7b9 r7`). `(5)` on its own stays a ghost note. In English, Spanish and
    Portuguese. See [tab recognition](tab-recognition.md) (notation sheet).
+
+7. **Move the buttons to the top: on the top row, the back button,
+   the title and, to the right, Copy, Rescan and Verified, so the
+   character actions are on their own line, enough for mobile.** In the
+   Text view the event screen's app bar has the view's Copy, Rescan and
+   Verified (and Fix, when shown) right of the title, and the line above
+   the text has the editing tools alone. On a screen narrower than 600 px
+   those three are icons with tooltips, the app bar's other buttons
+   (Dictionary, Play along, Rename, Clone, Download all, Share) go in a
+   More menu, and the tools sit 4 px apart with Overtype an icon and each
+   tap area its 40 px button: on a 390 px phone every tool is at full
+   size (each was about 10 px wide, scaled down). This reverses the
+   earlier choice of Copy above the text and not in the app bar. See
+   [tab recognition](tab-recognition.md#text-view) and the
+   [event screen](event-screen.md).

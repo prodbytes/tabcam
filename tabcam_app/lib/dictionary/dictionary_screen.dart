@@ -26,16 +26,19 @@ class DictionaryButton extends StatelessWidget {
     tooltip: context.l10n.dictionary,
     icon: const Icon(Icons.menu_book_outlined),
     onPressed: () async {
-      await Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          fullscreenDialog: true,
-          builder: (_) => const DictionaryScreen(),
-        ),
-      );
+      await openDictionary(context);
       onClosed?.call();
     },
   );
 }
+
+/// Opens [DictionaryScreen] over the screen; done when it's left.
+Future<void> openDictionary(BuildContext context) => Navigator.of(context).push(
+  MaterialPageRoute<void>(
+    fullscreenDialog: true,
+    builder: (_) => const DictionaryScreen(),
+  ),
+);
 
 /// YouTube's search for [query].
 Uri youTubeSearch(String query) =>
