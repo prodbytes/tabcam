@@ -714,6 +714,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get camAlongSpeedNormal => 'Velocidad normal (1×)';
 
   @override
+  String get camAlongSlower => 'Más lento (5 % menos)';
+
+  @override
+  String get camAlongFaster => 'Más rápido (5 % más)';
+
+  @override
   String get camAlongStop => 'Detener';
 
   @override
@@ -1691,6 +1697,102 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get installOpenGuide => 'Abrir la guía en GitHub';
+
+  @override
+  String get dictionary => 'Diccionario';
+
+  @override
+  String get dictionaryHint => 'Un acorde, una escala o una canción';
+
+  @override
+  String get dictionaryIntro =>
+      'Escribe un acorde (C, Am7, F#m7b5, G/B) o una escala (A minor pentatonic, D dorian, C major scale) para verlo en la guitarra. Cualquier otra cosa se busca en YouTube.';
+
+  @override
+  String get dictionaryChord => 'Acorde';
+
+  @override
+  String get dictionaryScale => 'Escala';
+
+  @override
+  String get dictionaryNoVoicings =>
+      'No hay forma de tocarlo en cuatro trastes.';
+
+  @override
+  String dictionaryYouTube(String query) {
+    return 'No es un acorde ni una escala. Buscar “$query” en YouTube.';
+  }
+
+  @override
+  String get dictionarySearchYouTube => 'Buscar en YouTube';
+
+  @override
+  String dictionaryFret(int fret) {
+    return '$fretº';
+  }
+
+  @override
+  String get dictionaryScaleMajor => 'mayor';
+
+  @override
+  String get dictionaryScaleMinor => 'menor';
+
+  @override
+  String get dictionaryScaleHarmonicMinor => 'menor armónica';
+
+  @override
+  String get dictionaryScaleMelodicMinor => 'menor melódica';
+
+  @override
+  String get dictionaryScaleMajorPentatonic => 'pentatónica mayor';
+
+  @override
+  String get dictionaryScaleMinorPentatonic => 'pentatónica menor';
+
+  @override
+  String get dictionaryScaleBlues => 'blues';
+
+  @override
+  String get dictionaryScaleMajorBlues => 'blues mayor';
+
+  @override
+  String get dictionaryScaleDorian => 'dórica';
+
+  @override
+  String get dictionaryScalePhrygian => 'frigia';
+
+  @override
+  String get dictionaryScaleLydian => 'lidia';
+
+  @override
+  String get dictionaryScaleMixolydian => 'mixolidia';
+
+  @override
+  String get dictionaryScaleLocrian => 'locria';
+
+  @override
+  String get dictionaryScalePhrygianDominant => 'frigia dominante';
+
+  @override
+  String get dictionaryScaleLydianDominant => 'lidia dominante';
+
+  @override
+  String get dictionaryScaleHarmonicMajor => 'mayor armónica';
+
+  @override
+  String get dictionaryScaleDoubleHarmonic => 'doble armónica';
+
+  @override
+  String get dictionaryScaleWholeTone => 'de tonos enteros';
+
+  @override
+  String get dictionaryScaleDiminished => 'disminuida';
+
+  @override
+  String get dictionaryScaleDominantDiminished => 'disminuida dominante';
+
+  @override
+  String get dictionaryScaleChromatic => 'cromática';
 
   @override
   String get videoEditTool => 'Editar';

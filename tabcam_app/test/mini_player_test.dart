@@ -409,6 +409,8 @@ void main() {
     expect(platform.playing, hasLength(1));
 
     // The image, in a pane on the left, zoomable; the recording plays on.
+    await tester.ensureVisible(image);
+    await tester.pump();
     await tester.tap(image);
     await _frames(tester);
     expect(pane, findsOneWidget);
@@ -421,6 +423,8 @@ void main() {
     expect(platform.playing, hasLength(1));
 
     // The PDF takes its place; tapped again, the pane goes.
+    await tester.ensureVisible(pdf);
+    await tester.pump();
     await tester.tap(pdf);
     await _frames(tester);
     expect(find.byKey(const Key('cam-image-k1')), findsNothing);

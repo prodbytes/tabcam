@@ -482,7 +482,8 @@ class _BackingFrame extends StatelessWidget {
       final event = track.library.byId(eventId);
       final media = track.media;
       final link = track.link;
-      // As wide as the sidebar, at most a third of the screen's height.
+      // As wide as the sidebar, at most a third of the screen's height
+      // (taller, the sidebar's column runs out of room on a short screen).
       final maxHeight = MediaQuery.sizeOf(context).height / 3;
       final Widget? content = switch ((media, link)) {
         _ when track.error != null => Padding(
@@ -507,14 +508,17 @@ class _BackingFrame extends StatelessWidget {
         ),
         _ => null,
       };
-      const compact = VisualDensity(horizontal: -4, vertical: -4);
+      const compact = VisualDensity(horizontal: -2, vertical: -2);
       return ColoredBox(
         key: const Key('cam-along-frame'),
         color: Colors.black,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (content != null) Center(child: content),
+            // The video gives way first where the frame is short of room
+            // (the sidebar caps the frame's height).
+            if (content != null)
+              Flexible(child: Center(heightFactor: 1, child: content)),
             if (media != null)
               VideoProgressIndicator(
                 media,
@@ -547,7 +551,7 @@ class _BackingFrame extends StatelessWidget {
               ),
             ),
             SizedBox(
-              height: 40,
+              height: 44,
               child: track.loading
                   ? const Center(
                       child: SizedBox.square(
@@ -665,9 +669,13 @@ class PlayAlongSidebar extends StatelessWidget {
   final VoidCallback onSectionClear;
   final void Function(double speed) onSpeed;
 
-  /// Its width on a screen [screen] wide: 44% of it, from 132 to 310 px
-  /// (a bit over a third of a phone held upright).
-  static double widthFor(double screen) => (screen * 0.44).clamp(132.0, 310.0);
+  /// Its width on a screen [screen] wide: half of it, from 160 to 360 px.
+  static double widthFor(double screen) => (screen * 0.5).clamp(160.0, 360.0);
+
+  /// What the list keeps of the sidebar's height, at least (two of its
+  /// rows): the frame shrinks its video rather than take it (a short
+  /// screen).
+  static const listRoom = 96.0;
 
   @override
   Widget build(BuildContext context) {
@@ -680,20 +688,39 @@ class PlayAlongSidebar extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _BackingFrame(
-              eventId: eventId,
-              track: track,
-              linkFrame: linkFrame,
-              onToggle: onToggle,
-              onStop: onStop,
-              onSkip: onSkip,
-              onRepeat: onRepeat,
-              onSection: onSection,
-              onSectionHere: onSectionHere,
-              onSectionClear: onSectionClear,
-              onSpeed: onSpeed,
+            // The footer takes its height first; the frame gets what's
+            // left over the list's [listRoom].
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, box) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: (box.maxHeight - listRoom).clamp(
+                          0.0,
+                          double.infinity,
+                        ),
+                      ),
+                      child: _BackingFrame(
+                        eventId: eventId,
+                        track: track,
+                        linkFrame: linkFrame,
+                        onToggle: onToggle,
+                        onStop: onStop,
+                        onSkip: onSkip,
+                        onRepeat: onRepeat,
+                        onSection: onSection,
+                        onSectionHere: onSectionHere,
+                        onSectionClear: onSectionClear,
+                        onSpeed: onSpeed,
+                      ),
+                    ),
+                    Expanded(child: _list(context, l10n)),
+                  ],
+                ),
+              ),
             ),
-            Expanded(child: _list(context, l10n)),
             ?footer,
           ],
         ),
@@ -880,7 +907,7 @@ class _SectionBar extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: range == null ? Colors.white54 : primary,
-                  fontSize: 11,
+                  fontSize: 12,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
@@ -946,20 +973,13 @@ class _SpeedBar extends StatelessWidget {
       padding: const EdgeInsets.only(left: 4),
       child: Row(
         children: [
-          Tooltip(
-            message: normal ? l10n.camAlongSpeed : l10n.camAlongSpeedNormal,
-            child: InkWell(
-              key: const Key('cam-along-speed-icon'),
-              onTap: normal ? null : () => onSpeed(1),
-              child: Padding(
-                padding: const EdgeInsets.all(4),
-                child: Icon(
-                  Icons.slow_motion_video,
-                  color: normal ? Colors.white70 : primary,
-                  size: 16,
-                ),
-              ),
-            ),
+          _button(
+            key: const Key('cam-along-speed-slower'),
+            tooltip: l10n.camAlongSlower,
+            icon: Icons.remove,
+            onTap: speed > BackingTrack.minSpeed + step / 2
+                ? () => onSpeed(_rounded(speed - step))
+                : null,
           ),
           Expanded(
             child: SliderTheme(
@@ -990,27 +1010,69 @@ class _SpeedBar extends StatelessWidget {
               ),
             ),
           ),
+          _button(
+            key: const Key('cam-along-speed-faster'),
+            tooltip: l10n.camAlongFaster,
+            icon: Icons.add,
+            onTap: speed < BackingTrack.maxSpeed - step / 2
+                ? () => onSpeed(_rounded(speed + step))
+                : null,
+          ),
           Tooltip(
             message: l10n.camAlongSpeedNormal,
             child: InkWell(
               key: const Key('cam-along-speed-label'),
               onTap: normal ? null : () => onSpeed(1),
               child: SizedBox(
-                width: 44,
+                width: 42,
                 child: Text(
                   label(speed),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: normal ? Colors.white54 : primary,
-                    fontSize: 11,
+                    fontSize: 12,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ),
             ),
           ),
+          _button(
+            key: const Key('cam-along-speed-reset'),
+            tooltip: l10n.camAlongSpeedNormal,
+            icon: Icons.restart_alt,
+            color: normal ? Colors.white38 : primary,
+            onTap: normal ? null : () => onSpeed(1),
+          ),
         ],
       ),
     );
   }
+
+  /// To the step, so −/+ land on the slider's stops (0.75, not 0.7499).
+  static double _rounded(double speed) => (speed / step).round() * step;
+
+  /// A small button of the row: −, + and reset; greyed out with no
+  /// [onTap] (at the slider's end, or at 1× already).
+  static Widget _button({
+    required Key key,
+    required String tooltip,
+    required IconData icon,
+    required VoidCallback? onTap,
+    Color color = Colors.white70,
+  }) => Tooltip(
+    message: tooltip,
+    child: InkWell(
+      key: key,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: Icon(
+          icon,
+          color: onTap == null ? Colors.white24 : color,
+          size: 18,
+        ),
+      ),
+    ),
+  );
 }

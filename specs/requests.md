@@ -1955,7 +1955,37 @@ spec.
 
 ## 2026-11-07
 
-1. **When a recording is opened as a video, let the user make some
+1. **In the mini player, add buttons to slow down, speed up and reset
+   the speed beside the speed control; make the overall mini player a
+   little larger.** The speed row of the play-along player is now
+   **Slower** (−), the slider, **Faster** (+), the speed (`0.75×`, a tap
+   resets it, as before) and **Normal speed** (↺): − and + move one 5 %
+   step and grey out at the slider's ends; ↺ lights up once the speed
+   isn't 1× and puts it back. The player is a little larger: the sidebar
+   is half the screen's width, from 160 to 360 px (was 44%, 132 to
+   310; the frame's height cap stays a third of the screen, more runs
+   the sidebar out of room on a short screen), its buttons roomier and
+   its small text 12 px. In English, Spanish and
+   Portuguese. See [Cam](cam.md#playing-along-with-a-file).
+2. **Add a button at the top of every file viewer, and of Cam and all
+   the views: a little dictionary where the user searches for anything.
+   For now a chord dictionary (a chord shows the chord, as jguitar's)
+   and the same for scales (as guitarscale.org's); anything that's
+   neither is probably a song, so search YouTube instead.** A
+   **Dictionary** button (a book icon), first in the app bar of the
+   event screen in every view, of the file screen and of Cam (locked
+   previews and captures opened by link included), opens a search
+   screen. A chord typed (`C`, `Am7`, `F#m7b5`, `G/B`, `Cmaj9`, `Do
+   menor`…) shows its notes, degrees and voicings as chord diagrams, the
+   voicings found on the device (every shape within four frets a hand
+   can hold, root in the bass, the best eight up the neck); a scale (`A
+   minor pentatonic`, `D dorian`, `C major scale`…) shows its notes and
+   the fretboard to the twelfth fret with them on it; anything else
+   offers, and Enter opens, YouTube's search for it. Nothing is fetched
+   but that. In English, Spanish and Portuguese, with the note and type
+   names of all three. See [dictionary](dictionary.md),
+   [event screen](event-screen.md) and [Cam](cam.md).
+3. **When a recording is opened as a video, let the user make some
    basic edits: trim the beginning and end; remove the audio or add the
    audio as a new track; adjust the new track to fit the video.** A
    video's file screen has **Edit** (scissors, before Rename), opening

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../capture/play_along_sidebar.dart';
+import '../dictionary/dictionary_screen.dart';
 import '../l10n/language.dart';
 import 'rename_dialog.dart';
 import '../library/library.dart';
@@ -331,6 +332,7 @@ class _FileScreenState extends State<FileScreen> {
         return Scaffold(
           appBar: AppBar(
             actions: [
+              const DictionaryButton(),
               if (sidebar) PlayAlongButton(along: _alongFor(event, page)),
             ],
             // Tapping the name renames the file (when the user can edit).

@@ -952,7 +952,15 @@
   },
   "camAlongSpeedNormal": "Normal speed (1×)",
   "@camAlongSpeedNormal": {
-    "description": "Cam: the speed shown beside the slider (0.75×); tapping it goes back to normal speed."
+    "description": "Cam: the speed shown beside the slider (0.75×) and the reset button after it; tapping either goes back to normal speed."
+  },
+  "camAlongSlower": "Slower (5 % less)",
+  "@camAlongSlower": {
+    "description": "Cam: the − button left of the speed slider"
+  },
+  "camAlongFaster": "Faster (5 % more)",
+  "@camAlongFaster": {
+    "description": "Cam: the + button right of the speed slider"
   },
   "camAlongStop": "Stop",
   "@camAlongStop": {
@@ -2246,6 +2254,136 @@
   "installOpenGuide": "Open the guide on GitHub",
   "@installOpenGuide": {
     "description": "iPhone install steps: button that opens the install guide on GitHub"
+  },
+  "dictionary": "Dictionary",
+  "@dictionary": {
+    "description": "App bar: the chord and scale dictionary button"
+  },
+  "dictionaryHint": "A chord, a scale or a song",
+  "@dictionaryHint": {
+    "description": "Dictionary: the search field's hint"
+  },
+  "dictionaryIntro": "Type a chord (C, Am7, F#m7b5, G/B) or a scale (A minor pentatonic, D dorian, C major scale) to see it on the guitar. Anything else is searched on YouTube.",
+  "@dictionaryIntro": {
+    "description": "Dictionary: what it does, under the empty field"
+  },
+  "dictionaryChord": "Chord",
+  "@dictionaryChord": {
+    "description": "Dictionary: a chord result's kind"
+  },
+  "dictionaryScale": "Scale",
+  "@dictionaryScale": {
+    "description": "Dictionary: a scale result's kind"
+  },
+  "dictionaryNoVoicings": "No way to play it within four frets.",
+  "@dictionaryNoVoicings": {
+    "description": "Dictionary: a chord with no voicing found"
+  },
+  "dictionaryYouTube": "Not a chord or a scale. Search YouTube for “{query}”.",
+  "@dictionaryYouTube": {
+    "description": "Dictionary: the query is neither",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "dictionarySearchYouTube": "Search YouTube",
+  "@dictionarySearchYouTube": {
+    "description": "Dictionary: the button that opens YouTube's search"
+  },
+  "dictionaryFret": "{fret}fr",
+  "@dictionaryFret": {
+    "description": "Dictionary: the fret a chord diagram starts at",
+    "placeholders": {
+      "fret": {
+        "type": "int"
+      }
+    }
+  },
+  "dictionaryScaleMajor": "major",
+  "@dictionaryScaleMajor": {
+    "description": "Scale type"
+  },
+  "dictionaryScaleMinor": "minor",
+  "@dictionaryScaleMinor": {
+    "description": "Scale type"
+  },
+  "dictionaryScaleHarmonicMinor": "harmonic minor",
+  "@dictionaryScaleHarmonicMinor": {
+    "description": "Scale type"
+  },
+  "dictionaryScaleMelodicMinor": "melodic minor",
+  "@dictionaryScaleMelodicMinor": {
+    "description": "Scale type"
+  },
+  "dictionaryScaleMajorPentatonic": "major pentatonic",
+  "@dictionaryScaleMajorPentatonic": {
+    "description": "Scale type"
+  },
+  "dictionaryScaleMinorPentatonic": "minor pentatonic",
+  "@dictionaryScaleMinorPentatonic": {
+    "description": "Scale type"
+  },
+  "dictionaryScaleBlues": "blues",
+  "@dictionaryScaleBlues": {
+    "description": "Scale type"
+  },
+  "dictionaryScaleMajorBlues": "major blues",
+  "@dictionaryScaleMajorBlues": {
+    "description": "Scale type"
+  },
+  "dictionaryScaleDorian": "dorian",
+  "@dictionaryScaleDorian": {
+    "description": "Scale type"
+  },
+  "dictionaryScalePhrygian": "phrygian",
+  "@dictionaryScalePhrygian": {
+    "description": "Scale type"
+  },
+  "dictionaryScaleLydian": "lydian",
+  "@dictionaryScaleLydian": {
+    "description": "Scale type"
+  },
+  "dictionaryScaleMixolydian": "mixolydian",
+  "@dictionaryScaleMixolydian": {
+    "description": "Scale type"
+  },
+  "dictionaryScaleLocrian": "locrian",
+  "@dictionaryScaleLocrian": {
+    "description": "Scale type"
+  },
+  "dictionaryScalePhrygianDominant": "phrygian dominant",
+  "@dictionaryScalePhrygianDominant": {
+    "description": "Scale type"
+  },
+  "dictionaryScaleLydianDominant": "lydian dominant",
+  "@dictionaryScaleLydianDominant": {
+    "description": "Scale type"
+  },
+  "dictionaryScaleHarmonicMajor": "harmonic major",
+  "@dictionaryScaleHarmonicMajor": {
+    "description": "Scale type"
+  },
+  "dictionaryScaleDoubleHarmonic": "double harmonic",
+  "@dictionaryScaleDoubleHarmonic": {
+    "description": "Scale type"
+  },
+  "dictionaryScaleWholeTone": "whole tone",
+  "@dictionaryScaleWholeTone": {
+    "description": "Scale type"
+  },
+  "dictionaryScaleDiminished": "diminished",
+  "@dictionaryScaleDiminished": {
+    "description": "Scale type"
+  },
+  "dictionaryScaleDominantDiminished": "dominant diminished",
+  "@dictionaryScaleDominantDiminished": {
+    "description": "Scale type"
+  },
+  "dictionaryScaleChromatic": "chromatic",
+  "@dictionaryScaleChromatic": {
+    "description": "Scale type"
   },
   "videoEditTool": "Edit",
   "@videoEditTool": {

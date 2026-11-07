@@ -10,6 +10,7 @@ import '../capture/media.dart';
 import '../capture/page_source.dart';
 import '../capture/play_along_screen.dart';
 import '../capture/play_along_sidebar.dart';
+import '../dictionary/dictionary_screen.dart';
 import '../export/capture_link.dart';
 import '../export/download.dart';
 import '../import/tab_page_import.dart';
@@ -1006,6 +1007,7 @@ class _EventScreenState extends State<EventScreen> {
               ),
             ),
             actions: [
+              const DictionaryButton(),
               if (text && !locked) PlayAlongButton(along: _along),
               if (editable)
                 IconButton(

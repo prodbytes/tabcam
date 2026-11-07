@@ -12,7 +12,10 @@ its **Not now** leaving. With Premium it opens the camera view
 
 - **The camera** fills the screen, the **front** one first (it faces the
   player); **Flip camera** in the app bar moves to the next one (not
-  while recording). The app bar has the capture's title. Without a
+  while recording). The app bar has the capture's title, and first of
+  its buttons **Dictionary** (a book icon, in the preview too), which
+  opens the chord and scale [dictionary](dictionary.md) over Cam; back
+  from it, the keys move the tab again. Without a
   camera, or one that isn't allowed, the view says so.
 - **The tab**, along the bottom, one **neckline** at a time: a staff
   (a run of string lines) with the lines right above it, such as chord
@@ -125,7 +128,7 @@ its **Not now** leaving. With Premium it opens the camera view
 <a id="playing-along-with-a-file"></a>**Playing along with a file**:
 when the capture has recordings, videos or links (or, in Cam, PDFs to
 [follow](#following-a-pdf)), Cam has a sidebar on
-the right (44% of the screen's width, from 132 to 310 px), open by
+the right (half of the screen's width, from 160 to 360 px), open by
 default: it opens by itself the first time the capture has one, when Cam
 opens or when one arrives later (a sync, the first take), and once the
 user hides it, it stays hidden. The same sidebar is beside the
@@ -180,7 +183,8 @@ pinch-zoomable, as the file screen shows it; its tooltips say **Show
 the page beside it** / **Hide the page**).
 
 - **The frame**, as wide as the sidebar and at most a third of the
-  screen's height: a video (or a link's page, 16:9) above a progress bar
+  screen's height (on a short screen the video shrinks first, so the
+  list under it keeps at least two rows): a video (or a link's page, 16:9) above a progress bar
   to scrub; a recording only the progress bar; under them its icon and
   name in small type, then **«** (10 seconds back, not before the
   start), **Play** / **Pause**, **Stop** (pauses it, back at its start),
@@ -208,10 +212,12 @@ the page beside it** / **Hide the page**).
   ([`backing_track.dart`](../tabcam_app/lib/capture/backing_track.dart)).
   The one in the frame is marked in the list.
 - **The speed** (a recording, video or link playing in the app, not a
-  page in a frame): under the section, a slider from 0.25× to 1.5× in
-  steps of 5 %, and the speed beside it (`0.75×`, in the primary colour
-  once changed; a tap on it, or on the speed icon left of the slider,
-  in the primary colour too once changed, goes back to 1×). The pitch stays, so a part
+  page in a frame): under the section, **Slower** (−) and **Faster**
+  (+) either side of a slider from 0.25× to 1.5× in steps of 5 % (each
+  button one step, greyed out at the ends), the speed after them
+  (`0.75×`, in the primary colour once changed; a tap on it goes back to
+  1×) and **Normal speed** (↺, lit once changed), which goes back to 1×
+  too. The pitch stays, so a part
   can be learnt slowly (the players keep the pitch: ExoPlayer, AVPlayer
   and the browsers' `playbackRate`). The speed is kept for the next file
   chosen while the screen is open; a section plays at it too.
