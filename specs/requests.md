@@ -2000,3 +2000,17 @@ spec.
    name. In English, Spanish and Portuguese. See
    [video edit](video-edit.md), the [file screen](event-screen.md#file-screen)
    and [platforms](platforms.md).
+
+4. **For some reason, the arrow keys are not working on the text
+   editor. Make sure that the arrow keys move the cursor and the text
+   editor works as a normal text editor.** The arrow keys do move the
+   cursor, in every browser and on the phones; what went wrong was the
+   editing tools: on a computer, a tap outside the text field unfocuses
+   it, so pressing −, +, ++, −− or Overtype (or Copy, Rescan, Verified)
+   took the keyboard focus off the text, and the arrow keys and typing
+   went nowhere until the text was clicked again. The whole line of
+   buttons is now part of the text field's tap region
+   (`TextFieldTapRegion`): a press keeps the focus and the cursor in the
+   text, and the next keys go to it. Seen in Chrome, Safari's engine and
+   Firefox; a widget test presses the tools with a mouse and checks the
+   focus and the cursor. See [tab recognition](tab-recognition.md#editing-tools).
