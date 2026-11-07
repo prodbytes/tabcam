@@ -442,13 +442,9 @@ class _TabTextViewState extends State<TabTextView> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: widget.actions != null
-                ? FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: editable && review == null
-                        ? _tools()
-                        : const SizedBox.shrink(),
-                  )
+                ? (editable && review == null
+                      ? _tools(wrap: true)
+                      : const SizedBox.shrink())
                 : Row(
                     children: [
                       Expanded(
@@ -635,14 +631,25 @@ class _TabTextViewState extends State<TabTextView> {
   /// note up or down a string, | adding a bar line across the staff, ||
   /// ending every string together, = adding an empty six-string staff, and
   /// Overtype, a toggle (filled while on).
-  Widget _tools() {
+  /// [children] in a row [gap] apart; when [wrap], onto more lines
+  /// rather than past the edge (the tools at their full size, the play-along
+  /// sidebar beside them on a phone).
+  static Widget _toolLine({
+    required bool wrap,
+    required double gap,
+    required List<Widget> children,
+  }) => wrap
+      ? Wrap(spacing: gap, runSpacing: 4, children: children)
+      : Row(mainAxisSize: MainAxisSize.min, spacing: gap, children: children);
+
+  Widget _tools({bool wrap = false}) {
     final enabled = !_busy;
     final scheme = Theme.of(context).colorScheme;
     // On a phone, with the line to themselves, closer together and
     // Overtype an icon (its tooltip says which mode), so all of them fit
     // at their full size.
     final phone = MediaQuery.sizeOf(context).width < 600;
-    final gap = SizedBox(width: phone ? 4 : 8);
+    final gap = phone ? 4.0 : 8.0;
     final overtypeStyle = _overtype
         ? OutlinedButton.styleFrom(
             backgroundColor: scheme.secondaryContainer,
@@ -661,51 +668,45 @@ class _TabTextViewState extends State<TabTextView> {
               context,
             ).copyWith(materialTapTargetSize: MaterialTapTargetSize.shrinkWrap)
           : Theme.of(context),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: _toolLine(
+        wrap: wrap,
+        gap: gap,
         children: [
           IconButton.outlined(
             tooltip: context.l10n.textViewFretDown,
             onPressed: enabled ? () => _bump(-1) : null,
             icon: const Icon(Icons.remove),
           ),
-          gap,
           IconButton.outlined(
             tooltip: context.l10n.textViewFretUp,
             onPressed: enabled ? () => _bump(1) : null,
             icon: const Icon(Icons.add),
           ),
-          gap,
           IconButton.outlined(
             tooltip: context.l10n.textViewNoteUp,
             onPressed: enabled ? () => _move(-1) : null,
             icon: const Text('++'),
           ),
-          gap,
           IconButton.outlined(
             tooltip: context.l10n.textViewNoteDown,
             onPressed: enabled ? () => _move(1) : null,
             icon: const Text('−−'),
           ),
-          gap,
           IconButton.outlined(
             tooltip: context.l10n.textViewBar,
             onPressed: enabled ? _bar : null,
             icon: const Text('|'),
           ),
-          gap,
           IconButton.outlined(
             tooltip: context.l10n.textViewAlignEnds,
             onPressed: enabled ? _alignEnds : null,
             icon: const Text('||'),
           ),
-          gap,
           IconButton.outlined(
             tooltip: context.l10n.textViewNewStaff,
             onPressed: enabled ? _newStaff : null,
             icon: const Text('='),
           ),
-          gap,
           Tooltip(
             message: _overtype
                 ? context.l10n.textViewOvertypeOn

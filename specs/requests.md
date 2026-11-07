@@ -2047,8 +2047,10 @@ spec.
    those three are icons with tooltips, the app bar's other buttons
    (Dictionary, Play along, Rename, Clone, Download all, Share) go in a
    More menu, and the tools sit 4 px apart with Overtype an icon and each
-   tap area its 40 px button: on a 390 px phone every tool is at full
-   size (each was about 10 px wide, scaled down). This reverses the
+   tap area its 40 px button. The tools never shrink now: on a 390 px
+   phone they fit one line, and beside the play-along sidebar they wrap
+   on to more lines at full size (each was about 10 px wide on a phone,
+   and 18 px beside the sidebar, scaled down). This reverses the
    earlier choice of Copy above the text and not in the app bar. See
    [tab recognition](tab-recognition.md#text-view) and the
    [event screen](event-screen.md).

@@ -292,11 +292,14 @@ while on), and there the event screen's other buttons go in a menu
 
 <a id="editing-tools"></a>**Editing tools**, on their own line above
 the text, outlined so they read as buttons (none while Fix's review
-shows, or on a capture shared read only). They're scaled down only if
-still too wide; on a screen narrower than 600 px they sit closer (4 px
-apart) and each one's tap area is its 40 px button, so all eight fit a
-phone at full size. The locked preview keeps Copy and Verified on this
-line, on its right, greyed under the Premium card
+shows, or on a capture shared read only). They keep their full size:
+where the line is too narrow for them (a phone with the play-along
+sidebar open beside the text) they go on to a second line rather than
+shrink. On a screen narrower than 600 px they sit closer (4 px apart)
+and each one's tap area is its 40 px button, so on a 390 px phone with
+the sidebar closed all eight fit on one line. The locked preview keeps
+Copy and Verified on this line, on its right, scaled down and greyed
+under the Premium card
 ([lib/screens/tab_editing.dart](../tabcam_app/lib/screens/tab_editing.dart)):
 
 - **−** and **+**: the fret number under the cursor (or just before it),
