@@ -129,4 +129,132 @@ void main() {
       expect(moveNote(_at('e|--5--|', 4), 1).failure, MoveNoteFailure.noRoom);
     });
   });
+
+  group('| (bar line)', () {
+    const staff = 'Am\ne|--3--5--|\nB|-5------|\nG|---------|';
+
+    test('a | on every string of the staff, at the cursor\'s column', () {
+      // The cursor on the first string, column 6 (after "e|--3-").
+      final barred = insertBar(_at(staff, 3 + 6))!;
+      expect(barred.text, 'Am\ne|--3-|-5--|\nB|-5--|----|\nG|----|-----|');
+      // Just after the new bar, on the cursor's line.
+      expect(barred.selection.baseOffset, 3 + 7);
+    });
+
+    test('from any string of the staff, other lines untouched', () {
+      final fromLast = insertBar(_at(staff, 3 + 12 + 12 + 6))!;
+      expect(fromLast.text, insertBar(_at(staff, 3 + 6))!.text);
+      expect(fromLast.text.split('\n').first, 'Am');
+    });
+
+    test('a short string is lengthened with dashes to the column', () {
+      expect(
+        insertBar(_at('e|--3--5--|\nB|-5', 7))!.text,
+        'e|--3--|5--|\nB|-5---|',
+      );
+    });
+
+    test('only the cursor\'s staff', () {
+      const two = 'e|--3--|\nB|--5--|\n\ne|--7--|\nB|--8--|';
+      expect(
+        insertBar(_at(two, 3))!.text,
+        'e|-|-3--|\nB|-|-5--|\n\ne|--7--|\nB|--8--|',
+      );
+    });
+
+    test('a string too short for three dashes is in the staff', () {
+      expect(
+        insertBar(_at('e|--3--5--|\nB|-5|', 7))!.text,
+        'e|--3--|5--|\nB|-5---|',
+      );
+    });
+
+    test('nothing off the strings', () {
+      expect(insertBar(_at(staff, 1)), isNull);
+      expect(insertBar(_at('la la la', 2)), isNull);
+    });
+  });
+
+  group('|| (line up the ends)', () {
+    test('every string padded to the longest, before its closing bar', () {
+      const ragged = 'e|--3--5--7--|\nB|-5---|\nG|---------';
+      expect(
+        alignEnds(_at(ragged, 0))!.text,
+        'e|--3--5--7--|\nB|-5---------|\nG|-----------|',
+      );
+    });
+
+    test('a double closing bar is every string\'s', () {
+      expect(
+        alignEnds(_at('e|--3--||\nB|-5-|', 0))!.text,
+        'e|--3--||\nB|-5---||',
+      );
+    });
+
+    test('every staff, other lines and trailing spaces', () {
+      const two = 'Am\ne|--3--|  \nB|-5|\nla la\n\ne|-7|\nB|--8--|';
+      expect(
+        alignEnds(_at(two, 0))!.text,
+        'Am\ne|--3--|\nB|-5---|\nla la\n\ne|-7---|\nB|--8--|',
+      );
+    });
+
+    test('the cursor stays in its line, at the end when it was there', () {
+      const ragged = 'e|--3--5--|\nB|-5-|';
+      // At the end of the short string.
+      final atEnd = alignEnds(_at(ragged, ragged.length))!;
+      expect(atEnd.selection.baseOffset, atEnd.text.length);
+      // On its 5: it stays on it.
+      final onNote = alignEnds(_at(ragged, 12 + 3))!;
+      expect(onNote.text[onNote.selection.baseOffset], '5');
+    });
+
+    test('already lined up: the same text; no staff: null', () {
+      const even = 'e|--3--|\nB|-5---|';
+      expect(alignEnds(_at(even, 0))!.text, even);
+      expect(alignEnds(_at('e|--3--|', 0)), isNull);
+      expect(alignEnds(_at('just words', 0)), isNull);
+    });
+  });
+
+  group('= (empty staff)', () {
+    const strings = ['e', 'B', 'G', 'D', 'A', 'E'];
+
+    void expectStaff(List<String> lines) {
+      expect(lines, hasLength(6));
+      for (final (i, line) in lines.indexed) {
+        expect(line, hasLength(newStaffWidth));
+        expect(line, '${strings[i]}|${'-' * 77}|');
+      }
+    }
+
+    test('in an empty text, the staff alone, the cursor after e|', () {
+      final added = newStaff(_at('', 0));
+      expectStaff(added.text.split('\n'));
+      expect(added.selection.baseOffset, 2);
+    });
+
+    test('under the cursor\'s line, a blank line between', () {
+      const text = 'Intro\nla la';
+      final added = newStaff(_at(text, 2));
+      final lines = added.text.split('\n');
+      expect(lines.first, 'Intro');
+      expect(lines[1], '');
+      expectStaff(lines.sublist(2, 8));
+      expect(lines[8], '');
+      expect(lines.last, 'la la');
+      // On the new first string, after its bar.
+      expect(added.selection.baseOffset, 'Intro\n\n'.length + 2);
+    });
+
+    test('under the whole staff the cursor is on', () {
+      const text = 'e|--3--|\nB|-5---|\n\nla la';
+      final lines = newStaff(_at(text, 3)).text.split('\n');
+      expect(lines.sublist(0, 2), ['e|--3--|', 'B|-5---|']);
+      expect(lines[2], '');
+      expectStaff(lines.sublist(3, 9));
+      // The blank line that was there stays the only one.
+      expect(lines.sublist(9), ['', 'la la']);
+    });
+  });
 }

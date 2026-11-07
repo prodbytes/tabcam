@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/services.dart';
 
 import '../cloud/ocr_api.dart';
@@ -183,14 +185,7 @@ enum MoveNoteFailure {
   if (!isTabLine(lines[row])) return noNote;
   final column = start - offset;
   final width = end - start;
-  // The staff: the string lines next to each other around it.
-  var first = row, last = row;
-  while (first > 0 && isTabLine(lines[first - 1])) {
-    first--;
-  }
-  while (last < lines.length - 1 && isTabLine(lines[last + 1])) {
-    last++;
-  }
+  final (first, last) = _staffAround(lines, row);
   final strings = last - first + 1;
   bool free(String line) {
     for (var i = column; i < column + width; i++) {
@@ -221,4 +216,172 @@ enum MoveNoteFailure {
     );
   }
   return (moved: null, failure: MoveNoteFailure.noRoom);
+}
+
+/// A string's name and its first bar, as `e|`, `B |` or `F#|`.
+final RegExp _namedString = RegExp(r'^\s*[A-Ga-g][#b]?\s*\|');
+
+/// A string line, even a short one: dashes ([isTabLine]), or a string's
+/// name and a bar (`B|-5|`, too short for three dashes).
+bool _isStringLine(String line) =>
+    isTabLine(line) || _namedString.hasMatch(line);
+
+/// The staff around string line [row]: the first and last of the string
+/// lines ([_isStringLine]) next to each other there.
+(int, int) _staffAround(List<String> lines, int row) {
+  var first = row, last = row;
+  while (first > 0 && _isStringLine(lines[first - 1])) {
+    first--;
+  }
+  while (last < lines.length - 1 && _isStringLine(lines[last + 1])) {
+    last++;
+  }
+  return (first, last);
+}
+
+/// The line and column of [offset] in [lines] (the text split at its
+/// newlines).
+(int, int) _rowColumn(List<String> lines, int offset) {
+  var row = 0, start = 0;
+  while (row < lines.length - 1 && start + lines[row].length < offset) {
+    start += lines[row].length + 1;
+    row++;
+  }
+  return (row, offset - start);
+}
+
+/// The offset of [row]'s [column] in [lines].
+int _offsetOf(List<String> lines, int row, int column) {
+  var at = column;
+  for (var i = 0; i < row; i++) {
+    at += lines[i].length + 1;
+  }
+  return at;
+}
+
+/// |: a bar line across the staff at the cursor's column. A `|` goes into
+/// every string of the staff the cursor is on, at that column, pushing the
+/// rest of each string right by one, so the columns stay lined up. A
+/// string too short to reach the column is lengthened with dashes, and
+/// the new bar becomes its closing bar. The
+/// cursor ends just after the new bar. Null when the cursor isn't on a
+/// string line.
+TextEditingValue? insertBar(TextEditingValue value) {
+  if (!value.selection.isValid) return null;
+  final lines = value.text.split('\n');
+  final (row, column) = _rowColumn(lines, value.selection.start);
+  if (!_isStringLine(lines[row])) return null;
+  final (first, last) = _staffAround(lines, row);
+  for (var i = first; i <= last; i++) {
+    final line = lines[i].trimRight();
+    if (line.length <= column) {
+      // A string that ends before the column: lengthened with dashes,
+      // and the new bar is its closing bar (in place of the one it had).
+      final body = line.replaceFirst(RegExp(r'\|+$'), '');
+      lines[i] = '${body.padRight(column, '-')}|';
+    } else {
+      lines[i] = '${line.substring(0, column)}|${line.substring(column)}';
+    }
+  }
+  return TextEditingValue(
+    text: lines.join('\n'),
+    selection: TextSelection.collapsed(
+      offset: _offsetOf(lines, row, column + 1),
+    ),
+  );
+}
+
+/// ||: every staff's strings end together. In each staff (two or more
+/// string lines next to each other), each string is padded with dashes to
+/// the longest one, before its closing bar, and every string gets the
+/// staff's closing bar (the longest run of `|` that ends one of them), so
+/// the bars at the end line up. Trailing spaces go. The cursor stays where
+/// it was in its line (after the padding when it was at the line's end).
+/// Null when the text has no staff.
+TextEditingValue? alignEnds(TextEditingValue value) {
+  final lines = value.text.split('\n');
+  final (row, column) = value.selection.isValid
+      ? _rowColumn(lines, value.selection.start)
+      : (-1, 0);
+  var cursorColumn = column;
+  var staves = 0;
+  var i = 0;
+  while (i < lines.length) {
+    if (!_isStringLine(lines[i])) {
+      i++;
+      continue;
+    }
+    final (first, last) = _staffAround(lines, i);
+    i = last + 1;
+    if (last == first) continue;
+    staves++;
+    final trimmed = [for (var k = first; k <= last; k++) lines[k].trimRight()];
+    String barsOf(String line) =>
+        RegExp(r'\|+$').firstMatch(line)?.group(0) ?? '';
+    final bodies = [
+      for (final t in trimmed) t.substring(0, t.length - barsOf(t).length),
+    ];
+    final closing = trimmed
+        .map(barsOf)
+        .fold('', (longest, b) => b.length > longest.length ? b : longest);
+    final width = bodies.map((b) => b.length).reduce(math.max);
+    for (var k = first; k <= last; k++) {
+      final body = bodies[k - first];
+      final line = '${body.padRight(width, '-')}$closing';
+      // The cursor past the body (in the closing bar, or after it)
+      // follows the line's end.
+      if (k == row && column > body.length) {
+        cursorColumn = math.min(width + column - body.length, line.length);
+      } else if (k == row) {
+        cursorColumn = math.min(column, line.length);
+      }
+      lines[k] = line;
+    }
+  }
+  if (staves == 0) return null;
+  return TextEditingValue(
+    text: lines.join('\n'),
+    selection: row < 0
+        ? value.selection
+        : TextSelection.collapsed(offset: _offsetOf(lines, row, cursorColumn)),
+  );
+}
+
+/// How wide = makes each string, its name and both bars included.
+const newStaffWidth = 80;
+
+/// =: an empty six-string staff in standard tuning, `e B G D A E`, each
+/// string its name, a bar, dashes and a closing bar, [newStaffWidth]
+/// characters in all. It goes under the cursor's line, or under its whole
+/// staff when the cursor is on one, with a blank line between it and the
+/// text around it. The cursor ends on the first string, just after its
+/// bar, to write the first note.
+TextEditingValue newStaff(TextEditingValue value) {
+  final staff = [
+    for (final name in const ['e', 'B', 'G', 'D', 'A', 'E'])
+      '$name|${'-' * (newStaffWidth - 3)}|',
+  ];
+  if (value.text.trim().isEmpty) {
+    return TextEditingValue(
+      text: staff.join('\n'),
+      selection: const TextSelection.collapsed(offset: 2),
+    );
+  }
+  final lines = value.text.split('\n');
+  var after = lines.length - 1;
+  if (value.selection.isValid) {
+    final (row, _) = _rowColumn(lines, value.selection.start);
+    after = _isStringLine(lines[row]) ? _staffAround(lines, row).$2 : row;
+  }
+  final before = lines[after].trim().isEmpty ? <String>[] : [''];
+  final next = after + 1 < lines.length && lines[after + 1].trim().isNotEmpty
+      ? ['']
+      : <String>[];
+  lines.insertAll(after + 1, [...before, ...staff, ...next]);
+  return TextEditingValue(
+    text: lines.join('\n'),
+    selection: TextSelection.collapsed(
+      offset: _offsetOf(lines, after + 1 + before.length, 2),
+    ),
+  );
 }

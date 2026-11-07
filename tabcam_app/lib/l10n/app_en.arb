@@ -1418,6 +1418,30 @@
   "@textViewNoStringFree": {
     "description": "Snackbar when ++ or −− finds no string with room for the note"
   },
+  "textViewBar": "Bar line: a | across every string, at the cursor",
+  "@textViewBar": {
+    "description": "Tooltip of |: a bar line across the staff at the cursor"
+  },
+  "textViewAlignEnds": "Line up the ends: every string ends with the longest",
+  "@textViewAlignEnds": {
+    "description": "Tooltip of ||: pads every string of each staff to the longest"
+  },
+  "textViewPutCursorOnString": "Put the cursor on a string line",
+  "@textViewPutCursorOnString": {
+    "description": "Snackbar when | finds the cursor off the strings"
+  },
+  "textViewNoStaff": "There are no strings to line up",
+  "@textViewNoStaff": {
+    "description": "Snackbar when || finds no staff in the text"
+  },
+  "textViewEndsAligned": "Every string already ends together",
+  "@textViewEndsAligned": {
+    "description": "Snackbar when || finds nothing to pad"
+  },
+  "textViewNewStaff": "Empty staff: six strings, e B G D A E, 80 characters wide",
+  "@textViewNewStaff": {
+    "description": "Tooltip of =: adds an empty six-string staff under the cursor"
+  },
   "textViewOvertypeOn": "Overtype: typing replaces characters, columns stay put",
   "@textViewOvertypeOn": {
     "description": "Tooltip of Overtype while on"

@@ -243,6 +243,39 @@ class _TabTextViewState extends State<TabTextView> {
     _changed(moved.text);
   }
 
+  /// |: a bar line across the cursor's staff, at its column.
+  void _bar() {
+    final value = insertBar(_text.value);
+    if (value == null) {
+      _say(context.l10n.textViewPutCursorOnString);
+      return;
+    }
+    _text.value = value;
+    _changed(value.text);
+  }
+
+  /// ||: every staff's strings end together, at the longest.
+  void _alignEnds() {
+    final value = alignEnds(_text.value);
+    if (value == null) {
+      _say(context.l10n.textViewNoStaff);
+      return;
+    }
+    if (value.text == _text.text) {
+      _say(context.l10n.textViewEndsAligned);
+      return;
+    }
+    _text.value = value;
+    _changed(value.text);
+  }
+
+  /// =: an empty six-string staff under the cursor's line or staff.
+  void _newStaff() {
+    final value = newStaff(_text.value);
+    _text.value = value;
+    _changed(value.text);
+  }
+
   /// Fix: asks which song this is, then for its corrections.
   Future<void> _autocorrect() async {
     final ocr = widget.ocr;
@@ -484,7 +517,9 @@ class _TabTextViewState extends State<TabTextView> {
 
   /// The editing tools, outlined so they read as buttons, on the left of
   /// the line: − and + on the fret under the cursor, ++ and −− moving its
-  /// note up or down a string, and Overtype, a toggle (filled while on).
+  /// note up or down a string, | adding a bar line across the staff, ||
+  /// ending every string together, = adding an empty six-string staff, and
+  /// Overtype, a toggle (filled while on).
   Widget _tools() {
     final enabled = !_busy;
     final scheme = Theme.of(context).colorScheme;
@@ -513,6 +548,24 @@ class _TabTextViewState extends State<TabTextView> {
           tooltip: context.l10n.textViewNoteDown,
           onPressed: enabled ? () => _move(1) : null,
           icon: const Text('−−'),
+        ),
+        const SizedBox(width: 8),
+        IconButton.outlined(
+          tooltip: context.l10n.textViewBar,
+          onPressed: enabled ? _bar : null,
+          icon: const Text('|'),
+        ),
+        const SizedBox(width: 8),
+        IconButton.outlined(
+          tooltip: context.l10n.textViewAlignEnds,
+          onPressed: enabled ? _alignEnds : null,
+          icon: const Text('||'),
+        ),
+        const SizedBox(width: 8),
+        IconButton.outlined(
+          tooltip: context.l10n.textViewNewStaff,
+          onPressed: enabled ? _newStaff : null,
+          icon: const Text('='),
         ),
         const SizedBox(width: 8),
         Tooltip(

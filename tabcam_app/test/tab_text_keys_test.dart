@@ -97,4 +97,45 @@ void main() {
       expect(focused(tester), isTrue, reason: '$tool keeps the focus');
     }
   });
+
+  testWidgets('|, || and = edit the staff and keep the focus in the text', (
+    tester,
+  ) async {
+    final text = await pump(tester);
+    await clickText(tester);
+    // The cursor on the first string, after "e|--3".
+    text.selection = const TextSelection.collapsed(offset: 5);
+    await tester.pump();
+
+    Future<void> press(String tooltip) async {
+      await tester.tap(find.byTooltip(tooltip), kind: PointerDeviceKind.mouse);
+      await tester.pump();
+      expect(focused(tester), isTrue, reason: '$tooltip keeps the focus');
+    }
+
+    await press('Bar line: a | across every string, at the cursor');
+    expect(text.text, 'e|--3|--5--|\nB|-5-|-----|');
+    expect(text.selection.baseOffset, 6);
+
+    // Ragged now: the first string one shorter.
+    text.value = const TextEditingValue(
+      text: 'e|--3--5-|\nB|-5------|',
+      selection: TextSelection.collapsed(offset: 0),
+    );
+    await tester.pump();
+    await press('Line up the ends: every string ends with the longest');
+    expect(text.text, 'e|--3--5--|\nB|-5------|');
+    // Pressed again, nothing to do: it says so.
+    await press('Line up the ends: every string ends with the longest');
+    expect(find.text('Every string already ends together'), findsOneWidget);
+
+    await press('Empty staff: six strings, e B G D A E, 80 characters wide');
+    final lines = text.text.split('\n');
+    expect(lines, hasLength(2 + 1 + 6));
+    expect(lines.last, 'E|${'-' * 77}|');
+    // The next key types on the new first string, after its bar.
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pump();
+    expect(text.selection.baseOffset, text.text.indexOf('e|---') + 3);
+  });
 }

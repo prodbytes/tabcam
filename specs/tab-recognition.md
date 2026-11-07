@@ -307,6 +307,28 @@ while Fix's review shows, or on a capture shared read only)
   string line too short to reach the column is lengthened with dashes,
   and the cursor follows the note. With no note there it says to put the
   cursor on one; with no other string free there, it says so.
+- **|**: a bar line across the staff at the cursor's column. A `|` goes
+  into every string of the staff the cursor is on, at that column,
+  pushing the rest of each string right by one, so the columns stay
+  lined up. A string too short to reach the column is lengthened with
+  dashes and the new bar becomes its closing bar. The cursor ends just
+  after the new bar. With the cursor off the strings, it says to put it
+  on a string line.
+- **||**: every string ends together. In each staff of the text, every
+  string is padded with dashes to the longest one, before its closing
+  bar, and every string gets the staff's closing bar (the longest run of
+  `|` ending one of them), so the bars at the end line up; trailing
+  spaces go. The cursor stays where it was on its line. When they
+  already end together it says so; with no staff, that there are no
+  strings to line up.
+- **=**: an empty six-string staff in standard tuning, `e B G D A E`,
+  each string its name, a bar, dashes and a closing bar, 80 characters
+  in all. It goes under the cursor's line, or under its whole staff when
+  the cursor is on one, with a blank line between it and the text
+  around it, and the cursor ends on the new first string, after its bar.
+- Here a staff is the string lines next to each other: a line with three
+  dashes or more, or a string's name and a bar (`B|-5|`, too short for
+  three dashes).
 - **Overtype**, a toggle button (on by default, filled while on and
   outlined while off; tap to switch to insert): typing replaces
   the characters after the cursor on its line instead of pushing them
