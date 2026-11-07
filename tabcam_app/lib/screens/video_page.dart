@@ -6,6 +6,7 @@ import 'package:video_player/video_player.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
 import '../l10n/language.dart';
+import 'media_url.dart';
 
 /// A video page: a play button until tapped, then the video, with a play /
 /// pause button and tap to pause and resume. It plays from the page's file
@@ -127,15 +128,18 @@ Future<VideoPlayerController> openPlayer(
 }) async {
   final path = await library.path(event, page);
   final options = VideoPlayerOptions(mixWithOthers: mixWithOthers);
-  final controller = path != null
-      ? VideoPlayerController.file(File(path), videoPlayerOptions: options)
-      : VideoPlayerController.networkUrl(
-          Uri.dataFromBytes(
-            await library.original(event, page),
-            mimeType: page.mimeType,
-          ),
-          videoPlayerOptions: options,
-        );
+  if (path == null) {
+    // The web: from memory, through a blob URL.
+    return openBytesPlayer(
+      await library.original(event, page),
+      page.mimeType,
+      options: options,
+    );
+  }
+  final controller = VideoPlayerController.file(
+    File(path),
+    videoPlayerOptions: options,
+  );
   try {
     await controller.initialize();
   } on Object {

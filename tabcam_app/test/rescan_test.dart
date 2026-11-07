@@ -93,8 +93,12 @@ void main() {
         ),
       ),
     );
+    // It opens on its files (whose list never settles: a thumbnail
+    // spinner); Rescan is on the Text view.
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('text')));
     await tester.pumpAndSettle();
-    // Verified: it opens on its text.
+    // Verified, it still opened on its files: Text shows the tab.
     expect(find.text('e|--0--5--|'), findsWidgets);
 
     // Cancel keeps it.
@@ -176,6 +180,10 @@ void main() {
         ),
       ),
     );
+    // It opens on its files (whose list never settles: a thumbnail
+    // spinner); Rescan is on the Text view.
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('text')));
     await tester.pumpAndSettle();
 
     reading = Completer<String?>();

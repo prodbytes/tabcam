@@ -2037,3 +2037,16 @@ spec.
    `7(9)`, a bend too, the pitch in parentheses after the note (after
    `7b9 r7`). `(5)` on its own stays a ghost note. In English, Spanish and
    Portuguese. See [tab recognition](tab-recognition.md) (notation sheet).
+7. **A capture should open on its list of files, not go straight to the
+   text, and it takes a long time; look for performance optimizations.**
+   A capture now always opens on its files list, a text tab marked
+   correct included (Text shows the tab; a reload still comes back to
+   the view the user was on). What made opening slow: on the web every
+   player (the Text view's play-along frame, each video's thumbnail in
+   the list) was handed the whole file as a base64 data URL; they now
+   play from a blob URL of the bytes, made at once and released with the
+   player (`media_url.dart`). The list's video thumbnails open their
+   players one after another instead of all at once, so the list shows
+   at once and the frames fill in. See the
+   [event screen](event-screen.md), [tab recognition](tab-recognition.md#text-view)
+   and [platforms](platforms.md).
