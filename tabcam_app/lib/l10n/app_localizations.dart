@@ -3159,6 +3159,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hide the dictionary'**
   String get dictionaryHide;
+
+  /// Video edit: what the track bar does (tooltip, screen reader)
+  ///
+  /// In en, this message translates to:
+  /// **'The track along the kept part: drag it to move it, its ends to trim it'**
+  String get videoEditTrackBar;
+
+  /// Video edit: nudges the track earlier
+  ///
+  /// In en, this message translates to:
+  /// **'A tenth of a second earlier'**
+  String get videoEditTrackEarlier;
+
+  /// Video edit: nudges the track later
+  ///
+  /// In en, this message translates to:
+  /// **'A tenth of a second later'**
+  String get videoEditTrackLater;
+
+  /// Video edit: the part of the track used, once trimmed (times like 0:01.5)
+  ///
+  /// In en, this message translates to:
+  /// **'Using {start}–{end} of the track'**
+  String videoEditTrackUsed(String start, String end);
 }
 
 class _AppLocalizationsDelegate

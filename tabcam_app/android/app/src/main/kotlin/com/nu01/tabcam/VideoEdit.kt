@@ -1,7 +1,6 @@
 package com.nu01.tabcam
 
 import android.content.Context
-import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
@@ -29,8 +28,9 @@ import java.io.File
  * - `startMs`, `endMs`: the part kept;
  * - `sound`: `original` (kept), `none` (removed) or `track` (replaced);
  * - `track`: absolute path of the new sound track, for `track`;
- * - `trackMs`: where the track starts, from the kept part's start (negative:
- *   that much of the track's start is cut).
+ * - `gapMs`, `fromMs`, `toMs`: the part of it that goes in (the app works it
+ *   out, `trackSpan` in video_edit.dart): `gapMs` of silence, then the track
+ *   from `fromMs` to `toMs`; left out when none of it falls in the kept part.
  *
  * Replies with the output path, or the error `failed`.
  *
@@ -64,7 +64,10 @@ class VideoEdit(private val context: Context, messenger: BinaryMessenger) :
         val endMs = call.argument<Number>("endMs")?.toLong()
         val sound = call.argument<String>("sound") ?: "original"
         val track = call.argument<String>("track")
-        val trackMs = call.argument<Number>("trackMs")?.toLong() ?: 0L
+        val gapMs = call.argument<Number>("gapMs")?.toLong()
+        val fromMs = call.argument<Number>("fromMs")?.toLong()
+        val toMs = call.argument<Number>("toMs")?.toLong()
+        val part = if (gapMs != null && fromMs != null && toMs != null) Triple(gapMs, fromMs, toMs) else null
         if (input.isNullOrEmpty() || output.isNullOrEmpty() || startMs == null || endMs == null) {
             result.error("failed", "edit needs input, output, startMs and endMs", null)
             return
@@ -85,7 +88,7 @@ class VideoEdit(private val context: Context, messenger: BinaryMessenger) :
             return
         }
         val composition = try {
-            compose(inputFile, startMs, endMs, sound, trackFile, trackMs)
+            compose(inputFile, startMs, endMs, sound, trackFile, part)
         } catch (e: Exception) {
             result.error("failed", e.message ?: e.toString(), null)
             return
@@ -101,7 +104,7 @@ class VideoEdit(private val context: Context, messenger: BinaryMessenger) :
         endMs: Long,
         sound: String,
         track: File?,
-        trackMs: Long,
+        part: Triple<Long, Long, Long>?,
     ): Composition {
         val clipMs = endMs - startMs
         require(clipMs > 0) { "Nothing to keep" }
@@ -111,9 +114,9 @@ class VideoEdit(private val context: Context, messenger: BinaryMessenger) :
         val sequences = mutableListOf(EditedMediaItemSequence.Builder(video).build())
         if (sound == "track") {
             requireNotNull(track) { "No track" }
-            val span = trackSpan(clipMs, durationMs(track), trackMs)
-            if (span != null) {
-                val (gapMs, fromMs, toMs) = span
+            if (part != null) {
+                val (gapMs, fromMs, toMs) = part
+                require(toMs > fromMs && gapMs >= 0 && fromMs >= 0) { "Bad track part" }
                 val audio = EditedMediaItem.Builder(clipped(track, fromMs, toMs))
                     .setRemoveVideo(true)
                     .build()
@@ -142,17 +145,6 @@ class VideoEdit(private val context: Context, messenger: BinaryMessenger) :
                     .build(),
             )
             .build()
-
-    private fun durationMs(file: File): Long {
-        val retriever = MediaMetadataRetriever()
-        try {
-            retriever.setDataSource(file.path)
-            return retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
-                ?.toLongOrNull() ?: throw IllegalArgumentException("${file.name} has no known length")
-        } finally {
-            retriever.release()
-        }
-    }
 
     private fun start(composition: Composition, output: File, result: MethodChannel.Result) {
         var transformer: Transformer? = null
@@ -203,22 +195,5 @@ class VideoEdit(private val context: Context, messenger: BinaryMessenger) :
 
     companion object {
         const val CHANNEL = "tabcam/video_edit"
-
-        /**
-         * The part of a track [trackMs] long that goes into a clip [clipMs]
-         * long, with the track starting [offsetMs] after the clip's start:
-         * the silence before it, then the track's part, from and to; null
-         * when none of it falls within the clip. The same as the app's
-         * `trackSpan` (video_edit.dart).
-         */
-        fun trackSpan(clipMs: Long, trackMs: Long, offsetMs: Long): Triple<Long, Long, Long>? {
-            if (clipMs <= 0 || trackMs <= 0) return null
-            val gap = if (offsetMs > 0) offsetMs else 0L
-            val from = if (offsetMs < 0) -offsetMs else 0L
-            if (gap >= clipMs || from >= trackMs) return null
-            val to = minOf(from + (clipMs - gap), trackMs)
-            if (to <= from) return null
-            return Triple(gap, from, to)
-        }
     }
 }

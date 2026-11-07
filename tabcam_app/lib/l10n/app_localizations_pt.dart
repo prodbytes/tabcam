@@ -1886,4 +1886,19 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dictionaryHide => 'Ocultar o dicionário';
+
+  @override
+  String get videoEditTrackBar =>
+      'A faixa ao longo da parte mantida: arraste para mover, as pontas para cortar';
+
+  @override
+  String get videoEditTrackEarlier => 'Um décimo de segundo antes';
+
+  @override
+  String get videoEditTrackLater => 'Um décimo de segundo depois';
+
+  @override
+  String videoEditTrackUsed(String start, String end) {
+    return 'Usando $start–$end da faixa';
+  }
 }

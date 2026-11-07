@@ -1849,4 +1849,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dictionaryHide => 'Hide the dictionary';
+
+  @override
+  String get videoEditTrackBar =>
+      'The track along the kept part: drag it to move it, its ends to trim it';
+
+  @override
+  String get videoEditTrackEarlier => 'A tenth of a second earlier';
+
+  @override
+  String get videoEditTrackLater => 'A tenth of a second later';
+
+  @override
+  String videoEditTrackUsed(String start, String end) {
+    return 'Using $start–$end of the track';
+  }
 }

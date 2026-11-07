@@ -73,11 +73,17 @@ class WebVideoEditor implements VideoEditing {
           }
           source = track = await _load(file, urls, elements);
           player.muted = true;
-          span = trackSpan(
-            Duration(milliseconds: (clip * 1000).round()),
-            Duration(milliseconds: (track.duration * 1000).round()),
-            edit.offset,
-          );
+          // The part of it that fits, as the edit says; worked out here
+          // when the edit doesn't know the track's length.
+          span =
+              edit.trackPart ??
+              trackSpan(
+                Duration(milliseconds: (clip * 1000).round()),
+                Duration(milliseconds: (track.duration * 1000).round()),
+                edit.offset,
+                trackStart: edit.trackStart,
+                trackEnd: edit.trackEnd,
+              );
         } else {
           source = player;
         }

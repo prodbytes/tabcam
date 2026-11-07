@@ -2518,5 +2518,29 @@
   "dictionaryHide": "Hide the dictionary",
   "@dictionaryHide": {
     "description": "App bar and dictionary sidebar: hides the dictionary sidebar"
+  },
+  "videoEditTrackBar": "The track along the kept part: drag it to move it, its ends to trim it",
+  "@videoEditTrackBar": {
+    "description": "Video edit: what the track bar does (tooltip, screen reader)"
+  },
+  "videoEditTrackEarlier": "A tenth of a second earlier",
+  "@videoEditTrackEarlier": {
+    "description": "Video edit: nudges the track earlier"
+  },
+  "videoEditTrackLater": "A tenth of a second later",
+  "@videoEditTrackLater": {
+    "description": "Video edit: nudges the track later"
+  },
+  "videoEditTrackUsed": "Using {start}–{end} of the track",
+  "@videoEditTrackUsed": {
+    "description": "Video edit: the part of the track used, once trimmed (times like 0:01.5)",
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
   }
 }

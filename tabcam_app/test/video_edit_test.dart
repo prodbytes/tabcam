@@ -98,6 +98,47 @@ void main() {
       expect(trackSpan(s(10), s(4), s(10)), isNull);
       expect(trackSpan(s(10), s(4), s(-4)), isNull);
       expect(trackSpan(Duration.zero, s(4), Duration.zero), isNull);
+      expect(trackSpan(s(10), Duration.zero, Duration.zero), isNull);
+    });
+
+    test('a track trimmed: its used part, where it starts', () {
+      // 1–3 s of the track, starting 2 s into the clip.
+      expect(trackSpan(s(10), s(4), s(2), trackStart: s(1), trackEnd: s(3)), (
+        gap: s(2),
+        from: s(1),
+        to: s(3),
+      ));
+      // Starting before the clip: more of its start cut.
+      expect(
+        trackSpan(s(10), s(4), s(-0.5), trackStart: s(1), trackEnd: s(3)),
+        (gap: Duration.zero, from: s(1.5), to: s(3)),
+      );
+      // Cut to the clip; an end past the track's is the track's.
+      expect(
+        trackSpan(s(2), s(4), Duration.zero, trackStart: s(1), trackEnd: s(9)),
+        (gap: Duration.zero, from: s(1), to: s(3)),
+      );
+      // Nothing of the used part in the clip.
+      expect(
+        trackSpan(s(10), s(4), s(-3), trackStart: s(1), trackEnd: s(3)),
+        isNull,
+      );
+    });
+
+    test('an edit fits its track by its length', () {
+      final edit = VideoEdit(
+        start: s(1),
+        end: s(6),
+        sound: EditSound.track,
+        trackLength: s(20),
+        trackStart: s(2),
+        offset: s(1),
+      );
+      expect(edit.trackPart, (gap: s(1), from: s(2), to: s(6)));
+      expect(
+        VideoEdit(start: s(1), end: s(6), sound: EditSound.track).trackPart,
+        isNull,
+      );
     });
   });
 
@@ -288,26 +329,80 @@ void main() {
     await tester.tap(find.byKey(const Key('video-edit-track-k1')));
     await _settle(tester);
     expect(find.byKey(const Key('video-edit-tracks')), findsNothing);
-    expect(find.text('Recording 1'), findsOneWidget);
+    // Its name: on its row, and on its bar.
+    expect(find.text('Recording 1'), findsNWidgets(2));
     expect(find.text('The track starts with the video'), findsOneWidget);
 
-    // Shifted later: the slider runs from the track's length before the
-    // video to the kept part's end.
-    final slider = find.byKey(const Key('video-edit-offset'));
-    expect(slider, findsOneWidget);
-    expect(tester.widget<Slider>(slider).min, -s(180).inMilliseconds);
-    expect(tester.widget<Slider>(slider).max, s(180).inMilliseconds);
-    await tester.drag(slider, const Offset(40, 0));
+    // The track bar: the track (3 minutes, as long as the video) along
+    // the kept part. Dragged, it moves later.
+    final bar = find.byKey(const Key('video-edit-track-bar'));
+    expect(bar, findsOneWidget);
+    final barWidth = tester.getSize(bar).width;
+    await tester.drag(
+      find.byKey(const Key('video-edit-track-move')),
+      Offset(barWidth / 6, 0),
+    );
     await _frames(tester);
     expect(find.textContaining('after the video'), findsOneWidget);
+    // Its start, dragged, trims it, and the rest stays put: its end moves
+    // with it.
+    await tester.drag(
+      find.byKey(const Key('video-edit-track-left')),
+      Offset(barWidth / 6, 0),
+    );
+    await _frames(tester);
+    expect(find.byKey(const Key('video-edit-track-used')), findsOneWidget);
+    // A tenth of a second earlier, twice.
+    await tester.tap(find.byKey(const Key('video-edit-track-earlier')));
+    await tester.tap(find.byKey(const Key('video-edit-track-earlier')));
+    await _frames(tester);
 
     await tester.tap(save);
     await _settle(tester);
     final (_, edit) = editor.applied.single;
     expect(edit.sound, EditSound.track);
     expect(await tester.runAsync(edit.track!.readAsBytes), [1, 2, 3]);
-    expect(edit.offset, greaterThan(Duration.zero));
+    expect(edit.trackLength, s(180));
     expect(edit.start, Duration.zero);
     expect(edit.end, s(180));
+    // Moved about a sixth later (a drag loses its first few pixels to
+    // the touch slop), then its start trimmed by the same drag, the
+    // offset following, less two tenths.
+    final dragged = edit.trackStart.inMilliseconds;
+    expect(dragged, inInclusiveRange(20000, 30000));
+    expect(edit.trackEnd, s(180));
+    expect(edit.offset.inMilliseconds, closeTo(2 * dragged - 200, 100));
+    final part = edit.trackPart!;
+    expect(part.gap, edit.offset);
+    expect(part.from, edit.trackStart);
+    // To the kept part's end: the track from its start, less the gap.
+    expect(part.to, edit.trackStart + (s(180) - edit.offset));
+  });
+
+  testWidgets('the current time shows beside the preview\'s progress', (
+    tester,
+  ) async {
+    tall(tester);
+    final (library, id) = await capture(tester);
+    await tester.pumpWidget(
+      host(
+        VideoEditScreen(
+          library: library,
+          eventId: id,
+          page: library.byId(id)!.pages.first,
+          pickFile: () async => null,
+        ),
+      ),
+    );
+    await _settle(tester);
+    expect(find.byKey(const Key('video-edit-time')), findsOneWidget);
+    expect(find.text('0:00.0'), findsOneWidget);
+    // Played, the player says where it is (12 s in, the fake's position).
+    await tester.tap(find.byKey(const Key('video-edit-play')));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 700)),
+    );
+    await _frames(tester);
+    expect(find.text('0:12.0'), findsOneWidget);
   });
 }
