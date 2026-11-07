@@ -415,6 +415,36 @@ class Library extends ChangeNotifier {
     return updated;
   }
 
+  /// Puts [media] (an edited video, say) in [page]'s place: a new page
+  /// (a new ID, as [rotatePage] makes: page files never change once
+  /// written) of [media]'s kind and extension, with [page]'s name and
+  /// filter; [page]'s own file goes.
+  Future<CaptureEvent> replacePage(
+    CaptureEvent event,
+    EventPage page,
+    Media media,
+  ) async {
+    await _arrival(event.id, page);
+    final replaced = EventPage(
+      id: newId(),
+      filter: page.filter,
+      kind: media.kind,
+      extension: media.extension,
+      title: page.title,
+    );
+    await _store.putPageFile(event.id, replaced, media.file);
+    final updated = await _save(
+      event.copyWith(
+        pages: [for (final p in event.pages) p.id == page.id ? replaced : p],
+      ),
+    );
+    await _store.deletePage(event.id, page);
+    _forget(page);
+    _revision++;
+    notifyListeners();
+    return updated;
+  }
+
   /// Puts the pages [order] names (page IDs, some or all of the event's) in
   /// that order. They take the places those pages had, so pages left out
   /// (images hidden from the list) stay where they are. The event as it is

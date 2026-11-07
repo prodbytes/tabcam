@@ -1788,4 +1788,70 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dictionaryScaleChromatic => 'cromática';
+
+  @override
+  String get videoEditTool => 'Editar';
+
+  @override
+  String get videoEditNotHere => 'Aqui não dá para editar vídeos';
+
+  @override
+  String get videoEditTrim => 'Cortar';
+
+  @override
+  String videoEditKeep(String start, String end) {
+    return 'Manter $start–$end';
+  }
+
+  @override
+  String get videoEditTrimStart => 'Começar aqui';
+
+  @override
+  String get videoEditTrimEnd => 'Terminar aqui';
+
+  @override
+  String get videoEditSound => 'Som';
+
+  @override
+  String get videoEditSoundOriginal => 'Original';
+
+  @override
+  String get videoEditSoundNone => 'Nenhum';
+
+  @override
+  String get videoEditSoundTrack => 'Nova faixa';
+
+  @override
+  String get videoEditPickTrack => 'Escolher uma faixa';
+
+  @override
+  String get videoEditChangeTrack => 'Trocar';
+
+  @override
+  String get videoEditTrackFile => 'Um arquivo de som…';
+
+  @override
+  String get videoEditNoTrack => 'Nenhuma faixa escolhida ainda';
+
+  @override
+  String get videoEditTrackWith => 'A faixa começa junto com o vídeo';
+
+  @override
+  String videoEditTrackAfter(String time) {
+    return 'A faixa começa $time depois do vídeo';
+  }
+
+  @override
+  String videoEditTrackBefore(String time) {
+    return 'A faixa começa $time antes do vídeo';
+  }
+
+  @override
+  String get videoEditReplaces => 'Salvar substitui o vídeo.';
+
+  @override
+  String get videoEditSaving => 'Salvando o vídeo…';
+
+  @override
+  String get videoEditCouldntSave => 'Não deu para salvar o vídeo';
 }

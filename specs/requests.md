@@ -1985,3 +1985,18 @@ spec.
    but that. In English, Spanish and Portuguese, with the note and type
    names of all three. See [dictionary](dictionary.md),
    [event screen](event-screen.md) and [Cam](cam.md).
+3. **When a recording is opened as a video, let the user make some
+   basic edits: trim the beginning and end; remove the audio or add the
+   audio as a new track; adjust the new track to fit the video.** A
+   video's file screen has **Edit** (scissors, before Rename), opening
+   the edit screen: the preview (plays the kept part only), **Trim** (a
+   range with its times, Start here and End here), and **Sound**:
+   Original, None, or New track, one of the capture's recordings or a
+   sound file, with a slider shifting it earlier or later along the
+   video (its first part cut, or silence first; cut to the kept part).
+   Save applies the edit on the device (Media3 Transformer on Android,
+   AVFoundation on iOS, a canvas and MediaRecorder pass in the browser)
+   and puts the result in the video's place, as a new page with its
+   name. In English, Spanish and Portuguese. See
+   [video edit](video-edit.md), the [file screen](event-screen.md#file-screen)
+   and [platforms](platforms.md).

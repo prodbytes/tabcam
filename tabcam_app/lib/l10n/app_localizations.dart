@@ -2985,6 +2985,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'chromatic'**
   String get dictionaryScaleChromatic;
+
+  /// File screen: the tool that opens a video's edits (trim, sound)
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get videoEditTool;
+
+  /// Video edit: Save on a platform without a video editor
+  ///
+  /// In en, this message translates to:
+  /// **'Videos can\'t be edited here'**
+  String get videoEditNotHere;
+
+  /// Video edit: the trim section's title
+  ///
+  /// In en, this message translates to:
+  /// **'Trim'**
+  String get videoEditTrim;
+
+  /// Video edit: the part of the video kept, from start to end (times like 0:12.3)
+  ///
+  /// In en, this message translates to:
+  /// **'Keep {start}–{end}'**
+  String videoEditKeep(String start, String end);
+
+  /// Video edit: keeps from where the preview is
+  ///
+  /// In en, this message translates to:
+  /// **'Start here'**
+  String get videoEditTrimStart;
+
+  /// Video edit: keeps until where the preview is
+  ///
+  /// In en, this message translates to:
+  /// **'End here'**
+  String get videoEditTrimEnd;
+
+  /// Video edit: the sound section's title
+  ///
+  /// In en, this message translates to:
+  /// **'Sound'**
+  String get videoEditSound;
+
+  /// Video edit: keep the video's own sound
+  ///
+  /// In en, this message translates to:
+  /// **'Original'**
+  String get videoEditSoundOriginal;
+
+  /// Video edit: take the sound out
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get videoEditSoundNone;
+
+  /// Video edit: replace the sound with a new track
+  ///
+  /// In en, this message translates to:
+  /// **'New track'**
+  String get videoEditSoundTrack;
+
+  /// Video edit: the sheet's title, and the button to pick the new track
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a track'**
+  String get videoEditPickTrack;
+
+  /// Video edit: picks another track
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get videoEditChangeTrack;
+
+  /// Video edit: the sheet's option to pick a sound file from the device
+  ///
+  /// In en, this message translates to:
+  /// **'A sound file…'**
+  String get videoEditTrackFile;
+
+  /// Video edit: New track chosen, no track picked
+  ///
+  /// In en, this message translates to:
+  /// **'No track picked yet'**
+  String get videoEditNoTrack;
+
+  /// Video edit: the track's shift, none
+  ///
+  /// In en, this message translates to:
+  /// **'The track starts with the video'**
+  String get videoEditTrackWith;
+
+  /// Video edit: the track's shift, later (time like 0:01.5)
+  ///
+  /// In en, this message translates to:
+  /// **'The track starts {time} after the video'**
+  String videoEditTrackAfter(String time);
+
+  /// Video edit: the track's shift, earlier: its first part is cut (time like 0:01.5)
+  ///
+  /// In en, this message translates to:
+  /// **'The track starts {time} before the video'**
+  String videoEditTrackBefore(String time);
+
+  /// Video edit: the note beside Save
+  ///
+  /// In en, this message translates to:
+  /// **'Saving replaces the video.'**
+  String get videoEditReplaces;
+
+  /// Video edit: while the edit is applied
+  ///
+  /// In en, this message translates to:
+  /// **'Saving the video…'**
+  String get videoEditSaving;
+
+  /// Video edit: the failure message
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save the video'**
+  String get videoEditCouldntSave;
 }
 
 class _AppLocalizationsDelegate
