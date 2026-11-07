@@ -84,7 +84,7 @@ review notes ([app stores](app-stores.md)).
   without Premium), for text tabs
   and typeset tab staves, never over the user's edits or a reading marked
   correct; the Text view, a tab editor (Copy, Rescan and Verified
-  on one line; overtype, − and + on a fret, ++ and −− moving a note across strings, | a bar line across the staff, || every string ending together, = an empty six-string staff) where a reading is marked
+  in the app bar, the editing tools on their own line; overtype, − and + on a fret, ++ and −− moving a note across strings, | a bar line across the staff, || every string ending together, = an empty six-string staff) where a reading is marked
   verified (the event then opens on it).
 - [Auto-correct](autocorrect.md): Fix, **hidden for now** (on only in a
   build with `TABCAM_FIX=true`): lines the tab up, and for Premium Claude

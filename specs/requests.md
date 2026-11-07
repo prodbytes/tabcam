@@ -2071,3 +2071,19 @@ spec.
    buttons shrink to fit a narrow sidebar. In English, Spanish and
    Portuguese. See [dictionary](dictionary.md), [Cam](cam.md) and
    [event screen](event-screen.md).
+9. **Move the buttons to the top: on the top row, the back button,
+   the title and, to the right, Copy, Rescan and Verified, so the
+   character actions are on their own line, enough for mobile.** In the
+   Text view the event screen's app bar has the view's Copy, Rescan and
+   Verified (and Fix, when shown) right of the title, and the line above
+   the text has the editing tools alone. On a screen narrower than 600 px
+   those three are icons with tooltips, the app bar's other buttons
+   (Dictionary, which shows or hides its sidebar, Play along, Rename,
+   Clone, Download all, Share) go in a More menu, and the tools sit 4 px apart with Overtype an icon and each
+   tap area its 40 px button. The tools never shrink now: on a 390 px
+   phone they fit one line, and beside the play-along sidebar they wrap
+   on to more lines at full size (each was about 10 px wide on a phone,
+   and 18 px beside the sidebar, scaled down). This reverses the
+   earlier choice of Copy above the text and not in the app bar. See
+   [tab recognition](tab-recognition.md#text-view) and the
+   [event screen](event-screen.md).
