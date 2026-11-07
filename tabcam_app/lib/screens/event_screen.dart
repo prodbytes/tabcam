@@ -10,7 +10,7 @@ import '../capture/media.dart';
 import '../capture/page_source.dart';
 import '../capture/play_along_screen.dart';
 import '../capture/play_along_sidebar.dart';
-import '../dictionary/dictionary_screen.dart';
+import '../dictionary/dictionary_sidebar.dart';
 import '../export/capture_link.dart';
 import '../export/download.dart';
 import '../import/tab_page_import.dart';
@@ -104,15 +104,11 @@ class _EventScreenState extends State<EventScreen> {
   @override
   void initState() {
     super.initState();
-    // A text tab marked correct is what the user wants to see: it opens on
-    // the Text view (the Text tool goes back to the pages).
+    // The list of files, unless a reload puts the user back on the Text
+    // view (Text shows the tab; the list is quick to open, the Text view
+    // loads the sidebar's player).
     final event = _library.byId(widget.eventId);
-    _text =
-        widget.initialText ??
-        (!_locked &&
-            event != null &&
-            event.tabText != null &&
-            event.tabTextCorrect);
+    _text = widget.initialText ?? false;
     // A reload: the file the user had open, over the list again.
     final file = event?.allPages.where((p) => p.id == widget.initialFile);
     if (file?.firstOrNull case final page?) {
@@ -196,8 +192,9 @@ class _EventScreenState extends State<EventScreen> {
     }
   }
 
-  /// On a phone, in the Text view: Dictionary, Play along, Rename, Clone,
-  /// Download all and Share, in a menu at the app bar's end.
+  /// On a phone, in the Text view: Dictionary (its sidebar shown or
+  /// hidden), Play along, Rename, Clone, Download all and Share, in a menu
+  /// at the app bar's end.
   Widget _moreMenu(CaptureEvent event, {required bool editable}) {
     final l10n = context.l10n;
     final along = _along;
@@ -222,8 +219,8 @@ class _EventScreenState extends State<EventScreen> {
         item(
           'more-dictionary',
           Icons.menu_book_outlined,
-          l10n.dictionary,
-          () => openDictionary(this.context),
+          DictionaryState.instance.open ? l10n.dictionaryHide : l10n.dictionary,
+          DictionaryState.instance.toggle,
         ),
         if (along.available)
           item(
@@ -1137,28 +1134,30 @@ class _EventScreenState extends State<EventScreen> {
                 : null,
           ),
           // Files dragged onto the screen are added to the capture.
-          body: FileDropArea(
-            enabled: !_busy && canAdd,
-            onFiles: (files, skipped) => _addDropped(event, files, skipped),
-            child: Column(
-              children: [
-                if (widget.byLink)
-                  _LinkBanner(onSignIn: widget.onSignIn)
-                else if (event.sharedBy case final owner?)
-                  _SharedBanner(owner: owner, readOnly: event.readOnly),
-                Expanded(
-                  // Locked, the preview has no sidebar (nothing plays).
-                  child: !text
-                      ? _fileList(event)
-                      : locked
-                      ? _textView(event)
-                      : PlayAlongBeside(
-                          along: _along,
-                          footer: const NotationSheet(),
-                          child: _textView(event),
-                        ),
-                ),
-              ],
+          body: DictionaryBeside(
+            child: FileDropArea(
+              enabled: !_busy && canAdd,
+              onFiles: (files, skipped) => _addDropped(event, files, skipped),
+              child: Column(
+                children: [
+                  if (widget.byLink)
+                    _LinkBanner(onSignIn: widget.onSignIn)
+                  else if (event.sharedBy case final owner?)
+                    _SharedBanner(owner: owner, readOnly: event.readOnly),
+                  Expanded(
+                    // Locked, the preview has no sidebar (nothing plays).
+                    child: !text
+                        ? _fileList(event)
+                        : locked
+                        ? _textView(event)
+                        : PlayAlongBeside(
+                            along: _along,
+                            footer: const NotationSheet(),
+                            child: _textView(event),
+                          ),
+                  ),
+                ],
+              ),
             ),
           ),
           bottomNavigationBar: SafeArea(

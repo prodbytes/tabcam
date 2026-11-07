@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
+import 'package:tabcam_app/dictionary/dictionary_sidebar.dart';
 import 'package:tabcam_app/library/capture_event.dart';
 import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
@@ -10,7 +11,7 @@ import 'package:tabcam_app/screens/tab_text_view.dart';
 const _riff = 'e|--3--5--|\nB|-5------|';
 
 /// The event screen on its Text view (the text marked Verified), in a
-/// window [width] wide.
+/// window [width] wide, the dictionary's sidebar closed.
 Future<Library> _textView(WidgetTester tester, double width) async {
   tester.view.physicalSize = Size(width, 844) * 3;
   tester.view.devicePixelRatio = 3;
@@ -33,6 +34,10 @@ Future<Library> _textView(WidgetTester tester, double width) async {
       home: EventScreen(library: library, eventId: event.id),
     ),
   );
+  await tester.pump();
+  await tester.pump(const Duration(seconds: 1));
+  // A capture opens on its files: the Text tool shows the tab.
+  await tester.tap(find.byKey(const Key('text')));
   await tester.pump();
   await tester.pump(const Duration(seconds: 1));
   expect(find.byType(TabTextView), findsOneWidget);
@@ -119,8 +124,10 @@ void main() {
     ]) {
       expect(find.byKey(Key(key)), findsOneWidget, reason: key);
     }
+    // Dictionary shows its sidebar.
+    addTearDown(DictionaryState.instance.clear);
     await tester.tap(find.byKey(const Key('more-dictionary')));
     await tester.pumpAndSettle();
-    expect(find.text('Dictionary'), findsWidgets);
+    expect(DictionaryState.instance.open, isTrue);
   });
 }

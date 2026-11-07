@@ -90,7 +90,8 @@ void main() {
     expect(library.byId(event.id)!.tabTextCorrect, isTrue);
   });
 
-  testWidgets('an event marked correct opens on its text tab', (tester) async {
+  testWidgets('an event marked correct opens on its files too; Text shows '
+      'the tab', (tester) async {
     final (library, event) = await _event(tester, correct: true);
     await tester.pumpWidget(
       MaterialApp(
@@ -99,9 +100,14 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
-    expect(find.byType(TabTextView), findsOneWidget);
+    expect(find.byType(TabTextView), findsNothing);
+    expect(find.text('Page 1'), findsOneWidget);
 
-    // The files are the Files tool away.
+    // The tab is the Text tool away, and Files comes back.
+    await tester.tap(find.byKey(const Key('text')));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byType(TabTextView), findsOneWidget);
     await tester.tap(find.byKey(const Key('files')));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));

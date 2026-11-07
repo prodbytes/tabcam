@@ -507,5 +507,6 @@
   "videoEditTrackBefore": "A faixa começa {time} antes do vídeo",
   "videoEditReplaces": "Salvar substitui o vídeo.",
   "videoEditSaving": "Salvando o vídeo…",
-  "videoEditCouldntSave": "Não deu para salvar o vídeo"
+  "videoEditCouldntSave": "Não deu para salvar o vídeo",
+  "dictionaryHide": "Ocultar o dicionário"
 }

@@ -283,9 +283,8 @@ while on), and there the event screen's other buttons go in a menu
 - **Verified**: a toggle marking the reading correct once the user has
   checked it: tonal like Copy while off, filled and ticked while on;
   tapping it again unmarks it. Saved at once. The mark is kept on the
-  event and syncs with it (`tabTextCorrect`), and a clone keeps it. An
-  event marked correct opens on its Text view (the Files tool goes back
-  to its list of files); one that isn't opens on its list. No read, on the device
+  event and syncs with it (`tabTextCorrect`), and a clone keeps it. The
+  event still opens on its list of files (Text shows the tab). No read, on the device
   or in the [cloud](cloud-ocr.md), replaces a text tab marked correct. On
   an event shared read only the mark is shown (when set) but can't be
   changed.

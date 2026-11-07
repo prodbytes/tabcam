@@ -10,6 +10,7 @@ import '../screens/file_screen.dart';
 import '../screens/page_image.dart';
 import '../screens/pdf_page.dart';
 import '../screens/youtube_link.dart';
+import '../screens/sidebar_widths.dart';
 import '../screens/split_handle.dart';
 import 'backing_track.dart';
 import 'link_frame.dart';
@@ -212,7 +213,10 @@ Widget imageViewFor(Library library, CaptureEvent event, EventPage page) =>
 
 /// [along]'s sidebar, beside [child]: kept while hidden (offstage), so a
 /// link's page isn't reloaded; nothing when there's nothing to play along
-/// with. On the other side, the PDF or image followed
+/// with. Its left edge is a separator to drag ([SplitHandle]): the
+/// sidebar gets wider or narrower, the same on every screen
+/// ([SidebarWidths]), and a double tap puts its default width back. On
+/// the other side, the PDF or image followed
 /// ([PlayAlong.followed]), when one is, in a pane of its own
 /// ([_FollowPane]), with a separator to drag ([SplitHandle]) between it
 /// and [child]: wider, the page reads better; [child] (the camera) gets
@@ -244,21 +248,29 @@ class PlayAlongBeside extends StatelessWidget {
   /// After each tap in the sidebar (Cam takes the keys back).
   final VoidCallback? onUse;
 
-  /// The narrowest [child] gets when the PDF's pane is dragged wider.
-  static const minChild = 96.0;
+  /// The narrowest [child] gets when the PDF's pane or the sidebar is
+  /// dragged wider (room for the tab's line under the camera).
+  static const minChild = 120.0;
 
   /// The narrowest the PDF's pane gets dragged.
   static const minPdf = 120.0;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: along,
+    listenable: Listenable.merge([along, SidebarWidths.instance]),
     builder: (context, _) => LayoutBuilder(
       builder: (context, box) {
         final screen = MediaQuery.sizeOf(context).width;
-        final sidebar = along.available && along.open
-            ? PlayAlongSidebar.widthFor(screen)
-            : 0.0;
+        final widths = SidebarWidths.instance;
+        final shown = along.available && along.open;
+        // The sidebar leaves [child] [minChild] and its edge.
+        final sidebarMax = box.maxWidth - minChild - 2 * SplitHandle.thickness;
+        final sidebarWidth = widths.widthOf(
+          SidebarWidths.playAlong,
+          fallback: PlayAlongSidebar.widthFor(screen),
+          max: sidebarMax,
+        );
+        final sidebar = shown ? sidebarWidth + SplitHandle.thickness : 0.0;
         // What's left for the pane, the separator and [child].
         final room = box.maxWidth - sidebar - SplitHandle.thickness;
         final max = room - minChild;
@@ -297,10 +309,30 @@ class PlayAlongBeside extends StatelessWidget {
               ),
             ],
             Expanded(child: child),
+            if (shown)
+              SplitHandle(
+                key: const Key('cam-along-split'),
+                axis: Axis.horizontal,
+                color: Colors.white38,
+                background: Colors.black,
+                // Dragged left, the sidebar (on the right) gets wider.
+                onDrag: (dx) => widths.set(
+                  SidebarWidths.playAlong,
+                  (sidebarWidth - dx).clamp(
+                    SidebarWidths.min,
+                    sidebarMax < SidebarWidths.min
+                        ? SidebarWidths.min
+                        : sidebarMax,
+                  ),
+                ),
+                onDragEnd: widths.save,
+                onReset: () => widths.reset(SidebarWidths.playAlong),
+              ),
             if (along.available)
               Offstage(
                 offstage: !along.open,
                 child: PlayAlongSidebar(
+                  width: sidebarWidth,
                   library: along.library,
                   eventId: along.eventId,
                   track: along.track,
@@ -559,61 +591,66 @@ class _BackingFrame extends StatelessWidget {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       ),
                     )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (track.canToggle) ...[
-                          IconButton(
-                            key: const Key('cam-along-back'),
-                            tooltip: l10n.camAlongBack,
-                            visualDensity: compact,
-                            color: Colors.white,
-                            icon: const Icon(Icons.fast_rewind),
-                            onPressed: () => onSkip(-skipBy),
-                          ),
-                          IconButton(
-                            key: const Key('cam-along-toggle'),
-                            tooltip: track.playing
-                                ? l10n.camAlongPause
-                                : l10n.camAlongPlay,
-                            visualDensity: compact,
-                            color: Colors.white,
-                            icon: Icon(
-                              track.playing ? Icons.pause : Icons.play_arrow,
+                  // Shrunk to fit a sidebar dragged narrow.
+                  : FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (track.canToggle) ...[
+                            IconButton(
+                              key: const Key('cam-along-back'),
+                              tooltip: l10n.camAlongBack,
+                              visualDensity: compact,
+                              color: Colors.white,
+                              icon: const Icon(Icons.fast_rewind),
+                              onPressed: () => onSkip(-skipBy),
                             ),
-                            onPressed: onToggle,
-                          ),
-                          IconButton(
-                            key: const Key('cam-along-stop'),
-                            tooltip: l10n.camAlongStop,
-                            visualDensity: compact,
-                            color: Colors.white,
-                            icon: const Icon(Icons.stop),
-                            onPressed: onStop,
-                          ),
-                          IconButton(
-                            key: const Key('cam-along-forward'),
-                            tooltip: l10n.camAlongForward,
-                            visualDensity: compact,
-                            color: Colors.white,
-                            icon: const Icon(Icons.fast_forward),
-                            onPressed: () => onSkip(skipBy),
-                          ),
-                          IconButton(
-                            key: const Key('cam-along-repeat'),
-                            tooltip: track.repeat
-                                ? l10n.camAlongRepeatOn
-                                : l10n.camAlongRepeatOff,
-                            isSelected: track.repeat,
-                            visualDensity: compact,
-                            color: track.repeat
-                                ? Theme.of(context).colorScheme.primary
-                                : Colors.white54,
-                            icon: const Icon(Icons.repeat),
-                            onPressed: onRepeat,
-                          ),
+                            IconButton(
+                              key: const Key('cam-along-toggle'),
+                              tooltip: track.playing
+                                  ? l10n.camAlongPause
+                                  : l10n.camAlongPlay,
+                              visualDensity: compact,
+                              color: Colors.white,
+                              icon: Icon(
+                                track.playing ? Icons.pause : Icons.play_arrow,
+                              ),
+                              onPressed: onToggle,
+                            ),
+                            IconButton(
+                              key: const Key('cam-along-stop'),
+                              tooltip: l10n.camAlongStop,
+                              visualDensity: compact,
+                              color: Colors.white,
+                              icon: const Icon(Icons.stop),
+                              onPressed: onStop,
+                            ),
+                            IconButton(
+                              key: const Key('cam-along-forward'),
+                              tooltip: l10n.camAlongForward,
+                              visualDensity: compact,
+                              color: Colors.white,
+                              icon: const Icon(Icons.fast_forward),
+                              onPressed: () => onSkip(skipBy),
+                            ),
+                            IconButton(
+                              key: const Key('cam-along-repeat'),
+                              tooltip: track.repeat
+                                  ? l10n.camAlongRepeatOn
+                                  : l10n.camAlongRepeatOff,
+                              isSelected: track.repeat,
+                              visualDensity: compact,
+                              color: track.repeat
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Colors.white54,
+                              icon: const Icon(Icons.repeat),
+                              onPressed: onRepeat,
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
             ),
           ],
@@ -649,7 +686,11 @@ class PlayAlongSidebar extends StatelessWidget {
     required this.onSectionHere,
     required this.onSectionClear,
     required this.onSpeed,
+    this.width,
   });
+
+  /// How wide it is; null: [widthFor] the screen.
+  final double? width;
 
   final Library library;
   final String eventId;
@@ -669,7 +710,8 @@ class PlayAlongSidebar extends StatelessWidget {
   final VoidCallback onSectionClear;
   final void Function(double speed) onSpeed;
 
-  /// Its width on a screen [screen] wide: half of it, from 160 to 360 px.
+  /// Its default width on a screen [screen] wide: half of it, from 160
+  /// to 360 px; the user drags it wider or narrower ([PlayAlongBeside]).
   static double widthFor(double screen) => (screen * 0.5).clamp(160.0, 360.0);
 
   /// What the list keeps of the sidebar's height, at least (two of its
@@ -682,7 +724,7 @@ class PlayAlongSidebar extends StatelessWidget {
     final l10n = context.l10n;
     return SizedBox(
       key: const Key('cam-along-sidebar'),
-      width: widthFor(MediaQuery.sizeOf(context).width),
+      width: width ?? widthFor(MediaQuery.sizeOf(context).width),
       child: Material(
         color: const Color(0xFF1C1C1C),
         child: Column(

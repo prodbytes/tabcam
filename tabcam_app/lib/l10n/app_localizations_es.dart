@@ -1888,4 +1888,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get videoEditCouldntSave => 'No se pudo guardar el video';
+
+  @override
+  String get dictionaryHide => 'Ocultar el diccionario';
 }

@@ -235,7 +235,7 @@ void main() {
     final (library, id) = await captureWith(tester, [
       (PageKind.image, 'jpg'),
       // A PDF to follow opens the sidebar, with no player in it (at a
-      // phone's width the player overflows: a separate issue).
+      // phone's width the player is 37 px too tall: a separate issue).
       (PageKind.pdf, 'pdf'),
     ], tab: true);
     await tester.pumpWidget(host(EventScreen(library: library, eventId: id)));

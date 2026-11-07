@@ -97,7 +97,20 @@ class _VideoFrameThumbnailState extends State<VideoFrameThumbnail> {
     _open();
   }
 
+  /// The thumbnails open their players one after another, not all at
+  /// once (each is a decoder; a list of takes would open a dozen together
+  /// and take long to show any), so the list shows at once and the frames
+  /// fill in.
+  static Future<void> _queue = Future.value();
+
   Future<void> _open() async {
+    final turn = _queue.then((_) => _openNow());
+    _queue = turn.catchError((_) {});
+    await turn;
+  }
+
+  Future<void> _openNow() async {
+    if (_disposed) return;
     try {
       final controller = await openPlayer(
         widget.library,
