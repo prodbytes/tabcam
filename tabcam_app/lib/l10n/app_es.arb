@@ -507,5 +507,6 @@
   "videoEditTrackBefore": "La pista empieza {time} antes del video",
   "videoEditReplaces": "Guardar reemplaza el video.",
   "videoEditSaving": "Guardando el video…",
-  "videoEditCouldntSave": "No se pudo guardar el video"
+  "videoEditCouldntSave": "No se pudo guardar el video",
+  "dictionaryHide": "Ocultar el diccionario"
 }

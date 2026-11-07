@@ -1846,4 +1846,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoEditCouldntSave => 'Couldn\'t save the video';
+
+  @override
+  String get dictionaryHide => 'Hide the dictionary';
 }

@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
-import '../dictionary/dictionary_screen.dart';
+import '../dictionary/dictionary_sidebar.dart';
 import '../l10n/language.dart';
 import '../library/capture_event.dart';
 import '../cloud/cloud_ocr.dart';
@@ -291,6 +291,12 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
 
   KeyEventResult _key(FocusNode _, KeyEvent event) {
     if (event is KeyUpEvent || widget.gate != null) {
+      return KeyEventResult.ignored;
+    }
+    // Typing in a field (the dictionary's search) isn't moving the tab.
+    if (FocusManager.instance.primaryFocus?.context
+            ?.findAncestorWidgetOfExactType<EditableText>() !=
+        null) {
       return KeyEventResult.ignored;
     }
     final key = event.logicalKey;
@@ -658,15 +664,18 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
                   )
                 : null,
           ),
-          body: gate == null
-              ? body
-              : PremiumGate(
-                  ocr: gate.ocr,
-                  email: gate.email,
-                  lead: l10n.premiumCamFeature,
-                  onClose: () => Navigator.of(context).pop(),
-                  child: body,
-                ),
+          body: DictionaryBeside(
+            onClosed: _focus.requestFocus,
+            child: gate == null
+                ? body
+                : PremiumGate(
+                    ocr: gate.ocr,
+                    email: gate.email,
+                    lead: l10n.premiumCamFeature,
+                    onClose: () => Navigator.of(context).pop(),
+                    child: body,
+                  ),
+          ),
         ),
       ),
     );

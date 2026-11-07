@@ -63,9 +63,11 @@ review notes ([app stores](app-stores.md)).
   along plays one of the capture's recordings, videos or links in a
   frame above the camera, the space bar pausing and playing it.
 - [Dictionary](dictionary.md): a book icon at the top of every file
-  viewer and Cam opens a search: a chord shows its notes and voicings
-  as chord diagrams, a scale its notes on the fretboard (both worked out
-  on the device); anything else is searched on YouTube.
+  viewer and Cam opens a search in a sidebar on the right: a chord shows
+  its notes and voicings as chord diagrams, a scale its notes on the
+  fretboard (both worked out on the device); anything else is searched
+  on YouTube. Every sidebar (the dictionary, the play-along player) is
+  resizable by dragging its edge, the width kept on the device.
 - [Video edit](video-edit.md): basic edits of a video from its file
   screen, on the device: trim its start and end; keep its sound, take it
   out, or replace it with a new track (one of the capture's recordings
