@@ -2050,7 +2050,44 @@ spec.
    at once and the frames fill in. See the
    [event screen](event-screen.md), [tab recognition](tab-recognition.md#text-view)
    and [platforms](platforms.md).
-8. **On the video editor's first row, the player's current time at
+8. **Make the dictionary a sidebar instead of a full-screen view: like
+   the mini player, opened on the right side, with the same features.
+   Make all sidebars resizable, so the user can set the right size if
+   one is too narrow.** The Dictionary button now shows and hides a
+   sidebar on the right (at the right edge, beside the play-along
+   player's when both show), with its title and ✕, the search field and
+   the same chord, scale and YouTube results; the viewer stays beside it
+   and keeps working. Its open state and search are app-wide (open on
+   the capture, it's open on a file and in Cam). In Cam, typing in it no
+   longer turns the tab. In a narrow sidebar the scale's fretboard
+   stands up (low E on the left, frets going down); wider than 480 px it
+   lies across as before. Both sidebars (the dictionary's, 40% of the
+   screen from 280 to 420 px by default; the play-along player's, half
+   the screen from 160 to 360 px) now have a separator on their left
+   edge: dragged, they get wider or narrower (from 160 px, leaving the
+   viewer 96 px, the camera 120 px); a double tap puts the default back.
+   The widths are the same on every screen and kept on the device
+   (`SidebarWidths`, the library's `sidebars` meta file). The player's
+   buttons shrink to fit a narrow sidebar. In English, Spanish and
+   Portuguese. See [dictionary](dictionary.md), [Cam](cam.md) and
+   [event screen](event-screen.md).
+9. **Move the buttons to the top: on the top row, the back button,
+   the title and, to the right, Copy, Rescan and Verified, so the
+   character actions are on their own line, enough for mobile.** In the
+   Text view the event screen's app bar has the view's Copy, Rescan and
+   Verified (and Fix, when shown) right of the title, and the line above
+   the text has the editing tools alone. On a screen narrower than 600 px
+   those three are icons with tooltips, the app bar's other buttons
+   (Dictionary, which shows or hides its sidebar, Play along, Rename,
+   Clone, Download all, Share) go in a More menu, and the tools sit 4 px apart with Overtype an icon and each
+   tap area its 40 px button. The tools never shrink now: on a 390 px
+   phone they fit one line, and beside the play-along sidebar they wrap
+   on to more lines at full size (each was about 10 px wide on a phone,
+   and 18 px beside the sidebar, scaled down). This reverses the
+   earlier choice of Copy above the text and not in the app bar. See
+   [tab recognition](tab-recognition.md#text-view) and the
+   [event screen](event-screen.md).
+10. **On the video editor's first row, the player's current time at
    the right of the play arrow, so the user knows where they are and sets
    the trims right; and a second bar for the audio, which the user trims
    and moves to match the video.** The preview's control row ends with

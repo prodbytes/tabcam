@@ -221,13 +221,18 @@ class _ChordPainter extends CustomPainter {
       old.root != root;
 }
 
-/// The neck up to the twelfth fret, high E at the top, with every note of
-/// [scale] on it (the roots in the theme's primary colour), the open
-/// strings before the nut and the fret numbers under it.
+/// The neck up to the twelfth fret with every note of [scale] on it
+/// (the roots in the theme's primary colour), the open strings before the
+/// nut and the fret numbers beside it. Wide, it lies across, as seen from
+/// above, high E at the top; narrow (a sidebar), it stands up, as a chord
+/// diagram does, low E on the left and the frets going down.
 class ScaleFretboard extends StatelessWidget {
   const ScaleFretboard({super.key, required this.scale});
 
   final Scale scale;
+
+  /// Narrower than this, it stands up.
+  static const across = 480.0;
 
   @override
   Widget build(BuildContext context) {
@@ -238,21 +243,198 @@ class ScaleFretboard extends StatelessWidget {
         final width = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : 360.0;
+        final colors = _FretboardColors(
+          line: scheme.onSurface,
+          muted: scheme.onSurfaceVariant,
+          note: scheme.surfaceContainerHighest,
+          onNote: scheme.onSurface,
+          root: scheme.primary,
+          onRoot: scheme.onPrimary,
+        );
+        if (width < across) {
+          // No wider than reads well: about 44 px a string.
+          final w = width.clamp(0.0, 300.0);
+          return Align(
+            alignment: Alignment.topLeft,
+            child: CustomPaint(
+              key: const Key('scale-fretboard-standing'),
+              size: Size(w, w * 1.75),
+              painter: _StandingFretboardPainter(scale: scale, colors: colors),
+            ),
+          );
+        }
         return CustomPaint(
           size: Size(width, width * 0.42),
           painter: _FretboardPainter(
             scale: scale,
-            line: scheme.onSurface,
-            muted: scheme.onSurfaceVariant,
-            note: scheme.surfaceContainerHighest,
-            onNote: scheme.onSurface,
-            root: scheme.primary,
-            onRoot: scheme.onPrimary,
+            line: colors.line,
+            muted: colors.muted,
+            note: colors.note,
+            onNote: colors.onNote,
+            root: colors.root,
+            onRoot: colors.onRoot,
           ),
         );
       },
     );
   }
+}
+
+class _FretboardColors {
+  const _FretboardColors({
+    required this.line,
+    required this.muted,
+    required this.note,
+    required this.onNote,
+    required this.root,
+    required this.onRoot,
+  });
+
+  final Color line;
+  final Color muted;
+  final Color note;
+  final Color onNote;
+  final Color root;
+  final Color onRoot;
+}
+
+/// The neck standing up: six strings across, low E on the left; the open
+/// strings above the nut; twelve frets going down, numbered on the left.
+class _StandingFretboardPainter extends CustomPainter {
+  const _StandingFretboardPainter({required this.scale, required this.colors});
+
+  final Scale scale;
+  final _FretboardColors colors;
+
+  static const _frets = 12;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final left = size.width * 0.14;
+    final gapX = (size.width - left) / 6;
+    // Row 0 is the open strings, above the nut.
+    final gapY = size.height / (_frets + 1);
+    final nutY = gapY;
+    final stroke = Paint()
+      ..color = colors.line
+      ..strokeWidth = 1
+      ..style = PaintingStyle.stroke;
+    final firstX = left + gapX / 2;
+    final lastX = left + gapX * 5.5;
+
+    canvas.drawLine(
+      Offset(firstX, nutY),
+      Offset(lastX, nutY),
+      Paint()
+        ..color = colors.line
+        ..strokeWidth = 3,
+    );
+    for (var f = 2; f <= _frets + 1; f++) {
+      final y = f * gapY;
+      canvas.drawLine(Offset(firstX, y), Offset(lastX, y), stroke);
+    }
+    for (var s = 0; s < 6; s++) {
+      final x = left + (s + 0.5) * gapX;
+      canvas.drawLine(Offset(x, nutY), Offset(x, size.height), stroke);
+    }
+    // Fret markers, between the strings, and the fret numbers.
+    final marker = Paint()..color = colors.muted.withValues(alpha: 0.25);
+    final mid = (firstX + lastX) / 2;
+    for (final f in const [3, 5, 7, 9, 12]) {
+      final y = (f + 0.5) * gapY;
+      if (f == 12) {
+        canvas.drawCircle(
+          Offset(left + gapX * 1.5 + gapX / 2, y),
+          gapX * 0.14,
+          marker,
+        );
+        canvas.drawCircle(
+          Offset(left + gapX * 3.5 + gapX / 2, y),
+          gapX * 0.14,
+          marker,
+        );
+      } else {
+        canvas.drawCircle(Offset(mid, y), gapX * 0.14, marker);
+      }
+    }
+    for (var f = 1; f <= _frets; f++) {
+      _paintText(
+        canvas,
+        '$f',
+        Offset(left * 0.5, (f + 0.5) * gapY),
+        color: colors.muted,
+        size: (gapY * 0.38).clamp(8.0, 13.0),
+      );
+    }
+    final r = (gapY < gapX ? gapY : gapX) * 0.4;
+    for (var s = 0; s < 6; s++) {
+      final x = left + (s + 0.5) * gapX;
+      final open = standardTuning[s];
+      for (var f = 0; f <= _frets; f++) {
+        final pc = (open + f) % 12;
+        final spelled = scale.spell(pc);
+        if (spelled == null) continue;
+        final isRoot = pc == scale.root.pitchClass;
+        final y = (f + 0.5) * gapY;
+        canvas.drawCircle(
+          Offset(x, y),
+          r,
+          Paint()..color = isRoot ? colors.root : colors.note,
+        );
+        if (!isRoot) {
+          canvas.drawCircle(
+            Offset(x, y),
+            r,
+            Paint()
+              ..color = colors.line.withValues(alpha: 0.5)
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 0.8,
+          );
+        }
+        _paintText(
+          canvas,
+          spelled.name,
+          Offset(x, y),
+          color: isRoot ? colors.onRoot : colors.onNote,
+          size: r * (spelled.name.length > 1 ? 0.95 : 1.15),
+          bold: isRoot,
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_StandingFretboardPainter old) =>
+      old.scale.root != scale.root ||
+      old.scale.type.key != scale.type.key ||
+      old.colors.line != colors.line ||
+      old.colors.root != colors.root;
+}
+
+/// [text] centred on [center].
+void _paintText(
+  Canvas canvas,
+  String text,
+  Offset center, {
+  required Color color,
+  required double size,
+  bool bold = false,
+}) {
+  final painter = TextPainter(
+    text: TextSpan(
+      text: text,
+      style: TextStyle(
+        color: color,
+        fontSize: size,
+        fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+      ),
+    ),
+    textDirection: TextDirection.ltr,
+  )..layout();
+  painter.paint(
+    canvas,
+    Offset(center.dx - painter.width / 2, center.dy - painter.height / 2),
+  );
 }
 
 class _FretboardPainter extends CustomPainter {

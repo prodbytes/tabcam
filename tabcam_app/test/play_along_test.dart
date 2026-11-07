@@ -11,11 +11,13 @@ import 'package:tabcam_app/capture/media.dart';
 import 'package:tabcam_app/capture/play_along_screen.dart';
 import 'package:tabcam_app/capture/play_along_sidebar.dart';
 import 'package:tabcam_app/capture/take_overlay.dart';
+import 'package:tabcam_app/dictionary/dictionary_sidebar.dart';
 import 'package:tabcam_app/l10n/app_localizations.dart';
 import 'package:tabcam_app/library/capture_event.dart';
 import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
 import 'package:tabcam_app/screens/event_screen.dart';
+import 'package:tabcam_app/screens/sidebar_widths.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 
 import 'fake_camera.dart';
@@ -88,6 +90,8 @@ void main() {
   setUp(() {
     CameraPlatform.instance = camera = FakeCameraPlatform();
     VideoPlayerPlatform.instance = video = FakeVideoPlatform();
+    SidebarWidths.instance.clear();
+    DictionaryState.instance.clear();
   });
 
   Future<void> frames(WidgetTester tester) async {
@@ -592,6 +596,90 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.space);
     await tester.pump();
     expect(find.text('3 / 3'), findsOneWidget);
+  });
+
+  testWidgets('the play-along sidebar\'s edge drags it wider and narrower, '
+      'kept for the next screen; a double tap puts it back', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    await tester.runAsync(() async {
+      await library.addMedia(library.byId(id)!, [
+        Media(
+          XFile.fromData(Uint8List.fromList([1]), name: 'riff.m4a'),
+          PageKind.audio,
+          'm4a',
+        ),
+      ]);
+    });
+    Widget cam() => app(
+      PlayAlongScreen(
+        library: library,
+        eventId: id,
+        cameras: () async => [_front],
+        headTracking: (_, _) => null,
+        takeRecorder: () => null,
+      ),
+    );
+    await tester.pumpWidget(cam());
+    await frames(tester);
+    final sidebar = find.byKey(const Key('cam-along-sidebar'));
+    final split = find.byKey(const Key('cam-along-split'));
+    double width() => tester.getSize(sidebar).width;
+    // Half the 800 px screen, at most 360.
+    expect(width(), 360);
+    await tester.drag(split, const Offset(-120, 0));
+    await frames(tester);
+    final wider = width();
+    expect(wider, inInclusiveRange(450, 480));
+    expect(SidebarWidths.instance.of(SidebarWidths.playAlong), wider);
+    // Another screen's sidebar is as wide.
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(cam());
+    await frames(tester);
+    expect(width(), wider);
+    // Not narrower than the least.
+    await tester.drag(split, const Offset(600, 0));
+    await frames(tester);
+    expect(width(), SidebarWidths.min);
+    await tester.tap(split);
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(split);
+    await frames(tester);
+    expect(width(), 360);
+  });
+
+  testWidgets('the dictionary opens beside Cam; typing in it doesn\'t turn '
+      'the tab, and closed, the keys turn it again', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+        ),
+      ),
+    );
+    await frames(tester);
+    expect(find.text('1 / 3'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('dictionary')));
+    await frames(tester);
+    expect(find.byKey(const Key('dictionary-sidebar')), findsOneWidget);
+    expect(find.byKey(const Key('preview')), findsOneWidget);
+    await tester.showKeyboard(find.byKey(const Key('dictionary-query')));
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.enterText(find.byKey(const Key('dictionary-query')), 'Am');
+    await frames(tester);
+    expect(find.text('1 / 3'), findsOneWidget);
+    expect(find.byKey(const Key('dictionary-chord')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('dictionary-close')));
+    await frames(tester);
+    expect(find.byKey(const Key('dictionary-sidebar')), findsNothing);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+    await tester.pump();
+    expect(find.text('2 / 3'), findsOneWidget);
   });
 
   testWidgets('with nothing to play along, no Play along', (tester) async {

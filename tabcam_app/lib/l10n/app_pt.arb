@@ -508,6 +508,7 @@
   "videoEditReplaces": "Salvar substitui o vídeo.",
   "videoEditSaving": "Salvando o vídeo…",
   "videoEditCouldntSave": "Não deu para salvar o vídeo",
+  "dictionaryHide": "Ocultar o dicionário",
   "videoEditTrackBar": "A faixa ao longo da parte mantida: arraste para mover, as pontas para cortar",
   "videoEditTrackEarlier": "Um décimo de segundo antes",
   "videoEditTrackLater": "Um décimo de segundo depois",

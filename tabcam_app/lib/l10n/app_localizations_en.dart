@@ -1848,6 +1848,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditCouldntSave => 'Couldn\'t save the video';
 
   @override
+  String get dictionaryHide => 'Hide the dictionary';
+
+  @override
   String get videoEditTrackBar =>
       'The track along the kept part: drag it to move it, its ends to trim it';
 

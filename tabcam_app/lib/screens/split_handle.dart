@@ -11,6 +11,7 @@ class SplitHandle extends StatelessWidget {
     super.key,
     required this.axis,
     required this.onDrag,
+    this.onDragEnd,
     this.onReset,
     this.color,
     this.background,
@@ -20,6 +21,9 @@ class SplitHandle extends StatelessWidget {
 
   /// How far it was dragged along [axis], in logical pixels.
   final void Function(double delta) onDrag;
+
+  /// When the drag ends (to keep the new size).
+  final VoidCallback? onDragEnd;
   final VoidCallback? onReset;
 
   /// The line's and grip's colour; the theme's outline by default.
@@ -46,6 +50,12 @@ class SplitHandle extends StatelessWidget {
         dragStartBehavior: DragStartBehavior.down,
         onHorizontalDragUpdate: across ? (d) => onDrag(d.delta.dx) : null,
         onVerticalDragUpdate: across ? null : (d) => onDrag(d.delta.dy),
+        onHorizontalDragEnd: across && onDragEnd != null
+            ? (_) => onDragEnd!()
+            : null,
+        onVerticalDragEnd: !across && onDragEnd != null
+            ? (_) => onDragEnd!()
+            : null,
         onDoubleTap: onReset,
         child: ColoredBox(
           color: background ?? scheme.surface,

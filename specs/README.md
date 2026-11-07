@@ -63,9 +63,11 @@ review notes ([app stores](app-stores.md)).
   along plays one of the capture's recordings, videos or links in a
   frame above the camera, the space bar pausing and playing it.
 - [Dictionary](dictionary.md): a book icon at the top of every file
-  viewer and Cam opens a search: a chord shows its notes and voicings
-  as chord diagrams, a scale its notes on the fretboard (both worked out
-  on the device); anything else is searched on YouTube.
+  viewer and Cam opens a search in a sidebar on the right: a chord shows
+  its notes and voicings as chord diagrams, a scale its notes on the
+  fretboard (both worked out on the device); anything else is searched
+  on YouTube. Every sidebar (the dictionary, the play-along player) is
+  resizable by dragging its edge, the width kept on the device.
 - [Video edit](video-edit.md): basic edits of a video from its file
   screen, on the device: trim its start and end; keep its sound, take it
   out, or replace it with a new track (one of the capture's recordings
@@ -82,7 +84,7 @@ review notes ([app stores](app-stores.md)).
   without Premium), for text tabs
   and typeset tab staves, never over the user's edits or a reading marked
   correct; the Text view, a tab editor (Copy, Rescan and Verified
-  on one line; overtype, − and + on a fret, ++ and −− moving a note across strings, | a bar line across the staff, || every string ending together, = an empty six-string staff) where a reading is marked
+  in the app bar, the editing tools on their own line; overtype, − and + on a fret, ++ and −− moving a note across strings, | a bar line across the staff, || every string ending together, = an empty six-string staff) where a reading is marked
   verified (the event then opens on it).
 - [Auto-correct](autocorrect.md): Fix, **hidden for now** (on only in a
   build with `TABCAM_FIX=true`): lines the tab up, and for Premium Claude

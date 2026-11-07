@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../capture/play_along_sidebar.dart';
-import '../dictionary/dictionary_screen.dart';
+import '../dictionary/dictionary_sidebar.dart';
 import '../l10n/language.dart';
 import 'rename_dialog.dart';
 import '../library/library.dart';
@@ -353,23 +353,25 @@ class _FileScreenState extends State<FileScreen> {
           // The whole body: an image fits it, not its own size. An image
           // and a PDF have the play-along sidebar beside them; a recording
           // plays in it.
-          body: _beside(
-            event,
-            page,
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: SizedBox.expand(
-                child: _inSidebar(event, page)
-                    ? const _RecordingAside()
-                    : _editing
-                    ? const SizedBox.shrink()
-                    : FilePreview(
-                        library: _library,
-                        event: event,
-                        page: page.isImage
-                            ? page.copyWith(filter: filter)
-                            : page,
-                      ),
+          body: DictionaryBeside(
+            child: _beside(
+              event,
+              page,
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: SizedBox.expand(
+                  child: _inSidebar(event, page)
+                      ? const _RecordingAside()
+                      : _editing
+                      ? const SizedBox.shrink()
+                      : FilePreview(
+                          library: _library,
+                          event: event,
+                          page: page.isImage
+                              ? page.copyWith(filter: filter)
+                              : page,
+                        ),
+                ),
               ),
             ),
           ),

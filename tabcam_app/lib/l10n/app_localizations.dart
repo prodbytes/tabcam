@@ -3154,6 +3154,12 @@ abstract class AppLocalizations {
   /// **'Couldn\'t save the video'**
   String get videoEditCouldntSave;
 
+  /// App bar and dictionary sidebar: hides the dictionary sidebar
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the dictionary'**
+  String get dictionaryHide;
+
   /// Video edit: what the track bar does (tooltip, screen reader)
   ///
   /// In en, this message translates to:

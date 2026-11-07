@@ -10,7 +10,7 @@ import '../capture/media.dart';
 import '../capture/page_source.dart';
 import '../capture/play_along_screen.dart';
 import '../capture/play_along_sidebar.dart';
-import '../dictionary/dictionary_screen.dart';
+import '../dictionary/dictionary_sidebar.dart';
 import '../export/capture_link.dart';
 import '../export/download.dart';
 import '../import/tab_page_import.dart';
@@ -162,8 +162,12 @@ class _EventScreenState extends State<EventScreen> {
     _list.dispose();
     _player.dispose();
     _alongOrNull?.dispose();
+    _textActions.dispose();
     super.dispose();
   }
+
+  /// The Text view's Copy, Fix, Rescan and Verified, in the app bar.
+  final _textActions = TabTextActions();
 
   /// Playing along beside the Text view, made when it first shows.
   PlayAlong? _alongOrNull;
@@ -186,6 +190,76 @@ class _EventScreenState extends State<EventScreen> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// On a phone, in the Text view: Dictionary (its sidebar shown or
+  /// hidden), Play along, Rename, Clone, Download all and Share, in a menu
+  /// at the app bar's end.
+  Widget _moreMenu(CaptureEvent event, {required bool editable}) {
+    final l10n = context.l10n;
+    final along = _along;
+    PopupMenuItem<VoidCallback> item(
+      String key,
+      IconData icon,
+      String label,
+      VoidCallback action, {
+      bool enabled = true,
+    }) => PopupMenuItem(
+      key: Key(key),
+      value: action,
+      enabled: enabled,
+      child: ListTile(leading: Icon(icon), title: Text(label)),
+    );
+    return PopupMenuButton<VoidCallback>(
+      key: const Key('event-more'),
+      tooltip: l10n.eventFileMore,
+      icon: const Icon(Icons.more_vert),
+      onSelected: (action) => action(),
+      itemBuilder: (context) => [
+        item(
+          'more-dictionary',
+          Icons.menu_book_outlined,
+          DictionaryState.instance.open ? l10n.dictionaryHide : l10n.dictionary,
+          DictionaryState.instance.toggle,
+        ),
+        if (along.available)
+          item(
+            'more-along',
+            Icons.queue_music,
+            along.open ? l10n.camAlongHide : l10n.camAlong,
+            along.toggle,
+          ),
+        if (editable)
+          item(
+            'more-rename',
+            Icons.edit_outlined,
+            l10n.eventRename,
+            () => _rename(event),
+          ),
+        if (!widget.byLink)
+          item(
+            'more-clone',
+            Icons.copy_all_outlined,
+            l10n.eventClone,
+            () => _clone(event),
+            enabled: !_busy,
+          ),
+        item(
+          'more-download-all',
+          Icons.download_outlined,
+          l10n.eventDownloadAll,
+          () => _downloadAll(event),
+          enabled: !_busy,
+        ),
+        item(
+          'more-share',
+          Icons.link,
+          l10n.eventShare,
+          () => _share(event),
+          enabled: !_busy,
+        ),
+      ],
+    );
   }
 
   void _snack(String message) =>
@@ -547,6 +621,7 @@ class _EventScreenState extends State<EventScreen> {
         library: _library,
         eventId: event.id,
         ocr: widget.ocr,
+        actions: _textActions,
         // Rescan: the text replaced by a new reading of the pages.
         onRescan: reader != null && event.pages.any((p) => p.isImage || p.isPdf)
             ? () => _rescan(event)
@@ -955,6 +1030,9 @@ class _EventScreenState extends State<EventScreen> {
         final text = _text;
         final locked = _locked;
         final l10n = context.l10n;
+        final narrow = MediaQuery.sizeOf(context).width < 600;
+        // The Text view shows the tab: its buttons go in the app bar.
+        final textActions = text && !locked && event.tabText != null;
         final hasText = event.tabText?.trim().isNotEmpty ?? false;
         final reading = switch (AutoReaderScope.of(context)
             ?.stateOf(event.id)) {
@@ -1003,31 +1081,50 @@ class _EventScreenState extends State<EventScreen> {
               ),
             ),
             actions: [
-              const DictionaryButton(),
-              if (text && !locked) PlayAlongButton(along: _along),
-              if (editable)
-                IconButton(
-                  tooltip: l10n.eventRename,
-                  icon: const Icon(Icons.edit_outlined),
-                  onPressed: () => _rename(event),
+              // The Text view's Copy, Fix, Rescan and Verified, right of
+              // the title: icons on a phone.
+              if (textActions)
+                ListenableBuilder(
+                  listenable: _textActions,
+                  builder: (context, _) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ..._textActions.build(context, compact: narrow),
+                      if (!narrow) const SizedBox(width: 8),
+                    ],
+                  ),
                 ),
-              if (!widget.byLink)
+              // On a phone they leave room for the title only with the
+              // other buttons in a menu.
+              if (textActions && narrow)
+                _moreMenu(event, editable: editable)
+              else ...[
+                const DictionaryButton(),
+                if (text && !locked) PlayAlongButton(along: _along),
+                if (editable)
+                  IconButton(
+                    tooltip: l10n.eventRename,
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () => _rename(event),
+                  ),
+                if (!widget.byLink)
+                  IconButton(
+                    tooltip: l10n.eventClone,
+                    icon: const Icon(Icons.copy_all_outlined),
+                    onPressed: _busy ? null : () => _clone(event),
+                  ),
                 IconButton(
-                  tooltip: l10n.eventClone,
-                  icon: const Icon(Icons.copy_all_outlined),
-                  onPressed: _busy ? null : () => _clone(event),
+                  key: const Key('download-all'),
+                  tooltip: l10n.eventDownloadAll,
+                  icon: const Icon(Icons.download_outlined),
+                  onPressed: _busy ? null : () => _downloadAll(event),
                 ),
-              IconButton(
-                key: const Key('download-all'),
-                tooltip: l10n.eventDownloadAll,
-                icon: const Icon(Icons.download_outlined),
-                onPressed: _busy ? null : () => _downloadAll(event),
-              ),
-              IconButton(
-                tooltip: l10n.eventShare,
-                icon: const Icon(Icons.link),
-                onPressed: _busy ? null : () => _share(event),
-              ),
+                IconButton(
+                  tooltip: l10n.eventShare,
+                  icon: const Icon(Icons.link),
+                  onPressed: _busy ? null : () => _share(event),
+                ),
+              ],
             ],
             bottom: _busy
                 ? const PreferredSize(
@@ -1037,28 +1134,30 @@ class _EventScreenState extends State<EventScreen> {
                 : null,
           ),
           // Files dragged onto the screen are added to the capture.
-          body: FileDropArea(
-            enabled: !_busy && canAdd,
-            onFiles: (files, skipped) => _addDropped(event, files, skipped),
-            child: Column(
-              children: [
-                if (widget.byLink)
-                  _LinkBanner(onSignIn: widget.onSignIn)
-                else if (event.sharedBy case final owner?)
-                  _SharedBanner(owner: owner, readOnly: event.readOnly),
-                Expanded(
-                  // Locked, the preview has no sidebar (nothing plays).
-                  child: !text
-                      ? _fileList(event)
-                      : locked
-                      ? _textView(event)
-                      : PlayAlongBeside(
-                          along: _along,
-                          footer: const NotationSheet(),
-                          child: _textView(event),
-                        ),
-                ),
-              ],
+          body: DictionaryBeside(
+            child: FileDropArea(
+              enabled: !_busy && canAdd,
+              onFiles: (files, skipped) => _addDropped(event, files, skipped),
+              child: Column(
+                children: [
+                  if (widget.byLink)
+                    _LinkBanner(onSignIn: widget.onSignIn)
+                  else if (event.sharedBy case final owner?)
+                    _SharedBanner(owner: owner, readOnly: event.readOnly),
+                  Expanded(
+                    // Locked, the preview has no sidebar (nothing plays).
+                    child: !text
+                        ? _fileList(event)
+                        : locked
+                        ? _textView(event)
+                        : PlayAlongBeside(
+                            along: _along,
+                            footer: const NotationSheet(),
+                            child: _textView(event),
+                          ),
+                  ),
+                ],
+              ),
             ),
           ),
           bottomNavigationBar: SafeArea(

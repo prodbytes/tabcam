@@ -1885,6 +1885,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditCouldntSave => 'Não deu para salvar o vídeo';
 
   @override
+  String get dictionaryHide => 'Ocultar o dicionário';
+
+  @override
   String get videoEditTrackBar =>
       'A faixa ao longo da parte mantida: arraste para mover, as pontas para cortar';
 

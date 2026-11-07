@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
-import 'package:tabcam_app/dictionary/dictionary_screen.dart';
+import 'package:tabcam_app/dictionary/dictionary_sidebar.dart';
 import 'package:tabcam_app/dictionary/music_theory.dart';
 import 'package:tabcam_app/dictionary/voicings.dart';
 import 'package:tabcam_app/l10n/app_localizations.dart';
@@ -9,6 +9,7 @@ import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
 import 'package:tabcam_app/screens/event_screen.dart';
 import 'package:tabcam_app/screens/file_screen.dart';
+import 'package:tabcam_app/screens/sidebar_widths.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import 'fakes.dart';
@@ -176,36 +177,90 @@ void main() {
     });
   });
 
-  group('the screen', () {
+  group('the sidebar', () {
     late FakeLauncher launcher;
 
     setUp(() {
       launcher = FakeLauncher();
       UrlLauncherPlatform.instance = launcher;
+      DictionaryState.instance.clear();
+      SidebarWidths.instance.clear();
     });
 
-    Future<void> open(WidgetTester tester) async {
+    /// A screen 1200 × 800 with the button and the sidebar beside some
+    /// content.
+    Future<void> show(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
       await tester.pumpWidget(
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(appBar: AppBar(actions: const [DictionaryButton()])),
+          home: Scaffold(
+            appBar: AppBar(actions: const [DictionaryButton()]),
+            body: const DictionaryBeside(
+              child: SizedBox.expand(key: Key('content')),
+            ),
+          ),
         ),
       );
+    }
+
+    Future<void> open(WidgetTester tester) async {
+      await show(tester);
       await tester.tap(find.byKey(const Key('dictionary')));
       await tester.pumpAndSettle();
     }
 
+    final sidebar = find.byKey(const Key('dictionary-sidebar'));
     final query = find.byKey(const Key('dictionary-query'));
+    final split = find.byKey(const Key('dictionary-split'));
+    double width(WidgetTester tester) => tester.getSize(sidebar).width;
 
-    testWidgets('opens from the button, with examples to tap', (tester) async {
-      await open(tester);
-      expect(find.byType(DictionaryScreen), findsOneWidget);
+    testWidgets('the button opens it on the right, beside the screen, and '
+        'hides it', (tester) async {
+      await show(tester);
+      expect(sidebar, findsNothing);
+      await tester.tap(find.byKey(const Key('dictionary')));
+      await tester.pumpAndSettle();
+      expect(sidebar, findsOneWidget);
       expect(query, findsOneWidget);
-      await tester.tap(find.widgetWithText(ActionChip, 'Am7'));
+      // The content stays, on the left; the sidebar is 40% of the screen.
+      expect(find.byKey(const Key('content')), findsOneWidget);
+      expect(tester.getTopRight(sidebar).dx, 1200);
+      expect(width(tester), 420);
+      expect(
+        tester.getTopRight(find.byKey(const Key('content'))).dx,
+        lessThan(tester.getTopLeft(sidebar).dx),
+      );
+      await tester.tap(find.byKey(const Key('dictionary')));
+      await tester.pumpAndSettle();
+      expect(sidebar, findsNothing);
+      expect(find.byKey(const Key('content')), findsOneWidget);
+    });
+
+    testWidgets('its close button hides it; the search is kept', (
+      tester,
+    ) async {
+      await open(tester);
+      await tester.enterText(query, 'Am7');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('dictionary-close')));
+      await tester.pumpAndSettle();
+      expect(sidebar, findsNothing);
+      expect(DictionaryState.instance.open, isFalse);
+      await tester.tap(find.byKey(const Key('dictionary')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('dictionary-chord')), findsOneWidget);
       expect(find.text('Am7'), findsWidgets);
+    });
+
+    testWidgets('offers examples to tap', (tester) async {
+      await open(tester);
+      await tester.tap(find.widgetWithText(ActionChip, 'Am7'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('dictionary-chord')), findsOneWidget);
       expect(find.byKey(const Key('chord-diagram')), findsWidgets);
     });
 
@@ -223,15 +278,19 @@ void main() {
       expect(launcher.launched, isEmpty);
     });
 
-    testWidgets('shows a scale on the neck', (tester) async {
+    testWidgets('shows a scale on the neck: standing in the sidebar, across '
+        'once it is dragged wide', (tester) async {
       await open(tester);
       await tester.enterText(query, 'A minor pentatonic');
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('dictionary-scale')), findsOneWidget);
-      expect(find.text('A minor pentatonic'), findsWidgets);
       expect(find.text('Scale · A  C  D  E  G'), findsOneWidget);
       expect(find.byKey(const Key('scale-fretboard')), findsOneWidget);
-      expect(find.byKey(const Key('chord-diagram')), findsNothing);
+      expect(find.byKey(const Key('scale-fretboard-standing')), findsOneWidget);
+      await tester.drag(split, const Offset(-300, 0));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('scale-fretboard')), findsOneWidget);
+      expect(find.byKey(const Key('scale-fretboard-standing')), findsNothing);
     });
 
     testWidgets('searches YouTube for anything else', (tester) async {
@@ -239,7 +298,6 @@ void main() {
       await tester.enterText(query, 'made-up riff lesson');
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('dictionary-youtube')), findsOneWidget);
-      expect(find.byKey(const Key('chord-diagram')), findsNothing);
       await tester.testTextInput.receiveAction(TextInputAction.search);
       await tester.pump();
       expect(launcher.launched, hasLength(1));
@@ -251,10 +309,49 @@ void main() {
       await tester.pump();
       expect(launcher.launched, hasLength(2));
     });
+
+    testWidgets('its edge drags it wider and narrower, within the screen; a '
+        'double tap puts it back', (tester) async {
+      await open(tester);
+      expect(width(tester), 420);
+      // The drag's slop aside, it follows the edge.
+      await tester.drag(split, const Offset(-120, 0));
+      await tester.pumpAndSettle();
+      final wider = width(tester);
+      expect(wider, inInclusiveRange(510, 540));
+      expect(SidebarWidths.instance.of(SidebarWidths.dictionary), wider);
+      await tester.drag(split, const Offset(220, 0));
+      await tester.pumpAndSettle();
+      expect(width(tester), inInclusiveRange(wider - 220, wider - 190));
+      // Never narrower than the least, nor so wide the screen goes.
+      await tester.drag(split, const Offset(400, 0));
+      await tester.pumpAndSettle();
+      expect(width(tester), SidebarWidths.min);
+      await tester.drag(split, const Offset(-2000, 0));
+      await tester.pumpAndSettle();
+      expect(width(tester), 1200 - DictionaryBeside.minChild - 12);
+      // Closed and opened again, it keeps its width.
+      await tester.tap(find.byKey(const Key('dictionary')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('dictionary')));
+      await tester.pumpAndSettle();
+      expect(width(tester), 1200 - DictionaryBeside.minChild - 12);
+      await tester.tap(split);
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tap(split);
+      await tester.pumpAndSettle();
+      expect(width(tester), 420);
+      expect(SidebarWidths.instance.of(SidebarWidths.dictionary), isNull);
+    });
   });
 
   group('the button', () {
-    testWidgets('is at the top of the capture and its files', (tester) async {
+    testWidgets('is at the top of the capture and its files, and opens the '
+        'sidebar there', (tester) async {
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      DictionaryState.instance.clear();
       final library = Library(PlatformEventStore(), null, (_) async => null);
       late String id;
       late String pageId;
@@ -273,6 +370,9 @@ void main() {
       );
       await tester.pump();
       expect(find.byKey(const Key('dictionary')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('dictionary')));
+      await tester.pump();
+      expect(find.byKey(const Key('dictionary-sidebar')), findsOneWidget);
       await tester.pumpWidget(
         MaterialApp(
           home: FileScreen(library: library, eventId: id, pageId: pageId),
@@ -280,6 +380,9 @@ void main() {
       );
       await tester.pump();
       expect(find.byKey(const Key('dictionary')), findsOneWidget);
+      // Still open, on the file's screen too.
+      expect(find.byKey(const Key('dictionary-sidebar')), findsOneWidget);
+      DictionaryState.instance.clear();
     });
   });
 }

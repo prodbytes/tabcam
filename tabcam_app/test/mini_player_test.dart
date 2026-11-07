@@ -227,6 +227,34 @@ void main() {
     home: home,
   );
 
+  testWidgets('on a phone, with the sidebar open beside the text, the '
+      'editing tools wrap at their full size', (tester) async {
+    tester.view.physicalSize = const Size(390, 844) * 3;
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    final (library, id) = await captureWith(tester, [
+      (PageKind.image, 'jpg'),
+      // A PDF to follow opens the sidebar, with no player in it (at a
+      // phone's width the player is 37 px too tall: a separate issue).
+      (PageKind.pdf, 'pdf'),
+    ], tab: true);
+    await tester.pumpWidget(host(EventScreen(library: library, eventId: id)));
+    await _frames(tester);
+    await tester.tap(find.byKey(const Key('text')));
+    await _frames(tester);
+    final sidebar = tester.getRect(find.byKey(const Key('cam-along-sidebar')));
+    expect(sidebar.width, greaterThan(100));
+    final plus = tester.getRect(
+      find.byTooltip('Fret up (the number under the cursor)'),
+    );
+    expect(plus.width, closeTo(40, 0.5));
+    // Every tool left of the sidebar: on more lines, not past the edge.
+    final overtype = tester.getRect(find.byKey(const Key('text-overtype')));
+    expect(overtype.width, closeTo(40, 0.5));
+    expect(overtype.right, lessThanOrEqualTo(sidebar.left));
+    expect(overtype.top, greaterThan(plus.top));
+  });
+
   testWidgets('the Text view has the play-along sidebar, open, with the '
       'recording loaded; the Files view has none, and pauses it', (
     tester,
