@@ -32,6 +32,9 @@ plays along.
   **Share** (a link icon) copies the capture's link, the one way to share
   it ([sharing](sharing.md)). There's no Hide images
   button (captures already [hidden](hidden-images.md) stay hidden).
+  First of all of them, in every view (the locked previews too),
+  **Dictionary** (a book icon) opens the chord and scale
+  [dictionary](dictionary.md).
 - **Shared with the user**: a line under the app bar, "Shared by <email>
   · Can edit" or "· Can view and add". Shared to read, Rename, reordering,
   Rotate, Delete and editing the text tab are off for the owner's files
@@ -160,7 +163,9 @@ plays along.
 One file, opened from the list, on its own screen (the back button goes
 to the list). The app bar has the file's name ("Page 2", a link's title,
 or the name the user gave it); tapping it renames the file, as does the
-**Rename** tool beside Delete.
+**Rename** tool beside Delete. **Dictionary** (a book icon, first of
+the app bar's buttons, for every kind of file) opens the chord and scale
+[dictionary](dictionary.md).
 The file is shown whole, as what it is:
 
 - **Images** are pinch-zoomable (up to 5×), as the view says. When the

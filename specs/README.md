@@ -62,6 +62,10 @@ review notes ([app stores](app-stores.md)).
   capture, Play plays it back with the tab turning as it did; Play
   along plays one of the capture's recordings, videos or links in a
   frame above the camera, the space bar pausing and playing it.
+- [Dictionary](dictionary.md): a book icon at the top of every file
+  viewer and Cam opens a search: a chord shows its notes and voicings
+  as chord diagrams, a scale its notes on the fretboard (both worked out
+  on the device); anything else is searched on YouTube.
 - [Hidden images](hidden-images.md): the owner hides a capture's photos
   and scans, for everyone; it then shows only the text tab, videos and
   links, and exports leave the images out.

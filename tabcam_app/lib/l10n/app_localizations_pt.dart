@@ -1693,4 +1693,99 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get installOpenGuide => 'Abrir o guia no GitHub';
+
+  @override
+  String get dictionary => 'Dicionário';
+
+  @override
+  String get dictionaryHint => 'Um acorde, uma escala ou uma música';
+
+  @override
+  String get dictionaryIntro =>
+      'Digite um acorde (C, Am7, F#m7b5, G/B) ou uma escala (A minor pentatonic, D dorian, C major scale) para vê-lo no violão. Qualquer outra coisa é pesquisada no YouTube.';
+
+  @override
+  String get dictionaryChord => 'Acorde';
+
+  @override
+  String get dictionaryScale => 'Escala';
+
+  @override
+  String get dictionaryNoVoicings => 'Não há como tocá-lo em quatro casas.';
+
+  @override
+  String dictionaryYouTube(String query) {
+    return 'Não é um acorde nem uma escala. Pesquisar “$query” no YouTube.';
+  }
+
+  @override
+  String get dictionarySearchYouTube => 'Pesquisar no YouTube';
+
+  @override
+  String dictionaryFret(int fret) {
+    return '$fretª';
+  }
+
+  @override
+  String get dictionaryScaleMajor => 'maior';
+
+  @override
+  String get dictionaryScaleMinor => 'menor';
+
+  @override
+  String get dictionaryScaleHarmonicMinor => 'menor harmônica';
+
+  @override
+  String get dictionaryScaleMelodicMinor => 'menor melódica';
+
+  @override
+  String get dictionaryScaleMajorPentatonic => 'pentatônica maior';
+
+  @override
+  String get dictionaryScaleMinorPentatonic => 'pentatônica menor';
+
+  @override
+  String get dictionaryScaleBlues => 'blues';
+
+  @override
+  String get dictionaryScaleMajorBlues => 'blues maior';
+
+  @override
+  String get dictionaryScaleDorian => 'dórica';
+
+  @override
+  String get dictionaryScalePhrygian => 'frígia';
+
+  @override
+  String get dictionaryScaleLydian => 'lídia';
+
+  @override
+  String get dictionaryScaleMixolydian => 'mixolídia';
+
+  @override
+  String get dictionaryScaleLocrian => 'lócria';
+
+  @override
+  String get dictionaryScalePhrygianDominant => 'frígia dominante';
+
+  @override
+  String get dictionaryScaleLydianDominant => 'lídia dominante';
+
+  @override
+  String get dictionaryScaleHarmonicMajor => 'maior harmônica';
+
+  @override
+  String get dictionaryScaleDoubleHarmonic => 'dupla harmônica';
+
+  @override
+  String get dictionaryScaleWholeTone => 'de tons inteiros';
+
+  @override
+  String get dictionaryScaleDiminished => 'diminuta';
+
+  @override
+  String get dictionaryScaleDominantDiminished => 'diminuta dominante';
+
+  @override
+  String get dictionaryScaleChromatic => 'cromática';
 }

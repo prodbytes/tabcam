@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
+import '../dictionary/dictionary_screen.dart';
 import '../l10n/language.dart';
 import '../library/capture_event.dart';
 import '../cloud/cloud_ocr.dart';
@@ -621,6 +622,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
               overflow: TextOverflow.ellipsis,
             ),
             actions: [
+              DictionaryButton(onClosed: _focus.requestFocus),
               if (gate == null)
                 PlayAlongButton(along: _along, onPressed: _focus.requestFocus),
               if (_heads case final heads?)

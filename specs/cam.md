@@ -12,7 +12,10 @@ its **Not now** leaving. With Premium it opens the camera view
 
 - **The camera** fills the screen, the **front** one first (it faces the
   player); **Flip camera** in the app bar moves to the next one (not
-  while recording). The app bar has the capture's title. Without a
+  while recording). The app bar has the capture's title, and first of
+  its buttons **Dictionary** (a book icon, in the preview too), which
+  opens the chord and scale [dictionary](dictionary.md) over Cam; back
+  from it, the keys move the tab again. Without a
   camera, or one that isn't allowed, the view says so.
 - **The tab**, along the bottom, one **neckline** at a time: a staff
   (a run of string lines) with the lines right above it, such as chord

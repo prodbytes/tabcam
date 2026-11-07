@@ -2805,6 +2805,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open the guide on GitHub'**
   String get installOpenGuide;
+
+  /// App bar: the chord and scale dictionary button
+  ///
+  /// In en, this message translates to:
+  /// **'Dictionary'**
+  String get dictionary;
+
+  /// Dictionary: the search field's hint
+  ///
+  /// In en, this message translates to:
+  /// **'A chord, a scale or a song'**
+  String get dictionaryHint;
+
+  /// Dictionary: what it does, under the empty field
+  ///
+  /// In en, this message translates to:
+  /// **'Type a chord (C, Am7, F#m7b5, G/B) or a scale (A minor pentatonic, D dorian, C major scale) to see it on the guitar. Anything else is searched on YouTube.'**
+  String get dictionaryIntro;
+
+  /// Dictionary: a chord result's kind
+  ///
+  /// In en, this message translates to:
+  /// **'Chord'**
+  String get dictionaryChord;
+
+  /// Dictionary: a scale result's kind
+  ///
+  /// In en, this message translates to:
+  /// **'Scale'**
+  String get dictionaryScale;
+
+  /// Dictionary: a chord with no voicing found
+  ///
+  /// In en, this message translates to:
+  /// **'No way to play it within four frets.'**
+  String get dictionaryNoVoicings;
+
+  /// Dictionary: the query is neither
+  ///
+  /// In en, this message translates to:
+  /// **'Not a chord or a scale. Search YouTube for “{query}”.'**
+  String dictionaryYouTube(String query);
+
+  /// Dictionary: the button that opens YouTube's search
+  ///
+  /// In en, this message translates to:
+  /// **'Search YouTube'**
+  String get dictionarySearchYouTube;
+
+  /// Dictionary: the fret a chord diagram starts at
+  ///
+  /// In en, this message translates to:
+  /// **'{fret}fr'**
+  String dictionaryFret(int fret);
+
+  /// Scale type
+  ///
+  /// In en, this message translates to:
+  /// **'major'**
+  String get dictionaryScaleMajor;
+
+  /// Scale type
+  ///
+  /// In en, this message translates to:
+  /// **'minor'**
+  String get dictionaryScaleMinor;
+
+  /// Scale type
+  ///
+  /// In en, this message translates to:
+  /// **'harmonic minor'**
+  String get dictionaryScaleHarmonicMinor;
+
+  /// Scale type
+  ///
+  /// In en, this message translates to:
+  /// **'melodic minor'**
+  String get dictionaryScaleMelodicMinor;
+
+  /// Scale type
+  ///
+  /// In en, this message translates to:
+  /// **'major pentatonic'**
+  String get dictionaryScaleMajorPentatonic;
+
+  /// Scale type
+  ///
+  /// In en, this message translates to:
+  /// **'minor pentatonic'**
+  String get dictionaryScaleMinorPentatonic;
+
+  /// Scale type
+  ///
+  /// In en, this message translates to:
+  /// **'blues'**
+  String get dictionaryScaleBlues;
+
+  /// Scale type
+  ///
+  /// In en, this message translates to:
+  /// **'major blues'**
+  String get dictionaryScaleMajorBlues;
+
+  /// Scale type
+  ///
+  /// In en, this message translates to:
+  /// **'dorian'**
+  String get dictionaryScaleDorian;
+
+  /// Scale type
+  ///
+  /// In en, this message translates to:
+  /// **'phrygian'**
+  String get dictionaryScalePhrygian;
+
+  /// Scale type
+  ///
+  /// In en, this message translates to:
+  /// **'lydian'**
+  String get dictionaryScaleLydian;
+
+  /// Scale type
+  ///
+  /// In en, this message translates to:
+  /// **'mixolydian'**
+  String get dictionaryScaleMixolydian;
+
+  /// Scale type
+  ///
+  /// In en, this message translates to:
+  /// **'locrian'**
+  String get dictionaryScaleLocrian;
+
+  /// Scale type
+  ///
+  /// In en, this message translates to:
+  /// **'phrygian dominant'**
+  String get dictionaryScalePhrygianDominant;
+
+  /// Scale type
+  ///
+  /// In en, this message translates to:
+  /// **'lydian dominant'**
+  String get dictionaryScaleLydianDominant;
+
+  /// Scale type
+  ///
+  /// In en, this message translates to:
+  /// **'harmonic major'**
+  String get dictionaryScaleHarmonicMajor;
+
+  /// Scale type
+  ///
+  /// In en, this message translates to:
+  /// **'double harmonic'**
+  String get dictionaryScaleDoubleHarmonic;
+
+  /// Scale type
+  ///
+  /// In en, this message translates to:
+  /// **'whole tone'**
+  String get dictionaryScaleWholeTone;
+
+  /// Scale type
+  ///
+  /// In en, this message translates to:
+  /// **'diminished'**
+  String get dictionaryScaleDiminished;
+
+  /// Scale type
+  ///
+  /// In en, this message translates to:
+  /// **'dominant diminished'**
+  String get dictionaryScaleDominantDiminished;
+
+  /// Scale type
+  ///
+  /// In en, this message translates to:
+  /// **'chromatic'**
+  String get dictionaryScaleChromatic;
 }
 
 class _AppLocalizationsDelegate
