@@ -1093,6 +1093,28 @@ class AppLocalizationsEs extends AppLocalizations {
       'Ninguna otra cuerda tiene sitio para esta nota ahí';
 
   @override
+  String get textViewBar =>
+      'Barra de compás: una | en todas las cuerdas, en el cursor';
+
+  @override
+  String get textViewAlignEnds =>
+      'Igualar los finales: todas las cuerdas terminan con la más larga';
+
+  @override
+  String get textViewPutCursorOnString =>
+      'Pon el cursor en una línea de cuerda';
+
+  @override
+  String get textViewNoStaff => 'No hay cuerdas que alinear';
+
+  @override
+  String get textViewEndsAligned => 'Todas las cuerdas ya terminan juntas';
+
+  @override
+  String get textViewNewStaff =>
+      'Tablatura vacía: seis cuerdas, e B G D A E, de 80 caracteres de ancho';
+
+  @override
   String get textViewOvertypeOn =>
       'Sobrescribir: lo que escribes reemplaza caracteres, las columnas no se mueven';
 

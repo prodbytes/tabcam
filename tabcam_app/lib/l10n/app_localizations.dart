@@ -1786,6 +1786,42 @@ abstract class AppLocalizations {
   /// **'No other string has room for this note there'**
   String get textViewNoStringFree;
 
+  /// Tooltip of |: a bar line across the staff at the cursor
+  ///
+  /// In en, this message translates to:
+  /// **'Bar line: a | across every string, at the cursor'**
+  String get textViewBar;
+
+  /// Tooltip of ||: pads every string of each staff to the longest
+  ///
+  /// In en, this message translates to:
+  /// **'Line up the ends: every string ends with the longest'**
+  String get textViewAlignEnds;
+
+  /// Snackbar when | finds the cursor off the strings
+  ///
+  /// In en, this message translates to:
+  /// **'Put the cursor on a string line'**
+  String get textViewPutCursorOnString;
+
+  /// Snackbar when || finds no staff in the text
+  ///
+  /// In en, this message translates to:
+  /// **'There are no strings to line up'**
+  String get textViewNoStaff;
+
+  /// Snackbar when || finds nothing to pad
+  ///
+  /// In en, this message translates to:
+  /// **'Every string already ends together'**
+  String get textViewEndsAligned;
+
+  /// Tooltip of =: adds an empty six-string staff under the cursor
+  ///
+  /// In en, this message translates to:
+  /// **'Empty staff: six strings, e B G D A E, 80 characters wide'**
+  String get textViewNewStaff;
+
   /// Tooltip of Overtype while on
   ///
   /// In en, this message translates to:

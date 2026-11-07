@@ -2014,3 +2014,18 @@ spec.
    text, and the next keys go to it. Seen in Chrome, Safari's engine and
    Firefox; a widget test presses the tools with a mouse and checks the
    focus and the cursor. See [tab recognition](tab-recognition.md#editing-tools).
+
+5. **Add two more tools to the text editor, beside the plus and
+   minus buttons: a pipe button that adds a pipe on each string, making a
+   vertical separator, and a double pipe that aligns the endings of each
+   string to the longest one, so they all end together. And one with the
+   equal sign that adds a full fretboard: six strings, beginning with the
+   standard notes and with pipe ends, 80 characters wide in all.** The
+   editing tools now end, before Overtype, with **|** (a bar across every
+   string of the cursor's staff, at its column), **||** (every staff's
+   strings padded with dashes to the longest, before a shared closing
+   bar) and **=** (an empty staff, `e B G D A E`, each string 80
+   characters with a bar at both ends, under the cursor's line or
+   staff). A short string such as `B|-5|` now counts as part of its staff
+   for these tools. In English, Spanish and Portuguese. See
+   [tab recognition](tab-recognition.md#editing-tools).

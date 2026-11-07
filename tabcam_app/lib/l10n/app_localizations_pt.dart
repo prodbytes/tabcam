@@ -1090,6 +1090,28 @@ class AppLocalizationsPt extends AppLocalizations {
       'Nenhuma outra corda tem espaço para esta nota ali';
 
   @override
+  String get textViewBar =>
+      'Barra de compasso: uma | em todas as cordas, no cursor';
+
+  @override
+  String get textViewAlignEnds =>
+      'Alinhar os finais: todas as cordas terminam com a mais longa';
+
+  @override
+  String get textViewPutCursorOnString =>
+      'Coloque o cursor numa linha de corda';
+
+  @override
+  String get textViewNoStaff => 'Não há cordas para alinhar';
+
+  @override
+  String get textViewEndsAligned => 'Todas as cordas já terminam juntas';
+
+  @override
+  String get textViewNewStaff =>
+      'Tablatura vazia: seis cordas, e B G D A E, com 80 caracteres de largura';
+
+  @override
   String get textViewOvertypeOn =>
       'Sobrescrever: digitar substitui caracteres, as colunas não se movem';
 

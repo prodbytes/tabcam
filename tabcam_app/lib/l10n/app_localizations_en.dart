@@ -1062,6 +1062,26 @@ class AppLocalizationsEn extends AppLocalizations {
       'No other string has room for this note there';
 
   @override
+  String get textViewBar => 'Bar line: a | across every string, at the cursor';
+
+  @override
+  String get textViewAlignEnds =>
+      'Line up the ends: every string ends with the longest';
+
+  @override
+  String get textViewPutCursorOnString => 'Put the cursor on a string line';
+
+  @override
+  String get textViewNoStaff => 'There are no strings to line up';
+
+  @override
+  String get textViewEndsAligned => 'Every string already ends together';
+
+  @override
+  String get textViewNewStaff =>
+      'Empty staff: six strings, e B G D A E, 80 characters wide';
+
+  @override
   String get textViewOvertypeOn =>
       'Overtype: typing replaces characters, columns stay put';
 
