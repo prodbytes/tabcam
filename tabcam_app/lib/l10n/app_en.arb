@@ -1478,6 +1478,14 @@
   "@textViewNotationGhost": {
     "description": "Notation sheet: (5)"
   },
+  "textViewNotationSlur": "slur: a hammer-on or a pull-off",
+  "@textViewNotationSlur": {
+    "description": "Notation sheet: 5_7"
+  },
+  "textViewNotationBendParens": "bend too: the pitch in parentheses after the note",
+  "@textViewNotationBendParens": {
+    "description": "Notation sheet: 7(9)"
+  },
   "textViewOvertype": "Overtype",
   "@textViewOvertype": {
     "description": "Checkbox button toggling overtype mode"

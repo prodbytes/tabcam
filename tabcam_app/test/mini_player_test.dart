@@ -257,7 +257,7 @@ void main() {
       find.descendant(of: sheet, matching: find.text('7b9 r7')),
       findsOneWidget,
     );
-    for (final symbol in ['7~', '(5)']) {
+    for (final symbol in ['5_7', '7(9)', '7~', '(5)']) {
       expect(
         find.descendant(of: sheet, matching: find.text(symbol)),
         findsOneWidget,

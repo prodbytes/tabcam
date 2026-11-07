@@ -1110,6 +1110,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get textViewNotationGhost => 'ghost note (played softly)';
 
   @override
+  String get textViewNotationSlur => 'slur: a hammer-on or a pull-off';
+
+  @override
+  String get textViewNotationBendParens =>
+      'bend too: the pitch in parentheses after the note';
+
+  @override
   String get textViewOvertype => 'Overtype';
 
   @override
