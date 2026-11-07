@@ -2029,3 +2029,11 @@ spec.
    staff). A short string such as `B|-5|` now counts as part of its staff
    for these tools. In English, Spanish and Portuguese. See
    [tab recognition](tab-recognition.md#editing-tools).
+
+6. **In the quick reference for tab notation, add that parentheses
+   are also a bend; and that `_` means a slur (ligature), either a
+   hammer-on or a pull-off.** The Text view's notation sheet has two more
+   rows: `5_7`, a slur, a hammer-on or a pull-off (after `7p5`), and
+   `7(9)`, a bend too, the pitch in parentheses after the note (after
+   `7b9 r7`). `(5)` on its own stays a ghost note. In English, Spanish and
+   Portuguese. See [tab recognition](tab-recognition.md) (notation sheet).

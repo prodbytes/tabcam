@@ -4,8 +4,9 @@ import '../l10n/language.dart';
 import 'mono_font.dart';
 
 /// A quick sheet of tab notation, at the bottom of the Text view's
-/// play-along sidebar: how a hammer-on, a pull-off, a slide, a bend,
-/// vibrato and a ghost note are written, each as it looks in the tab (in the tab's font) and what
+/// play-along sidebar: how a hammer-on, a pull-off, a slur (either), a
+/// slide, a bend (b, or the pitch in parentheses), vibrato and a ghost
+/// note are written, each as it looks in the tab (in the tab's font) and what
 /// it is. For the sidebar's dark background.
 class NotationSheet extends StatelessWidget {
   const NotationSheet({super.key});
@@ -16,8 +17,10 @@ class NotationSheet extends StatelessWidget {
     final rows = [
       ('5h7', l10n.textViewNotationHammerOn),
       ('7p5', l10n.textViewNotationPullOff),
+      ('5_7', l10n.textViewNotationSlur),
       ('5/7 7\\5', l10n.textViewNotationSlide),
       ('7b9 r7', l10n.textViewNotationBend),
+      ('7(9)', l10n.textViewNotationBendParens),
       ('7~', l10n.textViewNotationVibrato),
       ('(5)', l10n.textViewNotationGhost),
     ];

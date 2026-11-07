@@ -1141,6 +1141,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get textViewNotationGhost => 'nota fantasma (tocada de leve)';
 
   @override
+  String get textViewNotationSlur => 'ligado: ascendente ou descendente';
+
+  @override
+  String get textViewNotationBendParens =>
+      'bend também: a nota entre parênteses depois da nota';
+
+  @override
   String get textViewOvertype => 'Sobrescrever';
 
   @override

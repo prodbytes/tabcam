@@ -1876,6 +1876,18 @@ abstract class AppLocalizations {
   /// **'ghost note (played softly)'**
   String get textViewNotationGhost;
 
+  /// Notation sheet: 5_7
+  ///
+  /// In en, this message translates to:
+  /// **'slur: a hammer-on or a pull-off'**
+  String get textViewNotationSlur;
+
+  /// Notation sheet: 7(9)
+  ///
+  /// In en, this message translates to:
+  /// **'bend too: the pitch in parentheses after the note'**
+  String get textViewNotationBendParens;
+
   /// Checkbox button toggling overtype mode
   ///
   /// In en, this message translates to:

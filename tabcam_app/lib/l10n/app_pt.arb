@@ -295,6 +295,8 @@
   "textViewNotationBend": "bend (até a nota do 9), r soltar",
   "textViewNotationVibrato": "vibrato",
   "textViewNotationGhost": "nota fantasma (tocada de leve)",
+  "textViewNotationSlur": "ligado: ascendente ou descendente",
+  "textViewNotationBendParens": "bend também: a nota entre parênteses depois da nota",
   "textViewOvertype": "Sobrescrever",
   "textViewSongDialogTitle": "Corrigir pela tablatura da música",
   "textViewSongLabel": "Música e artista",
