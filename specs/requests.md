@@ -1967,3 +1967,21 @@ spec.
    the sidebar out of room on a short screen), its buttons roomier and
    its small text 12 px. In English, Spanish and
    Portuguese. See [Cam](cam.md#playing-along-with-a-file).
+2. **Add a button at the top of every file viewer, and of Cam and all
+   the views: a little dictionary where the user searches for anything.
+   For now a chord dictionary (a chord shows the chord, as jguitar's)
+   and the same for scales (as guitarscale.org's); anything that's
+   neither is probably a song, so search YouTube instead.** A
+   **Dictionary** button (a book icon), first in the app bar of the
+   event screen in every view, of the file screen and of Cam (locked
+   previews and captures opened by link included), opens a search
+   screen. A chord typed (`C`, `Am7`, `F#m7b5`, `G/B`, `Cmaj9`, `Do
+   menor`…) shows its notes, degrees and voicings as chord diagrams, the
+   voicings found on the device (every shape within four frets a hand
+   can hold, root in the bass, the best eight up the neck); a scale (`A
+   minor pentatonic`, `D dorian`, `C major scale`…) shows its notes and
+   the fretboard to the twelfth fret with them on it; anything else
+   offers, and Enter opens, YouTube's search for it. Nothing is fetched
+   but that. In English, Spanish and Portuguese, with the note and type
+   names of all three. See [dictionary](dictionary.md),
+   [event screen](event-screen.md) and [Cam](cam.md).
