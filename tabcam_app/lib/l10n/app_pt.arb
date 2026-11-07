@@ -507,5 +507,9 @@
   "videoEditTrackBefore": "A faixa começa {time} antes do vídeo",
   "videoEditReplaces": "Salvar substitui o vídeo.",
   "videoEditSaving": "Salvando o vídeo…",
-  "videoEditCouldntSave": "Não deu para salvar o vídeo"
+  "videoEditCouldntSave": "Não deu para salvar o vídeo",
+  "videoEditTrackBar": "A faixa ao longo da parte mantida: arraste para mover, as pontas para cortar",
+  "videoEditTrackEarlier": "Um décimo de segundo antes",
+  "videoEditTrackLater": "Um décimo de segundo depois",
+  "videoEditTrackUsed": "Usando {start}–{end} da faixa"
 }

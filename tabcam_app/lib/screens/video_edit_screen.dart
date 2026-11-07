@@ -81,6 +81,14 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   VideoPlayerController? _trackPlayer;
   Duration _offset = Duration.zero;
 
+  /// The part of the track used, from [_trackStart] to [_trackEnd]
+  /// (trimmed by the track bar's ends).
+  Duration _trackStart = Duration.zero;
+  Duration _trackEnd = Duration.zero;
+
+  /// The shortest part of a track that can be used.
+  static const minTrack = Duration(milliseconds: 500);
+
   /// Checks the preview every tenth of a second while it plays: the kept
   /// part's end, and the track's place along it.
   Timer? _ticker;
@@ -188,8 +196,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     }
     final track = _trackPlayer;
     if (track == null || _sound != EditSound.track) return;
-    final into = at - _start - _offset;
-    final within = into >= Duration.zero && into < _trackLength;
+    // Where in the track the video is: its used part starts [_offset]
+    // into the kept part.
+    final into = _trackStart + (at - _start - _offset);
+    final within = into >= _trackStart && into < _trackEnd;
     if (within && !_trackPlaying) {
       _trackPlaying = true;
       await track.seekTo(into);
@@ -342,6 +352,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       _trackName = name;
       _trackPlayer = player;
       _trackLength = length;
+      _trackStart = Duration.zero;
+      _trackEnd = length;
       _offset = Duration.zero;
     });
   }
@@ -364,9 +376,38 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     return controller;
   }
 
-  Future<void> _setOffset(Duration offset) async {
+  /// Moves the track's used part [delta] along the video (kept within
+  /// touch of the kept part).
+  Future<void> _moveTrack(Duration delta) async {
+    final used = _trackEnd - _trackStart;
+    final offset = _clamp(_offset + delta, -used, _end - _start);
+    if (offset == _offset) return;
     setState(() => _offset = offset);
     // The track finds its new place at the next tick.
+    await _pauseTrack();
+  }
+
+  /// Trims the track's start by [delta]: what's left stays where it is
+  /// along the video.
+  Future<void> _trimTrackStart(Duration delta) async {
+    final start = _clamp(
+      _trackStart + delta,
+      Duration.zero,
+      _trackEnd - minTrack,
+    );
+    if (start == _trackStart) return;
+    setState(() {
+      _offset += start - _trackStart;
+      _trackStart = start;
+    });
+    await _pauseTrack();
+  }
+
+  /// Trims the track's end by [delta].
+  Future<void> _trimTrackEnd(Duration delta) async {
+    final end = _clamp(_trackEnd + delta, _trackStart + minTrack, _trackLength);
+    if (end == _trackEnd) return;
+    setState(() => _trackEnd = end);
     await _pauseTrack();
   }
 
@@ -375,12 +416,19 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     end: _end,
     sound: _sound,
     track: _sound == EditSound.track ? _track : null,
+    trackLength: _trackLength,
+    trackStart: _trackStart,
+    trackEnd: _trackEnd,
     offset: _offset,
   );
 
   bool get _canSave {
     if (_video == null || _saving) return false;
-    if (_sound == EditSound.track && _track == null) return false;
+    // A track of unknown length can't be fitted.
+    if (_sound == EditSound.track &&
+        (_track == null || _trackLength <= Duration.zero)) {
+      return false;
+    }
     return _edit.changes(_duration);
   }
 
@@ -588,6 +636,19 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
             Expanded(
               child: VideoProgressIndicator(video, allowScrubbing: true),
             ),
+            const SizedBox(width: 12),
+            // Where it is, to the tenth of a second: the trims are set by
+            // it.
+            ValueListenableBuilder(
+              valueListenable: video,
+              builder: (context, value, _) => Text(
+                time(value.position),
+                key: const Key('video-edit-time'),
+                style: const TextStyle(
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
             const SizedBox(width: 16),
           ],
         ),
@@ -649,15 +710,14 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     );
   }
 
-  /// The new track: its name and Change, then where it starts along the
-  /// video, as a slider from its own length before the video's start to
-  /// the kept part's end.
+  /// The new track: its name and Change, then its bar along the kept
+  /// part ([_TrackBar]: dragged to move it, its ends to trim it), nudges
+  /// of a tenth of a second either way, and where it starts in words.
   Widget _trackRow(AppLocalizations l10n, ThemeData theme) {
     final name = _trackName;
     final clip = _end - _start;
-    final low = -_trackLength.inMilliseconds.toDouble();
-    final high = clip.inMilliseconds.toDouble();
-    final offset = _offset.inMilliseconds.toDouble().clamp(low, high);
+    const tenth = Duration(milliseconds: 100);
+    final trimmed = _trackStart > Duration.zero || _trackEnd < _trackLength;
     final shift = _offset == Duration.zero
         ? l10n.videoEditTrackWith
         : _offset > Duration.zero
@@ -681,28 +741,234 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
             ),
           ),
         ),
-        if (name != null && high > low) ...[
-          Slider(
-            key: const Key('video-edit-offset'),
-            min: low,
-            max: high,
-            value: offset,
-            label: shift,
-            onChanged: (v) => _setOffset(Duration(milliseconds: v.round())),
+        if (name != null &&
+            _trackLength > Duration.zero &&
+            clip > Duration.zero) ...[
+          _TrackBar(
+            clip: clip,
+            trackStart: _trackStart,
+            trackEnd: _trackEnd,
+            offset: _offset,
+            name: name,
+            label: l10n.videoEditTrackBar,
+            onMove: _moveTrack,
+            onTrimStart: _trimTrackStart,
+            onTrimEnd: _trimTrackEnd,
           ),
-          Text(
-            shift,
-            key: const Key('video-edit-shift'),
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: _offset == Duration.zero
-                  ? null
-                  : theme.colorScheme.primary,
-              fontFeatures: const [FontFeature.tabularFigures()],
+          Row(
+            children: [
+              IconButton(
+                key: const Key('video-edit-track-earlier'),
+                tooltip: l10n.videoEditTrackEarlier,
+                icon: const Icon(Icons.chevron_left),
+                onPressed: () => _moveTrack(-tenth),
+              ),
+              Expanded(
+                child: Text(
+                  shift,
+                  key: const Key('video-edit-shift'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: _offset == Duration.zero
+                        ? null
+                        : theme.colorScheme.primary,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+              IconButton(
+                key: const Key('video-edit-track-later'),
+                tooltip: l10n.videoEditTrackLater,
+                icon: const Icon(Icons.chevron_right),
+                onPressed: () => _moveTrack(tenth),
+              ),
+            ],
+          ),
+          if (trimmed)
+            Text(
+              l10n.videoEditTrackUsed(time(_trackStart), time(_trackEnd)),
+              key: const Key('video-edit-track-used'),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: theme.colorScheme.primary,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
             ),
-          ),
         ],
       ],
+    );
+  }
+}
+
+/// The track along the kept part: a bar as long as the kept part, the
+/// track's used part drawn over it where it plays (what falls outside is
+/// cut off). Dragged, it moves along the video ([onMove]); dragged by
+/// either end, it's trimmed ([onTrimStart], [onTrimEnd]): the start moves
+/// with what's cut, so the rest stays put.
+class _TrackBar extends StatelessWidget {
+  const _TrackBar({
+    required this.clip,
+    required this.trackStart,
+    required this.trackEnd,
+    required this.offset,
+    required this.name,
+    required this.label,
+    required this.onMove,
+    required this.onTrimStart,
+    required this.onTrimEnd,
+  });
+
+  final Duration clip;
+  final Duration trackStart;
+  final Duration trackEnd;
+  final Duration offset;
+  final String name;
+
+  /// What it does, for screen readers and the mouse.
+  final String label;
+
+  final void Function(Duration delta) onMove;
+  final void Function(Duration delta) onTrimStart;
+  final void Function(Duration delta) onTrimEnd;
+
+  static const height = 44.0;
+  static const grip = 14.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final perMs = width / clip.inMilliseconds;
+        Duration ms(double dx) => Duration(milliseconds: (dx / perMs).round());
+        final left = offset.inMilliseconds * perMs;
+        final used = (trackEnd - trackStart).inMilliseconds * perMs;
+        final right = left + used;
+        return Semantics(
+          label: label,
+          child: Tooltip(
+            message: label,
+            child: SizedBox(
+              key: const Key('video-edit-track-bar'),
+              height: height,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Stack(
+                  children: [
+                    // The kept part.
+                    Positioned.fill(
+                      child: ColoredBox(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                      ),
+                    ),
+                    // The track's used part, where it plays.
+                    Positioned(
+                      left: left,
+                      width: used < 2 ? 2 : used,
+                      top: 0,
+                      bottom: 0,
+                      child: MouseRegion(
+                        cursor: SystemMouseCursors.grab,
+                        child: GestureDetector(
+                          key: const Key('video-edit-track-move'),
+                          behavior: HitTestBehavior.opaque,
+                          onHorizontalDragUpdate: (d) => onMove(ms(d.delta.dx)),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            alignment: Alignment.center,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: grip + 4,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.graphic_eq,
+                                  size: 16,
+                                  color: theme.colorScheme.onPrimaryContainer,
+                                ),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color:
+                                          theme.colorScheme.onPrimaryContainer,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Its ends, to trim it, where they're on the bar.
+                    if (left > -grip && left < width)
+                      Positioned(
+                        left: left,
+                        top: 0,
+                        bottom: 0,
+                        width: grip,
+                        child: _Grip(
+                          key: const Key('video-edit-track-left'),
+                          onDrag: (dx) => onTrimStart(ms(dx)),
+                        ),
+                      ),
+                    if (right > 0 && right < width + grip)
+                      Positioned(
+                        left: right - grip,
+                        top: 0,
+                        bottom: 0,
+                        width: grip,
+                        child: _Grip(
+                          key: const Key('video-edit-track-right'),
+                          onDrag: (dx) => onTrimEnd(ms(dx)),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// One end of the track bar: a grip to drag.
+class _Grip extends StatelessWidget {
+  const _Grip({super.key, required this.onDrag});
+
+  final void Function(double dx) onDrag;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return MouseRegion(
+      cursor: SystemMouseCursors.resizeLeftRight,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onHorizontalDragUpdate: (d) => onDrag(d.delta.dx),
+        child: Center(
+          child: Container(
+            width: 4,
+            height: 20,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

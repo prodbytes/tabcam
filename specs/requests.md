@@ -2050,3 +2050,14 @@ spec.
    at once and the frames fill in. See the
    [event screen](event-screen.md), [tab recognition](tab-recognition.md#text-view)
    and [platforms](platforms.md).
+8. **On the video editor's first row, the player's current time at
+   the right of the play arrow, so the user knows where they are and sets
+   the trims right; and a second bar for the audio, which the user trims
+   and moves to match the video.** The preview's control row ends with
+   the current time (`0:12.3`). A new track has a **track bar** under
+   its name: the track drawn along the kept part where it plays; dragged
+   it moves, dragged by either end it's trimmed (the rest staying put),
+   with ‹ and › nudging it a tenth of a second and the shift and the
+   part used in words. The app works out what part of the track fits
+   and hands it to the platforms (`gapMs`, `fromMs`, `toMs`). In
+   English, Spanish and Portuguese. See [video edit](video-edit.md).

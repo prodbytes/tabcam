@@ -219,8 +219,9 @@ enum TakeOverlayBurner {
 /// Basic edits of a video (method channel `tabcam/video_edit`, method
 /// `edit`): the part kept (`startMs`–`endMs`), and its sound (`sound`):
 /// `original` kept, `none` removed, or `track` replaced by the sound file at
-/// `track`, starting `trackMs` after the kept part's start (negative: that
-/// much of the track's start is cut). Replies with the output path.
+/// `track`: `gapMs` of silence, then the track from `fromMs` to `toMs` (the
+/// app works out what fits; left out when nothing does). Replies with the
+/// output path.
 enum VideoEdit {
   static func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     guard call.method == "edit" else {
@@ -241,14 +242,20 @@ enum VideoEdit {
     }
     let sound = args["sound"] as? String ?? "original"
     let track = (args["track"] as? String).map { URL(fileURLWithPath: $0) }
-    let trackMs = (args["trackMs"] as? NSNumber)?.int64Value ?? 0
+    var part: VideoEditor.TrackPart?
+    if let gapMs = (args["gapMs"] as? NSNumber)?.int64Value,
+      let fromMs = (args["fromMs"] as? NSNumber)?.int64Value,
+      let toMs = (args["toMs"] as? NSNumber)?.int64Value
+    {
+      part = VideoEditor.TrackPart(gapMs: gapMs, fromMs: fromMs, toMs: toMs)
+    }
     if sound == "track" && track == nil {
       reply(FlutterError(code: "failed", message: "A new sound track needs a file.", details: nil))
       return
     }
     VideoEditor.edit(
       input: URL(fileURLWithPath: input), output: URL(fileURLWithPath: output),
-      startMs: startMs, endMs: endMs, sound: sound, track: track, trackMs: trackMs
+      startMs: startMs, endMs: endMs, sound: sound, track: track, part: part
     ) { error in
       if let error = error {
         reply(FlutterError(code: "failed", message: error, details: nil))
@@ -264,17 +271,25 @@ enum VideoEdit {
 /// kept as the track's transform) and the sound chosen, exported as H.264
 /// and AAC in MP4.
 enum VideoEditor {
+  /// The part of the track that goes in: `gapMs` of silence from the kept
+  /// part's start, then the track from `fromMs` to `toMs`.
+  struct TrackPart {
+    let gapMs: Int64
+    let fromMs: Int64
+    let toMs: Int64
+  }
+
   /// Calls `completion` exactly once, on any thread, with nil on success or
   /// an error message.
   static func edit(
     input: URL, output: URL, startMs: Int64, endMs: Int64, sound: String, track: URL?,
-    trackMs: Int64, completion: @escaping (String?) -> Void
+    part: TrackPart?, completion: @escaping (String?) -> Void
   ) {
     Task {
       do {
         try await run(
           input: input, output: output, startMs: startMs, endMs: endMs, sound: sound,
-          track: track, trackMs: trackMs)
+          track: track, part: part)
         completion(nil)
       } catch {
         completion(error.localizedDescription)
@@ -289,7 +304,7 @@ enum VideoEditor {
 
   private static func run(
     input: URL, output: URL, startMs: Int64, endMs: Int64, sound: String, track: URL?,
-    trackMs: Int64
+    part: TrackPart?
   ) async throws {
     let asset = AVURLAsset(url: input)
     guard let videoTrack = try await asset.loadTracks(withMediaType: .video).first else {
@@ -325,14 +340,11 @@ enum VideoEditor {
       guard let audio = try await AVURLAsset(url: track).loadTracks(withMediaType: .audio).first
       else { throw Failure("The track has no sound.") }
       let audioRange = try await audio.load(.timeRange)
-      // The track starts `offset` into the kept part: silence before it when
-      // positive; that much of its start cut when negative.
-      let offset = CMTime(value: trackMs, timescale: 1000)
-      let gap = CMTimeMaximum(offset, .zero)
-      let from = CMTimeMaximum(CMTimeMultiply(offset, multiplier: -1), .zero)
-      let room = range.duration - gap
-      if room > .zero && from < audioRange.duration {
-        let to = CMTimeMinimum(from + room, audioRange.duration)
+      // Nothing of the track falls in the kept part: silence.
+      if let part = part, part.toMs > part.fromMs, part.gapMs >= 0, part.fromMs >= 0 {
+        let gap = CMTime(value: part.gapMs, timescale: 1000)
+        let from = CMTimeMinimum(CMTime(value: part.fromMs, timescale: 1000), audioRange.duration)
+        let to = CMTimeMinimum(CMTime(value: part.toMs, timescale: 1000), audioRange.duration)
         guard
           let compAudio = composition.addMutableTrack(
             withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)

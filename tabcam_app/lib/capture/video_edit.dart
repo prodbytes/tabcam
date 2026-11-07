@@ -20,8 +20,9 @@ enum EditSound {
 
 /// A basic edit of a video: the part kept, from [start] to [end], and its
 /// sound: kept, removed, or replaced by [track], a recording or sound
-/// file that starts [offset] after the kept part's start (before it, when
-/// negative), cut to fit the kept part.
+/// file, of which the part from [trackStart] to [trackEnd] is used,
+/// starting [offset] after the kept part's start (before it, when
+/// negative), cut to fit the kept part ([trackPart]).
 @immutable
 class VideoEdit {
   const VideoEdit({
@@ -29,6 +30,9 @@ class VideoEdit {
     required this.end,
     this.sound = EditSound.original,
     this.track,
+    this.trackLength = Duration.zero,
+    this.trackStart = Duration.zero,
+    this.trackEnd,
     this.offset = Duration.zero,
   });
 
@@ -40,12 +44,31 @@ class VideoEdit {
   /// web), when [sound] is [EditSound.track].
   final XFile? track;
 
-  /// Where [track] starts, from the kept part's start: positive, it starts
-  /// that much after the video; negative, that much of its start is cut.
+  /// How long [track] is (zero: not known, and nothing of it can be fitted).
+  final Duration trackLength;
+
+  /// The part of [track] used: from [trackStart] to [trackEnd] (null: to
+  /// its end).
+  final Duration trackStart;
+  final Duration? trackEnd;
+
+  /// Where the used part of [track] starts, from the kept part's start:
+  /// positive, it starts that much after the video; negative, that much
+  /// more of its start is cut.
   final Duration offset;
 
   /// How long the kept part is.
   Duration get length => end - start;
+
+  /// The part of [track] that goes into the kept part, as [trackSpan]
+  /// fits it: null when none does (or the track's length isn't known).
+  ({Duration gap, Duration from, Duration to})? get trackPart => trackSpan(
+    length,
+    trackLength,
+    offset,
+    trackStart: trackStart,
+    trackEnd: trackEnd,
+  );
 
   /// The shortest part that can be kept.
   static const minLength = Duration(milliseconds: 500);
@@ -61,30 +84,49 @@ class VideoEdit {
       other.end == end &&
       other.sound == sound &&
       other.track == track &&
+      other.trackLength == trackLength &&
+      other.trackStart == trackStart &&
+      other.trackEnd == trackEnd &&
       other.offset == offset;
 
   @override
-  int get hashCode => Object.hash(start, end, sound, track, offset);
+  int get hashCode => Object.hash(
+    start,
+    end,
+    sound,
+    track,
+    trackLength,
+    trackStart,
+    trackEnd,
+    offset,
+  );
 
   @override
-  String toString() => 'VideoEdit($start–$end, $sound, $track, $offset)';
+  String toString() =>
+      'VideoEdit($start–$end, $sound, $track $trackStart–$trackEnd, $offset)';
 }
 
 /// The part of a track [trackLength] long that goes into a clip [clip]
-/// long, with the track starting [offset] after the clip's start: the
-/// silence before it ([gap]), and the part of the track itself, from
-/// [from] to [to]. Null when none of the track falls within the clip.
+/// long: of the track, the part from [trackStart] to [trackEnd] (null: its
+/// end) is used, starting [offset] after the clip's start. The silence
+/// before it ([gap]), and the part of the track itself, from [from] to
+/// [to]. Null when none of the track falls within the clip.
 ({Duration gap, Duration from, Duration to})? trackSpan(
   Duration clip,
   Duration trackLength,
-  Duration offset,
-) {
+  Duration offset, {
+  Duration trackStart = Duration.zero,
+  Duration? trackEnd,
+}) {
   if (clip <= Duration.zero || trackLength <= Duration.zero) return null;
+  final usedEnd = trackEnd == null || trackEnd > trackLength
+      ? trackLength
+      : trackEnd;
   final gap = offset > Duration.zero ? offset : Duration.zero;
-  final from = offset < Duration.zero ? -offset : Duration.zero;
-  if (gap >= clip || from >= trackLength) return null;
+  final from = trackStart + (offset < Duration.zero ? -offset : Duration.zero);
+  if (gap >= clip || from >= usedEnd) return null;
   final room = clip - gap;
-  final to = from + room < trackLength ? from + room : trackLength;
+  final to = from + room < usedEnd ? from + room : usedEnd;
   if (to <= from) return null;
   return (gap: gap, from: from, to: to);
 }
@@ -133,7 +175,9 @@ abstract final class VideoEditor {
 /// Android, AVFoundation on iOS) over the method channel
 /// `tabcam/video_edit`, method `edit`: the input and output paths, the
 /// part kept in ms, the sound (`original`, `none`, `track`) and, for a
-/// track, its path and offset in ms. It replies with the output path.
+/// track, its path and the part of it that goes in (`gapMs` of silence,
+/// then the track from `fromMs` to `toMs`). It replies with the output
+/// path.
 class ChannelVideoEditor implements VideoEditing {
   const ChannelVideoEditor();
 
@@ -153,6 +197,7 @@ class ChannelVideoEditor implements VideoEditing {
     if (edit.sound == EditSound.track && track == null) {
       throw ArgumentError('A new sound track needs a file');
     }
+    final part = track == null ? null : edit.trackPart;
     final dir = await getTemporaryDirectory();
     final output =
         '${dir.path}/edit-${DateTime.now().millisecondsSinceEpoch}.mp4';
@@ -163,7 +208,11 @@ class ChannelVideoEditor implements VideoEditing {
       'endMs': edit.end.inMilliseconds,
       'sound': edit.sound.name,
       'track': track?.path,
-      'trackMs': edit.offset.inMilliseconds,
+      if (part != null) ...{
+        'gapMs': part.gap.inMilliseconds,
+        'fromMs': part.from.inMilliseconds,
+        'toMs': part.to.inMilliseconds,
+      },
     });
     if (path == null) throw StateError('The video was not written');
     return XFile(path, mimeType: 'video/mp4');

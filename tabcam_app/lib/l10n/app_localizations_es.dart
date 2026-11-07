@@ -1888,4 +1888,19 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get videoEditCouldntSave => 'No se pudo guardar el video';
+
+  @override
+  String get videoEditTrackBar =>
+      'La pista a lo largo de la parte conservada: arrástrala para moverla, sus extremos para recortarla';
+
+  @override
+  String get videoEditTrackEarlier => 'Una décima de segundo antes';
+
+  @override
+  String get videoEditTrackLater => 'Una décima de segundo después';
+
+  @override
+  String videoEditTrackUsed(String start, String end) {
+    return 'Se usa $start–$end de la pista';
+  }
 }
