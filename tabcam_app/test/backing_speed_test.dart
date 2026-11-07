@@ -78,10 +78,9 @@ void main() {
     track.dispose();
   });
 
-  testWidgets('the sidebar shows the speed under the section: the slider '
-      'and the speed, which goes back to 1× tapped, as does the icon', (
-    tester,
-  ) async {
+  testWidgets('the sidebar shows the speed under the section: − and + '
+      'step it by 5 %, the slider sets it, and the speed or the reset '
+      'button goes back to 1×', (tester) async {
     final (track, event) = await loaded(tester);
     final calls = <double>[];
     await tester.pumpWidget(
@@ -143,15 +142,48 @@ void main() {
     expect(calls.last, 1);
     expect(find.text('1×'), findsOneWidget);
 
-    // So does a tap on the speed icon, left of the slider.
-    await tester.runAsync(() => track.setSpeed(0.5));
-    await tester.pump();
-    expect(find.text('0.5×'), findsOneWidget);
+    // − and + step it by 5 %, landing on the slider's stops.
+    final slower = find.byKey(const Key('cam-along-speed-slower'));
+    final faster = find.byKey(const Key('cam-along-speed-faster'));
+    final reset = find.byKey(const Key('cam-along-speed-reset'));
     calls.clear();
-    await tester.tap(find.byKey(const Key('cam-along-speed-icon')));
+    await tester.tap(slower);
+    await tester.pump();
+    expect(calls, [closeTo(0.95, 0.001)]);
+    expect(find.text('0.95×'), findsOneWidget);
+    await tester.tap(slower);
+    await tester.pump();
+    await tester.tap(slower);
+    await tester.pump();
+    expect(find.text('0.85×'), findsOneWidget);
+    await tester.tap(faster);
+    await tester.pump();
+    expect(find.text('0.9×'), findsOneWidget);
+
+    // The reset button goes back to normal; at 1× it does nothing.
+    calls.clear();
+    await tester.tap(reset);
     await tester.pump();
     expect(calls, [1]);
     expect(find.text('1×'), findsOneWidget);
+    calls.clear();
+    await tester.tap(reset);
+    await tester.pump();
+    expect(calls, isEmpty);
+
+    // At the ends, − and + do nothing.
+    await tester.runAsync(() => track.setSpeed(BackingTrack.maxSpeed));
+    await tester.pump();
+    expect(find.text('1.5×'), findsOneWidget);
+    await tester.tap(faster);
+    await tester.pump();
+    expect(calls, isEmpty);
+    await tester.runAsync(() => track.setSpeed(BackingTrack.minSpeed));
+    await tester.pump();
+    expect(find.text('0.25×'), findsOneWidget);
+    await tester.tap(slower);
+    await tester.pump();
+    expect(calls, isEmpty);
     track.dispose();
   });
 }

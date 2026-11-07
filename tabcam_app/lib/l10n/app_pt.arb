@@ -186,6 +186,8 @@
   "camAlongSectionClear": "Tocar tudo",
   "camAlongSpeed": "Velocidade: mais devagar à esquerda, mais rápido à direita",
   "camAlongSpeedNormal": "Velocidade normal (1×)",
+  "camAlongSlower": "Mais devagar (5 % a menos)",
+  "camAlongFaster": "Mais rápido (5 % a mais)",
   "camAlongStop": "Parar",
   "camHeadsOn": "Gestos de cabeça ligados: acene para cima ou à direita para a próxima linha, para baixo ou à esquerda para a anterior",
   "camHeadsOff": "Gestos de cabeça desligados",

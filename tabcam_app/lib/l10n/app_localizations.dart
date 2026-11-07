@@ -1216,11 +1216,23 @@ abstract class AppLocalizations {
   /// **'Speed: slower to the left, faster to the right'**
   String get camAlongSpeed;
 
-  /// Cam: the speed shown beside the slider (0.75×); tapping it goes back to normal speed.
+  /// Cam: the speed shown beside the slider (0.75×) and the reset button after it; tapping either goes back to normal speed.
   ///
   /// In en, this message translates to:
   /// **'Normal speed (1×)'**
   String get camAlongSpeedNormal;
+
+  /// Cam: the − button left of the speed slider
+  ///
+  /// In en, this message translates to:
+  /// **'Slower (5 % less)'**
+  String get camAlongSlower;
+
+  /// Cam: the + button right of the speed slider
+  ///
+  /// In en, this message translates to:
+  /// **'Faster (5 % more)'**
+  String get camAlongFaster;
 
   /// Cam: stops the file playing along, back at its start.
   ///
