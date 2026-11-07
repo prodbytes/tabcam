@@ -13,6 +13,7 @@ import '../l10n/language.dart';
 import '../library/capture_event.dart';
 import '../library/library.dart';
 import 'file_screen.dart';
+import 'media_url.dart';
 import 'video_page.dart' show openPlayer;
 
 /// Basic edits of a video, opened from its file screen: trim its start
@@ -347,14 +348,13 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 
   /// A player for [file]: from its path, or its bytes on the web.
   static Future<VideoPlayerController> _openFile(XFile file) async {
-    final controller = file.path.isNotEmpty && !kIsWeb
-        ? VideoPlayerController.file(File(file.path))
-        : VideoPlayerController.networkUrl(
-            Uri.dataFromBytes(
-              await file.readAsBytes(),
-              mimeType: file.mimeType ?? 'audio/mpeg',
-            ),
-          );
+    if (file.path.isEmpty || kIsWeb) {
+      return openBytesPlayer(
+        await file.readAsBytes(),
+        file.mimeType ?? 'audio/mpeg',
+      );
+    }
+    final controller = VideoPlayerController.file(File(file.path));
     try {
       await controller.initialize();
     } on Object {

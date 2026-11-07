@@ -104,15 +104,11 @@ class _EventScreenState extends State<EventScreen> {
   @override
   void initState() {
     super.initState();
-    // A text tab marked correct is what the user wants to see: it opens on
-    // the Text view (the Text tool goes back to the pages).
+    // The list of files, unless a reload puts the user back on the Text
+    // view (Text shows the tab; the list is quick to open, the Text view
+    // loads the sidebar's player).
     final event = _library.byId(widget.eventId);
-    _text =
-        widget.initialText ??
-        (!_locked &&
-            event != null &&
-            event.tabText != null &&
-            event.tabTextCorrect);
+    _text = widget.initialText ?? false;
     // A reload: the file the user had open, over the list again.
     final file = event?.allPages.where((p) => p.id == widget.initialFile);
     if (file?.firstOrNull case final page?) {
