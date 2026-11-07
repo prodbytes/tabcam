@@ -693,9 +693,13 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                         const SizedBox(width: 12),
-                        Text(
-                          l10n.camAddingTab,
-                          style: const TextStyle(color: Colors.white),
+                        // Wraps where the camera is narrow (the sidebar
+                        // beside it).
+                        Flexible(
+                          child: Text(
+                            l10n.camAddingTab,
+                            style: const TextStyle(color: Colors.white),
+                          ),
                         ),
                       ],
                     ),

@@ -952,7 +952,15 @@
   },
   "camAlongSpeedNormal": "Normal speed (1×)",
   "@camAlongSpeedNormal": {
-    "description": "Cam: the speed shown beside the slider (0.75×); tapping it goes back to normal speed."
+    "description": "Cam: the speed shown beside the slider (0.75×) and the reset button after it; tapping either goes back to normal speed."
+  },
+  "camAlongSlower": "Slower (5 % less)",
+  "@camAlongSlower": {
+    "description": "Cam: the − button left of the speed slider"
+  },
+  "camAlongFaster": "Faster (5 % more)",
+  "@camAlongFaster": {
+    "description": "Cam: the + button right of the speed slider"
   },
   "camAlongStop": "Stop",
   "@camAlongStop": {

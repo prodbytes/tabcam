@@ -1952,3 +1952,18 @@ spec.
    sidebars still list PDFs only. In English, Spanish and Portuguese.
    See [event screen](event-screen.md#file-screen) and
    [Cam](cam.md#following-a-pdf).
+
+## 2026-11-07
+
+1. **In the mini player, add buttons to slow down, speed up and reset
+   the speed beside the speed control; make the overall mini player a
+   little larger.** The speed row of the play-along player is now
+   **Slower** (−), the slider, **Faster** (+), the speed (`0.75×`, a tap
+   resets it, as before) and **Normal speed** (↺): − and + move one 5 %
+   step and grey out at the slider's ends; ↺ lights up once the speed
+   isn't 1× and puts it back. The player is a little larger: the sidebar
+   is half the screen's width, from 160 to 360 px (was 44%, 132 to
+   310; the frame's height cap stays a third of the screen, more runs
+   the sidebar out of room on a short screen), its buttons roomier and
+   its small text 12 px. In English, Spanish and
+   Portuguese. See [Cam](cam.md#playing-along-with-a-file).
