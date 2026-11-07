@@ -13,6 +13,7 @@ import 'link_page.dart';
 import 'mini_player.dart';
 import 'page_image.dart';
 import 'pdf_page.dart';
+import 'video_edit_screen.dart';
 import 'video_page.dart';
 import 'youtube_link.dart';
 
@@ -156,7 +157,7 @@ class FilePreview extends StatelessWidget {
 
 /// One file of a capture, opened from its list on its own screen: the
 /// file, and its tools: the view (Original or Scan, for an image), Rotate
-/// (an image) and Delete. An image and a PDF have the play-along sidebar
+/// (an image), Edit (a video), Rename and Delete. An image and a PDF have the play-along sidebar
 /// beside them; a recording opens in it, loaded in its frame, with the
 /// capture's pages and PDFs listed to follow one beside it.
 class FileScreen extends StatefulWidget {
@@ -240,6 +241,30 @@ class _FileScreenState extends State<FileScreen> {
         final turned = await _library.rotatePage(event, page);
         if (mounted) setState(() => _pageId = turned.pages[index].id);
       });
+
+  /// Edits a video (trim, sound): the edit screen over this one, the
+  /// video's own player let go meanwhile ([_editing]) so only the preview
+  /// plays; saved, the edited video is a new page in its place.
+  Future<void> _edit(CaptureEvent event, EventPage page) async {
+    setState(() => _editing = true);
+    try {
+      final replaced = await Navigator.of(context).push<String>(
+        MaterialPageRoute(
+          builder: (_) => VideoEditScreen(
+            library: _library,
+            eventId: widget.eventId,
+            page: page,
+          ),
+        ),
+      );
+      if (replaced != null && mounted) setState(() => _pageId = replaced);
+    } finally {
+      if (mounted) setState(() => _editing = false);
+    }
+  }
+
+  /// Whether the video's edit screen is over this one.
+  bool _editing = false;
 
   Future<void> _delete(CaptureEvent event, EventPage page) async {
     if (event.pages.length == 1) {
@@ -334,6 +359,8 @@ class _FileScreenState extends State<FileScreen> {
               child: SizedBox.expand(
                 child: _inSidebar(event, page)
                     ? const _RecordingAside()
+                    : _editing
+                    ? const SizedBox.shrink()
                     : FilePreview(
                         library: _library,
                         event: event,
@@ -365,6 +392,14 @@ class _FileScreenState extends State<FileScreen> {
                       onPressed: editable ? () => _rotate(event, page) : null,
                     ),
                   ],
+                  // Edit (a video: trim and sound), before Rename.
+                  if (page.isVideo)
+                    EventTool(
+                      key: const Key('edit-video'),
+                      icon: Icons.content_cut,
+                      label: l10n.videoEditTool,
+                      onPressed: editable ? () => _edit(event, page) : null,
+                    ),
                   // Rename, beside Delete.
                   EventTool(
                     key: const Key('rename-file'),

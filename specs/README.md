@@ -62,6 +62,11 @@ review notes ([app stores](app-stores.md)).
   capture, Play plays it back with the tab turning as it did; Play
   along plays one of the capture's recordings, videos or links in a
   frame above the camera, the space bar pausing and playing it.
+- [Video edit](video-edit.md): basic edits of a video from its file
+  screen, on the device: trim its start and end; keep its sound, take it
+  out, or replace it with a new track (one of the capture's recordings
+  or a sound file), shifted to fit the video; Save puts the result in
+  the video's place.
 - [Hidden images](hidden-images.md): the owner hides a capture's photos
   and scans, for everyone; it then shows only the text tab, videos and
   links, and exports leave the images out.

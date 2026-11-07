@@ -2246,5 +2246,103 @@
   "installOpenGuide": "Open the guide on GitHub",
   "@installOpenGuide": {
     "description": "iPhone install steps: button that opens the install guide on GitHub"
+  },
+  "videoEditTool": "Edit",
+  "@videoEditTool": {
+    "description": "File screen: the tool that opens a video's edits (trim, sound)"
+  },
+  "videoEditNotHere": "Videos can't be edited here",
+  "@videoEditNotHere": {
+    "description": "Video edit: Save on a platform without a video editor"
+  },
+  "videoEditTrim": "Trim",
+  "@videoEditTrim": {
+    "description": "Video edit: the trim section's title"
+  },
+  "videoEditKeep": "Keep {start}–{end}",
+  "@videoEditKeep": {
+    "description": "Video edit: the part of the video kept, from start to end (times like 0:12.3)",
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditTrimStart": "Start here",
+  "@videoEditTrimStart": {
+    "description": "Video edit: keeps from where the preview is"
+  },
+  "videoEditTrimEnd": "End here",
+  "@videoEditTrimEnd": {
+    "description": "Video edit: keeps until where the preview is"
+  },
+  "videoEditSound": "Sound",
+  "@videoEditSound": {
+    "description": "Video edit: the sound section's title"
+  },
+  "videoEditSoundOriginal": "Original",
+  "@videoEditSoundOriginal": {
+    "description": "Video edit: keep the video's own sound"
+  },
+  "videoEditSoundNone": "None",
+  "@videoEditSoundNone": {
+    "description": "Video edit: take the sound out"
+  },
+  "videoEditSoundTrack": "New track",
+  "@videoEditSoundTrack": {
+    "description": "Video edit: replace the sound with a new track"
+  },
+  "videoEditPickTrack": "Pick a track",
+  "@videoEditPickTrack": {
+    "description": "Video edit: the sheet's title, and the button to pick the new track"
+  },
+  "videoEditChangeTrack": "Change",
+  "@videoEditChangeTrack": {
+    "description": "Video edit: picks another track"
+  },
+  "videoEditTrackFile": "A sound file…",
+  "@videoEditTrackFile": {
+    "description": "Video edit: the sheet's option to pick a sound file from the device"
+  },
+  "videoEditNoTrack": "No track picked yet",
+  "@videoEditNoTrack": {
+    "description": "Video edit: New track chosen, no track picked"
+  },
+  "videoEditTrackWith": "The track starts with the video",
+  "@videoEditTrackWith": {
+    "description": "Video edit: the track's shift, none"
+  },
+  "videoEditTrackAfter": "The track starts {time} after the video",
+  "@videoEditTrackAfter": {
+    "description": "Video edit: the track's shift, later (time like 0:01.5)",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditTrackBefore": "The track starts {time} before the video",
+  "@videoEditTrackBefore": {
+    "description": "Video edit: the track's shift, earlier: its first part is cut (time like 0:01.5)",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditReplaces": "Saving replaces the video.",
+  "@videoEditReplaces": {
+    "description": "Video edit: the note beside Save"
+  },
+  "videoEditSaving": "Saving the video…",
+  "@videoEditSaving": {
+    "description": "Video edit: while the edit is applied"
+  },
+  "videoEditCouldntSave": "Couldn't save the video",
+  "@videoEditCouldntSave": {
+    "description": "Video edit: the failure message"
   }
 }

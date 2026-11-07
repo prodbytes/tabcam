@@ -7,6 +7,7 @@
 | Add photos & videos, files | Photo picker; system file picker | Photo library; Files app | Browser file picker (both) |
 | Play videos | From the file | From the file | From memory |
 | [Cam](cam.md) takes, [the tab in them](cam.md#the-tab-in-the-take) | MP4, the tab burned in after (Media3 Transformer) | MP4, the tab burned in after (AVFoundation) | WebM (MP4 on Safari), the tab recorded in as it goes (canvas and MediaRecorder) |
+| [Video edit](video-edit.md) (trim, sound) | On the device: Media3 Transformer (MP4) | On the device: AVFoundation (MP4) | In the browser: canvas, Web Audio and MediaRecorder, as long as the kept part plays (WebM; MP4 on Safari) |
 | [Cam's head gestures](cam.md#head-gestures) | ✅ ML Kit face detection | ✅ ML Kit face detection | ✅ MediaPipe Face Landmarker, in the browser (library and model from jsDelivr and Google when Cam opens) |
 | Open links, YouTube's too (`url_launcher`, outside the app) | The browser, or the app for the link (YouTube) | Safari, or the app for the link (YouTube) | A new tab |
 | Reading tabs (by itself), Premium only where Premium is set up | ✅ Premium's cloud (ML Kit on the device in builds without the service) | ✅ Premium's cloud (ML Kit on the device in builds without the service) | Premium's cloud (else the Text view says it needs the app) |
