@@ -14,8 +14,9 @@ its **Not now** leaving. With Premium it opens the camera view
   player); **Flip camera** in the app bar moves to the next one (not
   while recording). The app bar has the capture's title, and first of
   its buttons **Dictionary** (a book icon, in the preview too), which
-  opens the chord and scale [dictionary](dictionary.md) over Cam; back
-  from it, the keys move the tab again. Without a
+  shows the chord and scale [dictionary](dictionary.md) in a sidebar on
+  the right, the camera beside it; typing in it doesn't move the tab,
+  and once it's hidden the keys move the tab again. Without a
   camera, or one that isn't allowed, the view says so.
 - **The tab**, along the bottom, one **neckline** at a time: a staff
   (a run of string lines) with the lines right above it, such as chord
@@ -128,10 +129,18 @@ its **Not now** leaving. With Premium it opens the camera view
 <a id="playing-along-with-a-file"></a>**Playing along with a file**:
 when the capture has recordings, videos or links (or, in Cam, PDFs to
 [follow](#following-a-pdf)), Cam has a sidebar on
-the right (half of the screen's width, from 160 to 360 px), open by
-default: it opens by itself the first time the capture has one, when Cam
+the right, open by default: it opens by itself the first time the capture has one, when Cam
 opens or when one arrives later (a sync, the first take), and once the
-user hides it, it stays hidden. The same sidebar is beside the
+user hides it, it stays hidden. **Its width** is half of the screen's,
+from 160 to 360 px, until the user drags its left edge, a separator
+(`SplitHandle`, as the PDF pane's): left, wider; right, narrower; from
+160 px up to leaving what's beside it 120 px. A double tap on the edge
+puts the default back. The width set is the same on every screen with
+the sidebar and kept on the device between sessions
+([`SidebarWidths`](../tabcam_app/lib/screens/sidebar_widths.dart)).
+Dragged narrow, the player's buttons shrink to fit. The
+[dictionary](dictionary.md)'s sidebar, open, sits to its right, and is
+resizable the same way. The same sidebar is beside the
 [Text view](event-screen.md) (there with a notation sheet at its bottom,
 [tab recognition](tab-recognition.md#text-view)) and a PDF or an image
 on the [file screen](event-screen.md#file-screen), and a recording
@@ -163,7 +172,7 @@ camera (`PlayAlong.pdf`, `_PdfPane`; 40% of the screen's width, from 160
 to 480 px, so the page reads), with a **separator** between it and the
 camera (`SplitHandle`, a line with a grip, 12 px wide to take a finger,
 a resize cursor on a computer): dragged right, the PDF gets wider and the
-camera smaller, down to 96 px; dragged left, the PDF down to 120 px; a
+camera smaller, down to 120 px; dragged left, the PDF down to 120 px; a
 double tap puts the default width back. The width is kept while Cam is
 open, for the next PDF shown too. The pane has the PDF's name and
 **Hide the PDF** (✕)

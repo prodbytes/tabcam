@@ -10,9 +10,28 @@ chords and scales are worked out on the device
 ([`lib/dictionary/`](../tabcam_app/lib/dictionary/)); only a YouTube
 search leaves it.
 
-It opens the **Dictionary** screen (a full-screen dialog over the
-viewer; closing it goes back where the user was, Cam taking its keys
-back) with one search field, focused, and under it what was typed is:
+It shows and hides the **Dictionary sidebar** on the right of the
+screen, as the play-along player's sidebar opens
+([Cam](cam.md#playing-along-with-a-file)): the viewer stays beside it,
+on the left, and goes on working (the camera, the tab, what plays
+along). Where both show, the dictionary is the one at the right edge.
+The button is in the primary colour while the sidebar shows. The
+sidebar is **app-wide**: open on one screen, it's open on the next (the
+capture, a file, Cam) with the same search, until the button or the
+sidebar's own **✕** hides it. In Cam, typing in it doesn't turn the tab,
+and once it's hidden the keys turn the tab again.
+
+**Its width**: 40% of the screen's, from 280 to 420 px, until the user
+drags its left edge, a **separator** (`SplitHandle`, a line with a grip,
+12 px wide to take a finger, a resize cursor on a computer): dragged
+left it gets wider, right narrower, from 160 px up to leaving the
+viewer 96 px. A double tap on the edge puts the default width back. The
+width the user sets is the same on every screen and kept on the device
+between sessions ([`SidebarWidths`](../tabcam_app/lib/screens/sidebar_widths.dart),
+the library's `sidebars` meta file), as the play-along sidebar's is.
+
+At its top, the sidebar has its title and **✕**, then one search field,
+focused, and under it, scrolling, what was typed is:
 
 - **A chord** (`C`, `Am7`, `F#m7b5`, `G/B`, `Cmaj9`, `C6/9`, `E5`): shown
   as it's typed, with its name, its notes spelled from the root (`C#  E#
@@ -49,10 +68,13 @@ back) with one search field, focused, and under it what was typed is:
 - **A scale** (`A minor pentatonic`, `D dorian`, `C major scale`, `E
   blues`, `F# harmonic minor`, `Sol mixolidio`): its name (the type in
   the app's language), its notes and degrees as for a chord, and the
-  **fretboard** up to the twelfth fret seen from above, the high E at
-  the top, the open strings before the nut, every note of the scale on
-  it with its name (the roots in the primary colour), the fret numbers
-  under it and markers at 3, 5, 7, 9 and 12. The types: major
+  **fretboard** up to the twelfth fret, every note of the scale on it
+  with its name (the roots in the primary colour), the open strings past
+  the nut, the fret numbers beside it and markers at 3, 5, 7, 9 and 12.
+  In a sidebar narrower than 480 px it **stands up**, as a chord diagram
+  does (low E on the left, the frets going down, numbered on the left,
+  at most 300 px wide); dragged wider, it **lies across**, seen from
+  above, the high E at the top. The types: major
   (ionian), minor (natural minor, aeolian), harmonic minor, melodic
   minor, major pentatonic (`pentatonic` alone), minor pentatonic, blues,
   major blues, dorian, phrygian, lydian, mixolydian, locrian, phrygian
@@ -62,14 +84,14 @@ back) with one search field, focused, and under it what was typed is:
   "scale"/"mode"/"escala"/"modo". `C major scale`, `A minor scale`,
   `A natural minor` and `A aeolian` are scales (`C major` alone is the
   chord).
-- **Anything else** is a song (or whatever it is): the screen says
+- **Anything else** is a song (or whatever it is): the sidebar says
   it's not a chord or a scale and offers **Search YouTube**; Enter (the
   keyboard's search key) or the button opens YouTube's search for it
   outside the app (a new tab, or the browser or YouTube app), as any
   link opens ([event screen](event-screen.md)). Nothing is fetched by
   the app.
 
-Empty, the screen explains itself and offers examples to tap (`C`,
+Empty, the sidebar explains itself and offers examples to tap (`C`,
 `Am7`, `F#m7b5`, `G/B`, `A minor pentatonic`, `E blues`, `D dorian`).
 In English, Spanish and Portuguese (the chord names and qualities are
 the same in every language).

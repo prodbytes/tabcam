@@ -1883,4 +1883,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoEditCouldntSave => 'Não deu para salvar o vídeo';
+
+  @override
+  String get dictionaryHide => 'Ocultar o dicionário';
 }

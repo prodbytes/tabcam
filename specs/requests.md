@@ -2050,3 +2050,24 @@ spec.
    at once and the frames fill in. See the
    [event screen](event-screen.md), [tab recognition](tab-recognition.md#text-view)
    and [platforms](platforms.md).
+8. **Make the dictionary a sidebar instead of a full-screen view: like
+   the mini player, opened on the right side, with the same features.
+   Make all sidebars resizable, so the user can set the right size if
+   one is too narrow.** The Dictionary button now shows and hides a
+   sidebar on the right (at the right edge, beside the play-along
+   player's when both show), with its title and ✕, the search field and
+   the same chord, scale and YouTube results; the viewer stays beside it
+   and keeps working. Its open state and search are app-wide (open on
+   the capture, it's open on a file and in Cam). In Cam, typing in it no
+   longer turns the tab. In a narrow sidebar the scale's fretboard
+   stands up (low E on the left, frets going down); wider than 480 px it
+   lies across as before. Both sidebars (the dictionary's, 40% of the
+   screen from 280 to 420 px by default; the play-along player's, half
+   the screen from 160 to 360 px) now have a separator on their left
+   edge: dragged, they get wider or narrower (from 160 px, leaving the
+   viewer 96 px, the camera 120 px); a double tap puts the default back.
+   The widths are the same on every screen and kept on the device
+   (`SidebarWidths`, the library's `sidebars` meta file). The player's
+   buttons shrink to fit a narrow sidebar. In English, Spanish and
+   Portuguese. See [dictionary](dictionary.md), [Cam](cam.md) and
+   [event screen](event-screen.md).
