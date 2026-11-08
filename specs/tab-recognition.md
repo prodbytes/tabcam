@@ -370,4 +370,7 @@ or a pull-off), `5/7 7\5` slide up, down, `7b9 r7` bend (to the pitch of
 9), r release, `7(9)` a bend too (the pitch in parentheses after the
 note), `7~` vibrato and `(5)` a ghost note (played softly)
 (`NotationSheet`, [lib/screens/tab_notation.dart](../tabcam_app/lib/screens/tab_notation.dart)).
+It takes at most 30% of the sidebar's height: taller, as in a phone's
+narrow sidebar where its lines wrap, it scrolls, so the player above
+keeps room for its buttons.
 It's the Text view's only: Cam's and a PDF's sidebars have none.

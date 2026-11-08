@@ -2098,3 +2098,14 @@ spec.
    part used in words. The app works out what part of the track fits
    and hands it to the platforms (`gapMs`, `fromMs`, `toMs`). In
    English, Spanish and Portuguese. See [video edit](video-edit.md).
+
+## 2026-11-08
+
+1. **Continue: fix the sidebar player that was 37 px too tall on a
+   phone.** In a phone's sidebar (195 px wide on a 390 px phone) the
+   notation sheet's lines wrap, and it took 482 of the sidebar's 708 px,
+   leaving the player 130 px, too short for its buttons. The sidebar's
+   footer now takes at most 30% of its height and scrolls when taller, so
+   the player shows whole. See [tab recognition](tab-recognition.md)
+   (notation sheet).
+

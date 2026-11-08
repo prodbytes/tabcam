@@ -228,15 +228,14 @@ void main() {
   );
 
   testWidgets('on a phone, with the sidebar open beside the text, the '
-      'editing tools wrap at their full size', (tester) async {
+      'editing tools wrap at their full size, and the player and the '
+      'notation sheet fit the sidebar', (tester) async {
     tester.view.physicalSize = const Size(390, 844) * 3;
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
     final (library, id) = await captureWith(tester, [
       (PageKind.image, 'jpg'),
-      // A PDF to follow opens the sidebar, with no player in it (at a
-      // phone's width the player is 37 px too tall: a separate issue).
-      (PageKind.pdf, 'pdf'),
+      (PageKind.audio, 'm4a'),
     ], tab: true);
     await tester.pumpWidget(host(EventScreen(library: library, eventId: id)));
     await _frames(tester);
@@ -253,6 +252,24 @@ void main() {
     expect(overtype.width, closeTo(40, 0.5));
     expect(overtype.right, lessThanOrEqualTo(sidebar.left));
     expect(overtype.top, greaterThan(plus.top));
+
+    // The notation sheet, its lines wrapped in the narrow sidebar, takes
+    // at most 30% of it and scrolls; the player keeps its buttons, whole
+    // (no overflow: it would fail the test).
+    final footer = tester.getRect(find.byKey(const Key('cam-along-footer')));
+    expect(footer.height, lessThanOrEqualTo(sidebar.height * 0.3 + 0.5));
+    expect(footer.bottom, closeTo(sidebar.bottom, 0.5));
+    final frame = tester.getRect(find.byKey(const Key('cam-along-frame')));
+    final play = tester.getRect(find.byKey(const Key('cam-along-toggle')));
+    expect(play.bottom, lessThanOrEqualTo(frame.bottom + 0.5));
+    expect(frame.bottom, lessThan(footer.top));
+    // The sheet's last row is there, scrolled to.
+    await tester.dragUntilVisible(
+      find.text('(5)'),
+      find.byKey(const Key('cam-along-footer')),
+      const Offset(0, -60),
+    );
+    expect(find.text('(5)'), findsOneWidget);
   });
 
   testWidgets('the Text view has the play-along sidebar, open, with the '
