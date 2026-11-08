@@ -512,5 +512,6 @@
   "videoEditTrackBar": "A faixa ao longo da parte mantida: arraste para mover, as pontas para cortar",
   "videoEditTrackEarlier": "Um décimo de segundo antes",
   "videoEditTrackLater": "Um décimo de segundo depois",
-  "videoEditTrackUsed": "Usando {start}–{end} da faixa"
+  "videoEditTrackUsed": "Usando {start}–{end} da faixa",
+  "eventPlayLink": "Reproduzir em uma nova aba"
 }

@@ -1906,4 +1906,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String videoEditTrackUsed(String start, String end) {
     return 'Se usa $start–$end de la pista';
   }
+
+  @override
+  String get eventPlayLink => 'Reproducir en una pestaña nueva';
 }

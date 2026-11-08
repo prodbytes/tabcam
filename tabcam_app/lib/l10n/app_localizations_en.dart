@@ -1864,4 +1864,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String videoEditTrackUsed(String start, String end) {
     return 'Using $start–$end of the track';
   }
+
+  @override
+  String get eventPlayLink => 'Play in a new tab';
 }

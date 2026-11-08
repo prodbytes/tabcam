@@ -2098,3 +2098,13 @@ spec.
    part used in words. The app works out what part of the track fits
    and hands it to the platforms (`gapMs`, `fromMs`, `toMs`). In
    English, Spanish and Portuguese. See [video edit](video-edit.md).
+
+## 2026-11-08
+
+1. **Add the play buttons on the links as well, and when they're
+   clicked, open them in a new tab.** In a capture's files list (and its
+   contributions), a link's row now has a play button (▶, "Play in a new
+   tab") where a video's or recording's has one; it opens the link
+   outside the app, as a tap on the row does: a new tab on the web, the
+   browser or the YouTube app on Android and iOS. In English, Spanish
+   and Portuguese. See [event screen](event-screen.md).
