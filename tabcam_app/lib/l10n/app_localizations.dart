@@ -3183,6 +3183,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Using {start}–{end} of the track'**
   String videoEditTrackUsed(String start, String end);
+
+  /// Files list: a link's play button, which opens the link in a new tab
+  ///
+  /// In en, this message translates to:
+  /// **'Play in a new tab'**
+  String get eventPlayLink;
 }
 
 class _AppLocalizationsDelegate

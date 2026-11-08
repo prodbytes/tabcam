@@ -512,5 +512,6 @@
   "videoEditTrackBar": "La pista a lo largo de la parte conservada: arrástrala para moverla, sus extremos para recortarla",
   "videoEditTrackEarlier": "Una décima de segundo antes",
   "videoEditTrackLater": "Una décima de segundo después",
-  "videoEditTrackUsed": "Se usa {start}–{end} de la pista"
+  "videoEditTrackUsed": "Se usa {start}–{end} de la pista",
+  "eventPlayLink": "Reproducir en una pestaña nueva"
 }

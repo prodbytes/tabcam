@@ -198,6 +198,29 @@ void main() {
     expect(find.text('Made-up lesson'), findsOneWidget);
   });
 
+  testWidgets('a link has a play button, as a video has; it opens the link '
+      'in a new tab', (tester) async {
+    final launcher = FakeLauncher();
+    UrlLauncherPlatform.instance = launcher;
+    await open(tester, link: true);
+    final link = event().pages.last;
+    final play = find.byKey(ValueKey('link-play-${link.id}'));
+    expect(play, findsOneWidget);
+    expect(find.byTooltip('Play in a new tab'), findsOneWidget);
+    // The image has none.
+    expect(
+      find.byKey(ValueKey('link-play-${event().pages.first.id}')),
+      findsNothing,
+    );
+    await tester.tap(play);
+    await frames(tester);
+    final (url, options) = launcher.launched.single;
+    expect(url, 'https://example.com/lesson');
+    expect(options.mode, PreferredLaunchMode.externalApplication);
+    expect(options.webOnlyWindowName, '_blank');
+    expect(find.byType(FileScreen), findsNothing);
+  });
+
   testWidgets('a link has no view or Rotate', (tester) async {
     await open(tester, link: true);
     final link = event().pages.last;

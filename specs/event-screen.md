@@ -79,6 +79,11 @@ plays along.
   screen has its own player) and leaving the capture stop it too. At the
   end, play starts it over. One that can't play says so under its name
   ("This video can't be played here", or the recording's message).
+  A **link**'s row has the same **play** button (▶, "Play in a new
+  tab"), in the same place, for contributions' links too: it opens the
+  link outside the app, as a tap on the row does (a new tab on the web;
+  the browser, or the app the system hands it to such as YouTube, on
+  Android and iOS). Nothing plays in the list.
 
   Numbers count the files of that kind. A file the user named shows its
   name instead, whatever it is; files, PDFs, recordings and videos added
