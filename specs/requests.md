@@ -2101,11 +2101,17 @@ spec.
 
 ## 2026-11-08
 
-1. **Continue: fix the sidebar player that was 37 px too tall on a
+1. **Add the play buttons on the links as well, and when they're
+   clicked, open them in a new tab.** In a capture's files list (and its
+   contributions), a link's row now has a play button (▶, "Play in a new
+   tab") where a video's or recording's has one; it opens the link
+   outside the app, as a tap on the row does: a new tab on the web, the
+   browser or the YouTube app on Android and iOS. In English, Spanish
+   and Portuguese. See [event screen](event-screen.md).
+2. **Continue: fix the sidebar player that was 37 px too tall on a
    phone.** In a phone's sidebar (195 px wide on a 390 px phone) the
    notation sheet's lines wrap, and it took 482 of the sidebar's 708 px,
    leaving the player 130 px, too short for its buttons. The sidebar's
    footer now takes at most 30% of its height and scrolls when taller, so
    the player shows whole. See [tab recognition](tab-recognition.md)
    (notation sheet).
-

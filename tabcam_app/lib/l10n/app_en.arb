@@ -2542,5 +2542,9 @@
         "type": "String"
       }
     }
+  },
+  "eventPlayLink": "Play in a new tab",
+  "@eventPlayLink": {
+    "description": "Files list: a link's play button, which opens the link in a new tab"
   }
 }

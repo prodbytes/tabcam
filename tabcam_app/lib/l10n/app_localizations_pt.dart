@@ -1901,4 +1901,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String videoEditTrackUsed(String start, String end) {
     return 'Usando $start–$end da faixa';
   }
+
+  @override
+  String get eventPlayLink => 'Reproduzir em uma nova aba';
 }
