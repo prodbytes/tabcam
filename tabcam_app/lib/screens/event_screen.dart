@@ -851,8 +851,8 @@ class _EventScreenState extends State<EventScreen> {
         children: [
           if (playable)
             MiniPlayButton(player: _player, event: event, page: page)
-          else if (page.isLink && page.url != null)
-            _linkPlayButton(page),
+          else
+            _openPlayButton(page),
           if (mine)
             IconButton(
               key: ValueKey('delete-contribution-${page.id}'),
@@ -877,15 +877,26 @@ class _EventScreenState extends State<EventScreen> {
     );
   }
 
-  /// A link's play button, as a video's or recording's: it opens the
-  /// link in a new tab (on a phone, the browser or the app the system
-  /// hands it to, such as YouTube), as a tap on the row does.
-  Widget _linkPlayButton(EventPage page) => IconButton.filledTonal(
-    key: ValueKey('link-play-${page.id}'),
-    tooltip: context.l10n.eventPlayLink,
-    icon: const Icon(Icons.play_arrow),
-    onPressed: () => openLink(context, page.url!),
-  );
+  /// The play button of a file that doesn't play in the list (a video's
+  /// or recording's is [MiniPlayButton]): a link's opens it in a new tab
+  /// (on a phone, the browser or the app the system hands it to, such as
+  /// YouTube); an image's or a PDF's opens its view ([FileScreen]), the
+  /// play-along sidebar beside it. Each does what a tap on the row does.
+  Widget _openPlayButton(EventPage page) {
+    final url = page.isLink ? page.url : null;
+    return IconButton.filledTonal(
+      key: ValueKey(
+        url != null ? 'link-play-${page.id}' : 'file-play-${page.id}',
+      ),
+      tooltip: url != null
+          ? context.l10n.eventPlayLink
+          : context.l10n.eventPlayFile,
+      icon: const Icon(Icons.play_arrow),
+      onPressed: url != null
+          ? () => openLink(context, url)
+          : () => _openFile(page),
+    );
+  }
 
   /// The list: each file with its preview, a tap opening it alone; with
   /// the images hidden, the text tab first (a tap goes to the Text view).
@@ -969,8 +980,8 @@ class _EventScreenState extends State<EventScreen> {
             children: [
               if (playable)
                 MiniPlayButton(player: _player, event: event, page: page)
-              else if (page.isLink && page.url != null)
-                _linkPlayButton(page),
+              else
+                _openPlayButton(page),
               // Rename, Download and Delete: buttons where there's room,
               // a menu on a narrow phone (the name needs the room).
               if (narrow)

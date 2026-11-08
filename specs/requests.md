@@ -2134,3 +2134,11 @@ spec.
    web app and serves it under `/app/` with Python's `http.server`; the
    web service's readiness probe waits up to 20 minutes for the build.
    See [development environment](dev-environment.md).
+5. **Make all files and links in captures have a play button; for the
+   documents that miss one, open the document's view.** Every row of a
+   capture's files list (and its contributions) now has the ▶ button:
+   videos and recordings play in the list as before, links open in a new
+   tab, and images and PDFs ("Open to play along") open their view on
+   the file screen, the play-along sidebar beside them, as a tap on the
+   row does. In English, Spanish and Portuguese. See
+   [event screen](event-screen.md).

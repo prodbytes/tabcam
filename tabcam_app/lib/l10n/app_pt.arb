@@ -513,5 +513,6 @@
   "videoEditTrackEarlier": "Um décimo de segundo antes",
   "videoEditTrackLater": "Um décimo de segundo depois",
   "videoEditTrackUsed": "Usando {start}–{end} da faixa",
-  "eventPlayLink": "Reproduzir em uma nova aba"
+  "eventPlayLink": "Reproduzir em uma nova aba",
+  "eventPlayFile": "Abrir para tocar junto"
 }
