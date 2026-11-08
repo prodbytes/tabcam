@@ -82,11 +82,14 @@ plays along.
   screen has its own player) and leaving the capture stop it too. At the
   end, play starts it over. One that can't play says so under its name
   ("This video can't be played here", or the recording's message).
-  A **link**'s row has the same **play** button (▶, "Play in a new
-  tab"), in the same place, for contributions' links too: it opens the
-  link outside the app, as a tap on the row does (a new tab on the web;
-  the browser, or the app the system hands it to such as YouTube, on
-  Android and iOS). Nothing plays in the list.
+  **Every row has a play button** (▶), in the same place, contributions
+  included; the files that don't play in the list do what a tap on the
+  row does. A **link**'s ("Play in a new tab") opens it outside the app
+  (a new tab on the web; the browser, or the app the system hands it to
+  such as YouTube, on Android and iOS). An **image**'s or a **PDF**'s
+  ("Open to play along") opens its view on the
+  [file screen](#file-screen), with the play-along sidebar beside it
+  when the capture has something to play along with.
 
   Numbers count the files of that kind. A file the user named shows its
   name instead, whatever it is; files, PDFs, recordings and videos added

@@ -377,7 +377,7 @@
   "@eventRescanTitle": {
     "description": "Event: asked when tapping Rescan on the Text view"
   },
-  "eventRescanBody": "Every photo and PDF is read again. A tab found replaces the current text, even if you edited it or marked it verified; if none is found, the text is kept.",
+  "eventRescanBody": "Every photo and PDF is read again. A tab found replaces the current text, even if you edited it; if none is found, the text is kept.",
   "@eventRescanBody": {
     "description": "Event: what Rescan does"
   },
@@ -1373,6 +1373,10 @@
   "textViewRescanTip": "Read the tab from the pages again",
   "@textViewRescanTip": {
     "description": "Tooltip of the Rescan button"
+  },
+  "textViewRescanVerified": "The text is verified: unmark Verified to rescan",
+  "@textViewRescanVerified": {
+    "description": "Tooltip of the Rescan button, off while the text is marked Verified"
   },
   "textViewRescanning": "Rescanning the pages…",
   "@textViewRescanning": {
@@ -2534,6 +2538,10 @@
   "eventPlayLink": "Play in a new tab",
   "@eventPlayLink": {
     "description": "Files list: a link's play button, which opens the link in a new tab"
+  },
+  "eventPlayFile": "Open to play along",
+  "@eventPlayFile": {
+    "description": "Files list: an image's or PDF's play button, which opens its view with the play-along sidebar"
   },
   "videoEditKept": "Your edit is kept as you make it and plays with the video; Download makes a file of it.",
   "@videoEditKept": {

@@ -306,7 +306,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get eventRescanBody =>
-      'Cada foto y PDF se lee de nuevo. Si se encuentra una tablatura, reemplaza el texto actual, aunque lo hayas editado o marcado como verificado; si no, el texto se conserva.';
+      'Cada foto y PDF se lee de nuevo. Si se encuentra una tablatura, reemplaza el texto actual, aunque lo hayas editado; si no, el texto se conserva.';
 
   @override
   String eventRescanKept(String reason) {
@@ -1055,6 +1055,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get textViewRescanTip => 'Leer de nuevo la tablatura de las páginas';
+
+  @override
+  String get textViewRescanVerified =>
+      'El texto está verificado: desmarca Verificado para reescanear';
 
   @override
   String get textViewRescanning => 'Escaneando de nuevo las páginas…';
@@ -1900,6 +1904,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get eventPlayLink => 'Reproducir en una pestaña nueva';
+
+  @override
+  String get eventPlayFile => 'Abrir para tocar';
 
   @override
   String get videoEditKept =>
