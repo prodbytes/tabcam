@@ -719,6 +719,11 @@ class PlayAlongSidebar extends StatelessWidget {
   /// screen).
   static const listRoom = 96.0;
 
+  /// The most of the sidebar's height [footer] takes; taller (the notation
+  /// sheet in a phone's narrow sidebar, its lines wrapped), it scrolls,
+  /// so the frame keeps room for its buttons.
+  static const footerShare = 0.3;
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -727,44 +732,54 @@ class PlayAlongSidebar extends StatelessWidget {
       width: width ?? widthFor(MediaQuery.sizeOf(context).width),
       child: Material(
         color: const Color(0xFF1C1C1C),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // The footer takes its height first; the frame gets what's
-            // left over the list's [listRoom].
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, box) => Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxHeight: (box.maxHeight - listRoom).clamp(
-                          0.0,
-                          double.infinity,
+        child: LayoutBuilder(
+          builder: (context, sidebar) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // The footer takes its height first, up to [footerShare] of
+              // the sidebar's; the frame gets what's left over the list's
+              // [listRoom].
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, box) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxHeight: (box.maxHeight - listRoom).clamp(
+                            0.0,
+                            double.infinity,
+                          ),
+                        ),
+                        child: _BackingFrame(
+                          eventId: eventId,
+                          track: track,
+                          linkFrame: linkFrame,
+                          onToggle: onToggle,
+                          onStop: onStop,
+                          onSkip: onSkip,
+                          onRepeat: onRepeat,
+                          onSection: onSection,
+                          onSectionHere: onSectionHere,
+                          onSectionClear: onSectionClear,
+                          onSpeed: onSpeed,
                         ),
                       ),
-                      child: _BackingFrame(
-                        eventId: eventId,
-                        track: track,
-                        linkFrame: linkFrame,
-                        onToggle: onToggle,
-                        onStop: onStop,
-                        onSkip: onSkip,
-                        onRepeat: onRepeat,
-                        onSection: onSection,
-                        onSectionHere: onSectionHere,
-                        onSectionClear: onSectionClear,
-                        onSpeed: onSpeed,
-                      ),
-                    ),
-                    Expanded(child: _list(context, l10n)),
-                  ],
+                      Expanded(child: _list(context, l10n)),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            ?footer,
-          ],
+              if (footer case final footer?)
+                ConstrainedBox(
+                  key: const Key('cam-along-footer'),
+                  constraints: BoxConstraints(
+                    maxHeight: sidebar.maxHeight * footerShare,
+                  ),
+                  child: SingleChildScrollView(child: footer),
+                ),
+            ],
+          ),
         ),
       ),
     );
