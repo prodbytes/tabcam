@@ -543,17 +543,25 @@ class _TabTextViewState extends State<TabTextView> {
                 icon: const Icon(Icons.auto_fix_high),
                 label: Text(l10n.textViewFix),
               ),
+      // Off while the text is Verified, so a checked tab isn't read over
+      // (unmark it to rescan).
       if (editable && widget.onRescan != null)
         compact
             ? IconButton(
-                tooltip: l10n.textViewRescanTip,
-                onPressed: idle ? _rescan : null,
+                key: const Key('text-rescan'),
+                tooltip: correct
+                    ? l10n.textViewRescanVerified
+                    : l10n.textViewRescanTip,
+                onPressed: idle && !correct ? _rescan : null,
                 icon: const Icon(Icons.document_scanner_outlined),
               )
             : Tooltip(
-                message: l10n.textViewRescanTip,
+                message: correct
+                    ? l10n.textViewRescanVerified
+                    : l10n.textViewRescanTip,
                 child: FilledButton.tonalIcon(
-                  onPressed: idle ? _rescan : null,
+                  key: const Key('text-rescan'),
+                  onPressed: idle && !correct ? _rescan : null,
                   icon: const Icon(Icons.document_scanner_outlined),
                   label: Text(l10n.textViewRescan),
                 ),

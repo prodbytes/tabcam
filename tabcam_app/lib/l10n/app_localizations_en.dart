@@ -287,7 +287,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventRescanBody =>
-      'Every photo and PDF is read again. A tab found replaces the current text, even if you edited it or marked it verified; if none is found, the text is kept.';
+      'Every photo and PDF is read again. A tab found replaces the current text, even if you edited it; if none is found, the text is kept.';
 
   @override
   String eventRescanKept(String reason) {
@@ -1025,6 +1025,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get textViewRescanTip => 'Read the tab from the pages again';
+
+  @override
+  String get textViewRescanVerified =>
+      'The text is verified: unmark Verified to rescan';
 
   @override
   String get textViewRescanning => 'Rescanning the pages…';

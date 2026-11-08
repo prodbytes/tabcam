@@ -547,7 +547,7 @@ abstract class AppLocalizations {
   /// Event: what Rescan does
   ///
   /// In en, this message translates to:
-  /// **'Every photo and PDF is read again. A tab found replaces the current text, even if you edited it or marked it verified; if none is found, the text is kept.'**
+  /// **'Every photo and PDF is read again. A tab found replaces the current text, even if you edited it; if none is found, the text is kept.'**
   String get eventRescanBody;
 
   /// Event: Rescan found no tab, or failed: why, and that the text is as it was
@@ -1719,6 +1719,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Read the tab from the pages again'**
   String get textViewRescanTip;
+
+  /// Tooltip of the Rescan button, off while the text is marked Verified
+  ///
+  /// In en, this message translates to:
+  /// **'The text is verified: unmark Verified to rescan'**
+  String get textViewRescanVerified;
 
   /// Text view: shown while Rescan reads the pages
   ///
