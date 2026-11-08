@@ -1867,4 +1867,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventPlayLink => 'Play in a new tab';
+
+  @override
+  String get eventPlayFile => 'Open to play along';
 }

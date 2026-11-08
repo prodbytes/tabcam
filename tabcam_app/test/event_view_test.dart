@@ -207,10 +207,14 @@ void main() {
     final play = find.byKey(ValueKey('link-play-${link.id}'));
     expect(play, findsOneWidget);
     expect(find.byTooltip('Play in a new tab'), findsOneWidget);
-    // The image has none.
+    // The image's opens its view instead.
     expect(
       find.byKey(ValueKey('link-play-${event().pages.first.id}')),
       findsNothing,
+    );
+    expect(
+      find.byKey(ValueKey('file-play-${event().pages.first.id}')),
+      findsOneWidget,
     );
     await tester.tap(play);
     await frames(tester);
@@ -219,6 +223,22 @@ void main() {
     expect(options.mode, PreferredLaunchMode.externalApplication);
     expect(options.webOnlyWindowName, '_blank');
     expect(find.byType(FileScreen), findsNothing);
+  });
+
+  testWidgets('an image has a play button too; it opens the image\'s view', (
+    tester,
+  ) async {
+    await open(tester, images: 2);
+    for (final page in event().pages) {
+      expect(find.byKey(ValueKey('file-play-${page.id}')), findsOneWidget);
+    }
+    expect(find.byTooltip('Open to play along'), findsNWidgets(2));
+    await tester.tap(
+      find.byKey(ValueKey('file-play-${event().pages.last.id}')),
+    );
+    await frames(tester);
+    final screen = tester.widget<FileScreen>(find.byType(FileScreen));
+    expect(screen.pageId, event().pages.last.id);
   });
 
   testWidgets('a link has no view or Rotate', (tester) async {
