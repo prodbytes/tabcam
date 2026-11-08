@@ -172,8 +172,14 @@ class _EventScreenState extends State<EventScreen> {
   /// Playing along beside the Text view, made when it first shows.
   PlayAlong? _alongOrNull;
   // With the PDFs to follow beside the text, as in Cam.
-  PlayAlong get _along =>
-      _alongOrNull ??= PlayAlong(_library, widget.eventId, withPdfs: true);
+  // On a phone it starts closed: open, it takes half the width from the
+  // text and its tools (♫ in the More menu opens it).
+  PlayAlong get _along => _alongOrNull ??= PlayAlong(
+    _library,
+    widget.eventId,
+    withPdfs: true,
+    opensByItself: MediaQuery.sizeOf(context).width >= 600,
+  );
 
   /// Plays videos and recordings from the list, one at a time.
   late final ListPlayer _player = ListPlayer(_library);

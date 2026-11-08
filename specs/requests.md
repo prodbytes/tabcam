@@ -2115,3 +2115,14 @@ spec.
    footer now takes at most 30% of its height and scrolls when taller, so
    the player shows whole. See [tab recognition](tab-recognition.md)
    (notation sheet).
+3. **Continue: on a phone, start the play-along sidebar closed, so the
+   text and its tools get the full width.** In the Text view on a screen
+   narrower than 600 px the sidebar no longer opens by itself; Play along
+   in the app bar's More menu opens it, and loads the first file to play
+   then (`PlayAlong.opensByItself`). Cam and the file screen are
+   unchanged. The tools written as text (`++`, `−−`, `|`, `||`, `=`) now
+   fit an icon's 24 px box: at 44.5 px, three of them pushed Overtype to
+   a second line on a 390 px phone. See the
+   [event screen](event-screen.md) and
+   [tab recognition](tab-recognition.md#editing-tools).
+

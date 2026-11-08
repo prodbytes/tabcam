@@ -227,9 +227,9 @@ void main() {
     home: home,
   );
 
-  testWidgets('on a phone, with the sidebar open beside the text, the '
-      'editing tools wrap at their full size, and the player and the '
-      'notation sheet fit the sidebar', (tester) async {
+  testWidgets('on a phone the sidebar starts closed, the tools on one '
+      'line; opened, it loads the recording, the tools wrap at their full '
+      'size, and the player and the notation sheet fit it', (tester) async {
     tester.view.physicalSize = const Size(390, 844) * 3;
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
@@ -241,6 +241,20 @@ void main() {
     await _frames(tester);
     await tester.tap(find.byKey(const Key('text')));
     await _frames(tester);
+    // Closed: the text and its tools have the width, all on one line.
+    expect(find.byKey(const Key('cam-along-sidebar')), findsNothing);
+    final fretUp = find.byTooltip('Fret up (the number under the cursor)');
+    expect(
+      tester.getRect(find.byKey(const Key('text-overtype'))).top,
+      closeTo(tester.getRect(fretUp).top, 0.5),
+    );
+    // Opened from the More menu, it loads the recording, not playing.
+    await tester.tap(find.byKey(const Key('event-more')));
+    await _frames(tester);
+    await tester.tap(find.byKey(const Key('more-along')));
+    await _frames(tester);
+    expect(find.byKey(const Key('cam-along-toggle')), findsOneWidget);
+    expect(platform.playing, isEmpty);
     final sidebar = tester.getRect(find.byKey(const Key('cam-along-sidebar')));
     expect(sidebar.width, greaterThan(100));
     final plus = tester.getRect(

@@ -295,8 +295,10 @@ shows, or on a capture shared read only). They keep their full size:
 where the line is too narrow for them (a phone with the play-along
 sidebar open beside the text) they go on to a second line rather than
 shrink. On a screen narrower than 600 px they sit closer (4 px apart)
-and each one's tap area is its 40 px button, so on a 390 px phone with
-the sidebar closed all eight fit on one line. The locked preview keeps
+and each one's tap area is its 40 px button (a tool written as text,
+`++` or `||`, fits its text in an icon's 24 px box), so on a 390 px
+phone with the sidebar closed, as it starts there, all eight fit on one
+line. The locked preview keeps
 Copy and Verified on this line, on its right, scaled down and greyed
 under the Premium card
 ([lib/screens/tab_editing.dart](../tabcam_app/lib/screens/tab_editing.dart)):

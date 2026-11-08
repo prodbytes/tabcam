@@ -685,27 +685,27 @@ class _TabTextViewState extends State<TabTextView> {
           IconButton.outlined(
             tooltip: context.l10n.textViewNoteUp,
             onPressed: enabled ? () => _move(-1) : null,
-            icon: const Text('++'),
+            icon: const _Glyph('++'),
           ),
           IconButton.outlined(
             tooltip: context.l10n.textViewNoteDown,
             onPressed: enabled ? () => _move(1) : null,
-            icon: const Text('−−'),
+            icon: const _Glyph('−−'),
           ),
           IconButton.outlined(
             tooltip: context.l10n.textViewBar,
             onPressed: enabled ? _bar : null,
-            icon: const Text('|'),
+            icon: const _Glyph('|'),
           ),
           IconButton.outlined(
             tooltip: context.l10n.textViewAlignEnds,
             onPressed: enabled ? _alignEnds : null,
-            icon: const Text('||'),
+            icon: const _Glyph('||'),
           ),
           IconButton.outlined(
             tooltip: context.l10n.textViewNewStaff,
             onPressed: enabled ? _newStaff : null,
-            icon: const Text('='),
+            icon: const _Glyph('='),
           ),
           Tooltip(
             message: _overtype
@@ -1200,4 +1200,18 @@ class _ReviewView extends StatelessWidget {
   /// The string a line is for, from its label ("e|---"), if it has one.
   static String? _stringName(String line) =>
       RegExp(r'^\s*([A-Ga-g][#b]?)\s*[|:]').firstMatch(line)?.group(1);
+}
+
+/// A tool's text in place of an icon (`++`, `||`), in an icon's 24 px box
+/// (scaled down to fit), so every tool is as wide as one with an icon.
+class _Glyph extends StatelessWidget {
+  const _Glyph(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => SizedBox.square(
+    dimension: 24,
+    child: FittedBox(fit: BoxFit.scaleDown, child: Text(text)),
+  );
 }
