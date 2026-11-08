@@ -2125,4 +2125,12 @@ spec.
    a second line on a 390 px phone. See the
    [event screen](event-screen.md) and
    [tab recognition](tab-recognition.md#editing-tools).
-
+4. **The local app isn't loading: rebuild and restart.** The Flutter
+   web dev server had stopped once (restarted), then served, but the
+   debug build is ~1,500 modules and, with other projects' containers
+   loading the machine, each took seconds through Floci, so the page
+   never got past its loading bar. `scripts/flutter-web.sh` gains
+   `TABCAM_WEB_RELEASE=1` (environment or `.env`): it builds the release
+   web app and serves it under `/app/` with Python's `http.server`; the
+   web service's readiness probe waits up to 20 minutes for the build.
+   See [development environment](dev-environment.md).
