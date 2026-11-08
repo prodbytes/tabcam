@@ -2142,3 +2142,11 @@ spec.
    the file screen, the play-along sidebar beside them, as a tap on the
    row does. In English, Spanish and Portuguese. See
    [event screen](event-screen.md).
+6. **When Verified is checked, disable Rescan so a correct tab isn't
+   overwritten.** The Text view's Rescan is off while the text is marked
+   Verified, its tooltip saying "The text is verified: unmark Verified to
+   rescan"; unmarking turns it back on. Behind the button, neither the
+   device reader nor the cloud's collection replaces a verified text,
+   even for a Rescan, and the Rescan dialog no longer says it replaces a
+   verified text. In English, Spanish and Portuguese. See
+   [tab recognition](tab-recognition.md#text-view).

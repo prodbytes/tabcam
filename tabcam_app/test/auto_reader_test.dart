@@ -137,6 +137,23 @@ void main() {
     expect(library.byId(event.id)!.tabText, riff(1));
   });
 
+  test('not even a Rescan replaces a text marked correct', () async {
+    final r = reader(text: (_) => riff(reads.length));
+    await settle();
+    final event = await library.create([page()]);
+    await settle();
+    final read = library.byId(event.id)!.tabText;
+    await library.update(
+      library.byId(event.id)!.copyWith(tabTextCorrect: true),
+    );
+    r.readSoon(event.id, replace: true);
+    await settle();
+    expect(reads, [1, 1]);
+    final now = library.byId(event.id)!;
+    expect(now.tabText, read);
+    expect(now.tabTextCorrect, isTrue);
+  });
+
   test('a read that never ends fails after the timeout', () async {
     final hang = Completer<String?>();
     final r = AutoReader(

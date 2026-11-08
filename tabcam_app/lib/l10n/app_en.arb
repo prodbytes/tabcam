@@ -377,7 +377,7 @@
   "@eventRescanTitle": {
     "description": "Event: asked when tapping Rescan on the Text view"
   },
-  "eventRescanBody": "Every photo and PDF is read again. A tab found replaces the current text, even if you edited it or marked it verified; if none is found, the text is kept.",
+  "eventRescanBody": "Every photo and PDF is read again. A tab found replaces the current text, even if you edited it; if none is found, the text is kept.",
   "@eventRescanBody": {
     "description": "Event: what Rescan does"
   },
@@ -1373,6 +1373,10 @@
   "textViewRescanTip": "Read the tab from the pages again",
   "@textViewRescanTip": {
     "description": "Tooltip of the Rescan button"
+  },
+  "textViewRescanVerified": "The text is verified: unmark Verified to rescan",
+  "@textViewRescanVerified": {
+    "description": "Tooltip of the Rescan button, off while the text is marked Verified"
   },
   "textViewRescanning": "Rescanning the pages…",
   "@textViewRescanning": {

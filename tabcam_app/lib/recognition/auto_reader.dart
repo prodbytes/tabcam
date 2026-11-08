@@ -369,22 +369,20 @@ class AutoReader extends ChangeNotifier {
     return _write(id, text);
   }
 
-  /// Writes [text], read, as [id]'s text tab, unless the user edited it or
-  /// marked it correct (and this isn't a Rescan).
+  /// Writes [text], read, as [id]'s text tab, unless the user marked it
+  /// correct (never replaced, not even by a Rescan) or edited it (and this
+  /// isn't a Rescan).
   Future<ReadState?> _write(String id, String text) async {
     final replace = _replace.contains(id);
     // As it is now: the user may have edited the text meanwhile.
     final current = library.byId(id);
     if (current == null) return null;
-    if (!replace &&
-        current.tabText != null &&
-        (!current.tabTextAuto || current.tabTextCorrect)) {
+    if (current.tabText != null &&
+        (current.tabTextCorrect || (!replace && !current.tabTextAuto))) {
       _log('event $id: kept the text (edited, or marked correct)');
       return null;
     }
-    if (current.tabText != text ||
-        !current.tabTextAuto ||
-        (replace && current.tabTextCorrect)) {
+    if (current.tabText != text || !current.tabTextAuto) {
       // Only the text: pages added meanwhile stay.
       await library.patch(
         id,
@@ -392,7 +390,7 @@ class AutoReader extends ChangeNotifier {
         (now) => now.copyWith(
           tabText: text,
           tabTextAuto: true,
-          tabTextCorrect: replace ? false : null,
+          tabTextCorrect: false,
           tabTextDoubts: const [],
         ),
       );

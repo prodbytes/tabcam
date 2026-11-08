@@ -193,7 +193,7 @@ class CloudOcr extends ChangeNotifier {
   /// With [again] (Read again), every page, read before or not.
   ///
   /// With [replace] (Rescan, which reads [again] too), the reading replaces
-  /// the text tab even if the user edited it or marked it correct.
+  /// the text tab even if the user edited it; never one marked correct.
   Future<int> transcribe(
     CaptureEvent event, {
     bool again = false,
@@ -387,20 +387,20 @@ class CloudOcr extends ChangeNotifier {
       if (current == null) continue;
       // Read again also replaces a text another read left (an on-device
       // one too).
-      // Rescan replaces any text, the user's too.
+      // Rescan replaces any text, the user's edits too; nothing replaces
+      // a text marked correct.
       final replace = _replace.remove(event.id);
       final ours =
-          replace ||
           !current.tabTextCorrect &&
-              (current.tabText == null ||
-                  current.tabText == last?.text ||
-                  (again && current.tabTextAuto));
+          (replace ||
+              current.tabText == null ||
+              current.tabText == last?.text ||
+              (again && current.tabTextAuto));
       final standing = text == null ? doubts : standingDoubts(text, doubts);
       if (text != null &&
           ours &&
           (current.tabText != text ||
               !current.tabTextAuto ||
-              current.tabTextCorrect ||
               !listEquals(current.tabTextDoubts, standing))) {
         await library.update(
           current.copyWith(
@@ -416,7 +416,7 @@ class CloudOcr extends ChangeNotifier {
         '${text == null
             ? 'no tab on any page'
             : !ours
-            ? 'text tab edited, kept'
+            ? 'text tab edited or verified, kept'
             : 'text tab filled'}',
       );
       state.events[event.id] = _Filled(signature, ours ? text : last?.text);

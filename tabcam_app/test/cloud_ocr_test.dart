@@ -346,6 +346,16 @@ void main() {
     s.result(event, event.pages[2], 'ok', _riffA);
     await s.ocr.collect();
     expect(s.library.byId(event.id)!.tabText, read);
+
+    // Nor does a Rescan's new reading.
+    event = s.library.byId(event.id)!;
+    await s.ocr.transcribe(event, again: true, replace: true);
+    s.result(event, event.pages[0], 'ok', _riffB);
+    s.result(event, event.pages[1], 'ok', _riffB);
+    s.result(event, event.pages[2], 'ok', _riffB);
+    await s.ocr.collect();
+    expect(s.library.byId(event.id)!.tabText, read);
+    expect(s.library.byId(event.id)!.tabTextCorrect, isTrue);
     s.dispose();
   });
 

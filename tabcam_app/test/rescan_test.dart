@@ -11,7 +11,8 @@ import 'package:tabcam_app/screens/event_screen.dart';
 
 /// The Text view's Rescan reads every page again. The text stays while it
 /// reads (the view spins); a tab found replaces it, even one the user
-/// edited and marked verified; none found keeps it, with a message.
+/// edited; none found keeps it, with a message. While the text is marked
+/// verified, Rescan is off.
 void main() {
   Future<(Library, AutoReader, String, void Function(Completer<String?>))>
   setUp(WidgetTester tester, void Function() onRead) async {
@@ -39,7 +40,8 @@ void main() {
     return (library, reader, id, (Completer<String?> c) => reading = c);
   }
 
-  testWidgets('Rescan replaces an edited, verified text', (tester) async {
+  testWidgets('Rescan is off while the text is verified; unmarked, it '
+      'replaces an edited text', (tester) async {
     var reading = Completer<String?>();
     var reads = 0;
     late Library library;
@@ -101,6 +103,23 @@ void main() {
     // Verified, it still opened on its files: Text shows the tab.
     expect(find.text('e|--0--5--|'), findsWidgets);
 
+    // Verified: Rescan is off, and says why.
+    final rescan = find.byKey(const Key('text-rescan'));
+    expect(tester.widget<ButtonStyleButton>(rescan).onPressed, isNull);
+    expect(
+      find.byTooltip('The text is verified: unmark Verified to rescan'),
+      findsOneWidget,
+    );
+    await tester.tap(rescan, warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(find.text('Rescan the pages?'), findsNothing);
+
+    // Unmarked, Rescan is on again.
+    await tester.tap(find.text('Verified'));
+    await tester.pumpAndSettle();
+    expect(library.byId(id)!.tabTextCorrect, isFalse);
+    expect(tester.widget<ButtonStyleButton>(rescan).onPressed, isNotNull);
+
     // Cancel keeps it.
     await tester.tap(find.text('Rescan'));
     await tester.pumpAndSettle();
@@ -124,9 +143,8 @@ void main() {
       await settle();
     }
     expect(reads, 2);
-    // Kept, and still marked, while it reads; the view spins.
+    // Kept while it reads; the view spins.
     expect(library.byId(id)!.tabText, 'e|--0--5--|');
-    expect(library.byId(id)!.tabTextCorrect, isTrue);
     expect(find.text('Rescanning the pages…'), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
 
@@ -157,17 +175,14 @@ void main() {
       await tester.pump();
     }
 
-    // Made-up riffs: the first reading, then the user's edit and mark.
+    // Made-up riffs: the first reading, then the user's edit (not
+    // verified: Rescan would be off).
     reading.complete('e|--0--3--|');
     await settle();
     await tester.runAsync(
       () => library.patch(
         id,
-        (now) => now.copyWith(
-          tabText: 'e|--0--7--|',
-          tabTextAuto: false,
-          tabTextCorrect: true,
-        ),
+        (now) => now.copyWith(tabText: 'e|--0--7--|', tabTextAuto: false),
       ),
     );
     await tester.pumpWidget(
@@ -207,7 +222,6 @@ void main() {
     final event = library.byId(id)!;
     expect(event.tabText, 'e|--0--7--|');
     expect(event.tabTextAuto, isFalse);
-    expect(event.tabTextCorrect, isTrue);
     expect(find.text('e|--0--7--|'), findsWidgets);
     expect(find.text('Rescanning the pages…'), findsNothing);
     expect(find.textContaining('No tab found in the pages.'), findsOneWidget);
