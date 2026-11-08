@@ -11,7 +11,10 @@ user without it sees both tools with a lock on the icon, and each opens
 its screen as a greyed-out preview that takes nothing, under the Premium
 card (what the feature is, the offer, **Not now**). When the capture has
 recordings, videos, links or PDFs, the Text view has the play-along
-sidebar beside it, open, and **Play along** (♫) in the app bar, as in
+sidebar beside it, open (on a screen narrower than 600 px it starts
+closed, leaving the text and its tools the width, and opening it loads
+the first file to play), and **Play along** (♫) in the app bar (in its
+More menu on a phone), as in
 [Cam](cam.md#playing-along-with-a-file), its PDFs listed to
 [follow](cam.md#following-a-pdf) beside the text, with a quick sheet of tab
 notation at its bottom ([tab recognition](tab-recognition.md#text-view));

@@ -105,6 +105,9 @@ void main() {
     expect(plus.width, closeTo(40, 0.5));
     final overtype = tester.getRect(find.byKey(const Key('text-overtype')));
     expect(overtype.right, lessThanOrEqualTo(390 - 16 + 0.5));
+    // All eight on one line, each 40 wide (text glyphs in an icon's box).
+    expect(overtype.top, closeTo(plus.top, 0.5));
+    expect(overtype.width, closeTo(40, 0.5));
 
     // Verified, as an icon, toggles.
     await tester.tap(find.byKey(const Key('text-verified')));

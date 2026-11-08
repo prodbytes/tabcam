@@ -36,6 +36,7 @@ class PlayAlong extends ChangeNotifier {
     this.withPdfs = false,
     this.withImages = false,
     this.startId,
+    this.opensByItself = true,
   }) : track = track ?? BackingTrack(library) {
     library.addListener(_changed);
     _changed();
@@ -54,6 +55,12 @@ class PlayAlong extends ChangeNotifier {
   /// The file the screen opened on (a recording), loaded in the frame
   /// when the sidebar opens by itself, instead of the first to play.
   final String? startId;
+
+  /// Whether the sidebar opens by itself once the capture has something
+  /// to list. False (the Text view on a phone, where it would take half
+  /// the width): it stays closed until the user opens it, and loads the
+  /// file to play then.
+  final bool opensByItself;
 
   /// The page or PDF followed beside the screen, if one is.
   EventPage? get followed => _followed;
@@ -121,7 +128,21 @@ class PlayAlong extends ChangeNotifier {
     _opened = true;
     _open = !_open;
     if (!_open) unawaited(track.pause());
+    if (_open) _loadFirst();
     notifyListeners();
+  }
+
+  /// Loads the file the screen opened on, if it plays, else the first
+  /// that does, into the frame (not playing), when nothing is loaded yet.
+  void _loadFirst() {
+    final event = library.byId(eventId);
+    if (event == null || track.page != null) return;
+    final first =
+        event.pages
+            .where((p) => p.id == startId && BackingTrack.plays(p))
+            .firstOrNull ??
+        event.pages.where(BackingTrack.plays).firstOrNull;
+    if (first != null) unawaited(track.choose(event, first, play: false));
   }
 
   /// Plays [page] along (or pauses it, chosen again).
@@ -138,19 +159,11 @@ class PlayAlong extends ChangeNotifier {
       _followed = null;
       notifyListeners();
     }
-    if (_opened) return;
+    if (_opened || !opensByItself) return;
     if (event == null || !event.pages.any(_listed)) return;
     _opened = true;
     _open = true;
-    // The file the screen opened on, if it plays; else the first that does.
-    final first =
-        event.pages
-            .where((p) => p.id == startId && BackingTrack.plays(p))
-            .firstOrNull ??
-        event.pages.where(BackingTrack.plays).firstOrNull;
-    if (track.page == null && first != null) {
-      unawaited(track.choose(event, first, play: false));
-    }
+    _loadFirst();
     notifyListeners();
   }
 
