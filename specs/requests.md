@@ -2150,3 +2150,21 @@ spec.
    even for a Rescan, and the Rescan dialog no longer says it replaces a
    verified text. In English, Spanish and Portuguese. See
    [tab recognition](tab-recognition.md#text-view).
+7. **Improve the mini video editor: play / pause under the frame; a new
+   track plays along the muted video, trimmed and placed, with no Save
+   and no slow re-render; Download makes the file, with the video and
+   the sound alone in its menu. A sound file added as the track goes in
+   the capture's files too.** The edit is now kept with the video's page
+   (`EventPage.edit`, a `PageEdit`, synced and cloned with it) as it's
+   made, and the video's file is never changed: the editor's preview and
+   the file screen's player play it as it says (`EditedPlayback`: the
+   kept part, the video muted, the track along it). Save and Cancel
+   gave way to **Reset** and a **Download** split button: the video as
+   edited, or from its menu the video without sound or the sound only,
+   made on the device (the sound only: an `OfflineAudioContext` render
+   to WAV in the browser, M4A from Media3 and AVFoundation on the
+   phones, new `video: false` on the `tabcam/video_edit` channel). The
+   play button over the frame is gone; the controls are under it. A
+   sound file picked as the track is added to the capture as a
+   recording. In English, Spanish and Portuguese. See
+   [video edit](video-edit.md).

@@ -3,6 +3,9 @@ import 'dart:math';
 
 import '../processing/page_filter.dart';
 import '../recognition/tab_doubts.dart';
+import 'page_edit.dart';
+
+export 'page_edit.dart';
 
 /// What a page is: a picture of the tab, a video (someone playing it, a
 /// lesson), a recording, a PDF (the tab as a document), or a link (a lesson
@@ -21,6 +24,7 @@ class EventPage {
     this.url,
     this.title,
     this.from,
+    this.edit,
   });
 
   /// A link page to [url] (checked with [checkUrl]), with an optional
@@ -30,7 +34,8 @@ class EventPage {
       kind = PageKind.link,
       extension = 'url',
       url = checkUrl(url),
-      title = (title?.trim().isEmpty ?? true) ? null : title!.trim();
+      title = (title?.trim().isEmpty ?? true) ? null : title!.trim(),
+      edit = null;
 
   final String id;
 
@@ -52,6 +57,10 @@ class EventPage {
   /// For a page the owner published from someone's [Contribution]: the ID
   /// of the page it's a copy of there.
   final String? from;
+
+  /// A video's edit (trim, sound), played as it says; its file stays as it
+  /// is. Null: none.
+  final PageEdit? edit;
 
   bool get isVideo => kind == PageKind.video;
   bool get isImage => kind == PageKind.image;
@@ -87,16 +96,20 @@ class EventPage {
   /// The page's file name in its event's folder.
   String get fileName => '$id.$extension';
 
-  EventPage copyWith({PageFilter? filter, String? Function()? title}) =>
-      EventPage(
-        id: id,
-        filter: filter ?? this.filter,
-        kind: kind,
-        extension: extension,
-        url: url,
-        title: title == null ? this.title : title(),
-        from: from,
-      );
+  EventPage copyWith({
+    PageFilter? filter,
+    String? Function()? title,
+    PageEdit? Function()? edit,
+  }) => EventPage(
+    id: id,
+    filter: filter ?? this.filter,
+    kind: kind,
+    extension: extension,
+    url: url,
+    title: title == null ? this.title : title(),
+    from: from,
+    edit: edit == null ? this.edit : edit(),
+  );
 
   Map<String, Object?> toJson() => {
     'id': id,
@@ -106,6 +119,7 @@ class EventPage {
     if (url != null) 'url': url.toString(),
     if (title != null) 'title': title,
     if (from != null) 'from': from,
+    if (edit != null) 'edit': edit!.toJson(),
   };
 
   factory EventPage.fromJson(Map<String, Object?> json) {
@@ -138,6 +152,7 @@ class EventPage {
       // down from the cloud, as a link's is.
       title: json['title'] as String?,
       from: from,
+      edit: json['kind'] == 'video' ? PageEdit.fromJson(json['edit']) : null,
     );
   }
 }

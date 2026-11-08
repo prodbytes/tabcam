@@ -6,11 +6,14 @@ import 'package:video_player/video_player.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
 import '../l10n/language.dart';
+import 'edited_playback.dart';
 import 'media_url.dart';
 
 /// A video page: a play button until tapped, then the video, with a play /
 /// pause button and tap to pause and resume. It plays from the page's file
-/// (from memory on the web), and is let go when the page scrolls away.
+/// (from memory on the web), as its edit says ([EditedPlayback]: the kept
+/// part, with its new track along it), and is let go when the page scrolls
+/// away.
 class VideoPage extends StatefulWidget {
   const VideoPage({
     super.key,
@@ -32,10 +35,36 @@ class _VideoPageState extends State<VideoPage> {
   Object? _error;
   bool _loading = false;
 
+  /// The page's edit, played (with its new track's player).
+  EditedPlayback? _edited;
+  VideoPlayerController? _track;
+
   @override
   void dispose() {
+    _edited?.dispose();
     _controller?.dispose();
+    _track?.dispose();
     super.dispose();
+  }
+
+  /// Plays [controller] as the page's edit says, when it has one.
+  Future<void> _edit(VideoPlayerController controller) async {
+    final edit = widget.page.edit;
+    if (edit == null) return;
+    final trackPage = edit.sound == EditSound.track
+        ? widget.event.pages.where((p) => p.id == edit.trackId).firstOrNull
+        : null;
+    if (trackPage != null) {
+      try {
+        _track = await openPlayer(widget.library, widget.event, trackPage);
+      } on Object catch (e) {
+        // Gone, or not played here: the video plays silent.
+        debugPrint('TabCam: video: its track can\'t be played: $e');
+      }
+    }
+    final edited = _edited = EditedPlayback(controller, loop: true);
+    await edited.set(edit, track: _track);
+    await controller.seekTo(edit.start);
   }
 
   Future<void> _start() async {
@@ -47,9 +76,12 @@ class _VideoPageState extends State<VideoPage> {
         widget.page,
       );
       await controller.setLooping(true);
+      await _edit(controller);
       await controller.play();
       if (!mounted) {
+        _edited?.dispose();
         await controller.dispose();
+        await _track?.dispose();
         return;
       }
       setState(() => _controller = controller);

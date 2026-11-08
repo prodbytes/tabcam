@@ -204,9 +204,10 @@ The file is shown whole, as what it is:
   along** (♫) in the app bar, as in [Cam](cam.md#playing-along-with-a-file).
   Beside an image or a PDF the sidebar lists only what plays along,
   nothing to follow.
-- **Videos** show a play button; tapped, they play in place, looping,
-  with a bar at the bottom: a **play / pause** button and a scrubbable
-  progress bar. A tap on the video also pauses and resumes. A video that
+- **Videos** show a play button; tapped, they play in place, looping
+  (as their [edit](video-edit.md) says: the kept part, muted with its
+  new track along it), with a bar at the bottom: a **play / pause**
+  button and a scrubbable progress bar. A tap on the video also pauses and resumes. A video that
   can't play says so. **Edit** (below) trims it and changes its sound
   ([video edit](video-edit.md)).
 - **Recordings** (audio) of the capture's own open in the play-along
@@ -254,8 +255,8 @@ Its tools, along the bottom:
 - **Edit** (scissors, videos only), before Rename: the
   [video edit](video-edit.md) screen over this one (the video's own
   player let go meanwhile, so only the preview plays): trim, and the
-  sound kept, removed or replaced by a new track; saved, the edited video
-  is a new page in its place, shown here.
+  sound kept, removed or replaced by a new track, kept with the video as
+  it's made; back here, the video plays as edited.
 - **Rename** (pencil), just before Delete: asks for the file's name,
   prefilled, as on the list (saving it empty goes back to the default
   name).

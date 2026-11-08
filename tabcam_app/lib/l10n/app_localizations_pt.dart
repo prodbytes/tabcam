@@ -1880,15 +1880,6 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get videoEditReplaces => 'Salvar substitui o vídeo.';
-
-  @override
-  String get videoEditSaving => 'Salvando o vídeo…';
-
-  @override
-  String get videoEditCouldntSave => 'Não deu para salvar o vídeo';
-
-  @override
   String get dictionaryHide => 'Ocultar o dicionário';
 
   @override
@@ -1911,4 +1902,32 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get eventPlayFile => 'Abrir para tocar junto';
+
+  @override
+  String get videoEditKept =>
+      'Sua edição fica guardada enquanto você a faz e toca com o vídeo; Baixar cria um arquivo dela.';
+
+  @override
+  String get videoEditReset => 'Restaurar';
+
+  @override
+  String get videoEditDownload => 'Baixar';
+
+  @override
+  String get videoEditDownloadMore => 'Mais downloads';
+
+  @override
+  String get videoEditDownloadVideo => 'O vídeo';
+
+  @override
+  String get videoEditDownloadSilent => 'O vídeo sem som';
+
+  @override
+  String get videoEditDownloadSound => 'Só o som';
+
+  @override
+  String get videoEditDownloading => 'Criando o arquivo…';
+
+  @override
+  String get videoEditCouldntDownload => 'Não deu para criar o arquivo';
 }

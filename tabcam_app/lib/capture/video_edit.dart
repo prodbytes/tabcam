@@ -3,20 +3,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../library/page_edit.dart';
 import 'web_video_editor_stub.dart'
     if (dart.library.js_interop) 'web_video_editor.dart';
 
-/// What happens to a video's sound when it's edited.
-enum EditSound {
-  /// Its own sound stays.
-  original,
-
-  /// Its sound is taken out.
-  none,
-
-  /// A sound track takes its sound's place ([VideoEdit.track]).
-  track,
-}
+export '../library/page_edit.dart' show EditSound, trackSpan;
 
 /// A basic edit of a video: the part kept, from [start] to [end], and its
 /// sound: kept, removed, or replaced by [track], a recording or sound
@@ -106,38 +97,15 @@ class VideoEdit {
       'VideoEdit($start–$end, $sound, $track $trackStart–$trackEnd, $offset)';
 }
 
-/// The part of a track [trackLength] long that goes into a clip [clip]
-/// long: of the track, the part from [trackStart] to [trackEnd] (null: its
-/// end) is used, starting [offset] after the clip's start. The silence
-/// before it ([gap]), and the part of the track itself, from [from] to
-/// [to]. Null when none of the track falls within the clip.
-({Duration gap, Duration from, Duration to})? trackSpan(
-  Duration clip,
-  Duration trackLength,
-  Duration offset, {
-  Duration trackStart = Duration.zero,
-  Duration? trackEnd,
-}) {
-  if (clip <= Duration.zero || trackLength <= Duration.zero) return null;
-  final usedEnd = trackEnd == null || trackEnd > trackLength
-      ? trackLength
-      : trackEnd;
-  final gap = offset > Duration.zero ? offset : Duration.zero;
-  final from = trackStart + (offset < Duration.zero ? -offset : Duration.zero);
-  if (gap >= clip || from >= usedEnd) return null;
-  final room = clip - gap;
-  final to = from + room < usedEnd ? from + room : usedEnd;
-  if (to <= from) return null;
-  return (gap: gap, from: from, to: to);
-}
-
 /// Applies a [VideoEdit] to a video file, on the device.
 abstract class VideoEditing {
   /// [video] with [edit] applied: a new file (the original is left as it
-  /// is). [onProgress] gets how much is done, 0 to 1, where that's known.
+  /// is); with [soundOnly], its sound alone, as edited (a sound file).
+  /// [onProgress] gets how much is done, 0 to 1, where that's known.
   Future<XFile> apply(
     XFile video,
     VideoEdit edit, {
+    bool soundOnly = false,
     void Function(double done)? onProgress,
   });
 
@@ -176,8 +144,8 @@ abstract final class VideoEditor {
 /// `tabcam/video_edit`, method `edit`: the input and output paths, the
 /// part kept in ms, the sound (`original`, `none`, `track`) and, for a
 /// track, its path and the part of it that goes in (`gapMs` of silence,
-/// then the track from `fromMs` to `toMs`). It replies with the output
-/// path.
+/// then the track from `fromMs` to `toMs`); `video` false for the sound
+/// alone (an `.m4a`). It replies with the output path.
 class ChannelVideoEditor implements VideoEditing {
   const ChannelVideoEditor();
 
@@ -191,8 +159,12 @@ class ChannelVideoEditor implements VideoEditing {
   Future<XFile> apply(
     XFile video,
     VideoEdit edit, {
+    bool soundOnly = false,
     void Function(double done)? onProgress,
   }) async {
+    if (soundOnly && edit.sound == EditSound.none) {
+      throw ArgumentError('A video without sound has no sound to save');
+    }
     final track = edit.sound == EditSound.track ? edit.track : null;
     if (edit.sound == EditSound.track && track == null) {
       throw ArgumentError('A new sound track needs a file');
@@ -200,13 +172,15 @@ class ChannelVideoEditor implements VideoEditing {
     final part = track == null ? null : edit.trackPart;
     final dir = await getTemporaryDirectory();
     final output =
-        '${dir.path}/edit-${DateTime.now().millisecondsSinceEpoch}.mp4';
+        '${dir.path}/edit-${DateTime.now().millisecondsSinceEpoch}'
+        '.${soundOnly ? 'm4a' : 'mp4'}';
     final path = await channel.invokeMethod<String>('edit', {
       'input': video.path,
       'output': output,
       'startMs': edit.start.inMilliseconds,
       'endMs': edit.end.inMilliseconds,
       'sound': edit.sound.name,
+      'video': !soundOnly,
       'track': track?.path,
       if (part != null) ...{
         'gapMs': part.gap.inMilliseconds,
@@ -215,6 +189,47 @@ class ChannelVideoEditor implements VideoEditing {
       },
     });
     if (path == null) throw StateError('The video was not written');
-    return XFile(path, mimeType: 'video/mp4');
+    return XFile(path, mimeType: soundOnly ? 'audio/mp4' : 'video/mp4');
   }
+}
+
+/// [channels] (one or two, of samples from -1 to 1, all as long) as a
+/// 16-bit PCM WAV file at [sampleRate].
+Uint8List wavBytes(List<Float32List> channels, int sampleRate) {
+  final count = channels.length;
+  final frames = count == 0 ? 0 : channels.first.length;
+  final data = frames * count * 2;
+  final bytes = ByteData(44 + data);
+  void text(int at, String s) {
+    for (var i = 0; i < s.length; i++) {
+      bytes.setUint8(at + i, s.codeUnitAt(i));
+    }
+  }
+
+  text(0, 'RIFF');
+  bytes.setUint32(4, 36 + data, Endian.little);
+  text(8, 'WAVE');
+  text(12, 'fmt ');
+  bytes.setUint32(16, 16, Endian.little);
+  bytes.setUint16(20, 1, Endian.little); // PCM
+  bytes.setUint16(22, count, Endian.little);
+  bytes.setUint32(24, sampleRate, Endian.little);
+  bytes.setUint32(28, sampleRate * count * 2, Endian.little);
+  bytes.setUint16(32, count * 2, Endian.little);
+  bytes.setUint16(34, 16, Endian.little);
+  text(36, 'data');
+  bytes.setUint32(40, data, Endian.little);
+  var at = 44;
+  for (var f = 0; f < frames; f++) {
+    for (final channel in channels) {
+      final v = channel[f].clamp(-1.0, 1.0);
+      bytes.setInt16(
+        at,
+        (v < 0 ? v * 0x8000 : v * 0x7fff).round(),
+        Endian.little,
+      );
+      at += 2;
+    }
+  }
+  return bytes.buffer.asUint8List();
 }

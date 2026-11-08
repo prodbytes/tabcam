@@ -15,7 +15,7 @@ import 'package:web/web.dart' as web;
 /// Chrome with sound allowed without a tap): a video made here (a canvas that changes colour, with a
 /// tone, recorded as a take is) is trimmed, and its sound kept, taken out
 /// or replaced by the same file as a track, each as a video file of the
-/// kept part's length.
+/// kept part's length; and its sound alone, as a WAV.
 void main() {
   /// A video [seconds] long, with sound, as the browser records one.
   Future<XFile> makeVideo(double seconds) async {
@@ -161,11 +161,64 @@ void main() {
     final (trackedLength, trackedSound) = await probe(tracked);
     expect(trackedLength, closeTo(1, 0.5));
     expect(trackedSound, isTrue);
+
+    // The sound alone: a WAV as long as the kept part, rendered faster
+    // than it plays; the track's starts after its gap.
+    Future<web.AudioBuffer> decode(XFile file) async {
+      final audio = web.AudioContext();
+      try {
+        return await audio
+            .decodeAudioData((await file.readAsBytes()).buffer.toJS)
+            .toDart;
+      } finally {
+        await audio.close().toDart;
+      }
+    }
+
+    final clock = Stopwatch()..start();
+    final own = await editor.apply(
+      video,
+      const VideoEdit(
+        start: Duration(milliseconds: 500),
+        end: Duration(milliseconds: 2500),
+      ),
+      soundOnly: true,
+    );
+    expect(clock.elapsedMilliseconds, lessThan(1500));
+    expect(own.mimeType, 'audio/wav');
+    final ownSound = await decode(own);
+    expect(ownSound.duration, closeTo(2, 0.05));
+
+    final gapped = await editor.apply(
+      video,
+      VideoEdit(
+        start: Duration.zero,
+        end: const Duration(milliseconds: 2000),
+        sound: EditSound.track,
+        track: video,
+        offset: const Duration(milliseconds: 1000),
+      ),
+      soundOnly: true,
+    );
+    final gappedSound = await decode(gapped);
+    expect(gappedSound.duration, closeTo(2, 0.05));
+    double loudest(web.AudioBuffer buffer, double from, double to) {
+      final samples = buffer.getChannelData(0).toDart;
+      final rate = buffer.sampleRate;
+      var most = 0.0;
+      for (var i = (from * rate).round(); i < (to * rate).round(); i++) {
+        if (samples[i].abs() > most) most = samples[i].abs();
+      }
+      return most;
+    }
+
+    // Silence for its first second, the tone after.
+    expect(loudest(gappedSound, 0, 0.9), lessThan(0.01));
+    expect(loudest(gappedSound, 1.2, 1.9), greaterThan(0.1));
   }
 
-  testWidgets('the kept part, with its sound, without, or with a track', (
-    tester,
-  ) async {
+  testWidgets('the kept part, with its sound, without, or with a track; '
+      'its sound alone', (tester) async {
     await tester.runAsync(() async {
       try {
         await body();

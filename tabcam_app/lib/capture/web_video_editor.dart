@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:js_interop';
+import 'dart:typed_data';
 
 import 'package:cross_file/cross_file.dart';
 import 'package:web/web.dart' as web;
@@ -13,7 +14,9 @@ VideoEditing? webVideoEditor() => WebVideoEditor();
 /// canvas (its frames) and a Web Audio graph (its sound, or the new
 /// track's), and the browser's MediaRecorder records both, so it takes
 /// as long as the kept part is. The result is WebM (MP4 where only that
-/// records, Safari). All in the browser: nothing is uploaded to make it.
+/// records, Safari). The sound alone is rendered offline, faster than it
+/// plays ([OfflineAudioContext]), as a WAV. All in the browser: nothing
+/// is uploaded to make it.
 class WebVideoEditor implements VideoEditing {
   /// The first of these the browser records (Safari: MP4 only).
   static const _types = [
@@ -27,8 +30,10 @@ class WebVideoEditor implements VideoEditing {
   Future<XFile> apply(
     XFile video,
     VideoEdit edit, {
+    bool soundOnly = false,
     void Function(double done)? onProgress,
   }) async {
+    if (soundOnly) return _sound(video, edit);
     final urls = <String>[];
     final elements = <web.HTMLMediaElement>[];
     web.AudioContext? audio;
@@ -164,6 +169,67 @@ class WebVideoEditor implements VideoEditing {
       }
       if (audio != null) unawaited(audio.close().toDart);
     }
+  }
+
+  /// The edit's sound alone: the video's own (the kept part) or the
+  /// track's (silence first, then the part that fits), decoded and mixed
+  /// offline into a WAV as long as the kept part.
+  Future<XFile> _sound(XFile video, VideoEdit edit) async {
+    final clip = edit.length.inMilliseconds / 1000;
+    if (clip <= 0) throw StateError('nothing to keep');
+    final XFile source;
+    switch (edit.sound) {
+      case EditSound.none:
+        throw ArgumentError('A video without sound has no sound to save');
+      case EditSound.original:
+        source = video;
+      case EditSound.track:
+        source = edit.track ?? (throw ArgumentError('No track'));
+    }
+    // Any rate does: the context resamples to it.
+    const rate = 44100;
+    final decoder = web.OfflineAudioContext(1.toJS, 1, rate);
+    final bytes = await source.readAsBytes();
+    final buffer = await decoder
+        .decodeAudioData(Uint8List.fromList(bytes).buffer.toJS)
+        .toDart;
+    final channels = buffer.numberOfChannels.clamp(1, 2);
+    final context = web.OfflineAudioContext(
+      channels.toJS,
+      (clip * rate).ceil(),
+      rate,
+    );
+    final player = context.createBufferSource()..buffer = buffer;
+    player.connect(context.destination);
+    if (edit.sound == EditSound.original) {
+      player.start(0, edit.start.inMilliseconds / 1000, clip);
+    } else {
+      // The part of it that fits, as the edit says; worked out here when
+      // the edit doesn't know the track's length.
+      final span =
+          edit.trackPart ??
+          trackSpan(
+            edit.length,
+            Duration(milliseconds: (buffer.duration * 1000).round()),
+            edit.offset,
+            trackStart: edit.trackStart,
+            trackEnd: edit.trackEnd,
+          );
+      // None of it falls in the kept part: silence.
+      if (span != null) {
+        player.start(
+          span.gap.inMilliseconds / 1000,
+          span.from.inMilliseconds / 1000,
+          (span.to - span.from).inMilliseconds / 1000,
+        );
+      }
+    }
+    final mixed = await context.startRendering().toDart;
+    final wav = wavBytes([
+      for (var c = 0; c < mixed.numberOfChannels; c++)
+        mixed.getChannelData(c).toDart,
+    ], rate);
+    return XFile.fromData(wav, name: 'sound.wav', mimeType: 'audio/wav');
   }
 
   @override
