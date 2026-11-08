@@ -1908,4 +1908,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get eventPlayLink => 'Reproduzir em uma nova aba';
+
+  @override
+  String get eventPlayFile => 'Abrir para tocar junto';
 }

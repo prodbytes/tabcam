@@ -3195,6 +3195,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Play in a new tab'**
   String get eventPlayLink;
+
+  /// Files list: an image's or PDF's play button, which opens its view with the play-along sidebar
+  ///
+  /// In en, this message translates to:
+  /// **'Open to play along'**
+  String get eventPlayFile;
 }
 
 class _AppLocalizationsDelegate

@@ -15,7 +15,13 @@
   - `2-flutter-web`: the app on http://localhost:2012/app/ (the `/app/`
     base href production uses), on Flutter's `web-server` device, through
     `scripts/flutter-web.sh` (also `devbox run web`). Ready when `/app/`
-    answers. Stopping it also stops whatever listens on the port.
+    answers (it waits up to 20 minutes). Stopping it also stops whatever
+    listens on the port. With `TABCAM_WEB_RELEASE=1` (in the environment
+    or `.env`) it serves a **release build** instead (`flutter build web
+    --release`, served under `/app/` by Python's `http.server`): one
+    compiled `main.dart.js` rather than the debug build's ~1,500 modules,
+    which a busy machine takes minutes to load through Floci. No hot
+    reload: restarting the service rebuilds it.
   - `5-index`: [tabcam_index/site](../tabcam_index) on
     http://localhost:2013/: the index page and the local
     [maintenance](maintenance-mode.md) switch, `/status.json`

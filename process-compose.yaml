@@ -42,7 +42,9 @@ processes:
       initial_delay_seconds: 2
       period_seconds: 2
       timeout_seconds: 5
-      failure_threshold: 150
+      # Up to 20 minutes: a release build (TABCAM_WEB_RELEASE=1) on a busy
+      # machine takes that long.
+      failure_threshold: 600
     availability:
       restart: on_failure
       backoff_seconds: 5

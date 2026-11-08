@@ -1913,4 +1913,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get eventPlayLink => 'Reproducir en una pestaña nueva';
+
+  @override
+  String get eventPlayFile => 'Abrir para tocar';
 }
