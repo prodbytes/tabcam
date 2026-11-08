@@ -220,8 +220,8 @@ enum TakeOverlayBurner {
 /// `edit`): the part kept (`startMs`–`endMs`), and its sound (`sound`):
 /// `original` kept, `none` removed, or `track` replaced by the sound file at
 /// `track`: `gapMs` of silence, then the track from `fromMs` to `toMs` (the
-/// app works out what fits; left out when nothing does). Replies with the
-/// output path.
+/// app works out what fits; left out when nothing does); `video` false for
+/// the sound alone (an `.m4a`). Replies with the output path.
 enum VideoEdit {
   static func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     guard call.method == "edit" else {
@@ -241,6 +241,7 @@ enum VideoEdit {
       return
     }
     let sound = args["sound"] as? String ?? "original"
+    let video = args["video"] as? Bool ?? true
     let track = (args["track"] as? String).map { URL(fileURLWithPath: $0) }
     var part: VideoEditor.TrackPart?
     if let gapMs = (args["gapMs"] as? NSNumber)?.int64Value,
@@ -255,7 +256,7 @@ enum VideoEdit {
     }
     VideoEditor.edit(
       input: URL(fileURLWithPath: input), output: URL(fileURLWithPath: output),
-      startMs: startMs, endMs: endMs, sound: sound, track: track, part: part
+      startMs: startMs, endMs: endMs, sound: sound, track: track, part: part, video: video
     ) { error in
       if let error = error {
         reply(FlutterError(code: "failed", message: error, details: nil))
@@ -269,7 +270,7 @@ enum VideoEdit {
 /// The AVFoundation side of the edit, free of Flutter and UIKit: an
 /// `AVMutableComposition` of the kept part of the video (its orientation
 /// kept as the track's transform) and the sound chosen, exported as H.264
-/// and AAC in MP4.
+/// and AAC in MP4; or, without the video, the sound alone as AAC in M4A.
 enum VideoEditor {
   /// The part of the track that goes in: `gapMs` of silence from the kept
   /// part's start, then the track from `fromMs` to `toMs`.
@@ -283,13 +284,13 @@ enum VideoEditor {
   /// an error message.
   static func edit(
     input: URL, output: URL, startMs: Int64, endMs: Int64, sound: String, track: URL?,
-    part: TrackPart?, completion: @escaping (String?) -> Void
+    part: TrackPart?, video: Bool = true, completion: @escaping (String?) -> Void
   ) {
     Task {
       do {
         try await run(
           input: input, output: output, startMs: startMs, endMs: endMs, sound: sound,
-          track: track, part: part)
+          track: track, part: part, video: video)
         completion(nil)
       } catch {
         completion(error.localizedDescription)
@@ -304,7 +305,7 @@ enum VideoEditor {
 
   private static func run(
     input: URL, output: URL, startMs: Int64, endMs: Int64, sound: String, track: URL?,
-    part: TrackPart?
+    part: TrackPart?, video: Bool
   ) async throws {
     let asset = AVURLAsset(url: input)
     guard let videoTrack = try await asset.loadTracks(withMediaType: .video).first else {
@@ -317,12 +318,16 @@ enum VideoEditor {
     guard range.duration > .zero else { throw Failure("Nothing to keep.") }
 
     let composition = AVMutableComposition()
-    guard
-      let compVideo = composition.addMutableTrack(
-        withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
-    else { throw Failure("Could not add the video track.") }
-    try compVideo.insertTimeRange(range, of: videoTrack, at: .zero)
-    compVideo.preferredTransform = transform
+    if video {
+      guard
+        let compVideo = composition.addMutableTrack(
+          withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
+      else { throw Failure("Could not add the video track.") }
+      try compVideo.insertTimeRange(range, of: videoTrack, at: .zero)
+      compVideo.preferredTransform = transform
+    } else if sound == "none" {
+      throw Failure("A video without sound has no sound.")
+    }
 
     switch sound {
     case "original":
@@ -360,12 +365,16 @@ enum VideoEditor {
     if FileManager.default.fileExists(atPath: output.path) {
       try FileManager.default.removeItem(at: output)
     }
+    if !video && !composition.tracks.contains(where: { $0.mediaType == .audio }) {
+      throw Failure("There is no sound in the kept part.")
+    }
     guard
       let export = AVAssetExportSession(
-        asset: composition, presetName: AVAssetExportPresetHighestQuality)
+        asset: composition,
+        presetName: video ? AVAssetExportPresetHighestQuality : AVAssetExportPresetAppleM4A)
     else { throw Failure("Could not start the export.") }
     export.outputURL = output
-    export.outputFileType = .mp4
+    export.outputFileType = video ? .mp4 : .m4a
     export.shouldOptimizeForNetworkUse = true
     await withCheckedContinuation { (done: CheckedContinuation<Void, Never>) in
       export.exportAsynchronously { done.resume() }

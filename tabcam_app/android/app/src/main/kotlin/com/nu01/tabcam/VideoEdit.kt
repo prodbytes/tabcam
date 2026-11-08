@@ -30,7 +30,9 @@ import java.io.File
  * - `track`: absolute path of the new sound track, for `track`;
  * - `gapMs`, `fromMs`, `toMs`: the part of it that goes in (the app works it
  *   out, `trackSpan` in video_edit.dart): `gapMs` of silence, then the track
- *   from `fromMs` to `toMs`; left out when none of it falls in the kept part.
+ *   from `fromMs` to `toMs`; left out when none of it falls in the kept part;
+ * - `video`: false for the sound alone (AAC in MP4, an `.m4a`; not with
+ *   `none`), true (the default) for the video.
  *
  * Replies with the output path, or the error `failed`.
  *
@@ -39,7 +41,9 @@ import java.io.File
  * silence (a gap) for as long as it starts after the video, then the part of
  * it that fits the kept part; the composition forces an audio track, since
  * the primary has none then. A secondary sequence longer than the primary is
- * cut to it; the output is H.264 and AAC in MP4.
+ * cut to it; the output is H.264 and AAC in MP4. The sound alone is one
+ * sequence: the kept part of the video's own sound, or the track's (the gap,
+ * then its part), so it ends where the sound does.
  */
 @UnstableApi
 class VideoEdit(private val context: Context, messenger: BinaryMessenger) :
@@ -63,6 +67,7 @@ class VideoEdit(private val context: Context, messenger: BinaryMessenger) :
         val startMs = call.argument<Number>("startMs")?.toLong()
         val endMs = call.argument<Number>("endMs")?.toLong()
         val sound = call.argument<String>("sound") ?: "original"
+        val video = call.argument<Boolean>("video") ?: true
         val track = call.argument<String>("track")
         val gapMs = call.argument<Number>("gapMs")?.toLong()
         val fromMs = call.argument<Number>("fromMs")?.toLong()
@@ -88,7 +93,11 @@ class VideoEdit(private val context: Context, messenger: BinaryMessenger) :
             return
         }
         val composition = try {
-            compose(inputFile, startMs, endMs, sound, trackFile, part)
+            if (video) {
+                compose(inputFile, startMs, endMs, sound, trackFile, part)
+            } else {
+                composeSound(inputFile, startMs, endMs, sound, trackFile, part)
+            }
         } catch (e: Exception) {
             result.error("failed", e.message ?: e.toString(), null)
             return
@@ -133,6 +142,42 @@ class VideoEdit(private val context: Context, messenger: BinaryMessenger) :
             // with the track mixed in.
             .experimentalSetForceAudioTrack(sound == "track")
             .build()
+    }
+
+    /** The sound alone, as [compose] would mix it, without the video. */
+    private fun composeSound(
+        input: File,
+        startMs: Long,
+        endMs: Long,
+        sound: String,
+        track: File?,
+        part: Triple<Long, Long, Long>?,
+    ): Composition {
+        require(endMs > startMs) { "Nothing to keep" }
+        val sequence = when (sound) {
+            "original" -> EditedMediaItemSequence.Builder(
+                EditedMediaItem.Builder(clipped(input, startMs, endMs))
+                    .setRemoveVideo(true)
+                    .build(),
+            ).build()
+            "track" -> {
+                requireNotNull(track) { "No track" }
+                val (gapMs, fromMs, toMs) = requireNotNull(part) {
+                    "None of the track falls in the kept part"
+                }
+                require(toMs > fromMs && gapMs >= 0 && fromMs >= 0) { "Bad track part" }
+                val audio = EditedMediaItem.Builder(clipped(track, fromMs, toMs))
+                    .setRemoveVideo(true)
+                    .build()
+                val builder = EditedMediaItemSequence.Builder(emptyList<EditedMediaItem>())
+                if (gapMs > 0) builder.addGap(gapMs * 1000)
+                builder.addItem(audio)
+                builder.experimentalSetForceAudioTrack(true)
+                builder.build()
+            }
+            else -> throw IllegalArgumentException("A video without sound has no sound")
+        }
+        return Composition.Builder(listOf(sequence)).build()
     }
 
     private fun clipped(file: File, startMs: Long, endMs: Long): MediaItem =

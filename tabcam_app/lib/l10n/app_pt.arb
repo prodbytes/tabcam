@@ -505,13 +505,19 @@
   "videoEditTrackWith": "A faixa começa junto com o vídeo",
   "videoEditTrackAfter": "A faixa começa {time} depois do vídeo",
   "videoEditTrackBefore": "A faixa começa {time} antes do vídeo",
-  "videoEditReplaces": "Salvar substitui o vídeo.",
-  "videoEditSaving": "Salvando o vídeo…",
-  "videoEditCouldntSave": "Não deu para salvar o vídeo",
   "dictionaryHide": "Ocultar o dicionário",
   "videoEditTrackBar": "A faixa ao longo da parte mantida: arraste para mover, as pontas para cortar",
   "videoEditTrackEarlier": "Um décimo de segundo antes",
   "videoEditTrackLater": "Um décimo de segundo depois",
   "videoEditTrackUsed": "Usando {start}–{end} da faixa",
-  "eventPlayLink": "Reproduzir em uma nova aba"
+  "eventPlayLink": "Reproduzir em uma nova aba",
+  "videoEditKept": "Sua edição fica guardada enquanto você a faz e toca com o vídeo; Baixar cria um arquivo dela.",
+  "videoEditReset": "Restaurar",
+  "videoEditDownload": "Baixar",
+  "videoEditDownloadMore": "Mais downloads",
+  "videoEditDownloadVideo": "O vídeo",
+  "videoEditDownloadSilent": "O vídeo sem som",
+  "videoEditDownloadSound": "Só o som",
+  "videoEditDownloading": "Criando o arquivo…",
+  "videoEditCouldntDownload": "Não deu para criar o arquivo"
 }

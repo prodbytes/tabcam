@@ -114,6 +114,8 @@ class Library extends ChangeNotifier {
     final now = _now();
     final id = newId();
     final pages = <EventPage>[];
+    // A video's edit names its track by ID: the copy's track's.
+    final ids = {for (final page in event.pages) page.id: newId()};
     for (final page in event.pages) {
       if (page.isLink) {
         pages.add(
@@ -122,10 +124,11 @@ class Library extends ChangeNotifier {
         continue;
       }
       final copy = EventPage(
-        id: newId(),
+        id: ids[page.id]!,
         filter: page.filter,
         kind: page.kind,
         extension: page.extension,
+        edit: page.edit?.withTrackId(ids[page.edit?.trackId]),
       );
       await _arrival(event.id, page);
       final (bytes, _) = await _store.pageStream(event.id, page);
@@ -357,6 +360,22 @@ class Library extends ChangeNotifier {
       ),
     );
   }
+
+  /// Keeps [edit] with video [pageId] of event [eventId] (null: none, the
+  /// video plays as it is).
+  Future<CaptureEvent?> setPageEdit(
+    String eventId,
+    String pageId,
+    PageEdit? edit,
+  ) => patch(
+    eventId,
+    (now) => now.copyWith(
+      pages: [
+        for (final p in now.pages)
+          p.id == pageId ? p.copyWith(edit: () => edit) : p,
+      ],
+    ),
+  );
 
   /// Applies [change] to the event [id] as it is now, so changes made
   /// meanwhile (pages added while a read ran) aren't overwritten by an

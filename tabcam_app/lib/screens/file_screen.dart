@@ -245,11 +245,11 @@ class _FileScreenState extends State<FileScreen> {
 
   /// Edits a video (trim, sound): the edit screen over this one, the
   /// video's own player let go meanwhile ([_editing]) so only the preview
-  /// plays; saved, the edited video is a new page in its place.
+  /// plays; back, the video plays as edited (the edit is kept with it).
   Future<void> _edit(CaptureEvent event, EventPage page) async {
     setState(() => _editing = true);
     try {
-      final replaced = await Navigator.of(context).push<String>(
+      await Navigator.of(context).push<void>(
         MaterialPageRoute(
           builder: (_) => VideoEditScreen(
             library: _library,
@@ -258,7 +258,6 @@ class _FileScreenState extends State<FileScreen> {
           ),
         ),
       );
-      if (replaced != null && mounted) setState(() => _pageId = replaced);
     } finally {
       if (mounted) setState(() => _editing = false);
     }

@@ -9,20 +9,23 @@ import 'package:video_player/video_player.dart';
 
 import '../capture/media.dart';
 import '../capture/video_edit.dart';
+import '../export/download.dart';
 import '../l10n/language.dart';
 import '../library/capture_event.dart';
 import '../library/library.dart';
+import 'edited_playback.dart';
 import 'file_screen.dart';
 import 'media_url.dart';
 import 'video_page.dart' show openPlayer;
 
 /// Basic edits of a video, opened from its file screen: trim its start
 /// and end, and keep, remove or replace its sound with a new track (one
-/// of the capture's recordings, or a sound file), shifted to fit the
-/// video. The preview plays the kept part, with the new track along it.
-/// Save applies the edit on the device ([VideoEditor]) and puts the
-/// result in the video's place; the screen then pops with the new page's
-/// ID.
+/// of the capture's recordings, or a sound file, added to them), shifted
+/// to fit the video. The edit is kept with the page as it's made
+/// ([PageEdit]), and played as it says ([EditedPlayback]: the kept part,
+/// muted, the new track along it); the video's file stays as it is.
+/// Download makes a file of it on the device ([VideoEditor]): the video,
+/// the video without sound, or the sound alone.
 class VideoEditScreen extends StatefulWidget {
   const VideoEditScreen({
     super.key,
@@ -66,16 +69,22 @@ class VideoEditScreen extends StatefulWidget {
   State<VideoEditScreen> createState() => _VideoEditScreenState();
 }
 
+/// What Download makes: the video as edited, the video without sound, or
+/// its sound alone.
+enum _Download { video, silent, sound }
+
 class _VideoEditScreenState extends State<VideoEditScreen> {
   VideoPlayerController? _video;
+  EditedPlayback? _playback;
   Object? _error;
 
   Duration _start = Duration.zero;
   Duration _end = Duration.zero;
   EditSound _sound = EditSound.original;
 
-  /// The new track: its file, its name, and its player (for its length,
-  /// and to play it along the preview).
+  /// The new track: its page in the capture, its file, its name, and its
+  /// player (for its length, and to play it along the preview).
+  String? _trackId;
   XFile? _track;
   String? _trackName;
   VideoPlayerController? _trackPlayer;
@@ -89,12 +98,13 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// The shortest part of a track that can be used.
   static const minTrack = Duration(milliseconds: 500);
 
-  /// Checks the preview every tenth of a second while it plays: the kept
-  /// part's end, and the track's place along it.
-  Timer? _ticker;
-  bool _trackPlaying = false;
+  /// The edit as last kept with the page, and the wait before the next
+  /// change is kept (a drag makes many).
+  PageEdit? _saved;
+  Timer? _saveTimer;
 
-  bool _saving = false;
+  /// A download being made, and how far along it is (where that's known).
+  bool _busy = false;
   double? _progress;
 
   Library get _library => widget.library;
@@ -137,6 +147,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     unawaited(_open());
   }
 
+  /// Opens the video, and the edit it has (its track too).
   Future<void> _open() async {
     final event = _library.byId(widget.eventId);
     if (event == null) return;
@@ -151,82 +162,91 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         return;
       }
       await controller.setLooping(false);
+      final edit = event.pages
+          .where((p) => p.id == widget.page.id)
+          .firstOrNull
+          ?.edit;
       setState(() {
         _video = controller;
+        _playback = EditedPlayback(controller);
         _duration = length;
         _end = length;
+        _saved = edit;
+        if (edit != null) {
+          _start = _clamp(edit.start, Duration.zero, length);
+          _end = _clamp(edit.end, _start, length);
+          _sound = edit.sound;
+        }
       });
-      controller.addListener(_onVideo);
+      final track = edit?.trackId == null
+          ? null
+          : event.pages.where((p) => p.id == edit!.trackId).firstOrNull;
+      if (edit != null && track != null) {
+        final file = await _fileOf(event, track);
+        if (!mounted) return;
+        await _loadTrack(
+          track.id,
+          file,
+          fileLabel(context.l10n, event, track),
+          from: edit,
+        );
+      }
+      await _played();
     } on Object catch (e) {
       if (mounted) setState(() => _error = e);
     }
   }
 
-  void _onVideo() {
-    final video = _video;
-    if (video == null) return;
-    if (video.value.isPlaying) {
-      _ticker ??= Timer.periodic(const Duration(milliseconds: 100), _tick);
-    } else if (_ticker != null) {
-      _ticker?.cancel();
-      _ticker = null;
-      unawaited(_pauseTrack());
-    }
-  }
-
   @override
   void dispose() {
-    _ticker?.cancel();
-    _video?.removeListener(_onVideo);
+    if (_saveTimer?.isActive ?? false) {
+      _saveTimer!.cancel();
+      unawaited(_keep());
+    }
+    _playback?.dispose();
     _video?.dispose();
     _trackPlayer?.dispose();
     super.dispose();
   }
 
-  /// The kept part's end: back to its start, paused. The track: started
-  /// where it comes in, paused where it ends.
-  Future<void> _tick(Timer _) async {
-    final video = _video;
-    if (video == null || !video.value.isPlaying) return;
-    final at = video.value.position;
-    if (at >= _end) {
-      await video.pause();
-      await video.seekTo(_start);
-      return;
-    }
-    final track = _trackPlayer;
-    if (track == null || _sound != EditSound.track) return;
-    // Where in the track the video is: its used part starts [_offset]
-    // into the kept part.
-    final into = _trackStart + (at - _start - _offset);
-    final within = into >= _trackStart && into < _trackEnd;
-    if (within && !_trackPlaying) {
-      _trackPlaying = true;
-      await track.seekTo(into);
-      await track.play();
-    } else if (!within && _trackPlaying) {
-      await _pauseTrack();
-    }
+  /// The edit as it is now, as kept with the page: null when it changes
+  /// nothing (the video plays as it is).
+  PageEdit? get _pageEdit {
+    final trimmed = _start > Duration.zero || _end < _duration;
+    if (!trimmed && _sound == EditSound.original) return null;
+    return PageEdit(
+      start: _start,
+      end: _end,
+      sound: _sound,
+      trackId: _trackId,
+      trackStart: _trackStart,
+      trackEnd: _trackEnd >= _trackLength ? null : _trackEnd,
+      offset: _offset,
+    );
   }
 
-  Future<void> _pauseTrack() async {
-    if (!_trackPlaying) return;
-    _trackPlaying = false;
-    await _trackPlayer?.pause();
+  /// Something changed: the preview plays it, and it's kept with the page
+  /// a moment later.
+  void _changed() {
+    unawaited(_played());
+    _saveTimer?.cancel();
+    _saveTimer = Timer(const Duration(milliseconds: 400), _keep);
   }
 
-  /// Plays the kept part (from its start, when outside it), or pauses.
-  Future<void> _playPause() async {
-    final video = _video;
-    if (video == null) return;
-    if (video.value.isPlaying) {
-      await video.pause();
-      return;
+  /// The preview plays the edit as it is now.
+  Future<void> _played() async =>
+      _playback?.set(_pageEdit, track: _trackPlayer);
+
+  /// Keeps the edit with the page, when it changed.
+  Future<void> _keep() async {
+    final edit = _pageEdit;
+    if (edit == _saved) return;
+    _saved = edit;
+    try {
+      await _library.setPageEdit(widget.eventId, widget.page.id, edit);
+    } on Object catch (e) {
+      debugPrint('TabCam: video edit: not kept: $e');
     }
-    await video.setVolume(_sound == EditSound.original ? 1 : 0);
-    final at = video.value.position;
-    if (at < _start || at >= _end) await video.seekTo(_start);
-    await video.play();
   }
 
   /// Keeps from [start] to [end], at least [VideoEdit.minLength] long.
@@ -248,6 +268,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       _start = start;
       _end = end;
     });
+    _changed();
     final video = _video;
     if (video != null && !video.value.isPlaying) {
       unawaited(video.seekTo(endMoved ? end : start));
@@ -267,12 +288,12 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 
   Future<void> _setSound(EditSound sound) async {
     setState(() => _sound = sound);
-    await _video?.setVolume(sound == EditSound.original ? 1 : 0);
-    if (sound != EditSound.track) await _pauseTrack();
+    _changed();
     if (sound == EditSound.track && _track == null) await _pickTrack();
   }
 
-  /// A sheet of the capture's recordings, and a sound file to pick.
+  /// A sheet of the capture's recordings, and a sound file to pick (added
+  /// to the capture's files).
   Future<void> _pickTrack() async {
     final event = _library.byId(widget.eventId);
     final l10n = context.l10n;
@@ -310,29 +331,50 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         ),
       ),
     );
-    if (!mounted || picked == null) return;
-    XFile? file;
-    String? name;
+    if (!mounted || picked == null || event == null) return;
+    final EventPage page;
+    final XFile file;
+    var now = event;
     if (picked is EventPage) {
-      final path = await _library.path(event!, picked);
-      file = path != null
-          ? XFile(path, mimeType: picked.mimeType)
-          : XFile.fromData(
-              await _library.original(event, picked),
-              mimeType: picked.mimeType,
-              name: picked.fileName,
-            );
-      name = fileLabel(l10n, event, picked);
+      page = picked;
+      file = await _fileOf(event, page);
     } else {
-      file = await widget.pickFile();
-      name = file == null ? null : nameOfFile(file.name) ?? file.name;
+      final chosen = await widget.pickFile();
+      if (chosen == null || !mounted) return;
+      file = chosen;
+      // A recording of the capture's from now on: the edit names it, and
+      // it syncs with the rest.
+      final name = file.name.toLowerCase();
+      final dot = name.lastIndexOf('.');
+      final extension =
+          Media.of(file)?.extension ??
+          (dot < 0 ? 'mp3' : name.substring(dot + 1));
+      final before = {for (final p in event.pages) p.id};
+      try {
+        now = await _library.addMedia(event, [
+          Media(file, PageKind.audio, extension),
+        ]);
+      } on Object catch (e) {
+        debugPrint('TabCam: video edit: the track wasn\'t added: $e');
+        return;
+      }
+      final added = now.pages.where((p) => !before.contains(p.id));
+      if (added.isEmpty) return;
+      page = added.first;
     }
-    if (!mounted || file == null) return;
-    await _loadTrack(file, name!);
+    if (!mounted) return;
+    await _loadTrack(page.id, file, fileLabel(l10n, now, page));
   }
 
-  Future<void> _loadTrack(XFile file, String name) async {
-    await _pauseTrack();
+  /// Plays [file], page [id] of the capture, as the new track: as [from]
+  /// places it, or from its start, with the video's.
+  Future<void> _loadTrack(
+    String id,
+    XFile file,
+    String name, {
+    PageEdit? from,
+  }) async {
+    await _playback?.set(_pageEdit);
     await _trackPlayer?.dispose();
     _trackPlayer = null;
     VideoPlayerController? player;
@@ -348,14 +390,20 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       return;
     }
     setState(() {
+      _trackId = id;
       _track = file;
       _trackName = name;
       _trackPlayer = player;
       _trackLength = length;
-      _trackStart = Duration.zero;
-      _trackEnd = length;
-      _offset = Duration.zero;
+      _trackStart = from == null
+          ? Duration.zero
+          : _clamp(from.trackStart, Duration.zero, length);
+      _trackEnd = from?.trackEnd == null
+          ? length
+          : _clamp(from!.trackEnd!, _trackStart, length);
+      _offset = from?.offset ?? Duration.zero;
     });
+    _changed();
   }
 
   /// A player for [file]: from its path, or its bytes on the web.
@@ -378,18 +426,17 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 
   /// Moves the track's used part [delta] along the video (kept within
   /// touch of the kept part).
-  Future<void> _moveTrack(Duration delta) async {
+  void _moveTrack(Duration delta) {
     final used = _trackEnd - _trackStart;
     final offset = _clamp(_offset + delta, -used, _end - _start);
     if (offset == _offset) return;
     setState(() => _offset = offset);
-    // The track finds its new place at the next tick.
-    await _pauseTrack();
+    _changed();
   }
 
   /// Trims the track's start by [delta]: what's left stays where it is
   /// along the video.
-  Future<void> _trimTrackStart(Duration delta) async {
+  void _trimTrackStart(Duration delta) {
     final start = _clamp(
       _trackStart + delta,
       Duration.zero,
@@ -400,15 +447,29 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       _offset += start - _trackStart;
       _trackStart = start;
     });
-    await _pauseTrack();
+    _changed();
   }
 
   /// Trims the track's end by [delta].
-  Future<void> _trimTrackEnd(Duration delta) async {
+  void _trimTrackEnd(Duration delta) {
     final end = _clamp(_trackEnd + delta, _trackStart + minTrack, _trackLength);
     if (end == _trackEnd) return;
     setState(() => _trackEnd = end);
-    await _pauseTrack();
+    _changed();
+  }
+
+  /// Back to the video as it is: all of it, with its own sound (the track
+  /// stays picked, from its start, for New track).
+  void _reset() {
+    setState(() {
+      _start = Duration.zero;
+      _end = _duration;
+      _sound = EditSound.original;
+      _trackStart = Duration.zero;
+      _trackEnd = _trackLength;
+      _offset = Duration.zero;
+    });
+    _changed();
   }
 
   VideoEdit get _edit => VideoEdit(
@@ -422,21 +483,31 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     offset: _offset,
   );
 
-  bool get _canSave {
-    if (_video == null || _saving) return false;
-    // A track of unknown length can't be fitted.
-    if (_sound == EditSound.track &&
-        (_track == null || _trackLength <= Duration.zero)) {
-      return false;
-    }
-    return _edit.changes(_duration);
+  /// Whether the edit's track can be fitted (one of unknown length can't).
+  bool get _trackReady =>
+      _sound != EditSound.track ||
+      (_track != null && _trackLength > Duration.zero);
+
+  bool _canDownload(_Download what) {
+    if (_video == null || _busy) return false;
+    return switch (what) {
+      _Download.video => _trackReady,
+      _Download.silent => true,
+      _Download.sound => switch (_sound) {
+        EditSound.none => false,
+        EditSound.original => true,
+        EditSound.track => _trackReady && _edit.trackPart != null,
+      },
+    };
   }
 
-  Future<void> _save() async {
+  /// Makes a file of the edit, on the device ([VideoEditor]), and
+  /// downloads it: the video as edited, without sound, or its sound alone.
+  /// A video the edit doesn't change downloads as it is.
+  Future<void> _download(_Download what) async {
     final editor = _editor;
     final event = _library.byId(widget.eventId);
     final l10n = context.l10n;
-    final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
     if (editor == null) {
       messenger.showSnackBar(SnackBar(content: Text(l10n.videoEditNotHere)));
@@ -445,33 +516,51 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     if (event == null) return;
     await _video?.pause();
     setState(() {
-      _saving = true;
+      _busy = true;
       _progress = null;
     });
+    XFile? made;
     try {
       final page = widget.page;
       final input = await _fileOf(event, page);
-      final output = await editor.apply(
+      final label = fileLabel(l10n, event, page);
+      final edit = what == _Download.silent
+          ? VideoEdit(start: _start, end: _end, sound: EditSound.none)
+          : _edit;
+      if (what != _Download.sound && !edit.changes(_duration)) {
+        await Downloads.saveFile(_library, event, page, label);
+        return;
+      }
+      final out = made = await editor.apply(
         input,
-        _edit,
+        edit,
+        soundOnly: what == _Download.sound,
         onProgress: (done) {
           if (mounted) setState(() => _progress = done);
         },
       );
-      final media = Media.of(output) ?? Media(output, PageKind.video, 'mp4');
-      final now = _library.byId(widget.eventId) ?? event;
-      final updated = await _library.replacePage(now, page, media);
-      final index = now.pages.indexWhere((p) => p.id == page.id);
-      navigator.pop(index < 0 ? null : updated.pages[index].id);
+      final extension =
+          Media.of(out)?.extension ?? (what == _Download.sound ? 'm4a' : 'mp4');
+      await Downloads.saveBytes(
+        safeFileName(label, extension),
+        await out.readAsBytes(),
+        out.mimeType ?? 'video/mp4',
+      );
     } on Object catch (e, stack) {
       debugPrint(
-        'TabCam: video edit: ${l10n.videoEditCouldntSave}: $e\n$stack',
+        'TabCam: video edit: ${l10n.videoEditCouldntDownload}: $e\n$stack',
       );
-      if (!mounted) return;
       messenger.showSnackBar(
-        SnackBar(content: Text('${l10n.videoEditCouldntSave}: $e')),
+        SnackBar(content: Text('${l10n.videoEditCouldntDownload}: $e')),
       );
-      setState(() => _saving = false);
+    } finally {
+      // The phones' editors write it to a temporary file.
+      if (made != null && !kIsWeb && made.path.isNotEmpty) {
+        unawaited(
+          File(made.path).delete().then((_) {}, onError: (Object _) {}),
+        );
+      }
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -488,13 +577,14 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     final theme = Theme.of(context);
     final event = _library.byId(widget.eventId);
     final video = _video;
+    final changed = _pageEdit != null;
     return Scaffold(
       appBar: AppBar(
         title: Text(
           event == null ? '' : fileLabel(l10n, event, widget.page),
           overflow: TextOverflow.ellipsis,
         ),
-        bottom: _saving
+        bottom: _busy
             ? PreferredSize(
                 preferredSize: const Size.fromHeight(4),
                 child: LinearProgressIndicator(
@@ -509,7 +599,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           : video == null
           ? const Center(child: CircularProgressIndicator())
           : AbsorbPointer(
-              absorbing: _saving,
+              absorbing: _busy,
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
@@ -546,11 +636,11 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                     const SizedBox(height: 8),
                     _trackRow(l10n, theme),
                   ],
-                  if (_saving) ...[
+                  if (_busy) ...[
                     const SizedBox(height: 16),
                     Text(
-                      l10n.videoEditSaving,
-                      key: const Key('video-edit-saving'),
+                      l10n.videoEditDownloading,
+                      key: const Key('video-edit-downloading'),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -564,21 +654,18 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
             children: [
               Expanded(
                 child: Text(
-                  l10n.videoEditReplaces,
+                  l10n.videoEditKept,
                   style: theme.textTheme.bodySmall,
                 ),
               ),
+              const SizedBox(width: 8),
               TextButton(
-                key: const Key('video-edit-cancel'),
-                onPressed: _saving ? null : () => Navigator.pop(context),
-                child: Text(l10n.eventCancel),
+                key: const Key('video-edit-reset'),
+                onPressed: changed && !_busy ? _reset : null,
+                child: Text(l10n.videoEditReset),
               ),
               const SizedBox(width: 8),
-              FilledButton(
-                key: const Key('video-edit-save'),
-                onPressed: _canSave ? _save : null,
-                child: Text(l10n.eventSave),
-              ),
+              _downloadButton(l10n),
             ],
           ),
         ),
@@ -586,8 +673,73 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     );
   }
 
-  /// The video, at most a third of the screen, the play / pause button
-  /// over it and its progress under.
+  /// Download, split: the button downloads the video as edited; its menu
+  /// also has it without sound, and its sound alone.
+  Widget _downloadButton(AppLocalizations l10n) {
+    const radius = Radius.circular(20);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        FilledButton.icon(
+          key: const Key('video-edit-download'),
+          style: FilledButton.styleFrom(
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.horizontal(left: radius),
+            ),
+          ),
+          icon: const Icon(Icons.download_outlined),
+          label: Text(l10n.videoEditDownload),
+          onPressed: _canDownload(_Download.video)
+              ? () => _download(_Download.video)
+              : null,
+        ),
+        const SizedBox(width: 2),
+        MenuAnchor(
+          menuChildren: [
+            for (final (what, label, icon) in [
+              (
+                _Download.video,
+                l10n.videoEditDownloadVideo,
+                Icons.movie_outlined,
+              ),
+              (
+                _Download.silent,
+                l10n.videoEditDownloadSilent,
+                Icons.videocam_off_outlined,
+              ),
+              (_Download.sound, l10n.videoEditDownloadSound, Icons.audiotrack),
+            ])
+              MenuItemButton(
+                key: Key('video-edit-download-${what.name}'),
+                leadingIcon: Icon(icon),
+                onPressed: _canDownload(what) ? () => _download(what) : null,
+                child: Text(label),
+              ),
+          ],
+          builder: (context, menu, _) => FilledButton(
+            key: const Key('video-edit-download-more'),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: const Size(40, 40),
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.horizontal(right: radius),
+              ),
+            ),
+            onPressed: _video == null || _busy
+                ? null
+                : () => menu.isOpen ? menu.close() : menu.open(),
+            child: Tooltip(
+              message: l10n.videoEditDownloadMore,
+              child: const Icon(Icons.arrow_drop_down),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// The video, at most a third of the screen, and its controls under it:
+  /// play / pause, its progress and where it is.
   Widget _preview(VideoPlayerController video) {
     final height = MediaQuery.sizeOf(context).height / 3;
     return Column(
@@ -595,26 +747,11 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         ConstrainedBox(
           constraints: BoxConstraints(maxHeight: height),
           child: GestureDetector(
-            onTap: _playPause,
+            onTap: _playback?.playPause,
             child: Center(
               child: AspectRatio(
                 aspectRatio: video.value.aspectRatio,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    VideoPlayer(video),
-                    ValueListenableBuilder(
-                      valueListenable: video,
-                      builder: (context, value, _) => value.isPlaying
-                          ? const SizedBox.shrink()
-                          : const Icon(
-                              Icons.play_circle_fill,
-                              size: 64,
-                              color: Colors.white70,
-                            ),
-                    ),
-                  ],
-                ),
+                child: VideoPlayer(video),
               ),
             ),
           ),
@@ -630,7 +767,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                     ? context.l10n.textViewPause
                     : context.l10n.textViewPlay,
                 icon: Icon(value.isPlaying ? Icons.pause : Icons.play_arrow),
-                onPressed: _playPause,
+                onPressed: _playback?.playPause,
               ),
             ),
             Expanded(

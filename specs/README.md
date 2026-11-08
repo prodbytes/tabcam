@@ -69,10 +69,12 @@ review notes ([app stores](app-stores.md)).
   on YouTube. Every sidebar (the dictionary, the play-along player) is
   resizable by dragging its edge, the width kept on the device.
 - [Video edit](video-edit.md): basic edits of a video from its file
-  screen, on the device: trim its start and end; keep its sound, take it
-  out, or replace it with a new track (one of the capture's recordings
-  or a sound file), shifted to fit the video; Save puts the result in
-  the video's place.
+  screen: trim its start and end; keep its sound, take it out, or
+  replace it with a new track (one of the capture's recordings, or a
+  sound file, added to them), shifted to fit the video. The edit is kept
+  with the video and played as it says (muted, the track along it), no
+  file made; Download makes one on the device: the video, the video
+  without sound, or the sound only.
 - [Hidden images](hidden-images.md): the owner hides a capture's photos
   and scans, for everyone; it then shows only the text tab, videos and
   links, and exports leave the images out.

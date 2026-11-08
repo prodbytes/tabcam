@@ -3136,24 +3136,6 @@ abstract class AppLocalizations {
   /// **'The track starts {time} before the video'**
   String videoEditTrackBefore(String time);
 
-  /// Video edit: the note beside Save
-  ///
-  /// In en, this message translates to:
-  /// **'Saving replaces the video.'**
-  String get videoEditReplaces;
-
-  /// Video edit: while the edit is applied
-  ///
-  /// In en, this message translates to:
-  /// **'Saving the video…'**
-  String get videoEditSaving;
-
-  /// Video edit: the failure message
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t save the video'**
-  String get videoEditCouldntSave;
-
   /// App bar and dictionary sidebar: hides the dictionary sidebar
   ///
   /// In en, this message translates to:
@@ -3189,6 +3171,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Play in a new tab'**
   String get eventPlayLink;
+
+  /// Video edit: the note beside Reset and Download
+  ///
+  /// In en, this message translates to:
+  /// **'Your edit is kept as you make it and plays with the video; Download makes a file of it.'**
+  String get videoEditKept;
+
+  /// Video edit: undoes the whole edit (the whole video, its own sound)
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get videoEditReset;
+
+  /// Video edit: makes a file of the edited video and downloads it
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get videoEditDownload;
+
+  /// Video edit: the arrow beside Download that opens its other choices
+  ///
+  /// In en, this message translates to:
+  /// **'More downloads'**
+  String get videoEditDownloadMore;
+
+  /// Video edit: Download's menu: the video as edited, with its sound
+  ///
+  /// In en, this message translates to:
+  /// **'The video'**
+  String get videoEditDownloadVideo;
+
+  /// Video edit: Download's menu: the video as edited, silent
+  ///
+  /// In en, this message translates to:
+  /// **'The video without sound'**
+  String get videoEditDownloadSilent;
+
+  /// Video edit: Download's menu: the edited video's sound alone, as a sound file
+  ///
+  /// In en, this message translates to:
+  /// **'The sound only'**
+  String get videoEditDownloadSound;
+
+  /// Video edit: while a download is made
+  ///
+  /// In en, this message translates to:
+  /// **'Making the file…'**
+  String get videoEditDownloading;
+
+  /// Video edit: the download's failure message
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t make the file'**
+  String get videoEditCouldntDownload;
 }
 
 class _AppLocalizationsDelegate

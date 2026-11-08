@@ -1839,15 +1839,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get videoEditReplaces => 'Saving replaces the video.';
-
-  @override
-  String get videoEditSaving => 'Saving the video…';
-
-  @override
-  String get videoEditCouldntSave => 'Couldn\'t save the video';
-
-  @override
   String get dictionaryHide => 'Hide the dictionary';
 
   @override
@@ -1867,4 +1858,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventPlayLink => 'Play in a new tab';
+
+  @override
+  String get videoEditKept =>
+      'Your edit is kept as you make it and plays with the video; Download makes a file of it.';
+
+  @override
+  String get videoEditReset => 'Reset';
+
+  @override
+  String get videoEditDownload => 'Download';
+
+  @override
+  String get videoEditDownloadMore => 'More downloads';
+
+  @override
+  String get videoEditDownloadVideo => 'The video';
+
+  @override
+  String get videoEditDownloadSilent => 'The video without sound';
+
+  @override
+  String get videoEditDownloadSound => 'The sound only';
+
+  @override
+  String get videoEditDownloading => 'Making the file…';
+
+  @override
+  String get videoEditCouldntDownload => 'Couldn\'t make the file';
 }

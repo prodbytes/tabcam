@@ -97,6 +97,10 @@ abstract final class Downloads {
     return kIsWeb || saved != null;
   }
 
+  /// Saves [bytes], a file made here (an edited video), as [name].
+  static Future<bool> saveBytes(String name, Uint8List bytes, String type) =>
+      save(name, bytes, type);
+
   /// Saves [page]'s file, named as the list names it ([label]).
   static Future<bool> saveFile(
     Library library,
