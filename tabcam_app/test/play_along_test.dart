@@ -10,6 +10,7 @@ import 'package:image/image.dart' as img;
 import 'package:tabcam_app/capture/head_gestures.dart';
 import 'package:tabcam_app/capture/link_frame.dart';
 import 'package:tabcam_app/capture/media.dart';
+import 'package:tabcam_app/capture/backing_track.dart';
 import 'package:tabcam_app/capture/play_along_screen.dart';
 import 'package:tabcam_app/capture/play_along_sidebar.dart';
 import 'package:tabcam_app/capture/take_overlay.dart';
@@ -110,6 +111,8 @@ void main() {
     late String id;
     await tester.runAsync(() async {
       await library.load();
+      // Play plays at once (the count-in has tests of its own).
+      await library.writeMeta(BackingTrack.metaName, '{"countIn":false}');
       final event = await library.create([
         img.encodeJpg(img.Image(width: 8, height: 8)),
       ]);

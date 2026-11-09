@@ -700,6 +700,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get camAlongForward => 'Avançar 10 segundos';
 
   @override
+  String get camAlongCountInOn =>
+      'Contagem ligada: 2 segundos de silêncio antes de tocar';
+
+  @override
+  String get camAlongCountInOff => 'Contagem desligada: toca na hora';
+
+  @override
   String get camAlongRepeatOn => 'Repetir ligado: recomeça ao terminar';
 
   @override

@@ -264,9 +264,10 @@ view).
   screen's height (on a short screen the video shrinks first, so the
   list under it keeps at least two rows): a video (or a link's page, 16:9) above a progress bar
   to scrub (marked where its [phrase passes](#phrase-passes) are, with
-  their count and ✕ under it); a recording only the progress bar; under them its icon and
+  their count and ✕ under it), the [count-in](#count-in) at the start
+  of the progress bar's line; a recording only that line; under them its icon and
   name in small type, then **«** (10 seconds back, not before the
-  start), **Play** / **Pause**, **Stop** (pauses it, back at its start),
+  start), **Play** / **Pause** (Pause while it counts in too), **Stop** (pauses it, back at its start),
   **»** (10 seconds forward) and **Repeat** (on by default, in the
   primary colour while on: at its end it starts over; a recording or
   video loops, a YouTube video is started over when it says it ended, a
@@ -300,6 +301,24 @@ view).
   can be learnt slowly (the players keep the pitch: ExoPlayer, AVPlayer
   and the browsers' `playbackRate`). The speed is kept for the next file
   chosen while the screen is open; a section plays at it too.
+- <a id="count-in"></a>**The count-in** (what plays in the app: a
+  recording, a video, a link straight to a sound or video file; a page
+  in a frame plays at once): Play, the space bar or a tap on a file in
+  the list waits **2 seconds in silence** before it plays, time to get
+  from the keyboard or the screen to the instrument
+  (`BackingTrack.countIn`). On by default. It shows at the start of the
+  progress bar's line, before the bar: the **Count-in** button (a timer,
+  in amber while on; a timer struck through, grey, while off), then,
+  while it's on, its seconds in **amber**, not the progress bar's
+  colour: `2s` and a short amber bar. While it counts in, the bar fills
+  and the seconds count down (`2s`, `1s`), and Play shows Pause: Play
+  (or space) again, Pause, Stop, hiding the sidebar or another file
+  stop it without playing; turned off meanwhile, it plays at once; **0**
+  goes back to the start and keeps counting. Repeat and a section's
+  loop start over without one; the count-in is real time, whatever the
+  speed. The setting is kept on the device (the meta file
+  `play-along`, `{"countIn": false}`), for Cam, the Text view and the
+  file screen alike.
 - **The space bar** pauses and plays it while the sidebar shows (a key
   down; held, it doesn't repeat), and doesn't turn the tab; with the
   sidebar hidden, space turns the tab again. A tap in the sidebar or the

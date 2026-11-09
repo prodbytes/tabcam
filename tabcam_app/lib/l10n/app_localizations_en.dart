@@ -681,6 +681,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camAlongForward => 'Forward 10 seconds';
 
   @override
+  String get camAlongCountInOn =>
+      'Count-in on: 2 seconds of silence before it plays';
+
+  @override
+  String get camAlongCountInOff => 'Count-in off: it plays right away';
+
+  @override
   String get camAlongRepeatOn => 'Repeat on: it starts over at its end';
 
   @override

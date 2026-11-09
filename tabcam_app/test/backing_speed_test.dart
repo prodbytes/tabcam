@@ -45,6 +45,8 @@ void main() {
         return media;
       },
     );
+    // Play plays at once (the count-in has tests of its own).
+    await tester.runAsync(() => track.setCountIn(false));
     await tester.runAsync(
       () => track.choose(event, event.pages.first, play: false),
     );

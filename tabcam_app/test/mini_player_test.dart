@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tabcam_app/capture/backing_track.dart';
 import 'package:tabcam_app/l10n/app_localizations.dart';
 import 'package:tabcam_app/library/capture_event.dart';
 import 'package:tabcam_app/library/event_store_memory.dart';
@@ -204,6 +205,8 @@ void main() {
     late String id;
     await tester.runAsync(() async {
       await library.load();
+      // Play plays at once (the count-in has tests of its own).
+      await library.writeMeta(BackingTrack.metaName, '{"countIn":false}');
       var event = await library.create(const []);
       for (final (i, (kind, ext)) in kinds.indexed) {
         final page = EventPage(id: 'k$i', kind: kind, extension: ext);

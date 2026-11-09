@@ -1204,6 +1204,18 @@ abstract class AppLocalizations {
   /// **'Forward 10 seconds'**
   String get camAlongForward;
 
+  /// Tooltip of the play-along player's count-in button while it's on: a press on play waits 2 seconds before playing (time to get from the keyboard to the instrument).
+  ///
+  /// In en, this message translates to:
+  /// **'Count-in on: 2 seconds of silence before it plays'**
+  String get camAlongCountInOn;
+
+  /// Tooltip of the play-along player's count-in button while it's off.
+  ///
+  /// In en, this message translates to:
+  /// **'Count-in off: it plays right away'**
+  String get camAlongCountInOff;
+
   /// Cam: the file playing along repeats; tapping turns it off.
   ///
   /// In en, this message translates to:

@@ -183,6 +183,8 @@
   "camAlongPause": "Pausa (espacio)",
   "camAlongBack": "Atrás 10 segundos",
   "camAlongForward": "Adelante 10 segundos",
+  "camAlongCountInOn": "Cuenta previa activada: 2 segundos de silencio antes de sonar",
+  "camAlongCountInOff": "Cuenta previa desactivada: suena enseguida",
   "camAlongRepeatOn": "Repetir activado: vuelve a empezar al terminar",
   "camAlongRepeatOff": "Repetir desactivado",
   "camAlongSection": "Sección {start}–{end}",

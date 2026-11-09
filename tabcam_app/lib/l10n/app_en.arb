@@ -934,6 +934,14 @@
   "@camAlongForward": {
     "description": "Cam: the file playing along goes 10 seconds forward (»)."
   },
+  "camAlongCountInOn": "Count-in on: 2 seconds of silence before it plays",
+  "@camAlongCountInOn": {
+    "description": "Tooltip of the play-along player's count-in button while it's on: a press on play waits 2 seconds before playing (time to get from the keyboard to the instrument)."
+  },
+  "camAlongCountInOff": "Count-in off: it plays right away",
+  "@camAlongCountInOff": {
+    "description": "Tooltip of the play-along player's count-in button while it's off."
+  },
   "camAlongRepeatOn": "Repeat on: it starts over at its end",
   "@camAlongRepeatOn": {
     "description": "Cam: the file playing along repeats; tapping turns it off."
