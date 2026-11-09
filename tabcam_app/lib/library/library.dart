@@ -114,12 +114,13 @@ class Library extends ChangeNotifier {
     final now = _now();
     final id = newId();
     final pages = <EventPage>[];
-    // A video's edit names its track by ID: the copy's track's.
+    // A video's edit names its track by ID, and phrase times their song:
+    // the copy's.
     final ids = {for (final page in event.pages) page.id: newId()};
     for (final page in event.pages) {
       if (page.isLink) {
         pages.add(
-          EventPage.link(id: newId(), url: page.url!, title: page.title),
+          EventPage.link(id: ids[page.id]!, url: page.url!, title: page.title),
         );
         continue;
       }
@@ -146,6 +147,10 @@ class Library extends ChangeNotifier {
       tabTextCorrect: event.tabTextCorrect,
       tabTextDoubts: event.tabTextDoubts,
       hideImages: event.hideImages,
+      phrases: {
+        for (final MapEntry(:key, :value) in event.phrases.entries)
+          ?ids[key]: value,
+      },
     );
     await _store.save(copy);
     _set([copy, ..._all]);
@@ -228,6 +233,57 @@ class Library extends ChangeNotifier {
     await _store.save(updated);
     await _dropFiles(updated, mine.pages);
     return updated;
+  }
+
+  /// The [PhraseTimes] of song [pageId] of event [eventId]: the user's own,
+  /// on a capture they contribute to (else the owner's), or the capture's.
+  PhraseTimes phrasesOf(String eventId, String pageId) {
+    final event = byId(eventId);
+    if (event == null) return PhraseTimes.none;
+    return event.myContribution?.phrases[pageId] ??
+        event.phrases[pageId] ??
+        PhraseTimes.none;
+  }
+
+  /// Keeps [times] for song [pageId] of event [eventId] (empty or null:
+  /// none): with the capture, or with the user's own contribution on one
+  /// they contribute to. Songs since deleted are let go of meanwhile.
+  Future<void> setPhrases(
+    String eventId,
+    String pageId,
+    PhraseTimes? times,
+  ) async {
+    Map<String, PhraseTimes> changed(
+      Map<String, PhraseTimes> now,
+      Set<String> songs,
+    ) => {
+      for (final MapEntry(:key, :value) in now.entries)
+        if (key != pageId && songs.contains(key)) key: value,
+      if (times != null && times.isNotEmpty && songs.contains(pageId))
+        pageId: times,
+    };
+    final now = _byIdAll(eventId);
+    if (now == null || now.deleted != null) return;
+    final songs = {for (final p in now.allPages) p.id};
+    if (now.contributes) {
+      final mine = now.myContribution ?? Contribution(updated: _now());
+      final updated = _update(
+        now.copyWith(
+          contributions: [
+            mine.copyWith(
+              phrases: changed(mine.phrases, songs),
+              updated: _now(),
+            ),
+          ],
+        ),
+      );
+      await _store.save(updated);
+      return;
+    }
+    await patch(
+      eventId,
+      (now) => now.copyWith(phrases: changed(now.phrases, songs)),
+    );
   }
 
   /// Deletes [page] from the user's own contribution to [event].
