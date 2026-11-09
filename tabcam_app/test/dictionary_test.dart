@@ -1,9 +1,14 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:image/image.dart' as img;
 import 'package:tabcam_app/dictionary/dictionary_sidebar.dart';
 import 'package:tabcam_app/dictionary/music_theory.dart';
 import 'package:tabcam_app/dictionary/voicings.dart';
+import 'package:tabcam_app/dictionary/youtube_search.dart';
 import 'package:tabcam_app/l10n/app_localizations.dart';
 import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
@@ -177,6 +182,105 @@ void main() {
     });
   });
 
+  /// A `search.list` response with a video per title, made up.
+  http.Response found(List<String> titles) => http.Response(
+    jsonEncode({
+      'items': [
+        for (final (i, title) in titles.indexed)
+          {
+            'id': {'videoId': 'vid$i'},
+            'snippet': {'title': title, 'channelTitle': 'Channel $i'},
+          },
+      ],
+    }),
+    200,
+  );
+
+  group('YouTube search', () {
+    test('asks the API from the device, once per search', () async {
+      final asked = <Uri>[];
+      final search = YouTubeSearch(
+        apiKey: 'test-key',
+        client: MockClient((request) async {
+          asked.add(request.url);
+          return found([
+            'Made-up riff &amp; solo',
+            'It&#39;s a &quot;lesson&quot;',
+          ]);
+        }),
+      );
+      expect(search.available, isTrue);
+      expect(search.cached('made-up riff'), isNull);
+      final videos = await search.search(' made-up riff ');
+      expect(asked.single.host, 'www.googleapis.com');
+      expect(asked.single.path, '/youtube/v3/search');
+      expect(asked.single.queryParameters['q'], 'made-up riff');
+      expect(asked.single.queryParameters['type'], 'video');
+      expect(asked.single.queryParameters['key'], 'test-key');
+      expect(videos.map((v) => v.title), [
+        'Made-up riff & solo',
+        'It\'s a "lesson"',
+      ]);
+      expect(videos.first.channel, 'Channel 0');
+      expect('${videos.first.url}', 'https://www.youtube.com/watch?v=vid0');
+      await search.search('Made-Up  Riff');
+      expect(asked, hasLength(1));
+      expect(search.cached('MADE-UP RIFF'), videos);
+    });
+
+    test('fails on an error or a bad answer', () async {
+      for (final response in [
+        http.Response('{"error": {"code": 403}}', 403),
+        http.Response('not json', 200),
+        http.Response('{}', 200),
+      ]) {
+        final search = YouTubeSearch(
+          apiKey: 'test-key',
+          client: MockClient((_) async => response),
+        );
+        await expectLater(
+          search.search('made-up riff'),
+          throwsA(isA<YouTubeSearchFailed>()),
+        );
+        expect(search.cached('made-up riff'), isNull);
+      }
+    });
+
+    test('reads thumbnails and skips what is not a video', () {
+      final videos = YouTubeSearch.parse({
+        'items': [
+          {
+            'id': {'videoId': 'a'},
+            'snippet': {
+              'title': 'A',
+              'channelTitle': 'C',
+              'thumbnails': {
+                'medium': {'url': 'https://i.ytimg.com/vi/a/mqdefault.jpg'},
+              },
+            },
+          },
+          {
+            'id': {'channelId': 'x'},
+            'snippet': {'title': 'Channel'},
+          },
+        ],
+      });
+      expect(videos, hasLength(1));
+      expect(
+        '${videos.single.thumbnail}',
+        'https://i.ytimg.com/vi/a/mqdefault.jpg',
+      );
+      expect(
+        YouTubeSearch.unescape('&#x41;&#999999999;&lt;b&gt;'),
+        'A&#999999999;<b>',
+      );
+    });
+
+    test('is not available without a key', () {
+      expect(YouTubeSearch(apiKey: '').available, isFalse);
+    });
+  });
+
   group('the sidebar', () {
     late FakeLauncher launcher;
 
@@ -308,6 +412,107 @@ void main() {
       await tester.tap(find.byKey(const Key('dictionary-search-youtube')));
       await tester.pump();
       expect(launcher.launched, hasLength(2));
+    });
+
+    group('with YouTube search', () {
+      late List<String> asked;
+      late http.Response Function(String q) respond;
+      late YouTubeSearch app;
+
+      setUp(() {
+        app = YouTubeSearch.instance;
+        asked = [];
+        respond = (q) => found(['$q, part 1', '$q, part 2']);
+        YouTubeSearch.instance = YouTubeSearch(
+          apiKey: 'test-key',
+          client: MockClient((request) async {
+            final q = request.url.queryParameters['q']!;
+            asked.add(q);
+            return respond(q);
+          }),
+        );
+      });
+      tearDown(() => YouTubeSearch.instance = app);
+
+      testWidgets('shows its results once typing stops for a couple of '
+          'seconds; each opens in a new tab', (tester) async {
+        await open(tester);
+        await tester.enterText(query, 'made-up riff');
+        await tester.pump(const Duration(seconds: 1));
+        await tester.enterText(query, 'made-up riff lesson');
+        await tester.pump(const Duration(seconds: 1));
+        expect(asked, isEmpty);
+        expect(
+          find.byKey(const Key('dictionary-youtube-searching')),
+          findsOneWidget,
+        );
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pump();
+        expect(asked, ['made-up riff lesson']);
+        expect(
+          find.byKey(const Key('dictionary-youtube-searching')),
+          findsNothing,
+        );
+        expect(find.text('made-up riff lesson, part 1'), findsOneWidget);
+        expect(find.text('Channel 1'), findsOneWidget);
+        // The link to YouTube's own search stays above them.
+        expect(
+          find.byKey(const Key('dictionary-search-youtube')),
+          findsOneWidget,
+        );
+        await tester.tap(find.byKey(const Key('dictionary-video-vid1')));
+        await tester.pump();
+        expect(
+          launcher.launched.single.$1,
+          'https://www.youtube.com/watch?v=vid1',
+        );
+        // Back to it later, the results are there without asking again.
+        await tester.enterText(query, 'Am');
+        await tester.pump();
+        await tester.enterText(query, 'made-up riff lesson');
+        await tester.pump();
+        expect(find.text('made-up riff lesson, part 2'), findsOneWidget);
+        await tester.pump(const Duration(seconds: 3));
+        expect(asked, hasLength(1));
+      });
+
+      testWidgets('Enter searches without the wait', (tester) async {
+        await open(tester);
+        await tester.enterText(query, 'made-up riff');
+        await tester.testTextInput.receiveAction(TextInputAction.search);
+        await tester.pump();
+        await tester.pump();
+        expect(asked, ['made-up riff']);
+        expect(launcher.launched, isEmpty);
+        expect(find.text('made-up riff, part 1'), findsOneWidget);
+        await tester.pump(const Duration(seconds: 3));
+        expect(asked, hasLength(1));
+      });
+
+      testWidgets('nothing is searched for a chord, a scale or nothing', (
+        tester,
+      ) async {
+        await open(tester);
+        for (final text in ['Am7', 'E blues', '  ']) {
+          await tester.enterText(query, text);
+          await tester.pump(const Duration(seconds: 3));
+        }
+        expect(asked, isEmpty);
+      });
+
+      testWidgets('says so when it fails or finds nothing', (tester) async {
+        await open(tester);
+        respond = (_) => http.Response('{}', 403);
+        await tester.enterText(query, 'made-up riff');
+        await tester.pump(const Duration(seconds: 2));
+        await tester.pump();
+        expect(find.text("Couldn't load YouTube's results."), findsOneWidget);
+        respond = (_) => found([]);
+        await tester.enterText(query, 'another made-up riff');
+        await tester.pump(const Duration(seconds: 2));
+        await tester.pump();
+        expect(find.text('YouTube found no videos.'), findsOneWidget);
+      });
     });
 
     testWidgets('its edge drags it wider and narrower, within the screen; a '

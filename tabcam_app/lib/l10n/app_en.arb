@@ -2377,6 +2377,22 @@
   "@dictionarySearchYouTube": {
     "description": "Dictionary: the button that opens YouTube's search"
   },
+  "dictionaryYouTubeSearching": "Searching YouTube…",
+  "@dictionaryYouTubeSearching": {
+    "description": "Dictionary: YouTube's results are on their way"
+  },
+  "dictionaryYouTubeNone": "YouTube found no videos.",
+  "@dictionaryYouTubeNone": {
+    "description": "Dictionary: the YouTube search found nothing"
+  },
+  "dictionaryYouTubeFailed": "Couldn't load YouTube's results.",
+  "@dictionaryYouTubeFailed": {
+    "description": "Dictionary: the YouTube search failed (offline, quota spent)"
+  },
+  "dictionaryYouTubeOpen": "Open on YouTube",
+  "@dictionaryYouTubeOpen": {
+    "description": "Dictionary: tooltip of a YouTube result, which opens it in a new tab"
+  },
   "dictionaryFret": "{fret}fr",
   "@dictionaryFret": {
     "description": "Dictionary: the fret a chord diagram starts at",
