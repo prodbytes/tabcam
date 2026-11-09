@@ -52,6 +52,14 @@ Parameters:
     Default: ''
     Description: With EmailIssuer, the user pool's app client (the tokens' audience)
     AllowedPattern: '[a-z0-9]*'
+  SessionIssuer:
+    Type: String
+    Default: ''
+    Description: >
+      TabCam's sign-in sessions: their ID tokens' issuer (tabcam-share-api's
+      SessionIssuer, its /session); the keys are at its
+      /.well-known/jwks.json. Empty: none.
+    AllowedPattern: '(https://[a-z0-9.-]+/session)?'
   IdentityPoolId:
     Type: String
     Default: ''
@@ -325,6 +333,7 @@ Resources:
           # Sign in with Apple's audience (the bundle ID); empty: Google only.
           APPLE_CLIENT_ID: !Ref AppleClientId
           EMAIL_ISSUER: !Ref EmailIssuer
+          SESSION_ISSUER: !Ref SessionIssuer
           EMAIL_CLIENT_ID: !Ref EmailClientId
           COGNITO_IDENTITY_POOL_ID: !Ref IdentityPoolId
           RBACR_URL: !Ref RbacrUrl

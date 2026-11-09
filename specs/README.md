@@ -105,6 +105,10 @@ review notes ([app stores](app-stores.md)).
   Sign in with Apple on iOS) from the Profile tab; signed-in users' events sync both ways with
   their own folder in S3 (Cognito identity pool credentials, no server),
   deletions included; Delete account deletes it all.
+- [Sign-in sessions](sessions.md): TabCam's own session (the share API's
+  refresh token and KMS-signed ID tokens) keeps the user signed in until
+  they sign out or leave it unused for a week (90 days at most), whatever
+  the provider's hour-long token does.
 - [Caching users' files](cdn.md): every object says how to cache it
   (pages a year, JSON revalidated); reads go through the site's
   CloudFront, signed per folder by the share API, and a device cache keeps

@@ -126,7 +126,7 @@ class GoogleAuthService extends AuthService {
       // prompt and returns at once: a sign-in arrives as an event.
       if (_idToken case final token?) {
         _scheduleRefresh(token);
-      } else {
+      } else if (!skipQuietSignIn) {
         await GoogleSignIn.instance.attemptLightweightAuthentication();
       }
     } on GoogleSignInException catch (e) {

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../auth/auth_service.dart';
+import '../auth/session_auth_service.dart';
 import '../l10n/language.dart';
 import 'cdn.dart';
 import 'sigv4.dart';
@@ -200,10 +201,12 @@ class ShareApiException implements Exception {
 }
 
 /// The share API (tabcam_api/shares): grants of the user's own captures,
-/// what's shared with them, and credentials for it. Every request carries
-/// the user's ID token: Google's at the API's root, Apple's under `/apple`
-/// (each path has its own authorizer, for its issuer).
-class ShareApi {
+/// what's shared with them, and credentials for it; and TabCam's sign-in
+/// sessions ([SessionApi]). Every request carries the user's ID token:
+/// Google's at the API's root, Apple's under `/apple`, email's under
+/// `/email`, a TabCam session's under `/tabcam` (each path has its own
+/// authorizer, for its issuer).
+class ShareApi implements SessionApi {
   ShareApi({required this.baseUrl, http.Client? client})
     : _client = client ?? http.Client();
 
@@ -288,6 +291,29 @@ class ShareApi {
   }
 
   /// A Cognito token for the profile's identity (its folder).
+  @override
+  Future<SessionTokens> startSession(String providerToken) async =>
+      SessionTokens.fromJson(await _call(providerToken, 'POST', ['session']));
+
+  @override
+  Future<SessionTokens> refreshSession(String refreshToken) async =>
+      SessionTokens.fromJson(
+        await _call(
+          null,
+          'POST',
+          ['session', 'refresh'],
+          body: {'refreshToken': refreshToken},
+        ),
+      );
+
+  @override
+  Future<void> endSession(String refreshToken) => _call(
+    null,
+    'POST',
+    ['session', 'end'],
+    body: {'refreshToken': refreshToken},
+  );
+
   Future<ProfileToken> profileToken(String token) async {
     final body = await _call(token, 'POST', ['profile', 'credentials']);
     return ProfileToken(
@@ -406,8 +432,11 @@ class ShareApi {
     final uri = baseUrl.replace(
       pathSegments: [
         ...baseUrl.pathSegments.where((s) => s.isNotEmpty),
-        // Apple's and email's tokens go to the routes under their own name.
-        if (token != null)
+        // Apple's, email's and TabCam's tokens go to the routes under their
+        // own name.
+        if (token != null && isSessionToken(token))
+          'tabcam'
+        else if (token != null)
           ...switch (AuthProvider.ofToken(token)) {
             AuthProvider.apple => ['apple'],
             AuthProvider.email => ['email'],

@@ -8,7 +8,11 @@ The app sends the signed-in user's ID token (the one it gives Cognito):
   Apple, for one of its client IDs, separated by commas: the app's bundle ID
   (iOS) or the Services ID (the web flow, on Android);
 - or, with EMAIL_ISSUER and EMAIL_CLIENT_ID set, the tabcam-email user
-  pool's (sign in with email), for its app client.
+  pool's (sign in with email), for its app client;
+- or, with SESSION_ISSUER set, TabCam's own (a session the share API
+  started from one of those, tabcam_api/shares/sessions.py), signed by its
+  KMS key, for `tabcam-app`. It stands for the sign-in that started the
+  session: its `idp` (that provider's issuer) and `sub`.
 
 It must be unexpired, with a verified e-mail (Apple sends email_verified as
 "true", a string; its private relay addresses are verified too, and simply
@@ -56,11 +60,13 @@ def _ids(raw):
 
 GOOGLE_ISSUERS = ("accounts.google.com", "https://accounts.google.com")
 APPLE_ISSUERS = ("https://appleid.apple.com",)
+SESSION_AUDIENCE = "tabcam-app"
 
 
 class TokenVerifier:
     def __init__(self, client_id=None, jwks=None, apple_client_id=None, apple_jwks=None,
-                 email_issuer=None, email_client_id=None, email_jwks=None):
+                 email_issuer=None, email_client_id=None, email_jwks=None,
+                 session_issuer=None, session_jwks=None):
         google = client_id if client_id is not None else os.environ.get("GOOGLE_WEB_CLIENT_ID", "")
         apple = apple_client_id if apple_client_id is not None else os.environ.get("APPLE_CLIENT_ID", "")
         email_issuer = (email_issuer if email_issuer is not None
@@ -78,6 +84,14 @@ class TokenVerifier:
             self.providers.append(
                 Provider("email", f"{email_issuer}/.well-known/jwks.json", (email_issuer,),
                          email_issuer.removeprefix("https://"), _ids(email), email_jwks))
+        # TabCam's sessions: their Logins key is the provider's that
+        # started the session (verify picks it from the token's idp).
+        session_issuer = (session_issuer if session_issuer is not None
+                          else os.environ.get("SESSION_ISSUER", ""))
+        if session_issuer:
+            self.providers.append(
+                Provider("tabcam", f"{session_issuer}/.well-known/jwks.json", (session_issuer,),
+                         None, [SESSION_AUDIENCE], session_jwks))
 
     def _provider(self, token):
         """The provider the token says issued it (unverified: only to pick
@@ -93,6 +107,10 @@ class TokenVerifier:
 
     def verify(self, token):
         """(verified e-mail address in lower case, the token's Logins key)."""
+        return self._verify(token)[:2]
+
+    def _verify(self, token):
+        """(e-mail, Logins key, the sign-in's issuer, its sub)."""
         p = self._provider(token)
         if not p.client_ids:
             if p.name == "google":
@@ -111,15 +129,27 @@ class TokenVerifier:
         email = claims["email"]
         if not isinstance(email, str) or not email.strip():
             raise Unauthorized("no e-mail")
-        return email.strip().lower(), p.login
+        if p.name == "tabcam":
+            # The sign-in that started the session: one of the providers
+            # here (never a session itself).
+            started = next((q for q in self.providers
+                            if q.name != "tabcam" and claims.get("idp") in q.issuers), None)
+            if started is None:
+                raise Unauthorized("bad token: unknown idp")
+            # Taken as the provider's own token would be: not where that
+            # provider isn't set up.
+            if not started.client_ids:
+                if started.name == "google":
+                    raise Unauthorized("sign-in isn't set up")
+                raise Unsupported(f"{started.name} sign-in isn't set up")
+            return email.strip().lower(), started.login, started.issuers[-1], claims.get("sub", "")
+        return email.strip().lower(), p.login, p.issuers[-1], claims.get("sub", "")
 
     def verify_subject(self, token):
         """(e-mail, Logins key, subject): the subject is the sign-in,
         `<issuer>#<sub>`, as the share API's profiles know it."""
-        email, login = self.verify(token)
-        claims = jwt.decode(token, options={"verify_signature": False})
-        issuer = {p.login: p.issuers[-1] for p in self.providers}[login]
-        return email, login, f"{issuer}#{claims.get('sub', '')}"
+        email, login, issuer, sub = self._verify(token)
+        return email, login, f"{issuer}#{sub}"
 
     def email(self, token):
         """The token's verified e-mail address, lower case."""

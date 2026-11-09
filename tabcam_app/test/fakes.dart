@@ -232,7 +232,8 @@ class FakeAuth extends AuthService {
   Future<String?> Function()? deletionAnswer;
 
   @override
-  Future<String?> deletionAuthorization() async => deletionAnswer?.call();
+  Future<String?> deletionAuthorization([AuthUser? user]) async =>
+      deletionAnswer?.call();
 
   @override
   Widget? buildSignInButton([AuthProvider provider = AuthProvider.google]) =>

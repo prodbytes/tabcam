@@ -31,6 +31,7 @@ class ProfileService extends ChangeNotifier {
   String? _error;
 
   String? _userId;
+  String? _token;
   bool _started = false;
 
   void start() {
@@ -48,7 +49,16 @@ class ProfileService extends ChangeNotifier {
 
   void _onAuth() {
     final user = sync.auth.user?.id;
-    if (user == _userId) return;
+    final token = sync.auth.idToken;
+    if (user == _userId) {
+      // A renewed token after a failed fetch (one that had expired): again.
+      if (token != _token) {
+        _token = token;
+        if (user != null && _error != null && !_loading) unawaited(refresh());
+      }
+      return;
+    }
+    _token = token;
     _userId = user;
     _profile = null;
     _error = null;

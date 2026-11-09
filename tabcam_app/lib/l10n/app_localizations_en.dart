@@ -1461,6 +1461,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your Apple sign-in expired: sign in again.';
 
   @override
+  String get accountSessionEnded =>
+      'You were signed out (a week without using TabCam, or your sign-in ended elsewhere): sign in again.';
+
+  @override
   String get accountAppleUnavailable =>
       'Sign in with Apple isn\'t available on this device.';
 

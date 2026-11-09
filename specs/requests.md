@@ -2264,3 +2264,20 @@ spec.
    answers and the iOS privacy manifest declare the searches (search
    history, not linked). In English, Spanish and Portuguese. See
    [dictionary](dictionary.md) and [privacy](privacy.md).
+9. **Something in prod loses the login and asks to sign in again in the
+   middle of a session: make sessions last much longer (a week's idle
+   timeout), and remember the signed-in user until the session ends or
+   they sign out.** The cause: each session was the provider's hour-long
+   ID token; on the web Google's quiet renewal (FedCM) often fails (a
+   background tab, Safari, Firefox), so sync asked to sign in again and a
+   reload forgot the user; Apple's sign-in ended with its token. Now, in
+   builds with the share API, signing in starts a TabCam session there
+   (`POST /session`): a refresh token that lasts a week past its last use
+   (90 days at most), kept on the device and as a hash on the server, and
+   hour-long ID tokens signed by a KMS key, taken by the share API (under
+   `/tabcam`) and the cloud OCR service as the sign-in that started it.
+   The app (`SessionAuthService`) restores the user at once at launch,
+   renews the token quietly, and no longer shows Google's prompt at launch
+   when restored; sign-out, deleting the account and unlinking end the
+   session. Users signed in before keep their sign-in. See
+   [sign-in sessions](sessions.md), [cloud sync](cloud-sync.md#signing-in).

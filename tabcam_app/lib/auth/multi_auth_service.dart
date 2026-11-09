@@ -75,6 +75,14 @@ class MultiAuthService extends AuthService {
   }
 
   @override
+  set skipQuietSignIn(bool value) {
+    super.skipQuietSignIn = value;
+    for (final s in _services) {
+      s.skipQuietSignIn = value;
+    }
+  }
+
+  @override
   Future<void> init() async {
     await Future.wait([for (final s in _services) s.init()]);
   }
@@ -90,8 +98,17 @@ class MultiAuthService extends AuthService {
   }
 
   @override
-  Future<String?> deletionAuthorization() async =>
-      _active?.deletionAuthorization();
+  Future<String?> deletionAuthorization([AuthUser? user]) async {
+    final service = user == null ? _active : _forUser(user);
+    return service?.deletionAuthorization(user);
+  }
+
+  @override
+  Future<bool> stillValid(AuthUser user) async =>
+      await _forUser(user)?.stillValid(user) ?? true;
+
+  AuthService? _forUser(AuthUser user) =>
+      _services.where((s) => s.providers.contains(user.provider)).firstOrNull;
 
   @override
   Widget? buildSignInButton([AuthProvider provider = AuthProvider.google]) =>

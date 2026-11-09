@@ -1495,6 +1495,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Sua sessão da Apple expirou: entre novamente.';
 
   @override
+  String get accountSessionEnded =>
+      'Sua sessão foi encerrada (uma semana sem usar o TabCam, ou ela terminou em outro lugar): entre de novo.';
+
+  @override
   String get accountAppleUnavailable =>
       'Iniciar sessão com a Apple não está disponível neste dispositivo.';
 

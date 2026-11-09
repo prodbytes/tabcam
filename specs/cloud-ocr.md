@@ -198,8 +198,11 @@ with text but no tab is still `no-tab`.
   token, by its issuer: Google's (signed by Google, issued for TabCam's
   web client or the local web client) or, with `APPLE_CLIENT_ID` set,
   Apple's (signed by Apple's keys, `https://appleid.apple.com/auth/keys`,
-  issued for the bundle ID `com.nu01.tabcam`); either way unexpired, with
-  a verified address. It asks the main identity pool for the token's
+  issued for the bundle ID `com.nu01.tabcam`), or, with `SESSION_ISSUER`
+  set, a [TabCam session](sessions.md)'s (signed by its KMS key, the keys
+  at the share API's `/session/.well-known/jwks.json`, for `tabcam-app`,
+  taken as the sign-in that started the session); either way unexpired,
+  with a verified address. It asks the main identity pool for the token's
   identity ID, under the issuer's `Logins` key (so local web builds, whose
   identities are in the local pool, get 401), records identity → address,
   and answers `{email, premium, expiresAt, checked, upgradeUrl,

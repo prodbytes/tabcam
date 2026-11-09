@@ -9,7 +9,10 @@ Description: >
   holding a capture's link (its key). It also keeps the profiles (tabcam_api/shares/
   profiles.py): every sign-in belongs to one, whose Cognito developer
   identity is the folder its sign-ins share and whose roles are the union of
-  their addresses' rbacr roles. Needs the tabcam-user-data and
+  their addresses' rbacr roles, and TabCam's sign-in sessions
+  (tabcam_api/shares/sessions.py): a refresh token that lasts a week
+  past its last use (90 days at most), and ID tokens signed by a KMS key,
+  taken by the same routes under /tabcam. Needs the tabcam-user-data and
   tabcam-identity stacks. The function's code is uploaded by
   scripts/deploy-share-api.sh.
 
@@ -273,6 +276,59 @@ Resources:
       AliasName: alias/tabcam-profile-keys
       TargetKeyId: !Ref ProfileKey
 
+  # TabCam's sign-in sessions (sessions.py): each refresh token's SHA-256,
+  # whose sign-in it is, and when it ends (expiresAt, a week past its last
+  # use, 90 days at most; DynamoDB's TTL removes it some time after).
+  # Losing them only signs everyone out, so no backups.
+  SessionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - {AttributeName: id, AttributeType: S}
+        - {AttributeName: subject, AttributeType: S}
+      KeySchema:
+        - {AttributeName: id, KeyType: HASH}
+      GlobalSecondaryIndexes:
+        # A sign-in's sessions, ended when it's unlinked or its account
+        # deleted.
+        - IndexName: bySubject
+          KeySchema:
+            - {AttributeName: subject, KeyType: HASH}
+          Projection:
+            ProjectionType: KEYS_ONLY
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
+  # Signs TabCam's ID tokens (RS256): the private key never leaves KMS; the
+  # public one is at /session/.well-known/jwks.json. Kept when the stack
+  # goes (a new key would only sign everyone out once).
+  SessionKey:
+    Type: AWS::KMS::Key
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Description: TabCam sign-in sessions (signs TabCam's ID tokens)
+      KeySpec: RSA_2048
+      KeyUsage: SIGN_VERIFY
+      PendingWindowInDays: 30
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AccountAdministers
+            Effect: Allow
+            Principal:
+              AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
+            Action: kms:*
+            Resource: '*'
+
+  SessionKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: alias/tabcam-sessions
+      TargetKeyId: !Ref SessionKey
+
   # Each profile's key pair: its public key, and its private key wrapped by
   # ProfileKey. Written once per profile, never overwritten (keys.py).
   ProfileKeysTable:
@@ -371,6 +427,14 @@ Resources:
                   - !GetAtt ProfileKeysTable.Arn
                   # A capture's owner profile, by its folder (keys.py).
                   - !Sub ${ProfilesTable.Arn}/index/byIdentity
+                  - !GetAtt SessionsTable.Arn
+                  - !Sub ${SessionsTable.Arn}/index/bySubject
+              # Signing TabCam's ID tokens, and publishing the public key.
+              - Effect: Allow
+                Action:
+                  - kms:Sign
+                  - kms:GetPublicKey
+                Resource: !GetAtt SessionKey.Arn
               # Profile key pairs: made (the private key only wrapped), and
               # a profile's private key opened, always with that profile's
               # ID as encryption context.
@@ -523,6 +587,9 @@ Resources:
           CDN_SIGNING_KEY_PARAMETER: !Ref CdnSigningKeyParameterName
           CDN_HOSTS: !Ref CdnHosts
           CDN_DISTRIBUTIONS: !Ref CdnDistributionIds
+          SESSIONS_TABLE: !Ref SessionsTable
+          SESSION_KEY_ID: !GetAtt SessionKey.Arn
+          SESSION_ISSUER: !Sub https://${Api}.execute-api.${AWS::Region}.amazonaws.com/session
       # A placeholder: scripts/deploy-share-api.sh uploads the real code.
       Code:
         ZipFile: |
@@ -585,6 +652,20 @@ Resources:
         Issuer: !Ref EmailIssuer
         Audience: [!Ref EmailClientId]
 
+  # TabCam's own ID tokens (sessions.py) go to the same routes under
+  # /tabcam. The issuer is this API's /session, whose discovery document
+  # and keys are public routes below.
+  SessionAuthorizer:
+    Type: AWS::ApiGatewayV2::Authorizer
+    Properties:
+      ApiId: !Ref Api
+      Name: tabcam
+      AuthorizerType: JWT
+      IdentitySource: [$request.header.Authorization]
+      JwtConfiguration:
+        Issuer: !Sub https://${Api}.execute-api.${AWS::Region}.amazonaws.com/session
+        Audience: [tabcam-app]
+
   Integration:
     Type: AWS::ApiGatewayV2::Integration
     Properties:
@@ -595,7 +676,7 @@ Resources:
 
   Fn::ForEach::Routes:
     - Route
-    - [Grants, Grant, Revoke, Shared, Leave, Credentials, DeleteAccount, Profile, LinkCode, Link, Unlink, ProfileCredentials, PublishLink, JoinLink, ContentKey]
+    - [Grants, Grant, Revoke, Shared, Leave, Credentials, DeleteAccount, Profile, LinkCode, Link, Unlink, ProfileCredentials, PublishLink, JoinLink, ContentKey, StartSession]
     - Route${Route}:
         Type: AWS::ApiGatewayV2::Route
         Properties:
@@ -621,6 +702,28 @@ Resources:
           RouteKey: !FindInMap [Routes, !Ref Route, EmailKey]
           AuthorizationType: JWT
           AuthorizerId: !Ref EmailAuthorizer
+          Target: !Sub integrations/${Integration}
+      SessionRoute${Route}:
+        Type: AWS::ApiGatewayV2::Route
+        Properties:
+          ApiId: !Ref Api
+          RouteKey: !FindInMap [Routes, !Ref Route, SessionKey]
+          AuthorizationType: JWT
+          AuthorizerId: !Ref SessionAuthorizer
+          Target: !Sub integrations/${Integration}
+
+  # TabCam's sessions, without a token: renewing and ending one (the
+  # refresh token, in the body, is the proof), and the keys that check its
+  # ID tokens (for the authorizer above, and the cloud OCR service).
+  Fn::ForEach::SessionRoutes:
+    - Route
+    - [Refresh, End, Discovery, Keys]
+    - RouteSession${Route}:
+        Type: AWS::ApiGatewayV2::Route
+        Properties:
+          ApiId: !Ref Api
+          RouteKey: !FindInMap [SessionRoutes, !Ref Route, Key]
+          AuthorizationType: NONE
           Target: !Sub integrations/${Integration}
 
   # Anyone holding a capture's link, signed in or not: no authorizer. The
@@ -696,21 +799,27 @@ Resources:
 
 Mappings:
   Routes:
-    Grants: {Key: 'GET /shares/{captureId}', AppleKey: 'GET /apple/shares/{captureId}', EmailKey: 'GET /email/shares/{captureId}'}
-    Grant: {Key: 'PUT /shares/{captureId}', AppleKey: 'PUT /apple/shares/{captureId}', EmailKey: 'PUT /email/shares/{captureId}'}
-    Revoke: {Key: 'DELETE /shares/{captureId}', AppleKey: 'DELETE /apple/shares/{captureId}', EmailKey: 'DELETE /email/shares/{captureId}'}
-    Shared: {Key: 'GET /shared', AppleKey: 'GET /apple/shared', EmailKey: 'GET /email/shared'}
-    Leave: {Key: 'DELETE /shared/{owner}/{captureId}', AppleKey: 'DELETE /apple/shared/{owner}/{captureId}', EmailKey: 'DELETE /email/shared/{owner}/{captureId}'}
-    Credentials: {Key: 'POST /shared/{owner}/{captureId}/credentials', AppleKey: 'POST /apple/shared/{owner}/{captureId}/credentials', EmailKey: 'POST /email/shared/{owner}/{captureId}/credentials'}
-    DeleteAccount: {Key: 'DELETE /account', AppleKey: 'DELETE /apple/account', EmailKey: 'DELETE /email/account'}
-    Profile: {Key: 'GET /profile', AppleKey: 'GET /apple/profile', EmailKey: 'GET /email/profile'}
-    LinkCode: {Key: 'POST /profile/link-code', AppleKey: 'POST /apple/profile/link-code', EmailKey: 'POST /email/profile/link-code'}
-    Link: {Key: 'POST /profile/link', AppleKey: 'POST /apple/profile/link', EmailKey: 'POST /email/profile/link'}
-    Unlink: {Key: 'POST /profile/unlink', AppleKey: 'POST /apple/profile/unlink', EmailKey: 'POST /email/profile/unlink'}
-    ProfileCredentials: {Key: 'POST /profile/credentials', AppleKey: 'POST /apple/profile/credentials', EmailKey: 'POST /email/profile/credentials'}
-    PublishLink: {Key: 'PUT /links/{captureId}', AppleKey: 'PUT /apple/links/{captureId}', EmailKey: 'PUT /email/links/{captureId}'}
-    JoinLink: {Key: 'POST /links/{captureId}/join', AppleKey: 'POST /apple/links/{captureId}/join', EmailKey: 'POST /email/links/{captureId}/join'}
-    ContentKey: {Key: 'POST /keys/{owner}/{captureId}', AppleKey: 'POST /apple/keys/{owner}/{captureId}', EmailKey: 'POST /email/keys/{owner}/{captureId}'}
+    Grants: {Key: 'GET /shares/{captureId}', AppleKey: 'GET /apple/shares/{captureId}', EmailKey: 'GET /email/shares/{captureId}', SessionKey: 'GET /tabcam/shares/{captureId}'}
+    Grant: {Key: 'PUT /shares/{captureId}', AppleKey: 'PUT /apple/shares/{captureId}', EmailKey: 'PUT /email/shares/{captureId}', SessionKey: 'PUT /tabcam/shares/{captureId}'}
+    Revoke: {Key: 'DELETE /shares/{captureId}', AppleKey: 'DELETE /apple/shares/{captureId}', EmailKey: 'DELETE /email/shares/{captureId}', SessionKey: 'DELETE /tabcam/shares/{captureId}'}
+    Shared: {Key: 'GET /shared', AppleKey: 'GET /apple/shared', EmailKey: 'GET /email/shared', SessionKey: 'GET /tabcam/shared'}
+    Leave: {Key: 'DELETE /shared/{owner}/{captureId}', AppleKey: 'DELETE /apple/shared/{owner}/{captureId}', EmailKey: 'DELETE /email/shared/{owner}/{captureId}', SessionKey: 'DELETE /tabcam/shared/{owner}/{captureId}'}
+    Credentials: {Key: 'POST /shared/{owner}/{captureId}/credentials', AppleKey: 'POST /apple/shared/{owner}/{captureId}/credentials', EmailKey: 'POST /email/shared/{owner}/{captureId}/credentials', SessionKey: 'POST /tabcam/shared/{owner}/{captureId}/credentials'}
+    DeleteAccount: {Key: 'DELETE /account', AppleKey: 'DELETE /apple/account', EmailKey: 'DELETE /email/account', SessionKey: 'DELETE /tabcam/account'}
+    Profile: {Key: 'GET /profile', AppleKey: 'GET /apple/profile', EmailKey: 'GET /email/profile', SessionKey: 'GET /tabcam/profile'}
+    LinkCode: {Key: 'POST /profile/link-code', AppleKey: 'POST /apple/profile/link-code', EmailKey: 'POST /email/profile/link-code', SessionKey: 'POST /tabcam/profile/link-code'}
+    Link: {Key: 'POST /profile/link', AppleKey: 'POST /apple/profile/link', EmailKey: 'POST /email/profile/link', SessionKey: 'POST /tabcam/profile/link'}
+    Unlink: {Key: 'POST /profile/unlink', AppleKey: 'POST /apple/profile/unlink', EmailKey: 'POST /email/profile/unlink', SessionKey: 'POST /tabcam/profile/unlink'}
+    ProfileCredentials: {Key: 'POST /profile/credentials', AppleKey: 'POST /apple/profile/credentials', EmailKey: 'POST /email/profile/credentials', SessionKey: 'POST /tabcam/profile/credentials'}
+    PublishLink: {Key: 'PUT /links/{captureId}', AppleKey: 'PUT /apple/links/{captureId}', EmailKey: 'PUT /email/links/{captureId}', SessionKey: 'PUT /tabcam/links/{captureId}'}
+    JoinLink: {Key: 'POST /links/{captureId}/join', AppleKey: 'POST /apple/links/{captureId}/join', EmailKey: 'POST /email/links/{captureId}/join', SessionKey: 'POST /tabcam/links/{captureId}/join'}
+    StartSession: {Key: 'POST /session', AppleKey: 'POST /apple/session', EmailKey: 'POST /email/session', SessionKey: 'POST /tabcam/session'}
+    ContentKey: {Key: 'POST /keys/{owner}/{captureId}', AppleKey: 'POST /apple/keys/{owner}/{captureId}', EmailKey: 'POST /email/keys/{owner}/{captureId}', SessionKey: 'POST /tabcam/keys/{owner}/{captureId}'}
+  SessionRoutes:
+    Refresh: {Key: 'POST /session/refresh'}
+    End: {Key: 'POST /session/end'}
+    Discovery: {Key: 'GET /session/.well-known/openid-configuration'}
+    Keys: {Key: 'GET /session/.well-known/jwks.json'}
 
 Transform: AWS::LanguageExtensions
 
@@ -720,6 +829,9 @@ Outputs:
     Value: !Sub https://${Api}.execute-api.${AWS::Region}.amazonaws.com
   FunctionName:
     Value: !Ref Function
+  SessionIssuer:
+    Description: TabCam's ID tokens' issuer (the cloud OCR service's SessionIssuer)
+    Value: !Sub https://${Api}.execute-api.${AWS::Region}.amazonaws.com/session
   ProfilesTable:
     Description: The profiles (the cloud OCR service reads them)
     Value: !Ref ProfilesTable

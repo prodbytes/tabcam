@@ -31,12 +31,22 @@ it's seen: the profile's Cognito identity (a developer identity) is the
 folder, shared by every sign-in linked to it, and its addresses are all
 those sign-ins' verified ones.
 
-Routes (each also under /apple and /email, for Apple's and email's tokens):
+TabCam's own sessions (sessions.py) keep a user signed in for days: the
+app starts one with a provider's token (POST /session), then renews
+TabCam's ID tokens with its refresh token. Those tokens go to the same
+routes under /tabcam (their own authorizer), and stand for the sign-in
+that started the session.
+
+Routes (each also under /apple, /email and /tabcam, for Apple's, email's
+and TabCam's tokens):
   GET    /profile                                 my profile: ID, accounts, roles
   POST   /profile/link-code                       a code to link another sign-in
   POST   /profile/link                            {code}: join that profile
   POST   /profile/unlink                          {id}: unlink an account
   POST   /profile/credentials                     a Cognito token for its folder
+  POST   /session                                 start a TabCam session (not
+                                                  under /tabcam): its refresh
+                                                  token and ID token
   GET    /shares/{captureId}                      the capture's grants (owner)
   PUT    /shares/{captureId}                      grant {email, role} (owner)
   DELETE /shares/{captureId}?email=               revoke (owner)
@@ -67,6 +77,11 @@ And routes without a token (no authorizer): for anyone holding a link,
                                                   apps' link previews (the
                                                   site sends their crawlers
                                                   here)
+for TabCam's sessions (the refresh token is the proof):
+  POST   /session/refresh                         {refreshToken}: a new ID token
+  POST   /session/end                             {refreshToken}: sign out
+  GET    /session/.well-known/openid-configuration
+  GET    /session/.well-known/jwks.json           the ID tokens' public key
 and for Sign in with Apple on Android:
   POST   /apple/callback                          Apple's reply (form_post),
                                                   sent back to the app as an
@@ -90,6 +105,7 @@ import cdn
 import keys as pkeys
 import profiles as prof
 import sealed
+import sessions as sess
 
 ROLES = ("edit", "read")
 MAX_GRANTS = int(os.environ.get("MAX_GRANTS", "50"))
@@ -121,6 +137,17 @@ PREFIXES = {GOOGLE: "", APPLE: "/apple", EMAIL_SIGNIN: "/email"}
 LOGINS = {GOOGLE: "accounts.google.com", APPLE: "appleid.apple.com",
           EMAIL_SIGNIN: EMAIL_SIGNIN.removeprefix("https://")}
 PROVIDERS = {GOOGLE: "google", APPLE: "apple", EMAIL_SIGNIN: "email"}
+# TabCam's sessions: their ID tokens' issuer (the API's /session; empty:
+# no sessions), and the routes that need no token.
+SESSION_ISSUER = os.environ.get("SESSION_ISSUER", "")
+SESSION_REFRESH_ROUTE = "POST /session/refresh"
+SESSION_END_ROUTE = "POST /session/end"
+SESSION_DISCOVERY_ROUTE = "GET /session/.well-known/openid-configuration"
+SESSION_KEYS_ROUTE = "GET /session/.well-known/jwks.json"
+SESSION_ROUTES = (SESSION_REFRESH_ROUTE, SESSION_END_ROUTE, SESSION_DISCOVERY_ROUTE,
+                  SESSION_KEYS_ROUTE)
+if SESSION_ISSUER:
+    PREFIXES[SESSION_ISSUER] = "/tabcam"
 # The identity pool's developer provider: a profile's Cognito identity is
 # the developer identity of its ID.
 DEVELOPER = os.environ.get("DEVELOPER_PROVIDER", "login.tabcam.profiles")
@@ -139,13 +166,20 @@ def _clients():
     region = os.environ.get("AWS_REGION", "us-east-1")
     dynamodb = boto3.resource("dynamodb", region_name=region)
     accounts = os.environ.get("ACCOUNTS_TABLE")
+    sessions_table = os.environ.get("SESSIONS_TABLE")
+    kms = boto3.client("kms", region_name=region)
     keys_table = os.environ.get("PROFILE_KEYS_TABLE")
     keys = dynamodb.Table(keys_table) if keys_table else None
     return {
         "table": dynamodb.Table(os.environ["TABLE"]),
         # Profile keys (keys.py): off without the table and the KMS key.
         "keys": keys if os.environ.get("PROFILE_KEY_ID") else None,
-        "kms": boto3.client("kms", region_name=region),
+        "kms": kms,
+        # TabCam's sessions: off without their table, key and issuer.
+        "sessions": (sess.Sessions(dynamodb.Table(sessions_table))
+                     if sessions_table and SESSION_ISSUER and os.environ.get("SESSION_KEY_ID")
+                     else None),
+        "signer": sess.Signer(kms),
         "links": dynamodb.Table(os.environ["LINKS_TABLE"]),
         # The cloud OCR service's identity -> address table, if it's set up.
         "accounts": dynamodb.Table(accounts) if accounts else None,
@@ -193,6 +227,8 @@ def handler(event, context, clients=None):
             return preview(event, clients)
         if event.get("routeKey") == APPLE_CALLBACK_ROUTE:
             return apple_callback(event)
+        if event.get("routeKey") in SESSION_ROUTES:
+            return session_route(event, clients)
         return _json(200, Api(event, clients).route())
     except ApiError as e:
         return _json(e.status, {"message": e.message})
@@ -537,6 +573,49 @@ PREVIEW_PAGE = """<!DOCTYPE html>
 """
 
 
+def _sessions(clients):
+    sessions = clients.get("sessions")
+    if sessions is None or not SESSION_ISSUER:
+        raise ApiError(404, "No sessions here")
+    return sessions
+
+
+def session_route(event, clients):
+    """The session routes without a token: renewing, ending, and the keys
+    that check TabCam's ID tokens."""
+    route = event.get("routeKey")
+    sessions = _sessions(clients)
+    if route == SESSION_DISCOVERY_ROUTE:
+        return _cached_json(sess.discovery(SESSION_ISSUER))
+    if route == SESSION_KEYS_ROUTE:
+        return _cached_json(clients["signer"].jwks())
+    token = _body_of(event).get("refreshToken")
+    if route == SESSION_END_ROUTE:
+        sessions.end(token)
+        return _json(200, {"ended": True})
+    item = sessions.find(token)
+    # A sign-in no longer linked to a profile (its account deleted, or it
+    # was unlinked) can't go on.
+    link = clients["store"].link_of(item["subject"]) if item is not None else None
+    if link is None:
+        if item is not None:
+            sessions.end(token)
+        raise ApiError(401, "Sign in again")
+    try:
+        item = sessions.touch(item, email=link.get("email"))
+    except sess.Conflict:
+        raise ApiError(401, "Sign in again")
+    claims, id_token = sess.id_token(clients["signer"], SESSION_ISSUER, item, now=sessions.now())
+    return _json(200, {"idToken": id_token, "expiresAt": claims["exp"],
+                       "sessionExpiresAt": int(item["expiresAt"])})
+
+
+def _cached_json(body):
+    response = _json(200, body)
+    response["headers"]["cache-control"] = "public, max-age=3600"
+    return response
+
+
 class Api:
     def __init__(self, event, clients):
         self.event = event
@@ -568,18 +647,32 @@ class Api:
             issuer = APPLE
         elif path.startswith("/email/"):
             issuer = EMAIL_SIGNIN
+        elif path.startswith("/tabcam/"):
+            issuer = SESSION_ISSUER
         else:
             issuer = GOOGLE
         if not issuer or claims.get("iss") != issuer:
             raise ApiError(401, "Sign in again")
-        self.login = LOGINS[issuer]
-        self.provider = PROVIDERS[issuer]
+        # A TabCam session's token stands for the sign-in that started it:
+        # its provider's issuer (idp) and audience (idp_aud).
+        self.session = issuer == SESSION_ISSUER
+        if self.session:
+            if claims.get("aud") != sess.AUDIENCE:
+                raise ApiError(401, "Sign in again")
+            idp = claims.get("idp")
+            if idp not in PROVIDERS or not idp or idp == SESSION_ISSUER:
+                raise ApiError(401, "Sign in again")
+        else:
+            idp = issuer
+        self.issuer = idp
+        self.login = LOGINS[idp]
+        self.provider = PROVIDERS[idp]
         if not claims.get("sub"):
             raise ApiError(401, "Sign in again")
         # The sign-in, never the email: an address can change hands.
-        self.subject = f"{issuer}#{claims['sub']}"
+        self.subject = f"{idp}#{claims['sub']}"
         # Whose the token is: for Apple, the bundle ID or the Services ID.
-        self.audience = claims.get("aud")
+        self.audience = claims.get("idp_aud") if self.session else claims.get("aud")
         self.route_key = f"{method} {path[len(PREFIXES[issuer]):]}"
         # Only a verified address can be granted, or use a grant. Apple sends
         # email_verified as a string ("true"), Google as a boolean. Apple's
@@ -602,6 +695,7 @@ class Api:
             "POST /profile/link": self.link,
             "POST /profile/unlink": self.unlink,
             "POST /profile/credentials": self.profile_credentials,
+            "POST /session": self.start_session,
             "GET /shares/{captureId}": self.grants,
             "PUT /shares/{captureId}": self.grant,
             "DELETE /shares/{captureId}": self.revoke,
@@ -688,6 +782,26 @@ class Api:
                 "token": result["Token"], "prefix": f"{identity}/"}
         return with_cdn(self.clients, body)
 
+    def start_session(self):
+        """A TabCam session for this sign-in, started with the provider's
+        own token (a TabCam token can't start another: a session ends)."""
+        sessions = self.clients.get("sessions")
+        if sessions is None or not SESSION_ISSUER:
+            raise ApiError(404, "No sessions here")
+        if self.session:
+            raise ApiError(400, "Start a session with the provider's token")
+        self._profile()  # linked from the start: a session needs its link
+        refresh, item = sessions.start(self.subject, self.issuer, self.audience, self.email)
+        claims, id_token = sess.id_token(self.clients["signer"], SESSION_ISSUER, item,
+                                         now=sessions.now())
+        return {"refreshToken": refresh, "idToken": id_token, "expiresAt": claims["exp"],
+                "sessionExpiresAt": int(item["expiresAt"])}
+
+    def _end_sessions(self, subject):
+        sessions = self.clients.get("sessions")
+        if sessions is not None:
+            sessions.end_all(subject)
+
     def link_code(self):
         profile = self._profile()
         self._me()  # the profile's identity, settled before anyone joins
@@ -734,7 +848,11 @@ class Api:
                     raise ApiError(409, "The profile's owner can't be unlinked")
                 self.store.unlink(s["subject"])
                 if s["subject"] == self.subject:
+                    # The caller leaves: it gets a profile of its own at
+                    # its next request, and stays signed in.
                     return {"unlinked": True}
+                # Unlinked by another sign-in of the profile: signed out.
+                self._end_sessions(s["subject"])
                 return self._view(profile)
         raise ApiError(404, "No such account in this profile")
 
@@ -991,6 +1109,8 @@ class Api:
         linked = list(self.store.linked(profile["id"]))
         for s in linked:
             self.store.unlink(s["subject"])
+            self._end_sessions(s["subject"])
+        self._end_sessions(self.subject)
         self.store.delete_profile(profile["id"])
         # Its email sign-ins' addresses leave the user pool too: nothing of
         # the account is kept.
