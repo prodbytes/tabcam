@@ -96,6 +96,18 @@ Someone signed in before sessions existed stays signed in: at the next
 launch the provider's still valid token (or the email refresh token)
 starts a session, with no prompt.
 
+## Logs
+
+The app logs (`TabCam: …`, in the browser's console or the phone's log)
+when a session is restored (its provider and when it's renewed next),
+started, renewed, ended or can't start, never its tokens. The share API
+logs a JSON line per request (`"msg": "request"`: the route, the status,
+the milliseconds, `auth` (the provider, `+session` for a session's
+token), `account` (a hash of the sign-in) and the error), and API
+Gateway's access log (`/aws/apigateway/tabcam-share-api`, 30 days) a
+line per request with the authorizer's error, for tokens refused before
+the function.
+
 ## Security
 
 - The refresh token is the only long-lived secret, on the device as the

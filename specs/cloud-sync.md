@@ -311,7 +311,14 @@ device (a rename, a file added or moved) shows on another within 5
 minutes, or at once when that one is opened or comes back to the front.
 Few passes keep the cloud's cost down. One pass runs at a time; a
 request during one runs another right after. Passes wait for the library
-to load.
+to load. A pass stops at its next step when the sign-in changes; the same
+user's new ID token (an hourly renewal, or the [TabCam session](sessions.md)
+replacing the provider's token just after sign-in) starts it again with
+that token, so the first pass always ends (Home's "Loading your
+captures…" waits for it). Each pass logs (the browser's console, the
+phone's log) when it starts, ends (with its time and counts), stops or
+fails; the session logs when it's restored, started, renewed or ended,
+never its tokens.
 
 A pass lists the user's folder (with nothing new anywhere, that one
 request is the whole pass) and compares it with what last synced, kept

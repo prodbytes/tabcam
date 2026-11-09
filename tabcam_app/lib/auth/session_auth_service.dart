@@ -141,6 +141,10 @@ class SessionAuthService extends AuthService with WidgetsBindingObserver {
     if (restored != null) {
       _session = restored;
       _owned = restored.refreshToken;
+      debugPrint(
+        'TabCam: session restored (${restored.user.provider.name}), '
+        'renewal due in ${restored.renewAt.difference(_now()).inMinutes} min',
+      );
       // An expired token is renewed before anyone uses it (offline, the
       // session stays, and is renewed a minute later).
       if (_expiresSoon(restored)) {
@@ -222,6 +226,7 @@ class SessionAuthService extends AuthService with WidgetsBindingObserver {
       );
       _error = null;
       _failed = null;
+      debugPrint('TabCam: session started (${user.provider.name})');
       _schedule();
       // Signed in here: kept, over another tab's session.
       await _save(force: true);
@@ -249,6 +254,7 @@ class SessionAuthService extends AuthService with WidgetsBindingObserver {
       final tokens = await _api.refreshSession(session.refreshToken);
       if (_session != session) return; // signed out (or in) meanwhile
       _session = session.withToken(tokens.idToken, _now());
+      debugPrint('TabCam: session renewed');
       _schedule();
       await _save();
       notifyListeners();

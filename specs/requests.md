@@ -2286,3 +2286,16 @@ spec.
    script add the authorizer and the `/tabcam` routes in a second step,
    once the code is up. See
    [sign-in sessions](sessions.md), [cloud sync](cloud-sync.md#signing-in).
+10. **Now "Loading your captures" spins forever: troubleshoot, make sure
+    the logs have all the information needed, redeploy, and say when it's
+    verified working.** The session (item 9) replaces the provider's ID
+    token a moment after sign-in, while the first sync pass runs; a pass
+    stops when the token changes, and a new token of the same user didn't
+    start another, so the first pass never ended and Home waited for it
+    until the 5-minute tick. Now the same user's new token starts the pass
+    again whenever one is running or none has ended yet (also covering the
+    hourly renewal). Logs: each sync pass and session event in the app's
+    log; a JSON line per share API request (route, status, time, provider,
+    account hash, error); API Gateway access logs for 30 days, which show
+    the authorizers' refusals. See [cloud sync](cloud-sync.md#when-and-how),
+    [sign-in sessions](sessions.md#logs), [privacy](privacy.md).

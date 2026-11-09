@@ -216,10 +216,29 @@ _cached = None
 
 
 def handler(event, context, clients=None):
+    """Answers the request, and logs one JSON line about it: the route, the
+    status, how long it took, who asked (the sign-in's provider, `+session`
+    for a TabCam session's token, and the account's hash, never its email
+    or token) and, when it failed, why."""
     global _cached
-    if clients is None:
-        _cached = _cached or _clients()
-        clients = _cached
+    started = time.monotonic()
+    log = {"msg": "request", "route": event.get("routeKey")}
+    try:
+        if clients is None:
+            _cached = _cached or _clients()
+            clients = _cached
+        response = _handle(event, clients, log)
+    except Exception as e:
+        log.update(status=500, error=f"{type(e).__name__}: {e}",
+                   ms=round((time.monotonic() - started) * 1000))
+        print(json.dumps(log))
+        raise
+    log.update(status=response["statusCode"], ms=round((time.monotonic() - started) * 1000))
+    print(json.dumps(log))
+    return response
+
+
+def _handle(event, clients, log):
     try:
         if event.get("routeKey") == PUBLIC_ROUTE:
             return _json(200, public_credentials(event, clients))
@@ -228,9 +247,13 @@ def handler(event, context, clients=None):
         if event.get("routeKey") == APPLE_CALLBACK_ROUTE:
             return apple_callback(event)
         if event.get("routeKey") in SESSION_ROUTES:
-            return session_route(event, clients)
-        return _json(200, Api(event, clients).route())
+            return session_route(event, clients, log)
+        api = Api(event, clients)
+        log["auth"] = api.provider + ("+session" if api.session else "")
+        log["account"] = prof.account_id(api.subject)
+        return _json(200, api.route())
     except ApiError as e:
+        log["error"] = e.message
         return _json(e.status, {"message": e.message})
 
 
@@ -580,9 +603,10 @@ def _sessions(clients):
     return sessions
 
 
-def session_route(event, clients):
+def session_route(event, clients, log=None):
     """The session routes without a token: renewing, ending, and the keys
     that check TabCam's ID tokens."""
+    log = {} if log is None else log
     route = event.get("routeKey")
     sessions = _sessions(clients)
     if route == SESSION_DISCOVERY_ROUTE:
@@ -594,11 +618,16 @@ def session_route(event, clients):
         sessions.end(token)
         return _json(200, {"ended": True})
     item = sessions.find(token)
+    if item is None:
+        log["session"] = "unknown or expired"
+    else:
+        log["account"] = prof.account_id(item["subject"])
     # A sign-in no longer linked to a profile (its account deleted, or it
     # was unlinked) can't go on.
     link = clients["store"].link_of(item["subject"]) if item is not None else None
     if link is None:
         if item is not None:
+            log["session"] = "sign-in no longer linked"
             sessions.end(token)
         raise ApiError(401, "Sign in again")
     try:
