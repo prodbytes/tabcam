@@ -16,6 +16,7 @@ os.environ.update(
     ACCESS_ROLE_ARN="arn:aws:iam::1:role/tabcam-share-access",
     EMAIL_ISSUER="https://cognito-idp.us-east-1.amazonaws.com/us-east-1_Email",
     EMAIL_USER_POOL_ID="us-east-1_Email",
+    SESSION_ISSUER="https://api.example.com/session",
 )
 
 import index  # noqa: E402
@@ -77,6 +78,9 @@ class KeyTable:
     def put_item(self, Item, ConditionExpression=None):
         k = Item[self.key]
         if ConditionExpression and "attribute_not_exists" in ConditionExpression and k in self.items:
+            raise ConditionalCheckFailedException()
+        if (ConditionExpression and "attribute_exists" in ConditionExpression
+                and "attribute_not_exists" not in ConditionExpression and k not in self.items):
             raise ConditionalCheckFailedException()
         self.items[k] = {kk: Decimal(v) if isinstance(v, int) else v for kk, v in Item.items()}
 

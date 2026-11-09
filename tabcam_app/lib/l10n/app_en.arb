@@ -1974,6 +1974,10 @@
   "@accountAppleSignInExpired": {
     "description": "Error when the Apple sign-in expires"
   },
+  "accountSessionEnded": "You were signed out (a week without using TabCam, or your sign-in ended elsewhere): sign in again.",
+  "@accountSessionEnded": {
+    "description": "Account sheet: the TabCam session ended (unused for a week, 90 days old, or ended by the account's deletion or unlinking)"
+  },
   "accountAppleUnavailable": "Sign in with Apple isn't available on this device.",
   "@accountAppleUnavailable": {
     "description": "Why Apple sign-in can't be offered"

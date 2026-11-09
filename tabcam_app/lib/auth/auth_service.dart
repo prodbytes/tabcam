@@ -37,14 +37,27 @@ enum AuthProvider {
   };
 
   /// Who issued [idToken] (its `iss` claim, unverified: only to pick where
-  /// to send it, and the services check it). Google when it can't be read.
+  /// to send it, and the services check it): for a TabCam session's token
+  /// ([isSessionToken]), the provider of the sign-in that started it.
+  /// Google when it can't be read.
   static AuthProvider ofToken(String idToken) {
-    final issuer = jwtClaims(idToken)?['iss'];
+    final claims = jwtClaims(idToken) ?? const <String, Object?>{};
+    final session = claims['aud'] == sessionAudience;
+    final issuer = session ? claims['idp'] : claims['iss'];
     if (issuer == apple.issuer) return apple;
     if (issuer == email.issuer) return email;
     return google;
   }
 }
+
+/// The audience of TabCam's own ID tokens: a session the share API keeps
+/// (`tabcam_api/shares/sessions.py`, `SessionAuthService`).
+const String sessionAudience = 'tabcam-app';
+
+/// Whether [token] is TabCam's own (a session's), not a provider's.
+/// Unverified: only to pick where to send it.
+bool isSessionToken(String token) =>
+    jwtClaims(token)?['aud'] == sessionAudience;
 
 /// Who is signed in.
 @immutable
@@ -107,6 +120,11 @@ abstract class AuthService extends ChangeNotifier {
   /// restored silently.
   bool get checking;
 
+  /// Set before [init] when a longer session (TabCam's) already has the
+  /// user signed in: the provider doesn't look for a sign-in of its own at
+  /// launch (on the web, Google's prompt would show for nothing).
+  bool skipQuietSignIn = false;
+
   /// False when sign-in can't work here (e.g. no client ID configured);
   /// [unavailableReason] says why.
   bool get available;
@@ -125,12 +143,18 @@ abstract class AuthService extends ChangeNotifier {
 
   Future<void> signOut();
 
-  /// When the account is being deleted: what lets the share API revoke the
-  /// sign-in's tokens with its provider. Signed in with Apple, a fresh
-  /// authorization code from Apple's sheet (App Store guideline 5.1.1(v));
-  /// null for the others, which have nothing to revoke. Throws
-  /// [DeletionAuthorizationCanceled] when the user cancels the sheet.
-  Future<String?> deletionAuthorization() async => null;
+  /// When the account of [user] (or else the one signed in here) is being
+  /// deleted: what lets the share API revoke the sign-in's tokens with its
+  /// provider. Signed in with Apple, a fresh authorization code from
+  /// Apple's sheet (App Store guideline 5.1.1(v)); null for the others,
+  /// which have nothing to revoke. Throws [DeletionAuthorizationCanceled]
+  /// when the user cancels the sheet.
+  Future<String?> deletionAuthorization([AuthUser? user]) async => null;
+
+  /// Whether [user]'s sign-in still stands with its provider, for a session
+  /// kept longer than the provider's own token: false once they stopped
+  /// using Apple ID with the app. True when it can't tell.
+  Future<bool> stillValid(AuthUser user) async => true;
 
   /// [provider]'s own sign-in button, where the platform requires one
   /// (Google on web); null to use the app's button, which calls [signIn].

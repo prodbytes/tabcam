@@ -12,6 +12,7 @@ import 'auth/auth_service.dart';
 import 'auth/google_auth_service.dart';
 import 'auth/google_config.dart';
 import 'auth/multi_auth_service.dart';
+import 'auth/session_auth_service.dart';
 import 'cloud/cdn.dart';
 import 'cloud/cloud_config.dart';
 import 'cloud/cloud_ocr.dart';
@@ -116,12 +117,20 @@ class AppServices {
         if (!email.checking) link();
       });
     }
-    if (!apple && email == null) return GoogleAuthService();
-    return MultiAuthService([
-      if (apple) AppleAuthService(),
-      GoogleAuthService(),
-      ?email,
-    ]);
+    final AuthService providers = !apple && email == null
+        ? GoogleAuthService()
+        : MultiAuthService([
+            if (apple) AppleAuthService(),
+            GoogleAuthService(),
+            ?email,
+          ]);
+    // With the share API, a TabCam session keeps the user signed in for
+    // days (a week past its last use), whatever the provider's token does.
+    if (ShareConfig.apiUrl.isEmpty) return providers;
+    return SessionAuthService(
+      inner: providers,
+      api: ShareApi(baseUrl: Uri.parse(ShareConfig.apiUrl)),
+    );
   }
 
   static bool get _cloud =>

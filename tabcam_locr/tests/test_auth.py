@@ -126,3 +126,53 @@ def test_email_sign_in_tokens_are_taken_for_the_pools_client():
 def test_without_the_pool_set_up_email_tokens_are_refused():
     with pytest.raises(Unauthorized):
         verifier().verify(email_token())
+
+
+SESSION = "https://api.example.com/session"
+
+
+def session_token(idp="https://accounts.google.com", aud="tabcam-app", iss=SESSION, key=KEY, **extra):
+    claims = {"iss": iss, "aud": aud, "exp": int(time.time()) + 600, "sub": "riff-sub",
+              "idp": idp, "email": "Riff@Example.com", "email_verified": True, **extra}
+    return jwt.encode(claims, key, algorithm="RS256")
+
+
+def session_verifier(session_keys=None):
+    return TokenVerifier(client_id=WEB, jwks=Keys(), apple_client_id=BUNDLE, apple_jwks=Keys(),
+                         email_issuer=POOL, email_client_id="emailclient", email_jwks=Keys(),
+                         session_issuer=SESSION, session_jwks=session_keys or Keys())
+
+
+def test_a_tabcam_session_token_stands_for_the_sign_in_that_started_it():
+    v = session_verifier()
+    assert v.verify_subject(session_token()) == (
+        "riff@example.com", "accounts.google.com", "https://accounts.google.com#riff-sub")
+    assert v.verify_subject(session_token(idp="https://appleid.apple.com"))[1:] == (
+        "appleid.apple.com", "https://appleid.apple.com#riff-sub")
+    assert v.verify_subject(session_token(idp=POOL))[2] == f"{POOL}#riff-sub"
+
+
+def test_session_tokens_are_refused_when_anything_is_off():
+    v = session_verifier()
+    for bad in (session_token(aud=WEB), session_token(idp=SESSION),
+                session_token(idp="https://evil.example"), session_token(key=OTHER_KEY)):
+        with pytest.raises(Unauthorized):
+            v.verify(bad)
+    expired = jwt.encode({"iss": SESSION, "aud": "tabcam-app", "exp": int(time.time()) - 10,
+                          "sub": "s", "idp": "https://accounts.google.com", "email": "a@b.co",
+                          "email_verified": True}, KEY, algorithm="RS256")
+    with pytest.raises(Unauthorized):
+        v.verify(expired)
+
+
+def test_without_sessions_set_up_their_tokens_are_refused():
+    with pytest.raises(Unauthorized):
+        email_verifier().verify(session_token())
+
+
+def test_a_session_started_with_apple_is_refused_where_apple_isnt_set_up():
+    v = TokenVerifier(client_id=WEB, jwks=Keys(), apple_client_id="", apple_jwks=Keys(),
+                      session_issuer=SESSION, session_jwks=Keys())
+    with pytest.raises(Unsupported):
+        v.verify(session_token(idp="https://appleid.apple.com"))
+    assert v.email(session_token()) == "riff@example.com"

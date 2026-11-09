@@ -55,10 +55,15 @@ Google sign-in (`google_sign_in`,
 [lib/auth/](../tabcam_app/lib/auth)) per platform:
 
 - **Web**: Google Identity Services with FedCM: a quiet auto-select prompt
-  at launch, and Google's rendered button. GIS keeps no session, so the
-  app keeps the user and ID token in `localStorage`
-  (`tabcam.session`) and restores it at launch while the token has more
-  than a minute left. Sign out forgets it.
+  at launch (not when a [session](sessions.md) is restored), and Google's
+  rendered button. GIS keeps no session, so the app keeps the user and ID
+  token in `localStorage` (`tabcam.session`) and restores it at launch
+  while the token has more than a minute left. Sign out forgets it.
+
+Whoever signs in, with builds that have the share API, a
+[TabCam session](sessions.md) then keeps them signed in until they sign
+out or leave TabCam unused for a week (90 days at most), with TabCam's own
+ID tokens: the providers' tokens below only start it.
 - **Android**: Credential Manager: a quiet check at launch of the
   accounts that signed in before, and Google's sheet for the button.
 - **iOS**: the Google Sign-In SDK, which restores the last sign-in. It
@@ -87,13 +92,15 @@ keeps who, the provider and the ID token.
   (`…@privaterelay.appleid.com`, the token's `is_private_email`), shown as
   above. That address is what sharing and Premium go by: people share
   with it, and it has no Premium ([cloud OCR](cloud-ocr.md#who-is-premium)).
-- **The session**: Apple keeps none, and can't renew the ID token without
-  a server of TabCam's own, so the app keeps the user and token in a file
-  in its private Application Support folder (`apple_sign_in.json`) and
-  restores it at launch while the token has more than a minute left. When
-  the token expires the user is signed out, "Your Apple sign-in expired:
-  sign in again." At launch, a user who stopped using Apple ID with
-  TabCam (Settings → Apple ID → Sign in with Apple) is signed out. Sign
+- **The session**: Apple keeps none, and can't renew the ID token, so the
+  app keeps the user and token in a file in its private Application
+  Support folder (`apple_sign_in.json`) and restores it at launch while
+  the token has more than a minute left; that token starts a
+  [TabCam session](sessions.md), which keeps the user signed in after it
+  expires. Without one (builds without the share API), the user is signed
+  out when it expires, "Your Apple sign-in expired: sign in again." At
+  launch, a user who stopped using Apple ID with TabCam (Settings → Apple
+  ID → Sign in with Apple) is signed out, the TabCam session ended. Sign
   out forgets the session (Apple has no sign-out of its own).
 - **Its ID token** is issued for the bundle ID, `com.nu01.tabcam`, which
   the identity pool and the share API trust when set up (below). Each
@@ -252,7 +259,8 @@ the local origins), and get their credentials from the **local pool**,
 Google account has another identity ID there, so local builds sync to
 another folder ([dev environment](dev-environment.md)).
 Tokens last an hour; five minutes before one expires the app asks Google
-quietly for a new one.
+quietly for a new one. With a [TabCam session](sessions.md), failing to
+get one no longer matters: the session's tokens are used.
 
 ## What's synced, and where
 
@@ -487,8 +495,9 @@ code with a key of TabCam's, so the share API does it
 **Other devices** still signed in keep their credentials for up to an
 hour; a pass there in that time would upload their events again, under
 the deleted identity (where no one can reach them). Hence the dialog's
-"sign out there first". After that hour their sync fails ("Sign in again
-to sync"), and signing in again makes a new, empty identity, to which the
+"sign out there first". Their [TabCam sessions](sessions.md) end with the
+account, so within that hour they're signed out ("You were signed out
+…"), and signing in again makes a new, empty identity, to which the
 old account's events on that device aren't uploaded.
 
 **Without the app** (Google Play's "delete account URL"): the web app
@@ -624,13 +633,11 @@ Setting it up (the Google OAuth clients, the stacks, the variables):
   upload key use the developer's debug key, which a client can list.
 - **Web** keeps events in memory, so each visit downloads all of a user's
   events again, videos included.
-- An ID token that can't be refreshed quietly (Google wants the user to
-  choose an account again) stops sync after an hour, with "Sign in again
-  to sync".
-- **Sign in with Apple lasts as long as Apple's ID token** (Apple sets its
-  lifetime): the app can't renew it without a server exchanging Apple's
-  authorization code for a refresh token (which needs a Sign in with Apple
-  private key), so the user signs in again when it expires.
+- Builds without the share API (local web builds) have no
+  [TabCam sessions](sessions.md): there an ID token that can't be
+  refreshed quietly (Google wants the user to choose an account again)
+  stops sync after an hour, with "Sign in again to sync", and Sign in
+  with Apple lasts as long as Apple's ID token.
 - Sign in with Apple and Google are separate identities: no linking, so
   events synced under one don't show under the other.
 - Two devices changing the same event between passes: the later change

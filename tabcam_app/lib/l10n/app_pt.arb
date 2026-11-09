@@ -393,6 +393,7 @@
   "accountSignInWithApple": "Iniciar sessão com a Apple",
   "accountAppleSignInFailed": "Não foi possível iniciar sessão com a Apple",
   "accountAppleSignInExpired": "Sua sessão da Apple expirou: entre novamente.",
+  "accountSessionEnded": "Sua sessão foi encerrada (uma semana sem usar o TabCam, ou ela terminou em outro lugar): entre de novo.",
   "accountAppleUnavailable": "Iniciar sessão com a Apple não está disponível neste dispositivo.",
   "accountPrivateEmail": "ID {provider} (e-mail privado)",
   "profileLinkedAccounts": "Contas vinculadas",

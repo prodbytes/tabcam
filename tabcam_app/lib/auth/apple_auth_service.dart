@@ -347,15 +347,27 @@ class AppleAuthService extends AuthService {
   /// tokens when the account is deleted (it trades the code for them). The
   /// code must be the signed-in user's.
   @override
-  Future<String?> deletionAuthorization() async {
-    final user = _user;
-    if (user == null) return null;
+  Future<String?> deletionAuthorization([AuthUser? user]) async {
+    // A TabCam session outlives Apple's token: its user, then.
+    user ??= _user;
+    if (user == null || user.provider != AuthProvider.apple) return null;
     final got = await _apple.authorize();
     if (got == null) throw const DeletionAuthorizationCanceled();
     if (got.userId != user.id) {
       throw StateError(appL10n.deleteAccountAppleOtherId);
     }
     return got.code;
+  }
+
+  @override
+  Future<bool> stillValid(AuthUser user) async {
+    if (user.provider != AuthProvider.apple) return true;
+    try {
+      return await _apple.stillAuthorized(user.id);
+    } catch (e) {
+      debugPrint('TabCam: Sign in with Apple check failed: $e');
+      return true; // can't tell
+    }
   }
 
   /// Signs out when [token] expires: Apple can't renew it quietly.

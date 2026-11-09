@@ -2464,6 +2464,12 @@ abstract class AppLocalizations {
   /// **'Your Apple sign-in expired: sign in again.'**
   String get accountAppleSignInExpired;
 
+  /// Account sheet: the TabCam session ended (unused for a week, 90 days old, or ended by the account's deletion or unlinking)
+  ///
+  /// In en, this message translates to:
+  /// **'You were signed out (a week without using TabCam, or your sign-in ended elsewhere): sign in again.'**
+  String get accountSessionEnded;
+
   /// Why Apple sign-in can't be offered
   ///
   /// In en, this message translates to:

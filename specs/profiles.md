@@ -22,7 +22,10 @@ are every linked account's rbacr roles together.
 
 - A sign-in is its **subject**: `<issuer>#<sub>` of its ID token
   (`https://accounts.google.com#…`, `https://appleid.apple.com#…`), never
-  the email, which can change hands. Only verified addresses are used.
+  the email, which can change hands. Only verified addresses are used. A
+  [TabCam session](sessions.md)'s token stands for the subject that
+  started it (its `idp` and `sub`); unlinking a sign-in, or deleting the
+  account, ends its sessions.
 - **First sign-in**: the first request the share API sees from a subject
   finds its profile, or makes one:
   1. linked already: that profile (its last sign-in noted; the owner's

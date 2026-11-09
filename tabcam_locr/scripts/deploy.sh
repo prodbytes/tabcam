@@ -85,6 +85,9 @@ share_output() {
 profiles_table="$(share_output ProfilesTable)"; subjects_table="$(share_output SubjectsTable)"
 [[ "$profiles_table" =~ ^[A-Za-z0-9_.-]{3,255}$ && "$profiles_table" != None ]] || profiles_table=""
 [[ "$subjects_table" =~ ^[A-Za-z0-9_.-]{3,255}$ && "$subjects_table" != None ]] || subjects_table=""
+# TabCam's sign-in sessions: their tokens' issuer.
+session_issuer="$(share_output SessionIssuer)"
+[[ "$session_issuer" =~ ^https://[a-z0-9.-]+/session$ ]] || session_issuer=""
 
 echo "== Stack tabcam-ocr"
 aws cloudformation deploy --region "$region" --stack-name tabcam-ocr \
@@ -96,6 +99,7 @@ aws cloudformation deploy --region "$region" --stack-name tabcam-ocr \
     "GoogleLocalWebClientId=${TABCAM_GOOGLE_LOCAL_WEB_CLIENT_ID:-}" \
     "AppleClientId=$apple_client" \
     "EmailIssuer=$email_issuer" "EmailClientId=$email_client" \
+    "SessionIssuer=$session_issuer" \
     "AllowedOrigins=$TABCAM_WEB_ORIGINS" \
     "IdentityPoolId=${TABCAM_COGNITO_IDENTITY_POOL_ID:-}" \
     "RbacrTokenParameterName=$rbacr_param" \

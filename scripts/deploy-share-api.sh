@@ -136,7 +136,7 @@ aws cloudformation deploy --stack-name tabcam-share-api \
 
 echo "==> uploading the code"
 mkdir "$work/package"
-files=(index.py profiles.py keys.py sealed.py apple_revoke.py cdn.py adjectives.txt animals.txt)
+files=(index.py profiles.py keys.py sealed.py apple_revoke.py cdn.py sessions.py adjectives.txt animals.txt)
 for f in "${files[@]}"; do cp "tabcam_api/shares/$f" "$work/package/"; done
 "$work/venv/bin/pip" install --quiet --only-binary=:all: --require-hashes \
   --platform manylinux_2_28_aarch64 --platform manylinux_2_17_aarch64 \
@@ -170,3 +170,40 @@ fi
 status="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$url/keys/us-east-1:00000000-0000-0000-0000-000000000000/abc")"
 [[ "$status" == 401 ]] || { echo "error: $url/keys/… answered $status, not 401" >&2; exit 1; }
 echo "    $url/keys/… refuses requests without a token (401), as it should"
+# TabCam's sessions: the discovery document names this API's issuer, its
+# routes want a TabCam token, and an unknown refresh token is refused.
+issuer="$(curl -s "$url/session/.well-known/openid-configuration" \
+  | python3 -I -c 'import json, sys; print(json.load(sys.stdin).get("issuer", ""))')"
+[[ "$issuer" == "$url/session" ]] || { echo "error: the session issuer is '$issuer', not $url/session" >&2; exit 1; }
+curl -sf "$url/session/.well-known/jwks.json" | grep -q '"RS256"' \
+  || { echo "error: $url/session/.well-known/jwks.json has no RS256 key" >&2; exit 1; }
+status="$(curl -s -o /dev/null -w '%{http_code}' "$url/tabcam/shared")"
+[[ "$status" == 401 ]] || { echo "error: $url/tabcam/shared answered $status, not 401" >&2; exit 1; }
+status="$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'content-type: application/json' \
+  -d '{"refreshToken":"tcs1.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}' "$url/session/refresh")"
+[[ "$status" == 401 ]] || { echo "error: $url/session/refresh answered $status, not 401" >&2; exit 1; }
+echo "    sessions: issuer $issuer, its keys published, /tabcam/… wants a token, unknown refresh tokens refused"
+# A real TabCam token through the authorizer: made with the session key,
+# for a made-up sign-in, at the one route that refuses TabCam tokens before
+# touching anything (starting a session takes a provider's: 400). A 401
+# means the authorizer can't check TabCam's tokens (the issuer or the keys).
+b64url() { python3 -I -c 'import base64, sys; print(base64.urlsafe_b64encode(sys.stdin.buffer.read()).rstrip(b"=").decode())'; }
+kid="$(curl -s "$url/session/.well-known/jwks.json" \
+  | python3 -I -c 'import json, sys; print(json.load(sys.stdin)["keys"][0]["kid"])')"
+now="$(date +%s)"
+header="$(printf '{"alg":"RS256","typ":"JWT","kid":"%s"}' "$kid" | b64url)"
+payload="$(printf '{"iss":"%s","aud":"tabcam-app","sub":"deploy-check","idp":"https://accounts.google.com","email":"deploy-check@tabcam.nu01.com","email_verified":true,"iat":%d,"exp":%d}' \
+  "$url/session" "$now" "$((now + 300))" | b64url)"
+printf '%s' "$header.$payload" > "$work/jwt-input"
+signature="$(aws kms sign --key-id alias/tabcam-sessions --message "fileb://$work/jwt-input" \
+  --message-type RAW --signing-algorithm RSASSA_PKCS1_V1_5_SHA_256 --query Signature --output text \
+  | python3 -I -c 'import base64, sys; print(base64.urlsafe_b64encode(base64.b64decode(sys.stdin.read())).rstrip(b"=").decode())')"
+# The authorizer fetches the keys the first time: a few tries.
+for attempt in 1 2 3 4 5 6; do
+  status="$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+    -H "authorization: Bearer $header.$payload.$signature" "$url/tabcam/session")"
+  [[ "$status" == 400 ]] && break
+  sleep 5
+done
+[[ "$status" == 400 ]] || { echo "error: a TabCam token at $url/tabcam/session got $status, not 400" >&2; exit 1; }
+echo "    a TabCam token signed by the session key passes the /tabcam authorizer"
