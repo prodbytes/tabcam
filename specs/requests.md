@@ -2206,3 +2206,17 @@ spec.
    typing in a field are left alone. See
    [Cam](cam.md#playing-along-with-a-file) and the
    [event screen](event-screen.md).
+
+3. **Add a count-in to the mini player: wait 2 seconds, in silence,
+   before playing, while the user moves from the keyboard to the
+   instrument; show those seconds on the mini player in a different
+   colour, with a button before them to turn it off, all on the time
+   indicator's line.** In the play-along player, Play (the button, the
+   space bar, a file tapped in the list) of a recording, video or media
+   link now waits 2 seconds before it plays (`BackingTrack.countIn`, on
+   by default, kept on the device in the `play-along` meta file). The
+   progress bar's line starts with the **Count-in** button (a timer, amber
+   while on), then `2s` and a short bar in amber, which count down and
+   fill while it counts in; Play shows Pause meanwhile, and pressing it
+   (or Pause, Stop) cancels. In English, Spanish and Portuguese. See
+   [Cam](cam.md#count-in).

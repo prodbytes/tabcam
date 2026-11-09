@@ -697,6 +697,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get camAlongForward => 'Adelante 10 segundos';
 
   @override
+  String get camAlongCountInOn =>
+      'Cuenta previa activada: 2 segundos de silencio antes de sonar';
+
+  @override
+  String get camAlongCountInOff => 'Cuenta previa desactivada: suena enseguida';
+
+  @override
   String get camAlongRepeatOn =>
       'Repetir activado: vuelve a empezar al terminar';
 

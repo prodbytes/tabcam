@@ -396,6 +396,10 @@ class PlayAlongBeside extends StatelessWidget {
                       onUse?.call();
                       unawaited(along.track.clearPhrases());
                     },
+                    onCountIn: () {
+                      onUse?.call();
+                      unawaited(along.track.setCountIn(!along.track.countIn));
+                    },
                     onSpeed: (speed) {
                       onUse?.call();
                       unawaited(along.track.setSpeed(speed));
@@ -586,6 +590,7 @@ class _BackingFrame extends StatelessWidget {
     required this.onSectionClear,
     required this.onSpeed,
     this.onPhrasesClear,
+    this.onCountIn,
   });
 
   final String eventId;
@@ -600,6 +605,7 @@ class _BackingFrame extends StatelessWidget {
   final VoidCallback onSectionClear;
   final void Function(double speed) onSpeed;
   final VoidCallback? onPhrasesClear;
+  final VoidCallback? onCountIn;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -649,27 +655,41 @@ class _BackingFrame extends StatelessWidget {
             // (the sidebar caps the frame's height).
             if (content != null)
               Flexible(child: Center(heightFactor: 1, child: content)),
+            // The progress bar's line: the count-in's button and its
+            // seconds, then the progress bar.
             if (media != null)
-              Stack(
+              Row(
                 children: [
-                  VideoProgressIndicator(
-                    media,
-                    allowScrubbing: true,
-                    padding: const EdgeInsets.symmetric(vertical: 4),
+                  _CountIn(
+                    track: track,
+                    onToggle:
+                        onCountIn ?? () => track.setCountIn(!track.countIn),
                   ),
-                  if (phrases.isNotEmpty)
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: CustomPaint(
-                          key: const Key('cam-along-phrase-marks'),
-                          painter: _PhraseMarks(
-                            phrases,
-                            media.value.duration,
-                            Theme.of(context).colorScheme.primary,
-                          ),
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        VideoProgressIndicator(
+                          media,
+                          allowScrubbing: true,
+                          padding: const EdgeInsets.symmetric(vertical: 4),
                         ),
-                      ),
+                        if (phrases.isNotEmpty)
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child: CustomPaint(
+                                key: const Key('cam-along-phrase-marks'),
+                                painter: _PhraseMarks(
+                                  phrases,
+                                  media.value.duration,
+                                  Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
+                  ),
+                  const SizedBox(width: 8),
                 ],
               ),
             if (phrases.isNotEmpty)
@@ -729,13 +749,15 @@ class _BackingFrame extends StatelessWidget {
                             ),
                             IconButton(
                               key: const Key('cam-along-toggle'),
-                              tooltip: track.playing
+                              tooltip: track.playing || track.countingIn
                                   ? l10n.camAlongPause
                                   : l10n.camAlongPlay,
                               visualDensity: compact,
                               color: Colors.white,
                               icon: Icon(
-                                track.playing ? Icons.pause : Icons.play_arrow,
+                                track.playing || track.countingIn
+                                    ? Icons.pause
+                                    : Icons.play_arrow,
                               ),
                               onPressed: onToggle,
                             ),
@@ -807,6 +829,7 @@ class PlayAlongSidebar extends StatelessWidget {
     required this.onSectionClear,
     required this.onSpeed,
     this.onPhrasesClear,
+    this.onCountIn,
     this.width,
   });
 
@@ -834,6 +857,9 @@ class PlayAlongSidebar extends StatelessWidget {
   /// Forgets the phrase passes of what plays; null: the track forgets
   /// them itself.
   final VoidCallback? onPhrasesClear;
+
+  /// Turns the count-in on or off; null: the track does it itself.
+  final VoidCallback? onCountIn;
 
   /// Its default width on a screen [screen] wide: half of it, from 160
   /// to 360 px; the user drags it wider or narrower ([PlayAlongBeside]).
@@ -889,6 +915,7 @@ class PlayAlongSidebar extends StatelessWidget {
                           onSectionClear: onSectionClear,
                           onSpeed: onSpeed,
                           onPhrasesClear: onPhrasesClear,
+                          onCountIn: onCountIn,
                         ),
                       ),
                       Expanded(child: _list(context, l10n)),
@@ -1004,6 +1031,95 @@ IconData _icon(EventPage page) => switch (page) {
     Icons.smart_display_outlined,
   _ => Icons.link,
 };
+
+/// The count-in, at the start of the progress bar's line: a button to turn
+/// it on or off ([BackingTrack.countIn]), then, while it's on, its seconds
+/// in [color] (not the progress bar's): "2s" and a short bar, which count
+/// down and fill while it counts in.
+class _CountIn extends StatelessWidget {
+  const _CountIn({required this.track, required this.onToggle});
+
+  final BackingTrack track;
+  final VoidCallback onToggle;
+
+  /// The count-in's colour, apart from the progress bar's and the
+  /// sections' and passes' (the primary colour).
+  static const color = Colors.amber;
+
+  /// How wide its bar is.
+  static const barWidth = 28.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final on = track.countIn;
+    final length = BackingTrack.countInLength;
+    Widget seconds(double done) {
+      final left = (length.inMilliseconds * (1 - done) / 1000).ceil().clamp(
+        1,
+        length.inSeconds,
+      );
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 24,
+            child: Text(
+              '${track.countingIn ? left : length.inSeconds}s',
+              key: const Key('cam-along-count-in-seconds'),
+              maxLines: 1,
+              softWrap: false,
+              style: TextStyle(
+                color: track.countingIn ? color : color.withValues(alpha: 0.7),
+                fontSize: 11,
+                fontWeight: track.countingIn ? FontWeight.bold : null,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+          SizedBox(
+            width: barWidth,
+            child: LinearProgressIndicator(
+              key: const Key('cam-along-count-in-bar'),
+              value: done,
+              minHeight: 4,
+              color: color,
+              backgroundColor: color.withValues(alpha: 0.3),
+            ),
+          ),
+          const SizedBox(width: 4),
+        ],
+      );
+    }
+
+    return Row(
+      key: const Key('cam-along-count-in'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          key: const Key('cam-along-count-in-toggle'),
+          tooltip: on ? l10n.camAlongCountInOn : l10n.camAlongCountInOff,
+          isSelected: on,
+          visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+          iconSize: 16,
+          color: on ? color : Colors.white38,
+          icon: Icon(on ? Icons.timer_outlined : Icons.timer_off_outlined),
+          onPressed: onToggle,
+        ),
+        if (on)
+          track.countingIn
+              ? TweenAnimationBuilder<double>(
+                  // Each count-in fills from empty.
+                  key: ValueKey(track.countInRun),
+                  tween: Tween(begin: 0, end: 1),
+                  duration: length,
+                  builder: (context, done, _) => seconds(done),
+                )
+              : seconds(0),
+      ],
+    );
+  }
+}
 
 /// Where the tab turns along the song ([BackingTrack.phrases]): a tick
 /// across the progress bar at each phrase pass.

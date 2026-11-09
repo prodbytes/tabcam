@@ -181,6 +181,8 @@
   "camAlongPause": "Pausar (espaço)",
   "camAlongBack": "Voltar 10 segundos",
   "camAlongForward": "Avançar 10 segundos",
+  "camAlongCountInOn": "Contagem ligada: 2 segundos de silêncio antes de tocar",
+  "camAlongCountInOff": "Contagem desligada: toca na hora",
   "camAlongRepeatOn": "Repetir ligado: recomeça ao terminar",
   "camAlongRepeatOff": "Repetir desligado",
   "camAlongSection": "Trecho {start}–{end}",
