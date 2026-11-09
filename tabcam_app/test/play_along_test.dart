@@ -452,6 +452,7 @@ void main() {
   testWidgets('Play along: the sidebar opens with the first file loaded, '
       'paused, in a frame at its top; a recording or link from it plays '
       'there; space pauses and plays it; Stop and 0 go back to the start; '
+      '← and → skip in it, ↑ and ↓ turn the tab; '
       'hidden, it pauses and space turns the tab', (tester) async {
     final (library, id) = await capture(tester, tab: _tab);
     late String audio, youTube;
@@ -556,6 +557,24 @@ void main() {
     await frames(tester);
     expect(video.seeks, const [Duration.zero]);
     expect(video.playing, hasLength(1));
+
+    // ← and →: back and on in the track, the tab staying; ↓ and ↑ turn
+    // the tab.
+    final line = shown(tester);
+    video.seeks.clear();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await frames(tester);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await frames(tester);
+    expect(video.seeks, hasLength(2));
+    expect(video.seeks.last, lessThan(video.seeks.first));
+    expect(shown(tester), line);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await frames(tester);
+    expect(shown(tester), isNot(line));
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await frames(tester);
+    expect(shown(tester), line);
     await tester.tap(find.byKey(const Key('cam-along')));
     await frames(tester);
     expect(find.byKey(const Key('cam-along-sidebar')), findsNothing);

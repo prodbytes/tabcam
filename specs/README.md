@@ -56,13 +56,13 @@ review notes ([app stores](app-stores.md)).
   the capture's pages and PDFs to follow beside. Text and Cam are
   Premium's: locked, each opens as a preview under the Premium card.
 - [Cam](cam.md): record yourself playing along with the tab: the camera,
-  the tab under it one neckline (staff) at a time, any key to the next
-  and Backspace / ← / ↑ to the one before, or a strong nod up / right and
+  the tab under it one neckline (staff) at a time, any key (↓) to the
+  next and Backspace / ↑ (← with nothing playing along) to the one before, or a strong nod up / right and
   down / left (Android, iOS); Rec adds each take to the
   capture, Play plays it back with the tab turning as it did; Play
   along plays one of the capture's recordings, videos or links in a
-  frame above the camera, the space bar pausing and playing it and 0
-  going back to its start (its section's); turns
+  frame above the camera, the space bar pausing and playing it, 0
+  going back to its start (its section's) and ← / → skipping in it; turns
   of the tab while recording along with a song are kept as phrase
   passes (marked on its player, merged within two seconds at their
   average time), and **Auto-pass** turns the tab there the next time

@@ -28,10 +28,11 @@ its **Not now** leaving. With Premium it opens the camera view
   shrunk to fit the screen's width (a long staff reads best with the
   phone turned sideways), with its number under it ("2 / 14"). A
   capture with no text tab yet says to read it first.
-- **Moving along the tab**: any key (but the space bar and 0 while a
-  file [plays along](#playing-along-with-a-file)) goes to the next neckline (a
-  keyboard, or a Bluetooth page-turner pedal); **Backspace**, **←**,
-  **↑** and **Page Up** go to the one before. Shift, Control, Alt,
+- **Moving along the tab**: any key (but the space bar, 0, ← and →
+  while a file [plays along](#playing-along-with-a-file)) goes to the
+  next neckline (a keyboard, or a Bluetooth page-turner pedal), **↓**
+  among them; **Backspace**, **↑** and **Page Up** go to the one
+  before, and so does **←** while nothing plays along. Shift, Control, Alt,
   Meta, Caps Lock, Fn and Escape pressed alone do nothing. A tap on the
   neckline goes to the next; the arrows beside it (**Previous line**,
   **Next line**) to either side. It stops at the first and the last.
@@ -309,6 +310,12 @@ view).
   the frame goes back by Stop, then plays again if it played). Like
   space, it doesn't turn the tab while the sidebar shows. Ctrl / ⌘ + 0
   is left to the browser (its zoom).
+- **← and →** go 10 seconds back and on in it, as « and » do (held,
+  again and again), and don't turn the tab while the sidebar shows; the
+  tab's phrases go by **↑** (the one before) and **↓** (the next). With
+  the sidebar hidden, ← and → turn the tab again. A page-turner pedal
+  that sends ← and → skips in the song while the sidebar shows: one
+  that sends ↑ / ↓ or Page Up / Page Down turns the tab then.
 - **The keys outside Cam**: in the Text view and on a recording's file
   screen, a tap in the sidebar gives it the keyboard
   ([`PlayAlongKeys`](../tabcam_app/lib/capture/play_along_sidebar.dart)),
