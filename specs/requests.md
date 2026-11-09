@@ -2219,6 +2219,13 @@ spec.
    The Text view's sidebar doesn't list it. In English, Spanish and
    Portuguese. See [Cam](cam.md#following-the-text) and the
    [event screen](event-screen.md#file-screen).
+4. **In Cam, make ← and → go left and right in the mini player (skip
+   back and on in the song), and ↑ and ↓ move the tab's phrases.** While
+   the play-along sidebar shows with a file loaded, ← and → skip the
+   song 10 seconds back and on, as « and » (held, again and again), and
+   no longer turn the tab; ↑ goes to the phrase before and ↓ to the next,
+   as before. With the sidebar hidden, ← and → turn the tab as they did.
+   See [Cam](cam.md#playing-along-with-a-file).
 5. **Remember in the project's CLAUDE.md that "tab" means the whole
    document, "phrase" a neckline with all its strings, "line" a single
    string and "note" a single number on a line.** CLAUDE.md gains a
