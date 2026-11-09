@@ -73,8 +73,14 @@ review notes ([app stores](app-stores.md)).
   viewer and Cam opens a search in a sidebar on the right: a chord shows
   its notes and voicings as chord diagrams, a scale its notes on the
   fretboard (both worked out on the device); anything else is searched
-  on YouTube. Every sidebar (the dictionary, the play-along player) is
-  resizable by dragging its edge, the width kept on the device.
+  on YouTube. Every sidebar (the dictionary, the metronome, the
+  play-along player) is resizable by dragging its edge, the width kept on
+  the device.
+- [Metronome](metronome.md): a stopwatch icon beside the dictionary's
+  opens a metronome in a sidebar: 80 BPM in 4/4 by default, the tempo set
+  with −, + and a slider (30–250), the common time signatures (2/4 to
+  12/8), a light per beat, Start / Stop; clicks made on the device (Web
+  Audio on the web, a looping WAV on the phones), accented on the bar.
 - [Video edit](video-edit.md): basic edits of a video from its file
   screen: trim its start and end; keep its sound, take it out, or
   replace it with a new track (one of the capture's recordings, or a

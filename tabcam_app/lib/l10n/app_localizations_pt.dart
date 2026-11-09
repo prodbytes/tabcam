@@ -1989,4 +1989,34 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoEditCouldntDownload => 'Não deu para criar o arquivo';
+
+  @override
+  String get metronome => 'Metrônomo';
+
+  @override
+  String get metronomeHide => 'Ocultar o metrônomo';
+
+  @override
+  String get metronomeSlower => 'Mais lento';
+
+  @override
+  String get metronomeFaster => 'Mais rápido';
+
+  @override
+  String get metronomeTimeSignature => 'Compasso';
+
+  @override
+  String get metronomeEighths =>
+      'Cada clique é uma colcheia; o primeiro de cada grupo é acentuado.';
+
+  @override
+  String get metronomeStart => 'Iniciar';
+
+  @override
+  String get metronomeStop => 'Parar';
+
+  @override
+  String metronomeFailed(String error) {
+    return 'O metrônomo não pode tocar aqui: $error';
+  }
 }

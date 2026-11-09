@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import '../library/library.dart';
 
 /// How wide the user has dragged each sidebar (the play-along player,
-/// the dictionary), app-wide: set on one screen, every screen's sidebar
+/// the dictionary, the metronome), app-wide: set on one screen, every screen's sidebar
 /// is that wide. Kept on the device (the library's `sidebars` meta
 /// file) once [load]ed, so it lasts between sessions; a sidebar not
 /// dragged yet (or put back by a double tap on its edge) has its
@@ -22,6 +22,9 @@ class SidebarWidths extends ChangeNotifier {
 
   /// The dictionary's.
   static const dictionary = 'dictionary';
+
+  /// The metronome's.
+  static const metronome = 'metronome';
 
   /// The narrowest a sidebar is dragged.
   static const min = 160.0;
