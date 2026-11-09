@@ -1797,6 +1797,19 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dictionarySearchYouTube => 'Pesquisar no YouTube';
 
   @override
+  String get dictionaryYouTubeSearching => 'Pesquisando no YouTube…';
+
+  @override
+  String get dictionaryYouTubeNone => 'O YouTube não encontrou vídeos.';
+
+  @override
+  String get dictionaryYouTubeFailed =>
+      'Não foi possível carregar os resultados do YouTube.';
+
+  @override
+  String get dictionaryYouTubeOpen => 'Abrir no YouTube';
+
+  @override
   String dictionaryFret(int fret) {
     return '$fretª';
   }
