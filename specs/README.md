@@ -61,7 +61,8 @@ review notes ([app stores](app-stores.md)).
   down / left (Android, iOS); Rec adds each take to the
   capture, Play plays it back with the tab turning as it did; Play
   along plays one of the capture's recordings, videos or links in a
-  frame above the camera, the space bar pausing and playing it; turns
+  frame above the camera, the space bar pausing and playing it and 0
+  going back to its start (its section's); turns
   of the tab while recording along with a song are kept as phrase
   passes (marked on its player, merged within two seconds at their
   average time), and **Auto-pass** turns the tab there the next time

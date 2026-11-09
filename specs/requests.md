@@ -2193,3 +2193,16 @@ spec.
    passes give there (`AutoPass`); a pass by hand the same way within two
    seconds after one it made counts as that one. In English, Spanish
    and Portuguese. See [Cam](cam.md#phrase-passes).
+
+2. **Add shortcuts to the mini player: 0 goes to the beginning of the
+   song or section** (and the space bar pauses and plays, which already
+   worked in Cam). In the play-along player, **0** (top row or keypad)
+   goes back to the start of the file, or of its section when one is
+   set, playing on if it was playing (`BackingTrack.restart`; a link by
+   Stop, played again if it played). In Cam it's one of Cam's keys while
+   the sidebar shows, so it no longer turns the tab then; in the Text
+   view and on a recording's file screen a tap in the sidebar now gives
+   it the keyboard (`PlayAlongKeys`), for 0 and space. Ctrl / ⌘ + 0 and
+   typing in a field are left alone. See
+   [Cam](cam.md#playing-along-with-a-file) and the
+   [event screen](event-screen.md).

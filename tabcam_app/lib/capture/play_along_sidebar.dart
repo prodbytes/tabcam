@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
 import '../l10n/language.dart';
@@ -344,65 +345,142 @@ class PlayAlongBeside extends StatelessWidget {
             if (along.available)
               Offstage(
                 offstage: !along.open,
-                child: PlayAlongSidebar(
-                  width: sidebarWidth,
-                  library: along.library,
-                  eventId: along.eventId,
+                child: PlayAlongKeys(
                   track: along.track,
-                  linkFrame: linkFrame,
-                  toFollow: along.toFollow,
-                  followed: along.followed,
-                  footer: footer,
-                  onFollow: (page) {
-                    onUse?.call();
-                    along.follow(page);
-                  },
-                  onChoose: (page) {
-                    onUse?.call();
-                    unawaited(along.choose(page));
-                  },
-                  onStop: () {
-                    onUse?.call();
-                    unawaited(along.track.stop());
-                  },
-                  onToggle: () {
-                    onUse?.call();
-                    unawaited(along.track.toggle());
-                  },
-                  onSkip: (by) {
-                    onUse?.call();
-                    unawaited(along.track.skip(by));
-                  },
-                  onRepeat: () {
-                    onUse?.call();
-                    unawaited(along.track.setRepeat(!along.track.repeat));
-                  },
-                  onSection: (start, end) {
-                    onUse?.call();
-                    unawaited(along.track.setSection(start, end));
-                  },
-                  onSectionHere: ({required bool end}) {
-                    onUse?.call();
-                    unawaited(along.track.sectionHere(end: end));
-                  },
-                  onSectionClear: () {
-                    onUse?.call();
-                    unawaited(along.track.clearSection());
-                  },
-                  onPhrasesClear: () {
-                    onUse?.call();
-                    unawaited(along.track.clearPhrases());
-                  },
-                  onSpeed: (speed) {
-                    onUse?.call();
-                    unawaited(along.track.setSpeed(speed));
-                  },
+                  child: PlayAlongSidebar(
+                    width: sidebarWidth,
+                    library: along.library,
+                    eventId: along.eventId,
+                    track: along.track,
+                    linkFrame: linkFrame,
+                    toFollow: along.toFollow,
+                    followed: along.followed,
+                    footer: footer,
+                    onFollow: (page) {
+                      onUse?.call();
+                      along.follow(page);
+                    },
+                    onChoose: (page) {
+                      onUse?.call();
+                      unawaited(along.choose(page));
+                    },
+                    onStop: () {
+                      onUse?.call();
+                      unawaited(along.track.stop());
+                    },
+                    onToggle: () {
+                      onUse?.call();
+                      unawaited(along.track.toggle());
+                    },
+                    onSkip: (by) {
+                      onUse?.call();
+                      unawaited(along.track.skip(by));
+                    },
+                    onRepeat: () {
+                      onUse?.call();
+                      unawaited(along.track.setRepeat(!along.track.repeat));
+                    },
+                    onSection: (start, end) {
+                      onUse?.call();
+                      unawaited(along.track.setSection(start, end));
+                    },
+                    onSectionHere: ({required bool end}) {
+                      onUse?.call();
+                      unawaited(along.track.sectionHere(end: end));
+                    },
+                    onSectionClear: () {
+                      onUse?.call();
+                      unawaited(along.track.clearSection());
+                    },
+                    onPhrasesClear: () {
+                      onUse?.call();
+                      unawaited(along.track.clearPhrases());
+                    },
+                    onSpeed: (speed) {
+                      onUse?.call();
+                      unawaited(along.track.setSpeed(speed));
+                    },
+                  ),
                 ),
               ),
           ],
         );
       },
     ),
+  );
+}
+
+/// The play-along player's keys, while the keyboard is in the sidebar
+/// (a tap in it takes it there): **0** goes back to the start of the file
+/// or its section ([BackingTrack.restart]), the **space bar** pauses and
+/// plays it. Cam has its own keys and takes the keyboard back after a
+/// tap, handling the same ones.
+class PlayAlongKeys extends StatefulWidget {
+  const PlayAlongKeys({super.key, required this.track, required this.child});
+
+  final BackingTrack track;
+  final Widget child;
+
+  /// The keys that go back to the start: 0, on the top row or the keypad.
+  static final restart = {
+    LogicalKeyboardKey.digit0,
+    LogicalKeyboardKey.numpad0,
+  };
+
+  /// Whether [event] is 0 pressed alone (Ctrl / ⌘ + 0 is the browser's
+  /// zoom, left to it).
+  static bool isRestart(KeyEvent event) {
+    final keys = HardwareKeyboard.instance;
+    return restart.contains(event.logicalKey) &&
+        !keys.isControlPressed &&
+        !keys.isMetaPressed &&
+        !keys.isAltPressed;
+  }
+
+  @override
+  State<PlayAlongKeys> createState() => _PlayAlongKeysState();
+}
+
+class _PlayAlongKeysState extends State<PlayAlongKeys> {
+  final _focus = FocusNode(debugLabel: 'play-along keys');
+
+  @override
+  void dispose() {
+    _focus.dispose();
+    super.dispose();
+  }
+
+  KeyEventResult _key(FocusNode _, KeyEvent event) {
+    if (event is KeyUpEvent || widget.track.page == null) {
+      return KeyEventResult.ignored;
+    }
+    // Typing in a field isn't playing.
+    if (FocusManager.instance.primaryFocus?.context
+            ?.findAncestorWidgetOfExactType<EditableText>() !=
+        null) {
+      return KeyEventResult.ignored;
+    }
+    if (PlayAlongKeys.isRestart(event)) {
+      if (event is KeyDownEvent) unawaited(widget.track.restart());
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.space &&
+        widget.track.canToggle) {
+      if (event is KeyDownEvent) unawaited(widget.track.toggle());
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  @override
+  Widget build(BuildContext context) => Listener(
+    behavior: HitTestBehavior.translucent,
+    // A tap anywhere in the sidebar gives it the keyboard (its buttons
+    // don't take it), unless something in it already has it.
+    onPointerDown: (_) {
+      if (!_focus.hasFocus) _focus.requestFocus();
+    },
+    child: Focus(focusNode: _focus, onKeyEvent: _key, child: widget.child),
   );
 }
 

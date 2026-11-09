@@ -28,8 +28,8 @@ its **Not now** leaving. With Premium it opens the camera view
   shrunk to fit the screen's width (a long staff reads best with the
   phone turned sideways), with its number under it ("2 / 14"). A
   capture with no text tab yet says to read it first.
-- **Moving along the tab**: any key (but the space bar while a file
-  [plays along](#playing-along-with-a-file)) goes to the next neckline (a
+- **Moving along the tab**: any key (but the space bar and 0 while a
+  file [plays along](#playing-along-with-a-file)) goes to the next neckline (a
   keyboard, or a Bluetooth page-turner pedal); **Backspace**, **←**,
   **↑** and **Page Up** go to the one before. Shift, Control, Alt,
   Meta, Caps Lock, Fn and Escape pressed alone do nothing. A tap on the
@@ -283,6 +283,17 @@ the page beside it** / **Hide the page**).
   down; held, it doesn't repeat), and doesn't turn the tab; with the
   sidebar hidden, space turns the tab again. A tap in the sidebar or the
   frame gives the keys back to Cam.
+- **0** (on the top row or the keypad) goes back to the start of the
+  file, or of its section when one is set, playing on if it was playing
+  and staying paused if it wasn't (`BackingTrack.restart`; a link in
+  the frame goes back by Stop, then plays again if it played). Like
+  space, it doesn't turn the tab while the sidebar shows. Ctrl / ⌘ + 0
+  is left to the browser (its zoom).
+- **The keys outside Cam**: in the Text view and on a recording's file
+  screen, a tap in the sidebar gives it the keyboard
+  ([`PlayAlongKeys`](../tabcam_app/lib/capture/play_along_sidebar.dart)),
+  so **0** and the **space bar** work there as in Cam; typing in a field
+  (the Text view's editor) still types them.
 - **A link** straight to a sound or video file (its path ends in `.mp3`,
   `.m4a`, `.aac`, `.wav`, `.ogg`, `.oga`, `.opus`, `.flac`, `.mp4`,
   `.m4v`, `.mov` or `.webm`) plays in the app like a recording or video.
