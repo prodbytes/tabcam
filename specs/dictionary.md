@@ -5,10 +5,10 @@ every file viewer and of Cam: the [event screen](event-screen.md) in all
 its views (Files, Text, and the locked previews), the
 [file screen](event-screen.md#file-screen) for any file, Cam
 ([cam.md](cam.md)) with or without Premium, and a capture opened by its
-link. It's free for everyone, and takes nothing from the server: the
-chords and scales are worked out on the device
+link. It's free for everyone, and takes nothing from TabCam's servers:
+the chords and scales are worked out on the device
 ([`lib/dictionary/`](../tabcam_app/lib/dictionary/)); only a YouTube
-search leaves it.
+search leaves it, from the device straight to YouTube.
 
 It shows and hides the **Dictionary sidebar** on the right of the
 screen, as the play-along player's sidebar opens
@@ -85,13 +85,35 @@ focused, and under it, scrolling, what was typed is:
   `A natural minor` and `A aeolian` are scales (`C major` alone is the
   chord).
 - **Anything else** is a song (or whatever it is): the sidebar says
-  it's not a chord or a scale and offers **Search YouTube**; Enter (the
-  keyboard's search key) or the button opens YouTube's search for it
-  outside the app (a new tab, or the browser or YouTube app), as any
-  link opens ([event screen](event-screen.md)). Nothing is fetched by
-  the app.
+  it's not a chord or a scale and offers **Search YouTube**, a button
+  that opens YouTube's search for it outside the app (a new tab, or the
+  browser or YouTube app), as any link opens
+  ([event screen](event-screen.md)). Under it, once typing stops for
+  **two seconds** ("Searching YouTube…" and a progress bar meanwhile),
+  come **YouTube's results**, right there in the sidebar: eight videos,
+  each with its thumbnail, title (two lines at most) and channel, and
+  an open-in-new mark; a tap opens the video on YouTube outside the app,
+  in a new tab on the web ("Open on YouTube" as its tooltip). Enter (the
+  keyboard's search key) searches at once, without the wait. If the
+  search fails (offline, the quota spent), it says it couldn't load
+  YouTube's results; if YouTube finds nothing, it says so; the button
+  stays either way. A search typed again (on this screen or the next)
+  shows its results at once: the device keeps the last 50 searches'
+  results until the app closes, and asks YouTube once for each.
+  **How**: the device asks the YouTube Data API v3 (`search.list`,
+  videos only, title, channel and the medium thumbnail) itself
+  ([`youtube_search.dart`](../tabcam_app/lib/dictionary/youtube_search.dart)),
+  with the build's **API key**, `TABCAM_YOUTUBE_API_KEY` (a dart-define
+  from `.env`, or the GitHub variable of the same name in the Release,
+  Deploy and Deploy RC workflows). It's public, as it's in the app: a
+  Google Cloud key restricted to the YouTube Data API v3 only. The API
+  is free, so misuse can only spend its quota: 10,000 units a day, 100
+  a search, so about 100 searches a day for all users until Google
+  grants more (the YouTube API Services audit and quota form). No
+  TabCam server is involved. A build without the key shows the button
+  only, and Enter opens YouTube's search as the button does.
 
-Empty, the sidebar explains itself and offers examples to tap (`C`,
+Nothing typed, the sidebar explains itself and offers examples to tap (`C`,
 `Am7`, `F#m7b5`, `G/B`, `A minor pentatonic`, `E blues`, `D dorian`).
 In English, Spanish and Portuguese (the chord names and qualities are
 the same in every language).

@@ -2968,6 +2968,30 @@ abstract class AppLocalizations {
   /// **'Search YouTube'**
   String get dictionarySearchYouTube;
 
+  /// Dictionary: YouTube's results are on their way
+  ///
+  /// In en, this message translates to:
+  /// **'Searching YouTube…'**
+  String get dictionaryYouTubeSearching;
+
+  /// Dictionary: the YouTube search found nothing
+  ///
+  /// In en, this message translates to:
+  /// **'YouTube found no videos.'**
+  String get dictionaryYouTubeNone;
+
+  /// Dictionary: the YouTube search failed (offline, quota spent)
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load YouTube\'s results.'**
+  String get dictionaryYouTubeFailed;
+
+  /// Dictionary: tooltip of a YouTube result, which opens it in a new tab
+  ///
+  /// In en, this message translates to:
+  /// **'Open on YouTube'**
+  String get dictionaryYouTubeOpen;
+
   /// Dictionary: the fret a chord diagram starts at
   ///
   /// In en, this message translates to:

@@ -9,7 +9,9 @@
      transcribe: the Google or Apple account's email and name, the user
      IDs (Cognito identity, Google's, Apple's), and the captures (photos,
      videos, Cam's takes with their sound and audio recordings, files,
-     links, text). No tracking. The app's own code uses no required-reason
+     links, text). The dictionary's searches that aren't a chord or a
+     scale go to YouTube's search API for its results: search history,
+     not linked. No tracking. The app's own code uses no required-reason
      APIs. -->
 <plist version="1.0">
 <dict>
@@ -19,6 +21,18 @@
 	<array/>
 	<key>NSPrivacyCollectedDataTypes</key>
 	<array>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeSearchHistory</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeEmailAddress</string>

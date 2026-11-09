@@ -3,8 +3,11 @@
 /// player opens, where the user types a chord, a scale or anything else.
 /// A chord shows its notes and voicings, a scale its notes on the neck;
 /// anything else is searched on YouTube (the one thing that leaves the
-/// device).
+/// device): once typing stops for a couple of seconds, its results show
+/// under the field ([YouTubeSearch]).
 library;
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 
@@ -15,6 +18,7 @@ import '../screens/split_handle.dart';
 import 'diagrams.dart';
 import 'music_theory.dart';
 import 'voicings.dart';
+import 'youtube_search.dart';
 
 /// Whether the dictionary's sidebar shows, and what's typed in it,
 /// app-wide: open on one screen, it's open on the next (the capture, a
@@ -164,8 +168,9 @@ class DictionaryBeside extends StatelessWidget {
 }
 
 /// The dictionary's sidebar: its title and close button, the search
-/// field, and under it the chord, the scale, or the YouTube search for
-/// what was typed ([DictionaryState.query]).
+/// field, and under it the chord, the scale, or YouTube's results for
+/// what was typed ([DictionaryState.query]), searched once typing stops
+/// for [YouTubeSearch.wait].
 class DictionarySidebar extends StatefulWidget {
   const DictionarySidebar({super.key, required this.onClose});
 
@@ -181,6 +186,15 @@ class _DictionarySidebarState extends State<DictionarySidebar> {
   Lookup _lookup = const Other();
   List<Voicing> _voicings = const [];
 
+  /// YouTube's results for what's typed, while it's not a chord or a
+  /// scale: null until they come.
+  List<YouTubeVideo>? _videos;
+  bool _searching = false;
+  bool _failed = false;
+
+  /// Until typing has stopped for [YouTubeSearch.wait].
+  Timer? _wait;
+
   @override
   void initState() {
     super.initState();
@@ -189,6 +203,7 @@ class _DictionarySidebarState extends State<DictionarySidebar> {
 
   @override
   void dispose() {
+    _wait?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -196,12 +211,40 @@ class _DictionarySidebarState extends State<DictionarySidebar> {
   void _read(String query) {
     _state.query = query;
     final lookup = Lookup.of(query);
+    _wait?.cancel();
+    final youTube = YouTubeSearch.instance;
+    final searches =
+        lookup is Other && query.trim().isNotEmpty && youTube.available;
+    final cached = searches ? youTube.cached(query) : null;
     setState(() {
       _lookup = lookup;
       _voicings = switch (lookup) {
         ChordLookup(:final chord) => voicingsOf(chord),
         _ => const [],
       };
+      _videos = cached;
+      _searching = searches && cached == null;
+      _failed = false;
+    });
+    if (_searching) {
+      _wait = Timer(YouTubeSearch.wait, () => _searchYouTube(query));
+    }
+  }
+
+  Future<void> _searchYouTube(String query) async {
+    _wait?.cancel();
+    List<YouTubeVideo>? videos;
+    try {
+      videos = await YouTubeSearch.instance.search(query);
+    } on YouTubeSearchFailed {
+      videos = null;
+    }
+    // Typed on meanwhile: those results are for another search.
+    if (!mounted || _controller.text != query) return;
+    setState(() {
+      _videos = videos;
+      _searching = false;
+      _failed = videos == null;
     });
   }
 
@@ -211,11 +254,15 @@ class _DictionarySidebarState extends State<DictionarySidebar> {
     _read(query);
   }
 
-  /// Enter: a song (anything that's not a chord or a scale) goes to
-  /// YouTube.
+  /// Enter: a song (anything that's not a chord or a scale) is searched
+  /// on YouTube now, without the wait; in a build that can't search, it
+  /// opens YouTube's search.
   void _submit(String query) {
-    if (_lookup is Other && query.trim().isNotEmpty) {
+    if (_lookup is! Other || query.trim().isEmpty) return;
+    if (!YouTubeSearch.instance.available) {
       openLink(context, youTubeSearch(query));
+    } else if (_searching && _wait!.isActive) {
+      _searchYouTube(query);
     }
   }
 
@@ -291,7 +338,12 @@ class _DictionarySidebarState extends State<DictionarySidebar> {
                 ),
                 ScaleLookup(:final scale) => _ScaleResult(scale: scale),
                 Other() when query.trim().isEmpty => _Intro(onExample: _set),
-                Other() => _YouTubeResult(query: query),
+                Other() => _YouTubeResult(
+                  query: query,
+                  videos: _videos,
+                  searching: _searching,
+                  failed: _failed,
+                ),
               },
             ),
           ),
@@ -435,14 +487,29 @@ class _ScaleResult extends StatelessWidget {
   }
 }
 
+/// Not a chord or a scale: the button to YouTube's search and, under it,
+/// the videos it found ([videos]), each opening in a new tab.
 class _YouTubeResult extends StatelessWidget {
-  const _YouTubeResult({required this.query});
+  const _YouTubeResult({
+    required this.query,
+    required this.videos,
+    required this.searching,
+    required this.failed,
+  });
 
   final String query;
+  final List<YouTubeVideo>? videos;
+  final bool searching;
+  final bool failed;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final muted = theme.textTheme.bodyMedium?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    final videos = this.videos;
     return Column(
       key: const Key('dictionary-youtube'),
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -455,7 +522,110 @@ class _YouTubeResult extends StatelessWidget {
           label: Text(l10n.dictionarySearchYouTube),
           onPressed: () => openLink(context, youTubeSearch(query)),
         ),
+        if (searching) ...[
+          const SizedBox(height: 16),
+          Text(l10n.dictionaryYouTubeSearching, style: muted),
+          const SizedBox(height: 8),
+          const LinearProgressIndicator(
+            key: Key('dictionary-youtube-searching'),
+          ),
+        ] else if (failed) ...[
+          const SizedBox(height: 16),
+          Text(l10n.dictionaryYouTubeFailed, style: muted),
+        ] else if (videos != null && videos.isEmpty) ...[
+          const SizedBox(height: 16),
+          Text(l10n.dictionaryYouTubeNone, style: muted),
+        ] else if (videos != null) ...[
+          const SizedBox(height: 12),
+          for (final video in videos) _VideoTile(video: video),
+        ],
       ],
+    );
+  }
+}
+
+/// One of YouTube's results: its thumbnail, title and channel; a tap
+/// opens it outside the app (a new tab on the web).
+class _VideoTile extends StatelessWidget {
+  const _VideoTile({required this.video});
+
+  final YouTubeVideo video;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final thumbnail = video.thumbnail;
+    return Tooltip(
+      message: context.l10n.dictionaryYouTubeOpen,
+      waitDuration: const Duration(milliseconds: 600),
+      child: InkWell(
+        key: Key('dictionary-video-${video.id}'),
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => openLink(context, video.url),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: LayoutBuilder(
+            builder: (context, box) {
+              // A third of the sidebar, from 72 to 160 px.
+              final width = (box.maxWidth * 0.36).clamp(72.0, 160.0);
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: SizedBox(
+                      width: width,
+                      height: width * 9 / 16,
+                      child: ColoredBox(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        child: thumbnail == null
+                            ? const Icon(Icons.smart_display_outlined)
+                            : Image.network(
+                                '$thumbnail',
+                                fit: BoxFit.cover,
+                                webHtmlElementStrategy:
+                                    WebHtmlElementStrategy.fallback,
+                                errorBuilder: (_, _, _) =>
+                                    const Icon(Icons.smart_display_outlined),
+                              ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          video.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          video.channel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.open_in_new,
+                    size: 16,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
     );
   }
 }

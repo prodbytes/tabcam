@@ -2248,3 +2248,19 @@ spec.
    `x`: a ghost note or palm mute (muted, no pitch), in English, Spanish
    and Portuguese. See
    [tab recognition](tab-recognition.md) (Notation sheet).
+
+8. **In the dictionary, after a couple of seconds, if what's typed is
+   not a chord or a scale, show YouTube's search results right below,
+   in the same sidebar, with a link to open each in a new tab.** Once
+   typing stops for two seconds (Enter: at once), the sidebar asks the
+   YouTube Data API's search from the device (`YouTubeSearch`, with the
+   build's public API key `TABCAM_YOUTUBE_API_KEY`, passed by
+   `scripts/dart-defines.sh` and the workflows) and lists eight videos
+   under the Search YouTube button, each with its thumbnail, title and
+   channel, opening on YouTube in a new tab. It says so while it
+   searches, when it fails and when nothing is found; the last 50
+   searches' results are kept on the device. Without a key the sidebar
+   is as before. The privacy policy, `specs/privacy.md`, the store
+   answers and the iOS privacy manifest declare the searches (search
+   history, not linked). In English, Spanish and Portuguese. See
+   [dictionary](dictionary.md) and [privacy](privacy.md).

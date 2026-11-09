@@ -33,6 +33,10 @@
 #   TABCAM_OCR_URL
 #                TabCam Premium's cloud OCR (tabcam-ocr's ApiUrl,
 #                from tabcam_locr/scripts/deploy.sh); empty: no Premium
+#   TABCAM_YOUTUBE_API_KEY
+#                the dictionary's YouTube results (a Google API key
+#                restricted to the YouTube Data API v3); empty: none,
+#                only the link to YouTube's search
 # Needs the AWS CLI, Python 3 and Flutter (all in devbox).
 set -euo pipefail
 
