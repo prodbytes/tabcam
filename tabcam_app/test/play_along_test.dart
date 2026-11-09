@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:camera_platform_interface/camera_platform_interface.dart';
 
 import 'package:camera/camera.dart';
@@ -876,6 +878,117 @@ void main() {
     });
     await frames(tester);
     expect(pane, findsNothing);
+  });
+
+  testWidgets('Phrase passes: recording along with a song notes each turn '
+      'at its position, marked in its player; another time through, '
+      'auto-pass turns the tab there (a pass by hand right after it is the '
+      'same pass); off, it does not; forgotten, they are gone', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    late String song;
+    await tester.runAsync(() async {
+      final event = await library.addMedia(library.byId(id)!, [
+        Media(
+          XFile.fromData(Uint8List.fromList([1]), name: 'song.m4a'),
+          PageKind.audio,
+          'm4a',
+        ),
+      ]);
+      song = event.pages.last.id;
+    });
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          burn: (take, _) async => take,
+        ),
+      ),
+    );
+    await frames(tester);
+    Future<void> at(num seconds) async {
+      video.position = Duration(milliseconds: (seconds * 1000).round());
+      await frames(tester);
+    }
+
+    Future<void> pass() async {
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+      await frames(tester);
+    }
+
+    // The song plays from its start, and Cam records along with it.
+    video.position = Duration.zero;
+    await tester.tap(find.byKey(const Key('cam-along-toggle')));
+    await frames(tester);
+    await tester.tap(find.byTooltip('Rec'));
+    await frames(tester);
+    await at(10);
+    await pass();
+    expect(find.text('2 / 3'), findsOneWidget);
+    await at(20);
+    await pass();
+    expect(find.text('3 / 3'), findsOneWidget);
+    await tester.tap(_camStop);
+    await until(tester, () => recReady(tester));
+
+    var event = library.byId(id)!;
+    expect(event.phrases[song]!.passes, [
+      const PhrasePass(Duration(seconds: 10), PassDirection.next, 1),
+      const PhrasePass(Duration(seconds: 20), PassDirection.next, 2),
+    ]);
+    // The take keeps its own, and no file holds them: the photo, the song
+    // and the take are all the capture has.
+    final take = event.pages.last;
+    expect(take.title, 'Take 1');
+    // (The take's clock is the wall's: its two turns, a moment apart here,
+    // are one pass, to where they went.)
+    expect(event.phrases[take.id]!.passes.last.line, 2);
+    expect(event.pages, hasLength(3));
+    // Marked on the song's progress bar.
+    expect(find.byKey(const Key('cam-along-phrase-marks')), findsOneWidget);
+    expect(find.text('2 phrase passes'), findsOneWidget);
+
+    // Back at the start (the song repeating): the first line again; each
+    // pass turns the tab as the song passes it.
+    await at(1);
+    expect(find.text('1 / 3'), findsOneWidget);
+    for (final t in [2.5, 4, 5.5, 7, 8.5, 9.9]) {
+      await at(t);
+    }
+    expect(find.text('1 / 3'), findsOneWidget);
+    await at(10.5);
+    expect(find.text('2 / 3'), findsOneWidget);
+    // Passed by hand too, right after: the same pass, not one more; once.
+    await at(11);
+    await pass();
+    expect(find.text('2 / 3'), findsOneWidget);
+    await pass();
+    expect(find.text('3 / 3'), findsOneWidget);
+
+    // Off (kept on the device): the tab stays where the user leaves it.
+    expect(find.text('Auto-pass'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('cam-auto-pass')));
+    await frames(tester);
+    expect(
+      find.byTooltip('Auto-pass off: the tab turns only when you turn it'),
+      findsOneWidget,
+    );
+    await at(1);
+    expect(find.text('3 / 3'), findsOneWidget);
+    String? settings;
+    await tester.runAsync(() async => settings = await library.readMeta('cam'));
+    expect(jsonDecode(settings!), {'autoPass': false});
+
+    // Forgotten: no marks, nothing kept.
+    await tester.tap(find.byKey(const Key('cam-along-phrases-clear')));
+    await frames(tester);
+    event = library.byId(id)!;
+    expect(event.phrases.containsKey(song), isFalse);
+    expect(find.byKey(const Key('cam-along-phrases')), findsNothing);
+    expect(find.byKey(const Key('cam-along-phrase-marks')), findsNothing);
   });
 
   testWidgets('the text tab is listed first in the sidebar to follow; '

@@ -609,6 +609,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get camShowTab => 'Mostrar tablatura';
 
   @override
+  String get camAutoPass => 'Paso automático';
+
+  @override
+  String get camAutoPassOn =>
+      'Paso automático activado: la tablatura avanza sola donde la pasaste en la canción';
+
+  @override
+  String get camAutoPassOff =>
+      'Paso automático desactivado: la tablatura avanza solo cuando la pasas';
+
+  @override
   String get camPrevious => 'Línea anterior';
 
   @override
@@ -711,6 +722,20 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get camAlongSectionClear => 'Reproducir todo';
+
+  @override
+  String camAlongPhrases(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pasos de frase',
+      one: '1 paso de frase',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get camAlongPhrasesClear => 'Olvidar los pasos de frase';
 
   @override
   String get camAlongSpeed =>

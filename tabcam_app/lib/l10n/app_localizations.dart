@@ -1042,6 +1042,24 @@ abstract class AppLocalizations {
   /// **'Show tab'**
   String get camShowTab;
 
+  /// Cam: label of the button beside Hide tab that switches auto-pass on and off (the tab turns by itself where it turned before while the same song played)
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-pass'**
+  String get camAutoPass;
+
+  /// Cam: auto-pass button tooltip while it's on
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-pass on: the tab turns by itself where you turned it along the song'**
+  String get camAutoPassOn;
+
+  /// Cam: auto-pass button tooltip while it's off
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-pass off: the tab turns only when you turn it'**
+  String get camAutoPassOff;
+
   /// Cam: previous neckline tooltip
   ///
   /// In en, this message translates to:
@@ -1221,6 +1239,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Play all of it'**
   String get camAlongSectionClear;
+
+  /// Cam's player: how many phrase passes (times the tab turned while recording along) the song has; marked on its progress bar
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 phrase pass} other{{count} phrase passes}}'**
+  String camAlongPhrases(int count);
+
+  /// Cam's player: forgets the song's phrase passes, so auto-pass no longer turns the tab along it
+  ///
+  /// In en, this message translates to:
+  /// **'Forget the phrase passes'**
+  String get camAlongPhrasesClear;
 
   /// Cam: the slider that slows down (or speeds up) the file playing along; the pitch stays.
   ///

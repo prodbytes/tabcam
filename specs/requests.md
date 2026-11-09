@@ -2171,7 +2171,29 @@ spec.
 
 ## 2026-11-09
 
-1. **In the mini player sidebar, also add a link to open the text, as
+1. **In Cam, when recording, note each phrase pass (arrows, keys or a
+   head gesture), its time and direction, in a file apart from the
+   video, and show it in the mini player; the next time through the song
+   (it loops, or plays again), turn the phrase by itself at those times;
+   passes within two seconds of each other merge at their average time.
+   A switch beside Hide tab turns this auto-pass on and off. The timings
+   show in no list or sidebar.** While recording with a song playing in
+   the play-along player, each turn of the tab is noted at the song's
+   position with its direction and the neckline it went to
+   (`PhraseTimes`, `BackingTrack.recordPass`), merged into one the same
+   way within two seconds at their average (weighted by how many each
+   holds), and kept apart from the video in the capture's `event.json`
+   as `phrases` by song (a reader's in their own contribution), so it
+   syncs and clones but is no file in any list; the take keeps its own
+   from its necklines. The player marks each pass on the song's
+   progress bar, with their count and ✕ to forget them. **Auto-pass**
+   (beside Tab, on by default, kept on the device) follows the song's
+   position every 100 ms and turns the tab at each pass, and after a
+   jump (Repeat starting over, «, », a scrub) shows the neckline the
+   passes give there (`AutoPass`); a pass by hand the same way within two
+   seconds after one it made counts as that one. In English, Spanish
+   and Portuguese. See [Cam](cam.md#phrase-passes).
+2. **In the mini player sidebar, also add a link to open the text, as
    the first one, opening it to the side, just like documents and
    pages, but now with the text.** In Cam and on the file screen (beside
    a PDF, an image or a recording) the play-along sidebar's list now
