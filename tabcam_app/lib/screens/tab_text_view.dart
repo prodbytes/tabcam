@@ -28,7 +28,7 @@ import 'mono_font.dart';
 /// see [showFix]): lines the tab up, then with Premium auto-correct: the
 /// song's tab found online proposes corrections, shown per note for the
 /// user to accept or reject; **Rescan**, reading the tab from the pages
-/// again; and **Verified**, a toggle marking the text checked (the event
+/// again (a timer counts while it reads); and **Verified**, a toggle marking the text checked (the event
 /// then opens on its Text view, and no read replaces it). On the row's
 /// left, the editing tools, outlined: **−** and **+** change the fret
 /// under the cursor, **++** and **−−** move its note to the string above
@@ -45,6 +45,7 @@ class TabTextView extends StatefulWidget {
     this.onUpgrade,
     this.onRescan,
     this.rescanning = false,
+    this.rescanStarted,
     this.showFix = fixEnabled,
     this.sample,
     this.actions,
@@ -71,6 +72,10 @@ class TabTextView extends StatefulWidget {
   /// Rescan is reading the pages: it spins, and the text and its buttons
   /// wait (the text stays until a tab found replaces it).
   final bool rescanning;
+
+  /// When Rescan's read started: while [rescanning], a timer after
+  /// "Rescanning the pages…" counts from it (m:ss).
+  final DateTime? rescanStarted;
 
   /// Whether the Fix button shows ([fixEnabled] unless a test says).
   final bool showFix;
@@ -486,11 +491,17 @@ class _TabTextViewState extends State<TabTextView> {
           const LinearProgressIndicator(),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Text(
-              _checking
-                  ? context.l10n.textViewLookingOnline
-                  : context.l10n.textViewRescanning,
-            ),
+            child: _checking
+                ? Text(context.l10n.textViewLookingOnline)
+                : Row(
+                    children: [
+                      Flexible(child: Text(context.l10n.textViewRescanning)),
+                      if (widget.rescanStarted case final since?) ...[
+                        const SizedBox(width: 8),
+                        _Elapsed(key: const Key('rescan-timer'), since: since),
+                      ],
+                    ],
+                  ),
           ),
         ],
         Expanded(
@@ -775,6 +786,49 @@ class _TabTextViewState extends State<TabTextView> {
       ),
     );
   }
+}
+
+/// [elapsed] as m:ss (h:mm:ss from an hour on): Rescan's timer, and how
+/// long it took.
+String elapsedText(Duration elapsed) {
+  String two(int n) => n.toString().padLeft(2, '0');
+  final s = elapsed.isNegative ? 0 : elapsed.inSeconds;
+  return s >= 3600
+      ? '${s ~/ 3600}:${two(s ~/ 60 % 60)}:${two(s % 60)}'
+      : '${s ~/ 60}:${two(s % 60)}';
+}
+
+/// The time since [since] ([elapsedText]), counting each second, in
+/// figures of one width so it doesn't jiggle.
+class _Elapsed extends StatefulWidget {
+  const _Elapsed({super.key, required this.since});
+
+  final DateTime since;
+
+  @override
+  State<_Elapsed> createState() => _ElapsedState();
+}
+
+class _ElapsedState extends State<_Elapsed> {
+  late final Timer _tick;
+
+  @override
+  void initState() {
+    super.initState();
+    _tick = Timer.periodic(const Duration(seconds: 1), (_) => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _tick.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Text(
+    elapsedText(DateTime.now().difference(widget.since)),
+    style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()]),
+  );
 }
 
 /// The Text view's text, its doubtful notes ([doubts], where they still
