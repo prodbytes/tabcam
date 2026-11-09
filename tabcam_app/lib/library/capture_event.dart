@@ -4,8 +4,10 @@ import 'dart:math';
 import '../processing/page_filter.dart';
 import '../recognition/tab_doubts.dart';
 import 'page_edit.dart';
+import 'phrase_times.dart';
 
 export 'page_edit.dart';
+export 'phrase_times.dart';
 
 /// What a page is: a picture of the tab, a video (someone playing it, a
 /// lesson), a recording, a PDF (the tab as a document), or a link (a lesson
@@ -192,6 +194,7 @@ class Contribution {
     required this.updated,
     this.pages = const [],
     this.email,
+    this.phrases = const {},
   });
 
   /// Whose it is: their Cognito identity (their folder's name). Null for
@@ -206,16 +209,23 @@ class Contribution {
   /// once known); never in the cloud copy.
   final String? email;
 
+  /// Their own [PhraseTimes] for the capture's songs (theirs and the
+  /// owner's), by page ID: what they passed in Cam, which the owner's
+  /// capture can't keep for them.
+  final Map<String, PhraseTimes> phrases;
+
   Contribution copyWith({
     String? by,
     DateTime? updated,
     List<EventPage>? pages,
     String? email,
+    Map<String, PhraseTimes>? phrases,
   }) => Contribution(
     by: by ?? this.by,
     updated: updated ?? this.updated,
     pages: pages ?? this.pages,
     email: email ?? this.email,
+    phrases: phrases ?? this.phrases,
   );
 
   /// As saved: on the device with [by] and [email]; the cloud copy
@@ -224,6 +234,7 @@ class Contribution {
   Map<String, Object?> toJson({bool local = true}) => {
     'updated': updated.toUtc().toIso8601String(),
     'pages': [for (final p in pages) p.toJson()],
+    if (phrases.isNotEmpty) 'phrases': PhraseTimes.mapToJson(phrases),
     if (local && by != null) 'by': by,
     if (local && email != null) 'email': email,
   };
@@ -236,6 +247,7 @@ class Contribution {
         EventPage.fromJson((p as Map).cast<String, Object?>()),
     ],
     email: json['email'] as String?,
+    phrases: PhraseTimes.mapFromJson(json['phrases'], checkId),
   );
 }
 
@@ -263,6 +275,7 @@ class CaptureEvent {
     this.readOnly = false,
     this.linkKey,
     this.contributions = const [],
+    this.phrases = const {},
   }) : updated = updated ?? created;
 
   /// What's left of [event] once deleted: a tombstone, so the deletion
@@ -355,6 +368,11 @@ class CaptureEvent {
   /// (each syncs with its own folder), never in the capture's event.json.
   final List<Contribution> contributions;
 
+  /// When the tab turned while each of its songs (a recording or video,
+  /// by page ID) played in Cam ([PhraseTimes]): kept in event.json with
+  /// the rest, no file of its own, so no list shows it.
+  final Map<String, PhraseTimes> phrases;
+
   /// The user's own contribution, on a capture they [contributes] to.
   Contribution? get myContribution =>
       contributes ? contributions.firstOrNull : null;
@@ -408,6 +426,7 @@ class CaptureEvent {
     bool? readOnly,
     String? linkKey,
     List<Contribution>? contributions,
+    Map<String, PhraseTimes>? phrases,
   }) => CaptureEvent(
     id: id,
     title: title ?? this.title,
@@ -428,6 +447,7 @@ class CaptureEvent {
     readOnly: readOnly ?? this.readOnly,
     linkKey: linkKey ?? this.linkKey,
     contributions: contributions ?? this.contributions,
+    phrases: phrases ?? this.phrases,
   );
 
   /// The event as saved: with its [owner] and [shares]; on the device
@@ -451,6 +471,7 @@ class CaptureEvent {
     if (owner != null) 'owner': owner,
     if (shares.isNotEmpty) 'shares': [for (final s in shares) s.toJson()],
     if (linkKey != null) 'linkKey': linkKey,
+    if (phrases.isNotEmpty) 'phrases': PhraseTimes.mapToJson(phrases),
     if (local && sharedBy != null) 'sharedBy': sharedBy,
     if (local && readOnly) 'readOnly': true,
     if (local && contributions.isNotEmpty)
@@ -497,6 +518,7 @@ class CaptureEvent {
         for (final c in json['contributions'] as List? ?? const [])
           Contribution.fromJson((c as Map).cast<String, Object?>()),
       ],
+      phrases: PhraseTimes.mapFromJson(json['phrases'], checkId),
     );
   }
 }

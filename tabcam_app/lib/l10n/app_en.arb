@@ -801,6 +801,18 @@
   "@camShowTab": {
     "description": "Cam: shows the hidden text tab along the bottom of the screen again"
   },
+  "camAutoPass": "Auto-pass",
+  "@camAutoPass": {
+    "description": "Cam: label of the button beside Hide tab that switches auto-pass on and off (the tab turns by itself where it turned before while the same song played)"
+  },
+  "camAutoPassOn": "Auto-pass on: the tab turns by itself where you turned it along the song",
+  "@camAutoPassOn": {
+    "description": "Cam: auto-pass button tooltip while it's on"
+  },
+  "camAutoPassOff": "Auto-pass off: the tab turns only when you turn it",
+  "@camAutoPassOff": {
+    "description": "Cam: auto-pass button tooltip while it's off"
+  },
   "camPrevious": "Previous line",
   "@camPrevious": {
     "description": "Cam: previous neckline tooltip"
@@ -945,6 +957,19 @@
   "camAlongSectionClear": "Play all of it",
   "@camAlongSectionClear": {
     "description": "Cam: drops the section; the whole file plays again."
+  },
+  "camAlongPhrases": "{count, plural, =1{1 phrase pass} other{{count} phrase passes}}",
+  "@camAlongPhrases": {
+    "description": "Cam's player: how many phrase passes (times the tab turned while recording along) the song has; marked on its progress bar",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "camAlongPhrasesClear": "Forget the phrase passes",
+  "@camAlongPhrasesClear": {
+    "description": "Cam's player: forgets the song's phrase passes, so auto-pass no longer turns the tab along it"
   },
   "camAlongSpeed": "Speed: slower to the left, faster to the right",
   "@camAlongSpeed": {

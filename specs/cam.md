@@ -125,6 +125,54 @@ its **Not now** leaving. With Premium it opens the camera view
   turns (keys, taps, head gestures, a take playing back) and a take
   still gets it burned in where it showed; it's only off the screen.
   It shows again each time Cam opens.
+- <a id="phrase-passes"></a>**Phrase passes**: while recording, each
+  time the user turns the tab (a key, a tap on the neckline or its
+  arrows, a head gesture) with a song playing in the sidebar's
+  [player](#playing-along-with-a-file) (one that plays in the app: a
+  recording or video of the capture's, or a link straight to a sound or
+  video file, not a page in a frame), the song's position is noted, with
+  which way it turned (**next** or **previous**) and the neckline it
+  turned to ([`PhraseTimes`](../tabcam_app/lib/library/phrase_times.dart),
+  `BackingTrack.recordPass`, the position read from the player itself).
+  A pass within **two seconds** of one the same way (this time through
+  or an earlier one) is merged into it, at their **average** time (each
+  pass merged into it counting, so it settles as the song is played
+  again), keeping the newer's neckline; one moved within two seconds of
+  another the same way merges with it too. Passes are only noted while
+  recording, and only while the song plays.
+  - **Kept** with the capture, not in the video and not as a file: in
+    its `event.json`, as `phrases`, by the song's page ID (each pass
+    `{"ms", "dir": "next" | "previous", "line", "n"}`), so it syncs and
+    clones with the capture, and no list, sidebar or export shows it. On
+    a capture shared to read, they go to the user's own
+    [contribution](contributions.md) (its `contrib.json`), taking the
+    owner's place for them. They're saved when the take is (Stop, or
+    leaving Cam), not each pass. Songs since deleted are let go of.
+  - **The take** keeps its own too, from when its necklines showed
+    (merged the same way), so played along later it turns the tab as it
+    turned in it.
+  - **In the player**: a tick across the song's progress bar at each
+    pass (in the theme's primary colour), and under it how many there
+    are ("3 phrase passes") with **✕** (Forget the phrase passes), which
+    drops them. The same frame shows them beside the Text view and on
+    the file screen.
+- <a id="auto-pass"></a>**Auto-pass** (beside Tab: its icon in the
+  primary colour while on, struck through while off; on by default,
+  kept on the device in the `cam` meta file): while a song with phrase
+  passes plays in the player, Cam turns the tab by itself where they
+  are ([`AutoPass`](../tabcam_app/lib/capture/auto_pass.dart)), reading
+  the song's position every 100 ms: as the song passes one, the tab
+  goes to its neckline. When the song jumps (it starts over at its end
+  or its section's with Repeat, «, », a scrub, Play from the start, or
+  auto-pass switched on), the tab goes to the neckline the passes show
+  there: the last one's before it, or the first one's previous line
+  before it. A pass by hand the same way within two seconds after
+  auto-pass made one is taken as that pass: it doesn't turn the tab
+  again (once; a second one does), and, recording, its time is merged
+  into it; one by hand just before a pass is noted as usual, and the
+  pass then finds the tab already there. While a take plays back, or
+  the song is paused, it does nothing. Off, the tab turns only by
+  hand, and passes are still noted while recording.
 
 <a id="playing-along-with-a-file"></a>**Playing along with a file**:
 when the capture has recordings, videos or links (or, in Cam, PDFs to
@@ -194,7 +242,8 @@ the page beside it** / **Hide the page**).
 - **The frame**, as wide as the sidebar and at most a third of the
   screen's height (on a short screen the video shrinks first, so the
   list under it keeps at least two rows): a video (or a link's page, 16:9) above a progress bar
-  to scrub; a recording only the progress bar; under them its icon and
+  to scrub (marked where its [phrase passes](#phrase-passes) are, with
+  their count and ✕ under it); a recording only the progress bar; under them its icon and
   name in small type, then **«** (10 seconds back, not before the
   start), **Play** / **Pause**, **Stop** (pauses it, back at its start),
   **»** (10 seconds forward) and **Repeat** (on by default, in the

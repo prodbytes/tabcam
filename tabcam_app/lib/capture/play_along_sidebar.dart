@@ -389,6 +389,10 @@ class PlayAlongBeside extends StatelessWidget {
                     onUse?.call();
                     unawaited(along.track.clearSection());
                   },
+                  onPhrasesClear: () {
+                    onUse?.call();
+                    unawaited(along.track.clearPhrases());
+                  },
                   onSpeed: (speed) {
                     onUse?.call();
                     unawaited(along.track.setSpeed(speed));
@@ -503,6 +507,7 @@ class _BackingFrame extends StatelessWidget {
     required this.onSectionHere,
     required this.onSectionClear,
     required this.onSpeed,
+    this.onPhrasesClear,
   });
 
   final String eventId;
@@ -516,6 +521,7 @@ class _BackingFrame extends StatelessWidget {
   final void Function({required bool end}) onSectionHere;
   final VoidCallback onSectionClear;
   final void Function(double speed) onSpeed;
+  final VoidCallback? onPhrasesClear;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -527,6 +533,7 @@ class _BackingFrame extends StatelessWidget {
       final event = track.library.byId(eventId);
       final media = track.media;
       final link = track.link;
+      final phrases = track.phrases;
       // As wide as the sidebar, at most a third of the screen's height
       // (taller, the sidebar's column runs out of room on a short screen).
       final maxHeight = MediaQuery.sizeOf(context).height / 3;
@@ -565,10 +572,32 @@ class _BackingFrame extends StatelessWidget {
             if (content != null)
               Flexible(child: Center(heightFactor: 1, child: content)),
             if (media != null)
-              VideoProgressIndicator(
-                media,
-                allowScrubbing: true,
-                padding: const EdgeInsets.symmetric(vertical: 4),
+              Stack(
+                children: [
+                  VideoProgressIndicator(
+                    media,
+                    allowScrubbing: true,
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                  ),
+                  if (phrases.isNotEmpty)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: CustomPaint(
+                          key: const Key('cam-along-phrase-marks'),
+                          painter: _PhraseMarks(
+                            phrases,
+                            media.value.duration,
+                            Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            if (phrases.isNotEmpty)
+              _PhrasesBar(
+                count: phrases.passes.length,
+                onClear: onPhrasesClear ?? () => track.clearPhrases(),
               ),
             if (track.canSection)
               _SectionBar(
@@ -699,6 +728,7 @@ class PlayAlongSidebar extends StatelessWidget {
     required this.onSectionHere,
     required this.onSectionClear,
     required this.onSpeed,
+    this.onPhrasesClear,
     this.width,
   });
 
@@ -722,6 +752,10 @@ class PlayAlongSidebar extends StatelessWidget {
   final void Function({required bool end}) onSectionHere;
   final VoidCallback onSectionClear;
   final void Function(double speed) onSpeed;
+
+  /// Forgets the phrase passes of what plays; null: the track forgets
+  /// them itself.
+  final VoidCallback? onPhrasesClear;
 
   /// Its default width on a screen [screen] wide: half of it, from 160
   /// to 360 px; the user drags it wider or narrower ([PlayAlongBeside]).
@@ -776,6 +810,7 @@ class PlayAlongSidebar extends StatelessWidget {
                           onSectionHere: onSectionHere,
                           onSectionClear: onSectionClear,
                           onSpeed: onSpeed,
+                          onPhrasesClear: onPhrasesClear,
                         ),
                       ),
                       Expanded(child: _list(context, l10n)),
@@ -891,6 +926,72 @@ IconData _icon(EventPage page) => switch (page) {
     Icons.smart_display_outlined,
   _ => Icons.link,
 };
+
+/// Where the tab turns along the song ([BackingTrack.phrases]): a tick
+/// across the progress bar at each phrase pass.
+class _PhraseMarks extends CustomPainter {
+  _PhraseMarks(this.times, this.length, this.color);
+
+  final PhraseTimes times;
+  final Duration length;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final ms = length.inMilliseconds;
+    if (ms <= 0) return;
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 2;
+    for (final p in times.passes) {
+      final x = size.width * (p.at.inMilliseconds / ms).clamp(0.0, 1.0);
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_PhraseMarks old) =>
+      old.times != times || old.length != length || old.color != color;
+}
+
+/// Under the progress bar while a song has phrase passes: how many, and
+/// ✕ to forget them.
+class _PhrasesBar extends StatelessWidget {
+  const _PhrasesBar({required this.count, required this.onClear});
+
+  final int count;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final primary = Theme.of(context).colorScheme.primary;
+    return Row(
+      key: const Key('cam-along-phrases'),
+      children: [
+        const SizedBox(width: 8),
+        Icon(Icons.auto_mode, size: 14, color: primary),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            l10n.camAlongPhrases(count),
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: primary, fontSize: 12),
+          ),
+        ),
+        IconButton(
+          key: const Key('cam-along-phrases-clear'),
+          tooltip: l10n.camAlongPhrasesClear,
+          visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+          color: Colors.white70,
+          iconSize: 16,
+          icon: const Icon(Icons.close),
+          onPressed: onClear,
+        ),
+      ],
+    );
+  }
+}
 
 /// The section of a recording or video that repeats: a range over the
 /// whole file (dragging either end sets it), its times, and buttons to
