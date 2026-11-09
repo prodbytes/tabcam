@@ -244,7 +244,8 @@ void main() {
     await _frames(tester);
     await tester.tap(find.byKey(const Key('text')));
     await _frames(tester);
-    // Closed: the text and its tools have the width, all on one line.
+    // Closed: the text and its tools have the width, Overtype first on
+    // the tools' first line.
     expect(find.byKey(const Key('cam-along-sidebar')), findsNothing);
     final fretUp = find.byTooltip('Fret up (the number under the cursor)');
     expect(
@@ -265,10 +266,10 @@ void main() {
     );
     expect(plus.width, closeTo(40, 0.5));
     // Every tool left of the sidebar: on more lines, not past the edge.
-    final overtype = tester.getRect(find.byKey(const Key('text-overtype')));
-    expect(overtype.width, closeTo(40, 0.5));
-    expect(overtype.right, lessThanOrEqualTo(sidebar.left));
-    expect(overtype.top, greaterThan(plus.top));
+    final last = tester.getRect(find.byKey(const Key('text-new-phrase')));
+    expect(last.width, closeTo(40, 0.5));
+    expect(last.right, lessThanOrEqualTo(sidebar.left));
+    expect(last.top, greaterThan(plus.top));
 
     // The notation sheet, its lines wrapped in the narrow sidebar, takes
     // at most 30% of it and scrolls; the player keeps its buttons, whole

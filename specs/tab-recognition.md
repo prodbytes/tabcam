@@ -294,19 +294,24 @@ while on), and there the event screen's other buttons go in a menu
   changed.
 
 <a id="editing-tools"></a>**Editing tools**, on their own line above
-the text, outlined so they read as buttons (none while Fix's review
-shows, or on a capture shared read only). They keep their full size:
-where the line is too narrow for them (a phone with the play-along
-sidebar open beside the text) they go on to a second line rather than
-shrink. On a screen narrower than 600 px they sit closer (4 px apart)
-and each one's tap area is its 40 px button (a tool written as text,
-`++` or `||`, fits its text in an icon's 24 px box), so on a 390 px
-phone with the sidebar closed, as it starts there, all eight fit on one
-line. The locked preview keeps
+the text, round outlined icon buttons, all the same size (none while
+Fix's review shows, or on a capture shared read only). They keep their
+full size: where the line is too narrow for them they go on to a second
+line rather than shrink. On a screen narrower than 600 px they sit
+closer (4 px apart) and each one's tap area is its 40 px button (a tool
+written as text, `++` or `|>`, fits its text in an icon's 24 px box), so
+on a 390 px phone the first eight fit on the first line and the last
+two go on a second. The locked preview keeps
 Copy and Verified on this line, on its right, scaled down and greyed
 under the Premium card
 ([lib/screens/tab_editing.dart](../tabcam_app/lib/screens/tab_editing.dart)):
 
+- **Overtype**, first, set apart from the edits: a toggle (on by
+  default; filled while on, outlined while off; tap to switch to
+  insert), its keyboard icon's tooltip saying which mode. On, typing
+  replaces the characters after the cursor on its line instead of
+  pushing them right, and backspace on a line of a phrase leaves a
+  dash, so the columns stay lined up. Enter still breaks the line.
 - **−** and **+**: the fret number under the cursor (or just before it),
   one or two digits, goes down or up by one (15 + → 16, 5 + → 6), from 0
   to 99. Going from 9 to 10 takes the dash after it, from 10 to 9 leaves
@@ -328,27 +333,37 @@ under the Premium card
   dashes and the new bar becomes its closing bar. The cursor ends just
   after the new bar. With the cursor off the strings, it says to put it
   on a string line.
-- **||**: every string ends together. In each staff of the text, every
-  string is padded with dashes to the longest one, before its closing
-  bar, and every string gets the staff's closing bar (the longest run of
-  `|` ending one of them), so the bars at the end line up; trailing
-  spaces go. The cursor stays where it was on its line. When they
-  already end together it says so; with no staff, that there are no
-  strings to line up.
-- **=**: an empty six-string staff in standard tuning, `e B G D A E`,
-  each string its name, a bar, dashes and a closing bar, 80 characters
-  in all. It goes under the cursor's line, or under its whole staff when
-  the cursor is on one, with a blank line between it and the text
-  around it, and the cursor ends on the new first string, after its bar.
-- Here a staff is the string lines next to each other: a line with three
-  dashes or more, or a string's name and a bar (`B|-5|`, too short for
-  three dashes).
-- **Overtype**, a toggle button (on by default, filled while on and
-  outlined while off; tap to switch to insert; on a screen narrower than
-  600 px an icon alone, its tooltip saying which mode): typing replaces
-  the characters after the cursor on its line instead of pushing them
-  right, and backspace on a string line leaves a dash, so the columns
-  stay lined up. Enter still breaks the line.
+- **=**: a spacer, a dash down the phrase at the cursor's column. A `-`
+  goes into every line of the phrase the cursor is on, at that column,
+  pushing the rest of each line right by one, so the columns stay lined
+  up; each press adds one more. A line that ends before the column (or
+  the cursor in its closing bar) gets its dash at its end, before its
+  closing bar, and none goes into a line's name or opening bar (`e|`).
+  The cursor ends just after the new dash, still before the note it was
+  before. With the cursor off the lines, it says to put it on one.
+- **|>**: every phrase's lines end together, at the last end. In each
+  phrase of the text, every line is padded with dashes to the longest
+  one, before its closing bar, and every line gets the phrase's closing
+  bar (the longest run of `|` ending one of them), so the bars at the
+  end line up; trailing spaces go. The cursor stays where it was on its
+  line. When they already end together it says so; with no phrase, that
+  there are no strings to line up.
+- **<|**: every phrase's lines end together, at the first end. In each
+  phrase, every line is cut to the shortest one (the dashes before its
+  closing bar go), and every line gets the phrase's closing bar, as with
+  |>. A note is never cut: where one stands past that end, the lines end
+  together one dash after the last note (right after it when its line
+  had no dash there). The cursor stays where it was on its line, or goes
+  to the new end when what it was on was cut. The same messages as |>.
+- **New phrase** (a list-add icon, last): an empty six-line phrase in
+  standard tuning, `e B G D A E`, each line its string's name, a bar,
+  dashes and a closing bar, 80 characters in all. It goes under the
+  cursor's line, or under its whole phrase when the cursor is on one,
+  with a blank line between it and the text around it, and the cursor
+  ends on the new first line, after its bar.
+- Here a phrase is the lines of a staff next to each other: a line with
+  three dashes or more, or a string's name and a bar (`B|-5|`, too short
+  for three dashes).
 - The keyboard offers no suggestions or autocorrection, and dashes and
   quotes aren't made "smart".
 - The arrow keys move the cursor as in any editor, and pressing a tool

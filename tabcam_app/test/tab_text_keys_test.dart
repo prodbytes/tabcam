@@ -98,9 +98,8 @@ void main() {
     }
   });
 
-  testWidgets('|, || and = edit the staff and keep the focus in the text', (
-    tester,
-  ) async {
+  testWidgets('|, =, |>, <| and New phrase edit the phrases and keep the '
+      'focus in the text', (tester) async {
     final text = await pump(tester);
     await clickText(tester);
     // The cursor on the first string, after "e|--3".
@@ -117,19 +116,41 @@ void main() {
     expect(text.text, 'e|--3|--5--|\nB|-5-|-----|');
     expect(text.selection.baseOffset, 6);
 
-    // Ragged now: the first string one shorter.
+    // The cursor two dashes before the 3: a dash down the phrase there.
+    text.selection = const TextSelection.collapsed(offset: 3);
+    await tester.pump();
+    await press('Spacer: a - on every line of the phrase, at the cursor');
+    expect(text.text, 'e|---3|--5--|\nB|--5-|-----|');
+    expect(text.selection.baseOffset, 4);
+
+    // Ragged now: the first line one shorter.
+    const lastEnd =
+        "End together at the last end: each phrase's lines padded to the "
+        'longest';
     text.value = const TextEditingValue(
       text: 'e|--3--5-|\nB|-5------|',
       selection: TextSelection.collapsed(offset: 0),
     );
     await tester.pump();
-    await press('Line up the ends: every string ends with the longest');
+    await press(lastEnd);
     expect(text.text, 'e|--3--5--|\nB|-5------|');
     // Pressed again, nothing to do: it says so.
-    await press('Line up the ends: every string ends with the longest');
+    await press(lastEnd);
     expect(find.text('Every string already ends together'), findsOneWidget);
 
-    await press('Empty staff: six strings, e B G D A E, 80 characters wide');
+    // Cut back to the first end, the 5 keeping a dash after it.
+    text.value = const TextEditingValue(
+      text: 'e|--3--5------|\nB|-5------|',
+      selection: TextSelection.collapsed(offset: 0),
+    );
+    await tester.pump();
+    await press(
+      "End together at the first end: each phrase's lines cut to the "
+      'shortest, notes kept',
+    );
+    expect(text.text, 'e|--3--5--|\nB|-5------|');
+
+    await press('New phrase: six empty lines, e B G D A E, 80 characters wide');
     final lines = text.text.split('\n');
     expect(lines, hasLength(2 + 1 + 6));
     expect(lines.last, 'E|${'-' * 77}|');
