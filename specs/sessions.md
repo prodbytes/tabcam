@@ -113,7 +113,7 @@ starts a session, with no prompt.
   `APPLE_CLIENT_ID` gets "google sign-in needed", as Apple's own).
 - API Gateway reads the issuer's discovery document when it makes the
   `/tabcam` authorizer, and this API serves it, so the first deploy goes
-  in two steps (the stack's `SessionAuthorizer` parameter):
+  in two steps (the stack's `EnableSessionAuthorizer` parameter):
   `scripts/deploy-share-api.sh` deploys without the authorizer and its
   routes while the document doesn't answer yet, uploads the code, then
   deploys again with them; later deploys, in one step.

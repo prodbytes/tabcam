@@ -138,7 +138,7 @@ deploy_stack() {
       "AppleSignInKeyParameterName=$apple_key_param" \
       DeveloperProviderName=login.tabcam.profiles \
       "CdnPublicKey=$cdn_public_key" "CdnDistributionIds=$cdn_distributions" \
-      "SessionAuthorizer=$1" \
+      "EnableSessionAuthorizer=$1" \
     --no-fail-on-empty-changeset
 }
 existing_url="$(aws cloudformation describe-stacks --stack-name tabcam-share-api \

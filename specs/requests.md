@@ -2282,7 +2282,7 @@ spec.
    session. Users signed in before keep their sign-in. The first deploy
    failed (rolled back, nothing changed): API Gateway checks the issuer's
    discovery document when it makes the authorizer, and this API serves
-   it; so the stack's new `SessionAuthorizer` parameter lets the deploy
+   it; so the stack's new `EnableSessionAuthorizer` parameter lets the deploy
    script add the authorizer and the `/tabcam` routes in a second step,
    once the code is up. See
    [sign-in sessions](sessions.md), [cloud sync](cloud-sync.md#signing-in).
