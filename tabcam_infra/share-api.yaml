@@ -108,7 +108,7 @@ Parameters:
     Type: String
     Default: tabcam.nu01.com,rc.tabcam.nu01.com
     Description: The sites a grant is signed for, one policy each
-  SessionAuthorizer:
+  EnableSessionAuthorizer:
     Type: String
     Default: 'true'
     AllowedValues: ['true', 'false']
@@ -134,7 +134,7 @@ Conditions:
   HasAppleServicesId: !Not [!Equals [!Ref AppleServicesId, '']]
   HasEmail: !Not [!Equals [!Ref EmailIssuer, '']]
   HasAccountsTable: !Not [!Equals [!Ref AccountsTableName, '']]
-  HasSessionAuthorizer: !Equals [!Ref SessionAuthorizer, 'true']
+  HasSessionAuthorizer: !Equals [!Ref EnableSessionAuthorizer, 'true']
 
 Resources:
   # A profile: its ID (huge_wavy_darter), owner, Cognito identity.
