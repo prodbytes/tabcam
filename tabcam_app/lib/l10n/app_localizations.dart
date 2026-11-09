@@ -550,11 +550,17 @@ abstract class AppLocalizations {
   /// **'Every photo and PDF is read again. A tab found replaces the current text, even if you edited it; if none is found, the text is kept.'**
   String get eventRescanBody;
 
-  /// Event: Rescan found no tab, or failed: why, and that the text is as it was
+  /// Event: Rescan's read is done and a tab found replaced the text: how long it took (minutes:seconds)
   ///
   /// In en, this message translates to:
-  /// **'{reason} The text was kept.'**
-  String eventRescanKept(String reason);
+  /// **'Rescanned in {time}.'**
+  String eventRescanned(String time);
+
+  /// Event: Rescan's read is done but found no tab, or failed: how long it took (minutes:seconds), why, and that the text is as it was
+  ///
+  /// In en, this message translates to:
+  /// **'Rescanned in {time}. {reason} The text was kept.'**
+  String eventRescanKept(String time, String reason);
 
   /// Event Text view: reading failed
   ///

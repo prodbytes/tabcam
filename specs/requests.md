@@ -2314,3 +2314,18 @@ spec.
     library). The tempo and signature are kept on the device; it stops
     when its sidebar closes or the user leaves the screens that have it.
     In English, Spanish and Portuguese. See [metronome](metronome.md).
+12. **When a rescan is requested, show a timer right after the
+    "Rescanning the pages…" label while it spins, and when it ends a
+    simple message with the total time it took; also a subtle sound
+    effect when it's done, like a ding.** The Text view's progress line
+    now reads "Rescanning the pages… 0:12", the timer counting each
+    second from the dialog's Rescan tap (m:ss). When the read ends, a
+    message says "Rescanned in 0:42." (when no tab was found or the read
+    failed, the time comes first, then why and "The text was kept."),
+    and a soft ding plays: about 0.7 s, bell-like, made in the app with
+    no sound file; Android plays it as a notification sound, iOS as a
+    system sound (both quiet on silent), through the new `tabcam/sound`
+    channel, and the web through Web Audio, woken by the confirming tap.
+    In English, Spanish and Portuguese. See
+    [tab recognition](tab-recognition.md#the-ding) and
+    [platforms](platforms.md).

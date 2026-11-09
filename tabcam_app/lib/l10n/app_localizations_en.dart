@@ -290,8 +290,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Every photo and PDF is read again. A tab found replaces the current text, even if you edited it; if none is found, the text is kept.';
 
   @override
-  String eventRescanKept(String reason) {
-    return '$reason The text was kept.';
+  String eventRescanned(String time) {
+    return 'Rescanned in $time.';
+  }
+
+  @override
+  String eventRescanKept(String time, String reason) {
+    return 'Rescanned in $time. $reason The text was kept.';
   }
 
   @override

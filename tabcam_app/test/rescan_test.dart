@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:tabcam_app/l10n/app_localizations.dart';
@@ -8,14 +9,41 @@ import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
 import 'package:tabcam_app/recognition/auto_reader.dart';
 import 'package:tabcam_app/screens/event_screen.dart';
+import 'package:tabcam_app/sound/ding_io.dart';
 
 /// The Text view's Rescan reads every page again. The text stays while it
-/// reads (the view spins); a tab found replaces it, even one the user
-/// edited; none found keeps it, with a message. While the text is marked
-/// verified, Rescan is off.
+/// reads (the view spins, a timer counting); a tab found replaces it, even
+/// one the user edited; none found keeps it. Either way it dings, and a
+/// message says how long it took. While the text is marked verified,
+/// Rescan is off.
 void main() {
+  /// The dings played (the phones' channel, answered here).
+  final dings = <MethodCall>[];
+  setUp(() {
+    dings.clear();
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(dingChannel, (call) async {
+          dings.add(call);
+          return null;
+        });
+  });
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(dingChannel, null);
+  });
+
+  /// The timer after "Rescanning the pages…".
+  String timer(WidgetTester tester) => tester
+      .widget<Text>(
+        find.descendant(
+          of: find.byKey(const Key('rescan-timer')),
+          matching: find.byType(Text),
+        ),
+      )
+      .data!;
+
   Future<(Library, AutoReader, String, void Function(Completer<String?>))>
-  setUp(WidgetTester tester, void Function() onRead) async {
+  setUpEvent(WidgetTester tester, void Function() onRead) async {
     var reading = Completer<String?>();
     late Library library;
     late AutoReader reader;
@@ -147,6 +175,9 @@ void main() {
     expect(library.byId(id)!.tabText, 'e|--0--5--|');
     expect(find.text('Rescanning the pages…'), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    // A timer after it, counting from the start (m:ss).
+    expect(timer(tester), matches(RegExp(r'^0:0\d$')));
+    expect(dings, isEmpty);
 
     reading.complete('A|--2--5--|');
     await settle();
@@ -157,6 +188,14 @@ void main() {
     expect(event.tabTextCorrect, isFalse);
     expect(find.text('A|--2--5--|'), findsWidgets);
     expect(find.text('Rescanning the pages…'), findsNothing);
+    expect(find.byKey(const Key('rescan-timer')), findsNothing);
+    // Done: a ding, and how long it took.
+    expect(dings.map((c) => c.method), ['ding']);
+    expect(dings.single.arguments, isA<Uint8List>());
+    expect(
+      find.textContaining(RegExp(r'^Rescanned in 0:0\d\.$')),
+      findsOneWidget,
+    );
 
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 5));
@@ -165,7 +204,7 @@ void main() {
   testWidgets('Rescan finding no tab keeps the text, with a message', (
     tester,
   ) async {
-    final (library, reader, id, setReading) = await setUp(tester, () {});
+    final (library, reader, id, setReading) = await setUpEvent(tester, () {});
     var reading = Completer<String?>();
     setReading(reading);
     Future<void> settle() async {
@@ -215,6 +254,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await settle();
     expect(find.text('Rescanning the pages…'), findsOneWidget);
+    expect(timer(tester), matches(RegExp(r'^0:0\d$')));
 
     reading.complete(null); // no tab in the pages
     await settle();
@@ -224,8 +264,15 @@ void main() {
     expect(event.tabTextAuto, isFalse);
     expect(find.text('e|--0--7--|'), findsWidgets);
     expect(find.text('Rescanning the pages…'), findsNothing);
-    expect(find.textContaining('No tab found in the pages.'), findsOneWidget);
-    expect(find.textContaining('The text was kept.'), findsOneWidget);
+    expect(
+      find.textContaining(
+        RegExp(
+          r'^Rescanned in 0:0\d\. No tab found in the pages\. .* The text was kept\.$',
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(dings.map((c) => c.method), ['ding']);
 
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 5));

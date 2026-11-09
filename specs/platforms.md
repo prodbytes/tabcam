@@ -8,6 +8,7 @@
 | Play videos | From the file | From the file | From memory, through a blob URL |
 | [Cam](cam.md) takes, [the tab in them](cam.md#the-tab-in-the-take) | MP4, the tab burned in after (Media3 Transformer) | MP4, the tab burned in after (AVFoundation) | WebM (MP4 on Safari), the tab recorded in as it goes (canvas and MediaRecorder) |
 | [Video edit](video-edit.md) (trim, sound), played as edited; Download | On the device: Media3 Transformer (MP4; the sound only M4A) | On the device: AVFoundation (MP4; the sound only M4A) | In the browser: canvas, Web Audio and MediaRecorder, as long as the kept part plays (WebM; MP4 on Safari); the sound only rendered offline (WAV) |
+| [Rescan's ding](tab-recognition.md#the-ding) | A notification sound (`MediaPlayer`): the notification volume, quiet on silent | A system sound (AudioServices): quiet on silent | Web Audio, woken by the dialog's Rescan tap |
 | [Cam's head gestures](cam.md#head-gestures) | ✅ ML Kit face detection | ✅ ML Kit face detection | ✅ MediaPipe Face Landmarker, in the browser (library and model from jsDelivr and Google when Cam opens) |
 | Open links, YouTube's too (`url_launcher`, outside the app) | The browser, or the app for the link (YouTube) | Safari, or the app for the link (YouTube) | A new tab |
 | Reading tabs (by itself), Premium only where Premium is set up | ✅ Premium's cloud (ML Kit on the device in builds without the service) | ✅ Premium's cloud (ML Kit on the device in builds without the service) | Premium's cloud (else the Text view says it needs the app) |

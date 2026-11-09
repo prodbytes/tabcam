@@ -1,4 +1,5 @@
 import AVFoundation
+import AudioToolbox
 import Flutter
 import ImageIO
 import QuartzCore
@@ -8,6 +9,7 @@ import UIKit
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   private var takeOverlayChannel: FlutterMethodChannel?
   private var videoEditChannel: FlutterMethodChannel?
+  private var soundChannel: FlutterMethodChannel?
 
   override func application(
     _ application: UIApplication,
@@ -30,6 +32,46 @@ import UIKit
       channel.setMethodCallHandler(VideoEdit.handle)
       videoEditChannel = channel
     }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "Sound") {
+      let channel = FlutterMethodChannel(
+        name: "tabcam/sound", binaryMessenger: registrar.messenger())
+      channel.setMethodCallHandler(Sound.handle)
+      soundChannel = channel
+    }
+  }
+}
+
+/// Short sounds the app makes (Rescan's ding, see lib/sound/ding.dart):
+/// method channel `tabcam/sound`, method `ding`, its argument the sound's
+/// WAV file as bytes (the app makes it). Written to the temporary folder
+/// and played as a system sound: at the system's volume, silent with the
+/// ring / silent switch on silent, and the app's audio session (a video
+/// playing) left as it is.
+enum Sound {
+  static func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    guard call.method == "ding" else {
+      result(FlutterMethodNotImplemented)
+      return
+    }
+    guard let wav = call.arguments as? FlutterStandardTypedData else {
+      result(FlutterError(code: "failed", message: "ding takes the WAV's bytes", details: nil))
+      return
+    }
+    let url = FileManager.default.temporaryDirectory.appendingPathComponent("ding.wav")
+    do {
+      try wav.data.write(to: url, options: .atomic)
+    } catch {
+      result(FlutterError(code: "failed", message: error.localizedDescription, details: nil))
+      return
+    }
+    var id: SystemSoundID = 0
+    let status = AudioServicesCreateSystemSoundID(url as CFURL, &id)
+    guard status == kAudioServicesNoError else {
+      result(FlutterError(code: "failed", message: "System sound error \(status)", details: nil))
+      return
+    }
+    AudioServicesPlaySystemSoundWithCompletion(id) { AudioServicesDisposeSystemSoundID(id) }
+    result(nil)
   }
 }
 
