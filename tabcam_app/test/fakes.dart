@@ -164,9 +164,13 @@ class FakeCredentials implements CredentialSource {
   int clears = 0;
   Object? error;
 
+  /// Waited for before answering, when set (a slow first answer).
+  Future<void>? gate;
+
   @override
   Future<CognitoSession> session(String idToken) async {
     sessions++;
+    if (gate case final g?) await g;
     if (error case final e?) throw e;
     return CognitoSession(
       identityId: identityId,

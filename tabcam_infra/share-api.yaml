@@ -550,6 +550,13 @@ Resources:
         Comment: Signed URLs of users' folders
         Items: [!Ref CdnKey]
 
+  # The API's access logs (the stage's AccessLogSettings).
+  AccessLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/apigateway/tabcam-share-api
+      RetentionInDays: 30
+
   FunctionLogs:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -778,6 +785,13 @@ Resources:
       ApiId: !Ref Api
       StageName: $default
       AutoDeploy: true
+      # A line per request, the ones the authorizers refuse too (they never
+      # reach the function): the route, the status, the times, and why it
+      # failed. No IP addresses, tokens or bodies.
+      AccessLogSettings:
+        DestinationArn: !GetAtt AccessLogs.Arn
+        Format: >-
+          {"requestId":"$context.requestId","route":"$context.routeKey","method":"$context.httpMethod","path":"$context.path","status":"$context.status","ms":"$context.responseLatency","integrationMs":"$context.integrationLatency","integrationStatus":"$context.integrationStatus","authorizerError":"$context.authorizer.error","integrationError":"$context.integrationErrorMessage","error":"$context.error.message"}
       DefaultRouteSettings:
         ThrottlingBurstLimit: 20
         ThrottlingRateLimit: 10

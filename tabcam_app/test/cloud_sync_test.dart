@@ -1,5 +1,5 @@
-import 'dart:convert';
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cross_file/cross_file.dart';
@@ -115,6 +115,27 @@ void main() {
       expect(phone.sync.state, SyncState.synced);
     },
   );
+
+  test("the same user's token changing during the first pass (a TabCam "
+      'session replacing the provider\'s) still ends it', () async {
+    final gate = Completer<void>();
+    final phone = Device(bucket);
+    phone.credentials.gate = gate.future;
+    await phone.library.load();
+    phone.sync.start();
+    phone.auth.signInAs('me', 'provider-token');
+    await pumpEventQueue();
+    expect(phone.sync.firstPassDone, isFalse);
+    // The session starts while the pass waits for its credentials.
+    phone.auth.signInAs('me', 'session-token');
+    gate.complete();
+    for (var i = 0; i < 20 && !phone.sync.firstPassDone; i++) {
+      await pumpEventQueue();
+    }
+    expect(phone.sync.firstPassDone, isTrue);
+    expect(phone.sync.state, SyncState.synced);
+    phone.sync.dispose();
+  });
 
   test('nothing changed: a pass is one listing', () async {
     final phone = Device(bucket);

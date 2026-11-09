@@ -169,9 +169,15 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
       _set(SyncState.signedOut, null);
       return;
     }
-    // A new token of the same session (a refresh) needs no pass of its
-    // own, unless the last one failed (it may have been the token).
-    if (!wasSignedIn || _state == SyncState.failed) unawaited(syncNow());
+    // A new token of the same session (a refresh, or a TabCam session
+    // replacing the provider's token) needs no pass of its own, unless the
+    // last one failed (it may have been the token), or none has ended yet,
+    // or one is running: a running pass stops at its next step when the
+    // token changes, and starts again with this one (else the first pass
+    // would never end, and Home would show "Loading" until the next tick).
+    if (!wasSignedIn || _state == SyncState.failed || _running || !_passed) {
+      unawaited(syncNow());
+    }
     _periodic ??= Timer.periodic(period, (_) => _tick());
   }
 
@@ -222,16 +228,30 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
     final token = _token;
     if (token == null) return;
     _set(SyncState.syncing, null);
+    final started = DateTime.now();
+    debugPrint('TabCam: sync pass started');
     // Rejected credentials and a skewed clock are worth one more try: new
     // credentials, and the clock S3 just corrected.
     for (var attempt = 0; ; attempt++) {
       try {
         final (up, down) = await _run(token);
-        if (_token != token) return;
+        if (_token != token) {
+          debugPrint('TabCam: sync pass stopped: the sign-in changed');
+          return;
+        }
         _lastSynced = DateTime.now();
+        debugPrint(
+          'TabCam: sync pass done in '
+          '${DateTime.now().difference(started).inMilliseconds} ms: '
+          '$up up, $down down',
+        );
         _set(SyncState.synced, _summary(up, down));
         return;
       } on _SignedOut {
+        debugPrint(
+          'TabCam: sync pass stopped: the sign-in changed '
+          '(${_token == null ? 'signed out' : 'a new token'})',
+        );
         return;
       } on S3Exception catch (e) {
         if (attempt == 0 && (e.credentialsRejected || e.clockSkewed)) {
