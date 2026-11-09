@@ -2657,5 +2657,46 @@
   "videoEditCouldntDownload": "Couldn't make the file",
   "@videoEditCouldntDownload": {
     "description": "Video edit: the download's failure message"
+  },
+  "metronome": "Metronome",
+  "@metronome": {
+    "description": "The metronome's button and its sidebar's title"
+  },
+  "metronomeHide": "Hide the metronome",
+  "@metronomeHide": {
+    "description": "Tooltip of the metronome's button while its sidebar shows, and of its close button"
+  },
+  "metronomeSlower": "Slower",
+  "@metronomeSlower": {
+    "description": "Metronome: one BPM less"
+  },
+  "metronomeFaster": "Faster",
+  "@metronomeFaster": {
+    "description": "Metronome: one BPM more"
+  },
+  "metronomeTimeSignature": "Time signature",
+  "@metronomeTimeSignature": {
+    "description": "Metronome: the heading over the time signatures (4/4, 3/4, 6/8…)"
+  },
+  "metronomeEighths": "Each click is an eighth note; the first of each group is accented.",
+  "@metronomeEighths": {
+    "description": "Metronome: under the time signatures, for 6/8, 7/8, 9/8 and 12/8"
+  },
+  "metronomeStart": "Start",
+  "@metronomeStart": {
+    "description": "Metronome: starts the clicks"
+  },
+  "metronomeStop": "Stop",
+  "@metronomeStop": {
+    "description": "Metronome: stops the clicks"
+  },
+  "metronomeFailed": "The metronome can't play here: {error}",
+  "@metronomeFailed": {
+    "description": "Metronome: its sound couldn't start",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   }
 }

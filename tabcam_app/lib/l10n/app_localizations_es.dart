@@ -1999,4 +1999,34 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get videoEditCouldntDownload => 'No se pudo crear el archivo';
+
+  @override
+  String get metronome => 'Metrónomo';
+
+  @override
+  String get metronomeHide => 'Ocultar el metrónomo';
+
+  @override
+  String get metronomeSlower => 'Más lento';
+
+  @override
+  String get metronomeFaster => 'Más rápido';
+
+  @override
+  String get metronomeTimeSignature => 'Compás';
+
+  @override
+  String get metronomeEighths =>
+      'Cada clic es una corchea; el primero de cada grupo se acentúa.';
+
+  @override
+  String get metronomeStart => 'Iniciar';
+
+  @override
+  String get metronomeStop => 'Detener';
+
+  @override
+  String metronomeFailed(String error) {
+    return 'El metrónomo no puede sonar aquí: $error';
+  }
 }

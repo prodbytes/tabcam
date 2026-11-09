@@ -1956,4 +1956,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoEditCouldntDownload => 'Couldn\'t make the file';
+
+  @override
+  String get metronome => 'Metronome';
+
+  @override
+  String get metronomeHide => 'Hide the metronome';
+
+  @override
+  String get metronomeSlower => 'Slower';
+
+  @override
+  String get metronomeFaster => 'Faster';
+
+  @override
+  String get metronomeTimeSignature => 'Time signature';
+
+  @override
+  String get metronomeEighths =>
+      'Each click is an eighth note; the first of each group is accented.';
+
+  @override
+  String get metronomeStart => 'Start';
+
+  @override
+  String get metronomeStop => 'Stop';
+
+  @override
+  String metronomeFailed(String error) {
+    return 'The metronome can\'t play here: $error';
+  }
 }

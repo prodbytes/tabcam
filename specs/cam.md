@@ -16,7 +16,9 @@ its **Not now** leaving. With Premium it opens the camera view
   its buttons **Dictionary** (a book icon, in the preview too), which
   shows the chord and scale [dictionary](dictionary.md) in a sidebar on
   the right, the camera beside it; typing in it doesn't move the tab,
-  and once it's hidden the keys move the tab again. Without a
+  and once it's hidden the keys move the tab again. **Metronome** (a
+  stopwatch icon) after it opens the [metronome](metronome.md)'s sidebar
+  the same way. Without a
   camera, or one that isn't allowed, the view says so.
 - **The tab**, along the bottom, one **neckline** at a time: a staff
   (a run of string lines) with the lines right above it, such as chord

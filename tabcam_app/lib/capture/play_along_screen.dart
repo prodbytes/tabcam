@@ -12,6 +12,7 @@ import '../l10n/language.dart';
 import '../library/capture_event.dart';
 import '../cloud/cloud_ocr.dart';
 import '../library/library.dart';
+import '../metronome/metronome.dart';
 import '../recognition/necklines.dart';
 import '../screens/mono_font.dart';
 import '../screens/premium_card.dart';
@@ -786,6 +787,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
             ),
             actions: [
               DictionaryButton(onClosed: _focus.requestFocus),
+              MetronomeButton(onClosed: _focus.requestFocus),
               if (gate == null)
                 PlayAlongButton(along: _along, onPressed: _focus.requestFocus),
               if (_heads case final heads?)
@@ -821,17 +823,20 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
                   )
                 : null,
           ),
-          body: DictionaryBeside(
+          body: MetronomeBeside(
             onClosed: _focus.requestFocus,
-            child: gate == null
-                ? body
-                : PremiumGate(
-                    ocr: gate.ocr,
-                    email: gate.email,
-                    lead: l10n.premiumCamFeature,
-                    onClose: () => Navigator.of(context).pop(),
-                    child: body,
-                  ),
+            child: DictionaryBeside(
+              onClosed: _focus.requestFocus,
+              child: gate == null
+                  ? body
+                  : PremiumGate(
+                      ocr: gate.ocr,
+                      email: gate.email,
+                      lead: l10n.premiumCamFeature,
+                      onClose: () => Navigator.of(context).pop(),
+                      child: body,
+                    ),
+            ),
           ),
         ),
       ),

@@ -6,6 +6,7 @@ import '../l10n/language.dart';
 import 'rename_dialog.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
+import '../metronome/metronome.dart';
 import '../processing/page_filter.dart';
 import 'arriving.dart';
 import 'audio_page.dart';
@@ -334,6 +335,7 @@ class _FileScreenState extends State<FileScreen> {
           appBar: AppBar(
             actions: [
               const DictionaryButton(),
+              const MetronomeButton(),
               if (sidebar) PlayAlongButton(along: _alongFor(event, page)),
             ],
             // Tapping the name renames the file (when the user can edit).
@@ -354,24 +356,26 @@ class _FileScreenState extends State<FileScreen> {
           // The whole body: an image fits it, not its own size. An image
           // and a PDF have the play-along sidebar beside them; a recording
           // plays in it.
-          body: DictionaryBeside(
-            child: _beside(
-              event,
-              page,
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: SizedBox.expand(
-                  child: _inSidebar(event, page)
-                      ? const _RecordingAside()
-                      : _editing
-                      ? const SizedBox.shrink()
-                      : FilePreview(
-                          library: _library,
-                          event: event,
-                          page: page.isImage
-                              ? page.copyWith(filter: filter)
-                              : page,
-                        ),
+          body: MetronomeBeside(
+            child: DictionaryBeside(
+              child: _beside(
+                event,
+                page,
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: SizedBox.expand(
+                    child: _inSidebar(event, page)
+                        ? const _RecordingAside()
+                        : _editing
+                        ? const SizedBox.shrink()
+                        : FilePreview(
+                            library: _library,
+                            event: event,
+                            page: page.isImage
+                                ? page.copyWith(filter: filter)
+                                : page,
+                          ),
+                  ),
                 ),
               ),
             ),

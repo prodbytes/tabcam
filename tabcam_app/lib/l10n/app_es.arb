@@ -537,5 +537,14 @@
   "videoEditDownloadSilent": "El video sin sonido",
   "videoEditDownloadSound": "Solo el sonido",
   "videoEditDownloading": "Creando el archivo…",
-  "videoEditCouldntDownload": "No se pudo crear el archivo"
+  "videoEditCouldntDownload": "No se pudo crear el archivo",
+  "metronome": "Metrónomo",
+  "metronomeHide": "Ocultar el metrónomo",
+  "metronomeSlower": "Más lento",
+  "metronomeFaster": "Más rápido",
+  "metronomeTimeSignature": "Compás",
+  "metronomeEighths": "Cada clic es una corchea; el primero de cada grupo se acentúa.",
+  "metronomeStart": "Iniciar",
+  "metronomeStop": "Detener",
+  "metronomeFailed": "El metrónomo no puede sonar aquí: {error}"
 }
