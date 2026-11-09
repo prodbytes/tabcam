@@ -247,7 +247,11 @@ saving drops it; moving it (inserting before it on its line) does too.
 one character to its left or right on its line), clears its mark at once:
 the user has checked it. It's dropped from `tabTextDoubts` and saved (the
 text's pending edits first), so it's black on every device; not on a
-capture shared to read, whose text can't be changed. Marking the text **Verified** shows none (the user checked it); a **Rescan**
+capture shared to read, whose text can't be changed. Marking the text
+**Verified** clears them all, for good: the user has checked every note,
+so they're dropped from `tabTextDoubts` and saved with the mark, and
+unmarking it doesn't bring them back (a text marked Verified shows none
+in any case, one verified before this, or on an older app, too); a **Rescan**
 that finds a tab replaces them with the text, and the new reading
 brings its own. A read on
 the device says nothing of how sure it is: its text has none
@@ -276,17 +280,39 @@ while on), and there the event screen's other buttons go in a menu
   **Rescan**), then reads every page again
   (`readSoon(id, replace: true)`, which reads again too; with Premium,
   in the cloud). The text stays until the read ends: meanwhile the Text
-  view spins (a progress bar, "Rescanning the pages…"), and the text,
-  Fix, Rescan and Verified wait. Only once a tab is found does it
-  replace the text, as a read of its own (`tabTextAuto`), clearing the
-  old doubts. If the read finds no tab, fails, or
-  can't run (signed out, no OCR here), nothing changes and a message
-  says why, ending "The text was kept.". Shown only when the event has
-  photos or PDFs to read and the app can read them, and not on an event
-  shared read only.
+  view spins (a progress bar, "Rescanning the pages…" and after it a
+  timer counting from the confirming tap, m:ss, h:mm:ss from an hour,
+  in figures of one width), and the text, Fix, Rescan and Verified
+  wait. Only once a tab is found does it replace the text, as a read of
+  its own (`tabTextAuto`), clearing the old doubts. If the read finds no
+  tab, fails, or can't run (signed out, no OCR here), nothing changes.
+  **When it ends**, either way, a soft **ding** plays
+  ([the ding](#the-ding)) and a message says how long it took:
+  "Rescanned in 0:42." when a tab replaced the text, else "Rescanned in
+  0:42." followed by why and "The text was kept.". Shown only when the
+  event has photos or PDFs to read and the app can read them, and not
+  on an event shared read only.
+
+  <a id="the-ding"></a>**The ding** (`lib/sound/`): about 0.7 s, a
+  bell-like E6 (1318.5 Hz) with its octave and a fainter partial at 2.76
+  times, each dying away, at most 0.3 of full scale; made in the app
+  (`dingSamples`, `dingWav`: a 16-bit mono WAV at 44.1 kHz), so it's the
+  same everywhere and ships with no sound file. Android plays it as a
+  notification sound (`MediaPlayer`, `USAGE_NOTIFICATION_EVENT`): at the
+  notification volume, quiet on silent, vibrate or Do Not Disturb, and
+  taking no audio focus. iOS plays it as a system sound
+  (`AudioServicesPlaySystemSound`): quiet with the ring / silent switch
+  on silent, the app's audio session untouched. Both through the method
+  channel `tabcam/sound` (method `ding`, the WAV's bytes; the native
+  side writes it to its cache or temporary folder). The web plays it
+  through Web Audio: the dialog's Rescan tap wakes the page's
+  `AudioContext` (Safari plays sound only from a tap's handler), the
+  ding plays when the read ends, and the context sleeps again after it;
+  if the browser won't wake it, nothing plays rather than a late ding.
 - **Verified**: a toggle marking the reading correct once the user has
   checked it: tonal like Copy while off, filled and ticked while on;
-  tapping it again unmarks it. Saved at once. The mark is kept on the
+  tapping it again unmarks it. Saved at once. Marking it clears the red
+  notes for good ([doubtful notes](#text-view)). The mark is kept on the
   event and syncs with it (`tabTextCorrect`), and a clone keeps it. The
   event still opens on its list of files (Text shows the tab). No read, on the device
   or in the [cloud](cloud-ocr.md), replaces a text tab marked correct. On
