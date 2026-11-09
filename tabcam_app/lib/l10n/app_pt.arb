@@ -305,6 +305,7 @@
   "textViewNotationBend": "bend (até a nota do 9), r soltar",
   "textViewNotationVibrato": "vibrato",
   "textViewNotationGhost": "nota fantasma (tocada de leve)",
+  "textViewNotationMuted": "nota fantasma / palm mute (abafada, sem altura)",
   "textViewNotationSlur": "ligado: ascendente ou descendente",
   "textViewNotationBendParens": "bend também: a nota entre parênteses depois da nota",
   "textViewOvertype": "Sobrescrever",

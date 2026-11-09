@@ -1152,6 +1152,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get textViewNotationGhost => 'ghost note (played softly)';
 
   @override
+  String get textViewNotationMuted =>
+      'ghost note / palm mute (muted, no pitch)';
+
+  @override
   String get textViewNotationSlur => 'slur: a hammer-on or a pull-off';
 
   @override

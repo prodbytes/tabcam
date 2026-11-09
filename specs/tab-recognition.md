@@ -374,7 +374,8 @@ how techniques are written in tab, each symbol in the tab's font with
 what it is: `5h7` hammer-on, `7p5` pull-off, `5_7` a slur (a hammer-on
 or a pull-off), `5/7 7\5` slide up, down, `7b9 r7` bend (to the pitch of
 9), r release, `7(9)` a bend too (the pitch in parentheses after the
-note), `7~` vibrato and `(5)` a ghost note (played softly)
+note), `7~` vibrato, `(5)` a ghost note (played softly) and `x` a ghost
+note or palm mute (muted, no pitch)
 (`NotationSheet`, [lib/screens/tab_notation.dart](../tabcam_app/lib/screens/tab_notation.dart)).
 It takes at most 30% of the sidebar's height: taller, as in a phone's
 narrow sidebar where its lines wrap, it scrolls, so the player above

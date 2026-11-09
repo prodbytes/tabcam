@@ -2243,3 +2243,8 @@ spec.
    fill while it counts in; Play shows Pause meanwhile, and pressing it
    (or Pause, Stop) cancels. In English, Spanish and Portuguese. See
    [Cam](cam.md#count-in).
+7. **Add to the notation cheat sheet in the sidebar that X means a ghost
+   note / palm mute.** The Text view's notation sheet gains a last row,
+   `x`: a ghost note or palm mute (muted, no pitch), in English, Spanish
+   and Portuguese. See
+   [tab recognition](tab-recognition.md) (Notation sheet).
