@@ -247,7 +247,11 @@ saving drops it; moving it (inserting before it on its line) does too.
 one character to its left or right on its line), clears its mark at once:
 the user has checked it. It's dropped from `tabTextDoubts` and saved (the
 text's pending edits first), so it's black on every device; not on a
-capture shared to read, whose text can't be changed. Marking the text **Verified** shows none (the user checked it); a **Rescan**
+capture shared to read, whose text can't be changed. Marking the text
+**Verified** clears them all, for good: the user has checked every note,
+so they're dropped from `tabTextDoubts` and saved with the mark, and
+unmarking it doesn't bring them back (a text marked Verified shows none
+in any case, one verified before this, or on an older app, too); a **Rescan**
 that finds a tab replaces them with the text, and the new reading
 brings its own. A read on
 the device says nothing of how sure it is: its text has none
@@ -307,7 +311,8 @@ while on), and there the event screen's other buttons go in a menu
   if the browser won't wake it, nothing plays rather than a late ding.
 - **Verified**: a toggle marking the reading correct once the user has
   checked it: tonal like Copy while off, filled and ticked while on;
-  tapping it again unmarks it. Saved at once. The mark is kept on the
+  tapping it again unmarks it. Saved at once. Marking it clears the red
+  notes for good ([doubtful notes](#text-view)). The mark is kept on the
   event and syncs with it (`tabTextCorrect`), and a clone keeps it. The
   event still opens on its list of files (Text shows the tab). No read, on the device
   or in the [cloud](cloud-ocr.md), replaces a text tab marked correct. On

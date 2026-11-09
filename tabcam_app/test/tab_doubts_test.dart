@@ -126,4 +126,36 @@ void main() {
       expect(_red(tester), isEmpty);
     },
   );
+
+  testWidgets('Verified clears every red note, for good', (tester) async {
+    final library = Library(PlatformEventStore());
+    await library.load();
+    final event = await library.update(
+      (await library.create(const []))
+          .copyWith(tabText: _riff, tabTextAuto: true, tabTextDoubts: _doubts),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TabTextView(library: library, eventId: event.id),
+        ),
+      ),
+    );
+    expect(_red(tester), ['5h7', '10']);
+
+    // Marked Verified: none red, and none kept as doubtful.
+    await tester.tap(find.text('Verified'));
+    await tester.pumpAndSettle();
+    expect(library.byId(event.id)!.tabTextCorrect, isTrue);
+    expect(library.byId(event.id)!.tabTextDoubts, isEmpty);
+    expect(_red(tester), isEmpty);
+
+    // Unmarked: they don't come back; the text is as it was.
+    await tester.tap(find.text('Verified'));
+    await tester.pumpAndSettle();
+    expect(library.byId(event.id)!.tabTextCorrect, isFalse);
+    expect(library.byId(event.id)!.tabTextDoubts, isEmpty);
+    expect(_red(tester), isEmpty);
+    expect(library.byId(event.id)!.tabText, _riff);
+  });
 }

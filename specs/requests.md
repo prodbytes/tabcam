@@ -2329,3 +2329,9 @@ spec.
     In English, Spanish and Portuguese. See
     [tab recognition](tab-recognition.md#the-ding) and
     [platforms](platforms.md).
+13. **When the Verified button is clicked, remove all the red notes
+    marked.** Marking the text Verified now clears every doubtful note
+    (`tabTextDoubts` emptied and saved with the mark, so it syncs), and
+    unmarking it doesn't bring them back. Before, Verified only hid them
+    while it was on. See
+    [tab recognition](tab-recognition.md#text-view).
