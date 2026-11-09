@@ -14,7 +14,8 @@ import 'link_frame.dart';
 /// link straight to a sound or video file; any other link shows in a
 /// frame ([link]). A recording or video of the capture's own can play
 /// just a [section] of itself, over and over; what plays in the app can
-/// play slower (or faster), at a [speed].
+/// play slower (or faster), at a [speed]. What plays in the app keeps
+/// the [phrases] passed while Cam recorded along with it.
 class BackingTrack extends ChangeNotifier {
   BackingTrack(this.library, {this.open = _open});
 
@@ -41,6 +42,9 @@ class BackingTrack extends ChangeNotifier {
   /// The file or link chosen, and what plays it once it's loaded.
   EventPage? get page => _page;
   EventPage? _page;
+
+  /// The capture it's from.
+  String? _eventId;
   VideoPlayerController? get media => _media;
   VideoPlayerController? _media;
   LinkFrameController? get link => _link;
@@ -192,6 +196,54 @@ class BackingTrack extends ChangeNotifier {
     }
   }
 
+  /// Whether [phrases] are kept for it: what plays in the app (a recording
+  /// or video, a link straight to a sound or video file), loaded, whose
+  /// position is known to the split second.
+  bool get canPhrase => _media != null && _duration > Duration.zero;
+
+  /// Where the tab turned while Cam recorded along with it ([PhraseTimes]):
+  /// the passes recorded this visit, not saved yet, else the capture's.
+  PhraseTimes get phrases {
+    final (id, eventId) = (_page?.id, _eventId);
+    if (id == null || eventId == null || !canPhrase) return PhraseTimes.none;
+    return _unsaved[id] ?? library.phrasesOf(eventId, id);
+  }
+
+  /// Passes recorded, by song, until [savePhrases].
+  final _unsaved = <String, PhraseTimes>{};
+
+  /// Notes a phrase pass at [at] (its position): the tab turned
+  /// [direction] to [line]; merged into one within two seconds of it
+  /// ([PhraseTimes.add]). Kept on [savePhrases].
+  void recordPass(Duration at, PassDirection direction, int line) {
+    final id = _page?.id;
+    if (id == null || !canPhrase) return;
+    _unsaved[id] = phrases.add(at, direction, line);
+    notifyListeners();
+  }
+
+  /// Keeps the passes recorded with the capture.
+  Future<void> savePhrases() async {
+    final eventId = _eventId;
+    if (eventId == null || _unsaved.isEmpty) return;
+    final unsaved = Map.of(_unsaved);
+    _unsaved.clear();
+    for (final MapEntry(:key, :value) in unsaved.entries) {
+      await library.setPhrases(eventId, key, value);
+    }
+  }
+
+  /// Forgets its phrase passes: the tab isn't turned by itself along it
+  /// until some are recorded again.
+  Future<void> clearPhrases() async {
+    final (id, eventId) = (_page?.id, _eventId);
+    if (id == null || eventId == null) return;
+    _unsaved.remove(id);
+    notifyListeners();
+    await library.setPhrases(eventId, id, null);
+    if (!_disposed) notifyListeners();
+  }
+
   static Duration _clamp(Duration d, Duration min, Duration max) =>
       d < min ? min : (d > max ? max : d);
 
@@ -219,6 +271,7 @@ class BackingTrack extends ChangeNotifier {
   }) async {
     if (_page?.id == page.id) return toggle();
     await close();
+    _eventId = event.id;
     _page = page;
     _loading = true;
     notifyListeners();

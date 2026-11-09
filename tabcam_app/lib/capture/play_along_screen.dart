@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
@@ -15,6 +16,7 @@ import '../recognition/necklines.dart';
 import '../screens/mono_font.dart';
 import '../screens/premium_card.dart';
 import '../screens/video_page.dart';
+import 'auto_pass.dart';
 import 'backing_track.dart';
 import 'head_gestures.dart';
 import 'link_frame.dart';
@@ -34,6 +36,14 @@ import 'take_overlay.dart';
 /// "Take 2"…). **Play** plays the last take back, the necklines turning
 /// where they turned while it was recorded. **Tab** hides the tab from
 /// the screen, and shows it again.
+///
+/// **Phrase passes**: while recording along with a song playing in the
+/// sidebar's frame, each turn of the tab is noted at the song's position
+/// ([BackingTrack.recordPass]), merged with one the same way within two
+/// seconds of it, and kept with the capture ([PhraseTimes]); the take
+/// keeps its own. **Auto-pass** (beside Tab, on by default, kept on the
+/// device) then turns the tab by itself where it turned before, each
+/// time through the song ([AutoPass]).
 ///
 /// **Play along** (the app bar's, when the capture has recordings, videos,
 /// links or PDFs) shows and hides a sidebar of them, open from the first
@@ -148,11 +158,99 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   /// The keys' focus, taken back after a tap in the sidebar or the frame.
   final _focus = FocusNode();
 
+  /// Auto-pass: whether it's on, and what turns the tab along the song.
+  bool _autoPassOn = true;
+  final _autoPass = AutoPass();
+
+  /// The song auto-pass follows, and what reads its position meanwhile
+  /// (only while it plays).
+  String? _autoPassSong;
+  Timer? _autoPassTimer;
+  bool _autoPassReading = false;
+
+  /// How often auto-pass reads the song's position: the player's own
+  /// updates are coarser.
+  static const autoPassTick = Duration(milliseconds: 100);
+
+  /// The device's meta file Cam's settings are kept in.
+  static const metaName = 'cam';
+
   @override
   void initState() {
     super.initState();
     // A preview opens no camera.
-    if (widget.gate == null) _start();
+    if (widget.gate == null) {
+      _start();
+      _track.addListener(_trackChanged);
+      unawaited(_loadSettings());
+    }
+  }
+
+  Future<void> _loadSettings() async {
+    try {
+      final json = await widget.library.readMeta(metaName);
+      if (json == null) return;
+      final map = jsonDecode(json);
+      if (map is Map && map['autoPass'] == false && mounted) {
+        setState(() => _autoPassOn = false);
+        _trackChanged();
+      }
+    } on Object catch (e) {
+      debugPrint('TabCam: cam settings unreadable: $e');
+    }
+  }
+
+  Future<void> _toggleAutoPass() async {
+    setState(() => _autoPassOn = !_autoPassOn);
+    _focus.requestFocus();
+    // On again: the tab goes where the passes show at the song's position.
+    _autoPass.reset();
+    _trackChanged();
+    try {
+      await widget.library.writeMeta(
+        metaName,
+        jsonEncode({'autoPass': _autoPassOn}),
+      );
+    } on Object catch (e) {
+      debugPrint('TabCam: cam settings not saved: $e');
+    }
+  }
+
+  /// The song changed, played or paused: auto-pass follows it while it
+  /// plays (another song starts it over).
+  void _trackChanged() {
+    final song = _track.page?.id;
+    if (song != _autoPassSong) {
+      _autoPassSong = song;
+      _autoPass.reset();
+    }
+    final follow = _autoPassOn && _track.canPhrase && _track.playing;
+    if (!follow) {
+      _autoPassTimer?.cancel();
+      _autoPassTimer = null;
+    } else {
+      _autoPassTimer ??= Timer.periodic(autoPassTick, (_) => _autoPassNow());
+    }
+  }
+
+  /// Reads where the song is, and turns the tab where a pass says to.
+  Future<void> _autoPassNow() async {
+    final media = _track.media;
+    if (_autoPassReading || media == null || !_autoPassOn || _player != null) {
+      return;
+    }
+    final times = _track.phrases;
+    if (times.isEmpty || !media.value.isPlaying) return;
+    _autoPassReading = true;
+    try {
+      final at = await media.position ?? media.value.position;
+      if (!mounted || _track.media != media || !_autoPassOn) return;
+      if (_autoPass.tick(times, at) case final line?) _show(line);
+    } on Object catch (e) {
+      debugPrint('TabCam: auto-pass: $e');
+    } finally {
+      _autoPassReading = false;
+    }
   }
 
   Future<void> _start() async {
@@ -231,7 +329,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   /// plays: it turns them itself).
   void _gesture(HeadGesture gesture) {
     if (!mounted || !_headsOn || _player != null) return;
-    _show(_line + (gesture == HeadGesture.next ? 1 : -1));
+    unawaited(_pass(gesture == HeadGesture.next ? 1 : -1));
   }
 
   Future<void> _toggleHeads() async {
@@ -261,12 +359,45 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
           .showSnackBar(SnackBar(content: Text(message)));
 
   /// Shows neckline [index] (kept in range); while recording, notes when.
-  void _show(int index) {
-    if (_lines.isEmpty) return;
+  /// False when it was showing already.
+  bool _show(int index) {
+    if (_lines.isEmpty) return false;
     final line = index.clamp(0, _lines.length - 1);
-    if (line == _line) return;
+    if (line == _line) return false;
     setState(() => _line = line);
     if (_recording) _marks.add((_clock.elapsed, line));
+    return true;
+  }
+
+  /// The user passes a phrase: the next neckline ([delta] 1) or the one
+  /// before (-1). With a song playing along, recording, it's noted at the
+  /// song's position ([BackingTrack.recordPass]); with auto-pass on, the
+  /// same pass auto-pass just made doesn't turn the tab again.
+  Future<void> _pass(int delta) async {
+    final direction = delta > 0 ? PassDirection.next : PassDirection.previous;
+    final media = _track.media;
+    final along =
+        media != null &&
+        _track.canPhrase &&
+        media.value.isPlaying &&
+        _player == null &&
+        (_recording || _autoPassOn);
+    if (!along) {
+      _show(_line + delta);
+      return;
+    }
+    Duration at;
+    try {
+      at = await media.position ?? media.value.position;
+    } on Object {
+      at = media.value.position;
+    }
+    if (!mounted) return;
+    final absorbed = _autoPassOn && _autoPass.absorbs(at, direction);
+    if (!absorbed && !_show(_line + delta)) return;
+    if (_recording && _track.media == media) {
+      _track.recordPass(at, direction, _line);
+    }
   }
 
   static final _back = {
@@ -311,7 +442,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       if (event is KeyDownEvent) unawaited(_track.restart());
       return KeyEventResult.handled;
     }
-    _show(_line + (_back.contains(key) ? -1 : 1));
+    unawaited(_pass(_back.contains(key) ? -1 : 1));
     return KeyEventResult.handled;
   }
 
@@ -392,6 +523,8 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       final page = Library.addedPages(updated).last;
       final name = l10n.camTake(n);
       await library.renamePage(event.id, page.id, name);
+      // Played along later, the take turns the tab as it turned in it.
+      await library.setPhrases(event.id, page.id, takePhrases(marks));
       _take = page;
       _takeMarks = marks;
       if (mounted) _snack(l10n.camSaved(name));
@@ -399,6 +532,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       debugPrint('TabCam: cam: $e\n$stack');
       if (mounted) _snack(l10n.camCouldntRecord('$e'));
     } finally {
+      await _track.savePhrases();
       if (mounted) setState(() => _saving = false);
     }
   }
@@ -482,6 +616,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
 
   @override
   void dispose() {
+    _autoPassTimer?.cancel();
+    _track.removeListener(_trackChanged);
+    unawaited(_track.savePhrases());
     _along.dispose();
     _focus.dispose();
     _recorder?.dispose();
@@ -552,12 +689,12 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
           color: color,
           disabledColor: Colors.white24,
           icon: const Icon(Icons.chevron_left),
-          onPressed: _line > 0 ? () => _show(_line - 1) : null,
+          onPressed: _line > 0 ? () => unawaited(_pass(-1)) : null,
         ),
         Expanded(
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: () => _show(_line + 1),
+            onTap: () => unawaited(_pass(1)),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Column(
@@ -593,7 +730,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
           color: color,
           disabledColor: Colors.white24,
           icon: const Icon(Icons.chevron_right),
-          onPressed: _line < _lines.length - 1 ? () => _show(_line + 1) : null,
+          onPressed: _line < _lines.length - 1
+              ? () => unawaited(_pass(1))
+              : null,
         ),
       ],
     );
@@ -760,6 +899,18 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
                     _focus.requestFocus();
                   },
                 ),
+                _Control(
+                  key: const Key('cam-auto-pass'),
+                  icon: _autoPassOn ? Icons.auto_mode : Icons.motion_photos_off,
+                  color: _autoPassOn
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.white,
+                  label: l10n.camAutoPass,
+                  tooltip: _autoPassOn
+                      ? l10n.camAutoPassOn
+                      : l10n.camAutoPassOff,
+                  onPressed: widget.gate == null ? _toggleAutoPass : null,
+                ),
               ],
             ),
           ),
@@ -769,19 +920,23 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   }
 }
 
-/// Rec, Play or Tab: an icon over its label, on black.
+/// Rec, Play, Tab or Auto-pass: an icon over its label, on black.
 class _Control extends StatelessWidget {
   const _Control({
     super.key,
     required this.icon,
     required this.color,
     required this.label,
+    this.tooltip,
     this.onPressed,
   });
 
   final IconData icon;
   final Color color;
   final String label;
+
+  /// What its tooltip says; null: its [label].
+  final String? tooltip;
   final VoidCallback? onPressed;
 
   @override
@@ -793,7 +948,7 @@ class _Control extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
-            tooltip: label,
+            tooltip: tooltip ?? label,
             iconSize: 36,
             color: color,
             disabledColor: Colors.white24,

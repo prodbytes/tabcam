@@ -62,7 +62,11 @@ review notes ([app stores](app-stores.md)).
   capture, Play plays it back with the tab turning as it did; Play
   along plays one of the capture's recordings, videos or links in a
   frame above the camera, the space bar pausing and playing it and 0
-  going back to its start (its section's).
+  going back to its start (its section's); turns
+  of the tab while recording along with a song are kept as phrase
+  passes (marked on its player, merged within two seconds at their
+  average time), and **Auto-pass** turns the tab there the next time
+  through.
 - [Dictionary](dictionary.md): a book icon at the top of every file
   viewer and Cam opens a search in a sidebar on the right: a chord shows
   its notes and voicings as chord diagrams, a scale its notes on the

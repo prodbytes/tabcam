@@ -587,6 +587,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camShowTab => 'Show tab';
 
   @override
+  String get camAutoPass => 'Auto-pass';
+
+  @override
+  String get camAutoPassOn =>
+      'Auto-pass on: the tab turns by itself where you turned it along the song';
+
+  @override
+  String get camAutoPassOff =>
+      'Auto-pass off: the tab turns only when you turn it';
+
+  @override
   String get camPrevious => 'Previous line';
 
   @override
@@ -682,6 +693,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get camAlongSectionClear => 'Play all of it';
+
+  @override
+  String camAlongPhrases(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count phrase passes',
+      one: '1 phrase pass',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get camAlongPhrasesClear => 'Forget the phrase passes';
 
   @override
   String get camAlongSpeed => 'Speed: slower to the left, faster to the right';
