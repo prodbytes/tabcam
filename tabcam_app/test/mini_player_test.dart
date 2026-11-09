@@ -423,6 +423,44 @@ void main() {
     );
   });
 
+  testWidgets('with a text tab, a PDF\'s sidebar lists it first; tapped, '
+      'the text shows in a pane beside the PDF', (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final (library, id) = await captureWith(tester, [
+      (PageKind.pdf, 'pdf'),
+      (PageKind.audio, 'm4a'),
+    ], tab: true);
+    await tester.pumpWidget(
+      host(FileScreen(library: library, eventId: id, pageId: 'k0')),
+    );
+    await _frames(tester);
+    final text = find.byKey(const Key('cam-along-text'));
+    expect(text, findsOneWidget);
+    expect(
+      tester.getTopLeft(text).dy,
+      lessThan(tester.getTopLeft(find.byKey(const Key('cam-along-k1'))).dy),
+    );
+    await tester.tap(text);
+    await tester.pump();
+    final pane = find.byKey(const Key('cam-pdf-pane'));
+    expect(pane, findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('cam-text-view')),
+        matching: find.text('e|--0--3--|', findRichText: true),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      tester.getTopRight(pane).dx,
+      lessThan(
+        tester.getTopLeft(find.byKey(const Key('cam-along-sidebar'))).dx,
+      ),
+    );
+  });
+
   testWidgets('a recording opens in the sidebar: loaded in its frame, '
       'paused, with the pages and PDFs listed to follow; one tapped shows '
       'in a pane beside it', (tester) async {

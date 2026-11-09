@@ -177,6 +177,8 @@
   "camAlongFollow": "Seguir una página o un PDF",
   "camAlongPageShow": "Mostrar la página al lado",
   "camAlongPageHide": "Ocultar la página",
+  "camAlongTextShow": "Mostrar el texto al lado",
+  "camAlongTextHide": "Ocultar el texto",
   "camAlongPlay": "Reproducir (espacio)",
   "camAlongPause": "Pausa (espacio)",
   "camAlongBack": "Atrás 10 segundos",

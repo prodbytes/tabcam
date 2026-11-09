@@ -13,6 +13,7 @@ import '../screens/pdf_page.dart';
 import '../screens/youtube_link.dart';
 import '../screens/sidebar_widths.dart';
 import '../screens/split_handle.dart';
+import '../screens/mono_font.dart';
 import 'backing_track.dart';
 import 'link_frame.dart';
 
@@ -28,7 +29,9 @@ import 'link_frame.dart';
 /// pane on the other side ([PlayAlongBeside]); the Text view's sidebar
 /// lists them too, to check the reading against the page; a recording's
 /// file screen lists its pages as well ([withImages]), to follow one
-/// while it plays.
+/// while it plays. With [withText] (Cam and the file screen), the
+/// capture's text tab is listed first, to follow in the same pane
+/// ([followsText]).
 class PlayAlong extends ChangeNotifier {
   PlayAlong(
     this.library,
@@ -36,6 +39,7 @@ class PlayAlong extends ChangeNotifier {
     BackingTrack? track,
     this.withPdfs = false,
     this.withImages = false,
+    this.withText = false,
     this.startId,
     this.opensByItself = true,
   }) : track = track ?? BackingTrack(library) {
@@ -53,6 +57,9 @@ class PlayAlong extends ChangeNotifier {
   /// Whether the sidebar lists the capture's images, to follow one.
   final bool withImages;
 
+  /// Whether the sidebar lists the capture's text tab, to follow it.
+  final bool withText;
+
   /// The file the screen opened on (a recording), loaded in the frame
   /// when the sidebar opens by itself, instead of the first to play.
   final String? startId;
@@ -67,6 +74,18 @@ class PlayAlong extends ChangeNotifier {
   EventPage? get followed => _followed;
   EventPage? _followed;
 
+  /// Whether the text tab is followed beside the screen (then no page is).
+  bool get followsText => _followsText;
+  bool _followsText = false;
+
+  /// The capture's text tab, when the sidebar lists it: [withText] and
+  /// the capture has one.
+  String? get text {
+    if (!withText) return null;
+    final text = library.byId(eventId)?.tabText;
+    return text == null || text.trim().isEmpty ? null : text;
+  }
+
   /// Whether the sidebar shows.
   bool get open => _open;
   bool _open = false;
@@ -75,8 +94,10 @@ class PlayAlong extends ChangeNotifier {
   bool _opened = false;
 
   /// Whether the capture has anything to play along with (or, with
-  /// [withPdfs], a PDF to follow).
-  bool get available => library.byId(eventId)?.pages.any(_listed) ?? false;
+  /// [withPdfs], a PDF to follow; with [withText], its text). The text
+  /// alone doesn't open the sidebar by itself: ♫ does.
+  bool get available =>
+      text != null || (library.byId(eventId)?.pages.any(_listed) ?? false);
 
   /// Whether the sidebar lists [page].
   bool _listed(EventPage page) => BackingTrack.plays(page) || follows(page);
@@ -94,6 +115,14 @@ class PlayAlong extends ChangeNotifier {
   /// chosen again.
   void follow(EventPage page) {
     _followed = _followed?.id == page.id ? null : page;
+    _followsText = false;
+    notifyListeners();
+  }
+
+  /// Shows the text tab beside the screen, or hides it, chosen again.
+  void followText() {
+    _followsText = !_followsText;
+    _followed = null;
     notifyListeners();
   }
 
@@ -119,8 +148,9 @@ class PlayAlong extends ChangeNotifier {
 
   /// Hides what's followed beside the screen.
   void unfollow() {
-    if (_followed == null) return;
+    if (_followed == null && !_followsText) return;
     _followed = null;
+    _followsText = false;
     notifyListeners();
   }
 
@@ -158,6 +188,11 @@ class PlayAlong extends ChangeNotifier {
     if (_followed case final followed?
         when event?.pages.any((p) => p.id == followed.id) != true) {
       _followed = null;
+      notifyListeners();
+    }
+    // The text, cleared: its pane closes.
+    if (_followsText && text == null) {
+      _followsText = false;
       notifyListeners();
     }
     if (_opened || !opensByItself) return;
@@ -225,13 +260,44 @@ Widget imageViewFor(Library library, CaptureEvent event, EventPage page) =>
       child: PageImage(library: library, event: event, page: page),
     );
 
+/// The text tab's view for [PlayAlongBeside]'s pane: the text in the
+/// tab's font, as written (lines not wrapped, so the strings line up),
+/// scrolling both ways and selectable; it follows the capture's edits.
+class FollowedText extends StatelessWidget {
+  const FollowedText({super.key, required this.library, required this.eventId});
+
+  final Library library;
+  final String eventId;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: library,
+    builder: (context, _) => SingleChildScrollView(
+      key: const Key('cam-text-view'),
+      padding: const EdgeInsets.all(12),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: SelectableText(
+          library.byId(eventId)?.tabText ?? '',
+          style: const TextStyle(
+            fontFamily: monoFont,
+            fontSize: 13,
+            height: 1.25,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 /// [along]'s sidebar, beside [child]: kept while hidden (offstage), so a
 /// link's page isn't reloaded; nothing when there's nothing to play along
 /// with. Its left edge is a separator to drag ([SplitHandle]): the
 /// sidebar gets wider or narrower, the same on every screen
 /// ([SidebarWidths]), and a double tap puts its default width back. On
-/// the other side, the PDF or image followed
-/// ([PlayAlong.followed]), when one is, in a pane of its own
+/// the other side, the text, PDF or image followed ([PlayAlong.followsText],
+/// [PlayAlong.followed]), when one is, in a pane of its own
 /// ([_FollowPane]), with a separator to drag ([SplitHandle]) between it
 /// and [child]: wider, the page reads better; [child] (the camera) gets
 /// smaller, down to [minChild].
@@ -293,23 +359,43 @@ class PlayAlongBeside extends StatelessWidget {
         final paneWidth = clamp(along.paneWidth ?? PdfPaneWidth.of(screen));
         final event = along.library.byId(along.eventId);
         final followed = event == null ? null : along.followed;
+        final l10n = context.l10n;
+        final pane = switch (followed) {
+          _ when along.followsText && along.text != null => _FollowPane(
+            icon: Icons.notes,
+            label: l10n.textViewTextTab,
+            closeTooltip: l10n.camAlongTextHide,
+            width: paneWidth,
+            view: FollowedText(library: along.library, eventId: along.eventId),
+            onUse: onUse,
+            onClose: () {
+              onUse?.call();
+              along.unfollow();
+            },
+          ),
+          final followed? => _FollowPane(
+            icon: _icon(followed),
+            label: fileLabel(l10n, event!, followed),
+            closeTooltip: followed.isPdf
+                ? l10n.camAlongPdfHide
+                : l10n.camAlongPageHide,
+            width: paneWidth,
+            view: followed.isPdf
+                ? pdfView(along.library, event, followed)
+                : imageViewFor(along.library, event, followed),
+            onUse: onUse,
+            onClose: () {
+              onUse?.call();
+              along.unfollow();
+            },
+          ),
+          null => null,
+        };
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (followed != null) ...[
-              _FollowPane(
-                event: event!,
-                page: followed,
-                width: paneWidth,
-                view: followed.isPdf
-                    ? pdfView(along.library, event, followed)
-                    : imageViewFor(along.library, event, followed),
-                onUse: onUse,
-                onClose: () {
-                  onUse?.call();
-                  along.unfollow();
-                },
-              ),
+            if (pane != null) ...[
+              pane,
               SplitHandle(
                 key: const Key('cam-pdf-split'),
                 axis: Axis.horizontal,
@@ -355,10 +441,16 @@ class PlayAlongBeside extends StatelessWidget {
                     linkFrame: linkFrame,
                     toFollow: along.toFollow,
                     followed: along.followed,
+                    hasText: along.text != null,
+                    followsText: along.followsText,
                     footer: footer,
                     onFollow: (page) {
                       onUse?.call();
                       along.follow(page);
+                    },
+                    onFollowText: () {
+                      onUse?.call();
+                      along.followText();
                     },
                     onChoose: (page) {
                       onUse?.call();
@@ -494,22 +586,24 @@ abstract final class PdfPaneWidth {
   static double of(double screen) => (screen * 0.4).clamp(160.0, 480.0);
 }
 
-/// The PDF or image followed, beside the screen: its name and **Close**
-/// at the top, the document under them, scrolling and zoomable
-/// ([PdfPage], [imageViewFor]), [width] wide ([PdfPaneWidth], or as the
-/// user dragged it).
+/// The text, PDF or image followed, beside the screen: its [icon], [label]
+/// and **Close** at the top, the document under them, scrolling
+/// ([FollowedText], [PdfPage], [imageViewFor]), [width] wide
+/// ([PdfPaneWidth], or as the user dragged it).
 class _FollowPane extends StatelessWidget {
   const _FollowPane({
-    required this.event,
-    required this.page,
+    required this.icon,
+    required this.label,
+    required this.closeTooltip,
     required this.width,
     required this.view,
     required this.onClose,
     this.onUse,
   });
 
-  final CaptureEvent event;
-  final EventPage page;
+  final IconData icon;
+  final String label;
+  final String closeTooltip;
   final double width;
   final Widget view;
   final VoidCallback onClose;
@@ -517,7 +611,6 @@ class _FollowPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
     return SizedBox(
       key: const Key('cam-pdf-pane'),
       width: width,
@@ -532,11 +625,11 @@ class _FollowPane extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
                 child: Row(
                   children: [
-                    Icon(_icon(page), color: Colors.white70, size: 16),
+                    Icon(icon, color: Colors.white70, size: 16),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        fileLabel(l10n, event, page),
+                        label,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white,
@@ -546,9 +639,7 @@ class _FollowPane extends StatelessWidget {
                     ),
                     IconButton(
                       key: const Key('cam-pdf-close'),
-                      tooltip: page.isPdf
-                          ? l10n.camAlongPdfHide
-                          : l10n.camAlongPageHide,
+                      tooltip: closeTooltip,
                       visualDensity: const VisualDensity(
                         horizontal: -4,
                         vertical: -4,
@@ -803,7 +894,9 @@ class _BackingFrame extends StatelessWidget {
 }
 
 /// The sidebar: the backing track's frame at its top, always there, and
-/// under it the capture's recordings, videos and links, the one playing
+/// under it, first, the capture's text tab when it [hasText], marked when
+/// [followsText]: a tap shows it beside the screen, or hides it, tapped
+/// again. Then the capture's recordings, videos and links, the one playing
 /// along marked; a tap plays one along. Then the PDFs and images
 /// [toFollow], if any, under a heading of their own, the one [followed]
 /// marked; a tap shows it beside the screen, or hides it, tapped again.
@@ -819,6 +912,9 @@ class PlayAlongSidebar extends StatelessWidget {
     this.toFollow = const [],
     this.followed,
     this.onFollow,
+    this.hasText = false,
+    this.followsText = false,
+    this.onFollowText,
     this.footer,
     required this.onToggle,
     required this.onStop,
@@ -844,6 +940,9 @@ class PlayAlongSidebar extends StatelessWidget {
   final List<EventPage> toFollow;
   final EventPage? followed;
   final void Function(EventPage page)? onFollow;
+  final bool hasText;
+  final bool followsText;
+  final VoidCallback? onFollowText;
   final Widget? footer;
   final VoidCallback onToggle;
   final VoidCallback onStop;
@@ -958,6 +1057,30 @@ class PlayAlongSidebar extends StatelessWidget {
           return ListView(
             padding: EdgeInsets.zero,
             children: [
+              if (hasText)
+                Tooltip(
+                  message: followsText
+                      ? l10n.camAlongTextHide
+                      : l10n.camAlongTextShow,
+                  child: ListTile(
+                    key: const Key('cam-along-text'),
+                    dense: true,
+                    selected: followsText,
+                    selectedColor: primary,
+                    textColor: Colors.white,
+                    iconColor: Colors.white70,
+                    leading: const Icon(Icons.notes),
+                    title: Text(
+                      l10n.textViewTextTab,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: followsText
+                        ? const Icon(Icons.vertical_split, size: 18)
+                        : null,
+                    onTap: onFollowText,
+                  ),
+                ),
               if (pages.isNotEmpty) _heading(l10n.camAlongTitle),
               for (final page in pages)
                 ListTile(

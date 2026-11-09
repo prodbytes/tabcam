@@ -2206,8 +2206,31 @@ spec.
    typing in a field are left alone. See
    [Cam](cam.md#playing-along-with-a-file) and the
    [event screen](event-screen.md).
-
-3. **Add a count-in to the mini player: wait 2 seconds, in silence,
+3. **In the mini player sidebar, also add a link to open the text, as
+   the first one, opening it to the side, just like documents and
+   pages, but now with the text.** In Cam and on the file screen (beside
+   a PDF, an image or a recording) the play-along sidebar's list now
+   starts with **Text tab** when the capture has one; a tap shows the
+   text in the pane on the left, as a PDF or a page is followed (its
+   name and ✕, the separator to drag), in the tab's font, lines not
+   wrapped, scrolling both ways, selectable, following edits. One thing
+   shows in the pane at a time: the text, a PDF or a page. With only a
+   text tab, ♫ now shows (the sidebar doesn't open by itself for it).
+   The Text view's sidebar doesn't list it. In English, Spanish and
+   Portuguese. See [Cam](cam.md#following-the-text) and the
+   [event screen](event-screen.md#file-screen).
+4. **In Cam, make ← and → go left and right in the mini player (skip
+   back and on in the song), and ↑ and ↓ move the tab's phrases.** While
+   the play-along sidebar shows with a file loaded, ← and → skip the
+   song 10 seconds back and on, as « and » (held, again and again), and
+   no longer turn the tab; ↑ goes to the phrase before and ↓ to the next,
+   as before. With the sidebar hidden, ← and → turn the tab as they did.
+   See [Cam](cam.md#playing-along-with-a-file).
+5. **Remember in the project's CLAUDE.md that "tab" means the whole
+   document, "phrase" a neckline with all its strings, "line" a single
+   string and "note" a single number on a line.** CLAUDE.md gains a
+   **Glossary** section with these four words.
+6. **Add a count-in to the mini player: wait 2 seconds, in silence,
    before playing, while the user moves from the keyboard to the
    instrument; show those seconds on the mini player in a different
    colour, with a button before them to turn it off, all on the time

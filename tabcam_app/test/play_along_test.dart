@@ -455,6 +455,7 @@ void main() {
   testWidgets('Play along: the sidebar opens with the first file loaded, '
       'paused, in a frame at its top; a recording or link from it plays '
       'there; space pauses and plays it; Stop and 0 go back to the start; '
+      '← and → skip in it, ↑ and ↓ turn the tab; '
       'hidden, it pauses and space turns the tab', (tester) async {
     final (library, id) = await capture(tester, tab: _tab);
     late String audio, youTube;
@@ -559,6 +560,24 @@ void main() {
     await frames(tester);
     expect(video.seeks, const [Duration.zero]);
     expect(video.playing, hasLength(1));
+
+    // ← and →: back and on in the track, the tab staying; ↓ and ↑ turn
+    // the tab.
+    final line = shown(tester);
+    video.seeks.clear();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await frames(tester);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await frames(tester);
+    expect(video.seeks, hasLength(2));
+    expect(video.seeks.last, lessThan(video.seeks.first));
+    expect(shown(tester), line);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await frames(tester);
+    expect(shown(tester), isNot(line));
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await frames(tester);
+    expect(shown(tester), line);
     await tester.tap(find.byKey(const Key('cam-along')));
     await frames(tester);
     expect(find.byKey(const Key('cam-along-sidebar')), findsNothing);
@@ -694,7 +713,7 @@ void main() {
   });
 
   testWidgets('with nothing to play along, no Play along', (tester) async {
-    final (library, id) = await capture(tester, tab: _tab);
+    final (library, id) = await capture(tester);
     await tester.pumpWidget(
       app(
         PlayAlongScreen(
@@ -998,5 +1017,135 @@ void main() {
     expect(event.phrases.containsKey(song), isFalse);
     expect(find.byKey(const Key('cam-along-phrases')), findsNothing);
     expect(find.byKey(const Key('cam-along-phrase-marks')), findsNothing);
+  });
+
+  testWidgets('the text tab is listed first in the sidebar to follow; '
+      'tapped, it shows in the pane on the left of the camera, and hides '
+      'tapped again or closed; a PDF chosen takes its place', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    late String pdf;
+    await tester.runAsync(() async {
+      final event = await library.addMedia(library.byId(id)!, [
+        Media(
+          XFile.fromData(Uint8List.fromList([1]), name: 'sheet.pdf'),
+          PageKind.pdf,
+          'pdf',
+        ),
+      ]);
+      pdf = event.pages.last.id;
+    });
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          pdfView: (_, _, page) =>
+              SizedBox(key: ValueKey('fake-pdf-${page.id}')),
+        ),
+      ),
+    );
+    await frames(tester);
+    final text = find.byKey(const Key('cam-along-text'));
+    final pdfTile = find.byKey(ValueKey('cam-along-$pdf'));
+    expect(text, findsOneWidget);
+    expect(find.text('Text tab'), findsOneWidget);
+    // First, above the PDFs.
+    expect(tester.getTopLeft(text).dy, lessThan(tester.getTopLeft(pdfTile).dy));
+    final pane = find.byKey(const Key('cam-pdf-pane'));
+    final view = find.byKey(const Key('cam-text-view'));
+    expect(pane, findsNothing);
+
+    // Tapped: the text in the pane on the left, the row marked.
+    await tester.tap(text);
+    await tester.pump();
+    expect(pane, findsOneWidget);
+    expect(view, findsOneWidget);
+    expect(
+      find.descendant(
+        of: view,
+        matching: find.byWidgetPredicate(
+          (w) => w is SelectableText && w.data == _tab,
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(tester.widget<ListTile>(text).selected, isTrue);
+    expect(
+      tester.getTopLeft(pane).dx,
+      lessThan(tester.getTopLeft(find.byKey(const Key('neckline'))).dx),
+    );
+
+    // It follows the capture's edits.
+    await tester.runAsync(
+      () => library.update(library.byId(id)!.copyWith(tabText: 'e|--3--|')),
+    );
+    await frames(tester);
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is SelectableText && w.data == 'e|--3--|',
+      ),
+      findsOneWidget,
+    );
+
+    // A PDF chosen takes the pane; the text chosen again takes it back.
+    await tester.tap(pdfTile);
+    await tester.pump();
+    expect(view, findsNothing);
+    expect(find.byKey(ValueKey('fake-pdf-$pdf')), findsOneWidget);
+    expect(tester.widget<ListTile>(text).selected, isFalse);
+    await tester.tap(text);
+    await tester.pump();
+    expect(view, findsOneWidget);
+    expect(find.byKey(ValueKey('fake-pdf-$pdf')), findsNothing);
+    expect(tester.widget<ListTile>(pdfTile).selected, isFalse);
+
+    // Tapped again: hidden; closed from the pane.
+    await tester.tap(text);
+    await tester.pump();
+    expect(pane, findsNothing);
+    await tester.tap(text);
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('cam-pdf-close')));
+    await tester.pump();
+    expect(pane, findsNothing);
+
+    // The text cleared: the row goes, the pane closes.
+    await tester.tap(text);
+    await tester.pump();
+    await tester.runAsync(
+      () => library.update(library.byId(id)!.copyWith(tabText: '')),
+    );
+    await frames(tester);
+    expect(pane, findsNothing);
+    expect(text, findsNothing);
+  });
+
+  testWidgets('with the text tab alone, Play along shows but the sidebar '
+      'doesn\'t open by itself; opened, it lists the text', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+        ),
+      ),
+    );
+    await frames(tester);
+    expect(find.byKey(const Key('cam-along')), findsOneWidget);
+    expect(find.byKey(const Key('cam-along-sidebar')), findsNothing);
+    await tester.tap(find.byKey(const Key('cam-along')));
+    await frames(tester);
+    expect(find.byKey(const Key('cam-along-sidebar')), findsOneWidget);
+    expect(find.byKey(const Key('cam-along-frame')), findsNothing);
+    await tester.tap(find.byKey(const Key('cam-along-text')));
+    await tester.pump();
+    expect(find.byKey(const Key('cam-text-view')), findsOneWidget);
   });
 }
