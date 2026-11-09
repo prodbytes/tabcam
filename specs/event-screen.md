@@ -202,8 +202,11 @@ The file is shown whole, as what it is:
   A PDF that can't be read says so. When the capture has recordings,
   videos or links, the play-along sidebar is beside it, open, with **Play
   along** (♫) in the app bar, as in [Cam](cam.md#playing-along-with-a-file).
-  Beside an image or a PDF the sidebar lists only what plays along,
-  nothing to follow.
+  Beside an image or a PDF the sidebar lists what plays along and, when
+  the capture has a text tab, the **Text tab** first, to
+  [follow beside the file](cam.md#following-the-text) in a pane on its
+  left (then ♫ is there even with nothing to play, the sidebar opened
+  by it); no PDFs or pages to follow.
 - **Videos** show a play button; tapped, they play in place, looping
   (as their [edit](video-edit.md) says: the kept part, muted with its
   new track along it), with a bar at the bottom: a **play / pause**
@@ -218,7 +221,9 @@ The file is shown whole, as what it is:
   pauses it. The screen itself shows a card with a music note,
   "Recording" and "It plays in the sidebar. Pick a page or PDF there to
   follow along." Under the files to play along, the sidebar lists the
-  capture's **images and PDFs** under **Follow a page or PDF**: a tap
+  capture's **images and PDFs** under **Follow a page or PDF** (and,
+  first in the list, the **Text tab**, when there is one,
+  [followed the same way](cam.md#following-the-text)): a tap
   shows one in a pane on the left, as Cam
   [follows a PDF](cam.md#following-a-pdf) (an image pinch-zoomable, a
   PDF scrolling, with the separator to drag; **Hide the page** / **Hide

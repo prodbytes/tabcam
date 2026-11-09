@@ -652,6 +652,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camAlongPageHide => 'Hide the page';
 
   @override
+  String get camAlongTextShow => 'Show the text beside it';
+
+  @override
+  String get camAlongTextHide => 'Hide the text';
+
+  @override
   String get camAlongPlay => 'Play (space)';
 
   @override

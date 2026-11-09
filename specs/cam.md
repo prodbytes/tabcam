@@ -156,7 +156,10 @@ frame stays.
 **Play along** (♫ in the app bar, in the primary colour while open)
 hides and shows the sidebar, frame and all; hiding it pauses what plays
 (kept offstage, so a link's page isn't reloaded). A capture with none of
-them has no sidebar and no ♫. A tap on one plays it in the frame, taking
+them has no sidebar and no ♫, unless it has a text tab: then ♫ is
+there, and the sidebar, opened with it, lists the text to
+[follow](#following-the-text) (the text alone doesn't open it by
+itself). A tap on one plays it in the frame, taking
 the place of the one before; a tap on the one in the frame pauses or
 plays it. The user plays along, and records as usual: Rec doesn't stop
 it, so the microphone records it too (iOS mixes its sound with the
@@ -168,7 +171,7 @@ sidebar also lists the capture's PDFs, under **Follow a PDF** (after the
 files to play along, with a PDF icon; the capture's photos aren't
 listed), so the guitarist can read the tab from the page itself when the
 text tab is still wrong. A tap on one opens a **PDF pane** on the **left** of the
-camera (`PlayAlong.pdf`, `_PdfPane`; 40% of the screen's width, from 160
+camera (`PlayAlong.followed`, `_FollowPane`; 40% of the screen's width, from 160
 to 480 px, so the page reads), with a **separator** between it and the
 camera (`SplitHandle`, a line with a grip, 12 px wide to take a finger,
 a resize cursor on a computer): dragged right, the PDF gets wider and the
@@ -190,6 +193,23 @@ to follow, and a recording's lists the capture's **images and PDFs**,
 under **Follow a page or PDF** (an image shows in the pane
 pinch-zoomable, as the file screen shows it; its tooltips say **Show
 the page beside it** / **Hide the page**).
+
+<a id="following-the-text"></a>**Following the text**: in Cam and on
+the [file screen](event-screen.md#file-screen) (beside a PDF, an image
+or a recording), when the capture has a text tab, the sidebar's list
+starts with it: **Text tab** (a notes icon), above the files to play
+along and the PDFs and pages to follow (`PlayAlong.withText`,
+`PlayAlong.followsText`). A tap shows the text in the same pane on the
+left (**Show the text beside it**), as a PDF is followed: its name and
+**Hide the text** (✕) at the top, the separator to drag, the width kept
+for the next one shown. The text is in the tab's monospaced font, lines
+as written (not wrapped, so the strings line up), scrolling down and
+across, selectable to copy (`FollowedText`); an edit or a sync shows in
+it at once. The pane shows one thing at a time: a PDF or a page tapped
+takes the text's place, and the text tapped takes theirs; tapped again,
+or ✕, it hides. A text cleared while it shows closes the pane and the
+row goes. The Text view's sidebar doesn't list it (the text is the
+view).
 
 - **The frame**, as wide as the sidebar and at most a third of the
   screen's height (on a short screen the video shrinks first, so the

@@ -142,6 +142,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     widget.library,
     widget.eventId,
     withPdfs: true,
+    withText: true,
   );
   BackingTrack get _track => _along.track;
 

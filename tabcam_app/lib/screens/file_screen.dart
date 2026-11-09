@@ -304,6 +304,8 @@ class _FileScreenState extends State<FileScreen> {
       widget.eventId,
       withPdfs: recording,
       withImages: recording,
+      // The text tab, to follow beside any file (a PDF, a page).
+      withText: true,
       startId: recording ? page.id : null,
     );
   }

@@ -1150,6 +1150,18 @@ abstract class AppLocalizations {
   /// **'Hide the page'**
   String get camAlongPageHide;
 
+  /// Play-along sidebar: tapping the text tab row shows the capture's text in a pane beside the camera or file
+  ///
+  /// In en, this message translates to:
+  /// **'Show the text beside it'**
+  String get camAlongTextShow;
+
+  /// Play-along sidebar and the text's pane: hides the text shown beside the camera or file
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the text'**
+  String get camAlongTextHide;
+
   /// Cam backing track: play; the space bar does it too
   ///
   /// In en, this message translates to:
