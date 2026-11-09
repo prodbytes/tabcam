@@ -276,14 +276,35 @@ while on), and there the event screen's other buttons go in a menu
   **Rescan**), then reads every page again
   (`readSoon(id, replace: true)`, which reads again too; with Premium,
   in the cloud). The text stays until the read ends: meanwhile the Text
-  view spins (a progress bar, "Rescanning the pages…"), and the text,
-  Fix, Rescan and Verified wait. Only once a tab is found does it
-  replace the text, as a read of its own (`tabTextAuto`), clearing the
-  old doubts. If the read finds no tab, fails, or
-  can't run (signed out, no OCR here), nothing changes and a message
-  says why, ending "The text was kept.". Shown only when the event has
-  photos or PDFs to read and the app can read them, and not on an event
-  shared read only.
+  view spins (a progress bar, "Rescanning the pages…" and after it a
+  timer counting from the confirming tap, m:ss, h:mm:ss from an hour,
+  in figures of one width), and the text, Fix, Rescan and Verified
+  wait. Only once a tab is found does it replace the text, as a read of
+  its own (`tabTextAuto`), clearing the old doubts. If the read finds no
+  tab, fails, or can't run (signed out, no OCR here), nothing changes.
+  **When it ends**, either way, a soft **ding** plays
+  ([the ding](#the-ding)) and a message says how long it took:
+  "Rescanned in 0:42." when a tab replaced the text, else "Rescanned in
+  0:42." followed by why and "The text was kept.". Shown only when the
+  event has photos or PDFs to read and the app can read them, and not
+  on an event shared read only.
+
+  <a id="the-ding"></a>**The ding** (`lib/sound/`): about 0.7 s, a
+  bell-like E6 (1318.5 Hz) with its octave and a fainter partial at 2.76
+  times, each dying away, at most 0.3 of full scale; made in the app
+  (`dingSamples`, `dingWav`: a 16-bit mono WAV at 44.1 kHz), so it's the
+  same everywhere and ships with no sound file. Android plays it as a
+  notification sound (`MediaPlayer`, `USAGE_NOTIFICATION_EVENT`): at the
+  notification volume, quiet on silent, vibrate or Do Not Disturb, and
+  taking no audio focus. iOS plays it as a system sound
+  (`AudioServicesPlaySystemSound`): quiet with the ring / silent switch
+  on silent, the app's audio session untouched. Both through the method
+  channel `tabcam/sound` (method `ding`, the WAV's bytes; the native
+  side writes it to its cache or temporary folder). The web plays it
+  through Web Audio: the dialog's Rescan tap wakes the page's
+  `AudioContext` (Safari plays sound only from a tap's handler), the
+  ding plays when the read ends, and the context sleeps again after it;
+  if the browser won't wake it, nothing plays rather than a late ding.
 - **Verified**: a toggle marking the reading correct once the user has
   checked it: tonal like Copy while off, filled and ticked while on;
   tapping it again unmarks it. Saved at once. The mark is kept on the

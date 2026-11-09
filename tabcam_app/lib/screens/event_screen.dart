@@ -18,6 +18,7 @@ import '../l10n/language.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
 import '../recognition/auto_reader.dart';
+import '../sound/ding.dart';
 import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
 import 'account_panel.dart';
@@ -525,10 +526,14 @@ class _EventScreenState extends State<EventScreen> {
   /// Rescan is reading the pages: the Text view spins, its text kept.
   bool get _rescanning => _unfollow != null;
 
+  /// When Rescan's read started: the Text view's timer counts from it.
+  DateTime? _rescanStarted;
+
   /// The Text view's Rescan: asks, then reads every photo and PDF again.
-  /// The text stays (and the Text view spins) until the read ends: a tab
-  /// found replaces it, even one the user edited or marked verified (the
-  /// mark is cleared); none found, or a failure, keeps it and says why.
+  /// The text stays (and the Text view spins, a timer counting) until the
+  /// read ends: a tab found replaces it; none found, or a failure, keeps
+  /// it and says why. Either way a ding, and a message says how long it
+  /// took.
   Future<void> _rescan(CaptureEvent event) async {
     final reader = AutoReaderScope.of(context);
     if (reader == null) return;
@@ -544,7 +549,11 @@ class _EventScreenState extends State<EventScreen> {
             child: Text(l10n.eventCancel),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () {
+              // From the tap, so the browser lets the ding play at the end.
+              primeDing();
+              Navigator.pop(context, true);
+            },
             child: Text(l10n.textViewRescan),
           ),
         ],
@@ -554,6 +563,7 @@ class _EventScreenState extends State<EventScreen> {
     reader.readSoon(event.id, replace: true);
     _stopFollowing();
     final id = event.id;
+    final started = DateTime.now();
     void follow() {
       final state = reader.stateOf(id);
       // Still reading: on the device, or in the cloud until its text comes.
@@ -561,20 +571,30 @@ class _EventScreenState extends State<EventScreen> {
       _stopFollowing();
       if (!mounted) return;
       setState(() {});
-      if (state == null) return; // a tab found: the text is replaced
+      // Done: a ding, and how long it took.
+      unawaited(playDing());
       final l10n = context.l10n;
-      _snack(
-        l10n.eventRescanKept(switch (state) {
-          ReadState.noTab => l10n.eventNoTab,
-          ReadState.unsupported => l10n.eventReadUnsupported,
-          ReadState.needsSignIn => l10n.eventReadNeedsSignIn,
-          _ => l10n.eventReadFailed,
-        }),
-      );
+      final took = elapsedText(DateTime.now().difference(started));
+      _snack(switch (state) {
+        null => l10n.eventRescanned(took), // a tab found: the text replaced
+        ReadState.noTab => l10n.eventRescanKept(took, l10n.eventNoTab),
+        ReadState.unsupported => l10n.eventRescanKept(
+          took,
+          l10n.eventReadUnsupported,
+        ),
+        ReadState.needsSignIn => l10n.eventRescanKept(
+          took,
+          l10n.eventReadNeedsSignIn,
+        ),
+        _ => l10n.eventRescanKept(took, l10n.eventReadFailed),
+      });
     }
 
     reader.addListener(follow);
-    setState(() => _unfollow = () => reader.removeListener(follow));
+    setState(() {
+      _rescanStarted = started;
+      _unfollow = () => reader.removeListener(follow);
+    });
     follow();
   }
 
@@ -633,6 +653,7 @@ class _EventScreenState extends State<EventScreen> {
             ? () => _rescan(event)
             : null,
         rescanning: _rescanning,
+        rescanStarted: _rescanStarted,
         onUpgrade: switch ((widget.sync, widget.ocr)) {
           (final sync?, final ocr?) => () => showAccountSheet(
             context,

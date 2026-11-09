@@ -9,12 +9,14 @@ class MainActivity : FlutterActivity() {
     private var takeOverlay: TakeOverlay? = null
     private var videoEdit: VideoEdit? = null
     private var cameraPermission: CameraPermission? = null
+    private var sound: Sound? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         takeOverlay = TakeOverlay(applicationContext, flutterEngine.dartExecutor.binaryMessenger)
         videoEdit = VideoEdit(applicationContext, flutterEngine.dartExecutor.binaryMessenger)
         cameraPermission = CameraPermission(this, flutterEngine.dartExecutor.binaryMessenger)
+        sound = Sound(applicationContext, flutterEngine.dartExecutor.binaryMessenger)
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
@@ -24,6 +26,8 @@ class MainActivity : FlutterActivity() {
         videoEdit = null
         cameraPermission?.dispose()
         cameraPermission = null
+        sound?.dispose()
+        sound = null
         super.cleanUpFlutterEngine(flutterEngine)
     }
 

@@ -381,10 +381,24 @@
   "@eventRescanBody": {
     "description": "Event: what Rescan does"
   },
-  "eventRescanKept": "{reason} The text was kept.",
-  "@eventRescanKept": {
-    "description": "Event: Rescan found no tab, or failed: why, and that the text is as it was",
+  "eventRescanned": "Rescanned in {time}.",
+  "@eventRescanned": {
+    "description": "Event: Rescan's read is done and a tab found replaced the text: how long it took (minutes:seconds)",
     "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "0:12"
+      }
+    }
+  },
+  "eventRescanKept": "Rescanned in {time}. {reason} The text was kept.",
+  "@eventRescanKept": {
+    "description": "Event: Rescan's read is done but found no tab, or failed: how long it took (minutes:seconds), why, and that the text is as it was",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "0:12"
+      },
       "reason": {
         "type": "String"
       }

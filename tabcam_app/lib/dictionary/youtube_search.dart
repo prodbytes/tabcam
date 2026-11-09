@@ -41,8 +41,7 @@ class YouTubeSearchFailed implements Exception {
 /// Searches YouTube from the device, keeping the last searches' results
 /// so the same search isn't asked twice (each costs the API's quota).
 class YouTubeSearch {
-  YouTubeSearch({required this.apiKey, http.Client? client})
-    : _given = client;
+  YouTubeSearch({required this.apiKey, http.Client? client}) : _given = client;
 
   static const _buildKey = String.fromEnvironment('TABCAM_YOUTUBE_API_KEY');
 

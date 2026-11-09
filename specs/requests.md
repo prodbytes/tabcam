@@ -2299,3 +2299,18 @@ spec.
     account hash, error); API Gateway access logs for 30 days, which show
     the authorizers' refusals. See [cloud sync](cloud-sync.md#when-and-how),
     [sign-in sessions](sessions.md#logs), [privacy](privacy.md).
+11. **When a rescan is requested, show a timer right after the
+    "Rescanning the pages…" label while it spins, and when it ends a
+    simple message with the total time it took; also a subtle sound
+    effect when it's done, like a ding.** The Text view's progress line
+    now reads "Rescanning the pages… 0:12", the timer counting each
+    second from the dialog's Rescan tap (m:ss). When the read ends, a
+    message says "Rescanned in 0:42." (when no tab was found or the read
+    failed, the time comes first, then why and "The text was kept."),
+    and a soft ding plays: about 0.7 s, bell-like, made in the app with
+    no sound file; Android plays it as a notification sound, iOS as a
+    system sound (both quiet on silent), through the new `tabcam/sound`
+    channel, and the web through Web Audio, woken by the confirming tap.
+    In English, Spanish and Portuguese. See
+    [tab recognition](tab-recognition.md#the-ding) and
+    [platforms](platforms.md).

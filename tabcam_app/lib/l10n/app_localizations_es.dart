@@ -309,8 +309,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Cada foto y PDF se lee de nuevo. Si se encuentra una tablatura, reemplaza el texto actual, aunque lo hayas editado; si no, el texto se conserva.';
 
   @override
-  String eventRescanKept(String reason) {
-    return '$reason Se conservó el texto.';
+  String eventRescanned(String time) {
+    return 'Páginas leídas de nuevo en $time.';
+  }
+
+  @override
+  String eventRescanKept(String time, String reason) {
+    return 'Páginas leídas de nuevo en $time. $reason Se conservó el texto.';
   }
 
   @override
