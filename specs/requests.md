@@ -2226,3 +2226,7 @@ spec.
    no longer turn the tab; ↑ goes to the phrase before and ↓ to the next,
    as before. With the sidebar hidden, ← and → turn the tab as they did.
    See [Cam](cam.md#playing-along-with-a-file).
+5. **Remember in the project's CLAUDE.md that "tab" means the whole
+   document, "phrase" a neckline with all its strings, "line" a single
+   string and "note" a single number on a line.** CLAUDE.md gains a
+   **Glossary** section with these four words.
