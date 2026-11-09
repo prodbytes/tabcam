@@ -910,6 +910,14 @@
   "@camAlongPageHide": {
     "description": "Sidebar: tooltip of the image showing, and of its Close"
   },
+  "camAlongTextShow": "Show the text beside it",
+  "@camAlongTextShow": {
+    "description": "Play-along sidebar: tapping the text tab row shows the capture's text in a pane beside the camera or file"
+  },
+  "camAlongTextHide": "Hide the text",
+  "@camAlongTextHide": {
+    "description": "Play-along sidebar and the text's pane: hides the text shown beside the camera or file"
+  },
   "camAlongPlay": "Play (space)",
   "@camAlongPlay": {
     "description": "Cam backing track: play; the space bar does it too"

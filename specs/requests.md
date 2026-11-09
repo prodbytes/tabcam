@@ -2206,3 +2206,16 @@ spec.
    typing in a field are left alone. See
    [Cam](cam.md#playing-along-with-a-file) and the
    [event screen](event-screen.md).
+3. **In the mini player sidebar, also add a link to open the text, as
+   the first one, opening it to the side, just like documents and
+   pages, but now with the text.** In Cam and on the file screen (beside
+   a PDF, an image or a recording) the play-along sidebar's list now
+   starts with **Text tab** when the capture has one; a tap shows the
+   text in the pane on the left, as a PDF or a page is followed (its
+   name and ✕, the separator to drag), in the tab's font, lines not
+   wrapped, scrolling both ways, selectable, following edits. One thing
+   shows in the pane at a time: the text, a PDF or a page. With only a
+   text tab, ♫ now shows (the sidebar doesn't open by itself for it).
+   The Text view's sidebar doesn't list it. In English, Spanish and
+   Portuguese. See [Cam](cam.md#following-the-text) and the
+   [event screen](event-screen.md#file-screen).
