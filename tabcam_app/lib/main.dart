@@ -29,6 +29,7 @@ import 'l10n/language.dart';
 import 'library/library.dart';
 import 'maintenance/maintenance.dart';
 import 'export/incoming_links.dart';
+import 'metronome/metronome.dart';
 import 'recognition/auto_reader.dart';
 import 'screens/home_screen.dart';
 import 'screens/sidebar_widths.dart';
@@ -72,6 +73,7 @@ class AppServices {
   AppServices() : library = Library()..load() {
     language = LanguageSetting(library)..load();
     unawaited(SidebarWidths.instance.load(library));
+    unawaited(MetronomeState.instance.load(library));
     // Sign-in and sync only in a build that has both set up (.env, or the
     // deploys' repository variables); otherwise events stay on the device.
     if (_cloud) auth = _signIn()..init();

@@ -2299,3 +2299,18 @@ spec.
     account hash, error); API Gateway access logs for 30 days, which show
     the authorizers' refusals. See [cloud sync](cloud-sync.md#when-and-how),
     [sign-in sessions](sessions.md#logs), [privacy](privacy.md).
+11. **Add another tool besides the dictionary and the mini player as a
+    sidebar: a metronome. Clicking the metronome icon opens it in a
+    sidebar; 4/4 and 80 BPM by default; the user adjusts the BPM, picks
+    one of the most common time signatures, and plays it, with simple
+    sounds like a regular metronome.** A **Metronome** button (a stopwatch
+    icon) after Dictionary on every capture, file screen and Cam (in the
+    phone's More menu too) shows a resizable sidebar on the right: the
+    tempo (−, +, a 30–250 slider), time signatures 2/4, 3/4, 4/4, 5/4,
+    6/8, 7/8, 9/8 and 12/8, a light per beat, and Start / Stop. Clicks are
+    made on the device, accented on the bar's first beat (and each
+    group's in eighth-note meters): Web Audio on the web, a looping WAV
+    of whole bars through the media player on the phones (no new
+    library). The tempo and signature are kept on the device; it stops
+    when its sidebar closes or the user leaves the screens that have it.
+    In English, Spanish and Portuguese. See [metronome](metronome.md).

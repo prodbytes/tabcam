@@ -17,6 +17,7 @@ import '../import/tab_page_import.dart';
 import '../l10n/language.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
+import '../metronome/metronome.dart';
 import '../recognition/auto_reader.dart';
 import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
@@ -198,8 +199,8 @@ class _EventScreenState extends State<EventScreen> {
     }
   }
 
-  /// On a phone, in the Text view: Dictionary (its sidebar shown or
-  /// hidden), Play along, Rename, Clone, Download all and Share, in a menu
+  /// On a phone, in the Text view: Dictionary and Metronome (their
+  /// sidebars shown or hidden), Play along, Rename, Clone, Download all and Share, in a menu
   /// at the app bar's end.
   Widget _moreMenu(CaptureEvent event, {required bool editable}) {
     final l10n = context.l10n;
@@ -227,6 +228,12 @@ class _EventScreenState extends State<EventScreen> {
           Icons.menu_book_outlined,
           DictionaryState.instance.open ? l10n.dictionaryHide : l10n.dictionary,
           DictionaryState.instance.toggle,
+        ),
+        item(
+          'more-metronome',
+          Icons.av_timer,
+          MetronomeState.instance.open ? l10n.metronomeHide : l10n.metronome,
+          MetronomeState.instance.toggle,
         ),
         if (along.available)
           item(
@@ -1131,6 +1138,7 @@ class _EventScreenState extends State<EventScreen> {
                 _moreMenu(event, editable: editable)
               else ...[
                 const DictionaryButton(),
+                const MetronomeButton(),
                 if (text && !locked) PlayAlongButton(along: _along),
                 if (editable)
                   IconButton(
@@ -1165,29 +1173,31 @@ class _EventScreenState extends State<EventScreen> {
                 : null,
           ),
           // Files dragged onto the screen are added to the capture.
-          body: DictionaryBeside(
-            child: FileDropArea(
-              enabled: !_busy && canAdd,
-              onFiles: (files, skipped) => _addDropped(event, files, skipped),
-              child: Column(
-                children: [
-                  if (widget.byLink)
-                    _LinkBanner(onSignIn: widget.onSignIn)
-                  else if (event.sharedBy case final owner?)
-                    _SharedBanner(owner: owner, readOnly: event.readOnly),
-                  Expanded(
-                    // Locked, the preview has no sidebar (nothing plays).
-                    child: !text
-                        ? _fileList(event)
-                        : locked
-                        ? _textView(event)
-                        : PlayAlongBeside(
-                            along: _along,
-                            footer: const NotationSheet(),
-                            child: _textView(event),
-                          ),
-                  ),
-                ],
+          body: MetronomeBeside(
+            child: DictionaryBeside(
+              child: FileDropArea(
+                enabled: !_busy && canAdd,
+                onFiles: (files, skipped) => _addDropped(event, files, skipped),
+                child: Column(
+                  children: [
+                    if (widget.byLink)
+                      _LinkBanner(onSignIn: widget.onSignIn)
+                    else if (event.sharedBy case final owner?)
+                      _SharedBanner(owner: owner, readOnly: event.readOnly),
+                    Expanded(
+                      // Locked, the preview has no sidebar (nothing plays).
+                      child: !text
+                          ? _fileList(event)
+                          : locked
+                          ? _textView(event)
+                          : PlayAlongBeside(
+                              along: _along,
+                              footer: const NotationSheet(),
+                              child: _textView(event),
+                            ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

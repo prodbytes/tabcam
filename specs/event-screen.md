@@ -38,12 +38,14 @@ plays along.
   button (captures already [hidden](hidden-images.md) stay hidden).
   First of all of them, in every view (the locked previews too),
   **Dictionary** (a book icon) shows and hides the chord and scale
-  [dictionary](dictionary.md) in a resizable sidebar on the right.
+  [dictionary](dictionary.md) in a resizable sidebar on the right, and
+  **Metronome** (a stopwatch icon) right after it the
+  [metronome](metronome.md)'s.
   In the Text view, with its tab shown, the Text view's **Copy**,
   **Rescan** and **Verified** (and Fix, in a build that shows it) come
   first, right of the title ([tab recognition](tab-recognition.md#text-view)).
-  On a screen narrower than 600 px they're icons, and Dictionary (showing
-  or hiding its sidebar), Play along, Rename, Clone, Download all and
+  On a screen narrower than 600 px they're icons, and Dictionary and
+  Metronome (showing or hiding their sidebars), Play along, Rename, Clone, Download all and
   Share go in a **More** menu (⋮) after them, so the title keeps its room.
 - **Shared with the user**: a line under the app bar, "Shared by <email>
   · Can edit" or "· Can view and add". Shared to read, Rename, reordering,
@@ -186,7 +188,8 @@ or the name the user gave it); tapping it renames the file, as does the
 **Rename** tool beside Delete. **Dictionary** (a book icon, first of
 the app bar's buttons, for every kind of file) shows and hides the chord
 and scale [dictionary](dictionary.md) in a resizable sidebar on the
-right.
+right, and **Metronome** (a stopwatch icon) after it the
+[metronome](metronome.md)'s.
 The file is shown whole, as what it is:
 
 - **Images** are pinch-zoomable (up to 5×), as the view says. When the

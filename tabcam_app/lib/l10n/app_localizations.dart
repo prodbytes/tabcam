@@ -3327,6 +3327,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t make the file'**
   String get videoEditCouldntDownload;
+
+  /// The metronome's button and its sidebar's title
+  ///
+  /// In en, this message translates to:
+  /// **'Metronome'**
+  String get metronome;
+
+  /// Tooltip of the metronome's button while its sidebar shows, and of its close button
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the metronome'**
+  String get metronomeHide;
+
+  /// Metronome: one BPM less
+  ///
+  /// In en, this message translates to:
+  /// **'Slower'**
+  String get metronomeSlower;
+
+  /// Metronome: one BPM more
+  ///
+  /// In en, this message translates to:
+  /// **'Faster'**
+  String get metronomeFaster;
+
+  /// Metronome: the heading over the time signatures (4/4, 3/4, 6/8…)
+  ///
+  /// In en, this message translates to:
+  /// **'Time signature'**
+  String get metronomeTimeSignature;
+
+  /// Metronome: under the time signatures, for 6/8, 7/8, 9/8 and 12/8
+  ///
+  /// In en, this message translates to:
+  /// **'Each click is an eighth note; the first of each group is accented.'**
+  String get metronomeEighths;
+
+  /// Metronome: starts the clicks
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get metronomeStart;
+
+  /// Metronome: stops the clicks
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get metronomeStop;
+
+  /// Metronome: its sound couldn't start
+  ///
+  /// In en, this message translates to:
+  /// **'The metronome can\'t play here: {error}'**
+  String metronomeFailed(String error);
 }
 
 class _AppLocalizationsDelegate
