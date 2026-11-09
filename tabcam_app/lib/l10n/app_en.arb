@@ -1523,6 +1523,10 @@
   "@textViewNotationGhost": {
     "description": "Notation sheet: (5)"
   },
+  "textViewNotationMuted": "ghost note / palm mute (muted, no pitch)",
+  "@textViewNotationMuted": {
+    "description": "Notation sheet: x"
+  },
   "textViewNotationSlur": "slur: a hammer-on or a pull-off",
   "@textViewNotationSlur": {
     "description": "Notation sheet: 5_7"

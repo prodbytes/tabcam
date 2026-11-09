@@ -1936,6 +1936,12 @@ abstract class AppLocalizations {
   /// **'ghost note (played softly)'**
   String get textViewNotationGhost;
 
+  /// Notation sheet: x
+  ///
+  /// In en, this message translates to:
+  /// **'ghost note / palm mute (muted, no pitch)'**
+  String get textViewNotationMuted;
+
   /// Notation sheet: 5_7
   ///
   /// In en, this message translates to:

@@ -1186,6 +1186,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get textViewNotationGhost => 'nota fantasma (tocada suave)';
 
   @override
+  String get textViewNotationMuted =>
+      'nota fantasma / palm mute (apagada, sin altura)';
+
+  @override
   String get textViewNotationSlur => 'ligado: ascendente o descendente';
 
   @override
