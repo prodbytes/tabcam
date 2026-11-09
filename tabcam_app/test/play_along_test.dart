@@ -451,7 +451,7 @@ void main() {
 
   testWidgets('Play along: the sidebar opens with the first file loaded, '
       'paused, in a frame at its top; a recording or link from it plays '
-      'there; space pauses and plays it; Stop goes back to the start; '
+      'there; space pauses and plays it; Stop and 0 go back to the start; '
       'hidden, it pauses and space turns the tab', (tester) async {
     final (library, id) = await capture(tester, tab: _tab);
     late String audio, youTube;
@@ -549,6 +549,12 @@ void main() {
     // Hidden (the frame with it, paused) and shown again.
     await tester.tap(find.byKey(const Key('cam-along-toggle')));
     await frames(tester);
+    expect(video.playing, hasLength(1));
+    // 0: back to the start, playing on.
+    video.seeks.clear();
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit0);
+    await frames(tester);
+    expect(video.seeks, const [Duration.zero]);
     expect(video.playing, hasLength(1));
     await tester.tap(find.byKey(const Key('cam-along')));
     await frames(tester);

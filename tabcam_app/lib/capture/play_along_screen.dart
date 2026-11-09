@@ -438,6 +438,11 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       if (event is KeyDownEvent) unawaited(_track.toggle());
       return KeyEventResult.handled;
     }
+    // 0: back to its start (its section's).
+    if (PlayAlongKeys.isRestart(event) && _along.open && _track.page != null) {
+      if (event is KeyDownEvent) unawaited(_track.restart());
+      return KeyEventResult.handled;
+    }
     unawaited(_pass(_back.contains(key) ? -1 : 1));
     return KeyEventResult.handled;
   }

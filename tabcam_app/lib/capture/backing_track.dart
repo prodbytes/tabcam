@@ -350,6 +350,20 @@ class BackingTrack extends ChangeNotifier {
     await _link?.skip(by);
   }
 
+  /// Back to its start (its section's), playing on if it plays, paused
+  /// if it's paused: the **0** key.
+  Future<void> restart() async {
+    if (_media case final media?) {
+      return media.seekTo(section?.start ?? Duration.zero);
+    }
+    final link = _link;
+    if (link == null) return;
+    // A frame's page goes back only through Stop, which pauses it.
+    final wasPlaying = link.playing;
+    await link.stop();
+    if (wasPlaying) await link.toggle();
+  }
+
   /// Pauses it (a take plays back).
   Future<void> pause() async {
     await _media?.pause();
