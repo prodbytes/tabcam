@@ -108,6 +108,16 @@ Parameters:
     Type: String
     Default: tabcam.nu01.com,rc.tabcam.nu01.com
     Description: The sites a grant is signed for, one policy each
+  SessionAuthorizer:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: >
+      The /tabcam routes and their authorizer, which takes TabCam's ID
+      tokens. API Gateway reads the issuer's discovery document when it
+      makes the authorizer, and this API serves it: so the first deploy
+      passes false, the function's code is uploaded, and a second deploy
+      passes true (scripts/deploy-share-api.sh does both).
   CdnDistributionIds:
     Type: String
     Default: ''
@@ -124,6 +134,7 @@ Conditions:
   HasAppleServicesId: !Not [!Equals [!Ref AppleServicesId, '']]
   HasEmail: !Not [!Equals [!Ref EmailIssuer, '']]
   HasAccountsTable: !Not [!Equals [!Ref AccountsTableName, '']]
+  HasSessionAuthorizer: !Equals [!Ref SessionAuthorizer, 'true']
 
 Resources:
   # A profile: its ID (huge_wavy_darter), owner, Cognito identity.
@@ -657,6 +668,7 @@ Resources:
   # and keys are public routes below.
   SessionAuthorizer:
     Type: AWS::ApiGatewayV2::Authorizer
+    Condition: HasSessionAuthorizer
     Properties:
       ApiId: !Ref Api
       Name: tabcam
@@ -705,6 +717,7 @@ Resources:
           Target: !Sub integrations/${Integration}
       SessionRoute${Route}:
         Type: AWS::ApiGatewayV2::Route
+        Condition: HasSessionAuthorizer
         Properties:
           ApiId: !Ref Api
           RouteKey: !FindInMap [Routes, !Ref Route, SessionKey]

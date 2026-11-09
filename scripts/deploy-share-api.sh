@@ -115,24 +115,40 @@ python3 -m venv "$work/venv"
 "$work/venv/bin/python" -I -m unittest discover -s tabcam_api/shares
 
 echo "==> deploying tabcam-share-api"
+# TabCam's sessions' authorizer reads the discovery document this API
+# serves: until it answers (the first deploy), the stack goes up without
+# the authorizer and its /tabcam routes, then again with them once the code
+# is uploaded.
 # NAMED_IAM: the function's and the access role's names are fixed (the
 # access role trusts the function's by name). AUTO_EXPAND: Fn::ForEach.
-# One API for production and the RC, so tenancy=shared.
-aws cloudformation deploy --stack-name tabcam-share-api \
-  --template-file tabcam_infra/share-api.yaml \
-  --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
-  --tags project=tabcam tenancy=shared \
-  --parameter-overrides "GoogleWebClientId=$TABCAM_GOOGLE_WEB_CLIENT_ID" \
-    "GoogleLocalWebClientId=${TABCAM_GOOGLE_LOCAL_WEB_CLIENT_ID:-}" \
-    "AppleClientId=$apple_client" "AppleServicesId=$apple_services" \
-    "EmailIssuer=$email_issuer" "EmailClientId=$email_client" \
-    "AllowedOrigins=$origins" \
-    "AccountsTableName=$accounts" \
-    "RbacrTokenParameterName=$rbacr_param" \
-    "AppleSignInKeyParameterName=$apple_key_param" \
-    DeveloperProviderName=login.tabcam.profiles \
-    "CdnPublicKey=$cdn_public_key" "CdnDistributionIds=$cdn_distributions" \
-  --no-fail-on-empty-changeset
+# One API for production and the RC, so tenancy=shared. $1: the sessions'
+# authorizer, true or false.
+deploy_stack() {
+  aws cloudformation deploy --stack-name tabcam-share-api \
+    --template-file tabcam_infra/share-api.yaml \
+    --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
+    --tags project=tabcam tenancy=shared \
+    --parameter-overrides "GoogleWebClientId=$TABCAM_GOOGLE_WEB_CLIENT_ID" \
+      "GoogleLocalWebClientId=${TABCAM_GOOGLE_LOCAL_WEB_CLIENT_ID:-}" \
+      "AppleClientId=$apple_client" "AppleServicesId=$apple_services" \
+      "EmailIssuer=$email_issuer" "EmailClientId=$email_client" \
+      "AllowedOrigins=$origins" \
+      "AccountsTableName=$accounts" \
+      "RbacrTokenParameterName=$rbacr_param" \
+      "AppleSignInKeyParameterName=$apple_key_param" \
+      DeveloperProviderName=login.tabcam.profiles \
+      "CdnPublicKey=$cdn_public_key" "CdnDistributionIds=$cdn_distributions" \
+      "SessionAuthorizer=$1" \
+    --no-fail-on-empty-changeset
+}
+existing_url="$(aws cloudformation describe-stacks --stack-name tabcam-share-api \
+  --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" --output text 2>/dev/null || true)"
+sessions_up=false
+if [[ "$existing_url" == https://* ]] && curl -sf "$existing_url/session/.well-known/openid-configuration" \
+    | grep -q '"jwks_uri"'; then
+  sessions_up=true
+fi
+deploy_stack "$sessions_up"
 
 echo "==> uploading the code"
 mkdir "$work/package"
@@ -146,6 +162,10 @@ for f in "${files[@]}"; do cp "tabcam_api/shares/$f" "$work/package/"; done
 aws lambda update-function-code --function-name tabcam-share-api \
   --zip-file "fileb://$work/share-api.zip" --query LastModified --output text
 aws lambda wait function-updated --function-name tabcam-share-api
+if [[ "$sessions_up" != true ]]; then
+  echo "==> adding the sessions' authorizer and /tabcam routes"
+  deploy_stack true
+fi
 
 url="$(aws cloudformation describe-stacks --stack-name tabcam-share-api \
   --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" --output text)"

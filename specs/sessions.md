@@ -111,6 +111,12 @@ starts a session, with no prompt.
 - The cloud OCR service takes a session's token only where it takes the
   provider that started it (an Apple-started one without
   `APPLE_CLIENT_ID` gets "google sign-in needed", as Apple's own).
+- API Gateway reads the issuer's discovery document when it makes the
+  `/tabcam` authorizer, and this API serves it, so the first deploy goes
+  in two steps (the stack's `SessionAuthorizer` parameter):
+  `scripts/deploy-share-api.sh` deploys without the authorizer and its
+  routes while the document doesn't answer yet, uploads the code, then
+  deploys again with them; later deploys, in one step.
 - `scripts/deploy-share-api.sh` checks, after deploying, the discovery
   document and keys, that `/tabcam/…` and an unknown refresh token are
   refused, and that a real TabCam token (signed by the session key, for a
