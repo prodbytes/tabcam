@@ -136,7 +136,9 @@ class _TabTextViewState extends State<TabTextView> {
   String? get _stored =>
       widget.sample ?? widget.library.byId(widget.eventId)?.tabText;
 
-  /// The doubtful notes to show in red: none once the text is Verified.
+  /// The doubtful notes to show in red: none once the text is Verified
+  /// (marking it clears them; this also hides any a text verified before
+  /// that, or on an older app, still has).
   List<TabDoubt> get _doubts {
     final event = widget.library.byId(widget.eventId);
     if (event == null || event.tabTextCorrect) return const [];
@@ -250,12 +252,18 @@ class _TabTextViewState extends State<TabTextView> {
   }
 
   /// Marks the text tab correct, or no longer correct; saved right away.
+  /// Marking it clears every red note for good: the user has checked them
+  /// all, so unmarking it doesn't bring them back.
   Future<void> _toggleCorrect() async {
     _save();
     final event = widget.library.byId(widget.eventId);
     if (event == null || event.readOnly) return;
+    final correct = !event.tabTextCorrect;
     await widget.library.update(
-      event.copyWith(tabTextCorrect: !event.tabTextCorrect),
+      event.copyWith(
+        tabTextCorrect: correct,
+        tabTextDoubts: correct ? const [] : null,
+      ),
     );
     if (mounted) setState(() {});
   }
