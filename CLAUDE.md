@@ -18,6 +18,15 @@
   "scanner" only in code identifiers and third-party names
   (`cunning_document_scanner`, CamScanner).
 
+## Glossary
+
+Use these words with these meanings, in requests, code, docs and specs:
+
+- **Tab**: the whole document.
+- **Phrase**: one neckline (staff), with all its strings.
+- **Line**: a single string of a phrase.
+- **Note**: a single number on a line.
+
 ## Keep the specification up to date
 
 After every user request, update the [specs/](specs/) folder in the same

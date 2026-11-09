@@ -2219,3 +2219,7 @@ spec.
    The Text view's sidebar doesn't list it. In English, Spanish and
    Portuguese. See [Cam](cam.md#following-the-text) and the
    [event screen](event-screen.md#file-screen).
+5. **Remember in the project's CLAUDE.md that "tab" means the whole
+   document, "phrase" a neckline with all its strings, "line" a single
+   string and "note" a single number on a line.** CLAUDE.md gains a
+   **Glossary** section with these four words.
