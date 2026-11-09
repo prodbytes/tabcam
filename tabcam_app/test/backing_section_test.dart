@@ -1,9 +1,9 @@
-import 'dart:typed_data';
-
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tabcam_app/capture/backing_track.dart';
+import 'package:tabcam_app/capture/link_frame.dart';
 import 'package:tabcam_app/capture/media.dart';
 import 'package:tabcam_app/capture/play_along_sidebar.dart';
 import 'package:tabcam_app/l10n/app_localizations.dart';
@@ -201,6 +201,114 @@ void main() {
     final (link, _, _) = await loaded(tester, link: true);
     expect(link.canSection, isFalse);
     link.dispose();
+  });
+
+  testWidgets('restart goes back to the section\'s start (the file\'s '
+      'without one), playing on or staying paused', (tester) async {
+    final (track, _, _) = await loaded(tester);
+    video.seeks.clear();
+    await tester.runAsync(() => track.restart());
+    expect(video.seeks.last, Duration.zero);
+    expect(track.playing, isFalse);
+
+    await tester.runAsync(
+      () => track.setSection(
+        const Duration(seconds: 10),
+        const Duration(seconds: 20),
+      ),
+    );
+    await tester.runAsync(() => track.toggle());
+    video.seeks.clear();
+    await tester.runAsync(() => track.restart());
+    expect(video.seeks, const [Duration(seconds: 10)]);
+    expect(track.playing, isTrue);
+    track.dispose();
+  });
+
+  testWidgets('a link restarts by Stop, played again if it played', (
+    tester,
+  ) async {
+    final library = Library(PlatformEventStore(), null, (_) async => null);
+    late CaptureEvent event;
+    await tester.runAsync(() async {
+      await library.load();
+      event = await library.addLink(
+        await library.create(const []),
+        Uri.parse('https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+        title: 'Riff',
+      );
+    });
+    final track = BackingTrack(library);
+    await tester.runAsync(() => track.choose(event, event.pages.last));
+    final commands = <LinkCommand>[];
+    track.link!.command = (command) async => commands.add(command);
+    await tester.runAsync(() => track.restart());
+    expect(commands, [LinkCommand.stop, LinkCommand.play]);
+    commands.clear();
+    await tester.runAsync(() => track.pause());
+    commands.clear();
+    await tester.runAsync(() => track.restart());
+    expect(commands, [LinkCommand.stop]);
+    track.dispose();
+  });
+
+  testWidgets('in the sidebar, 0 goes back to the start and space plays '
+      'and pauses, once a tap gives it the keyboard; not Ctrl+0, nor '
+      'typing in a field', (tester) async {
+    final (track, _, _) = await loaded(tester);
+    final field = TextEditingController();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Row(
+            children: [
+              Expanded(child: TextField(controller: field)),
+              PlayAlongKeys(
+                track: track,
+                child: const SizedBox(
+                  key: Key('sidebar'),
+                  width: 200,
+                  height: 200,
+                  child: ColoredBox(color: Colors.black),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(const Key('sidebar')));
+    await tester.pump();
+    video.seeks.clear();
+    await tester.runAsync(() => tester.sendKeyEvent(LogicalKeyboardKey.digit0));
+    expect(video.seeks, const [Duration.zero]);
+    await tester.runAsync(
+      () => tester.sendKeyEvent(LogicalKeyboardKey.numpad0),
+    );
+    expect(video.seeks, hasLength(2));
+
+    await tester.runAsync(() async {
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.digit0);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    });
+    expect(video.seeks, hasLength(2));
+
+    await tester.runAsync(() => tester.sendKeyEvent(LogicalKeyboardKey.space));
+    await tester.pump();
+    expect(track.playing, isTrue);
+    await tester.runAsync(() => tester.sendKeyEvent(LogicalKeyboardKey.space));
+    await tester.pump();
+    expect(track.playing, isFalse);
+
+    // In the field, 0 and space are typed.
+    await tester.tap(find.byType(TextField));
+    await tester.pump();
+    await tester.enterText(find.byType(TextField), '');
+    await tester.runAsync(() => tester.sendKeyEvent(LogicalKeyboardKey.digit0));
+    expect(video.seeks, hasLength(2));
+    expect(track.playing, isFalse);
+    track.dispose();
   });
 
   testWidgets('the start and end can be set where it plays now', (
