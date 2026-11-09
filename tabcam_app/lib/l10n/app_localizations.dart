@@ -1258,16 +1258,10 @@ abstract class AppLocalizations {
   /// **'Play all of it'**
   String get camAlongSectionClear;
 
-  /// Cam's player: how many phrase passes (times the tab turned while recording along) the song has; marked on its progress bar
+  /// Cam's player: the button at the right of the progress bar that forgets the song's phrase passes (the timing marks on the bar), so auto-pass no longer turns the tab along it
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 phrase pass} other{{count} phrase passes}}'**
-  String camAlongPhrases(int count);
-
-  /// Cam's player: forgets the song's phrase passes, so auto-pass no longer turns the tab along it
-  ///
-  /// In en, this message translates to:
-  /// **'Forget the phrase passes'**
+  /// **'Clear the phrase passes marked on the bar'**
   String get camAlongPhrasesClear;
 
   /// Cam: the slider that slows down (or speeds up) the file playing along; the pitch stays.

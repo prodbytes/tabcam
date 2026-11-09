@@ -713,18 +713,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camAlongSectionClear => 'Play all of it';
 
   @override
-  String camAlongPhrases(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count phrase passes',
-      one: '1 phrase pass',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get camAlongPhrasesClear => 'Forget the phrase passes';
+  String get camAlongPhrasesClear =>
+      'Clear the phrase passes marked on the bar';
 
   @override
   String get camAlongSpeed => 'Speed: slower to the left, faster to the right';

@@ -988,18 +988,9 @@
   "@camAlongSectionClear": {
     "description": "Cam: drops the section; the whole file plays again."
   },
-  "camAlongPhrases": "{count, plural, =1{1 phrase pass} other{{count} phrase passes}}",
-  "@camAlongPhrases": {
-    "description": "Cam's player: how many phrase passes (times the tab turned while recording along) the song has; marked on its progress bar",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "camAlongPhrasesClear": "Forget the phrase passes",
+  "camAlongPhrasesClear": "Clear the phrase passes marked on the bar",
   "@camAlongPhrasesClear": {
-    "description": "Cam's player: forgets the song's phrase passes, so auto-pass no longer turns the tab along it"
+    "description": "Cam's player: the button at the right of the progress bar that forgets the song's phrase passes (the timing marks on the bar), so auto-pass no longer turns the tab along it"
   },
   "camAlongSpeed": "Speed: slower to the left, faster to the right",
   "@camAlongSpeed": {
