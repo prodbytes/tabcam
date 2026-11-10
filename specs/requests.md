@@ -2382,3 +2382,9 @@ spec.
    publishing and taking back a file. See
    [Cam](cam.md#phrase-passes) and
    [contributions](contributions.md#what-the-owner-sees-and-publishes).
+4. **When the Rec button is pressed, automatically start the selected
+   file.** In Cam, Rec now also plays the file loaded in the play-along
+   player (the sidebar showing), as its Play would: after the count-in,
+   from where it is. One already playing plays on; with the sidebar
+   hidden, nothing starts. See
+   [Cam](cam.md#playing-along-with-a-file).
