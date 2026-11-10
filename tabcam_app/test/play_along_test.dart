@@ -908,6 +908,60 @@ void main() {
     expect(pane, findsNothing);
   });
 
+  testWidgets('Rec starts the song in the sidebar\'s player; one playing '
+      'already plays on; with the sidebar hidden, nothing starts', (
+    tester,
+  ) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    await tester.runAsync(() async {
+      await library.addMedia(library.byId(id)!, [
+        Media(
+          XFile.fromData(Uint8List.fromList([1]), name: 'riff.m4a'),
+          PageKind.audio,
+          'm4a',
+        ),
+      ]);
+    });
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          burn: (take, _) async => take,
+        ),
+      ),
+    );
+    await frames(tester);
+    video.position = Duration.zero;
+    // Loaded in the frame, not playing: Rec plays it.
+    expect(video.playing, isEmpty);
+    await tester.tap(find.byTooltip('Rec'));
+    await frames(tester);
+    expect(video.playing, hasLength(1));
+    // The take's Stop leaves it playing; Rec again doesn't pause it.
+    await tester.tap(_camStop);
+    await until(tester, () => recReady(tester));
+    expect(video.playing, hasLength(1));
+    await tester.tap(find.byTooltip('Rec'));
+    await frames(tester);
+    expect(video.playing, hasLength(1));
+    await tester.tap(_camStop);
+    await until(tester, () => recReady(tester));
+
+    // The sidebar hidden (which pauses it): Rec starts nothing.
+    await tester.tap(find.byKey(const Key('cam-along')));
+    await frames(tester);
+    expect(video.playing, isEmpty);
+    await tester.tap(find.byTooltip('Rec'));
+    await frames(tester);
+    expect(video.playing, isEmpty);
+    await tester.tap(_camStop);
+    await until(tester, () => recReady(tester));
+  });
+
   testWidgets('Phrase passes: recording along with a song notes each turn '
       'at its position, marked in its player; another time through, '
       'auto-pass turns the tab there (a pass by hand right after it is the '

@@ -2395,4 +2395,14 @@ spec.
    tests: a take recorded along with a song with Auto-pass off keeps
    nothing for the song or the take and leaves the song's earlier pass
    alone, and switched on mid-take only the turns from then on are
-   noted. See [Cam](cam.md#phrase-passes).
+   noted (the take's own passes checked in full). A stretch with it off
+   leaves a gap in the passes, which the spec now spells out: the tab
+   stays through it and catches up at the next pass, and before a first
+   pass that follows turns made while off it shows the neckline that
+   pass turned from. See [Cam](cam.md#phrase-passes).
+4. **When the Rec button is pressed, automatically start the selected
+   file.** In Cam, Rec now also plays the file loaded in the play-along
+   player (the sidebar showing), as its Play would: after the count-in,
+   from where it is. One already playing plays on; with the sidebar
+   hidden, nothing starts. See
+   [Cam](cam.md#playing-along-with-a-file).

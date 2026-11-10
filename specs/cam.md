@@ -244,7 +244,12 @@ itself). A tap on one plays it in the frame, taking
 the place of the one before; a tap on the one in the frame pauses or
 plays it. The user plays along, and records as usual: Rec doesn't stop
 it, so the microphone records it too (iOS mixes its sound with the
-recording's: `mixWithOthers`).
+recording's: `mixWithOthers`). **Rec starts it**: with the sidebar
+showing and the one in the frame not playing, Rec plays it as Play
+would (after the [count-in](#count-in), from where it is, or from its
+start, its section's, at its end), once the take is recording; one
+that plays already plays on, and with the sidebar hidden nothing
+starts. Stop (the take's) leaves it playing.
 
 <a id="following-a-pdf"></a>**Following a PDF**: in Cam and in the
 [Text view](tab-recognition.md#text-view) (not beside a PDF), the

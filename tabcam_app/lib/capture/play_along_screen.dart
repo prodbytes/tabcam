@@ -510,6 +510,16 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     _marks = [(Duration.zero, _line)];
     _unpassed = {};
     if (mounted) setState(() => _recording = true);
+    // The song in the sidebar's player starts with the take (counting in
+    // first, from where it is), unless it plays already.
+    if (mounted &&
+        _along.open &&
+        _track.page != null &&
+        !_track.loading &&
+        !_track.playing &&
+        !_track.countingIn) {
+      unawaited(_track.toggle());
+    }
   }
 
   /// Stops recording and adds the take to the capture.
