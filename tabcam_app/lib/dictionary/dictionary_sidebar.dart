@@ -1,6 +1,7 @@
 /// The dictionary: a button at the top of every file viewer and Cam, and
 /// the sidebar it opens on the right of the screen, as the play-along
-/// player opens, where the user types a chord, a scale or anything else.
+/// player opens (or, turned by its Rotate button, the panel under the
+/// screen), where the user types a chord, a scale or anything else.
 /// A chord shows its notes and voicings, a scale its notes on the neck;
 /// anything else is searched on YouTube (the one thing that leaves the
 /// device): once typing stops for a couple of seconds, its results show
@@ -8,6 +9,7 @@
 library;
 
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
@@ -100,7 +102,10 @@ Uri youTubeSearch(String query) =>
 /// [child], with the dictionary's sidebar on its right while it's open
 /// ([DictionaryState]); its left edge is a separator to drag
 /// ([SplitHandle]) to make it wider or narrower, the same on every screen
-/// ([SidebarWidths]); a double tap puts its default width back.
+/// ([SidebarWidths]); a double tap puts its default width back. Turned by
+/// its Rotate button ([SidebarWidths.isBelow]), it's a panel under
+/// [child] instead, across the screen, its top edge the separator that
+/// makes it taller or shorter.
 class DictionaryBeside extends StatelessWidget {
   const DictionaryBeside({super.key, required this.child, this.onClosed});
 
@@ -109,12 +114,38 @@ class DictionaryBeside extends StatelessWidget {
   /// After the sidebar's own close button hides it.
   final VoidCallback? onClosed;
 
-  /// The narrowest [child] gets when the sidebar is dragged wider.
+  /// The narrowest (or, over the panel, the shortest) [child] gets when
+  /// the sidebar is dragged wider (taller).
   static const minChild = 96.0;
+
+  /// The shortest the panel under the screen is dragged.
+  static const minHeight = 120.0;
+
+  /// What its search field's row takes: the panel keeps that much even
+  /// where the screen is too short for [minChild] over it (a phone lying
+  /// down with its keyboard up), so what's typed shows.
+  static const fieldHeight = 64.0;
+
+  /// The narrowest its content is laid out: narrower (a window with no
+  /// room for it), the sidebar is cut, not squeezed.
+  static const minContent = 160.0;
+
+  /// The narrowest the panel under the screen is laid out, cut likewise
+  /// (a phone with the metronome's sidebar open beside it): its one row
+  /// is the book, the field and the two buttons.
+  static const minBelow = 240.0;
+
+  /// The shortest the sidebar at the side is laid out (its title and its
+  /// field), cut likewise.
+  static const minSide = 112.0;
 
   /// Its default width on a screen [screen] wide: 40% of it, from 280 to
   /// 420 px.
   static double widthFor(double screen) => (screen * 0.4).clamp(280.0, 420.0);
+
+  /// Its default height, under a screen [screen] tall: 40% of it, from
+  /// 180 to 360 px.
+  static double heightFor(double screen) => (screen * 0.4).clamp(180.0, 360.0);
 
   @override
   Widget build(BuildContext context) {
@@ -124,38 +155,68 @@ class DictionaryBeside extends StatelessWidget {
       listenable: Listenable.merge([state, widths]),
       builder: (context, _) => LayoutBuilder(
         builder: (context, box) {
-          final max = box.maxWidth - minChild - SplitHandle.thickness;
-          final width = widths.widthOf(
-            SidebarWidths.dictionary,
-            fallback: widthFor(MediaQuery.sizeOf(context).width),
+          final below = widths.isBelow(SidebarWidths.dictionary);
+          final sizeKey = below
+              ? SidebarWidths.dictionaryHeight
+              : SidebarWidths.dictionary;
+          final least = below ? minHeight : SidebarWidths.min;
+          final screen = MediaQuery.sizeOf(context);
+          final room =
+              (below ? box.maxHeight : box.maxWidth) - SplitHandle.thickness;
+          final max = below
+              ? math.max(room - minChild, math.min(room, fieldHeight))
+              : room - minChild;
+          final extent = widths.widthOf(
+            sizeKey,
+            fallback: below ? heightFor(screen.height) : widthFor(screen.width),
             max: max,
+            least: least,
           );
-          return Row(
+          // Laid out no smaller than its header needs, and cut to its
+          // place.
+          final laidOut = math.max(extent, below ? fieldHeight : minContent);
+          final tall = box.maxHeight < minSide ? minSide : null;
+          final wide = box.maxWidth < minBelow ? minBelow : null;
+          // One Flex either way, so turning it keeps [child] (the camera,
+          // what plays) and what the sidebar shows.
+          return Flex(
+            direction: below ? Axis.vertical : Axis.horizontal,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(child: child),
               if (state.open) ...[
                 SplitHandle(
                   key: const Key('dictionary-split'),
-                  axis: Axis.horizontal,
-                  // Dragged left, the sidebar (on the right) gets wider.
-                  onDrag: (dx) => widths.set(
-                    SidebarWidths.dictionary,
-                    (width - dx).clamp(
-                      SidebarWidths.min,
-                      max < SidebarWidths.min ? SidebarWidths.min : max,
-                    ),
+                  axis: below ? Axis.vertical : Axis.horizontal,
+                  // Dragged left (up), the sidebar on the right (the panel
+                  // underneath) gets wider (taller).
+                  onDrag: (d) => widths.set(
+                    sizeKey,
+                    (extent - d).clamp(least, max < least ? least : max),
                   ),
                   onDragEnd: widths.save,
-                  onReset: () => widths.reset(SidebarWidths.dictionary),
+                  onReset: () => widths.reset(sizeKey),
                 ),
                 SizedBox(
-                  width: width,
-                  child: DictionarySidebar(
-                    onClose: () {
-                      state.close();
-                      onClosed?.call();
-                    },
+                  width: below ? null : extent,
+                  height: below ? extent : null,
+                  child: ClipRect(
+                    child: OverflowBox(
+                      alignment: Alignment.topLeft,
+                      minWidth: below ? wide : laidOut,
+                      maxWidth: below ? wide : laidOut,
+                      minHeight: below ? laidOut : tall,
+                      maxHeight: below ? laidOut : tall,
+                      child: DictionarySidebar(
+                        below: below,
+                        onRotate: () =>
+                            widths.setBelow(SidebarWidths.dictionary, !below),
+                        onClose: () {
+                          state.close();
+                          onClosed?.call();
+                        },
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -167,14 +228,29 @@ class DictionaryBeside extends StatelessWidget {
   }
 }
 
-/// The dictionary's sidebar: its title and close button, the search
+/// The dictionary's sidebar: its title, its Rotate button (to the panel
+/// under the screen and back, [onRotate]) and close button, the search
 /// field, and under it the chord, the scale, or YouTube's results for
 /// what was typed ([DictionaryState.query]), searched once typing stops
-/// for [YouTubeSearch.wait].
+/// for [YouTubeSearch.wait]. [below] (the panel), the field and the
+/// buttons share one row, and a chord's or a scale's neck lies down
+/// beside its name.
 class DictionarySidebar extends StatefulWidget {
-  const DictionarySidebar({super.key, required this.onClose});
+  const DictionarySidebar({
+    super.key,
+    required this.onClose,
+    this.onRotate,
+    this.below = false,
+  });
 
   final VoidCallback onClose;
+
+  /// Turns it: to the panel under the screen, or back to the side. Null,
+  /// it has no Rotate button.
+  final VoidCallback? onRotate;
+
+  /// Whether it's the panel under the screen.
+  final bool below;
 
   @override
   State<DictionarySidebar> createState() => _DictionarySidebarState();
@@ -183,6 +259,9 @@ class DictionarySidebar extends StatefulWidget {
 class _DictionarySidebarState extends State<DictionarySidebar> {
   final _state = DictionaryState.instance;
   late final _controller = TextEditingController(text: _state.query);
+
+  /// The field's: turned (its row changes), it keeps the keyboard.
+  final _focus = FocusNode();
   Lookup _lookup = const Other();
   List<Voicing> _voicings = const [];
 
@@ -205,6 +284,7 @@ class _DictionarySidebarState extends State<DictionarySidebar> {
   void dispose() {
     _wait?.cancel();
     _controller.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
@@ -271,79 +351,125 @@ class _DictionarySidebarState extends State<DictionarySidebar> {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final query = _controller.text;
+    final below = widget.below;
+    final field = TextField(
+      key: const Key('dictionary-query'),
+      controller: _controller,
+      focusNode: _focus,
+      autofocus: true,
+      textInputAction: TextInputAction.search,
+      autocorrect: false,
+      enableSuggestions: false,
+      decoration: InputDecoration(
+        isDense: true,
+        hintText: l10n.dictionaryHint,
+        prefixIcon: const Icon(Icons.search),
+        suffixIcon: query.isEmpty
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () => _set(''),
+              ),
+        border: const OutlineInputBorder(),
+      ),
+      onChanged: _read,
+      onSubmitted: _submit,
+    );
+    final buttons = [
+      if (widget.onRotate case final rotate?)
+        IconButton(
+          key: const Key('dictionary-rotate'),
+          tooltip: below ? l10n.dictionaryToSide : l10n.dictionaryToBottom,
+          icon: Icon(
+            below
+                ? Icons.rotate_90_degrees_ccw_outlined
+                : Icons.rotate_90_degrees_cw_outlined,
+          ),
+          onPressed: rotate,
+        ),
+      IconButton(
+        key: const Key('dictionary-close'),
+        tooltip: l10n.dictionaryHide,
+        icon: const Icon(Icons.close),
+        onPressed: widget.onClose,
+      ),
+    ];
+    final book = Icon(
+      Icons.menu_book_outlined,
+      size: 18,
+      color: theme.colorScheme.onSurfaceVariant,
+    );
     return Material(
       key: const Key('dictionary-sidebar'),
       color: theme.colorScheme.surfaceContainerLow,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 4, 0),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.menu_book_outlined,
-                  size: 18,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    l10n.dictionary,
-                    style: theme.textTheme.titleMedium,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                IconButton(
-                  key: const Key('dictionary-close'),
-                  tooltip: l10n.dictionaryHide,
-                  icon: const Icon(Icons.close),
-                  onPressed: widget.onClose,
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
-            child: TextField(
-              key: const Key('dictionary-query'),
-              controller: _controller,
-              autofocus: true,
-              textInputAction: TextInputAction.search,
-              autocorrect: false,
-              enableSuggestions: false,
-              decoration: InputDecoration(
-                isDense: true,
-                hintText: l10n.dictionaryHint,
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: query.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () => _set(''),
-                      ),
-                border: const OutlineInputBorder(),
+          if (below)
+            // One row, to leave the panel's height to what it shows.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 4, 0),
+              child: Row(
+                children: [
+                  book,
+                  const SizedBox(width: 8),
+                  Expanded(child: field),
+                  ...buttons,
+                ],
               ),
-              onChanged: _read,
-              onSubmitted: _submit,
+            )
+          else ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 4, 0),
+              child: Row(
+                children: [
+                  book,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      l10n.dictionary,
+                      style: theme.textTheme.titleMedium,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  ...buttons,
+                ],
+              ),
             ),
-          ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+              child: field,
+            ),
+          ],
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(12),
-              child: switch (_lookup) {
-                ChordLookup(:final chord) => _ChordResult(
-                  chord: chord,
-                  voicings: _voicings,
-                ),
-                ScaleLookup(:final scale) => _ScaleResult(scale: scale),
-                Other() when query.trim().isEmpty => _Intro(onExample: _set),
-                Other() => _YouTubeResult(
-                  query: query,
-                  videos: _videos,
-                  searching: _searching,
-                  failed: _failed,
-                ),
+            child: LayoutBuilder(
+              builder: (context, box) {
+                // What the panel leaves a neck lying in it.
+                final room = below ? box.maxHeight - 24 : null;
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.all(12),
+                  child: switch (_lookup) {
+                    ChordLookup(:final chord) => _ChordResult(
+                      chord: chord,
+                      voicings: _voicings,
+                      below: below,
+                    ),
+                    ScaleLookup(:final scale) => _ScaleResult(
+                      scale: scale,
+                      below: below,
+                      room: room,
+                    ),
+                    Other() when query.trim().isEmpty => _Intro(
+                      onExample: _set,
+                    ),
+                    Other() => _YouTubeResult(
+                      query: query,
+                      videos: _videos,
+                      searching: _searching,
+                      failed: _failed,
+                    ),
+                  },
+                );
               },
             ),
           ),
@@ -427,62 +553,110 @@ class _Heading extends StatelessWidget {
   }
 }
 
+/// A result's [heading] and, under it, its [picture]; in the panel under
+/// the screen ([below]) wide enough for both, the picture is beside the
+/// heading instead, so a short panel shows it without scrolling.
+class _Result extends StatelessWidget {
+  const _Result({
+    super.key,
+    required this.heading,
+    required this.picture,
+    required this.below,
+  });
+
+  final Widget heading;
+  final Widget picture;
+  final bool below;
+
+  /// Narrower than this, the picture goes under the heading in the panel
+  /// too (a phone held up).
+  static const beside = 560.0;
+
+  /// The heading's width beside the picture.
+  static const headingWidth = 220.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, box) {
+        if (below && box.maxWidth >= beside) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(width: headingWidth, child: heading),
+              const SizedBox(width: 16),
+              Expanded(child: picture),
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [heading, const SizedBox(height: 16), picture],
+        );
+      },
+    );
+  }
+}
+
 class _ChordResult extends StatelessWidget {
-  const _ChordResult({required this.chord, required this.voicings});
+  const _ChordResult({
+    required this.chord,
+    required this.voicings,
+    required this.below,
+  });
 
   final Chord chord;
   final List<Voicing> voicings;
+  final bool below;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return Column(
+    return _Result(
       key: const Key('dictionary-chord'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _Heading(
-          title: chord.name,
-          kind: l10n.dictionaryChord,
-          notes: chord.notes,
-          degrees: chord.quality.degrees,
-        ),
-        const SizedBox(height: 16),
-        if (voicings.isEmpty)
-          Text(l10n.dictionaryNoVoicings)
-        else
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              for (final v in voicings) ChordDiagram(chord: chord, voicing: v),
-            ],
-          ),
-      ],
+      below: below,
+      heading: _Heading(
+        title: chord.name,
+        kind: l10n.dictionaryChord,
+        notes: chord.notes,
+        degrees: chord.quality.degrees,
+      ),
+      picture: voicings.isEmpty
+          ? Text(l10n.dictionaryNoVoicings)
+          : Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                for (final v in voicings)
+                  ChordDiagram(chord: chord, voicing: v, lying: below),
+              ],
+            ),
     );
   }
 }
 
 class _ScaleResult extends StatelessWidget {
-  const _ScaleResult({required this.scale});
+  const _ScaleResult({required this.scale, required this.below, this.room});
 
   final Scale scale;
+  final bool below;
+
+  /// In the panel, the height it leaves the neck.
+  final double? room;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return Column(
+    return _Result(
       key: const Key('dictionary-scale'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _Heading(
-          title: '${scale.root.name} ${scaleTypeName(l10n, scale.type)}',
-          kind: l10n.dictionaryScale,
-          notes: scale.notes,
-          degrees: scale.type.degrees,
-        ),
-        const SizedBox(height: 16),
-        ScaleFretboard(scale: scale),
-      ],
+      below: below,
+      heading: _Heading(
+        title: '${scale.root.name} ${scaleTypeName(l10n, scale.type)}',
+        kind: l10n.dictionaryScale,
+        notes: scale.notes,
+        degrees: scale.type.degrees,
+      ),
+      picture: ScaleFretboard(scale: scale, lying: below, maxHeight: room),
     );
   }
 }

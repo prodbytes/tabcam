@@ -550,6 +550,262 @@ void main() {
     });
   });
 
+  group('rotated', () {
+    setUp(() {
+      DictionaryState.instance.clear();
+      SidebarWidths.instance.clear();
+    });
+
+    Future<void> open(
+      WidgetTester tester, {
+      Size size = const Size(1200, 800),
+    }) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            appBar: AppBar(actions: const [DictionaryButton()]),
+            body: const DictionaryBeside(
+              child: SizedBox.expand(key: Key('content')),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.byKey(const Key('dictionary')));
+      await tester.pumpAndSettle();
+    }
+
+    final sidebar = find.byKey(const Key('dictionary-sidebar'));
+    final query = find.byKey(const Key('dictionary-query'));
+    final split = find.byKey(const Key('dictionary-split'));
+    final rotate = find.byKey(const Key('dictionary-rotate'));
+    final content = find.byKey(const Key('content'));
+    double height(WidgetTester tester) => tester.getSize(sidebar).height;
+
+    testWidgets('its Rotate button makes it a panel under the screen, across '
+        'it, and puts it back at the side', (tester) async {
+      await open(tester);
+      final kept = tester.element(content);
+      expect(tester.getSize(sidebar).width, 420);
+      expect(find.byTooltip('Show the dictionary at the bottom'), findsOne);
+      await tester.enterText(query, 'Am7');
+      await tester.pumpAndSettle();
+      await tester.tap(rotate);
+      await tester.pumpAndSettle();
+      expect(SidebarWidths.instance.isBelow(SidebarWidths.dictionary), isTrue);
+      // Across the screen, at its bottom, 40% of its height; the content
+      // over it, the same one (what plays there goes on).
+      expect(tester.getRect(sidebar), const Rect.fromLTRB(0, 480, 1200, 800));
+      expect(tester.getSize(content).width, 1200);
+      expect(
+        tester.getBottomLeft(content).dy,
+        lessThan(tester.getTopLeft(sidebar).dy),
+      );
+      expect(tester.element(content), same(kept));
+      // What was typed is still there, and typed in.
+      expect(find.byKey(const Key('dictionary-chord')), findsOneWidget);
+      expect(tester.widget<TextField>(query).focusNode!.hasFocus, isTrue);
+      expect(find.byTooltip('Show the dictionary at the side'), findsOne);
+      await tester.tap(rotate);
+      await tester.pumpAndSettle();
+      expect(SidebarWidths.instance.isBelow(SidebarWidths.dictionary), isFalse);
+      expect(tester.getSize(sidebar), const Size(420, 800 - 56));
+      expect(tester.element(content), same(kept));
+      expect(find.byKey(const Key('dictionary-chord')), findsOneWidget);
+    });
+
+    testWidgets('a chord\'s necks lie down in the panel, and stand at the '
+        'side', (tester) async {
+      await open(tester);
+      await tester.enterText(query, 'Am7');
+      await tester.pumpAndSettle();
+      final standing = find.byKey(const Key('chord-diagram-standing'));
+      final lying = find.byKey(const Key('chord-diagram-lying'));
+      expect(standing, findsWidgets);
+      expect(lying, findsNothing);
+      final size = tester.getSize(standing.first);
+      expect(size.height, greaterThan(size.width));
+      await tester.tap(rotate);
+      await tester.pumpAndSettle();
+      expect(standing, findsNothing);
+      expect(lying, findsWidgets);
+      // The same picture, turned.
+      expect(tester.getSize(lying.first), Size(size.height, size.width));
+    });
+
+    testWidgets('a scale\'s neck lies across in the panel, however narrow, '
+        'and fits its height', (tester) async {
+      await open(tester);
+      await tester.enterText(query, 'A minor pentatonic');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('scale-fretboard-standing')), findsOneWidget);
+      await tester.tap(rotate);
+      await tester.pumpAndSettle();
+      final lying = find.byKey(const Key('scale-fretboard-lying'));
+      expect(find.byKey(const Key('scale-fretboard-standing')), findsNothing);
+      expect(lying, findsOneWidget);
+      var neck = tester.getRect(lying);
+      expect(neck.width, greaterThan(neck.height * 2));
+      // All of it shows in the panel, beside its name.
+      expect(neck.bottom, lessThanOrEqualTo(800));
+      expect(neck.top, greaterThan(tester.getRect(query).bottom));
+      expect(
+        neck.left,
+        greaterThan(tester.getRect(find.textContaining('Scale ·')).right),
+      );
+      // A phone held up: under its name, still across.
+      tester.view.physicalSize = const Size(360, 640);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('scale-fretboard-standing')), findsNothing);
+      neck = tester.getRect(lying);
+      expect(neck.width, greaterThan(neck.height * 2));
+      expect(neck.right, lessThanOrEqualTo(360));
+    });
+
+    testWidgets('its top edge drags it taller and shorter, within the '
+        'screen; a double tap puts it back', (tester) async {
+      await open(tester);
+      await tester.tap(rotate);
+      await tester.pumpAndSettle();
+      expect(height(tester), 320);
+      await tester.drag(split, const Offset(0, -120));
+      await tester.pumpAndSettle();
+      final taller = height(tester);
+      expect(taller, inInclusiveRange(410, 440));
+      expect(SidebarWidths.instance.of(SidebarWidths.dictionaryHeight), taller);
+      // Its width at the side is another thing.
+      expect(SidebarWidths.instance.of(SidebarWidths.dictionary), isNull);
+      await tester.drag(split, const Offset(0, 700));
+      await tester.pumpAndSettle();
+      expect(height(tester), DictionaryBeside.minHeight);
+      await tester.drag(split, const Offset(0, -2000));
+      await tester.pumpAndSettle();
+      expect(height(tester), 800 - 56 - DictionaryBeside.minChild - 12);
+      await tester.tap(split);
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tap(split);
+      await tester.pumpAndSettle();
+      expect(height(tester), 320);
+    });
+
+    testWidgets('fits a small phone, at the side and under the screen, and '
+        'keeps its field where there is no room', (tester) async {
+      for (final text in [
+        '',
+        'F#m7b5',
+        'C# harmonic minor',
+        'a made-up riff',
+      ]) {
+        DictionaryState.instance.clear();
+        SidebarWidths.instance.clear();
+        await open(tester, size: const Size(320, 480));
+        await tester.enterText(query, text);
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+        await tester.tap(rotate);
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+        expect(tester.getSize(sidebar).width, 320);
+        // Lying down with the keyboard up: a strip is left.
+        tester.view.physicalSize = const Size(480, 150);
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+        expect(tester.getSize(query).height, greaterThan(0));
+        expect(tester.getRect(query).bottom, lessThanOrEqualTo(150));
+        await tester.tap(rotate);
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+      }
+    });
+
+    testWidgets('is cut, not squeezed, where a sidebar beside it leaves it '
+        'narrow', (tester) async {
+      // A 360 px phone with the metronome's sidebar open: 96 px are left.
+      Future<void> narrow(WidgetTester tester) async {
+        tester.view.physicalSize = const Size(360, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              appBar: AppBar(actions: const [DictionaryButton()]),
+              body: const Row(
+                children: [
+                  Expanded(
+                    child: DictionaryBeside(
+                      child: SizedBox.expand(key: Key('content')),
+                    ),
+                  ),
+                  SizedBox(width: 264),
+                ],
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.byKey(const Key('dictionary')));
+        await tester.pump();
+      }
+
+      for (final text in ['', 'Am7', 'E blues', 'a made-up riff']) {
+        DictionaryState.instance.clear();
+        SidebarWidths.instance.clear();
+        SidebarWidths.instance.setBelow(SidebarWidths.dictionary, true);
+        await narrow(tester);
+        await tester.enterText(query, text);
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+        // Laid out at its least width, from its left edge, in its 96 px.
+        expect(tester.getSize(sidebar).width, DictionaryBeside.minBelow);
+        expect(tester.getTopLeft(sidebar).dx, 0);
+        expect(tester.getSize(content).width, 96);
+        expect(tester.getSize(query).width, greaterThan(60));
+        await tester.pumpWidget(const SizedBox());
+      }
+      SidebarWidths.instance.clear();
+    });
+
+    testWidgets('is kept on the device', (tester) async {
+      final store = PlatformEventStore();
+      final library = Library(store, null, (_) async => null);
+      await tester.runAsync(() async {
+        await library.load();
+        await SidebarWidths.instance.load(library);
+      });
+      expect(SidebarWidths.instance.isBelow(SidebarWidths.dictionary), isFalse);
+      await open(tester);
+      await tester.tap(rotate);
+      await tester.pumpAndSettle();
+      await tester.drag(split, const Offset(0, -100));
+      await tester.pumpAndSettle();
+      final tall = height(tester);
+      String? saved;
+      await tester.runAsync(() async {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        saved = await library.readMeta(SidebarWidths.metaName);
+      });
+      expect(jsonDecode(saved!), {
+        'dictionaryHeight': tall,
+        'below': ['dictionary'],
+      });
+      // The app opened again.
+      SidebarWidths.instance.clear();
+      expect(SidebarWidths.instance.isBelow(SidebarWidths.dictionary), isFalse);
+      await tester.runAsync(() => SidebarWidths.instance.load(library));
+      await tester.pumpAndSettle();
+      expect(SidebarWidths.instance.isBelow(SidebarWidths.dictionary), isTrue);
+      expect(height(tester), tall);
+      expect(tester.getSize(sidebar).width, 1200);
+      SidebarWidths.instance.clear();
+    });
+  });
+
   group('the button', () {
     testWidgets('is at the top of the capture and its files, and opens the '
         'sidebar there', (tester) async {

@@ -523,6 +523,8 @@
   "videoEditTrackAfter": "A faixa começa {time} depois do vídeo",
   "videoEditTrackBefore": "A faixa começa {time} antes do vídeo",
   "dictionaryHide": "Ocultar o dicionário",
+  "dictionaryToBottom": "Mostrar o dicionário embaixo",
+  "dictionaryToSide": "Mostrar o dicionário ao lado",
   "videoEditTrackBar": "A faixa ao longo da parte mantida: arraste para mover, as pontas para cortar",
   "videoEditTrackEarlier": "Um décimo de segundo antes",
   "videoEditTrackLater": "Um décimo de segundo depois",

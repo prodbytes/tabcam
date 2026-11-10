@@ -1904,6 +1904,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dictionaryHide => 'Hide the dictionary';
 
   @override
+  String get dictionaryToBottom => 'Show the dictionary at the bottom';
+
+  @override
+  String get dictionaryToSide => 'Show the dictionary at the side';
+
+  @override
   String get videoEditTrackBar =>
       'The track along the kept part: drag it to move it, its ends to trim it';
 

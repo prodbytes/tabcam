@@ -10,11 +10,13 @@ the chords and scales are worked out on the device
 ([`lib/dictionary/`](../tabcam_app/lib/dictionary/)); only a YouTube
 search leaves it, from the device straight to YouTube.
 
-It shows and hides the **Dictionary sidebar** on the right of the
+It shows and hides the **Dictionary sidebar**: on the right of the
 screen, as the play-along player's sidebar opens
-([Cam](cam.md#playing-along-with-a-file)): the viewer stays beside it,
-on the left, and goes on working (the camera, the tab, what plays
-along). Where both show, the dictionary is the one at the right edge.
+([Cam](cam.md#playing-along-with-a-file)), or, once turned by its
+**Rotate** button (below), a panel under the screen. The viewer stays
+beside it, on the left (or over the panel), and goes on working (the
+camera, the tab, what plays along). At the side, where the play-along
+sidebar shows too, the dictionary is the one at the right edge.
 The button is in the primary colour while the sidebar shows. The
 sidebar is **app-wide**: open on one screen, it's open on the next (the
 capture, a file, Cam) with the same search, until the button or the
@@ -30,8 +32,44 @@ width the user sets is the same on every screen and kept on the device
 between sessions ([`SidebarWidths`](../tabcam_app/lib/screens/sidebar_widths.dart),
 the library's `sidebars` meta file), as the play-along sidebar's is.
 
-At its top, the sidebar has its title and **✕**, then one search field,
-focused, and under it, scrolling, what was typed is:
+**Rotate**, a button beside the sidebar's **✕** ("Show the dictionary at
+the bottom"), turns it into a **panel under the screen**, across its
+width, with the viewer over it; there the button ("Show the dictionary
+at the side") puts it back on the right. Turning it keeps the viewer as
+it is (the camera, what plays), what was typed and the keyboard. The
+choice is app-wide, as the widths are, and kept on the device with them
+(the `sidebars` meta file's `below` list), so the dictionary opens where
+it was left, on every screen and in the next session. As a panel:
+
+- **Its height** is 40% of the screen's, from 180 to 360 px, until the
+  user drags its top edge, the same separator lying down: up it gets
+  taller, down shorter, from 120 px up to leaving the viewer 96 px; a
+  double tap puts the default back. The height is kept apart from the
+  side's width (`dictionaryHeight`), each for its own layout.
+- The search field and the buttons share **one row** (no title), to
+  leave the height to what it shows.
+- **The necks lie down**: a chord's diagrams and a scale's fretboard are
+  drawn with the nut at the left and the frets going right, the high E
+  at the top as in a tab (see below), and where the panel is 560 px wide
+  or more they're beside the chord's or scale's name, notes and degrees
+  (220 px), not under them, so a short panel shows them without
+  scrolling. At the side they stand, as before.
+- The other sidebars stay where they are: the play-along player's is in
+  the viewer, over the panel; the [metronome](metronome.md)'s is at the
+  right of both, the screen's whole height.
+
+On a small phone neither layout overflows: where the screen leaves less
+than the sidebar's content needs (160 px wide; its title and field, 112
+px, tall), the content is cut at its edge, not squeezed; so is the
+panel's where it's left less than 240 px wide (a phone with the
+metronome's sidebar open beside it), its row laid out from the left, the
+field first; and where a
+screen is too short for the viewer's 96 px over the panel (a phone lying
+down with its keyboard up), the panel keeps the 64 px of its field's
+row, so what's typed shows.
+
+At its top, the sidebar has its title, **Rotate** and **✕**, then one
+search field, focused, and under it, scrolling, what was typed is:
 
 - **A chord** (`C`, `Am7`, `F#m7b5`, `G/B`, `Cmaj9`, `C6/9`, `E5`): shown
   as it's typed, with its name, its notes spelled from the root (`C#  E#
@@ -40,7 +78,11 @@ focused, and under it, scrolling, what was typed is:
   high E, the nut (or the starting fret, "5fr") at the top, a dot per
   fretted string (the root notes in the primary colour), ○ for an open
   string, × for one not played, a bar for a barre, each string's note
-  under it, and the frets written under the diagram (`x32010`). The
+  under it, and the frets written under the diagram (`x32010`). In the
+  panel under the screen the same diagram **lies down**: the nut (or the
+  starting fret, labelled under it) at the left, the frets going right,
+  the high E at the top and the low E at the bottom, ○ and × before the
+  nut and each string's note at its right end. The
   voicings are **found by itself**
   ([`voicings.dart`](../tabcam_app/lib/dictionary/voicings.dart)): every
   way to hold the chord's notes within four frets, up to the twelfth
@@ -74,7 +116,10 @@ focused, and under it, scrolling, what was typed is:
   In a sidebar narrower than 480 px it **stands up**, as a chord diagram
   does (low E on the left, the frets going down, numbered on the left,
   at most 300 px wide); dragged wider, it **lies across**, seen from
-  above, the high E at the top. The types: major
+  above, the high E at the top. In the panel under the screen it always
+  lies across, the nut at the left, however narrow the panel (a phone
+  held up), and no taller than the panel shows (but 130 px at least, to
+  stay readable; scrolled then). The types: major
   (ionian), minor (natural minor, aeolian), harmonic minor, melodic
   minor, major pentatonic (`pentatonic` alone), minor pentatonic, blues,
   major blues, dorian, phrygian, lydian, mixolydian, locrian, phrygian

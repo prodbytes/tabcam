@@ -1947,6 +1947,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dictionaryHide => 'Ocultar el diccionario';
 
   @override
+  String get dictionaryToBottom => 'Mostrar el diccionario abajo';
+
+  @override
+  String get dictionaryToSide => 'Mostrar el diccionario al lado';
+
+  @override
   String get videoEditTrackBar =>
       'La pista a lo largo de la parte conservada: arrástrala para moverla, sus extremos para recortarla';
 

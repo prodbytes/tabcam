@@ -74,7 +74,8 @@ review notes ([app stores](app-stores.md)).
   viewer and Cam opens a search in a sidebar on the right: a chord shows
   its notes and voicings as chord diagrams, a scale its notes on the
   fretboard (both worked out on the device); anything else is searched
-  on YouTube. Every sidebar (the dictionary, the metronome, the
+  on YouTube. Its Rotate button makes it a panel under the screen, the
+  necks lying down. Every sidebar (the dictionary, the metronome, the
   play-along player) is resizable by dragging its edge, the width kept on
   the device.
 - [Metronome](metronome.md): a stopwatch icon beside the dictionary's
