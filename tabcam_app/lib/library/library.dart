@@ -225,9 +225,19 @@ class Library extends ChangeNotifier {
     if (now == null || !now.contributes) return null;
     final mine = now.myContribution ?? Contribution(updated: _now());
     final pages = change(mine.pages);
+    final kept = {for (final p in pages) p.id};
     final updated = _update(
       now.copyWith(
-        contributions: [mine.copyWith(pages: pages, updated: _now())],
+        contributions: [
+          mine.copyWith(
+            pages: pages,
+            phrases: _phrasesWithout(mine.phrases, [
+              for (final p in mine.pages)
+                if (!kept.contains(p.id)) p,
+            ]),
+            updated: _now(),
+          ),
+        ],
       ),
     );
     await _store.save(updated);
@@ -235,8 +245,22 @@ class Library extends ChangeNotifier {
     return updated;
   }
 
-  /// The [PhraseTimes] of song [pageId] of event [eventId]: the user's own,
-  /// on a capture they contribute to (else the owner's), or the capture's.
+  /// [times] without those of the files [gone]: a file's phrase passes go
+  /// with it. (Only theirs: others may be of files still on their way.)
+  static Map<String, PhraseTimes> _phrasesWithout(
+    Map<String, PhraseTimes> times,
+    Iterable<EventPage> gone,
+  ) {
+    final ids = {for (final p in gone) p.id};
+    return {
+      for (final MapEntry(:key, :value) in times.entries)
+        if (!ids.contains(key)) key: value,
+    };
+  }
+
+  /// The [PhraseTimes] of song [pageId] of event [eventId], its file's own
+  /// (each file keeps its own, by its page ID): the user's, on a capture
+  /// they contribute to (else the owner's), or the capture's.
   PhraseTimes phrasesOf(String eventId, String pageId) {
     final event = byId(eventId);
     if (event == null) return PhraseTimes.none;
@@ -325,12 +349,21 @@ class Library extends ChangeNotifier {
       final (bytes, _) = await _store.pageStream(event.id, page);
       await _store.putPageStream(event.id, copy, bytes);
     }
-    return patch(
-      event.id,
-      (now) => now.isPublished(page)
-          ? now
-          : now.copyWith(pages: [...now.pages, copy]),
-    );
+    return patch(event.id, (now) {
+      if (now.isPublished(page)) return now;
+      // Its phrase passes come with it (the owner's, else its reader's):
+      // the copy plays along as the file did.
+      final times =
+          now.phrases[page.id] ??
+          now.contributions
+              .where((c) => c.pages.any((p) => p.id == page.id))
+              .firstOrNull
+              ?.phrases[page.id];
+      return now.copyWith(
+        pages: [...now.pages, copy],
+        phrases: times == null ? null : {...now.phrases, copy.id: times},
+      );
+    });
   }
 
   /// Takes [page] back out of the capture's pages, after [publish]: its
@@ -544,6 +577,7 @@ class Library extends ChangeNotifier {
           for (final p in event.pages)
             if (p.id != page.id) p,
         ],
+        phrases: _phrasesWithout(event.phrases, [page]),
       ),
     );
     await _dropFiles(updated, [page]);

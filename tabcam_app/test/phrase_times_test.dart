@@ -209,6 +209,29 @@ void main() {
       expect(library.byId(event.id)!.toJson().containsKey('phrases'), isFalse);
     });
 
+    test('each file keeps its own, at its own times; a file deleted, its '
+        'go with it, the others\' stay', () async {
+      final (library, event) = await withSong();
+      final (song, link) = (event.pages.first.id, event.pages.last.id);
+      final songs = PhraseTimes.none.add(s(3), next, 1).add(s(9), next, 2);
+      final links = PhraseTimes.none.add(s(5), previous, 0);
+      await library.setPhrases(event.id, song, songs);
+      await library.setPhrases(event.id, link, links);
+      expect(library.phrasesOf(event.id, song).passes, songs.passes);
+      expect(library.phrasesOf(event.id, link).passes, links.passes);
+      // One changed, the other is as it was.
+      await library.setPhrases(event.id, song, songs.add(s(20), next, 2));
+      expect(library.phrasesOf(event.id, song).passes, hasLength(3));
+      expect(library.phrasesOf(event.id, link).passes, links.passes);
+
+      final now = library.byId(event.id)!;
+      await library.deletePage(now, now.pages.firstWhere((p) => p.id == song));
+      final after = library.byId(event.id)!;
+      expect(after.phrases.keys, [link]);
+      expect(library.phrasesOf(event.id, song).isEmpty, isTrue);
+      expect(after.phrases[link]!.passes, links.passes);
+    });
+
     test('a clone keeps them, for its own copies of the songs', () async {
       final (library, event) = await withSong();
       final link = event.pages.last.id;

@@ -55,8 +55,11 @@ everyone sees it"). Publishing copies the file into the capture's own
 files, as a new page with a file of its own whose `from` names the
 contribution's page: it's then shown to everyone, synced with the capture, in its link
 and its exports, and its row says **Published**, its button a check
-("Published: tap to take it back"). Tapping again deletes the copy from
-the capture; deleting it from the capture's list does the same. Either way
+("Published: tap to take it back"). The copy brings the file's
+[phrase passes](cam.md#phrase-passes) (the owner's own for it, else the
+reader's), so Cam turns the tab along it as it did along the original.
+Tapping again deletes the copy from
+the capture, and its passes with it; deleting it from the capture's list does the same. Either way
 the reader's contribution keeps its own.
 
 ## How it's stored and synced

@@ -848,6 +848,62 @@ void main() {
       );
     });
 
+    test("a student's phrase passes are their file's: published, the copy "
+        'has them; taken back or deleted, they go with it', () async {
+      final copy = await anaAddsATake();
+      final take = copy.myContribution!.pages.first;
+      final times = PhraseTimes.none
+          .add(const Duration(seconds: 4), PassDirection.next, 1)
+          .add(const Duration(seconds: 9), PassDirection.next, 2);
+      anaPhone.later();
+      await anaPhone.library.setPhrases(lesson.id, take.id, times);
+      await anaPhone.sync.syncNow();
+      await julio.sync.syncNow();
+      var event = julio.library.byId(lesson.id)!;
+      final theirs = event.contributions.single.pages.first;
+      expect(
+        event.contributions.single.phrases[theirs.id]!.passes,
+        times.passes,
+      );
+
+      await julio.library.original(event, theirs);
+      julio.later();
+      await julio.library.publish(event, theirs);
+      final published = julio.library.byId(lesson.id)!.pages.last;
+      expect(
+        julio.library.phrasesOf(lesson.id, published.id).passes,
+        times.passes,
+      );
+      await julio.sync.syncNow();
+      await boPhone.sync.syncNow();
+      final bos = boPhone.library.byId(lesson.id)!;
+      expect(
+        boPhone.library.phrasesOf(lesson.id, bos.pages.last.id).passes,
+        times.passes,
+      );
+
+      // Taken back: the copy's go; Ana's file keeps hers.
+      julio.later();
+      await julio.library.unpublish(julio.library.byId(lesson.id)!, theirs);
+      event = julio.library.byId(lesson.id)!;
+      expect(event.phrases.containsKey(published.id), isFalse);
+      expect(
+        event.contributions.single.phrases[theirs.id]!.passes,
+        times.passes,
+      );
+
+      // Ana deletes her file: its passes go with it.
+      anaPhone.later();
+      await anaPhone.library.deleteContributionPage(
+        anaPhone.library.byId(lesson.id)!,
+        take,
+      );
+      expect(
+        anaPhone.library.byId(lesson.id)!.myContribution!.phrases,
+        isEmpty,
+      );
+    });
+
     test("a student's files reach their other devices", () async {
       await anaAddsATake();
       final tablet = device(ana, 'ana@example.com');
