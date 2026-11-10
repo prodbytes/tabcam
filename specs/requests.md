@@ -2403,8 +2403,9 @@ spec.
    file, Cam) shows it where it was left. Turning it keeps the viewer,
    what was typed and the keyboard. The play-along sidebar stays in the
    viewer, over the panel, and the metronome's at the right of both. On
-   small screens the sidebar's content is cut rather than overflowing,
-   and the panel keeps its field's row where a screen is too short for
-   both. New tests: rotating and back, the necks lying, the height's
+   small screens the sidebar's content is cut rather than overflowing
+   (the panel's too, laid out 240 px wide at least, where the
+   metronome's sidebar beside it leaves it narrower), and the panel
+   keeps its field's row where a screen is too short for both. New tests: rotating and back, the necks lying, the height's
    drag, a small phone, and the choice kept on the device. See
    [Dictionary](dictionary.md).

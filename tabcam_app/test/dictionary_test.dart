@@ -723,6 +723,54 @@ void main() {
       }
     });
 
+    testWidgets('is cut, not squeezed, where a sidebar beside it leaves it '
+        'narrow', (tester) async {
+      // A 360 px phone with the metronome's sidebar open: 96 px are left.
+      Future<void> narrow(WidgetTester tester) async {
+        tester.view.physicalSize = const Size(360, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              appBar: AppBar(actions: const [DictionaryButton()]),
+              body: const Row(
+                children: [
+                  Expanded(
+                    child: DictionaryBeside(
+                      child: SizedBox.expand(key: Key('content')),
+                    ),
+                  ),
+                  SizedBox(width: 264),
+                ],
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.byKey(const Key('dictionary')));
+        await tester.pump();
+      }
+
+      for (final text in ['', 'Am7', 'E blues', 'a made-up riff']) {
+        DictionaryState.instance.clear();
+        SidebarWidths.instance.clear();
+        SidebarWidths.instance.setBelow(SidebarWidths.dictionary, true);
+        await narrow(tester);
+        await tester.enterText(query, text);
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+        // Laid out at its least width, from its left edge, in its 96 px.
+        expect(tester.getSize(sidebar).width, DictionaryBeside.minBelow);
+        expect(tester.getTopLeft(sidebar).dx, 0);
+        expect(tester.getSize(content).width, 96);
+        expect(tester.getSize(query).width, greaterThan(60));
+        await tester.pumpWidget(const SizedBox());
+      }
+      SidebarWidths.instance.clear();
+    });
+
     testWidgets('is kept on the device', (tester) async {
       final store = PlatformEventStore();
       final library = Library(store, null, (_) async => null);

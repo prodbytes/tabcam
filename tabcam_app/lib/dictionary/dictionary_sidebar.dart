@@ -130,6 +130,11 @@ class DictionaryBeside extends StatelessWidget {
   /// room for it), the sidebar is cut, not squeezed.
   static const minContent = 160.0;
 
+  /// The narrowest the panel under the screen is laid out, cut likewise
+  /// (a phone with the metronome's sidebar open beside it): its one row
+  /// is the book, the field and the two buttons.
+  static const minBelow = 240.0;
+
   /// The shortest the sidebar at the side is laid out (its title and its
   /// field), cut likewise.
   static const minSide = 112.0;
@@ -171,6 +176,7 @@ class DictionaryBeside extends StatelessWidget {
           // place.
           final laidOut = math.max(extent, below ? fieldHeight : minContent);
           final tall = box.maxHeight < minSide ? minSide : null;
+          final wide = box.maxWidth < minBelow ? minBelow : null;
           // One Flex either way, so turning it keeps [child] (the camera,
           // what plays) and what the sidebar shows.
           return Flex(
@@ -196,11 +202,9 @@ class DictionaryBeside extends StatelessWidget {
                   height: below ? extent : null,
                   child: ClipRect(
                     child: OverflowBox(
-                      alignment: below
-                          ? Alignment.topCenter
-                          : Alignment.topLeft,
-                      minWidth: below ? null : laidOut,
-                      maxWidth: below ? null : laidOut,
+                      alignment: Alignment.topLeft,
+                      minWidth: below ? wide : laidOut,
+                      maxWidth: below ? wide : laidOut,
                       minHeight: below ? laidOut : tall,
                       maxHeight: below ? laidOut : tall,
                       child: DictionarySidebar(

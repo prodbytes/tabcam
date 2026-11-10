@@ -10,11 +10,13 @@ the chords and scales are worked out on the device
 ([`lib/dictionary/`](../tabcam_app/lib/dictionary/)); only a YouTube
 search leaves it, from the device straight to YouTube.
 
-It shows and hides the **Dictionary sidebar** on the right of the
+It shows and hides the **Dictionary sidebar**: on the right of the
 screen, as the play-along player's sidebar opens
-([Cam](cam.md#playing-along-with-a-file)): the viewer stays beside it,
-on the left, and goes on working (the camera, the tab, what plays
-along). Where both show, the dictionary is the one at the right edge.
+([Cam](cam.md#playing-along-with-a-file)), or, once turned by its
+**Rotate** button (below), a panel under the screen. The viewer stays
+beside it, on the left (or over the panel), and goes on working (the
+camera, the tab, what plays along). At the side, where the play-along
+sidebar shows too, the dictionary is the one at the right edge.
 The button is in the primary colour while the sidebar shows. The
 sidebar is **app-wide**: open on one screen, it's open on the next (the
 capture, a file, Cam) with the same search, until the button or the
@@ -58,7 +60,10 @@ it was left, on every screen and in the next session. As a panel:
 
 On a small phone neither layout overflows: where the screen leaves less
 than the sidebar's content needs (160 px wide; its title and field, 112
-px, tall), the content is cut at its edge, not squeezed; and where a
+px, tall), the content is cut at its edge, not squeezed; so is the
+panel's where it's left less than 240 px wide (a phone with the
+metronome's sidebar open beside it), its row laid out from the left, the
+field first; and where a
 screen is too short for the viewer's 96 px over the panel (a phone lying
 down with its keyboard up), the panel keeps the 64 px of its field's
 row, so what's typed shows.

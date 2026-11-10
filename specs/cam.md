@@ -15,7 +15,8 @@ its **Not now** leaving. With Premium it opens the camera view
   while recording). The app bar has the capture's title, and first of
   its buttons **Dictionary** (a book icon, in the preview too), which
   shows the chord and scale [dictionary](dictionary.md) in a sidebar on
-  the right, the camera beside it; typing in it doesn't move the tab,
+  the right, the camera beside it (or, turned by its Rotate button, in
+  a panel under the camera); typing in it doesn't move the tab,
   and once it's hidden the keys move the tab again. **Metronome** (a
   stopwatch icon) after it opens the [metronome](metronome.md)'s sidebar
   the same way. Without a
@@ -210,7 +211,8 @@ the sidebar and kept on the device between sessions
 ([`SidebarWidths`](../tabcam_app/lib/screens/sidebar_widths.dart)).
 Dragged narrow, the player's buttons shrink to fit. The
 [dictionary](dictionary.md)'s sidebar, open, sits to its right, and is
-resizable the same way. The same sidebar is beside the
+resizable the same way (turned by its Rotate button, it's a panel under
+both instead, its top edge the one to drag). The same sidebar is beside the
 [Text view](event-screen.md) (there with a notation sheet at its bottom,
 [tab recognition](tab-recognition.md#text-view)) and a PDF or an image
 on the [file screen](event-screen.md#file-screen), and a recording

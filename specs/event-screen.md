@@ -38,7 +38,8 @@ plays along.
   button (captures already [hidden](hidden-images.md) stay hidden).
   First of all of them, in every view (the locked previews too),
   **Dictionary** (a book icon) shows and hides the chord and scale
-  [dictionary](dictionary.md) in a resizable sidebar on the right, and
+  [dictionary](dictionary.md) in a resizable sidebar on the right (or,
+  turned by its Rotate button, a panel under the screen), and
   **Metronome** (a stopwatch icon) right after it the
   [metronome](metronome.md)'s.
   In the Text view, with its tab shown, the Text view's **Copy**,
@@ -188,7 +189,8 @@ or the name the user gave it); tapping it renames the file, as does the
 **Rename** tool beside Delete. **Dictionary** (a book icon, first of
 the app bar's buttons, for every kind of file) shows and hides the chord
 and scale [dictionary](dictionary.md) in a resizable sidebar on the
-right, and **Metronome** (a stopwatch icon) after it the
+right (or, turned by its Rotate button, a panel under the file), and
+**Metronome** (a stopwatch icon) after it the
 [metronome](metronome.md)'s.
 The file is shown whole, as what it is:
 
