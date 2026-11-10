@@ -600,7 +600,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get camAutoPassOff =>
-      'Auto-pass off: the tab turns only when you turn it';
+      'Auto-pass off: the tab turns only when you turn it, and no phrase passes are recorded';
 
   @override
   String get camPrevious => 'Previous line';

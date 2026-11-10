@@ -622,7 +622,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get camAutoPassOff =>
-      'Paso automático desactivado: la tablatura avanza solo cuando la pasas';
+      'Paso automático desactivado: la tablatura avanza solo cuando la pasas, y no se graban pasos de frase';
 
   @override
   String get camPrevious => 'Línea anterior';

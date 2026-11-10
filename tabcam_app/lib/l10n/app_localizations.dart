@@ -1063,7 +1063,7 @@ abstract class AppLocalizations {
   /// Cam: auto-pass button tooltip while it's off
   ///
   /// In en, this message translates to:
-  /// **'Auto-pass off: the tab turns only when you turn it'**
+  /// **'Auto-pass off: the tab turns only when you turn it, and no phrase passes are recorded'**
   String get camAutoPassOff;
 
   /// Cam: previous neckline tooltip

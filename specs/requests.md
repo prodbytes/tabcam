@@ -2409,3 +2409,27 @@ spec.
    keeps its field's row where a screen is too short for both. New tests: rotating and back, the necks lying, the height's
    drag, a small phone, and the choice kept on the device. See
    [Dictionary](dictionary.md).
+3. **When auto-pass is off, do not record timing files.** Recording in
+   Cam with Auto-pass off now notes no phrase passes at all: not the
+   song's (`BackingTrack.recordPass` isn't called) and not the take's
+   own. Until now they were noted while recording whatever Auto-pass
+   was. The passes there already are left as they are, neither changed
+   nor deleted. Switched during a take, the turns made while it was on
+   are noted and kept (the song's and the take's), those made while it
+   was off aren't; the take still shows every turn (burned in, and on
+   Play). The button's tooltip while off says so ("…and no phrase
+   passes are recorded"), in English, Spanish and Portuguese. New
+   tests: a take recorded along with a song with Auto-pass off keeps
+   nothing for the song or the take and leaves the song's earlier pass
+   alone, and switched on mid-take only the turns from then on are
+   noted (the take's own passes checked in full). A stretch with it off
+   leaves a gap in the passes, which the spec now spells out: the tab
+   stays through it and catches up at the next pass, and before a first
+   pass that follows turns made while off it shows the neckline that
+   pass turned from. See [Cam](cam.md#phrase-passes).
+4. **When the Rec button is pressed, automatically start the selected
+   file.** In Cam, Rec now also plays the file loaded in the play-along
+   player (the sidebar showing), as its Play would: after the count-in,
+   from where it is. One already playing plays on; with the sidebar
+   hidden, nothing starts. See
+   [Cam](cam.md#playing-along-with-a-file).

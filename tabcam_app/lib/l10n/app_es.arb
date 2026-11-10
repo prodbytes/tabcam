@@ -159,7 +159,7 @@
   "camShowTab": "Mostrar tablatura",
   "camAutoPass": "Paso automático",
   "camAutoPassOn": "Paso automático activado: la tablatura avanza sola donde la pasaste en la canción",
-  "camAutoPassOff": "Paso automático desactivado: la tablatura avanza solo cuando la pasas",
+  "camAutoPassOff": "Paso automático desactivado: la tablatura avanza solo cuando la pasas, y no se graban pasos de frase",
   "camPrevious": "Línea anterior",
   "camNext": "Línea siguiente",
   "camNoTab": "Aún no hay tablatura en texto: lee la tablatura de la captura para tocar con ella.",
