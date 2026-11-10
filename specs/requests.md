@@ -2335,3 +2335,25 @@ spec.
     unmarking it doesn't bring them back. Before, Verified only hid them
     while it was on. See
     [tab recognition](tab-recognition.md#text-view).
+
+## 2026-11-10
+
+1. **Make sure the auto-pass time marks are per file: different audio
+   and video files have their phrases passed at different times (a
+   timings file with the source's base name and another suffix and
+   extension, or whatever correlates them best), in the mini player.**
+   They already were: each song's passes are kept in the capture's
+   `event.json` under its page ID, the base name of its file
+   (`<id>.<extension>`), and the player and auto-pass read only the
+   passes of the file that plays. They stay there rather than in a
+   `<id>.phrases.json` beside the file, because page files never change
+   once written (sync and the file cache rely on it) and passes change
+   at every take. What wasn't per file is fixed: a file deleted (from
+   the capture or a reader's contribution) left its passes behind until
+   the next save, and now takes them with it; a file the owner publishes
+   from a contribution now brings its passes to the copy, as a clone's
+   copies do. New tests: two songs recorded along in one take keep their
+   own passes and auto-pass follows the one that plays; deleting,
+   publishing and taking back a file. See
+   [Cam](cam.md#phrase-passes) and
+   [contributions](contributions.md#what-the-owner-sees-and-publishes).

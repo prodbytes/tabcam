@@ -1019,6 +1019,106 @@ void main() {
     expect(find.byKey(const Key('cam-along-phrase-marks')), findsNothing);
   });
 
+  testWidgets('Phrase passes are per file: two songs played along in one '
+      'take each keep their own, at their own times, and auto-pass follows '
+      'the one that plays', (tester) async {
+    // Tall enough for the sidebar to list both songs under the frame.
+    tester.view
+      ..physicalSize = const Size(1200, 1600)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final (library, id) = await capture(tester, tab: _tab);
+    late String first, second;
+    await tester.runAsync(() async {
+      final event = await library.addMedia(library.byId(id)!, [
+        Media(
+          XFile.fromData(Uint8List.fromList([1]), name: 'riff-a.m4a'),
+          PageKind.audio,
+          'm4a',
+        ),
+        Media(
+          XFile.fromData(Uint8List.fromList([2]), name: 'riff-b.mp3'),
+          PageKind.audio,
+          'mp3',
+        ),
+      ]);
+      (first, second) = (event.pages[1].id, event.pages[2].id);
+    });
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          burn: (take, _) async => take,
+        ),
+      ),
+    );
+    await frames(tester);
+    Future<void> at(num seconds) async {
+      video.position = Duration(milliseconds: (seconds * 1000).round());
+      await frames(tester);
+    }
+
+    Future<void> pass() async {
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+      await frames(tester);
+    }
+
+    // The first song plays, recording: a pass at 10 s; then the second, in
+    // its place: a pass at 5 s.
+    video.position = Duration.zero;
+    await tester.tap(find.byKey(const Key('cam-along-toggle')));
+    await frames(tester);
+    await tester.tap(find.byTooltip('Rec'));
+    await frames(tester);
+    await at(10);
+    await pass();
+    expect(find.text('2 / 3'), findsOneWidget);
+    await tester.tap(find.byKey(ValueKey('cam-along-$second')));
+    await frames(tester);
+    await at(5);
+    await pass();
+    expect(find.text('3 / 3'), findsOneWidget);
+    await tester.tap(_camStop);
+    await until(tester, () => recReady(tester));
+
+    final event = library.byId(id)!;
+    expect(event.phrases[first]!.passes, [
+      const PhrasePass(Duration(seconds: 10), PassDirection.next, 1),
+    ]);
+    expect(event.phrases[second]!.passes, [
+      const PhrasePass(Duration(seconds: 5), PassDirection.next, 2),
+    ]);
+    expect(find.byKey(const Key('cam-along-phrase-marks')), findsOneWidget);
+
+    // The second plays on: its pass turns the tab, the first's doesn't.
+    await at(1);
+    expect(find.text('2 / 3'), findsOneWidget);
+    for (final t in [2.5, 4, 5.5]) {
+      await at(t);
+    }
+    expect(find.text('3 / 3'), findsOneWidget);
+    for (final t in [7, 8.5, 10, 11.5]) {
+      await at(t);
+    }
+    expect(find.text('3 / 3'), findsOneWidget);
+
+    // The first again: its own pass, not the second's.
+    await tester.tap(find.byKey(ValueKey('cam-along-$first')));
+    await frames(tester);
+    await at(1);
+    expect(find.text('1 / 3'), findsOneWidget);
+    for (final t in [2.5, 4, 5.5, 7, 8.5, 9.9]) {
+      await at(t);
+    }
+    expect(find.text('1 / 3'), findsOneWidget);
+    await at(10.5);
+    expect(find.text('2 / 3'), findsOneWidget);
+  });
+
   testWidgets('the text tab is listed first in the sidebar to follow; '
       'tapped, it shows in the pane on the left of the camera, and hides '
       'tapped again or closed; a PDF chosen takes its place', (tester) async {

@@ -143,14 +143,32 @@ its **Not now** leaving. With Premium it opens the camera view
   again), keeping the newer's neckline; one moved within two seconds of
   another the same way merges with it too. Passes are only noted while
   recording, and only while the song plays.
+  - **Per file**: each recording, video or link keeps its own passes,
+    at its own times, on the file's own timeline (a video's edit
+    doesn't move them: the player plays the file as it is). Two songs
+    of a capture, or a song and a take, never share them: recorded
+    along one and then another in the same take, each gets the passes
+    made while it played, and the player and auto-pass use only the
+    passes of the file that plays.
   - **Kept** with the capture, not in the video and not as a file: in
-    its `event.json`, as `phrases`, by the song's page ID (each pass
+    its `event.json`, as `phrases`, by the song's page ID, the base
+    name its file is kept under (`<id>.<extension>`; each pass
     `{"ms", "dir": "next" | "previous", "line", "n"}`), so it syncs and
-    clones with the capture, and no list, sidebar or export shows it. On
+    clones with the capture, and no list, sidebar or export shows it.
+    Not a file of its own beside the song's (`<id>.phrases.json`): page
+    files never change once written, so sync and the
+    [file cache](cdn.md) need only see which pages a capture has, and
+    passes change at every take. On
     a capture shared to read, they go to the user's own
     [contribution](contributions.md) (its `contrib.json`), taking the
     owner's place for them. They're saved when the take is (Stop, or
-    leaving Cam), not each pass. Songs since deleted are let go of.
+    leaving Cam), not each pass.
+  - **They go with their file**: a file deleted (from the capture, or
+    from the user's contribution), its passes are deleted with it; a
+    clone's copies of the files have their originals' passes, and so
+    does a file the owner [publishes](contributions.md#what-the-owner-sees-and-publishes)
+    from a contribution (the owner's own for it, else its reader's).
+    Passes for a song deleted elsewhere are let go of at the next save.
   - **The take** keeps its own too, from when its necklines showed
     (merged the same way), so played along later it turns the tab as it
     turned in it.

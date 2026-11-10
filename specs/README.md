@@ -65,8 +65,8 @@ review notes ([app stores](app-stores.md)).
   going back to its start (its section's) and ← / → skipping in it,
   play waiting a 2-second count-in (shown in amber on the progress
   bar's line, with a button to turn it off); turns
-  of the tab while recording along with a song are kept as phrase
-  passes (marked on its player, merged within two seconds at their
+  of the tab while recording along with a song are kept as that file's
+  own phrase passes (marked on its player, merged within two seconds at their
   average time), and **Auto-pass** turns the tab there the next time
   through.
 - [Dictionary](dictionary.md): a book icon at the top of every file
