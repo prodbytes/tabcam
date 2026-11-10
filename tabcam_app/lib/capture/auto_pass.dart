@@ -56,10 +56,15 @@ class AutoPass {
 
 /// A take's own phrase passes, from when its necklines showed ([marks]:
 /// the first the one it started on): played along later, auto-pass turns
-/// the tab as it turned in the take.
-PhraseTimes takePhrases(List<(Duration, int)> marks) {
+/// the tab as it turned in the take. The marks at the indexes in [skip]
+/// (made with auto-pass off) are turns of the tab, but no passes.
+PhraseTimes takePhrases(
+  List<(Duration, int)> marks, {
+  Set<int> skip = const {},
+}) {
   var times = PhraseTimes.none;
   for (var i = 1; i < marks.length; i++) {
+    if (skip.contains(i)) continue;
     final (at, line) = marks[i];
     final before = marks[i - 1].$2;
     if (line == before) continue;

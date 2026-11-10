@@ -166,6 +166,23 @@ void main() {
       ]);
       expect(takePhrases([(Duration.zero, 3)]).isEmpty, isTrue);
     });
+
+    test('a take\'s passes: none for the turns made with auto-pass off', () {
+      final marks = [
+        (Duration.zero, 0),
+        (s(4), 1),
+        (s(8), 2),
+        (s(15), 1),
+        (s(20), 2),
+      ];
+      // Off for the turns at 8 s and 15 s: the next one still turns from
+      // where the tab was.
+      expect(takePhrases(marks, skip: {2, 3}).passes, [
+        PhrasePass(s(4), next, 1),
+        PhrasePass(s(20), next, 2),
+      ]);
+      expect(takePhrases(marks, skip: {1, 2, 3, 4}).isEmpty, isTrue);
+    });
   });
 
   group('Library', () {

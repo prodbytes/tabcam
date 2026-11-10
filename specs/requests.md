@@ -2382,3 +2382,17 @@ spec.
    publishing and taking back a file. See
    [Cam](cam.md#phrase-passes) and
    [contributions](contributions.md#what-the-owner-sees-and-publishes).
+3. **When auto-pass is off, do not record timing files.** Recording in
+   Cam with Auto-pass off now notes no phrase passes at all: not the
+   song's (`BackingTrack.recordPass` isn't called) and not the take's
+   own. Until now they were noted while recording whatever Auto-pass
+   was. The passes there already are left as they are, neither changed
+   nor deleted. Switched during a take, the turns made while it was on
+   are noted and kept (the song's and the take's), those made while it
+   was off aren't; the take still shows every turn (burned in, and on
+   Play). The button's tooltip while off says so ("…and no phrase
+   passes are recorded"), in English, Spanish and Portuguese. New
+   tests: a take recorded along with a song with Auto-pass off keeps
+   nothing for the song or the take and leaves the song's earlier pass
+   alone, and switched on mid-take only the turns from then on are
+   noted. See [Cam](cam.md#phrase-passes).
