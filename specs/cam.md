@@ -192,7 +192,11 @@ its **Not now** leaving. With Premium it opens the camera view
     pass (in the theme's primary colour), and at the bar's right end, on
     its line, a **clear** button (a clear-all icon in the same colour,
     "Clear the phrase passes marked on the bar") that drops them all; no
-    count is shown. The same frame shows them beside the Text view and
+    count is shown. A pass shows on the bar as soon as it's made, while
+    the take still records, not only once it's saved. Cleared during a
+    take, the marks go at once and the take records on: passes made
+    after (Auto-pass on) are noted and marked again, and only those are
+    kept. The same frame shows them beside the Text view and
     on the file screen.
 - <a id="auto-pass"></a>**Auto-pass** (beside Tab: its icon in the
   primary colour while on, struck through while off; on by default,
