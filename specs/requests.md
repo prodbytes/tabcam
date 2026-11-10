@@ -2382,3 +2382,29 @@ spec.
    publishing and taking back a file. See
    [Cam](cam.md#phrase-passes) and
    [contributions](contributions.md#what-the-owner-sees-and-publishes).
+2. **Add a "rotate" button in the dictionary view to show the dictionary
+   as a bottom panel instead of side, and orient the neck scale
+   horizontally.** The dictionary's sidebar has a **Rotate** button
+   beside its ✕: it turns the sidebar into a panel under the screen,
+   across its width (the viewer over it), and back to the right side.
+   The panel's top edge is the separator: dragged, it sets the panel's
+   height (40% of the screen's by default, from 180 to 360 px; 120 px at
+   least, the viewer keeping 96 px), a double tap puts it back. In the
+   panel the search field and the buttons share one row, and the necks
+   lie down, the nut at the left and the frets going right, the high E
+   at the top: a chord's diagrams (the same picture turned, the starting
+   fret labelled under it, each string's note at its right end) and a
+   scale's fretboard (across however narrow the panel, sized to the
+   panel's height), beside the name and notes where the panel is 560 px
+   wide or more. At the side they stand as before. The layout and the
+   height are app-wide and kept on the device with the sidebars' widths
+   (the `sidebars` meta file: `below` and `dictionaryHeight`), so every
+   screen that has the dictionary (the capture in all its views, a
+   file, Cam) shows it where it was left. Turning it keeps the viewer,
+   what was typed and the keyboard. The play-along sidebar stays in the
+   viewer, over the panel, and the metronome's at the right of both. On
+   small screens the sidebar's content is cut rather than overflowing,
+   and the panel keeps its field's row where a screen is too short for
+   both. New tests: rotating and back, the necks lying, the height's
+   drag, a small phone, and the choice kept on the device. See
+   [Dictionary](dictionary.md).

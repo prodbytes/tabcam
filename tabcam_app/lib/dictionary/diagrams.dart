@@ -11,18 +11,25 @@ import 'voicings.dart';
 
 /// One voicing of [chord], strings left (low E) to right, frets down
 /// from the nut (or from the fret labelled at the left), its root notes
-/// in the theme's primary colour, each string's note under it.
+/// in the theme's primary colour, each string's note under it. [lying]
+/// (the dictionary as a panel under the screen), the neck lies down: the
+/// nut at the left, the frets going right, the high E at the top as in a
+/// tab, each string's note at its right end and the fret's label under it.
 class ChordDiagram extends StatelessWidget {
   const ChordDiagram({
     super.key,
     required this.chord,
     required this.voicing,
     this.width = 96,
+    this.lying = false,
   });
 
   final Chord chord;
   final Voicing voicing;
+
+  /// Across the strings; along the frets it's 1.3 times this.
   final double width;
+  final bool lying;
 
   @override
   Widget build(BuildContext context) {
@@ -34,10 +41,12 @@ class ChordDiagram extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         CustomPaint(
-          size: Size(width, width * 1.3),
+          key: Key(lying ? 'chord-diagram-lying' : 'chord-diagram-standing'),
+          size: lying ? Size(width * 1.3, width) : Size(width, width * 1.3),
           painter: _ChordPainter(
             chord: chord,
             voicing: voicing,
+            lying: lying,
             fretLabel: base > 1 ? l10n.dictionaryFret(base) : null,
             line: scheme.onSurface,
             muted: scheme.onSurfaceVariant,
@@ -62,6 +71,7 @@ class _ChordPainter extends CustomPainter {
   const _ChordPainter({
     required this.chord,
     required this.voicing,
+    required this.lying,
     required this.fretLabel,
     required this.line,
     required this.muted,
@@ -71,6 +81,7 @@ class _ChordPainter extends CustomPainter {
 
   final Chord chord;
   final Voicing voicing;
+  final bool lying;
   final String? fretLabel;
   final Color line;
   final Color muted;
@@ -81,12 +92,21 @@ class _ChordPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final left = size.width * 0.24;
-    final right = size.width * 0.95;
-    final top = size.height * 0.14;
-    final bottom = size.height * 0.84;
-    final gapX = (right - left) / 5;
-    final gapY = (bottom - top) / _fretsShown;
+    // Across the strings and along the frets: the width and the height
+    // standing, the other way round lying.
+    final across = lying ? size.height : size.width;
+    final along = lying ? size.width : size.height;
+    // The low E, a margin (the fret's label) from the edge.
+    final first = across * 0.24;
+    final gapS = across * 0.71 / 5;
+    final nutAt = along * 0.14;
+    final end = along * 0.84;
+    final gapF = (end - nutAt) / _fretsShown;
+    // String [s] (0 the low E; on the left standing, at the bottom lying)
+    // at [a] along the neck.
+    Offset at(num s, double a) => lying
+        ? Offset(a, across - first - s * gapS)
+        : Offset(first + s * gapS, a);
     final base = voicing.baseFret;
     final nut = base == 1;
     final stroke = Paint()
@@ -96,10 +116,10 @@ class _ChordPainter extends CustomPainter {
 
     // The nut, or the first fret line, then the frets.
     for (var f = 0; f <= _fretsShown; f++) {
-      final y = top + f * gapY;
+      final a = nutAt + f * gapF;
       canvas.drawLine(
-        Offset(left, y),
-        Offset(right, y),
+        at(0, a),
+        at(5, a),
         f == 0 && nut
             ? (Paint()
                 ..color = line
@@ -108,78 +128,68 @@ class _ChordPainter extends CustomPainter {
       );
     }
     for (var s = 0; s < 6; s++) {
-      final x = left + s * gapX;
-      canvas.drawLine(Offset(x, top), Offset(x, bottom), stroke);
+      canvas.drawLine(at(s, nutAt), at(s, end), stroke);
     }
     if (fretLabel case final label?) {
       _text(
         canvas,
         label,
-        Offset(left - gapX * 0.3 - 3, top + gapY / 2),
+        lying
+            ? Offset(nutAt + gapF / 2, across - first / 2 + 1)
+            : Offset(first - gapS * 0.3 - 3, nutAt + gapF / 2),
         color: muted,
-        size: size.width * 0.1,
-        align: TextAlign.right,
+        size: across * 0.1,
+        align: lying ? TextAlign.center : TextAlign.right,
       );
     }
 
     // A barre: a bar from its first string to the last.
     final frets = voicing.frets;
     if (voicing.barreFrom case final from?) {
-      final y = top + (voicing.lowestFret - base + 0.5) * gapY;
-      final r = gapX * 0.3;
+      final a = nutAt + (voicing.lowestFret - base + 0.5) * gapF;
+      final r = gapS * 0.3;
       canvas.drawRRect(
-        RRect.fromLTRBR(
-          left + from * gapX - r,
-          y - r,
-          left + 5 * gapX + r,
-          y + r,
+        RRect.fromRectAndRadius(
+          Rect.fromPoints(at(from, a), at(5, a)).inflate(r),
           Radius.circular(r),
         ),
         Paint()..color = line,
       );
     }
 
-    // Each string: a mark above the nut (open, not played) or a dot.
-    final markSize = size.width * 0.11;
+    // Each string: a mark before the nut (open, not played) or a dot.
+    final markSize = across * 0.11;
     for (var s = 0; s < 6; s++) {
-      final x = left + s * gapX;
       final f = frets[s];
       final pc = f == null ? null : (standardTuning[s] + f) % 12;
       final isRoot = pc == chord.root.pitchClass;
+      final mark = at(s, nutAt - markSize * 0.75);
       if (f == null) {
-        _text(
-          canvas,
-          '×',
-          Offset(x, top - markSize * 0.75),
-          color: muted,
-          size: markSize * 1.2,
-        );
+        _text(canvas, '×', mark, color: muted, size: markSize * 1.2);
       } else if (f == 0) {
         canvas.drawCircle(
-          Offset(x, top - markSize * 0.75),
-          gapX * 0.22,
+          mark,
+          gapS * 0.22,
           Paint()
             ..color = isRoot ? root : line
             ..style = PaintingStyle.stroke
             ..strokeWidth = isRoot ? 2 : 1.2,
         );
       } else {
-        final y = top + (f - base + 0.5) * gapY;
-        final r = gapX * 0.34;
         canvas.drawCircle(
-          Offset(x, y),
-          r,
+          at(s, nutAt + (f - base + 0.5) * gapF),
+          gapS * 0.34,
           Paint()..color = isRoot ? root : line,
         );
       }
-      // The note under the string.
+      // The note past the string's end.
       if (pc != null) {
         _text(
           canvas,
           chord.spell(pc)?.name ?? Note.of(pc).name,
-          Offset(x, bottom + (size.height - bottom) / 2),
+          at(s, end + (along - end) / 2),
           color: isRoot ? root : muted,
-          size: size.width * 0.1,
+          size: across * 0.1,
           bold: isRoot,
         );
       }
@@ -216,6 +226,7 @@ class _ChordPainter extends CustomPainter {
   @override
   bool shouldRepaint(_ChordPainter old) =>
       old.voicing.frets != voicing.frets ||
+      old.lying != lying ||
       old.chord != chord ||
       old.line != line ||
       old.root != root;
@@ -225,11 +236,27 @@ class _ChordPainter extends CustomPainter {
 /// (the roots in the theme's primary colour), the open strings before the
 /// nut and the fret numbers beside it. Wide, it lies across, as seen from
 /// above, high E at the top; narrow (a sidebar), it stands up, as a chord
-/// diagram does, low E on the left and the frets going down.
+/// diagram does, low E on the left and the frets going down. [lying] (the
+/// dictionary as a panel under the screen), it lies across however narrow,
+/// the nut at the left, no taller than [maxHeight] (the panel's room)
+/// while that leaves it readable.
 class ScaleFretboard extends StatelessWidget {
-  const ScaleFretboard({super.key, required this.scale});
+  const ScaleFretboard({
+    super.key,
+    required this.scale,
+    this.lying = false,
+    this.maxHeight,
+  });
 
   final Scale scale;
+  final bool lying;
+  final double? maxHeight;
+
+  /// Lying, its height for its width.
+  static const _aspect = 0.42;
+
+  /// The least height [maxHeight] brings it to.
+  static const minLyingHeight = 130.0;
 
   /// Narrower than this, it stands up.
   static const across = 480.0;
@@ -251,6 +278,28 @@ class ScaleFretboard extends StatelessWidget {
           root: scheme.primary,
           onRoot: scheme.onPrimary,
         );
+        if (lying) {
+          final tall = maxHeight ?? double.infinity;
+          final most =
+              (tall < minLyingHeight ? minLyingHeight : tall) / _aspect;
+          final w = width < most ? width : most;
+          return Align(
+            alignment: Alignment.topLeft,
+            child: CustomPaint(
+              key: const Key('scale-fretboard-lying'),
+              size: Size(w, w * _aspect),
+              painter: _FretboardPainter(
+                scale: scale,
+                line: colors.line,
+                muted: colors.muted,
+                note: colors.note,
+                onNote: colors.onNote,
+                root: colors.root,
+                onRoot: colors.onRoot,
+              ),
+            ),
+          );
+        }
         if (width < across) {
           // No wider than reads well: about 44 px a string.
           final w = width.clamp(0.0, 300.0);
@@ -264,7 +313,7 @@ class ScaleFretboard extends StatelessWidget {
           );
         }
         return CustomPaint(
-          size: Size(width, width * 0.42),
+          size: Size(width, width * _aspect),
           painter: _FretboardPainter(
             scale: scale,
             line: colors.line,

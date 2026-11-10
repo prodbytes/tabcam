@@ -3244,6 +3244,18 @@ abstract class AppLocalizations {
   /// **'Hide the dictionary'**
   String get dictionaryHide;
 
+  /// Dictionary sidebar: the Rotate button, while it is at the side; turns it into a panel under the screen
+  ///
+  /// In en, this message translates to:
+  /// **'Show the dictionary at the bottom'**
+  String get dictionaryToBottom;
+
+  /// Dictionary panel: the Rotate button, while it is under the screen; puts it back at the side
+  ///
+  /// In en, this message translates to:
+  /// **'Show the dictionary at the side'**
+  String get dictionaryToSide;
+
   /// Video edit: what the track bar does (tooltip, screen reader)
   ///
   /// In en, this message translates to:

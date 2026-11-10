@@ -2585,6 +2585,14 @@
   "@dictionaryHide": {
     "description": "App bar and dictionary sidebar: hides the dictionary sidebar"
   },
+  "dictionaryToBottom": "Show the dictionary at the bottom",
+  "@dictionaryToBottom": {
+    "description": "Dictionary sidebar: the Rotate button, while it is at the side; turns it into a panel under the screen"
+  },
+  "dictionaryToSide": "Show the dictionary at the side",
+  "@dictionaryToSide": {
+    "description": "Dictionary panel: the Rotate button, while it is under the screen; puts it back at the side"
+  },
   "videoEditTrackBar": "The track along the kept part: drag it to move it, its ends to trim it",
   "@videoEditTrackBar": {
     "description": "Video edit: what the track bar does (tooltip, screen reader)"

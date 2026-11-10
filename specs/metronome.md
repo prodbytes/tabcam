@@ -13,7 +13,9 @@ nothing leaves it, and no server is involved.
   the **More** menu (⋮), with Dictionary. The button shows and hides the
   sidebar.
 - The sidebar opens on the right of the screen, beside the content; with
-  the dictionary open too, the metronome's is the rightmost. Its default
+  the dictionary open too, the metronome's is the rightmost (and, the
+  dictionary turned into its panel under the screen, at the right of the
+  viewer and the panel, the screen's whole height). Its default
   width is 30% of the screen (260 to 340 px); dragging its left edge makes
   it wider or narrower, a double tap puts the default back, and the width
   is kept on the device with the other sidebars'
