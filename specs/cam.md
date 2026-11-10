@@ -155,10 +155,11 @@ its **Not now** leaving. With Premium it opens the camera view
     (merged the same way), so played along later it turns the tab as it
     turned in it.
   - **In the player**: a tick across the song's progress bar at each
-    pass (in the theme's primary colour), and under it how many there
-    are ("3 phrase passes") with **✕** (Forget the phrase passes), which
-    drops them. The same frame shows them beside the Text view and on
-    the file screen.
+    pass (in the theme's primary colour), and at the bar's right end, on
+    its line, a **clear** button (a clear-all icon in the same colour,
+    "Clear the phrase passes marked on the bar") that drops them all; no
+    count is shown. The same frame shows them beside the Text view and
+    on the file screen.
 - <a id="auto-pass"></a>**Auto-pass** (beside Tab: its icon in the
   primary colour while on, struck through while off; on by default,
   kept on the device in the `cam` meta file): while a song with phrase
@@ -266,8 +267,8 @@ view).
   screen's height (on a short screen the video shrinks first, so the
   list under it keeps at least two rows): a video (or a link's page, 16:9) above a progress bar
   to scrub (marked where its [phrase passes](#phrase-passes) are, with
-  their count and ✕ under it), the [count-in](#count-in) at the start
-  of the progress bar's line; a recording only that line; under them its icon and
+  the button that clears them at the line's right end), the
+  [count-in](#count-in) at the start of the progress bar's line; a recording only that line; under them its icon and
   name in small type, then **«** (10 seconds back, not before the
   start), **Play** / **Pause** (Pause while it counts in too), **Stop** (pauses it, back at its start),
   **»** (10 seconds forward) and **Repeat** (on by default, in the

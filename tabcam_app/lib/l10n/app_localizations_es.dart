@@ -736,18 +736,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get camAlongSectionClear => 'Reproducir todo';
 
   @override
-  String camAlongPhrases(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count pasos de frase',
-      one: '1 paso de frase',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get camAlongPhrasesClear => 'Olvidar los pasos de frase';
+  String get camAlongPhrasesClear =>
+      'Borrar los pasos de frase marcados en la barra';
 
   @override
   String get camAlongSpeed =>

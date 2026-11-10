@@ -732,18 +732,8 @@ class AppLocalizationsPt extends AppLocalizations {
   String get camAlongSectionClear => 'Tocar tudo';
 
   @override
-  String camAlongPhrases(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count passagens de frase',
-      one: '1 passagem de frase',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get camAlongPhrasesClear => 'Esquecer as passagens de frase';
+  String get camAlongPhrasesClear =>
+      'Limpar as passagens de frase marcadas na barra';
 
   @override
   String get camAlongSpeed =>

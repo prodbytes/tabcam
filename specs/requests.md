@@ -2351,3 +2351,12 @@ spec.
     line. With ten tools, a 390 px phone shows eight on the first line
     and two on a second. In English, Spanish and Portuguese. See
     [tab recognition](tab-recognition.md#editing-tools).
+15. **At the bottom of the mini player, a button to clear all the timing
+    marks, on the right side of the bar perhaps. And there's no need for
+    the passes count label: remove it.** The play-along player's
+    "3 phrase passes" row under the progress bar is gone. The button
+    that clears the passes moved onto the progress bar's line, at its
+    right end (the count-in is at its left): a clear-all icon in the
+    marks' primary colour, "Clear the phrase passes marked on the bar",
+    shown while the song has passes. In English, Spanish and Portuguese.
+    See [Cam](cam.md#phrase-passes).

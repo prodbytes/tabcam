@@ -747,7 +747,9 @@ class _BackingFrame extends StatelessWidget {
             if (content != null)
               Flexible(child: Center(heightFactor: 1, child: content)),
             // The progress bar's line: the count-in's button and its
-            // seconds, then the progress bar.
+            // seconds, then the progress bar, and at its right, while the
+            // song has phrase passes marked on it, the button that clears
+            // them.
             if (media != null)
               Row(
                 children: [
@@ -780,13 +782,19 @@ class _BackingFrame extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  if (phrases.isNotEmpty)
+                    IconButton(
+                      key: const Key('cam-along-phrases-clear'),
+                      tooltip: l10n.camAlongPhrasesClear,
+                      visualDensity: compact,
+                      color: Theme.of(context).colorScheme.primary,
+                      iconSize: 18,
+                      icon: const Icon(Icons.clear_all),
+                      onPressed: onPhrasesClear ?? () => track.clearPhrases(),
+                    )
+                  else
+                    const SizedBox(width: 8),
                 ],
-              ),
-            if (phrases.isNotEmpty)
-              _PhrasesBar(
-                count: phrases.passes.length,
-                onClear: onPhrasesClear ?? () => track.clearPhrases(),
               ),
             if (track.canSection)
               _SectionBar(
@@ -1269,45 +1277,6 @@ class _PhraseMarks extends CustomPainter {
   @override
   bool shouldRepaint(_PhraseMarks old) =>
       old.times != times || old.length != length || old.color != color;
-}
-
-/// Under the progress bar while a song has phrase passes: how many, and
-/// ✕ to forget them.
-class _PhrasesBar extends StatelessWidget {
-  const _PhrasesBar({required this.count, required this.onClear});
-
-  final int count;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final primary = Theme.of(context).colorScheme.primary;
-    return Row(
-      key: const Key('cam-along-phrases'),
-      children: [
-        const SizedBox(width: 8),
-        Icon(Icons.auto_mode, size: 14, color: primary),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            l10n.camAlongPhrases(count),
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: primary, fontSize: 12),
-          ),
-        ),
-        IconButton(
-          key: const Key('cam-along-phrases-clear'),
-          tooltip: l10n.camAlongPhrasesClear,
-          visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
-          color: Colors.white70,
-          iconSize: 16,
-          icon: const Icon(Icons.close),
-          onPressed: onClear,
-        ),
-      ],
-    );
-  }
 }
 
 /// The section of a recording or video that repeats: a range over the
