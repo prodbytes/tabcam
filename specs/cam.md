@@ -147,7 +147,14 @@ its **Not now** leaving. With Premium it opens the camera view
   with it **off**, recording notes none, for the song or for the take,
   and the passes there already stay as they are (they're neither
   changed nor deleted). Switched during a take, the turns made while it
-  was on are noted and kept, those made while it was off aren't.
+  was on are noted and kept, those made while it was off aren't. That
+  leaves a **gap** in the passes (the song's and the take's), and
+  [Auto-pass](#auto-pass) only knows the passes: through a stretch
+  recorded with it off the tab stays on the last pass's neckline, and
+  goes straight to the next pass's (however many lines on) when the
+  song reaches it; before the first pass it shows the neckline that
+  pass turned from, so when the turns before it were made with
+  Auto-pass off, that's not the one the take started on.
   - **Per file**: each recording, video or link keeps its own passes,
     at its own times, on the file's own timeline (a video's edit
     doesn't move them: the player plays the file as it is). Two songs

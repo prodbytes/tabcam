@@ -1194,7 +1194,16 @@ void main() {
     ]);
     take = event.pages.last;
     expect(take.title, 'Take 2');
-    expect(event.phrases[take.id]!.passes.last.line, 2);
+    // The take's own: the two turns back made with it off are no passes;
+    // the one auto-pass made once on and the one by hand are (within two
+    // seconds on the take's clock, here: merged into one).
+    expect(
+      [
+        for (final p in event.phrases[take.id]!.passes)
+          (p.direction, p.line, p.count),
+      ],
+      [(PassDirection.next, 2, 2)],
+    );
   });
 
   testWidgets('Phrase passes are per file: two songs played along in one '

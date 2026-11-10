@@ -182,6 +182,16 @@ void main() {
         PhrasePass(s(20), next, 2),
       ]);
       expect(takePhrases(marks, skip: {1, 2, 3, 4}).isEmpty, isTrue);
+      // The gap they leave: the tab stays where the pass before left it,
+      // and catches up at the next pass.
+      final gapped = takePhrases(marks, skip: {2, 3});
+      expect(gapped.lineAt(s(10)), 1);
+      expect(gapped.lineAt(s(20)), 2);
+      // Off for the first turns: before the first pass kept, the tab is
+      // where that pass turned from, not where the take started.
+      final late = takePhrases(marks, skip: {1, 2, 3});
+      expect(late.passes, [PhrasePass(s(20), next, 2)]);
+      expect(late.lineAt(Duration.zero), 1);
     });
   });
 
