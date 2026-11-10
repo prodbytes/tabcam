@@ -30,10 +30,13 @@ import 'mono_font.dart';
 /// user to accept or reject; **Rescan**, reading the tab from the pages
 /// again (a timer counts while it reads); and **Verified**, a toggle marking the text checked (the event
 /// then opens on its Text view, and no read replaces it). On the row's
-/// left, the editing tools, outlined: **−** and **+** change the fret
-/// under the cursor, **++** and **−−** move its note to the string above
-/// or below, and the **Overtype** toggle (on by default) makes typing
-/// replace characters instead of pushing the line right. To check the
+/// left, the editing tools, round and outlined: first the **Overtype**
+/// toggle (on by default), making typing replace characters instead of
+/// pushing the line right; **−** and **+** change the fret under the
+/// cursor, **++** and **−−** move its note to the line above or below,
+/// **|** and **=** put a bar or a dash down the phrase, **|>** and **<|**
+/// end every phrase's lines together at the last or the first end, and
+/// **New phrase** adds an empty one. To check the
 /// reading against the page, the play-along sidebar beside the view
 /// lists the capture's PDFs to follow, as Cam's does.
 class TabTextView extends StatefulWidget {
@@ -322,9 +325,21 @@ class _TabTextViewState extends State<TabTextView> {
     _changed(value.text);
   }
 
-  /// ||: every staff's strings end together, at the longest.
-  void _alignEnds() {
-    final value = alignEnds(_text.value);
+  /// =: a dash down the cursor's phrase, at its column.
+  void _spacer() {
+    final value = insertSpacer(_text.value);
+    if (value == null) {
+      _say(context.l10n.textViewPutCursorOnString);
+      return;
+    }
+    _text.value = value;
+    _changed(value.text);
+  }
+
+  /// |> and <|: every phrase's lines end together, at the last end
+  /// ([alignEnds]) or the first ([trimEnds]).
+  void _endTogether(TextEditingValue? Function(TextEditingValue) end) {
+    final value = end(_text.value);
     if (value == null) {
       _say(context.l10n.textViewNoStaff);
       return;
@@ -337,7 +352,8 @@ class _TabTextViewState extends State<TabTextView> {
     _changed(value.text);
   }
 
-  /// =: an empty six-string staff under the cursor's line or staff.
+  /// New phrase: an empty six-line phrase under the cursor's line or
+  /// phrase.
   void _newStaff() {
     final value = newStaff(_text.value);
     _text.value = value;
@@ -653,11 +669,12 @@ class _TabTextViewState extends State<TabTextView> {
     );
   }
 
-  /// The editing tools, outlined so they read as buttons, on the left of
-  /// the line: − and + on the fret under the cursor, ++ and −− moving its
-  /// note up or down a string, | adding a bar line across the staff, ||
-  /// ending every string together, = adding an empty six-string staff, and
-  /// Overtype, a toggle (filled while on).
+  /// The editing tools, round and outlined so they read as buttons, on
+  /// the left of the line: Overtype first, a toggle (filled while on);
+  /// − and + on the fret under the cursor, ++ and −− moving its note up or
+  /// down a line, | a bar and = a dash down the phrase, |> and <| ending
+  /// every phrase's lines together at the last or the first end, and New
+  /// phrase adding an empty one.
   /// [children] in a row [gap] apart; when [wrap], onto more lines
   /// rather than past the edge (the tools at their full size, the play-along
   /// sidebar beside them on a phone).
@@ -672,23 +689,11 @@ class _TabTextViewState extends State<TabTextView> {
   Widget _tools({bool wrap = false}) {
     final enabled = !_busy;
     final scheme = Theme.of(context).colorScheme;
-    // On a phone, with the line to themselves, closer together and
-    // Overtype an icon (its tooltip says which mode), so all of them fit
-    // at their full size.
+    // On a phone, with the line to themselves, closer together, so as
+    // many as can fit at their full size do.
     final phone = MediaQuery.sizeOf(context).width < 600;
     final gap = phone ? 4.0 : 8.0;
-    final overtypeStyle = _overtype
-        ? OutlinedButton.styleFrom(
-            backgroundColor: scheme.secondaryContainer,
-            foregroundColor: scheme.onSecondaryContainer,
-          )
-        : null;
-    final overtypeIcon = Icon(
-      _overtype ? Icons.keyboard : Icons.keyboard_outlined,
-    );
-    void toggleOvertype() => setState(() => _overtype = !_overtype);
-    // On a phone each tool's tap area is its 40 px button, not 48: eight
-    // fit across the screen.
+    // On a phone each tool's tap area is its 40 px button, not 48.
     return Theme(
       data: phone
           ? Theme.of(
@@ -699,6 +704,30 @@ class _TabTextViewState extends State<TabTextView> {
         wrap: wrap,
         gap: gap,
         children: [
+          // First, set apart from the edits: how typing works.
+          Tooltip(
+            message: _overtype
+                ? context.l10n.textViewOvertypeOn
+                : context.l10n.textViewOvertypeOff,
+            child: Semantics(
+              toggled: _overtype,
+              child: IconButton.outlined(
+                key: const Key('text-overtype'),
+                onPressed: enabled
+                    ? () => setState(() => _overtype = !_overtype)
+                    : null,
+                isSelected: _overtype,
+                style: _overtype
+                    ? IconButton.styleFrom(
+                        backgroundColor: scheme.secondaryContainer,
+                        foregroundColor: scheme.onSecondaryContainer,
+                      )
+                    : null,
+                icon: const Icon(Icons.keyboard_outlined),
+                selectedIcon: const Icon(Icons.keyboard),
+              ),
+            ),
+          ),
           IconButton.outlined(
             tooltip: context.l10n.textViewFretDown,
             onPressed: enabled ? () => _bump(-1) : null,
@@ -725,37 +754,28 @@ class _TabTextViewState extends State<TabTextView> {
             icon: const _Glyph('|'),
           ),
           IconButton.outlined(
-            tooltip: context.l10n.textViewAlignEnds,
-            onPressed: enabled ? _alignEnds : null,
-            icon: const _Glyph('||'),
-          ),
-          IconButton.outlined(
-            tooltip: context.l10n.textViewNewStaff,
-            onPressed: enabled ? _newStaff : null,
+            key: const Key('text-spacer'),
+            tooltip: context.l10n.textViewSpacer,
+            onPressed: enabled ? _spacer : null,
             icon: const _Glyph('='),
           ),
-          Tooltip(
-            message: _overtype
-                ? context.l10n.textViewOvertypeOn
-                : context.l10n.textViewOvertypeOff,
-            child: Semantics(
-              toggled: _overtype,
-              child: phone
-                  ? IconButton.outlined(
-                      key: const Key('text-overtype'),
-                      onPressed: enabled ? toggleOvertype : null,
-                      isSelected: _overtype,
-                      style: overtypeStyle,
-                      icon: overtypeIcon,
-                    )
-                  : OutlinedButton.icon(
-                      key: const Key('text-overtype'),
-                      onPressed: enabled ? toggleOvertype : null,
-                      style: overtypeStyle,
-                      icon: overtypeIcon,
-                      label: Text(context.l10n.textViewOvertype),
-                    ),
-            ),
+          IconButton.outlined(
+            key: const Key('text-ends-last'),
+            tooltip: context.l10n.textViewEndsLast,
+            onPressed: enabled ? () => _endTogether(alignEnds) : null,
+            icon: const _Glyph('|>'),
+          ),
+          IconButton.outlined(
+            key: const Key('text-ends-first'),
+            tooltip: context.l10n.textViewEndsFirst,
+            onPressed: enabled ? () => _endTogether(trimEnds) : null,
+            icon: const _Glyph('<|'),
+          ),
+          IconButton.outlined(
+            key: const Key('text-new-phrase'),
+            tooltip: context.l10n.textViewNewStaff,
+            onPressed: enabled ? _newStaff : null,
+            icon: const Icon(Icons.playlist_add),
           ),
         ],
       ),

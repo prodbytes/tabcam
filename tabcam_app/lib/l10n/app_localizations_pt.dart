@@ -732,18 +732,8 @@ class AppLocalizationsPt extends AppLocalizations {
   String get camAlongSectionClear => 'Tocar tudo';
 
   @override
-  String camAlongPhrases(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count passagens de frase',
-      one: '1 passagem de frase',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get camAlongPhrasesClear => 'Esquecer as passagens de frase';
+  String get camAlongPhrasesClear =>
+      'Limpar as passagens de frase marcadas na barra';
 
   @override
   String get camAlongSpeed =>
@@ -1141,8 +1131,16 @@ class AppLocalizationsPt extends AppLocalizations {
       'Barra de compasso: uma | em todas as cordas, no cursor';
 
   @override
-  String get textViewAlignEnds =>
-      'Alinhar os finais: todas as cordas terminam com a mais longa';
+  String get textViewSpacer =>
+      'Espaçador: um - em cada linha da frase, no cursor';
+
+  @override
+  String get textViewEndsLast =>
+      'Terminar juntas no último final: as linhas de cada frase vão até a mais longa';
+
+  @override
+  String get textViewEndsFirst =>
+      'Terminar juntas no primeiro final: as linhas de cada frase são cortadas na mais curta, sem cortar notas';
 
   @override
   String get textViewPutCursorOnString =>
@@ -1156,7 +1154,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get textViewNewStaff =>
-      'Tablatura vazia: seis cordas, e B G D A E, com 80 caracteres de largura';
+      'Frase nova: seis linhas vazias, e B G D A E, com 80 caracteres de largura';
 
   @override
   String get textViewOvertypeOn =>
@@ -1197,9 +1195,6 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get textViewNotationBendParens =>
       'bend também: a nota entre parênteses depois da nota';
-
-  @override
-  String get textViewOvertype => 'Sobrescrever';
 
   @override
   String get textViewSongDialogTitle => 'Corrigir pela tablatura da música';

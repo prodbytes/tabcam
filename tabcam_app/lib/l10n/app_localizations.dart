@@ -1258,16 +1258,10 @@ abstract class AppLocalizations {
   /// **'Play all of it'**
   String get camAlongSectionClear;
 
-  /// Cam's player: how many phrase passes (times the tab turned while recording along) the song has; marked on its progress bar
+  /// Cam's player: the button at the right of the progress bar that forgets the song's phrase passes (the timing marks on the bar), so auto-pass no longer turns the tab along it
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 phrase pass} other{{count} phrase passes}}'**
-  String camAlongPhrases(int count);
-
-  /// Cam's player: forgets the song's phrase passes, so auto-pass no longer turns the tab along it
-  ///
-  /// In en, this message translates to:
-  /// **'Forget the phrase passes'**
+  /// **'Clear the phrase passes marked on the bar'**
   String get camAlongPhrasesClear;
 
   /// Cam: the slider that slows down (or speeds up) the file playing along; the pitch stays.
@@ -1858,34 +1852,46 @@ abstract class AppLocalizations {
   /// **'Bar line: a | across every string, at the cursor'**
   String get textViewBar;
 
-  /// Tooltip of ||: pads every string of each staff to the longest
+  /// Tooltip of =: a dash down the cursor's phrase (staff), at its column
   ///
   /// In en, this message translates to:
-  /// **'Line up the ends: every string ends with the longest'**
-  String get textViewAlignEnds;
+  /// **'Spacer: a - on every line of the phrase, at the cursor'**
+  String get textViewSpacer;
 
-  /// Snackbar when | finds the cursor off the strings
+  /// Tooltip of |>: pads every line (string) of each phrase (staff) to the longest
+  ///
+  /// In en, this message translates to:
+  /// **'End together at the last end: each phrase\'s lines padded to the longest'**
+  String get textViewEndsLast;
+
+  /// Tooltip of <|: cuts every line (string) of each phrase (staff) to the shortest, never cutting a note
+  ///
+  /// In en, this message translates to:
+  /// **'End together at the first end: each phrase\'s lines cut to the shortest, notes kept'**
+  String get textViewEndsFirst;
+
+  /// Snackbar when | or = finds the cursor off the strings
   ///
   /// In en, this message translates to:
   /// **'Put the cursor on a string line'**
   String get textViewPutCursorOnString;
 
-  /// Snackbar when || finds no staff in the text
+  /// Snackbar when |> or <| finds no phrase (staff) in the text
   ///
   /// In en, this message translates to:
   /// **'There are no strings to line up'**
   String get textViewNoStaff;
 
-  /// Snackbar when || finds nothing to pad
+  /// Snackbar when |> or <| finds nothing to change
   ///
   /// In en, this message translates to:
   /// **'Every string already ends together'**
   String get textViewEndsAligned;
 
-  /// Tooltip of =: adds an empty six-string staff under the cursor
+  /// Tooltip of New phrase (a list-add icon): adds an empty six-line phrase (staff) under the cursor
   ///
   /// In en, this message translates to:
-  /// **'Empty staff: six strings, e B G D A E, 80 characters wide'**
+  /// **'New phrase: six empty lines, e B G D A E, 80 characters wide'**
   String get textViewNewStaff;
 
   /// Tooltip of Overtype while on
@@ -1959,12 +1965,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'bend too: the pitch in parentheses after the note'**
   String get textViewNotationBendParens;
-
-  /// Checkbox button toggling overtype mode
-  ///
-  /// In en, this message translates to:
-  /// **'Overtype'**
-  String get textViewOvertype;
 
   /// Title of the dialog asking which song the tab is
   ///

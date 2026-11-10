@@ -975,9 +975,21 @@ void main() {
     // are one pass, to where they went.)
     expect(event.phrases[take.id]!.passes.last.line, 2);
     expect(event.pages, hasLength(3));
-    // Marked on the song's progress bar.
-    expect(find.byKey(const Key('cam-along-phrase-marks')), findsOneWidget);
-    expect(find.text('2 phrase passes'), findsOneWidget);
+    // Marked on the song's progress bar, with no count; the button that
+    // clears them at the bar's right, on its line.
+    final marks = find.byKey(const Key('cam-along-phrase-marks'));
+    expect(marks, findsOneWidget);
+    expect(find.textContaining('phrase pass'), findsNothing);
+    final clear = find.byKey(const Key('cam-along-phrases-clear'));
+    expect(
+      find.byTooltip('Clear the phrase passes marked on the bar'),
+      findsOneWidget,
+    );
+    expect(tester.getCenter(clear).dy, closeTo(tester.getCenter(marks).dy, 1));
+    expect(
+      tester.getTopLeft(clear).dx,
+      greaterThanOrEqualTo(tester.getTopRight(marks).dx),
+    );
 
     // Back at the start (the song repeating): the first line again; each
     // pass turns the tab as the song passes it.
@@ -1015,7 +1027,7 @@ void main() {
     await frames(tester);
     event = library.byId(id)!;
     expect(event.phrases.containsKey(song), isFalse);
-    expect(find.byKey(const Key('cam-along-phrases')), findsNothing);
+    expect(find.byKey(const Key('cam-along-phrases-clear')), findsNothing);
     expect(find.byKey(const Key('cam-along-phrase-marks')), findsNothing);
   });
 
