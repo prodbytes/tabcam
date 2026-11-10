@@ -1010,6 +1010,8 @@ void main() {
     await at(10);
     await pass();
     expect(find.text('2 / 3'), findsOneWidget);
+    // Marked on the song's progress bar at once, while still recording.
+    expect(find.byKey(const Key('cam-along-phrase-marks')), findsOneWidget);
     await at(20);
     await pass();
     expect(find.text('3 / 3'), findsOneWidget);
@@ -1204,6 +1206,75 @@ void main() {
       ],
       [(PassDirection.next, 2, 2)],
     );
+  });
+
+  testWidgets('Phrase passes cleared while recording: the marks go at once, '
+      'the take records on, and passes made after are noted and marked '
+      'again', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    late String song;
+    await tester.runAsync(() async {
+      final event = await library.addMedia(library.byId(id)!, [
+        Media(
+          XFile.fromData(Uint8List.fromList([1]), name: 'riff.m4a'),
+          PageKind.audio,
+          'm4a',
+        ),
+      ]);
+      song = event.pages.last.id;
+    });
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          burn: (take, _) async => take,
+        ),
+      ),
+    );
+    await frames(tester);
+    Future<void> at(num seconds) async {
+      video.position = Duration(milliseconds: (seconds * 1000).round());
+      await frames(tester);
+    }
+
+    Future<void> pass() async {
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+      await frames(tester);
+    }
+
+    final marks = find.byKey(const Key('cam-along-phrase-marks'));
+    final clear = find.byKey(const Key('cam-along-phrases-clear'));
+    video.position = Duration.zero;
+    // Rec starts the song too.
+    await tester.tap(find.byTooltip('Rec'));
+    await frames(tester);
+    expect(marks, findsNothing);
+    await at(10);
+    await pass();
+    // Marked as soon as it's passed.
+    expect(marks, findsOneWidget);
+
+    await tester.tap(clear);
+    await frames(tester);
+    expect(marks, findsNothing);
+    expect(clear, findsNothing);
+    // Still recording, the song still playing.
+    expect(_camStop, findsOneWidget);
+    expect(video.playing, hasLength(1));
+
+    await at(20);
+    await pass();
+    expect(marks, findsOneWidget);
+    await tester.tap(_camStop);
+    await until(tester, () => recReady(tester));
+    // Only the pass made after clearing is kept.
+    expect(library.byId(id)!.phrases[song]!.passes, [
+      const PhrasePass(Duration(seconds: 20), PassDirection.next, 2),
+    ]);
   });
 
   testWidgets('Phrase passes are per file: two songs played along in one '

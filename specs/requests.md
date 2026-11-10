@@ -2433,3 +2433,14 @@ spec.
    from where it is. One already playing plays on; with the sidebar
    hidden, nothing starts. See
    [Cam](cam.md#playing-along-with-a-file).
+5. **Show the time marking in the timeline as soon as a phrase is
+   passed.** It already did while recording (passes are noted only
+   while Rec is on, as the user confirmed): the mark is drawn on the
+   progress bar the moment the pass is made. Now a test checks it, and
+   the spec says so. See [Cam](cam.md#phrase-passes).
+6. **When the clear button is pressed, clear the timelines but keep
+   recording, as long as auto-pass is on.** It already did: clearing
+   during a take drops the marks at once, the take records on, and
+   passes made after (Auto-pass on) are noted and marked again; only
+   those are kept. Now a test checks it, and the spec says so. See
+   [Cam](cam.md#phrase-passes).
