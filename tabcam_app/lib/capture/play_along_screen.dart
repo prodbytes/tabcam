@@ -39,12 +39,13 @@ import 'take_overlay.dart';
 /// the screen, and shows it again.
 ///
 /// **Phrase passes**: while recording along with a song playing in the
-/// sidebar's frame, each turn of the tab is noted at the song's position
-/// ([BackingTrack.recordPass]), merged with one the same way within two
-/// seconds of it, and kept with the capture ([PhraseTimes]); the take
-/// keeps its own. **Auto-pass** (beside Tab, on by default, kept on the
-/// device) then turns the tab by itself where it turned before, each
-/// time through the song ([AutoPass]).
+/// sidebar's frame, with Auto-pass on, each turn of the tab is noted at
+/// the song's position ([BackingTrack.recordPass]), merged with one the
+/// same way within two seconds of it, and kept with the capture
+/// ([PhraseTimes]); the take keeps its own. **Auto-pass** (beside Tab, on
+/// by default, kept on the device) then turns the tab by itself where it
+/// turned before, each time through the song ([AutoPass]). Off, no pass
+/// is noted, for the song or the take.
 ///
 /// **Play along** (the app bar's, when the capture has recordings, videos,
 /// links or PDFs) shows and hides a sidebar of them, open from the first
@@ -126,6 +127,10 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   /// While recording: when it started, and when each neckline showed.
   final _clock = Stopwatch();
   List<(Duration, int)> _marks = [];
+
+  /// The [_marks] (by index) made with auto-pass off: the tab turned in
+  /// the take there, but it's no phrase pass of the take's.
+  Set<int> _unpassed = {};
   bool _recording = false;
   bool _saving = false;
 
@@ -367,14 +372,18 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     final line = index.clamp(0, _lines.length - 1);
     if (line == _line) return false;
     setState(() => _line = line);
-    if (_recording) _marks.add((_clock.elapsed, line));
+    if (_recording) {
+      if (!_autoPassOn) _unpassed.add(_marks.length);
+      _marks.add((_clock.elapsed, line));
+    }
     return true;
   }
 
   /// The user passes a phrase: the next neckline ([delta] 1) or the one
-  /// before (-1). With a song playing along, recording, it's noted at the
-  /// song's position ([BackingTrack.recordPass]); with auto-pass on, the
-  /// same pass auto-pass just made doesn't turn the tab again.
+  /// before (-1). With auto-pass on and a song playing along, the same
+  /// pass auto-pass just made doesn't turn the tab again, and, recording,
+  /// it's noted at the song's position ([BackingTrack.recordPass]). With
+  /// auto-pass off, it only turns the tab: no pass is noted.
   Future<void> _pass(int delta) async {
     final direction = delta > 0 ? PassDirection.next : PassDirection.previous;
     final media = _track.media;
@@ -383,7 +392,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         _track.canPhrase &&
         media.value.isPlaying &&
         _player == null &&
-        (_recording || _autoPassOn);
+        _autoPassOn;
     if (!along) {
       _show(_line + delta);
       return;
@@ -397,7 +406,8 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     if (!mounted) return;
     final absorbed = _autoPassOn && _autoPass.absorbs(at, direction);
     if (!absorbed && !_show(_line + delta)) return;
-    if (_recording && _track.media == media) {
+    // (Auto-pass switched off while the position was read: not noted.)
+    if (_recording && _autoPassOn && _track.media == media) {
       _track.recordPass(at, direction, _line);
     }
   }
@@ -498,6 +508,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       ..reset()
       ..start();
     _marks = [(Duration.zero, _line)];
+    _unpassed = {};
     if (mounted) setState(() => _recording = true);
     // The song in the sidebar's player starts with the take (counting in
     // first, from where it is), unless it plays already.
@@ -522,6 +533,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     });
     _clock.stop();
     final marks = _marks;
+    final unpassed = _unpassed;
     try {
       var file = await (_recordingTab
           ? _recorder!.stop()
@@ -547,8 +559,13 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       final page = Library.addedPages(updated).last;
       final name = l10n.camTake(n);
       await library.renamePage(event.id, page.id, name);
-      // Played along later, the take turns the tab as it turned in it.
-      await library.setPhrases(event.id, page.id, takePhrases(marks));
+      // Played along later, the take turns the tab as it turned in it
+      // while auto-pass was on (off all along: it has no passes).
+      await library.setPhrases(
+        event.id,
+        page.id,
+        takePhrases(marks, skip: unpassed),
+      );
       _take = page;
       _takeMarks = marks;
       if (mounted) _snack(l10n.camSaved(name));

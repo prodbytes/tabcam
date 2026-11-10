@@ -128,7 +128,8 @@ its **Not now** leaving. With Premium it opens the camera view
   turns (keys, taps, head gestures, a take playing back) and a take
   still gets it burned in where it showed; it's only off the screen.
   It shows again each time Cam opens.
-- <a id="phrase-passes"></a>**Phrase passes**: while recording, each
+- <a id="phrase-passes"></a>**Phrase passes**: while recording with
+  [Auto-pass](#auto-pass) on, each
   time the user turns the tab (a key, a tap on the neckline or its
   arrows, a head gesture) with a song playing in the sidebar's
   [player](#playing-along-with-a-file) (one that plays in the app: a
@@ -142,7 +143,18 @@ its **Not now** leaving. With Premium it opens the camera view
   pass merged into it counting, so it settles as the song is played
   again), keeping the newer's neckline; one moved within two seconds of
   another the same way merges with it too. Passes are only noted while
-  recording, and only while the song plays.
+  recording, only while the song plays, and only while Auto-pass is on:
+  with it **off**, recording notes none, for the song or for the take,
+  and the passes there already stay as they are (they're neither
+  changed nor deleted). Switched during a take, the turns made while it
+  was on are noted and kept, those made while it was off aren't. That
+  leaves a **gap** in the passes (the song's and the take's), and
+  [Auto-pass](#auto-pass) only knows the passes: through a stretch
+  recorded with it off the tab stays on the last pass's neckline, and
+  goes straight to the next pass's (however many lines on) when the
+  song reaches it; before the first pass it shows the neckline that
+  pass turned from, so when the turns before it were made with
+  Auto-pass off, that's not the one the take started on.
   - **Per file**: each recording, video or link keeps its own passes,
     at its own times, on the file's own timeline (a video's edit
     doesn't move them: the player plays the file as it is). Two songs
@@ -170,8 +182,11 @@ its **Not now** leaving. With Premium it opens the camera view
     from a contribution (the owner's own for it, else its reader's).
     Passes for a song deleted elsewhere are let go of at the next save.
   - **The take** keeps its own too, from when its necklines showed
-    (merged the same way), so played along later it turns the tab as it
-    turned in it.
+    while Auto-pass was on (merged the same way; `takePhrases`), so
+    played along later it turns the tab as it turned in it. A turn made
+    while Auto-pass was off is still in the take (burned in, and
+    followed when Play plays it back), but it's no pass of the take's;
+    a take recorded with Auto-pass off all along has none.
   - **In the player**: a tick across the song's progress bar at each
     pass (in the theme's primary colour), and at the bar's right end, on
     its line, a **clear** button (a clear-all icon in the same colour,
@@ -194,7 +209,10 @@ its **Not now** leaving. With Premium it opens the camera view
   into it; one by hand just before a pass is noted as usual, and the
   pass then finds the tab already there. While a take plays back, or
   the song is paused, it does nothing. Off, the tab turns only by
-  hand, and passes are still noted while recording.
+  hand, and no [phrase passes](#phrase-passes) are noted while
+  recording (its tooltip says so: "Auto-pass off: the tab turns only
+  when you turn it, and no phrase passes are recorded"); the ones
+  there already are kept for when it's on again.
 
 <a id="playing-along-with-a-file"></a>**Playing along with a file**:
 when the capture has recordings, videos or links (or, in Cam, PDFs to

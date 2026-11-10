@@ -823,7 +823,7 @@
   "@camAutoPassOn": {
     "description": "Cam: auto-pass button tooltip while it's on"
   },
-  "camAutoPassOff": "Auto-pass off: the tab turns only when you turn it",
+  "camAutoPassOff": "Auto-pass off: the tab turns only when you turn it, and no phrase passes are recorded",
   "@camAutoPassOff": {
     "description": "Cam: auto-pass button tooltip while it's off"
   },
