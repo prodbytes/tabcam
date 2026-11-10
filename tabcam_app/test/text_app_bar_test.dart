@@ -103,11 +103,17 @@ void main() {
       find.byTooltip('Fret up (the number under the cursor)'),
     );
     expect(plus.width, closeTo(40, 0.5));
+    // Overtype first, a circle as wide as the rest; the ten of them, each
+    // 40 wide (text glyphs in an icon's box), on screen: as many as fit
+    // on the first line, the rest on a second.
     final overtype = tester.getRect(find.byKey(const Key('text-overtype')));
-    expect(overtype.right, lessThanOrEqualTo(390 - 16 + 0.5));
-    // All eight on one line, each 40 wide (text glyphs in an icon's box).
+    expect(overtype.left, closeTo(16, 0.5));
     expect(overtype.top, closeTo(plus.top, 0.5));
     expect(overtype.width, closeTo(40, 0.5));
+    final newPhrase = tester.getRect(find.byKey(const Key('text-new-phrase')));
+    expect(newPhrase.width, closeTo(40, 0.5));
+    expect(newPhrase.right, lessThanOrEqualTo(390 - 16 + 0.5));
+    expect(newPhrase.top, greaterThan(plus.top));
 
     // Verified, as an icon, toggles.
     await tester.tap(find.byKey(const Key('text-verified')));

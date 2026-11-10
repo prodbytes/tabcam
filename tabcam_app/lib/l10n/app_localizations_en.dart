@@ -1112,8 +1112,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get textViewBar => 'Bar line: a | across every string, at the cursor';
 
   @override
-  String get textViewAlignEnds =>
-      'Line up the ends: every string ends with the longest';
+  String get textViewSpacer =>
+      'Spacer: a - on every line of the phrase, at the cursor';
+
+  @override
+  String get textViewEndsLast =>
+      'End together at the last end: each phrase\'s lines padded to the longest';
+
+  @override
+  String get textViewEndsFirst =>
+      'End together at the first end: each phrase\'s lines cut to the shortest, notes kept';
 
   @override
   String get textViewPutCursorOnString => 'Put the cursor on a string line';
@@ -1126,7 +1134,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get textViewNewStaff =>
-      'Empty staff: six strings, e B G D A E, 80 characters wide';
+      'New phrase: six empty lines, e B G D A E, 80 characters wide';
 
   @override
   String get textViewOvertypeOn =>
@@ -1166,9 +1174,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get textViewNotationBendParens =>
       'bend too: the pitch in parentheses after the note';
-
-  @override
-  String get textViewOvertype => 'Overtype';
 
   @override
   String get textViewSongDialogTitle => 'Fix from the song\'s tab';

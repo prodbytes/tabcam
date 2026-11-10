@@ -291,14 +291,89 @@ TextEditingValue? insertBar(TextEditingValue value) {
   );
 }
 
-/// ||: every staff's strings end together. In each staff (two or more
-/// string lines next to each other), each string is padded with dashes to
-/// the longest one, before its closing bar, and every string gets the
-/// staff's closing bar (the longest run of `|` that ends one of them), so
-/// the bars at the end line up. Trailing spaces go. The cursor stays where
-/// it was in its line (after the padding when it was at the line's end).
-/// Null when the text has no staff.
-TextEditingValue? alignEnds(TextEditingValue value) {
+/// The bars that close [line] (`|` or `||`), or none.
+String _closingBars(String line) =>
+    RegExp(r'\|+$').firstMatch(line)?.group(0) ?? '';
+
+/// A line's opening: its string's name and first bar (`e|`), or a bar
+/// alone (`|---`).
+final RegExp _opening = RegExp(r'^\s*(?:[A-Ga-g][#b]?\s*)?\|');
+
+/// =: a spacer, a dash down the phrase at the cursor's column. A `-` goes
+/// into every line of the phrase the cursor is on, at that column,
+/// pushing the rest of each line right by one, so the columns stay lined
+/// up. A line that ends before the column (or the cursor in its closing
+/// bar) gets its dash at its end, before its closing bar, and none goes
+/// into a line's name or opening bar. The cursor ends just after the new
+/// dash, still before the note it was before. Null when the cursor isn't
+/// on a line of a phrase.
+TextEditingValue? insertSpacer(TextEditingValue value) {
+  if (!value.selection.isValid) return null;
+  final lines = value.text.split('\n');
+  final (row, column) = _rowColumn(lines, value.selection.start);
+  if (!_isStringLine(lines[row])) return null;
+  final (first, last) = _staffAround(lines, row);
+  var cursorColumn = column + 1;
+  for (var i = first; i <= last; i++) {
+    final line = lines[i].trimRight();
+    final end = line.length - _closingBars(line).length;
+    final opening = _opening.firstMatch(line)?.end ?? 0;
+    // A line that's only its opening (`e|`) gets the dash after it.
+    final at = opening > end
+        ? line.length
+        : math.max(math.min(column, end), opening);
+    lines[i] = '${line.substring(0, at)}-${line.substring(at)}';
+    if (i == row) cursorColumn = at + 1;
+  }
+  return TextEditingValue(
+    text: lines.join('\n'),
+    selection: TextSelection.collapsed(
+      offset: _offsetOf(lines, row, cursorColumn),
+    ),
+  );
+}
+
+/// |>: every phrase's lines end together, at the last end. In each phrase
+/// (two or more lines next to each other), each line is padded with
+/// dashes to the longest one, before its closing bar, and every line gets
+/// the phrase's closing bar (the longest run of `|` that ends one of
+/// them), so the bars at the end line up. Trailing spaces go. The cursor
+/// stays where it was in its line (after the padding when it was at the
+/// line's end). Null when the text has no phrase.
+TextEditingValue? alignEnds(TextEditingValue value) => _endTogether(
+  value,
+  (bodies) => bodies.map((b) => b.length).reduce(math.max),
+);
+
+/// <|: every phrase's lines end together, at the first end. In each
+/// phrase, each line is cut to the shortest one (the dashes before its
+/// closing bar go) and every line gets the phrase's closing bar, as with
+/// |>. Notes are never cut: where one stands past that end, the lines end
+/// together one dash after the last note instead (right after it when its
+/// line had no dash there). The cursor stays where it was in its line, or
+/// at the new end when what it was on was cut. Null when the text has no
+/// phrase.
+TextEditingValue? trimEnds(TextEditingValue value) =>
+    _endTogether(value, (bodies) {
+      final shortest = bodies.map((b) => b.length).reduce(math.min);
+      // How short each line can get and keep its notes, and a dash after
+      // the last one when it had one.
+      final kept = bodies
+          .map((b) {
+            final notes = b.replaceFirst(RegExp(r'-+$'), '').length;
+            return notes < b.length ? notes + 1 : notes;
+          })
+          .reduce(math.max);
+      return math.max(shortest, kept);
+    });
+
+/// Every phrase's lines made [widthOf] their bodies (each line without
+/// its closing bar) wide, padded with dashes or cut, then given the
+/// phrase's closing bar: [alignEnds] and [trimEnds].
+TextEditingValue? _endTogether(
+  TextEditingValue value,
+  int Function(List<String> bodies) widthOf,
+) {
   final lines = value.text.split('\n');
   final (row, column) = value.selection.isValid
       ? _rowColumn(lines, value.selection.start)
@@ -316,24 +391,25 @@ TextEditingValue? alignEnds(TextEditingValue value) {
     if (last == first) continue;
     staves++;
     final trimmed = [for (var k = first; k <= last; k++) lines[k].trimRight()];
-    String barsOf(String line) =>
-        RegExp(r'\|+$').firstMatch(line)?.group(0) ?? '';
     final bodies = [
-      for (final t in trimmed) t.substring(0, t.length - barsOf(t).length),
+      for (final t in trimmed)
+        t.substring(0, t.length - _closingBars(t).length),
     ];
     final closing = trimmed
-        .map(barsOf)
+        .map(_closingBars)
         .fold('', (longest, b) => b.length > longest.length ? b : longest);
-    final width = bodies.map((b) => b.length).reduce(math.max);
+    final width = widthOf(bodies);
     for (var k = first; k <= last; k++) {
       final body = bodies[k - first];
-      final line = '${body.padRight(width, '-')}$closing';
+      final line =
+          '${body.length > width ? body.substring(0, width) : body.padRight(width, '-')}'
+          '$closing';
       // The cursor past the body (in the closing bar, or after it)
-      // follows the line's end.
+      // follows the line's end; one in dashes that were cut goes to it.
       if (k == row && column > body.length) {
         cursorColumn = math.min(width + column - body.length, line.length);
       } else if (k == row) {
-        cursorColumn = math.min(column, line.length);
+        cursorColumn = math.min(column, width);
       }
       lines[k] = line;
     }
@@ -347,15 +423,15 @@ TextEditingValue? alignEnds(TextEditingValue value) {
   );
 }
 
-/// How wide = makes each string, its name and both bars included.
+/// How wide New phrase makes each line, its name and both bars included.
 const newStaffWidth = 80;
 
-/// =: an empty six-string staff in standard tuning, `e B G D A E`, each
-/// string its name, a bar, dashes and a closing bar, [newStaffWidth]
-/// characters in all. It goes under the cursor's line, or under its whole
-/// staff when the cursor is on one, with a blank line between it and the
-/// text around it. The cursor ends on the first string, just after its
-/// bar, to write the first note.
+/// New phrase: an empty six-line phrase in standard tuning,
+/// `e B G D A E`, each line its string's name, a bar, dashes and a
+/// closing bar, [newStaffWidth] characters in all. It goes under the
+/// cursor's line, or under its whole phrase when the cursor is on one,
+/// with a blank line between it and the text around it. The cursor ends
+/// on the first line, just after its bar, to write the first note.
 TextEditingValue newStaff(TextEditingValue value) {
   final staff = [
     for (final name in const ['e', 'B', 'G', 'D', 'A', 'E'])
