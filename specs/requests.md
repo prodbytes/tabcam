@@ -2335,7 +2335,23 @@ spec.
     unmarking it doesn't bring them back. Before, Verified only hid them
     while it was on. See
     [tab recognition](tab-recognition.md#text-view).
-14. **At the bottom of the mini player, a button to clear all the timing
+14. **In the text editor, make the Overtype button a circle, like the
+    others, and the first one, as it's kind of special. Make the equal
+    sign add one dash on each line, vertically, like a spacer. Then add
+    two new buttons: `|>` to make the ends of the phrases match the last
+    end (what the align-ends button did), and `<|` to make them match
+    the first end.** The Text view's tools are now all round outlined
+    icon buttons, Overtype first (a keyboard icon, filled while on, on
+    every screen size; its "Overtype" label is gone). **=** is a spacer:
+    a dash down the cursor's phrase at its column, the rest of each line
+    pushed right. **|>** replaces **||** (each phrase's lines padded to
+    the longest), and the new **<|** cuts each phrase's lines back to the
+    shortest, never cutting a note. Adding an empty phrase, which `=` did,
+    moved to a **New phrase** tool (a list-add icon) at the end of the
+    line. With ten tools, a 390 px phone shows eight on the first line
+    and two on a second. In English, Spanish and Portuguese. See
+    [tab recognition](tab-recognition.md#editing-tools).
+15. **At the bottom of the mini player, a button to clear all the timing
     marks, on the right side of the bar perhaps. And there's no need for
     the passes count label: remove it.** The play-along player's
     "3 phrase passes" row under the progress bar is gone. The button

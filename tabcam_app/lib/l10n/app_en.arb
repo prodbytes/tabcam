@@ -1472,25 +1472,33 @@
   "@textViewBar": {
     "description": "Tooltip of |: a bar line across the staff at the cursor"
   },
-  "textViewAlignEnds": "Line up the ends: every string ends with the longest",
-  "@textViewAlignEnds": {
-    "description": "Tooltip of ||: pads every string of each staff to the longest"
+  "textViewSpacer": "Spacer: a - on every line of the phrase, at the cursor",
+  "@textViewSpacer": {
+    "description": "Tooltip of =: a dash down the cursor's phrase (staff), at its column"
+  },
+  "textViewEndsLast": "End together at the last end: each phrase's lines padded to the longest",
+  "@textViewEndsLast": {
+    "description": "Tooltip of |>: pads every line (string) of each phrase (staff) to the longest"
+  },
+  "textViewEndsFirst": "End together at the first end: each phrase's lines cut to the shortest, notes kept",
+  "@textViewEndsFirst": {
+    "description": "Tooltip of <|: cuts every line (string) of each phrase (staff) to the shortest, never cutting a note"
   },
   "textViewPutCursorOnString": "Put the cursor on a string line",
   "@textViewPutCursorOnString": {
-    "description": "Snackbar when | finds the cursor off the strings"
+    "description": "Snackbar when | or = finds the cursor off the strings"
   },
   "textViewNoStaff": "There are no strings to line up",
   "@textViewNoStaff": {
-    "description": "Snackbar when || finds no staff in the text"
+    "description": "Snackbar when |> or <| finds no phrase (staff) in the text"
   },
   "textViewEndsAligned": "Every string already ends together",
   "@textViewEndsAligned": {
-    "description": "Snackbar when || finds nothing to pad"
+    "description": "Snackbar when |> or <| finds nothing to change"
   },
-  "textViewNewStaff": "Empty staff: six strings, e B G D A E, 80 characters wide",
+  "textViewNewStaff": "New phrase: six empty lines, e B G D A E, 80 characters wide",
   "@textViewNewStaff": {
-    "description": "Tooltip of =: adds an empty six-string staff under the cursor"
+    "description": "Tooltip of New phrase (a list-add icon): adds an empty six-line phrase (staff) under the cursor"
   },
   "textViewOvertypeOn": "Overtype: typing replaces characters, columns stay put",
   "@textViewOvertypeOn": {
@@ -1539,10 +1547,6 @@
   "textViewNotationBendParens": "bend too: the pitch in parentheses after the note",
   "@textViewNotationBendParens": {
     "description": "Notation sheet: 7(9)"
-  },
-  "textViewOvertype": "Overtype",
-  "@textViewOvertype": {
-    "description": "Checkbox button toggling overtype mode"
   },
   "textViewSongDialogTitle": "Fix from the song's tab",
   "@textViewSongDialogTitle": {

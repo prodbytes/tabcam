@@ -175,7 +175,51 @@ void main() {
     });
   });
 
-  group('|| (line up the ends)', () {
+  group('= (spacer)', () {
+    // A made-up riff, a chord name over it.
+    const staff = 'Am\ne|--3--5--|\nB|-5---6--|\nG|--|';
+
+    test('a dash down the phrase at the cursor, before the note there', () {
+      // On the e line's 3.
+      final spaced = insertSpacer(_at(staff, 3 + 4))!;
+      expect(spaced.text, 'Am\ne|---3--5--|\nB|-5----6--|\nG|---|');
+      // Just after the new dash: still before the 3.
+      expect(spaced.text[spaced.selection.baseOffset], '3');
+    });
+
+    test('pressed again, one more dash each time', () {
+      final once = insertSpacer(_at(staff, 3 + 4))!;
+      final twice = insertSpacer(once)!;
+      expect(twice.text, 'Am\ne|----3--5--|\nB|-5-----6--|\nG|----|');
+    });
+
+    test('at a line\'s end or in its closing bar: before the bar', () {
+      // At the very end of the e line, after its closing bar.
+      expect(
+        insertSpacer(_at(staff, 3 + 11))!.text,
+        'Am\ne|--3--5---|\nB|-5---6---|\nG|---|',
+      );
+    });
+
+    test('never in a line\'s name or opening bar', () {
+      final spaced = insertSpacer(_at(staff, 3))!;
+      expect(spaced.text, 'Am\ne|---3--5--|\nB|--5---6--|\nG|---|');
+      expect(spaced.selection.baseOffset, 3 + 3);
+      expect(insertSpacer(_at('e|\nB|-5-|', 0))!.text, 'e|-\nB|--5-|');
+    });
+
+    test('only the cursor\'s phrase; nothing off the lines', () {
+      const two = 'e|--3--|\nB|--5--|\n\ne|--7--|\nB|--8--|';
+      expect(
+        insertSpacer(_at(two, 3))!.text,
+        'e|---3--|\nB|---5--|\n\ne|--7--|\nB|--8--|',
+      );
+      expect(insertSpacer(_at(staff, 1)), isNull);
+      expect(insertSpacer(_at('la la la', 2)), isNull);
+    });
+  });
+
+  group('|> (end together at the last end)', () {
     test('every string padded to the longest, before its closing bar', () {
       const ragged = 'e|--3--5--7--|\nB|-5---|\nG|---------';
       expect(
@@ -217,7 +261,52 @@ void main() {
     });
   });
 
-  group('= (empty staff)', () {
+  group('<| (end together at the first end)', () {
+    test('every line cut to the shortest, before its closing bar', () {
+      const ragged = 'e|--3--------|\nB|-5---|\nG|-----------';
+      expect(trimEnds(_at(ragged, 0))!.text, 'e|--3--|\nB|-5---|\nG|-----|');
+    });
+
+    test('a note past the shortest end isn\'t cut: one dash after it', () {
+      const ragged = 'e|--3--5--7-----|\nB|-5|\nG|--------';
+      expect(
+        trimEnds(_at(ragged, 0))!.text,
+        'e|--3--5--7-|\nB|-5--------|\nG|----------|',
+      );
+      // A note right at its line's end keeps its place, no dash added.
+      expect(
+        trimEnds(_at('e|--3--7|\nB|-5----------|', 0))!.text,
+        'e|--3--7|\nB|-5----|',
+      );
+    });
+
+    test('every phrase, the double closing bar every line\'s', () {
+      const two = 'e|--3-----||\nB|-5---|\nla la\n\ne|-7|\nB|--8-----|';
+      expect(
+        trimEnds(_at(two, 0))!.text,
+        'e|--3--||\nB|-5---||\nla la\n\ne|-7--|\nB|--8-|',
+      );
+    });
+
+    test('the cursor in what was cut goes to the new end', () {
+      const ragged = 'e|--3------|\nB|-5--|';
+      final cut = trimEnds(_at(ragged, 9))!;
+      expect(cut.text, 'e|--3-|\nB|-5--|');
+      expect(cut.selection.baseOffset, 6);
+      // At the end of the line: still at its end.
+      final atEnd = trimEnds(_at(ragged, 12))!;
+      expect(atEnd.selection.baseOffset, 7);
+    });
+
+    test('already together: the same text; no phrase: null', () {
+      const even = 'e|--3--|\nB|-5---|';
+      expect(trimEnds(_at(even, 0))!.text, even);
+      expect(trimEnds(_at('e|--3--|', 0)), isNull);
+      expect(trimEnds(_at('just words', 0)), isNull);
+    });
+  });
+
+  group('New phrase (empty phrase)', () {
     const strings = ['e', 'B', 'G', 'D', 'A', 'E'];
 
     void expectStaff(List<String> lines) {

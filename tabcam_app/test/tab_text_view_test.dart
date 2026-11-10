@@ -196,7 +196,8 @@ void main() {
     expect(find.text('Copy'), findsOneWidget);
   });
 
-  testWidgets('the tools are outlined, Overtype a toggle', (tester) async {
+  testWidgets('the tools are round and outlined, Overtype a toggle and '
+      'the first', (tester) async {
     final library = Library(PlatformEventStore());
     await library.load();
     final event = await library.update(
@@ -210,8 +211,28 @@ void main() {
       ),
     );
     expect(find.byIcon(Icons.check_box), findsNothing);
-    final overtype = find.widgetWithText(OutlinedButton, 'Overtype');
+    final overtype = find.byKey(const Key('text-overtype'));
     expect(overtype, findsOneWidget);
+    // A circle like the other tools (an outlined icon button, their size),
+    // before them.
+    expect(tester.widget(overtype), isA<IconButton>());
+    final fretDown = find.ancestor(
+      of: find.byTooltip('Fret down (the number under the cursor)'),
+      matching: find.byType(IconButton),
+    );
+    expect(tester.getSize(overtype), tester.getSize(fretDown));
+    expect(
+      tester.getTopRight(overtype).dx,
+      lessThan(tester.getTopLeft(fretDown).dx),
+    );
+    for (final key in [
+      'text-spacer',
+      'text-ends-last',
+      'text-ends-first',
+      'text-new-phrase',
+    ]) {
+      expect(find.byKey(Key(key)), findsOneWidget, reason: key);
+    }
     bool? toggled() => tester
         .widget<Semantics>(
           find.ancestor(of: overtype, matching: find.byType(Semantics)).first,
