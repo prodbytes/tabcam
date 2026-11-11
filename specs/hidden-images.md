@@ -13,7 +13,9 @@ the owner, on every device, and the people it's
   stays hidden, and the app can't show its images again.
 - **Hidden**, the event screen's list of files is first the **text
   tab**, then the videos, PDFs, recordings and links in their order. The
-  text tab's row shows its first line, monospaced, and a tap goes to the
+  text tab's row shows its first line of text, monospaced, past blank
+  lines and the [file dividers](tab-recognition.md#several-files) of a
+  text read from several files, and a tap goes to the
   [Text view](tab-recognition.md#text-view). Before the tab has been
   read, it says "No text tab yet". The hidden images are still read
   ([by itself](tab-recognition.md#reading-by-itself)). Adding photos or

@@ -3079,10 +3079,14 @@ spec.
     added there). The file list's text entry shows the first line past
     the dividers; Copy, sharing, the download and previews keep them.
     A PDF's pages stay one file (no divider between them); a renamed
-    file's divider keeps the old name until read again. Tests
+    file's divider keeps the old name until read again, and so does an
+    unnamed one's ("Page 1" is its place) after the pages are reordered,
+    deleted or added, since the device doesn't read a text again for
+    that. Tests
     (`test/file_dividers_test.dart`, `test/auto_reader_test.dart`,
     `test/cloud_ocr_test.dart`, `test/pdf_reading_test.dart`,
+    `test/hide_images_test.dart`,
     `tabcam_locr/tests/test_autocorrect.py`). See
     [tab recognition](tab-recognition.md#several-files),
-    [cloud OCR](cloud-ocr.md#in-the-app), [Cam](cam.md) and
-    [auto-correct](autocorrect.md).
+    [cloud OCR](cloud-ocr.md#in-the-app), [Cam](cam.md),
+    [auto-correct](autocorrect.md) and [hidden images](hidden-images.md).

@@ -236,8 +236,15 @@ D|-----------|
   "PDF 1"), in the app's language. On one line (line breaks and control
   characters become spaces, runs of spaces one), cut to 60 characters
   ending in `…`; other characters are kept as named. It's text written
-  when the tab is read: renaming the file later doesn't change it (Read
-  again or Rescan writes the new name).
+  when the tab is read: renaming the file later doesn't change it, and
+  nor does reordering, deleting or adding files, though an unnamed
+  file's "Page 2" is its place in the list: a text already read isn't
+  read again when the pages change ([by itself](#reading-by-itself)), so
+  after a reorder its "Page 1" may head what the list now calls "Page 2",
+  and a deleted file's part stays. Read again or Rescan writes the names
+  as the list has them then. (The [cloud's
+  transcription](cloud-ocr.md#in-the-app) collects again when the pages
+  change, so its auto text follows them.)
 - **Only with two or more**: a text from one file, or from several of
   which only one had tab, has no divider. Texts read before this
   (2026-11-11) have none until read again.
