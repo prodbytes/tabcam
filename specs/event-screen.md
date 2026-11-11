@@ -108,7 +108,9 @@ plays along.
   narrower than 600 px, Rename, Download and Delete are in a **More**
   menu (⋮) on each row instead of buttons, so the name keeps its room.
   **Delete file** (a bin on each row, after Download) asks
-  "Delete "<name>"?" (Cancel, Delete) and deletes the file (stopping it
+  "Delete "<name>"?" (Cancel, Delete, and **Don't ask again**: ticked, a
+  file's delete no longer asks on this device, see
+  [delete confirmations](delete-confirms.md)) and deletes the file (stopping it
   if it plays in the list); the last file can't be deleted (the message
   says to delete the event instead), and a failure shows "Couldn't
   delete". Rename and Delete aren't there read only. A tap opens the file alone on the file screen, except a link's:
@@ -179,7 +181,7 @@ plays along.
   The Original / Scan view and Rotate are the file screen's, not this
   one's; Delete is on both.
 - While a tool works, a progress bar shows under the app bar and the tools
-  are off. Failures show as a message at the bottom.
+  are off. Failures show as a message at the top ([messages](messages.md)).
 
 ## File screen
 

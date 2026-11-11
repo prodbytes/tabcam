@@ -155,7 +155,7 @@
   "camRec": "Gravar",
   "camStop": "Parar",
   "camRecKey": "Gravar (1)",
-  "camStopKey": "Parar (1)",
+  "camStopKey": "Parar (1) · novo take (.)",
   "camPlay": "Tocar",
   "camHideTab": "Ocultar tablatura",
   "camShowTab": "Mostrar tablatura",
@@ -531,6 +531,10 @@
   "videoEditTrackBar": "A faixa ao longo da parte mantida: arraste para mover, as pontas para cortar",
   "videoEditTrackEarlier": "Um décimo de segundo antes",
   "videoEditTrackLater": "Um décimo de segundo depois",
+  "videoEditTrackVolume": "Volume da faixa",
+  "videoEditTrackVolumeLevel": "{percent}%",
+  "videoEditTrackMute": "Silenciar a faixa",
+  "videoEditTrackUnmute": "Ativar o som da faixa",
   "videoEditTrackUsed": "Usando {start}–{end} da faixa",
   "eventPlayLink": "Reproduzir em uma nova aba",
   "eventPlayFile": "Abrir para tocar junto",
@@ -551,5 +555,9 @@
   "metronomeEighths": "Cada clique é uma colcheia; o primeiro de cada grupo é acentuado.",
   "metronomeStart": "Iniciar",
   "metronomeStop": "Parar",
-  "metronomeFailed": "O metrônomo não pode tocar aqui: {error}"
+  "metronomeFailed": "O metrônomo não pode tocar aqui: {error}",
+  "deleteDontAskAgain": "Não perguntar de novo",
+  "deleteAskTitle": "Perguntar antes de excluir",
+  "deleteAskOn": "Excluir uma captura ou um arquivo pergunta antes, neste dispositivo.",
+  "deleteAskOff": "Algumas exclusões acontecem na hora, sem perguntar. Ative para voltar a perguntar."
 }

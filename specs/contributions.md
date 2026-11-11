@@ -41,7 +41,8 @@ says "Shared by <email> · Can view and add". Add (scan, a document, photos
 dragging files onto it and [Cam](cam.md)'s takes go to the reader's
 **contribution**, not the owner's capture. Below the
 capture's files the list shows **Your files** ("Only you and <owner> see
-these"), each with Delete (after a confirmation), playable in the list and
+these"), each with Delete (after a confirmation, with **Don't ask again**,
+[delete confirmations](delete-confirms.md)), playable in the list and
 opening alone on the file screen (shown as it is: no Rename, Rotate or
 saved view). A file the owner published also shows among the capture's
 files, and as **Published** in Your files.

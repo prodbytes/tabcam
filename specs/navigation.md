@@ -19,10 +19,28 @@ tabs, and a compact **app bar** on top names the open one
   - Signed in only (signed out, there's only the welcome, below); tabs
     keep their state (the list's scroll) while another is open.
 - **App bar**: the open tab's name on the left, bold (22 sp, weight 700):
-  "TabCam" on Home, "Capture", "Profile". No buttons: what was there
+  "TabCam" on Home, "Capture", "Profile". On Home only, at its right,
+  **Dictionary** (a book icon) and **Metronome** (a stopwatch icon), as
+  on every file viewer: they open the [dictionary](dictionary.md)'s and
+  the [metronome](metronome.md)'s sidebars beside the captures (below).
+  Two icons leave the title its room on any phone, so Home has no
+  **More** menu. Capture and Profile have no buttons: what was there
   (Import photos, About, the cloud button) is on the tabs.
+- **The sidebars on Home**: open, they're at the right of the captures
+  (the dictionary's, or its panel turned under them, left of the
+  metronome's), between the app bar (and the Premium banner, across the
+  top) and the navigation bar, which they never cover. They're the same
+  sidebars as everywhere, app-wide: open on Home, they're open in the
+  capture opened from it, at the same widths, and the other way round.
+  On Capture and Profile they don't show (those tabs span the screen)
+  but stay open, to show again back on Home; the metronome stops there,
+  as when leaving any screen that has it, and when a screen without it
+  opens over Home (a capture link loading, or unavailable).
 - An event opens over the tabs as its own screen ([event screen](event-screen.md)),
   with a back button.
+- Messages show at the top, just under the app bar, covering neither the
+  app bar's buttons nor the bottom navigation bar, which stay where they
+  are ([messages](messages.md)).
 
 ## Signed out: the welcome
 
@@ -116,10 +134,9 @@ library), `IMG_1234`, `VID_20261030_101500`, `VID-…-WA0001`, `PXL_…`,
 `Screenshot … at …`, a date and time, digits, a UUID. A video from the
 photo library keeps its name on Android, iOS and the web, so a lesson's
 names its capture. It goes to **Home**, where it's first in the list, scrolled to
-and outlined for 3 seconds, with a message, "Saved "<title>" (2 pages)"
+and outlined for 3 seconds, with a message at the top, "Saved "<title>" (2 pages)"
 (or "1 video, 1 link", ...), and **Open**, which goes by itself after 6
-seconds, as every message does (Flutter would otherwise keep a message
-with a button until it's dismissed). Cancelling does nothing;
+seconds ([messages](messages.md)). Cancelling does nothing;
 picked files that aren't photos or videos are left out, with a message
 saying how many.
 
@@ -147,7 +164,12 @@ apps, [cloud OCR](cloud-ocr.md#in-the-store-apps)). The same panel opens
 in a sheet from Home's Premium banner's **Upgrade**. In
 a build without sign-in, a line says so. Then **Language**
 ([localization](localization.md)): the device's language (the default),
-English, Español or Português; the app changes at once. Then **About**: the app's name
+English, Español or Português; the app changes at once. Then **Ask
+before deleting**, a switch kept on the device: on (the default), every
+delete of a capture or a file asks first; off once a confirm's **Don't
+ask again** was ticked, and turned on, they all ask again (it only
+turns them on; [delete confirmations](delete-confirms.md)). Delete account asks
+whatever it says. Then **About**: the app's name
 and version (X.Y.Z, or "(development build)"), what it does,
 **Privacy policy** (opens https://tabcam.nu01.com/privacy in the browser,
 [privacy](privacy.md)) and **Licenses**.

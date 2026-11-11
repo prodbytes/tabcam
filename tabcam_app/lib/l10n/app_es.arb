@@ -155,7 +155,7 @@
   "camRec": "Grabar",
   "camStop": "Detener",
   "camRecKey": "Grabar (1)",
-  "camStopKey": "Detener (1)",
+  "camStopKey": "Detener (1) · nueva toma (.)",
   "camPlay": "Reproducir",
   "camHideTab": "Ocultar tablatura",
   "camShowTab": "Mostrar tablatura",
@@ -531,6 +531,10 @@
   "videoEditTrackBar": "La pista a lo largo de la parte conservada: arrástrala para moverla, sus extremos para recortarla",
   "videoEditTrackEarlier": "Una décima de segundo antes",
   "videoEditTrackLater": "Una décima de segundo después",
+  "videoEditTrackVolume": "Volumen de la pista",
+  "videoEditTrackVolumeLevel": "{percent} %",
+  "videoEditTrackMute": "Silenciar la pista",
+  "videoEditTrackUnmute": "Activar el sonido de la pista",
   "videoEditTrackUsed": "Se usa {start}–{end} de la pista",
   "eventPlayLink": "Reproducir en una pestaña nueva",
   "eventPlayFile": "Abrir para tocar",
@@ -551,5 +555,9 @@
   "metronomeEighths": "Cada clic es una corchea; el primero de cada grupo se acentúa.",
   "metronomeStart": "Iniciar",
   "metronomeStop": "Detener",
-  "metronomeFailed": "El metrónomo no puede sonar aquí: {error}"
+  "metronomeFailed": "El metrónomo no puede sonar aquí: {error}",
+  "deleteDontAskAgain": "No volver a preguntar",
+  "deleteAskTitle": "Preguntar antes de eliminar",
+  "deleteAskOn": "Eliminar una captura o un archivo pregunta antes, en este dispositivo.",
+  "deleteAskOff": "Algunas eliminaciones ocurren de inmediato, sin preguntar. Actívalo para que vuelva a preguntar."
 }

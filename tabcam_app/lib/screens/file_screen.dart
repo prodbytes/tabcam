@@ -19,6 +19,7 @@ import 'place.dart';
 import 'video_edit_screen.dart';
 import 'video_page.dart';
 import 'youtube_link.dart';
+import 'messages.dart';
 
 /// What a file is called in its capture's list: "Page 2", "Video 1", "PDF
 /// 1", "Recording 1" (numbered among the files of its kind, in the capture
@@ -216,9 +217,7 @@ class _FileScreenState extends State<FileScreen> {
     }
   }
 
-  void _snack(String message) =>
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
+  void _snack(String message) => showMessage(context, message);
 
   /// Original ↔ Scan: the image's filter, saved (its thumbnail and the
   /// exports follow), or only what shows on a capture shared read only.

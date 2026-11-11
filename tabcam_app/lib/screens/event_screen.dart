@@ -24,6 +24,7 @@ import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
 import 'account_panel.dart';
 import 'clone.dart';
+import 'delete_confirm.dart';
 import 'file_drop_area.dart';
 import 'file_screen.dart';
 import 'link_page.dart';
@@ -36,6 +37,7 @@ import 'tab_notation.dart';
 import 'tab_text_view.dart';
 import 'mono_font.dart';
 import 'mini_player.dart';
+import 'messages.dart';
 
 /// One event (a capture): the list of its files (images, videos,
 /// recordings, PDFs and links), each with a preview, a tap opening it alone
@@ -276,9 +278,7 @@ class _EventScreenState extends State<EventScreen> {
     );
   }
 
-  void _snack(String message) =>
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
+  void _snack(String message) => showMessage(context, message);
 
   Future<void> _rename(CaptureEvent event) =>
       renameEvent(context, _library, event);
@@ -362,8 +362,7 @@ class _EventScreenState extends State<EventScreen> {
         final imported = await TabPageImporter.create(widget.ocr)
             .addTo(_library, added, url);
         if (imported != null && mounted) {
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          _snack(tabImportMessage(l10n, imported));
+          replaceMessage(context, tabImportMessage(l10n, imported));
         }
       } else if (source == _AddSource.scan) {
         widget.ocr?.warm();
@@ -456,23 +455,15 @@ class _EventScreenState extends State<EventScreen> {
       _snack(l10n.eventKeepOnePage);
       return;
     }
-    final sure = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.homeLibraryDeleteTitle(fileLabel(l10n, event, page))),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.eventCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.eventDelete),
-          ),
-        ],
-      ),
+    final sure = await confirmDelete(
+      context,
+      library: _library,
+      kind: DeleteKind.file,
+      title: l10n.homeLibraryDeleteTitle(fileLabel(l10n, event, page)),
+      confirm: l10n.eventDelete,
+      cancel: l10n.eventCancel,
     );
-    if (sure != true || !mounted) return;
+    if (!sure || !mounted) return;
     // It may be the one playing in the list.
     if (_player.holds(page)) await _player.stop();
     await _run(l10n.eventCouldntDelete, () async {
@@ -759,23 +750,15 @@ class _EventScreenState extends State<EventScreen> {
   /// A reader deletes one of their own files, once they confirm.
   Future<void> _deleteContribution(CaptureEvent event, EventPage page) async {
     final l10n = context.l10n;
-    final sure = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.homeLibraryDeleteTitle(fileLabel(l10n, event, page))),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.eventCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.eventDelete),
-          ),
-        ],
-      ),
+    final sure = await confirmDelete(
+      context,
+      library: _library,
+      kind: DeleteKind.contribution,
+      title: l10n.homeLibraryDeleteTitle(fileLabel(l10n, event, page)),
+      confirm: l10n.eventDelete,
+      cancel: l10n.eventCancel,
     );
-    if (sure != true || !mounted) return;
+    if (!sure || !mounted) return;
     if (_player.holds(page)) await _player.stop();
     await _run(l10n.eventCouldntDelete, () async {
       final now = _library.byId(event.id);

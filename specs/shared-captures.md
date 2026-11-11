@@ -47,7 +47,8 @@ add"** under the app bar.
   work. Add, dragging files and Cam add to the user's own
   [contribution](contributions.md). A clone is the user's own.
 - **Remove** (a card's menu, instead of Delete, after a confirmation that
-  the owner keeps it) takes it off the user's devices and leaves the
+  the owner keeps it, with **Don't ask again**, see
+  [delete confirmations](delete-confirms.md)) takes it off the user's devices and leaves the
   share.
 - A share the owner removed, or a capture the owner deleted, goes from
   the user's devices at the next pass. A role change applies at the next

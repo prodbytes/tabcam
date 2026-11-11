@@ -1,4 +1,4 @@
-/// The dictionary: a button at the top of every file viewer and Cam, and
+/// The dictionary: a button at the top of every file viewer, Cam and Home, and
 /// the sidebar it opens on the right of the screen, as the play-along
 /// player opens (or, turned by its Rotate button, the panel under the
 /// screen), where the user types a chord, a scale or anything else.
@@ -23,8 +23,8 @@ import 'voicings.dart';
 import 'youtube_search.dart';
 
 /// Whether the dictionary's sidebar shows, and what's typed in it,
-/// app-wide: open on one screen, it's open on the next (the capture, a
-/// file, Cam), with the same search.
+/// app-wide: open on one screen, it's open on the next (Home, the capture,
+/// a file, Cam), with the same search.
 class DictionaryState extends ChangeNotifier {
   DictionaryState._();
 
@@ -107,12 +107,22 @@ Uri youTubeSearch(String query) =>
 /// [child] instead, across the screen, its top edge the separator that
 /// makes it taller or shorter.
 class DictionaryBeside extends StatelessWidget {
-  const DictionaryBeside({super.key, required this.child, this.onClosed});
+  const DictionaryBeside({
+    super.key,
+    required this.child,
+    this.onClosed,
+    this.enabled = true,
+  });
 
   final Widget child;
 
   /// After the sidebar's own close button hides it.
   final VoidCallback? onClosed;
+
+  /// False, [child] shows alone (Home's tabs other than Home), keeping its
+  /// state; the sidebar stays open app-wide, to show again where it's
+  /// enabled.
+  final bool enabled;
 
   /// The narrowest (or, over the panel, the shortest) [child] gets when
   /// the sidebar is dragged wider (taller).
@@ -184,7 +194,7 @@ class DictionaryBeside extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(child: child),
-              if (state.open) ...[
+              if (state.open && enabled) ...[
                 SplitHandle(
                   key: const Key('dictionary-split'),
                   axis: below ? Axis.vertical : Axis.horizontal,

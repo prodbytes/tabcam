@@ -24,6 +24,7 @@ import 'link_frame.dart';
 import 'play_along_sidebar.dart';
 import 'media.dart';
 import 'take_overlay.dart';
+import '../screens/messages.dart';
 
 /// Cam: the guitarist records themselves playing along with the capture's
 /// tab. The camera (the front one first: it faces the player) fills the
@@ -32,11 +33,12 @@ import 'take_overlay.dart';
 /// Backspace, ← , ↑ and Page Up to the one before; a tap on the neckline
 /// or its arrows too; on Android, iOS and the web, a strong nod up or turn
 /// to the right too, a nod down or turn to the left to the one before
-/// ([HeadTracking]). **Rec** records (video and sound) until it's
-/// tapped again, and adds the take to the capture as a video ("Take 1",
-/// "Take 2"…). **Play** plays the last take back, the necklines turning
-/// where they turned while it was recorded. **Tab** hides the tab from
-/// the screen, and shows it again.
+/// ([HeadTracking]). **Rec** (or the 1 key) records (video and sound)
+/// until it's tapped again, and adds the take to the capture as a video
+/// ("Take 1", "Take 2"…); the . key saves the take and starts the next,
+/// the song in the sidebar from its start. **Play** plays the last take
+/// back, the necklines turning where they turned while it was recorded.
+/// **Tab** hides the tab from the screen, and shows it again.
 ///
 /// **Phrase passes**: while recording along with a song playing in the
 /// sidebar's frame, with Auto-pass on, each turn of the tab is noted at
@@ -133,6 +135,12 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   Set<int> _unpassed = {};
   bool _recording = false;
   bool _saving = false;
+
+  /// Saving a take to start the next at once ([_nextTake], the . key).
+  bool _nextTaking = false;
+
+  /// Starting a take ([_rec]): until it records, Rec, 1 and . wait.
+  bool _starting = false;
 
   /// The last take, and when its necklines showed.
   EventPage? _take;
@@ -361,9 +369,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     _ => appL10n.eventCameraFailed('$e'),
   };
 
-  void _snack(String message) =>
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
+  void _snack(String message) => showMessage(context, message);
 
   /// Shows neckline [index] (kept in range); while recording, notes when.
   /// False when it was showing already.
@@ -446,8 +452,14 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     if (_modifiers.contains(key)) return KeyEventResult.ignored;
     // 1: Rec / Stop, as the button (when it can be pressed), sidebar or
     // not. A key down: held, it doesn't start and stop again.
-    if (_isRecKey(event)) {
+    if (_alone(event, _recKeys)) {
       if (event is KeyDownEvent && _canRec) unawaited(_rec());
+      return KeyEventResult.handled;
+    }
+    // .: Stop and Rec again, a new take (not recording, Rec); a key down,
+    // and nothing while one is saved for the next.
+    if (_alone(event, _nextTakeKeys, _nextTakePhysical)) {
+      if (event is KeyDownEvent && _canRec) unawaited(_nextTake());
       return KeyEventResult.handled;
     }
     // Space: the backing track's play / pause, while its sidebar shows.
@@ -476,20 +488,38 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     LogicalKeyboardKey.numpad1,
   };
 
-  /// Whether [event] is 1 pressed alone (with Ctrl, ⌘ or Alt it's another
-  /// shortcut's, such as the browser's first tab, and turns the tab as
-  /// any key).
-  static bool _isRecKey(KeyEvent event) {
-    final keys = HardwareKeyboard.instance;
-    return _recKeys.contains(event.logicalKey) &&
-        !keys.isControlPressed &&
-        !keys.isMetaPressed &&
-        !keys.isAltPressed;
+  /// The keys that save the take and start a new one: ., on the main
+  /// keyboard or the keypad.
+  static final _nextTakeKeys = {
+    LogicalKeyboardKey.period,
+    LogicalKeyboardKey.numpadDecimal,
+  };
+
+  /// The keypad's decimal key, whatever it types: on the web, where it
+  /// types "," (Brazilian, German and most European layouts), its logical
+  /// key is the comma, not [LogicalKeyboardKey.numpadDecimal].
+  static final _nextTakePhysical = {PhysicalKeyboardKey.numpadDecimal};
+
+  /// Whether [event] is one of [keys] (or of the [physical] keys) pressed
+  /// alone (with Ctrl, ⌘ or Alt it's another shortcut's, such as the
+  /// browser's first tab, and turns the tab as any key).
+  static bool _alone(
+    KeyEvent event,
+    Set<LogicalKeyboardKey> keys, [
+    Set<PhysicalKeyboardKey> physical = const {},
+  ]) {
+    final keyboard = HardwareKeyboard.instance;
+    return (keys.contains(event.logicalKey) ||
+            physical.contains(event.physicalKey)) &&
+        !keyboard.isControlPressed &&
+        !keyboard.isMetaPressed &&
+        !keyboard.isAltPressed;
   }
 
-  /// Whether Rec / Stop can be pressed: a camera, no take being saved,
-  /// none playing back.
-  bool get _canRec => _controller != null && !_saving && _player == null;
+  /// Whether Rec / Stop can be pressed: a camera, no take being saved
+  /// (nor saved for the next), none playing back.
+  bool get _canRec =>
+      _controller != null && !_saving && !_nextTaking && _player == null;
 
   /// How far ← and → move the backing track.
   static final _skips = {
@@ -500,7 +530,20 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   Future<void> _rec() async {
     if (_recording) return _stopRecording();
     final controller = _controller;
-    if (controller == null || _saving) return;
+    // A second press while the first starts would start another recording
+    // alongside it (the camera records one at a time).
+    if (controller == null || _saving || _starting) return;
+    _starting = true;
+    try {
+      await _startRecording(controller);
+    } finally {
+      _starting = false;
+    }
+  }
+
+  /// Starts recording a take with [controller], and the sidebar's song with
+  /// it.
+  Future<void> _startRecording(CameraController controller) async {
     await _stopPlaying();
     try {
       if (controller.value.isStreamingImages) {
@@ -546,6 +589,30 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         !_track.playing &&
         !_track.countingIn) {
       unawaited(_track.toggle());
+    }
+  }
+
+  /// The . key: while recording, a new take. The song in the sidebar
+  /// stops at once, back at its start (its section's); the take is saved
+  /// as Stop saves it; then Rec starts the next, and the song with it
+  /// from there (counting in, if that's on). Not recording, Rec.
+  Future<void> _nextTake() async {
+    if (!_recording) return _rec();
+    setState(() => _nextTaking = true);
+    try {
+      if (_along.open && _track.page != null) {
+        try {
+          await _track.stop();
+        } on Object catch (e) {
+          debugPrint('TabCam: cam: the song didn\'t stop: $e');
+        }
+      }
+      await _stopRecording();
+      // The take is kept whether or not the next one starts.
+      if (!mounted || _controller == null) return;
+      await _rec();
+    } finally {
+      if (mounted) setState(() => _nextTaking = false);
     }
   }
 
@@ -822,9 +889,10 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     );
     return PopScope(
       // Leaving while recording keeps the take.
-      canPop: !_recording && !_saving,
+      // (Not while one is saved for the next: it would start after.)
+      canPop: !_recording && !_saving && !_nextTaking,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && !_saving) _leave();
+        if (!didPop && !_saving && !_nextTaking) _leave();
       },
       child: Focus(
         focusNode: _focus,
@@ -865,7 +933,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
                 IconButton(
                   tooltip: l10n.eventFlipCamera,
                   icon: const Icon(Icons.cameraswitch),
-                  onPressed: _recording || _saving
+                  onPressed: _recording || _saving || _nextTaking
                       ? null
                       : () => _open((_camera + 1) % _cameras.length),
                 ),
@@ -956,7 +1024,8 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
                   icon: playing ? Icons.stop : Icons.play_arrow,
                   color: Colors.white,
                   label: playing ? l10n.camStop : l10n.camPlay,
-                  onPressed: _take == null || _recording || _saving
+                  onPressed:
+                      _take == null || _recording || _saving || _nextTaking
                       ? null
                       : _play,
                 ),

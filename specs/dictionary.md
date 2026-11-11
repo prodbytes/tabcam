@@ -1,11 +1,12 @@
 # Dictionary
 
 A **Dictionary** button (a book icon, first in the app bar) at the top of
-every file viewer and of Cam: the [event screen](event-screen.md) in all
-its views (Files, Text, and the locked previews), the
+every file viewer, of Cam and of Home: the [event screen](event-screen.md)
+in all its views (Files, Text, and the locked previews), the
 [file screen](event-screen.md#file-screen) for any file, Cam
-([cam.md](cam.md)) with or without Premium, and a capture opened by its
-link. It's free for everyone, and takes nothing from TabCam's servers:
+([cam.md](cam.md)) with or without Premium, a capture opened by its
+link, and Home's captures ([navigation](navigation.md); not the Capture
+and Profile tabs, where the sidebar doesn't show but stays open). It's free for everyone, and takes nothing from TabCam's servers:
 the chords and scales are worked out on the device
 ([`lib/dictionary/`](../tabcam_app/lib/dictionary/)); only a YouTube
 search leaves it, from the device straight to YouTube.
@@ -18,8 +19,8 @@ beside it, on the left (or over the panel), and goes on working (the
 camera, the tab, what plays along). At the side, where the play-along
 sidebar shows too, the dictionary is the one at the right edge.
 The button is in the primary colour while the sidebar shows. The
-sidebar is **app-wide**: open on one screen, it's open on the next (the
-capture, a file, Cam) with the same search, until the button or the
+sidebar is **app-wide**: open on one screen, it's open on the next (Home,
+the capture, a file, Cam) with the same search, until the button or the
 sidebar's own **✕** hides it. In Cam, typing in it doesn't turn the tab,
 and once it's hidden the keys turn the tab again.
 

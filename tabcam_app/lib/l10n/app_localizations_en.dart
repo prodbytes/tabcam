@@ -586,7 +586,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camRecKey => 'Rec (1)';
 
   @override
-  String get camStopKey => 'Stop (1)';
+  String get camStopKey => 'Stop (1) · new take (.)';
 
   @override
   String get camPlay => 'Play';
@@ -1929,6 +1929,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditTrackLater => 'A tenth of a second later';
 
   @override
+  String get videoEditTrackVolume => 'Track volume';
+
+  @override
+  String videoEditTrackVolumeLevel(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String get videoEditTrackMute => 'Mute the track';
+
+  @override
+  String get videoEditTrackUnmute => 'Unmute the track';
+
+  @override
   String videoEditTrackUsed(String start, String end) {
     return 'Using $start–$end of the track';
   }
@@ -1996,4 +2010,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String metronomeFailed(String error) {
     return 'The metronome can\'t play here: $error';
   }
+
+  @override
+  String get deleteDontAskAgain => 'Don\'t ask again';
+
+  @override
+  String get deleteAskTitle => 'Ask before deleting';
+
+  @override
+  String get deleteAskOn =>
+      'Deleting a capture or a file asks first, on this device.';
+
+  @override
+  String get deleteAskOff =>
+      'Some deletes happen at once, without asking. Turn it on to be asked again.';
 }

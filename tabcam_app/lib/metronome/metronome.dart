@@ -1,4 +1,4 @@
-/// The metronome: a button at the top of every file viewer and Cam, and
+/// The metronome: a button at the top of every file viewer, Cam and Home, and
 /// the sidebar it opens on the right of the screen, as the dictionary
 /// does: the tempo (BPM), the time signature, the beats lit as they click,
 /// and Start / Stop.
@@ -250,12 +250,23 @@ class MetronomeButton extends StatelessWidget {
 /// ([SplitHandle]) to make it wider or narrower, the same on every screen
 /// ([SidebarWidths]); a double tap puts its default width back.
 class MetronomeBeside extends StatefulWidget {
-  const MetronomeBeside({super.key, required this.child, this.onClosed});
+  const MetronomeBeside({
+    super.key,
+    required this.child,
+    this.onClosed,
+    this.enabled = true,
+  });
 
   final Widget child;
 
   /// After the sidebar's own close button hides it.
   final VoidCallback? onClosed;
+
+  /// False, [child] shows alone, and this isn't a place that has the
+  /// metronome (Home's tabs other than Home): with none left, it stops, as
+  /// when the screen goes, or is covered by one without it. [child] keeps
+  /// its state either way.
+  final bool enabled;
 
   /// The narrowest [child] gets when the sidebar is dragged wider.
   static const minChild = 96.0;
@@ -270,15 +281,37 @@ class MetronomeBeside extends StatefulWidget {
 class _MetronomeBesideState extends State<MetronomeBeside> {
   final _state = MetronomeState.instance;
 
+  /// Whether this is a place that has the metronome now ([attach]ed):
+  /// [MetronomeBeside.enabled], and on screen, not covered by a screen
+  /// opened over it (its route offstage, its tickers off; a dialog or a
+  /// menu over it doesn't count). Covered by one that has the metronome
+  /// too (a capture over Home, a file over its capture), that one has
+  /// attached by then, so it plays on; covered by one that hasn't, it
+  /// stops.
+  bool _hosting = false;
+
+  void _host() {
+    final hosting = widget.enabled && TickerMode.valuesOf(context).enabled;
+    if (hosting == _hosting) return;
+    _hosting = hosting;
+    hosting ? _state.attach() : _state.detach();
+  }
+
   @override
-  void initState() {
-    super.initState();
-    _state.attach();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _host();
+  }
+
+  @override
+  void didUpdateWidget(MetronomeBeside old) {
+    super.didUpdateWidget(old);
+    _host();
   }
 
   @override
   void dispose() {
-    _state.detach();
+    if (_hosting) _state.detach();
     super.dispose();
   }
 
@@ -302,7 +335,7 @@ class _MetronomeBesideState extends State<MetronomeBeside> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(child: widget.child),
-              if (_state.open) ...[
+              if (_state.open && widget.enabled) ...[
                 SplitHandle(
                   key: const Key('metronome-split'),
                   axis: Axis.horizontal,
