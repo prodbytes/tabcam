@@ -2731,3 +2731,26 @@ spec.
     `test/meta_names_test.dart` and `test/public_capture_test.dart`). See
     [library](library.md#device-settings), [sharing](sharing.md),
     [delete confirmations](delete-confirms.md).
+11. **(Editor redesign, step 1 of 11) Captures keep fields a newer app
+    wrote.** The user asked for a new video editor: the take's own sound
+    and the song played along with on two lanes, mixed, each with its
+    volume and mute; the tab shown as a layer over the video instead of
+    burned into the take; a two-line title (the song and artist) fading
+    in; and a small "Recorded by TabCam" watermark, which only Premium
+    users can turn off. It ships in 11 steps; this first one adds nothing
+    visible. A page's details and a video's edit now keep the JSON keys
+    this version doesn't know (`extra` on `EventPage` and `PageEdit`,
+    `lib/library/json_extra.dart`) and write them back after the known
+    ones, which win; renaming, editing (`setPageEdit`), rotating,
+    replacing, publishing and cloning a page carry them (a clone copies
+    them as they are), and so does the video editor, even through Reset
+    (the edit then stays, as the whole video, and downloads as the video
+    itself). Known keys are read and checked as before and are never
+    taken from `extra`; only plain JSON, at most 32 levels deep, is kept.
+    So the take log and the new editor's settings that later steps add
+    survive an older app re-saving the page, provided this one ships at
+    least a release before takes stop being burned in. Tests
+    (`test/keep_unknown_keys_test.dart`, `test/video_edit_test.dart`):
+    round trips, every rebuild path, clone, publish, known keys winning,
+    values that aren't JSON. See [library](library.md#events) and
+    [video edit](video-edit.md).

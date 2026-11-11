@@ -22,6 +22,10 @@ track playing along it at its volume, started where it comes in
 kept part; elsewhere (the file list's play buttons, Cam's play along,
 the list's Download and Download all) the video's file is used as it
 is. A cloned capture's video keeps its edit, naming the copy's track.
+An edit's keys from a newer app (a newer editor's settings) are kept with
+it and written back with every change made here, even a Reset: the edit
+then stays, as the whole video with its own sound, which plays and
+downloads as the video itself ([library](library.md#events)).
 **Download** makes a file of the edit, on the device
 ([`video_edit.dart`](../tabcam_app/lib/capture/video_edit.dart)): nothing
 is uploaded to make it, and no server is involved.
