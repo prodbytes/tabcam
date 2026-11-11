@@ -2048,4 +2048,18 @@ class AppLocalizationsPt extends AppLocalizations {
   String metronomeFailed(String error) {
     return 'O metrônomo não pode tocar aqui: $error';
   }
+
+  @override
+  String get deleteDontAskAgain => 'Não perguntar de novo';
+
+  @override
+  String get deleteAskTitle => 'Perguntar antes de excluir';
+
+  @override
+  String get deleteAskOn =>
+      'Excluir uma captura ou um arquivo pergunta antes, neste dispositivo.';
+
+  @override
+  String get deleteAskOff =>
+      'Algumas exclusões acontecem na hora, sem perguntar. Ative para voltar a perguntar.';
 }

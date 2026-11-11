@@ -33,13 +33,17 @@ review notes ([app stores](app-stores.md)).
 
 - [Navigation](navigation.md): as Presence's, a bottom navigation bar
   with Home (the events), Capture (Scan with the camera; Add a
-  document (PDF), photos & videos, files or a link) and Profile (the account, About, and how to install the phone app from GitHub).
+  document (PDF), photos & videos, files or a link) and Profile (the account, the language, Ask before deleting, About, and how to install the phone app from GitHub).
 - [Messages](messages.md): the app's short messages ("Link copied",
   "Saved … (Open)") show at the top, under the status bar, 42%
   transparent, over the page without moving it or covering the bottom
   navigation bar; one at a time, each gone after a few seconds.
 - [Library](library.md): the Home tab, a grid of events (newest first),
   in My captures and Shared with me sections once something is shared, with Rename, Share, Clone and Delete; how events are stored.
+- [Delete confirmations](delete-confirms.md): deleting a capture or a
+  file asks first, with **Don't ask again** (per kind of delete, kept on
+  the device); Profile's **Ask before deleting** brings them back.
+  Deleting the account always asks.
 - [Scanning](scanning.md): the system document camera (edge detection,
   straightening, several pages), and adding pages, photos, videos, files
   and links.

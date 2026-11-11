@@ -2475,6 +2475,34 @@ spec.
    and the app bar and inside the safe area's sides, over a dialog and
    outliving a page, nothing left behind, and the app's own "Saved"
    message. See [Messages](messages.md).
+3. **Add a "dont ask again" checkbox on delete confirms.** Every delete
+   confirmation (a capture from its card on Home, removing a capture
+   shared with the user, a file from a capture's list, a reader's own
+   file under Your files) now goes through one shared dialog
+   (`confirmDelete`, `lib/screens/delete_confirm.dart`) with a **Don't
+   ask again** checkbox, in English, Spanish and Portuguese. Ticked and
+   confirmed, that kind of delete no longer asks on this device: the
+   next one deletes at once; ticked and cancelled, nothing changes. Each
+   kind is skipped on its own (a file's doesn't skip a capture's), kept
+   in the library's `deleteconfirms` meta file (letters and digits only,
+   which the apps' store requires of a meta's name), not synced; on the
+   web, where metas are in memory, until the tab is reloaded. The way
+   back is a new device setting on the Profile tab, **Ask before
+   deleting** (under Language): on when every kind asks, and turned on
+   it brings them all back; it only turns them on, so a stray tap never
+   stops every confirm. Deleting the account keeps its own confirm,
+   which always asks. New tests: the meta name passes the apps' check;
+   the checkbox shows; ticked and cancelled changes nothing; ticked and
+   confirmed deletes and the next one doesn't ask, read back from the
+   device; kinds are independent, through the UI for a capture, a shared
+   capture's Remove and a reader's own file; the Profile switch brings
+   the confirms back and can't turn them off; deleting the account still
+   asks. See the new
+   [delete confirmations](delete-confirms.md) spec, and
+   [library](library.md), [event screen](event-screen.md),
+   [contributions](contributions.md),
+   [shared captures](shared-captures.md) and
+   [navigation](navigation.md#profile).
 5. **When editing a recording, add a volume control to the side of the
    audio track. Left side.** The video edit screen's track bar (Sound:
    New track) now has the track's volume at its left, on the same row,

@@ -14,7 +14,9 @@ the [welcome](navigation.md#signed-out-the-welcome) alone.
   **Remove** instead of Delete, and no Rename when shared to read). Tapping a
   card opens the [event screen](event-screen.md); its ⋮ menu has **Rename**,
   **Share** ([sharing](sharing.md)), **Clone** (below) and **Delete** (after a confirmation,
-  which says the pages and text tab go too). Long-pressing a card renames
+  which says the pages and text tab go too, and has **Don't ask again**:
+  ticked, a capture's delete no longer asks on this device, see
+  [delete confirmations](delete-confirms.md)). Long-pressing a card renames
   it. On a phone (narrower than 600 dp) the card's text is a point
   smaller, its ⋮ 20 dp instead of 24, and the preview's icon 40 dp
   instead of 48 (its badge 14 instead of 16).

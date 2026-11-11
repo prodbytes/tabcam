@@ -20,6 +20,7 @@ import '../import/tab_page_import.dart';
 import '../library/capture_event.dart';
 import '../library/library.dart';
 import 'account_panel.dart';
+import 'delete_confirm.dart';
 import 'install_links.dart';
 import 'premium_card.dart' show storeApp;
 import 'library_screen.dart';
@@ -381,6 +382,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 ProfileView(
+                  library: library,
                   auth: widget.auth,
                   sync: widget.sync,
                   ocr: widget.ocr,
@@ -738,10 +740,21 @@ class _PremiumBannerState extends State<_PremiumBanner> {
 }
 
 /// The Profile tab: the account (in a build with sign-in), the language,
-/// About, then, outside a store app, how to install the phone app
-/// ([InstallLinks]).
+/// **Ask before deleting** ([AskBeforeDeleting]), About, then, outside a
+/// store app, how to install the phone app ([InstallLinks]).
 class ProfileView extends StatelessWidget {
-  const ProfileView({super.key, this.auth, this.sync, this.ocr, this.store});
+  const ProfileView({
+    super.key,
+    this.library,
+    this.auth,
+    this.sync,
+    this.ocr,
+    this.store,
+  });
+
+  /// The device's library, for the device's settings kept with it (**Ask
+  /// before deleting**); without one, they aren't shown.
+  final Library? library;
 
   final AuthService? auth;
   final CloudSync? sync;
@@ -771,6 +784,10 @@ class ProfileView extends StatelessWidget {
                 if (LanguageScope.maybeOf(context) case final language?) ...[
                   const Divider(height: 48),
                   _LanguagePicker(language: language),
+                ],
+                if (library case final library?) ...[
+                  const Divider(height: 48),
+                  AskBeforeDeleting(library: library),
                 ],
                 const Divider(height: 48),
                 Text(l10n.homeAbout, style: theme.textTheme.titleMedium),

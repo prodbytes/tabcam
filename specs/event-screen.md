@@ -108,7 +108,9 @@ plays along.
   narrower than 600 px, Rename, Download and Delete are in a **More**
   menu (⋮) on each row instead of buttons, so the name keeps its room.
   **Delete file** (a bin on each row, after Download) asks
-  "Delete "<name>"?" (Cancel, Delete) and deletes the file (stopping it
+  "Delete "<name>"?" (Cancel, Delete, and **Don't ask again**: ticked, a
+  file's delete no longer asks on this device, see
+  [delete confirmations](delete-confirms.md)) and deletes the file (stopping it
   if it plays in the list); the last file can't be deleted (the message
   says to delete the event instead), and a failure shows "Couldn't
   delete". Rename and Delete aren't there read only. A tap opens the file alone on the file screen, except a link's:
