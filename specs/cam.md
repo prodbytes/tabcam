@@ -150,7 +150,9 @@ its **Not now** leaving. With Premium it opens the camera view
     or none) no take starts at all, the camera's alone neither: a message
     says to allow or connect one ("No take without its sound: …"). Checked end to end in Chromium, Firefox and
     WebKit with a fake webcam (the saved take's frames have the band).
-  - **Android and iOS**: burned in after recording, by the platform's
+  - **Android and iOS**: burned in after recording (on Android after
+    the take's sound is put in, see
+    [Recording comes first](#recording-comes-first)), by the platform's
     own video tools over the method channel `tabcam/take_overlay`
     (`burn`: the take, an output path, and the bands with their times
     in ms): Media3 Transformer with an `OverlayEffect`
@@ -559,17 +561,124 @@ slow down while a take records
   take's as it's saved, maybe while the next records), so neither stops
   a song playing in another app (opened otherwise, a player takes
   "mixed with others" from the app's session).
-- **Android**: the camera (CameraX) records sound as its plugin sets it
-  (the camcorder source, the phone maker's processing, its own bitrate):
-  the plugin takes no audio source or bitrate. **Nothing here changes
-  the Android take's sound**: it's still the camcorder source with the
-  phone maker's automatic gain and noise suppression, at the plugin's
-  bitrate. What would is recording the sound separately in native code
-  (`AudioRecord` with the `UNPROCESSED` or `VOICE_PERFORMANCE` source,
-  on an urgent-audio thread) and putting it into the take after, in
-  step with its video; not done yet. What Android gets: a take played
-  back in Cam mixes with others, so it doesn't take the audio focus from
-  a song playing in another app, and the lighter load below.
+- **Android**: the app records the take's sound itself, apart from the
+  camera, and puts it into the take when it stops
+  ([`TakeSound.kt`](../tabcam_app/android/app/src/main/kotlin/com/nu01/tabcam/TakeSound.kt),
+  [`take_sound.dart`](../tabcam_app/lib/capture/take_sound.dart), method
+  channel `tabcam/take_sound`). The camera plugin (CameraX) would
+  record the camcorder source, with the phone maker's automatic gain,
+  noise suppression and limiter, and takes no other source or bitrate.
+  - **When Cam opens** (`prepare`, before the camera): the microphone
+    permission is asked for if it isn't granted yet, then the microphone
+    is opened with `AudioRecord`, from the first source that works:
+    `UNPROCESSED` where the phone says it has it
+    (`AudioManager.PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED` is
+    "true": no gain control, noise suppression or limiter), else
+    `VOICE_PERFORMANCE` (Android 10 on: meant for live music), else
+    `MIC`; 48 kHz stereo, else 48 kHz mono, 44.1 kHz stereo, 44.1 kHz
+    mono; 16-bit PCM. Each is tried (started, read from for up to half
+    a second, stopped), and the first that gives sound is kept open
+    until Cam closes (`release`). What it got is logged (`TabCam: take
+    sound: unprocessed 48000/2 …`). The camera then opens **without
+    sound** (`enableAudio: false`). Should no source work, or the
+    microphone be refused, the camera opens with sound and records the
+    take's as before (the camcorder source), and why is logged
+    (`TabCam: cam: the camera records the take's sound: …`). Refused,
+    the camera plugin asks for the microphone again as it opens: refused
+    there too, Cam says the camera or microphone isn't allowed, as
+    before; allowed there, Cam prepares again at once, without asking
+    (`prepare` with `ask` false), and the app records the takes' sound
+    after all. That camera, opened with sound, records none of its own:
+    its plugin only adds the microphone to a recording when the
+    permission reads as granted as it starts, which the app hides then
+    (see Rec).
+  - **Rec** starts the sound first (`start`: the microphone records, its
+    AAC encoder and file set up, so a failure shows before any video;
+    then no take starts and "Couldn't record: …" says why), then the
+    camera, and tells the app's side the moment the camera's recording
+    has started (`videoStarted`). The sound is read on a thread of its
+    own at the urgent-audio priority (`THREAD_PRIORITY_URGENT_AUDIO`),
+    which only reads (20 ms at a time, from a half-second buffer, at
+    least four times the system's smallest) and queues; another thread,
+    at the normal priority, encodes it to AAC (256 kbps in stereo, 128
+    kbps in mono, `MediaCodec`, into an `.m4a` in the cache), so a slow
+    encoder only lets the queue grow (192 KB a second in stereo), never
+    a gap in the sound. An encoder that fails mid-take still takes what
+    is read off the queue till the take stops (dropped), so it doesn't
+    grow through the take; the take is then saved without its sound, and
+    a message says so. The camera doesn't open the microphone: its
+    plugin would (with the camcorder source, muted, but sharing the
+    microphone's input, whose processing would then go to the app's
+    sound too) unless the permission reads as refused when its
+    recording starts, so `MainActivity.checkPermission` says
+    `RECORD_AUDIO` is refused, to the app itself, from `start` until
+    `videoStarted` (the app's own checks use the application's context
+    and are untouched). Should the camera not start, the sound is
+    dropped (`cancel`).
+  - **In step**: the sound's first frame's time is read from the
+    system (`AudioRecord.getTimestamp` in `BOOTTIME`, the latest over
+    the first second; else when the first read came back, less its
+    length); the video's start is when the camera's recording said it
+    started (the plugin waits for CameraX's start event; `videoStarted`
+    is called as soon as that returns), or, without it, when Stop was
+    pressed (`videoStopping`) less the video's length. The encoder waits
+    for the video's start and drops the sound before it (or puts
+    silence first, should the sound have started later, at most 2 s),
+    so the sound's first frame is the video's first, to the sample.
+    Both ways of telling the video's start are logged at Stop, with how
+    far apart they are, to check the step on a phone.
+  - **Kept in step** through the take: the encoder numbers the sound's
+    frames at its nominal rate, while the video's times are the system's,
+    so a microphone clock off its rate (100 ppm, a usual error, is 60 ms
+    in ten minutes) or frames lost (the reader late by more than the
+    half-second buffer) would put the sound out of step as the take goes
+    on. So the reader reads the system's timestamp again each second
+    (`getTimestamp`, which tells where the sound really is), and from
+    the first frame's time it gives, how many frames the sound has
+    fallen behind ([`TakeSoundMath`](../tabcam_app/android/app/src/main/kotlin/com/nu01/tabcam/TakeSoundMath.kt)
+    `driftFrames`); the encoder makes it up as it goes (`correction`):
+    50 ms or more behind, frames were lost, and that much silence goes
+    in at once where they were; more than 1 ms either way, one frame is
+    repeated or left out per 20 ms read (at most 1 ms a second, ten
+    times a clock's usual error; too little to hear). A timestamp going
+    back by 50 ms or more, or forward by more than 10 s, is taken as
+    wrong, and the timestamps aren't followed for the rest of the take.
+    What it came to is logged at Stop (`drift … frames (… ppm …); …
+    frames of silence put in, … repeated, … left out`), and silence put
+    in for lost frames gets "Check the take's sound: the sound skipped
+    … ms" (the take kept). (CameraX, recording the sound itself, timed
+    each of its buffers by the timestamps.)
+  - **Stop** stops the camera, then the sound (after the video's end),
+    and `stop` puts the sound into the camera's MP4
+    ([`TakeMux.kt`](../tabcam_app/android/app/src/main/kotlin/com/nu01/tabcam/TakeMux.kt)):
+    the video and the sound copied as they are, not re-encoded
+    (`MediaExtractor` and `MediaMuxer`, interleaved by time, the
+    video's rotation kept), the sound after the video's end left out,
+    and, should the encoder say how much priming it put first
+    (`encoder-delay`), that many whole AAC frames dropped. The camera's
+    file and the `.m4a` are deleted. Then the tab is burned in as before
+    (Media3 Transformer copies the sound, AAC to AAC): one pass more
+    than before, but a copy, about as fast as the storage, and the take
+    has its sound even if the burn fails.
+  - **Never a silent take unsaid**: should the sound not go in, the
+    take is saved as the camera recorded it (without sound) and "The
+    take was saved without its sound: …" says why; should the sound
+    have stopped early (the microphone failed mid-take), be all
+    silence (another app holding the microphone silences this one, on
+    Android 10 on) or have skipped (frames lost, silence in their place),
+    it's saved and "Check the take's sound: …" says so.
+  - The song playing along is heard through the microphone, as before
+    (the unprocessed source cancels no echo). A take played back in Cam
+    mixes with others, so it doesn't take the audio focus from a song
+    playing in another app.
+  - Checked: the app's side with a faked channel (tests), the native
+    side by building it, and its arithmetic (sources, step, drift and
+    its making up) by JVM tests (`android/app/src/test`,
+    `TakeSoundMathTest`: `./gradlew :app:testDebugUnitTest` in
+    `android/`, with the JDK Flutter uses); **not yet on a phone**. Still to check there:
+    the step (a clap on the take, sound against picture, and the two
+    starts logged), which source the phone gives, and whether the AAC
+    encoder states its priming.
 - **While a take records**, everywhere: head gestures look for a face
   about 7 times a second instead of 10 (enough for a nod, out and back
   within a second). On Android and iOS that is the face detector's
@@ -584,14 +693,15 @@ slow down while a take records
   running goes on); phrase passes are kept when the take ends, as
   before. Auto-pass and the song playing along go on as ever.
 - Not controllable without forking the camera plugins or recording the
-  sound separately: Android's audio source, bitrate and sample rate;
-  iOS's mono 44.1 kHz; the plugins' own thread priorities; the
-  microphone each system picks with a headset connected. iOS's tab
-  burn-in re-encodes the take's sound (AAC to AAC); Android's copies it.
+  sound separately (as Android now does): iOS's mono 44.1 kHz; the
+  plugins' own thread priorities; the microphone each system picks with
+  a headset connected. iOS's tab burn-in re-encodes the take's sound
+  (AAC to AAC); Android's copies it.
 
 **Permissions**: the camera and the microphone (iOS:
-`NSCameraUsageDescription`, `NSMicrophoneUsageDescription`; Android: the
-`camera` plugin's `CAMERA` and `RECORD_AUDIO`; the web: the browser's
+`NSCameraUsageDescription`, `NSMicrophoneUsageDescription`; Android:
+`CAMERA` and `RECORD_AUDIO`, the microphone asked for by the app when Cam
+opens (for the take's sound), then the camera by the `camera` plugin; the web: the browser's
 prompts, for the camera and then the microphone, when Cam opens; with
 the microphone refused, the preview shows but Rec records nothing). On
 the web a take is WebM, on Android MP4, on iOS MOV.

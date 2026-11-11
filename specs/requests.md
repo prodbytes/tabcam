@@ -2899,3 +2899,53 @@ spec.
     playing a track whose player can't say its length, and in Chrome the
     plan rendered with several clips and a track trimmed at its end. See
     [video edit](video-edit.md#the-render-plan).
+15. **(Follow-up) Android: the take's sound recorded without the phone's
+    processing.** Following item 12 ("make sure that when recording, in
+    the camera view, adequate priority is given to the recording
+    process, so that it don't damages the audio. The audio recording is
+    the most important thing"), which left Android's take sound as the
+    camera plugin records it (CameraX's camcorder source, with the
+    maker's gain control, noise suppression and limiter; no source or
+    bitrate to set). Now on Android the app records it itself: when Cam
+    opens, it asks for the microphone and opens it with `AudioRecord`
+    (the `UNPROCESSED` source where the phone has it, else
+    `VOICE_PERFORMANCE`, else `MIC`; 48 kHz stereo where it can), tried
+    once, and the camera opens without sound; failing that, the camera
+    records the sound as before. Rec starts the sound before the camera
+    (read on an urgent-audio thread, encoded to AAC at 256 kbps on
+    another); Stop stops the camera, then the sound, and puts the sound
+    into the camera's MP4, both copied as they are, in step: the sound
+    before the video's start (told by the camera's start, the sound's
+    by the system's timestamps) is dropped as it's encoded, so its first
+    frame is the video's. Then the tab is burned in as before (copying
+    the sound). The camera plugin, which would open the microphone with
+    the camcorder source even with its sound off (and so bring that
+    processing back), sees the microphone refused while its recording
+    starts (`MainActivity.checkPermission`). A take whose sound didn't go
+    in is saved without it, and a message says so; one whose sound
+    stopped early or is all silence, with a message too. New files:
+    `TakeSound.kt`, `TakeMux.kt`, `TakeSoundMath.kt` (the pure
+    arithmetic, kept apart for JVM tests), `lib/capture/take_sound.dart`; `RECORD_AUDIO` declared in
+    the app's manifest too. Tests (fake channel): the camera opened
+    without sound, the sound started before the camera and stopped after
+    it, the take saved being the one with the sound (then burned), the
+    . key's next take the same, the microphone closed with Cam; the
+    camera recording the sound when the app can't; no take when the
+    sound doesn't start; the sound dropped when the camera doesn't
+    start; the take kept with a message when the sound isn't put in or
+    has a problem; `TakeSound`'s replies. Built (debug APK), **not yet
+    tried on a phone** (none was connected): the step (a clap test,
+    with the two video starts logged at Stop), the source a phone gives
+    and the AAC encoder's priming are to check there. Then, from the review: the
+    sound kept in step through the take (a timestamp each second; lost
+    frames put back as silence, with a message, and a microphone clock
+    off its rate made up a frame at a time), where before only the
+    start was put in step and the sound could slip by tens of ms over a
+    long take; an encoder failing mid-take no longer leaves the queue
+    growing till Stop (it's still emptied); and the microphone refused
+    at the app's prompt but allowed at the camera's own (which asks
+    again) now gets the app's sound for the takes, not the camera's
+    processed one (`prepare` again, without asking). JVM unit tests
+    added for the native arithmetic (`android/app/src/test`,
+    `TakeSoundMathTest`, junit). See
+    [Cam](cam.md#recording-comes-first).
