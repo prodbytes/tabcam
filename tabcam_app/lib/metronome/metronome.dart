@@ -264,7 +264,8 @@ class MetronomeBeside extends StatefulWidget {
 
   /// False, [child] shows alone, and this isn't a place that has the
   /// metronome (Home's tabs other than Home): with none left, it stops, as
-  /// when the screen goes. [child] keeps its state either way.
+  /// when the screen goes, or is covered by one without it. [child] keeps
+  /// its state either way.
   final bool enabled;
 
   /// The narrowest [child] gets when the sidebar is dragged wider.
@@ -280,22 +281,37 @@ class MetronomeBeside extends StatefulWidget {
 class _MetronomeBesideState extends State<MetronomeBeside> {
   final _state = MetronomeState.instance;
 
+  /// Whether this is a place that has the metronome now ([attach]ed):
+  /// [MetronomeBeside.enabled], and on screen, not covered by a screen
+  /// opened over it (its route offstage, its tickers off; a dialog or a
+  /// menu over it doesn't count). Covered by one that has the metronome
+  /// too (a capture over Home, a file over its capture), that one has
+  /// attached by then, so it plays on; covered by one that hasn't, it
+  /// stops.
+  bool _hosting = false;
+
+  void _host() {
+    final hosting = widget.enabled && TickerMode.valuesOf(context).enabled;
+    if (hosting == _hosting) return;
+    _hosting = hosting;
+    hosting ? _state.attach() : _state.detach();
+  }
+
   @override
-  void initState() {
-    super.initState();
-    if (widget.enabled) _state.attach();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _host();
   }
 
   @override
   void didUpdateWidget(MetronomeBeside old) {
     super.didUpdateWidget(old);
-    if (widget.enabled == old.enabled) return;
-    widget.enabled ? _state.attach() : _state.detach();
+    _host();
   }
 
   @override
   void dispose() {
-    if (widget.enabled) _state.detach();
+    if (_hosting) _state.detach();
     super.dispose();
   }
 

@@ -2466,6 +2466,12 @@ spec.
    beside working captures, above the navigation bar; the other tabs hide
    them and stop the metronome; it plays on into a capture and back; the
    panel under the captures; and a small phone, with captures and
-   without, overflows nothing. See
+   without, overflows nothing. After review: Home stays under every
+   screen opened from it, so a metronome sidebar counts as a place that
+   has the metronome only while it's on screen, not covered by another
+   screen (a dialog or a menu over it doesn't count); a capture link
+   still loading, or unavailable, over Home now stops it. A card too
+   narrow for its ⋮ opens that menu on a long-press, so its actions (and
+   a read-only shared capture's) stay in reach. Tests for both. See
    [Navigation](navigation.md), [Library](library.md),
    [Dictionary](dictionary.md) and [Metronome](metronome.md).

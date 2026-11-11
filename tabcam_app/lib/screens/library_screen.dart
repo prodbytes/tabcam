@@ -507,6 +507,55 @@ class _EventCard extends StatelessWidget {
     }
   }
 
+  /// The card's actions, in its ⋮ menu.
+  List<PopupMenuEntry<_CardAction>> _items(BuildContext context) {
+    final l10n = context.l10n;
+    return [
+      if (!event.readOnly)
+        PopupMenuItem(
+          value: _CardAction.rename,
+          child: Text(l10n.homeLibraryRename),
+        ),
+      PopupMenuItem(
+        value: _CardAction.share,
+        child: Text(l10n.homeLibraryShare),
+      ),
+      PopupMenuItem(
+        value: _CardAction.clone,
+        child: Text(l10n.homeLibraryClone),
+      ),
+      PopupMenuItem(
+        value: _CardAction.delete,
+        child: Text(
+          event.isShared ? l10n.homeLibraryRemove : l10n.homeLibraryDelete,
+        ),
+      ),
+    ];
+  }
+
+  /// The ⋮ menu over the card whose box [context] is, for a long-press when
+  /// the card is too narrow to show its ⋮.
+  Future<void> _menu(BuildContext context) async {
+    final card = context.findRenderObject()! as RenderBox;
+    final overlay =
+        Navigator.of(context).overlay!.context.findRenderObject()! as RenderBox;
+    final action = await showMenu<_CardAction>(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromPoints(
+          card.localToGlobal(Offset.zero, ancestor: overlay),
+          card.localToGlobal(
+            card.size.bottomRight(Offset.zero),
+            ancestor: overlay,
+          ),
+        ),
+        Offset.zero & overlay.size,
+      ),
+      items: _items(context),
+    );
+    if (action != null && context.mounted) await _action(context, action);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -530,99 +579,86 @@ class _EventCard extends StatelessWidget {
               side: BorderSide(color: theme.colorScheme.primary, width: 3),
             )
           : null,
-      child: InkWell(
-        onTap: onOpen,
-        // Long-press is a shortcut to Rename.
-        onLongPress: event.readOnly
-            ? null
-            : () => _action(context, _CardAction.rename),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: ColoredBox(
-                color: Colors.white,
-                child: CardPreview(library: library, event: event),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 0, 8),
-              // Squeezed (a phone with the dictionary's and the metronome's
-              // sidebars beside Home), the card drops its ⋮ rather than
-              // overflow; long-press still renames it.
-              child: LayoutBuilder(
-                builder: (context, box) => Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            event.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: smaller(theme.textTheme.titleSmall),
-                          ),
-                          Text(
-                            [
-                              if (event.artist.isNotEmpty) event.artist,
-                              if (event.hideImages)
-                                l10n.homeLibraryImagesHidden
-                              else if (pages > 0 || pages == event.pages.length)
-                                l10n.homePages(pages),
-                              if (videos > 0) l10n.homeVideos(videos),
-                              if (audio > 0) l10n.homeAudio(audio),
-                              if (pdfs > 0) l10n.homePdfs(pdfs),
-                              if (links > 0) l10n.homeLinks(links),
-                              if (event.tabText != null) l10n.homeLibraryText,
-                              if (event.sharedBy case final owner?)
-                                l10n.homeLibrarySharedBy(owner),
-                            ].join(' · '),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: smaller(theme.textTheme.bodySmall),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (box.maxWidth >= _menuRoom)
-                      PopupMenuButton<_CardAction>(
-                        tooltip: l10n.homeLibraryMore,
-                        iconSize: narrow ? 20 : null,
-                        onSelected: (a) => _action(context, a),
-                        itemBuilder: (_) => [
-                          if (!event.readOnly)
-                            PopupMenuItem(
-                              value: _CardAction.rename,
-                              child: Text(l10n.homeLibraryRename),
-                            ),
-                          PopupMenuItem(
-                            value: _CardAction.share,
-                            child: Text(l10n.homeLibraryShare),
-                          ),
-                          PopupMenuItem(
-                            value: _CardAction.clone,
-                            child: Text(l10n.homeLibraryClone),
-                          ),
-                          PopupMenuItem(
-                            value: _CardAction.delete,
-                            child: Text(
-                              event.isShared
-                                  ? l10n.homeLibraryRemove
-                                  : l10n.homeLibraryDelete,
-                            ),
-                          ),
-                        ],
-                      ),
-                  ],
+      // Squeezed (a phone with the dictionary's or the metronome's sidebar
+      // beside Home), the card drops its ⋮ rather than overflow, and a
+      // long-press opens that menu instead, so every action stays in reach.
+      child: LayoutBuilder(
+        builder: (context, box) {
+          final menu = box.maxWidth - _textInset >= _menuRoom;
+          return InkWell(
+            onTap: onOpen,
+            // Long-press is a shortcut to Rename, or the ⋮'s menu without it.
+            onLongPress: !menu
+                ? () => _menu(context)
+                : event.readOnly
+                ? null
+                : () => _action(context, _CardAction.rename),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: ColoredBox(
+                    color: Colors.white,
+                    child: CardPreview(library: library, event: event),
+                  ),
                 ),
-              ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(_textInset, 8, 0, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              event.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: smaller(theme.textTheme.titleSmall),
+                            ),
+                            Text(
+                              [
+                                if (event.artist.isNotEmpty) event.artist,
+                                if (event.hideImages)
+                                  l10n.homeLibraryImagesHidden
+                                else if (pages > 0 ||
+                                    pages == event.pages.length)
+                                  l10n.homePages(pages),
+                                if (videos > 0) l10n.homeVideos(videos),
+                                if (audio > 0) l10n.homeAudio(audio),
+                                if (pdfs > 0) l10n.homePdfs(pdfs),
+                                if (links > 0) l10n.homeLinks(links),
+                                if (event.tabText != null) l10n.homeLibraryText,
+                                if (event.sharedBy case final owner?)
+                                  l10n.homeLibrarySharedBy(owner),
+                              ].join(' · '),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: smaller(theme.textTheme.bodySmall),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (menu)
+                        PopupMenuButton<_CardAction>(
+                          tooltip: l10n.homeLibraryMore,
+                          iconSize: narrow ? 20 : null,
+                          onSelected: (a) => _action(context, a),
+                          itemBuilder: _items,
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
+
+  /// The card's title and details, from its left edge.
+  static const _textInset = 12.0;
 
   /// The narrowest the card's line under its preview is with its ⋮: the
   /// button (48) and a little of the title.

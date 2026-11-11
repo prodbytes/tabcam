@@ -27,7 +27,11 @@ nothing leaves it, and no server is involved.
   and back. It **stops** when its sidebar is closed (its close button, or
   the app bar's button), and when the user leaves for a place that has no
   metronome: Home's Capture and Profile tabs, where its sidebar doesn't
-  show (still open, it shows again, stopped, back on Home).
+  show (still open, it shows again, stopped, back on Home), or a screen
+  opened over one that has it but has none itself (a capture link still
+  loading, or unavailable, over Home). A screen covered by another counts
+  as left once the other has slid in, so going from one that has it to
+  another that has it plays on; a dialog or a menu over it doesn't count.
 - In Cam, closing it gives the keys back to the tab, as the dictionary
   does.
 
@@ -107,6 +111,10 @@ and louder for accents:
   - Capture and Profile show neither button nor sidebar, and stop the
     metronome; back on Home both sidebars show again;
   - it plays on from Home into a capture and back;
+  - a dialog over Home lets it play, and a screen without the metronome
+    opened over Home stops it;
+  - on a phone, a card squeezed by the sidebar has no ⋮, and a
+    long-press opens its menu (without Rename on a read-only one);
   - the dictionary turned is a panel under the captures, above the
     navigation bar;
   - a small phone (320 × 568), with captures and with none, overflows

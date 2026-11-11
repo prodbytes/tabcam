@@ -34,7 +34,8 @@ tabs, and a compact **app bar** on top names the open one
   capture opened from it, at the same widths, and the other way round.
   On Capture and Profile they don't show (those tabs span the screen)
   but stay open, to show again back on Home; the metronome stops there,
-  as when leaving any screen that has it.
+  as when leaving any screen that has it, and when a screen without it
+  opens over Home (a capture link loading, or unavailable).
 - An event opens over the tabs as its own screen ([event screen](event-screen.md)),
   with a back button.
 

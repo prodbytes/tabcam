@@ -15,7 +15,7 @@ the [welcome](navigation.md#signed-out-the-welcome) alone.
   card opens the [event screen](event-screen.md); its ⋮ menu has **Rename**,
   **Share** ([sharing](sharing.md)), **Clone** (below) and **Delete** (after a confirmation,
   which says the pages and text tab go too). Long-pressing a card renames
-  it. On a phone (narrower than 600 dp) the card's text is a point
+  it (on one too narrow for its ⋮, below, it opens the ⋮'s menu). On a phone (narrower than 600 dp) the card's text is a point
   smaller, its ⋮ 20 dp instead of 24, and the preview's icon 40 dp
   instead of 48 (its badge 14 instead of 16).
 - **Previews**: a card shows, in order of preference, the first image
@@ -78,7 +78,9 @@ the [welcome](navigation.md#signed-out-the-welcome) alone.
   the captures, which stay usable beside them (the search, the cards).
   Squeezed by them on a phone, nothing overflows: a card narrower than
   84 px (room for its ⋮ and a little of the title) drops its ⋮ until
-  there's room again (long-press still renames it), and the empty,
+  there's room again, and a long-press on it opens that menu instead of
+  renaming, so Rename, Share, Clone and Delete (or Remove) stay in reach,
+  read-only shared captures included; the empty,
   loading and couldn't-load messages scroll where they don't fit.
 - **Theme**: Material 3, dark, from an amber seed color (`#E0A030`).
 

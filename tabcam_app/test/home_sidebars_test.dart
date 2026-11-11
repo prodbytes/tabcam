@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tabcam_app/dictionary/dictionary_sidebar.dart';
@@ -8,6 +10,7 @@ import 'package:tabcam_app/metronome/click_track.dart';
 import 'package:tabcam_app/metronome/metronome.dart';
 import 'package:tabcam_app/metronome/metronome_sound.dart';
 import 'package:tabcam_app/screens/event_screen.dart';
+import 'package:tabcam_app/screens/rename_dialog.dart';
 import 'package:tabcam_app/screens/sidebar_widths.dart';
 
 /// Records what it was asked to play.
@@ -41,11 +44,12 @@ void main() {
   });
 
   /// Home, on a screen [size], with captures of made-up riffs named
-  /// [titles].
+  /// [titles], and [readOnly] ones shared with the user to read only.
   Future<void> home(
     WidgetTester tester, {
     Size size = const Size(1200, 800),
     List<String> titles = const ['Riff in E', 'Slow blues lick'],
+    List<String> readOnly = const [],
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -55,6 +59,16 @@ void main() {
     for (final title in titles) {
       final event = await library.create(const []);
       await library.update(event.copyWith(title: title));
+    }
+    for (final title in readOnly) {
+      final event = await library.create(const []);
+      await library.update(
+        event.copyWith(
+          title: title,
+          sharedBy: 'friend@example.com',
+          readOnly: true,
+        ),
+      );
     }
     await tester.pumpWidget(TabCamApp(library: library));
     await tester.pumpAndSettle();
@@ -198,6 +212,100 @@ void main() {
     await tester.tap(metronomeButton);
     await tester.pump();
     expect(metronome.playing, isFalse);
+  });
+
+  Future<void> frames(WidgetTester tester) async {
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+  }
+
+  testWidgets('a dialog over Home lets it play; a screen without the '
+      'metronome opened over Home stops it', (tester) async {
+    await home(tester);
+    await tester.tap(metronomeButton);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('metronome-play')));
+    await tester.pump();
+    expect(metronome.playing, isTrue);
+
+    final context = tester.element(search);
+    unawaited(
+      showDialog<void>(
+        context: context,
+        builder: (_) => const AlertDialog(content: Text('A dialog')),
+      ),
+    );
+    await frames(tester);
+    expect(find.text('A dialog'), findsOneWidget);
+    expect(metronome.playing, isTrue);
+    Navigator.of(context).pop();
+    await frames(tester);
+
+    // As a capture link that's still loading, or unavailable, is.
+    unawaited(
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => const Scaffold(body: Text('Elsewhere')),
+        ),
+      ),
+    );
+    await frames(tester);
+    expect(find.text('Elsewhere'), findsOneWidget);
+    expect(metronome.playing, isFalse);
+    expect(sound.calls, ['start 80 4/4', 'stop']);
+    // Back on Home, the sidebar shows again, stopped.
+    Navigator.of(context).pop();
+    await frames(tester);
+    expect(metronomeSidebar, findsOneWidget);
+    expect(metronome.playing, isFalse);
+  });
+
+  testWidgets('a card squeezed by a sidebar on a phone has no ⋮; a '
+      'long-press opens its menu, read only too', (tester) async {
+    await home(
+      tester,
+      size: const Size(360, 640),
+      titles: const ['Riff in E'],
+      readOnly: const ['Waltz in D'],
+    );
+    final more = find.byTooltip('More');
+    expect(more, findsNWidgets(2));
+    await tester.tap(metronomeButton);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(more, findsNothing);
+
+    await tester.longPress(find.text('Riff in E'));
+    await tester.pumpAndSettle();
+    for (final item in ['Rename', 'Share', 'Clone', 'Delete']) {
+      expect(find.text(item), findsOneWidget);
+    }
+    await tester.tap(find.text('Rename'));
+    await tester.pumpAndSettle();
+    expect(find.byType(RenameDialog), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Waltz in D'));
+    await tester.pumpAndSettle();
+    await tester.longPress(find.text('Waltz in D'));
+    await tester.pumpAndSettle();
+    expect(find.text('Rename'), findsNothing);
+    for (final item in ['Share', 'Clone', 'Remove']) {
+      expect(find.text(item), findsOneWidget);
+    }
+    await tester.tapAt(const Offset(4, 4));
+    await tester.pumpAndSettle();
+
+    // The sidebar closed, the ⋮ is back, and long-press renames again.
+    await tester.tap(metronomeButton);
+    await tester.pumpAndSettle();
+    expect(more, findsNWidgets(2));
+    await tester.longPress(find.text('Riff in E'));
+    await tester.pumpAndSettle();
+    expect(find.text('Share'), findsNothing);
+    expect(find.byType(RenameDialog), findsOneWidget);
   });
 
   testWidgets('the dictionary rotated is a panel under the captures, above '
