@@ -900,6 +900,24 @@
   "@camNoSound": {
     "description": "Cam (web): no microphone (refused or missing), so no take is recorded"
   },
+  "camTakeNoSound": "The take was saved without its sound: {reason}",
+  "@camTakeNoSound": {
+    "description": "Cam (Android): the take's sound, recorded apart from the camera, couldn't be put into the take, and why",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "camTakeSoundWarning": "Check the take's sound: {reason}",
+  "@camTakeSoundWarning": {
+    "description": "Cam (Android): the take was saved with its sound, but something went wrong with it (it stopped early, or it's all silence), and what",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "camAlong": "Play along with a file",
   "@camAlong": {
     "description": "Cam app bar: shows the sidebar of recordings, videos and links to play along with"

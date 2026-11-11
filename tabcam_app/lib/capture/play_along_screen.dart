@@ -26,6 +26,7 @@ import 'play_along_sidebar.dart';
 import 'media.dart';
 import 'take_overlay.dart';
 import 'take_priority.dart';
+import 'take_sound.dart';
 import '../screens/messages.dart';
 
 /// Cam: the guitarist records themselves playing along with the capture's
@@ -60,10 +61,12 @@ import '../screens/messages.dart';
 /// side, to follow the tab on it ([PlayAlong.followed]).
 ///
 /// **Recording comes first** ([TakePriority]): the take's sound is
-/// recorded as a musician wants it (on iOS, the audio session set for
-/// recording music and mixed with the song; on the web, the microphone
-/// without voice-call processing, at a high bitrate), set up when Cam
-/// opens rather than as the take starts; while it records, head gestures
+/// recorded as a musician wants it (on Android, by the app itself, from
+/// the microphone's unprocessed source, and put into the take after
+/// ([TakeSound]); on iOS, the audio session set for recording music and
+/// mixed with the song; on the web, the microphone without voice-call
+/// processing, at a high bitrate), set up when Cam opens rather than as
+/// the take starts; while it records, head gestures
 /// look less often, the web draws the tab at the camera's rate, and cloud
 /// sync starts no pass.
 class PlayAlongScreen extends StatefulWidget {
@@ -170,6 +173,16 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
 
   /// Whether this take is [_recorder]'s (else the camera's own).
   bool _recordingTab = false;
+
+  /// Android: whether the takes' sound is recorded by the app
+  /// ([TakeSound]), the camera opened without sound; decided when Cam
+  /// opens (false: the camera records it, as on iOS).
+  bool _ownSound = false;
+
+  /// Android: the microphone was refused when the app asked for it as Cam
+  /// opened; the camera asks again, and if allowed there, the app records
+  /// the sound after all ([_open]).
+  bool _soundRefused = false;
 
   /// What plays along, and whether the sidebar to choose it shows.
   late final PlayAlong _along = PlayAlong(
@@ -301,6 +314,13 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         (c) => c.lensDirection == CameraLensDirection.front,
       );
       _cameras = cameras;
+      // Before the camera opens: it opens with sound or without by this.
+      if (TakeSound.supported) {
+        final ready = await TakeSound.prepare();
+        if (!mounted) return;
+        _ownSound = ready == TakeSoundReady.ok;
+        _soundRefused = ready == TakeSoundReady.refused;
+      }
       await _open(front < 0 ? 0 : front);
     } on Object catch (e) {
       if (mounted) setState(() => _error = _describe(e));
@@ -320,8 +340,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       ResolutionPreset.high,
       // The web's takes have the microphone's sound, opened by the take
       // recorder without the processing for voice calls (the camera's
-      // would have it).
-      enableAudio: !kIsWeb,
+      // would have it); so do Android's where the app records it
+      // ([TakeSound]).
+      enableAudio: !kIsWeb && !_ownSound,
       // iOS (Android's camera takes none): music wants more than the
       // encoder's default.
       audioBitrate: TakePriority.iosAudioBitrate,
@@ -338,6 +359,19 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     if (!mounted) {
       await controller.dispose();
       return;
+    }
+    // Refused when the app asked, the microphone was allowed at the
+    // camera's own prompt (else the camera wouldn't have opened): the app
+    // records the takes' sound after all. This camera, opened with sound,
+    // records none of its own then (its plugin checks the permission as
+    // each recording starts, and the app's side hides it).
+    if (_soundRefused) {
+      _soundRefused = false;
+      _ownSound = await TakeSound.prepare(ask: false) == TakeSoundReady.ok;
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
     }
     await _prepareSound(controller);
     if (!mounted) {
@@ -609,6 +643,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   /// it.
   Future<void> _startRecording(CameraController controller) async {
     await _stopPlaying();
+    var soundStarted = false;
     try {
       if (controller.value.isStreamingImages) {
         await controller.stopImageStream();
@@ -642,6 +677,12 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         }
       }
       if (!_recordingTab) {
+        // Android: the take's sound first, so it has the video's first
+        // moment; what came before is dropped when it's put in.
+        if (_ownSound) {
+          await TakeSound.start();
+          soundStarted = true;
+        }
         // Its frames go to the head gestures while it records, with them
         // on (not on the web: it streams none, and the tracker reads the
         // preview). Off, none are streamed: on iOS each would be copied on
@@ -654,9 +695,11 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
               ? null
               : _frame,
         );
+        if (soundStarted) await TakeSound.videoStarted();
       }
     } on Object catch (e) {
       debugPrint('TabCam: cam: $e');
+      if (soundStarted) unawaited(TakeSound.cancel());
       if (mounted) _snack(context.l10n.camCouldntRecord('$e'));
       unawaited(_stream());
       return;
@@ -721,6 +764,8 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       try {
         file = await (_recordingTab
             ? _recorder!.stop()
+            : _ownSound
+            ? _stopWithSound(controller)
             : controller.stopVideoRecording());
       } finally {
         _takeRecording(false);
@@ -763,6 +808,26 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       await _track.savePhrases();
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  /// Android, the take's sound recorded by the app: the camera stopped,
+  /// then the sound, which goes into the camera's video in step with it
+  /// ([TakeSound.stop]). Should that fail, the video is kept without
+  /// sound, and a message says so: never a silent take unsaid.
+  Future<XFile> _stopWithSound(CameraController controller) async {
+    final l10n = context.l10n;
+    await TakeSound.videoStopping();
+    final XFile video;
+    try {
+      video = await controller.stopVideoRecording();
+    } on Object {
+      unawaited(TakeSound.cancel());
+      rethrow;
+    }
+    final (:take, :error, :warning) = await TakeSound.stop(video);
+    if (mounted && error != null) _snack(l10n.camTakeNoSound(error));
+    if (mounted && warning != null) _snack(l10n.camTakeSoundWarning(warning));
+    return take;
   }
 
   /// [take] with the tab burned in where it showed ([marks]); null when it
@@ -853,7 +918,10 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   @override
   void dispose() {
     TakePriority.recording.value = false;
-    if (widget.gate == null) unawaited(TakeAudio.release());
+    if (widget.gate == null) {
+      unawaited(TakeAudio.release());
+      unawaited(TakeSound.release());
+    }
     _autoPassTimer?.cancel();
     _track.removeListener(_trackChanged);
     widget.library.removeListener(_libraryChanged);

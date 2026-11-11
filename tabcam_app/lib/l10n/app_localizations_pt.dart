@@ -670,6 +670,16 @@ class AppLocalizationsPt extends AppLocalizations {
       'Sem som o take não é gravado: permita o microfone para este site, ou conecte um, e toque em Gravar de novo.';
 
   @override
+  String camTakeNoSound(String reason) {
+    return 'O take foi salvo sem o seu som: $reason';
+  }
+
+  @override
+  String camTakeSoundWarning(String reason) {
+    return 'Confira o som do take: $reason';
+  }
+
+  @override
   String get camAlong => 'Tocar junto com um arquivo';
 
   @override

@@ -172,6 +172,8 @@
   "camNoOverlay": "La toma se guardó sin la tablatura: {reason}",
   "camRecordingNoTab": "Grabando sin la tablatura: {reason}",
   "camNoSound": "Sin sonido no se graba la toma: permite el micrófono para este sitio, o conecta uno, y pulsa Grabar de nuevo.",
+  "camTakeNoSound": "La toma se guardó sin su sonido: {reason}",
+  "camTakeSoundWarning": "Revisa el sonido de la toma: {reason}",
   "camAlong": "Tocar junto con un archivo",
   "camAlongHide": "Ocultar los archivos para tocar junto",
   "camAlongTitle": "Tocar junto",
