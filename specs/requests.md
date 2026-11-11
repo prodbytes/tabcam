@@ -2820,7 +2820,11 @@ spec.
     every quarter of a second (`Transformer.getProgress`, the export's
     `progress`), so their progress bar says how far along it is. The
     preview (`EditedPlayback`) plays the same plan, finding the song's
-    place with the shared `songAt`. Found by running the iOS renderer's
+    place with the shared `songAt`; the file screen's player finds the
+    track's length as the editor does (`mediaLength`: the player's, else
+    the editor's, as for a take the browser recorded, else the end the
+    edit keeps for the track), so such a track still plays there. Found
+    by running the iOS renderer's
     smoke test against macOS's AVFoundation: a render with a track failed
     (the code on main too), as the track's asset was let go before the
     export finished; it's now held until then (still to be seen on an
@@ -2833,6 +2837,7 @@ spec.
     `test/web_video_editor_test.dart`): every `trackSpan` case as plan
     clips, clips cut to the kept length, `songAt`, passthrough only for an
     untouched video in the format made, the channel's arguments and
-    progress, the plans the editor's Download renders, and in Chrome the
+    progress, the plans the editor's Download renders, the file screen
+    playing a track whose player can't say its length, and in Chrome the
     plan rendered with several clips and a track trimmed at its end. See
     [video edit](video-edit.md#the-render-plan).

@@ -16,7 +16,7 @@ import '../library/library.dart';
 import 'edited_playback.dart';
 import 'file_screen.dart';
 import 'media_url.dart';
-import 'video_page.dart' show openPlayer;
+import 'video_page.dart' show mediaLength, openPlayer, pageFile;
 import 'messages.dart';
 
 /// Basic edits of a video, opened from its file screen: trim its start
@@ -129,29 +129,13 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   VideoEditing? get _editor => widget.editor ?? VideoEditor.instance;
 
   /// [file]'s length: [player]'s, or the editor's where the player can't
-  /// say.
-  Future<Duration> _lengthOf(VideoPlayerController player, XFile file) async {
-    final known = player.value.duration;
-    if (known > Duration.zero) return known;
-    try {
-      return await _editor?.length(file) ?? Duration.zero;
-    } on Object catch (e) {
-      debugPrint('TabCam: video edit: no length: $e');
-      return Duration.zero;
-    }
-  }
+  /// say ([mediaLength], as the file screen finds it).
+  Future<Duration> _lengthOf(VideoPlayerController player, XFile file) =>
+      mediaLength(player, () async => file, editor: _editor);
 
   /// [page]'s file: its path, or its bytes on the web.
-  Future<XFile> _fileOf(CaptureEvent event, EventPage page) async {
-    final path = await _library.path(event, page);
-    return path != null
-        ? XFile(path, mimeType: page.mimeType)
-        : XFile.fromData(
-            await _library.original(event, page),
-            mimeType: page.mimeType,
-            name: page.fileName,
-          );
-  }
+  Future<XFile> _fileOf(CaptureEvent event, EventPage page) =>
+      pageFile(_library, event, page);
 
   @override
   void initState() {

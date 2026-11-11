@@ -22,7 +22,10 @@ says it is, paused outside it; checked every tenth of a second, as the
 [section](cam.md#playing-along-with-a-file) is; a change that moves
 nothing, such as the volume, doesn't stop or re-seek it). The
 [file screen](event-screen.md#file-screen)'s player does, looping the
-kept part; elsewhere (the file list's play buttons, Cam's play along,
+kept part; it finds the track's length as the editor does (its player's,
+or, where the player can't say, as for a take the browser recorded, the
+editor's), and when neither can say, takes the end the edit keeps for
+the track (none: the track doesn't play); elsewhere (the file list's play buttons, Cam's play along,
 the list's Download and Download all) the video's file is used as it
 is. A cloned capture's video keeps its edit, naming the copy's track.
 An edit's keys from a newer app (a newer editor's settings) are kept with

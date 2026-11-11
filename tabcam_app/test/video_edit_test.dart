@@ -28,8 +28,16 @@ class FakeEditor implements VideoEditing {
   final EditFormats formatsHere;
   final rendered = <RenderPlan>[];
 
+  /// The length it finds, where the player can't say (none: the phones'
+  /// editors), and how many times it was asked.
+  Duration? lengthHere;
+  var lengthsAsked = 0;
+
   @override
-  Future<Duration?> length(XFile file) async => null;
+  Future<Duration?> length(XFile file) async {
+    lengthsAsked++;
+    return lengthHere;
+  }
 
   @override
   Future<EditFormats> formats() async => formatsHere;
@@ -64,6 +72,26 @@ class VolumePlatform extends FakeVideoPlatform {
   @override
   Future<void> setVolume(int playerId, double volume) async =>
       volumes[playerId] = volume;
+}
+
+/// The fake platform, where the players in [unknown] can't say how long
+/// their file is (the browser, for a take it recorded: video_player_web's
+/// unset duration).
+class UnknownLengthPlatform extends VolumePlatform {
+  UnknownLengthPlatform(this.unknown);
+
+  final Set<int> unknown;
+
+  @override
+  Stream<VideoEvent> videoEventsFor(int playerId) => unknown.contains(playerId)
+      ? Stream.value(
+          VideoEvent(
+            eventType: VideoEventType.initialized,
+            duration: const Duration(milliseconds: -9007199254740991),
+            size: const Size(320, 240),
+          ),
+        )
+      : super.videoEventsFor(playerId);
 }
 
 class _Paths extends PathProviderPlatform with MockPlatformInterfaceMixin {
@@ -934,6 +962,64 @@ void main() {
     // The video (the first player) and its track (the second).
     expect(platform.seeks, contains(s(10)));
     expect(platform.volumes[0], 0);
+    expect(platform.playing, containsAll([0, 1]));
+  });
+
+  /// The file screen, playing [id]'s video as [edit] says, its track
+  /// (the second player) not knowing its length.
+  Future<void> playWithUnknownTrackLength(
+    WidgetTester tester,
+    Library library,
+    String id,
+    PageEdit edit,
+  ) async {
+    VideoPlayerPlatform.instance = platform = UnknownLengthPlatform({1});
+    await tester.runAsync(() => library.setPageEdit(id, 'k0', edit));
+    await tester.pumpWidget(
+      host(FileScreen(library: library, eventId: id, pageId: 'k0')),
+    );
+    await _settle(tester);
+    await tester.tap(find.byIcon(Icons.play_circle_fill));
+    await _settle(tester);
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 300)),
+    );
+    await _frames(tester);
+  }
+
+  testWidgets('the file screen plays a track whose player can\'t say how '
+      'long it is: the editor\'s length, as in the editor', (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester);
+    editor.lengthHere = s(40);
+    await playWithUnknownTrackLength(
+      tester,
+      library,
+      id,
+      PageEdit(start: s(10), end: s(20), sound: EditSound.track, trackId: 'k1'),
+    );
+    expect(editor.lengthsAsked, 1);
+    expect(platform.volumes[0], 0);
+    expect(platform.playing, containsAll([0, 1]));
+  });
+
+  testWidgets('the file screen plays a track nothing can say the length of '
+      'up to the end its edit keeps', (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester);
+    await playWithUnknownTrackLength(
+      tester,
+      library,
+      id,
+      PageEdit(
+        start: s(10),
+        end: s(20),
+        sound: EditSound.track,
+        trackId: 'k1',
+        trackEnd: s(30),
+      ),
+    );
+    expect(editor.lengthsAsked, 1);
     expect(platform.playing, containsAll([0, 1]));
   });
 
