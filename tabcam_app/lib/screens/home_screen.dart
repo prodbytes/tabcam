@@ -26,6 +26,7 @@ import 'library_screen.dart';
 import 'place.dart';
 import 'public_capture_screen.dart';
 import 'link_page.dart';
+import 'messages.dart';
 
 /// The app's tabs, in the bottom navigation bar's order.
 enum HomeTab {
@@ -91,9 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
   /// How long "Saved … (Open)" shows after a capture.
   static const Duration savedMessageFor = Duration(seconds: 6);
 
-  void _snack(String message) => ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text(message)));
+  void _snack(String message) => replaceMessage(context, message);
 
   @override
   void initState() {
@@ -276,22 +275,16 @@ class _HomeScreenState extends State<HomeScreen> {
       _fresh = event!.id;
     });
     final l10n = context.l10n;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(l10n.homeSaved(event.title, contentsOf(event, l10n))),
-          // Gone after a while, like the others: with an action, Flutter
-          // would keep it until it's dismissed.
-          persist: false,
-          duration: savedMessageFor,
-          action: SnackBarAction(
-            label: l10n.homeOpen,
-            onPressed: () =>
-                openEvent(context, library, event!, widget.sync, widget.ocr),
-          ),
-        ),
-      );
+    replaceMessage(
+      context,
+      l10n.homeSaved(event.title, contentsOf(event, l10n)),
+      duration: savedMessageFor,
+      action: MessageAction(
+        label: l10n.homeOpen,
+        onPressed: () =>
+            openEvent(context, library, event!, widget.sync, widget.ocr),
+      ),
+    );
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted && _fresh == event!.id) setState(() => _fresh = null);
     });
@@ -635,13 +628,13 @@ final Uri privacyPolicyUrl = Uri.parse('https://tabcam.nu01.com/privacy');
 
 /// Opens TabCam's privacy policy in the browser.
 Future<void> openPrivacyPolicy(BuildContext context) async {
-  final messenger = ScaffoldMessenger.maybeOf(context);
+  final messenger = Messenger.maybeOf(context);
   final couldNotOpen = context.l10n.textViewCouldNotOpen('$privacyPolicyUrl');
   if (!await launchUrl(
     privacyPolicyUrl,
     mode: LaunchMode.externalApplication,
   )) {
-    messenger?.showSnackBar(SnackBar(content: Text(couldNotOpen)));
+    messenger?.show(couldNotOpen);
   }
 }
 

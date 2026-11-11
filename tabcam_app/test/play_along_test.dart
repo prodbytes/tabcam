@@ -20,6 +20,7 @@ import 'package:tabcam_app/library/capture_event.dart';
 import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
 import 'package:tabcam_app/screens/event_screen.dart';
+import 'package:tabcam_app/screens/messages.dart';
 import 'package:tabcam_app/screens/sidebar_widths.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 
@@ -1165,9 +1166,9 @@ void main() {
     expect(take.title, 'Take 1');
     expect(event.phrases.containsKey(take.id), isFalse);
     expect(event.phrases.keys, [song]);
-    // ("Saved Take 1" is over the buttons meanwhile.)
-    ScaffoldMessenger.of(tester.element(find.byKey(const Key('cam-auto-pass'))))
-        .removeCurrentSnackBar();
+    // ("Saved Take 1" shows meanwhile, at the top.)
+    Messenger.maybeOf(tester.element(find.byKey(const Key('cam-auto-pass'))))!
+        .hide();
     await frames(tester);
 
     // Another take: two turns back with it off, then it's switched on

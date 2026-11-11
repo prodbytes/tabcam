@@ -179,7 +179,7 @@ plays along.
   The Original / Scan view and Rotate are the file screen's, not this
   one's; Delete is on both.
 - While a tool works, a progress bar shows under the app bar and the tools
-  are off. Failures show as a message at the bottom.
+  are off. Failures show as a message at the top ([messages](messages.md)).
 
 ## File screen
 

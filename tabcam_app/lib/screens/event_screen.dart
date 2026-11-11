@@ -36,6 +36,7 @@ import 'tab_notation.dart';
 import 'tab_text_view.dart';
 import 'mono_font.dart';
 import 'mini_player.dart';
+import 'messages.dart';
 
 /// One event (a capture): the list of its files (images, videos,
 /// recordings, PDFs and links), each with a preview, a tap opening it alone
@@ -276,9 +277,7 @@ class _EventScreenState extends State<EventScreen> {
     );
   }
 
-  void _snack(String message) =>
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
+  void _snack(String message) => showMessage(context, message);
 
   Future<void> _rename(CaptureEvent event) =>
       renameEvent(context, _library, event);
@@ -350,8 +349,7 @@ class _EventScreenState extends State<EventScreen> {
         final imported = await TabPageImporter.create(widget.ocr)
             .addTo(_library, added, url);
         if (imported != null && mounted) {
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          _snack(tabImportMessage(l10n, imported));
+          replaceMessage(context, tabImportMessage(l10n, imported));
         }
       } else if (source == _AddSource.scan) {
         widget.ocr?.warm();

@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../cloud/cloud_ocr.dart';
 import '../l10n/language.dart';
+import 'messages.dart';
 
 /// Whether this is a store app (Android, iOS): it leaves out how to
 /// install the phone app, which it is.
@@ -164,12 +165,10 @@ class PremiumCard extends StatelessWidget {
       '${t.day.toString().padLeft(2, '0')}';
 
   static Future<void> _open(BuildContext context, Uri url) async {
-    final messenger = ScaffoldMessenger.maybeOf(context);
+    final messenger = Messenger.maybeOf(context);
     final l10n = context.l10n;
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      messenger?.showSnackBar(
-        SnackBar(content: Text(l10n.accountPremiumCouldntOpen('$url'))),
-      );
+      messenger?.show(l10n.accountPremiumCouldntOpen('$url'));
     }
   }
 }

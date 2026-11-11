@@ -24,6 +24,7 @@ import 'link_frame.dart';
 import 'play_along_sidebar.dart';
 import 'media.dart';
 import 'take_overlay.dart';
+import '../screens/messages.dart';
 
 /// Cam: the guitarist records themselves playing along with the capture's
 /// tab. The camera (the front one first: it faces the player) fills the
@@ -361,9 +362,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     _ => appL10n.eventCameraFailed('$e'),
   };
 
-  void _snack(String message) =>
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
+  void _snack(String message) => showMessage(context, message);
 
   /// Shows neckline [index] (kept in range); while recording, notes when.
   /// False when it was showing already.
