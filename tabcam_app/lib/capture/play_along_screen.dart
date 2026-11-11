@@ -189,8 +189,19 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     if (widget.gate == null) {
       _start();
       _track.addListener(_trackChanged);
+      widget.library.addListener(_libraryChanged);
       unawaited(_loadSettings());
     }
+  }
+
+  /// The last take, deleted (from the sidebar, say): Play has none.
+  void _libraryChanged() {
+    final take = _take;
+    if (take == null || !mounted) return;
+    final event = widget.library.byId(widget.eventId);
+    final kept =
+        event != null && Library.addedPages(event).any((p) => p.id == take.id);
+    if (!kept) setState(() => _take = null);
   }
 
   Future<void> _loadSettings() async {
@@ -659,6 +670,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   void dispose() {
     _autoPassTimer?.cancel();
     _track.removeListener(_trackChanged);
+    widget.library.removeListener(_libraryChanged);
     unawaited(_track.savePhrases());
     _along.dispose();
     _focus.dispose();
@@ -791,6 +803,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       linkFrame: widget.linkFrame,
       pdfView: widget.pdfView,
       onUse: _focus.requestFocus,
+      // Not in a preview, nor while a take records, saves or plays back.
+      deletes: gate == null,
+      canDelete: !_recording && !_saving && !playing,
       child: _main(controller, playing),
     );
     return PopScope(

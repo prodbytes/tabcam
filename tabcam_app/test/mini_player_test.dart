@@ -462,6 +462,35 @@ void main() {
     );
   });
 
+  testWidgets('on a recording\'s file screen, the sidebar\'s files show '
+      'Delete, all but the recording\'s own', (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final (library, id) = await captureWith(tester, [
+      (PageKind.pdf, 'pdf'),
+      (PageKind.video, 'mp4'),
+      (PageKind.audio, 'm4a'),
+    ]);
+    await tester.pumpWidget(
+      host(FileScreen(library: library, eventId: id, pageId: 'k2')),
+    );
+    await _frames(tester);
+    expect(find.byKey(const Key('cam-along-k2')), findsOneWidget);
+    expect(find.byKey(const Key('cam-along-delete-k2')), findsNothing);
+    expect(find.byKey(const Key('cam-along-delete-k1')), findsOneWidget);
+    expect(find.byKey(const Key('cam-along-delete-k0')), findsOneWidget);
+
+    // The video deleted from it: the recording's screen stays.
+    await tester.tap(find.byKey(const Key('cam-along-delete-k1')));
+    await _frames(tester);
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await _frames(tester);
+    expect(library.byId(id)!.pages.map((p) => p.id), ['k0', 'k2']);
+    expect(find.byKey(const Key('cam-along-k1')), findsNothing);
+    expect(find.byKey(const Key('recording-aside')), findsOneWidget);
+  });
+
   testWidgets('a recording opens in the sidebar: loaded in its frame, '
       'paused, with the pages and PDFs listed to follow; one tapped shows '
       'in a pane beside it', (tester) async {

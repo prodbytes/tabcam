@@ -264,6 +264,32 @@ start, its section's, at its end), once the take is recording; one
 that plays already plays on, and with the sidebar hidden nothing
 starts. Stop (the take's) leaves it playing.
 
+<a id="deleting-from-the-sidebar"></a>**Deleting from the sidebar**: each
+file in it (the recordings, videos and links, Cam's takes among them,
+and the PDFs and pages to [follow](#following-a-pdf); not the text tab)
+has **Delete** (a bin; its tooltip "Delete <name>") at the right end of
+its row, after its mark (playing, or followed). It's the capture's
+list's [Delete file](event-screen.md), from the same code (`deleteFile`,
+`mayDeleteFile`,
+[`file_delete.dart`](../tabcam_app/lib/screens/file_delete.dart)): it
+asks "Delete "<name>"?" (Cancel, Delete), the capture's last file can't
+be deleted (the message says to delete the event instead), and a
+failure shows "Couldn't delete". It shows only where the list would
+offer it: on the user's own captures and those shared with them to
+edit, on every file; on a capture shared to read, on none of the
+owner's (the sidebar lists only the capture's own files, so a reader's
+takes, in their [contribution](contributions.md), are deleted from the
+list's "Your files"). Not in Cam's Premium preview, nor on a capture
+opened by its link. It's greyed while a take records, saves or plays
+back, and while the screen works. Once deleted, the file loaded in the
+player (playing or paused) is let go of: it stops and the frame closes,
+nothing else loading by itself; a PDF or page followed closes its pane;
+the take Cam's Play would play back gone, Play is greyed. A file
+deleted anywhere else (the list, a sync) is let go of the same way. On
+the [file screen](event-screen.md#file-screen), the file it shows (a
+recording, listed in its own sidebar) has no Delete there: the screen's
+own Delete deletes it and goes back to the list.
+
 <a id="following-a-pdf"></a>**Following a PDF**: in Cam and in the
 [Text view](tab-recognition.md#text-view) (not beside a PDF), the
 sidebar also lists the capture's PDFs, under **Follow a PDF** (after the

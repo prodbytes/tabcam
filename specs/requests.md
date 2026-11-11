@@ -2444,3 +2444,29 @@ spec.
    passes made after (Auto-pass on) are noted and marked again; only
    those are kept. Now a test checks it, and the spec says so. See
    [Cam](cam.md#phrase-passes).
+
+## 2026-11-11
+
+7. **In the mini player sidebar, to the right of files, add the delete
+   button. So I can delete anything, especially the takes.** Each file
+   in the play-along sidebar (in Cam, beside the Text view and on the
+   file screen) now ends in a **Delete** button (a bin, its tooltip
+   "Delete <name>", in English, Spanish and Portuguese), after the
+   playing or followed mark; the text tab's row has none. It's the
+   capture's list's Delete file, moved into one shared function
+   (`deleteFile` and `mayDeleteFile`, `file_delete.dart`, which the
+   list now uses too): the same question, the last file kept, and the
+   same rules on who may delete what (on a capture shared to read, none
+   of the owner's files). It's greyed while a take records, saves or
+   plays back, and isn't in Cam's Premium preview or on a capture
+   opened by its link. The file the sidebar's player had loaded, once
+   deleted (from the sidebar or anywhere else), is let go of: it stops
+   and the frame closes; a followed PDF or page closes its pane; Cam's
+   Play has no take once its take is deleted. On a recording's file
+   screen, the recording's own row has no Delete (the screen's own
+   Delete deletes it and goes back). New tests: Delete at the right of
+   a take's row, asking first, cancelled keeping it, confirmed deleting
+   it and its file; deleting the song playing stops it; a followed PDF
+   deleted closes its pane; a reader sees none on the owner's files;
+   the file screen's own recording has none. See
+   [Cam](cam.md#deleting-from-the-sidebar).

@@ -288,9 +288,17 @@ class _FileScreenState extends State<FileScreen> {
   static bool _withSidebar(CaptureEvent event, EventPage page) =>
       page.isPdf || page.isImage || _inSidebar(event, page);
 
+  /// The sidebar's files show Delete, as the capture's list does, all but
+  /// this screen's own (its app bar's Delete deletes it and goes back).
   Widget _beside(CaptureEvent event, EventPage page, Widget child) =>
       _withSidebar(event, page)
-      ? PlayAlongBeside(along: _alongFor(event, page), child: child)
+      ? PlayAlongBeside(
+          along: _alongFor(event, page),
+          deletes: true,
+          canDelete: !_busy,
+          keepId: page.id,
+          child: child,
+        )
       : child;
 
   /// Playing along beside the file, made when it first shows: for a

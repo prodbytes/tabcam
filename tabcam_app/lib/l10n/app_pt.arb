@@ -173,6 +173,7 @@
   "camAlongHide": "Ocultar os arquivos para tocar junto",
   "camAlongTitle": "Tocar junto",
   "camAlongPdfs": "Seguir um PDF",
+  "camAlongDelete": "Excluir {name}",
   "camAlongPdfShow": "Mostrar o PDF ao lado da câmera",
   "camAlongPdfHide": "Ocultar o PDF",
   "camAlongFollow": "Seguir uma página ou um PDF",
