@@ -37,7 +37,8 @@ on the text as it is, saved as the user's edit:
   measure's notes stay in it and every string ends at the same column.
 - It says "Tab lined up", or that the strings already line up. Without
   Premium (where the upgrade can be offered) it adds that checking it
-  online is Premium's, with **Upgrade**.
+  online is Premium's, with **Upgrade**; that message stays until it's
+  tapped, swiped away or acted on ([messages](messages.md)).
 
 ## Checking it online (Premium)
 
