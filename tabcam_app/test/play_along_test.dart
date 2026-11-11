@@ -270,6 +270,8 @@ void main() {
     expect(pages, hasLength(2));
     expect(pages.last.kind, PageKind.video);
     expect(pages.last.title, 'Take 1');
+    // Marked as Cam's take.
+    expect(pages.last.take, isTrue);
     // The tab burned in: the first neckline, then the second.
     final bands = burned.single;
     expect([for (final (b, _) in bands) b.line], [0, 1]);
@@ -1607,5 +1609,211 @@ void main() {
     await tester.tap(find.byKey(const Key('cam-along-text')));
     await tester.pump();
     expect(find.byKey(const Key('cam-text-view')), findsOneWidget);
+  });
+
+  testWidgets('Cam\'s takes are the last thing in the sidebar, under '
+      'Takes, the most recent first: an old take (named "Take 3", '
+      'not marked) and a marked take renamed too; the file loaded first '
+      'is a song, not a take', (tester) async {
+    // Tall enough for the sidebar to list everything under the frame.
+    tester.view
+      ..physicalSize = const Size(1200, 2000)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final (library, id) = await capture(tester, tab: _tab);
+    final ids = <String, String>{};
+    await tester.runAsync(() async {
+      Media video(String name) => Media(
+        XFile.fromData(Uint8List.fromList([1]), name: name),
+        PageKind.video,
+        'mp4',
+      );
+      Future<void> add(
+        String key,
+        Media media, {
+        bool take = false,
+        String? title,
+      }) async {
+        final event = await library.addMedia(library.byId(id)!, [
+          media,
+        ], take: take);
+        ids[key] = event.pages.last.id;
+        if (title != null) await library.renamePage(id, ids[key]!, title);
+      }
+
+      // A take first, then a song, a take, the PDF, an old take, a link
+      // and a take renamed.
+      await add('take1', video('take.mp4'), take: true, title: 'Take 1');
+      await add(
+        'song',
+        Media(
+          XFile.fromData(Uint8List.fromList([1]), name: 'riff.m4a'),
+          PageKind.audio,
+          'm4a',
+        ),
+        title: 'Riff',
+      );
+      await add('take2', video('take.mp4'), take: true, title: 'Take 2');
+      await add(
+        'pdf',
+        Media(
+          XFile.fromData(Uint8List.fromList([1]), name: 'sheet.pdf'),
+          PageKind.pdf,
+          'pdf',
+        ),
+        title: 'Sheet',
+      );
+      // Saved before takes were marked: named as Cam names them.
+      await add('take3', video('take.mp4'), title: 'Take 3');
+      final event = await library.addLink(
+        library.byId(id)!,
+        Uri.parse('https://example.com/backing'),
+        title: 'Backing track',
+      );
+      ids['link'] = event.pages.last.id;
+      await add('renamed', video('take.mp4'), take: true, title: 'Best one');
+      // A video of the user's own, not a take.
+      await add('lesson', video('lesson.mp4'), title: 'Lesson');
+    });
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          linkFrame: (_) => const SizedBox(key: Key('fake-link-frame')),
+          pdfView: (_, _, page) =>
+              SizedBox(key: ValueKey('fake-pdf-${page.id}')),
+        ),
+      ),
+    );
+    await frames(tester);
+    expect(find.byKey(const Key('cam-along-sidebar')), findsOneWidget);
+    Finder row(String key) => find.byKey(ValueKey('cam-along-${ids[key]}'));
+    double top(Finder f) => tester.getTopLeft(f).dy;
+    final order = [
+      find.byKey(const Key('cam-along-text')),
+      row('song'),
+      row('link'),
+      row('lesson'),
+      row('pdf'),
+      // The most recent take first.
+      find.text('Takes'),
+      row('renamed'),
+      row('take3'),
+      row('take2'),
+      row('take1'),
+    ];
+    for (final f in order) {
+      expect(f, findsOneWidget);
+    }
+    for (var i = 1; i < order.length; i++) {
+      expect(top(order[i - 1]), lessThan(top(order[i])), reason: '$i');
+    }
+    // The songs' heading over the songs, the PDF's under them.
+    expect(top(find.text('Play along')), lessThan(top(row('song'))));
+    expect(top(find.text('Follow a PDF')), greaterThan(top(row('lesson'))));
+    // The song loaded first, not Take 1 (the capture's first file).
+    expect(tester.widget<ListTile>(row('song')).selected, isTrue);
+    expect(tester.widget<ListTile>(row('take1')).selected, isFalse);
+
+    // A take plays along as the songs do.
+    await tester.tap(row('take2'));
+    await frames(tester);
+    expect(tester.widget<ListTile>(row('take2')).selected, isTrue);
+  });
+
+  testWidgets('with only takes to play along, the most recent loads, '
+      'listed first', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    late String take1, take2;
+    await tester.runAsync(() async {
+      for (final n in [1, 2]) {
+        final event = await library.addMedia(library.byId(id)!, [
+          Media(
+            XFile.fromData(Uint8List.fromList([n]), name: 'take.mp4'),
+            PageKind.video,
+            'mp4',
+          ),
+        ], take: true);
+        await library.renamePage(id, event.pages.last.id, 'Take $n');
+        if (n == 1) {
+          take1 = event.pages.last.id;
+        } else {
+          take2 = event.pages.last.id;
+        }
+      }
+    });
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+        ),
+      ),
+    );
+    await frames(tester);
+    expect(find.text('Takes'), findsOneWidget);
+    expect(find.text('Play along'), findsNothing);
+    final first = find.byKey(ValueKey('cam-along-$take1'));
+    final second = find.byKey(ValueKey('cam-along-$take2'));
+    expect(tester.widget<ListTile>(second).selected, isTrue);
+    expect(tester.widget<ListTile>(first).selected, isFalse);
+    expect(tester.getTopLeft(second).dy, lessThan(tester.getTopLeft(first).dy));
+  });
+
+  group('isTake', () {
+    EventPage video(String? title, {bool take = false}) => EventPage(
+      id: 'p1',
+      kind: PageKind.video,
+      extension: 'mp4',
+      title: title,
+      take: take,
+    );
+
+    test('a marked take is one, whatever its name', () {
+      expect(isTake(video('Best one', take: true)), isTrue);
+      expect(isTake(video(null, take: true)), isTrue);
+    });
+
+    test('an old take: a video named as Cam names them, in any language', () {
+      expect(isTake(video('Take 3')), isTrue);
+      expect(isTake(video('Toma 12')), isTrue);
+      expect(isTake(video('Take')), isFalse);
+      expect(isTake(video('Retake 3')), isFalse);
+      expect(isTake(video('Take 3 again')), isFalse);
+      expect(isTake(video('Lesson')), isFalse);
+      expect(isTake(video(null)), isFalse);
+      // Not a video: not a take.
+      expect(
+        isTake(
+          const EventPage(
+            id: 'p2',
+            kind: PageKind.audio,
+            extension: 'm4a',
+            title: 'Take 3',
+          ),
+        ),
+        isFalse,
+      );
+    });
+
+    test('the mark is kept: renamed, edited, and through JSON (sync)', () {
+      final take = video('Take 1', take: true);
+      final renamed = take.copyWith(title: () => 'Best one');
+      expect(renamed.take, isTrue);
+      expect(take.copyWith(edit: () => null).take, isTrue);
+      final json = jsonDecode(jsonEncode(renamed.toJson()));
+      expect(json['take'], isTrue);
+      expect(EventPage.fromJson(json).take, isTrue);
+      // Not a take: no mark in its JSON.
+      expect(video('Lesson').toJson().containsKey('take'), isFalse);
+      expect(EventPage.fromJson(video('Lesson').toJson()).take, isFalse);
+    });
   });
 }

@@ -207,7 +207,8 @@ The file is shown whole, as what it is:
   A PDF that can't be read says so. When the capture has recordings,
   videos or links, the play-along sidebar is beside it, open, with **Play
   along** (♫) in the app bar, as in [Cam](cam.md#playing-along-with-a-file).
-  Beside an image or a PDF the sidebar lists what plays along and, when
+  Beside an image or a PDF the sidebar lists what plays along (Cam's
+  takes last, under **Takes**) and, when
   the capture has a text tab, the **Text tab** first, to
   [follow beside the file](cam.md#following-the-text) in a pane on its
   left (then ♫ is there even with nothing to play, the sidebar opened
@@ -227,15 +228,17 @@ The file is shown whole, as what it is:
   ([Cam](cam.md#playing-along-with-a-file)); ♫ hides the sidebar and
   pauses it. The screen itself shows a card with a music note,
   "Recording" and "It plays in the sidebar. Pick a page or PDF there to
-  follow along." Under the files to play along, the sidebar lists the
-  capture's **images and PDFs** under **Follow a page or PDF** (and,
+  follow along." Under the files to play along (Cam's takes aside),
+  the sidebar lists the capture's **images and PDFs** under **Follow a page or PDF** (and,
   first in the list, the **Text tab**, when there is one,
   [followed the same way](cam.md#following-the-text)): a tap
   shows one in a pane on the left, as Cam
   [follows a PDF](cam.md#following-a-pdf) (an image pinch-zoomable, a
   PDF scrolling, with the separator to drag; **Hide the page** / **Hide
   the PDF** closes it; tapped again, or another tapped, it goes or is
-  replaced). A recording that can't play says so in the frame. A
+  replaced). Cam's takes come after them, last in the list, under
+  **Takes**, and play along as the other files do. A recording that
+  can't play says so in the frame. A
   contribution's recording (not listed in the sidebar) still shows as a
   card with a **play** button; tapped, it loads and plays, with **play /
   pause**, a scrubbable progress bar and the time ("0:12 / 3:04"), and at
