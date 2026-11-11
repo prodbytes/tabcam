@@ -672,6 +672,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get camAlongTitle => 'Tocar junto';
 
   @override
+  String get camAlongTakes => 'Tomas';
+
+  @override
   String get camAlongPdfs => 'Seguir un PDF';
 
   @override

@@ -2444,3 +2444,22 @@ spec.
    passes made after (Auto-pass on) are noted and marked again; only
    those are kept. Now a test checks it, and the spec says so. See
    [Cam](cam.md#phrase-passes).
+
+## 2026-11-11
+
+8. **take the takes be the last thing on the sidebar.** The play-along
+   sidebar (Cam, the Text view, the file screen) now lists Cam's takes
+   last, after the text tab, the files to play along and the PDFs or
+   pages to follow, under a heading of their own, **Takes** (Spanish
+   **Tomas**, Portuguese **Takes**), in the capture's order (Take 1
+   first). Cam now marks the takes it saves (`take` on the page, kept
+   when it's renamed, edited, cloned or published, and synced with it);
+   takes saved before are recognised by their name as Cam gives it, in
+   any of the app's languages ("Take 3", "Toma 3"), on videos. The file
+   loaded first in the sidebar's player is still a song to play along
+   with, not a take, unless the capture has nothing but takes. New
+   tests: with a song, a link, a video, a PDF and takes (marked, renamed
+   and an old one), the rows run text, songs, PDF, then the takes under
+   Takes, and a song is loaded first; with only takes, the first loads;
+   which pages count as takes and that the mark survives renaming and
+   JSON. See [Cam](cam.md#playing-along-with-a-file).

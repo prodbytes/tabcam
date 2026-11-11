@@ -1138,6 +1138,12 @@ abstract class AppLocalizations {
   /// **'Play along'**
   String get camAlongTitle;
 
+  /// Cam sidebar heading over Cam's takes, listed last; tapping one plays it along
+  ///
+  /// In en, this message translates to:
+  /// **'Takes'**
+  String get camAlongTakes;
+
   /// Cam sidebar heading over the capture's PDFs; tapping one shows it beside the camera
   ///
   /// In en, this message translates to:

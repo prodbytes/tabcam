@@ -207,7 +207,8 @@ The file is shown whole, as what it is:
   A PDF that can't be read says so. When the capture has recordings,
   videos or links, the play-along sidebar is beside it, open, with **Play
   along** (♫) in the app bar, as in [Cam](cam.md#playing-along-with-a-file).
-  Beside an image or a PDF the sidebar lists what plays along and, when
+  Beside an image or a PDF the sidebar lists what plays along (Cam's
+  takes last, under **Takes**) and, when
   the capture has a text tab, the **Text tab** first, to
   [follow beside the file](cam.md#following-the-text) in a pane on its
   left (then ♫ is there even with nothing to play, the sidebar opened

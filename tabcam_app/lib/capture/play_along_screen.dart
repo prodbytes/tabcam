@@ -555,7 +555,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       while (names.contains(l10n.camTake(n))) {
         n++;
       }
-      final updated = await library.addMedia(event, [media]);
+      final updated = await library.addMedia(event, [media], take: true);
       final page = Library.addedPages(updated).last;
       final name = l10n.camTake(n);
       await library.renamePage(event.id, page.id, name);
