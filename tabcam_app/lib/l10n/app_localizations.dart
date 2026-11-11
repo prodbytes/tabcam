@@ -1030,6 +1030,18 @@ abstract class AppLocalizations {
   /// **'Stop'**
   String get camStop;
 
+  /// Cam: the Rec button's tooltip; the 1 key does it too
+  ///
+  /// In en, this message translates to:
+  /// **'Rec (1)'**
+  String get camRecKey;
+
+  /// Cam: the Stop button's tooltip while recording; the 1 key does it too, and the . key saves the take and starts a new one
+  ///
+  /// In en, this message translates to:
+  /// **'Stop (1) · new take (.)'**
+  String get camStopKey;
+
   /// Cam: play the last take back
   ///
   /// In en, this message translates to:
@@ -1137,6 +1149,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Play along'**
   String get camAlongTitle;
+
+  /// Cam sidebar heading over Cam's takes, listed last; tapping one plays it along
+  ///
+  /// In en, this message translates to:
+  /// **'Takes'**
+  String get camAlongTakes;
 
   /// Cam sidebar heading over the capture's PDFs; tapping one shows it beside the camera
   ///
@@ -3273,6 +3291,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A tenth of a second later'**
   String get videoEditTrackLater;
+
+  /// Video edit: the track's volume control, at the left of the track bar (tooltip, screen reader); opens a slider
+  ///
+  /// In en, this message translates to:
+  /// **'Track volume'**
+  String get videoEditTrackVolume;
+
+  /// Video edit: the track's volume, as a percentage (0 to 100), under the volume control and beside its slider
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}%'**
+  String videoEditTrackVolumeLevel(int percent);
+
+  /// Video edit: the volume slider's speaker button, while the track has sound; silences it
+  ///
+  /// In en, this message translates to:
+  /// **'Mute the track'**
+  String get videoEditTrackMute;
+
+  /// Video edit: the volume slider's speaker button, while the track is muted; puts back its level
+  ///
+  /// In en, this message translates to:
+  /// **'Unmute the track'**
+  String get videoEditTrackUnmute;
 
   /// Video edit: the part of the track used, once trimmed (times like 0:01.5)
   ///

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:camera_platform_interface/camera_platform_interface.dart';
@@ -75,11 +76,16 @@ e|--12-10-|
 B|--13-12-|
 ''';
 
-/// The bar's Stop (Rec's or Play's), not the sidebar's: a take opens the
-/// sidebar, whose frame has a Stop too.
+/// Rec's tooltip while recording.
+const _stopKeys = 'Stop (1) · new take (.)';
+
+/// The bar's Stop (Rec's, [_stopKeys], or Play's), not the sidebar's: a
+/// take opens the sidebar, whose frame has a Stop too.
 final _camStop = find.byElementPredicate((e) {
   final w = e.widget;
-  if (w is! Tooltip || w.message != 'Stop') return false;
+  if (w is! Tooltip || (w.message != 'Stop' && w.message != _stopKeys)) {
+    return false;
+  }
   var inSidebar = false;
   e.visitAncestorElements((a) {
     inSidebar = a.widget.key == const Key('cam-along-sidebar');
@@ -143,7 +149,7 @@ void main() {
       matching: find.byType(IconButton),
     );
     final button = tester.widget<IconButton>(rec);
-    return button.tooltip == 'Rec' && button.onPressed != null;
+    return button.tooltip == 'Rec (1)' && button.onPressed != null;
   }
 
   String shown(WidgetTester tester) =>
@@ -257,7 +263,7 @@ void main() {
       isNull,
     );
 
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     expect(camera.recording, isTrue);
     await tester.sendKeyEvent(LogicalKeyboardKey.space);
@@ -269,6 +275,8 @@ void main() {
     expect(pages, hasLength(2));
     expect(pages.last.kind, PageKind.video);
     expect(pages.last.title, 'Take 1');
+    // Marked as Cam's take.
+    expect(pages.last.take, isTrue);
     // The tab burned in: the first neckline, then the second.
     final bands = burned.single;
     expect([for (final (b, _) in bands) b.line], [0, 1]);
@@ -284,7 +292,7 @@ void main() {
     expect(saved, [7, 7]);
 
     // A second take is Take 2.
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
@@ -299,6 +307,361 @@ void main() {
     await frames(tester);
     expect(video.playing, isEmpty);
     expect(find.byKey(const Key('preview')), findsOneWidget);
+  });
+
+  testWidgets('1 presses Rec and Stop (the top row\'s or the keypad\'s); '
+      'held, it doesn\'t repeat; it doesn\'t turn the tab', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          burn: (take, _) async => take,
+        ),
+      ),
+    );
+    await frames(tester);
+    expect(find.text('1 / 3'), findsOneWidget);
+
+    // 1 down: a take starts; held (repeats), it records on.
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.digit1);
+    await frames(tester);
+    expect(camera.recording, isTrue);
+    for (var i = 0; i < 3; i++) {
+      await tester.sendKeyRepeatEvent(LogicalKeyboardKey.digit1);
+      await frames(tester);
+    }
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.digit1);
+    await frames(tester);
+    expect(camera.recording, isTrue);
+    expect(find.text('1 / 3'), findsOneWidget);
+    expect(
+      tester
+          .widget<IconButton>(
+            find.descendant(
+              of: find.byKey(const Key('cam-rec')),
+              matching: find.byType(IconButton),
+            ),
+          )
+          .tooltip,
+      _stopKeys,
+    );
+    // Other keys still turn the tab.
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+    await tester.pump();
+    expect(find.text('2 / 3'), findsOneWidget);
+
+    // 1 again: Stop, the take saved.
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
+    await until(tester, () => recReady(tester));
+    expect(camera.recording, isFalse);
+    var pages = library.byId(id)!.pages;
+    expect(pages, hasLength(2));
+    expect(pages.last.title, 'Take 1');
+    expect(find.text('2 / 3'), findsOneWidget);
+
+    // The keypad's 1 too.
+    await tester.sendKeyEvent(LogicalKeyboardKey.numpad1);
+    await frames(tester);
+    expect(camera.recording, isTrue);
+    await tester.sendKeyEvent(LogicalKeyboardKey.numpad1);
+    await until(tester, () => recReady(tester));
+    expect(camera.recording, isFalse);
+    pages = library.byId(id)!.pages;
+    expect(pages, hasLength(3));
+    expect(pages.last.title, 'Take 2');
+    expect(find.text('2 / 3'), findsOneWidget);
+
+    // Ctrl + 1 is no Rec: it turns the tab as any key.
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await frames(tester);
+    expect(camera.recording, isFalse);
+    expect(find.text('3 / 3'), findsOneWidget);
+
+    // While a take plays back, Rec is dead, and so is 1.
+    await tester.tap(find.byTooltip('Play'));
+    await frames(tester);
+    expect(video.playing, hasLength(1));
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
+    await frames(tester);
+    expect(camera.recording, isFalse);
+    expect(library.byId(id)!.pages, hasLength(3));
+    await tester.tap(_camStop);
+    await frames(tester);
+    expect(video.playing, isEmpty);
+  });
+
+  testWidgets('. saves the take and starts a new one (the main keyboard\'s '
+      'or the keypad\'s); held, it doesn\'t repeat; not recording, it '
+      'starts a take; it doesn\'t turn the tab', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          burn: (take, _) async => take,
+        ),
+      ),
+    );
+    await frames(tester);
+    List<EventPage> pages() => library.byId(id)!.pages;
+
+    // Not recording: . starts a take, as Rec.
+    await tester.sendKeyEvent(LogicalKeyboardKey.period);
+    await frames(tester);
+    expect(camera.recording, isTrue);
+    expect(pages(), hasLength(1));
+    expect(find.text('1 / 3'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+    await tester.pump();
+    expect(find.text('2 / 3'), findsOneWidget);
+
+    // Recording: . saves Take 1 and records again; held, no more.
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.period);
+    for (var i = 0; i < 3; i++) {
+      await tester.sendKeyRepeatEvent(LogicalKeyboardKey.period);
+      await frames(tester);
+    }
+    await until(tester, () => pages().length == 2 && camera.recording);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.period);
+    await frames(tester);
+    expect(camera.recordings, 1);
+    expect(camera.recording, isTrue);
+    expect(pages(), hasLength(2));
+    expect(pages().last.title, 'Take 1');
+    expect(find.text('Take 1 added to the capture'), findsOneWidget);
+    expect(find.text('2 / 3'), findsOneWidget);
+    expect(
+      tester
+          .widget<IconButton>(
+            find.descendant(
+              of: find.byKey(const Key('cam-rec')),
+              matching: find.byType(IconButton),
+            ),
+          )
+          .tooltip,
+      _stopKeys,
+    );
+
+    // The keypad's . too.
+    await tester.sendKeyEvent(LogicalKeyboardKey.numpadDecimal);
+    await until(tester, () => pages().length == 3 && camera.recording);
+    expect(pages().last.title, 'Take 2');
+    expect(camera.recordings, 2);
+
+    // Ctrl + . is no new take: it turns the tab as any key.
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.period);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await frames(tester);
+    expect(camera.recording, isTrue);
+    expect(pages(), hasLength(3));
+    expect(find.text('3 / 3'), findsOneWidget);
+
+    // Stop saves the last: Take 3.
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
+    await until(tester, () => recReady(tester));
+    expect(camera.recording, isFalse);
+    expect(pages(), hasLength(4));
+    expect(pages().last.title, 'Take 3');
+  });
+
+  testWidgets('. pressed again while the take is saved for the next does '
+      'nothing, nor does 1; the next starts once it\'s saved', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    Completer<void>? hold;
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          burn: (take, _) async {
+            await hold?.future;
+            return take;
+          },
+        ),
+      ),
+    );
+    await frames(tester);
+    List<EventPage> pages() => library.byId(id)!.pages;
+
+    await tester.tap(find.byTooltip('Rec (1)'));
+    await frames(tester);
+    expect(camera.recording, isTrue);
+
+    hold = Completer<void>();
+    await tester.sendKeyEvent(LogicalKeyboardKey.period);
+    await frames(tester);
+    // Saving: the camera stopped, no new take yet.
+    expect(camera.recording, isFalse);
+    expect(camera.recordings, 1);
+    await tester.sendKeyEvent(LogicalKeyboardKey.period);
+    await tester.sendKeyEvent(LogicalKeyboardKey.numpadDecimal);
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
+    await frames(tester);
+    expect(camera.recording, isFalse);
+    expect(pages(), hasLength(1));
+    // Rec is dead meanwhile.
+    expect(
+      tester
+          .widget<IconButton>(
+            find.descendant(
+              of: find.byKey(const Key('cam-rec')),
+              matching: find.byType(IconButton),
+            ),
+          )
+          .onPressed,
+      isNull,
+    );
+
+    hold.complete();
+    await until(tester, () => pages().length == 2 && camera.recording);
+    await frames(tester);
+    // One take saved, one recording: the presses meanwhile did nothing.
+    expect(pages().last.title, 'Take 1');
+    expect(camera.recordings, 1);
+    expect(camera.recording, isTrue);
+
+    hold = null;
+    await tester.tap(_camStop);
+    await until(tester, () => recReady(tester));
+    expect(pages(), hasLength(3));
+    expect(pages().last.title, 'Take 2');
+  });
+
+  testWidgets('., 1 and Rec pressed again while a take starts do nothing: '
+      'one recording starts', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          burn: (take, _) async => take,
+        ),
+      ),
+    );
+    await frames(tester);
+    List<EventPage> pages() => library.byId(id)!.pages;
+
+    final hold = camera.startHold = Completer<void>();
+    await tester.sendKeyEvent(LogicalKeyboardKey.period);
+    await frames(tester);
+    expect(camera.starts, 1);
+    expect(camera.recording, isFalse);
+    await tester.sendKeyEvent(LogicalKeyboardKey.period);
+    await tester.sendKeyEvent(LogicalKeyboardKey.numpadDecimal);
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
+    await tester.tap(find.byTooltip('Rec (1)'));
+    await frames(tester);
+    expect(camera.starts, 1);
+
+    camera.startHold = null;
+    hold.complete();
+    await until(tester, () => camera.recording);
+    await frames(tester);
+    expect(camera.starts, 1);
+    expect(find.textContaining("Couldn't record"), findsNothing);
+
+    // One take, saved at Stop.
+    await tester.tap(_camStop);
+    await until(tester, () => recReady(tester));
+    expect(camera.recordings, 1);
+    expect(pages(), hasLength(2));
+    expect(pages().last.title, 'Take 1');
+  });
+
+  testWidgets('the keypad\'s decimal key typing "," (a European layout on '
+      'the web) is . too; the comma key turns the tab', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          burn: (take, _) async => take,
+        ),
+      ),
+    );
+    await frames(tester);
+    List<EventPage> pages() => library.byId(id)!.pages;
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.comma);
+    await tester.pump();
+    expect(find.text('2 / 3'), findsOneWidget);
+    expect(camera.recording, isFalse);
+
+    Future<void> keypadComma() => tester.sendKeyEvent(
+      LogicalKeyboardKey.comma,
+      physicalKey: PhysicalKeyboardKey.numpadDecimal,
+      character: ',',
+    );
+    await keypadComma();
+    await frames(tester);
+    expect(camera.recording, isTrue);
+    expect(find.text('2 / 3'), findsOneWidget);
+
+    await keypadComma();
+    await until(tester, () => pages().length == 2 && camera.recording);
+    expect(pages().last.title, 'Take 1');
+    expect(find.text('2 / 3'), findsOneWidget);
+
+    await tester.tap(_camStop);
+    await until(tester, () => recReady(tester));
+    expect(pages().last.title, 'Take 2');
+  });
+
+  testWidgets('. keeps the take when the next can\'t start', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          burn: (take, _) async => take,
+        ),
+      ),
+    );
+    await frames(tester);
+    await tester.tap(find.byTooltip('Rec (1)'));
+    await frames(tester);
+    expect(camera.recording, isTrue);
+
+    camera.startError = CameraException('busy', 'the camera is busy');
+    await tester.sendKeyEvent(LogicalKeyboardKey.period);
+    await until(tester, () => recReady(tester));
+    expect(camera.recording, isFalse);
+    final pages = library.byId(id)!.pages;
+    expect(pages, hasLength(2));
+    expect(pages.last.title, 'Take 1');
+    // Its message, then the failure's.
+    expect(find.text('Take 1 added to the capture'), findsOneWidget);
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(seconds: 1));
+    }
+    expect(find.textContaining("Couldn't record"), findsOneWidget);
   });
 
   testWidgets('without a text tab, it says so', (tester) async {
@@ -350,7 +713,7 @@ void main() {
     expect(find.text('2 / 3'), findsOneWidget);
 
     // Recording, the frames still go to it.
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     expect(camera.streaming, isTrue);
     heads!.onGesture(HeadGesture.next);
@@ -394,7 +757,7 @@ void main() {
     expect(heads!.active, isTrue);
     expect(find.byKey(const Key('cam-heads')), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     expect(camera.recording, isTrue);
     heads!.onGesture(HeadGesture.next);
@@ -439,7 +802,7 @@ void main() {
     await frames(tester);
     await tester.tap(find.byKey(const Key('cam')));
     await frames(tester);
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
@@ -939,14 +1302,14 @@ void main() {
     video.position = Duration.zero;
     // Loaded in the frame, not playing: Rec plays it.
     expect(video.playing, isEmpty);
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     expect(video.playing, hasLength(1));
     // The take's Stop leaves it playing; Rec again doesn't pause it.
     await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
     expect(video.playing, hasLength(1));
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     expect(video.playing, hasLength(1));
     await tester.tap(_camStop);
@@ -956,11 +1319,88 @@ void main() {
     await tester.tap(find.byKey(const Key('cam-along')));
     await frames(tester);
     expect(video.playing, isEmpty);
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     expect(video.playing, isEmpty);
     await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
+
+    // With it showing again, 1 starts a take and the song, as Rec does.
+    await tester.tap(find.byKey(const Key('cam-along')));
+    await frames(tester);
+    expect(video.playing, isEmpty);
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
+    await frames(tester);
+    expect(camera.recording, isTrue);
+    expect(video.playing, hasLength(1));
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
+    await until(tester, () => recReady(tester));
+    expect(camera.recording, isFalse);
+  });
+
+  testWidgets('. with a song in the sidebar: it stops at once, back at its '
+      'start, and plays from there with the new take', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    await tester.runAsync(() async {
+      await library.addMedia(library.byId(id)!, [
+        Media(
+          XFile.fromData(Uint8List.fromList([1]), name: 'riff.m4a'),
+          PageKind.audio,
+          'm4a',
+        ),
+      ]);
+    });
+    Completer<void>? hold;
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          burn: (take, _) async {
+            await hold?.future;
+            return take;
+          },
+        ),
+      ),
+    );
+    await frames(tester);
+    // . starts a take and the song, as Rec, from where it is.
+    expect(video.playing, isEmpty);
+    await tester.sendKeyEvent(LogicalKeyboardKey.period);
+    await frames(tester);
+    expect(camera.recording, isTrue);
+    expect(video.playing, hasLength(1));
+    expect(video.seeks, isEmpty);
+
+    // Again: the song stops at once, back at its start, while the take
+    // is saved…
+    video.position = const Duration(seconds: 40);
+    hold = Completer<void>();
+    await tester.sendKeyEvent(LogicalKeyboardKey.period);
+    await frames(tester);
+    expect(video.playing, isEmpty);
+    expect(video.seeks, [Duration.zero]);
+    expect(camera.recording, isFalse);
+
+    // …then it plays from there with the new take.
+    video.position = Duration.zero;
+    hold.complete();
+    await until(
+      tester,
+      () => library.byId(id)!.pages.length == 3 && camera.recording,
+    );
+    await frames(tester);
+    expect(library.byId(id)!.pages.last.title, 'Take 1');
+    expect(video.playing, hasLength(1));
+    expect(video.seeks, [Duration.zero]);
+
+    hold = null;
+    await tester.tap(_camStop);
+    await until(tester, () => recReady(tester));
+    expect(library.byId(id)!.pages.last.title, 'Take 2');
   });
 
   testWidgets('Phrase passes: recording along with a song notes each turn '
@@ -1006,7 +1446,7 @@ void main() {
     video.position = Duration.zero;
     await tester.tap(find.byKey(const Key('cam-along-toggle')));
     await frames(tester);
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     await at(10);
     await pass();
@@ -1147,7 +1587,7 @@ void main() {
     video.position = Duration.zero;
     await tester.tap(find.byKey(const Key('cam-along-toggle')));
     await frames(tester);
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     await at(9);
     expect(find.text('1 / 3'), findsOneWidget);
@@ -1173,7 +1613,7 @@ void main() {
 
     // Another take: two turns back with it off, then it's switched on
     // (the tab goes where the song's pass shows) and a turn then is noted.
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     await at(30);
     await tester.sendKeyEvent(LogicalKeyboardKey.backspace);
@@ -1251,7 +1691,7 @@ void main() {
     final clear = find.byKey(const Key('cam-along-phrases-clear'));
     video.position = Duration.zero;
     // Rec starts the song too.
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     expect(marks, findsNothing);
     await at(10);
@@ -1331,7 +1771,7 @@ void main() {
     video.position = Duration.zero;
     await tester.tap(find.byKey(const Key('cam-along-toggle')));
     await frames(tester);
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     await at(10);
     await pass();
@@ -1506,5 +1946,211 @@ void main() {
     await tester.tap(find.byKey(const Key('cam-along-text')));
     await tester.pump();
     expect(find.byKey(const Key('cam-text-view')), findsOneWidget);
+  });
+
+  testWidgets('Cam\'s takes are the last thing in the sidebar, under '
+      'Takes, the most recent first: an old take (named "Take 3", '
+      'not marked) and a marked take renamed too; the file loaded first '
+      'is a song, not a take', (tester) async {
+    // Tall enough for the sidebar to list everything under the frame.
+    tester.view
+      ..physicalSize = const Size(1200, 2000)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final (library, id) = await capture(tester, tab: _tab);
+    final ids = <String, String>{};
+    await tester.runAsync(() async {
+      Media video(String name) => Media(
+        XFile.fromData(Uint8List.fromList([1]), name: name),
+        PageKind.video,
+        'mp4',
+      );
+      Future<void> add(
+        String key,
+        Media media, {
+        bool take = false,
+        String? title,
+      }) async {
+        final event = await library.addMedia(library.byId(id)!, [
+          media,
+        ], take: take);
+        ids[key] = event.pages.last.id;
+        if (title != null) await library.renamePage(id, ids[key]!, title);
+      }
+
+      // A take first, then a song, a take, the PDF, an old take, a link
+      // and a take renamed.
+      await add('take1', video('take.mp4'), take: true, title: 'Take 1');
+      await add(
+        'song',
+        Media(
+          XFile.fromData(Uint8List.fromList([1]), name: 'riff.m4a'),
+          PageKind.audio,
+          'm4a',
+        ),
+        title: 'Riff',
+      );
+      await add('take2', video('take.mp4'), take: true, title: 'Take 2');
+      await add(
+        'pdf',
+        Media(
+          XFile.fromData(Uint8List.fromList([1]), name: 'sheet.pdf'),
+          PageKind.pdf,
+          'pdf',
+        ),
+        title: 'Sheet',
+      );
+      // Saved before takes were marked: named as Cam names them.
+      await add('take3', video('take.mp4'), title: 'Take 3');
+      final event = await library.addLink(
+        library.byId(id)!,
+        Uri.parse('https://example.com/backing'),
+        title: 'Backing track',
+      );
+      ids['link'] = event.pages.last.id;
+      await add('renamed', video('take.mp4'), take: true, title: 'Best one');
+      // A video of the user's own, not a take.
+      await add('lesson', video('lesson.mp4'), title: 'Lesson');
+    });
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          linkFrame: (_) => const SizedBox(key: Key('fake-link-frame')),
+          pdfView: (_, _, page) =>
+              SizedBox(key: ValueKey('fake-pdf-${page.id}')),
+        ),
+      ),
+    );
+    await frames(tester);
+    expect(find.byKey(const Key('cam-along-sidebar')), findsOneWidget);
+    Finder row(String key) => find.byKey(ValueKey('cam-along-${ids[key]}'));
+    double top(Finder f) => tester.getTopLeft(f).dy;
+    final order = [
+      find.byKey(const Key('cam-along-text')),
+      row('song'),
+      row('link'),
+      row('lesson'),
+      row('pdf'),
+      // The most recent take first.
+      find.text('Takes'),
+      row('renamed'),
+      row('take3'),
+      row('take2'),
+      row('take1'),
+    ];
+    for (final f in order) {
+      expect(f, findsOneWidget);
+    }
+    for (var i = 1; i < order.length; i++) {
+      expect(top(order[i - 1]), lessThan(top(order[i])), reason: '$i');
+    }
+    // The songs' heading over the songs, the PDF's under them.
+    expect(top(find.text('Play along')), lessThan(top(row('song'))));
+    expect(top(find.text('Follow a PDF')), greaterThan(top(row('lesson'))));
+    // The song loaded first, not Take 1 (the capture's first file).
+    expect(tester.widget<ListTile>(row('song')).selected, isTrue);
+    expect(tester.widget<ListTile>(row('take1')).selected, isFalse);
+
+    // A take plays along as the songs do.
+    await tester.tap(row('take2'));
+    await frames(tester);
+    expect(tester.widget<ListTile>(row('take2')).selected, isTrue);
+  });
+
+  testWidgets('with only takes to play along, the most recent loads, '
+      'listed first', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    late String take1, take2;
+    await tester.runAsync(() async {
+      for (final n in [1, 2]) {
+        final event = await library.addMedia(library.byId(id)!, [
+          Media(
+            XFile.fromData(Uint8List.fromList([n]), name: 'take.mp4'),
+            PageKind.video,
+            'mp4',
+          ),
+        ], take: true);
+        await library.renamePage(id, event.pages.last.id, 'Take $n');
+        if (n == 1) {
+          take1 = event.pages.last.id;
+        } else {
+          take2 = event.pages.last.id;
+        }
+      }
+    });
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+        ),
+      ),
+    );
+    await frames(tester);
+    expect(find.text('Takes'), findsOneWidget);
+    expect(find.text('Play along'), findsNothing);
+    final first = find.byKey(ValueKey('cam-along-$take1'));
+    final second = find.byKey(ValueKey('cam-along-$take2'));
+    expect(tester.widget<ListTile>(second).selected, isTrue);
+    expect(tester.widget<ListTile>(first).selected, isFalse);
+    expect(tester.getTopLeft(second).dy, lessThan(tester.getTopLeft(first).dy));
+  });
+
+  group('isTake', () {
+    EventPage video(String? title, {bool take = false}) => EventPage(
+      id: 'p1',
+      kind: PageKind.video,
+      extension: 'mp4',
+      title: title,
+      take: take,
+    );
+
+    test('a marked take is one, whatever its name', () {
+      expect(isTake(video('Best one', take: true)), isTrue);
+      expect(isTake(video(null, take: true)), isTrue);
+    });
+
+    test('an old take: a video named as Cam names them, in any language', () {
+      expect(isTake(video('Take 3')), isTrue);
+      expect(isTake(video('Toma 12')), isTrue);
+      expect(isTake(video('Take')), isFalse);
+      expect(isTake(video('Retake 3')), isFalse);
+      expect(isTake(video('Take 3 again')), isFalse);
+      expect(isTake(video('Lesson')), isFalse);
+      expect(isTake(video(null)), isFalse);
+      // Not a video: not a take.
+      expect(
+        isTake(
+          const EventPage(
+            id: 'p2',
+            kind: PageKind.audio,
+            extension: 'm4a',
+            title: 'Take 3',
+          ),
+        ),
+        isFalse,
+      );
+    });
+
+    test('the mark is kept: renamed, edited, and through JSON (sync)', () {
+      final take = video('Take 1', take: true);
+      final renamed = take.copyWith(title: () => 'Best one');
+      expect(renamed.take, isTrue);
+      expect(take.copyWith(edit: () => null).take, isTrue);
+      final json = jsonDecode(jsonEncode(renamed.toJson()));
+      expect(json['take'], isTrue);
+      expect(EventPage.fromJson(json).take, isTrue);
+      // Not a take: no mark in its JSON.
+      expect(video('Lesson').toJson().containsKey('take'), isFalse);
+      expect(EventPage.fromJson(video('Lesson').toJson()).take, isFalse);
+    });
   });
 }

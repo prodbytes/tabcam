@@ -31,8 +31,10 @@ its **Not now** leaving. With Premium it opens the camera view
   shrunk to fit the screen's width (a long staff reads best with the
   phone turned sideways), with its number under it ("2 / 14"). A
   capture with no text tab yet says to read it first.
-- **Moving along the tab**: any key (but the space bar, 0, ← and →
-  while a file [plays along](#playing-along-with-a-file)) goes to the
+- **Moving along the tab**: any key (but **1**, which is
+  [Rec / Stop](#rec-key), **.**, which is [a new take](#new-take-key),
+  and the space bar, 0, ← and → while a file
+  [plays along](#playing-along-with-a-file)) goes to the
   next neckline (a keyboard, or a Bluetooth page-turner pedal), **↓**
   among them; **Backspace**, **↑** and **Page Up** go to the one
   before, and so does **←** while nothing plays along. Shift, Control, Alt,
@@ -82,12 +84,46 @@ its **Not now** leaving. With Premium it opens the camera view
   in the theme's primary colour while it sees a face; off, nothing
   watches for faces. While a take plays back, gestures do nothing.
 - **Rec** records video and sound (`camera`, `ResolutionPreset.high`)
-  from the neckline showing, until **Stop**. The take is then added to
+  from the neckline showing, until **Stop**.
+  <a id="rec-key"></a>The **1** key (on the top row or the keypad)
+  presses it too, Rec and then Stop, with the sidebar showing or not
+  (so it also starts the sidebar's song, as Rec does); it doesn't turn
+  the tab. It acts on the key down: held, it doesn't repeat (it
+  doesn't start a take and stop it again). While the button can't be
+  pressed (a take being saved or playing back, no camera, the
+  preview), 1 does nothing. With Ctrl, ⌘ or Alt held, 1 is another
+  shortcut's (the browser's) and turns the tab as any key. The button's
+  tooltip says so: "Rec (1)", and "Stop (1) · new take (.)" while
+  recording, in English, Spanish and Portuguese. The take is then added to
   the capture as a video, at the end of its files, named "Take 1",
   "Take 2"… (the first number no file has), and a message says so. It
-  syncs as any video does. Going back while recording stops it and
-  keeps the take. Back on the capture, its takes show: the file list
+  is marked as a take (`take` on its page, `EventPage.take`), which
+  stays when it's renamed, edited, cloned or published, so the
+  play-along sidebar lists it with the [takes](#playing-along-with-a-file).
+  It syncs as any video does (the mark with it, as its name does).
+  Going back while recording stops it and keeps the take. Back on the capture, its takes show: the file list
   (not the Text view), scrolled to its end.
+  <a id="new-take-key"></a>The **.** key (on the main keyboard or the
+  keypad's decimal key, also where that key types "," as on Brazilian,
+  German and most European layouts, matched by where it is on the
+  keyboard; the comma key itself turns the tab) starts **a new take** while recording: the
+  take is stopped and saved as Stop saves it (added, named, its phrase
+  passes kept, the message shown), and once it's saved, the next take
+  starts as Rec starts one. The song in the sidebar (when it shows)
+  stops at once and goes back to its start (its section's, with one
+  chosen), so it's silent while the take is saved; with the new take
+  it plays from there, after the count-in if that's on, as Rec starts
+  it. The tab stays at the neckline showing, as with Rec (auto-pass
+  turns it along the song, as ever). Not recording, **.** starts a take,
+  as 1 does. It acts on the key
+  down only (held, it doesn't repeat), does nothing while Rec can't be
+  pressed, and with Ctrl, ⌘ or Alt it turns the tab as any key. While
+  the take is saved for the next, Rec, Play, the camera switch, 1, .
+  and going back do nothing, so a second press can't start or stop
+  another take (the camera records one at a time). Nor do Rec, 1 and .
+  while a take starts (until the camera records), so pressing again at
+  once doesn't start a second recording alongside it. If the next take
+  can't start, the one saved is kept and a message says why.
 - <a id="the-tab-in-the-take"></a>**The tab is in the take**: each
   neckline shows along the bottom of the video while it showed in Cam,
   as a band as wide as the video (white monospaced text on a dark,
@@ -243,10 +279,19 @@ opened there plays in it
 [`play_along_sidebar.dart`](../tabcam_app/lib/capture/play_along_sidebar.dart)).
 At its top a compact **player frame**, there whenever there's something
 to play, with the first of them loaded in it, paused (`BackingTrack`,
-[`backing_track.dart`](../tabcam_app/lib/capture/backing_track.dart)),
-and under it the list of them in the capture's order (its takes too),
-under **Play along**, each with its icon and name; the list scrolls, the
-frame stays.
+[`backing_track.dart`](../tabcam_app/lib/capture/backing_track.dart)):
+a song to play along with, not one of Cam's takes, unless there's
+nothing else (then the most recent take); on the file screen, the recording
+opened, take or not. Under it the list: the [text tab](#following-the-text)
+first, if listed; then the files to play along in the capture's order,
+under **Play along**, each with its icon and name; then the
+[PDFs](#following-a-pdf) or pages to follow; and **last, Cam's takes**,
+under **Takes** (Spanish **Tomas**), **the most recent first** (the
+reverse of the order they were made: Take 3, Take 2, Take 1), played along as the others
+are. A take is one Cam marked as such (renamed, it still is one), or,
+saved before takes were marked, a video named as Cam names them in any
+of the app's languages ("Take 3", "Toma 3"; `isTake`). The list
+scrolls, the frame stays.
 **Play along** (♫ in the app bar, in the primary colour while open)
 hides and shows the sidebar, frame and all; hiding it pauses what plays
 (kept offstage, so a link's page isn't reloaded). A capture with none of
@@ -267,7 +312,7 @@ starts. Stop (the take's) leaves it playing.
 <a id="following-a-pdf"></a>**Following a PDF**: in Cam and in the
 [Text view](tab-recognition.md#text-view) (not beside a PDF), the
 sidebar also lists the capture's PDFs, under **Follow a PDF** (after the
-files to play along, with a PDF icon; the capture's photos aren't
+files to play along and before Cam's takes, with a PDF icon; the capture's photos aren't
 listed), so the guitarist can read the tab from the page itself when the
 text tab is still wrong. A tap on one opens a **PDF pane** on the **left** of the
 camera (`PlayAlong.followed`, `_FollowPane`; 40% of the screen's width, from 160
@@ -297,7 +342,7 @@ the page beside it** / **Hide the page**).
 the [file screen](event-screen.md#file-screen) (beside a PDF, an image
 or a recording), when the capture has a text tab, the sidebar's list
 starts with it: **Text tab** (a notes icon), above the files to play
-along and the PDFs and pages to follow (`PlayAlong.withText`,
+along, the PDFs and pages to follow and the takes (`PlayAlong.withText`,
 `PlayAlong.followsText`). A tap shows the text in the same pane on the
 left (**Show the text beside it**), as a PDF is followed: its name and
 **Hide the text** (✕) at the top, the separator to drag, the width kept

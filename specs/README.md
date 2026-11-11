@@ -62,8 +62,8 @@ review notes ([app stores](app-stores.md)).
 - [Cam](cam.md): record yourself playing along with the tab: the camera,
   the tab under it one neckline (staff) at a time, any key (↓) to the
   next and Backspace / ↑ (← with nothing playing along) to the one before, or a strong nod up / right and
-  down / left (Android, iOS); Rec adds each take to the
-  capture, Play plays it back with the tab turning as it did; Play
+  down / left (Android, iOS); Rec (or the 1 key) adds each take to the
+  capture, the . key saving it and starting a new one, Play plays it back with the tab turning as it did; Play
   along plays one of the capture's recordings, videos or links in a
   frame above the camera, the space bar pausing and playing it, 0
   going back to its start (its section's) and ← / → skipping in it,
@@ -90,7 +90,8 @@ review notes ([app stores](app-stores.md)).
 - [Video edit](video-edit.md): basic edits of a video from its file
   screen: trim its start and end; keep its sound, take it out, or
   replace it with a new track (one of the capture's recordings, or a
-  sound file, added to them), shifted to fit the video. The edit is kept
+  sound file, added to them), shifted to fit the video, at a volume set
+  at the left of its bar. The edit is kept
   with the video and played as it says (muted, the track along it), no
   file made; Download makes one on the device: the video, the video
   without sound, or the sound only.

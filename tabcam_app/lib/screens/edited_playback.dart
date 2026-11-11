@@ -8,8 +8,8 @@ import '../library/page_edit.dart';
 /// part only (from its start, when outside it; at its end, back to its
 /// start, playing on when [loop]ing, paused otherwise), with the video's
 /// own sound, none, or, muted, the new [track] along it, started where it
-/// comes in. Checked every tenth of a second while it plays. The players
-/// stay their owner's to dispose of.
+/// comes in, at the edit's track volume. Checked every tenth of a second
+/// while it plays. The players stay their owner's to dispose of.
 class EditedPlayback {
   EditedPlayback(this.video, {this.loop = false}) {
     video.addListener(_onVideo);
@@ -38,17 +38,22 @@ class EditedPlayback {
     return length > Duration.zero && end > length ? length : end;
   }
 
-  /// Plays [edit] from now on (with [track] for its new track); what the
-  /// track plays is found again at the next check.
+  /// Plays [edit] from now on (with [track] for its new track, at the
+  /// edit's track volume); what the track plays is found again at the next
+  /// check, unless only its volume changed (it plays on, as loud as now
+  /// asked).
   Future<void> set(PageEdit? edit, {VideoPlayerController? track}) async {
     final changedTrack = !identical(track, _track);
+    final moved =
+        changedTrack || edit?.withTrackVolume(1) != _edit?.withTrackVolume(1);
     if (changedTrack) await pauseTrack();
     _edit = edit;
     _track = track;
     await video.setVolume(
       edit == null || edit.sound == EditSound.original ? 1 : 0,
     );
-    if (!changedTrack) await pauseTrack();
+    await track?.setVolume(edit?.trackVolume ?? 1);
+    if (moved && !changedTrack) await pauseTrack();
   }
 
   void _onVideo() {

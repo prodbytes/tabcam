@@ -583,6 +583,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camStop => 'Stop';
 
   @override
+  String get camRecKey => 'Rec (1)';
+
+  @override
+  String get camStopKey => 'Stop (1) · new take (.)';
+
+  @override
   String get camPlay => 'Play';
 
   @override
@@ -648,6 +654,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get camAlongTitle => 'Play along';
+
+  @override
+  String get camAlongTakes => 'Takes';
 
   @override
   String get camAlongPdfs => 'Follow a PDF';
@@ -1918,6 +1927,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoEditTrackLater => 'A tenth of a second later';
+
+  @override
+  String get videoEditTrackVolume => 'Track volume';
+
+  @override
+  String videoEditTrackVolumeLevel(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String get videoEditTrackMute => 'Mute the track';
+
+  @override
+  String get videoEditTrackUnmute => 'Unmute the track';
 
   @override
   String videoEditTrackUsed(String start, String end) {
