@@ -858,5 +858,76 @@ void main() {
     await _settle(tester);
     expect(find.text('25%'), findsOneWidget);
     expect(platform.volumes[platform.lastPlayer], 0.25);
+
+    // Slid down to 0%, Unmute puts back the level it had as it was
+    // opened.
+    await tester.tap(find.byKey(const Key('video-edit-track-volume')));
+    await _frames(tester);
+    final slider = find.byKey(const Key('video-edit-track-volume-slider'));
+    for (final v in [20.0, 10.0, 5.0, 0.0]) {
+      if (v == 20) tester.widget<Slider>(slider).onChangeStart!(25);
+      tester.widget<Slider>(slider).onChanged!(v);
+      await _frames(tester);
+    }
+    tester.widget<Slider>(slider).onChangeEnd?.call(0);
+    await _settle(tester);
+    expect(library.byId(id)!.pages.first.edit!.trackVolume, 0);
+    await tester.tap(find.byKey(const Key('video-edit-track-mute')));
+    await _settle(tester);
+    expect(library.byId(id)!.pages.first.edit!.trackVolume, 0.25);
+    expect(platform.volumes[platform.lastPlayer], 0.25);
+  });
+
+  testWidgets('a muted edit, opened again, unmutes to 100%', (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester);
+    await tester.runAsync(
+      () => library.setPageEdit(
+        id,
+        'k0',
+        PageEdit(
+          start: s(10),
+          end: s(20),
+          sound: EditSound.track,
+          trackId: 'k1',
+          trackVolume: 0,
+        ),
+      ),
+    );
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    expect(find.text('0%'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('video-edit-track-volume')));
+    await _frames(tester);
+    await tester.tap(find.byKey(const Key('video-edit-track-mute')));
+    await _settle(tester);
+    expect(library.byId(id)!.pages.first.edit!.trackVolume, 1);
+  });
+
+  testWidgets('the track\'s volume fits its bar at the largest text size', (
+    tester,
+  ) async {
+    tall(tester);
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    final (library, id) = await capture(tester);
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    await tester.tap(find.text('New track'));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-track-k1')));
+    await _settle(tester);
+    // No overflow (which would fail the test), the level on one line,
+    // within the control.
+    final control = tester.getRect(
+      find.byKey(const Key('video-edit-track-volume')),
+    );
+    final level = tester.getRect(
+      find.byKey(const Key('video-edit-track-volume-level')),
+    );
+    expect(control.contains(level.topLeft), isTrue);
+    expect(control.contains(level.bottomRight - const Offset(1, 1)), isTrue);
+    expect(find.text('100%'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

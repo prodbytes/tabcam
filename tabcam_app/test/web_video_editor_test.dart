@@ -235,19 +235,25 @@ void main() {
       loudest(quieter, 1.2, 1.9),
       closeTo(loudest(gappedSound, 1.2, 1.9) / 2, 0.02),
     );
-    // And with the video, it goes through the gain too.
-    final quietVideo = await editor.apply(
-      video,
-      VideoEdit(
-        start: Duration.zero,
-        end: const Duration(milliseconds: 1000),
-        sound: EditSound.track,
-        track: video,
-        trackVolume: 0.5,
-      ),
+    // And with the video, it goes through the gain too: its recorded
+    // sound is about half as loud as the same edit's at 100%.
+    VideoEdit withVideo(double volume) => VideoEdit(
+      start: Duration.zero,
+      end: const Duration(milliseconds: 1500),
+      sound: EditSound.track,
+      track: video,
+      trackVolume: volume,
     );
+    final quietVideo = await editor.apply(video, withVideo(0.5));
     final (_, quietVideoSound) = await probe(quietVideo);
     expect(quietVideoSound, isTrue);
+    final loudVideo = await editor.apply(video, withVideo(1));
+    // Past the recorder's start and before its end; compressed, so
+    // within a margin.
+    final ratio =
+        loudest(await decode(quietVideo), 0.4, 1.0) /
+        loudest(await decode(loudVideo), 0.4, 1.0);
+    expect(ratio, closeTo(0.5, 0.12));
   }
 
   testWidgets('the kept part, with its sound, without, or with a track; '

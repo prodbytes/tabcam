@@ -55,7 +55,11 @@ was left:
   over its level (`80%`, in the primary colour when it's not 100%; the
   speaker low under 50%, crossed out at 0%); tapped, it opens a slider
   from **0% to 100%** in steps of 5%, its level beside it, and **Mute**
-  (Unmute puts back the level it had). 100%, the track as it is, is the
+  (Unmute puts back the level it had before Mute or before a slide down
+  to 0%; an edit saved muted and opened again unmutes to 100%, as the
+  level it had isn't kept). It fits the bar's height at any text size:
+  the level stays on one line, and speaker and level shrink together
+  when the text is too large. 100%, the track as it is, is the
   default. The preview plays the track at it at once (a change of volume
   doesn't stop or re-seek the track), as the file screen and Download
   do. **100% is the most**: the players can't play a file louder than

@@ -183,6 +183,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           _end = _clamp(edit.end, _start, length);
           _sound = edit.sound;
           _trackVolume = edit.trackVolume;
+          // Saved muted, the level it had isn't known: Unmute gives 100%.
+          _unmutedVolume = edit.trackVolume > 0 ? edit.trackVolume : 1;
         }
       });
       final track = edit?.trackId == null
@@ -474,10 +476,16 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     _changed();
   }
 
+  /// Keeps the track's level, when it's not muted, for Unmute to put
+  /// back: before Mute, and as a slide starts (one down to 0% mutes it).
+  void _keepTrackVolume() {
+    if (_trackVolume > 0) _unmutedVolume = _trackVolume;
+  }
+
   /// Mutes the track, or puts it back as loud as it was.
   void _muteTrack() {
     if (_trackVolume > 0) {
-      _unmutedVolume = _trackVolume;
+      _keepTrackVolume();
       _setTrackVolume(0);
     } else {
       _setTrackVolume(_unmutedVolume > 0 ? _unmutedVolume : 1);
@@ -916,6 +924,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
               _TrackVolume(
                 volume: _trackVolume,
                 onChanged: _setTrackVolume,
+                onChangeStart: _keepTrackVolume,
                 onMute: _muteTrack,
               ),
               const SizedBox(width: 4),
@@ -982,16 +991,22 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 /// The track's volume, at the left of its bar: a speaker over the level
 /// (`80%`, in the primary colour when it's not as it is). Tapped, it opens
 /// a slider, 0% to 100% in steps of 5%, with Mute beside it (Unmute puts
-/// back the level it had).
+/// back the level it had before Mute or a slide down to 0%). It fits its
+/// bar's height at any text size: the level stays on one line, and the
+/// two shrink together when the text is too large.
 class _TrackVolume extends StatelessWidget {
   const _TrackVolume({
     required this.volume,
     required this.onChanged,
+    required this.onChangeStart,
     required this.onMute,
   });
 
   final double volume;
   final void Function(double volume) onChanged;
+
+  /// A slide starts, before [onChanged].
+  final VoidCallback onChangeStart;
   final VoidCallback onMute;
 
   @override
@@ -1034,6 +1049,7 @@ class _TrackVolume extends StatelessWidget {
                   label: level,
                   semanticFormatterCallback: (v) =>
                       l10n.videoEditTrackVolumeLevel(v.round()),
+                  onChangeStart: (_) => onChangeStart(),
                   onChanged: (v) => onChanged(v / 100),
                 ),
               ),
@@ -1068,20 +1084,25 @@ class _TrackVolume extends StatelessWidget {
                   size: 20,
                   color: changed ? theme.colorScheme.primary : null,
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    icon,
-                    Text(
-                      level,
-                      key: const Key('video-edit-track-volume-level'),
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: changed ? theme.colorScheme.primary : null,
-                        fontFeatures: const [FontFeature.tabularFigures()],
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      icon,
+                      Text(
+                        level,
+                        key: const Key('video-edit-track-volume-level'),
+                        maxLines: 1,
+                        softWrap: false,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: changed ? theme.colorScheme.primary : null,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
