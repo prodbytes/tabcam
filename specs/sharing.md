@@ -57,6 +57,13 @@ those [shared with them](shared-captures.md). If it isn't there yet:
 - in a build without cloud sync, it says the capture isn't on this
   device.
 
+On the web, once the capture opens in the user's own library, the
+address keeps where they are instead of the link: `?open=<capture id>`,
+without the key, which doesn't come back (not even with the browser's
+Back) ([navigation](navigation.md#coming-back-where-the-user-was)).
+Opened by its link (read only), the link stays in the address, so a
+reload opens it again.
+
 **By its link** ([PublicCaptureScreen](../tabcam_app/lib/screens/public_capture_screen.dart),
 [PublicCaptures](../tabcam_app/lib/cloud/public_capture.dart)): the app
 asks the share API, without signing in, for read-only credentials to the

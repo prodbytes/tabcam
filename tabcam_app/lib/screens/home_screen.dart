@@ -112,30 +112,108 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _restorePlace() async {
     final place = await PlaceMemory.of(library).load();
     await library.ready;
-    if (!mounted || _linked != null) return;
+    if (!mounted || _linkOpened) return;
     final tab = HomeTab.values.where((t) => t.name == place.tab).firstOrNull;
     if (tab != null && tab != _tab) setState(() => _tab = tab);
-    if (place.eventId case final id?) {
+    if (place.eventId != null) _reopen(place);
+  }
+
+  /// Stops waiting for the event [_reopen] waits for.
+  VoidCallback? _stopReopen;
+
+  /// The event [_reopen] waits for, if it does.
+  String? _reopening;
+
+  /// The user moved on (another tab, a new capture) while [_reopen]
+  /// waited: it doesn't open over where they are now, and the place
+  /// forgets it.
+  void _cancelReopen() {
+    final id = _reopening;
+    if (id == null) return;
+    _stopReopen?.call();
+    PlaceMemory.of(library).update(
+      (p) => p.eventId == id
+          ? p.copyWith(eventId: () => null, text: false, fileId: () => null)
+          : p,
+    );
+  }
+
+  /// Opens the event [place] names, on its view (and its file): at once
+  /// if it's here, else once signed in and the first sync pass brings it
+  /// (on the web, the library is only in memory: a reload brings it down
+  /// again). Not there after a pass that worked (deleted, or not the
+  /// user's), Home stays and the place forgets it.
+  void _reopen(Place place) {
+    final id = place.eventId!;
+    final memory = PlaceMemory.of(library);
+    final sync = widget.sync;
+    late final VoidCallback check;
+    void stop() {
+      library.removeListener(check);
+      sync?.removeListener(check);
+      widget.auth?.removeListener(check);
+      _stopReopen = null;
+      _reopening = null;
+    }
+
+    check = () {
+      // The user moved on (or a link opened another) while it was waited
+      // for.
+      if (!mounted || _linkOpened || memory.place.eventId != id) {
+        stop();
+        return;
+      }
+      if (!library.loaded) return;
       if (library.byId(id) case final event?) {
+        // Something else opened over Home meanwhile (the camera for a new
+        // capture, a page opened from Home): the user moved on.
+        if (ModalRoute.isCurrentOf(context) == false) {
+          _cancelReopen();
+          return;
+        }
+        stop();
         unawaited(
           openEvent(
             context,
             library,
             event,
-            widget.sync,
+            sync,
             widget.ocr,
             place.fileId,
             place.text,
           ),
         );
+        return;
       }
-    }
+      // Signed in, its captures may not have come down yet: until a pass
+      // has worked (one that failed, offline say, proves nothing).
+      if (sync != null &&
+          widget.auth?.user != null &&
+          (!sync.firstPassDone || sync.state != SyncState.synced)) {
+        return;
+      }
+      stop();
+      memory.update(
+        (p) => p.eventId == id
+            ? p.copyWith(eventId: () => null, text: false, fileId: () => null)
+            : p,
+      );
+    };
+
+    _stopReopen?.call();
+    _stopReopen = stop;
+    _reopening = id;
+    library.addListener(check);
+    sync?.addListener(check);
+    widget.auth?.addListener(check);
+    check();
   }
 
   @override
   void dispose() {
     IncomingLinks.instance.removeListener(_incoming);
     _stopLink();
+    _stopReopen?.call();
     super.dispose();
   }
 
@@ -147,6 +225,10 @@ class _HomeScreenState extends State<HomeScreen> {
   /// the link.
   String? _linked;
   Uri? _link;
+
+  /// Whether a capture's link has been opened: then it, not the place
+  /// the user was, opens at launch.
+  bool _linkOpened = false;
   bool _askedToSignIn = false;
   bool _passSinceLink = false;
 
@@ -161,6 +243,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final id = CaptureLink.idIn(link);
     if (id == null) return;
     _stopLink();
+    _linkOpened = true;
     _linked = id;
     _link = link;
     _askedToSignIn = false;
@@ -273,6 +356,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     if (event == null || !mounted) return;
+    _cancelReopen();
     PlaceMemory.of(library).update((p) => p.copyWith(tab: HomeTab.home.name));
     setState(() {
       _tab = HomeTab.home;
@@ -431,6 +515,9 @@ class _HomeScreenState extends State<HomeScreen> {
               widget.sync?.profiles?.refresh();
             }
             setState(() => _tab = tab);
+            // On a tab, nothing is open over it: a capture a reload still
+            // waits for doesn't open later.
+            _cancelReopen();
             PlaceMemory.of(library).update((p) => p.copyWith(tab: tab.name));
           },
         ),
