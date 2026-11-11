@@ -11,11 +11,25 @@ import 'package:tabcam_app/export/incoming_links.dart';
 import 'package:tabcam_app/library/capture_event.dart';
 import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
+import 'package:tabcam_app/library/meta_names.dart';
+import 'package:tabcam_app/library/meta_storage.dart';
 import 'package:tabcam_app/main.dart';
+import 'package:tabcam_app/screens/event_screen.dart';
 import 'package:tabcam_app/screens/file_screen.dart';
 import 'package:tabcam_app/screens/public_capture_screen.dart';
 
 import 'fakes.dart';
+
+/// localStorage, as a map.
+class _Storage implements MetaStorage {
+  final Map<String, String> items = {};
+
+  @override
+  String? getItem(String key) => items[key];
+
+  @override
+  void setItem(String key, String value) => items[key] = value;
+}
 
 const owner = 'us-east-1:00000000-0000-0000-0000-00000000000a';
 const riff = 'e|--3--5--7--|\nB|--------8--|';
@@ -177,6 +191,39 @@ void main() {
     expect(find.byKey(const Key('welcome')), findsOneWidget);
     // Still waiting: once signed in, Home opens it.
     expect(IncomingLinks.instance.pending, link);
+  });
+
+  testWidgets("the link's capture keeps its settings apart from the "
+      "device's", (tester) async {
+    // The device's settings, as the web keeps them (localStorage).
+    final storage = _Storage()
+      ..items['tabcam.meta.playalong'] = '{"countIn":true}';
+    final before = PlatformEventStore.defaultStorage;
+    PlatformEventStore.defaultStorage = () => storage;
+    addTearDown(() => PlatformEventStore.defaultStorage = before);
+
+    await tester.runAsync(ownerShares);
+    final mine = Library(PlatformEventStore());
+    await tester.runAsync(mine.load);
+    await IncomingLinks.instance.didPushRouteInformation(
+      RouteInformation(uri: link),
+    );
+    await tester.pumpWidget(
+      TabCamApp(library: mine, auth: FakeAuth(), captures: captures()),
+    );
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await frames(tester);
+    final opened = tester.widget<EventScreen>(find.byType(EventScreen)).library;
+    expect(opened, isNot(same(mine)));
+    await tester.runAsync(() async {
+      // It neither reads the device's count-in nor changes it.
+      expect(await opened.readMeta(MetaNames.playAlong), isNull);
+      await opened.writeMeta(MetaNames.playAlong, '{"countIn":false}');
+      expect(storage.items, {'tabcam.meta.playalong': '{"countIn":true}'});
+      expect(await mine.readMeta(MetaNames.playAlong), '{"countIn":true}');
+    });
   });
 
   testWidgets("signed out, a file's link opens that file over the capture", (

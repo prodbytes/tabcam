@@ -24,7 +24,7 @@ import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
 import 'account_panel.dart';
 import 'clone.dart';
-import 'delete_confirm.dart';
+import 'file_delete.dart';
 import 'file_drop_area.dart';
 import 'file_screen.dart';
 import 'link_page.dart';
@@ -416,7 +416,7 @@ class _EventScreenState extends State<EventScreen> {
       switch (action) {
         _FileAction.rename => _renamePage(event, page),
         _FileAction.download => _download(event, page),
-        _FileAction.delete => _deletePage(event, page),
+        _FileAction.delete => _deleteFile(event, page),
       };
 
   /// Downloads one file: the browser's download, or the system's "save
@@ -447,30 +447,23 @@ class _EventScreenState extends State<EventScreen> {
     );
   }
 
-  /// Deletes one of its files from the list, once the user confirms; the
-  /// last one stays (the event is deleted instead).
-  Future<void> _deletePage(CaptureEvent event, EventPage page) async {
-    final l10n = context.l10n;
-    if (event.pages.length == 1) {
-      _snack(l10n.eventKeepOnePage);
-      return;
-    }
-    final sure = await confirmDelete(
-      context,
-      library: _library,
-      kind: DeleteKind.file,
-      title: l10n.homeLibraryDeleteTitle(fileLabel(l10n, event, page)),
-      confirm: l10n.eventDelete,
-      cancel: l10n.eventCancel,
-    );
-    if (!sure || !mounted) return;
-    // It may be the one playing in the list.
+  /// Deletes one of its files, or one of the reader's own, once the user
+  /// confirms ([deleteFile]); the capture's last one stays (the event is
+  /// deleted instead).
+  Future<void> _deleteFile(CaptureEvent event, EventPage page) => deleteFile(
+    context,
+    _library,
+    event,
+    page,
+    letGo: () => _letGo(page),
+    run: _run,
+  );
+
+  /// Lets go of [page], about to be deleted (from the list or the Text
+  /// view's sidebar): it may be the one playing in the list, which plays on
+  /// in the Text view.
+  Future<void> _letGo(EventPage page) async {
     if (_player.holds(page)) await _player.stop();
-    await _run(l10n.eventCouldntDelete, () async {
-      // As it is now: a read may have changed it meanwhile.
-      final now = _library.byId(event.id);
-      if (now != null) await _library.deletePage(now, page);
-    });
   }
 
   /// Files the user dragged onto the screen ([FileDropArea]): added, as
@@ -747,25 +740,6 @@ class _EventScreenState extends State<EventScreen> {
     });
   }
 
-  /// A reader deletes one of their own files, once they confirm.
-  Future<void> _deleteContribution(CaptureEvent event, EventPage page) async {
-    final l10n = context.l10n;
-    final sure = await confirmDelete(
-      context,
-      library: _library,
-      kind: DeleteKind.contribution,
-      title: l10n.homeLibraryDeleteTitle(fileLabel(l10n, event, page)),
-      confirm: l10n.eventDelete,
-      cancel: l10n.eventCancel,
-    );
-    if (!sure || !mounted) return;
-    if (_player.holds(page)) await _player.stop();
-    await _run(l10n.eventCouldntDelete, () async {
-      final now = _library.byId(event.id);
-      if (now != null) await _library.deleteContributionPage(now, page);
-    });
-  }
-
   /// What people added, below the capture's own files: each person's on
   /// the owner's capture, or the reader's own; null when there's none.
   Widget? _contributionList(CaptureEvent event) {
@@ -881,7 +855,7 @@ class _EventScreenState extends State<EventScreen> {
               key: ValueKey('delete-contribution-${page.id}'),
               tooltip: l10n.eventDeleteFile,
               icon: const Icon(Icons.delete_outline),
-              onPressed: _busy ? null : () => _deleteContribution(event, page),
+              onPressed: _busy ? null : () => _deleteFile(event, page),
             )
           else
             IconButton(
@@ -1209,6 +1183,11 @@ class _EventScreenState extends State<EventScreen> {
                           : PlayAlongBeside(
                               along: _along,
                               footer: const NotationSheet(),
+                              deletes: !widget.byLink,
+                              canDelete: !_busy,
+                              // As the list's Delete: its player, its run.
+                              letGo: _letGo,
+                              run: _run,
                               child: _textView(event),
                             ),
                     ),
@@ -1290,9 +1269,11 @@ enum _FileAction {
   const _FileAction(this.icon);
   final IconData icon;
 
-  /// Renaming and deleting change the capture; links have no file.
+  /// Renaming and deleting change the capture ([mayDeleteFile]); links
+  /// have no file.
   bool offered(CaptureEvent event, EventPage page) => switch (this) {
-    rename || delete => !event.readOnly,
+    rename => !event.readOnly,
+    delete => mayDeleteFile(event, page),
     download => page.hasFile,
   };
 

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/language.dart';
 import '../library/library.dart';
+import '../library/meta_names.dart';
 
 /// The kinds of delete that ask first, each skipped on its own once the
 /// user ticks **Don't ask again** ([DeleteConfirms]). Deleting the account
@@ -42,7 +43,7 @@ class DeleteConfirms extends ChangeNotifier {
 
   /// The meta file they're kept in. Letters and digits only: on the apps
   /// it names a file, and the store refuses anything else (`checkId`).
-  static const String metaName = 'deleteconfirms';
+  static const String metaName = MetaNames.deleteConfirms;
 
   final Library library;
   final Set<DeleteKind> _skipped = {};

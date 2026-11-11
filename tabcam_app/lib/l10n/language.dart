@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/widgets.dart';
 
 import '../library/library.dart';
+import '../library/meta_names.dart';
 import 'app_localizations.dart';
 
 export 'app_localizations.dart';
@@ -23,7 +24,7 @@ class LanguageSetting extends ChangeNotifier {
   };
 
   /// The meta file it's kept in.
-  static const String metaName = 'language';
+  static const String metaName = MetaNames.language;
 
   String? _code;
 

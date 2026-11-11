@@ -10,6 +10,7 @@ import '../capture/take_priority.dart';
 import '../l10n/language.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
+import '../library/meta_names.dart';
 import 'cognito.dart';
 import 's3.dart';
 import 'profile_service.dart';
@@ -90,7 +91,7 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
   final Duration debounce;
 
   /// The state file's name in the store (beside the events).
-  static const String stateName = 'cloudsync';
+  static const String stateName = MetaNames.cloudSync;
 
   SyncState _state = SyncState.signedOut;
   SyncState get state => _state;

@@ -149,10 +149,64 @@ through the cloud) loads as an image page.
   before events were called scans, so existing libraries still load) and
   `<page id>.<extension>` per page: the image as scanned, or the photo or
   video as picked (copied file to file, never read whole into memory).
-  Cloud sync's state is `cloudsync.json`, beside `scans/`; pages it
+  Cloud sync's state is `cloudsync.json`, beside `scans/`, as is every
+  other meta (below); pages it
   downloads are written to `<page>.part` and renamed when complete. `scan.json` is written beside and renamed
   over, so a crash never leaves half a file. An event whose `scan.json`
   can't be read is skipped, not fatal.
-- **Web**: in memory; events last until the tab is closed.
+- **Web**: in memory; events last until the tab is closed (signed in, a
+  reload brings them down again with [cloud sync](cloud-sync.md)). The
+  device settings alone are kept in the browser's localStorage (below).
 
 Filtered pages are rendered on demand and cached in memory.
+
+### Device settings
+
+The library also keeps small JSON documents of the app's own, its
+**metas** (`readMeta`/`writeMeta`), each by a name listed in
+[lib/library/meta_names.dart](../tabcam_app/lib/library/meta_names.dart)
+(`MetaNames`). The device settings, none of them synced, are:
+
+| Meta | What |
+|---|---|
+| `cam` | Cam's Auto-pass ([Cam](cam.md)) |
+| `playalong` | the play-along player's count-in ([Cam](cam.md)) |
+| `deleteconfirms` | the deletes that no longer ask ([delete confirmations](delete-confirms.md)) |
+| `sidebars` | the sidebars' widths and the dictionary's turn ([dictionary](dictionary.md)) |
+| `place` | where the user was (the apps; the web keeps it in the page's address, [navigation](navigation.md)) |
+| `language` | the language picked ([localization](localization.md)) |
+| `metronome` | the metronome's tempo and time signature ([metronome](metronome.md)) |
+
+Two more metas are cloud state, not settings: `cloudsync` (what has
+synced) and `cloudocr` (what cloud OCR has filled).
+
+- **Android, iOS and the desktop**: each meta is a file, `<name>.json`
+  beside `scans/`, written beside and renamed over. Its name names the
+  file, so it must pass `checkId` (lowercase letters and digits, 32 at
+  most); the store refuses any other, and the web's store refuses the
+  same names, so a bad one fails in tests. (The count-in's meta was
+  `play-along` until 2026-11-11, so it was never kept on the apps.)
+- **Web**: the device settings are kept in the browser's localStorage,
+  under `tabcam.meta.<name>`, so they last reloads and closing the tab;
+  the other metas, like the captures and their files, stay in memory
+  (cloud sync's state describes the captures here, which a reload
+  loses). Where the browser refuses storage (a private window, storage
+  disabled, over quota), they're kept in memory, silently, until the tab
+  is reloaded. Only the user's library keeps them there: a capture opened
+  by its link ([sharing](sharing.md)) has a library of its own
+  (`PlatformEventStore.memoryOnly`) whose settings stay in memory, as on
+  the apps, so changing one there (the count-in, say) neither reads nor
+  changes the device's, and goes with the screen.
+- **Signing out** keeps the device settings, on every platform: they're
+  the device's, not the account's. **Deleting the account** empties
+  `cloudsync` and `cloudocr` ([cloud sync](cloud-sync.md#deleting-the-account))
+  and keeps the settings.
+- Tests (`test/meta_names_test.dart`): every name passes `checkId`, the
+  classes' names are the ones listed, `lib/` names its metas only
+  through `MetaNames`; the apps' store keeps each and a new store reads
+  it back; the web's store keeps the settings, and nothing else, in a
+  fake localStorage that a new store reads back, keeps them in memory
+  when the storage throws, and refuses a bad name; a memory-only store
+  (a link's) neither reads nor writes the device's settings
+  (`test/public_capture_test.dart` checks the link's screen uses one).
+

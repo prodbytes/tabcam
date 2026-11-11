@@ -6,6 +6,7 @@ import 'package:video_player/video_player.dart';
 
 import '../library/capture_event.dart';
 import '../library/library.dart';
+import '../library/meta_names.dart';
 import '../screens/video_page.dart';
 import 'link_frame.dart';
 
@@ -55,7 +56,7 @@ class BackingTrack extends ChangeNotifier {
   LinkFrameController? _link;
 
   /// The device's meta file the player's settings are kept in.
-  static const metaName = 'play-along';
+  static const metaName = MetaNames.playAlong;
 
   Future<void> _loadSettings() async {
     try {

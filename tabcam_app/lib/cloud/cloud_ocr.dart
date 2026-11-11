@@ -7,6 +7,7 @@ import '../auth/auth_service.dart';
 import '../l10n/language.dart';
 import '../library/capture_event.dart';
 import '../library/library.dart';
+import '../library/meta_names.dart';
 import '../recognition/tab_doubts.dart';
 import 'cloud_sync.dart';
 import 'cognito.dart';
@@ -51,7 +52,7 @@ class CloudOcr extends ChangeNotifier {
   final DateTime Function() _now;
 
   /// The state file's name in the store (beside the events).
-  static const String stateName = 'cloudocr';
+  static const String stateName = MetaNames.cloudOcr;
 
   /// Image pages the service reads, as cloud sync uploads them.
   static const Set<String> imageExtensions = {

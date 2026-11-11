@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import '../library/capture_event.dart';
 import '../library/library.dart';
+import '../library/meta_names.dart';
 import 'place_address_stub.dart'
     if (dart.library.js_interop) 'place_address_web.dart'
     as platform;
@@ -150,7 +151,7 @@ class PlaceMemory {
       _of[library] ??= PlaceMemory._(library);
 
   /// The meta file it's kept in.
-  static const String metaName = 'place';
+  static const String metaName = MetaNames.place;
 
   /// The web page's address, which keeps the place there (null in the
   /// apps: the meta file does). Tests set their own.

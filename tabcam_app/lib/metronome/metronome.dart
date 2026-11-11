@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/language.dart';
 import '../library/library.dart';
+import '../library/meta_names.dart';
 import '../screens/sidebar_widths.dart';
 import '../screens/split_handle.dart';
 import 'click_track.dart';
@@ -33,7 +34,7 @@ class MetronomeState extends ChangeNotifier {
   static const defaultSignature = TimeSignature.fourFour;
 
   /// The meta file the tempo and time signature are kept in.
-  static const metaName = 'metronome';
+  static const metaName = MetaNames.metronome;
 
   /// What plays the clicks (a fake in tests).
   MetronomeSound sound = PlatformMetronomeSound();

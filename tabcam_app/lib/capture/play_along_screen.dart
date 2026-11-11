@@ -12,6 +12,7 @@ import '../l10n/language.dart';
 import '../library/capture_event.dart';
 import '../cloud/cloud_ocr.dart';
 import '../library/library.dart';
+import '../library/meta_names.dart';
 import '../metronome/metronome.dart';
 import '../recognition/necklines.dart';
 import '../screens/mono_font.dart';
@@ -197,7 +198,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   static const autoPassTick = Duration(milliseconds: 100);
 
   /// The device's meta file Cam's settings are kept in.
-  static const metaName = 'cam';
+  static const metaName = MetaNames.cam;
 
   @override
   void initState() {
@@ -206,8 +207,19 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     if (widget.gate == null) {
       _start();
       _track.addListener(_trackChanged);
+      widget.library.addListener(_libraryChanged);
       unawaited(_loadSettings());
     }
+  }
+
+  /// The last take, deleted (from the sidebar, say): Play has none.
+  void _libraryChanged() {
+    final take = _take;
+    if (take == null || !mounted) return;
+    final event = widget.library.byId(widget.eventId);
+    final kept =
+        event != null && Library.addedPages(event).any((p) => p.id == take.id);
+    if (!kept) setState(() => _take = null);
   }
 
   Future<void> _loadSettings() async {
@@ -824,6 +836,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     if (widget.gate == null) unawaited(TakeAudio.release());
     _autoPassTimer?.cancel();
     _track.removeListener(_trackChanged);
+    widget.library.removeListener(_libraryChanged);
     unawaited(_track.savePhrases());
     _along.dispose();
     _focus.dispose();
@@ -956,6 +969,10 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       linkFrame: widget.linkFrame,
       pdfView: widget.pdfView,
       onUse: _focus.requestFocus,
+      // Not in a preview, nor while a take records, saves (or is saved
+      // for the next, until it starts) or plays back.
+      deletes: gate == null,
+      canDelete: !_recording && !_saving && !_nextTaking && !playing,
       child: _main(controller, playing),
     );
     return PopScope(
