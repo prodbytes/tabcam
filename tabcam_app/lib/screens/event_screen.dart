@@ -19,6 +19,7 @@ import '../library/library.dart';
 import '../library/capture_event.dart';
 import '../metronome/metronome.dart';
 import '../recognition/auto_reader.dart';
+import '../recognition/file_dividers.dart';
 import '../sound/ding.dart';
 import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
@@ -918,7 +919,13 @@ class _EventScreenState extends State<EventScreen> {
             ),
             subtitle: Text(
               tab.isNotEmpty
-                  ? tab.split('\n').first
+                  // Its first line, past a file's divider.
+                  ? tab
+                            .split('\n')
+                            .where((l) => l.trim().isNotEmpty)
+                            .where((l) => !isFileDivider(l))
+                            .firstOrNull ??
+                        tab.split('\n').first
                   : event.readOnly
                   ? l10n.textViewHiddenNotRead
                   : l10n.textViewHiddenStillRead,

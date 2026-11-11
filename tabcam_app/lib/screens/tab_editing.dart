@@ -3,13 +3,16 @@ import 'dart:math' as math;
 import 'package:flutter/services.dart';
 
 import '../cloud/ocr_api.dart';
+import '../recognition/file_dividers.dart';
 
 /// Edits to a text tab that keep its columns lined up: overtype, + and −
 /// on a fret, ++ and −− moving a note across strings, and auto-correct's
 /// corrections.
 
-/// A string line: dashes are what's between its notes.
-bool isTabLine(String line) => '-'.allMatches(line).length >= 3;
+/// A string line: dashes are what's between its notes. Never a file's
+/// divider ([isFileDivider]), whatever dashes its name has.
+bool isTabLine(String line) =>
+    '-'.allMatches(line).length >= 3 && !isFileDivider(line);
 
 /// What fills the room a note leaves: a dash on a string line, else a space.
 String _filler(String line) => isTabLine(line) ? '-' : ' ';

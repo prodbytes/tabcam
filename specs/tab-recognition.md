@@ -71,8 +71,10 @@ with **Read**. Its log lines start with `TabCam: read tab:`.
 Each page (as scanned, not filtered) is turned upright, scaled to at most
 2400 px and made grayscale. Staff lines are found in that image, and OCR
 runs on the same image (through a temporary file, deleted after), so their
-coordinates agree. Pages with tab are joined with a blank line. With
-nothing found, the Text view says so; with a result, it's saved on the
+coordinates agree. Each photo is read on its own, a file of its own; the
+texts of the files with tab are joined as [several files](#several-files)
+says (one file's alone, two or more each after a divider with its
+name). With nothing found, the Text view says so; with a result, it's saved on the
 event (and shows in the Text view, if it's open).
 
 ## Text tabs
@@ -190,8 +192,11 @@ text tab ([lib/recognition/pdf_reader.dart](../tabcam_app/lib/recognition/pdf_re
    2400 px (the longer side), on white, and read by the device's OCR
    (Android and iOS; the web has none).
 
-The event's pages are read in their order: each run of photos together,
-each PDF on its own; the texts are joined by a blank line. On the web, a
+The event's files are read in their order, each on its own (a photo by
+OCR, a PDF by its text, else OCR), and their texts joined as
+[several files](#several-files) says. A PDF is one file, however many
+pages it has: its pages' tabs are joined by a blank line, with no
+divider between them. On the web, a
 PDF's text is read though photos can't be; a scanned PDF there says that
 reading it needs the Android or iOS app, or TabCam Premium (not "no tab
 found").
@@ -202,6 +207,58 @@ the device (exact, at once); a scanned PDF, or an event with photos, goes
 to the [cloud](cloud-ocr.md#transcription), which renders each PDF page
 and reads it as it reads a photo. "Nothing to read" now asks for
 a scan, a photo or a PDF.
+
+## Several files
+
+When a capture's text tab is read from **two or more files** (photos,
+PDFs) that have tab, each file's part starts with a **divider**, a line
+with the file's name, the first file's too; the parts are joined by a
+blank line, as before ([lib/recognition/file_dividers.dart](../tabcam_app/lib/recognition/file_dividers.dart),
+`joinFileTexts`):
+
+```
+―― sheet-1.pdf ―――――――――――――――――――――――――
+e|---0---3---|
+B|-1---1-----|
+
+―― Page 2 ――――――――――――――――――――――――――――――
+G|-2---2b4r2-|
+D|-----------|
+```
+
+- **The form** (`fileDivider`): two `―` (U+2015, the horizontal bar,
+  which Roboto Mono draws), a space, the name, a space, and `―` to 40
+  characters in all (two at least, after a long name). It's drawn with
+  that bar, not dashes, so nothing reads it as tab.
+- **The name** is the file's in the capture's list (`fileLabel`, moved to
+  [lib/library/file_label.dart](../tabcam_app/lib/library/file_label.dart)):
+  its title if the user named it, else its kind and number ("Page 2",
+  "PDF 1"), in the app's language. On one line (line breaks and control
+  characters become spaces, runs of spaces one), cut to 60 characters
+  ending in `…`; other characters are kept as named. It's text written
+  when the tab is read: renaming the file later doesn't change it (Read
+  again or Rescan writes the new name).
+- **Only with two or more**: a text from one file, or from several of
+  which only one had tab, has no divider. Texts read before this
+  (2026-11-11) have none until read again.
+- **Every path**: the device's reading (each photo now read on its own,
+  each PDF), Read again and Rescan, Premium's PDFs read here, and the
+  [cloud's transcription](cloud-ocr.md#in-the-app), whose per-file
+  results the app joins on the device (the server's untouched).
+- **Read as text, never as tab** (`isFileDivider`): the string lines'
+  test (`isTabLine`, so a name with dashes, `a---b.pdf`, isn't a staff),
+  and with it the editing tools (overtype's backspace, the spacer, the
+  bar, the lines ending together, the new phrase) and Fix's lining up
+  (`reformatTab`); [Cam's necklines](cam.md) (a divider ends a staff like
+  a blank line, heads none and is no neckline of its own, so Cam's and
+  auto-pass's neckline numbers count staves only); the
+  [cloud's auto-correct](autocorrect.md) (its string lines take dashes,
+  bars and notes only: a `―` line is text). The red doubts and
+  auto-correct's corrections are by line in the whole text: the cloud's
+  doubts are moved down past each divider. The file list's text entry
+  (images hidden) shows the first line past the dividers. Copy, sharing,
+  the download (`<title> tab.txt`) and the card's preview keep the text
+  as it is, dividers and all.
 
 ## Troubleshooting log
 
