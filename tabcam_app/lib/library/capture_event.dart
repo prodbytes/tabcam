@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 
+import '../capture/take_log.dart';
 import '../processing/page_filter.dart';
 import '../recognition/tab_doubts.dart';
 import 'json_extra.dart';
@@ -30,6 +31,7 @@ class EventPage {
     this.from,
     this.edit,
     this.take = false,
+    this.takeLog,
     this.extra = const {},
   });
 
@@ -47,7 +49,8 @@ class EventPage {
        url = checkUrl(url),
        title = (title?.trim().isEmpty ?? true) ? null : title!.trim(),
        edit = null,
-       take = false;
+       take = false,
+       takeLog = null;
 
   final String id;
 
@@ -79,6 +82,13 @@ class EventPage {
   /// takes saved before they were marked).
   final bool take;
 
+  /// For a take: what Cam noted while it recorded (the tab's turns, the
+  /// lag), written once when it's saved ([TakeLog]); kept when it's
+  /// renamed, edited, published or cloned (a clone's naming the copy's
+  /// pages). Null for a take saved before takes had one, and for any
+  /// other page.
+  final TakeLog? takeLog;
+
   /// The keys of its JSON this version doesn't know (a newer app's, see
   /// `unknownKeys`), kept wherever the page is rebuilt (renamed, edited,
   /// copied, published, replaced) and written back as they came, after
@@ -97,6 +107,7 @@ class EventPage {
     'from',
     'edit',
     'take',
+    'takeLog',
   };
 
   bool get isVideo => kind == PageKind.video;
@@ -148,6 +159,7 @@ class EventPage {
     from: from,
     edit: edit == null ? this.edit : edit(),
     take: take,
+    takeLog: takeLog,
     extra: extra ?? this.extra,
   );
 
@@ -161,6 +173,7 @@ class EventPage {
     if (from != null) 'from': from,
     if (edit != null) 'edit': edit!.toJson(),
     if (take) 'take': true,
+    if (takeLog != null) 'takeLog': takeLog!.toJson(),
     for (final MapEntry(:key, :value) in extraEntries(extra, knownKeys))
       key: value,
   };
@@ -199,6 +212,7 @@ class EventPage {
       from: from,
       edit: json['kind'] == 'video' ? PageEdit.fromJson(json['edit']) : null,
       take: json['take'] == true,
+      takeLog: TakeLog.fromJson(json['takeLog']),
       extra: extra,
     );
   }

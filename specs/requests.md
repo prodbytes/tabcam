@@ -3022,3 +3022,40 @@ spec.
     video without sound renders with its song (its sound alone fails).
     See
     [video edit](video-edit.md).
+17. **(Editor redesign, step 3) Cam keeps a take log: tab marks, necklines
+    and lag.** Each take Cam saves now keeps a log on its page
+    (`takeLog`, `EventPage.takeLog`, `lib/capture/take_log.dart`, JSON
+    v1), written once as it's saved: the necklines it showed (each text
+    once, so later changes to the capture's tab change nothing) and every
+    turn of the tab as it came (Auto-pass off, tab hidden, back to the
+    same text: all kept; the bands and the take's phrase passes are
+    worked out as before); whether the tab is in its picture (`burned`:
+    true when drawn in by the web recorder or burned in on the phones;
+    false with no tab, the web recorder's fallback to the camera alone,
+    or a failed burn); the lag between the file's start and the take's
+    clock (`lagMs`, with `lagFrom` and the raw readings `lagRaw`: on the
+    web the MediaRecorder's `start` event, which `start()` now waits for,
+    at most a second; on the phones the middle of where the start call's
+    and the stop call's bounds agree, the file's length read from the
+    MP4's index, `lib/capture/mp4_length.dart`); and an empty `song`, for
+    a later step. It syncs, publishes and goes into contributions with
+    the page; a clone's names the copy's songs; replacing the page's file
+    drops it. The phones' burn now places each band at its time in the
+    file (the turn's time plus the lag), so the burned tab, Play and the
+    editor's later tab layer agree. **Play** in Cam now plays the
+    capture's last take (also after reopening Cam), its necklines turning
+    as its log says, with the lag; a neckline the tab no longer has shows
+    as it was; on a tab with the same neckline twice, the take just
+    recorded turns to the copy that showed, as before (Cam keeps its
+    lines), and an older one to the copy nearest the one before. Nothing
+    else visible changes. Tests
+    (`test/take_log_test.dart`, `test/play_along_test.dart`,
+    `test/keep_unknown_keys_test.dart`, in Chrome
+    `test/web_take_recorder_test.dart`): unfiltered turns, de-duplicated
+    necklines, JSON round trips and lenient reading, the lag's midpoint
+    and its fallback, a made-up MP4's length, the log saved burned, not
+    burned, with no tab and from the web recorder, kept through rename,
+    restart and clone, an older take's necklines on Play after Cam
+    reopens, and a tab with a neckline twice played back on the right
+    copy. See [Cam](cam.md#what-a-take-keeps),
+    [library](library.md) and [video edit](video-edit.md).

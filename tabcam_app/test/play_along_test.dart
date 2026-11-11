@@ -16,6 +16,8 @@ import 'package:tabcam_app/capture/media.dart';
 import 'package:tabcam_app/capture/backing_track.dart';
 import 'package:tabcam_app/capture/play_along_screen.dart';
 import 'package:tabcam_app/capture/play_along_sidebar.dart';
+import 'package:tabcam_app/capture/auto_pass.dart';
+import 'package:tabcam_app/capture/take_log.dart';
 import 'package:tabcam_app/capture/take_overlay.dart';
 import 'package:tabcam_app/capture/take_priority.dart';
 import 'package:tabcam_app/capture/take_sound.dart';
@@ -91,6 +93,12 @@ class FakeTakeRecorder implements TakeRecorder {
     if (startError case final error?) throw error;
     started++;
   }
+
+  /// How long it had recorded when the take's clock started, in ms.
+  double? sinceStart = 120;
+
+  @override
+  double? msSinceStart() => started > 0 ? sinceStart : null;
 
   @override
   Future<XFile> stop() async => XFile.fromData(
@@ -355,6 +363,28 @@ void main() {
       () async => saved = await library.original(library.byId(id)!, pages.last),
     );
     expect(saved, [7, 7]);
+    // Its log: the tab in its picture, the necklines it showed, each turn
+    // (the burn's bands at their times in the file), and the lag, told
+    // from the camera's start and stop.
+    final log = pages.last.takeLog!;
+    expect(log.burned, isTrue);
+    expect(log.tab!.lines, [
+      '[Riff]\ne|--0--3--|\nB|--1--1--|',
+      'e|--5--7--|\nB|--5--8--|',
+    ]);
+    expect([for (final (_, line) in log.tab!.marks) line], [0, 1]);
+    expect(log.tab!.marks.first.$1, 0);
+    expect(log.tab!.fileMarks(log.lagMs).last.$1, bands.last.$1.start);
+    expect(log.lagFrom, LagFrom.bounds);
+    expect(log.lagRaw.keys, [
+      'startCallMs',
+      'startReturnMs',
+      'stopCallMs',
+      'stopReturnMs',
+    ]);
+    expect(log.lagRaw['startCallMs'], lessThanOrEqualTo(0));
+    expect(log.lagMs, greaterThanOrEqualTo(0));
+    expect(log.song, isEmpty);
 
     // A second take is Take 2.
     await tester.tap(find.byTooltip('Rec (1)'));
@@ -372,6 +402,224 @@ void main() {
     await frames(tester);
     expect(video.playing, isEmpty);
     expect(find.byKey(const Key('preview')), findsOneWidget);
+  });
+
+  testWidgets('a take\'s log keeps every turn of the tab as it came (with '
+      'Auto-pass off, the tab hidden), the phrase passes as before; '
+      'the tab not burned in, the log says so', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    var burns = 0;
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          burn: (take, _) async => ++burns == 1 ? take : null,
+        ),
+      ),
+    );
+    await frames(tester);
+    await tester.tap(find.byTooltip('Rec (1)'));
+    await frames(tester);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+    await tester.pump();
+    // Hidden, it still turns, and the turn is noted.
+    await tester.tap(find.byKey(const Key('cam-tab')));
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+    await tester.pump();
+    // Auto-pass off: a turn, but no pass of the take's.
+    await tester.tap(find.byKey(const Key('cam-auto-pass')));
+    await frames(tester);
+    await tester.sendKeyEvent(LogicalKeyboardKey.backspace);
+    await tester.pump();
+    await tester.tap(_camStop);
+    await until(tester, () => recReady(tester));
+
+    var take = library.byId(id)!.pages.last;
+    final log = take.takeLog!;
+    expect(log.burned, isTrue);
+    expect(log.tab!.lines, hasLength(3));
+    expect([for (final (_, line) in log.tab!.marks) line], [0, 1, 2, 1]);
+    // The phrase passes leave the turn made with Auto-pass off out.
+    final marks = [
+      for (final (ms, line) in log.tab!.marks)
+        (Duration(milliseconds: ms), line),
+    ];
+    List<(PassDirection, int, int)> passes(PhraseTimes times) => [
+      for (final p in times.passes) (p.direction, p.line, p.count),
+    ];
+    final saved = passes(library.phrasesOf(id, take.id));
+    expect(saved, passes(takePhrases(marks, skip: {3})));
+    expect(saved, isNot(passes(takePhrases(marks))));
+    expect(saved, isNotEmpty);
+
+    // Not burned in this time: the log says the picture has no tab.
+    await tester.tap(find.byTooltip('Rec (1)'));
+    await frames(tester);
+    await tester.tap(_camStop);
+    await until(tester, () => recReady(tester));
+    take = library.byId(id)!.pages.last;
+    expect(take.title, 'Take 2');
+    expect(take.takeLog!.burned, isFalse);
+    // Only the neckline it showed: the second.
+    expect(take.takeLog!.tab!.lines, ['e|--5--7--|\nB|--5--8--|']);
+    expect(take.takeLog!.tab!.marks, [(0, 0)]);
+  });
+
+  testWidgets('with no tab, a take\'s log has none, and nothing is burned', (
+    tester,
+  ) async {
+    final (library, id) = await capture(tester);
+    var burns = 0;
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          burn: (take, _) async {
+            burns++;
+            return take;
+          },
+        ),
+      ),
+    );
+    await frames(tester);
+    await tester.tap(find.byTooltip('Rec (1)'));
+    await frames(tester);
+    await tester.tap(_camStop);
+    await until(tester, () => recReady(tester));
+    final log = library.byId(id)!.pages.last.takeLog!;
+    expect(burns, 0);
+    expect(log.tab, isNull);
+    expect(log.burned, isFalse);
+  });
+
+  testWidgets('reopened, Cam plays the capture\'s last take, its necklines '
+      'turning as its log says (lag and all), even those its tab has no '
+      'more', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    // An older take, recorded when the tab had another first line.
+    const old = 'e|--3--5--|\nB|--3--5--|';
+    final log = TakeLog(
+      burned: false,
+      lagMs: 200,
+      lagFrom: LagFrom.bounds,
+      tab: TakeTab.of(
+        [old, 'e|--12-10-|\nB|--13-12-|'],
+        [(Duration.zero, 0), (const Duration(seconds: 5), 1)],
+      ),
+    );
+    await tester.runAsync(() async {
+      await library.addMedia(
+        library.byId(id)!,
+        [
+          Media(
+            XFile.fromData(Uint8List.fromList([5, 5]), name: 'take.mp4'),
+            PageKind.video,
+            'mp4',
+          ),
+        ],
+        take: true,
+        takeLog: log,
+      );
+    });
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+        ),
+      ),
+    );
+    await frames(tester);
+    expect(find.text('1 / 3'), findsOneWidget);
+
+    video.position = const Duration(seconds: 1);
+    await tester.tap(find.byTooltip('Play'));
+    await frames(tester);
+    expect(video.playing, hasLength(1));
+    // Its own first line, no longer the tab's: shown as it was.
+    expect(shown(tester), old);
+    expect(find.text('1 / 3'), findsNothing);
+    // 5 s on the take's clock is 5.2 s in the file.
+    video.position = const Duration(milliseconds: 5100);
+    await frames(tester);
+    expect(shown(tester), old);
+    video.position = const Duration(milliseconds: 5300);
+    await frames(tester);
+    expect(shown(tester), 'e|--12-10-|\nB|--13-12-|');
+    expect(find.text('3 / 3'), findsOneWidget);
+
+    await tester.tap(_camStop);
+    await frames(tester);
+    expect(video.playing, isEmpty);
+    expect(find.text('3 / 3'), findsOneWidget);
+  });
+
+  testWidgets('a tab with a neckline twice: the take just recorded plays '
+      'back on the copy that showed, and leaves Cam there', (tester) async {
+    // The third staff the same as the second (the log keeps its text once).
+    const twice = '''
+e|--0--3--|
+B|--1--1--|
+
+e|--5--7--|
+B|--5--8--|
+
+e|--5--7--|
+B|--5--8--|
+''';
+    final (library, id) = await capture(tester, tab: twice);
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          burn: (take, _) async => take,
+        ),
+      ),
+    );
+    await frames(tester);
+    await tester.tap(find.byTooltip('Rec (1)'));
+    await frames(tester);
+    await tester.tap(find.byTooltip('Next line'));
+    await tester.pump();
+    await tester.tap(find.byTooltip('Next line'));
+    await tester.pump();
+    expect(find.text('3 / 3'), findsOneWidget);
+    await tester.tap(_camStop);
+    await until(tester, () => recReady(tester));
+    final log = library.byId(id)!.pages.last.takeLog!;
+    expect(log.tab!.lines, hasLength(2));
+    expect([for (final (_, line) in log.tab!.marks) line], [0, 1, 1]);
+
+    // Back to the first line, then Play from the take's end.
+    await tester.tap(find.byTooltip('Previous line'));
+    await tester.pump();
+    await tester.tap(find.byTooltip('Previous line'));
+    await tester.pump();
+    expect(find.text('1 / 3'), findsOneWidget);
+    video.position = const Duration(minutes: 1);
+    await tester.tap(find.byTooltip('Play'));
+    await frames(tester);
+    expect(video.playing, hasLength(1));
+    expect(find.text('3 / 3'), findsOneWidget);
+    await tester.tap(_camStop);
+    await frames(tester);
+    expect(find.text('3 / 3'), findsOneWidget);
   });
 
   testWidgets('recording comes first: on iOS the take\'s sound is set up '
@@ -972,6 +1220,30 @@ void main() {
       await tester.tap(_camStop);
       await until(tester, () => recReady(tester));
       expect(library.byId(id)!.pages.last.title, 'Take 1');
+      // No tab in its picture, its log says.
+      final log = library.byId(id)!.pages.last.takeLog!;
+      expect(log.burned, isFalse);
+      expect(log.tab!.lines, hasLength(1));
+      expect(log.lagFrom, LagFrom.bounds);
+    });
+
+    testWidgets('a take recorded with the tab drawn in: its log says so, '
+        'its lag the recorder\'s', (tester) async {
+      final recorder = FakeTakeRecorder()..sinceStart = 86.6;
+      final (library, id) = await open(tester, recorder);
+      await tester.tap(find.byTooltip('Rec (1)'));
+      await frames(tester);
+      expect(recorder.started, 1);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+      await tester.pump();
+      await tester.tap(_camStop);
+      await until(tester, () => recReady(tester));
+      final log = library.byId(id)!.pages.last.takeLog!;
+      expect(log.burned, isTrue);
+      expect(log.lagMs, 87);
+      expect(log.lagFrom, LagFrom.recorder);
+      expect(log.lagRaw['recorderStartMs'], -87);
+      expect([for (final (_, line) in log.tab!.marks) line], [0, 1]);
     });
 
     testWidgets('the recorder failing and the microphone not lent, no take', (

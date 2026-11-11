@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../capture/media.dart';
+import '../capture/take_log.dart';
 import '../processing/page_crop.dart';
 import '../processing/page_filter.dart';
 import 'capture_event.dart';
@@ -136,6 +137,7 @@ class Library extends ChangeNotifier {
         extension: page.extension,
         edit: page.edit?.copyWith(trackId: ids[page.edit?.trackId]),
         take: page.take,
+        takeLog: page.takeLog?.withPages(ids),
         extra: page.extra,
       );
       await _arrival(event.id, page);
@@ -179,17 +181,24 @@ class Library extends ChangeNotifier {
   /// otherwise, and videos always, they're kept as picked. On a capture the
   /// user [CaptureEvent.contributes] to, they're added to their own
   /// contribution instead ([addedPages] says which they are). [take]: Cam's
-  /// takes, marked so ([EventPage.take]).
+  /// takes, marked so ([EventPage.take]), each with [takeLog] if given
+  /// ([EventPage.takeLog]: Cam adds one take at a time).
   Future<CaptureEvent> addMedia(
     CaptureEvent event,
     List<Media> media, {
     bool take = false,
+    TakeLog? takeLog,
   }) async {
     final added = <EventPage>[];
     for (final m in media) {
       final page = m.kind == PageKind.image
           ? await _addPhoto(event, m)
-          : await _addFile(event, m, take: take);
+          : await _addFile(
+              event,
+              m,
+              take: take,
+              takeLog: take ? takeLog : null,
+            );
       added.add(page);
     }
     return _append(event, added);
@@ -358,6 +367,7 @@ class Library extends ChangeNotifier {
         title: page.title,
         from: page.id,
         take: page.take,
+        takeLog: page.takeLog,
         extra: page.extra,
       );
       await _arrival(event.id, page);
@@ -394,6 +404,7 @@ class Library extends ChangeNotifier {
     CaptureEvent event,
     Media m, {
     bool take = false,
+    TakeLog? takeLog,
   }) async {
     final page = EventPage(
       id: newId(),
@@ -402,6 +413,7 @@ class Library extends ChangeNotifier {
       // A file is named after its file (photos' names are the picker's).
       title: m.kind == PageKind.image ? null : nameOfFile(m.file.name),
       take: take,
+      takeLog: takeLog,
     );
     await _store.putPageFile(event.id, page, m.file);
     return page;
@@ -548,7 +560,9 @@ class Library extends ChangeNotifier {
   /// (a new ID, as [rotatePage] makes: page files never change once
   /// written) of [media]'s kind and extension, with [page]'s name,
   /// filter, take mark and the keys a newer app wrote
-  /// ([EventPage.extra]); [page]'s own file goes.
+  /// ([EventPage.extra]); [page]'s own file goes. Not its take log
+  /// ([EventPage.takeLog]): that tells of the file recorded, not of
+  /// [media].
   Future<CaptureEvent> replacePage(
     CaptureEvent event,
     EventPage page,

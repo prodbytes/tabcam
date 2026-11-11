@@ -252,7 +252,10 @@ the song again). Layers drawn over the video (the tab, a title, a
 watermark) and fades in and out (by default 3 s, set by the user: the
 picture from and to black, both lanes' levels ramping with it) come in
 later steps of the editor's redesign, as more of the plan; for now a
-plan has none, and each lane's level is one level throughout.
+plan has none, and each lane's level is one level throughout. The tab
+layer will come from the take's [log](cam.md#what-a-take-keeps), which
+Cam keeps with each take it saves (the tab's turns, the necklines shown
+and the lag), unused by the editor for now.
 
 **How it's rendered**, on the device
 ([platforms](platforms.md)): each platform gets the plan and only
