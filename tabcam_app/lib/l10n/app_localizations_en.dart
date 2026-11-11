@@ -1972,13 +1972,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditDownloadMore => 'More downloads';
 
   @override
-  String get videoEditDownloadVideo => 'The video';
+  String videoEditDownloadVideo(String format) {
+    return 'The video ($format)';
+  }
 
   @override
-  String get videoEditDownloadSilent => 'The video without sound';
+  String videoEditDownloadSilent(String format) {
+    return 'The video without sound ($format)';
+  }
 
   @override
-  String get videoEditDownloadSound => 'The sound only';
+  String videoEditDownloadSound(String format) {
+    return 'The sound only ($format)';
+  }
 
   @override
   String get videoEditDownloading => 'Making the file…';

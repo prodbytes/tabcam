@@ -2731,7 +2731,48 @@ spec.
     `test/meta_names_test.dart` and `test/public_capture_test.dart`). See
     [library](library.md#device-settings), [sharing](sharing.md),
     [delete confirmations](delete-confirms.md).
-11. **(Editor redesign, step 1 of 11) Captures keep fields a newer app
+11. **let the user download as MP3 only the audio, or MP4 the entire
+    video** — the user then chose the sound only as **M4A (AAC)** rather
+    than MP3 (no MP3 encoder is bundled), in the video editor's Download
+    menu only. Android (Media3 Transformer) and iOS (AVFoundation)
+    already made MP4 and, for the sound only, M4A (`audio/mp4`): checked,
+    unchanged. The web now makes them too: the video is recorded as MP4
+    (`video/mp4;codecs=avc1.42E01E,mp4a.40.2`, then simpler MP4 types)
+    where the browser can (Chrome, Edge, Safari), WebM only where it
+    can't (Firefox), named by what was recorded; Chrome's MP4 says its
+    length and seeks. The sound only, still mixed offline, is encoded as
+    AAC by WebCodecs' AudioEncoder and written into an M4A by a small
+    muxer in Dart (`m4a.dart`, no library added), its edit list cutting
+    the encoder's delay (measured once) so it's as long as the kept
+    part; without the AudioEncoder, MediaRecorder records it as AAC as
+    it plays (an older Safari); a WAV only where AAC can't be made
+    (Firefox). Safari 26's AudioEncoder describes its AAC as a whole ES
+    descriptor (Apple's magic cookie), from which the M4A takes the
+    AudioSpecificConfig (as it was, the file played nowhere), and its
+    delay is taken as Apple's 2,112 samples, not measured; every M4A
+    also has a `roll` sample group, as Apple's MP4s do, so Safari and
+    AVFoundation cut only the edit list's delay (checked in Chrome,
+    WebKit, Firefox, AVFoundation, `afconvert` and FFmpeg). Recording
+    the sound as it plays starts its AudioContext at Download's tap,
+    before the slow decoding, and falls back to a WAV if the browser
+    still won't play it. The track's volume goes into every output. The menu says
+    each format: "The video (MP4)", "The video without sound (MP4)",
+    "The sound only (M4A)" (Spanish and Portuguese too), "(WebM)" and
+    "(WAV)" where those are what the browser makes. A video the edit
+    doesn't change downloads as it is when it's already MPEG-4 (`.mp4`,
+    `.m4v`; in Firefox too) or in the format made here (a WebM where
+    WebM is recorded); made again otherwise (e.g. a WebM take in
+    Chrome). New tests: the recorder types' order and fallback, files
+    named by format, the M4A's boxes (`ftyp` M4A,
+    `moov`/`trak`/`mp4a`/`esds`, sample tables, edit list, `roll`
+    group, `mdat`), the AudioSpecificConfig taken from Safari's ES
+    descriptor, the menu's labels and file names, which unchanged
+    videos are kept as they are; the browser test (Chrome) checks the
+    video is an MP4 that says its length, the sound only an M4A as long
+    as the kept part with the track at its volume, the recorder and WAV
+    ways, and a WAV when the recorder's sound won't play. See
+    [video edit](video-edit.md).
+12. **(Editor redesign, step 1 of 11) Captures keep fields a newer app
     wrote.** The user asked for a new video editor: the take's own sound
     and the song played along with on two lanes, mixed, each with its
     volume and mute; the tab shown as a layer over the video instead of

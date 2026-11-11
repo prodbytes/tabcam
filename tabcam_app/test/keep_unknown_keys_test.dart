@@ -308,17 +308,29 @@ void main() {
               edit: () => video.edit!.withTrackId(event.pages.first.id),
               extra: {'takeLog': _takeLog, 'page': event.pages.first.id},
             ),
+            EventPage.link(
+              id: 'l1',
+              url: Uri.parse('https://example.com/lesson'),
+              title: 'Lesson',
+              extra: const {'future': 'link'},
+            ),
           ],
         ),
       );
       final copy = await library.clone(library.byId(event.id)!);
       expect(copy.pages.first.extra, {'future': 1});
-      expect(copy.pages.last.extra, {
+      expect(copy.pages[1].extra, {
         'takeLog': _takeLog,
         'page': event.pages.first.id,
       });
-      expect(copy.pages.last.edit!.trackId, copy.pages.first.id);
-      expect(copy.pages.last.edit!.extra, _editV2);
+      expect(copy.pages[1].edit!.trackId, copy.pages.first.id);
+      expect(copy.pages[1].edit!.extra, _editV2);
+      final link = copy.pages.last;
+      expect(link.isLink, isTrue);
+      expect(link.id, isNot('l1'));
+      expect(link.url, Uri.parse('https://example.com/lesson'));
+      expect(link.title, 'Lesson');
+      expect(link.extra, {'future': 'link'});
     });
 
     test('when a contribution\'s page is published', () async {
