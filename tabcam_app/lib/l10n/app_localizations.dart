@@ -1030,6 +1030,18 @@ abstract class AppLocalizations {
   /// **'Stop'**
   String get camStop;
 
+  /// Cam: the Rec button's tooltip; the 1 key does it too
+  ///
+  /// In en, this message translates to:
+  /// **'Rec (1)'**
+  String get camRecKey;
+
+  /// Cam: the Stop button's tooltip while recording; the 1 key does it too
+  ///
+  /// In en, this message translates to:
+  /// **'Stop (1)'**
+  String get camStopKey;
+
   /// Cam: play the last take back
   ///
   /// In en, this message translates to:
@@ -1137,6 +1149,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Play along'**
   String get camAlongTitle;
+
+  /// Cam sidebar heading over Cam's takes, listed last; tapping one plays it along
+  ///
+  /// In en, this message translates to:
+  /// **'Takes'**
+  String get camAlongTakes;
 
   /// Cam sidebar heading over the capture's PDFs; tapping one shows it beside the camera
   ///

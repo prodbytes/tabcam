@@ -2447,7 +2447,45 @@ spec.
 
 ## 2026-11-11
 
-4. **When a capture is open in a view, and the browser refreshes, keep
+6. **In the cam screen make the "1" key be a shortcut to toggle
+   recording on/off.** In Cam, **1** (on the top row or the keypad)
+   now presses Rec / Stop as the button does: it starts a take (and the
+   sidebar's song with it) or stops it and saves the take, with the
+   play-along sidebar showing or not, and no longer turns the tab. It
+   acts on the key down only, so holding it doesn't start and stop a
+   take; while the button is dead (a take saving or playing back) it
+   does nothing; with Ctrl, ⌘ or Alt it's left to the other shortcut
+   and turns the tab as before. The button's tooltip now names the key
+   ("Rec (1)", "Stop (1)"), in English, Spanish and Portuguese, like
+   the sidebar's "Play (space)". New tests: 1 starts a take and 1 again
+   saves it, the keypad's 1 too, its repeats don't toggle, it doesn't
+   turn the tab while other keys still do, Ctrl + 1 does, it's dead
+   while a take plays back, and with the sidebar showing it starts the
+   song with the take. See [Cam](cam.md#rec-key).
+
+7. **take the takes be the last thing on the sidebar.** The play-along
+   sidebar (Cam, the Text view, the file screen) now lists Cam's takes
+   last, after the text tab, the files to play along and the PDFs or
+   pages to follow, under a heading of their own, **Takes** (Spanish
+   **Tomas**, Portuguese **Takes**), in the capture's order (Take 1
+   first). Cam now marks the takes it saves (`take` on the page, kept
+   when it's renamed, edited, cloned or published, and synced with it);
+   takes saved before are recognised by their name as Cam gives it, in
+   any of the app's languages ("Take 3", "Toma 3"), on videos. The file
+   loaded first in the sidebar's player is still a song to play along
+   with, not a take, unless the capture has nothing but takes. New
+   tests: with a song, a link, a video, a PDF and takes (marked, renamed
+   and an old one), the rows run text, songs, PDF, then the takes under
+   Takes, and a song is loaded first; with only takes, the first loads;
+   which pages count as takes and that the mark survives renaming and
+   JSON; on a recording's file screen, the take comes after the pages
+   and PDFs to follow. See [Cam](cam.md#playing-along-with-a-file) and
+   the [file screen](event-screen.md#file-screen).
+   Then, asked to **start them in reverse order, so that the most recent
+   one is the first**: the takes are listed most recent first, and with
+   only takes to play along, the most recent is the one loaded.
+
+8. **When a capture is open in a view, and the browser refreshes, keep
    the same view and capture as it was.** The web app already meant to
    come back where the user was, but kept the place in the library's
    meta file, which on the web is only in memory: a reload lost it (and
@@ -2471,3 +2509,13 @@ spec.
    Clone write the address, a link wins over it, and signed in it waits
    for the first pass, past a failed one. See
    [navigation](navigation.md#coming-back-where-the-user-was).
+   Then, from review: the browser's Back, which shows the first history
+   entry's address again (Flutter's history handling) before closing
+   what's open, no longer brings back a capture's link and its key, nor
+   an older place over a screen the place doesn't follow (Cam): the
+   place is written over it at once, and a link stays in the address
+   only while it's the one the page opened at and no capture has
+   opened. Rotate, which gives the file a new ID, keeps it the place's
+   file. A capture a reload is still waiting for no longer opens over
+   where the user has moved on to (another tab, a new capture, a screen
+   opened over Home); the place forgets it. New tests for each.

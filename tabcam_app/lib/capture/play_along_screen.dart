@@ -444,6 +444,12 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     }
     final key = event.logicalKey;
     if (_modifiers.contains(key)) return KeyEventResult.ignored;
+    // 1: Rec / Stop, as the button (when it can be pressed), sidebar or
+    // not. A key down: held, it doesn't start and stop again.
+    if (_isRecKey(event)) {
+      if (event is KeyDownEvent && _canRec) unawaited(_rec());
+      return KeyEventResult.handled;
+    }
     // Space: the backing track's play / pause, while its sidebar shows.
     if (key == LogicalKeyboardKey.space && _along.open && _track.page != null) {
       if (event is KeyDownEvent) unawaited(_track.toggle());
@@ -463,6 +469,27 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     unawaited(_pass(_back.contains(key) ? -1 : 1));
     return KeyEventResult.handled;
   }
+
+  /// The keys that press Rec / Stop: 1, on the top row or the keypad.
+  static final _recKeys = {
+    LogicalKeyboardKey.digit1,
+    LogicalKeyboardKey.numpad1,
+  };
+
+  /// Whether [event] is 1 pressed alone (with Ctrl, ⌘ or Alt it's another
+  /// shortcut's, such as the browser's first tab, and turns the tab as
+  /// any key).
+  static bool _isRecKey(KeyEvent event) {
+    final keys = HardwareKeyboard.instance;
+    return _recKeys.contains(event.logicalKey) &&
+        !keys.isControlPressed &&
+        !keys.isMetaPressed &&
+        !keys.isAltPressed;
+  }
+
+  /// Whether Rec / Stop can be pressed: a camera, no take being saved,
+  /// none playing back.
+  bool get _canRec => _controller != null && !_saving && _player == null;
 
   /// How far ← and → move the backing track.
   static final _skips = {
@@ -555,7 +582,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       while (names.contains(l10n.camTake(n))) {
         n++;
       }
-      final updated = await library.addMedia(event, [media]);
+      final updated = await library.addMedia(event, [media], take: true);
       final page = Library.addedPages(updated).last;
       final name = l10n.camTake(n);
       await library.renamePage(event.id, page.id, name);
@@ -921,9 +948,8 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
                   icon: _recording ? Icons.stop : Icons.fiber_manual_record,
                   color: Colors.red,
                   label: _recording ? l10n.camStop : l10n.camRec,
-                  onPressed: controller == null || _saving || playing
-                      ? null
-                      : _rec,
+                  tooltip: _recording ? l10n.camStopKey : l10n.camRecKey,
+                  onPressed: _canRec ? _rec : null,
                 ),
                 _Control(
                   key: const Key('cam-play'),

@@ -27,6 +27,7 @@ class EventPage {
     this.title,
     this.from,
     this.edit,
+    this.take = false,
   });
 
   /// A link page to [url] (checked with [checkUrl]), with an optional
@@ -37,7 +38,8 @@ class EventPage {
       extension = 'url',
       url = checkUrl(url),
       title = (title?.trim().isEmpty ?? true) ? null : title!.trim(),
-      edit = null;
+      edit = null,
+      take = false;
 
   final String id;
 
@@ -63,6 +65,11 @@ class EventPage {
   /// A video's edit (trim, sound), played as it says; its file stays as it
   /// is. Null: none.
   final PageEdit? edit;
+
+  /// Whether it's one of Cam's takes, as Cam marks the takes it saves:
+  /// kept when it's renamed, edited, copied or published (see `isTake` for
+  /// takes saved before they were marked).
+  final bool take;
 
   bool get isVideo => kind == PageKind.video;
   bool get isImage => kind == PageKind.image;
@@ -111,6 +118,7 @@ class EventPage {
     title: title == null ? this.title : title(),
     from: from,
     edit: edit == null ? this.edit : edit(),
+    take: take,
   );
 
   Map<String, Object?> toJson() => {
@@ -122,6 +130,7 @@ class EventPage {
     if (title != null) 'title': title,
     if (from != null) 'from': from,
     if (edit != null) 'edit': edit!.toJson(),
+    if (take) 'take': true,
   };
 
   factory EventPage.fromJson(Map<String, Object?> json) {
@@ -155,6 +164,7 @@ class EventPage {
       title: json['title'] as String?,
       from: from,
       edit: json['kind'] == 'video' ? PageEdit.fromJson(json['edit']) : null,
+      take: json['take'] == true,
     );
   }
 }
