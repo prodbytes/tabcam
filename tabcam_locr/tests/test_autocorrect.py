@@ -33,6 +33,17 @@ def test_parse_numbers_the_notes_of_string_lines_only():
     assert 'n5@11 "8"' in text and "line 8 (text): la la la" in text
 
 
+def test_parse_reads_a_file_divider_as_text_whatever_its_name():
+    # The app's divider before each file's part of a text read from
+    # several files (lib/recognition/file_dividers.dart): text, even when
+    # the file's name has dashes and notes enough for a string line.
+    divider = "―― 1-2---3-5.pdf ――――――――――――――――――――――――"
+    r = parse(divider + "\n" + RIFF)
+    assert r.tab_lines == {2, 3, 4, 5, 6, 7}
+    assert [(n.line, n.text) for n in r.notes.values()][0] == (2, "0")
+    assert "line 0 (text): " + divider in describe(r)
+
+
 def test_check_keeps_corrections_that_fit_the_reading():
     r = parse(RIFF)
     out = check(r, [

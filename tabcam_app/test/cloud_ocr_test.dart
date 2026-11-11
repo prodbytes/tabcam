@@ -16,6 +16,7 @@ import 'package:tabcam_app/library/capture_event.dart';
 import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
 import 'package:tabcam_app/main.dart';
+import 'package:tabcam_app/recognition/file_dividers.dart';
 import 'package:tabcam_app/recognition/tab_doubts.dart';
 import 'package:tabcam_app/screens/account_panel.dart';
 import 'package:tabcam_app/screens/event_screen.dart';
@@ -254,9 +255,11 @@ void main() {
 
       s.result(event, event.pages[1], 'ok', _riffB);
       await s.ocr.collect();
+      // Joined on the device, each file's text after its divider.
       expect(
         s.library.byId(event.id)!.tabText,
-        '${_riffA.trim()}\n\n${_riffB.trim()}\n',
+        '${fileDivider('Page 1')}\n${_riffA.trim()}\n\n'
+        '${fileDivider('Page 2')}\n${_riffB.trim()}\n',
       );
       s.dispose();
     },
@@ -291,12 +294,14 @@ void main() {
       );
       await s.ocr.collect();
       final filled = s.library.byId(event.id)!;
-      // The second page's lines come after the first's two and a blank line.
+      // Each page's lines after its divider: the first's from line 1, the
+      // second's after the first's two, a blank line and its divider.
       expect(filled.tabTextDoubts, const [
-        TabDoubt(0, 5, '0'),
-        TabDoubt(3, 7, '2b4r2'),
+        TabDoubt(1, 5, '0'),
+        TabDoubt(5, 7, '2b4r2'),
       ]);
-      expect(filled.tabText!.split('\n')[3].substring(7, 12), '2b4r2');
+      expect(filled.tabText!.split('\n')[1].substring(5, 6), '0');
+      expect(filled.tabText!.split('\n')[5].substring(7, 12), '2b4r2');
       s.dispose();
     },
   );
@@ -358,6 +363,42 @@ void main() {
     expect(s.library.byId(event.id)!.tabTextCorrect, isTrue);
     s.dispose();
   });
+
+  test(
+    'Premium: two PDFs\' texts, read here, each after its divider',
+    () async {
+      final s = _Setup(premium: true);
+      await s.start();
+      await s.signIn();
+      var n = 0;
+      final reader = AutoReader(
+        library: s.library,
+        auth: s.auth,
+        ocr: () => s.ocr,
+        supported: false,
+        read: (_) async => fail('no OCR here'),
+        readPdf: (pdf, ocr) async => ++n == 1 ? 'e|--0--3--|' : 'B|--1--1--|',
+      )..start();
+      Media pdf(String name) => Media(
+        XFile.fromData(Uint8List.fromList([1]), name: name),
+        PageKind.pdf,
+        'pdf',
+      );
+      final event = await s.library.addMedia(await s.library.create(const []), [
+        pdf('a.pdf'),
+        pdf('b.pdf'),
+      ]);
+      await _until(() => s.library.byId(event.id)!.tabText != null);
+      expect(
+        s.library.byId(event.id)!.tabText,
+        '${fileDivider('PDF 1')}\ne|--0--3--|\n\n'
+        '${fileDivider('PDF 2')}\nB|--1--1--|',
+      );
+      expect(s.api.transcribed, isEmpty);
+      reader.dispose();
+      s.dispose();
+    },
+  );
 
   test(
     'Premium: a PDF\'s text is read here; a scanned PDF goes to the cloud',
@@ -483,7 +524,8 @@ void main() {
     await _until(() => reader.stateOf(event.id) == null);
     expect(
       s.library.byId(event.id)!.tabText,
-      '${_riffB.trim()}\n\n${_riffB.trim()}\n',
+      '${fileDivider('Page 1')}\n${_riffB.trim()}\n\n'
+      '${fileDivider('Page 2')}\n${_riffB.trim()}\n',
     );
     reader.dispose();
     s.dispose();

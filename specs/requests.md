@@ -3059,3 +3059,34 @@ spec.
     reopens, and a tab with a neckline twice played back on the right
     copy. See [Cam](cam.md#what-a-take-keeps),
     [library](library.md) and [video edit](video-edit.md).
+18. **"parsing text from multiple files makes sure to add dividing line in
+    the text indicating the file switch. Preferably with the file name, in
+    the beginning."** A text tab read from two or more files (photos,
+    PDFs) with tab now has a divider at the start of each file's part,
+    the first's too: `―― <name> ―――…` (U+2015 bars, 40 characters in
+    all), the name the file's in the capture's list (its title, else
+    "Page 2", "PDF 1"), on one line and cut to 60 characters with `…`
+    (`lib/recognition/file_dividers.dart`; `fileLabel` moved to
+    `lib/library/file_label.dart`). One file, or one of several with tab,
+    gets none. Every path: the device's reading (each photo now read on
+    its own), Read again, Rescan, Premium's PDFs read here, and the
+    cloud's per-file results, joined on the device with the doubts moved
+    past the dividers (no server change, nothing to deploy). Nothing
+    reads a divider as tab: `isTabLine` (so the editing tools and
+    overtype), Fix's `reformatTab`, Cam's necklines (no neckline of its
+    own, none heads with it, so auto-pass's numbers count staves only),
+    and the cloud's auto-correct parse (a `―` line is text; a test
+    added there). The file list's text entry shows the first line past
+    the dividers; Copy, sharing, the download and previews keep them.
+    A PDF's pages stay one file (no divider between them); a renamed
+    file's divider keeps the old name until read again, and so does an
+    unnamed one's ("Page 1" is its place) after the pages are reordered,
+    deleted or added, since the device doesn't read a text again for
+    that. Tests
+    (`test/file_dividers_test.dart`, `test/auto_reader_test.dart`,
+    `test/cloud_ocr_test.dart`, `test/pdf_reading_test.dart`,
+    `test/hide_images_test.dart`,
+    `tabcam_locr/tests/test_autocorrect.py`). See
+    [tab recognition](tab-recognition.md#several-files),
+    [cloud OCR](cloud-ocr.md#in-the-app), [Cam](cam.md),
+    [auto-correct](autocorrect.md) and [hidden images](hidden-images.md).

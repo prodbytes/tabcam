@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'file_dividers.dart';
+
 /// Turns what OCR read on a page into plain-text tablature. Pure Dart, so
 /// it's tested without a device (test/tab_layout_test.dart).
 ///
@@ -317,6 +319,8 @@ bool isNotation(String line) {
 /// The body of a tab line, after its string name, with OCR's usual
 /// misreadings fixed; null if the line isn't tab.
 String? _tabBody(String line) {
+  // A file's divider is text, whatever its name.
+  if (isFileDivider(line)) return null;
   var body = _fixTabChars(line.replaceFirst(_prefix, ''))
       .replaceAll(RegExp(r'\s+$'), '');
   if (body.endsWith('|')) body = body.substring(0, body.length - 1);

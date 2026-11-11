@@ -6,8 +6,10 @@ import 'package:flutter/foundation.dart';
 import '../auth/auth_service.dart';
 import '../l10n/language.dart';
 import '../library/capture_event.dart';
+import '../library/file_label.dart';
 import '../library/library.dart';
 import '../library/meta_names.dart';
+import '../recognition/file_dividers.dart';
 import '../recognition/tab_doubts.dart';
 import 'cloud_sync.dart';
 import 'cognito.dart';
@@ -346,12 +348,9 @@ class CloudOcr extends ChangeNotifier {
         _collected(event.id, last?.text != null);
         continue;
       }
-      final texts = <String>[];
-      // The notes the cloud wasn't sure of, at their lines in the joined
-      // text: each page's lines come after the pages before it and a
-      // blank line.
-      final doubts = <TabDoubt>[];
-      var top = 0;
+      // Each file's text, and the notes the cloud wasn't sure of in it.
+      final texts = <({String name, String text})>[];
+      final pageDoubts = <List<TabDoubt>>[];
       for (final p in pages) {
         final bytes = await bucket.get(
           '$prefix${event.id}/${p.id}.json',
@@ -368,20 +367,24 @@ class CloudOcr extends ChangeNotifier {
         if (result['status'] == 'ok' && result['text'] is String) {
           final text = (result['text'] as String).trimRight();
           if (text.isNotEmpty) {
-            texts.add(text);
-            for (final d in result['doubts'] as List? ?? const []) {
-              final doubt = TabDoubt.fromJson(d);
-              if (doubt != null) {
-                doubts.add(
-                  TabDoubt(doubt.line + top, doubt.column, doubt.note),
-                );
-              }
-            }
-            top += '\n'.allMatches(text).length + 2;
+            texts.add((name: fileLabel(appL10n, event, p), text: text));
+            pageDoubts.add([
+              for (final d in result['doubts'] as List? ?? const [])
+                ?TabDoubt.fromJson(d),
+            ]);
           }
         }
       }
-      final text = texts.isEmpty ? null : '${texts.join('\n\n')}\n';
+      // Joined on the device: two files or more, each after its divider.
+      // The doubts at their lines in the joined text: each file's lines
+      // come where its text starts.
+      final joined = joinFileTexts(texts);
+      final doubts = [
+        for (final (i, list) in pageDoubts.indexed)
+          for (final d in list)
+            TabDoubt(d.line + joined.tops[i], d.column, d.note),
+      ];
+      final text = texts.isEmpty ? null : '${joined.text}\n';
       // Only while the text tab is still ours: never over the user's edits,
       // an on-device reading, or a text tab the user marked correct.
       final current = library.byId(event.id);
