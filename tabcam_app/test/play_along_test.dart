@@ -20,7 +20,9 @@ import 'package:tabcam_app/l10n/app_localizations.dart';
 import 'package:tabcam_app/library/capture_event.dart';
 import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
+import 'package:tabcam_app/screens/delete_confirm.dart';
 import 'package:tabcam_app/screens/event_screen.dart';
+import 'package:tabcam_app/screens/file_delete.dart';
 import 'package:tabcam_app/screens/messages.dart';
 import 'package:tabcam_app/screens/sidebar_widths.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
@@ -2152,5 +2154,377 @@ void main() {
       expect(video('Lesson').toJson().containsKey('take'), isFalse);
       expect(EventPage.fromJson(video('Lesson').toJson()).take, isFalse);
     });
+  });
+
+  /// Rec (or Stop), whatever its tooltip says.
+  final rec = find.descendant(
+    of: find.byKey(const Key('cam-rec')),
+    matching: find.byType(IconButton),
+  );
+
+  testWidgets('each file in the sidebar has Delete at the right of its row, '
+      'the text tab none; it asks first, as the list does: cancelled, the '
+      'take stays; confirmed, it goes with its file, the player lets go of '
+      'it and Play has no take', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          burn: (take, _) async => XFile.fromData(
+            Uint8List.fromList([7, 7]),
+            name: 'burned.mp4',
+            mimeType: 'video/mp4',
+          ),
+        ),
+      ),
+    );
+    await frames(tester);
+    await tester.tap(rec);
+    await frames(tester);
+    await tester.tap(_camStop);
+    await until(tester, () => recReady(tester));
+    final take = library.byId(id)!.pages.last;
+    expect(take.title, 'Take 1');
+
+    // The take opens the sidebar, loaded in its frame; its row ends in
+    // Delete.
+    expect(find.byKey(const Key('cam-along-frame')), findsOneWidget);
+    final row = find.byKey(ValueKey('cam-along-${take.id}'));
+    final delete = find.byKey(ValueKey('cam-along-delete-${take.id}'));
+    expect(find.descendant(of: row, matching: delete), findsOneWidget);
+    expect(tester.widget<IconButton>(delete).tooltip, 'Delete Take 1');
+    final title = find.descendant(of: row, matching: find.text('Take 1'));
+    expect(
+      tester.getTopLeft(delete).dx,
+      greaterThan(tester.getTopRight(title).dx),
+    );
+    expect(
+      tester.getTopRight(row).dx - tester.getTopRight(delete).dx,
+      lessThanOrEqualTo(24),
+    );
+    // The text tab's row has none.
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('cam-along-text')),
+        matching: find.byIcon(Icons.delete_outline),
+      ),
+      findsNothing,
+    );
+
+    // Cancelled: the take stays.
+    await tester.tap(delete);
+    await frames(tester);
+    expect(find.text('Delete "Take 1"?'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await frames(tester);
+    expect(library.byId(id)!.pages.map((p) => p.id), contains(take.id));
+    expect(find.byKey(const Key('cam-along-frame')), findsOneWidget);
+
+    // Confirmed: it goes, with its file; the frame lets go of it, and
+    // Play has nothing to play back.
+    await tester.tap(delete);
+    await frames(tester);
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await frames(tester);
+    expect(library.byId(id)!.pages.map((p) => p.id), isNot(contains(take.id)));
+    late bool kept;
+    await tester.runAsync(() async => kept = await library.hasPage(id, take));
+    expect(kept, isFalse);
+    expect(row, findsNothing);
+    expect(find.byKey(const Key('cam-along-frame')), findsNothing);
+    expect(
+      tester
+          .widget<IconButton>(
+            find.descendant(
+              of: find.byKey(const Key('cam-play')),
+              matching: find.byType(IconButton),
+            ),
+          )
+          .onPressed,
+      isNull,
+    );
+  });
+
+  testWidgets('deleting the song playing in the sidebar stops it and closes '
+      'its frame; while a take records, Delete is greyed', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    late EventPage song;
+    await tester.runAsync(() async {
+      final event = await library.addMedia(library.byId(id)!, [
+        Media(
+          XFile.fromData(Uint8List.fromList([1]), name: 'riff.m4a'),
+          PageKind.audio,
+          'm4a',
+        ),
+      ]);
+      song = event.pages.last;
+    });
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          burn: (take, _) async => take,
+        ),
+      ),
+    );
+    await frames(tester);
+    final delete = find.byKey(ValueKey('cam-along-delete-${song.id}'));
+    expect(tester.widget<IconButton>(delete).onPressed, isNotNull);
+
+    // Recording: greyed.
+    await tester.tap(rec);
+    await frames(tester);
+    expect(tester.widget<IconButton>(delete).onPressed, isNull);
+    await tester.tap(_camStop);
+    await until(tester, () => recReady(tester));
+    expect(tester.widget<IconButton>(delete).onPressed, isNotNull);
+
+    // A new take (.): still greyed after the old one is saved, while the
+    // next starts.
+    await tester.tap(rec);
+    await frames(tester);
+    final started = camera.starts;
+    final hold = camera.startHold = Completer<void>();
+    await tester.sendKeyEvent(LogicalKeyboardKey.period);
+    await until(tester, () => camera.starts > started && !camera.recording);
+    await frames(tester);
+    expect(tester.widget<IconButton>(delete).onPressed, isNull);
+    camera.startHold = null;
+    hold.complete();
+    await until(tester, () => camera.recording);
+    await frames(tester);
+    expect(tester.widget<IconButton>(delete).onPressed, isNull);
+    await tester.tap(_camStop);
+    await until(tester, () => recReady(tester));
+    expect(tester.widget<IconButton>(delete).onPressed, isNotNull);
+
+    // Playing (Rec played it), with its mark left of Delete.
+    expect(video.playing, hasLength(1));
+    final row = find.byKey(ValueKey('cam-along-${song.id}'));
+    final mark = find.descendant(
+      of: row,
+      matching: find.byIcon(Icons.graphic_eq),
+    );
+    expect(mark, findsOneWidget);
+    expect(
+      tester.getTopRight(mark).dx,
+      lessThanOrEqualTo(tester.getTopLeft(delete).dx),
+    );
+
+    await tester.tap(delete);
+    await frames(tester);
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await frames(tester);
+    expect(library.byId(id)!.pages.map((p) => p.id), isNot(contains(song.id)));
+    expect(video.playing, isEmpty);
+    expect(row, findsNothing);
+    // The take is what's left to play: nothing loads by itself.
+    expect(find.byKey(const Key('cam-along-frame')), findsNothing);
+  });
+
+  testWidgets('a followed PDF deleted from the sidebar stops being followed', (
+    tester,
+  ) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    late String pdf;
+    await tester.runAsync(() async {
+      final event = await library.addMedia(library.byId(id)!, [
+        Media(
+          XFile.fromData(Uint8List.fromList([1]), name: 'sheet.pdf'),
+          PageKind.pdf,
+          'pdf',
+        ),
+      ]);
+      pdf = event.pages.last.id;
+    });
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          pdfView: (_, _, page) =>
+              SizedBox(key: ValueKey('fake-pdf-${page.id}')),
+        ),
+      ),
+    );
+    await frames(tester);
+    await tester.tap(find.byKey(ValueKey('cam-along-$pdf')));
+    await tester.pump();
+    expect(find.byKey(const Key('cam-pdf-pane')), findsOneWidget);
+    await tester.tap(find.byKey(ValueKey('cam-along-delete-$pdf')));
+    await frames(tester);
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await frames(tester);
+    expect(library.byId(id)!.pages.map((p) => p.id), isNot(contains(pdf)));
+    expect(find.byKey(const Key('cam-pdf-pane')), findsNothing);
+    expect(find.byKey(ValueKey('cam-along-$pdf')), findsNothing);
+  });
+
+  testWidgets('on a capture shared to read, the sidebar lists the reader\'s '
+      'own take after the owner\'s files; only theirs has Delete, and it '
+      'deletes it from their contribution', (tester) async {
+    final library = Library(PlatformEventStore(), null, (_) async => null);
+    late String id;
+    late EventPage song, mine;
+    await tester.runAsync(() async {
+      await library.load();
+      await library.writeMeta(BackingTrack.metaName, '{"countIn":false}');
+      var event = await library.create([
+        img.encodeJpg(img.Image(width: 8, height: 8)),
+      ]);
+      id = event.id;
+      event = await library.addMedia(event, [
+        Media(
+          XFile.fromData(Uint8List.fromList([1]), name: 'riff.m4a'),
+          PageKind.audio,
+          'm4a',
+        ),
+      ]);
+      song = event.pages.last;
+      await library.applyRemote(
+        library
+            .byId(id)!
+            .copyWith(
+              tabText: _tab,
+              sharedBy: 'owner@example.com',
+              readOnly: true,
+            ),
+      );
+      // The reader's own take: their contribution's.
+      event = await library.addMedia(library.byId(id)!, [
+        Media(
+          XFile.fromData(Uint8List.fromList([2]), name: 'take.mp4'),
+          PageKind.video,
+          'mp4',
+        ),
+      ]);
+      mine = event.myContribution!.pages.single;
+    });
+    final event = library.byId(id)!;
+    expect(mayDeleteFile(event, song), isFalse);
+    expect(mayDeleteFile(event, mine), isTrue);
+
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+        ),
+      ),
+    );
+    await frames(tester);
+    final songRow = find.byKey(ValueKey('cam-along-${song.id}'));
+    final mineRow = find.byKey(ValueKey('cam-along-${mine.id}'));
+    expect(songRow, findsOneWidget);
+    expect(mineRow, findsOneWidget);
+    expect(
+      tester.getTopLeft(mineRow).dy,
+      greaterThan(tester.getTopLeft(songRow).dy),
+    );
+    expect(find.byKey(ValueKey('cam-along-delete-${song.id}')), findsNothing);
+    final delete = find.byKey(ValueKey('cam-along-delete-${mine.id}'));
+    expect(find.descendant(of: mineRow, matching: delete), findsOneWidget);
+    expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+
+    // Deleted, from their contribution and with its file; the owner's
+    // files stay.
+    late bool kept;
+    await tester.runAsync(() async => kept = await library.hasPage(id, mine));
+    expect(kept, isTrue);
+    await tester.tap(delete);
+    await frames(tester);
+    expect(find.text('Delete "Video 1"?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await frames(tester);
+    final now = library.byId(id)!;
+    expect(now.myContribution!.pages, isEmpty);
+    expect(now.pages.map((p) => p.id), contains(song.id));
+    await tester.runAsync(() async => kept = await library.hasPage(id, mine));
+    expect(kept, isFalse);
+    expect(mineRow, findsNothing);
+
+    // Shared to edit, the owner's files show it.
+    await tester.runAsync(
+      () => library.applyRemote(library.byId(id)!.copyWith(readOnly: false)),
+    );
+    await frames(tester);
+    expect(find.byKey(ValueKey('cam-along-delete-${song.id}')), findsOneWidget);
+  });
+
+  testWidgets('the sidebar\'s Delete asks with "Don\'t ask again", the '
+      'list\'s confirm: ticked in the sidebar, neither the sidebar\'s next '
+      'delete nor the list\'s asks', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    final songs = <String>[];
+    await tester.runAsync(() async {
+      for (final riff in ['riff-a', 'riff-b', 'riff-c']) {
+        final event = await library.addMedia(library.byId(id)!, [
+          Media(
+            XFile.fromData(Uint8List.fromList([1]), name: '$riff.m4a'),
+            PageKind.audio,
+            'm4a',
+          ),
+        ]);
+        songs.add(event.pages.last.id);
+      }
+    });
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+        ),
+      ),
+    );
+    await frames(tester);
+    List<String> ids() => [for (final p in library.byId(id)!.pages) p.id];
+    final dontAsk = find.byKey(const Key('dont-ask-again'));
+
+    // The shared confirm, its box unticked; ticked and confirmed, the
+    // song goes and a file's delete no longer asks.
+    await tester.tap(find.byKey(ValueKey('cam-along-delete-${songs[0]}')));
+    await frames(tester);
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(tester.widget<CheckboxListTile>(dontAsk).value, isFalse);
+    await tester.tap(dontAsk);
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await frames(tester);
+    expect(ids(), isNot(contains(songs[0])));
+    expect(DeleteConfirms.of(library).asks(DeleteKind.file), isFalse);
+    // A reader's own file still asks: another kind.
+    expect(DeleteConfirms.of(library).asks(DeleteKind.contribution), isTrue);
+
+    // The sidebar's next delete goes at once.
+    await tester.tap(find.byKey(ValueKey('cam-along-delete-${songs[1]}')));
+    await frames(tester);
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(ids(), isNot(contains(songs[1])));
+
+    // And so does the capture's list's.
+    await tester.pumpWidget(app(EventScreen(library: library, eventId: id)));
+    await frames(tester);
+    await tester.tap(find.byKey(ValueKey('delete-${songs[2]}')));
+    await frames(tester);
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(ids(), isNot(contains(songs[2])));
   });
 }
