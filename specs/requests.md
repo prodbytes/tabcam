@@ -2830,7 +2830,7 @@ spec.
     microphone without processing, a refused microphone giving no sound,
     and a microphone's track lent to the camera's stream once. See
     [Cam](cam.md#recording-comes-first).
-12. **(Editor redesign, step 1 of 11) Captures keep fields a newer app
+13. **(Editor redesign, step 1 of 11) Captures keep fields a newer app
     wrote.** The user asked for a new video editor: the take's own sound
     and the song played along with on two lanes, mixed, each with its
     volume and mute; the tab shown as a layer over the video instead of
@@ -2853,7 +2853,7 @@ spec.
     round trips, every rebuild path, clone, publish, known keys winning,
     values that aren't JSON. See [library](library.md#events) and
     [video edit](video-edit.md).
-13. **(Editor redesign, step 2) One render plan for Download (same output
+14. **(Editor redesign, step 2) One render plan for Download (same output
     as today).** Download and the players now work from one description
     of a video's edit, the render plan (`lib/capture/render_plan.dart`,
     pure Dart, derived from the edit, never stored): the input and the
