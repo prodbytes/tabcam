@@ -651,6 +651,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'No take without its sound: allow the microphone for this site, or connect one, and press Rec again.';
 
   @override
+  String camTakeNoSound(String reason) {
+    return 'The take was saved without its sound: $reason';
+  }
+
+  @override
+  String camTakeSoundWarning(String reason) {
+    return 'Check the take\'s sound: $reason';
+  }
+
+  @override
   String get camAlong => 'Play along with a file';
 
   @override

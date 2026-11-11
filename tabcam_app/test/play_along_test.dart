@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:camera_platform_interface/camera_platform_interface.dart';
 
@@ -17,6 +18,7 @@ import 'package:tabcam_app/capture/play_along_screen.dart';
 import 'package:tabcam_app/capture/play_along_sidebar.dart';
 import 'package:tabcam_app/capture/take_overlay.dart';
 import 'package:tabcam_app/capture/take_priority.dart';
+import 'package:tabcam_app/capture/take_sound.dart';
 import 'package:tabcam_app/dictionary/dictionary_sidebar.dart';
 import 'package:tabcam_app/l10n/app_localizations.dart';
 import 'package:tabcam_app/library/capture_event.dart';
@@ -151,7 +153,21 @@ void main() {
     VideoPlayerPlatform.instance = video = FakeVideoPlatform();
     SidebarWidths.instance.clear();
     DictionaryState.instance.clear();
+    // Android (the tests' platform) records the take's sound in the app
+    // where it can; here it can't, so the camera does, unless a test
+    // fakes it (the Android group).
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          TakeSound.channel,
+          (call) async => call.method == 'prepare'
+              ? {'ok': false, 'reason': 'not in tests'}
+              : null,
+        );
   });
+  tearDown(
+    () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(TakeSound.channel, null),
+  );
 
   Future<void> frames(WidgetTester tester) async {
     await tester.runAsync(
@@ -973,6 +989,271 @@ void main() {
       expect(find.textContaining('No take without its sound'), findsOneWidget);
       expect(recReady(tester), isTrue);
       expect(library.byId(id)!.pages, hasLength(1));
+    });
+  });
+
+  group('Android: the take\'s sound recorded by the app', () {
+    /// The calls on `tabcam/take_sound`, and what the camera was doing at
+    /// each (started recordings, recording).
+    late List<(String, int, bool)> calls;
+    late List<Object?> stopArgs;
+
+    /// What the native side does: [prepared] for `prepare`, the files `stop`
+    /// gives in turn ([takes]), or an error for a method in [fail].
+    late Map<String, Object?> prepared;
+    late List<String> takes;
+    late Map<String, PlatformException> fail;
+    late String? warning;
+    late Directory dir;
+
+    setUp(() {
+      calls = [];
+      stopArgs = [];
+      prepared = {
+        'ok': true,
+        'source': 'unprocessed',
+        'sampleRate': 48000,
+        'channels': 2,
+      };
+      takes = [];
+      fail = {};
+      warning = null;
+    });
+
+    Future<void> open(WidgetTester tester, {int takeCount = 1}) async {
+      await tester.runAsync(() async {
+        dir = await Directory.systemTemp.createTemp('take_sound_test');
+        for (var i = 0; i < takeCount; i++) {
+          final file = File('${dir.path}/take-$i.mp4');
+          await file.writeAsBytes([5, i]);
+          takes.add(file.path);
+        }
+      });
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final messenger = tester.binding.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(TakeSound.channel, (call) async {
+        calls.add((call.method, camera.starts, camera.recording));
+        if (fail[call.method] case final error?) throw error;
+        return switch (call.method) {
+          'prepare' => prepared,
+          'stop' => () {
+            stopArgs.add(call.arguments);
+            return {
+              'path': takes.removeAt(0),
+              'leadMs': 120.0,
+              'warning': warning,
+            };
+          }(),
+          _ => null,
+        };
+      });
+      addTearDown(
+        () => messenger.setMockMethodCallHandler(TakeSound.channel, null),
+      );
+    }
+
+    List<String> methods() => [for (final (m, _, _) in calls) m];
+
+    Widget cam(Library library, String id, {List<String>? burned}) =>
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          burn: (take, _) async {
+            burned?.add(take.path);
+            return take;
+          },
+        );
+
+    testWidgets('the camera opens without sound; Rec starts the sound before '
+        'the camera, Stop puts it into the take (then the tab is burned in); '
+        '. does it again; closed, the microphone is closed', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      try {
+        await open(tester, takeCount: 2);
+        final (library, id) = await capture(tester, tab: _tab);
+        final burned = <String>[];
+        await tester.pumpWidget(app(cam(library, id, burned: burned)));
+        await frames(tester);
+        expect(methods(), ['prepare']);
+        expect(camera.settings.single!.enableAudio, isFalse);
+
+        await tester.tap(find.byTooltip('Rec (1)'));
+        await frames(tester);
+        expect(camera.recording, isTrue);
+        // The sound started before the camera; the camera's start told
+        // once it recorded.
+        expect(calls, [
+          ('prepare', 0, false),
+          ('start', 0, false),
+          ('videoStarted', 1, true),
+        ]);
+
+        await tester.tap(_camStop);
+        await until(tester, () => recReady(tester));
+        expect(calls.sublist(3), [
+          ('videoStopping', 1, true),
+          ('stop', 1, false),
+        ]);
+        // The camera's video went to the sound, and what came back is the
+        // take (burned with the tab after).
+        expect(stopArgs.single, containsPair('video', isA<String>()));
+        expect(burned.single, endsWith('take-0.mp4'));
+        final pages = library.byId(id)!.pages;
+        expect(pages.last.title, 'Take 1');
+        late Uint8List saved;
+        await tester.runAsync(
+          () async =>
+              saved = await library.original(library.byId(id)!, pages.last),
+        );
+        expect(saved, [5, 0]);
+        expect(find.textContaining('without its sound'), findsNothing);
+
+        // . : the take saved with its sound, and the next started the
+        // same way.
+        await tester.sendKeyEvent(LogicalKeyboardKey.period);
+        await frames(tester);
+        await tester.sendKeyEvent(LogicalKeyboardKey.period);
+        await until(
+          tester,
+          () => library.byId(id)!.pages.length == 3 && camera.recording,
+        );
+        expect(methods().sublist(5), [
+          'start',
+          'videoStarted',
+          'videoStopping',
+          'stop',
+          'start',
+          'videoStarted',
+        ]);
+        expect(burned.last, endsWith('take-1.mp4'));
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+        expect(methods().last, 'release');
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
+    testWidgets('where the app can\'t record the sound (the microphone '
+        'refused, or none works), the camera records it, as before', (
+      tester,
+    ) async {
+      prepared = {'ok': false, 'reason': 'No microphone could be opened'};
+      await open(tester);
+      final (library, id) = await capture(tester, tab: _tab);
+      await tester.pumpWidget(app(cam(library, id)));
+      await frames(tester);
+      expect(camera.settings.single!.enableAudio, isTrue);
+      await tester.tap(find.byTooltip('Rec (1)'));
+      await frames(tester);
+      expect(camera.recording, isTrue);
+      await tester.tap(_camStop);
+      await until(tester, () => recReady(tester));
+      // Only prepared (and released when Cam closes).
+      expect(methods(), ['prepare']);
+      expect(library.byId(id)!.pages.last.title, 'Take 1');
+    });
+
+    testWidgets('the sound not starting (the microphone busy), no take, '
+        'and a message says why', (tester) async {
+      fail['start'] = PlatformException(
+        code: 'failed',
+        message: 'The microphone is in use',
+      );
+      await open(tester);
+      final (library, id) = await capture(tester, tab: _tab);
+      await tester.pumpWidget(app(cam(library, id)));
+      await frames(tester);
+      await tester.tap(find.byTooltip('Rec (1)'));
+      await frames(tester);
+      expect(camera.starts, 0);
+      expect(camera.recording, isFalse);
+      expect(
+        find.textContaining(
+          "Couldn't record: PlatformException(failed, "
+          'The microphone is in use',
+        ),
+        findsOneWidget,
+      );
+      expect(recReady(tester), isTrue);
+      expect(library.byId(id)!.pages, hasLength(1));
+      expect(TakePriority.recording.value, isFalse);
+    });
+
+    testWidgets('the camera not starting, the sound is dropped', (
+      tester,
+    ) async {
+      await open(tester);
+      final (library, id) = await capture(tester, tab: _tab);
+      await tester.pumpWidget(app(cam(library, id)));
+      await frames(tester);
+      camera.startError = CameraException('busy', 'The camera is busy');
+      await tester.tap(find.byTooltip('Rec (1)'));
+      await frames(tester);
+      expect(methods(), ['prepare', 'start', 'cancel']);
+      expect(camera.recording, isFalse);
+      expect(library.byId(id)!.pages, hasLength(1));
+    });
+
+    testWidgets('the sound not put in: the take is kept, and a message says '
+        'it has no sound', (tester) async {
+      fail['stop'] = PlatformException(
+        code: 'failed',
+        message: 'No sound was recorded',
+      );
+      await open(tester);
+      final (library, id) = await capture(tester, tab: _tab);
+      await tester.pumpWidget(app(cam(library, id)));
+      await frames(tester);
+      await tester.tap(find.byTooltip('Rec (1)'));
+      await frames(tester);
+      await tester.tap(_camStop);
+      await until(tester, () => recReady(tester));
+      final pages = library.byId(id)!.pages;
+      expect(pages.last.title, 'Take 1');
+      late Uint8List saved;
+      await tester.runAsync(
+        () async =>
+            saved = await library.original(library.byId(id)!, pages.last),
+      );
+      // The camera's own.
+      expect(saved, [9, 1]);
+      expect(
+        find.text(
+          'The take was saved without its sound: No sound was '
+          'recorded',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a sound with a problem: the take is kept with it, and a '
+        'message says what', (tester) async {
+      warning = 'the microphone gave only silence';
+      await open(tester);
+      final (library, id) = await capture(tester, tab: _tab);
+      await tester.pumpWidget(app(cam(library, id)));
+      await frames(tester);
+      await tester.tap(find.byTooltip('Rec (1)'));
+      await frames(tester);
+      await tester.tap(_camStop);
+      await until(tester, () => recReady(tester));
+      final pages = library.byId(id)!.pages;
+      expect(pages.last.title, 'Take 1');
+      late Uint8List saved;
+      await tester.runAsync(
+        () async =>
+            saved = await library.original(library.byId(id)!, pages.last),
+      );
+      expect(saved, [5, 0]);
+      expect(
+        find.text("Check the take's sound: the microphone gave only silence"),
+        findsOneWidget,
+      );
     });
   });
 

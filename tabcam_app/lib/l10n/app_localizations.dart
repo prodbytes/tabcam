@@ -1138,6 +1138,18 @@ abstract class AppLocalizations {
   /// **'No take without its sound: allow the microphone for this site, or connect one, and press Rec again.'**
   String get camNoSound;
 
+  /// Cam (Android): the take's sound, recorded apart from the camera, couldn't be put into the take, and why
+  ///
+  /// In en, this message translates to:
+  /// **'The take was saved without its sound: {reason}'**
+  String camTakeNoSound(String reason);
+
+  /// Cam (Android): the take was saved with its sound, but something went wrong with it (it stopped early, or it's all silence), and what
+  ///
+  /// In en, this message translates to:
+  /// **'Check the take\'s sound: {reason}'**
+  String camTakeSoundWarning(String reason);
+
   /// Cam app bar: shows the sidebar of recordings, videos and links to play along with
   ///
   /// In en, this message translates to:
