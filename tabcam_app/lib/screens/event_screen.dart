@@ -304,11 +304,23 @@ class _EventScreenState extends State<EventScreen> {
     if (!mounted) return;
     setState(() => _busy = false);
     if (copy == null) return;
-    Navigator.of(context).pushReplacement(
+    // The copy is where the user is now (a reload opens it), until it's
+    // closed.
+    final memory = PlaceMemory.of(_library);
+    memory.update(
+      (p) =>
+          p.copyWith(eventId: () => copy.id, text: false, fileId: () => null),
+    );
+    await Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
         builder: (_) =>
             EventScreen(library: _library, eventId: copy.id, sync: widget.sync),
       ),
+    );
+    memory.update(
+      (p) => p.eventId == copy.id
+          ? p.copyWith(eventId: () => null, text: false, fileId: () => null)
+          : p,
     );
   }
 

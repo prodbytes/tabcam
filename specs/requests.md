@@ -2444,3 +2444,30 @@ spec.
    passes made after (Auto-pass on) are noted and marked again; only
    those are kept. Now a test checks it, and the spec says so. See
    [Cam](cam.md#phrase-passes).
+
+## 2026-11-11
+
+4. **When a capture is open in a view, and the browser refreshes, keep
+   the same view and capture as it was.** The web app already meant to
+   come back where the user was, but kept the place in the library's
+   meta file, which on the web is only in memory: a reload lost it (and
+   the captures themselves, until the first sync pass brings them down
+   again), so it always opened on Home. On the web the place is now kept
+   in the page's address, replaced at every move without adding history
+   entries: `?tab=…&open=<capture>&view=text|files&file=<file>`, the
+   site's base (`/app/`) and Flutter's fragment kept. At launch it waits
+   for the library and, signed in, for the first sync pass to bring the
+   capture, then opens it on its view (and its file); a capture a pass
+   that works doesn't bring leaves Home quietly and drops out of the
+   address (a failed pass, offline, keeps it waiting for the next). A
+   capture's link still wins at launch, and its key leaves the address
+   once a capture is open; a sign-in email's code leaves it too. Clone's
+   copy is now the place while it's open (it was the original's). The
+   apps keep the place on the device as before. Cam isn't kept (a reload
+   comes back to the capture under it). New tests: the address reads
+   back as written (base, port and fragment kept, bad IDs left out, the
+   link's key dropped), a reload opens the capture on its Text view and
+   its file, an unknown capture falls back to Home, moving around and
+   Clone write the address, a link wins over it, and signed in it waits
+   for the first pass, past a failed one. See
+   [navigation](navigation.md#coming-back-where-the-user-was).

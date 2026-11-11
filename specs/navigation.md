@@ -45,15 +45,39 @@ was, on the device only.
 ## Coming back where the user was
 
 A reload (the web) or a restart (the apps) opens where the user was:
-the tab, and the event that was open over it, on its Text view or its
+the tab, and the capture that was open over it, on its Text view or its
 list of files, and the file open over that, if one was
-([lib/screens/place.dart](../tabcam_app/lib/screens/place.dart)).
-The place is kept on the device (the library's `place` meta file, not
-synced), saved half a second after each move: switching tabs, opening
-or closing an event, switching Files and Text, opening or closing a
-file. A capture's link opening at launch wins over it; an event deleted
-since isn't
-opened.
+([lib/screens/place.dart](../tabcam_app/lib/screens/place.dart)). Each
+move updates the place: switching tabs, opening or closing a capture
+(Clone's copy, opened in the original's place, too), switching Files
+and Text, opening or closing a file. Cam isn't kept: a reload with Cam
+open comes back to the capture, on the view under it.
+
+- **The apps** keep it on the device (the library's `place` meta file,
+  not synced), saved half a second after each move.
+- **The web** keeps it in the page's address, at once
+  (`history.replaceState`, adding no history entry; the library there
+  is only in memory, so the device can't keep it). Its parameters:
+  `tab` (`capture` or `profile`; none on Home), `open` (the capture's
+  ID), `view` (`text` or `files`) and `file` (the file's ID), as in
+  `https://tabcam.nu01.com/app/?open=<capture>&view=text`. Only the
+  query changes: the site's base (`/app/`, on prod, RC and the local
+  site), its other parameters and Flutter's fragment stay. A capture's
+  link's `c`, `k` and `f` ([sharing](sharing.md#opening-a-link)) leave
+  the address once a capture is open, so its key isn't left there, and
+  a sign-in email's `signin-code` (used once, at launch) at the first
+  move. The browser's back button closes what's open (Flutter's own
+  history handling), and the address follows. The same address in
+  another tab of the same browser (signed in as the same user) opens
+  the same place.
+
+At launch the place waits for the library and, signed in, for the first
+sync pass (on the web, a reload brings the user's captures down again):
+the capture opens as soon as it's there. If a pass that works doesn't
+bring it (deleted since, or not the user's), Home stays, on the tab,
+with no message, and the place forgets it; a pass that fails (offline)
+keeps it waiting for the next. A capture's link opening at launch
+wins over it.
 
 ## Capture
 
