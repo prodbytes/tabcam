@@ -2616,6 +2616,11 @@ spec.
    sidebar or the list holds in both; its messages show at the top. A
    test that Don't ask again ticked in the sidebar skips the list's
    confirm too. See [delete confirmations](delete-confirms.md).
+   From the merge's review: in Cam, the sidebar's Delete is now greyed
+   too while "." saves a take for the next, until the next take has
+   started, where between saving one and starting the next it was
+   live (with Don't ask again ticked, the song could be deleted and
+   the new take start without it). A test checks it's greyed then.
 7. **take the takes be the last thing on the sidebar.** The play-along
    sidebar (Cam, the Text view, the file screen) now lists Cam's takes
    last, after the text tab, the files to play along and the PDFs or

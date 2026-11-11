@@ -2288,6 +2288,25 @@ void main() {
     await until(tester, () => recReady(tester));
     expect(tester.widget<IconButton>(delete).onPressed, isNotNull);
 
+    // A new take (.): still greyed after the old one is saved, while the
+    // next starts.
+    await tester.tap(rec);
+    await frames(tester);
+    final started = camera.starts;
+    final hold = camera.startHold = Completer<void>();
+    await tester.sendKeyEvent(LogicalKeyboardKey.period);
+    await until(tester, () => camera.starts > started && !camera.recording);
+    await frames(tester);
+    expect(tester.widget<IconButton>(delete).onPressed, isNull);
+    camera.startHold = null;
+    hold.complete();
+    await until(tester, () => camera.recording);
+    await frames(tester);
+    expect(tester.widget<IconButton>(delete).onPressed, isNull);
+    await tester.tap(_camStop);
+    await until(tester, () => recReady(tester));
+    expect(tester.widget<IconButton>(delete).onPressed, isNotNull);
+
     // Playing (Rec played it), with its mark left of Delete.
     expect(video.playing, hasLength(1));
     final row = find.byKey(ValueKey('cam-along-${song.id}'));

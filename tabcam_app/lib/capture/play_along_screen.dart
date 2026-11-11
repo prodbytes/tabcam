@@ -897,9 +897,10 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       linkFrame: widget.linkFrame,
       pdfView: widget.pdfView,
       onUse: _focus.requestFocus,
-      // Not in a preview, nor while a take records, saves or plays back.
+      // Not in a preview, nor while a take records, saves (or is saved
+      // for the next, until it starts) or plays back.
       deletes: gate == null,
-      canDelete: !_recording && !_saving && !playing,
+      canDelete: !_recording && !_saving && !_nextTaking && !playing,
       child: _main(controller, playing),
     );
     return PopScope(

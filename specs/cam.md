@@ -335,7 +335,8 @@ edit, on every file; on a capture shared to read, on none of the
 owner's, only on the reader's own (their takes, listed after the
 capture's files and under **Takes**), which it deletes from their
 [contribution](contributions.md), file and all. Not in Cam's Premium
-preview, nor on a capture opened by its link. It's greyed while a take records, saves or plays
+preview, nor on a capture opened by its link. It's greyed while a take
+records, saves (with ".", until the next take has started) or plays
 back, and while the screen works. Once deleted, the file loaded in the
 player (playing or paused) is let go of: it stops and the frame closes,
 nothing else loading by itself; a PDF or page followed closes its pane;
