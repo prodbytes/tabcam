@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:web/web.dart' as web;
 
 import 'head_gestures.dart';
+import 'take_priority.dart';
 
 /// In the browser, head gestures come from [WebHeadTracker].
 HeadTracking? webHeadTracking(void Function(HeadGesture) onGesture) =>
@@ -22,7 +23,8 @@ const _model =
 
 /// Head gestures in the browser: MediaPipe's Face Landmarker reads the
 /// camera preview's own `<video>` (the web camera streams no frames to
-/// Dart, so [onImage] gets none) about 10 times a second, and its
+/// Dart, so [onImage] gets none) about 10 times a second (7 while a take
+/// records: [TakePriority.headIntervalRecording]), and its
 /// facial transformation matrix gives the head's angles ([headAngles])
 /// for a [NodDetector].
 ///
@@ -42,6 +44,7 @@ class WebHeadTracker implements HeadTracking {
   final ValueNotifier<bool> face = ValueNotifier(false);
 
   bool _active = true;
+  bool _recording = false;
   bool _closed = false;
   bool _failed = false;
   Future<_FaceLandmarker?>? _loading;
@@ -74,11 +77,26 @@ class WebHeadTracker implements HeadTracking {
     }
   }
 
+  @override
+  set recording(bool recording) {
+    if (recording == _recording) return;
+    _recording = recording;
+    // Again at the other rate.
+    _timer?.cancel();
+    _timer = null;
+    _run();
+  }
+
   void _run() {
     if (_closed || _failed || !_active || _timer != null) return;
     _loading ??= _load();
-    // One detection at a time, about 10 a second.
-    _timer = Timer.periodic(const Duration(milliseconds: 100), (_) => _tick());
+    // One detection at a time.
+    _timer = Timer.periodic(
+      _recording
+          ? TakePriority.headIntervalRecording
+          : TakePriority.headInterval,
+      (_) => _tick(),
+    );
   }
 
   Future<_FaceLandmarker?> _load() async {

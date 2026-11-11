@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import '../auth/auth_service.dart';
+import '../capture/take_priority.dart';
 import '../l10n/language.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
@@ -121,6 +122,7 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
     _started = true;
     auth.addListener(_onAuth);
     library.localChanges.addListener(_onLocalChange);
+    TakePriority.recording.addListener(_onTake);
     WidgetsBinding.instance.addObserver(this);
     _onAuth();
   }
@@ -188,9 +190,27 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
     _soon = Timer(debounce, () => unawaited(syncNow()));
   }
 
-  /// Runs a pass now (or right after the running one).
+  /// A pass asked for while Cam records a take ([TakePriority.recording]):
+  /// none starts then, the take comes first; it runs once the take ends.
+  bool _held = false;
+
+  void _onTake() {
+    if (TakePriority.recording.value || !_held) return;
+    _held = false;
+    // After a pause, as for a change: the next take may start at once
+    // (Cam's . key), and holds it again.
+    _soon?.cancel();
+    _soon = Timer(debounce, () => unawaited(syncNow()));
+  }
+
+  /// Runs a pass now (or right after the running one); while a take
+  /// records, once it ends.
   Future<void> syncNow() async {
     if (_token == null || _paused) return;
+    if (TakePriority.recording.value) {
+      _held = true;
+      return;
+    }
     if (_running) {
       _again = true;
       return;
@@ -204,6 +224,11 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
       do {
         _again = false;
         await _pass();
+        // A take started meanwhile: the next pass waits for its end.
+        if (_again && TakePriority.recording.value) {
+          _held = true;
+          break;
+        }
       } while (_again && _token != null && !_paused);
     } finally {
       _running = false;
@@ -1123,6 +1148,7 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
     if (_started) {
       auth.removeListener(_onAuth);
       library.localChanges.removeListener(_onLocalChange);
+      TakePriority.recording.removeListener(_onTake);
       WidgetsBinding.instance.removeObserver(this);
     }
     _periodic?.cancel();
