@@ -179,6 +179,11 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   /// opens (false: the camera records it, as on iOS).
   bool _ownSound = false;
 
+  /// Android: the microphone was refused when the app asked for it as Cam
+  /// opened; the camera asks again, and if allowed there, the app records
+  /// the sound after all ([_open]).
+  bool _soundRefused = false;
+
   /// What plays along, and whether the sidebar to choose it shows.
   late final PlayAlong _along = PlayAlong(
     widget.library,
@@ -311,8 +316,10 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       _cameras = cameras;
       // Before the camera opens: it opens with sound or without by this.
       if (TakeSound.supported) {
-        _ownSound = await TakeSound.prepare();
+        final ready = await TakeSound.prepare();
         if (!mounted) return;
+        _ownSound = ready == TakeSoundReady.ok;
+        _soundRefused = ready == TakeSoundReady.refused;
       }
       await _open(front < 0 ? 0 : front);
     } on Object catch (e) {
@@ -352,6 +359,19 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     if (!mounted) {
       await controller.dispose();
       return;
+    }
+    // Refused when the app asked, the microphone was allowed at the
+    // camera's own prompt (else the camera wouldn't have opened): the app
+    // records the takes' sound after all. This camera, opened with sound,
+    // records none of its own then (its plugin checks the permission as
+    // each recording starts, and the app's side hides it).
+    if (_soundRefused) {
+      _soundRefused = false;
+      _ownSound = await TakeSound.prepare(ask: false) == TakeSoundReady.ok;
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
     }
     await _prepareSound(controller);
     if (!mounted) {

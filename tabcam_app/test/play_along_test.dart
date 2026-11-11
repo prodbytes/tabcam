@@ -997,10 +997,13 @@ void main() {
     /// each (started recordings, recording).
     late List<(String, int, bool)> calls;
     late List<Object?> stopArgs;
+    late List<Object?> prepareArgs;
 
-    /// What the native side does: [prepared] for `prepare`, the files `stop`
-    /// gives in turn ([takes]), or an error for a method in [fail].
+    /// What the native side does: [prepared] for `prepare` (then
+    /// [preparedAgain], if set, for the next ones), the files `stop` gives
+    /// in turn ([takes]), or an error for a method in [fail].
     late Map<String, Object?> prepared;
+    late Map<String, Object?>? preparedAgain;
     late List<String> takes;
     late Map<String, PlatformException> fail;
     late String? warning;
@@ -1009,6 +1012,8 @@ void main() {
     setUp(() {
       calls = [];
       stopArgs = [];
+      prepareArgs = [];
+      preparedAgain = null;
       prepared = {
         'ok': true,
         'source': 'unprocessed',
@@ -1035,7 +1040,12 @@ void main() {
         calls.add((call.method, camera.starts, camera.recording));
         if (fail[call.method] case final error?) throw error;
         return switch (call.method) {
-          'prepare' => prepared,
+          'prepare' => () {
+            prepareArgs.add(call.arguments);
+            return prepareArgs.length > 1
+                ? preparedAgain ?? prepared
+                : prepared;
+          }(),
           'stop' => () {
             stopArgs.add(call.arguments);
             return {
@@ -1138,10 +1148,8 @@ void main() {
       }
     });
 
-    testWidgets('where the app can\'t record the sound (the microphone '
-        'refused, or none works), the camera records it, as before', (
-      tester,
-    ) async {
+    testWidgets('where the app can\'t record the sound (no microphone '
+        'source works), the camera records it, as before', (tester) async {
       prepared = {'ok': false, 'reason': 'No microphone could be opened'};
       await open(tester);
       final (library, id) = await capture(tester, tab: _tab);
@@ -1155,6 +1163,76 @@ void main() {
       await until(tester, () => recReady(tester));
       // Only prepared (and released when Cam closes).
       expect(methods(), ['prepare']);
+      expect(library.byId(id)!.pages.last.title, 'Take 1');
+    });
+
+    testWidgets('the microphone refused when the app asked, then allowed at '
+        'the camera\'s prompt (the camera opened with sound): the app '
+        'records the sound after all', (tester) async {
+      prepared = {
+        'ok': false,
+        'reason': 'The microphone isn\'t allowed',
+        'refused': true,
+      };
+      preparedAgain = {
+        'ok': true,
+        'source': 'unprocessed',
+        'sampleRate': 48000,
+        'channels': 2,
+      };
+      await open(tester);
+      final (library, id) = await capture(tester, tab: _tab);
+      await tester.pumpWidget(app(cam(library, id)));
+      await frames(tester);
+      // Asked once; prepared again, without asking, once the camera opened.
+      expect(camera.settings.single!.enableAudio, isTrue);
+      expect(prepareArgs, [
+        {'ask': true},
+        {'ask': false},
+      ]);
+      expect(calls.last, ('prepare', 0, false));
+      await tester.tap(find.byTooltip('Rec (1)'));
+      await frames(tester);
+      expect(camera.recording, isTrue);
+      await tester.tap(_camStop);
+      await until(tester, () => recReady(tester));
+      expect(methods(), [
+        'prepare',
+        'prepare',
+        'start',
+        'videoStarted',
+        'videoStopping',
+        'stop',
+      ]);
+      late Uint8List saved;
+      await tester.runAsync(
+        () async => saved = await library.original(
+          library.byId(id)!,
+          library.byId(id)!.pages.last,
+        ),
+      );
+      expect(saved, [5, 0]);
+    });
+
+    testWidgets('the microphone refused, and still not usable once the '
+        'camera opened: the camera records the sound', (tester) async {
+      prepared = {
+        'ok': false,
+        'reason': 'The microphone isn\'t allowed',
+        'refused': true,
+      };
+      preparedAgain = {'ok': false, 'reason': 'No microphone could be opened'};
+      await open(tester);
+      final (library, id) = await capture(tester, tab: _tab);
+      await tester.pumpWidget(app(cam(library, id)));
+      await frames(tester);
+      expect(camera.settings.single!.enableAudio, isTrue);
+      await tester.tap(find.byTooltip('Rec (1)'));
+      await frames(tester);
+      expect(camera.recording, isTrue);
+      await tester.tap(_camStop);
+      await until(tester, () => recReady(tester));
+      expect(methods(), ['prepare', 'prepare']);
       expect(library.byId(id)!.pages.last.title, 'Take 1');
     });
 

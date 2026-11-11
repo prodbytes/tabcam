@@ -43,11 +43,14 @@ import kotlin.math.min
  * See specs/cam.md, "Recording comes first".
  *
  * Channel `tabcam/take_sound`:
- * - `prepare` (Cam opens): asks for the microphone if it isn't allowed yet,
- *   then opens it and tries it (a short start, read and stop), keeping it
- *   open for the takes. Replies `{ok, reason, source, sampleRate,
- *   channels}`; `ok` false (refused, or no source works) means the camera
- *   should record the take's sound itself, as before.
+ * - `prepare` (Cam opens): asks for the microphone if it isn't allowed yet
+ *   (not with `ask` false), then opens it and tries it (a short start,
+ *   read and stop), keeping it open for the takes. Replies `{ok, reason,
+ *   refused, source, sampleRate, channels}`; `ok` false (refused, or no
+ *   source works) means the camera should record the take's sound
+ *   itself, as before; `refused` true, that the microphone isn't
+ *   allowed (the camera plugin then asks for it again, and if allowed
+ *   there, Cam prepares again, without asking).
  * - `start` (Rec, before the camera starts): the microphone records; the
  *   camera is kept from opening it too until `videoStarted`.
  * - `videoStarted` (right after the camera's recording started) and
@@ -93,7 +96,7 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
-            "prepare" -> prepare(result)
+            "prepare" -> prepare(call.argument<Boolean>("ask") != false, result)
             "start" -> onControl(result) {
                 start()
                 null
@@ -154,8 +157,12 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
         context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) ==
             PackageManager.PERMISSION_GRANTED
 
-    private fun prepare(result: MethodChannel.Result) {
+    private fun prepare(ask: Boolean, result: MethodChannel.Result) {
         if (granted()) return onControl(result) { open() }
+        if (!ask) {
+            result.success(refused())
+            return
+        }
         if (pendingPermission != null) {
             result.success(notOk("Already asking for the microphone"))
             return
@@ -172,12 +179,14 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
         if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
             onControl(result) { open() }
         } else {
-            result.success(notOk("The microphone isn't allowed"))
+            result.success(refused())
         }
         return true
     }
 
     private fun notOk(reason: String) = mapOf("ok" to false, "reason" to reason)
+
+    private fun refused() = notOk("The microphone isn't allowed") + ("refused" to true)
 
     /** Opens the microphone (control thread); never throws. */
     private fun open(): Map<String, Any?> = try {
@@ -247,7 +256,8 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
                 "${s.format.channels} ch; audio start by ${outcome.audioStartBy}; " +
                 "lead ${outcome.leadFrames} frames; video start by Rec - by Stop: " +
                 (if (byStop > 0 && outcome.videoStartNs > 0) "${(outcome.videoStartNs - byStop) / 1_000_000} ms" else "?") +
-                "; encoder delay ${outcome.encoderDelay}; ${outcome.aacFrames} AAC frames",
+                "; encoder delay ${outcome.encoderDelay}; ${outcome.aacFrames} AAC frames; " +
+                describe(outcome.drift, s.format.sampleRate),
         )
         if (outcome.aacFrames == 0L) {
             s.file.delete()
@@ -266,9 +276,11 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
             Log.w(TAG, "take sound: the camera recorded sound too (left out)")
         }
         video.delete()
+        val gapMs = outcome.drift.silence * 1000 / s.format.sampleRate
         val warning = when {
             outcome.problem != null -> outcome.problem
             !outcome.heard -> "the microphone gave only silence (is another app using it?)"
+            gapMs > 0 -> "the sound skipped $gapMs ms (the phone was busy); silence is in its place"
             else -> null
         }
         return mapOf(
@@ -276,6 +288,14 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
             "leadMs" to outcome.leadFrames * 1000.0 / s.format.sampleRate,
             "warning" to warning,
         )
+    }
+
+    /** How the sound kept in step, for the log. */
+    private fun describe(drift: Drift, sampleRate: Int): String {
+        val ppm = if (drift.frames > 0) drift.measured * 1_000_000 / drift.frames else 0
+        return "drift ${drift.measured} frames ($ppm ppm, + for a slow clock or lost frames); " +
+            "${drift.silence} frames of silence put in, ${drift.repeated} repeated, " +
+            "${drift.left} left out" + (drift.why?.let { "; timestamps not followed: $it" } ?: "")
     }
 
     /**
@@ -417,11 +437,34 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
         val problem: String?,
         val micBroken: Boolean,
         val readerStuck: Boolean,
+        val drift: Drift,
     )
 
-    /** PCM read from the microphone, passed from the reading thread to the encoding one. */
+    /**
+     * How the sound was kept in step through the take: [measured] the
+     * last drift a timestamp told ([TakeSoundMath.driftFrames]), over
+     * [frames] frames encoded; [silence] frames of it put in for frames
+     * lost, [repeated] and [left] frames repeated and left out for a
+     * microphone clock off its rate; [why] the timestamps weren't
+     * followed (null: they were, or there were none).
+     */
+    private class Drift(
+        val measured: Long,
+        val frames: Long,
+        val silence: Long,
+        val repeated: Long,
+        val left: Long,
+        val why: String?,
+    )
+
+    /**
+     * PCM read from the microphone, passed from the reading thread to the
+     * encoding one; [drift], when a timestamp was read with it, how many
+     * frames the sound had fallen behind by then ([NO_DRIFT]: none read).
+     */
     private class Chunk(val bytes: ByteArray) {
         var length = 0
+        var drift = NO_DRIFT
     }
 
     /**
@@ -431,7 +474,13 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
      *
      * The encoder waits for the video's start ([videoStarted]), then drops
      * the sound read before it ([TakeSoundMath.leadFrames]), so the
-     * sound's first frame is the video's.
+     * sound's first frame is the video's. After that, the reader reads
+     * the system's timestamp each second, and the encoder keeps the sound
+     * in step with it ([TakeSoundMath.correction]): frames lost (the
+     * reader late by more than the microphone's buffer) come back as
+     * silence, and a microphone clock off its rate is made up for a frame
+     * at a time, as the camera's own sound was (CameraX times each of
+     * its buffers by the timestamps).
      */
     private class Session(private val mic: Mic, val file: File) {
         val source = mic.source
@@ -460,6 +509,10 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
         @Volatile private var encoderDelay = 0
         @Volatile private var leadFrames = 0L
         @Volatile private var audioStartBy = "?"
+        @Volatile private var drift = Drift(0, 0, 0, 0, 0, null)
+
+        // Why the reader stopped following the timestamps (reader writes).
+        @Volatile private var driftIgnored: String? = null
 
         private lateinit var codec: MediaCodec
         private lateinit var muxer: MediaMuxer
@@ -553,6 +606,7 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
                 problem = problem,
                 micBroken = readerStuck || readError != null,
                 readerStuck = readerStuck,
+                drift = drift,
             )
         }
 
@@ -560,6 +614,10 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
             Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)
             val timestamp = AudioTimestamp()
             var reads = 0
+            // The first frame's time the drift is told against, and the
+            // last drift told.
+            var reference = 0L
+            var lastDrift = 0L
             try {
                 while (running) {
                     val chunk = pool.poll() ?: Chunk(ByteArray(chunkBytes))
@@ -573,7 +631,7 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
                         continue
                     }
                     chunk.length = n
-                    filled.add(chunk)
+                    chunk.drift = NO_DRIFT
                     // When the first frame was captured: the system's
                     // timestamps over the first second (the latest kept),
                     // else when the first read came back.
@@ -584,18 +642,36 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
                             format.sampleRate,
                         )
                     }
-                    if (reads < TIMESTAMP_READS &&
+                    // Then once a second, how far the sound has fallen
+                    // behind (the encoder makes up for it).
+                    val first = reads < TIMESTAMP_READS
+                    if ((first || (driftIgnored == null && reads % TIMESTAMP_READS == 0)) &&
                         record.getTimestamp(timestamp, AudioTimestamp.TIMEBASE_BOOTTIME) ==
                         AudioRecord.SUCCESS &&
                         timestamp.nanoTime > 0 &&
                         timestamp.framePosition >= 0
                     ) {
-                        timestampStartNs = TakeSoundMath.firstFrameNs(
+                        val startNs = TakeSoundMath.firstFrameNs(
                             timestamp.nanoTime,
                             timestamp.framePosition,
                             format.sampleRate,
                         )
+                        if (first) {
+                            timestampStartNs = startNs
+                        } else {
+                            if (reference == 0L) {
+                                reference = timestampStartNs.takeIf { it != 0L } ?: startNs
+                            }
+                            val d = TakeSoundMath.driftFrames(startNs, reference, format.sampleRate)
+                            if (TakeSoundMath.believable(lastDrift, d, format.sampleRate)) {
+                                chunk.drift = d
+                                lastDrift = d
+                            } else {
+                                driftIgnored = "a timestamp said $d frames after $lastDrift"
+                            }
+                        }
                     }
+                    filled.add(chunk)
                     reads++
                 }
             } catch (e: Exception) {
@@ -610,6 +686,15 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
             var track = -1
             var muxing = false
             var fedFrames = 0L
+            // Whether the reader's END was taken off the queue.
+            var ended = false
+            // Keeping in step: the last drift told, frames put in (less
+            // those left out) for it so far, and how.
+            var measured = 0L
+            var made = 0L
+            var silence = 0L
+            var repeated = 0L
+            var leftOut = 0L
 
             fun drain(untilEnd: Boolean) {
                 var waits = 0
@@ -674,12 +759,23 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
                 }
             }
 
+            fun feedSilence(frames: Long) {
+                val zeros = ByteArray(chunkBytes)
+                var bytes = frames * frameBytes
+                while (bytes > 0) {
+                    val n = min(bytes, zeros.size.toLong()).toInt()
+                    feed(zeros, 0, n)
+                    bytes -= n
+                }
+            }
+
             try {
                 videoKnown.await()
                 if (cancelled) {
                     while (filled.take() !== END) {
                         // Dropped.
                     }
+                    ended = true
                     return
                 }
                 val byTimestamp = timestampStartNs
@@ -692,18 +788,14 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
                     0L
                 }
                 var skipBytes = max(leadFrames, 0L) * frameBytes
-                if (leadFrames < 0) {
-                    val silence = ByteArray(chunkBytes)
-                    var left = -leadFrames * frameBytes
-                    while (left > 0) {
-                        val n = min(left, silence.size.toLong()).toInt()
-                        feed(silence, 0, n)
-                        left -= n
-                    }
-                }
+                if (leadFrames < 0) feedSilence(-leadFrames)
                 while (true) {
                     val chunk = filled.take()
-                    if (chunk === END) break
+                    if (chunk === END) {
+                        ended = true
+                        break
+                    }
+                    if (chunk.drift != NO_DRIFT) measured = chunk.drift
                     var offset = 0
                     var length = chunk.length
                     if (skipBytes > 0) {
@@ -722,7 +814,28 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
                     }
                     if (length > 0 && encodeError == null) {
                         try {
+                            // In step again, once the lead is dropped.
+                            val fix = if (skipBytes == 0L && length >= 2 * frameBytes) {
+                                TakeSoundMath.correction(measured - made, format.sampleRate)
+                            } else {
+                                0L
+                            }
+                            when {
+                                fix > 1 -> {
+                                    feedSilence(fix)
+                                    silence += fix
+                                }
+                                fix == -1L -> {
+                                    length -= frameBytes
+                                    leftOut++
+                                }
+                            }
+                            made += fix
                             feed(chunk.bytes, offset, length)
+                            if (fix == 1L) {
+                                feed(chunk.bytes, offset + length - frameBytes, frameBytes)
+                                repeated++
+                            }
                         } catch (e: Exception) {
                             // The rest is still taken off the queue (and
                             // dropped), so it doesn't grow.
@@ -752,6 +865,7 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
             } catch (e: Exception) {
                 if (encodeError == null) encodeError = e.message ?: e.toString()
             } finally {
+                drift = Drift(measured, fedFrames, silence, repeated, leftOut, driftIgnored)
                 try {
                     codec.stop()
                 } catch (_: Exception) {
@@ -771,6 +885,17 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
                 } catch (_: Exception) {
                 }
                 if (!muxing) aacFrames = 0
+                // Stopped early: what the reader still reads is taken off
+                // the queue till its end, so the queue doesn't grow
+                // through the rest of the take.
+                if (!ended) {
+                    while (true) {
+                        val chunk = filled.take()
+                        if (chunk === END) break
+                        chunk.length = 0
+                        pool.offer(chunk)
+                    }
+                }
             }
         }
 
@@ -794,6 +919,9 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
     }
 
     companion object {
+        /** A [Chunk] read without a timestamp. */
+        private const val NO_DRIFT = Long.MIN_VALUE
+
         const val CHANNEL = "tabcam/take_sound"
         const val REQUEST_CODE = 2013
         private const val TAG = "TabCam"

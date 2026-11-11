@@ -80,6 +80,8 @@ dependencies {
     implementation("androidx.media3:media3-transformer:$media3Version")
     implementation("androidx.media3:media3-effect:$media3Version")
     implementation("androidx.media3:media3-common:$media3Version")
+    // The JVM tests of the pure parts (src/test, e.g. TakeSoundMathTest.kt).
+    testImplementation("junit:junit:4.13.2")
     // The renderer's smoke test (src/androidTest/.../VideoRenderTest.kt).
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")

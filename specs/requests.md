@@ -2925,8 +2925,7 @@ spec.
     in is saved without it, and a message says so; one whose sound
     stopped early or is all silence, with a message too. New files:
     `TakeSound.kt`, `TakeMux.kt`, `TakeSoundMath.kt` (the pure
-    arithmetic, kept apart for JVM tests the Android project doesn't
-    have yet), `lib/capture/take_sound.dart`; `RECORD_AUDIO` declared in
+    arithmetic, kept apart for JVM tests), `lib/capture/take_sound.dart`; `RECORD_AUDIO` declared in
     the app's manifest too. Tests (fake channel): the camera opened
     without sound, the sound started before the camera and stopped after
     it, the take saved being the one with the sound (then burned), the
@@ -2937,5 +2936,16 @@ spec.
     has a problem; `TakeSound`'s replies. Built (debug APK), **not yet
     tried on a phone** (none was connected): the step (a clap test,
     with the two video starts logged at Stop), the source a phone gives
-    and the AAC encoder's priming are to check there. See
+    and the AAC encoder's priming are to check there. Then, from the review: the
+    sound kept in step through the take (a timestamp each second; lost
+    frames put back as silence, with a message, and a microphone clock
+    off its rate made up a frame at a time), where before only the
+    start was put in step and the sound could slip by tens of ms over a
+    long take; an encoder failing mid-take no longer leaves the queue
+    growing till Stop (it's still emptied); and the microphone refused
+    at the app's prompt but allowed at the camera's own (which asks
+    again) now gets the app's sound for the takes, not the camera's
+    processed one (`prepare` again, without asking). JVM unit tests
+    added for the native arithmetic (`android/app/src/test`,
+    `TakeSoundMathTest`, junit). See
     [Cam](cam.md#recording-comes-first).

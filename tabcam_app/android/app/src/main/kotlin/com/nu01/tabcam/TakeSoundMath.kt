@@ -8,9 +8,7 @@ import kotlin.math.roundToLong
  * The pure parts of [TakeSound] and [TakeMux]: which microphone source and
  * format to try, and the arithmetic that puts the take's sound in step
  * with its video. No Android object is touched here (only constants), so
- * these can be checked on the JVM; the app has no JVM unit test setup
- * yet (`android/app/src/test`), so for now they're kept small and
- * documented, to be tested when one is added.
+ * these are checked on the JVM (`android/app/src/test`, TakeSoundMathTest).
  *
  * Times are `SystemClock.elapsedRealtimeNanos()` (BOOTTIME), which is
  * also the time base `AudioRecord.getTimestamp(…, TIMEBASE_BOOTTIME)`
@@ -111,6 +109,58 @@ object TakeSoundMath {
      * encoder's input times count frames from 0.
      */
     fun framesToUs(frames: Long, sampleRate: Int): Long = frames * 1_000_000L / sampleRate
+
+    /**
+     * How many frames the sound has fallen behind since it was put in
+     * step: a later timestamp tells its first frame's time as
+     * [impliedStartNs] ([firstFrameNs]), against [referenceNs], the one
+     * it was put in step by. Positive: frames are missing (lost when the
+     * reading fell behind the microphone's buffer, or a microphone clock
+     * slower than its rate says); negative: there are too many (a faster
+     * clock). The video's times are the system's (`BOOTTIME`), so that
+     * is what the sound has to keep to.
+     */
+    fun driftFrames(impliedStartNs: Long, referenceNs: Long, sampleRate: Int): Long =
+        ((impliedStartNs - referenceNs).toDouble() * sampleRate / 1e9).roundToLong()
+
+    /**
+     * Whether a timestamp's drift ([next], [driftFrames]) can be believed
+     * after the last one ([previous]): the sound can lose frames, by a
+     * lot at once, but can't gain more than a clock's worth, so going
+     * back by a gap's length or more, or forward by more than
+     * [MAX_GAP_S], means the timestamps are wrong (they're then not
+     * followed for the rest of the take).
+     */
+    fun believable(previous: Long, next: Long, sampleRate: Int): Boolean =
+        next > previous - gapFrames(sampleRate) && next - previous <= MAX_GAP_S * sampleRate
+
+    /**
+     * What to do at the next 20 ms of sound so it keeps in step, with
+     * [missing] frames to put in (negative: to take out):
+     * - a gap's length or more ([gapFrames]): that many frames of silence,
+     *   at once (the sound lost them: a gap where it was lost);
+     * - more than [slackFrames] either way: one frame repeated (1) or
+     *   left out (-1), too little to hear, at most once a chunk (1 ms a
+     *   second, ten times a clock's usual error);
+     * - else nothing (0).
+     */
+    fun correction(missing: Long, sampleRate: Int): Long = when {
+        missing >= gapFrames(sampleRate) -> missing
+        missing > slackFrames(sampleRate) -> 1
+        missing < -slackFrames(sampleRate) -> -1
+        else -> 0
+    }
+
+    /** Frames lost at once that are put back as silence: 50 ms. */
+    fun gapFrames(sampleRate: Int): Long = sampleRate * GAP_MS / 1000
+
+    /** How far out of step the sound may be before it's nudged: 1 ms. */
+    fun slackFrames(sampleRate: Int): Long = sampleRate / 1000L
+
+    const val GAP_MS = 50L
+
+    /** A timestamp saying more than this was lost at once is wrong. */
+    const val MAX_GAP_S = 10L
 
     /**
      * Whole AAC frames (1024 samples) of the encoder's priming to drop

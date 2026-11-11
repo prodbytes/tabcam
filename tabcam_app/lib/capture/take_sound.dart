@@ -11,7 +11,11 @@ import 'package:flutter/services.dart';
 ///
 /// Cam [prepare]s it when it opens: where it can't (the microphone
 /// refused, or no source works), the camera records the take's sound
-/// itself, as before. Then each take: [start] before the camera starts,
+/// itself, as before. Refused here, the microphone is asked for again by
+/// the camera as it opens; allowed there, Cam prepares this again (without
+/// asking) and the app records the sound after all: the camera, opened
+/// with sound, records none of its own while the app's records (see
+/// `MainActivity.checkPermission`). Then each take: [start] before the camera starts,
 /// [videoStarted] as soon as it has, [videoStopping] just before it's
 /// stopped, and [stop] with the camera's video (or [cancel] if the camera
 /// didn't start).
@@ -21,27 +25,31 @@ abstract final class TakeSound {
   static bool get supported =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
-  /// Asks for the microphone if it isn't allowed, and opens it: whether
-  /// takes get their sound here (else the camera should record it).
-  static Future<bool> prepare() async {
-    if (!supported) return false;
+  /// Asks for the microphone if it isn't allowed (not with [ask] false),
+  /// and opens it: whether takes get their sound here (else the camera
+  /// should record it), and if not, whether the microphone was refused.
+  static Future<TakeSoundReady> prepare({bool ask = true}) async {
+    if (!supported) return TakeSoundReady.unavailable;
     try {
-      final info = await channel.invokeMapMethod<String, Object?>('prepare');
+      final info = await channel.invokeMapMethod<String, Object?>('prepare', {
+        'ask': ask,
+      });
       if (info?['ok'] == true) {
         debugPrint(
           'TabCam: cam: the take\'s sound: ${info!['source']}, '
           '${info['sampleRate']} Hz, ${info['channels']} channel(s)',
         );
-        return true;
+        return TakeSoundReady.ok;
       }
       debugPrint(
         'TabCam: cam: the camera records the take\'s sound: '
         '${info?['reason']}',
       );
+      if (info?['refused'] == true) return TakeSoundReady.refused;
     } on Object catch (e) {
       debugPrint('TabCam: cam: the camera records the take\'s sound: $e');
     }
-    return false;
+    return TakeSoundReady.unavailable;
   }
 
   /// The microphone records the take's sound; throws when it can't.
@@ -99,4 +107,18 @@ abstract final class TakeSound {
       debugPrint('TabCam: cam: the take\'s sound ($method): $e');
     }
   }
+}
+
+/// What [TakeSound.prepare] came to.
+enum TakeSoundReady {
+  /// The app records the takes' sound: the camera opens without it.
+  ok,
+
+  /// The microphone isn't allowed: the camera opens with sound (and asks
+  /// for it again).
+  refused,
+
+  /// The app can't record it (no source works, or not Android): the
+  /// camera records the takes' sound.
+  unavailable,
 }

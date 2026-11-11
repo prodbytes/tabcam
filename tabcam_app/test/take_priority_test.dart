@@ -127,7 +127,7 @@ void main() {
     test('is the app\'s on Android only', () async {
       debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
       expect(TakeSound.supported, isFalse);
-      expect(await TakeSound.prepare(), isFalse);
+      expect(await TakeSound.prepare(), TakeSoundReady.unavailable);
       await TakeSound.release();
       expect(calls, isEmpty);
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
@@ -138,14 +138,32 @@ void main() {
         'the camera records the sound', () async {
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
       reply = (_) => {'ok': true, 'source': 'unprocessed'};
-      expect(await TakeSound.prepare(), isTrue);
-      reply = (_) => {'ok': false, 'reason': 'The microphone isn\'t allowed'};
-      expect(await TakeSound.prepare(), isFalse);
+      expect(await TakeSound.prepare(), TakeSoundReady.ok);
+      reply = (_) => {
+        'ok': false,
+        'reason': 'The microphone isn\'t allowed',
+        'refused': true,
+      };
+      expect(await TakeSound.prepare(), TakeSoundReady.refused);
+      // Asked again without asking the user.
+      expect(await TakeSound.prepare(ask: false), TakeSoundReady.refused);
+      reply = (_) => {'ok': false, 'reason': 'No microphone could be opened'};
+      expect(await TakeSound.prepare(), TakeSoundReady.unavailable);
       reply = (_) => throw PlatformException(code: 'failed');
-      expect(await TakeSound.prepare(), isFalse);
+      expect(await TakeSound.prepare(), TakeSoundReady.unavailable);
       expect(
         [for (final c in calls) c.method],
-        ['prepare', 'prepare', 'prepare'],
+        ['prepare', 'prepare', 'prepare', 'prepare', 'prepare'],
+      );
+      expect(
+        [for (final c in calls) c.arguments],
+        [
+          {'ask': true},
+          {'ask': true},
+          {'ask': false},
+          {'ask': true},
+          {'ask': true},
+        ],
       );
     });
 
