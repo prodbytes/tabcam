@@ -21,9 +21,10 @@ import 'video_page.dart' show openPlayer;
 /// Basic edits of a video, opened from its file screen: trim its start
 /// and end, and keep, remove or replace its sound with a new track (one
 /// of the capture's recordings, or a sound file, added to them), shifted
-/// to fit the video. The edit is kept with the page as it's made
-/// ([PageEdit]), and played as it says ([EditedPlayback]: the kept part,
-/// muted, the new track along it); the video's file stays as it is.
+/// to fit the video, at a volume set beside it. The edit is kept with the
+/// page as it's made ([PageEdit]), and played as it says
+/// ([EditedPlayback]: the kept part, muted, the new track along it); the
+/// video's file stays as it is.
 /// Download makes a file of it on the device ([VideoEditor]): the video,
 /// the video without sound, or the sound alone.
 class VideoEditScreen extends StatefulWidget {
@@ -94,6 +95,11 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// (trimmed by the track bar's ends).
   Duration _trackStart = Duration.zero;
   Duration _trackEnd = Duration.zero;
+
+  /// How loud the track plays, 0 to 1 (as it is), and how loud it was
+  /// before it was muted, for unmuting.
+  double _trackVolume = 1;
+  double _unmutedVolume = 1;
 
   /// The shortest part of a track that can be used.
   static const minTrack = Duration(milliseconds: 500);
@@ -176,6 +182,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           _start = _clamp(edit.start, Duration.zero, length);
           _end = _clamp(edit.end, _start, length);
           _sound = edit.sound;
+          _trackVolume = edit.trackVolume;
         }
       });
       final track = edit?.trackId == null
@@ -222,6 +229,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       trackStart: _trackStart,
       trackEnd: _trackEnd >= _trackLength ? null : _trackEnd,
       offset: _offset,
+      trackVolume: _trackVolume,
     );
   }
 
@@ -458,8 +466,26 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     _changed();
   }
 
+  /// The track at [volume], 0 to 1 (to the hundredth).
+  void _setTrackVolume(double volume) {
+    volume = PageEdit.volume(volume);
+    if (volume == _trackVolume) return;
+    setState(() => _trackVolume = volume);
+    _changed();
+  }
+
+  /// Mutes the track, or puts it back as loud as it was.
+  void _muteTrack() {
+    if (_trackVolume > 0) {
+      _unmutedVolume = _trackVolume;
+      _setTrackVolume(0);
+    } else {
+      _setTrackVolume(_unmutedVolume > 0 ? _unmutedVolume : 1);
+    }
+  }
+
   /// Back to the video as it is: all of it, with its own sound (the track
-  /// stays picked, from its start, for New track).
+  /// stays picked, from its start, at 100%, for New track).
   void _reset() {
     setState(() {
       _start = Duration.zero;
@@ -468,6 +494,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       _trackStart = Duration.zero;
       _trackEnd = _trackLength;
       _offset = Duration.zero;
+      _trackVolume = 1;
+      _unmutedVolume = 1;
     });
     _changed();
   }
@@ -481,6 +509,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     trackStart: _trackStart,
     trackEnd: _trackEnd,
     offset: _offset,
+    trackVolume: _trackVolume,
   );
 
   /// Whether the edit's track can be fitted (one of unknown length can't).
@@ -847,9 +876,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     );
   }
 
-  /// The new track: its name and Change, then its bar along the kept
-  /// part ([_TrackBar]: dragged to move it, its ends to trim it), nudges
-  /// of a tenth of a second either way, and where it starts in words.
+  /// The new track: its name and Change, then, on one row, its volume
+  /// ([_TrackVolume]) and its bar along the kept part ([_TrackBar]:
+  /// dragged to move it, its ends to trim it), nudges of a tenth of a
+  /// second either way, and where it starts in words.
   Widget _trackRow(AppLocalizations l10n, ThemeData theme) {
     final name = _trackName;
     final clip = _end - _start;
@@ -881,16 +911,28 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         if (name != null &&
             _trackLength > Duration.zero &&
             clip > Duration.zero) ...[
-          _TrackBar(
-            clip: clip,
-            trackStart: _trackStart,
-            trackEnd: _trackEnd,
-            offset: _offset,
-            name: name,
-            label: l10n.videoEditTrackBar,
-            onMove: _moveTrack,
-            onTrimStart: _trimTrackStart,
-            onTrimEnd: _trimTrackEnd,
+          Row(
+            children: [
+              _TrackVolume(
+                volume: _trackVolume,
+                onChanged: _setTrackVolume,
+                onMute: _muteTrack,
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: _TrackBar(
+                  clip: clip,
+                  trackStart: _trackStart,
+                  trackEnd: _trackEnd,
+                  offset: _offset,
+                  name: name,
+                  label: l10n.videoEditTrackBar,
+                  onMove: _moveTrack,
+                  onTrimStart: _trimTrackStart,
+                  onTrimEnd: _trimTrackEnd,
+                ),
+              ),
+            ],
           ),
           Row(
             children: [
@@ -933,6 +975,119 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
             ),
         ],
       ],
+    );
+  }
+}
+
+/// The track's volume, at the left of its bar: a speaker over the level
+/// (`80%`, in the primary colour when it's not as it is). Tapped, it opens
+/// a slider, 0% to 100% in steps of 5%, with Mute beside it (Unmute puts
+/// back the level it had).
+class _TrackVolume extends StatelessWidget {
+  const _TrackVolume({
+    required this.volume,
+    required this.onChanged,
+    required this.onMute,
+  });
+
+  final double volume;
+  final void Function(double volume) onChanged;
+  final VoidCallback onMute;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final percent = (volume * 100).round();
+    final level = l10n.videoEditTrackVolumeLevel(percent);
+    final icon = Icon(
+      volume <= 0
+          ? Icons.volume_off_outlined
+          : volume < 0.5
+          ? Icons.volume_down_outlined
+          : Icons.volume_up_outlined,
+    );
+    final changed = volume != 1;
+    return MenuAnchor(
+      alignmentOffset: const Offset(0, 4),
+      menuChildren: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                key: const Key('video-edit-track-mute'),
+                tooltip: volume <= 0
+                    ? l10n.videoEditTrackUnmute
+                    : l10n.videoEditTrackMute,
+                icon: icon,
+                onPressed: onMute,
+              ),
+              SizedBox(
+                width: 200,
+                child: Slider(
+                  key: const Key('video-edit-track-volume-slider'),
+                  max: 100,
+                  divisions: 20,
+                  value: percent.clamp(0, 100).toDouble(),
+                  label: level,
+                  semanticFormatterCallback: (v) =>
+                      l10n.videoEditTrackVolumeLevel(v.round()),
+                  onChanged: (v) => onChanged(v / 100),
+                ),
+              ),
+              SizedBox(
+                width: 44,
+                child: Text(
+                  level,
+                  textAlign: TextAlign.end,
+                  style: const TextStyle(
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+          ),
+        ),
+      ],
+      builder: (context, menu, _) => Semantics(
+        button: true,
+        child: Tooltip(
+          message: l10n.videoEditTrackVolume,
+          child: InkWell(
+            key: const Key('video-edit-track-volume'),
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => menu.isOpen ? menu.close() : menu.open(),
+            child: SizedBox(
+              width: 48,
+              height: _TrackBar.height,
+              child: IconTheme.merge(
+                data: IconThemeData(
+                  size: 20,
+                  color: changed ? theme.colorScheme.primary : null,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    icon,
+                    Text(
+                      level,
+                      key: const Key('video-edit-track-volume-level'),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: changed ? theme.colorScheme.primary : null,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

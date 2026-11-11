@@ -215,6 +215,39 @@ void main() {
     // Silence for its first second, the tone after.
     expect(loudest(gappedSound, 0, 0.9), lessThan(0.01));
     expect(loudest(gappedSound, 1.2, 1.9), greaterThan(0.1));
+
+    // At half its volume, the track is half as loud.
+    final quieter = await decode(
+      await editor.apply(
+        video,
+        VideoEdit(
+          start: Duration.zero,
+          end: const Duration(milliseconds: 2000),
+          sound: EditSound.track,
+          track: video,
+          offset: const Duration(milliseconds: 1000),
+          trackVolume: 0.5,
+        ),
+        soundOnly: true,
+      ),
+    );
+    expect(
+      loudest(quieter, 1.2, 1.9),
+      closeTo(loudest(gappedSound, 1.2, 1.9) / 2, 0.02),
+    );
+    // And with the video, it goes through the gain too.
+    final quietVideo = await editor.apply(
+      video,
+      VideoEdit(
+        start: Duration.zero,
+        end: const Duration(milliseconds: 1000),
+        sound: EditSound.track,
+        track: video,
+        trackVolume: 0.5,
+      ),
+    );
+    final (_, quietVideoSound) = await probe(quietVideo);
+    expect(quietVideoSound, isTrue);
   }
 
   testWidgets('the kept part, with its sound, without, or with a track; '

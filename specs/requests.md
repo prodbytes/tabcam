@@ -2444,3 +2444,29 @@ spec.
    passes made after (Auto-pass on) are noted and marked again; only
    those are kept. Now a test checks it, and the spec says so. See
    [Cam](cam.md#phrase-passes).
+
+## 2026-11-11
+
+5. **When editing a recording, add a volume control to the side of the
+   audio track. Left side.** The video edit screen's track bar (Sound:
+   New track) now has the track's volume at its left, on the same row,
+   the bar narrowing to make room: a speaker over the level (`100%`);
+   tapped, it opens a slider from 0% to 100% in steps of 5%, with Mute
+   (Unmute puts back the level it had). It's part of the edit kept with
+   the video (`trackVolume`, in its JSON only when not 100%, read
+   defensively from older or broken edits) and applies wherever the
+   edit plays: the editor's preview (at once, without stopping the
+   track), the file screen, and Download on every platform (Android: a
+   Media3 `GainProcessor` on the track; iOS: an `AVMutableAudioMix`;
+   the web: a gain node, recorded and offline). Reset puts it back to
+   100%. The range stops at 100% because the players can't play a file
+   louder than it is, so a boost would only reach the download and
+   sound different from the preview. It's the track's only: Original
+   keeps the video's own sound as it is. Labels in English, Spanish and
+   Portuguese. New tests: the control is left of the bar on its row;
+   the slider and Mute change the kept edit and the preview track's
+   volume without pausing it; Download and the phones' channel get it;
+   JSON round trip, defaults and defensive reading; Reset; a kept
+   edit's track plays at its volume on the file screen; and, in Chrome,
+   the web editor's track at half volume is half as loud. See
+   [Video edit](video-edit.md).

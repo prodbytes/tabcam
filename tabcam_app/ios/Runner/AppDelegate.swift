@@ -262,8 +262,9 @@ enum TakeOverlayBurner {
 /// `edit`): the part kept (`startMs`–`endMs`), and its sound (`sound`):
 /// `original` kept, `none` removed, or `track` replaced by the sound file at
 /// `track`: `gapMs` of silence, then the track from `fromMs` to `toMs` (the
-/// app works out what fits; left out when nothing does); `video` false for
-/// the sound alone (an `.m4a`). Replies with the output path.
+/// app works out what fits; left out when nothing does), at `trackVolume`
+/// (0 to 1; 1 when left out); `video` false for the sound alone (an
+/// `.m4a`). Replies with the output path.
 enum VideoEdit {
   static func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     guard call.method == "edit" else {
@@ -292,13 +293,15 @@ enum VideoEdit {
     {
       part = VideoEditor.TrackPart(gapMs: gapMs, fromMs: fromMs, toMs: toMs)
     }
+    let volume = (args["trackVolume"] as? NSNumber)?.floatValue ?? 1
     if sound == "track" && track == nil {
       reply(FlutterError(code: "failed", message: "A new sound track needs a file.", details: nil))
       return
     }
     VideoEditor.edit(
       input: URL(fileURLWithPath: input), output: URL(fileURLWithPath: output),
-      startMs: startMs, endMs: endMs, sound: sound, track: track, part: part, video: video
+      startMs: startMs, endMs: endMs, sound: sound, track: track, part: part,
+      trackVolume: volume, video: video
     ) { error in
       if let error = error {
         reply(FlutterError(code: "failed", message: error, details: nil))
@@ -311,8 +314,9 @@ enum VideoEdit {
 
 /// The AVFoundation side of the edit, free of Flutter and UIKit: an
 /// `AVMutableComposition` of the kept part of the video (its orientation
-/// kept as the track's transform) and the sound chosen, exported as H.264
-/// and AAC in MP4; or, without the video, the sound alone as AAC in M4A.
+/// kept as the track's transform) and the sound chosen (a track at its
+/// volume, through an audio mix), exported as H.264 and AAC in MP4; or,
+/// without the video, the sound alone as AAC in M4A.
 enum VideoEditor {
   /// The part of the track that goes in: `gapMs` of silence from the kept
   /// part's start, then the track from `fromMs` to `toMs`.
@@ -326,13 +330,14 @@ enum VideoEditor {
   /// an error message.
   static func edit(
     input: URL, output: URL, startMs: Int64, endMs: Int64, sound: String, track: URL?,
-    part: TrackPart?, video: Bool = true, completion: @escaping (String?) -> Void
+    part: TrackPart?, trackVolume: Float = 1, video: Bool = true,
+    completion: @escaping (String?) -> Void
   ) {
     Task {
       do {
         try await run(
           input: input, output: output, startMs: startMs, endMs: endMs, sound: sound,
-          track: track, part: part, video: video)
+          track: track, part: part, trackVolume: trackVolume, video: video)
         completion(nil)
       } catch {
         completion(error.localizedDescription)
@@ -347,7 +352,7 @@ enum VideoEditor {
 
   private static func run(
     input: URL, output: URL, startMs: Int64, endMs: Int64, sound: String, track: URL?,
-    part: TrackPart?, video: Bool
+    part: TrackPart?, trackVolume: Float, video: Bool
   ) async throws {
     let asset = AVURLAsset(url: input)
     guard let videoTrack = try await asset.loadTracks(withMediaType: .video).first else {
@@ -360,6 +365,8 @@ enum VideoEditor {
     guard range.duration > .zero else { throw Failure("Nothing to keep.") }
 
     let composition = AVMutableComposition()
+    // The track's volume, when it's not as it is.
+    var audioMix: AVAudioMix?
     if video {
       guard
         let compVideo = composition.addMutableTrack(
@@ -399,6 +406,14 @@ enum VideoEditor {
         try compAudio.insertTimeRange(
           CMTimeRange(start: audioRange.start + from, end: audioRange.start + to), of: audio,
           at: gap)
+        let volume = trackVolume.isNaN ? 1 : min(max(trackVolume, 0), 1)
+        if volume != 1 {
+          let parameters = AVMutableAudioMixInputParameters(track: compAudio)
+          parameters.setVolume(volume, at: .zero)
+          let mix = AVMutableAudioMix()
+          mix.inputParameters = [parameters]
+          audioMix = mix
+        }
       }
     default:
       break
@@ -417,6 +432,7 @@ enum VideoEditor {
     else { throw Failure("Could not start the export.") }
     export.outputURL = output
     export.outputFileType = video ? .mp4 : .m4a
+    export.audioMix = audioMix
     export.shouldOptimizeForNetworkUse = true
     await withCheckedContinuation { (done: CheckedContinuation<Void, Never>) in
       export.exportAsynchronously { done.resume() }

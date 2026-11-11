@@ -13,7 +13,7 @@ export '../library/page_edit.dart' show EditSound, trackSpan;
 /// sound: kept, removed, or replaced by [track], a recording or sound
 /// file, of which the part from [trackStart] to [trackEnd] is used,
 /// starting [offset] after the kept part's start (before it, when
-/// negative), cut to fit the kept part ([trackPart]).
+/// negative), cut to fit the kept part ([trackPart]), at [trackVolume].
 @immutable
 class VideoEdit {
   const VideoEdit({
@@ -25,6 +25,7 @@ class VideoEdit {
     this.trackStart = Duration.zero,
     this.trackEnd,
     this.offset = Duration.zero,
+    this.trackVolume = 1,
   });
 
   final Duration start;
@@ -47,6 +48,9 @@ class VideoEdit {
   /// positive, it starts that much after the video; negative, that much
   /// more of its start is cut.
   final Duration offset;
+
+  /// How loud [track] goes in: a gain from 0 (silent) to 1 (as it is).
+  final double trackVolume;
 
   /// How long the kept part is.
   Duration get length => end - start;
@@ -78,7 +82,8 @@ class VideoEdit {
       other.trackLength == trackLength &&
       other.trackStart == trackStart &&
       other.trackEnd == trackEnd &&
-      other.offset == offset;
+      other.offset == offset &&
+      other.trackVolume == trackVolume;
 
   @override
   int get hashCode => Object.hash(
@@ -90,11 +95,13 @@ class VideoEdit {
     trackStart,
     trackEnd,
     offset,
+    trackVolume,
   );
 
   @override
   String toString() =>
-      'VideoEdit($start–$end, $sound, $track $trackStart–$trackEnd, $offset)';
+      'VideoEdit($start–$end, $sound, $track $trackStart–$trackEnd, $offset, '
+      '$trackVolume)';
 }
 
 /// Applies a [VideoEdit] to a video file, on the device.
@@ -144,8 +151,9 @@ abstract final class VideoEditor {
 /// `tabcam/video_edit`, method `edit`: the input and output paths, the
 /// part kept in ms, the sound (`original`, `none`, `track`) and, for a
 /// track, its path and the part of it that goes in (`gapMs` of silence,
-/// then the track from `fromMs` to `toMs`); `video` false for the sound
-/// alone (an `.m4a`). It replies with the output path.
+/// then the track from `fromMs` to `toMs`, at `trackVolume`, a gain from
+/// 0 to 1); `video` false for the sound alone (an `.m4a`). It replies with
+/// the output path.
 class ChannelVideoEditor implements VideoEditing {
   const ChannelVideoEditor();
 
@@ -182,6 +190,7 @@ class ChannelVideoEditor implements VideoEditing {
       'sound': edit.sound.name,
       'video': !soundOnly,
       'track': track?.path,
+      if (track != null) 'trackVolume': PageEdit.volume(edit.trackVolume),
       if (part != null) ...{
         'gapMs': part.gap.inMilliseconds,
         'fromMs': part.from.inMilliseconds,

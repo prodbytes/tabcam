@@ -1958,6 +1958,20 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditTrackLater => 'Um décimo de segundo depois';
 
   @override
+  String get videoEditTrackVolume => 'Volume da faixa';
+
+  @override
+  String videoEditTrackVolumeLevel(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String get videoEditTrackMute => 'Silenciar a faixa';
+
+  @override
+  String get videoEditTrackUnmute => 'Ativar o som da faixa';
+
+  @override
   String videoEditTrackUsed(String start, String end) {
     return 'Usando $start–$end da faixa';
   }
