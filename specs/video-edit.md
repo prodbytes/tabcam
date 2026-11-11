@@ -13,20 +13,26 @@ it's made (the page's `edit`: the part kept, the sound, the track's page
 ID, the part of the track used, where it starts and its volume; synced
 with the capture as a rename is), and the video's file stays as it is: no Save,
 and no waiting for the video to be made again. Players play the video as
-its edit says
+its edit says, from the same [render plan](#the-render-plan) Download
+renders
 ([`edited_playback.dart`](../tabcam_app/lib/screens/edited_playback.dart)):
 the kept part only, with its own sound, silent, or muted with the new
-track playing along it at its volume, started where it comes in
-(checked every tenth of a second, as the [section](cam.md#playing-along-with-a-file) is). The
+track playing along it at its volume, in its clip (from where the plan
+says it is, paused outside it; checked every tenth of a second, as the
+[section](cam.md#playing-along-with-a-file) is; a change that moves
+nothing, such as the volume, doesn't stop or re-seek it). The
 [file screen](event-screen.md#file-screen)'s player does, looping the
-kept part; elsewhere (the file list's play buttons, Cam's play along,
+kept part; it finds the track's length as the editor does (its player's,
+or, where the player can't say, as for a take the browser recorded, the
+editor's), and when neither can say, takes the end the edit keeps for
+the track (none: the track doesn't play); elsewhere (the file list's play buttons, Cam's play along,
 the list's Download and Download all) the video's file is used as it
 is. A cloned capture's video keeps its edit, naming the copy's track.
 An edit's keys from a newer app (a newer editor's settings) are kept with
 it and written back with every change made here, even a Reset: the edit
 then stays, as the whole video with its own sound, which plays and
 downloads as the video itself ([library](library.md#events)).
-**Download** makes a file of the edit, on the device
+**Download** renders the edit's plan to a file, on the device
 ([`video_edit.dart`](../tabcam_app/lib/capture/video_edit.dart)): nothing
 is uploaded to make it, and no server is involved.
 
@@ -110,42 +116,91 @@ was left:
   it again only as a WebM) or already in the format made here (a
   `.webm` where the browser records WebM), and is made again otherwise
   (a WebM take in Chrome, a MOV), so the video is an MP4 wherever MP4
-  is made. A progress bar shows meanwhile (the browser's says how far along a
-  video is; the phones' is indeterminate), with "Making the file…"; a
+  is made (the plan is a [passthrough](#the-render-plan)). A progress
+  bar shows meanwhile, saying how far along it is (the browser's as the
+  video plays; the phones' as Media3 or AVFoundation report it, every
+  quarter of a second), with "Making the file…"; a
   failure says "Couldn't make the file" and why. A track whose length
   can't be told can't be downloaded with the video.
 
-**How it's applied**, on the device
-([platforms](platforms.md)):
+### The render plan
+
+Download and the players work from one description of the edit, the
+**render plan**
+([`render_plan.dart`](../tabcam_app/lib/capture/render_plan.dart),
+pure Dart, `RenderPlan.of`): derived from the page's edit each time,
+never stored. It says:
+
+- the **input** and the part of it **kept** (`start`–`end`); output
+  times count from the kept part's start;
+- the **format** made and whether the **picture** goes in (not for the
+  sound only);
+- the **own** lane: the video's own sound at a volume (1 for now), or
+  none (taken out);
+- the **song** lane: the track's page and file, its volume, and its
+  **clips**, each from a time in the output (`at`) the track from
+  `from` to `to` (at a `speed`, 1 for now), silent between them. Today's
+  edits make at most one clip: the part of the track that fits the kept
+  part, where its shift puts it (`trackSpan`: the silence before it,
+  then the track from its first moment in the kept part to its last).
+  Clips are cut to the output (`clampClips`): nothing is ever played
+  before its start or past its end. Where the song is at a time in the
+  output is one function, shared by the preview and the web's renderer
+  (`songAt`, a binary search over the clips; none in a gap);
+- whether it's a **passthrough**: the whole video, its own sound as it
+  is, no song, and the input already in the format made (an MP4 or M4V
+  anywhere; a WebM where WebM is made). Only then does Download save the
+  file as it is; everything else is rendered.
+
+Download's three items are three plans of the same edit: **the video**;
+**the video without sound** (the same plan with neither lane: only the
+sound is dropped); **the sound only** (no picture). Layers drawn over
+the video (the tab, a title, a watermark) and fades in and out come in
+later steps of the editor's redesign, as more of the plan; for now a
+plan has none.
+
+**How it's rendered**, on the device
+([platforms](platforms.md)): each platform gets the plan and only
+carries it out; the times are all worked out in Dart.
 
 - **Android**: Media3 Transformer
   ([`VideoEdit.kt`](../tabcam_app/android/app/src/main/kotlin/com/nu01/tabcam/VideoEdit.kt),
-  method channel `tabcam/video_edit`, method `edit`): a composition
-  whose primary sequence is the video clipped to the kept part, its
-  audio removed unless kept; a new track is a second sequence, a gap
-  (silence) for as long as it starts after the video, then the part of
-  it that fits (`gapMs`, `fromMs`, `toMs`, worked out by the app), at its
-  volume (`trackVolume`: a `GainProcessor` effect on it, when not 1), the
-  composition forcing an audio track since the primary has none. H.264
-  and AAC in MP4. The sound only (`video: false`) is one sequence, the
-  kept part of the video's sound or the track's gap and part (at its
-  volume), AAC in M4A; it ends where the sound does.
+  method channel `tabcam/video_edit`, method `render`, the plan's
+  `toChannel`: `input`, `output`, `video`, `startMs`, `endMs`, `own`
+  `{volume}` and `song` `{path, volume, clips: [{atMs, fromMs, toMs,
+  speed}]}`, and a `job`). With the picture: a composition whose
+  primary sequence is the video clipped to the kept part, its audio
+  removed unless the own lane keeps it (through a `GainProcessor` at its
+  volume, when not 1); the song lane is a second sequence, a gap
+  (silence) up to each clip, then the track clipped to it, at the lane's
+  volume, the composition forcing an audio track when the primary has
+  none. H.264 and AAC in MP4. The sound only has no picture: the own
+  lane's sound clipped, and the song's sequence, AAC in M4A; it ends
+  where the sound does. A clip at a speed other than 1 is refused (not
+  yet). While it renders, `Transformer.getProgress` is read every quarter
+  of a second and sent back to the app (`progress`, with the `job` and
+  `done`, 0 to 1), which moves the progress bar.
 - **iOS**: AVFoundation
   ([`AppDelegate.swift`](../tabcam_app/ios/Runner/AppDelegate.swift), the
-  same channel): an `AVMutableComposition` with the kept part of the
-  video track (its orientation kept as the composition track's
-  transform), its own audio tracks cut the same unless removed, or the
-  track's sound inserted at its shift, at its volume (an
-  `AVMutableAudioMix` whose input parameters set the track's volume,
-  when not 1); exported as MP4 (highest quality).
-  The sound only (`video: false`) leaves the video track out and exports
-  M4A (`AVAssetExportPresetAppleM4A`); it ends where the sound does.
+  same channel and method): an `AVMutableComposition` with the kept part
+  of the video track (its orientation kept as the composition track's
+  transform), its own audio tracks cut the same when the own lane keeps
+  them, and the song lane's clips inserted on one audio track, each where
+  it starts; the volumes that aren't 1 through an `AVMutableAudioMix`.
+  Exported as MP4 (highest quality); the sound only leaves the video
+  track out and exports M4A (`AVAssetExportPresetAppleM4A`), and ends
+  where the sound does. The track's asset is held until the export is
+  done (a composition doesn't keep the assets its tracks came from; let
+  go, the export failed). The export's `progress` is read every quarter
+  of a second and sent back as on Android.
 - **The web**
-  ([`web_video_editor.dart`](../tabcam_app/lib/capture/web_video_editor.dart)):
-  the kept part plays, hidden, into a canvas (its frames, at 30 a
-  second) and a Web Audio graph (the video's own sound, or the track's,
-  started where it comes in, through a gain node at its volume), and the browser's MediaRecorder records
-  both. **The video is MP4** where the browser records it: the first
+  ([`web_video_editor.dart`](../tabcam_app/lib/capture/web_video_editor.dart),
+  the plan given directly): the kept part plays, hidden, into a canvas
+  (its frames, at 30 a second) and a Web Audio graph (the own lane, and
+  the song lane's track, each through a gain node at its volume; the
+  track plays in its clips, from where the plan says, paused between
+  them, so a track trimmed at its end stops there), and the browser's
+  MediaRecorder records both. **The video is MP4** where the browser records it: the first
   type it supports of `video/mp4;codecs=avc1.42E01E,mp4a.40.2`,
   `video/mp4;codecs=avc1,mp4a.40.2` and `video/mp4`
   ([`edit_formats.dart`](../tabcam_app/lib/capture/edit_formats.dart),
@@ -159,9 +214,11 @@ was left:
   which says it's endless until sought to its end. It takes as long as
   the kept part is to play, and the progress bar says how far along it
   is. **The sound only** is mixed offline, faster than it plays: the
-  video's or the track's sound decoded (Web Audio's `decodeAudioData`)
-  and mixed in an `OfflineAudioContext` at 44.1 kHz as long as the kept
-  part (the track after its gap, through a gain node at its volume).
+  video's and the track's sound decoded (Web Audio's `decodeAudioData`,
+  each file once) and mixed in an `OfflineAudioContext` at 44.1 kHz as
+  long as the kept part (the own lane from the kept part's start, each
+  of the song's clips where it starts, each through a gain node at its
+  lane's volume).
   Then, the first way the browser can ([`WebSoundWay`](../tabcam_app/lib/capture/edit_formats.dart)):
   - **WebCodecs' `AudioEncoder`** (`mp4a.40.2`, AAC-LC at 160 kbit/s,
     checked with `AudioEncoder.isConfigSupported`: Chrome and Edge on
@@ -205,10 +262,15 @@ was left:
 - **Elsewhere** (desktop builds): Download says videos can't be edited
   here.
 
-The math of fitting a track into the kept part is one function, the
-app's (`trackSpan`, `VideoEdit.trackPart`): of the track, the part used
-(its trims), starting at its shift from the kept part's start; the
-silence before it, then the track from its first moment that falls in
-the kept part to its last. The platforms get the result (`gapMs`,
-`fromMs`, `toMs`; nothing when none of it falls in), and the track's
-volume (`trackVolume`, 0 to 1), and only insert it.
+**Native smoke tests**: the renderers are also tested on their
+platforms, with a 2 s made-up clip and a made-up tone as the song: an
+XCTest in `ios/RunnerTests` (on the simulator: `xcodebuild test
+-workspace ios/Runner.xcworkspace -scheme Runner -destination
+'platform=iOS Simulator,name=…' -only-testing:RunnerTests`) and an
+instrumented test in `android/app/src/androidTest` (on a phone on USB:
+`./gradlew :app:connectedDebugAndroidTest` in `android/`), each
+rendering a trimmed plan with its own sound and a song clip at half its
+volume, the sound alone, and refusing a plan with neither picture nor
+sound; and each reading the channel's arguments. (ML Kit's pods leave
+the arm64 simulator out, so the XCTest needs a simulator that runs
+x86_64.)

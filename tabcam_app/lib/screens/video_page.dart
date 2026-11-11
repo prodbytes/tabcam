@@ -1,8 +1,10 @@
 import 'dart:io';
 
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
+import '../capture/video_edit.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
 import '../l10n/language.dart';
@@ -11,9 +13,10 @@ import 'media_url.dart';
 
 /// A video page: a play button until tapped, then the video, with a play /
 /// pause button and tap to pause and resume. It plays from the page's file
-/// (from memory on the web), as its edit says ([EditedPlayback]: the kept
-/// part, with its new track along it), and is let go when the page scrolls
-/// away.
+/// (from memory on the web), as its edit says ([EditedPlayback], with the
+/// plan Download renders: the kept part, with its new track along it, the
+/// track's length found as the editor finds it, [mediaLength]), and is let
+/// go when the page scrolls away.
 class VideoPage extends StatefulWidget {
   const VideoPage({
     super.key,
@@ -62,8 +65,23 @@ class _VideoPageState extends State<VideoPage> {
         debugPrint('TabCam: video: its track can\'t be played: $e');
       }
     }
+    final track = _track;
+    var songLength = Duration.zero;
+    if (track != null && trackPage != null) {
+      songLength = await mediaLength(
+        track,
+        () => pageFile(widget.library, widget.event, trackPage),
+      );
+      // Still unknown: the track's end the edit keeps, as before.
+      if (songLength <= Duration.zero) {
+        songLength = edit.trackEnd ?? Duration.zero;
+      }
+    }
     final edited = _edited = EditedPlayback(controller, loop: true);
-    await edited.set(edit, track: _track);
+    await edited.set(
+      EditedPlayback.planOf(edit, songLength: songLength),
+      song: track,
+    );
     await controller.seekTo(edit.start);
   }
 
@@ -179,6 +197,42 @@ Future<VideoPlayerController> openPlayer(
     rethrow;
   }
   return controller;
+}
+
+/// [page]'s file: its path, or its bytes on the web.
+Future<XFile> pageFile(
+  Library library,
+  CaptureEvent event,
+  EventPage page,
+) async {
+  final path = await library.path(event, page);
+  return path != null
+      ? XFile(path, mimeType: page.mimeType)
+      : XFile.fromData(
+          await library.original(event, page),
+          mimeType: page.mimeType,
+          name: page.fileName,
+        );
+}
+
+/// How long [file] is: [player]'s word, unless it has none (the browser,
+/// for a take it recorded), then [editor]'s ([VideoEditor.instance] when
+/// not given); zero when neither can say. [file] is only read when the
+/// player can't say.
+Future<Duration> mediaLength(
+  VideoPlayerController player,
+  Future<XFile> Function() file, {
+  VideoEditing? editor,
+}) async {
+  final known = player.value.duration;
+  if (known > Duration.zero) return known;
+  try {
+    return await (editor ?? VideoEditor.instance)?.length(await file()) ??
+        Duration.zero;
+  } on Object catch (e) {
+    debugPrint('TabCam: video: no length: $e');
+    return Duration.zero;
+  }
 }
 
 /// Plays or pauses [controller], its icon following it; at the end, plays

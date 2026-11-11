@@ -30,7 +30,9 @@ import UIKit
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "VideoEdit") {
       let channel = FlutterMethodChannel(
         name: "tabcam/video_edit", binaryMessenger: registrar.messenger())
-      channel.setMethodCallHandler(VideoEdit.handle)
+      channel.setMethodCallHandler { [weak channel] call, result in
+        VideoEdit.handle(call, result: result, channel: channel)
+      }
       videoEditChannel = channel
     }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "Sound") {
@@ -318,16 +320,20 @@ enum TakeOverlayBurner {
   }
 }
 
-/// Basic edits of a video (method channel `tabcam/video_edit`, method
-/// `edit`): the part kept (`startMs`–`endMs`), and its sound (`sound`):
-/// `original` kept, `none` removed, or `track` replaced by the sound file at
-/// `track`: `gapMs` of silence, then the track from `fromMs` to `toMs` (the
-/// app works out what fits; left out when nothing does), at `trackVolume`
-/// (0 to 1; 1 when left out); `video` false for the sound alone (an
-/// `.m4a`). Replies with the output path.
+/// Renders an edit's plan (lib/capture/render_plan.dart; method channel
+/// `tabcam/video_edit`, method `render`, the plan's `toChannel`): `input`
+/// and `output` paths, `video` (false for the sound alone, an `.m4a`), the
+/// part kept (`startMs`–`endMs`), the video's own sound (`own`: `volume`, 0
+/// to 1; left out: removed) and the song lane (`song`: `path`, `volume` and
+/// `clips`, each `atMs` in the output, the song from `fromMs` to `toMs`, at
+/// `speed`, 1 for now). With a `job`, `progress` calls back with `job` and
+/// `done` (0 to 1) every quarter of a second while it renders. Replies with
+/// the output path.
 enum VideoEdit {
-  static func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-    guard call.method == "edit" else {
+  static func handle(
+    _ call: FlutterMethodCall, result: @escaping FlutterResult, channel: FlutterMethodChannel?
+  ) {
+    guard call.method == "render" else {
       result(FlutterMethodNotImplemented)
       return
     }
@@ -335,69 +341,123 @@ enum VideoEdit {
       DispatchQueue.main.async { result(value) }
     }
     guard let args = call.arguments as? [String: Any],
-      let input = args["input"] as? String,
-      let output = args["output"] as? String,
-      let startMs = (args["startMs"] as? NSNumber)?.int64Value,
-      let endMs = (args["endMs"] as? NSNumber)?.int64Value
+      let plan = VideoEditor.Plan(args: args)
     else {
-      reply(FlutterError(code: "failed", message: "Bad arguments for edit.", details: nil))
+      reply(FlutterError(code: "failed", message: "Bad arguments for render.", details: nil))
       return
     }
-    let sound = args["sound"] as? String ?? "original"
-    let video = args["video"] as? Bool ?? true
-    let track = (args["track"] as? String).map { URL(fileURLWithPath: $0) }
-    var part: VideoEditor.TrackPart?
-    if let gapMs = (args["gapMs"] as? NSNumber)?.int64Value,
-      let fromMs = (args["fromMs"] as? NSNumber)?.int64Value,
-      let toMs = (args["toMs"] as? NSNumber)?.int64Value
-    {
-      part = VideoEditor.TrackPart(gapMs: gapMs, fromMs: fromMs, toMs: toMs)
+    var progress: ((Float) -> Void)?
+    if let job = (args["job"] as? NSNumber)?.intValue {
+      progress = { done in
+        DispatchQueue.main.async {
+          channel?.invokeMethod("progress", arguments: ["job": job, "done": Double(done)])
+        }
+      }
     }
-    let volume = (args["trackVolume"] as? NSNumber)?.floatValue ?? 1
-    if sound == "track" && track == nil {
-      reply(FlutterError(code: "failed", message: "A new sound track needs a file.", details: nil))
-      return
-    }
-    VideoEditor.edit(
-      input: URL(fileURLWithPath: input), output: URL(fileURLWithPath: output),
-      startMs: startMs, endMs: endMs, sound: sound, track: track, part: part,
-      trackVolume: volume, video: video
-    ) { error in
+    VideoEditor.render(plan, progress: progress) { error in
       if let error = error {
         reply(FlutterError(code: "failed", message: error, details: nil))
       } else {
-        reply(output)
+        reply(plan.output.path)
       }
     }
   }
 }
 
-/// The AVFoundation side of the edit, free of Flutter and UIKit: an
-/// `AVMutableComposition` of the kept part of the video (its orientation
-/// kept as the track's transform) and the sound chosen (a track at its
-/// volume, through an audio mix), exported as H.264 and AAC in MP4; or,
-/// without the video, the sound alone as AAC in M4A.
+/// The AVFoundation side of `render`, free of Flutter and UIKit (the
+/// RunnerTests smoke test calls it): an `AVMutableComposition` of the kept
+/// part of the video (its orientation kept as the track's transform), its
+/// own sound cut the same when kept, and the song lane's clips inserted on
+/// one track where they start, with their volumes through an audio mix;
+/// exported as H.264 and AAC in MP4, or, without the video, the sound alone
+/// as AAC in M4A.
 enum VideoEditor {
-  /// The part of the track that goes in: `gapMs` of silence from the kept
-  /// part's start, then the track from `fromMs` to `toMs`.
-  struct TrackPart {
-    let gapMs: Int64
+  /// A piece of the song lane: from `atMs` in the output, the song from
+  /// `fromMs` to `toMs`.
+  struct Clip: Equatable {
+    let atMs: Int64
     let fromMs: Int64
     let toMs: Int64
+    var speed: Double = 1
+  }
+
+  /// The song lane: its file, its volume, and its clips in output order.
+  struct Song {
+    let url: URL
+    var volume: Float = 1
+    let clips: [Clip]
+  }
+
+  /// What `render` is asked.
+  struct Plan {
+    let input: URL
+    let output: URL
+    var video: Bool = true
+    let startMs: Int64
+    let endMs: Int64
+    /// The video's own sound's volume; nil: removed.
+    var ownVolume: Float? = 1
+    var song: Song?
+
+    /// The plan the channel's arguments describe; nil when they're bad.
+    init?(args: [String: Any]) {
+      func int64(_ map: [String: Any], _ key: String) -> Int64? {
+        (map[key] as? NSNumber)?.int64Value
+      }
+      func volume(_ map: [String: Any]) -> Float {
+        let v = (map["volume"] as? NSNumber)?.floatValue ?? 1
+        return v.isNaN ? 1 : min(max(v, 0), 1)
+      }
+      guard let input = args["input"] as? String,
+        let output = args["output"] as? String,
+        let startMs = int64(args, "startMs"),
+        let endMs = int64(args, "endMs")
+      else { return nil }
+      var song: Song?
+      if let lane = args["song"] as? [String: Any] {
+        guard let path = lane["path"] as? String else { return nil }
+        var clips: [Clip] = []
+        for case let clip as [String: Any] in (lane["clips"] as? [Any]) ?? [] {
+          guard let atMs = int64(clip, "atMs"), let fromMs = int64(clip, "fromMs"),
+            let toMs = int64(clip, "toMs")
+          else { return nil }
+          clips.append(
+            Clip(
+              atMs: atMs, fromMs: fromMs, toMs: toMs,
+              speed: (clip["speed"] as? NSNumber)?.doubleValue ?? 1))
+        }
+        song = Song(url: URL(fileURLWithPath: path), volume: volume(lane), clips: clips)
+      }
+      self.init(
+        input: URL(fileURLWithPath: input), output: URL(fileURLWithPath: output),
+        video: args["video"] as? Bool ?? true, startMs: startMs, endMs: endMs,
+        ownVolume: (args["own"] as? [String: Any]).map { volume($0) }, song: song)
+    }
+
+    init(
+      input: URL, output: URL, video: Bool = true, startMs: Int64, endMs: Int64,
+      ownVolume: Float? = 1, song: Song? = nil
+    ) {
+      self.input = input
+      self.output = output
+      self.video = video
+      self.startMs = startMs
+      self.endMs = endMs
+      self.ownVolume = ownVolume
+      self.song = song
+    }
   }
 
   /// Calls `completion` exactly once, on any thread, with nil on success or
-  /// an error message.
-  static func edit(
-    input: URL, output: URL, startMs: Int64, endMs: Int64, sound: String, track: URL?,
-    part: TrackPart?, trackVolume: Float = 1, video: Bool = true,
+  /// an error message; `progress`, every quarter of a second while it
+  /// exports, with how much is done (0 to 1), on any thread.
+  static func render(
+    _ plan: Plan, progress: ((Float) -> Void)? = nil,
     completion: @escaping (String?) -> Void
   ) {
     Task {
       do {
-        try await run(
-          input: input, output: output, startMs: startMs, endMs: endMs, sound: sound,
-          track: track, part: part, trackVolume: trackVolume, video: video)
+        try await run(plan, progress: progress)
         completion(nil)
       } catch {
         completion(error.localizedDescription)
@@ -410,36 +470,40 @@ enum VideoEditor {
     init(_ message: String) { errorDescription = message }
   }
 
-  private static func run(
-    input: URL, output: URL, startMs: Int64, endMs: Int64, sound: String, track: URL?,
-    part: TrackPart?, trackVolume: Float, video: Bool
-  ) async throws {
-    let asset = AVURLAsset(url: input)
+  private static func ms(_ value: Int64) -> CMTime { CMTime(value: value, timescale: 1000) }
+
+  private static func run(_ plan: Plan, progress: ((Float) -> Void)?) async throws {
+    let asset = AVURLAsset(url: plan.input)
     guard let videoTrack = try await asset.loadTracks(withMediaType: .video).first else {
       throw Failure("The video has no video track.")
     }
     let (trackRange, transform) = try await videoTrack.load(.timeRange, .preferredTransform)
-    let wanted = CMTimeRange(
-      start: CMTime(value: startMs, timescale: 1000), end: CMTime(value: endMs, timescale: 1000))
+    let wanted = CMTimeRange(start: ms(plan.startMs), end: ms(plan.endMs))
     let range = CMTimeRangeGetIntersection(wanted, otherRange: trackRange)
     guard range.duration > .zero else { throw Failure("Nothing to keep.") }
+    if let song = plan.song, song.clips.contains(where: { $0.speed != 1 }) {
+      throw Failure("A song at another speed can't be rendered yet.")
+    }
 
     let composition = AVMutableComposition()
-    // The track's volume, when it's not as it is.
-    var audioMix: AVAudioMix?
-    if video {
+    // The volumes that aren't 1, one per audio track.
+    var volumes: [AVMutableAudioMixInputParameters] = []
+    func mix(_ track: AVMutableCompositionTrack, at volume: Float) {
+      guard volume != 1 else { return }
+      let parameters = AVMutableAudioMixInputParameters(track: track)
+      parameters.setVolume(volume, at: .zero)
+      volumes.append(parameters)
+    }
+    if plan.video {
       guard
         let compVideo = composition.addMutableTrack(
           withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
       else { throw Failure("Could not add the video track.") }
       try compVideo.insertTimeRange(range, of: videoTrack, at: .zero)
       compVideo.preferredTransform = transform
-    } else if sound == "none" {
-      throw Failure("A video without sound has no sound.")
     }
 
-    switch sound {
-    case "original":
+    if let ownVolume = plan.ownVolume {
       for audio in try await asset.loadTracks(withMediaType: .audio) {
         let audioRange = CMTimeRangeGetIntersection(
           try await audio.load(.timeRange), otherRange: range)
@@ -448,57 +512,71 @@ enum VideoEditor {
             withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
         else { continue }
         try compAudio.insertTimeRange(audioRange, of: audio, at: audioRange.start - range.start)
+        mix(compAudio, at: ownVolume)
       }
-    case "track":
-      guard let track = track else { throw Failure("No track.") }
-      guard let audio = try await AVURLAsset(url: track).loadTracks(withMediaType: .audio).first
-      else { throw Failure("The track has no sound.") }
-      let audioRange = try await audio.load(.timeRange)
-      // Nothing of the track falls in the kept part: silence.
-      if let part = part, part.toMs > part.fromMs, part.gapMs >= 0, part.fromMs >= 0 {
-        let gap = CMTime(value: part.gapMs, timescale: 1000)
-        let from = CMTimeMinimum(CMTime(value: part.fromMs, timescale: 1000), audioRange.duration)
-        let to = CMTimeMinimum(CMTime(value: part.toMs, timescale: 1000), audioRange.duration)
-        guard
-          let compAudio = composition.addMutableTrack(
-            withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
-        else { throw Failure("Could not add the sound track.") }
-        try compAudio.insertTimeRange(
-          CMTimeRange(start: audioRange.start + from, end: audioRange.start + to), of: audio,
-          at: gap)
-        let volume = trackVolume.isNaN ? 1 : min(max(trackVolume, 0), 1)
-        if volume != 1 {
-          let parameters = AVMutableAudioMixInputParameters(track: compAudio)
-          parameters.setVolume(volume, at: .zero)
-          let mix = AVMutableAudioMix()
-          mix.inputParameters = [parameters]
-          audioMix = mix
-        }
-      }
-    default:
-      break
     }
 
-    if FileManager.default.fileExists(atPath: output.path) {
-      try FileManager.default.removeItem(at: output)
+    // No clip of the song falls in the kept part: silence.
+    // The song's asset, held until the export is done (as the video's
+    // is): a composition doesn't keep the assets of the tracks it was made
+    // from, and one let go fails the export.
+    var songAsset: AVURLAsset?
+    if let song = plan.song, !song.clips.isEmpty {
+      let asset = AVURLAsset(url: song.url)
+      songAsset = asset
+      guard let audio = try await asset.loadTracks(withMediaType: .audio).first
+      else { throw Failure("The song has no sound.") }
+      let audioRange = try await audio.load(.timeRange)
+      guard
+        let compAudio = composition.addMutableTrack(
+          withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
+      else { throw Failure("Could not add the song's track.") }
+      for clip in song.clips where clip.toMs > clip.fromMs && clip.fromMs >= 0 && clip.atMs >= 0 {
+        let from = CMTimeMinimum(ms(clip.fromMs), audioRange.duration)
+        let to = CMTimeMinimum(ms(clip.toMs), audioRange.duration)
+        guard to > from else { continue }
+        try compAudio.insertTimeRange(
+          CMTimeRange(start: audioRange.start + from, end: audioRange.start + to), of: audio,
+          at: ms(clip.atMs))
+      }
+      mix(compAudio, at: song.volume)
     }
-    if !video && !composition.tracks.contains(where: { $0.mediaType == .audio }) {
+
+    if FileManager.default.fileExists(atPath: plan.output.path) {
+      try FileManager.default.removeItem(at: plan.output)
+    }
+    if !plan.video && !composition.tracks.contains(where: { $0.mediaType == .audio }) {
       throw Failure("There is no sound in the kept part.")
     }
     guard
       let export = AVAssetExportSession(
         asset: composition,
-        presetName: video ? AVAssetExportPresetHighestQuality : AVAssetExportPresetAppleM4A)
+        presetName: plan.video ? AVAssetExportPresetHighestQuality : AVAssetExportPresetAppleM4A)
     else { throw Failure("Could not start the export.") }
-    export.outputURL = output
-    export.outputFileType = video ? .mp4 : .m4a
-    export.audioMix = audioMix
+    export.outputURL = plan.output
+    export.outputFileType = plan.video ? .mp4 : .m4a
+    if !volumes.isEmpty {
+      let audioMix = AVMutableAudioMix()
+      audioMix.inputParameters = volumes
+      export.audioMix = audioMix
+    }
     export.shouldOptimizeForNetworkUse = true
+    let polling = progress.map { report in
+      Task {
+        while !Task.isCancelled {
+          report(export.progress)
+          try? await Task.sleep(nanoseconds: 250_000_000)
+        }
+      }
+    }
     await withCheckedContinuation { (done: CheckedContinuation<Void, Never>) in
       export.exportAsynchronously { done.resume() }
     }
+    polling?.cancel()
+    withExtendedLifetime((asset, songAsset)) {}
     guard export.status == .completed else {
       throw Failure(export.error?.localizedDescription ?? "The export did not complete.")
     }
+    progress?(1)
   }
 }
