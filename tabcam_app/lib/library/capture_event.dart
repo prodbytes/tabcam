@@ -3,6 +3,7 @@ import 'dart:math';
 
 import '../processing/page_filter.dart';
 import '../recognition/tab_doubts.dart';
+import 'json_extra.dart';
 import 'page_edit.dart';
 import 'phrase_times.dart';
 
@@ -16,7 +17,8 @@ enum PageKind { image, video, audio, pdf, link }
 
 /// One page of an event: an image's, video's, recording's or PDF's file is
 /// kept by the store as `<id>.<extension>`; a link has no file, only its
-/// [url].
+/// [url]. Keys a newer app wrote that this one doesn't know are kept in
+/// [extra], and written back.
 class EventPage {
   const EventPage({
     required this.id,
@@ -28,18 +30,24 @@ class EventPage {
     this.from,
     this.edit,
     this.take = false,
+    this.extra = const {},
   });
 
   /// A link page to [url] (checked with [checkUrl]), with an optional
   /// [title].
-  EventPage.link({required this.id, required Uri url, String? title, this.from})
-    : filter = PageFilter.original,
-      kind = PageKind.link,
-      extension = 'url',
-      url = checkUrl(url),
-      title = (title?.trim().isEmpty ?? true) ? null : title!.trim(),
-      edit = null,
-      take = false;
+  EventPage.link({
+    required this.id,
+    required Uri url,
+    String? title,
+    this.from,
+    this.extra = const {},
+  }) : filter = PageFilter.original,
+       kind = PageKind.link,
+       extension = 'url',
+       url = checkUrl(url),
+       title = (title?.trim().isEmpty ?? true) ? null : title!.trim(),
+       edit = null,
+       take = false;
 
   final String id;
 
@@ -70,6 +78,26 @@ class EventPage {
   /// kept when it's renamed, edited, copied or published (see `isTake` for
   /// takes saved before they were marked).
   final bool take;
+
+  /// The keys of its JSON this version doesn't know (a newer app's, see
+  /// `unknownKeys`), kept wherever the page is rebuilt (renamed, edited,
+  /// copied, published, replaced) and written back as they came, after
+  /// the known ones, which win.
+  final Map<String, Object?> extra;
+
+  /// The keys [toJson] writes, and [EventPage.fromJson] reads (and
+  /// checks): never taken from [extra], even when this page has none.
+  static const Set<String> knownKeys = {
+    'id',
+    'filter',
+    'kind',
+    'extension',
+    'url',
+    'title',
+    'from',
+    'edit',
+    'take',
+  };
 
   bool get isVideo => kind == PageKind.video;
   bool get isImage => kind == PageKind.image;
@@ -109,6 +137,7 @@ class EventPage {
     PageFilter? filter,
     String? Function()? title,
     PageEdit? Function()? edit,
+    Map<String, Object?>? extra,
   }) => EventPage(
     id: id,
     filter: filter ?? this.filter,
@@ -119,6 +148,7 @@ class EventPage {
     from: from,
     edit: edit == null ? this.edit : edit(),
     take: take,
+    extra: extra ?? this.extra,
   );
 
   Map<String, Object?> toJson() => {
@@ -131,6 +161,8 @@ class EventPage {
     if (from != null) 'from': from,
     if (edit != null) 'edit': edit!.toJson(),
     if (take) 'take': true,
+    for (final MapEntry(:key, :value) in extraEntries(extra, knownKeys))
+      key: value,
   };
 
   factory EventPage.fromJson(Map<String, Object?> json) {
@@ -139,6 +171,7 @@ class EventPage {
       final String f => checkId(f),
       _ => null,
     };
+    final extra = unknownKeys(json, knownKeys);
     // Events also come from the cloud: a link is checked again here.
     if (json['kind'] == 'link') {
       return EventPage.link(
@@ -146,6 +179,7 @@ class EventPage {
         url: Uri.parse(json['url'] as String),
         title: json['title'] as String?,
         from: from,
+        extra: extra,
       );
     }
     return EventPage(
@@ -165,6 +199,7 @@ class EventPage {
       from: from,
       edit: json['kind'] == 'video' ? PageEdit.fromJson(json['edit']) : null,
       take: json['take'] == true,
+      extra: extra,
     );
   }
 }

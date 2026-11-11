@@ -142,6 +142,16 @@ say) is refused when loading. Events saved before videos were added load as
 image pages with the extension `img`. A kind this version doesn't know (from a newer app,
 through the cloud) loads as an image page.
 
+**Fields a newer app wrote are kept.** A page's details, and a video's
+`edit`, keep the keys this version doesn't know (a newer app's, such as a
+take's log or a newer editor's settings) and write them back as they
+came, so renaming, editing, rotating, replacing, publishing or cloning a
+page here doesn't drop them (a clone copies them as they are, changing
+nothing in them). The keys this version knows are always read and
+checked as before (IDs, links, extensions) and are never taken from the
+kept ones: when both have one, the known value wins. Only plain JSON is
+kept, at most 32 levels deep; anything else is left out.
+
 ## Storage
 
 - **Android and iOS**: files in the app's documents folder, one folder per

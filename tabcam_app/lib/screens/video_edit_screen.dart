@@ -110,6 +110,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   PageEdit? _saved;
   Timer? _saveTimer;
 
+  /// The keys of the saved edit a newer app wrote ([PageEdit.extra]):
+  /// kept with every change made here.
+  Map<String, Object?> _extra = const {};
+
   /// A download being made, and how far along it is (where that's known).
   bool _busy = false;
   double? _progress;
@@ -193,6 +197,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         _duration = length;
         _end = length;
         _saved = edit;
+        _extra = edit?.extra ?? const {};
         if (edit != null) {
           _start = _clamp(edit.start, Duration.zero, length);
           _end = _clamp(edit.end, _start, length);
@@ -233,11 +238,18 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     super.dispose();
   }
 
+  /// Whether the edit changes the video: it's trimmed, or its sound isn't
+  /// its own.
+  bool get _edited =>
+      _start > Duration.zero ||
+      _end < _duration ||
+      _sound != EditSound.original;
+
   /// The edit as it is now, as kept with the page: null when it changes
-  /// nothing (the video plays as it is).
+  /// nothing (the video plays as it is) and has no keys a newer app wrote
+  /// to keep (nor a length to keep them with).
   PageEdit? get _pageEdit {
-    final trimmed = _start > Duration.zero || _end < _duration;
-    if (!trimmed && _sound == EditSound.original) return null;
+    if (!_edited && (_extra.isEmpty || _end <= _start)) return null;
     return PageEdit(
       start: _start,
       end: _end,
@@ -247,6 +259,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       trackEnd: _trackEnd >= _trackLength ? null : _trackEnd,
       offset: _offset,
       trackVolume: _trackVolume,
+      extra: _extra,
     );
   }
 
@@ -265,7 +278,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// Keeps the edit with the page, when it changed.
   Future<void> _keep() async {
     final edit = _pageEdit;
-    if (edit == _saved) return;
+    // Unchanged, or with a newer app's keys but no length known yet: the
+    // edit saved stays.
+    if (edit == _saved || (edit == null && _extra.isNotEmpty)) return;
     _saved = edit;
     try {
       await _library.setPageEdit(widget.eventId, widget.page.id, edit);
@@ -631,7 +646,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     final theme = Theme.of(context);
     final event = _library.byId(widget.eventId);
     final video = _video;
-    final changed = _pageEdit != null;
+    final changed = _edited;
     return Scaffold(
       appBar: AppBar(
         title: Text(

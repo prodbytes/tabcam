@@ -794,6 +794,48 @@ void main() {
     expect(enabled(tester, 'video-edit-reset'), isTrue);
   });
 
+  testWidgets('an edit keeps the keys a newer app wrote: trimmed, reset, '
+      'and downloaded as it is when they\'re all it has', (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester);
+    const newer = {
+      'v': 2,
+      'title': {
+        'on': true,
+        'lines': ['Blue Riff', 'Made-up Band'],
+      },
+    };
+    await tester.runAsync(
+      () => library.setPageEdit(
+        id,
+        'k0',
+        PageEdit.fromJson({'startMs': 2000, 'endMs': 20000, ...newer}),
+      ),
+    );
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    expect(find.text('Keep 0:02.0–0:20.0'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('video-edit-end-here')));
+    await _settle(tester);
+    var edit = library.byId(id)!.pages.first.edit!;
+    expect(edit.end, s(12));
+    expect(edit.extra, newer);
+
+    // Reset: the whole video, its own sound; the newer keys stay, so the
+    // edit does, and the video downloads as it is.
+    await tester.tap(find.byKey(const Key('video-edit-reset')));
+    await _settle(tester);
+    edit = library.byId(id)!.pages.first.edit!;
+    expect((edit.start, edit.end), (Duration.zero, s(180)));
+    expect(edit.extra, newer);
+    expect(enabled(tester, 'video-edit-reset'), isFalse);
+    await tester.tap(find.byKey(const Key('video-edit-download')));
+    await _settle(tester);
+    expect(editor.applied, isEmpty);
+    expect(saved.single.$2, [1, 2, 3]);
+  });
+
   testWidgets('the file screen plays a video as its edit says: from the '
       'kept part\'s start, muted, its track along it', (tester) async {
     tall(tester);
