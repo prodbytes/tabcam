@@ -618,20 +618,39 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       await TakeAudio.prepare();
       _recordingTab = false;
       if (_recorder case final recorder?) {
-        // The tab recorded in as it goes; failing that, the camera alone.
+        // No take without its sound (a microphone refused or missing):
+        // the sound matters most.
+        if (!await recorder.hasSound()) {
+          debugPrint('TabCam: cam: no microphone, no take');
+          if (mounted) _snack(context.l10n.camNoSound);
+          unawaited(_stream());
+          return;
+        }
+        // The tab recorded in as it goes; failing that, the camera alone,
+        // with the microphone's sound (the web's camera has none).
         try {
           await recorder.start(() => _lines.isEmpty ? null : _lines[_line]);
           _recordingTab = true;
         } on Object catch (e) {
           debugPrint('TabCam: cam: recording without the tab: $e');
+          if (!await recorder.lendSoundToCamera()) {
+            if (mounted) _snack(context.l10n.camNoSound);
+            unawaited(_stream());
+            return;
+          }
           if (mounted) _snack(context.l10n.camRecordingNoTab('$e'));
         }
       }
       if (!_recordingTab) {
-        // Its frames still go to the head gestures while it records (not
-        // on the web: it streams none, and the tracker reads the preview).
+        // Its frames go to the head gestures while it records, with them
+        // on (not on the web: it streams none, and the tracker reads the
+        // preview). Off, none are streamed: on iOS each would be copied on
+        // the queue that writes the take's sound.
         await controller.startVideoRecording(
-          onAvailable: _heads == null || !controller.supportsImageStreaming()
+          onAvailable:
+              _heads == null ||
+                  !_headsOn ||
+                  !controller.supportsImageStreaming()
               ? null
               : _frame,
         );
@@ -639,6 +658,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     } on Object catch (e) {
       debugPrint('TabCam: cam: $e');
       if (mounted) _snack(context.l10n.camCouldntRecord('$e'));
+      unawaited(_stream());
       return;
     }
     _clock

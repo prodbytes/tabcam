@@ -35,9 +35,11 @@ abstract final class TakePriority {
   static const int webVideoBitrate = 5000000;
 
   /// The browser's take's formats, the first it records taken (Safari:
-  /// MP4 only). VP8 before VP9: VP9 is encoded in software, and costs the
-  /// processor several times more while the take records; VP8, the older,
-  /// plays wherever VP9 does.
+  /// MP4 only). VP8 before VP9: Chrome encodes both in software (libvpx),
+  /// VP9 at several times VP8's cost while the take records; VP8 plays
+  /// wherever VP9 does. H.264 (which Chrome may encode in hardware) isn't
+  /// asked for: in a WebM, Firefox and Safari don't play it, and an MP4
+  /// take would change what the app reads from the web's takes.
   static const List<String> webTypes = [
     'video/webm;codecs=vp8,opus',
     'video/webm;codecs=vp9,opus',

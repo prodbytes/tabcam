@@ -163,6 +163,17 @@ abstract class TakeRecorder {
   /// starts without waiting for it.
   Future<void> prepare();
 
+  /// Whether a take would have sound: the microphone open (opened now if
+  /// it isn't, which may ask the user), or the camera's own. Cam records
+  /// no take without it: the take's sound matters most.
+  Future<bool> hasSound();
+
+  /// Should [start] fail, gives the camera's own recording (the take
+  /// without the tab) the microphone's sound: the web's camera is opened
+  /// without sound, so its stream gets the microphone's track. Whether the
+  /// camera's stream has sound now.
+  Future<bool> lendSoundToCamera();
+
   /// Starts recording the camera with the band for [neckline] (what shows
   /// now; null: none) along its bottom.
   Future<void> start(String? Function() neckline);

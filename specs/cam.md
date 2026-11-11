@@ -144,8 +144,11 @@ its **Not now** leaving. With Premium it opens the camera view
     (VP8, else VP9, with Opus), or MP4 where only that records
     (Safari), the sound at 192 kbps and the video at 5 Mbps. Should a band's image fail, its text is drawn on
     the canvas as it is. Should the recorder fail to start, the camera
-    records the take alone and a message says so, with why ("Recording
-    without the tab: …"). Checked end to end in Chromium, Firefox and
+    records the take alone, with the microphone's sound (its track added
+    to the camera's stream, which has none), and a message says so, with
+    why ("Recording without the tab: …"). Without a microphone (refused,
+    or none) no take starts at all, the camera's alone neither: a message
+    says to allow or connect one ("No take without its sound: …"). Checked end to end in Chromium, Firefox and
     WebKit with a fake webcam (the saved take's frames have the band).
   - **Android and iOS**: burned in after recording, by the platform's
     own video tools over the method channel `tabcam/take_overlay`
@@ -528,10 +531,16 @@ slow down while a take records
   them (asked for, not required). What the browser gave is logged
   (`TabCam: cam: microphone: …`); Safari on iOS may not honour all of it.
   The take's sound is at 192 kbps, its video at 5 Mbps, in VP8 before
-  VP9 (VP9 is encoded in software and costs the processor several times
-  more), and the tab is drawn into it at most 30 times a second. Should
-  the recorder fail and the camera record the take alone, that take has
-  no sound.
+  VP9, and the tab is drawn into it at most 30 times a second. Chrome
+  encodes both in software (libvpx), VP8 at a fraction of VP9's cost.
+  H.264, which Chrome can encode in the graphics hardware, isn't asked
+  for: in a WebM, Firefox and Safari don't play it, and an MP4 take
+  would change what the rest of the app reads from the web's takes
+  (WebM); left for a change of its own. With no microphone (refused or
+  missing) Rec records nothing and says so ("No take without its
+  sound: …"); should the recorder fail and the camera record the take
+  alone, the microphone's track is added to the camera's stream (its
+  preview is muted, so it isn't heard), so that take has its sound too.
 - **iOS**: the camera records sound at 128 kbps (AAC; its plugin writes
   mono at 44.1 kHz). When Cam opens, the microphone joins the camera
   (`prepareForVideoRecording`; else it would as the take starts, and the
@@ -545,16 +554,31 @@ slow down while a take records
   the sound out, 48 kHz preferred. It's set again as each take starts
   (changed only where something changed it), and `release` puts the
   mode back to the default when Cam closes. A take played back in Cam
-  plays mixed with others too, so the next take doesn't stop a song
-  playing in another app.
+  plays mixed with others too, and so do the list's video thumbnails
+  (never heard; the capture's screen stays under Cam and makes the new
+  take's as it's saved, maybe while the next records), so neither stops
+  a song playing in another app (opened otherwise, a player takes
+  "mixed with others" from the app's session).
 - **Android**: the camera (CameraX) records sound as its plugin sets it
   (the camcorder source, the phone maker's processing, its own bitrate):
-  the plugin takes no audio source or bitrate. A take played back in Cam
-  mixes with others, so it doesn't take the audio focus from a song
-  playing in another app.
+  the plugin takes no audio source or bitrate. **Nothing here changes
+  the Android take's sound**: it's still the camcorder source with the
+  phone maker's automatic gain and noise suppression, at the plugin's
+  bitrate. What would is recording the sound separately in native code
+  (`AudioRecord` with the `UNPROCESSED` or `VOICE_PERFORMANCE` source,
+  on an urgent-audio thread) and putting it into the take after, in
+  step with its video; not done yet. What Android gets: a take played
+  back in Cam mixes with others, so it doesn't take the audio focus from
+  a song playing in another app, and the lighter load below.
 - **While a take records**, everywhere: head gestures look for a face
   about 7 times a second instead of 10 (enough for a nod, out and back
-  within a second); cloud sync starts no pass (one asked for meanwhile,
+  within a second). On Android and iOS that is the face detector's
+  rate: with gestures on, the camera plugin still hands every frame to
+  the app (it streams no fewer), and the app skips most of them; on iOS
+  that copy runs on the queue that writes the take's sound. With
+  gestures off when the take starts, the camera streams no frames during
+  it at all (turned on during a take, they work from the next). Cloud
+  sync starts no pass (one asked for meanwhile,
   such as for the take just saved before the **.** key's next one, runs
   2 s after the take ends, unless another starts by then; a pass already
   running goes on); phrase passes are kept when the take ends, as
@@ -568,4 +592,6 @@ slow down while a take records
 **Permissions**: the camera and the microphone (iOS:
 `NSCameraUsageDescription`, `NSMicrophoneUsageDescription`; Android: the
 `camera` plugin's `CAMERA` and `RECORD_AUDIO`; the web: the browser's
-prompts, for the camera and then the microphone, when Cam opens). On the web a take is WebM, on Android MP4, on iOS MOV.
+prompts, for the camera and then the microphone, when Cam opens; with
+the microphone refused, the preview shows but Rec records nothing). On
+the web a take is WebM, on Android MP4, on iOS MOV.

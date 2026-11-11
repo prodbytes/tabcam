@@ -647,6 +647,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get camNoSound =>
+      'No take without its sound: allow the microphone for this site, or connect one, and press Rec again.';
+
+  @override
   String get camAlong => 'Play along with a file';
 
   @override

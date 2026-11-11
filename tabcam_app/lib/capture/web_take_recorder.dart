@@ -93,6 +93,38 @@ class WebTakeRecorder implements TakeRecorder {
   static bool _live(web.MediaStream stream) =>
       stream.getAudioTracks().toDart.any((t) => t.readyState == 'live');
 
+  /// The camera preview's stream, if it shows.
+  static web.MediaStream? _cameraStream() {
+    final source = cameraVideo(null)?.srcObject;
+    if (source == null || !source.isA<web.MediaStream>()) return null;
+    return source as web.MediaStream;
+  }
+
+  @override
+  Future<bool> hasSound() async {
+    if (await _openMic() case final mic? when _live(mic)) return true;
+    final camera = _cameraStream();
+    return camera != null && _live(camera);
+  }
+
+  @override
+  Future<bool> lendSoundToCamera() async {
+    final camera = _cameraStream();
+    if (camera == null) return false;
+    if (_live(camera)) return true;
+    final mic = await _openMic();
+    if (mic == null) return false;
+    // A track of a microphone closed since is no use.
+    for (final track in camera.getAudioTracks().toDart) {
+      camera.removeTrack(track);
+    }
+    for (final track in mic.getAudioTracks().toDart) {
+      // The preview is muted: it isn't heard, only recorded.
+      camera.addTrack(track);
+    }
+    return _live(camera);
+  }
+
   static void _stopTracks(web.MediaStream stream) {
     for (final track in stream.getTracks().toDart) {
       track.stop();

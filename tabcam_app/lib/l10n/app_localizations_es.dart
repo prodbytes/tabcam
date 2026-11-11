@@ -669,6 +669,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get camNoSound =>
+      'Sin sonido no se graba la toma: permite el micrófono para este sitio, o conecta uno, y pulsa Grabar de nuevo.';
+
+  @override
   String get camAlong => 'Tocar junto con un archivo';
 
   @override

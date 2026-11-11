@@ -10,6 +10,7 @@ import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
 import 'package:tabcam_app/screens/event_screen.dart';
 import 'package:tabcam_app/screens/file_screen.dart';
+import 'package:tabcam_app/screens/file_thumbnails.dart';
 import 'package:video_player/video_player.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 
@@ -125,6 +126,38 @@ Future<void> _frames(WidgetTester tester) async {
 void main() {
   late FakeVideoPlatform platform;
   setUp(() => VideoPlayerPlatform.instance = platform = FakeVideoPlatform());
+
+  testWidgets('a video\'s thumbnail mixes with others (iOS: it leaves '
+      'Cam\'s session mixed, under Cam as a take is saved)', (tester) async {
+    final library = Library(PlatformEventStore(), null, (_) async => null);
+    late CaptureEvent event;
+    const page = EventPage(id: 'v1', kind: PageKind.video, extension: 'mp4');
+    await tester.runAsync(() async {
+      await library.load();
+      event = await library.create(const []);
+      await library.putPageStream(
+        event.id,
+        page,
+        Stream.value(Uint8List.fromList([1, 2, 3])),
+      );
+      event = await library.update(event.copyWith(pages: [page]));
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        home: VideoFrameThumbnail(
+          library: library,
+          event: event,
+          page: page,
+          fallback: const SizedBox(),
+        ),
+      ),
+    );
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await _frames(tester);
+    expect(platform.mixes, [true]);
+  });
 
   testWidgets('videos and recordings play from the list, one at a time', (
     tester,

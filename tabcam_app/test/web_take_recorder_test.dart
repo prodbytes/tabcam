@@ -110,4 +110,51 @@ void main() {
       web.URL.revokeObjectURL(url);
     });
   });
+
+  testWidgets('no take without its sound: a refused microphone says so; '
+      'a microphone lent to the camera, should the recorder fail', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      // The "camera": a canvas's stream, without sound (as the web's
+      // camera is opened).
+      final source =
+          web.document.createElement('canvas') as web.HTMLCanvasElement
+            ..width = 32
+            ..height = 24;
+      final view = web.document.createElement('flt-platform-view');
+      final cameraStream = source.captureStream(30);
+      final video = web.document.createElement('video') as web.HTMLVideoElement
+        ..muted = true
+        ..srcObject = cameraStream;
+      view.append(video);
+      web.document.body!.append(view);
+
+      // Refused: no sound, none lent.
+      final refused = WebTakeRecorder(
+        getUserMedia: (_) async => throw StateError('NotAllowedError'),
+      );
+      expect(await refused.hasSound(), isFalse);
+      expect(await refused.lendSoundToCamera(), isFalse);
+      expect(cameraStream.getAudioTracks().toDart, isEmpty);
+      refused.dispose();
+
+      // A microphone (Web Audio's, live, silent): sound, and its track
+      // goes onto the camera's stream for the camera's own recording.
+      final context = web.AudioContext();
+      final mic = context.createMediaStreamDestination().stream;
+      final recorder = WebTakeRecorder(getUserMedia: (_) async => mic);
+      expect(await recorder.hasSound(), isTrue);
+      expect(await recorder.lendSoundToCamera(), isTrue);
+      final lent = cameraStream.getAudioTracks().toDart;
+      expect(lent, hasLength(1));
+      expect(lent.single.id, mic.getAudioTracks().toDart.single.id);
+      // Lent once: asked again, nothing more is added.
+      expect(await recorder.lendSoundToCamera(), isTrue);
+      expect(cameraStream.getAudioTracks().toDart, hasLength(1));
+      recorder.dispose();
+      await context.close().toDart;
+      view.remove();
+    });
+  });
 }

@@ -171,6 +171,7 @@
   "camAddingTab": "Adicionando a tablatura ao vídeo…",
   "camNoOverlay": "O take foi salvo sem a tablatura: {reason}",
   "camRecordingNoTab": "Gravando sem a tablatura: {reason}",
+  "camNoSound": "Sem som o take não é gravado: permita o microfone para este site, ou conecte um, e toque em Gravar de novo.",
   "camAlong": "Tocar junto com um arquivo",
   "camAlongHide": "Ocultar os arquivos para tocar junto",
   "camAlongTitle": "Tocar junto",

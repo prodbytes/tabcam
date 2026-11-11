@@ -112,10 +112,15 @@ class _VideoFrameThumbnailState extends State<VideoFrameThumbnail> {
   Future<void> _openNow() async {
     if (_disposed) return;
     try {
+      // Mixed with others, as it's never heard: else (iOS) opening it
+      // takes that from the app's audio session, and a take's thumbnail,
+      // made under Cam as the take is saved (maybe as the next records),
+      // would stop the song playing along in another app.
       final controller = await openPlayer(
         widget.library,
         widget.event,
         widget.page,
+        mixWithOthers: true,
       );
       if (_disposed) {
         await controller.dispose();
