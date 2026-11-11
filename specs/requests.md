@@ -2454,21 +2454,24 @@ spec.
    bar's buttons, and pushing floating buttons up. Now every one of them
    (Home, the event screen, a file, Cam, the camera, the Text view, the
    video edit, Share, Clone, the account's) is a banner at the top,
-   under the status bar, sliding down over the page: it moves and
-   resizes nothing, leaves the bottom navigation bar uncovered and
-   usable, and shows over dialogs too. Its background is the inverse
-   surface at alpha 0.58 (42% transparent), slightly blurred behind so
-   the text, fully opaque like the action, stays readable; 560 px wide
-   at most, centred. It keeps what the messages had: their text, Open
-   and Upgrade, one at a time (queued, or replacing where they did),
-   gone after 4 seconds (6 for "Saved … (Open)"), and dismissible by a
-   swipe (now up) or a tap; Upgrade in the Text view now goes by itself
-   too, as every message does. One mechanism for all: `TopMessages`
-   around the app's navigator, `showMessage` / `replaceMessage` /
-   `Messenger`. New tests: the message at the top, the FAB and the
-   navigation bar where they were and the navigation taking taps while
-   it shows, the background's alpha 0.58 with opaque text in both
-   themes, one at a time and replacing, the action, a tap and a swipe
-   dismissing it, compact on wide screens, under the status bar, over a
-   dialog and outliving a page, nothing left behind, and the app's own
-   "Saved" message. See [Messages](messages.md).
+   just under the app bar, sliding down over the page: it moves and
+   resizes nothing, leaves both the app bar's buttons (back, actions)
+   and the bottom navigation bar uncovered and usable, and shows over
+   dialogs too. Its background is the inverse surface at alpha 0.58
+   (42% transparent), slightly blurred behind so the text, fully opaque
+   like the action, stays readable; 560 px wide at most, centred. It
+   keeps what the messages had: their text, Open and Upgrade, one at a
+   time (queued, or replacing where they did), gone after 4 seconds (6
+   for "Saved … (Open)"), the Text view's Premium offer with Upgrade
+   kept until dismissed as before, and dismissible by a swipe (now up)
+   or a tap. One mechanism for all: `TopMessages` around the app's
+   navigator, `showMessage` / `replaceMessage` / `Messenger`. New
+   tests: the message at the top, under the app bar, the FAB and both
+   bars where they were, the bottom navigation, the app bar's action and
+   a back button taking taps while it shows, the background's alpha
+   0.58 with opaque text in both themes, one at a time and replacing,
+   the Premium offer staying until dismissed, the action, a tap and a
+   swipe dismissing it, compact on wide screens, under the status bar
+   and the app bar and inside the safe area's sides, over a dialog and
+   outliving a page, nothing left behind, and the app's own "Saved"
+   message. See [Messages](messages.md).

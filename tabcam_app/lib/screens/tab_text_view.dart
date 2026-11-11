@@ -277,9 +277,12 @@ class _TabTextViewState extends State<TabTextView> {
     if (mounted) setState(() {});
   }
 
+  /// Shows [message] in place of the one showing. With an [action] (the
+  /// Premium offer's Upgrade) it stays until it's dismissed or acted on,
+  /// as the SnackBar it was did.
   void _say(String message, {MessageAction? action}) {
     if (!mounted) return;
-    replaceMessage(context, message, action: action);
+    replaceMessage(context, message, action: action, persist: action != null);
   }
 
   Future<void> _copy() async {

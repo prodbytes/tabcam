@@ -6,11 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
 /// The app's messages ("Link copied", "Saved … (Open)"): a banner at the
-/// top of the screen, under the status bar, floating over the page. It
+/// top of the screen, just under the app bar, floating over the page. It
 /// moves and resizes nothing (no bottom navigation, button or FAB goes up
-/// for it) and leaves the bottom navigation bar uncovered. One shows at a
-/// time; the others wait their turn. Each goes by itself after its
-/// [Messenger.show] duration, at once on a tap, or swiped up; its
+/// for it) and covers neither the app bar (its back button and actions)
+/// nor the bottom navigation bar. One shows at a time; the others wait
+/// their turn. Each goes by itself after its [Messenger.show] duration
+/// (unless it persists), at once on a tap, or swiped up; its
 /// [MessageAction] (Open, Upgrade) hides it too.
 ///
 /// [TopMessages], around the app's navigator, shows them over every route
@@ -66,14 +67,32 @@ class MessageAction {
 /// How much of a message's background shows: 42% transparent.
 const double messageOpacity = 0.58;
 
+/// Where a message's top is: [messageGap] under the app bar, itself
+/// under the status bar, so that the app bar's back button and actions
+/// stay uncovered.
+double messageTop(BuildContext context) =>
+    MediaQuery.paddingOf(context).top +
+    (AppBarTheme.of(context).toolbarHeight ?? kToolbarHeight) +
+    messageGap;
+
+/// The space between a message and the app bar above it.
+const double messageGap = 8;
+
+/// The space between a message and the safe area's sides.
+const double messageSideMargin = 12;
+
 /// Shows [text] as a message (see [TopMessages]), after the one showing.
+/// It goes after [duration], or, if it [persist]s, once dismissed or
+/// acted on.
 void showMessage(
   BuildContext context,
   String text, {
   MessageAction? action,
   Duration duration = Messenger.defaultDuration,
+  bool persist = false,
 }) =>
-    Messenger.maybeOf(context)?.show(text, action: action, duration: duration);
+    Messenger.maybeOf(context)
+        ?.show(text, action: action, duration: duration, persist: persist);
 
 /// Shows [text] as a message (see [TopMessages]) in place of the one
 /// showing, which goes.
@@ -82,9 +101,10 @@ void replaceMessage(
   String text, {
   MessageAction? action,
   Duration duration = Messenger.defaultDuration,
+  bool persist = false,
 }) => Messenger.maybeOf(context)
   ?..hide()
-  ..show(text, action: action, duration: duration);
+  ..show(text, action: action, duration: duration, persist: persist);
 
 /// The queue of messages shown at the top of the screen (see
 /// [TopMessages]). Get it with [maybeOf] before an `await`, as it stays
@@ -120,14 +140,17 @@ class Messenger {
   OverlayEntry? _entry;
   bool _waiting = false;
 
-  /// Shows [text] once the messages before it have gone.
+  /// Shows [text] once the messages before it have gone. It goes after
+  /// [duration], or, if it [persist]s (an offer to keep in view), once
+  /// dismissed, acted on or replaced.
   void show(
     String text, {
     MessageAction? action,
     Duration duration = defaultDuration,
+    bool persist = false,
   }) {
     if (!_alive()) return;
-    _queue.add(_Message(text, action, duration));
+    _queue.add(_Message(text, action, duration, persist: persist));
     _next();
   }
 
@@ -187,11 +210,12 @@ class Messenger {
 }
 
 class _Message {
-  _Message(this.text, this.action, this.duration);
+  _Message(this.text, this.action, this.duration, {required this.persist});
 
   final String text;
   final MessageAction? action;
   final Duration duration;
+  final bool persist;
 
   /// The banner showing it, once built.
   _BannerState? banner;
@@ -225,7 +249,7 @@ class _BannerState extends State<_Banner> with SingleTickerProviderStateMixin {
     super.initState();
     widget.message.banner = this;
     _shown.forward().then((_) {
-      if (mounted && !_leaving) {
+      if (mounted && !_leaving && !widget.message.persist) {
         _timer = Timer(widget.message.duration, leave);
       }
     });
@@ -264,77 +288,76 @@ class _BannerState extends State<_Banner> with SingleTickerProviderStateMixin {
         .merge(snack.contentTextStyle)
         .copyWith(color: foreground);
     final radius = BorderRadius.circular(12);
+    final safe = MediaQuery.paddingOf(context);
+    // Under the app bar, not over its back button and actions; inside the
+    // safe area's sides.
     return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: SafeArea(
-        bottom: false,
-        minimum: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: FadeTransition(
-              opacity: _eased,
-              child: SlideTransition(
-                position: Tween(
-                  begin: const Offset(0, -0.5),
-                  end: Offset.zero,
-                ).animate(_eased),
-                child: Dismissible(
-                  key: ObjectKey(message),
-                  direction: DismissDirection.up,
-                  onDismissed: (_) {
-                    _leaving = true;
-                    _timer?.cancel();
-                    widget.onGone();
-                  },
-                  child: Semantics(
-                    container: true,
-                    liveRegion: true,
-                    child: GestureDetector(
-                      onTap: leave,
-                      child: ClipRRect(
-                        borderRadius: radius,
-                        // What's behind shows through, blurred, so that the
-                        // text stays readable over it.
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-                          child: Material(
-                            key: const Key('top-message'),
-                            color: background,
-                            borderRadius: radius,
-                            child: Padding(
-                              padding: EdgeInsetsDirectional.only(
-                                start: 16,
-                                end: action == null ? 16 : 8,
-                                top: action == null ? 12 : 4,
-                                bottom: action == null ? 12 : 4,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Flexible(
-                                    child: Text(message.text, style: textStyle),
-                                  ),
-                                  if (action != null) ...[
-                                    const SizedBox(width: 8),
-                                    TextButton(
-                                      style: TextButton.styleFrom(
-                                        foregroundColor:
-                                            snack.actionTextColor ??
-                                            scheme.inversePrimary,
-                                      ),
-                                      onPressed: () {
-                                        leave();
-                                        action.onPressed();
-                                      },
-                                      child: Text(action.label),
+      top: messageTop(context),
+      left: safe.left + messageSideMargin,
+      right: safe.right + messageSideMargin,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: FadeTransition(
+            opacity: _eased,
+            child: SlideTransition(
+              position: Tween(
+                begin: const Offset(0, -0.5),
+                end: Offset.zero,
+              ).animate(_eased),
+              child: Dismissible(
+                key: ObjectKey(message),
+                direction: DismissDirection.up,
+                onDismissed: (_) {
+                  _leaving = true;
+                  _timer?.cancel();
+                  widget.onGone();
+                },
+                child: Semantics(
+                  container: true,
+                  liveRegion: true,
+                  child: GestureDetector(
+                    onTap: leave,
+                    child: ClipRRect(
+                      borderRadius: radius,
+                      // What's behind shows through, blurred, so that the
+                      // text stays readable over it.
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+                        child: Material(
+                          key: const Key('top-message'),
+                          color: background,
+                          borderRadius: radius,
+                          child: Padding(
+                            padding: EdgeInsetsDirectional.only(
+                              start: 16,
+                              end: action == null ? 16 : 8,
+                              top: action == null ? 12 : 4,
+                              bottom: action == null ? 12 : 4,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: Text(message.text, style: textStyle),
+                                ),
+                                if (action != null) ...[
+                                  const SizedBox(width: 8),
+                                  TextButton(
+                                    style: TextButton.styleFrom(
+                                      foregroundColor:
+                                          snack.actionTextColor ??
+                                          scheme.inversePrimary,
                                     ),
-                                  ],
+                                    onPressed: () {
+                                      leave();
+                                      action.onPressed();
+                                    },
+                                    child: Text(action.label),
+                                  ),
                                 ],
-                              ),
+                              ],
                             ),
                           ),
                         ),

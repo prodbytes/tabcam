@@ -23,8 +23,9 @@ tabs, and a compact **app bar** on top names the open one
   (Import photos, About, the cloud button) is on the tabs.
 - An event opens over the tabs as its own screen ([event screen](event-screen.md)),
   with a back button.
-- Messages show at the top, over the app bar, never over the bottom
-  navigation bar, which stays where it is ([messages](messages.md)).
+- Messages show at the top, just under the app bar, covering neither the
+  app bar's buttons nor the bottom navigation bar, which stay where they
+  are ([messages](messages.md)).
 
 ## Signed out: the welcome
 
@@ -88,7 +89,7 @@ photo library keeps its name on Android, iOS and the web, so a lesson's
 names its capture. It goes to **Home**, where it's first in the list, scrolled to
 and outlined for 3 seconds, with a message at the top, "Saved "<title>" (2 pages)"
 (or "1 video, 1 link", ...), and **Open**, which goes by itself after 6
-seconds, as every message does ([messages](messages.md)). Cancelling does nothing;
+seconds ([messages](messages.md)). Cancelling does nothing;
 picked files that aren't photos or videos are left out, with a message
 saying how many.
 

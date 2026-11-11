@@ -20,10 +20,20 @@ class _Page extends StatefulWidget {
 
 class _PageState extends State<_Page> {
   int _tab = 0;
+  int _stars = 0;
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Riffs')),
+    appBar: AppBar(
+      title: Text('Riffs, $_stars stars'),
+      actions: [
+        IconButton(
+          tooltip: 'Star',
+          icon: const Icon(Icons.star),
+          onPressed: () => setState(() => _stars++),
+        ),
+      ],
+    ),
     body: Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -47,6 +57,15 @@ class _PageState extends State<_Page> {
           TextButton(
             onPressed: () => replaceMessage(context, 'Tab copied'),
             child: const Text('replace'),
+          ),
+          TextButton(
+            onPressed: () => showMessage(
+              context,
+              'Checking it is part of TabCam Premium.',
+              action: MessageAction(label: 'Upgrade', onPressed: () {}),
+              persist: true,
+            ),
+            child: const Text('offer'),
           ),
           TextButton(
             onPressed: () => showDialog<void>(
@@ -113,27 +132,37 @@ void main() {
       await tester.pumpWidget(_app(host: host));
       final fab = tester.getRect(find.byType(FloatingActionButton));
       final bar = tester.getRect(find.byType(NavigationBar));
+      final appBar = tester.getRect(find.byType(AppBar));
       final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
 
-      await _show(tester, 'copy');
-      expect(find.text('Link copied'), findsOneWidget);
+      await _show(tester, 'save');
+      expect(find.textContaining('Riff in E'), findsOneWidget);
       final banner = tester.getRect(find.byKey(_banner));
       expect(banner.top, lessThan(screen.height / 4));
+      // Under the app bar, 8 px below it, not over its buttons.
+      expect(banner.top, appBar.bottom + messageGap);
       expect(banner.bottom, lessThan(bar.top));
-      // Nothing moved for it, the FAB and the navigation bar least of all.
+      // Nothing moved for it, the FAB and the navigation bars least of all.
       expect(tester.getRect(find.byType(FloatingActionButton)), fab);
       expect(tester.getRect(find.byType(NavigationBar)), bar);
+      expect(tester.getRect(find.byType(AppBar)), appBar);
 
       // The bottom navigation takes taps while it shows.
       await tester.tap(find.text('Profile'));
       await tester.pump();
       expect(find.text('Tab 2'), findsOneWidget);
-      expect(find.text('Link copied'), findsOneWidget);
+      expect(find.textContaining('Riff in E'), findsOneWidget);
+
+      // So does the app bar's action, at once.
+      await tester.tap(find.byTooltip('Star'));
+      await tester.pump();
+      expect(find.text('Riffs, 1 stars'), findsOneWidget);
+      expect(find.textContaining('Riff in E'), findsOneWidget);
 
       // Gone by itself after 4 s.
       await tester.pump(const Duration(seconds: 4));
       await tester.pumpAndSettle();
-      expect(find.text('Link copied'), findsNothing);
+      expect(find.textContaining('Riff in E'), findsNothing);
       expect(find.byKey(_banner), findsNothing);
     });
 
@@ -215,13 +244,44 @@ void main() {
     expect(banner.center.dx, closeTo(800, 1));
   });
 
-  testWidgets('it stays under the status bar', (tester) async {
-    tester.view.padding = const FakeViewPadding(top: 72);
+  testWidgets('it stays under the status bar and the app bar', (tester) async {
+    // A 24 px status bar and 30 px cut-outs on the sides.
+    tester.view.padding = const FakeViewPadding(top: 72, left: 90, right: 90);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(_app());
-    await _show(tester, 'copy');
-    expect(tester.getRect(find.byKey(_banner)).top, greaterThanOrEqualTo(24));
+    final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
+    await _show(tester, 'offer');
+    final banner = tester.getRect(find.byKey(_banner));
+    expect(tester.getRect(find.byType(AppBar)).bottom, 24 + kToolbarHeight);
+    expect(banner.top, 24 + kToolbarHeight + 8);
+    expect(banner.left, greaterThanOrEqualTo(30 + 12));
+    expect(banner.right, lessThanOrEqualTo(screen.width - 30 - 12));
+  });
+
+  testWidgets('with an offer to keep, it stays until dismissed', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_app());
+    await _show(tester, 'offer');
+    await tester.pump(const Duration(seconds: 30));
+    await tester.pumpAndSettle();
+    expect(find.text('Upgrade'), findsOneWidget);
+    // The others wait for it, as they did for a SnackBar's.
+    await tester.tap(find.text('copy'));
+    await tester.pump(const Duration(seconds: 10));
+    expect(find.text('Link copied'), findsNothing);
+    await tester.tap(find.textContaining('TabCam Premium'));
+    await tester.pumpAndSettle();
+    expect(find.text('Upgrade'), findsNothing);
+    expect(find.text('Link copied'), findsOneWidget);
+    // Replaced, it goes at once.
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+    await _show(tester, 'offer');
+    await _show(tester, 'replace');
+    expect(find.text('Upgrade'), findsNothing);
+    expect(find.text('Tab copied'), findsOneWidget);
   });
 
   testWidgets('shown from a dialog, it shows over it; it outlives a page', (
@@ -249,6 +309,20 @@ void main() {
     await tester.pump(const Duration(seconds: 4));
     await tester.pumpAndSettle();
     expect(find.byKey(_banner), findsNothing);
+
+    // A long message, shown on that page, leaves its back button free.
+    showMessage(
+      tester.element(find.text('second page')),
+      'Saved "A riff with a rather long name to fill the line" (2 pages, '
+      '1 video, 1 link)',
+      action: MessageAction(label: 'Open', onPressed: () {}),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(_banner), findsOneWidget);
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(find.text('second page'), findsNothing);
+    expect(find.byKey(_banner), findsOneWidget);
   });
 
   testWidgets('nothing is left when the app goes while one shows', (
@@ -287,6 +361,7 @@ void main() {
     final banner = tester.getRect(find.byKey(_banner));
     final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
     expect(banner.top, lessThan(screen.height / 4));
+    expect(banner.top, greaterThan(tester.getRect(find.byType(AppBar)).bottom));
     expect(tester.getRect(bar), barAt);
     // Profile, from the navigation bar, while it shows.
     await tester.tap(find.descendant(of: bar, matching: find.text('Profile')));
