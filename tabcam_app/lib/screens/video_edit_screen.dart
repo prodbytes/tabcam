@@ -17,6 +17,7 @@ import 'edited_playback.dart';
 import 'file_screen.dart';
 import 'media_url.dart';
 import 'video_page.dart' show openPlayer;
+import 'messages.dart';
 
 /// Basic edits of a video, opened from its file screen: trim its start
 /// and end, and keep, remove or replace its sound with a new track (one
@@ -545,9 +546,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     final editor = _editor;
     final event = _library.byId(widget.eventId);
     final l10n = context.l10n;
-    final messenger = ScaffoldMessenger.of(context);
+    final messenger = Messenger.maybeOf(context);
     if (editor == null) {
-      messenger.showSnackBar(SnackBar(content: Text(l10n.videoEditNotHere)));
+      messenger?.show(l10n.videoEditNotHere);
       return;
     }
     if (event == null) return;
@@ -587,9 +588,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       debugPrint(
         'TabCam: video edit: ${l10n.videoEditCouldntDownload}: $e\n$stack',
       );
-      messenger.showSnackBar(
-        SnackBar(content: Text('${l10n.videoEditCouldntDownload}: $e')),
-      );
+      messenger?.show('${l10n.videoEditCouldntDownload}: $e');
     } finally {
       // The phones' editors write it to a temporary file.
       if (made != null && !kIsWeb && made.path.isNotEmpty) {

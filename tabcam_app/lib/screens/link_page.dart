@@ -6,6 +6,7 @@ import '../import/tab_page_import.dart';
 import '../library/capture_event.dart';
 import '../l10n/language.dart';
 import 'youtube_link.dart';
+import 'messages.dart';
 
 /// Opens [url] outside the app: on the web in a new tab; on Android and
 /// iOS in the browser, or the app the system hands it to (such as
@@ -24,12 +25,10 @@ Future<bool> launchLink(Uri url) async {
   }
 }
 
-/// [launchLink], saying so at the bottom of the screen if it can't.
+/// [launchLink], saying so in a message at the top if it can't.
 Future<void> openLink(BuildContext context, Uri url) async {
   if (!await launchLink(url) && context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.textViewCouldNotOpen('$url'))),
-    );
+    showMessage(context, context.l10n.textViewCouldNotOpen('$url'));
   }
 }
 
@@ -53,9 +52,7 @@ class LinkPage extends StatelessWidget {
   Future<void> _copy(BuildContext context) async {
     await Clipboard.setData(ClipboardData(text: page.url.toString()));
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(context.l10n.textViewLinkCopied)));
+      showMessage(context, context.l10n.textViewLinkCopied);
     }
   }
 

@@ -2447,6 +2447,34 @@ spec.
 
 ## 2026-11-11
 
+2. **Make notification messages show from the top and without
+   dislocating page elements so that buttons in nav are not covered;
+   make notification background 42% transparent.** The app's messages
+   were Flutter SnackBars, at the bottom: over the bottom navigation
+   bar's buttons, and pushing floating buttons up. Now every one of them
+   (Home, the event screen, a file, Cam, the camera, the Text view, the
+   video edit, Share, Clone, the account's) is a banner at the top,
+   just under the app bar, sliding down over the page: it moves and
+   resizes nothing, leaves both the app bar's buttons (back, actions)
+   and the bottom navigation bar uncovered and usable, and shows over
+   dialogs too. Its background is the inverse surface at alpha 0.58
+   (42% transparent), slightly blurred behind so the text, fully opaque
+   like the action, stays readable; 560 px wide at most, centred. It
+   keeps what the messages had: their text, Open and Upgrade, one at a
+   time (queued, or replacing where they did), gone after 4 seconds (6
+   for "Saved … (Open)"), the Text view's Premium offer with Upgrade
+   kept until dismissed as before, and dismissible by a swipe (now up)
+   or a tap. One mechanism for all: `TopMessages` around the app's
+   navigator, `showMessage` / `replaceMessage` / `Messenger`. New
+   tests: the message at the top, under the app bar, the FAB and both
+   bars where they were, the bottom navigation, the app bar's action and
+   a back button taking taps while it shows, the background's alpha
+   0.58 with opaque text in both themes, one at a time and replacing,
+   the Premium offer staying until dismissed, the action, a tap and a
+   swipe dismissing it, compact on wide screens, under the status bar
+   and the app bar and inside the safe area's sides, over a dialog and
+   outliving a page, nothing left behind, and the app's own "Saved"
+   message. See [Messages](messages.md).
 5. **When editing a recording, add a volume control to the side of the
    audio track. Left side.** The video edit screen's track bar (Sound:
    New track) now has the track's volume at its left, on the same row,

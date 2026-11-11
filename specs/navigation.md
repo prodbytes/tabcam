@@ -23,6 +23,9 @@ tabs, and a compact **app bar** on top names the open one
   (Import photos, About, the cloud button) is on the tabs.
 - An event opens over the tabs as its own screen ([event screen](event-screen.md)),
   with a back button.
+- Messages show at the top, just under the app bar, covering neither the
+  app bar's buttons nor the bottom navigation bar, which stay where they
+  are ([messages](messages.md)).
 
 ## Signed out: the welcome
 
@@ -84,10 +87,9 @@ library), `IMG_1234`, `VID_20261030_101500`, `VID-…-WA0001`, `PXL_…`,
 `Screenshot … at …`, a date and time, digits, a UUID. A video from the
 photo library keeps its name on Android, iOS and the web, so a lesson's
 names its capture. It goes to **Home**, where it's first in the list, scrolled to
-and outlined for 3 seconds, with a message, "Saved "<title>" (2 pages)"
+and outlined for 3 seconds, with a message at the top, "Saved "<title>" (2 pages)"
 (or "1 video, 1 link", ...), and **Open**, which goes by itself after 6
-seconds, as every message does (Flutter would otherwise keep a message
-with a button until it's dismissed). Cancelling does nothing;
+seconds ([messages](messages.md)). Cancelling does nothing;
 picked files that aren't photos or videos are left out, with a message
 saying how many.
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../cloud/account_deletion.dart';
 import '../cloud/cloud_sync.dart';
 import '../l10n/language.dart';
+import 'messages.dart';
 
 /// Profile's **Delete account**: asks first ([confirmAccountDeletion]),
 /// then deletes it ([AccountDeletion]) in a dialog that shows how far it
@@ -12,7 +13,7 @@ Future<void> deleteAccount(
   CloudSync sync, {
   bool premium = false,
 }) async {
-  final messenger = ScaffoldMessenger.maybeOf(context);
+  final messenger = Messenger.maybeOf(context);
   final done = context.l10n.deleteAccountDone;
   if (!await confirmAccountDeletion(context, premium: premium)) return;
   if (!context.mounted) return;
@@ -22,7 +23,7 @@ Future<void> deleteAccount(
     builder: (_) => DeletionDialog(deletion: AccountDeletion(sync)),
   );
   if (deleted ?? false) {
-    messenger?.showSnackBar(SnackBar(content: Text(done)));
+    messenger?.show(done);
   }
 }
 

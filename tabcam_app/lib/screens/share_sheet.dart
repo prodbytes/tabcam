@@ -9,6 +9,7 @@ import '../l10n/language.dart';
 import '../cloud/public_capture.dart';
 import '../library/capture_event.dart';
 import 'sign_in_gate.dart';
+import 'messages.dart';
 
 /// **Share**: copies the capture's link (`…/app/?c=<id>&k=<key>`) to the
 /// clipboard, nothing else, and says so. Signed in (or in a build without
@@ -47,12 +48,12 @@ Future<void> copyCaptureLink(
   final copying = Clipboard.setData(
     ClipboardData(text: CaptureLink.of(keyed).toString()),
   );
-  final messenger = ScaffoldMessenger.maybeOf(context);
+  final messenger = Messenger.maybeOf(context);
   final copied = context.l10n.eventLinkCopied;
   await copying;
   messenger
-    ?..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text(copied)));
+    ?..hide()
+    ..show(copied);
   if (sync == null) return;
   if (!identical(keyed, event)) {
     await sync.library.patch(
