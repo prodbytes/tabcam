@@ -97,8 +97,9 @@ review notes ([app stores](app-stores.md)).
   sound file, added to them), shifted to fit the video, at a volume set
   at the left of its bar. The edit is kept
   with the video and played as it says (muted, the track along it), no
-  file made; Download makes one on the device: the video, the video
-  without sound, or the sound only.
+  file made; Download makes one on the device: the video or the video
+  without sound (MP4), or the sound only (M4A; WebM and WAV where a
+  browser can't make those).
 - [Hidden images](hidden-images.md): the owner hides a capture's photos
   and scans, for everyone; it then shows only the text tab, videos and
   links, and exports leave the images out.

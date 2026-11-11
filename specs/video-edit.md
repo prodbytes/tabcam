@@ -86,13 +86,27 @@ was left:
   changes something: the whole video again, with its own sound; the
   track stays picked, from its start, at 100%) and **Download**, a split button. Pressed, it
   downloads **the video** as edited; its arrow opens a menu of **The
-  video**, **The video without sound** and **The sound only** (off when
-  the sound is None). A change is kept a moment after it's made (a drag
+  video (MP4)**, **The video without sound (MP4)** and **The sound only
+  (M4A)** (off when the sound is None): **the whole video as an MP4**
+  (H.264 and AAC), **its sound alone as an M4A** (AAC, `audio/mp4`).
+  Each item says the format it makes here (the editor's `formats()`):
+  MP4 and M4A on Android, iOS and the browsers that make them (Chrome,
+  Edge, Safari); in a browser that can't record MP4 the videos say
+  **(WebM)**, and in one that can't make AAC the sound says **(WAV)**
+  (Firefox, both), so the label is always what the file will be. (MP3
+  was asked for; AAC was chosen instead, as no MP3 encoder is bundled
+  and every platform here makes AAC.) A change is kept a moment after it's made (a drag
   makes many), and on leaving; an edit that changes nothing is none.
   Download makes the file on the device and saves it (the browser's
   download, or the system's "save as" on Android and iOS), named as the
-  video is in the list; a video the edit doesn't change downloads as it
-  is. A progress bar shows meanwhile (the browser's says how far along a
+  video is in the list with the made format's extension (`.mp4`,
+  `.m4a`; `.webm`, `.wav` where those are made); a video the edit
+  doesn't change downloads as it is when it's already MPEG-4 (an
+  `.mp4` or `.m4v`, on every platform: in Firefox too, which would make
+  it again only as a WebM) or already in the format made here (a
+  `.webm` where the browser records WebM), and is made again otherwise
+  (a WebM take in Chrome, a MOV), so the video is an MP4 wherever MP4
+  is made. A progress bar shows meanwhile (the browser's says how far along a
   video is; the phones' is indeterminate), with "Making the file…"; a
   failure says "Couldn't make the file" and why. A track whose length
   can't be told can't be downloaded with the video.
@@ -127,14 +141,63 @@ was left:
   the kept part plays, hidden, into a canvas (its frames, at 30 a
   second) and a Web Audio graph (the video's own sound, or the track's,
   started where it comes in, through a gain node at its volume), and the browser's MediaRecorder records
-  both: WebM (VP9 or VP8, Opus), or MP4 where only that records
-  (Safari). It takes as long as the kept part is to play, and the
-  progress bar says how far along it is. The file's format is the
-  recorder's (an `.mp4` downloads as `.webm` where WebM records). **The
-  sound only** is rendered offline, faster than it plays: the video's or
-  the track's sound decoded (Web Audio's `decodeAudioData`) and mixed in
-  an `OfflineAudioContext` as long as the kept part (the track after its
-  gap, through a gain node at its volume), written as a 16-bit WAV (`wavBytes`).
+  both. **The video is MP4** where the browser records it: the first
+  type it supports of `video/mp4;codecs=avc1.42E01E,mp4a.40.2`,
+  `video/mp4;codecs=avc1,mp4a.40.2` and `video/mp4`
+  ([`edit_formats.dart`](../tabcam_app/lib/capture/edit_formats.dart),
+  `videoRecorderTypes`; Chrome and Edge record H.264 and AAC, raising
+  the level for a larger frame, and Safari does); **WebM** (VP9 or VP8,
+  Opus) only where none is (Firefox). The file is named by what was
+  recorded (`edit.mp4`, `video/mp4`; `edit.webm` otherwise). The MP4
+  Chrome writes is fragmented and says its length (a final fragment
+  and index), so it seeks and plays in browsers, QuickTime and
+  FFmpeg-based players; no fix-up is needed, unlike the WebM it records,
+  which says it's endless until sought to its end. It takes as long as
+  the kept part is to play, and the progress bar says how far along it
+  is. **The sound only** is mixed offline, faster than it plays: the
+  video's or the track's sound decoded (Web Audio's `decodeAudioData`)
+  and mixed in an `OfflineAudioContext` at 44.1 kHz as long as the kept
+  part (the track after its gap, through a gain node at its volume).
+  Then, the first way the browser can ([`WebSoundWay`](../tabcam_app/lib/capture/edit_formats.dart)):
+  - **WebCodecs' `AudioEncoder`** (`mp4a.40.2`, AAC-LC at 160 kbit/s,
+    checked with `AudioEncoder.isConfigSupported`: Chrome and Edge on
+    macOS, Windows and Android, Safari 26), fed the mix a second at a
+    time, so it's still faster than it plays; its frames are written
+    into an **M4A** here, by a small muxer in Dart
+    ([`m4a.dart`](../tabcam_app/lib/capture/m4a.dart), `m4aBytes`: no
+    library, nothing fetched): `ftyp` (`M4A `), then `moov` (one `mp4a`
+    track, its `esds` holding the AudioSpecificConfig, the frames'
+    sizes and one chunk's offset) before `mdat`, so it plays as it
+    loads. The AudioSpecificConfig is the encoder's description as
+    Chrome gives it (two bytes); Safari's encoder gives Apple's "magic
+    cookie" instead, a whole MPEG-4 ES descriptor, from which it's taken
+    (`audioSpecificConfig`; written as it was, it said no audio type and
+    the file played nowhere). **An edit list cuts the encoder's delay
+    and padding**, so the file is as long as the kept part, to the
+    sample, and the track starts exactly where it should; and a `roll`
+    sample group (each frame needs the one before, -1), as Apple's own
+    MP4s have, without which Apple's decoders (Safari, AVFoundation)
+    cut the usual delay themselves and the edit list's too, losing the
+    sound's first 2,112 samples. The delay is measured once per channel
+    count (a tone after 4,096 samples of silence, encoded, written and
+    decoded, starts that much later; 2,112 samples under Apple's
+    encoder, the one used where it can't be measured), except in Safari
+    (its ES descriptor says it's Apple's encoder): 2,112. Checked with
+    Chrome's and Safari's encoders: Chrome, Safari (WebKit) and
+    Firefox's `decodeAudioData`, AVFoundation, `afconvert` and FFmpeg
+    all start the sound where it is; Firefox's alone keeps the padding,
+    up to about 46 ms more at the end (silence).
+  - Else **MediaRecorder** as `audio/mp4;codecs=mp4a.40.2` (an older
+    Safari, without the AudioEncoder): the mix played into it, so it
+    takes as long as the kept part, the progress bar saying how far
+    along; an M4A about as long (the recorder's start may cut a moment).
+    The `AudioContext` it plays in is made and started first, at
+    Download's tap (Safari starts one only then), before the file is
+    read, decoded and mixed; if the browser still won't run it (or
+    record), the sound downloads as a WAV instead (`sound.wav`) rather
+    than failing.
+  - Else (Firefox, Chrome on Linux: no AAC encoder) a 16-bit **WAV**
+    (`wavBytes`), and the menu says (WAV).
 - **Elsewhere** (desktop builds): Download says videos can't be edited
   here.
 
