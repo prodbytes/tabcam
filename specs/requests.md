@@ -2481,3 +2481,6 @@ spec.
    JSON; on a recording's file screen, the take comes after the pages
    and PDFs to follow. See [Cam](cam.md#playing-along-with-a-file) and
    the [file screen](event-screen.md#file-screen).
+   Then, asked to **start them in reverse order, so that the most recent
+   one is the first**: the takes are listed most recent first, and with
+   only takes to play along, the most recent is the one loaded.

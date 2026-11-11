@@ -1612,7 +1612,7 @@ void main() {
   });
 
   testWidgets('Cam\'s takes are the last thing in the sidebar, under '
-      'Takes, in the order they were made: an old take (named "Take 3", '
+      'Takes, the most recent first: an old take (named "Take 3", '
       'not marked) and a marked take renamed too; the file loaded first '
       'is a song, not a take', (tester) async {
     // Tall enough for the sidebar to list everything under the frame.
@@ -1699,11 +1699,12 @@ void main() {
       row('link'),
       row('lesson'),
       row('pdf'),
+      // The most recent take first.
       find.text('Takes'),
-      row('take1'),
-      row('take2'),
-      row('take3'),
       row('renamed'),
+      row('take3'),
+      row('take2'),
+      row('take1'),
     ];
     for (final f in order) {
       expect(f, findsOneWidget);
@@ -1724,9 +1725,8 @@ void main() {
     expect(tester.widget<ListTile>(row('take2')).selected, isTrue);
   });
 
-  testWidgets('with only takes to play along, the first take loads', (
-    tester,
-  ) async {
+  testWidgets('with only takes to play along, the most recent loads, '
+      'listed first', (tester) async {
     final (library, id) = await capture(tester, tab: _tab);
     late String take1, take2;
     await tester.runAsync(() async {
@@ -1762,8 +1762,9 @@ void main() {
     expect(find.text('Play along'), findsNothing);
     final first = find.byKey(ValueKey('cam-along-$take1'));
     final second = find.byKey(ValueKey('cam-along-$take2'));
-    expect(tester.widget<ListTile>(first).selected, isTrue);
-    expect(tester.getTopLeft(first).dy, lessThan(tester.getTopLeft(second).dy));
+    expect(tester.widget<ListTile>(second).selected, isTrue);
+    expect(tester.widget<ListTile>(first).selected, isFalse);
+    expect(tester.getTopLeft(second).dy, lessThan(tester.getTopLeft(first).dy));
   });
 
   group('isTake', () {

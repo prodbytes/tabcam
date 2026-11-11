@@ -259,13 +259,13 @@ At its top a compact **player frame**, there whenever there's something
 to play, with the first of them loaded in it, paused (`BackingTrack`,
 [`backing_track.dart`](../tabcam_app/lib/capture/backing_track.dart)):
 a song to play along with, not one of Cam's takes, unless there's
-nothing else (then the first take); on the file screen, the recording
+nothing else (then the most recent take); on the file screen, the recording
 opened, take or not. Under it the list: the [text tab](#following-the-text)
 first, if listed; then the files to play along in the capture's order,
 under **Play along**, each with its icon and name; then the
 [PDFs](#following-a-pdf) or pages to follow; and **last, Cam's takes**,
-under **Takes** (Spanish **Tomas**), in the capture's order, which is
-the order they were made (Take 1 first), played along as the others
+under **Takes** (Spanish **Tomas**), **the most recent first** (the
+reverse of the order they were made: Take 3, Take 2, Take 1), played along as the others
 are. A take is one Cam marked as such (renamed, it still is one), or,
 saved before takes were marked, a video named as Cam names them in any
 of the app's languages ("Take 3", "Toma 3"; `isTake`). The list

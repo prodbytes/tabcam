@@ -166,7 +166,7 @@ class PlayAlong extends ChangeNotifier {
   /// Loads the file the screen opened on, if it plays, else the first
   /// that does, into the frame (not playing), when nothing is loaded yet:
   /// a song to play along with rather than one of Cam's takes ([isTake]),
-  /// the first take only when there's nothing else.
+  /// the most recent take only when there's nothing else.
   void _loadFirst() {
     final event = library.byId(eventId);
     if (event == null || track.page != null) return;
@@ -174,7 +174,7 @@ class PlayAlong extends ChangeNotifier {
     final first =
         playing.where((p) => p.id == startId).firstOrNull ??
         playing.where((p) => !isTake(p)).firstOrNull ??
-        playing.firstOrNull;
+        playing.lastOrNull;
     if (first != null) unawaited(track.choose(event, first, play: false));
   }
 
@@ -910,8 +910,8 @@ class _BackingFrame extends StatelessWidget {
 /// along marked; a tap plays one along. Then the PDFs and images
 /// [toFollow], if any, under a heading of their own, the one [followed]
 /// marked; a tap shows it beside the screen, or hides it, tapped again.
-/// Last, Cam's takes ([isTake]), under a heading of their own, in the
-/// capture's order (the order they were made); a tap plays one along, as
+/// Last, Cam's takes ([isTake]), under a heading of their own, the most
+/// recent first (the capture's order reversed); a tap plays one along, as
 /// the other files. At the bottom, [footer], if any, out of the scrolling
 /// list.
 class PlayAlongSidebar extends StatelessWidget {
@@ -1068,7 +1068,8 @@ class PlayAlongSidebar extends StatelessWidget {
           final event = library.byId(eventId);
           final playing = [...?event?.pages.where(BackingTrack.plays)];
           final pages = [...playing.where((p) => !isTake(p))];
-          final takes = [...playing.where(isTake)];
+          // The most recent first.
+          final takes = [...playing.where(isTake)].reversed.toList();
           final primary = Theme.of(context).colorScheme.primary;
           // A file to play along (a song or a take): the one playing marked.
           Widget fileRow(EventPage page) => ListTile(
