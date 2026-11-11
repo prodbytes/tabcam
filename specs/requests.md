@@ -2795,3 +2795,44 @@ spec.
     round trips, every rebuild path, clone, publish, known keys winning,
     values that aren't JSON. See [library](library.md#events) and
     [video edit](video-edit.md).
+13. **(Editor redesign, step 2) One render plan for Download (same output
+    as today).** Download and the players now work from one description
+    of a video's edit, the render plan (`lib/capture/render_plan.dart`,
+    pure Dart, derived from the edit, never stored): the input and the
+    part kept, the format and whether the picture goes in, the video's own
+    sound at a volume or none, and the song lane (the track's file and
+    volume, and its clips in output time, cut to the kept part), and
+    whether it's a passthrough (the whole video as it is, already in the
+    format made: then the file is saved as it is, which replaces
+    `VideoEdit.changes`; `VideoEdit` is gone, its shortest length is
+    `PageEdit.minLength`). Today's edits give the same output as before:
+    Original keeps the own sound, None neither lane, New track one clip
+    where `trackSpan` puts it; the video without sound is the same plan
+    with neither lane; the sound only has no picture. The method channel
+    `tabcam/video_edit` has a `render` method taking the plan (own and
+    song lanes, a list of clips) in place of `edit`'s flat arguments, on
+    Android (Media3: the own sound through a gain, the song a sequence of
+    gaps and clips) and iOS (AVFoundation: the clips inserted where they
+    start, the volumes through an audio mix), and the web renderer takes
+    the plan directly (its song plays in its clips, so a track trimmed at
+    its end now stops there instead of playing on to the video's end; the
+    sound only mixes each clip offline). The phones now report progress
+    every quarter of a second (`Transformer.getProgress`, the export's
+    `progress`), so their progress bar says how far along it is. The
+    preview (`EditedPlayback`) plays the same plan, finding the song's
+    place with the shared `songAt`. Found by running the iOS renderer's
+    smoke test against macOS's AVFoundation: a render with a track failed
+    (the code on main too), as the track's asset was let go before the
+    export finished; it's now held until then (still to be seen on an
+    iPhone). Layers and fades come in later steps.
+    Native smoke tests were added: an XCTest (`ios/RunnerTests`) and an
+    Android instrumented test (`android/app/src/androidTest`, with a 2 s
+    made-up clip and tone) render a trimmed plan with a song clip, the
+    sound alone, and refuse a plan with nothing to make. Tests
+    (`test/render_plan_test.dart`, `test/video_edit_test.dart`,
+    `test/web_video_editor_test.dart`): every `trackSpan` case as plan
+    clips, clips cut to the kept length, `songAt`, passthrough only for an
+    untouched video in the format made, the channel's arguments and
+    progress, the plans the editor's Download renders, and in Chrome the
+    plan rendered with several clips and a track trimmed at its end. See
+    [video edit](video-edit.md#the-render-plan).

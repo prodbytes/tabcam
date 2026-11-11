@@ -26,8 +26,9 @@ import 'messages.dart';
 /// page as it's made ([PageEdit]), and played as it says
 /// ([EditedPlayback]: the kept part, muted, the new track along it); the
 /// video's file stays as it is.
-/// Download makes a file of it on the device ([VideoEditor]): the video,
-/// the video without sound, or the sound alone.
+/// Download renders the same plan ([RenderPlan]) to a file on the device
+/// ([VideoEditor]): the video, the video without sound, or the sound
+/// alone.
 class VideoEditScreen extends StatefulWidget {
   const VideoEditScreen({
     super.key,
@@ -70,10 +71,6 @@ class VideoEditScreen extends StatefulWidget {
   @override
   State<VideoEditScreen> createState() => _VideoEditScreenState();
 }
-
-/// What Download makes: the video as edited, the video without sound, or
-/// its sound alone.
-enum _Download { video, silent, sound }
 
 class _VideoEditScreenState extends State<VideoEditScreen> {
   VideoPlayerController? _video;
@@ -271,9 +268,11 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     _saveTimer = Timer(const Duration(milliseconds: 400), _keep);
   }
 
-  /// The preview plays the edit as it is now.
-  Future<void> _played() async =>
-      _playback?.set(_pageEdit, track: _trackPlayer);
+  /// The preview plays the edit as it is now: the plan Download renders.
+  Future<void> _played() async => _playback?.set(
+    EditedPlayback.planOf(_pageEdit, songLength: _trackLength),
+    song: _trackPlayer,
+  );
 
   /// Keeps the edit with the page, when it changed.
   Future<void> _keep() async {
@@ -289,16 +288,16 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     }
   }
 
-  /// Keeps from [start] to [end], at least [VideoEdit.minLength] long.
+  /// Keeps from [start] to [end], at least [PageEdit.minLength] long.
   void _trim(Duration start, Duration end) {
     final length = _duration;
     start = _clamp(start, Duration.zero, length);
     end = _clamp(end, Duration.zero, length);
-    if (end - start < VideoEdit.minLength) {
-      if (start + VideoEdit.minLength <= length) {
-        end = start + VideoEdit.minLength;
+    if (end - start < PageEdit.minLength) {
+      if (start + PageEdit.minLength <= length) {
+        end = start + PageEdit.minLength;
       } else {
-        start = length - VideoEdit.minLength;
+        start = length - PageEdit.minLength;
         end = length;
       }
     }
@@ -414,7 +413,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     String name, {
     PageEdit? from,
   }) async {
-    await _playback?.set(_pageEdit);
+    await _playback?.set(EditedPlayback.planOf(_pageEdit));
     await _trackPlayer?.dispose();
     _trackPlayer = null;
     VideoPlayerController? player;
@@ -538,16 +537,17 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     _changed();
   }
 
-  VideoEdit get _edit => VideoEdit(
-    start: _start,
-    end: _end,
-    sound: _sound,
-    track: _sound == EditSound.track ? _track : null,
-    trackLength: _trackLength,
-    trackStart: _trackStart,
-    trackEnd: _trackEnd,
-    offset: _offset,
-    trackVolume: _trackVolume,
+  /// The plan of the edit as it is now, for [kind]: of [input], the
+  /// video's file, for Download (the preview's has no files).
+  RenderPlan _plan(RenderKind kind, {XFile? input}) => RenderPlan.of(
+    _pageEdit,
+    input: input,
+    duration: _duration,
+    inputExtension: input == null ? null : Media.of(input)?.extension,
+    songFile: _track,
+    songLength: _trackLength,
+    kind: kind,
+    formats: _formats,
   );
 
   /// Whether the edit's track can be fitted (one of unknown length can't).
@@ -555,26 +555,22 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       _sound != EditSound.track ||
       (_track != null && _trackLength > Duration.zero);
 
-  bool _canDownload(_Download what) {
+  bool _canDownload(RenderKind what) {
     if (_video == null || _busy) return false;
     return switch (what) {
-      _Download.video => _trackReady,
-      _Download.silent => true,
-      _Download.sound => switch (_sound) {
-        EditSound.none => false,
-        EditSound.original => true,
-        EditSound.track => _trackReady && _edit.trackPart != null,
-      },
+      RenderKind.video => _trackReady,
+      RenderKind.silent => true,
+      RenderKind.sound => _trackReady && _plan(RenderKind.sound).hasSound,
     };
   }
 
-  /// Makes a file of the edit, on the device ([VideoEditor]), and
-  /// downloads it: the video as edited, without sound, or its sound alone,
-  /// in [_formats]. A video the edit doesn't change downloads as it is
-  /// when it's already an MP4 (or M4V), or in the format made here (a
-  /// WebM where the browser records WebM); made again otherwise (a WebM,
-  /// or a MOV, as an MP4).
-  Future<void> _download(_Download what) async {
+  /// Renders the edit's plan to a file, on the device ([VideoEditor]),
+  /// and downloads it: the video as edited, without sound, or its sound
+  /// alone, in [_formats]. A plan that's a passthrough (the video as it
+  /// is, already an MP4 or M4V, or in the format made here: a WebM where
+  /// the browser records WebM) downloads the file as it is; anything else
+  /// is made (a WebM, or a MOV, as an MP4).
+  Future<void> _download(RenderKind what) async {
     final editor = _editor;
     final event = _library.byId(widget.eventId);
     final l10n = context.l10n;
@@ -594,24 +590,18 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       final page = widget.page;
       final input = await _fileOf(event, page);
       final label = fileLabel(l10n, event, page);
-      final edit = what == _Download.silent
-          ? VideoEdit(start: _start, end: _end, sound: EditSound.none)
-          : _edit;
-      if (what != _Download.sound &&
-          !edit.changes(_duration) &&
-          _formats.keepsAsIs(Media.of(input)?.extension)) {
+      final plan = _plan(what, input: input);
+      if (plan.passthrough) {
         await Downloads.saveFile(_library, event, page, label);
         return;
       }
-      final out = made = await editor.apply(
-        input,
-        edit,
-        soundOnly: what == _Download.sound,
+      final out = made = await editor.render(
+        plan,
         onProgress: (done) {
           if (mounted) setState(() => _progress = done);
         },
       );
-      final format = what == _Download.sound ? _formats.sound : _formats.video;
+      final format = plan.format;
       await Downloads.saveBytes(
         safeFileName(label, Media.of(out)?.extension ?? format.extension),
         await out.readAsBytes(),
@@ -759,8 +749,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           ),
           icon: const Icon(Icons.download_outlined),
           label: Text(l10n.videoEditDownload),
-          onPressed: _canDownload(_Download.video)
-              ? () => _download(_Download.video)
+          onPressed: _canDownload(RenderKind.video)
+              ? () => _download(RenderKind.video)
               : null,
         ),
         const SizedBox(width: 2),
@@ -768,17 +758,17 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           menuChildren: [
             for (final (what, label, icon) in [
               (
-                _Download.video,
+                RenderKind.video,
                 l10n.videoEditDownloadVideo(_formats.video.label),
                 Icons.movie_outlined,
               ),
               (
-                _Download.silent,
+                RenderKind.silent,
                 l10n.videoEditDownloadSilent(_formats.video.label),
                 Icons.videocam_off_outlined,
               ),
               (
-                _Download.sound,
+                RenderKind.sound,
                 l10n.videoEditDownloadSound(_formats.sound.label),
                 Icons.audiotrack,
               ),

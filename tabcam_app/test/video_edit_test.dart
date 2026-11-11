@@ -26,7 +26,7 @@ class FakeEditor implements VideoEditing {
   FakeEditor([this.formatsHere = EditFormats.standard]);
 
   final EditFormats formatsHere;
-  final applied = <(XFile, VideoEdit, bool)>[];
+  final rendered = <RenderPlan>[];
 
   @override
   Future<Duration?> length(XFile file) async => null;
@@ -35,18 +35,16 @@ class FakeEditor implements VideoEditing {
   Future<EditFormats> formats() async => formatsHere;
 
   @override
-  Future<XFile> apply(
-    XFile video,
-    VideoEdit edit, {
-    bool soundOnly = false,
+  Future<XFile> render(
+    RenderPlan plan, {
     void Function(double done)? onProgress,
   }) async {
-    applied.add((video, edit, soundOnly));
+    rendered.add(plan);
     onProgress?.call(0.5);
-    final format = soundOnly ? formatsHere.sound : formatsHere.video;
+    final format = plan.format;
     return XFile.fromData(
       Uint8List.fromList([9, 9, 9]),
-      name: '${soundOnly ? 'sound' : 'edit'}.${format.extension}',
+      name: '${plan.video ? 'edit' : 'sound'}.${format.extension}',
       mimeType: format.mimeType,
     );
   }
@@ -160,22 +158,6 @@ void main() {
         isNull,
       );
     });
-
-    test('an edit fits its track by its length', () {
-      final edit = VideoEdit(
-        start: s(1),
-        end: s(6),
-        sound: EditSound.track,
-        trackLength: s(20),
-        trackStart: s(2),
-        offset: s(1),
-      );
-      expect(edit.trackPart, (gap: s(1), from: s(2), to: s(6)));
-      expect(
-        VideoEdit(start: s(1), end: s(6), sound: EditSound.track).trackPart,
-        isNull,
-      );
-    });
   });
 
   group('a kept edit', () {
@@ -251,48 +233,117 @@ void main() {
       }
     });
 
-    test('the phones\' editor gets the track\'s volume', () async {
-      TestWidgetsFlutterBinding.ensureInitialized();
-      PathProviderPlatform.instance = _Paths();
-      final messenger =
-          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
-      final calls = <MethodCall>[];
-      messenger.setMockMethodCallHandler(ChannelVideoEditor.channel, (c) async {
-        calls.add(c);
-        return (c.arguments as Map)['output'];
-      });
-      addTearDown(
-        () => messenger.setMockMethodCallHandler(
-          ChannelVideoEditor.channel,
-          null,
-        ),
-      );
-      final edit = VideoEdit(
-        start: Duration.zero,
-        end: s(4),
-        sound: EditSound.track,
-        track: XFile('/tmp/riff.m4a'),
-        trackLength: s(10),
-        trackVolume: 0.35,
-      );
-      await const ChannelVideoEditor().apply(XFile('/tmp/take.mp4'), edit);
-      await const ChannelVideoEditor().apply(
-        XFile('/tmp/take.mp4'),
-        edit,
-        soundOnly: true,
-      );
-      // Without a track, there's no volume to send.
-      await const ChannelVideoEditor().apply(
-        XFile('/tmp/take.mp4'),
-        VideoEdit(start: Duration.zero, end: s(4), trackVolume: 0.35),
-      );
-      final args = [for (final c in calls) c.arguments as Map];
-      expect(args[0]['trackVolume'], 0.35);
-      expect(args[0]['video'], isTrue);
-      expect(args[1]['trackVolume'], 0.35);
-      expect(args[1]['video'], isFalse);
-      expect(args[2].containsKey('trackVolume'), isFalse);
-    });
+    test(
+      'the phones\' editor gets the plan, and reports its progress',
+      () async {
+        TestWidgetsFlutterBinding.ensureInitialized();
+        PathProviderPlatform.instance = _Paths();
+        final messenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+        final calls = <MethodCall>[];
+        messenger.setMockMethodCallHandler(ChannelVideoEditor.channel, (
+          c,
+        ) async {
+          calls.add(c);
+          final args = c.arguments as Map;
+          // The platform reports how far along it is, by job.
+          if (args['job'] != null) {
+            await messenger.handlePlatformMessage(
+              ChannelVideoEditor.channel.name,
+              const StandardMethodCodec().encodeMethodCall(
+                MethodCall('progress', {'job': args['job'], 'done': 0.4}),
+              ),
+              (_) {},
+            );
+          }
+          return args['output'];
+        });
+        addTearDown(() {
+          messenger.setMockMethodCallHandler(ChannelVideoEditor.channel, null);
+          ChannelVideoEditor.reset();
+        });
+        final edit = PageEdit(
+          start: s(1),
+          end: s(5),
+          sound: EditSound.track,
+          trackId: 'k1',
+          offset: s(-2),
+          trackVolume: 0.35,
+        );
+        RenderPlan plan(RenderKind kind) => RenderPlan.of(
+          edit,
+          input: XFile('/tmp/take.mp4'),
+          duration: s(10),
+          songFile: XFile('/tmp/riff.m4a'),
+          songLength: s(10),
+          kind: kind,
+        );
+        final progress = <double>[];
+        final video = await const ChannelVideoEditor().render(
+          plan(RenderKind.video),
+          onProgress: progress.add,
+        );
+        final sound = await const ChannelVideoEditor().render(
+          plan(RenderKind.sound),
+        );
+        await const ChannelVideoEditor().render(plan(RenderKind.silent));
+        expect(calls.map((c) => c.method).toSet(), {'render'});
+        final args = [for (final c in calls) c.arguments as Map];
+        expect(args[0]['input'], '/tmp/take.mp4');
+        expect(args[0]['video'], isTrue);
+        expect(args[0]['startMs'], 1000);
+        expect(args[0]['endMs'], 5000);
+        expect(args[0].containsKey('own'), isFalse);
+        expect(args[0]['song'], {
+          'path': '/tmp/riff.m4a',
+          'volume': 0.35,
+          'clips': [
+            {'atMs': 0, 'fromMs': 2000, 'toMs': 6000, 'speed': 1.0},
+          ],
+        });
+        expect(progress, [0.4]);
+        expect(video.path, endsWith('.mp4'));
+        expect(video.mimeType, 'video/mp4');
+        // The sound alone: no picture, an M4A; no job without a listener.
+        expect(args[1]['video'], isFalse);
+        expect(args[1].containsKey('job'), isFalse);
+        expect(sound.path, endsWith('.m4a'));
+        expect(sound.mimeType, 'audio/mp4');
+        // Without sound: neither lane.
+        expect(args[2].containsKey('own'), isFalse);
+        expect(args[2].containsKey('song'), isFalse);
+        // Its own sound, as it is.
+        await const ChannelVideoEditor().render(
+          RenderPlan.of(
+            PageEdit(start: Duration.zero, end: s(4)),
+            input: XFile('/tmp/take.mp4'),
+          ),
+        );
+        expect((calls.last.arguments as Map)['own'], {'volume': 1.0});
+        // Nothing to make: no sound to save, or a song with no file.
+        await expectLater(
+          const ChannelVideoEditor().render(
+            RenderPlan.of(
+              PageEdit(start: Duration.zero, end: s(4), sound: EditSound.none),
+              input: XFile('/tmp/take.mp4'),
+              kind: RenderKind.sound,
+            ),
+          ),
+          throwsArgumentError,
+        );
+        await expectLater(
+          const ChannelVideoEditor().render(
+            RenderPlan.of(
+              edit,
+              input: XFile('/tmp/take.mp4'),
+              songLength: s(10),
+            ),
+          ),
+          throwsArgumentError,
+        );
+        expect(calls, hasLength(4));
+      },
+    );
 
     test('broken or on a page that\'s not a video, is none', () {
       expect(PageEdit.fromJson({'startMs': 5000, 'endMs': 1000}), isNull);
@@ -474,18 +525,22 @@ void main() {
     final page = library.byId(id)!.pages.first;
     expect(page.id, 'k0');
     expect(page.edit, PageEdit(start: Duration.zero, end: s(12)));
-    expect(editor.applied, isEmpty);
+    expect(editor.rendered, isEmpty);
     expect(enabled(tester, 'video-edit-reset'), isTrue);
 
     // Download: the video, as edited, made on the device.
     await tester.tap(find.byKey(const Key('video-edit-download')));
     await _settle(tester);
-    final (input, edit, soundOnly) = editor.applied.single;
-    expect(await tester.runAsync(input.readAsBytes), [1, 2, 3]);
-    expect(edit.start, Duration.zero);
-    expect(edit.end, s(12));
-    expect(edit.sound, EditSound.original);
-    expect(soundOnly, isFalse);
+    final plan = editor.rendered.single;
+    expect(await tester.runAsync(plan.input!.readAsBytes), [1, 2, 3]);
+    expect(plan.start, Duration.zero);
+    expect(plan.end, s(12));
+    expect(plan.duration, s(180));
+    expect(plan.own, const OwnLane());
+    expect(plan.song, isNull);
+    expect(plan.video, isTrue);
+    expect(plan.format, EditFormat.mp4);
+    expect(plan.passthrough, isFalse);
     final (name, bytes, type) = saved.single;
     expect(name, 'Made-up riff.mp4');
     expect(bytes, [9, 9, 9]);
@@ -507,7 +562,7 @@ void main() {
     await _settle(tester);
     await tester.tap(find.byKey(const Key('video-edit-download')));
     await _settle(tester);
-    expect(editor.applied, isEmpty);
+    expect(editor.rendered, isEmpty);
     final (name, bytes, _) = saved.single;
     expect(name, 'Made-up riff.mp4');
     expect(bytes, [1, 2, 3]);
@@ -597,31 +652,40 @@ void main() {
     // Download: the video with the track.
     await tester.tap(find.byKey(const Key('video-edit-download')));
     await _settle(tester);
-    final (_, edit, _) = editor.applied.single;
-    expect(edit.sound, EditSound.track);
-    expect(await tester.runAsync(edit.track!.readAsBytes), [1, 2, 3]);
-    expect(edit.trackLength, s(180));
-    expect(edit.trackStart, kept.trackStart);
-    expect(edit.offset, kept.offset);
-    final part = edit.trackPart!;
-    expect(part.gap, edit.offset);
-    expect(part.from, edit.trackStart);
-    // To the kept part's end: the track from its start, less the gap.
-    expect(part.to, edit.trackStart + (s(180) - edit.offset));
+    final plan = editor.rendered.single;
+    expect(plan.own, isNull);
+    final song = plan.song!;
+    expect(song.page, 'k1');
+    expect(await tester.runAsync(song.file!.readAsBytes), [1, 2, 3]);
+    expect(song.volume, 1);
+    // One clip: from its shift, the track from its start, to the kept
+    // part's end (the track's start, less the gap).
+    expect(song.clips, [
+      SongClip(
+        at: kept.offset,
+        from: kept.trackStart,
+        to: kept.trackStart + (s(180) - kept.offset),
+      ),
+    ]);
 
     // The menu: without sound, and the sound alone.
     await tester.tap(find.byKey(const Key('video-edit-download-more')));
     await _frames(tester);
     await tester.tap(find.byKey(const Key('video-edit-download-silent')));
     await _settle(tester);
-    expect(editor.applied[1].$2.sound, EditSound.none);
-    expect(editor.applied[1].$3, isFalse);
+    // Without sound: the same video, neither lane.
+    expect(editor.rendered[1].video, isTrue);
+    expect(editor.rendered[1].own, isNull);
+    expect(editor.rendered[1].song, isNull);
+    expect(editor.rendered[1].end, plan.end);
     await tester.tap(find.byKey(const Key('video-edit-download-more')));
     await _frames(tester);
     await tester.tap(find.byKey(const Key('video-edit-download-sound')));
     await _settle(tester);
-    expect(editor.applied[2].$2.sound, EditSound.track);
-    expect(editor.applied[2].$3, isTrue);
+    // The sound alone: the song lane, no picture.
+    expect(editor.rendered[2].video, isFalse);
+    expect(editor.rendered[2].song, song);
+    expect(editor.rendered[2].format, EditFormat.m4a);
     // Each as its format: the videos MP4, the sound alone M4A.
     expect(
       [for (final (name, _, type) in saved) (name, type)],
@@ -672,9 +736,14 @@ void main() {
     await _settle(tester);
     await tester.tap(find.byKey(const Key('video-edit-download')));
     await _settle(tester);
-    final (_, edit, soundOnly) = editor.applied.single;
-    expect(edit.changes(s(180)), isFalse);
-    expect(soundOnly, isFalse);
+    // Unchanged, but not in the format made: rendered, not passed through.
+    final plan = editor.rendered.single;
+    expect(plan.start, Duration.zero);
+    expect(plan.end, s(180));
+    expect(plan.own, const OwnLane());
+    expect(plan.song, isNull);
+    expect(plan.keepsFormat, isFalse);
+    expect(plan.passthrough, isFalse);
     final (name, bytes, type) = saved.single;
     expect(name, 'Made-up riff.mp4');
     expect(bytes, [9, 9, 9]);
@@ -690,7 +759,7 @@ void main() {
     await _settle(tester);
     await tester.tap(find.byKey(const Key('video-edit-download')));
     await _settle(tester);
-    expect(editor.applied, isEmpty);
+    expect(editor.rendered, isEmpty);
     expect(saved.single.$1, 'Made-up riff.webm');
     expect(saved.single.$2, [1, 2, 3]);
   });
@@ -708,7 +777,7 @@ void main() {
     await _settle(tester);
     await tester.tap(find.byKey(const Key('video-edit-download')));
     await _settle(tester);
-    expect(editor.applied, isEmpty);
+    expect(editor.rendered, isEmpty);
     expect(saved.single.$1, 'Made-up riff.mp4');
     expect(saved.single.$2, [1, 2, 3]);
 
@@ -721,7 +790,7 @@ void main() {
     await _settle(tester);
     await tester.tap(find.byKey(const Key('video-edit-download')));
     await _settle(tester);
-    expect(editor.applied, isEmpty);
+    expect(editor.rendered, isEmpty);
     expect(saved.single.$1, 'Made-up riff.m4v');
     expect(saved.single.$2, [1, 2, 3]);
   });
@@ -832,7 +901,7 @@ void main() {
     expect(enabled(tester, 'video-edit-reset'), isFalse);
     await tester.tap(find.byKey(const Key('video-edit-download')));
     await _settle(tester);
-    expect(editor.applied, isEmpty);
+    expect(editor.rendered, isEmpty);
     expect(saved.single.$2, [1, 2, 3]);
   });
 
@@ -971,7 +1040,7 @@ void main() {
     // Download: the track goes in at half.
     await tester.tap(find.byKey(const Key('video-edit-download')));
     await _settle(tester);
-    expect(editor.applied.single.$2.trackVolume, 0.5);
+    expect(editor.rendered.single.song!.volume, 0.5);
 
     // Reset: as it is again.
     await tester.tap(find.byKey(const Key('video-edit-reset')));

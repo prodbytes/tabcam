@@ -2,14 +2,17 @@ import 'dart:async';
 
 import 'package:video_player/video_player.dart';
 
+import '../capture/render_plan.dart';
 import '../library/page_edit.dart';
 
-/// Plays [video] as an edit says, without making a file of it: the kept
-/// part only (from its start, when outside it; at its end, back to its
-/// start, playing on when [loop]ing, paused otherwise), with the video's
-/// own sound, none, or, muted, the new [track] along it, started where it
-/// comes in, at the edit's track volume. Checked every tenth of a second
-/// while it plays. The players stay their owner's to dispose of.
+/// Plays [video] as a [RenderPlan] says (the one Download renders),
+/// without making a file of it: the kept part only (from its start, when
+/// outside it; at its end, back to its start, playing on when [loop]ing,
+/// paused otherwise), with the video's own sound at its volume, or muted,
+/// and the song lane's player along it, playing in its clips from where
+/// the plan says, paused between them, at its volume. Checked every tenth
+/// of a second while it plays. The players stay their owner's to dispose
+/// of.
 class EditedPlayback {
   EditedPlayback(this.video, {this.loop = false}) {
     video.addListener(_onVideo);
@@ -18,42 +21,45 @@ class EditedPlayback {
   final VideoPlayerController video;
   final bool loop;
 
-  /// The edit played; null plays the video as it is.
-  PageEdit? get edit => _edit;
-  PageEdit? _edit;
+  /// The plan played; null plays the video as it is.
+  RenderPlan? get plan => _plan;
+  RenderPlan? _plan;
 
-  /// The new track's player, for [EditSound.track].
-  VideoPlayerController? get track => _track;
-  VideoPlayerController? _track;
+  /// The song lane's player.
+  VideoPlayerController? get song => _song;
+  VideoPlayerController? _song;
 
   Timer? _ticker;
-  bool _trackPlaying = false;
+  bool _songPlaying = false;
   Duration? _last;
 
-  Duration get start => _edit?.start ?? Duration.zero;
+  Duration get start => _plan?.start ?? Duration.zero;
   Duration get end {
     final length = video.value.duration;
-    final end = _edit?.end;
+    final end = _plan?.end;
     if (end == null) return length;
     return length > Duration.zero && end > length ? length : end;
   }
 
-  /// Plays [edit] from now on (with [track] for its new track, at the
-  /// edit's track volume); what the track plays is found again at the next
-  /// check, unless only its volume changed (it plays on, as loud as now
-  /// asked).
-  Future<void> set(PageEdit? edit, {VideoPlayerController? track}) async {
-    final changedTrack = !identical(track, _track);
-    final moved =
-        changedTrack || edit?.withTrackVolume(1) != _edit?.withTrackVolume(1);
-    if (changedTrack) await pauseTrack();
-    _edit = edit;
-    _track = track;
-    await video.setVolume(
-      edit == null || edit.sound == EditSound.original ? 1 : 0,
-    );
-    await track?.setVolume(edit?.trackVolume ?? 1);
-    if (moved && !changedTrack) await pauseTrack();
+  /// The preview's plan of [edit] (null: the video as it is), its song
+  /// [songLength] long.
+  static RenderPlan? planOf(PageEdit? edit, {Duration? songLength}) =>
+      edit == null
+      ? null
+      : RenderPlan.of(edit, songLength: songLength ?? Duration.zero);
+
+  /// Plays [plan] from now on (with [song] as the song lane's player);
+  /// where the song plays is found again at the next check, unless only
+  /// volumes changed (it plays on, as loud as now asked).
+  Future<void> set(RenderPlan? plan, {VideoPlayerController? song}) async {
+    final changedSong = !identical(song, _song);
+    final moved = changedSong || plan?.timeline != _plan?.timeline;
+    if (changedSong) await pauseSong();
+    _plan = plan;
+    _song = song;
+    await video.setVolume(plan == null ? 1 : plan.own?.volume ?? 0);
+    await song?.setVolume(plan?.song?.volume ?? 1);
+    if (moved && !changedSong) await pauseSong();
   }
 
   void _onVideo() {
@@ -63,7 +69,7 @@ class EditedPlayback {
       _ticker?.cancel();
       _ticker = null;
       _last = null;
-      unawaited(pauseTrack());
+      unawaited(pauseSong());
     }
   }
 
@@ -73,38 +79,32 @@ class EditedPlayback {
     final last = _last;
     _last = at;
     if (at >= end || at < start - const Duration(milliseconds: 250)) {
-      await pauseTrack();
+      await pauseSong();
       await video.seekTo(start);
       if (!loop && at >= end) await video.pause();
       return;
     }
-    final edit = _edit;
-    final track = _track;
-    if (edit == null || track == null || edit.sound != EditSound.track) {
-      return;
-    }
-    // Sought: the track finds its place again.
+    final plan = _plan;
+    final song = _song;
+    if (plan == null || song == null || plan.song == null) return;
+    // Sought: the song finds its place again.
     if (last != null && (at - last).abs() > const Duration(seconds: 1)) {
-      await pauseTrack();
+      await pauseSong();
     }
-    // Where in the track the video is: its used part starts [offset]
-    // into the kept part.
-    final trackEnd = edit.trackEnd ?? track.value.duration;
-    final into = edit.trackStart + (at - start - edit.offset);
-    final within = into >= edit.trackStart && into < trackEnd;
-    if (within && !_trackPlaying) {
-      _trackPlaying = true;
-      await track.seekTo(into);
-      await track.play();
-    } else if (!within && _trackPlaying) {
-      await pauseTrack();
+    final into = plan.songAt(at - start);
+    if (into != null && !_songPlaying) {
+      _songPlaying = true;
+      await song.seekTo(into);
+      await song.play();
+    } else if (into == null && _songPlaying) {
+      await pauseSong();
     }
   }
 
-  Future<void> pauseTrack() async {
-    if (!_trackPlaying) return;
-    _trackPlaying = false;
-    await _track?.pause();
+  Future<void> pauseSong() async {
+    if (!_songPlaying) return;
+    _songPlaying = false;
+    await _song?.pause();
   }
 
   /// Plays the kept part (from its start, when outside it), or pauses.
