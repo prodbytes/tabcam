@@ -1036,10 +1036,10 @@ abstract class AppLocalizations {
   /// **'Rec (1)'**
   String get camRecKey;
 
-  /// Cam: the Stop button's tooltip while recording; the 1 key does it too
+  /// Cam: the Stop button's tooltip while recording; the 1 key does it too, and the . key saves the take and starts a new one
   ///
   /// In en, this message translates to:
-  /// **'Stop (1)'**
+  /// **'Stop (1) · new take (.)'**
   String get camStopKey;
 
   /// Cam: play the last take back

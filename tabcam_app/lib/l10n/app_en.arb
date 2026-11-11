@@ -807,9 +807,9 @@
   "@camRecKey": {
     "description": "Cam: the Rec button's tooltip; the 1 key does it too"
   },
-  "camStopKey": "Stop (1)",
+  "camStopKey": "Stop (1) · new take (.)",
   "@camStopKey": {
-    "description": "Cam: the Stop button's tooltip while recording; the 1 key does it too"
+    "description": "Cam: the Stop button's tooltip while recording; the 1 key does it too, and the . key saves the take and starts a new one"
   },
   "camPlay": "Play",
   "@camPlay": {

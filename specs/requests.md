@@ -2462,3 +2462,23 @@ spec.
    turn the tab while other keys still do, Ctrl + 1 does, it's dead
    while a take plays back, and with the sidebar showing it starts the
    song with the take. See [Cam](cam.md#rec-key).
+
+9. **Also in camre view make the "." button stop recording and start a
+   new take.** In Cam, **.** (on the main keyboard or the keypad's
+   decimal key) now saves the take being recorded as Stop does (added,
+   named "Take n", its phrase passes kept, the message shown) and, once
+   it's saved, starts the next take as Rec does. The song in the
+   play-along sidebar stops at once, back at its start (its section's),
+   and plays from there with the new take, after the count-in if it's
+   on. Not recording, . starts a take as 1 does. It acts on the key
+   down only, not with Ctrl, ⌘ or Alt (then it turns the tab as any
+   key), and no longer turns the tab otherwise. While the take is saved
+   for the next, Rec, Play, the camera switch, 1, . and Back do nothing,
+   so a second press can't double up; if the next take can't start, the
+   first is kept and a message says why. Rec's tooltip while recording
+   is now "Stop (1) · new take (.)" (Spanish and Portuguese too). New
+   tests: . starts a take, saves Take 1 and records again, the keypad's
+   . too, held it doesn't repeat, Ctrl + . turns the tab, presses while
+   saving are ignored, a failed start keeps the take, and with a song in
+   the sidebar it stops at once and restarts from its start with the new
+   take. See [Cam](cam.md#new-take-key).

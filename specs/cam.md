@@ -32,7 +32,8 @@ its **Not now** leaving. With Premium it opens the camera view
   phone turned sideways), with its number under it ("2 / 14"). A
   capture with no text tab yet says to read it first.
 - **Moving along the tab**: any key (but **1**, which is
-  [Rec / Stop](#rec-key), and the space bar, 0, ← and → while a file
+  [Rec / Stop](#rec-key), **.**, which is [a new take](#new-take-key),
+  and the space bar, 0, ← and → while a file
   [plays along](#playing-along-with-a-file)) goes to the
   next neckline (a keyboard, or a Bluetooth page-turner pedal), **↓**
   among them; **Backspace**, **↑** and **Page Up** go to the one
@@ -92,13 +93,30 @@ its **Not now** leaving. With Premium it opens the camera view
   pressed (a take being saved or playing back, no camera, the
   preview), 1 does nothing. With Ctrl, ⌘ or Alt held, 1 is another
   shortcut's (the browser's) and turns the tab as any key. The button's
-  tooltip says so: "Rec (1)", and "Stop (1)" while recording, in
-  English, Spanish and Portuguese. The take is then added to
+  tooltip says so: "Rec (1)", and "Stop (1) · new take (.)" while
+  recording, in English, Spanish and Portuguese. The take is then added to
   the capture as a video, at the end of its files, named "Take 1",
   "Take 2"… (the first number no file has), and a message says so. It
   syncs as any video does. Going back while recording stops it and
   keeps the take. Back on the capture, its takes show: the file list
   (not the Text view), scrolled to its end.
+  <a id="new-take-key"></a>The **.** key (on the main keyboard or the
+  keypad's decimal key) starts **a new take** while recording: the
+  take is stopped and saved as Stop saves it (added, named, its phrase
+  passes kept, the message shown), and once it's saved, the next take
+  starts as Rec starts one. The song in the sidebar (when it shows)
+  stops at once and goes back to its start (its section's, with one
+  chosen), so it's silent while the take is saved; with the new take
+  it plays from there, after the count-in if that's on, as Rec starts
+  it. The tab stays at the neckline showing, as with Rec (auto-pass
+  turns it along the song, as ever). Not recording, **.** starts a take,
+  as 1 does. It acts on the key
+  down only (held, it doesn't repeat), does nothing while Rec can't be
+  pressed, and with Ctrl, ⌘ or Alt it turns the tab as any key. While
+  the take is saved for the next, Rec, Play, the camera switch, 1, .
+  and going back do nothing, so a second press can't start or stop
+  another take (the camera records one at a time). If the next take
+  can't start, the one saved is kept and a message says why.
 - <a id="the-tab-in-the-take"></a>**The tab is in the take**: each
   neckline shows along the bottom of the video while it showed in Cam,
   as a band as wide as the video (white monospaced text on a dark,
