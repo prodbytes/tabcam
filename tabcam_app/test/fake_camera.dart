@@ -13,14 +13,24 @@ class FakeCameraPlatform extends CameraPlatform
   int shots = 0;
   final List<String> opened = [];
 
+  /// What each camera was opened with.
+  final List<MediaSettings?> settings = [];
+
+  /// How many times a recording was prepared for (iOS).
+  int prepared = 0;
+
   @override
   Future<int> createCameraWithSettings(
     CameraDescription cameraDescription,
     MediaSettings? mediaSettings,
   ) async {
     opened.add(cameraDescription.name);
+    settings.add(mediaSettings);
     return opened.length;
   }
+
+  @override
+  Future<void> prepareForVideoRecording() async => prepared++;
 
   @override
   Future<void> initializeCamera(

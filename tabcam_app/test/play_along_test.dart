@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:camera_platform_interface/camera_platform_interface.dart';
 
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,6 +16,7 @@ import 'package:tabcam_app/capture/backing_track.dart';
 import 'package:tabcam_app/capture/play_along_screen.dart';
 import 'package:tabcam_app/capture/play_along_sidebar.dart';
 import 'package:tabcam_app/capture/take_overlay.dart';
+import 'package:tabcam_app/capture/take_priority.dart';
 import 'package:tabcam_app/dictionary/dictionary_sidebar.dart';
 import 'package:tabcam_app/l10n/app_localizations.dart';
 import 'package:tabcam_app/library/capture_event.dart';
@@ -41,6 +43,12 @@ class FakeHeads implements HeadTracking {
   @override
   bool active = true;
 
+  /// Whether it was told a take records, each time it was told.
+  final List<bool> recordings = [];
+
+  @override
+  set recording(bool recording) => recordings.add(recording);
+
   @override
   void onImage(CameraImage image) => frames++;
 
@@ -52,6 +60,45 @@ class FakeHeads implements HeadTracking {
 
   @override
   void dispose() => disposed = true;
+}
+
+/// The web's take recorder, faked: whether a microphone opens, whether
+/// starting fails, and whether it lends its sound to the camera.
+class FakeTakeRecorder implements TakeRecorder {
+  bool sound = true;
+  bool lends = true;
+  Object? startError;
+  int prepared = 0;
+  int started = 0;
+  int lent = 0;
+
+  @override
+  Future<void> prepare() async => prepared++;
+
+  @override
+  Future<bool> hasSound() async => sound;
+
+  @override
+  Future<bool> lendSoundToCamera() async {
+    lent++;
+    return lends;
+  }
+
+  @override
+  Future<void> start(String? Function() neckline) async {
+    if (startError case final error?) throw error;
+    started++;
+  }
+
+  @override
+  Future<XFile> stop() async => XFile.fromData(
+    Uint8List.fromList([7, started]),
+    name: 'take.webm',
+    mimeType: 'video/webm',
+  );
+
+  @override
+  void dispose() {}
 }
 
 const _back = CameraDescription(
@@ -309,6 +356,77 @@ void main() {
     await frames(tester);
     expect(video.playing, isEmpty);
     expect(find.byKey(const Key('preview')), findsOneWidget);
+  });
+
+  testWidgets('recording comes first: on iOS the take\'s sound is set up '
+      'when Cam opens and again as a take starts; while it records, head '
+      'gestures look less often and sync waits; the take plays back mixed '
+      'with others', (tester) async {
+    final audio = <String>[];
+    final messenger = tester.binding.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(TakeAudio.channel, (call) async {
+      audio.add(call.method);
+      return null;
+    });
+    addTearDown(
+      () => messenger.setMockMethodCallHandler(TakeAudio.channel, null),
+    );
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    try {
+      final (library, id) = await capture(tester, tab: _tab);
+      late FakeHeads heads;
+      await tester.pumpWidget(
+        app(
+          PlayAlongScreen(
+            library: library,
+            eventId: id,
+            cameras: () async => [_front],
+            headTracking: (_, onGesture) => heads = FakeHeads(onGesture),
+            takeRecorder: () => null,
+            burn: (take, _) async => take,
+          ),
+        ),
+      );
+      await frames(tester);
+      // The camera records sound, at a bitrate for music; the microphone
+      // joins it now, and the session is set, before any take.
+      final settings = camera.settings.single!;
+      expect(settings.enableAudio, isTrue);
+      expect(settings.audioBitrate, TakePriority.iosAudioBitrate);
+      expect(camera.prepared, 1);
+      expect(audio, ['prepare']);
+      expect(TakePriority.recording.value, isFalse);
+
+      await tester.tap(find.byTooltip('Rec (1)'));
+      await frames(tester);
+      expect(camera.recording, isTrue);
+      expect(audio, ['prepare', 'prepare']);
+      expect(TakePriority.recording.value, isTrue);
+      expect(heads.recordings, [true]);
+
+      await tester.tap(_camStop);
+      await until(tester, () => recReady(tester));
+      expect(camera.recording, isFalse);
+      expect(library.byId(id)!.pages.last.title, 'Take 1');
+      expect(TakePriority.recording.value, isFalse);
+      expect(heads.recordings, [true, false]);
+
+      // Played back, the take leaves others' sound playing.
+      await tester.tap(find.byTooltip('Play'));
+      await frames(tester);
+      expect(video.playing, hasLength(1));
+      expect(video.mixes, isNotEmpty);
+      expect(video.mixes, everyElement(isTrue));
+      await tester.tap(_camStop);
+      await frames(tester);
+
+      // Closed: the session's mode back to the default.
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+      expect(audio.last, 'release');
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
   });
 
   testWidgets('1 presses Rec and Stop (the top row\'s or the keypad\'s); '
@@ -735,6 +853,16 @@ void main() {
     await tester.pump();
     expect(find.text('3 / 3'), findsOneWidget);
 
+    // Off, a take streams no frames either (on iOS each would be copied
+    // on the queue that writes the take's sound).
+    await tester.tap(find.byTooltip('Rec (1)'));
+    await frames(tester);
+    expect(camera.recording, isTrue);
+    expect(camera.streaming, isFalse);
+    await tester.tap(_camStop);
+    await until(tester, () => recReady(tester));
+    expect(camera.streaming, isFalse);
+
     await tester.pumpWidget(const SizedBox());
     expect(heads!.disposed, isTrue);
   });
@@ -775,6 +903,77 @@ void main() {
     heads!.onGesture(HeadGesture.next);
     await tester.pump();
     expect(find.text('2 / 3'), findsOneWidget);
+  });
+
+  group('web: no take without its sound', () {
+    Future<(Library, String)> open(
+      WidgetTester tester,
+      FakeTakeRecorder recorder,
+    ) async {
+      camera.imageStreaming = false;
+      final (library, id) = await capture(tester, tab: _tab);
+      await tester.pumpWidget(
+        app(
+          PlayAlongScreen(
+            library: library,
+            eventId: id,
+            cameras: () async => [_front],
+            headTracking: (_, _) => null,
+            takeRecorder: () => recorder,
+          ),
+        ),
+      );
+      await frames(tester);
+      return (library, id);
+    }
+
+    testWidgets('with no microphone (refused, or none), Rec records '
+        'nothing and says why', (tester) async {
+      final recorder = FakeTakeRecorder()..sound = false;
+      final (library, id) = await open(tester, recorder);
+      expect(recorder.prepared, 1);
+      await tester.tap(find.byTooltip('Rec (1)'));
+      await frames(tester);
+      expect(recorder.started, 0);
+      expect(camera.starts, 0);
+      expect(camera.recording, isFalse);
+      expect(find.textContaining('No take without its sound'), findsOneWidget);
+      expect(recReady(tester), isTrue);
+      expect(library.byId(id)!.pages, hasLength(1));
+      expect(TakePriority.recording.value, isFalse);
+    });
+
+    testWidgets('the recorder failing, the camera records the take alone '
+        'with the microphone\'s sound', (tester) async {
+      final recorder = FakeTakeRecorder()
+        ..startError = StateError('the camera isn\'t showing yet');
+      final (library, id) = await open(tester, recorder);
+      await tester.tap(find.byTooltip('Rec (1)'));
+      await frames(tester);
+      expect(recorder.lent, 1);
+      expect(camera.recording, isTrue);
+      expect(find.textContaining('Recording without the tab'), findsOneWidget);
+      await tester.tap(_camStop);
+      await until(tester, () => recReady(tester));
+      expect(library.byId(id)!.pages.last.title, 'Take 1');
+    });
+
+    testWidgets('the recorder failing and the microphone not lent, no take', (
+      tester,
+    ) async {
+      final recorder = FakeTakeRecorder()
+        ..startError = StateError('no recorder')
+        ..lends = false;
+      final (library, id) = await open(tester, recorder);
+      await tester.tap(find.byTooltip('Rec (1)'));
+      await frames(tester);
+      expect(recorder.lent, 1);
+      expect(camera.starts, 0);
+      expect(camera.recording, isFalse);
+      expect(find.textContaining('No take without its sound'), findsOneWidget);
+      expect(recReady(tester), isTrue);
+      expect(library.byId(id)!.pages, hasLength(1));
+    });
   });
 
   testWidgets('where head gestures can\'t work, there\'s no switch', (

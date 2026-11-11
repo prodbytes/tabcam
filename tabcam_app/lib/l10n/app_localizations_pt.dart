@@ -666,6 +666,10 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get camNoSound =>
+      'Sem som o take não é gravado: permita o microfone para este site, ou conecte um, e toque em Gravar de novo.';
+
+  @override
   String get camAlong => 'Tocar junto com um arquivo';
 
   @override

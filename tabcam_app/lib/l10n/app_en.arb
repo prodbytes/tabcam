@@ -896,6 +896,10 @@
       }
     }
   },
+  "camNoSound": "No take without its sound: allow the microphone for this site, or connect one, and press Rec again.",
+  "@camNoSound": {
+    "description": "Cam (web): no microphone (refused or missing), so no take is recorded"
+  },
   "camAlong": "Play along with a file",
   "@camAlong": {
     "description": "Cam app bar: shows the sidebar of recordings, videos and links to play along with"

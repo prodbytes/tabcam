@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 
+import 'take_priority.dart';
 import 'web_head_tracker_stub.dart'
     if (dart.library.js_interop) 'web_head_tracker.dart';
 
@@ -160,6 +161,10 @@ abstract class HeadTracking {
   /// Whether the user has head gestures on: off, it watches nothing.
   set active(bool active);
 
+  /// Whether a take is recording: it then looks less often
+  /// ([TakePriority.headIntervalRecording]), the take coming first.
+  set recording(bool recording);
+
   void dispose();
 
   /// The image format the camera must stream in for [HeadTracker].
@@ -215,15 +220,16 @@ class HeadTracker implements HeadTracking {
   bool active = true;
 
   @override
+  bool recording = false;
+
+  @override
   void onImage(CameraImage image) {
     final at = _clock.elapsed;
-    // One frame at a time, about 10 a second.
-    if (!active ||
-        _busy ||
-        _closed ||
-        at - _last < const Duration(milliseconds: 100)) {
-      return;
-    }
+    // One frame at a time, about 10 a second (7 while a take records).
+    final interval = recording
+        ? TakePriority.headIntervalRecording
+        : TakePriority.headInterval;
+    if (!active || _busy || _closed || at - _last < interval) return;
     final input = _input(image);
     if (input == null) return;
     _busy = true;

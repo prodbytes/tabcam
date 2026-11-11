@@ -2772,6 +2772,64 @@ spec.
     as the kept part with the track at its volume, the recorder and WAV
     ways, and a WAV when the recorder's sound won't play. See
     [video edit](video-edit.md).
+12. **Make sure that when recording, in the camera view, adequate
+    priority is given to the recording process, so that it don't
+    damages the audio. The audio recording is the most important
+    thing.** Cam now records a take's sound as a musician wants it and
+    makes way for it while it records (new
+    [`take_priority.dart`](../tabcam_app/lib/capture/take_priority.dart)).
+    Web: the camera opens without sound and the take recorder opens the
+    microphone itself when Cam opens, kept open, with echo cancellation,
+    noise suppression, automatic gain and voice isolation off (they took
+    out the song playing along, treated held notes as noise and pumped
+    the level), stereo and 48 kHz where there are; the take's sound at
+    192 kbps (was the browser's default), its video at 5 Mbps, VP8 before
+    VP9 (both encoded in software in Chrome, VP9 at several times the
+    cost; H.264, maybe hardware-encoded, not taken: Firefox and Safari
+    don't play it in a WebM, and an MP4 take is a change of its own),
+    and the tab drawn into it at most 30 times a second (was every
+    display refresh, up to 120). With no microphone (refused or
+    missing) Rec now records nothing and says why ("No take without its
+    sound: …"); before, the camera's `getUserMedia` failed and Cam
+    didn't open, and with the camera opened without sound a take would
+    have been silent. Should the tab recorder fail, the camera's own
+    recording gets the microphone's track (it would have had no sound). iOS: the
+    camera's sound at 128 kbps (was the encoder's default); the
+    microphone joins the camera when Cam opens (was as the take started,
+    losing its first moments and changing the audio route under the
+    song), and a new method channel `tabcam/audio` sets the audio
+    session for it then and as each take starts: play and record in the
+    `videoRecording` mode (the microphone by the camera, no voice
+    processing), mixed with others with no ducking, 48 kHz preferred;
+    its mode goes back to the default when Cam closes. A take played
+    back in Cam now mixes with others (it took that away on iOS, so the
+    next take stopped a song in another app; on Android it took the
+    audio focus). While a take records, head gestures look about 7
+    times a second instead of 10, and cloud sync starts no pass (one
+    asked for runs 2 s after the take ends, so the **.** key's next
+    take isn't shared with the upload of the one before). With head
+    gestures off, a take streams no camera frames to the app (they
+    were streamed and dropped; on iOS each is copied on the queue that
+    writes the take's sound); with them on, every frame still crosses
+    (the plugin streams no fewer). The list's video thumbnails open
+    their players mixed with others (the capture's screen, under Cam,
+    made the new take's as it was saved and so took "mixed with others"
+    from the session again, maybe during the next take). **Android's
+    take sound is unchanged**: still the camcorder source with the
+    maker's gain and noise processing; recording it separately in
+    native code (`AudioRecord`, `UNPROCESSED`) is what would change it,
+    not done here. New tests: the web's microphone constraints, bitrates and formats, the
+    tab drawn at 30 a second whatever the display, the iOS session set
+    on iOS only (and a failure only logged), Cam on iOS preparing the
+    sound when it opens and again at Rec, head gestures told when a
+    take records, the take played back mixed with others, sync held
+    during a take, no frames streamed in a take with gestures off, Rec
+    refused without a microphone, the camera alone given the
+    microphone's sound (or refused without one), a video thumbnail
+    mixing with others, and, in Chrome, the recorder asking for the
+    microphone without processing, a refused microphone giving no sound,
+    and a microphone's track lent to the camera's stream once. See
+    [Cam](cam.md#recording-comes-first).
 12. **(Editor redesign, step 1 of 11) Captures keep fields a newer app
     wrote.** The user asked for a new video editor: the take's own sound
     and the song played along with on two lanes, mixed, each with its

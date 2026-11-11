@@ -1132,6 +1132,12 @@ abstract class AppLocalizations {
   /// **'Recording without the tab: {reason}'**
   String camRecordingNoTab(String reason);
 
+  /// Cam (web): no microphone (refused or missing), so no take is recorded
+  ///
+  /// In en, this message translates to:
+  /// **'No take without its sound: allow the microphone for this site, or connect one, and press Rec again.'**
+  String get camNoSound;
+
   /// Cam app bar: shows the sidebar of recordings, videos and links to play along with
   ///
   /// In en, this message translates to:

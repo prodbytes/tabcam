@@ -39,13 +39,33 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 20));
       }
 
-      final recorder = WebTakeRecorder();
+      // The "microphone", through the recorder's own seam: what it was
+      // asked for is kept. (It gives no track: a test's page can't make
+      // sound without a tap, and a silent track holds the recording up.)
+      final asked = <Object?>[];
+      final recorder = WebTakeRecorder(
+        getUserMedia: (constraints) async {
+          asked.add(constraints.audio.dartify());
+          return web.MediaStream();
+        },
+      );
+      // Opened when Cam opens, once, without the processing for calls.
+      await recorder.prepare();
+      expect(asked, hasLength(1));
+      final mic = asked.single as Map;
+      expect(mic['echoCancellation'], isFalse);
+      expect(mic['noiseSuppression'], isFalse);
+      expect(mic['autoGainControl'], isFalse);
       var line = 'e|--0--3--|\nB|--1--1--|';
       await recorder.start(() => line);
       await Future<void>.delayed(const Duration(milliseconds: 600));
       line = 'e|--5--7--|\nB|--5--8--|';
       await Future<void>.delayed(const Duration(milliseconds: 600));
       final take = await recorder.stop();
+      // Its microphone had no live track, so the take asked again, the
+      // same way.
+      expect(asked, hasLength(2));
+      expect(asked.last, asked.first);
       recorder.dispose();
       timer.cancel();
       view.remove();
@@ -88,6 +108,53 @@ void main() {
       final bottom = brightness(frame.height - 3);
       expect(bottom, lessThan(top * 0.6));
       web.URL.revokeObjectURL(url);
+    });
+  });
+
+  testWidgets('no take without its sound: a refused microphone says so; '
+      'a microphone lent to the camera, should the recorder fail', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      // The "camera": a canvas's stream, without sound (as the web's
+      // camera is opened).
+      final source =
+          web.document.createElement('canvas') as web.HTMLCanvasElement
+            ..width = 32
+            ..height = 24;
+      final view = web.document.createElement('flt-platform-view');
+      final cameraStream = source.captureStream(30);
+      final video = web.document.createElement('video') as web.HTMLVideoElement
+        ..muted = true
+        ..srcObject = cameraStream;
+      view.append(video);
+      web.document.body!.append(view);
+
+      // Refused: no sound, none lent.
+      final refused = WebTakeRecorder(
+        getUserMedia: (_) async => throw StateError('NotAllowedError'),
+      );
+      expect(await refused.hasSound(), isFalse);
+      expect(await refused.lendSoundToCamera(), isFalse);
+      expect(cameraStream.getAudioTracks().toDart, isEmpty);
+      refused.dispose();
+
+      // A microphone (Web Audio's, live, silent): sound, and its track
+      // goes onto the camera's stream for the camera's own recording.
+      final context = web.AudioContext();
+      final mic = context.createMediaStreamDestination().stream;
+      final recorder = WebTakeRecorder(getUserMedia: (_) async => mic);
+      expect(await recorder.hasSound(), isTrue);
+      expect(await recorder.lendSoundToCamera(), isTrue);
+      final lent = cameraStream.getAudioTracks().toDart;
+      expect(lent, hasLength(1));
+      expect(lent.single.id, mic.getAudioTracks().toDart.single.id);
+      // Lent once: asked again, nothing more is added.
+      expect(await recorder.lendSoundToCamera(), isTrue);
+      expect(cameraStream.getAudioTracks().toDart, hasLength(1));
+      recorder.dispose();
+      await context.close().toDart;
+      view.remove();
     });
   });
 }
