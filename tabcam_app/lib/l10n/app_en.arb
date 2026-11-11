@@ -908,6 +908,10 @@
   "@camAlongTitle": {
     "description": "Cam sidebar heading"
   },
+  "camAlongTakes": "Takes",
+  "@camAlongTakes": {
+    "description": "Cam sidebar heading over Cam's takes, listed last; tapping one plays it along"
+  },
   "camAlongPdfs": "Follow a PDF",
   "@camAlongPdfs": {
     "description": "Cam sidebar heading over the capture's PDFs; tapping one shows it beside the camera"

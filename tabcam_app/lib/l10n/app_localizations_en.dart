@@ -656,6 +656,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camAlongTitle => 'Play along';
 
   @override
+  String get camAlongTakes => 'Takes';
+
+  @override
   String get camAlongPdfs => 'Follow a PDF';
 
   @override
