@@ -190,7 +190,7 @@ void main() {
 
   group('a kept edit', () {
     test('goes to JSON and back with its video page', () {
-      final edit = PageEdit(
+      final edit = PageEdit.fromSound(
         start: s(1),
         end: s(6),
         sound: EditSound.track,
@@ -216,6 +216,7 @@ void main() {
       );
       // A trim alone keeps only what it needs.
       expect(PageEdit(start: s(1), end: s(2)).toJson(), {
+        'v': 2,
         'startMs': 1000,
         'endMs': 2000,
         'sound': 'original',
@@ -224,7 +225,7 @@ void main() {
 
     test('keeps its track\'s volume: in JSON only when not as it is, read '
         'defensively, through a clone and in ==', () {
-      final edit = PageEdit(
+      final edit = PageEdit.fromSound(
         start: s(1),
         end: s(6),
         sound: EditSound.track,
@@ -233,13 +234,13 @@ void main() {
       );
       expect(edit.toJson()['trackVolume'], 0.4);
       expect(PageEdit.fromJson(jsonDecode(jsonEncode(edit.toJson()))), edit);
-      expect(edit, isNot(edit.withTrackVolume(1)));
+      expect(edit, isNot(edit.copyWith(trackVolume: 1)));
       expect(
-        edit.withTrackVolume(1).toJson().containsKey('trackVolume'),
+        edit.copyWith(trackVolume: 1).toJson().containsKey('trackVolume'),
         false,
       );
-      expect(edit.withTrackId('k9').trackVolume, 0.4);
-      expect(edit.withTrackVolume(0.4), edit);
+      expect(edit.copyWith(trackId: 'k9').trackVolume, 0.4);
+      expect(edit.copyWith(trackVolume: 0.4), edit);
       // As it is, by default: an older edit has none.
       expect(PageEdit(start: s(1), end: s(2)).trackVolume, 1);
       expect(PageEdit.fromJson({'startMs': 0, 'endMs': 1000})!.trackVolume, 1);
@@ -290,7 +291,7 @@ void main() {
           messenger.setMockMethodCallHandler(ChannelVideoEditor.channel, null);
           ChannelVideoEditor.reset();
         });
-        final edit = PageEdit(
+        final edit = PageEdit.fromSound(
           start: s(1),
           end: s(5),
           sound: EditSound.track,
@@ -352,7 +353,11 @@ void main() {
         await expectLater(
           const ChannelVideoEditor().render(
             RenderPlan.of(
-              PageEdit(start: Duration.zero, end: s(4), sound: EditSound.none),
+              PageEdit.fromSound(
+                start: Duration.zero,
+                end: s(4),
+                sound: EditSound.none,
+              ),
               input: XFile('/tmp/take.mp4'),
               kind: RenderKind.sound,
             ),
@@ -420,11 +425,14 @@ void main() {
   });
   tearDown(() => VideoEditor.instance = null);
 
-  /// A capture with a video (k0, a [video] file), a recording (k1) and an
-  /// image (k2).
+  /// A capture with a video (k0, a [video] file; one of Cam's takes when
+  /// [editTake]), a recording (k1) and an image (k2); [withTake]: another
+  /// video (k3) and a take (k4) too.
   Future<(Library, String)> capture(
     WidgetTester tester, {
     String video = 'mp4',
+    bool editTake = false,
+    bool withTake = false,
   }) async {
     final library = Library(PlatformEventStore(), null, (_) async => null);
     late String id;
@@ -435,12 +443,14 @@ void main() {
         (PageKind.video, video),
         (PageKind.audio, 'm4a'),
         (PageKind.image, 'jpg'),
+        if (withTake) ...[(PageKind.video, 'mp4'), (PageKind.video, 'mp4')],
       ].indexed) {
         final page = EventPage(
           id: 'k$i',
           kind: kind,
           extension: ext,
           title: i == 0 ? 'Made-up riff' : null,
+          take: (i == 0 && editTake) || i == 4,
         );
         await library.putPageStream(
           event.id,
@@ -596,67 +606,97 @@ void main() {
     expect(bytes, [1, 2, 3]);
   });
 
-  testWidgets('the sound: None, or a new track from the capture\'s '
-      'recordings, shifted along the video, played with the video muted; '
-      'Download\'s menu has the video without sound and the sound alone', (
-    tester,
-  ) async {
+  testWidgets('two lanes, mixed: the video\'s own sound and a track picked '
+      'from the capture\'s recordings, videos and takes, moved along the '
+      'video; Download has both, its menu the video without sound and the '
+      'sound alone', (tester) async {
     tall(tester);
-    final (library, id) = await capture(tester);
+    final (library, id) = await capture(tester, withTake: true);
     await tester.pumpWidget(editScreen(library, id));
     await _settle(tester);
 
-    // None: kept as such; the preview is muted.
-    await tester.tap(find.text('None'));
-    await _settle(tester);
-    expect(library.byId(id)!.pages.first.edit?.sound, EditSound.none);
-    expect(platform.volumes[0], 0);
-    expect(find.byKey(const Key('video-edit-track')), findsNothing);
+    // A video that isn't a take: its lanes are its sound and a track. No
+    // sound choice and no trim section: the lanes are the edit.
+    expect(find.text('Video sound'), findsOneWidget);
+    expect(find.text('Add a track'), findsOneWidget);
+    expect(find.byKey(const Key('video-edit-take-volume')), findsOneWidget);
+    expect(find.byKey(const Key('video-edit-song-volume')), findsNothing);
+    expect(find.byKey(const Key('video-edit-ruler')), findsOneWidget);
+    expect(find.byKey(const Key('video-edit-sound')), findsNothing);
+    expect(find.byKey(const Key('video-edit-range')), findsNothing);
 
-    // New track: the sheet lists the recording (not the image or the
-    // video), and a sound file.
-    await tester.tap(find.text('New track'));
+    // The sheet lists the recording, the other video and the take (not
+    // the image, nor the video edited), and a sound file.
+    await tester.tap(find.byKey(const Key('video-edit-song-add')));
     await _settle(tester);
     expect(find.byKey(const Key('video-edit-tracks')), findsOneWidget);
     expect(find.byKey(const Key('video-edit-track-k1')), findsOneWidget);
+    expect(find.byKey(const Key('video-edit-track-k3')), findsOneWidget);
+    expect(find.byKey(const Key('video-edit-track-k4')), findsOneWidget);
     expect(find.byKey(const Key('video-edit-track-k2')), findsNothing);
     expect(find.byKey(const Key('video-edit-track-k0')), findsNothing);
     expect(find.byKey(const Key('video-edit-track-file')), findsOneWidget);
     await tester.tap(find.byKey(const Key('video-edit-track-k1')));
     await _settle(tester);
     expect(find.byKey(const Key('video-edit-tracks')), findsNothing);
-    // Its name: on its row, and on its bar.
+    // Its name: on its bar, and in its details under the lanes.
     expect(find.text('Recording 1'), findsNWidgets(2));
     expect(find.text('The track starts with the video'), findsOneWidget);
 
-    // The track bar: the track (3 minutes, as long as the video) along
-    // the kept part. Dragged, it moves later.
-    final bar = find.byKey(const Key('video-edit-track-bar'));
-    expect(bar, findsOneWidget);
-    final barWidth = tester.getSize(bar).width;
+    // A volume at the left of each lane's bar; the bars on one time axis.
+    Rect rect(String key) => tester.getRect(find.byKey(Key(key)));
+    final takeBar = rect('video-edit-take-bar');
+    final songBar = rect('video-edit-song-bar');
+    expect(
+      rect('video-edit-take-volume').right,
+      lessThanOrEqualTo(takeBar.left),
+    );
+    expect(
+      rect('video-edit-song-volume').right,
+      lessThanOrEqualTo(songBar.left),
+    );
+    expect(
+      rect('video-edit-take-volume').center.dy,
+      closeTo(takeBar.center.dy, 1),
+    );
+    expect(
+      rect('video-edit-song-volume').center.dy,
+      closeTo(songBar.center.dy, 1),
+    );
+    expect(songBar.left, closeTo(takeBar.left, 0.5));
+    expect(songBar.right, closeTo(takeBar.right, 0.5));
+    expect(rect('video-edit-ruler').left, closeTo(takeBar.left, 0.5));
+    expect(rect('video-edit-ruler').right, closeTo(takeBar.right, 0.5));
+
+    // The track (3 minutes, as long as the video) along the whole video.
+    // Dragged, it moves later; its start, dragged, trims it, and the rest
+    // stays put: its end moves with it.
+    final barWidth = songBar.width;
     await tester.drag(
-      find.byKey(const Key('video-edit-track-move')),
+      find.byKey(const Key('video-edit-song-move')),
       Offset(barWidth / 6, 0),
     );
     await _frames(tester);
     expect(find.textContaining('after the video'), findsOneWidget);
-    // Its start, dragged, trims it, and the rest stays put: its end moves
-    // with it.
     await tester.drag(
-      find.byKey(const Key('video-edit-track-left')),
+      find.byKey(const Key('video-edit-song-left')),
       Offset(barWidth / 6, 0),
     );
     await _frames(tester);
-    expect(find.byKey(const Key('video-edit-track-used')), findsOneWidget);
+    expect(find.byKey(const Key('video-edit-song-used')), findsOneWidget);
     // A tenth of a second earlier, twice.
-    await tester.tap(find.byKey(const Key('video-edit-track-earlier')));
-    await tester.tap(find.byKey(const Key('video-edit-track-earlier')));
+    await tester.tap(find.byKey(const Key('video-edit-song-earlier')));
+    await tester.tap(find.byKey(const Key('video-edit-song-earlier')));
     await _settle(tester);
 
-    // Kept with the video: the recording by its ID, where it plays.
+    // Kept with the video: the recording by its ID, where it plays, both
+    // lanes heard (older apps play the video's own sound then).
     final kept = library.byId(id)!.pages.first.edit!;
-    expect(kept.sound, EditSound.track);
+    expect(kept.song, SongMode.manual);
     expect(kept.trackId, 'k1');
+    expect(kept.ownAudible, isTrue);
+    expect(kept.songAudible, isTrue);
+    expect(kept.toJson()['sound'], 'original');
     final dragged = kept.trackStart.inMilliseconds;
     // Moved about a sixth later (a drag loses its first few pixels to
     // the touch slop), then its start trimmed by the same drag, the
@@ -665,23 +705,24 @@ void main() {
     expect(kept.trackEnd, isNull);
     expect(kept.offset.inMilliseconds, closeTo(2 * dragged - 200, 100));
 
-    // Played: the video muted, the track along it once it comes in.
+    // Played: the video at its own volume, the track along it once it
+    // comes in.
     platform.position = kept.offset + s(1);
     await tester.tap(find.byKey(const Key('video-edit-play')));
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 300)),
     );
     await _frames(tester);
-    expect(platform.volumes[0], 0);
+    expect(platform.volumes[0], 1);
     expect(platform.playing, containsAll([0, platform.lastPlayer]));
     await tester.tap(find.byKey(const Key('video-edit-play')));
     await _settle(tester);
 
-    // Download: the video with the track.
+    // Download: the video with both, mixed.
     await tester.tap(find.byKey(const Key('video-edit-download')));
     await _settle(tester);
     final plan = editor.rendered.single;
-    expect(plan.own, isNull);
+    expect(plan.own, const OwnLane());
     final song = plan.song!;
     expect(song.page, 'k1');
     expect(await tester.runAsync(song.file!.readAsBytes), [1, 2, 3]);
@@ -710,8 +751,9 @@ void main() {
     await _frames(tester);
     await tester.tap(find.byKey(const Key('video-edit-download-sound')));
     await _settle(tester);
-    // The sound alone: the song lane, no picture.
+    // The sound alone: both lanes mixed, no picture.
     expect(editor.rendered[2].video, isFalse);
+    expect(editor.rendered[2].own, const OwnLane());
     expect(editor.rendered[2].song, song);
     expect(editor.rendered[2].format, EditFormat.m4a);
     // Each as its format: the videos MP4, the sound alone M4A.
@@ -841,7 +883,7 @@ void main() {
       ),
     );
     await _settle(tester);
-    await tester.tap(find.text('New track'));
+    await tester.tap(find.byKey(const Key('video-edit-song-add')));
     await _settle(tester);
     await tester.tap(find.byKey(const Key('video-edit-track-file')));
     // The file is read off the test clock.
@@ -871,7 +913,7 @@ void main() {
       () => library.setPageEdit(
         id,
         'k0',
-        PageEdit(
+        PageEdit.fromSound(
           start: s(2),
           end: s(12),
           sound: EditSound.track,
@@ -896,7 +938,7 @@ void main() {
     tall(tester);
     final (library, id) = await capture(tester);
     const newer = {
-      'v': 2,
+      'nudgeMs': -120,
       'title': {
         'on': true,
         'lines': ['Blue Riff', 'Made-up Band'],
@@ -941,7 +983,7 @@ void main() {
       () => library.setPageEdit(
         id,
         'k0',
-        PageEdit(
+        PageEdit.fromSound(
           start: s(10),
           end: s(20),
           sound: EditSound.track,
@@ -996,7 +1038,12 @@ void main() {
       tester,
       library,
       id,
-      PageEdit(start: s(10), end: s(20), sound: EditSound.track, trackId: 'k1'),
+      PageEdit.fromSound(
+        start: s(10),
+        end: s(20),
+        sound: EditSound.track,
+        trackId: 'k1',
+      ),
     );
     expect(editor.lengthsAsked, 1);
     expect(platform.volumes[0], 0);
@@ -1011,7 +1058,7 @@ void main() {
       tester,
       library,
       id,
-      PageEdit(
+      PageEdit.fromSound(
         start: s(10),
         end: s(20),
         sound: EditSound.track,
@@ -1030,7 +1077,12 @@ void main() {
       await library.setPageEdit(
         id,
         'k0',
-        PageEdit(start: s(1), end: s(2), sound: EditSound.track, trackId: 'k1'),
+        PageEdit.fromSound(
+          start: s(1),
+          end: s(2),
+          sound: EditSound.track,
+          trackId: 'k1',
+        ),
       );
       return library.clone(library.byId(id)!);
     });
@@ -1058,33 +1110,278 @@ void main() {
     expect(find.text('0:12.0'), findsOneWidget);
   });
 
-  testWidgets('the track\'s volume: at the left of its bar, on its row; '
-      'set, it\'s kept with the edit, the preview plays the track at it '
-      '(on, without stopping), Download gets it, and Reset puts it back', (
+  testWidgets('a take\'s lanes are Take and Song; its own sound\'s volume '
+      'and Mute are kept with the edit (muted, its level too, across a '
+      'reopen) and played; muting both lanes turns Sound only off', (
     tester,
   ) async {
+    tall(tester);
+    final (library, id) = await capture(tester, editTake: true);
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    expect(find.text('Take'), findsOneWidget);
+    expect(find.text('Add a song'), findsOneWidget);
+    expect(find.text('Video sound'), findsNothing);
+
+    Future<bool> soundOnly() async {
+      await tester.tap(find.byKey(const Key('video-edit-download-more')));
+      await _frames(tester);
+      final on =
+          tester
+              .widget<MenuItemButton>(
+                find.byKey(const Key('video-edit-download-sound')),
+              )
+              .onPressed !=
+          null;
+      await tester.tap(find.byKey(const Key('video-edit-download-more')));
+      await _frames(tester);
+      return on;
+    }
+
+    PageEdit? edit() => library.byId(id)!.pages.first.edit;
+
+    // At 60%: kept, and the preview plays the video at it.
+    await tester.tap(find.byKey(const Key('video-edit-take-volume')));
+    await _frames(tester);
+    final slider = find.byKey(const Key('video-edit-take-volume-slider'));
+    tester.widget<Slider>(slider).onChanged!(60);
+    await _settle(tester);
+    expect(platform.volumes[0], 0.6);
+    expect(edit()!.ownVolume, 0.6);
+    expect(edit()!.ownMuted, isFalse);
+
+    // Muted: silent, its level kept; nothing left to hear, so no sound
+    // alone.
+    await tester.tap(find.byKey(const Key('video-edit-take-mute')));
+    await _settle(tester);
+    expect(platform.volumes[0], 0);
+    expect(edit()!.ownMuted, isTrue);
+    expect(edit()!.ownVolume, 0.6);
+    expect(edit()!.toJson()['sound'], 'none');
+    await tester.tapAt(const Offset(450, 1500));
+    await _frames(tester);
+    expect(await soundOnly(), isFalse);
+
+    // Opened again: still muted, at 60%; Unmute plays it at 60%.
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    final video = platform.lastPlayer;
+    expect(platform.volumes[video], 0);
+    expect(find.text('60%'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('video-edit-take-volume')));
+    await _frames(tester);
+    await tester.tap(find.byKey(const Key('video-edit-take-mute')));
+    await _settle(tester);
+    expect(platform.volumes[video], 0.6);
+    expect(edit()!.ownMuted, isFalse);
+    expect(edit()!.ownVolume, 0.6);
+    await tester.tapAt(const Offset(450, 1500));
+    await _frames(tester);
+    expect(await soundOnly(), isTrue);
+
+    // With a song too: both muted, no sound alone; the song heard, there
+    // is. A take's sheet and the song's details say "song", as its lane.
+    await tester.tap(find.byKey(const Key('video-edit-song-add')));
+    await _settle(tester);
+    expect(find.text('Pick a song'), findsOneWidget);
+    expect(find.text('Pick a track'), findsNothing);
+    await tester.tap(find.byKey(const Key('video-edit-track-k1')));
+    await _settle(tester);
+    expect(find.text('Song · '), findsOneWidget);
+    expect(find.text('The song starts with the video'), findsOneWidget);
+    expect(find.textContaining('The track'), findsNothing);
+    await tester.tap(find.byKey(const Key('video-edit-song-later')));
+    await _settle(tester);
+    expect(find.text('The song starts 0:00.1 after the video'), findsOneWidget);
+    for (final lane in ['take', 'song']) {
+      await tester.tap(find.byKey(Key('video-edit-$lane-volume')));
+      await _frames(tester);
+      await tester.tap(find.byKey(Key('video-edit-$lane-mute')));
+      await _settle(tester);
+      await tester.tapAt(const Offset(450, 1500));
+      await _frames(tester);
+    }
+    expect(edit()!.ownMuted, isTrue);
+    expect(edit()!.songMuted, isTrue);
+    expect(await soundOnly(), isFalse);
+    await tester.tap(find.byKey(const Key('video-edit-song-volume')));
+    await _frames(tester);
+    await tester.tap(find.byKey(const Key('video-edit-song-mute')));
+    await _settle(tester);
+    await tester.tapAt(const Offset(450, 1500));
+    await _frames(tester);
+    expect(edit()!.toJson()['sound'], 'track');
+    expect(await soundOnly(), isTrue);
+  });
+
+  testWidgets('the Take lane\'s grips trim the video and both sounds with '
+      'it: the song stays where it is along the video, cut where the '
+      'video is', (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester);
+    await tester.runAsync(
+      () => library.setPageEdit(
+        id,
+        'k0',
+        PageEdit(
+          start: Duration.zero,
+          end: s(180),
+          song: SongMode.manual,
+          trackId: 'k1',
+          offset: s(10),
+        ),
+      ),
+    );
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    final block = tester.getRect(find.byKey(const Key('video-edit-song-move')));
+    final width = tester
+        .getSize(find.byKey(const Key('video-edit-take-bar')))
+        .width;
+
+    // Its start, a sixth in (30 s).
+    await tester.drag(
+      find.byKey(const Key('video-edit-take-start')),
+      Offset(width / 6, 0),
+    );
+    await _settle(tester);
+    // Its end, a sixth back.
+    await tester.drag(
+      find.byKey(const Key('video-edit-take-end')),
+      Offset(-width / 6, 0),
+    );
+    await _settle(tester);
+    final kept = library.byId(id)!.pages.first.edit!;
+    expect(kept.start.inMilliseconds, inInclusiveRange(20000, 30000));
+    expect(kept.end.inMilliseconds, inInclusiveRange(150000, 160000));
+    // The song where it was along the video: it starts 10 s into it, so
+    // its start before the part kept is cut.
+    expect(kept.offset, s(10) - kept.start);
+    expect(
+      tester.getRect(find.byKey(const Key('video-edit-song-move'))).left,
+      closeTo(block.left, 1),
+    );
+    // While paused, the preview went to the end moved, exactly once let go.
+    expect(platform.seeks.last, kept.end);
+
+    await tester.tap(find.byKey(const Key('video-edit-download')));
+    await _settle(tester);
+    final plan = editor.rendered.single;
+    expect((plan.start, plan.end), (kept.start, kept.end));
+    expect(plan.own, const OwnLane());
+    // The song from the kept part's start, 10 s from where the video
+    // starts, to its end.
+    expect(plan.song!.clips, [
+      SongClip(
+        at: Duration.zero,
+        from: kept.start - s(10),
+        to: kept.end - s(10),
+      ),
+    ]);
+  });
+
+  testWidgets('a muted song of unknown length doesn\'t hold back Download '
+      '(it\'s left out of it); heard, it does', (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester);
+    // As an older app's Original with a track picked: the song lane
+    // muted; its file one neither the player nor the editor can say the
+    // length of.
+    VideoPlayerPlatform.instance = platform = UnknownLengthPlatform({1});
+    await tester.runAsync(
+      () => library.setPageEdit(
+        id,
+        'k0',
+        PageEdit.fromSound(
+          start: s(1),
+          end: s(9),
+          sound: EditSound.original,
+          trackId: 'k1',
+        ),
+      ),
+    );
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    expect(find.text('Recording 1'), findsWidgets);
+    expect(enabled(tester, 'video-edit-download'), isTrue);
+    await tester.tap(find.byKey(const Key('video-edit-download')));
+    await _settle(tester);
+    final plan = editor.rendered.single;
+    expect(plan.own, const OwnLane());
+    expect(plan.song, isNull);
+
+    // Heard, it can't be fitted: Download waits.
+    await tester.tap(find.byKey(const Key('video-edit-song-volume')));
+    await _frames(tester);
+    await tester.tap(find.byKey(const Key('video-edit-song-mute')));
+    await _settle(tester);
+    await tester.tapAt(const Offset(450, 1500));
+    await _frames(tester);
+    expect(library.byId(id)!.pages.first.edit!.songMuted, isFalse);
+    expect(enabled(tester, 'video-edit-download'), isFalse);
+  });
+
+  testWidgets('⋮ Remove takes the song out (song: off); Reset gives no '
+      'edit at all', (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester);
+    await tester.runAsync(
+      () => library.setPageEdit(
+        id,
+        'k0',
+        PageEdit(
+          start: s(2),
+          end: s(12),
+          song: SongMode.manual,
+          trackId: 'k1',
+          offset: s(1.5),
+          trackVolume: 0.7,
+        ),
+      ),
+    );
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    expect(find.text('Recording 1'), findsNWidgets(2));
+    await tester.tap(find.byKey(const Key('video-edit-song-menu')));
+    await _frames(tester);
+    expect(find.byKey(const Key('video-edit-song-change')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('video-edit-song-remove')));
+    await _settle(tester);
+    var edit = library.byId(id)!.pages.first.edit!;
+    expect(edit.song, SongMode.off);
+    expect(edit.toJson()['song'], 'off');
+    expect(edit.trackId, isNull);
+    expect(edit.start, s(2));
+    expect(find.text('Recording 1'), findsNothing);
+    expect(find.text('Add a track'), findsOneWidget);
+    expect(find.byKey(const Key('video-edit-song-volume')), findsNothing);
+    expect(enabled(tester, 'video-edit-reset'), isTrue);
+
+    await tester.tap(find.byKey(const Key('video-edit-reset')));
+    await _settle(tester);
+    expect(library.byId(id)!.pages.first.edit, isNull);
+    expect(enabled(tester, 'video-edit-reset'), isFalse);
+    expect(find.text('Keep 0:00.0–3:00.0'), findsOneWidget);
+  });
+
+  testWidgets('the track\'s volume: at the left of its bar, on its row; '
+      'set, it\'s kept with the edit, the preview plays the track at it '
+      '(on, without stopping), Mute keeps its level, Download gets it, and '
+      'Reset puts it back', (tester) async {
     tall(tester);
     final (library, id) = await capture(tester);
     await tester.pumpWidget(editScreen(library, id));
     await _settle(tester);
-    await tester.tap(find.text('New track'));
+    await tester.tap(find.byKey(const Key('video-edit-song-add')));
     await _settle(tester);
     await tester.tap(find.byKey(const Key('video-edit-track-k1')));
     await _settle(tester);
     final track = platform.lastPlayer;
-
-    // At the left of the bar, on the same row.
-    final control = tester.getRect(
-      find.byKey(const Key('video-edit-track-volume')),
-    );
-    final bar = tester.getRect(find.byKey(const Key('video-edit-track-bar')));
-    expect(control.right, lessThanOrEqualTo(bar.left));
-    expect(control.center.dy, closeTo(bar.center.dy, 1));
-    expect(bar.right - control.left, closeTo(900 - 32, 1));
-    expect(find.text('100%'), findsOneWidget);
+    expect(find.text('100%'), findsNWidgets(2));
     expect(platform.volumes[track], 1);
 
-    // Played: the video muted, the track along it.
+    // Played: the video, and the track along it.
     await tester.tap(find.byKey(const Key('video-edit-play')));
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 300)),
@@ -1093,9 +1390,9 @@ void main() {
     expect(platform.playing, containsAll([0, track]));
 
     // Tapped, it opens its slider; at half, the track plays on, at half.
-    await tester.tap(find.byKey(const Key('video-edit-track-volume')));
+    await tester.tap(find.byKey(const Key('video-edit-song-volume')));
     await _frames(tester);
-    final slider = find.byKey(const Key('video-edit-track-volume-slider'));
+    final slider = find.byKey(const Key('video-edit-song-volume-slider'));
     expect(slider, findsOneWidget);
     platform.paused.clear();
     tester.widget<Slider>(slider).onChanged!(50);
@@ -1107,16 +1404,18 @@ void main() {
     expect(find.text('50%'), findsNWidgets(2));
     expect(tester.widget<Slider>(slider).value, 50);
 
-    // Muted, and back as loud as it was.
-    await tester.tap(find.byKey(const Key('video-edit-track-mute')));
+    // Muted: silent, its level kept (and still shown); then heard again.
+    await tester.tap(find.byKey(const Key('video-edit-song-mute')));
     await _settle(tester);
     expect(platform.volumes[track], 0);
-    expect(library.byId(id)!.pages.first.edit!.trackVolume, 0);
-    expect(find.text('0%'), findsNWidgets(2));
-    await tester.tap(find.byKey(const Key('video-edit-track-mute')));
+    expect(platform.paused, isNot(contains(track)));
+    expect(library.byId(id)!.pages.first.edit!.trackVolume, 0.5);
+    expect(library.byId(id)!.pages.first.edit!.songMuted, isTrue);
+    expect(find.text('50%'), findsNWidgets(2));
+    await tester.tap(find.byKey(const Key('video-edit-song-mute')));
     await _settle(tester);
     expect(platform.volumes[track], 0.5);
-    expect(library.byId(id)!.pages.first.edit!.trackVolume, 0.5);
+    expect(library.byId(id)!.pages.first.edit!.songMuted, isFalse);
     await tester.tapAt(const Offset(450, 1500));
     await _frames(tester);
     expect(slider, findsNothing);
@@ -1128,15 +1427,18 @@ void main() {
     await _settle(tester);
     expect(editor.rendered.single.song!.volume, 0.5);
 
-    // Reset: as it is again.
+    // Reset: no song, no edit; picked again, at 100%.
     await tester.tap(find.byKey(const Key('video-edit-reset')));
     await _settle(tester);
     expect(library.byId(id)!.pages.first.edit, isNull);
-    await tester.tap(find.text('New track'));
+    expect(find.byKey(const Key('video-edit-song-add')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('video-edit-song-add')));
     await _settle(tester);
-    expect(find.text('100%'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('video-edit-track-k1')));
+    await _settle(tester);
+    expect(find.text('100%'), findsNWidgets(2));
     expect(library.byId(id)!.pages.first.edit!.trackVolume, 1);
-    expect(platform.volumes[track], 1);
+    expect(platform.volumes[platform.lastPlayer], 1);
   });
 
   testWidgets('a kept edit\'s track plays at its volume, on its file screen '
@@ -1147,7 +1449,7 @@ void main() {
       () => library.setPageEdit(
         id,
         'k0',
-        PageEdit(
+        PageEdit.fromSound(
           start: s(10),
           end: s(20),
           sound: EditSound.track,
@@ -1171,9 +1473,9 @@ void main() {
 
     // Slid down to 0%, Unmute puts back the level it had as it was
     // opened.
-    await tester.tap(find.byKey(const Key('video-edit-track-volume')));
+    await tester.tap(find.byKey(const Key('video-edit-song-volume')));
     await _frames(tester);
-    final slider = find.byKey(const Key('video-edit-track-volume-slider'));
+    final slider = find.byKey(const Key('video-edit-song-volume-slider'));
     for (final v in [20.0, 10.0, 5.0, 0.0]) {
       if (v == 20) tester.widget<Slider>(slider).onChangeStart!(25);
       tester.widget<Slider>(slider).onChanged!(v);
@@ -1182,62 +1484,93 @@ void main() {
     tester.widget<Slider>(slider).onChangeEnd?.call(0);
     await _settle(tester);
     expect(library.byId(id)!.pages.first.edit!.trackVolume, 0);
-    await tester.tap(find.byKey(const Key('video-edit-track-mute')));
+    await tester.tap(find.byKey(const Key('video-edit-song-mute')));
     await _settle(tester);
     expect(library.byId(id)!.pages.first.edit!.trackVolume, 0.25);
     expect(platform.volumes[platform.lastPlayer], 0.25);
   });
 
-  testWidgets('a muted edit, opened again, unmutes to 100%', (tester) async {
+  testWidgets('an edit an older app saved muted (at 0%) unmutes to 100%; one '
+      'muted here keeps its level', (tester) async {
     tall(tester);
     final (library, id) = await capture(tester);
-    await tester.runAsync(
-      () => library.setPageEdit(
-        id,
-        'k0',
-        PageEdit(
-          start: s(10),
-          end: s(20),
-          sound: EditSound.track,
-          trackId: 'k1',
-          trackVolume: 0,
-        ),
+    Future<void> open(PageEdit edit) async {
+      await tester.runAsync(() => library.setPageEdit(id, 'k0', edit));
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(editScreen(library, id));
+      await _settle(tester);
+      await tester.tap(find.byKey(const Key('video-edit-song-volume')));
+      await _frames(tester);
+      await tester.tap(find.byKey(const Key('video-edit-song-mute')));
+      await _settle(tester);
+    }
+
+    await open(
+      PageEdit.fromSound(
+        start: s(10),
+        end: s(20),
+        sound: EditSound.track,
+        trackId: 'k1',
+        trackVolume: 0,
       ),
     );
-    await tester.pumpWidget(editScreen(library, id));
-    await _settle(tester);
-    expect(find.text('0%'), findsOneWidget);
-    await tester.tap(find.byKey(const Key('video-edit-track-volume')));
-    await _frames(tester);
-    await tester.tap(find.byKey(const Key('video-edit-track-mute')));
-    await _settle(tester);
     expect(library.byId(id)!.pages.first.edit!.trackVolume, 1);
+
+    await open(
+      PageEdit(
+        start: s(10),
+        end: s(20),
+        song: SongMode.manual,
+        songMuted: true,
+        trackId: 'k1',
+        trackVolume: 0.4,
+      ),
+    );
+    final edit = library.byId(id)!.pages.first.edit!;
+    expect(edit.songMuted, isFalse);
+    expect(edit.trackVolume, 0.4);
   });
 
-  testWidgets('the track\'s volume fits its bar at the largest text size', (
-    tester,
-  ) async {
-    tall(tester);
-    tester.platformDispatcher.textScaleFactorTestValue = 2;
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    final (library, id) = await capture(tester);
-    await tester.pumpWidget(editScreen(library, id));
-    await _settle(tester);
-    await tester.tap(find.text('New track'));
-    await _settle(tester);
-    await tester.tap(find.byKey(const Key('video-edit-track-k1')));
-    await _settle(tester);
-    // No overflow (which would fail the test), the level on one line,
-    // within the control.
-    final control = tester.getRect(
-      find.byKey(const Key('video-edit-track-volume')),
-    );
-    final level = tester.getRect(
-      find.byKey(const Key('video-edit-track-volume-level')),
-    );
-    expect(control.contains(level.topLeft), isTrue);
-    expect(control.contains(level.bottomRight - const Offset(1, 1)), isTrue);
-    expect(find.text('100%'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
+  for (final (name, size) in [
+    ('a phone', const Size(400, 900)),
+    ('a wide screen', const Size(1280, 900)),
+  ]) {
+    testWidgets('both lanes fit at the largest text size, on $name', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final (library, id) = await capture(tester);
+      await tester.pumpWidget(editScreen(library, id));
+      await _settle(tester);
+      await tester.tap(find.byKey(const Key('video-edit-song-add')));
+      await _settle(tester);
+      await tester.tap(find.byKey(const Key('video-edit-track-k1')));
+      await _settle(tester);
+      // No overflow (which would fail the test); each lane one row, its
+      // level on one line within its control.
+      for (final lane in ['take', 'song']) {
+        final control = tester.getRect(
+          find.byKey(Key('video-edit-$lane-volume')),
+        );
+        final level = tester.getRect(
+          find.byKey(Key('video-edit-$lane-volume-level')),
+        );
+        final bar = tester.getRect(find.byKey(Key('video-edit-$lane-bar')));
+        expect(control.contains(level.topLeft), isTrue, reason: lane);
+        expect(
+          control.contains(level.bottomRight - const Offset(1, 1)),
+          isTrue,
+          reason: lane,
+        );
+        expect(control.center.dy, closeTo(bar.center.dy, 1), reason: lane);
+        expect(bar.height, greaterThanOrEqualTo(44), reason: lane);
+      }
+      expect(find.text('100%'), findsNWidgets(2));
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

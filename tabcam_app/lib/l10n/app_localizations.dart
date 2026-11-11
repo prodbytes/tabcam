@@ -3190,12 +3190,6 @@ abstract class AppLocalizations {
   /// **'Videos can\'t be edited here'**
   String get videoEditNotHere;
 
-  /// Video edit: the trim section's title
-  ///
-  /// In en, this message translates to:
-  /// **'Trim'**
-  String get videoEditTrim;
-
   /// Video edit: the part of the video kept, from start to end (times like 0:12.3)
   ///
   /// In en, this message translates to:
@@ -3214,30 +3208,6 @@ abstract class AppLocalizations {
   /// **'End here'**
   String get videoEditTrimEnd;
 
-  /// Video edit: the sound section's title
-  ///
-  /// In en, this message translates to:
-  /// **'Sound'**
-  String get videoEditSound;
-
-  /// Video edit: keep the video's own sound
-  ///
-  /// In en, this message translates to:
-  /// **'Original'**
-  String get videoEditSoundOriginal;
-
-  /// Video edit: take the sound out
-  ///
-  /// In en, this message translates to:
-  /// **'None'**
-  String get videoEditSoundNone;
-
-  /// Video edit: replace the sound with a new track
-  ///
-  /// In en, this message translates to:
-  /// **'New track'**
-  String get videoEditSoundTrack;
-
   /// Video edit: the sheet's title, and the button to pick the new track
   ///
   /// In en, this message translates to:
@@ -3255,12 +3225,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A sound file…'**
   String get videoEditTrackFile;
-
-  /// Video edit: New track chosen, no track picked
-  ///
-  /// In en, this message translates to:
-  /// **'No track picked yet'**
-  String get videoEditNoTrack;
 
   /// Video edit: the track's shift, none
   ///
@@ -3298,10 +3262,10 @@ abstract class AppLocalizations {
   /// **'Show the dictionary at the side'**
   String get dictionaryToSide;
 
-  /// Video edit: what the track bar does (tooltip, screen reader)
+  /// Video edit: the song lane's bar, for screen readers and the mouse
   ///
   /// In en, this message translates to:
-  /// **'The track along the kept part: drag it to move it, its ends to trim it'**
+  /// **'Along the video: drag it to move it, its ends to trim it'**
   String get videoEditTrackBar;
 
   /// Video edit: nudges the track earlier
@@ -3316,35 +3280,137 @@ abstract class AppLocalizations {
   /// **'A tenth of a second later'**
   String get videoEditTrackLater;
 
-  /// Video edit: the track's volume control, at the left of the track bar (tooltip, screen reader); opens a slider
-  ///
-  /// In en, this message translates to:
-  /// **'Track volume'**
-  String get videoEditTrackVolume;
-
   /// Video edit: the track's volume, as a percentage (0 to 100), under the volume control and beside its slider
   ///
   /// In en, this message translates to:
   /// **'{percent}%'**
   String videoEditTrackVolumeLevel(int percent);
 
-  /// Video edit: the volume slider's speaker button, while the track has sound; silences it
-  ///
-  /// In en, this message translates to:
-  /// **'Mute the track'**
-  String get videoEditTrackMute;
-
-  /// Video edit: the volume slider's speaker button, while the track is muted; puts back its level
-  ///
-  /// In en, this message translates to:
-  /// **'Unmute the track'**
-  String get videoEditTrackUnmute;
-
   /// Video edit: the part of the track used, once trimmed (times like 0:01.5)
   ///
   /// In en, this message translates to:
   /// **'Using {start}–{end} of the track'**
   String videoEditTrackUsed(String start, String end);
+
+  /// Video edit, a take (a video Cam recorded): the sheet's title, to pick the song for its Song lane
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a song'**
+  String get videoEditPickSong;
+
+  /// Video edit, a take: the song's shift, none
+  ///
+  /// In en, this message translates to:
+  /// **'The song starts with the video'**
+  String get videoEditSongWith;
+
+  /// Video edit, a take: the song's shift, later (time like 0:01.5)
+  ///
+  /// In en, this message translates to:
+  /// **'The song starts {time} after the video'**
+  String videoEditSongAfter(String time);
+
+  /// Video edit, a take: the song's shift, earlier: its first part is cut (time like 0:01.5)
+  ///
+  /// In en, this message translates to:
+  /// **'The song starts {time} before the video'**
+  String videoEditSongBefore(String time);
+
+  /// Video edit, a take: the part of the song used, once trimmed (times like 0:01.5)
+  ///
+  /// In en, this message translates to:
+  /// **'Using {start}–{end} of the song'**
+  String videoEditSongUsed(String start, String end);
+
+  /// Video edit: the take's own sound's lane (a video Cam recorded)
+  ///
+  /// In en, this message translates to:
+  /// **'Take'**
+  String get videoEditLaneTake;
+
+  /// Video edit: the lane of the song a take was played along with
+  ///
+  /// In en, this message translates to:
+  /// **'Song'**
+  String get videoEditLaneSong;
+
+  /// Video edit: the video's own sound's lane (a video Cam didn't record)
+  ///
+  /// In en, this message translates to:
+  /// **'Video sound'**
+  String get videoEditLaneVideo;
+
+  /// Video edit: the lane of a sound added to a video Cam didn't record
+  ///
+  /// In en, this message translates to:
+  /// **'Track'**
+  String get videoEditLaneTrack;
+
+  /// Video edit: the empty song lane of a take, to pick a song
+  ///
+  /// In en, this message translates to:
+  /// **'Add a song'**
+  String get videoEditAddSong;
+
+  /// Video edit: the empty track lane of a video, to pick a sound
+  ///
+  /// In en, this message translates to:
+  /// **'Add a track'**
+  String get videoEditAddTrack;
+
+  /// Video edit: the song lane's menu: takes the song out of the lane
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get videoEditRemoveSong;
+
+  /// Video edit: a lane's volume control (lane: Take, Song, Video sound or Track)
+  ///
+  /// In en, this message translates to:
+  /// **'Volume ({lane})'**
+  String videoEditLaneVolume(String lane);
+
+  /// Video edit: mutes a lane, keeping its level (lane: Take, Song, Video sound or Track)
+  ///
+  /// In en, this message translates to:
+  /// **'Mute ({lane})'**
+  String videoEditLaneMute(String lane);
+
+  /// Video edit: unmutes a lane (lane: Take, Song, Video sound or Track)
+  ///
+  /// In en, this message translates to:
+  /// **'Unmute ({lane})'**
+  String videoEditLaneUnmute(String lane);
+
+  /// Video edit: the take lane's bar, for screen readers and the mouse
+  ///
+  /// In en, this message translates to:
+  /// **'The whole video, the part kept bright: drag its ends to trim it, and both sounds with it'**
+  String get videoEditTakeBar;
+
+  /// Video edit: the take lane's left grip
+  ///
+  /// In en, this message translates to:
+  /// **'Start of the part kept'**
+  String get videoEditKeptStart;
+
+  /// Video edit: the take lane's right grip
+  ///
+  /// In en, this message translates to:
+  /// **'End of the part kept'**
+  String get videoEditKeptEnd;
+
+  /// Video edit: the time ruler over the lanes
+  ///
+  /// In en, this message translates to:
+  /// **'Where the preview is: tap or drag to go elsewhere'**
+  String get videoEditRuler;
+
+  /// Video edit: the app bar's info button, which says how the edit is kept
+  ///
+  /// In en, this message translates to:
+  /// **'About the edit'**
+  String get videoEditAbout;
 
   /// Files list: a link's play button, which opens the link in a new tab
   ///

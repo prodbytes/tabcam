@@ -44,7 +44,9 @@ void main() {
     });
 
     test('None: no lane at all', () {
-      final p = plan(PageEdit(start: s(2), end: s(8), sound: EditSound.none));
+      final p = plan(
+        PageEdit.fromSound(start: s(2), end: s(8), sound: EditSound.none),
+      );
       expect(p.own, isNull);
       expect(p.song, isNull);
       expect(p.hasSound, isFalse);
@@ -76,7 +78,7 @@ void main() {
         (s(4.5), s(6), s(30), s(3), s(0), null),
       ];
       for (final (start, end, length, offset, from, to) in cases) {
-        final edit = PageEdit(
+        final edit = PageEdit.fromSound(
           start: start,
           end: end,
           sound: EditSound.track,
@@ -121,7 +123,7 @@ void main() {
 
     test('a track at −2 s and at +3 s: the gaps and spans of before', () {
       // Kept 3–9 s (6 s); a 30 s track, its 1–20 s used.
-      PageEdit at(double offset) => PageEdit(
+      PageEdit at(double offset) => PageEdit.fromSound(
         start: s(3),
         end: s(9),
         sound: EditSound.track,
@@ -145,7 +147,7 @@ void main() {
     });
 
     test('without sound: neither lane, the rest kept', () {
-      final edit = PageEdit(
+      final edit = PageEdit.fromSound(
         start: s(1),
         end: s(5),
         sound: EditSound.track,
@@ -266,13 +268,18 @@ void main() {
         isFalse,
       );
       expect(
-        plan(PageEdit(start: Duration.zero, end: s(20), sound: EditSound.none))
-            .passthrough,
+        plan(
+          PageEdit.fromSound(
+            start: Duration.zero,
+            end: s(20),
+            sound: EditSound.none,
+          ),
+        ).passthrough,
         isFalse,
       );
       expect(
         plan(
-          PageEdit(
+          PageEdit.fromSound(
             start: Duration.zero,
             end: s(20),
             sound: EditSound.track,
@@ -289,7 +296,7 @@ void main() {
   });
 
   test('the timeline moves only with what moves sound, not volumes', () {
-    final edit = PageEdit(
+    final edit = PageEdit.fromSound(
       start: s(1),
       end: s(5),
       sound: EditSound.track,
@@ -298,12 +305,12 @@ void main() {
     );
     final timeline = plan(edit, songLength: s(10)).timeline;
     expect(
-      plan(edit.withTrackVolume(0.3), songLength: s(10)).timeline,
+      plan(edit.copyWith(trackVolume: 0.3), songLength: s(10)).timeline,
       timeline,
     );
     expect(
       plan(
-        PageEdit(
+        PageEdit.fromSound(
           start: s(1),
           end: s(5),
           sound: EditSound.track,

@@ -8,11 +8,14 @@ import '../library/page_edit.dart';
 /// Plays [video] as a [RenderPlan] says (the one Download renders),
 /// without making a file of it: the kept part only (from its start, when
 /// outside it; at its end, back to its start, playing on when [loop]ing,
-/// paused otherwise), with the video's own sound at its volume, or muted,
-/// and the song lane's player along it, playing in its clips from where
-/// the plan says, paused between them, at its volume. Checked every tenth
-/// of a second while it plays. The players stay their owner's to dispose
-/// of.
+/// paused otherwise), the two lanes mixed: the video's own sound at its
+/// volume (0: muted), and the song lane's player along it, playing in its
+/// clips from where the plan says, paused between them, at its volume.
+/// Checked every tenth of a second while it plays; every
+/// [driftChecks] checks, while both play, the song's place is compared
+/// with where the plan has it, and sought again when it's more than
+/// [driftMost] off (a long video's song would otherwise drift on). The
+/// players stay their owner's to dispose of.
 class EditedPlayback {
   EditedPlayback(this.video, {this.loop = false}) {
     video.addListener(_onVideo);
@@ -33,6 +36,14 @@ class EditedPlayback {
   bool _songPlaying = false;
   Duration? _last;
 
+  /// The checks since the song's place was last compared.
+  int _sinceDrift = 0;
+
+  /// How often the song's drift is checked (every 2 s), and how far off
+  /// it may be.
+  static const driftChecks = 20;
+  static const driftMost = Duration(milliseconds: 150);
+
   Duration get start => _plan?.start ?? Duration.zero;
   Duration get end {
     final length = video.value.duration;
@@ -46,7 +57,11 @@ class EditedPlayback {
   static RenderPlan? planOf(PageEdit? edit, {Duration? songLength}) =>
       edit == null
       ? null
-      : RenderPlan.of(edit, songLength: songLength ?? Duration.zero);
+      : RenderPlan.of(
+          edit,
+          songLength: songLength ?? Duration.zero,
+          preview: true,
+        );
 
   /// Plays [plan] from now on (with [song] as the song lane's player);
   /// where the song plays is found again at the next check, unless only
@@ -94,11 +109,29 @@ class EditedPlayback {
     final into = plan.songAt(at - start);
     if (into != null && !_songPlaying) {
       _songPlaying = true;
+      _sinceDrift = 0;
       await song.seekTo(into);
       await song.play();
     } else if (into == null && _songPlaying) {
       await pauseSong();
+    } else if (into != null && ++_sinceDrift >= driftChecks) {
+      _sinceDrift = 0;
+      await _correctDrift(plan, song);
     }
+  }
+
+  /// Seeks the song to where the plan has it, if it's more than
+  /// [driftMost] off: both players asked where they are now.
+  Future<void> _correctDrift(
+    RenderPlan plan,
+    VideoPlayerController song,
+  ) async {
+    final videoAt = await video.position;
+    final songAt = await song.position;
+    if (videoAt == null || songAt == null || !_songPlaying) return;
+    final want = plan.songAt(videoAt - start);
+    if (want == null) return;
+    if ((songAt - want).abs() > driftMost) await song.seekTo(want);
   }
 
   Future<void> pauseSong() async {

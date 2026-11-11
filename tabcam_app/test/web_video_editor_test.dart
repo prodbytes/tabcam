@@ -3,6 +3,7 @@ library;
 
 import 'dart:async';
 import 'dart:js_interop';
+import 'dart:math';
 
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart';
@@ -20,8 +21,9 @@ import 'package:web/web.dart' as web;
 /// (by WebCodecs, or recorded as it plays), or a WAV where AAC can't be
 /// made.
 void main() {
-  /// A video [seconds] long, with sound, as the browser records one.
-  Future<XFile> makeVideo(double seconds) async {
+  /// A video [seconds] long, with sound (unless not [sound]), as the
+  /// browser records one.
+  Future<XFile> makeVideo(double seconds, {bool sound = true}) async {
     final canvas = web.document.createElement('canvas') as web.HTMLCanvasElement
       ..width = 160
       ..height = 120;
@@ -40,8 +42,10 @@ void main() {
     final sink = audio.createMediaStreamDestination();
     tone.connect(sink);
     tone.start();
-    for (final track in sink.stream.getAudioTracks().toDart) {
-      stream.addTrack(track);
+    if (sound) {
+      for (final track in sink.stream.getAudioTracks().toDart) {
+        stream.addTrack(track);
+      }
     }
     final recorder = web.MediaRecorder(
       stream,
@@ -176,7 +180,7 @@ void main() {
 
     final silent = await editor.render(
       plan(
-        const PageEdit(
+        PageEdit.fromSound(
           start: Duration.zero,
           end: Duration(milliseconds: 1000),
           sound: EditSound.none,
@@ -190,10 +194,11 @@ void main() {
 
     final tracked = await editor.render(
       plan(
-        const PageEdit(
+        PageEdit.fromSound(
           start: Duration.zero,
           end: Duration(milliseconds: 1000),
           sound: EditSound.track,
+          trackId: 'k1',
           offset: Duration(milliseconds: -500),
         ),
       ),
@@ -218,10 +223,11 @@ void main() {
 
     /// The track's sound alone, starting a second in, at [volume].
     RenderPlan gappedAt(double volume) => plan(
-      PageEdit(
+      PageEdit.fromSound(
         start: Duration.zero,
         end: const Duration(milliseconds: 2000),
         sound: EditSound.track,
+        trackId: 'k1',
         offset: const Duration(milliseconds: 1000),
         trackVolume: volume,
       ),
@@ -347,10 +353,11 @@ void main() {
     final cut = await decode(
       await editor.render(
         plan(
-          const PageEdit(
+          PageEdit.fromSound(
             start: Duration.zero,
             end: Duration(milliseconds: 1500),
             sound: EditSound.track,
+            trackId: 'k1',
             trackStart: Duration(milliseconds: 500),
             trackEnd: Duration(milliseconds: 900),
           ),
@@ -363,10 +370,11 @@ void main() {
     // And with the video, it goes through the gain too: its recorded
     // sound is about half as loud as the same edit's at 100%.
     RenderPlan withVideo(double volume) => plan(
-      PageEdit(
+      PageEdit.fromSound(
         start: Duration.zero,
         end: const Duration(milliseconds: 1500),
         sound: EditSound.track,
+        trackId: 'k1',
         trackVolume: volume,
       ),
     );
@@ -381,6 +389,107 @@ void main() {
         loudest(await decode(quietVideo), 0.4, 1.0) /
         loudest(await decode(loudVideo), 0.4, 1.0);
     expect(ratio, closeTo(0.5, 0.12));
+
+    // The two lanes, mixed: the video's own sound at half, and the same
+    // file as the song a second in, at 40% (together under full scale,
+    // so nothing clips). Mixed offline, the sound alone is the sum of
+    // each lane's, to the sample (a WAV, so nothing's lost).
+    final wavs = WebVideoEditor(soundWay: WebSoundWay.wav);
+    PageEdit lanes({bool own = true, bool song = true}) => PageEdit(
+      start: Duration.zero,
+      end: const Duration(milliseconds: 2000),
+      ownVolume: 0.5,
+      ownMuted: !own,
+      song: SongMode.manual,
+      songMuted: !song,
+      trackId: 'k1',
+      offset: const Duration(milliseconds: 1000),
+      trackVolume: 0.4,
+    );
+    Future<web.AudioBuffer> soundOf(PageEdit edit) async =>
+        decode(await wavs.render(plan(edit, kind: RenderKind.sound)));
+    final mixed = await soundOf(lanes());
+    final ownOnly = await soundOf(lanes(song: false));
+    final songOnly = await soundOf(lanes(own: false));
+    expect(mixed.duration, closeTo(2, 0.001));
+    final m = mixed.getChannelData(0).toDart;
+    final o = ownOnly.getChannelData(0).toDart;
+    final g = songOnly.getChannelData(0).toDart;
+    var off = 0.0;
+    for (var i = 0; i < m.length; i++) {
+      off = max(off, (m[i] - (o[i] + g[i])).abs());
+    }
+    expect(off, lessThan(0.001));
+    // The own lane all along, the song only after its second of silence.
+    expect(loudest(ownOnly, 0.1, 1.9), greaterThan(0.05));
+    expect(loudest(songOnly, 0, 0.98), lessThan(0.01));
+    expect(loudest(songOnly, 1.05, 1.9), greaterThan(0.05));
+
+    // With the video, the own lane goes through its gain too, and both
+    // lanes are heard.
+    RenderPlan ownAt(double volume) => plan(
+      PageEdit(
+        start: Duration.zero,
+        end: const Duration(milliseconds: 1500),
+        ownVolume: volume,
+      ),
+    );
+    final quietOwn = await decode(await editor.render(ownAt(0.5)));
+    final loudOwn = await decode(await editor.render(ownAt(1)));
+    expect(
+      loudest(quietOwn, 0.4, 1.0) / loudest(loudOwn, 0.4, 1.0),
+      closeTo(0.5, 0.12),
+    );
+    final bothVideo = await editor.render(plan(lanes()));
+    final (bothLength, bothSound) = await probe(bothVideo);
+    expect(bothLength, closeTo(2, 0.5));
+    expect(bothSound, isTrue);
+
+    // A video longer than it decodes whole: its own sound streams from
+    // the playing video, through its gain, the song mixed beside it.
+    final streaming = WebVideoEditor(streamedOver: Duration.zero);
+    final quietStreamed = await decode(await streaming.render(ownAt(0.5)));
+    final loudStreamed = await decode(await streaming.render(ownAt(1)));
+    expect(
+      loudest(quietStreamed, 0.4, 1.0) / loudest(loudStreamed, 0.4, 1.0),
+      closeTo(0.5, 0.12),
+    );
+    final bothStreamed = await streaming.render(plan(lanes()));
+    final (bothStreamedLength, bothStreamedSound) = await probe(bothStreamed);
+    expect(bothStreamedLength, closeTo(2, 0.5));
+    expect(bothStreamedSound, isTrue);
+
+    // A video without sound: its own lane doesn't decode, so it streams
+    // (silence) and the video still renders, with the song in it; its
+    // sound alone fails, saying why, rather than leaving the lane out.
+    final mute = await makeVideo(2, sound: false);
+    final (_, muteSound) = await probe(mute);
+    expect(muteSound, isFalse);
+    final muteLength = (await editor.length(mute))!;
+    RenderPlan mutePlan(PageEdit edit, {RenderKind kind = RenderKind.video}) =>
+        RenderPlan.of(
+          edit,
+          input: mute,
+          duration: muteLength,
+          inputExtension: 'webm',
+          songFile: video,
+          songLength: videoLength,
+          kind: kind,
+        );
+    final muteEdit = PageEdit(
+      start: Duration.zero,
+      end: const Duration(milliseconds: 1500),
+      song: SongMode.manual,
+      trackId: 'k1',
+      offset: const Duration(milliseconds: 500),
+    );
+    final muteWithSong = await decode(await editor.render(mutePlan(muteEdit)));
+    expect(loudest(muteWithSong, 0.1, 0.4), lessThan(0.02));
+    expect(loudest(muteWithSong, 0.7, 1.2), greaterThan(0.05));
+    await expectLater(
+      wavs.render(mutePlan(muteEdit, kind: RenderKind.sound)),
+      throwsA(anything),
+    );
   }
 
   testWidgets('the kept part, with its sound, without, or with a track; '

@@ -1878,9 +1878,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditNotHere => 'Videos can\'t be edited here';
 
   @override
-  String get videoEditTrim => 'Trim';
-
-  @override
   String videoEditKeep(String start, String end) {
     return 'Keep $start–$end';
   }
@@ -1892,18 +1889,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditTrimEnd => 'End here';
 
   @override
-  String get videoEditSound => 'Sound';
-
-  @override
-  String get videoEditSoundOriginal => 'Original';
-
-  @override
-  String get videoEditSoundNone => 'None';
-
-  @override
-  String get videoEditSoundTrack => 'New track';
-
-  @override
   String get videoEditPickTrack => 'Pick a track';
 
   @override
@@ -1911,9 +1896,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoEditTrackFile => 'A sound file…';
-
-  @override
-  String get videoEditNoTrack => 'No track picked yet';
 
   @override
   String get videoEditTrackWith => 'The track starts with the video';
@@ -1939,7 +1921,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoEditTrackBar =>
-      'The track along the kept part: drag it to move it, its ends to trim it';
+      'Along the video: drag it to move it, its ends to trim it';
 
   @override
   String get videoEditTrackEarlier => 'A tenth of a second earlier';
@@ -1948,23 +1930,88 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditTrackLater => 'A tenth of a second later';
 
   @override
-  String get videoEditTrackVolume => 'Track volume';
-
-  @override
   String videoEditTrackVolumeLevel(int percent) {
     return '$percent%';
   }
 
   @override
-  String get videoEditTrackMute => 'Mute the track';
-
-  @override
-  String get videoEditTrackUnmute => 'Unmute the track';
-
-  @override
   String videoEditTrackUsed(String start, String end) {
     return 'Using $start–$end of the track';
   }
+
+  @override
+  String get videoEditPickSong => 'Pick a song';
+
+  @override
+  String get videoEditSongWith => 'The song starts with the video';
+
+  @override
+  String videoEditSongAfter(String time) {
+    return 'The song starts $time after the video';
+  }
+
+  @override
+  String videoEditSongBefore(String time) {
+    return 'The song starts $time before the video';
+  }
+
+  @override
+  String videoEditSongUsed(String start, String end) {
+    return 'Using $start–$end of the song';
+  }
+
+  @override
+  String get videoEditLaneTake => 'Take';
+
+  @override
+  String get videoEditLaneSong => 'Song';
+
+  @override
+  String get videoEditLaneVideo => 'Video sound';
+
+  @override
+  String get videoEditLaneTrack => 'Track';
+
+  @override
+  String get videoEditAddSong => 'Add a song';
+
+  @override
+  String get videoEditAddTrack => 'Add a track';
+
+  @override
+  String get videoEditRemoveSong => 'Remove';
+
+  @override
+  String videoEditLaneVolume(String lane) {
+    return 'Volume ($lane)';
+  }
+
+  @override
+  String videoEditLaneMute(String lane) {
+    return 'Mute ($lane)';
+  }
+
+  @override
+  String videoEditLaneUnmute(String lane) {
+    return 'Unmute ($lane)';
+  }
+
+  @override
+  String get videoEditTakeBar =>
+      'The whole video, the part kept bright: drag its ends to trim it, and both sounds with it';
+
+  @override
+  String get videoEditKeptStart => 'Start of the part kept';
+
+  @override
+  String get videoEditKeptEnd => 'End of the part kept';
+
+  @override
+  String get videoEditRuler =>
+      'Where the preview is: tap or drag to go elsewhere';
+
+  @override
+  String get videoEditAbout => 'About the edit';
 
   @override
   String get eventPlayLink => 'Play in a new tab';
