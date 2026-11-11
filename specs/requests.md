@@ -2676,5 +2676,11 @@ spec.
     only through `MetaNames`, the apps' store round-trips each, the web's
     store keeps the settings across a new store in a fake localStorage
     and nothing else, falls back to memory when storage throws, and
-    refuses a bad name. See [library](library.md#device-settings),
+    refuses a bad name. A capture opened by its link has a library of
+    its own, whose settings stay in memory (`PlatformEventStore.memoryOnly`),
+    as on the apps: it neither reads nor changes the device's settings in
+    localStorage, where it would otherwise have shared them with the
+    user's library and disagreed with its in-memory copy (tests in
+    `test/meta_names_test.dart` and `test/public_capture_test.dart`). See
+    [library](library.md#device-settings), [sharing](sharing.md),
     [delete confirmations](delete-confirms.md).

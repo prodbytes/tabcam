@@ -131,6 +131,34 @@ void main() {
       );
     });
 
+    test('a library opened by a link keeps its settings apart from the '
+        'device\'s', () async {
+      final storage = _FakeStorage();
+      final before = web.PlatformEventStore.defaultStorage;
+      web.PlatformEventStore.defaultStorage = () => storage;
+      addTearDown(() => web.PlatformEventStore.defaultStorage = before);
+
+      // The user's library, on the web: the device's settings.
+      final mine = web.PlatformEventStore();
+      expect(mine.storage, same(storage));
+      await mine.writeMeta(MetaNames.playAlong, '{"countIn":true}');
+
+      // A capture opened by its link: its own, in memory only.
+      final opened = web.PlatformEventStore.memoryOnly();
+      expect(opened.storage, isNull);
+      expect(await opened.readMeta(MetaNames.playAlong), isNull);
+      await opened.writeMeta(MetaNames.playAlong, '{"countIn":false}');
+      expect(await opened.readMeta(MetaNames.playAlong), '{"countIn":false}');
+
+      // The device's setting is the user's, in memory and after a reload.
+      expect(await mine.readMeta(MetaNames.playAlong), '{"countIn":true}');
+      expect(storage.items, {'tabcam.meta.playalong': '{"countIn":true}'});
+      expect(
+        await web.PlatformEventStore().readMeta(MetaNames.playAlong),
+        '{"countIn":true}',
+      );
+    });
+
     test('off the web there is no localStorage', () {
       expect(web.PlatformEventStore().storage, isNull);
     });

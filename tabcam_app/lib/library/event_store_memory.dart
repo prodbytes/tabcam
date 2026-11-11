@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:cross_file/cross_file.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import 'capture_event.dart';
 import 'event_store.dart';
@@ -8,14 +9,27 @@ import 'meta_names.dart';
 import 'meta_storage.dart';
 
 /// Events kept in memory, for the web: they last until the tab is closed
-/// (signed in, they come back with cloud sync). The device's settings
-/// ([MetaNames.deviceSettings]) are also kept in [storage], the browser's
-/// localStorage, so they last a reload; other metas, the events and their
-/// files never are.
+/// (signed in, they come back with cloud sync). The user's library also
+/// keeps the device's settings ([MetaNames.deviceSettings]) in [storage],
+/// the browser's localStorage, so they last a reload; other metas, the
+/// events and their files never are. A capture opened by its link has a
+/// library of its own ([PlatformEventStore.memoryOnly]), whose settings
+/// stay in memory, as on the apps.
 class PlatformEventStore implements EventStore {
-  /// [storage] defaults to the browser's localStorage (none off the web).
+  /// The user's library: [storage] defaults to the browser's localStorage
+  /// (none off the web).
   PlatformEventStore({MetaStorage? storage})
-    : storage = storage ?? browserMetaStorage();
+    : storage = storage ?? defaultStorage();
+
+  /// A library apart from the user's (a capture opened by its link): all
+  /// of it in memory, settings too, so it neither reads nor changes the
+  /// device's, and goes with it.
+  PlatformEventStore.memoryOnly() : storage = null;
+
+  /// Where a new user's library keeps the device's settings: the
+  /// browser's localStorage; a test's fake.
+  @visibleForTesting
+  static MetaStorage? Function() defaultStorage = browserMetaStorage;
 
   /// Where the device's settings last a reload; null, only in memory.
   final MetaStorage? storage;

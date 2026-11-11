@@ -192,7 +192,11 @@ synced) and `cloudocr` (what cloud OCR has filled).
   (cloud sync's state describes the captures here, which a reload
   loses). Where the browser refuses storage (a private window, storage
   disabled, over quota), they're kept in memory, silently, until the tab
-  is reloaded.
+  is reloaded. Only the user's library keeps them there: a capture opened
+  by its link ([sharing](sharing.md)) has a library of its own
+  (`PlatformEventStore.memoryOnly`) whose settings stay in memory, as on
+  the apps, so changing one there (the count-in, say) neither reads nor
+  changes the device's, and goes with the screen.
 - **Signing out** keeps the device settings, on every platform: they're
   the device's, not the account's. **Deleting the account** empties
   `cloudsync` and `cloudocr` ([cloud sync](cloud-sync.md#deleting-the-account))
@@ -202,5 +206,7 @@ synced) and `cloudocr` (what cloud OCR has filled).
   through `MetaNames`; the apps' store keeps each and a new store reads
   it back; the web's store keeps the settings, and nothing else, in a
   fake localStorage that a new store reads back, keeps them in memory
-  when the storage throws, and refuses a bad name.
+  when the storage throws, and refuses a bad name; a memory-only store
+  (a link's) neither reads nor writes the device's settings
+  (`test/public_capture_test.dart` checks the link's screen uses one).
 
