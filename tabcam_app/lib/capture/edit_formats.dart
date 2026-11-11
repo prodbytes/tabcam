@@ -55,6 +55,15 @@ class EditFormats {
 
   @override
   String toString() => 'EditFormats(${video.label}, ${sound.label})';
+
+  /// Whether a video file with [extension], unchanged, downloads as it
+  /// is rather than made again: when it's already MPEG-4 (`mp4`, or
+  /// `m4v`, the same file named for iTunes), or already in the [video]
+  /// format made here (a WebM where the browser records WebM).
+  bool keepsAsIs(String? extension) {
+    final e = extension?.toLowerCase();
+    return e == 'mp4' || e == 'm4v' || e == video.extension;
+  }
 }
 
 /// The MediaRecorder types the browser's editor records a video as, best

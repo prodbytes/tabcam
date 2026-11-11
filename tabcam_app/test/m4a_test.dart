@@ -128,6 +128,31 @@ void main() {
     expect(mdat.body, [for (final f in frames) ...f]);
   });
 
+  test('each frame needs the one before it to decode (a roll of -1), as '
+      'Apple writes AAC, so Apple\'s decoders cut only the edit list\'s '
+      'delay', () {
+    final stbl = ['moov', 'trak', 'mdia', 'minf', 'stbl'];
+    final sgpd = find(file, [...stbl, 'sgpd']).body;
+    expect(sgpd[0], 1); // version 1
+    expect(String.fromCharCodes(sgpd.sublist(4, 8)), 'roll');
+    expect([u32(sgpd, 8), u32(sgpd, 12)], [2, 1]);
+    expect(ByteData.sublistView(sgpd).getInt16(16), -1);
+    expect(sgpd, hasLength(18));
+    final sbgp = find(file, [...stbl, 'sbgp']).body;
+    expect(String.fromCharCodes(sbgp.sublist(4, 8)), 'roll');
+    expect([u32(sbgp, 8), u32(sbgp, 12), u32(sbgp, 16)], [1, 90, 1]);
+    // No frames: no group.
+    final empty = m4aBytes(const [], sampleRate: 44100, channels: 2);
+    final table = find(empty, stbl);
+    expect(
+      [
+        for (final b in boxes(empty, table.at, table.at + table.body.length))
+          b.type,
+      ],
+      ['stsd', 'stts', 'stsc', 'stsz', 'stco'],
+    );
+  });
+
   test('as long as the sound: the encoder\'s delay and padding cut by an '
       'edit list', () {
     final mvhd = find(file, ['moov', 'mvhd']).body;
@@ -160,7 +185,8 @@ void main() {
   });
 
   test('a long descriptor\'s size takes more bytes', () {
-    final config = Uint8List(200);
+    // An AudioSpecificConfig (AAC LC first), however long.
+    final config = Uint8List(200)..[0] = 0x12;
     final long = m4aBytes(
       frames.sublist(0, 1),
       sampleRate: 44100,
@@ -180,6 +206,74 @@ void main() {
       0x81,
       0x48,
     ]);
+  });
+
+  // WebKit's AudioEncoder (Safari 26) describes its AAC with Apple's
+  // magic cookie, a whole ES descriptor, not the AudioSpecificConfig
+  // (Chrome's 12 10) in it.
+  final webkit = Uint8List.fromList([
+    0x03, 0x80, 0x80, 0x80, 0x22, 0x00, 0x00, 0x00, // ES, ID 0, no flags
+    0x04, 0x80, 0x80, 0x80, 0x14, 0x40, 0x14, 0x00, 0x18, 0x00, //
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // decoder config
+    0x05, 0x80, 0x80, 0x80, 0x02, 0x12, 0x10, // its AudioSpecificConfig
+    0x06, 0x80, 0x80, 0x80, 0x01, 0x02, // sync layer
+  ]);
+
+  test('an encoder\'s description: an AudioSpecificConfig as it is, the '
+      'one in an ES descriptor (WebKit\'s)', () {
+    expect(isEsDescriptor(webkit), isTrue);
+    expect(isEsDescriptor(Uint8List.fromList([0x12, 0x10])), isFalse);
+    expect(audioSpecificConfig(webkit), [0x12, 0x10]);
+    expect(audioSpecificConfig(Uint8List.fromList([0x12, 0x10])), [0x12, 0x10]);
+    // Its flags say what comes before its decoder config: a stream it
+    // depends on, a URL, an OCR stream.
+    final flagged = Uint8List.fromList([
+      0x03, 0x1e, 0x00, 0x01, 0xe0, 0x00, 0x02, // ID 1, all three flags
+      0x03, 0x61, 0x62, 0x63, 0x00, 0x03, // the URL "abc", the OCR's ID
+      0x04, 0x11, 0x40, 0x15, ...List.filled(11, 0), //
+      0x05, 0x02, 0x11, 0x90,
+    ]);
+    expect(flagged[1], flagged.length - 2);
+    expect(audioSpecificConfig(flagged), [0x11, 0x90]);
+    // A decoder config, or the specific info, alone.
+    expect(audioSpecificConfig(webkit.sublist(8, 33)), [0x12, 0x10]);
+    expect(audioSpecificConfig(webkit.sublist(26, 33)), [0x12, 0x10]);
+    // Cut short, or none in it: none.
+    expect(audioSpecificConfig(webkit.sublist(0, 30)), isNull);
+    expect(audioSpecificConfig(webkit.sublist(0, 26)), isNull);
+    expect(
+      audioSpecificConfig(Uint8List.fromList([3, 6, 0, 0, 0, 6, 1, 2])),
+      isNull,
+    );
+    expect(audioSpecificConfig(Uint8List(0)), isNull);
+  });
+
+  test('an M4A of WebKit\'s frames holds the AudioSpecificConfig, not its '
+      'whole ES descriptor (which says no audio type)', () {
+    final made = m4aBytes(
+      frames.sublist(0, 3),
+      sampleRate: 44100,
+      channels: 2,
+      config: webkit,
+    );
+    final esds = find(made, [
+      'moov', 'trak', 'mdia', 'minf', 'stbl', 'stsd', 'mp4a', 'esds', //
+    ]).body;
+    final info = esds.indexOf(5, esds.indexOf(4, 5));
+    expect(esds.sublist(info, info + 4), [5, 2, 0x12, 0x10]);
+    expect(esds.sublist(esds.length - 3), [6, 1, 2]);
+    // One that holds none: made from the rate and channels.
+    final none = m4aBytes(
+      frames.sublist(0, 3),
+      sampleRate: 48000,
+      channels: 1,
+      config: webkit.sublist(0, 26),
+    );
+    final noneEsds = find(none, [
+      'moov', 'trak', 'mdia', 'minf', 'stbl', 'stsd', 'mp4a', 'esds', //
+    ]).body;
+    final noneInfo = noneEsds.indexOf(5, noneEsds.indexOf(4, 5));
+    expect(noneEsds.sublist(noneInfo, noneInfo + 4), [5, 2, 0x11, 0x88]);
   });
 
   test('aacConfig: AAC LC, the rate\'s index, the channels', () {

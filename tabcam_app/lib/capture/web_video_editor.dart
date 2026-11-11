@@ -28,10 +28,18 @@ VideoEditing? webVideoEditor() => WebVideoEditor();
 /// uploaded to make it.
 class WebVideoEditor implements VideoEditing {
   /// [soundWay], for tests, makes the sound alone that way, whatever the
-  /// browser can.
-  WebVideoEditor({@visibleForTesting this.soundWay});
+  /// browser can; [soundContext] makes the context the sound alone is
+  /// recorded in, as it plays.
+  WebVideoEditor({
+    @visibleForTesting this.soundWay,
+    @visibleForTesting this.soundContext,
+  });
 
   final WebSoundWay? soundWay;
+  final web.AudioContext Function()? soundContext;
+
+  web.AudioContext _soundContext() =>
+      soundContext?.call() ?? web.AudioContext();
 
   /// The sound alone's rate: any does, the context resamples to it.
   static const _rate = 44100;
@@ -259,6 +267,37 @@ class WebVideoEditor implements VideoEditing {
       case EditSound.track:
         source = edit.track ?? (throw ArgumentError('No track'));
     }
+    // Where it'll be recorded as it plays, the context it plays in is
+    // started now, while Download's tap still lets it start: reading,
+    // decoding and mixing a long video can outlast that.
+    final early = await _soundWay(2);
+    final playing = early == WebSoundWay.recorder ? _soundContext() : null;
+    final started = playing?.resume().toDart.then<void>(
+      (_) {},
+      onError: (Object _) {},
+    );
+    try {
+      return await _mix(source, edit, clip, playing, started, onProgress);
+    } finally {
+      if (playing != null && playing.state != 'closed') {
+        unawaited(
+          playing.close().toDart.then<void>((_) {}, onError: (Object _) {}),
+        );
+      }
+    }
+  }
+
+  /// [_sound]'s work: [source]'s sound decoded, mixed offline as long as
+  /// the kept part ([clip] seconds), then made AAC in an M4A (or a WAV);
+  /// recorded, if so, in [playing], once [started].
+  Future<XFile> _mix(
+    XFile source,
+    VideoEdit edit,
+    double clip,
+    web.AudioContext? playing,
+    Future<void>? started,
+    void Function(double done)? onProgress,
+  ) async {
     const rate = _rate;
     final decoder = web.OfflineAudioContext(1.toJS, 1, rate);
     final bytes = await source.readAsBytes();
@@ -308,25 +347,40 @@ class WebVideoEditor implements VideoEditing {
       for (var c = 0; c < mixed.numberOfChannels; c++)
         mixed.getChannelData(c).toDart,
     ];
-    final way = await _soundWay(samples.length);
-    final format = way.format;
-    final Uint8List made;
+    var way = await _soundWay(samples.length);
+    Uint8List? made;
     switch (way) {
       case WebSoundWay.encoder:
-        final (frames, config) = await _encode(samples, rate);
+        final (frames, description) = await _encode(samples, rate);
         made = m4aBytes(
           frames,
           sampleRate: rate,
           channels: samples.length,
-          config: config,
-          priming: await _priming(samples.length),
+          config: description,
+          priming: await _priming(samples.length, description),
           length: mixed.length,
         );
       case WebSoundWay.recorder:
-        made = await _record(mixed, onProgress);
+        final live = playing ?? _soundContext();
+        try {
+          made = await _record(live, started, mixed, onProgress);
+        } on Object catch (e) {
+          // The browser won't play it (no tap it counts) or record it:
+          // a WAV, as where AAC can't be made, rather than nothing.
+          debugPrint('TabCam: video edit: sound not recorded, a WAV: $e');
+          way = WebSoundWay.wav;
+        } finally {
+          if (playing == null) {
+            unawaited(
+              live.close().toDart.then<void>((_) {}, onError: (Object _) {}),
+            );
+          }
+        }
       case WebSoundWay.wav:
-        made = wavBytes(samples, rate);
+        break;
     }
+    made ??= wavBytes(samples, rate);
+    final format = way.format;
     return XFile.fromData(
       made,
       name: 'sound.${format.extension}',
@@ -336,7 +390,9 @@ class WebVideoEditor implements VideoEditing {
 
   /// [samples] (a list a channel, all as long, at [rate]) encoded as
   /// AAC-LC by WebCodecs' AudioEncoder, a second at a time: its frames,
-  /// and the decoder's config (null when the encoder gives none).
+  /// and the decoder's description (null when the encoder gives none): an
+  /// AudioSpecificConfig (Chrome's), or an ES descriptor that holds one
+  /// (WebKit's), which [m4aBytes] takes either way.
   static Future<(List<Uint8List>, Uint8List?)> _encode(
     List<Float32List> samples,
     int rate,
@@ -396,9 +452,16 @@ class WebVideoEditor implements VideoEditing {
   /// sound (Apple's AAC encoder, under Chrome and Safari on a Mac, puts
   /// 2112), which the M4A's edit list skips. Measured once: a tone after
   /// [_lead] samples of silence, encoded, written and decoded, starts
-  /// that much later.
-  static Future<int> _priming(int channels) =>
-      _primings[channels] ??= _measurePriming(channels);
+  /// that much later. Not where the encoder's [description] is an ES
+  /// descriptor (Safari's): that's Apple's encoder itself, whose delay is
+  /// 2112, and nothing need be encoded to know it.
+  static Future<int> _priming(int channels, Uint8List? description) {
+    if (description != null && isEsDescriptor(description)) {
+      return Future.value(_usualPriming);
+    }
+    return _primings[channels] ??= _measurePriming(channels);
+  }
+
   static final _primings = <int, Future<int>>{};
   static const _lead = 4096;
 
@@ -412,14 +475,14 @@ class WebVideoEditor implements VideoEditing {
       for (var i = _lead; i < n; i++) {
         tone[i] = 0.5 * sin(2 * pi * 440 * (i - _lead) / _rate);
       }
-      final (frames, config) = await _encode([
+      final (frames, description) = await _encode([
         for (var c = 0; c < channels; c++) tone,
       ], _rate);
       final file = m4aBytes(
         frames,
         sampleRate: _rate,
         channels: channels,
-        config: config,
+        config: description,
       );
       final decoder = web.OfflineAudioContext(channels.toJS, 1, _rate);
       final decoded = await decoder
@@ -437,17 +500,18 @@ class WebVideoEditor implements VideoEditing {
     }
   }
 
-  /// [mixed] played into a MediaRecorder as AAC in MP4, as long as it is
-  /// (where the AudioEncoder can't make AAC: an older Safari).
+  /// [mixed] played in [context] into a MediaRecorder as AAC in MP4, as
+  /// long as it is (where the AudioEncoder can't make AAC: an older
+  /// Safari). [started]: [context] asked to start, by Download's tap.
   static Future<Uint8List> _record(
+    web.AudioContext context,
+    Future<void>? started,
     web.AudioBuffer mixed,
     void Function(double done)? onProgress,
   ) async {
-    final context = web.AudioContext();
     Timer? timer;
     try {
-      // Started by Download's tap, as the video's sound is.
-      await context.resume().toDart.timeout(
+      await (started ?? context.resume().toDart).timeout(
         const Duration(seconds: 2),
         onTimeout: () => null,
       );
@@ -490,7 +554,6 @@ class WebVideoEditor implements VideoEditing {
       return (await blob.arrayBuffer().toDart).toDart.asUint8List();
     } finally {
       timer?.cancel();
-      unawaited(context.close().toDart);
     }
   }
 

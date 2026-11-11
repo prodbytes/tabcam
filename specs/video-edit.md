@@ -101,9 +101,12 @@ was left:
   download, or the system's "save as" on Android and iOS), named as the
   video is in the list with the made format's extension (`.mp4`,
   `.m4a`; `.webm`, `.wav` where those are made); a video the edit
-  doesn't change downloads as it is when it's already in the video's
-  format (an `.mp4`), and is made again in it otherwise (a WebM take
-  in Chrome, a MOV), so the video is always an MP4 where MP4 is made. A progress bar shows meanwhile (the browser's says how far along a
+  doesn't change downloads as it is when it's already MPEG-4 (an
+  `.mp4` or `.m4v`, on every platform: in Firefox too, which would make
+  it again only as a WebM) or already in the format made here (a
+  `.webm` where the browser records WebM), and is made again otherwise
+  (a WebM take in Chrome, a MOV), so the video is an MP4 wherever MP4
+  is made. A progress bar shows meanwhile (the browser's says how far along a
   video is; the phones' is indeterminate), with "Making the file…"; a
   failure says "Couldn't make the file" and why. A track whose length
   can't be told can't be downloaded with the video.
@@ -163,20 +166,36 @@ was left:
     into an **M4A** here, by a small muxer in Dart
     ([`m4a.dart`](../tabcam_app/lib/capture/m4a.dart), `m4aBytes`: no
     library, nothing fetched): `ftyp` (`M4A `), then `moov` (one `mp4a`
-    track, its `esds` holding the encoder's AudioSpecificConfig, the
-    frames' sizes and one chunk's offset) before `mdat`, so it plays as
-    it loads. **An edit list cuts the encoder's delay and padding**, so
-    the file is as long as the kept part, to the sample, and the track
-    starts exactly where it should: the delay is measured once per
-    channel count (a tone after 4,096 samples of silence, encoded,
-    written and decoded, starts that much later; 2,112 samples under
-    Apple's encoder, the one used where it can't be measured). Apple's
-    tools read the delay from it but not the padding, so they count up
-    to about 46 ms more at the end (silence).
+    track, its `esds` holding the AudioSpecificConfig, the frames'
+    sizes and one chunk's offset) before `mdat`, so it plays as it
+    loads. The AudioSpecificConfig is the encoder's description as
+    Chrome gives it (two bytes); Safari's encoder gives Apple's "magic
+    cookie" instead, a whole MPEG-4 ES descriptor, from which it's taken
+    (`audioSpecificConfig`; written as it was, it said no audio type and
+    the file played nowhere). **An edit list cuts the encoder's delay
+    and padding**, so the file is as long as the kept part, to the
+    sample, and the track starts exactly where it should; and a `roll`
+    sample group (each frame needs the one before, -1), as Apple's own
+    MP4s have, without which Apple's decoders (Safari, AVFoundation)
+    cut the usual delay themselves and the edit list's too, losing the
+    sound's first 2,112 samples. The delay is measured once per channel
+    count (a tone after 4,096 samples of silence, encoded, written and
+    decoded, starts that much later; 2,112 samples under Apple's
+    encoder, the one used where it can't be measured), except in Safari
+    (its ES descriptor says it's Apple's encoder): 2,112. Checked with
+    Chrome's and Safari's encoders: Chrome, Safari (WebKit) and
+    Firefox's `decodeAudioData`, AVFoundation, `afconvert` and FFmpeg
+    all start the sound where it is; Firefox's alone keeps the padding,
+    up to about 46 ms more at the end (silence).
   - Else **MediaRecorder** as `audio/mp4;codecs=mp4a.40.2` (an older
     Safari, without the AudioEncoder): the mix played into it, so it
     takes as long as the kept part, the progress bar saying how far
     along; an M4A about as long (the recorder's start may cut a moment).
+    The `AudioContext` it plays in is made and started first, at
+    Download's tap (Safari starts one only then), before the file is
+    read, decoded and mixed; if the browser still won't run it (or
+    record), the sound downloads as a WAV instead (`sound.wav`) rather
+    than failing.
   - Else (Firefox, Chrome on Linux: no AAC encoder) a 16-bit **WAV**
     (`wavBytes`), and the menu says (WAV).
 - **Elsewhere** (desktop builds): Download says videos can't be edited

@@ -695,6 +695,37 @@ void main() {
     expect(saved.single.$2, [1, 2, 3]);
   });
 
+  testWidgets('an MPEG-4 video as it is downloads as it is, even where the '
+      'browser records WebM', (tester) async {
+    tall(tester);
+    // A browser that records WebM (Firefox): an MP4 isn't made again as a
+    // WebM.
+    VideoEditor.instance = editor = FakeEditor(
+      const EditFormats(video: EditFormat.webm, sound: EditFormat.wav),
+    );
+    final (library, id) = await capture(tester);
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-download')));
+    await _settle(tester);
+    expect(editor.applied, isEmpty);
+    expect(saved.single.$1, 'Made-up riff.mp4');
+    expect(saved.single.$2, [1, 2, 3]);
+
+    // An M4V (MPEG-4 too), where MP4 is made: as it is, not made again.
+    VideoEditor.instance = editor = FakeEditor();
+    saved.clear();
+    final (library2, id2) = await capture(tester, video: 'm4v');
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(editScreen(library2, id2));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-download')));
+    await _settle(tester);
+    expect(editor.applied, isEmpty);
+    expect(saved.single.$1, 'Made-up riff.m4v');
+    expect(saved.single.$2, [1, 2, 3]);
+  });
+
   testWidgets('a sound file picked as the track is added to the capture\'s '
       'files, and the edit names it', (tester) async {
     tall(tester);

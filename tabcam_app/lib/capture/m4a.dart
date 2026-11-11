@@ -10,11 +10,17 @@ const aacFrameLength = 1024;
 /// in an M4A file (ISO base media, `M4A ` brand, one `mp4a` track, its
 /// index before its data so it plays as it loads).
 ///
-/// [config] is the AAC AudioSpecificConfig (the encoder's decoder
-/// description; made from the rate and channels when null). The first
-/// [priming] samples are the encoder's delay and [length] the samples
-/// that are sound (all the rest when null): an edit list plays those
-/// only, so the file is as long as the sound put in.
+/// [config] is the encoder's decoder description: the AAC
+/// AudioSpecificConfig, or an MPEG-4 ES descriptor that holds it
+/// ([audioSpecificConfig]); made from the rate and channels when null or
+/// when it holds none. The first [priming] samples are the encoder's
+/// delay and [length] the samples that are sound (all the rest when
+/// null): an edit list plays those only, so the file is as long as the
+/// sound put in. Each frame is also marked as needing the one before it
+/// to decode (a `roll` sample group, -1), as Apple's own MP4s are: without
+/// it, Apple's decoders (Safari, AVFoundation) cut an AAC encoder's usual
+/// delay themselves, and then the edit list's too, losing the sound's
+/// first 2112 samples.
 Uint8List m4aBytes(
   List<Uint8List> frames, {
   required int sampleRate,
@@ -26,7 +32,9 @@ Uint8List m4aBytes(
   if (sampleRate <= 0 || channels <= 0) {
     throw ArgumentError('A sound needs a rate and channels');
   }
-  final asc = config ?? aacConfig(sampleRate, channels);
+  final asc =
+      (config == null ? null : audioSpecificConfig(config)) ??
+      aacConfig(sampleRate, channels);
   final media = frames.length * aacFrameLength;
   final shown = (length ?? media - priming)
       .clamp(0, max(0, media - priming))
@@ -157,6 +165,22 @@ Uint8List m4aBytes(
               _u(frames.isEmpty ? 0 : 1, 4),
               if (frames.isNotEmpty) _u(offset, 4),
             ]),
+            if (frames.isNotEmpty) ...[
+              // Version 1: its entries' length, 2 bytes, a roll of -1.
+              _full('sgpd', flags: 0x01000000, [
+                ascii.encode('roll'),
+                _u(2, 4),
+                _u(1, 4),
+                _u(0xffff, 2),
+              ]),
+              // All the frames in it.
+              _full('sbgp', [
+                ascii.encode('roll'),
+                _u(1, 4),
+                _u(frames.length, 4),
+                _u(1, 4),
+              ]),
+            ],
           ]),
         ]),
       ]),
@@ -180,6 +204,75 @@ Uint8List m4aBytes(
     out.add(f);
   }
   return out.takeBytes();
+}
+
+/// Whether [description], an AudioEncoder's decoder description, is an
+/// MPEG-4 ES descriptor (Apple's "magic cookie", which WebKit's encoder
+/// gives) rather than an AudioSpecificConfig (Chrome's). No
+/// AudioSpecificConfig starts with a byte below 8: that would be audio
+/// object type 0, none.
+bool isEsDescriptor(Uint8List description) =>
+    description.isNotEmpty && description[0] < 8;
+
+/// The AAC AudioSpecificConfig in [description], an AudioEncoder's
+/// decoder description: itself where it is one; where it's an MPEG-4 ES
+/// descriptor ([isEsDescriptor]), the DecoderSpecificInfo in its
+/// DecoderConfigDescriptor. Null where it holds none (or is cut short).
+Uint8List? audioSpecificConfig(Uint8List description) {
+  if (description.isEmpty) return null;
+  if (!isEsDescriptor(description)) return description;
+  // Each descriptor: its tag, its size (7 bits a byte, at most 4), its
+  // body. Null when [at] doesn't start a whole one.
+  (int, int, int)? read(int at) {
+    if (at >= description.length) return null;
+    final tag = description[at++];
+    var size = 0;
+    for (var i = 0; i < 4; i++) {
+      if (at >= description.length) return null;
+      final b = description[at++];
+      size = (size << 7) | (b & 0x7f);
+      if (b & 0x80 == 0) break;
+    }
+    if (at + size > description.length) return null;
+    return (tag, at, at + size);
+  }
+
+  // The descriptors from [at] to [end]: the first with [tag].
+  (int, int)? find(int tag, int at, int end) {
+    while (at < end) {
+      final d = read(at);
+      if (d == null || d.$3 > end) return null;
+      if (d.$1 == tag) return (d.$2, d.$3);
+      at = d.$3;
+    }
+    return null;
+  }
+
+  var (start, end) = (0, description.length);
+  if (description[start] == 3) {
+    // ES_Descriptor: its ID, flags, and what the flags say comes next.
+    final es = find(3, 0, end);
+    if (es == null || es.$2 - es.$1 < 3) return null;
+    var at = es.$1 + 2;
+    final flags = description[at++];
+    if (flags & 0x80 != 0) at += 2; // the stream it depends on
+    if (flags & 0x40 != 0) {
+      if (at >= es.$2) return null;
+      at += 1 + description[at]; // a URL
+    }
+    if (flags & 0x20 != 0) at += 2; // the OCR stream
+    if (at >= es.$2) return null;
+    (start, end) = (at, es.$2);
+  }
+  if (description[start] == 4) {
+    // DecoderConfigDescriptor: 13 bytes, then its DecoderSpecificInfo.
+    final config = find(4, start, end);
+    if (config == null || config.$2 - config.$1 < 13) return null;
+    (start, end) = (config.$1 + 13, config.$2);
+  }
+  final info = find(5, start, end);
+  if (info == null || info.$1 == info.$2) return null;
+  return Uint8List.fromList(description.sublist(info.$1, info.$2));
 }
 
 /// The AAC-LC AudioSpecificConfig for [sampleRate] and [channels] (1 to

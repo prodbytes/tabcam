@@ -292,6 +292,16 @@ void main() {
       closeTo(0.5, 0.1),
     );
 
+    // Where the browser won't play it to be recorded (Safari, once
+    // Download's tap is too long ago): a WAV rather than nothing.
+    final unplayed = await WebVideoEditor(
+      soundWay: WebSoundWay.recorder,
+      soundContext: () => web.AudioContext()..close(),
+    ).apply(video, gappedAt(0.5), soundOnly: true);
+    expect(unplayed.mimeType, 'audio/wav');
+    expect(unplayed.name, 'sound.wav');
+    expect((await decode(unplayed)).duration, closeTo(2, 0.001));
+
     // Where AAC can't be made at all (Firefox): a WAV, as long exactly.
     final wav = await WebVideoEditor(soundWay: WebSoundWay.wav)
         .apply(video, gappedAt(0.5), soundOnly: true);

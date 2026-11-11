@@ -556,7 +556,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// Makes a file of the edit, on the device ([VideoEditor]), and
   /// downloads it: the video as edited, without sound, or its sound alone,
   /// in [_formats]. A video the edit doesn't change downloads as it is
-  /// when it's already in that format (an MP4); made again otherwise.
+  /// when it's already an MP4 (or M4V), or in the format made here (a
+  /// WebM where the browser records WebM); made again otherwise (a WebM,
+  /// or a MOV, as an MP4).
   Future<void> _download(_Download what) async {
     final editor = _editor;
     final event = _library.byId(widget.eventId);
@@ -582,7 +584,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           : _edit;
       if (what != _Download.sound &&
           !edit.changes(_duration) &&
-          Media.of(input)?.extension == _formats.video.extension) {
+          _formats.keepsAsIs(Media.of(input)?.extension)) {
         await Downloads.saveFile(_library, event, page, label);
         return;
       }

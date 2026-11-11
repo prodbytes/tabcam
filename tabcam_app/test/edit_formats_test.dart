@@ -93,6 +93,26 @@ void main() {
     expect(soundRecorderType, 'audio/mp4;codecs=mp4a.40.2');
   });
 
+  test('an unchanged video downloads as it is when it\'s MPEG-4 or in the '
+      'format made here', () {
+    const webm = EditFormats(video: EditFormat.webm, sound: EditFormat.wav);
+    for (final (extension, standard, firefox) in [
+      ('mp4', true, true),
+      ('MP4', true, true),
+      ('m4v', true, true),
+      ('webm', false, true),
+      ('mov', false, false),
+      (null, false, false),
+    ]) {
+      expect(
+        EditFormats.standard.keepsAsIs(extension),
+        standard,
+        reason: '$extension',
+      );
+      expect(webm.keepsAsIs(extension), firefox, reason: '$extension');
+    }
+  });
+
   test('the phones make MP4, and M4A for the sound alone', () async {
     expect(await const ChannelVideoEditor().formats(), EditFormats.standard);
   });

@@ -2746,16 +2746,29 @@ spec.
     the encoder's delay (measured once) so it's as long as the kept
     part; without the AudioEncoder, MediaRecorder records it as AAC as
     it plays (an older Safari); a WAV only where AAC can't be made
-    (Firefox). The track's volume goes into every output. The menu says
+    (Firefox). Safari 26's AudioEncoder describes its AAC as a whole ES
+    descriptor (Apple's magic cookie), from which the M4A takes the
+    AudioSpecificConfig (as it was, the file played nowhere), and its
+    delay is taken as Apple's 2,112 samples, not measured; every M4A
+    also has a `roll` sample group, as Apple's MP4s do, so Safari and
+    AVFoundation cut only the edit list's delay (checked in Chrome,
+    WebKit, Firefox, AVFoundation, `afconvert` and FFmpeg). Recording
+    the sound as it plays starts its AudioContext at Download's tap,
+    before the slow decoding, and falls back to a WAV if the browser
+    still won't play it. The track's volume goes into every output. The menu says
     each format: "The video (MP4)", "The video without sound (MP4)",
     "The sound only (M4A)" (Spanish and Portuguese too), "(WebM)" and
     "(WAV)" where those are what the browser makes. A video the edit
-    doesn't change downloads as it is only when it's already an MP4
-    (made again otherwise, e.g. a WebM take). New tests: the recorder
-    types' order and fallback, files named by format, the M4A's boxes
-    (`ftyp` M4A, `moov`/`trak`/`mp4a`/`esds`, sample tables, edit list,
-    `mdat`), the menu's labels and file names, an unchanged WebM made
-    again; the browser test (Chrome) checks the video is an MP4 that
-    says its length, the sound only an M4A as long as the kept part with
-    the track at its volume, the recorder and WAV ways too. See
+    doesn't change downloads as it is when it's already MPEG-4 (`.mp4`,
+    `.m4v`; in Firefox too) or in the format made here (a WebM where
+    WebM is recorded); made again otherwise (e.g. a WebM take in
+    Chrome). New tests: the recorder types' order and fallback, files
+    named by format, the M4A's boxes (`ftyp` M4A,
+    `moov`/`trak`/`mp4a`/`esds`, sample tables, edit list, `roll`
+    group, `mdat`), the AudioSpecificConfig taken from Safari's ES
+    descriptor, the menu's labels and file names, which unchanged
+    videos are kept as they are; the browser test (Chrome) checks the
+    video is an MP4 that says its length, the sound only an M4A as long
+    as the kept part with the track at its volume, the recorder and WAV
+    ways, and a WAV when the recorder's sound won't play. See
     [video edit](video-edit.md).
