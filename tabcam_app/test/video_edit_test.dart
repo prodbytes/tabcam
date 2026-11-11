@@ -20,12 +20,19 @@ import 'package:video_player_platform_interface/video_player_platform_interface.
 
 import 'mini_player_test.dart' show FakeVideoPlatform;
 
-/// An editor that records what it's asked and hands back a small WebM.
+/// An editor that records what it's asked and hands back a small file in
+/// [formatsHere] (MP4 and M4A, as the phones and most browsers make).
 class FakeEditor implements VideoEditing {
+  FakeEditor([this.formatsHere = EditFormats.standard]);
+
+  final EditFormats formatsHere;
   final applied = <(XFile, VideoEdit, bool)>[];
 
   @override
   Future<Duration?> length(XFile file) async => null;
+
+  @override
+  Future<EditFormats> formats() async => formatsHere;
 
   @override
   Future<XFile> apply(
@@ -36,10 +43,11 @@ class FakeEditor implements VideoEditing {
   }) async {
     applied.add((video, edit, soundOnly));
     onProgress?.call(0.5);
+    final format = soundOnly ? formatsHere.sound : formatsHere.video;
     return XFile.fromData(
       Uint8List.fromList([9, 9, 9]),
-      name: 'edit.webm',
-      mimeType: 'video/webm',
+      name: '${soundOnly ? 'sound' : 'edit'}.${format.extension}',
+      mimeType: format.mimeType,
     );
   }
 }
@@ -333,15 +341,19 @@ void main() {
   });
   tearDown(() => VideoEditor.instance = null);
 
-  /// A capture with a video (k0), a recording (k1) and an image (k2).
-  Future<(Library, String)> capture(WidgetTester tester) async {
+  /// A capture with a video (k0, a [video] file), a recording (k1) and an
+  /// image (k2).
+  Future<(Library, String)> capture(
+    WidgetTester tester, {
+    String video = 'mp4',
+  }) async {
     final library = Library(PlatformEventStore(), null, (_) async => null);
     late String id;
     await tester.runAsync(() async {
       await library.load();
       var event = await library.create(const []);
       for (final (i, (kind, ext)) in [
-        (PageKind.video, 'mp4'),
+        (PageKind.video, video),
         (PageKind.audio, 'm4a'),
         (PageKind.image, 'jpg'),
       ].indexed) {
@@ -475,9 +487,9 @@ void main() {
     expect(edit.sound, EditSound.original);
     expect(soundOnly, isFalse);
     final (name, bytes, type) = saved.single;
-    expect(name, 'Made-up riff.webm');
+    expect(name, 'Made-up riff.mp4');
     expect(bytes, [9, 9, 9]);
-    expect(type, 'video/webm');
+    expect(type, 'video/mp4');
     // The video's own file is as it was.
     expect(library.byId(id)!.pages.first.extension, 'mp4');
 
@@ -610,7 +622,108 @@ void main() {
     await _settle(tester);
     expect(editor.applied[2].$2.sound, EditSound.track);
     expect(editor.applied[2].$3, isTrue);
-    expect(saved.length, 3);
+    // Each as its format: the videos MP4, the sound alone M4A.
+    expect(
+      [for (final (name, _, type) in saved) (name, type)],
+      [
+        ('Made-up riff.mp4', 'video/mp4'),
+        ('Made-up riff.mp4', 'video/mp4'),
+        ('Made-up riff.m4a', 'audio/mp4'),
+      ],
+    );
+  });
+
+  testWidgets('Download\'s menu says each file\'s format: MP4 and M4A, or '
+      'what the browser makes instead', (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester);
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-download-more')));
+    await _frames(tester);
+    expect(find.text('The video (MP4)'), findsOneWidget);
+    expect(find.text('The video without sound (MP4)'), findsOneWidget);
+    expect(find.text('The sound only (M4A)'), findsOneWidget);
+
+    // A browser that records WebM and can't make AAC (Firefox).
+    VideoEditor.instance = FakeEditor(
+      const EditFormats(video: EditFormat.webm, sound: EditFormat.wav),
+    );
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-download-more')));
+    await _frames(tester);
+    expect(find.text('The video (WebM)'), findsOneWidget);
+    expect(find.text('The video without sound (WebM)'), findsOneWidget);
+    expect(find.text('The sound only (WAV)'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('video-edit-download-sound')));
+    await _settle(tester);
+    final (name, _, type) = saved.single;
+    expect(name, 'Made-up riff.wav');
+    expect(type, 'audio/wav');
+  });
+
+  testWidgets('a video as it is, not in the format Download makes, is made '
+      'again in it', (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester, video: 'webm');
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-download')));
+    await _settle(tester);
+    final (_, edit, soundOnly) = editor.applied.single;
+    expect(edit.changes(s(180)), isFalse);
+    expect(soundOnly, isFalse);
+    final (name, bytes, type) = saved.single;
+    expect(name, 'Made-up riff.mp4');
+    expect(bytes, [9, 9, 9]);
+    expect(type, 'video/mp4');
+
+    // Where the browser makes WebM, a WebM as it is downloads as it is.
+    VideoEditor.instance = editor = FakeEditor(
+      const EditFormats(video: EditFormat.webm, sound: EditFormat.wav),
+    );
+    saved.clear();
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-download')));
+    await _settle(tester);
+    expect(editor.applied, isEmpty);
+    expect(saved.single.$1, 'Made-up riff.webm');
+    expect(saved.single.$2, [1, 2, 3]);
+  });
+
+  testWidgets('an MPEG-4 video as it is downloads as it is, even where the '
+      'browser records WebM', (tester) async {
+    tall(tester);
+    // A browser that records WebM (Firefox): an MP4 isn't made again as a
+    // WebM.
+    VideoEditor.instance = editor = FakeEditor(
+      const EditFormats(video: EditFormat.webm, sound: EditFormat.wav),
+    );
+    final (library, id) = await capture(tester);
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-download')));
+    await _settle(tester);
+    expect(editor.applied, isEmpty);
+    expect(saved.single.$1, 'Made-up riff.mp4');
+    expect(saved.single.$2, [1, 2, 3]);
+
+    // An M4V (MPEG-4 too), where MP4 is made: as it is, not made again.
+    VideoEditor.instance = editor = FakeEditor();
+    saved.clear();
+    final (library2, id2) = await capture(tester, video: 'm4v');
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(editScreen(library2, id2));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-download')));
+    await _settle(tester);
+    expect(editor.applied, isEmpty);
+    expect(saved.single.$1, 'Made-up riff.m4v');
+    expect(saved.single.$2, [1, 2, 3]);
   });
 
   testWidgets('a sound file picked as the track is added to the capture\'s '

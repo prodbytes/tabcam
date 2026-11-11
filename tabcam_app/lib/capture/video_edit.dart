@@ -4,10 +4,12 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../library/page_edit.dart';
+import 'edit_formats.dart';
 import 'web_video_editor_stub.dart'
     if (dart.library.js_interop) 'web_video_editor.dart';
 
 export '../library/page_edit.dart' show EditSound, trackSpan;
+export 'edit_formats.dart' show EditFormat, EditFormats;
 
 /// A basic edit of a video: the part kept, from [start] to [end], and its
 /// sound: kept, removed, or replaced by [track], a recording or sound
@@ -120,6 +122,11 @@ abstract class VideoEditing {
   /// say (the browser, for a file it recorded itself: a take); null where
   /// the player knows.
   Future<Duration?> length(XFile file);
+
+  /// The formats [apply] makes here: the video's (MP4, or WebM in a
+  /// browser that can't record MP4) and the sound's alone (M4A, or WAV in
+  /// a browser that can't make AAC).
+  Future<EditFormats> formats();
 }
 
 /// The video editor for this platform: the browser's ([webVideoEditor]),
@@ -163,6 +170,10 @@ class ChannelVideoEditor implements VideoEditing {
   @override
   Future<Duration?> length(XFile file) async => null;
 
+  /// H.264 and AAC in MP4; AAC in M4A for the sound alone.
+  @override
+  Future<EditFormats> formats() async => EditFormats.standard;
+
   @override
   Future<XFile> apply(
     XFile video,
@@ -179,9 +190,10 @@ class ChannelVideoEditor implements VideoEditing {
     }
     final part = track == null ? null : edit.trackPart;
     final dir = await getTemporaryDirectory();
+    final format = soundOnly ? EditFormat.m4a : EditFormat.mp4;
     final output =
         '${dir.path}/edit-${DateTime.now().millisecondsSinceEpoch}'
-        '.${soundOnly ? 'm4a' : 'mp4'}';
+        '.${format.extension}';
     final path = await channel.invokeMethod<String>('edit', {
       'input': video.path,
       'output': output,
@@ -198,7 +210,7 @@ class ChannelVideoEditor implements VideoEditing {
       },
     });
     if (path == null) throw StateError('The video was not written');
-    return XFile(path, mimeType: soundOnly ? 'audio/mp4' : 'video/mp4');
+    return XFile(path, mimeType: format.mimeType);
   }
 }
 
