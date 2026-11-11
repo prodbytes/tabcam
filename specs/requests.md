@@ -2470,3 +2470,14 @@ spec.
    deleted closes its pane; a reader sees none on the owner's files;
    the file screen's own recording has none. See
    [Cam](cam.md#deleting-from-the-sidebar).
+   From the review: on a capture shared to read, the sidebar now lists
+   the reader's own files (their takes) after the capture's, not those
+   published, so a reader deletes their takes there too (the known
+   limitation that it didn't is gone from
+   [contributions](contributions.md)); beside the Text view, the
+   sidebar's Delete also stops the file if the list plays it (the list
+   plays on in the Text view) and shows in the screen's progress bar,
+   as the list's Delete does. New tests: a reader's take listed after
+   the owner's files, the only one with Delete, deleted from their
+   contribution with its file; a recording the list plays, deleted from
+   the Text view's sidebar, stops.

@@ -44,7 +44,12 @@ capture's files the list shows **Your files** ("Only you and <owner> see
 these"), each with Delete (after a confirmation), playable in the list and
 opening alone on the file screen (shown as it is: no Rename, Rotate or
 saved view). A file the owner published also shows among the capture's
-files, and as **Published** in Your files.
+files, and as **Published** in Your files. The
+[play-along sidebar](cam.md#playing-along-with-a-file) (in Cam, beside
+the Text view, on the file screen) lists the reader's own files too,
+after the capture's (not those published: the capture's copy is
+listed), so they play along with their takes and
+[delete them there](cam.md#deleting-from-the-sidebar).
 
 ## What the owner sees and publishes
 
@@ -135,5 +140,3 @@ Whose it is is the folder's name, never what `contrib.json` says.
   their contribution in the owner's folder; the owner still sees it.
 - Readers' files are read from S3 directly, not through CloudFront (a
   signed grant covers one folder: the capture's).
-- Cam's play-along list shows the capture's files, not the reader's own
-  takes.

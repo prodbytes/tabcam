@@ -114,7 +114,9 @@ plays along.
   delete". Rename and Delete aren't there read only. The play-along
   sidebar's Delete (beside the Text view, in Cam, on the file screen)
   is the same, from the same code
-  ([Cam](cam.md#deleting-from-the-sidebar)). A tap opens the file alone on the file screen, except a link's:
+  ([Cam](cam.md#deleting-from-the-sidebar)): beside the Text view it
+  also stops the file if it plays in the list, and shows in the
+  screen's progress bar. A tap opens the file alone on the file screen, except a link's:
   a tap opens the link itself, outside the app, as the file screen's
   **Open** does (a new tab on the web; the browser, or the app for it
   such as YouTube, on Android and iOS). A link's chevron (**Details**)

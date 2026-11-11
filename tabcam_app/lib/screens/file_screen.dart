@@ -280,7 +280,8 @@ class _FileScreenState extends State<FileScreen> {
   }
 
   /// Whether [page] opens in the sidebar: a recording of the capture's
-  /// own (a contribution's isn't listed there: it plays on its page).
+  /// own (a contribution's opens on its own page, not in the sidebar,
+  /// though a reader's own are listed in it, [PlayAlong.filesOf]).
   static bool _inSidebar(CaptureEvent event, EventPage page) =>
       page.isAudio && event.pages.contains(page);
 
@@ -297,6 +298,7 @@ class _FileScreenState extends State<FileScreen> {
           deletes: true,
           canDelete: !_busy,
           keepId: page.id,
+          run: _run,
           child: child,
         )
       : child;

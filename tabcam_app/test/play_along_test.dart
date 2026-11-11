@@ -1705,8 +1705,9 @@ void main() {
     expect(find.byKey(ValueKey('cam-along-$pdf')), findsNothing);
   });
 
-  testWidgets('on a capture shared to read, the owner\'s files in the sidebar '
-      'have no Delete; the reader may delete only their own', (tester) async {
+  testWidgets('on a capture shared to read, the sidebar lists the reader\'s '
+      'own take after the owner\'s files; only theirs has Delete, and it '
+      'deletes it from their contribution', (tester) async {
     final library = Library(PlatformEventStore(), null, (_) async => null);
     late String id;
     late EventPage song, mine;
@@ -1760,8 +1761,35 @@ void main() {
       ),
     );
     await frames(tester);
-    expect(find.byKey(ValueKey('cam-along-${song.id}')), findsOneWidget);
-    expect(find.byIcon(Icons.delete_outline), findsNothing);
+    final songRow = find.byKey(ValueKey('cam-along-${song.id}'));
+    final mineRow = find.byKey(ValueKey('cam-along-${mine.id}'));
+    expect(songRow, findsOneWidget);
+    expect(mineRow, findsOneWidget);
+    expect(
+      tester.getTopLeft(mineRow).dy,
+      greaterThan(tester.getTopLeft(songRow).dy),
+    );
+    expect(find.byKey(ValueKey('cam-along-delete-${song.id}')), findsNothing);
+    final delete = find.byKey(ValueKey('cam-along-delete-${mine.id}'));
+    expect(find.descendant(of: mineRow, matching: delete), findsOneWidget);
+    expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+
+    // Deleted, from their contribution and with its file; the owner's
+    // files stay.
+    late bool kept;
+    await tester.runAsync(() async => kept = await library.hasPage(id, mine));
+    expect(kept, isTrue);
+    await tester.tap(delete);
+    await frames(tester);
+    expect(find.text('Delete "Video 1"?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await frames(tester);
+    final now = library.byId(id)!;
+    expect(now.myContribution!.pages, isEmpty);
+    expect(now.pages.map((p) => p.id), contains(song.id));
+    await tester.runAsync(() async => kept = await library.hasPage(id, mine));
+    expect(kept, isFalse);
+    expect(mineRow, findsNothing);
 
     // Shared to edit, the owner's files show it.
     await tester.runAsync(

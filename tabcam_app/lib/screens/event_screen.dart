@@ -445,12 +445,16 @@ class _EventScreenState extends State<EventScreen> {
     _library,
     event,
     page,
-    letGo: () async {
-      // It may be the one playing in the list.
-      if (_player.holds(page)) await _player.stop();
-    },
+    letGo: () => _letGo(page),
     run: _run,
   );
+
+  /// Lets go of [page], about to be deleted (from the list or the Text
+  /// view's sidebar): it may be the one playing in the list, which plays on
+  /// in the Text view.
+  Future<void> _letGo(EventPage page) async {
+    if (_player.holds(page)) await _player.stop();
+  }
 
   /// Files the user dragged onto the screen ([FileDropArea]): added, as
   /// Add's Files would.
@@ -1171,6 +1175,9 @@ class _EventScreenState extends State<EventScreen> {
                               footer: const NotationSheet(),
                               deletes: !widget.byLink,
                               canDelete: !_busy,
+                              // As the list's Delete: its player, its run.
+                              letGo: _letGo,
+                              run: _run,
                               child: _textView(event),
                             ),
                     ),

@@ -32,7 +32,8 @@ import 'link_frame.dart';
 /// file screen lists its pages as well ([withImages]), to follow one
 /// while it plays. With [withText] (Cam and the file screen), the
 /// capture's text tab is listed first, to follow in the same pane
-/// ([followsText]).
+/// ([followsText]). On a capture shared to read, the reader's own files
+/// (their takes) are listed too, after the capture's ([filesOf]).
 class PlayAlong extends ChangeNotifier {
   PlayAlong(
     this.library,
@@ -51,6 +52,20 @@ class PlayAlong extends ChangeNotifier {
   final Library library;
   final String eventId;
   final BackingTrack track;
+
+  /// The files of [event] the sidebar may list: the capture's own, then,
+  /// on one the user contributes to, their own contribution's (Cam's
+  /// takes among them), but those published (the capture's copy is
+  /// listed already).
+  static List<EventPage> filesOf(CaptureEvent event) => [
+    ...event.pages,
+    for (final page in event.myContribution?.pages ?? const <EventPage>[])
+      if (!event.isPublished(page)) page,
+  ];
+
+  /// Whether [event] still has [page] among the files the sidebar lists.
+  static bool _has(CaptureEvent? event, EventPage page) =>
+      event != null && filesOf(event).any((p) => p.id == page.id);
 
   /// Whether the sidebar lists the capture's PDFs, to follow one.
   final bool withPdfs;
@@ -97,8 +112,11 @@ class PlayAlong extends ChangeNotifier {
   /// Whether the capture has anything to play along with (or, with
   /// [withPdfs], a PDF to follow; with [withText], its text). The text
   /// alone doesn't open the sidebar by itself: ♫ does.
-  bool get available =>
-      text != null || (library.byId(eventId)?.pages.any(_listed) ?? false);
+  bool get available {
+    if (text != null) return true;
+    final event = library.byId(eventId);
+    return event != null && filesOf(event).any(_listed);
+  }
 
   /// Whether the sidebar lists [page].
   bool _listed(EventPage page) => BackingTrack.plays(page) || follows(page);
@@ -109,7 +127,8 @@ class PlayAlong extends ChangeNotifier {
 
   /// The capture's PDFs and images the sidebar lists, to follow one.
   List<EventPage> get toFollow => [
-    ...?library.byId(eventId)?.pages.where(follows),
+    if (library.byId(eventId) case final event?)
+      ...filesOf(event).where(follows),
   ];
 
   /// Shows [page] (a PDF or an image) beside the screen, or hides it,
@@ -169,11 +188,12 @@ class PlayAlong extends ChangeNotifier {
   void _loadFirst() {
     final event = library.byId(eventId);
     if (event == null || track.page != null) return;
+    final files = filesOf(event);
     final first =
-        event.pages
+        files
             .where((p) => p.id == startId && BackingTrack.plays(p))
             .firstOrNull ??
-        event.pages.where(BackingTrack.plays).firstOrNull;
+        files.where(BackingTrack.plays).firstOrNull;
     if (first != null) unawaited(track.choose(event, first, play: false));
   }
 
@@ -196,14 +216,12 @@ class PlayAlong extends ChangeNotifier {
   void _changed() {
     final event = library.byId(eventId);
     // The file followed, deleted (or synced away): the pane closes.
-    if (_followed case final followed?
-        when event?.pages.any((p) => p.id == followed.id) != true) {
+    if (_followed case final followed? when !_has(event, followed)) {
       _followed = null;
       notifyListeners();
     }
     // The file playing, deleted (or synced away): the player lets go.
-    if (track.page case final playing?
-        when event?.pages.any((p) => p.id == playing.id) != true) {
+    if (track.page case final playing? when !_has(event, playing)) {
       unawaited(track.close());
     }
     // The text, cleared: its pane closes.
@@ -212,7 +230,7 @@ class PlayAlong extends ChangeNotifier {
       notifyListeners();
     }
     if (_opened || !opensByItself) return;
-    if (event == null || !event.pages.any(_listed)) return;
+    if (event == null || !filesOf(event).any(_listed)) return;
     _opened = true;
     _open = true;
     _loadFirst();
@@ -329,6 +347,8 @@ class PlayAlongBeside extends StatelessWidget {
     this.deletes = false,
     this.canDelete = true,
     this.keepId,
+    this.letGo,
+    this.run,
   });
 
   final PlayAlong along;
@@ -345,6 +365,17 @@ class PlayAlongBeside extends StatelessWidget {
   /// A file that shows no Delete in the sidebar: the file screen's own
   /// (its app bar deletes it, and the screen with it).
   final String? keepId;
+
+  /// Before a file deleted from the sidebar goes, once the user confirms,
+  /// besides the sidebar's own player: the screen lets go of it too (the
+  /// event screen's list player, which may be playing it).
+  final Future<void> Function(EventPage page)? letGo;
+
+  /// Runs a delete from the sidebar ([deleteFile]'s `run`): the screen's
+  /// own, as its list's Delete does (its progress bar, its message on a
+  /// failure); without it, a failure shows in a snack bar.
+  final Future<void> Function(String failure, Future<void> Function() task)?
+  run;
   final Widget Function(LinkFrameController controller) linkFrame;
 
   /// Under the sidebar's list, if anything (the Text view's notation
@@ -368,7 +399,8 @@ class PlayAlongBeside extends StatelessWidget {
 
   /// Deletes [page] from the sidebar, as the capture's list does
   /// ([deleteFile]), once the user confirms: if it's what plays, the
-  /// player lets go of it first; if it's followed, its pane closes.
+  /// player lets go of it first (the screen's too, [letGo]); if it's
+  /// followed, its pane closes.
   Future<void> _delete(BuildContext context, EventPage page) async {
     onUse?.call();
     final event = along.library.byId(along.eventId);
@@ -378,7 +410,11 @@ class PlayAlongBeside extends StatelessWidget {
         along.library,
         event,
         page,
-        letGo: () => along.letGo(page),
+        letGo: () async {
+          await along.letGo(page);
+          await letGo?.call(page);
+        },
+        run: run,
       );
     }
     onUse?.call();
@@ -1157,7 +1193,10 @@ class PlayAlongSidebar extends StatelessWidget {
         listenable: Listenable.merge([library, track]),
         builder: (context, _) {
           final event = library.byId(eventId);
-          final pages = [...?event?.pages.where(BackingTrack.plays)];
+          final pages = [
+            if (event != null)
+              ...PlayAlong.filesOf(event).where(BackingTrack.plays),
+          ];
           final primary = Theme.of(context).colorScheme.primary;
           return ListView(
             padding: EdgeInsets.zero,

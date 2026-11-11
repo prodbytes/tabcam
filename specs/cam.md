@@ -246,7 +246,10 @@ to play, with the first of them loaded in it, paused (`BackingTrack`,
 [`backing_track.dart`](../tabcam_app/lib/capture/backing_track.dart)),
 and under it the list of them in the capture's order (its takes too),
 under **Play along**, each with its icon and name; the list scrolls, the
-frame stays.
+frame stays. On a capture shared to read, the reader's own files (their
+[contribution](contributions.md)'s, their takes among them) are listed
+too, after the capture's, but not one published (the capture's copy is
+listed) (`PlayAlong.filesOf`).
 **Play along** (♫ in the app bar, in the primary colour while open)
 hides and shows the sidebar, frame and all; hiding it pauses what plays
 (kept offstage, so a link's page isn't reloaded). A capture with none of
@@ -277,14 +280,17 @@ be deleted (the message says to delete the event instead), and a
 failure shows "Couldn't delete". It shows only where the list would
 offer it: on the user's own captures and those shared with them to
 edit, on every file; on a capture shared to read, on none of the
-owner's (the sidebar lists only the capture's own files, so a reader's
-takes, in their [contribution](contributions.md), are deleted from the
-list's "Your files"). Not in Cam's Premium preview, nor on a capture
-opened by its link. It's greyed while a take records, saves or plays
+owner's, only on the reader's own (their takes, listed after the
+capture's files), which it deletes from their
+[contribution](contributions.md), file and all. Not in Cam's Premium
+preview, nor on a capture opened by its link. It's greyed while a take records, saves or plays
 back, and while the screen works. Once deleted, the file loaded in the
 player (playing or paused) is let go of: it stops and the frame closes,
 nothing else loading by itself; a PDF or page followed closes its pane;
-the take Cam's Play would play back gone, Play is greyed. A file
+the take Cam's Play would play back gone, Play is greyed. Beside the
+Text view, a recording the capture's list was playing (it plays on in
+the Text view) stops too, as the list's Delete stops it, and the delete
+shows in the screen's progress bar, as the list's does. A file
 deleted anywhere else (the list, a sync) is let go of the same way. On
 the [file screen](event-screen.md#file-screen), the file it shows (a
 recording, listed in its own sidebar) has no Delete there: the screen's
