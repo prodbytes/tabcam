@@ -14,9 +14,9 @@ import 'media_url.dart';
 /// A video page: a play button until tapped, then the video, with a play /
 /// pause button and tap to pause and resume. It plays from the page's file
 /// (from memory on the web), as its edit says ([EditedPlayback], with the
-/// plan Download renders: the kept part, with its new track along it, the
-/// track's length found as the editor finds it, [mediaLength]), and is let
-/// go when the page scrolls away.
+/// plan Download renders: the kept part, its own sound and its song mixed,
+/// the song's length found as the editor finds it, [mediaLength]), and is
+/// let go when the page scrolls away.
 class VideoPage extends StatefulWidget {
   const VideoPage({
     super.key,
@@ -54,7 +54,8 @@ class _VideoPageState extends State<VideoPage> {
   Future<void> _edit(VideoPlayerController controller) async {
     final edit = widget.page.edit;
     if (edit == null) return;
-    final trackPage = edit.sound == EditSound.track
+    // The song lane's player, when it's heard (a muted one isn't opened).
+    final trackPage = edit.songAudible
         ? widget.event.pages.where((p) => p.id == edit.trackId).firstOrNull
         : null;
     if (trackPage != null) {

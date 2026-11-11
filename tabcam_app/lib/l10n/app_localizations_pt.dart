@@ -1906,9 +1906,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditNotHere => 'Aqui não dá para editar vídeos';
 
   @override
-  String get videoEditTrim => 'Cortar';
-
-  @override
   String videoEditKeep(String start, String end) {
     return 'Manter $start–$end';
   }
@@ -1920,18 +1917,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditTrimEnd => 'Terminar aqui';
 
   @override
-  String get videoEditSound => 'Som';
-
-  @override
-  String get videoEditSoundOriginal => 'Original';
-
-  @override
-  String get videoEditSoundNone => 'Nenhum';
-
-  @override
-  String get videoEditSoundTrack => 'Nova faixa';
-
-  @override
   String get videoEditPickTrack => 'Escolher uma faixa';
 
   @override
@@ -1939,9 +1924,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoEditTrackFile => 'Um arquivo de som…';
-
-  @override
-  String get videoEditNoTrack => 'Nenhuma faixa escolhida ainda';
 
   @override
   String get videoEditTrackWith => 'A faixa começa junto com o vídeo';
@@ -1967,7 +1949,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoEditTrackBar =>
-      'A faixa ao longo da parte mantida: arraste para mover, as pontas para cortar';
+      'Ao longo do vídeo: arraste para mover, as pontas para cortar';
 
   @override
   String get videoEditTrackEarlier => 'Um décimo de segundo antes';
@@ -1976,23 +1958,67 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditTrackLater => 'Um décimo de segundo depois';
 
   @override
-  String get videoEditTrackVolume => 'Volume da faixa';
-
-  @override
   String videoEditTrackVolumeLevel(int percent) {
     return '$percent%';
   }
 
   @override
-  String get videoEditTrackMute => 'Silenciar a faixa';
-
-  @override
-  String get videoEditTrackUnmute => 'Ativar o som da faixa';
-
-  @override
   String videoEditTrackUsed(String start, String end) {
     return 'Usando $start–$end da faixa';
   }
+
+  @override
+  String get videoEditLaneTake => 'Take';
+
+  @override
+  String get videoEditLaneSong => 'Música';
+
+  @override
+  String get videoEditLaneVideo => 'Som do vídeo';
+
+  @override
+  String get videoEditLaneTrack => 'Faixa';
+
+  @override
+  String get videoEditAddSong => 'Adicionar uma música';
+
+  @override
+  String get videoEditAddTrack => 'Adicionar uma faixa';
+
+  @override
+  String get videoEditRemoveSong => 'Remover';
+
+  @override
+  String videoEditLaneVolume(String lane) {
+    return 'Volume ($lane)';
+  }
+
+  @override
+  String videoEditLaneMute(String lane) {
+    return 'Silenciar ($lane)';
+  }
+
+  @override
+  String videoEditLaneUnmute(String lane) {
+    return 'Ativar o som ($lane)';
+  }
+
+  @override
+  String get videoEditTakeBar =>
+      'O vídeo inteiro, com a parte mantida em destaque: arraste as pontas para cortá-lo, e os dois sons junto';
+
+  @override
+  String get videoEditKeptStart => 'Início da parte mantida';
+
+  @override
+  String get videoEditKeptEnd => 'Fim da parte mantida';
+
+  @override
+  String get videoEditRuler =>
+      'Onde a prévia está: toque ou arraste para ir a outro ponto';
+
+  @override
+  String get videoEditAbout => 'Sobre a edição';
 
   @override
   String get eventPlayLink => 'Reproduzir em uma nova aba';

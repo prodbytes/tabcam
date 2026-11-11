@@ -92,14 +92,14 @@ review notes ([app stores](app-stores.md)).
   12/8), a light per beat, Start / Stop; clicks made on the device (Web
   Audio on the web, a looping WAV on the phones), accented on the bar.
 - [Video edit](video-edit.md): basic edits of a video from its file
-  screen: trim its start and end; keep its sound, take it out, or
-  replace it with a new track (one of the capture's recordings, or a
-  sound file, added to them), shifted to fit the video, at a volume set
-  at the left of its bar. The edit is kept
-  with the video and played as it says (muted, the track along it), no
-  file made; Download makes one on the device: the video or the video
-  without sound (MP4), or the sound only (M4A; WebM and WAV where a
-  browser can't make those).
+  screen, on one time axis in two sound lanes, mixed: the Take lane
+  (the video, trimmed by its grips, its own sound's volume and Mute)
+  and the Song lane (one of the capture's recordings, videos or takes,
+  or a sound file, added to them, placed along the video, with its own
+  volume and Mute). The edit is kept with the video (older apps still
+  read its sound) and played as it says, no file made; Download makes
+  one on the device: the video or the video without sound (MP4), or
+  the sound only (M4A; WebM and WAV where a browser can't make those).
 - [Hidden images](hidden-images.md): the owner hides a capture's photos
   and scans, for everyone; it then shows only the text tab, videos and
   links, and exports leave the images out.

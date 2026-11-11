@@ -131,8 +131,9 @@ never synced is gone at once.
 in the old one's place, and deletes the old file: page files never change
 once written, which is what lets cloud sync compare pages by name.
 
-A video's **edit** ([video edit](video-edit.md): the part kept, its
-sound, a recording of the capture's as its new track) is kept on its page
+A video's **edit** ([video edit](video-edit.md): the part kept, its own
+sound's level, and a song from the capture's files mixed with it, where
+it plays and its level) is kept on its page
 (`edit`, in the details), not in its file, which stays as it is; it
 changes and syncs as a page's name does.
 

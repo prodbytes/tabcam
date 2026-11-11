@@ -222,11 +222,11 @@ The file is shown whole, as what it is:
   left (then ♫ is there even with nothing to play, the sidebar opened
   by it); no PDFs or pages to follow.
 - **Videos** show a play button; tapped, they play in place, looping
-  (as their [edit](video-edit.md) says: the kept part, muted with its
-  new track along it), with a bar at the bottom: a **play / pause**
+  (as their [edit](video-edit.md) says: the kept part, its own sound and
+  its song mixed, each at its volume), with a bar at the bottom: a **play / pause**
   button and a scrubbable progress bar. A tap on the video also pauses and resumes. A video that
-  can't play says so. **Edit** (below) trims it and changes its sound
-  ([video edit](video-edit.md)).
+  can't play says so. **Edit** (below) trims it and mixes a song with
+  its sound ([video edit](video-edit.md)).
 - **Recordings** (audio) of the capture's own open in the play-along
   sidebar, as usual: it opens with the recording loaded in its player
   frame, paused, marked in its list (not the first file to play, as
@@ -277,9 +277,10 @@ Its tools, along the bottom:
   the screen stays on it.
 - **Edit** (scissors, videos only), before Rename: the
   [video edit](video-edit.md) screen over this one (the video's own
-  player let go meanwhile, so only the preview plays): trim, and the
-  sound kept, removed or replaced by a new track, kept with the video as
-  it's made; back here, the video plays as edited.
+  player let go meanwhile, so only the preview plays): trim, and two
+  sound lanes mixed (the video's own and a song, each with its volume
+  and Mute), kept with the video as it's made; back here, the video
+  plays as edited.
 - **Rename** (pencil), just before Delete: asks for the file's name,
   prefilled, as on the list (saving it empty goes back to the default
   name).

@@ -62,7 +62,8 @@ class SongClip {
   String toString() => 'SongClip(at $at: $from–$to×$speed)';
 }
 
-/// The video's own sound, at [volume] (0 to 1).
+/// The video's own sound, at [volume] (0 to 1; 0 only in a preview's
+/// plan, for a lane that isn't heard).
 @immutable
 class OwnLane {
   const OwnLane({this.volume = 1});
@@ -140,8 +141,11 @@ class PlanTimeline {
 /// are in the output, where 0 is the kept part's start, except [start]
 /// and [end], the kept part of [input].
 ///
-/// Layers drawn over the video (the tab, a title, a watermark) and fades
-/// come in later steps; for now a plan has none.
+/// The two lanes are mixed: the video's own sound ([own]) and the song
+/// ([song]), each at its volume. Layers drawn over the video (the tab, a
+/// title, a watermark) and the fades in and out (the picture from and to
+/// black, both lanes' volumes ramping with it) come in later steps; for
+/// now a plan has none, and each lane's volume is one level throughout.
 @immutable
 class RenderPlan {
   const RenderPlan({
@@ -159,7 +163,9 @@ class RenderPlan {
   /// The plan of [edit] (null: the whole video as it is) for [kind], made
   /// in [formats]: [input] is the video, [duration] long, a file with
   /// [inputExtension]; [songFile] the song lane's file, [songLength]
-  /// long. A preview's plan leaves the files out.
+  /// long. A [preview]'s plan leaves the files out, and keeps a lane that
+  /// isn't heard (muted, or at 0%) at volume 0, so muting and unmuting
+  /// only change a volume and move nothing; Download's leaves it out.
   factory RenderPlan.of(
     PageEdit? edit, {
     XFile? input,
@@ -169,15 +175,25 @@ class RenderPlan {
     Duration songLength = Duration.zero,
     RenderKind kind = RenderKind.video,
     EditFormats formats = EditFormats.standard,
+    bool preview = false,
   }) {
     final start = edit?.start ?? Duration.zero;
     final end = edit?.end ?? duration;
     final length = end - start;
-    final sound = edit?.sound ?? EditSound.original;
     final audible = kind != RenderKind.silent;
+    OwnLane? own;
+    if (audible && (edit == null || edit.ownAudible)) {
+      own = OwnLane(volume: edit?.ownVolume ?? 1);
+    } else if (audible && preview) {
+      own = const OwnLane(volume: 0);
+    }
     SongLane? song;
-    if (audible && edit != null && sound == EditSound.track) {
-      // The manual song lane: one clip, as the track bar places it.
+    if (audible &&
+        edit != null &&
+        edit.hasSong &&
+        (preview || edit.songAudible)) {
+      // The manual song lane (an auto one too, for now, as the one clip
+      // its track keys approximate it by): one clip, as the bar places it.
       final span = trackSpan(
         length,
         songLength,
@@ -188,7 +204,7 @@ class RenderPlan {
       song = SongLane(
         file: songFile,
         page: edit.trackId,
-        volume: edit.trackVolume,
+        volume: edit.songAudible ? edit.trackVolume : 0,
         clips: clampClips([
           if (span != null)
             SongClip(at: span.gap, from: span.from, to: span.to),
@@ -202,7 +218,7 @@ class RenderPlan {
       duration: duration,
       format: kind == RenderKind.sound ? formats.sound : formats.video,
       video: kind != RenderKind.sound,
-      own: audible && sound == EditSound.original ? const OwnLane() : null,
+      own: own,
       song: song,
       keepsFormat:
           kind != RenderKind.sound && formats.keepsAsIs(inputExtension),
@@ -240,7 +256,9 @@ class RenderPlan {
   Duration get length => end - start;
 
   /// Whether the output has any sound in it.
-  bool get hasSound => own != null || (song?.clips.isNotEmpty ?? false);
+  bool get hasSound =>
+      (own != null && own!.volume > 0) ||
+      (song != null && song!.volume > 0 && song!.clips.isNotEmpty);
 
   /// Whether Download can save [input] as it is: the whole video, its own
   /// sound as it is and nothing else, already in the format made. Only

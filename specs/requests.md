@@ -2899,3 +2899,59 @@ spec.
     playing a track whose player can't say its length, and in Chrome the
     plan rendered with several clips and a track trimmed at its end. See
     [video edit](video-edit.md#the-render-plan).
+15. **(Editor redesign, step 7) Two audio lanes: the take's own sound and
+    a song, mixed.** The video editor no longer chooses one sound
+    (Original, None or New track): the video's own sound and a song are
+    two lanes on one time axis, both heard, mixed, each with its volume
+    and Mute at its left. The screen now has a ruler (tapped or dragged,
+    the preview goes there; it replaces the preview's scrub bar), the
+    **Take** lane (the whole video, the part kept bright, its grips the
+    trim, which replaces the Trim section; the song stays put along the
+    video and is cut with it) and the **Song** lane (a dashed "Add a
+    song" until one is picked; the picker lists the capture's videos
+    and takes too now; dragged, trimmed by its ends, ⋮ Change or
+    Remove), with a playhead across them; for a video Cam didn't record
+    they read "Video sound" and "Track". Start here and End here moved
+    to the row under the preview; the song's details (its name and the
+    tenth-of-a-second nudges) sit under the lanes; the "kept, not
+    applied" hint moved behind ⓘ in the app bar. **Mute keeps the
+    level** (it used to set it to 0%, and an edit reopened at 100%).
+    The edit is stored as version 2 (`v: 2`): new keys `ownVolume`,
+    `ownMuted`, `songMuted` and `song` (`manual`, `off`; `auto` is
+    reserved for the song lined up by itself, a later step), beside the
+    old keys, which keep their meaning; `sound` is still written for
+    older apps, worked out from the lanes (`track` when only the song
+    is heard, `none` when neither is, `original` otherwise). An edit
+    from before is read by its old `sound` (Original keeps a picked
+    track as a muted manual lane, None mutes both, Track mutes the own
+    sound) and downloads as before; an edit whose `sound` an older app
+    changed since is read with that app's meaning for the lanes, its
+    levels and newer keys kept. `PageEdit` has one `copyWith` (in place
+    of `withTrackId` and `withTrackVolume`), its `==`, `hashCode` and
+    `toString` from one list of fields; Reset now gives no edit at all
+    (the song taken out). The preview (`EditedPlayback`) plays the own
+    lane at its level and keeps a muted lane at 0 (muting re-seeks
+    nothing), and every 2 seconds seeks the song back when it's drifted
+    more than 150 ms. The web renderer mixes both lanes offline first
+    (the same mix the sound only uses; 22.05 kHz past 8 minutes) and
+    plays the mix into the recording, the muted video following its
+    clock (its speed nudged to 0.98–1.02 while more than 40 ms off);
+    Android and iOS already mixed both lanes from step 2's plan. The
+    fades in and out (3 s by default, configurable, the picture from
+    and to black and both lanes ramping with it) come in a later step:
+    each lane's level is one level throughout for now. Tests
+    (`test/two_lanes_test.dart`, `test/video_edit_test.dart`,
+    `test/render_plan_test.dart`, `test/web_video_editor_test.dart`):
+    each old form read and downloaded as before, `sound` worked out
+    from the lanes, an older app's change winning with the levels and
+    newer keys kept, mute keeping the level through JSON, every field
+    round-tripped and counted in `==`, `EditedPlayback` with fake
+    players (the own level, 200 ms of drift re-sought, 100 ms let be, a
+    level change seeking nothing), and on the screen two volume
+    controls with their own keys, the picker's videos and takes, muting
+    both lanes turning Sound only off, the Take grips trimming both
+    lanes, Remove keeping `song: off`, Reset giving no edit, and both
+    lanes fitting at the largest text size on a phone and a wide
+    screen; in Chrome the offline mix is the sum of the lanes to the
+    sample, and the own lane's level reaches the video. See
+    [video edit](video-edit.md).

@@ -2528,10 +2528,6 @@
   "@videoEditNotHere": {
     "description": "Video edit: Save on a platform without a video editor"
   },
-  "videoEditTrim": "Trim",
-  "@videoEditTrim": {
-    "description": "Video edit: the trim section's title"
-  },
   "videoEditKeep": "Keep {start}–{end}",
   "@videoEditKeep": {
     "description": "Video edit: the part of the video kept, from start to end (times like 0:12.3)",
@@ -2552,22 +2548,6 @@
   "@videoEditTrimEnd": {
     "description": "Video edit: keeps until where the preview is"
   },
-  "videoEditSound": "Sound",
-  "@videoEditSound": {
-    "description": "Video edit: the sound section's title"
-  },
-  "videoEditSoundOriginal": "Original",
-  "@videoEditSoundOriginal": {
-    "description": "Video edit: keep the video's own sound"
-  },
-  "videoEditSoundNone": "None",
-  "@videoEditSoundNone": {
-    "description": "Video edit: take the sound out"
-  },
-  "videoEditSoundTrack": "New track",
-  "@videoEditSoundTrack": {
-    "description": "Video edit: replace the sound with a new track"
-  },
   "videoEditPickTrack": "Pick a track",
   "@videoEditPickTrack": {
     "description": "Video edit: the sheet's title, and the button to pick the new track"
@@ -2579,10 +2559,6 @@
   "videoEditTrackFile": "A sound file…",
   "@videoEditTrackFile": {
     "description": "Video edit: the sheet's option to pick a sound file from the device"
-  },
-  "videoEditNoTrack": "No track picked yet",
-  "@videoEditNoTrack": {
-    "description": "Video edit: New track chosen, no track picked"
   },
   "videoEditTrackWith": "The track starts with the video",
   "@videoEditTrackWith": {
@@ -2618,9 +2594,9 @@
   "@dictionaryToSide": {
     "description": "Dictionary panel: the Rotate button, while it is under the screen; puts it back at the side"
   },
-  "videoEditTrackBar": "The track along the kept part: drag it to move it, its ends to trim it",
+  "videoEditTrackBar": "Along the video: drag it to move it, its ends to trim it",
   "@videoEditTrackBar": {
-    "description": "Video edit: what the track bar does (tooltip, screen reader)"
+    "description": "Video edit: the song lane's bar, for screen readers and the mouse"
   },
   "videoEditTrackEarlier": "A tenth of a second earlier",
   "@videoEditTrackEarlier": {
@@ -2630,10 +2606,6 @@
   "@videoEditTrackLater": {
     "description": "Video edit: nudges the track later"
   },
-  "videoEditTrackVolume": "Track volume",
-  "@videoEditTrackVolume": {
-    "description": "Video edit: the track's volume control, at the left of the track bar (tooltip, screen reader); opens a slider"
-  },
   "videoEditTrackVolumeLevel": "{percent}%",
   "@videoEditTrackVolumeLevel": {
     "description": "Video edit: the track's volume, as a percentage (0 to 100), under the volume control and beside its slider",
@@ -2642,14 +2614,6 @@
         "type": "int"
       }
     }
-  },
-  "videoEditTrackMute": "Mute the track",
-  "@videoEditTrackMute": {
-    "description": "Video edit: the volume slider's speaker button, while the track has sound; silences it"
-  },
-  "videoEditTrackUnmute": "Unmute the track",
-  "@videoEditTrackUnmute": {
-    "description": "Video edit: the volume slider's speaker button, while the track is muted; puts back its level"
   },
   "videoEditTrackUsed": "Using {start}–{end} of the track",
   "@videoEditTrackUsed": {
@@ -2662,6 +2626,81 @@
         "type": "String"
       }
     }
+  },
+  "videoEditLaneTake": "Take",
+  "@videoEditLaneTake": {
+    "description": "Video edit: the take's own sound's lane (a video Cam recorded)"
+  },
+  "videoEditLaneSong": "Song",
+  "@videoEditLaneSong": {
+    "description": "Video edit: the lane of the song a take was played along with"
+  },
+  "videoEditLaneVideo": "Video sound",
+  "@videoEditLaneVideo": {
+    "description": "Video edit: the video's own sound's lane (a video Cam didn't record)"
+  },
+  "videoEditLaneTrack": "Track",
+  "@videoEditLaneTrack": {
+    "description": "Video edit: the lane of a sound added to a video Cam didn't record"
+  },
+  "videoEditAddSong": "Add a song",
+  "@videoEditAddSong": {
+    "description": "Video edit: the empty song lane of a take, to pick a song"
+  },
+  "videoEditAddTrack": "Add a track",
+  "@videoEditAddTrack": {
+    "description": "Video edit: the empty track lane of a video, to pick a sound"
+  },
+  "videoEditRemoveSong": "Remove",
+  "@videoEditRemoveSong": {
+    "description": "Video edit: the song lane's menu: takes the song out of the lane"
+  },
+  "videoEditLaneVolume": "Volume ({lane})",
+  "@videoEditLaneVolume": {
+    "description": "Video edit: a lane's volume control (lane: Take, Song, Video sound or Track)",
+    "placeholders": {
+      "lane": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditLaneMute": "Mute ({lane})",
+  "@videoEditLaneMute": {
+    "description": "Video edit: mutes a lane, keeping its level (lane: Take, Song, Video sound or Track)",
+    "placeholders": {
+      "lane": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditLaneUnmute": "Unmute ({lane})",
+  "@videoEditLaneUnmute": {
+    "description": "Video edit: unmutes a lane (lane: Take, Song, Video sound or Track)",
+    "placeholders": {
+      "lane": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditTakeBar": "The whole video, the part kept bright: drag its ends to trim it, and both sounds with it",
+  "@videoEditTakeBar": {
+    "description": "Video edit: the take lane's bar, for screen readers and the mouse"
+  },
+  "videoEditKeptStart": "Start of the part kept",
+  "@videoEditKeptStart": {
+    "description": "Video edit: the take lane's left grip"
+  },
+  "videoEditKeptEnd": "End of the part kept",
+  "@videoEditKeptEnd": {
+    "description": "Video edit: the take lane's right grip"
+  },
+  "videoEditRuler": "Where the preview is: tap or drag to go elsewhere",
+  "@videoEditRuler": {
+    "description": "Video edit: the time ruler over the lanes"
+  },
+  "videoEditAbout": "About the edit",
+  "@videoEditAbout": {
+    "description": "Video edit: the app bar's info button, which says how the edit is kept"
   },
   "eventPlayLink": "Play in a new tab",
   "@eventPlayLink": {

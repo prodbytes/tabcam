@@ -134,7 +134,7 @@ class Library extends ChangeNotifier {
         filter: page.filter,
         kind: page.kind,
         extension: page.extension,
-        edit: page.edit?.withTrackId(ids[page.edit?.trackId]),
+        edit: page.edit?.copyWith(trackId: ids[page.edit?.trackId]),
         take: page.take,
         extra: page.extra,
       );

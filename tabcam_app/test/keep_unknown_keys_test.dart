@@ -24,10 +24,8 @@ const _takeLog = {
   'song': <Object?>[],
 };
 
-/// What a newer app might add to an edit.
-const _editV2 = {
-  'v': 2,
-  'ownVolume': 0.8,
+/// What a newer app might add to an edit (keys this one doesn't know).
+const _editNewer = {
   'nudgeMs': -120,
   'title': {
     'on': true,
@@ -175,25 +173,28 @@ void main() {
   group('edits', () {
     test('keep keys they don\'t know through every rebuild', () {
       final json = {
+        'v': 2,
         'startMs': 1000,
         'endMs': 5000,
         'sound': 'track',
         'trackId': 'p2',
         'trackVolume': 0.5,
-        ..._editV2,
+        'ownMuted': true,
+        'song': 'manual',
+        ..._editNewer,
       };
       final edit = PageEdit.fromJson(json)!;
-      expect(edit.extra, _editV2);
+      expect(edit.extra, _editNewer);
       expect(_encoded(edit.toJson()), _encoded(json));
-      final changed = edit.withTrackVolume(0.3).withTrackId('p9');
+      final changed = edit.copyWith(trackVolume: 0.3).copyWith(trackId: 'p9');
       expect(changed.trackVolume, 0.3);
       expect(changed.trackId, 'p9');
-      expect(changed.extra, _editV2);
-      expect(_encoded(changed.toJson())['title'], _editV2['title']);
+      expect(changed.extra, _editNewer);
+      expect(_encoded(changed.toJson())['title'], _editNewer['title']);
     });
 
     test('are equal only with the same extra keys', () {
-      final a = PageEdit.fromJson({'startMs': 0, 'endMs': 10, ..._editV2})!;
+      final a = PageEdit.fromJson({'startMs': 0, 'endMs': 10, ..._editNewer})!;
       final b = PageEdit.fromJson(_encoded(a.toJson()))!;
       expect(a, b);
       expect(a.hashCode, b.hashCode);
@@ -208,11 +209,11 @@ void main() {
     });
 
     test('come in a page and go out with it', () {
-      final page = EventPage.fromJson(_pageJson(edit: _editV2));
-      expect(page.edit!.extra, _editV2);
+      final page = EventPage.fromJson(_pageJson(edit: _editNewer));
+      expect(page.edit!.extra, _editNewer);
       final json = _encoded(page.copyWith(title: () => 'Take 1').toJson());
       expect(json['edit'], containsPair('v', 2));
-      expect(json['edit'], containsPair('title', _editV2['title']));
+      expect(json['edit'], containsPair('title', _editNewer['title']));
       expect(json['takeLog'], _takeLog);
     });
   });
@@ -242,8 +243,11 @@ void main() {
             event.pages.first.copyWith(extra: const {'future': 1}),
             video.copyWith(
               extra: const {'takeLog': _takeLog},
-              edit: () =>
-                  PageEdit.fromJson({'startMs': 0, 'endMs': 2000, ..._editV2}),
+              edit: () => PageEdit.fromJson({
+                'startMs': 0,
+                'endMs': 2000,
+                ..._editNewer,
+              }),
             ),
           ],
         ),
@@ -258,7 +262,7 @@ void main() {
       final pages = reopened.byId(event.id)!.pages;
       expect(pages.first.extra, {'future': 1});
       expect(pages.last.extra, {'takeLog': _takeLog});
-      expect(pages.last.edit!.extra, _editV2);
+      expect(pages.last.edit!.extra, _editNewer);
     });
 
     test('when a page is renamed or its edit changed', () async {
@@ -270,11 +274,11 @@ void main() {
       now = (await library.setPageEdit(
         event.id,
         video.id,
-        video.edit!.withTrackVolume(0.4),
+        video.edit!.copyWith(trackVolume: 0.4),
       ))!;
       expect(now.pages.last.extra, {'takeLog': _takeLog});
       expect(now.pages.last.edit!.trackVolume, 0.4);
-      expect(now.pages.last.edit!.extra, _editV2);
+      expect(now.pages.last.edit!.extra, _editNewer);
       // Taking the edit off keeps the page's own.
       now = (await library.setPageEdit(event.id, video.id, null))!;
       expect(now.pages.last.edit, isNull);
@@ -305,7 +309,7 @@ void main() {
           pages: [
             event.pages.first,
             video.copyWith(
-              edit: () => video.edit!.withTrackId(event.pages.first.id),
+              edit: () => video.edit!.copyWith(trackId: event.pages.first.id),
               extra: {'takeLog': _takeLog, 'page': event.pages.first.id},
             ),
             EventPage.link(
@@ -324,7 +328,7 @@ void main() {
         'page': event.pages.first.id,
       });
       expect(copy.pages[1].edit!.trackId, copy.pages.first.id);
-      expect(copy.pages[1].edit!.extra, _editV2);
+      expect(copy.pages[1].edit!.extra, _editNewer);
       final link = copy.pages.last;
       expect(link.isLink, isTrue);
       expect(link.id, isNot('l1'));
