@@ -14,6 +14,7 @@ import '../recognition/tab_layout.dart';
 import 'tab_editing.dart';
 import '../l10n/language.dart';
 import 'mono_font.dart';
+import 'messages.dart';
 
 /// The event screen's Text view: the tab read from the event's pages, to
 /// check against them and fix, monospaced and unwrapped (long lines scroll
@@ -276,11 +277,12 @@ class _TabTextViewState extends State<TabTextView> {
     if (mounted) setState(() {});
   }
 
-  void _say(String message, {SnackBarAction? action}) {
+  /// Shows [message] in place of the one showing. With an [action] (the
+  /// Premium offer's Upgrade) it stays until it's dismissed or acted on,
+  /// as the SnackBar it was did.
+  void _say(String message, {MessageAction? action}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message), action: action));
+    replaceMessage(context, message, action: action, persist: action != null);
   }
 
   Future<void> _copy() async {
@@ -384,7 +386,7 @@ class _TabTextViewState extends State<TabTextView> {
             ? l10n.textViewFixLinedUp
             : l10n.textViewFixAlreadyLinedUp,
         action: offer
-            ? SnackBarAction(
+            ? MessageAction(
                 label: l10n.textViewUpgrade,
                 onPressed: widget.onUpgrade!,
               )

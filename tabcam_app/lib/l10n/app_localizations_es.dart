@@ -605,6 +605,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get camStop => 'Detener';
 
   @override
+  String get camRecKey => 'Grabar (1)';
+
+  @override
+  String get camStopKey => 'Detener (1) · nueva toma (.)';
+
+  @override
   String get camPlay => 'Reproducir';
 
   @override
@@ -670,6 +676,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get camAlongTitle => 'Tocar junto';
+
+  @override
+  String get camAlongTakes => 'Tomas';
 
   @override
   String get camAlongPdfs => 'Seguir un PDF';
@@ -1961,6 +1970,20 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get videoEditTrackLater => 'Una décima de segundo después';
+
+  @override
+  String get videoEditTrackVolume => 'Volumen de la pista';
+
+  @override
+  String videoEditTrackVolumeLevel(int percent) {
+    return '$percent %';
+  }
+
+  @override
+  String get videoEditTrackMute => 'Silenciar la pista';
+
+  @override
+  String get videoEditTrackUnmute => 'Activar el sonido de la pista';
 
   @override
   String videoEditTrackUsed(String start, String end) {

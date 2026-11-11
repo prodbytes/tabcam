@@ -130,6 +130,7 @@ class Library extends ChangeNotifier {
         kind: page.kind,
         extension: page.extension,
         edit: page.edit?.withTrackId(ids[page.edit?.trackId]),
+        take: page.take,
       );
       await _arrival(event.id, page);
       final (bytes, _) = await _store.pageStream(event.id, page);
@@ -171,13 +172,18 @@ class Library extends ChangeNotifier {
   /// the page in them when one stands out ([cropToPage]: a JPEG then);
   /// otherwise, and videos always, they're kept as picked. On a capture the
   /// user [CaptureEvent.contributes] to, they're added to their own
-  /// contribution instead ([addedPages] says which they are).
-  Future<CaptureEvent> addMedia(CaptureEvent event, List<Media> media) async {
+  /// contribution instead ([addedPages] says which they are). [take]: Cam's
+  /// takes, marked so ([EventPage.take]).
+  Future<CaptureEvent> addMedia(
+    CaptureEvent event,
+    List<Media> media, {
+    bool take = false,
+  }) async {
     final added = <EventPage>[];
     for (final m in media) {
       final page = m.kind == PageKind.image
           ? await _addPhoto(event, m)
-          : await _addFile(event, m);
+          : await _addFile(event, m, take: take);
       added.add(page);
     }
     return _append(event, added);
@@ -344,6 +350,7 @@ class Library extends ChangeNotifier {
         extension: page.extension,
         title: page.title,
         from: page.id,
+        take: page.take,
       );
       await _arrival(event.id, page);
       final (bytes, _) = await _store.pageStream(event.id, page);
@@ -375,13 +382,18 @@ class Library extends ChangeNotifier {
     return deletePage(now, copy);
   }
 
-  Future<EventPage> _addFile(CaptureEvent event, Media m) async {
+  Future<EventPage> _addFile(
+    CaptureEvent event,
+    Media m, {
+    bool take = false,
+  }) async {
     final page = EventPage(
       id: newId(),
       kind: m.kind,
       extension: m.extension,
       // A file is named after its file (photos' names are the picker's).
       title: m.kind == PageKind.image ? null : nameOfFile(m.file.name),
+      take: take,
     );
     await _store.putPageFile(event.id, page, m.file);
     return page;
@@ -539,6 +551,7 @@ class Library extends ChangeNotifier {
       kind: media.kind,
       extension: media.extension,
       title: page.title,
+      take: page.take,
     );
     await _store.putPageFile(event.id, replaced, media.file);
     final updated = await _save(

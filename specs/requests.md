@@ -2447,6 +2447,34 @@ spec.
 
 ## 2026-11-11
 
+2. **Make notification messages show from the top and without
+   dislocating page elements so that buttons in nav are not covered;
+   make notification background 42% transparent.** The app's messages
+   were Flutter SnackBars, at the bottom: over the bottom navigation
+   bar's buttons, and pushing floating buttons up. Now every one of them
+   (Home, the event screen, a file, Cam, the camera, the Text view, the
+   video edit, Share, Clone, the account's) is a banner at the top,
+   just under the app bar, sliding down over the page: it moves and
+   resizes nothing, leaves both the app bar's buttons (back, actions)
+   and the bottom navigation bar uncovered and usable, and shows over
+   dialogs too. Its background is the inverse surface at alpha 0.58
+   (42% transparent), slightly blurred behind so the text, fully opaque
+   like the action, stays readable; 560 px wide at most, centred. It
+   keeps what the messages had: their text, Open and Upgrade, one at a
+   time (queued, or replacing where they did), gone after 4 seconds (6
+   for "Saved … (Open)"), the Text view's Premium offer with Upgrade
+   kept until dismissed as before, and dismissible by a swipe (now up)
+   or a tap. One mechanism for all: `TopMessages` around the app's
+   navigator, `showMessage` / `replaceMessage` / `Messenger`. New
+   tests: the message at the top, under the app bar, the FAB and both
+   bars where they were, the bottom navigation, the app bar's action and
+   a back button taking taps while it shows, the background's alpha
+   0.58 with opaque text in both themes, one at a time and replacing,
+   the Premium offer staying until dismissed, the action, a tap and a
+   swipe dismissing it, compact on wide screens, under the status bar
+   and the app bar and inside the safe area's sides, over a dialog and
+   outliving a page, nothing left behind, and the app's own "Saved"
+   message. See [Messages](messages.md).
 3. **Add a "dont ask again" checkbox on delete confirms.** Every delete
    confirmation (a capture from its card on Home, removing a capture
    shared with the user, a file from a capture's list, a reader's own
@@ -2475,3 +2503,92 @@ spec.
    [contributions](contributions.md),
    [shared captures](shared-captures.md) and
    [navigation](navigation.md#profile).
+5. **When editing a recording, add a volume control to the side of the
+   audio track. Left side.** The video edit screen's track bar (Sound:
+   New track) now has the track's volume at its left, on the same row,
+   the bar narrowing to make room: a speaker over the level (`100%`);
+   tapped, it opens a slider from 0% to 100% in steps of 5%, with Mute
+   (Unmute puts back the level it had before Mute or a slide down to
+   0%; 100% for an edit saved muted). It fits its row at any text size
+   (level on one line, shrunk with the speaker when too large). It's
+   part of the edit kept with the video (`trackVolume`, in its JSON only when not 100%, read
+   defensively from older or broken edits) and applies wherever the
+   edit plays: the editor's preview (at once, without stopping the
+   track), the file screen, and Download on every platform (Android: a
+   Media3 `GainProcessor` on the track; iOS: an `AVMutableAudioMix`;
+   the web: a gain node, recorded and offline). Reset puts it back to
+   100%. The range stops at 100% because the players can't play a file
+   louder than it is, so a boost would only reach the download and
+   sound different from the preview. It's the track's only: Original
+   keeps the video's own sound as it is. Labels in English, Spanish and
+   Portuguese. New tests: the control is left of the bar on its row;
+   the slider and Mute change the kept edit and the preview track's
+   volume without pausing it; Download and the phones' channel get it;
+   JSON round trip, defaults and defensive reading; Reset; a kept
+   edit's track plays at its volume on the file screen; Unmute after a
+   slide to 0% and after reopening a muted edit; no overflow at 200%
+   text; and, in Chrome, the web editor's track at half volume is half
+   as loud, in the sound alone and in the recorded video. See
+   [Video edit](video-edit.md).
+6. **In the cam screen make the "1" key be a shortcut to toggle
+   recording on/off.** In Cam, **1** (on the top row or the keypad)
+   now presses Rec / Stop as the button does: it starts a take (and the
+   sidebar's song with it) or stops it and saves the take, with the
+   play-along sidebar showing or not, and no longer turns the tab. It
+   acts on the key down only, so holding it doesn't start and stop a
+   take; while the button is dead (a take saving or playing back) it
+   does nothing; with Ctrl, ⌘ or Alt it's left to the other shortcut
+   and turns the tab as before. The button's tooltip now names the key
+   ("Rec (1)", "Stop (1)"), in English, Spanish and Portuguese, like
+   the sidebar's "Play (space)". New tests: 1 starts a take and 1 again
+   saves it, the keypad's 1 too, its repeats don't toggle, it doesn't
+   turn the tab while other keys still do, Ctrl + 1 does, it's dead
+   while a take plays back, and with the sidebar showing it starts the
+   song with the take. See [Cam](cam.md#rec-key).
+
+7. **take the takes be the last thing on the sidebar.** The play-along
+   sidebar (Cam, the Text view, the file screen) now lists Cam's takes
+   last, after the text tab, the files to play along and the PDFs or
+   pages to follow, under a heading of their own, **Takes** (Spanish
+   **Tomas**, Portuguese **Takes**), in the capture's order (Take 1
+   first). Cam now marks the takes it saves (`take` on the page, kept
+   when it's renamed, edited, cloned or published, and synced with it);
+   takes saved before are recognised by their name as Cam gives it, in
+   any of the app's languages ("Take 3", "Toma 3"), on videos. The file
+   loaded first in the sidebar's player is still a song to play along
+   with, not a take, unless the capture has nothing but takes. New
+   tests: with a song, a link, a video, a PDF and takes (marked, renamed
+   and an old one), the rows run text, songs, PDF, then the takes under
+   Takes, and a song is loaded first; with only takes, the first loads;
+   which pages count as takes and that the mark survives renaming and
+   JSON; on a recording's file screen, the take comes after the pages
+   and PDFs to follow. See [Cam](cam.md#playing-along-with-a-file) and
+   the [file screen](event-screen.md#file-screen).
+   Then, asked to **start them in reverse order, so that the most recent
+   one is the first**: the takes are listed most recent first, and with
+   only takes to play along, the most recent is the one loaded.
+9. **Also in camre view make the "." button stop recording and start a
+   new take.** In Cam, **.** (on the main keyboard or the keypad's
+   decimal key) now saves the take being recorded as Stop does (added,
+   named "Take n", its phrase passes kept, the message shown) and, once
+   it's saved, starts the next take as Rec does. The song in the
+   play-along sidebar stops at once, back at its start (its section's),
+   and plays from there with the new take, after the count-in if it's
+   on. Not recording, . starts a take as 1 does. It acts on the key
+   down only, not with Ctrl, ⌘ or Alt (then it turns the tab as any
+   key), and no longer turns the tab otherwise. While the take is saved
+   for the next, Rec, Play, the camera switch, 1, . and Back do nothing,
+   so a second press can't double up; if the next take can't start, the
+   first is kept and a message says why. Rec's tooltip while recording
+   is now "Stop (1) · new take (.)" (Spanish and Portuguese too). New
+   tests: . starts a take, saves Take 1 and records again, the keypad's
+   . too, held it doesn't repeat, Ctrl + . turns the tab, presses while
+   saving are ignored, a failed start keeps the take, and with a song in
+   the sidebar it stops at once and restarts from its start with the new
+   take. Review fixes: Rec, 1 and . pressed again while a take starts
+   (before the camera records) are ignored, where they started a second
+   recording alongside the first (on the web, a corrupt take); and the
+   keypad's decimal key is matched by where it is too, so on the web,
+   where it types "," (Brazilian, German and most European layouts) and
+   its logical key is the comma, it's still a new take, not a turn of
+   the tab. Tests for both. See [Cam](cam.md#new-take-key).

@@ -19,9 +19,9 @@ enum EditSound {
 /// kept, from [start] to [end], and its sound: kept, removed, or replaced
 /// by the capture's recording [trackId], of which the part from
 /// [trackStart] to [trackEnd] (null: its end) is used, starting [offset]
-/// after the kept part's start (before it, when negative). The video's
-/// file stays as it is: players play it as edited, and a download makes a
-/// file of it.
+/// after the kept part's start (before it, when negative), at
+/// [trackVolume]. The video's file stays as it is: players play it as
+/// edited, and a download makes a file of it.
 class PageEdit {
   const PageEdit({
     required this.start,
@@ -31,6 +31,7 @@ class PageEdit {
     this.trackStart = Duration.zero,
     this.trackEnd,
     this.offset = Duration.zero,
+    this.trackVolume = 1,
   });
 
   final Duration start;
@@ -44,6 +45,16 @@ class PageEdit {
   final Duration? trackEnd;
   final Duration offset;
 
+  /// How loud the track plays, from 0 (silent) to 1 (as it is, the
+  /// default): the players can't play it louder than it is.
+  final double trackVolume;
+
+  /// [volume] as a track's: within 0–1, to the hundredth; 1 when it
+  /// isn't a number.
+  static double volume(Object? volume) => volume is num && volume.isFinite
+      ? (volume.clamp(0, 1) * 100).round() / 100
+      : 1;
+
   Map<String, Object?> toJson() => {
     'startMs': start.inMilliseconds,
     'endMs': end.inMilliseconds,
@@ -52,6 +63,7 @@ class PageEdit {
     if (trackStart > Duration.zero) 'trackStartMs': trackStart.inMilliseconds,
     if (trackEnd != null) 'trackEndMs': trackEnd!.inMilliseconds,
     if (offset != Duration.zero) 'offsetMs': offset.inMilliseconds,
+    if (trackVolume != 1) 'trackVolume': trackVolume,
   };
 
   /// Null when [json] isn't an edit (one from a newer app, or broken).
@@ -72,6 +84,7 @@ class PageEdit {
       trackStart: ms('trackStartMs') ?? Duration.zero,
       trackEnd: ms('trackEndMs'),
       offset: ms('offsetMs') ?? Duration.zero,
+      trackVolume: volume(json['trackVolume']),
     );
   }
 
@@ -84,6 +97,19 @@ class PageEdit {
     trackStart: trackStart,
     trackEnd: trackEnd,
     offset: offset,
+    trackVolume: trackVolume,
+  );
+
+  /// This edit with its track at [volume] (as [PageEdit.volume] has it).
+  PageEdit withTrackVolume(double volume) => PageEdit(
+    start: start,
+    end: end,
+    sound: sound,
+    trackId: trackId,
+    trackStart: trackStart,
+    trackEnd: trackEnd,
+    offset: offset,
+    trackVolume: PageEdit.volume(volume),
   );
 
   @override
@@ -95,16 +121,25 @@ class PageEdit {
       other.trackId == trackId &&
       other.trackStart == trackStart &&
       other.trackEnd == trackEnd &&
-      other.offset == offset;
+      other.offset == offset &&
+      other.trackVolume == trackVolume;
 
   @override
-  int get hashCode =>
-      Object.hash(start, end, sound, trackId, trackStart, trackEnd, offset);
+  int get hashCode => Object.hash(
+    start,
+    end,
+    sound,
+    trackId,
+    trackStart,
+    trackEnd,
+    offset,
+    trackVolume,
+  );
 
   @override
   String toString() =>
       'PageEdit($start–$end, $sound, $trackId $trackStart–$trackEnd, '
-      '$offset)';
+      '$offset, $trackVolume)';
 }
 
 /// The part of a track [trackLength] long that goes into a clip [clip]

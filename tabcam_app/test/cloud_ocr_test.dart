@@ -1026,6 +1026,10 @@ void _fixTests() {
       ),
       findsOneWidget,
     );
+    // The offer stays until it's taken or dismissed, as a SnackBar with
+    // an action did.
+    await tester.pump(const Duration(seconds: 30));
+    expect(find.text('Upgrade'), findsOneWidget);
     await tester.tap(find.text('Upgrade'));
     await tester.pump();
     expect(upgraded, isTrue);

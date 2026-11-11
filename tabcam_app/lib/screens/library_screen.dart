@@ -15,6 +15,7 @@ import 'rename_dialog.dart';
 import 'event_screen.dart';
 import 'place.dart';
 import 'share_sheet.dart';
+import 'messages.dart';
 
 /// The Home tab: every event as a card, newest first; once something is
 /// shared with the user, in two sections, My captures and Shared with me. A new event
@@ -583,5 +584,4 @@ class _EventCard extends StatelessWidget {
 }
 
 void _snack(BuildContext context, String message) =>
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    showMessage(context, message);

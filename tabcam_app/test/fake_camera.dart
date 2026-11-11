@@ -105,8 +105,21 @@ class FakeCameraPlatform extends CameraPlatform
     CameraImageStreamOptions? options,
   }) => _frames.stream;
 
+  /// What the next recording fails with, if it's to (then it's cleared).
+  Object? startError;
+
+  /// Recordings asked to start; while set, they start once it completes.
+  int starts = 0;
+  Completer<void>? startHold;
+
   @override
   Future<void> startVideoCapturing(VideoCaptureOptions options) async {
+    starts++;
+    await startHold?.future;
+    if (startError case final error?) {
+      startError = null;
+      throw error;
+    }
     if (!imageStreaming && options.streamCallback != null) {
       // As camera_web does.
       throw UnimplementedError('Streaming is not currently supported on web');

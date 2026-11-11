@@ -32,6 +32,7 @@ import 'export/incoming_links.dart';
 import 'metronome/metronome.dart';
 import 'recognition/auto_reader.dart';
 import 'screens/home_screen.dart';
+import 'screens/messages.dart';
 import 'screens/sidebar_widths.dart';
 import 'screens/welcome_screen.dart';
 
@@ -304,7 +305,8 @@ class TabCamApp extends StatelessWidget {
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) {
         showingL10n(AppLocalizations.of(context));
-        return child!;
+        // Messages at the top, over every screen and dialog.
+        return TopMessages(child: child!);
       },
       debugShowCheckedModeBanner: false,
       theme: theme(Brightness.light),
