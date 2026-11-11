@@ -605,6 +605,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get camStop => 'Detener';
 
   @override
+  String get camRecKey => 'Grabar (1)';
+
+  @override
+  String get camStopKey => 'Detener (1)';
+
+  @override
   String get camPlay => 'Reproducir';
 
   @override
@@ -670,6 +676,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get camAlongTitle => 'Tocar junto';
+
+  @override
+  String get camAlongTakes => 'Tomas';
 
   @override
   String get camAlongPdfs => 'Seguir un PDF';

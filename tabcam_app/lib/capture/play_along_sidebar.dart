@@ -164,15 +164,17 @@ class PlayAlong extends ChangeNotifier {
   }
 
   /// Loads the file the screen opened on, if it plays, else the first
-  /// that does, into the frame (not playing), when nothing is loaded yet.
+  /// that does, into the frame (not playing), when nothing is loaded yet:
+  /// a song to play along with rather than one of Cam's takes ([isTake]),
+  /// the most recent take only when there's nothing else.
   void _loadFirst() {
     final event = library.byId(eventId);
     if (event == null || track.page != null) return;
+    final playing = event.pages.where(BackingTrack.plays);
     final first =
-        event.pages
-            .where((p) => p.id == startId && BackingTrack.plays(p))
-            .firstOrNull ??
-        event.pages.where(BackingTrack.plays).firstOrNull;
+        playing.where((p) => p.id == startId).firstOrNull ??
+        playing.where((p) => !isTake(p)).firstOrNull ??
+        playing.lastOrNull;
     if (first != null) unawaited(track.choose(event, first, play: false));
   }
 
@@ -908,7 +910,10 @@ class _BackingFrame extends StatelessWidget {
 /// along marked; a tap plays one along. Then the PDFs and images
 /// [toFollow], if any, under a heading of their own, the one [followed]
 /// marked; a tap shows it beside the screen, or hides it, tapped again.
-/// At the bottom, [footer], if any, out of the scrolling list.
+/// Last, Cam's takes ([isTake]), under a heading of their own, the most
+/// recent first (the capture's order reversed); a tap plays one along, as
+/// the other files. At the bottom, [footer], if any, out of the scrolling
+/// list.
 class PlayAlongSidebar extends StatelessWidget {
   const PlayAlongSidebar({
     super.key,
@@ -1054,14 +1059,37 @@ class PlayAlongSidebar extends StatelessWidget {
     ),
   );
 
-  /// The files to play along, under the frame, then the PDFs to follow.
+  /// The files to play along, under the frame, then the PDFs to follow,
+  /// then Cam's takes.
   Widget _list(BuildContext context, AppLocalizations l10n) =>
       ListenableBuilder(
         listenable: Listenable.merge([library, track]),
         builder: (context, _) {
           final event = library.byId(eventId);
-          final pages = [...?event?.pages.where(BackingTrack.plays)];
+          final playing = [...?event?.pages.where(BackingTrack.plays)];
+          final pages = [...playing.where((p) => !isTake(p))];
+          // The most recent first.
+          final takes = [...playing.where(isTake)].reversed.toList();
           final primary = Theme.of(context).colorScheme.primary;
+          // A file to play along (a song or a take): the one playing marked.
+          Widget fileRow(EventPage page) => ListTile(
+            key: ValueKey('cam-along-${page.id}'),
+            dense: true,
+            selected: track.page?.id == page.id,
+            selectedColor: Theme.of(context).colorScheme.primary,
+            textColor: Colors.white,
+            iconColor: Colors.white70,
+            leading: Icon(_icon(page)),
+            title: Text(
+              fileLabel(l10n, event!, page),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            trailing: track.page?.id == page.id && track.playing
+                ? const Icon(Icons.graphic_eq, size: 18)
+                : null,
+            onTap: () => onChoose(page),
+          );
           return ListView(
             padding: EdgeInsets.zero,
             children: [
@@ -1090,25 +1118,7 @@ class PlayAlongSidebar extends StatelessWidget {
                   ),
                 ),
               if (pages.isNotEmpty) _heading(l10n.camAlongTitle),
-              for (final page in pages)
-                ListTile(
-                  key: ValueKey('cam-along-${page.id}'),
-                  dense: true,
-                  selected: track.page?.id == page.id,
-                  selectedColor: Theme.of(context).colorScheme.primary,
-                  textColor: Colors.white,
-                  iconColor: Colors.white70,
-                  leading: Icon(_icon(page)),
-                  title: Text(
-                    fileLabel(l10n, event!, page),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: track.page?.id == page.id && track.playing
-                      ? const Icon(Icons.graphic_eq, size: 18)
-                      : null,
-                  onTap: () => onChoose(page),
-                ),
+              for (final page in pages) fileRow(page),
               if (toFollow.isNotEmpty && event != null) ...[
                 // "Follow a PDF" while only PDFs are listed.
                 _heading(
@@ -1145,11 +1155,38 @@ class PlayAlongSidebar extends StatelessWidget {
                     ),
                   ),
               ],
+              // Cam's takes, last.
+              if (takes.isNotEmpty) ...[
+                _heading(l10n.camAlongTakes),
+                for (final page in takes) fileRow(page),
+              ],
             ],
           );
         },
       );
 }
+
+/// Whether [page] is one of Cam's takes: marked so when Cam saved it
+/// ([EventPage.take]; renamed, it still is), or, saved before takes were
+/// marked, a video named as Cam names them, in any of the app's languages
+/// ("Take 2", "Toma 2").
+bool isTake(EventPage page) =>
+    page.take || (page.isVideo && _takeNames.hasMatch(page.title ?? ''));
+
+/// The names Cam gives its takes ([AppLocalizations.camTake]), in all the
+/// app's languages, any number.
+final _takeNames = () {
+  const n = 7654321;
+  final names = {
+    for (final locale in AppLocalizations.supportedLocales)
+      lookupAppLocalizations(locale)
+          .camTake(n)
+          .split('$n')
+          .map(RegExp.escape)
+          .join(r'\d+'),
+  };
+  return RegExp('^(?:${names.join('|')})\$');
+}();
 
 /// A recording's, video's, link's, PDF's or image's icon (a YouTube
 /// video's as a video).
