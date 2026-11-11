@@ -4,6 +4,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
 import '../l10n/language.dart';
+import '../screens/messages.dart';
 
 /// What [CameraCaptureScreen] returns: the pages taken (empty when
 /// cancelled), or [chooseInstead] when there's no camera and the user
@@ -109,9 +110,7 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen> {
       if (mounted) setState(() => _pages.add(bytes));
     } on Object catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.eventCouldntTakePicture('$e'))),
-        );
+        showMessage(context, context.l10n.eventCouldntTakePicture('$e'));
       }
     } finally {
       if (mounted) setState(() => _busy = false);

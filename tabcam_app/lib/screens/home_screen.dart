@@ -14,18 +14,22 @@ import '../capture/page_source.dart';
 import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
 import '../cloud/public_capture.dart';
+import '../dictionary/dictionary_sidebar.dart';
 import '../export/capture_link.dart';
 import '../export/incoming_links.dart';
 import '../import/tab_page_import.dart';
 import '../library/capture_event.dart';
 import '../library/library.dart';
+import '../metronome/metronome.dart';
 import 'account_panel.dart';
+import 'delete_confirm.dart';
 import 'install_links.dart';
 import 'premium_card.dart' show storeApp;
 import 'library_screen.dart';
 import 'place.dart';
 import 'public_capture_screen.dart';
 import 'link_page.dart';
+import 'messages.dart';
 
 /// The app's tabs, in the bottom navigation bar's order.
 enum HomeTab {
@@ -52,7 +56,8 @@ enum HomeTab {
 /// Home (the events), Capture (Scan, and Add for uploads) and Profile (the
 /// account and About), each with its name in the app bar. A capture lands
 /// on Home, at the top of the list, outlined, with Open in the message
-/// that confirms it.
+/// that confirms it. On Home, the app bar has Dictionary and Metronome,
+/// their sidebars beside the captures, as on every file viewer.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
@@ -91,9 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
   /// How long "Saved … (Open)" shows after a capture.
   static const Duration savedMessageFor = Duration(seconds: 6);
 
-  void _snack(String message) => ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text(message)));
+  void _snack(String message) => replaceMessage(context, message);
 
   @override
   void initState() {
@@ -109,30 +112,108 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _restorePlace() async {
     final place = await PlaceMemory.of(library).load();
     await library.ready;
-    if (!mounted || _linked != null) return;
+    if (!mounted || _linkOpened) return;
     final tab = HomeTab.values.where((t) => t.name == place.tab).firstOrNull;
     if (tab != null && tab != _tab) setState(() => _tab = tab);
-    if (place.eventId case final id?) {
+    if (place.eventId != null) _reopen(place);
+  }
+
+  /// Stops waiting for the event [_reopen] waits for.
+  VoidCallback? _stopReopen;
+
+  /// The event [_reopen] waits for, if it does.
+  String? _reopening;
+
+  /// The user moved on (another tab, a new capture) while [_reopen]
+  /// waited: it doesn't open over where they are now, and the place
+  /// forgets it.
+  void _cancelReopen() {
+    final id = _reopening;
+    if (id == null) return;
+    _stopReopen?.call();
+    PlaceMemory.of(library).update(
+      (p) => p.eventId == id
+          ? p.copyWith(eventId: () => null, text: false, fileId: () => null)
+          : p,
+    );
+  }
+
+  /// Opens the event [place] names, on its view (and its file): at once
+  /// if it's here, else once signed in and the first sync pass brings it
+  /// (on the web, the library is only in memory: a reload brings it down
+  /// again). Not there after a pass that worked (deleted, or not the
+  /// user's), Home stays and the place forgets it.
+  void _reopen(Place place) {
+    final id = place.eventId!;
+    final memory = PlaceMemory.of(library);
+    final sync = widget.sync;
+    late final VoidCallback check;
+    void stop() {
+      library.removeListener(check);
+      sync?.removeListener(check);
+      widget.auth?.removeListener(check);
+      _stopReopen = null;
+      _reopening = null;
+    }
+
+    check = () {
+      // The user moved on (or a link opened another) while it was waited
+      // for.
+      if (!mounted || _linkOpened || memory.place.eventId != id) {
+        stop();
+        return;
+      }
+      if (!library.loaded) return;
       if (library.byId(id) case final event?) {
+        // Something else opened over Home meanwhile (the camera for a new
+        // capture, a page opened from Home): the user moved on.
+        if (ModalRoute.isCurrentOf(context) == false) {
+          _cancelReopen();
+          return;
+        }
+        stop();
         unawaited(
           openEvent(
             context,
             library,
             event,
-            widget.sync,
+            sync,
             widget.ocr,
             place.fileId,
             place.text,
           ),
         );
+        return;
       }
-    }
+      // Signed in, its captures may not have come down yet: until a pass
+      // has worked (one that failed, offline say, proves nothing).
+      if (sync != null &&
+          widget.auth?.user != null &&
+          (!sync.firstPassDone || sync.state != SyncState.synced)) {
+        return;
+      }
+      stop();
+      memory.update(
+        (p) => p.eventId == id
+            ? p.copyWith(eventId: () => null, text: false, fileId: () => null)
+            : p,
+      );
+    };
+
+    _stopReopen?.call();
+    _stopReopen = stop;
+    _reopening = id;
+    library.addListener(check);
+    sync?.addListener(check);
+    widget.auth?.addListener(check);
+    check();
   }
 
   @override
   void dispose() {
     IncomingLinks.instance.removeListener(_incoming);
     _stopLink();
+    _stopReopen?.call();
     super.dispose();
   }
 
@@ -144,6 +225,10 @@ class _HomeScreenState extends State<HomeScreen> {
   /// the link.
   String? _linked;
   Uri? _link;
+
+  /// Whether a capture's link has been opened: then it, not the place
+  /// the user was, opens at launch.
+  bool _linkOpened = false;
   bool _askedToSignIn = false;
   bool _passSinceLink = false;
 
@@ -158,6 +243,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final id = CaptureLink.idIn(link);
     if (id == null) return;
     _stopLink();
+    _linkOpened = true;
     _linked = id;
     _link = link;
     _askedToSignIn = false;
@@ -270,28 +356,23 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     if (event == null || !mounted) return;
+    _cancelReopen();
     PlaceMemory.of(library).update((p) => p.copyWith(tab: HomeTab.home.name));
     setState(() {
       _tab = HomeTab.home;
       _fresh = event!.id;
     });
     final l10n = context.l10n;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(l10n.homeSaved(event.title, contentsOf(event, l10n))),
-          // Gone after a while, like the others: with an action, Flutter
-          // would keep it until it's dismissed.
-          persist: false,
-          duration: savedMessageFor,
-          action: SnackBarAction(
-            label: l10n.homeOpen,
-            onPressed: () =>
-                openEvent(context, library, event!, widget.sync, widget.ocr),
-          ),
-        ),
-      );
+    replaceMessage(
+      context,
+      l10n.homeSaved(event.title, contentsOf(event, l10n)),
+      duration: savedMessageFor,
+      action: MessageAction(
+        label: l10n.homeOpen,
+        onPressed: () =>
+            openEvent(context, library, event!, widget.sync, widget.ocr),
+      ),
+    );
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted && _fresh == event!.id) setState(() => _fresh = null);
     });
@@ -346,6 +427,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final onHome = _tab == HomeTab.home;
     return Scaffold(
       appBar: AppBar(
         centerTitle: false,
@@ -353,21 +435,38 @@ class _HomeScreenState extends State<HomeScreen> {
           _tab.title(context.l10n),
           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
         ),
+        // On Home, as on every file viewer: the dictionary's and the
+        // metronome's sidebars, beside the captures. Two icons leave the
+        // title room on any phone, so there's no More menu.
+        actions: [
+          if (onHome) ...const [DictionaryButton(), MetronomeButton()],
+        ],
       ),
       body: Column(
         children: [
           if ((widget.sync, widget.ocr) case (final sync?, final ocr?)
-              when _tab == HomeTab.home)
+              when onHome)
             _PremiumBanner(sync: sync, ocr: ocr),
           Expanded(
             child: IndexedStack(
               index: _tab.index,
               children: [
-                LibraryView(
-                  library: library,
-                  sync: widget.sync,
-                  ocr: widget.ocr,
-                  fresh: _fresh,
+                // The sidebars, open, at the right of the captures (the
+                // banner across the top, the navigation bar under them). On
+                // Capture and Profile they're hidden (still open, to show
+                // again on Home) and the metronome stops, as when leaving a
+                // screen that has it.
+                MetronomeBeside(
+                  enabled: onHome,
+                  child: DictionaryBeside(
+                    enabled: onHome,
+                    child: LibraryView(
+                      library: library,
+                      sync: widget.sync,
+                      ocr: widget.ocr,
+                      fresh: _fresh,
+                    ),
+                  ),
                 ),
                 // Files dragged onto Capture make a new capture of them.
                 FileDropArea(
@@ -388,6 +487,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 ProfileView(
+                  library: library,
                   auth: widget.auth,
                   sync: widget.sync,
                   ocr: widget.ocr,
@@ -415,6 +515,9 @@ class _HomeScreenState extends State<HomeScreen> {
               widget.sync?.profiles?.refresh();
             }
             setState(() => _tab = tab);
+            // On a tab, nothing is open over it: a capture a reload still
+            // waits for doesn't open later.
+            _cancelReopen();
             PlaceMemory.of(library).update((p) => p.copyWith(tab: tab.name));
           },
         ),
@@ -635,13 +738,13 @@ final Uri privacyPolicyUrl = Uri.parse('https://tabcam.nu01.com/privacy');
 
 /// Opens TabCam's privacy policy in the browser.
 Future<void> openPrivacyPolicy(BuildContext context) async {
-  final messenger = ScaffoldMessenger.maybeOf(context);
+  final messenger = Messenger.maybeOf(context);
   final couldNotOpen = context.l10n.textViewCouldNotOpen('$privacyPolicyUrl');
   if (!await launchUrl(
     privacyPolicyUrl,
     mode: LaunchMode.externalApplication,
   )) {
-    messenger?.showSnackBar(SnackBar(content: Text(couldNotOpen)));
+    messenger?.show(couldNotOpen);
   }
 }
 
@@ -745,10 +848,21 @@ class _PremiumBannerState extends State<_PremiumBanner> {
 }
 
 /// The Profile tab: the account (in a build with sign-in), the language,
-/// About, then, outside a store app, how to install the phone app
-/// ([InstallLinks]).
+/// **Ask before deleting** ([AskBeforeDeleting]), About, then, outside a
+/// store app, how to install the phone app ([InstallLinks]).
 class ProfileView extends StatelessWidget {
-  const ProfileView({super.key, this.auth, this.sync, this.ocr, this.store});
+  const ProfileView({
+    super.key,
+    this.library,
+    this.auth,
+    this.sync,
+    this.ocr,
+    this.store,
+  });
+
+  /// The device's library, for the device's settings kept with it (**Ask
+  /// before deleting**); without one, they aren't shown.
+  final Library? library;
 
   final AuthService? auth;
   final CloudSync? sync;
@@ -778,6 +892,10 @@ class ProfileView extends StatelessWidget {
                 if (LanguageScope.maybeOf(context) case final language?) ...[
                   const Divider(height: 48),
                   _LanguagePicker(language: language),
+                ],
+                if (library case final library?) ...[
+                  const Divider(height: 48),
+                  AskBeforeDeleting(library: library),
                 ],
                 const Divider(height: 48),
                 Text(l10n.homeAbout, style: theme.textTheme.titleMedium),

@@ -605,6 +605,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get camStop => 'Detener';
 
   @override
+  String get camRecKey => 'Grabar (1)';
+
+  @override
+  String get camStopKey => 'Detener (1) · nueva toma (.)';
+
+  @override
   String get camPlay => 'Reproducir';
 
   @override
@@ -670,6 +676,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get camAlongTitle => 'Tocar junto';
+
+  @override
+  String get camAlongTakes => 'Tomas';
 
   @override
   String get camAlongPdfs => 'Seguir un PDF';
@@ -1968,6 +1977,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoEditTrackLater => 'Una décima de segundo después';
 
   @override
+  String get videoEditTrackVolume => 'Volumen de la pista';
+
+  @override
+  String videoEditTrackVolumeLevel(int percent) {
+    return '$percent %';
+  }
+
+  @override
+  String get videoEditTrackMute => 'Silenciar la pista';
+
+  @override
+  String get videoEditTrackUnmute => 'Activar el sonido de la pista';
+
+  @override
   String videoEditTrackUsed(String start, String end) {
     return 'Se usa $start–$end de la pista';
   }
@@ -2035,4 +2058,18 @@ class AppLocalizationsEs extends AppLocalizations {
   String metronomeFailed(String error) {
     return 'El metrónomo no puede sonar aquí: $error';
   }
+
+  @override
+  String get deleteDontAskAgain => 'No volver a preguntar';
+
+  @override
+  String get deleteAskTitle => 'Preguntar antes de eliminar';
+
+  @override
+  String get deleteAskOn =>
+      'Eliminar una captura o un archivo pregunta antes, en este dispositivo.';
+
+  @override
+  String get deleteAskOff =>
+      'Algunas eliminaciones ocurren de inmediato, sin preguntar. Actívalo para que vuelva a preguntar.';
 }

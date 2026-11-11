@@ -195,11 +195,13 @@ void main() {
     expect(platform.disposed, contains(recording));
   });
 
-  /// A capture with [kinds]' files (ids k0, k1…) and, if [tab], a text tab.
+  /// A capture with [kinds]' files (ids k0, k1…) and, if [tab], a text tab;
+  /// those at [takes] are Cam's takes ("Take 1"…, marked).
   Future<(Library, String)> captureWith(
     WidgetTester tester,
     List<(PageKind, String)> kinds, {
     bool tab = false,
+    List<int> takes = const [],
   }) async {
     final library = Library(PlatformEventStore(), null, (_) async => null);
     late String id;
@@ -209,7 +211,14 @@ void main() {
       await library.writeMeta(BackingTrack.metaName, '{"countIn":false}');
       var event = await library.create(const []);
       for (final (i, (kind, ext)) in kinds.indexed) {
-        final page = EventPage(id: 'k$i', kind: kind, extension: ext);
+        final take = takes.indexOf(i) + 1;
+        final page = EventPage(
+          id: 'k$i',
+          kind: kind,
+          extension: ext,
+          title: take > 0 ? 'Take $take' : null,
+          take: take > 0,
+        );
         await library.putPageStream(
           event.id,
           page,
@@ -609,6 +618,46 @@ void main() {
     await tester.tap(find.byKey(const Key('cam-along')));
     await _frames(tester);
     expect(sidebar, findsNothing);
+    expect(platform.playing, isEmpty);
+  });
+
+  testWidgets('a recording\'s sidebar lists Cam\'s takes last: after the '
+      'pages and PDFs to follow, under Takes', (tester) async {
+    // Tall enough for the whole list.
+    tester.view.physicalSize = const Size(1200, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final (library, id) = await captureWith(
+      tester,
+      [
+        (PageKind.video, 'mp4'),
+        (PageKind.audio, 'm4a'),
+        (PageKind.pdf, 'pdf'),
+        (PageKind.image, 'jpg'),
+      ],
+      takes: [0],
+    );
+    await tester.pumpWidget(
+      host(FileScreen(library: library, eventId: id, pageId: 'k1')),
+    );
+    await _frames(tester);
+    double top(Finder f) => tester.getTopLeft(f).dy;
+    final recording = find.byKey(const Key('cam-along-k1'));
+    final pdf = find.byKey(const Key('cam-along-k2'));
+    final image = find.byKey(const Key('cam-along-k3'));
+    final take = find.byKey(const Key('cam-along-k0'));
+    final takes = find.text('Takes');
+    expect(takes, findsOneWidget);
+    expect(find.text('Take 1'), findsOneWidget);
+    // The recording opened, not the take before it.
+    expect(tester.widget<ListTile>(recording).selected, isTrue);
+    expect(tester.widget<ListTile>(take).selected, isFalse);
+    // Recording, the PDF and the image to follow, then the take, last.
+    expect(top(recording), lessThan(top(find.text('Follow a page or PDF'))));
+    expect(top(find.text('Follow a page or PDF')), lessThan(top(pdf)));
+    expect(top(pdf), lessThan(top(image)));
+    expect(top(image), lessThan(top(takes)));
+    expect(top(takes), lessThan(top(take)));
     expect(platform.playing, isEmpty);
   });
 }

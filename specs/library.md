@@ -14,8 +14,10 @@ the [welcome](navigation.md#signed-out-the-welcome) alone.
   **Remove** instead of Delete, and no Rename when shared to read). Tapping a
   card opens the [event screen](event-screen.md); its ⋮ menu has **Rename**,
   **Share** ([sharing](sharing.md)), **Clone** (below) and **Delete** (after a confirmation,
-  which says the pages and text tab go too). Long-pressing a card renames
-  it. On a phone (narrower than 600 dp) the card's text is a point
+  which says the pages and text tab go too, and has **Don't ask again**:
+  ticked, a capture's delete no longer asks on this device, see
+  [delete confirmations](delete-confirms.md)). Long-pressing a card renames
+  it (on one too narrow for its ⋮, below, it opens the ⋮'s menu). On a phone (narrower than 600 dp) the card's text is a point
   smaller, its ⋮ 20 dp instead of 24, and the preview's icon 40 dp
   instead of 48 (its badge 14 instead of 16).
 - **Previews**: a card shows, in order of preference, the first image
@@ -73,6 +75,15 @@ the [welcome](navigation.md#signed-out-the-welcome) alone.
   ("Saved "Tab 2026-10-10 14:05" (2 pages)") with **Open**, for 6
   seconds. Events
   synced from other devices appear in the list as they come down.
+- **Dictionary and Metronome**: Home's app bar has both buttons
+  ([navigation](navigation.md)), and their sidebars open at the right of
+  the captures, which stay usable beside them (the search, the cards).
+  Squeezed by them on a phone, nothing overflows: a card narrower than
+  84 px (room for its ⋮ and a little of the title) drops its ⋮ until
+  there's room again, and a long-press on it opens that menu instead of
+  renaming, so Rename, Share, Clone and Delete (or Remove) stay in reach,
+  read-only shared captures included; the empty,
+  loading and couldn't-load messages scroll where they don't fit.
 - **Theme**: Material 3, dark, from an amber seed color (`#E0A030`).
 
 ## Events
@@ -87,7 +98,9 @@ with, and one shared with the user has `sharedBy` (the owner's email) and
 `readOnly` (all kept on the device only). Once its link has been copied
 it has a `linkKey` ([sharing](sharing.md)), synced; a clone has none. A page has an ID, a kind (**image**,
 **video**, **audio**, **pdf** or **link**), its file's extension, and a
-[filter](page-filters.md) (used for images only). A link has no file
+[filter](page-filters.md) (used for images only). A video Cam recorded is
+marked `take` ([Cam](cam.md)), kept when it's renamed, edited, cloned or
+published, and synced with the page. A link has no file
 (its extension is `url`): it has its address (`url`, `http` or `https`
 only, checked again whenever an event is loaded, since events also come
 from the cloud) and an optional `title`. A new event is titled `Tab YYYY-MM-DD HH:MM` (its local time).

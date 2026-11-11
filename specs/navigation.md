@@ -19,10 +19,28 @@ tabs, and a compact **app bar** on top names the open one
   - Signed in only (signed out, there's only the welcome, below); tabs
     keep their state (the list's scroll) while another is open.
 - **App bar**: the open tab's name on the left, bold (22 sp, weight 700):
-  "TabCam" on Home, "Capture", "Profile". No buttons: what was there
+  "TabCam" on Home, "Capture", "Profile". On Home only, at its right,
+  **Dictionary** (a book icon) and **Metronome** (a stopwatch icon), as
+  on every file viewer: they open the [dictionary](dictionary.md)'s and
+  the [metronome](metronome.md)'s sidebars beside the captures (below).
+  Two icons leave the title its room on any phone, so Home has no
+  **More** menu. Capture and Profile have no buttons: what was there
   (Import photos, About, the cloud button) is on the tabs.
+- **The sidebars on Home**: open, they're at the right of the captures
+  (the dictionary's, or its panel turned under them, left of the
+  metronome's), between the app bar (and the Premium banner, across the
+  top) and the navigation bar, which they never cover. They're the same
+  sidebars as everywhere, app-wide: open on Home, they're open in the
+  capture opened from it, at the same widths, and the other way round.
+  On Capture and Profile they don't show (those tabs span the screen)
+  but stay open, to show again back on Home; the metronome stops there,
+  as when leaving any screen that has it, and when a screen without it
+  opens over Home (a capture link loading, or unavailable).
 - An event opens over the tabs as its own screen ([event screen](event-screen.md)),
   with a back button.
+- Messages show at the top, just under the app bar, covering neither the
+  app bar's buttons nor the bottom navigation bar, which stay where they
+  are ([messages](messages.md)).
 
 ## Signed out: the welcome
 
@@ -45,15 +63,47 @@ was, on the device only.
 ## Coming back where the user was
 
 A reload (the web) or a restart (the apps) opens where the user was:
-the tab, and the event that was open over it, on its Text view or its
+the tab, and the capture that was open over it, on its Text view or its
 list of files, and the file open over that, if one was
-([lib/screens/place.dart](../tabcam_app/lib/screens/place.dart)).
-The place is kept on the device (the library's `place` meta file, not
-synced), saved half a second after each move: switching tabs, opening
-or closing an event, switching Files and Text, opening or closing a
-file. A capture's link opening at launch wins over it; an event deleted
-since isn't
-opened.
+([lib/screens/place.dart](../tabcam_app/lib/screens/place.dart)). Each
+move updates the place: switching tabs, opening or closing a capture
+(Clone's copy, opened in the original's place, too), switching Files
+and Text, opening or closing a file (and Rotate, which gives the file a
+new ID). Cam isn't kept: a reload with Cam
+open comes back to the capture, on the view under it.
+
+- **The apps** keep it on the device (the library's `place` meta file,
+  not synced), saved half a second after each move.
+- **The web** keeps it in the page's address, at once
+  (`history.replaceState`, adding no history entry; the library there
+  is only in memory, so the device can't keep it). Its parameters:
+  `tab` (`capture` or `profile`; none on Home), `open` (the capture's
+  ID), `view` (`text` or `files`) and `file` (the file's ID), as in
+  `https://tabcam.nu01.com/app/?open=<capture>&view=text`. Only the
+  query changes: the site's base (`/app/`, on prod, RC and the local
+  site), its other parameters and Flutter's fragment stay. A capture's
+  link's `c`, `k` and `f` ([sharing](sharing.md#opening-a-link)) stay
+  only while it's the link the page opened at and no capture has opened
+  yet (a link still waiting, or one opened read only); then they leave
+  the address for good, so its key isn't left there. A sign-in email's
+  `signin-code` (used once, at launch) leaves at the first move. The
+  browser's back button closes what's open (Flutter's own history
+  handling, which first shows the page's first history entry's address
+  again, the link it opened at say): the place is written over that at
+  once, so neither a link's key nor an older place comes back, and Back
+  over a screen the place doesn't follow (Cam) leaves it as it was. The
+  same address in another tab of the same browser (signed in as the
+  same user) opens the same place.
+
+At launch the place waits for the library and, signed in, for the first
+sync pass (on the web, a reload brings the user's captures down again):
+the capture opens as soon as it's there. If a pass that works doesn't
+bring it (deleted since, or not the user's), Home stays, on the tab,
+with no message, and the place forgets it; a pass that fails (offline)
+keeps it waiting for the next. If the user moves on meanwhile (another
+tab, a new capture, a screen opened over Home), it doesn't open over
+that, and the place forgets it too. A capture's link opening at launch
+wins over it.
 
 ## Capture
 
@@ -84,10 +134,9 @@ library), `IMG_1234`, `VID_20261030_101500`, `VID-…-WA0001`, `PXL_…`,
 `Screenshot … at …`, a date and time, digits, a UUID. A video from the
 photo library keeps its name on Android, iOS and the web, so a lesson's
 names its capture. It goes to **Home**, where it's first in the list, scrolled to
-and outlined for 3 seconds, with a message, "Saved "<title>" (2 pages)"
+and outlined for 3 seconds, with a message at the top, "Saved "<title>" (2 pages)"
 (or "1 video, 1 link", ...), and **Open**, which goes by itself after 6
-seconds, as every message does (Flutter would otherwise keep a message
-with a button until it's dismissed). Cancelling does nothing;
+seconds ([messages](messages.md)). Cancelling does nothing;
 picked files that aren't photos or videos are left out, with a message
 saying how many.
 
@@ -115,7 +164,12 @@ apps, [cloud OCR](cloud-ocr.md#in-the-store-apps)). The same panel opens
 in a sheet from Home's Premium banner's **Upgrade**. In
 a build without sign-in, a line says so. Then **Language**
 ([localization](localization.md)): the device's language (the default),
-English, Español or Português; the app changes at once. Then **About**: the app's name
+English, Español or Português; the app changes at once. Then **Ask
+before deleting**, a switch kept on the device: on (the default), every
+delete of a capture or a file asks first; off once a confirm's **Don't
+ask again** was ticked, and turned on, they all ask again (it only
+turns them on; [delete confirmations](delete-confirms.md)). Delete account asks
+whatever it says. Then **About**: the app's name
 and version (X.Y.Z, or "(development build)"), what it does,
 **Privacy policy** (opens https://tabcam.nu01.com/privacy in the browser,
 [privacy](privacy.md)) and **Licenses**.

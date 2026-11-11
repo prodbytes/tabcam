@@ -2447,6 +2447,133 @@ spec.
 
 ## 2026-11-11
 
+1. **Show the metronome and dictionary on the home screen.** Home's app
+   bar now has **Dictionary** (book) and **Metronome** (stopwatch), on
+   the Home tab only, as on every file viewer; two icons fit any phone
+   beside the title, so there's no More menu. Their sidebars are the
+   same widgets (`DictionaryBeside`, `MetronomeBeside`) with the same
+   app-wide state, widths and Rotate choice, at the right of the
+   captures (the dictionary turned: a panel under them), between the app
+   bar and the navigation bar, never over it. On Capture and Profile the
+   buttons and sidebars don't show (still open, they show again on
+   Home), and the metronome stops there, as when leaving a screen that
+   has it; both widgets gained an `enabled` flag for that, which keeps
+   the captures' state. Going back from a capture to Home no longer stops
+   the metronome, since Home has it now. Squeezed on a phone, a capture's
+   card drops its ⋮ rather than overflow, and Home's empty, loading and
+   couldn't-load messages scroll. New tests
+   (`home_sidebars_test.dart`): the buttons open and close each sidebar
+   beside working captures, above the navigation bar; the other tabs hide
+   them and stop the metronome; it plays on into a capture and back; the
+   panel under the captures; and a small phone, with captures and
+   without, overflows nothing. After review: Home stays under every
+   screen opened from it, so a metronome sidebar counts as a place that
+   has the metronome only while it's on screen, not covered by another
+   screen (a dialog or a menu over it doesn't count); a capture link
+   still loading, or unavailable, over Home now stops it. A card too
+   narrow for its ⋮ opens that menu on a long-press, so its actions (and
+   a read-only shared capture's) stay in reach. Tests for both. See
+   [Navigation](navigation.md), [Library](library.md),
+   [Dictionary](dictionary.md) and [Metronome](metronome.md).
+2. **Make notification messages show from the top and without
+   dislocating page elements so that buttons in nav are not covered;
+   make notification background 42% transparent.** The app's messages
+   were Flutter SnackBars, at the bottom: over the bottom navigation
+   bar's buttons, and pushing floating buttons up. Now every one of them
+   (Home, the event screen, a file, Cam, the camera, the Text view, the
+   video edit, Share, Clone, the account's) is a banner at the top,
+   just under the app bar, sliding down over the page: it moves and
+   resizes nothing, leaves both the app bar's buttons (back, actions)
+   and the bottom navigation bar uncovered and usable, and shows over
+   dialogs too. Its background is the inverse surface at alpha 0.58
+   (42% transparent), slightly blurred behind so the text, fully opaque
+   like the action, stays readable; 560 px wide at most, centred. It
+   keeps what the messages had: their text, Open and Upgrade, one at a
+   time (queued, or replacing where they did), gone after 4 seconds (6
+   for "Saved … (Open)"), the Text view's Premium offer with Upgrade
+   kept until dismissed as before, and dismissible by a swipe (now up)
+   or a tap. One mechanism for all: `TopMessages` around the app's
+   navigator, `showMessage` / `replaceMessage` / `Messenger`. New
+   tests: the message at the top, under the app bar, the FAB and both
+   bars where they were, the bottom navigation, the app bar's action and
+   a back button taking taps while it shows, the background's alpha
+   0.58 with opaque text in both themes, one at a time and replacing,
+   the Premium offer staying until dismissed, the action, a tap and a
+   swipe dismissing it, compact on wide screens, under the status bar
+   and the app bar and inside the safe area's sides, over a dialog and
+   outliving a page, nothing left behind, and the app's own "Saved"
+   message. See [Messages](messages.md).
+3. **Add a "dont ask again" checkbox on delete confirms.** Every delete
+   confirmation (a capture from its card on Home, removing a capture
+   shared with the user, a file from a capture's list, a reader's own
+   file under Your files) now goes through one shared dialog
+   (`confirmDelete`, `lib/screens/delete_confirm.dart`) with a **Don't
+   ask again** checkbox, in English, Spanish and Portuguese. Ticked and
+   confirmed, that kind of delete no longer asks on this device: the
+   next one deletes at once; ticked and cancelled, nothing changes. Each
+   kind is skipped on its own (a file's doesn't skip a capture's), kept
+   in the library's `deleteconfirms` meta file (letters and digits only,
+   which the apps' store requires of a meta's name), not synced; on the
+   web, where metas are in memory, until the tab is reloaded. The way
+   back is a new device setting on the Profile tab, **Ask before
+   deleting** (under Language): on when every kind asks, and turned on
+   it brings them all back; it only turns them on, so a stray tap never
+   stops every confirm. Deleting the account keeps its own confirm,
+   which always asks. New tests: the meta name passes the apps' check;
+   the checkbox shows; ticked and cancelled changes nothing; ticked and
+   confirmed deletes and the next one doesn't ask, read back from the
+   device; kinds are independent, through the UI for a capture, a shared
+   capture's Remove and a reader's own file; the Profile switch brings
+   the confirms back and can't turn them off; deleting the account still
+   asks. See the new
+   [delete confirmations](delete-confirms.md) spec, and
+   [library](library.md), [event screen](event-screen.md),
+   [contributions](contributions.md),
+   [shared captures](shared-captures.md) and
+   [navigation](navigation.md#profile).
+5. **When editing a recording, add a volume control to the side of the
+   audio track. Left side.** The video edit screen's track bar (Sound:
+   New track) now has the track's volume at its left, on the same row,
+   the bar narrowing to make room: a speaker over the level (`100%`);
+   tapped, it opens a slider from 0% to 100% in steps of 5%, with Mute
+   (Unmute puts back the level it had before Mute or a slide down to
+   0%; 100% for an edit saved muted). It fits its row at any text size
+   (level on one line, shrunk with the speaker when too large). It's
+   part of the edit kept with the video (`trackVolume`, in its JSON only when not 100%, read
+   defensively from older or broken edits) and applies wherever the
+   edit plays: the editor's preview (at once, without stopping the
+   track), the file screen, and Download on every platform (Android: a
+   Media3 `GainProcessor` on the track; iOS: an `AVMutableAudioMix`;
+   the web: a gain node, recorded and offline). Reset puts it back to
+   100%. The range stops at 100% because the players can't play a file
+   louder than it is, so a boost would only reach the download and
+   sound different from the preview. It's the track's only: Original
+   keeps the video's own sound as it is. Labels in English, Spanish and
+   Portuguese. New tests: the control is left of the bar on its row;
+   the slider and Mute change the kept edit and the preview track's
+   volume without pausing it; Download and the phones' channel get it;
+   JSON round trip, defaults and defensive reading; Reset; a kept
+   edit's track plays at its volume on the file screen; Unmute after a
+   slide to 0% and after reopening a muted edit; no overflow at 200%
+   text; and, in Chrome, the web editor's track at half volume is half
+   as loud, in the sound alone and in the recorded video. See
+   [Video edit](video-edit.md).
+6. **In the cam screen make the "1" key be a shortcut to toggle
+   recording on/off.** In Cam, **1** (on the top row or the keypad)
+   now presses Rec / Stop as the button does: it starts a take (and the
+   sidebar's song with it) or stops it and saves the take, with the
+   play-along sidebar showing or not, and no longer turns the tab. It
+   acts on the key down only, so holding it doesn't start and stop a
+   take; while the button is dead (a take saving or playing back) it
+   does nothing; with Ctrl, ⌘ or Alt it's left to the other shortcut
+   and turns the tab as before. The button's tooltip now names the key
+   ("Rec (1)", "Stop (1)"), in English, Spanish and Portuguese, like
+   the sidebar's "Play (space)". New tests: 1 starts a take and 1 again
+   saves it, the keypad's 1 too, its repeats don't toggle, it doesn't
+   turn the tab while other keys still do, Ctrl + 1 does, it's dead
+   while a take plays back, and with the sidebar showing it starts the
+   song with the take. See [Cam](cam.md#rec-key).
+
 7. **In the mini player sidebar, to the right of files, add the delete
    button. So I can delete anything, especially the takes.** Each file
    in the play-along sidebar (in Cam, beside the Text view and on the
@@ -2481,3 +2608,91 @@ spec.
    the owner's files, the only one with Delete, deleted from their
    contribution with its file; a recording the list plays, deleted from
    the Text view's sidebar, stops.
+   Merged with main's takes-last and Don't ask again: the takes' rows
+   under **Takes** have Delete too (a reader's own takes listed there
+   with the capture's, theirs first), and the sidebar's Delete asks in
+   the shared delete confirm with **Don't ask again** (the list's "file"
+   kind, or "contribution" for a reader's own), so a choice made in the
+   sidebar or the list holds in both; its messages show at the top. A
+   test that Don't ask again ticked in the sidebar skips the list's
+   confirm too. See [delete confirmations](delete-confirms.md).
+7. **take the takes be the last thing on the sidebar.** The play-along
+   sidebar (Cam, the Text view, the file screen) now lists Cam's takes
+   last, after the text tab, the files to play along and the PDFs or
+   pages to follow, under a heading of their own, **Takes** (Spanish
+   **Tomas**, Portuguese **Takes**), in the capture's order (Take 1
+   first). Cam now marks the takes it saves (`take` on the page, kept
+   when it's renamed, edited, cloned or published, and synced with it);
+   takes saved before are recognised by their name as Cam gives it, in
+   any of the app's languages ("Take 3", "Toma 3"), on videos. The file
+   loaded first in the sidebar's player is still a song to play along
+   with, not a take, unless the capture has nothing but takes. New
+   tests: with a song, a link, a video, a PDF and takes (marked, renamed
+   and an old one), the rows run text, songs, PDF, then the takes under
+   Takes, and a song is loaded first; with only takes, the first loads;
+   which pages count as takes and that the mark survives renaming and
+   JSON; on a recording's file screen, the take comes after the pages
+   and PDFs to follow. See [Cam](cam.md#playing-along-with-a-file) and
+   the [file screen](event-screen.md#file-screen).
+   Then, asked to **start them in reverse order, so that the most recent
+   one is the first**: the takes are listed most recent first, and with
+   only takes to play along, the most recent is the one loaded.
+8. **When a capture is open in a view, and the browser refreshes, keep
+   the same view and capture as it was.** The web app already meant to
+   come back where the user was, but kept the place in the library's
+   meta file, which on the web is only in memory: a reload lost it (and
+   the captures themselves, until the first sync pass brings them down
+   again), so it always opened on Home. On the web the place is now kept
+   in the page's address, replaced at every move without adding history
+   entries: `?tab=…&open=<capture>&view=text|files&file=<file>`, the
+   site's base (`/app/`) and Flutter's fragment kept. At launch it waits
+   for the library and, signed in, for the first sync pass to bring the
+   capture, then opens it on its view (and its file); a capture a pass
+   that works doesn't bring leaves Home quietly and drops out of the
+   address (a failed pass, offline, keeps it waiting for the next). A
+   capture's link still wins at launch, and its key leaves the address
+   once a capture is open; a sign-in email's code leaves it too. Clone's
+   copy is now the place while it's open (it was the original's). The
+   apps keep the place on the device as before. Cam isn't kept (a reload
+   comes back to the capture under it). New tests: the address reads
+   back as written (base, port and fragment kept, bad IDs left out, the
+   link's key dropped), a reload opens the capture on its Text view and
+   its file, an unknown capture falls back to Home, moving around and
+   Clone write the address, a link wins over it, and signed in it waits
+   for the first pass, past a failed one. See
+   [navigation](navigation.md#coming-back-where-the-user-was).
+   Then, from review: the browser's Back, which shows the first history
+   entry's address again (Flutter's history handling) before closing
+   what's open, no longer brings back a capture's link and its key, nor
+   an older place over a screen the place doesn't follow (Cam): the
+   place is written over it at once, and a link stays in the address
+   only while it's the one the page opened at and no capture has
+   opened. Rotate, which gives the file a new ID, keeps it the place's
+   file. A capture a reload is still waiting for no longer opens over
+   where the user has moved on to (another tab, a new capture, a screen
+   opened over Home); the place forgets it. New tests for each.
+9. **Also in camre view make the "." button stop recording and start a
+   new take.** In Cam, **.** (on the main keyboard or the keypad's
+   decimal key) now saves the take being recorded as Stop does (added,
+   named "Take n", its phrase passes kept, the message shown) and, once
+   it's saved, starts the next take as Rec does. The song in the
+   play-along sidebar stops at once, back at its start (its section's),
+   and plays from there with the new take, after the count-in if it's
+   on. Not recording, . starts a take as 1 does. It acts on the key
+   down only, not with Ctrl, ⌘ or Alt (then it turns the tab as any
+   key), and no longer turns the tab otherwise. While the take is saved
+   for the next, Rec, Play, the camera switch, 1, . and Back do nothing,
+   so a second press can't double up; if the next take can't start, the
+   first is kept and a message says why. Rec's tooltip while recording
+   is now "Stop (1) · new take (.)" (Spanish and Portuguese too). New
+   tests: . starts a take, saves Take 1 and records again, the keypad's
+   . too, held it doesn't repeat, Ctrl + . turns the tab, presses while
+   saving are ignored, a failed start keeps the take, and with a song in
+   the sidebar it stops at once and restarts from its start with the new
+   take. Review fixes: Rec, 1 and . pressed again while a take starts
+   (before the camera records) are ignored, where they started a second
+   recording alongside the first (on the web, a corrupt take); and the
+   keypad's decimal key is matched by where it is too, so on the web,
+   where it types "," (Brazilian, German and most European layouts) and
+   its logical key is the comma, it's still a new take, not a turn of
+   the tab. Tests for both. See [Cam](cam.md#new-take-key).

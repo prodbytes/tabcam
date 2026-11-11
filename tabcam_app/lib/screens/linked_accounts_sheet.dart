@@ -5,6 +5,7 @@ import '../cloud/profile_service.dart';
 import '../cloud/share_api.dart';
 import '../l10n/language.dart';
 import 'mono_font.dart';
+import 'messages.dart';
 
 /// Profile → **Linked accounts**: the sign-ins that reach the profile's
 /// captures (the owner can't be unlinked), a code to link another one, and
@@ -62,14 +63,14 @@ class _LinkedAccountsSheetState extends State<LinkedAccountsSheet> {
   Future<void> _link() async {
     final code = _code.text.trim();
     if (code.isEmpty) return;
-    final messenger = ScaffoldMessenger.maybeOf(context);
+    final messenger = Messenger.maybeOf(context);
     final l10n = context.l10n;
     setState(() => _error = null);
     try {
       await widget.profiles.link(code);
       _code.clear();
       final id = widget.profiles.profile?.id ?? '';
-      messenger?.showSnackBar(SnackBar(content: Text(l10n.profileLinked(id))));
+      messenger?.show(l10n.profileLinked(id));
     } on Object catch (e) {
       if (mounted) setState(() => _error = _why(e));
     }

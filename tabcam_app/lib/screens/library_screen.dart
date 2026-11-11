@@ -10,10 +10,12 @@ import '../library/search.dart';
 import '../l10n/language.dart';
 import 'card_preview.dart';
 import 'clone.dart';
+import 'delete_confirm.dart';
 import 'rename_dialog.dart';
 import 'event_screen.dart';
 import 'place.dart';
 import 'share_sheet.dart';
+import 'messages.dart';
 
 /// The Home tab: every event as a card, newest first; once something is
 /// shared with the user, in two sections, My captures and Shared with me. A new event
@@ -317,12 +319,34 @@ Future<void> openEvent(
   );
 }
 
+/// [child] in the middle of its room, scrolling where it doesn't fit (a
+/// small phone with the dictionary's or the metronome's sidebar beside
+/// Home, or the dictionary's panel under it).
+class _Centered extends StatelessWidget {
+  const _Centered({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, box) => SingleChildScrollView(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minWidth: box.maxWidth,
+          minHeight: box.maxHeight,
+        ),
+        child: Center(child: child),
+      ),
+    ),
+  );
+}
+
 /// Signed in, while the first pass brings the user's captures.
 class _Loading extends StatelessWidget {
   const _Loading();
 
   @override
-  Widget build(BuildContext context) => Center(
+  Widget build(BuildContext context) => _Centered(
     child: Column(
       key: const Key('library-loading'),
       mainAxisSize: MainAxisSize.min,
@@ -345,7 +369,7 @@ class _LoadFailed extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return Center(
+    return _Centered(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
@@ -381,7 +405,7 @@ class _Empty extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
-    return Center(
+    return _Centered(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
@@ -438,24 +462,16 @@ class _EventCard extends StatelessWidget {
       case _CardAction.share:
         await shareCapture(context, event, sync: sync);
       case _CardAction.delete when event.isShared:
-        final ok = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(l10n.homeLibraryRemoveTitle(event.title)),
-            content: Text(l10n.homeLibraryRemoveBody('${event.sharedBy}')),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: Text(l10n.homeLibraryCancel),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: Text(l10n.homeLibraryRemove),
-              ),
-            ],
-          ),
+        final ok = await confirmDelete(
+          context,
+          library: library,
+          kind: DeleteKind.sharedCapture,
+          title: l10n.homeLibraryRemoveTitle(event.title),
+          body: l10n.homeLibraryRemoveBody('${event.sharedBy}'),
+          confirm: l10n.homeLibraryRemove,
+          cancel: l10n.homeLibraryCancel,
         );
-        if (ok != true || !context.mounted) return;
+        if (!ok || !context.mounted) return;
         try {
           await sync?.leave(event);
         } on Object catch (e) {
@@ -464,25 +480,66 @@ class _EventCard extends StatelessWidget {
           }
         }
       case _CardAction.delete:
-        final ok = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(l10n.homeLibraryDeleteTitle(event.title)),
-            content: Text(l10n.homeLibraryDeleteBody),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: Text(l10n.homeLibraryCancel),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: Text(l10n.homeLibraryDelete),
-              ),
-            ],
-          ),
+        final ok = await confirmDelete(
+          context,
+          library: library,
+          kind: DeleteKind.capture,
+          title: l10n.homeLibraryDeleteTitle(event.title),
+          body: l10n.homeLibraryDeleteBody,
+          confirm: l10n.homeLibraryDelete,
+          cancel: l10n.homeLibraryCancel,
         );
-        if (ok == true) await library.delete(event);
+        if (ok) await library.delete(event);
     }
+  }
+
+  /// The card's actions, in its ⋮ menu.
+  List<PopupMenuEntry<_CardAction>> _items(BuildContext context) {
+    final l10n = context.l10n;
+    return [
+      if (!event.readOnly)
+        PopupMenuItem(
+          value: _CardAction.rename,
+          child: Text(l10n.homeLibraryRename),
+        ),
+      PopupMenuItem(
+        value: _CardAction.share,
+        child: Text(l10n.homeLibraryShare),
+      ),
+      PopupMenuItem(
+        value: _CardAction.clone,
+        child: Text(l10n.homeLibraryClone),
+      ),
+      PopupMenuItem(
+        value: _CardAction.delete,
+        child: Text(
+          event.isShared ? l10n.homeLibraryRemove : l10n.homeLibraryDelete,
+        ),
+      ),
+    ];
+  }
+
+  /// The ⋮ menu over the card whose box [context] is, for a long-press when
+  /// the card is too narrow to show its ⋮.
+  Future<void> _menu(BuildContext context) async {
+    final card = context.findRenderObject()! as RenderBox;
+    final overlay =
+        Navigator.of(context).overlay!.context.findRenderObject()! as RenderBox;
+    final action = await showMenu<_CardAction>(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromPoints(
+          card.localToGlobal(Offset.zero, ancestor: overlay),
+          card.localToGlobal(
+            card.size.bottomRight(Offset.zero),
+            ancestor: overlay,
+          ),
+        ),
+        Offset.zero & overlay.size,
+      ),
+      items: _items(context),
+    );
+    if (action != null && context.mounted) await _action(context, action);
   }
 
   @override
@@ -508,95 +565,91 @@ class _EventCard extends StatelessWidget {
               side: BorderSide(color: theme.colorScheme.primary, width: 3),
             )
           : null,
-      child: InkWell(
-        onTap: onOpen,
-        // Long-press is a shortcut to Rename.
-        onLongPress: event.readOnly
-            ? null
-            : () => _action(context, _CardAction.rename),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: ColoredBox(
-                color: Colors.white,
-                child: CardPreview(library: library, event: event),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 0, 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          event.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: smaller(theme.textTheme.titleSmall),
-                        ),
-                        Text(
-                          [
-                            if (event.artist.isNotEmpty) event.artist,
-                            if (event.hideImages)
-                              l10n.homeLibraryImagesHidden
-                            else if (pages > 0 || pages == event.pages.length)
-                              l10n.homePages(pages),
-                            if (videos > 0) l10n.homeVideos(videos),
-                            if (audio > 0) l10n.homeAudio(audio),
-                            if (pdfs > 0) l10n.homePdfs(pdfs),
-                            if (links > 0) l10n.homeLinks(links),
-                            if (event.tabText != null) l10n.homeLibraryText,
-                            if (event.sharedBy case final owner?)
-                              l10n.homeLibrarySharedBy(owner),
-                          ].join(' · '),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: smaller(theme.textTheme.bodySmall),
-                        ),
-                      ],
-                    ),
+      // Squeezed (a phone with the dictionary's or the metronome's sidebar
+      // beside Home), the card drops its ⋮ rather than overflow, and a
+      // long-press opens that menu instead, so every action stays in reach.
+      child: LayoutBuilder(
+        builder: (context, box) {
+          final menu = box.maxWidth - _textInset >= _menuRoom;
+          return InkWell(
+            onTap: onOpen,
+            // Long-press is a shortcut to Rename, or the ⋮'s menu without it.
+            onLongPress: !menu
+                ? () => _menu(context)
+                : event.readOnly
+                ? null
+                : () => _action(context, _CardAction.rename),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: ColoredBox(
+                    color: Colors.white,
+                    child: CardPreview(library: library, event: event),
                   ),
-                  PopupMenuButton<_CardAction>(
-                    tooltip: l10n.homeLibraryMore,
-                    iconSize: narrow ? 20 : null,
-                    onSelected: (a) => _action(context, a),
-                    itemBuilder: (_) => [
-                      if (!event.readOnly)
-                        PopupMenuItem(
-                          value: _CardAction.rename,
-                          child: Text(l10n.homeLibraryRename),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(_textInset, 8, 0, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              event.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: smaller(theme.textTheme.titleSmall),
+                            ),
+                            Text(
+                              [
+                                if (event.artist.isNotEmpty) event.artist,
+                                if (event.hideImages)
+                                  l10n.homeLibraryImagesHidden
+                                else if (pages > 0 ||
+                                    pages == event.pages.length)
+                                  l10n.homePages(pages),
+                                if (videos > 0) l10n.homeVideos(videos),
+                                if (audio > 0) l10n.homeAudio(audio),
+                                if (pdfs > 0) l10n.homePdfs(pdfs),
+                                if (links > 0) l10n.homeLinks(links),
+                                if (event.tabText != null) l10n.homeLibraryText,
+                                if (event.sharedBy case final owner?)
+                                  l10n.homeLibrarySharedBy(owner),
+                              ].join(' · '),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: smaller(theme.textTheme.bodySmall),
+                            ),
+                          ],
                         ),
-                      PopupMenuItem(
-                        value: _CardAction.share,
-                        child: Text(l10n.homeLibraryShare),
                       ),
-                      PopupMenuItem(
-                        value: _CardAction.clone,
-                        child: Text(l10n.homeLibraryClone),
-                      ),
-                      PopupMenuItem(
-                        value: _CardAction.delete,
-                        child: Text(
-                          event.isShared
-                              ? l10n.homeLibraryRemove
-                              : l10n.homeLibraryDelete,
+                      if (menu)
+                        PopupMenuButton<_CardAction>(
+                          tooltip: l10n.homeLibraryMore,
+                          iconSize: narrow ? 20 : null,
+                          onSelected: (a) => _action(context, a),
+                          itemBuilder: _items,
                         ),
-                      ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
+
+  /// The card's title and details, from its left edge.
+  static const _textInset = 12.0;
+
+  /// The narrowest the card's line under its preview is with its ⋮: the
+  /// button (48) and a little of the title.
+  static const _menuRoom = 72.0;
 }
 
 void _snack(BuildContext context, String message) =>
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    showMessage(context, message);

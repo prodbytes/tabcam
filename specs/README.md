@@ -33,9 +33,17 @@ review notes ([app stores](app-stores.md)).
 
 - [Navigation](navigation.md): as Presence's, a bottom navigation bar
   with Home (the events), Capture (Scan with the camera; Add a
-  document (PDF), photos & videos, files or a link) and Profile (the account, About, and how to install the phone app from GitHub).
+  document (PDF), photos & videos, files or a link) and Profile (the account, the language, Ask before deleting, About, and how to install the phone app from GitHub).
+- [Messages](messages.md): the app's short messages ("Link copied",
+  "Saved … (Open)") show at the top, under the status bar, 42%
+  transparent, over the page without moving it or covering the bottom
+  navigation bar; one at a time, each gone after a few seconds.
 - [Library](library.md): the Home tab, a grid of events (newest first),
   in My captures and Shared with me sections once something is shared, with Rename, Share, Clone and Delete; how events are stored.
+- [Delete confirmations](delete-confirms.md): deleting a capture or a
+  file asks first, with **Don't ask again** (per kind of delete, kept on
+  the device); Profile's **Ask before deleting** brings them back.
+  Deleting the account always asks.
 - [Scanning](scanning.md): the system document camera (edge detection,
   straightening, several pages), and adding pages, photos, videos, files
   and links.
@@ -58,8 +66,8 @@ review notes ([app stores](app-stores.md)).
 - [Cam](cam.md): record yourself playing along with the tab: the camera,
   the tab under it one neckline (staff) at a time, any key (↓) to the
   next and Backspace / ↑ (← with nothing playing along) to the one before, or a strong nod up / right and
-  down / left (Android, iOS); Rec adds each take to the
-  capture, Play plays it back with the tab turning as it did; Play
+  down / left (Android, iOS); Rec (or the 1 key) adds each take to the
+  capture, the . key saving it and starting a new one, Play plays it back with the tab turning as it did; Play
   along plays one of the capture's recordings, videos or links in a
   frame above the camera, the space bar pausing and playing it, 0
   going back to its start (its section's) and ← / → skipping in it,
@@ -71,7 +79,7 @@ review notes ([app stores](app-stores.md)).
   average time), and **Auto-pass** turns the tab there the next time
   through.
 - [Dictionary](dictionary.md): a book icon at the top of every file
-  viewer and Cam opens a search in a sidebar on the right: a chord shows
+  viewer, Cam and Home opens a search in a sidebar on the right: a chord shows
   its notes and voicings as chord diagrams, a scale its notes on the
   fretboard (both worked out on the device); anything else is searched
   on YouTube. Its Rotate button makes it a panel under the screen, the
@@ -86,7 +94,8 @@ review notes ([app stores](app-stores.md)).
 - [Video edit](video-edit.md): basic edits of a video from its file
   screen: trim its start and end; keep its sound, take it out, or
   replace it with a new track (one of the capture's recordings, or a
-  sound file, added to them), shifted to fit the video. The edit is kept
+  sound file, added to them), shifted to fit the video, at a volume set
+  at the left of its bar. The edit is kept
   with the video and played as it says (muted, the track along it), no
   file made; Download makes one on the device: the video, the video
   without sound, or the sound only.

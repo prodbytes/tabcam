@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tabcam_app/capture/video_edit.dart';
 import 'package:tabcam_app/export/download.dart';
@@ -13,6 +14,8 @@ import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
 import 'package:tabcam_app/screens/file_screen.dart';
 import 'package:tabcam_app/screens/video_edit_screen.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 
 import 'mini_player_test.dart' show FakeVideoPlatform;
@@ -41,13 +44,25 @@ class FakeEditor implements VideoEditing {
   }
 }
 
-/// The fake platform, with each player's volume.
+/// The fake platform, with each player's volume, and each pause.
 class VolumePlatform extends FakeVideoPlatform {
   final volumes = <int, double>{};
+  final paused = <int>[];
+
+  @override
+  Future<void> pause(int playerId) {
+    paused.add(playerId);
+    return super.pause(playerId);
+  }
 
   @override
   Future<void> setVolume(int playerId, double volume) async =>
       volumes[playerId] = volume;
+}
+
+class _Paths extends PathProviderPlatform with MockPlatformInterfaceMixin {
+  @override
+  Future<String?> getTemporaryPath() async => '/tmp/tabcam-test';
 }
 
 Duration s(double seconds) => Duration(milliseconds: (seconds * 1000).round());
@@ -187,6 +202,88 @@ void main() {
         'endMs': 2000,
         'sound': 'original',
       });
+    });
+
+    test('keeps its track\'s volume: in JSON only when not as it is, read '
+        'defensively, through a clone and in ==', () {
+      final edit = PageEdit(
+        start: s(1),
+        end: s(6),
+        sound: EditSound.track,
+        trackId: 'k1',
+        trackVolume: 0.4,
+      );
+      expect(edit.toJson()['trackVolume'], 0.4);
+      expect(PageEdit.fromJson(jsonDecode(jsonEncode(edit.toJson()))), edit);
+      expect(edit, isNot(edit.withTrackVolume(1)));
+      expect(
+        edit.withTrackVolume(1).toJson().containsKey('trackVolume'),
+        false,
+      );
+      expect(edit.withTrackId('k9').trackVolume, 0.4);
+      expect(edit.withTrackVolume(0.4), edit);
+      // As it is, by default: an older edit has none.
+      expect(PageEdit(start: s(1), end: s(2)).trackVolume, 1);
+      expect(PageEdit.fromJson({'startMs': 0, 'endMs': 1000})!.trackVolume, 1);
+      // Anything else: within 0–1, to the hundredth, or as it is.
+      for (final (json, volume) in [
+        ('loud', 1.0),
+        (null, 1.0),
+        (2.5, 1.0),
+        (-1, 0.0),
+        (0.333, 0.33),
+        (0, 0.0),
+      ]) {
+        expect(
+          PageEdit.fromJson({'startMs': 0, 'endMs': 1000, 'trackVolume': json})!
+              .trackVolume,
+          volume,
+          reason: '$json',
+        );
+      }
+    });
+
+    test('the phones\' editor gets the track\'s volume', () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      PathProviderPlatform.instance = _Paths();
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      final calls = <MethodCall>[];
+      messenger.setMockMethodCallHandler(ChannelVideoEditor.channel, (c) async {
+        calls.add(c);
+        return (c.arguments as Map)['output'];
+      });
+      addTearDown(
+        () => messenger.setMockMethodCallHandler(
+          ChannelVideoEditor.channel,
+          null,
+        ),
+      );
+      final edit = VideoEdit(
+        start: Duration.zero,
+        end: s(4),
+        sound: EditSound.track,
+        track: XFile('/tmp/riff.m4a'),
+        trackLength: s(10),
+        trackVolume: 0.35,
+      );
+      await const ChannelVideoEditor().apply(XFile('/tmp/take.mp4'), edit);
+      await const ChannelVideoEditor().apply(
+        XFile('/tmp/take.mp4'),
+        edit,
+        soundOnly: true,
+      );
+      // Without a track, there's no volume to send.
+      await const ChannelVideoEditor().apply(
+        XFile('/tmp/take.mp4'),
+        VideoEdit(start: Duration.zero, end: s(4), trackVolume: 0.35),
+      );
+      final args = [for (final c in calls) c.arguments as Map];
+      expect(args[0]['trackVolume'], 0.35);
+      expect(args[0]['video'], isTrue);
+      expect(args[1]['trackVolume'], 0.35);
+      expect(args[1]['video'], isFalse);
+      expect(args[2].containsKey('trackVolume'), isFalse);
     });
 
     test('broken or on a page that\'s not a video, is none', () {
@@ -649,5 +746,188 @@ void main() {
     );
     await _frames(tester);
     expect(find.text('0:12.0'), findsOneWidget);
+  });
+
+  testWidgets('the track\'s volume: at the left of its bar, on its row; '
+      'set, it\'s kept with the edit, the preview plays the track at it '
+      '(on, without stopping), Download gets it, and Reset puts it back', (
+    tester,
+  ) async {
+    tall(tester);
+    final (library, id) = await capture(tester);
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    await tester.tap(find.text('New track'));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-track-k1')));
+    await _settle(tester);
+    final track = platform.lastPlayer;
+
+    // At the left of the bar, on the same row.
+    final control = tester.getRect(
+      find.byKey(const Key('video-edit-track-volume')),
+    );
+    final bar = tester.getRect(find.byKey(const Key('video-edit-track-bar')));
+    expect(control.right, lessThanOrEqualTo(bar.left));
+    expect(control.center.dy, closeTo(bar.center.dy, 1));
+    expect(bar.right - control.left, closeTo(900 - 32, 1));
+    expect(find.text('100%'), findsOneWidget);
+    expect(platform.volumes[track], 1);
+
+    // Played: the video muted, the track along it.
+    await tester.tap(find.byKey(const Key('video-edit-play')));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 300)),
+    );
+    await _frames(tester);
+    expect(platform.playing, containsAll([0, track]));
+
+    // Tapped, it opens its slider; at half, the track plays on, at half.
+    await tester.tap(find.byKey(const Key('video-edit-track-volume')));
+    await _frames(tester);
+    final slider = find.byKey(const Key('video-edit-track-volume-slider'));
+    expect(slider, findsOneWidget);
+    platform.paused.clear();
+    tester.widget<Slider>(slider).onChanged!(50);
+    await _settle(tester);
+    expect(platform.volumes[track], 0.5);
+    expect(platform.playing, contains(track));
+    expect(platform.paused, isNot(contains(track)));
+    expect(library.byId(id)!.pages.first.edit!.trackVolume, 0.5);
+    expect(find.text('50%'), findsNWidgets(2));
+    expect(tester.widget<Slider>(slider).value, 50);
+
+    // Muted, and back as loud as it was.
+    await tester.tap(find.byKey(const Key('video-edit-track-mute')));
+    await _settle(tester);
+    expect(platform.volumes[track], 0);
+    expect(library.byId(id)!.pages.first.edit!.trackVolume, 0);
+    expect(find.text('0%'), findsNWidgets(2));
+    await tester.tap(find.byKey(const Key('video-edit-track-mute')));
+    await _settle(tester);
+    expect(platform.volumes[track], 0.5);
+    expect(library.byId(id)!.pages.first.edit!.trackVolume, 0.5);
+    await tester.tapAt(const Offset(450, 1500));
+    await _frames(tester);
+    expect(slider, findsNothing);
+    await tester.tap(find.byKey(const Key('video-edit-play')));
+    await _settle(tester);
+
+    // Download: the track goes in at half.
+    await tester.tap(find.byKey(const Key('video-edit-download')));
+    await _settle(tester);
+    expect(editor.applied.single.$2.trackVolume, 0.5);
+
+    // Reset: as it is again.
+    await tester.tap(find.byKey(const Key('video-edit-reset')));
+    await _settle(tester);
+    expect(library.byId(id)!.pages.first.edit, isNull);
+    await tester.tap(find.text('New track'));
+    await _settle(tester);
+    expect(find.text('100%'), findsOneWidget);
+    expect(library.byId(id)!.pages.first.edit!.trackVolume, 1);
+    expect(platform.volumes[track], 1);
+  });
+
+  testWidgets('a kept edit\'s track plays at its volume, on its file screen '
+      'and in the editor', (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester);
+    await tester.runAsync(
+      () => library.setPageEdit(
+        id,
+        'k0',
+        PageEdit(
+          start: s(10),
+          end: s(20),
+          sound: EditSound.track,
+          trackId: 'k1',
+          trackVolume: 0.25,
+        ),
+      ),
+    );
+    await tester.pumpWidget(
+      host(FileScreen(library: library, eventId: id, pageId: 'k0')),
+    );
+    await _settle(tester);
+    await tester.tap(find.byIcon(Icons.play_circle_fill));
+    await _settle(tester);
+    expect(platform.volumes[1], 0.25);
+
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    expect(find.text('25%'), findsOneWidget);
+    expect(platform.volumes[platform.lastPlayer], 0.25);
+
+    // Slid down to 0%, Unmute puts back the level it had as it was
+    // opened.
+    await tester.tap(find.byKey(const Key('video-edit-track-volume')));
+    await _frames(tester);
+    final slider = find.byKey(const Key('video-edit-track-volume-slider'));
+    for (final v in [20.0, 10.0, 5.0, 0.0]) {
+      if (v == 20) tester.widget<Slider>(slider).onChangeStart!(25);
+      tester.widget<Slider>(slider).onChanged!(v);
+      await _frames(tester);
+    }
+    tester.widget<Slider>(slider).onChangeEnd?.call(0);
+    await _settle(tester);
+    expect(library.byId(id)!.pages.first.edit!.trackVolume, 0);
+    await tester.tap(find.byKey(const Key('video-edit-track-mute')));
+    await _settle(tester);
+    expect(library.byId(id)!.pages.first.edit!.trackVolume, 0.25);
+    expect(platform.volumes[platform.lastPlayer], 0.25);
+  });
+
+  testWidgets('a muted edit, opened again, unmutes to 100%', (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester);
+    await tester.runAsync(
+      () => library.setPageEdit(
+        id,
+        'k0',
+        PageEdit(
+          start: s(10),
+          end: s(20),
+          sound: EditSound.track,
+          trackId: 'k1',
+          trackVolume: 0,
+        ),
+      ),
+    );
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    expect(find.text('0%'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('video-edit-track-volume')));
+    await _frames(tester);
+    await tester.tap(find.byKey(const Key('video-edit-track-mute')));
+    await _settle(tester);
+    expect(library.byId(id)!.pages.first.edit!.trackVolume, 1);
+  });
+
+  testWidgets('the track\'s volume fits its bar at the largest text size', (
+    tester,
+  ) async {
+    tall(tester);
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    final (library, id) = await capture(tester);
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    await tester.tap(find.text('New track'));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-track-k1')));
+    await _settle(tester);
+    // No overflow (which would fail the test), the level on one line,
+    // within the control.
+    final control = tester.getRect(
+      find.byKey(const Key('video-edit-track-volume')),
+    );
+    final level = tester.getRect(
+      find.byKey(const Key('video-edit-track-volume-level')),
+    );
+    expect(control.contains(level.topLeft), isTrue);
+    expect(control.contains(level.bottomRight - const Offset(1, 1)), isTrue);
+    expect(find.text('100%'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

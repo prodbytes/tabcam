@@ -15,9 +15,11 @@ import 'link_page.dart';
 import 'mini_player.dart';
 import 'page_image.dart';
 import 'pdf_page.dart';
+import 'place.dart';
 import 'video_edit_screen.dart';
 import 'video_page.dart';
 import 'youtube_link.dart';
+import 'messages.dart';
 
 /// What a file is called in its capture's list: "Page 2", "Video 1", "PDF
 /// 1", "Recording 1" (numbered among the files of its kind, in the capture
@@ -215,9 +217,7 @@ class _FileScreenState extends State<FileScreen> {
     }
   }
 
-  void _snack(String message) =>
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
+  void _snack(String message) => showMessage(context, message);
 
   /// Original ↔ Scan: the image's filter, saved (its thumbnail and the
   /// exports follow), or only what shows on a capture shared read only.
@@ -241,7 +241,14 @@ class _FileScreenState extends State<FileScreen> {
       _run(context.l10n.eventCouldntRotate, () async {
         final index = event.pages.indexOf(page);
         final turned = await _library.rotatePage(event, page);
-        if (mounted) setState(() => _pageId = turned.pages[index].id);
+        final id = turned.pages[index].id;
+        // The place names the file by its new ID, for a reload.
+        PlaceMemory.of(_library).update(
+          (p) => p.eventId == widget.eventId && p.fileId == page.id
+              ? p.copyWith(fileId: () => id)
+              : p,
+        );
+        if (mounted) setState(() => _pageId = id);
       });
 
   /// Edits a video (trim, sound): the edit screen over this one, the

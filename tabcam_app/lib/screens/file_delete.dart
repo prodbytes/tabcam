@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../l10n/language.dart';
 import '../library/capture_event.dart';
 import '../library/library.dart';
+import 'delete_confirm.dart';
 import 'file_screen.dart';
+import 'messages.dart';
 
 /// Whether the user may delete [page] from [event]: one of the capture's
 /// own files on a capture of theirs or one shared with them to edit; on
@@ -21,9 +23,13 @@ bool mayDeleteFile(CaptureEvent event, EventPage page) {
 /// ([Library.deleteContributionPage]). Nothing for a file the user may
 /// not delete ([mayDeleteFile]).
 ///
+/// It asks first ([confirmDelete]: [DeleteKind.file] for one of the
+/// capture's, [DeleteKind.contribution] for one of the user's own), unless
+/// the user ticked **Don't ask again** on that kind of delete.
+///
 /// [letGo] runs once the user confirms, before the file goes (a player
 /// lets go of it). [run] runs the delete (the screen's progress bar and
-/// error message); without it, a failure shows in a snack bar.
+/// error message); without it, a failure shows as a message.
 Future<void> deleteFile(
   BuildContext context,
   Library library,
@@ -34,13 +40,20 @@ Future<void> deleteFile(
 }) async {
   if (!mayDeleteFile(event, page)) return;
   final l10n = context.l10n;
-  final messenger = ScaffoldMessenger.maybeOf(context);
+  final messenger = Messenger.maybeOf(context);
   final own = event.pages.any((p) => p.id == page.id);
   if (own && event.pages.length == 1) {
-    messenger?.showSnackBar(SnackBar(content: Text(l10n.eventKeepOnePage)));
+    messenger?.show(l10n.eventKeepOnePage);
     return;
   }
-  final sure = await _confirm(context, event, page, contribution: !own);
+  final sure = await confirmDelete(
+    context,
+    library: library,
+    kind: own ? DeleteKind.file : DeleteKind.contribution,
+    title: l10n.homeLibraryDeleteTitle(fileLabel(l10n, event, page)),
+    confirm: l10n.eventDelete,
+    cancel: l10n.eventCancel,
+  );
   if (!sure || !context.mounted) return;
   await letGo?.call();
   Future<void> task() async {
@@ -59,36 +72,6 @@ Future<void> deleteFile(
     await task();
   } on Object catch (e, stack) {
     debugPrint('TabCam: ${l10n.eventCouldntDelete}: $e\n$stack');
-    messenger?.showSnackBar(
-      SnackBar(content: Text('${l10n.eventCouldntDelete}: $e')),
-    );
+    messenger?.show('${l10n.eventCouldntDelete}: $e');
   }
-}
-
-/// Asks before [page] is deleted: one of the capture's own files, or of
-/// the user's [contribution]. The one place deleting a file asks.
-Future<bool> _confirm(
-  BuildContext context,
-  CaptureEvent event,
-  EventPage page, {
-  required bool contribution,
-}) async {
-  final l10n = context.l10n;
-  final sure = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(l10n.homeLibraryDeleteTitle(fileLabel(l10n, event, page))),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: Text(l10n.eventCancel),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: Text(l10n.eventDelete),
-        ),
-      ],
-    ),
-  );
-  return sure == true;
 }

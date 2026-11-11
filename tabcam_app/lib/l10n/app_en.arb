@@ -803,6 +803,14 @@
   "@camStop": {
     "description": "Cam: stop recording or playing"
   },
+  "camRecKey": "Rec (1)",
+  "@camRecKey": {
+    "description": "Cam: the Rec button's tooltip; the 1 key does it too"
+  },
+  "camStopKey": "Stop (1) · new take (.)",
+  "@camStopKey": {
+    "description": "Cam: the Stop button's tooltip while recording; the 1 key does it too, and the . key saves the take and starts a new one"
+  },
   "camPlay": "Play",
   "@camPlay": {
     "description": "Cam: play the last take back"
@@ -899,6 +907,10 @@
   "camAlongTitle": "Play along",
   "@camAlongTitle": {
     "description": "Cam sidebar heading"
+  },
+  "camAlongTakes": "Takes",
+  "@camAlongTakes": {
+    "description": "Cam sidebar heading over Cam's takes, listed last; tapping one plays it along"
   },
   "camAlongPdfs": "Follow a PDF",
   "@camAlongPdfs": {
@@ -2614,6 +2626,27 @@
   "@videoEditTrackLater": {
     "description": "Video edit: nudges the track later"
   },
+  "videoEditTrackVolume": "Track volume",
+  "@videoEditTrackVolume": {
+    "description": "Video edit: the track's volume control, at the left of the track bar (tooltip, screen reader); opens a slider"
+  },
+  "videoEditTrackVolumeLevel": "{percent}%",
+  "@videoEditTrackVolumeLevel": {
+    "description": "Video edit: the track's volume, as a percentage (0 to 100), under the volume control and beside its slider",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditTrackMute": "Mute the track",
+  "@videoEditTrackMute": {
+    "description": "Video edit: the volume slider's speaker button, while the track has sound; silences it"
+  },
+  "videoEditTrackUnmute": "Unmute the track",
+  "@videoEditTrackUnmute": {
+    "description": "Video edit: the volume slider's speaker button, while the track is muted; puts back its level"
+  },
   "videoEditTrackUsed": "Using {start}–{end} of the track",
   "@videoEditTrackUsed": {
     "description": "Video edit: the part of the track used, once trimmed (times like 0:01.5)",
@@ -2710,5 +2743,21 @@
         "type": "String"
       }
     }
+  },
+  "deleteDontAskAgain": "Don't ask again",
+  "@deleteDontAskAgain": {
+    "description": "Delete confirmation (a capture, a file): the checkbox that stops this kind of delete asking on this device"
+  },
+  "deleteAskTitle": "Ask before deleting",
+  "@deleteAskTitle": {
+    "description": "Profile: the device setting that brings the delete confirmations back"
+  },
+  "deleteAskOn": "Deleting a capture or a file asks first, on this device.",
+  "@deleteAskOn": {
+    "description": "Profile: under Ask before deleting, when it's on"
+  },
+  "deleteAskOff": "Some deletes happen at once, without asking. Turn it on to be asked again.",
+  "@deleteAskOff": {
+    "description": "Profile: under Ask before deleting, when it's off"
   }
 }
