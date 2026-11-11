@@ -2005,13 +2005,19 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditDownloadMore => 'Mais downloads';
 
   @override
-  String get videoEditDownloadVideo => 'O vídeo';
+  String videoEditDownloadVideo(String format) {
+    return 'O vídeo ($format)';
+  }
 
   @override
-  String get videoEditDownloadSilent => 'O vídeo sem som';
+  String videoEditDownloadSilent(String format) {
+    return 'O vídeo sem som ($format)';
+  }
 
   @override
-  String get videoEditDownloadSound => 'Só o som';
+  String videoEditDownloadSound(String format) {
+    return 'Só o som ($format)';
+  }
 
   @override
   String get videoEditDownloading => 'Criando o arquivo…';

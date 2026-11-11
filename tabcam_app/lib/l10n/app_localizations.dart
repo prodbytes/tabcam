@@ -3358,23 +3358,23 @@ abstract class AppLocalizations {
   /// **'More downloads'**
   String get videoEditDownloadMore;
 
-  /// Video edit: Download's menu: the video as edited, with its sound
+  /// Video edit: Download's menu: the video as edited, with its sound; format: the file's format (MP4, or WebM in a browser that can't record MP4)
   ///
   /// In en, this message translates to:
-  /// **'The video'**
-  String get videoEditDownloadVideo;
+  /// **'The video ({format})'**
+  String videoEditDownloadVideo(String format);
 
-  /// Video edit: Download's menu: the video as edited, silent
+  /// Video edit: Download's menu: the video as edited, silent; format: the file's format (MP4, or WebM in a browser that can't record MP4)
   ///
   /// In en, this message translates to:
-  /// **'The video without sound'**
-  String get videoEditDownloadSilent;
+  /// **'The video without sound ({format})'**
+  String videoEditDownloadSilent(String format);
 
-  /// Video edit: Download's menu: the edited video's sound alone, as a sound file
+  /// Video edit: Download's menu: the edited video's sound alone, as a sound file; format: the file's format (M4A, or WAV in a browser that can't make AAC)
   ///
   /// In en, this message translates to:
-  /// **'The sound only'**
-  String get videoEditDownloadSound;
+  /// **'The sound only ({format})'**
+  String videoEditDownloadSound(String format);
 
   /// Video edit: while a download is made
   ///

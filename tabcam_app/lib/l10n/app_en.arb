@@ -2674,17 +2674,35 @@
   "@videoEditDownloadMore": {
     "description": "Video edit: the arrow beside Download that opens its other choices"
   },
-  "videoEditDownloadVideo": "The video",
+  "videoEditDownloadVideo": "The video ({format})",
   "@videoEditDownloadVideo": {
-    "description": "Video edit: Download's menu: the video as edited, with its sound"
+    "description": "Video edit: Download's menu: the video as edited, with its sound; format: the file's format (MP4, or WebM in a browser that can't record MP4)",
+    "placeholders": {
+      "format": {
+        "type": "String",
+        "example": "MP4"
+      }
+    }
   },
-  "videoEditDownloadSilent": "The video without sound",
+  "videoEditDownloadSilent": "The video without sound ({format})",
   "@videoEditDownloadSilent": {
-    "description": "Video edit: Download's menu: the video as edited, silent"
+    "description": "Video edit: Download's menu: the video as edited, silent; format: the file's format (MP4, or WebM in a browser that can't record MP4)",
+    "placeholders": {
+      "format": {
+        "type": "String",
+        "example": "MP4"
+      }
+    }
   },
-  "videoEditDownloadSound": "The sound only",
+  "videoEditDownloadSound": "The sound only ({format})",
   "@videoEditDownloadSound": {
-    "description": "Video edit: Download's menu: the edited video's sound alone, as a sound file"
+    "description": "Video edit: Download's menu: the edited video's sound alone, as a sound file; format: the file's format (M4A, or WAV in a browser that can't make AAC)",
+    "placeholders": {
+      "format": {
+        "type": "String",
+        "example": "M4A"
+      }
+    }
   },
   "videoEditDownloading": "Making the file…",
   "@videoEditDownloading": {

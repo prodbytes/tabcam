@@ -7,6 +7,7 @@ import 'dart:js_interop';
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tabcam_app/capture/edit_formats.dart';
 import 'package:tabcam_app/capture/video_edit.dart';
 import 'package:tabcam_app/capture/web_video_editor.dart';
 import 'package:web/web.dart' as web;
@@ -14,8 +15,10 @@ import 'package:web/web.dart' as web;
 /// The browser editor, in a real browser (`bash scripts/test-browser.sh`:
 /// Chrome with sound allowed without a tap): a video made here (a canvas that changes colour, with a
 /// tone, recorded as a take is) is trimmed, and its sound kept, taken out
-/// or replaced by the same file as a track, each as a video file of the
-/// kept part's length; and its sound alone, as a WAV.
+/// or replaced by the same file as a track, each as an MP4 of the kept
+/// part's length that says its length; and its sound alone, AAC in an M4A
+/// (by WebCodecs, or recorded as it plays), or a WAV where AAC can't be
+/// made.
 void main() {
   /// A video [seconds] long, with sound, as the browser records one.
   Future<XFile> makeVideo(double seconds) async {
@@ -64,9 +67,9 @@ void main() {
     return XFile.fromData(bytes, name: 'made.webm', mimeType: 'video/webm');
   }
 
-  /// What a browser makes of [file]: its length in seconds, and whether
-  /// it has sound.
-  Future<(double, bool)> probe(XFile file) async {
+  /// [probe], and whether the file says its length as it loads (one
+  /// MediaRecorder wrote as WebM doesn't: it's sought to its end).
+  Future<(double, bool, bool)> probeAll(XFile file) async {
     final blob = web.Blob(
       [(await file.readAsBytes()).toJS].toJS,
       web.BlobPropertyBag(type: file.mimeType ?? ''),
@@ -84,6 +87,7 @@ void main() {
     }).toJS;
     video.load();
     await loaded.future.timeout(const Duration(seconds: 10));
+    final known = video.duration.isFinite;
     if (video.duration.isInfinite) {
       final seeked = Completer<void>();
       video.onseeked = ((web.Event _) => seeked.complete()).toJS;
@@ -103,7 +107,24 @@ void main() {
     } finally {
       await audio.close().toDart;
     }
-    return (video.duration, sound);
+    return (video.duration, sound, known);
+  }
+
+  /// What a browser makes of [file]: its length in seconds, and whether
+  /// it has sound.
+  Future<(double, bool)> probe(XFile file) async {
+    final (length, sound, _) = await probeAll(file);
+    return (length, sound);
+  }
+
+  /// The type of [file]'s first box (an MP4's or M4A's is `ftyp`) and
+  /// its brand.
+  Future<(String, String)> firstBox(XFile file) async {
+    final bytes = await file.readAsBytes();
+    return (
+      String.fromCharCodes(bytes.sublist(4, 8)),
+      String.fromCharCodes(bytes.sublist(8, 12)),
+    );
   }
 
   Future<void> body() async {
@@ -112,6 +133,8 @@ void main() {
     expect(length, closeTo(3, 0.6));
     expect(sound, isTrue);
     final editor = WebVideoEditor();
+    // Chrome records MP4 and encodes AAC.
+    expect(await editor.formats(), EditFormats.standard);
     // A file the browser recorded says it's endless; the editor finds
     // out its length.
     expect(
@@ -128,13 +151,16 @@ void main() {
       ),
       onProgress: progress.add,
     );
-    expect(trimmed.mimeType, 'video/webm');
-    expect(trimmed.name, 'edit.webm');
+    expect(trimmed.mimeType, 'video/mp4');
+    expect(trimmed.name, 'edit.mp4');
+    expect((await firstBox(trimmed)).$1, 'ftyp');
     expect(progress, isNotEmpty);
     expect(progress.last, closeTo(1, 0.2));
-    final (kept, keptSound) = await probe(trimmed);
+    final (kept, keptSound, keptKnown) = await probeAll(trimmed);
     expect(kept, closeTo(1.5, 0.5));
     expect(keptSound, isTrue);
+    // An MP4 the recorder wrote says its length, so it seeks.
+    expect(keptKnown, isTrue);
 
     final silent = await editor.apply(
       video,
@@ -144,6 +170,7 @@ void main() {
         sound: EditSound.none,
       ),
     );
+    expect(silent.name, 'edit.mp4');
     final (silentLength, silentSound) = await probe(silent);
     expect(silentLength, closeTo(1, 0.5));
     expect(silentSound, isFalse);
@@ -162,8 +189,9 @@ void main() {
     expect(trackedLength, closeTo(1, 0.5));
     expect(trackedSound, isTrue);
 
-    // The sound alone: a WAV as long as the kept part, rendered faster
-    // than it plays; the track's starts after its gap.
+    // The sound alone: AAC in an M4A as long as the kept part (the
+    // encoder's delay cut), made faster than it plays; the track's starts
+    // after its gap.
     Future<web.AudioBuffer> decode(XFile file) async {
       final audio = web.AudioContext();
       try {
@@ -185,9 +213,11 @@ void main() {
       soundOnly: true,
     );
     expect(clock.elapsedMilliseconds, lessThan(1500));
-    expect(own.mimeType, 'audio/wav');
+    expect(own.mimeType, 'audio/mp4');
+    expect(own.name, 'sound.m4a');
+    expect(await firstBox(own), ('ftyp', 'M4A '));
     final ownSound = await decode(own);
-    expect(ownSound.duration, closeTo(2, 0.05));
+    expect(ownSound.duration, closeTo(2, 0.01));
 
     final gapped = await editor.apply(
       video,
@@ -201,7 +231,8 @@ void main() {
       soundOnly: true,
     );
     final gappedSound = await decode(gapped);
-    expect(gappedSound.duration, closeTo(2, 0.05));
+    expect(gapped.name, 'sound.m4a');
+    expect(gappedSound.duration, closeTo(2, 0.01));
     double loudest(web.AudioBuffer buffer, double from, double to) {
       final samples = buffer.getChannelData(0).toDart;
       final rate = buffer.sampleRate;
@@ -212,9 +243,10 @@ void main() {
       return most;
     }
 
-    // Silence for its first second, the tone after.
-    expect(loudest(gappedSound, 0, 0.9), lessThan(0.01));
-    expect(loudest(gappedSound, 1.2, 1.9), greaterThan(0.1));
+    // Silence for its first second, the tone after: where it is, the
+    // encoder's delay cut.
+    expect(loudest(gappedSound, 0, 0.98), lessThan(0.01));
+    expect(loudest(gappedSound, 1.02, 1.9), greaterThan(0.1));
 
     // At half its volume, the track is half as loud.
     final quieter = await decode(
@@ -235,6 +267,43 @@ void main() {
       loudest(quieter, 1.2, 1.9),
       closeTo(loudest(gappedSound, 1.2, 1.9) / 2, 0.02),
     );
+    // Recorded as it plays, where WebCodecs can't make AAC (an older
+    // Safari): an M4A about as long, the track at its volume too.
+    VideoEdit gappedAt(double volume) => VideoEdit(
+      start: Duration.zero,
+      end: const Duration(milliseconds: 2000),
+      sound: EditSound.track,
+      track: video,
+      offset: const Duration(milliseconds: 1000),
+      trackVolume: volume,
+    );
+    final recorder = WebVideoEditor(soundWay: WebSoundWay.recorder);
+    final recorded = await recorder.apply(video, gappedAt(1), soundOnly: true);
+    expect(recorded.mimeType, 'audio/mp4');
+    expect(recorded.name, 'sound.m4a');
+    expect((await firstBox(recorded)).$1, 'ftyp');
+    final recordedSound = await decode(recorded);
+    expect(recordedSound.duration, closeTo(2, 0.3));
+    final recordedQuieter = await decode(
+      await recorder.apply(video, gappedAt(0.5), soundOnly: true),
+    );
+    expect(
+      loudest(recordedQuieter, 1.3, 1.7) / loudest(recordedSound, 1.3, 1.7),
+      closeTo(0.5, 0.1),
+    );
+
+    // Where AAC can't be made at all (Firefox): a WAV, as long exactly.
+    final wav = await WebVideoEditor(soundWay: WebSoundWay.wav)
+        .apply(video, gappedAt(0.5), soundOnly: true);
+    expect(wav.mimeType, 'audio/wav');
+    expect(wav.name, 'sound.wav');
+    final wavSound = await decode(wav);
+    expect(wavSound.duration, closeTo(2, 0.001));
+    expect(
+      loudest(wavSound, 1.2, 1.9),
+      closeTo(loudest(gappedSound, 1.2, 1.9) / 2, 0.02),
+    );
+
     // And with the video, it goes through the gain too: its recorded
     // sound is about half as loud as the same edit's at 100%.
     VideoEdit withVideo(double volume) => VideoEdit(
@@ -245,6 +314,7 @@ void main() {
       trackVolume: volume,
     );
     final quietVideo = await editor.apply(video, withVideo(0.5));
+    expect(quietVideo.name, 'edit.mp4');
     final (_, quietVideoSound) = await probe(quietVideo);
     expect(quietVideoSound, isTrue);
     final loudVideo = await editor.apply(video, withVideo(1));
@@ -267,5 +337,5 @@ void main() {
         rethrow;
       }
     });
-  }, timeout: const Timeout(Duration(minutes: 2)));
+  }, timeout: const Timeout(Duration(minutes: 3)));
 }

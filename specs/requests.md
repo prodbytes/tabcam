@@ -2654,3 +2654,31 @@ spec.
    where it types "," (Brazilian, German and most European layouts) and
    its logical key is the comma, it's still a new take, not a turn of
    the tab. Tests for both. See [Cam](cam.md#new-take-key).
+10. **let the user download as MP3 only the audio, or MP4 the entire
+    video** — the user then chose the sound only as **M4A (AAC)** rather
+    than MP3 (no MP3 encoder is bundled), in the video editor's Download
+    menu only. Android (Media3 Transformer) and iOS (AVFoundation)
+    already made MP4 and, for the sound only, M4A (`audio/mp4`): checked,
+    unchanged. The web now makes them too: the video is recorded as MP4
+    (`video/mp4;codecs=avc1.42E01E,mp4a.40.2`, then simpler MP4 types)
+    where the browser can (Chrome, Edge, Safari), WebM only where it
+    can't (Firefox), named by what was recorded; Chrome's MP4 says its
+    length and seeks. The sound only, still mixed offline, is encoded as
+    AAC by WebCodecs' AudioEncoder and written into an M4A by a small
+    muxer in Dart (`m4a.dart`, no library added), its edit list cutting
+    the encoder's delay (measured once) so it's as long as the kept
+    part; without the AudioEncoder, MediaRecorder records it as AAC as
+    it plays (an older Safari); a WAV only where AAC can't be made
+    (Firefox). The track's volume goes into every output. The menu says
+    each format: "The video (MP4)", "The video without sound (MP4)",
+    "The sound only (M4A)" (Spanish and Portuguese too), "(WebM)" and
+    "(WAV)" where those are what the browser makes. A video the edit
+    doesn't change downloads as it is only when it's already an MP4
+    (made again otherwise, e.g. a WebM take). New tests: the recorder
+    types' order and fallback, files named by format, the M4A's boxes
+    (`ftyp` M4A, `moov`/`trak`/`mp4a`/`esds`, sample tables, edit list,
+    `mdat`), the menu's labels and file names, an unchanged WebM made
+    again; the browser test (Chrome) checks the video is an MP4 that
+    says its length, the sound only an M4A as long as the kept part with
+    the track at its volume, the recorder and WAV ways too. See
+    [video edit](video-edit.md).

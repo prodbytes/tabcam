@@ -114,6 +114,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   bool _busy = false;
   double? _progress;
 
+  /// The formats Download makes here (the menu says them): MP4 and M4A
+  /// until the editor says otherwise (a browser that can't make them).
+  EditFormats _formats = EditFormats.standard;
+
   Library get _library => widget.library;
 
   /// How long the video and the track are: the players' word, unless they
@@ -152,6 +156,16 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   void initState() {
     super.initState();
     unawaited(_open());
+    unawaited(_loadFormats());
+  }
+
+  Future<void> _loadFormats() async {
+    try {
+      final formats = await _editor?.formats();
+      if (formats != null && mounted) setState(() => _formats = formats);
+    } on Object catch (e) {
+      debugPrint('TabCam: video edit: formats unknown: $e');
+    }
   }
 
   /// Opens the video, and the edit it has (its track too).
@@ -540,8 +554,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   }
 
   /// Makes a file of the edit, on the device ([VideoEditor]), and
-  /// downloads it: the video as edited, without sound, or its sound alone.
-  /// A video the edit doesn't change downloads as it is.
+  /// downloads it: the video as edited, without sound, or its sound alone,
+  /// in [_formats]. A video the edit doesn't change downloads as it is
+  /// when it's already in that format (an MP4); made again otherwise.
   Future<void> _download(_Download what) async {
     final editor = _editor;
     final event = _library.byId(widget.eventId);
@@ -565,7 +580,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       final edit = what == _Download.silent
           ? VideoEdit(start: _start, end: _end, sound: EditSound.none)
           : _edit;
-      if (what != _Download.sound && !edit.changes(_duration)) {
+      if (what != _Download.sound &&
+          !edit.changes(_duration) &&
+          Media.of(input)?.extension == _formats.video.extension) {
         await Downloads.saveFile(_library, event, page, label);
         return;
       }
@@ -577,12 +594,11 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           if (mounted) setState(() => _progress = done);
         },
       );
-      final extension =
-          Media.of(out)?.extension ?? (what == _Download.sound ? 'm4a' : 'mp4');
+      final format = what == _Download.sound ? _formats.sound : _formats.video;
       await Downloads.saveBytes(
-        safeFileName(label, extension),
+        safeFileName(label, Media.of(out)?.extension ?? format.extension),
         await out.readAsBytes(),
-        out.mimeType ?? 'video/mp4',
+        out.mimeType ?? format.mimeType,
       );
     } on Object catch (e, stack) {
       debugPrint(
@@ -710,7 +726,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   }
 
   /// Download, split: the button downloads the video as edited; its menu
-  /// also has it without sound, and its sound alone.
+  /// also has it without sound, and its sound alone, each saying its
+  /// format.
   Widget _downloadButton(AppLocalizations l10n) {
     const radius = Radius.circular(20);
     return Row(
@@ -735,15 +752,19 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
             for (final (what, label, icon) in [
               (
                 _Download.video,
-                l10n.videoEditDownloadVideo,
+                l10n.videoEditDownloadVideo(_formats.video.label),
                 Icons.movie_outlined,
               ),
               (
                 _Download.silent,
-                l10n.videoEditDownloadSilent,
+                l10n.videoEditDownloadSilent(_formats.video.label),
                 Icons.videocam_off_outlined,
               ),
-              (_Download.sound, l10n.videoEditDownloadSound, Icons.audiotrack),
+              (
+                _Download.sound,
+                l10n.videoEditDownloadSound(_formats.sound.label),
+                Icons.audiotrack,
+              ),
             ])
               MenuItemButton(
                 key: Key('video-edit-download-${what.name}'),
