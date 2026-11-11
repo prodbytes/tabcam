@@ -2918,7 +2918,10 @@ spec.
     level** (it used to set it to 0%, and an edit reopened at 100%).
     The edit is stored as version 2 (`v: 2`): new keys `ownVolume`,
     `ownMuted`, `songMuted` and `song` (`manual`, `off`; `auto` is
-    reserved for the song lined up by itself, a later step), beside the
+    reserved for the song lined up by itself, a later step; absent with
+    a `trackId`, as a later version writes a song that's the page's
+    default, it reads as `auto`, the track keys' one clip, and stays
+    absent when written back), beside the
     old keys, which keep their meaning; `sound` is still written for
     older apps, worked out from the lanes (`track` when only the song
     is heard, `none` when neither is, `original` otherwise). An edit
@@ -2929,14 +2932,26 @@ spec.
     levels and newer keys kept. `PageEdit` has one `copyWith` (in place
     of `withTrackId` and `withTrackVolume`), its `==`, `hashCode` and
     `toString` from one list of fields; Reset now gives no edit at all
-    (the song taken out). The preview (`EditedPlayback`) plays the own
+    (the song taken out; after Remove, the explicit `song: off` keeps
+    Reset on). A song of unknown length holds back Download only while
+    it's heard (a muted one is left out of the download). On a take,
+    the picker and the song's details say "song" ("Pick a song", "The
+    song starts…", "… of the song"), as its lane does; "track" on other
+    videos. The preview (`EditedPlayback`) plays the own
     lane at its level and keeps a muted lane at 0 (muting re-seeks
     nothing), and every 2 seconds seeks the song back when it's drifted
     more than 150 ms. The web renderer mixes both lanes offline first
     (the same mix the sound only uses; 22.05 kHz past 8 minutes) and
     plays the mix into the recording, the muted video following its
     clock (its speed nudged to 0.98–1.02 while more than 40 ms off);
-    Android and iOS already mixed both lanes from step 2's plan. The
+    as `decodeAudioData` decodes whole files, a file over 8 minutes is
+    decoded at 22.05 kHz, and a video over 16 minutes, or one whose
+    sound won't decode, has its own sound streamed from the playing
+    video (through its gain) instead of decoded, so a long take trimmed
+    short neither runs out of memory nor loses its sound unsaid; the
+    sound only, with nothing to stream from, fails with the browser's
+    reason when the own sound won't decode. Android and iOS already
+    mixed both lanes from step 2's plan. The
     fades in and out (3 s by default, configurable, the picture from
     and to black and both lanes ramping with it) come in a later step:
     each lane's level is one level throughout for now. Tests
@@ -2953,5 +2968,7 @@ spec.
     lanes, Remove keeping `song: off`, Reset giving no edit, and both
     lanes fitting at the largest text size on a phone and a wide
     screen; in Chrome the offline mix is the sum of the lanes to the
-    sample, and the own lane's level reaches the video. See
+    sample, the own lane's level reaches the video, streamed too, and a
+    video without sound renders with its song (its sound alone fails).
+    See
     [video edit](video-edit.md).

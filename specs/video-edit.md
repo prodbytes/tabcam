@@ -78,7 +78,8 @@ makes a file of it."), opening with the video's edit as it was left:
     exactly the end it moved when let go). This replaces the Trim
     section's range and the preview's scrub bar.
   - **The Song lane**: empty, a dashed **Add a song** (**Add a track**)
-    row, which opens a sheet of the capture's **recordings**, **videos**
+    row, which opens a sheet, **Pick a song** (**Pick a track**), of the
+    capture's **recordings**, **videos**
     and **takes** (not the video edited) and **a sound file** from the
     device (**a sound file picked is added to the capture's files** as
     a recording, named after its file, so the edit can name it and it
@@ -90,9 +91,13 @@ makes a file of it."), opening with the video's edit as it was left:
     either end, it's trimmed** (a grip at each end; the start moves
     with what's cut, so the rest stays put; at least half a second
     stays). **⋮** at its right: **Change** (the sheet again) and
-    **Remove** (the lane empty again, the edit keeping `song: off`).
+    **Remove** (the lane empty again, the edit keeping `song: off`, so
+    a song a later version would add by default isn't put back; Reset
+    stays on, and clears it).
     A song whose length can't be told shows its name alone, unplaced,
-    and can't be downloaded with the video.
+    and holds back Download while it's heard; muted, it's left out of
+    the download, which goes ahead (as an older app's edit with a track
+    picked but the video's own sound chosen).
   - **Each lane's volume**: a speaker over its level (`80%`, in the
     primary colour when it's not 100% or it's muted; the speaker low
     under 50%, crossed out when the lane isn't heard, the level struck
@@ -117,15 +122,18 @@ makes a file of it."), opening with the video's edit as it was left:
 - **Under the lanes, the song's details** (when there's one): its lane
   and name ("Song · Recording 1"), **‹** and **›**, which nudge it a
   tenth of a second earlier or later, with where it starts in words
-  between them ("The track starts 0:01.5 after the video": silence
+  between them ("The song starts 0:01.5 after the video": silence
   first; "… 0:01.5 before the video": that much more of its start is
   cut; counted from the kept part's start), and, once trimmed, "Using
-  0:01.0–0:42.5 of the track". A song shorter than the kept part leaves
+  0:01.0–0:42.5 of the song". They name it as its lane does: "song" on
+  a take, "track" ("The track starts…", "… of the track") on any other
+  video. A song shorter than the kept part leaves
   silence after. (Later steps put the layer chips here, the song's
   details then showing when its lane is selected.)
 - **At the bottom**: **Reset** (on once the edit is anything but the
-  defaults: the whole video, its own sound at 100%, and no song; Reset
-  goes back to them, the song taken out, and the edit is none) and
+  defaults: the whole video, its own sound at 100%, and no song said,
+  so a song Removed, `song: off`, keeps it on; Reset goes back to them,
+  the song taken out, and the edit is none) and
   **Download**, a split button (both shrink to fit at the largest text
   sizes). Pressed, it downloads **the video** as edited, both lanes
   mixed; its arrow opens a menu of **The video (MP4)**, **The video
@@ -172,7 +180,12 @@ version 2 (`v: 2`):
   `song`: `manual` (placed by hand), `off` (none; Remove) or `auto` (a
   later step lines a take's song up by itself; this version plays it
   as the one clip its track keys approximate, and a change made here
-  makes it `manual`). Absent, the song lane is none.
+  makes it `manual`). Absent, it's the page's default: none without a
+  `trackId`; with one, `auto` (this version never writes a song without
+  `song`, but a later one leaves it out when it's the page's default, a
+  take's song lined up by itself or an older take's placed at the
+  start, and this one then plays its track keys' one clip rather than
+  dropping the song). Written back, it stays absent.
 - **`sound`, for older apps**, worked out from the lanes and always
   written: `track` when only the song is heard, `none` when neither is,
   `original` otherwise (with both heard, older apps play the video's
@@ -282,14 +295,25 @@ carries it out; the times are all worked out in Dart.
 - **The web**
   ([`web_video_editor.dart`](../tabcam_app/lib/capture/web_video_editor.dart),
   the plan given directly): **the sound first, offline and exact**: the
-  two lanes are decoded (Web Audio's `decodeAudioData`, each file once;
-  a video whose sound can't be decoded, as one without any, adds none)
+  two lanes are decoded (Web Audio's `decodeAudioData`, each file once)
   and mixed in an `OfflineAudioContext` as long as the kept part (the
   own lane from the kept part's start, each of the song's clips where
   it starts, each through a gain node at its lane's level), at 44.1 kHz
-  (22.05 kHz for a kept part over 8 minutes, so the decoded sound fits
-  in memory). Then **the video follows the sound's clock**: the kept
-  part plays, hidden and muted, into a canvas (its frames, at 30 a
+  (22.05 kHz for a kept part over 8 minutes). `decodeAudioData` decodes
+  a whole file, whatever part of it is kept, so the rate a file is
+  decoded at goes by its own length: over 8 minutes, 22.05 kHz (about
+  176 KB a second in stereo rather than 384 KB at 48 kHz). **A video
+  over 16 minutes**, or one whose sound won't decode (one without any),
+  **has its own sound streamed** from the playing video instead
+  (`createMediaElementSource`, through the lane's gain, into the
+  recording beside the mixed song), so a long take trimmed short
+  doesn't decode all of it (a video without sound then adds silence).
+  The sound alone has no playing video to stream from: there, a video
+  whose own sound won't decode fails the download, saying why, rather
+  than leaving the lane out unsaid. Then **the video follows the
+  sound's clock**: the kept
+  part plays, hidden and muted (unless its own sound streams), into a
+  canvas (its frames, at 30 a
   second), and the mix plays from a buffer into the recorded stream
   beside it (the `AudioContext` it plays in made and started at
   Download's tap, before the files are decoded), started as the video

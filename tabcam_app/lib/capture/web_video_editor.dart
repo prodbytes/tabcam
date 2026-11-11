@@ -20,7 +20,9 @@ VideoEditing? webVideoEditor() => WebVideoEditor();
 /// then the kept part plays, hidden and muted, into a canvas (its
 /// frames), the mix plays into the recording beside it, the video
 /// following the mix's clock, and the browser's MediaRecorder records
-/// both, so it takes as long as the kept part is. The result is
+/// both, so it takes as long as the kept part is (a long video's own
+/// sound, or one that won't decode, streams from the playing video
+/// instead, [streamedOver]). The result is
 /// MP4 (H.264 and AAC) where the browser records it (Chrome, Edge,
 /// Safari), WebM where it can't (Firefox) ([videoRecorderTypes]). The
 /// sound alone is mixed offline, faster than it plays
@@ -36,10 +38,16 @@ class WebVideoEditor implements VideoEditing {
   WebVideoEditor({
     @visibleForTesting this.soundWay,
     @visibleForTesting this.soundContext,
+    @visibleForTesting this.streamedOver = _streamedOver,
   });
 
   final WebSoundWay? soundWay;
   final web.AudioContext Function()? soundContext;
+
+  /// A video longer than this has its own sound streamed as it plays, in
+  /// a render with the picture, rather than decoded whole
+  /// ([_streamedOver]; tests make it shorter).
+  final Duration streamedOver;
 
   web.AudioContext _soundContext() =>
       soundContext?.call() ?? web.AudioContext();
@@ -132,17 +140,39 @@ class WebVideoEditor implements VideoEditing {
 
       // The sound: both lanes mixed offline first (exact, to the sample),
       // then played into the recorded stream (not the speakers) as the
-      // video plays, muted, following it.
-      player.muted = true;
+      // video plays, muted, following it. The video's own sound is
+      // decoded whole (decodeAudioData decodes all of a file, whatever
+      // part is kept): a video longer than [streamedOver], or one whose
+      // sound won't decode, has it streamed from the playing video
+      // instead, through its lane's gain, as before the lanes were mixed
+      // offline (a video without sound then adds silence).
+      final own = plan.own;
+      final ownHeard = graph != null && own != null && own.volume > 0;
+      final whole = Duration(milliseconds: (total * 1000).round());
+      web.AudioBuffer? ownSound;
+      var streamed = ownHeard && whole > streamedOver;
+      if (ownHeard && !streamed) {
+        try {
+          ownSound = await _decode(video, whole);
+        } on Object catch (e) {
+          debugPrint(
+            'TabCam: video edit: the video\'s own sound doesn\'t decode, '
+            'streamed as it plays: $e',
+          );
+          streamed = true;
+        }
+      }
+      player.muted = !streamed;
       final mixed = graph == null
           ? null
           : await _mixdown(
-              video,
               plan,
+              ownSound,
+              await _songSound(plan),
               plan.length > _longest ? _longRate : _rate,
             );
       web.AudioBufferSourceNode? source;
-      if (graph != null && mixed != null) {
+      if (graph != null && (mixed != null || streamed)) {
         await started?.timeout(
           const Duration(seconds: 2),
           onTimeout: () => null,
@@ -151,8 +181,20 @@ class WebVideoEditor implements VideoEditing {
           throw StateError('the browser won\'t play sound here');
         }
         final sink = graph.createMediaStreamDestination();
-        source = graph.createBufferSource()..buffer = mixed;
-        source.connect(sink);
+        if (mixed != null) {
+          source = graph.createBufferSource()..buffer = mixed;
+          source.connect(sink);
+        }
+        if (streamed && own != null) {
+          final input = graph.createMediaElementSource(player);
+          if (own.volume != 1) {
+            final gain = graph.createGain()..gain.value = own.volume;
+            input.connect(gain);
+            gain.connect(sink);
+          } else {
+            input.connect(sink);
+          }
+        }
         for (final t in sink.stream.getAudioTracks().toDart) {
           stream.addTrack(t);
         }
@@ -242,46 +284,57 @@ class WebVideoEditor implements VideoEditing {
     }
   }
 
-  /// A kept part longer than this is mixed at [_longRate] for the video,
-  /// so its decoded sound fits in memory (about 384 KB a second at
-  /// 48 kHz in stereo).
+  /// A file longer than this is decoded at [_longRate], and a kept part
+  /// longer than this is mixed at it for the video, so the decoded sound
+  /// fits in memory (about 384 KB a second at 48 kHz in stereo, 176 KB at
+  /// 22.05 kHz). decodeAudioData decodes a whole file, whatever part of
+  /// it is used, so it's the file's length that counts.
   static const _longest = Duration(minutes: 8);
   static const _longRate = 22050;
 
-  /// The plan's two lanes decoded (each file once) and mixed offline, at
-  /// [rate], as long as the kept part: the own lane from the kept part's
-  /// start, each of the song's clips where it starts, each through a gain
-  /// node at its lane's volume. Null when there's nothing to mix (no lane
-  /// heard; a video whose sound can't be decoded, as one without any, adds
-  /// none).
+  /// A video longer than this has its own sound streamed as it plays in a
+  /// render with the picture ([streamedOver]): decoded whole, even at
+  /// [_longRate], it would take more than about 170 MB.
+  static const _streamedOver = Duration(minutes: 16);
+
+  /// [file]'s sound, decoded whole (as decodeAudioData does), at a rate
+  /// that keeps a file [length] long in memory ([_longest]). Throws when
+  /// it won't decode (a file without sound, or the browser can't).
+  static Future<web.AudioBuffer> _decode(XFile file, Duration length) async {
+    final rate = length > _longest ? _longRate : _rate;
+    final decoder = web.OfflineAudioContext(1.toJS, 1, rate);
+    final bytes = await file.readAsBytes();
+    // A copy: decodeAudioData takes the buffer it's given away.
+    return decoder
+        .decodeAudioData(Uint8List.fromList(bytes).buffer.toJS)
+        .toDart;
+  }
+
+  /// The plan's song, decoded (its file once), when it's heard: at the
+  /// lower rate for a kept part over [_longest] (its length unknown here,
+  /// a song that long is taken to be at least as long).
+  static Future<web.AudioBuffer?> _songSound(RenderPlan plan) async {
+    final song = plan.song;
+    if (song == null || song.volume <= 0 || song.clips.isEmpty) return null;
+    return _decode(
+      song.file ?? (throw ArgumentError('A song lane needs a file')),
+      plan.length,
+    );
+  }
+
+  /// The plan's two lanes, decoded ([ownBuffer], the whole video's sound;
+  /// [songBuffer], the song's), mixed offline at [rate], as long as the
+  /// kept part: the own lane from the kept part's start, each of the
+  /// song's clips where it starts, each through a gain node at its lane's
+  /// volume. Null when there's nothing to mix.
   static Future<web.AudioBuffer?> _mixdown(
-    XFile video,
     RenderPlan plan,
+    web.AudioBuffer? ownBuffer,
+    web.AudioBuffer? songBuffer,
     int rate,
   ) async {
-    final decoder = web.OfflineAudioContext(1.toJS, 1, rate);
-    Future<web.AudioBuffer> decode(XFile file) async {
-      final bytes = await file.readAsBytes();
-      return decoder
-          .decodeAudioData(Uint8List.fromList(bytes).buffer.toJS)
-          .toDart;
-    }
-
     final own = plan.own;
     final song = plan.song;
-    web.AudioBuffer? ownBuffer;
-    if (own != null && own.volume > 0) {
-      try {
-        ownBuffer = await decode(video);
-      } on Object catch (e) {
-        debugPrint('TabCam: video edit: the video\'s own sound: $e');
-      }
-    }
-    final songBuffer = song == null || song.volume <= 0 || song.clips.isEmpty
-        ? null
-        : await decode(
-            song.file ?? (throw ArgumentError('A song lane needs a file')),
-          );
     if (ownBuffer == null && songBuffer == null) return null;
     final channels = [
       ?ownBuffer?.numberOfChannels,
@@ -371,8 +424,18 @@ class WebVideoEditor implements VideoEditing {
     void Function(double done)? onProgress,
   ) async {
     const rate = _rate;
+    // The video's own sound, decoded whole (there's no playing video to
+    // stream it from here): one that won't decode fails the download, with
+    // the browser's reason, rather than leaving the lane out unsaid.
+    final own = plan.own;
+    final ownSound = own == null || own.volume <= 0
+        ? null
+        : await _decode(
+            video,
+            plan.duration > Duration.zero ? plan.duration : plan.end,
+          );
     final mixed =
-        await _mixdown(video, plan, rate) ??
+        await _mixdown(plan, ownSound, await _songSound(plan), rate) ??
         (throw StateError('There is no sound in the kept part'));
     final samples = [
       for (var c = 0; c < mixed.numberOfChannels; c++)

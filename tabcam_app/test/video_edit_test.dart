@@ -1181,12 +1181,19 @@ void main() {
     expect(await soundOnly(), isTrue);
 
     // With a song too: both muted, no sound alone; the song heard, there
-    // is.
+    // is. A take's sheet and the song's details say "song", as its lane.
     await tester.tap(find.byKey(const Key('video-edit-song-add')));
     await _settle(tester);
+    expect(find.text('Pick a song'), findsOneWidget);
+    expect(find.text('Pick a track'), findsNothing);
     await tester.tap(find.byKey(const Key('video-edit-track-k1')));
     await _settle(tester);
     expect(find.text('Song · '), findsOneWidget);
+    expect(find.text('The song starts with the video'), findsOneWidget);
+    expect(find.textContaining('The track'), findsNothing);
+    await tester.tap(find.byKey(const Key('video-edit-song-later')));
+    await _settle(tester);
+    expect(find.text('The song starts 0:00.1 after the video'), findsOneWidget);
     for (final lane in ['take', 'song']) {
       await tester.tap(find.byKey(Key('video-edit-$lane-volume')));
       await _frames(tester);
@@ -1272,6 +1279,47 @@ void main() {
         to: kept.end - s(10),
       ),
     ]);
+  });
+
+  testWidgets('a muted song of unknown length doesn\'t hold back Download '
+      '(it\'s left out of it); heard, it does', (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester);
+    // As an older app's Original with a track picked: the song lane
+    // muted; its file one neither the player nor the editor can say the
+    // length of.
+    VideoPlayerPlatform.instance = platform = UnknownLengthPlatform({1});
+    await tester.runAsync(
+      () => library.setPageEdit(
+        id,
+        'k0',
+        PageEdit.fromSound(
+          start: s(1),
+          end: s(9),
+          sound: EditSound.original,
+          trackId: 'k1',
+        ),
+      ),
+    );
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    expect(find.text('Recording 1'), findsWidgets);
+    expect(enabled(tester, 'video-edit-download'), isTrue);
+    await tester.tap(find.byKey(const Key('video-edit-download')));
+    await _settle(tester);
+    final plan = editor.rendered.single;
+    expect(plan.own, const OwnLane());
+    expect(plan.song, isNull);
+
+    // Heard, it can't be fitted: Download waits.
+    await tester.tap(find.byKey(const Key('video-edit-song-volume')));
+    await _frames(tester);
+    await tester.tap(find.byKey(const Key('video-edit-song-mute')));
+    await _settle(tester);
+    await tester.tapAt(const Offset(450, 1500));
+    await _frames(tester);
+    expect(library.byId(id)!.pages.first.edit!.songMuted, isFalse);
+    expect(enabled(tester, 'video-edit-download'), isFalse);
   });
 
   testWidgets('⋮ Remove takes the song out (song: off); Reset gives no '

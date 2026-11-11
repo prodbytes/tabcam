@@ -2627,6 +2627,44 @@
       }
     }
   },
+  "videoEditPickSong": "Pick a song",
+  "@videoEditPickSong": {
+    "description": "Video edit, a take (a video Cam recorded): the sheet's title, to pick the song for its Song lane"
+  },
+  "videoEditSongWith": "The song starts with the video",
+  "@videoEditSongWith": {
+    "description": "Video edit, a take: the song's shift, none"
+  },
+  "videoEditSongAfter": "The song starts {time} after the video",
+  "@videoEditSongAfter": {
+    "description": "Video edit, a take: the song's shift, later (time like 0:01.5)",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditSongBefore": "The song starts {time} before the video",
+  "@videoEditSongBefore": {
+    "description": "Video edit, a take: the song's shift, earlier: its first part is cut (time like 0:01.5)",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditSongUsed": "Using {start}–{end} of the song",
+  "@videoEditSongUsed": {
+    "description": "Video edit, a take: the part of the song used, once trimmed (times like 0:01.5)",
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
   "videoEditLaneTake": "Take",
   "@videoEditLaneTake": {
     "description": "Video edit: the take's own sound's lane (a video Cam recorded)"

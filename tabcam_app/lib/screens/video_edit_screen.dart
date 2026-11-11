@@ -185,9 +185,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// and "Song" ("Video sound" and "Track" otherwise).
   bool get _take => isTake(widget.page);
 
-  /// Whether the Song lane has a song in it.
-  bool get _hasSong =>
-      _song != null && _song != SongMode.off && _trackId != null;
+  /// Whether the Song lane has a song in it (as [PageEdit.hasSong]: a
+  /// song picked, its lane not `off`; none said, a newer app's default).
+  bool get _hasSong => _song != SongMode.off && _trackId != null;
 
   /// [file]'s length: [player]'s, or the editor's where the player can't
   /// say ([mediaLength], as the file screen finds it).
@@ -461,7 +461,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           children: [
             ListTile(
               title: Text(
-                l10n.videoEditPickTrack,
+                _take ? l10n.videoEditPickSong : l10n.videoEditPickTrack,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
@@ -614,7 +614,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 
   /// The song, changed by hand here: placed by hand from now on.
   void _placedByHand() {
-    if (_song == SongMode.auto) _song = SongMode.manual;
+    if (_song == null || _song == SongMode.auto) _song = SongMode.manual;
   }
 
   /// Moves the song's used part [delta] along the video (kept within
@@ -704,9 +704,13 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     formats: _formats,
   );
 
-  /// Whether the song can be fitted (one of unknown length can't).
+  /// Whether the song lane can be rendered: it isn't heard (a muted song
+  /// is left out of the download), or its song can be fitted (one of
+  /// unknown length can't).
   bool get _trackReady =>
-      !_hasSong || (_track != null && _trackLength > Duration.zero);
+      !_hasSong ||
+      _songLevel.silent ||
+      (_track != null && _trackLength > Duration.zero);
 
   bool _canDownload(RenderKind what) {
     if (_video == null || _busy) return false;
@@ -1190,11 +1194,16 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     const tenth = Duration(milliseconds: 100);
     const tabular = [FontFeature.tabularFigures()];
     final trimmed = _trackStart > Duration.zero || _trackEnd < _trackLength;
+    final take = _take;
     final shift = _offset == Duration.zero
-        ? l10n.videoEditTrackWith
+        ? (take ? l10n.videoEditSongWith : l10n.videoEditTrackWith)
         : _offset > Duration.zero
-        ? l10n.videoEditTrackAfter(time(_offset))
-        : l10n.videoEditTrackBefore(time(-_offset));
+        ? (take ? l10n.videoEditSongAfter : l10n.videoEditTrackAfter)(
+            time(_offset),
+          )
+        : (take ? l10n.videoEditSongBefore : l10n.videoEditTrackBefore)(
+            time(-_offset),
+          );
     return Column(
       key: const Key('video-edit-song-details'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1202,7 +1211,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         Row(
           children: [
             Text(
-              '${_take ? l10n.videoEditLaneSong : l10n.videoEditLaneTrack} · ',
+              '${take ? l10n.videoEditLaneSong : l10n.videoEditLaneTrack} · ',
               style: theme.textTheme.titleSmall,
             ),
             Expanded(
@@ -1247,7 +1256,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           ),
         if (trimmed && _trackLength > Duration.zero)
           Text(
-            l10n.videoEditTrackUsed(time(_trackStart), time(_trackEnd)),
+            (take ? l10n.videoEditSongUsed : l10n.videoEditTrackUsed)(
+              time(_trackStart),
+              time(_trackEnd),
+            ),
             key: const Key('video-edit-song-used'),
             textAlign: TextAlign.center,
             style: TextStyle(

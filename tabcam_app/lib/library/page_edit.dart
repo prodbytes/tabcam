@@ -153,10 +153,15 @@ class PageEdit {
       ? (volume.clamp(0, 1) * 100).round() / 100
       : 1;
 
-  /// How the song lane is placed: as [song] says, or, by default, none.
-  /// (Later steps work the default out from the page: a take's log lines
-  /// its song up by itself.)
-  SongMode get songMode => song ?? SongMode.off;
+  /// How the song lane is placed: as [song] says, or, by default, none
+  /// without a song picked, and [SongMode.auto] with one. This version
+  /// never writes a song without `song`; a later one leaves `song` out
+  /// when it's the page's default (a take's log lining its song up by
+  /// itself, or a song placed at the start for an older take), and this
+  /// one then plays the one clip its track keys approximate it by (as
+  /// [SongMode.auto] says), rather than dropping it.
+  SongMode get songMode =>
+      song ?? (trackId == null ? SongMode.off : SongMode.auto);
 
   /// Whether the video's own sound is heard.
   bool get ownAudible => !ownMuted && ownVolume > 0;

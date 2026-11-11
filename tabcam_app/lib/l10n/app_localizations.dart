@@ -3280,6 +3280,36 @@ abstract class AppLocalizations {
   /// **'Using {start}–{end} of the track'**
   String videoEditTrackUsed(String start, String end);
 
+  /// Video edit, a take (a video Cam recorded): the sheet's title, to pick the song for its Song lane
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a song'**
+  String get videoEditPickSong;
+
+  /// Video edit, a take: the song's shift, none
+  ///
+  /// In en, this message translates to:
+  /// **'The song starts with the video'**
+  String get videoEditSongWith;
+
+  /// Video edit, a take: the song's shift, later (time like 0:01.5)
+  ///
+  /// In en, this message translates to:
+  /// **'The song starts {time} after the video'**
+  String videoEditSongAfter(String time);
+
+  /// Video edit, a take: the song's shift, earlier: its first part is cut (time like 0:01.5)
+  ///
+  /// In en, this message translates to:
+  /// **'The song starts {time} before the video'**
+  String videoEditSongBefore(String time);
+
+  /// Video edit, a take: the part of the song used, once trimmed (times like 0:01.5)
+  ///
+  /// In en, this message translates to:
+  /// **'Using {start}–{end} of the song'**
+  String videoEditSongUsed(String start, String end);
+
   /// Video edit: the take's own sound's lane (a video Cam recorded)
   ///
   /// In en, this message translates to:

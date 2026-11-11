@@ -21,8 +21,9 @@ import 'package:web/web.dart' as web;
 /// (by WebCodecs, or recorded as it plays), or a WAV where AAC can't be
 /// made.
 void main() {
-  /// A video [seconds] long, with sound, as the browser records one.
-  Future<XFile> makeVideo(double seconds) async {
+  /// A video [seconds] long, with sound (unless not [sound]), as the
+  /// browser records one.
+  Future<XFile> makeVideo(double seconds, {bool sound = true}) async {
     final canvas = web.document.createElement('canvas') as web.HTMLCanvasElement
       ..width = 160
       ..height = 120;
@@ -41,8 +42,10 @@ void main() {
     final sink = audio.createMediaStreamDestination();
     tone.connect(sink);
     tone.start();
-    for (final track in sink.stream.getAudioTracks().toDart) {
-      stream.addTrack(track);
+    if (sound) {
+      for (final track in sink.stream.getAudioTracks().toDart) {
+        stream.addTrack(track);
+      }
     }
     final recorder = web.MediaRecorder(
       stream,
@@ -441,6 +444,52 @@ void main() {
     final (bothLength, bothSound) = await probe(bothVideo);
     expect(bothLength, closeTo(2, 0.5));
     expect(bothSound, isTrue);
+
+    // A video longer than it decodes whole: its own sound streams from
+    // the playing video, through its gain, the song mixed beside it.
+    final streaming = WebVideoEditor(streamedOver: Duration.zero);
+    final quietStreamed = await decode(await streaming.render(ownAt(0.5)));
+    final loudStreamed = await decode(await streaming.render(ownAt(1)));
+    expect(
+      loudest(quietStreamed, 0.4, 1.0) / loudest(loudStreamed, 0.4, 1.0),
+      closeTo(0.5, 0.12),
+    );
+    final bothStreamed = await streaming.render(plan(lanes()));
+    final (bothStreamedLength, bothStreamedSound) = await probe(bothStreamed);
+    expect(bothStreamedLength, closeTo(2, 0.5));
+    expect(bothStreamedSound, isTrue);
+
+    // A video without sound: its own lane doesn't decode, so it streams
+    // (silence) and the video still renders, with the song in it; its
+    // sound alone fails, saying why, rather than leaving the lane out.
+    final mute = await makeVideo(2, sound: false);
+    final (_, muteSound) = await probe(mute);
+    expect(muteSound, isFalse);
+    final muteLength = (await editor.length(mute))!;
+    RenderPlan mutePlan(PageEdit edit, {RenderKind kind = RenderKind.video}) =>
+        RenderPlan.of(
+          edit,
+          input: mute,
+          duration: muteLength,
+          inputExtension: 'webm',
+          songFile: video,
+          songLength: videoLength,
+          kind: kind,
+        );
+    final muteEdit = PageEdit(
+      start: Duration.zero,
+      end: const Duration(milliseconds: 1500),
+      song: SongMode.manual,
+      trackId: 'k1',
+      offset: const Duration(milliseconds: 500),
+    );
+    final muteWithSong = await decode(await editor.render(mutePlan(muteEdit)));
+    expect(loudest(muteWithSong, 0.1, 0.4), lessThan(0.02));
+    expect(loudest(muteWithSong, 0.7, 1.2), greaterThan(0.05));
+    await expectLater(
+      wavs.render(mutePlan(muteEdit, kind: RenderKind.sound)),
+      throwsA(anything),
+    );
   }
 
   testWidgets('the kept part, with its sound, without, or with a track; '

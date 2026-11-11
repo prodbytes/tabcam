@@ -1968,6 +1968,27 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get videoEditPickSong => 'Escolher uma música';
+
+  @override
+  String get videoEditSongWith => 'A música começa junto com o vídeo';
+
+  @override
+  String videoEditSongAfter(String time) {
+    return 'A música começa $time depois do vídeo';
+  }
+
+  @override
+  String videoEditSongBefore(String time) {
+    return 'A música começa $time antes do vídeo';
+  }
+
+  @override
+  String videoEditSongUsed(String start, String end) {
+    return 'Usando $start–$end da música';
+  }
+
+  @override
   String get videoEditLaneTake => 'Take';
 
   @override

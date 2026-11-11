@@ -233,7 +233,7 @@ void main() {
 
     test('only the own sound heard: original', () {
       expect(lanes(songMuted: true).sound, EditSound.original);
-      expect(lanes(mode: null).sound, EditSound.original);
+      expect(lanes(mode: null, trackId: null).sound, EditSound.original);
     });
   });
 
@@ -306,6 +306,45 @@ void main() {
       expect(edit.offset, s(4.5));
       expect(edit.ownVolume, 0.6);
       expect(edit.sound, EditSound.original);
+    });
+  });
+
+  group('a newer app\'s edit, `song` left out as the page\'s default', () {
+    // A later step writes `song` only when it isn't the default (a take's
+    // song lined up by itself, a legacy take's placed at the start).
+    final json = {
+      'v': 2,
+      'startMs': 0,
+      'endMs': 9000,
+      'sound': 'original',
+      'trackId': 'p7',
+      'offsetMs': 1500,
+      'trackVolume': 0.8,
+    };
+
+    test('with a track picked: the song lane is auto, heard as its track '
+        'keys approximate it, both lanes in the download', () {
+      final edit = _read(json);
+      expect(edit.song, isNull);
+      expect(edit.songMode, SongMode.auto);
+      expect(edit.hasSong, isTrue);
+      expect(edit.songAudible, isTrue);
+      expect(edit.sound, EditSound.original);
+      final p = plan(edit);
+      expect(p.own, const OwnLane());
+      expect(p.song!.volume, 0.8);
+      expect(p.song!.clips, [
+        SongClip(at: s(1.5), from: Duration.zero, to: s(7.5)),
+      ]);
+      // Written back as it came: `song` still left out.
+      expect(edit.toJson(), json);
+    });
+
+    test('without one: no song', () {
+      final edit = _read({...json}..remove('trackId'));
+      expect(edit.songMode, SongMode.off);
+      expect(edit.hasSong, isFalse);
+      expect(plan(edit).song, isNull);
     });
   });
 
