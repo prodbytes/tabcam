@@ -2456,15 +2456,20 @@ spec.
    confirmed, that kind of delete no longer asks on this device: the
    next one deletes at once; ticked and cancelled, nothing changes. Each
    kind is skipped on its own (a file's doesn't skip a capture's), kept
-   in the library's `delete-confirms` meta file, not synced. The way
+   in the library's `deleteconfirms` meta file (letters and digits only,
+   which the apps' store requires of a meta's name), not synced; on the
+   web, where metas are in memory, until the tab is reloaded. The way
    back is a new device setting on the Profile tab, **Ask before
    deleting** (under Language): on when every kind asks, and turned on
-   it brings them all back (off, none asks). Deleting the account keeps
-   its own confirm, which always asks. New tests: the checkbox shows;
-   ticked and cancelled changes nothing; ticked and confirmed deletes and
-   the next one doesn't ask, read back from the device; kinds are
-   independent; the Profile switch brings the confirms back; deleting
-   the account still asks. See the new
+   it brings them all back; it only turns them on, so a stray tap never
+   stops every confirm. Deleting the account keeps its own confirm,
+   which always asks. New tests: the meta name passes the apps' check;
+   the checkbox shows; ticked and cancelled changes nothing; ticked and
+   confirmed deletes and the next one doesn't ask, read back from the
+   device; kinds are independent, through the UI for a capture, a shared
+   capture's Remove and a reader's own file; the Profile switch brings
+   the confirms back and can't turn them off; deleting the account still
+   asks. See the new
    [delete confirmations](delete-confirms.md) spec, and
    [library](library.md), [event screen](event-screen.md),
    [contributions](contributions.md),

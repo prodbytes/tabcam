@@ -118,8 +118,8 @@ a build without sign-in, a line says so. Then **Language**
 English, Español or Português; the app changes at once. Then **Ask
 before deleting**, a switch kept on the device: on (the default), every
 delete of a capture or a file asks first; off once a confirm's **Don't
-ask again** was ticked, and turned on, they all ask again
-([delete confirmations](delete-confirms.md)). Delete account asks
+ask again** was ticked, and turned on, they all ask again (it only
+turns them on; [delete confirmations](delete-confirms.md)). Delete account asks
 whatever it says. Then **About**: the app's name
 and version (X.Y.Z, or "(development build)"), what it does,
 **Privacy policy** (opens https://tabcam.nu01.com/privacy in the browser,

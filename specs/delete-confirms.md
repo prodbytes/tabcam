@@ -28,8 +28,12 @@ the file and goes back to the list).
 - Ticked and cancelled, nothing changes: nothing is deleted and it asks
   next time, the box unticked again.
 - What no longer asks is kept on the device (the library's
-  `delete-confirms` meta file, `{"skip": ["file", …]}`), not synced: each
-  device asks until it's told not to.
+  `deleteconfirms` meta file, `{"skip": ["file", …]}`; letters and digits
+  only, since on the apps it names a file and the store refuses anything
+  else), not synced: each device asks until it's told not to.
+- On the web the library's meta files are kept in memory, like its
+  captures ([library](library.md)), so there the choice lasts until the
+  tab is reloaded or closed; after that every kind asks again.
 
 ## Ask before deleting
 
@@ -38,7 +42,9 @@ The way back is on the **Profile** tab, a device setting under Language
 On (the default) when every kind asks: "Deleting a capture or a file asks
 first, on this device." Off once any kind doesn't: "Some deletes happen
 at once, without asking. Turn it on to be asked again." Turned on, every
-kind asks again; turned off, none does.
+kind asks again. It only turns them on: while every kind asks it's on and
+can't be switched off, since only a confirm's **Don't ask again** stops
+one asking, so a stray tap on Profile never stops every confirm.
 
 ## What always asks
 
@@ -50,10 +56,15 @@ Cam's untaken pages) aren't either.
 
 ## Tests
 
-`test/delete_confirm_test.dart`: the checkbox shows, unticked; ticked and
-cancelled nothing is deleted and it asks again; ticked and confirmed the
-file is deleted, the next file's delete doesn't ask, and the setting is
-read back from the device's store; a skipped file confirm leaves the
-capture's asking; Profile's switch shows off, and on brings every kind's
-confirm back (off skips them all); deleting the account still asks, with
-no checkbox.
+`test/delete_confirm_test.dart`: the meta name is one the apps' store
+takes (and the file test runs on a store that refuses any other, as the
+apps' does); the checkbox shows, unticked; ticked and cancelled nothing
+is deleted and it asks again; ticked and confirmed the file is deleted,
+the next file's delete doesn't ask, and the setting is read back from the
+device's store; a skipped file confirm leaves the capture's asking;
+Profile's switch shows off, on brings every kind's confirm back, and then
+can't be switched off; removing a shared capture, from its card, asks
+though captures don't, and its skip leaves the others asking; a reader's
+own file, under Your files, asks though files don't, its skip leaves the
+others asking and the next one goes at once; deleting the account still
+asks, with no checkbox.

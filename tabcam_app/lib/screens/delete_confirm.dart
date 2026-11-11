@@ -28,9 +28,9 @@ enum DeleteKind {
 }
 
 /// Which kinds of delete ([DeleteKind]) ask first, kept on this device (the
-/// library's `delete-confirms` meta file): all of them, until the user
+/// library's `deleteconfirms` meta file): all of them, until the user
 /// ticks **Don't ask again** on one; Profile's **Ask before deleting**
-/// turns them all back on (or off).
+/// turns them all back on.
 class DeleteConfirms extends ChangeNotifier {
   DeleteConfirms._(this.library);
 
@@ -40,8 +40,9 @@ class DeleteConfirms extends ChangeNotifier {
   static DeleteConfirms of(Library library) =>
       _of[library] ??= DeleteConfirms._(library);
 
-  /// The meta file they're kept in.
-  static const String metaName = 'delete-confirms';
+  /// The meta file they're kept in. Letters and digits only: on the apps
+  /// it names a file, and the store refuses anything else (`checkId`).
+  static const String metaName = 'deleteconfirms';
 
   final Library library;
   final Set<DeleteKind> _skipped = {};
@@ -78,16 +79,11 @@ class DeleteConfirms extends ChangeNotifier {
     await _save();
   }
 
-  /// Every kind of delete asks first ([ask]), or none does.
-  Future<void> setAskAll(bool ask) async {
+  /// Every kind of delete asks first again.
+  Future<void> askAll() async {
     await load();
-    final was = Set.of(_skipped);
-    if (ask) {
-      _skipped.clear();
-    } else {
-      _skipped.addAll(DeleteKind.values);
-    }
-    if (_skipped.length == was.length) return;
+    if (_skipped.isEmpty) return;
+    _skipped.clear();
     notifyListeners();
     await _save();
   }
@@ -201,8 +197,10 @@ class _DeleteDialogState extends State<_DeleteDialog> {
 }
 
 /// Profile's **Ask before deleting**: on, every delete of a capture or a
-/// file asks first; off (or once some kind no longer asks), turning it on
-/// brings every confirm back. Kept on this device.
+/// file asks first; off once some kind no longer asks, and turning it on
+/// brings every confirm back. Only on: it's off only by a confirm's
+/// **Don't ask again**, so a stray tap never stops every confirm. Kept on
+/// this device.
 class AskBeforeDeleting extends StatefulWidget {
   const AskBeforeDeleting({super.key, required this.library});
 
@@ -237,7 +235,7 @@ class _AskBeforeDeletingState extends State<AskBeforeDeleting> {
           ),
           subtitle: Text(on ? l10n.deleteAskOn : l10n.deleteAskOff),
           value: on,
-          onChanged: _confirms.setAskAll,
+          onChanged: on ? null : (_) => _confirms.askAll(),
         );
       },
     );
