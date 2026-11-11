@@ -47,6 +47,13 @@ class WebTakeRecorder implements TakeRecorder {
   Completer<void>? _stopped;
   String _type = 'video/webm';
 
+  /// When the recording started (its `start` event), on the page's clock
+  /// (`performance.now()`, ms).
+  double? _startedAt;
+
+  /// How long [start] waits for the recording's `start` event at most.
+  static const startWait = Duration(seconds: 1);
+
   /// Bands drawn so far, by their neckline (null while it's being drawn).
   final Map<String, web.ImageBitmap?> _bands = {};
 
@@ -204,7 +211,17 @@ class WebTakeRecorder implements TakeRecorder {
     }
     if (_type.isEmpty) _type = recorder.mimeType;
     _chunks.clear();
+    _startedAt = null;
     final stopped = _stopped = Completer<void>();
+    final started = Completer<void>();
+    recorder.onstart = ((web.Event e) {
+      // When it happened, not when this ran: the same clock as
+      // `performance.now()` (else, a browser of old, when this ran).
+      final now = web.window.performance.now();
+      final at = e.timeStamp.toDouble();
+      _startedAt = at > 0 && at <= now ? at : now;
+      if (!started.isCompleted) started.complete();
+    }).toJS;
     recorder.ondataavailable = ((web.BlobEvent e) {
       if (e.data.size > 0) _chunks.add(e.data);
     }).toJS;
@@ -213,7 +230,16 @@ class WebTakeRecorder implements TakeRecorder {
     }).toJS;
     // In pieces, so a long take isn't held in one buffer.
     recorder.start(1000);
+    // Returns once it records, so the take's clock starts after it does
+    // (its lag, [msSinceStart], is then how far ahead the file is).
+    await started.future.timeout(startWait, onTimeout: () {});
   }
+
+  @override
+  double? msSinceStart() => switch (_startedAt) {
+    final at? => web.window.performance.now() - at,
+    null => null,
+  };
 
   static List<web.MediaStreamTrack> _audioOf(JSObject? source) {
     if (source == null || !source.isA<web.MediaStream>()) return const [];

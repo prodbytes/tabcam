@@ -57,7 +57,12 @@ void main() {
       expect(mic['noiseSuppression'], isFalse);
       expect(mic['autoGainControl'], isFalse);
       var line = 'e|--0--3--|\nB|--1--1--|';
+      expect(recorder.msSinceStart(), isNull);
       await recorder.start(() => line);
+      // Back once it records: how long ago it started, the take's lag.
+      final since = recorder.msSinceStart();
+      expect(since, isNotNull);
+      expect(since, inInclusiveRange(0, 1000));
       await Future<void>.delayed(const Duration(milliseconds: 600));
       line = 'e|--5--7--|\nB|--5--8--|';
       await Future<void>.delayed(const Duration(milliseconds: 600));

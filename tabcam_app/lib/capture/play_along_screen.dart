@@ -24,6 +24,8 @@ import 'head_gestures.dart';
 import 'link_frame.dart';
 import 'play_along_sidebar.dart';
 import 'media.dart';
+import 'mp4_length.dart';
+import 'take_log.dart';
 import 'take_overlay.dart';
 import 'take_priority.dart';
 import 'take_sound.dart';
@@ -39,8 +41,11 @@ import '../screens/messages.dart';
 /// ([HeadTracking]). **Rec** (or the 1 key) records (video and sound)
 /// until it's tapped again, and adds the take to the capture as a video
 /// ("Take 1", "Take 2"…); the . key saves the take and starts the next,
-/// the song in the sidebar from its start. **Play** plays the last take
-/// back, the necklines turning where they turned while it was recorded.
+/// the song in the sidebar from its start. Each take keeps a log of what
+/// Cam noted while it recorded ([TakeLog]: the tab's turns, the necklines
+/// shown, how far the file started before the take's clock). **Play**
+/// plays the capture's last take back, the necklines turning where they
+/// turned while it was recorded (as its log says).
 /// **Tab** hides the tab from the screen, and shows it again.
 ///
 /// **Phrase passes**: while recording along with a song playing in the
@@ -143,6 +148,21 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   final _clock = Stopwatch();
   List<(Duration, int)> _marks = [];
 
+  /// The take's lag readings ([TakeLog.lagRaw]), on [_span] (started as
+  /// the recording is told to start): when it was told to start and when
+  /// that returned, when [_clock] started, when it was told to stop and
+  /// when that returned.
+  final _span = Stopwatch();
+  Duration _startCall = Duration.zero;
+  Duration _startReturn = Duration.zero;
+  Duration _clockZero = Duration.zero;
+  Duration _stopCall = Duration.zero;
+  Duration _stopReturn = Duration.zero;
+
+  /// The web's take recorder: how long it had recorded when [_clock]
+  /// started (ms; null: not known, or not its take).
+  double? _recorderLag;
+
   /// The [_marks] (by index) made with auto-pass off: the tab turned in
   /// the take there, but it's no phrase pass of the take's.
   Set<int> _unpassed = {};
@@ -155,10 +175,16 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   /// Starting a take ([_rec]): until it records, Rec, 1 and . wait.
   bool _starting = false;
 
-  /// The last take, and when its necklines showed.
+  /// The take Play plays: the capture's last (the user's own last, on a
+  /// capture they contribute to), the one just saved after Rec.
   EventPage? _take;
-  List<(Duration, int)> _takeMarks = const [];
   VideoPlayerController? _player;
+
+  /// The log of the take playing back ([_play]), its necklines turning as
+  /// it says; and the neckline it shows when that isn't one of the
+  /// capture's (its tab changed since).
+  TakeLog? _playedLog;
+  String? _playedLine;
 
   /// Head gestures: what watches for them (null where it can't), and
   /// whether the user has them on.
@@ -218,6 +244,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     super.initState();
     // A preview opens no camera.
     if (widget.gate == null) {
+      _take = _lastTake();
       _start();
       _track.addListener(_trackChanged);
       widget.library.addListener(_libraryChanged);
@@ -225,14 +252,27 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     }
   }
 
-  /// The last take, deleted (from the sidebar, say): Play has none.
+  /// The capture's last take (of the user's own files, [Library.addedPages]),
+  /// if it has one.
+  EventPage? _lastTake() {
+    final event = widget.library.byId(widget.eventId);
+    if (event == null) return null;
+    return Library.addedPages(event).where(isTake).lastOrNull;
+  }
+
+  /// The take Play plays, deleted (from the sidebar, say): the last of
+  /// those left, if any; none yet, one that arrives (a sync).
   void _libraryChanged() {
+    if (!mounted) return;
     final take = _take;
-    if (take == null || !mounted) return;
     final event = widget.library.byId(widget.eventId);
     final kept =
-        event != null && Library.addedPages(event).any((p) => p.id == take.id);
-    if (!kept) setState(() => _take = null);
+        take != null &&
+        event != null &&
+        Library.addedPages(event).any((p) => p.id == take.id);
+    if (kept) return;
+    final last = _lastTake();
+    if (last?.id != take?.id) setState(() => _take = last);
   }
 
   Future<void> _loadSettings() async {
@@ -664,7 +704,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         // The tab recorded in as it goes; failing that, the camera alone,
         // with the microphone's sound (the web's camera has none).
         try {
+          _startTiming();
           await recorder.start(() => _lines.isEmpty ? null : _lines[_line]);
+          _startReturn = _span.elapsed;
           _recordingTab = true;
         } on Object catch (e) {
           debugPrint('TabCam: cam: recording without the tab: $e');
@@ -687,6 +729,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         // on (not on the web: it streams none, and the tracker reads the
         // preview). Off, none are streamed: on iOS each would be copied on
         // the queue that writes the take's sound.
+        _startTiming();
         await controller.startVideoRecording(
           onAvailable:
               _heads == null ||
@@ -695,6 +738,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
               ? null
               : _frame,
         );
+        _startReturn = _span.elapsed;
         if (soundStarted) await TakeSound.videoStarted();
       }
     } on Object catch (e) {
@@ -704,6 +748,8 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       unawaited(_stream());
       return;
     }
+    _clockZero = _span.elapsed;
+    _recorderLag = _recordingTab ? _recorder?.msSinceStart() : null;
     _clock
       ..reset()
       ..start();
@@ -721,6 +767,47 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         !_track.countingIn) {
       unawaited(_track.toggle());
     }
+  }
+
+  /// Notes that the recording is told to start now ([_span] from 0).
+  void _startTiming() {
+    _span
+      ..reset()
+      ..start();
+    _startCall = _span.elapsed;
+  }
+
+  /// [stop]s the recording, noting when it was told to and when it
+  /// returned.
+  Future<XFile> _timedStop(Future<XFile> Function() stop) async {
+    _stopCall = _span.elapsed;
+    try {
+      return await stop();
+    } finally {
+      _stopReturn = _span.elapsed;
+      _span.stop();
+    }
+  }
+
+  /// The take's lag ([TakeLog.lagMs]), from the readings noted while it
+  /// started and stopped: the web's recorder's own, else the bounds the
+  /// calls put on it, with the file's length ([fileMs]) where known.
+  ({int lagMs, LagFrom from, Map<String, int> raw}) _lag(int? fileMs) {
+    int ms(Duration at) => (at - _clockZero).inMilliseconds;
+    if (_recorderLag case final since?) {
+      return lagFromRecorder(
+        since,
+        startCallMs: ms(_startCall),
+        startReturnMs: ms(_startReturn),
+      );
+    }
+    return lagFromBounds(
+      startCallMs: ms(_startCall),
+      startReturnMs: ms(_startReturn),
+      stopCallMs: ms(_stopCall),
+      stopReturnMs: ms(_stopReturn),
+      fileMs: fileMs,
+    );
   }
 
   /// The . key: while recording, a new take. The song in the sidebar
@@ -763,17 +850,35 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       XFile file;
       try {
         file = await (_recordingTab
-            ? _recorder!.stop()
+            ? _timedStop(_recorder!.stop)
             : _ownSound
             ? _stopWithSound(controller)
-            : controller.stopVideoRecording());
+            : _timedStop(controller.stopVideoRecording));
       } finally {
         _takeRecording(false);
       }
       unawaited(_stream());
-      if (!_recordingTab && _lines.isNotEmpty && TakeOverlay.supported) {
-        file = await _burn(file, marks) ?? file;
+      // The log: the tab's turns as they came, and the lag (on the phones,
+      // with the file's length as recorded).
+      final tab = _lines.isEmpty ? null : TakeTab.of(_lines, marks);
+      final fileMs = _recordingTab || kIsWeb ? null : await mp4VideoMs(file);
+      final lag = _lag(fileMs);
+      // Whether the tab is in the picture: drawn in as the web recorded,
+      // or burned in here.
+      var burned = _recordingTab && tab != null;
+      if (!_recordingTab && tab != null && TakeOverlay.supported) {
+        if (await _burn(file, tab, lag.lagMs) case final withTab?) {
+          file = withTab;
+          burned = true;
+        }
       }
+      final log = TakeLog(
+        burned: burned,
+        lagMs: lag.lagMs,
+        lagFrom: lag.from,
+        lagRaw: lag.raw,
+        tab: tab,
+      );
       final known = Media.of(file);
       final media = known?.kind == PageKind.video
           ? known!
@@ -787,7 +892,12 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       while (names.contains(l10n.camTake(n))) {
         n++;
       }
-      final updated = await library.addMedia(event, [media], take: true);
+      final updated = await library.addMedia(
+        event,
+        [media],
+        take: true,
+        takeLog: log,
+      );
       final page = Library.addedPages(updated).last;
       final name = l10n.camTake(n);
       await library.renamePage(event.id, page.id, name);
@@ -799,7 +909,6 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         takePhrases(marks, skip: unpassed),
       );
       _take = page;
-      _takeMarks = marks;
       if (mounted) _snack(l10n.camSaved(name));
     } on Object catch (e, stack) {
       debugPrint('TabCam: cam: $e\n$stack');
@@ -819,7 +928,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     await TakeSound.videoStopping();
     final XFile video;
     try {
-      video = await controller.stopVideoRecording();
+      video = await _timedStop(controller.stopVideoRecording);
     } on Object {
       unawaited(TakeSound.cancel());
       rethrow;
@@ -830,16 +939,17 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     return take;
   }
 
-  /// [take] with the tab burned in where it showed ([marks]); null when it
-  /// couldn't be (the take is kept as it is, and a message says so).
-  Future<XFile?> _burn(XFile take, List<(Duration, int)> marks) async {
+  /// [take] with [tab] burned in where it showed, at its times in the
+  /// file ([lagMs] after the take's clock, [TakeTab.fileMarks]); null when
+  /// it couldn't be (the take is kept as it is, and a message says so).
+  Future<XFile?> _burn(XFile take, TakeTab tab, int lagMs) async {
     final l10n = context.l10n;
     setState(() => _burning = true);
     try {
       final pngs = <int, Uint8List>{};
       final bands = <(TabBand, Uint8List)>[];
-      for (final band in bandsOf(marks)) {
-        final png = pngs[band.line] ??= await renderBand(_lines[band.line]);
+      for (final band in bandsOf(tab.fileMarks(lagMs))) {
+        final png = pngs[band.line] ??= await renderBand(tab.lines[band.line]);
         bands.add((band, png));
       }
       final burned = await widget.burn(take, bands);
@@ -852,7 +962,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     }
   }
 
-  /// Plays the last take back, or stops it.
+  /// Plays the take back ([_take]), or stops it.
   Future<void> _play() async {
     if (_player != null) return _stopPlaying();
     final take = _take;
@@ -874,7 +984,10 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         return;
       }
       player.addListener(_follow);
-      setState(() => _player = player);
+      setState(() {
+        _player = player;
+        _playedLog = take.takeLog;
+      });
       await player.play();
     } on Object catch (e) {
       debugPrint('TabCam: cam: $e');
@@ -882,19 +995,25 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     }
   }
 
-  /// While a take plays: the neckline that showed then; at its end, the
-  /// camera again.
+  /// While a take plays: the neckline that showed then, as its log says
+  /// (one no longer in the capture's tab shows as it was; a take without
+  /// a log turns none); at its end, the camera again.
   void _follow() {
     final player = _player;
     if (player == null) return;
     final v = player.value;
     final at = v.position;
-    var line = _line;
-    for (final (time, index) in _takeMarks) {
-      if (time > at) break;
-      line = index;
+    if (_playedLog?.lineAt(at) case final text?) {
+      final line = _lines.indexOf(text);
+      if (line >= 0 && (line != _line || _playedLine != null)) {
+        setState(() {
+          _line = line;
+          _playedLine = null;
+        });
+      } else if (line < 0 && text != _playedLine) {
+        setState(() => _playedLine = text);
+      }
     }
-    if (line != _line) setState(() => _line = line);
     if (v.isCompleted ||
         (v.duration > Duration.zero && at >= v.duration && !v.isPlaying)) {
       _stopPlaying();
@@ -905,7 +1024,13 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     final player = _player;
     if (player == null) return;
     player.removeListener(_follow);
-    if (mounted) setState(() => _player = null);
+    _playedLog = null;
+    if (mounted) {
+      setState(() {
+        _player = null;
+        _playedLine = null;
+      });
+    }
     await player.dispose();
   }
 
@@ -979,7 +1104,10 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   Widget _neckline() {
     final l10n = context.l10n;
     const color = Colors.white;
-    if (_lines.isEmpty) {
+    // A take playing back shows its own neckline where the capture's tab
+    // no longer has it.
+    final played = _playedLine;
+    if (_lines.isEmpty && played == null) {
       return Padding(
         padding: const EdgeInsets.all(16),
         child: Text(
@@ -1011,7 +1139,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
-                      _lines[_line],
+                      played ?? _lines[_line],
                       key: const Key('neckline'),
                       softWrap: false,
                       style: const TextStyle(
@@ -1022,11 +1150,16 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${_line + 1} / ${_lines.length}',
-                    style: const TextStyle(color: Colors.white54, fontSize: 12),
-                  ),
+                  if (played == null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      '${_line + 1} / ${_lines.length}',
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

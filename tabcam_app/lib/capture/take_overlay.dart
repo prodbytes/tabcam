@@ -175,8 +175,15 @@ abstract class TakeRecorder {
   Future<bool> lendSoundToCamera();
 
   /// Starts recording the camera with the band for [neckline] (what shows
-  /// now; null: none) along its bottom.
+  /// now; null: none) along its bottom; returns once the recording has
+  /// started (or, should it not say, soon after).
   Future<void> start(String? Function() neckline);
+
+  /// How long ago the recording started, in ms, as of now (the web: the
+  /// MediaRecorder's `start` event, on the page's clock); null when it
+  /// isn't known. Cam reads it as the take's clock starts: the take's lag
+  /// (`TakeLog.lagMs`).
+  double? msSinceStart();
 
   /// The browser's; null elsewhere.
   static TakeRecorder? forPlatform() => webTakeRecorder();

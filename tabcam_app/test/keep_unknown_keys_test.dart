@@ -11,8 +11,9 @@ import 'package:tabcam_app/library/event_store_io.dart';
 import 'package:tabcam_app/library/json_extra.dart';
 import 'package:tabcam_app/library/library.dart';
 
-/// What a newer app might write on a take's page: a made-up log.
-const _takeLog = {
+/// What a newer app might write on a take's page: a made-up log of a kind
+/// this version doesn't know (its own take log, `takeLog`, it reads).
+const _futureLog = {
   'v': 1,
   'lagMs': 120,
   'burned': false,
@@ -57,7 +58,7 @@ Map<String, Object?> _pageJson({Map<String, Object?> edit = const {}}) => {
     'trackVolume': 0.5,
     ...edit,
   },
-  'takeLog': _takeLog,
+  'futureLog': _futureLog,
   'future': 1,
 };
 
@@ -65,10 +66,10 @@ void main() {
   group('pages', () {
     test('keep keys they don\'t know through copyWith and toJson', () {
       final page = EventPage.fromJson(_pageJson());
-      expect(page.extra.keys, ['takeLog', 'future']);
+      expect(page.extra.keys, ['futureLog', 'future']);
       final json = _encoded(page.copyWith(title: () => 'x').toJson());
       expect(json['title'], 'x');
-      expect(json['takeLog'], _takeLog);
+      expect(json['futureLog'], _futureLog);
       expect(json['future'], 1);
       // And again, loaded back.
       final again = EventPage.fromJson(json).toJson();
@@ -214,7 +215,7 @@ void main() {
       final json = _encoded(page.copyWith(title: () => 'Take 1').toJson());
       expect(json['edit'], containsPair('v', 2));
       expect(json['edit'], containsPair('title', _editNewer['title']));
-      expect(json['takeLog'], _takeLog);
+      expect(json['futureLog'], _futureLog);
     });
   });
 
@@ -242,7 +243,7 @@ void main() {
           pages: [
             event.pages.first.copyWith(extra: const {'future': 1}),
             video.copyWith(
-              extra: const {'takeLog': _takeLog},
+              extra: const {'futureLog': _futureLog},
               edit: () => PageEdit.fromJson({
                 'startMs': 0,
                 'endMs': 2000,
@@ -261,7 +262,7 @@ void main() {
       await reopened.load();
       final pages = reopened.byId(event.id)!.pages;
       expect(pages.first.extra, {'future': 1});
-      expect(pages.last.extra, {'takeLog': _takeLog});
+      expect(pages.last.extra, {'futureLog': _futureLog});
       expect(pages.last.edit!.extra, _editNewer);
     });
 
@@ -270,19 +271,19 @@ void main() {
       final video = event.pages.last;
       var now = (await library.renamePage(event.id, video.id, 'Take 1'))!;
       expect(now.pages.last.title, 'Take 1');
-      expect(now.pages.last.extra, {'takeLog': _takeLog});
+      expect(now.pages.last.extra, {'futureLog': _futureLog});
       now = (await library.setPageEdit(
         event.id,
         video.id,
         video.edit!.copyWith(trackVolume: 0.4),
       ))!;
-      expect(now.pages.last.extra, {'takeLog': _takeLog});
+      expect(now.pages.last.extra, {'futureLog': _futureLog});
       expect(now.pages.last.edit!.trackVolume, 0.4);
       expect(now.pages.last.edit!.extra, _editNewer);
       // Taking the edit off keeps the page's own.
       now = (await library.setPageEdit(event.id, video.id, null))!;
       expect(now.pages.last.edit, isNull);
-      expect(now.pages.last.extra, {'takeLog': _takeLog});
+      expect(now.pages.last.extra, {'futureLog': _futureLog});
     });
 
     test('when a page is rotated or replaced', () async {
@@ -296,7 +297,7 @@ void main() {
       now = await library.replacePage(now, now.pages.last, pick.media.single);
       expect(now.pages.last.id, isNot(event.pages.last.id));
       expect(now.pages.last.take, isTrue);
-      expect(now.pages.last.extra, {'takeLog': _takeLog});
+      expect(now.pages.last.extra, {'futureLog': _futureLog});
     });
 
     test('in a clone, as they are', () async {
@@ -310,7 +311,7 @@ void main() {
             event.pages.first,
             video.copyWith(
               edit: () => video.edit!.copyWith(trackId: event.pages.first.id),
-              extra: {'takeLog': _takeLog, 'page': event.pages.first.id},
+              extra: {'futureLog': _futureLog, 'page': event.pages.first.id},
             ),
             EventPage.link(
               id: 'l1',
@@ -324,7 +325,7 @@ void main() {
       final copy = await library.clone(library.byId(event.id)!);
       expect(copy.pages.first.extra, {'future': 1});
       expect(copy.pages[1].extra, {
-        'takeLog': _takeLog,
+        'futureLog': _futureLog,
         'page': event.pages.first.id,
       });
       expect(copy.pages[1].edit!.trackId, copy.pages.first.id);

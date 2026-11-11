@@ -102,7 +102,10 @@ its **Not now** leaving. With Premium it opens the camera view
   is marked as a take (`take` on its page, `EventPage.take`), which
   stays when it's renamed, edited, cloned or published, so the
   play-along sidebar lists it with the [takes](#playing-along-with-a-file).
-  It syncs as any video does (the mark with it, as its name does).
+  It syncs as any video does (the mark with it, as its name does). It
+  also keeps a **log** of what Cam noted while it recorded (the tab's
+  turns and how far the file started before them, see
+  [What a take keeps](#what-a-take-keeps)).
   Going back while recording stops it and keeps the take. Back on the capture, its takes show: the file list
   (not the Text view), scrolled to its end.
   <a id="new-take-key"></a>The **.** key (on the main keyboard or the
@@ -155,7 +158,9 @@ its **Not now** leaving. With Premium it opens the camera view
     [Recording comes first](#recording-comes-first)), by the platform's
     own video tools over the method channel `tabcam/take_overlay`
     (`burn`: the take, an output path, and the bands with their times
-    in ms): Media3 Transformer with an `OverlayEffect`
+    in ms, in the file: each turn's time on the take's clock plus the
+    take's [lag](#what-a-take-keeps), the first band from the file's
+    start): Media3 Transformer with an `OverlayEffect`
     ([`TakeOverlay.kt`](../tabcam_app/android/app/src/main/kotlin/com/nu01/tabcam/TakeOverlay.kt))
     on Android; an `AVMutableVideoComposition` with Core Animation
     layers ([`AppDelegate.swift`](../tabcam_app/ios/Runner/AppDelegate.swift))
@@ -163,16 +168,25 @@ its **Not now** leaving. With Premium it opens the camera view
     in MP4. "Adding the tab to the video…" shows meanwhile. If it
     fails, the take is saved as recorded and a message says it was
     saved without the tab, and why ("The take was saved without the
-    tab: …").
+    tab: …"); its log says so (`burned` false).
   - A capture with no text tab records the camera alone.
-- **Play** plays the last take of this visit back in the camera's place,
-  until **Stop** or its end; the necklines under it turn where they
-  turned while it was recorded (the take has the tab in it too).
+- **Play** plays the capture's last take back in the camera's place (the
+  last of the user's own, on a capture shared to read: their
+  contribution's), until **Stop** or its end: the one just recorded, or,
+  when Cam opens, the last one recorded before (on this device or
+  another); deleted, the one before it. The necklines under it turn
+  where they turned while it was recorded, as its
+  [log](#what-a-take-keeps) says (at their times in the file, the lag
+  added): a neckline the capture's tab no longer has (its text changed
+  since) shows as it was, without the "2 / 5" under it. Stopped, the tab
+  stays at the last neckline shown that the capture's tab has. A take
+  from before takes had a log turns none (its tab is in its picture).
 - **Tab** (beside Rec and Play: **Hide tab** with the tab showing,
   **Show tab** with it hidden) hides the tab along the bottom, leaving
   the camera more of the screen, and shows it again. Hidden, it still
   turns (keys, taps, head gestures, a take playing back) and a take
-  still gets it burned in where it showed; it's only off the screen.
+  still gets it burned in where it showed, and its log notes it; it's
+  only off the screen.
   It shows again each time Cam opens.
 - <a id="phrase-passes"></a>**Phrase passes**: while recording with
   [Auto-pass](#auto-pass) on, each
@@ -516,6 +530,85 @@ On a capture shared with the user to read, each take goes to their own
 capture opened by its link (a take couldn't be saved there), and while a
 tool works. Opening it stops what
 plays in the list.
+
+<a id="what-a-take-keeps"></a>**What a take keeps**: besides its file,
+each take Cam saves keeps a **log** of what Cam noted while it recorded,
+on its page (`takeLog` in the capture's details, `EventPage.takeLog`,
+[`take_log.dart`](../tabcam_app/lib/capture/take_log.dart)), written
+once, as the take is saved, and never changed after. It syncs, is
+published and goes into the user's [contribution](contributions.md)
+with the page as its name does; a [clone](library.md)'s copy names the
+copy's files; renamed or edited, it stays. From it a later version of
+the [editor](video-edit.md) draws the tab over the take, instead of the
+tab being burned into its picture, and lines the song played along up
+with it. For now Play uses it (above). A few KB for a ten-minute take:
+```json
+"takeLog": {
+  "v": 1, "burned": true,
+  "lagMs": 180, "lagFrom": "bounds",
+  "lagRaw": {"startCallMs": -240, "startReturnMs": -10,
+             "stopCallMs": 61000, "stopReturnMs": 61310, "fileMs": 61420},
+  "tab": {"lines": ["e|--3--5--7--|", "e|--5--7--8--|"],
+          "marks": [[0, 0], [4210, 1], [8380, 0]]},
+  "song": []
+}
+```
+- **The tab** (`tab`; none when the capture had no text tab): the
+  necklines the take showed (`lines`), each text once, in the order
+  first shown, so a later change to the capture's tab changes nothing
+  here; and each turn (`marks`: ms on the take's clock, and which of
+  `lines`), every one as it came: those made with Auto-pass off, with
+  the tab hidden, two at once or back to the same text, the first at 0
+  (the neckline it started on). The bands and the take's own
+  [phrase passes](#phrase-passes) are worked out from the turns as
+  before (`takePhrases`, the passes leaving out the turns made with
+  Auto-pass off); the log keeps them all. At most 4000 turns (the
+  first).
+- **Whether the tab is in its picture** (`burned`): true when it was
+  drawn in as the web recorded it or burned in after on Android and
+  iOS; false when there was none, or it couldn't be put in (the web
+  recorder failed and the camera recorded alone; the burn failed). A
+  log that doesn't say counts as burned, so the tab is never drawn
+  twice.
+- **The lag** (`lagMs`): how long the file had been recording when the
+  take's clock started (the clock starts once the recording has):
+  a time on the clock is `lagMs` later in the file (the start staying
+  the file's start). `lagFrom` says how it was told:
+  - `recorder` (the web): the browser's recorder says when it started
+    (its `start` event's time, on the page's clock; the recorder's
+    `start` returns once it has, at most a second on), and the clock's
+    start less that is the lag.
+  - `bounds` (Android, iOS, and the web's camera recording alone): the
+    file's first frame came between the camera being told to start and
+    that returning, so the lag is between those two (on the clock,
+    before its 0); its last frame between being told to stop and that
+    returning, so, with the file's length (its video track's, read from
+    the MP4's index, [`mp4_length.dart`](../tabcam_app/lib/capture/mp4_length.dart),
+    only the boxes' headers read), the lag is between the length less
+    each. The lag is the middle of where both ranges agree; where they
+    don't, or the length can't be read (a WebM), the middle of the
+    first. Typically within ±100 ms; a later step lets the user nudge
+    what's left.
+  - `none`: not told, 0.
+  The readings it was told from (`lagRaw`, ms on the take's clock) are
+  kept, so it can be told again better later.
+- **The song** (`song`): the song played along, as segments of the
+  take (`at`, `to` on the take's clock; the song's page, where in it
+  (`from`) and at what `speed`); empty for now: a later version notes
+  them, and `songLink` when it was a link in a frame.
+- A take without a log (saved before takes had one) has its tab in its
+  picture, or never had one.
+- Checked: the turns kept unfiltered, the necklines kept once and the
+  turns pointing at them, the JSON read back as written (and leniently:
+  what isn't as expected is left out), the lag's midpoint for made-up
+  timings and the start's range where the two don't agree, the length
+  read from a made-up MP4's index, the log saved with a take (burned,
+  not burned, the web's recorder's lag, the web's camera alone), kept
+  through a rename and a restart, a clone's naming its copy's song,
+  and Play of an older take after Cam reopens turning its necklines,
+  lag and all (`test/take_log_test.dart`, `test/play_along_test.dart`,
+  in Chrome `test/web_take_recorder_test.dart`). **Not yet on a phone**:
+  how big the log grows, and that saving it costs no dropped frames.
 
 <a id="recording-comes-first"></a>**Recording comes first**: in a take
 the sound matters most, so Cam records it as a musician wants it, sets it

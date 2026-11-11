@@ -100,7 +100,11 @@ it has a `linkKey` ([sharing](sharing.md)), synced; a clone has none. A page has
 **video**, **audio**, **pdf** or **link**), its file's extension, and a
 [filter](page-filters.md) (used for images only). A video Cam recorded is
 marked `take` ([Cam](cam.md)), kept when it's renamed, edited, cloned or
-published, and synced with the page. A link has no file
+published, and synced with the page; it also has its
+[log](cam.md#what-a-take-keeps) (`takeLog`: the tab's turns and the
+lag, written once), kept the same way (a clone's naming the copy's
+files), but not when the page's file is replaced by another (it tells
+of the file recorded). A link has no file
 (its extension is `url`): it has its address (`url`, `http` or `https`
 only, checked again whenever an event is loaded, since events also come
 from the cloud) and an optional `title`. A new event is titled `Tab YYYY-MM-DD HH:MM` (its local time).
@@ -145,7 +149,8 @@ through the cloud) loads as an image page.
 
 **Fields a newer app wrote are kept.** A page's details, and a video's
 `edit`, keep the keys this version doesn't know (a newer app's, such as a
-take's log or a newer editor's settings) and write them back as they
+newer editor's settings, or, in an app from before take logs, a take's
+log) and write them back as they
 came, so renaming, editing, rotating, replacing, publishing or cloning a
 page here doesn't drop them (a clone copies them as they are, changing
 nothing in them). The keys this version knows are always read and
