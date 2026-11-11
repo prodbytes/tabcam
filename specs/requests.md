@@ -2447,6 +2447,33 @@ spec.
 
 ## 2026-11-11
 
+5. **When editing a recording, add a volume control to the side of the
+   audio track. Left side.** The video edit screen's track bar (Sound:
+   New track) now has the track's volume at its left, on the same row,
+   the bar narrowing to make room: a speaker over the level (`100%`);
+   tapped, it opens a slider from 0% to 100% in steps of 5%, with Mute
+   (Unmute puts back the level it had before Mute or a slide down to
+   0%; 100% for an edit saved muted). It fits its row at any text size
+   (level on one line, shrunk with the speaker when too large). It's
+   part of the edit kept with the video (`trackVolume`, in its JSON only when not 100%, read
+   defensively from older or broken edits) and applies wherever the
+   edit plays: the editor's preview (at once, without stopping the
+   track), the file screen, and Download on every platform (Android: a
+   Media3 `GainProcessor` on the track; iOS: an `AVMutableAudioMix`;
+   the web: a gain node, recorded and offline). Reset puts it back to
+   100%. The range stops at 100% because the players can't play a file
+   louder than it is, so a boost would only reach the download and
+   sound different from the preview. It's the track's only: Original
+   keeps the video's own sound as it is. Labels in English, Spanish and
+   Portuguese. New tests: the control is left of the bar on its row;
+   the slider and Mute change the kept edit and the preview track's
+   volume without pausing it; Download and the phones' channel get it;
+   JSON round trip, defaults and defensive reading; Reset; a kept
+   edit's track plays at its volume on the file screen; Unmute after a
+   slide to 0% and after reopening a muted edit; no overflow at 200%
+   text; and, in Chrome, the web editor's track at half volume is half
+   as loud, in the sound alone and in the recorded video. See
+   [Video edit](video-edit.md).
 6. **In the cam screen make the "1" key be a shortcut to toggle
    recording on/off.** In Cam, **1** (on the top row or the keypad)
    now presses Rec / Stop as the button does: it starts a take (and the

@@ -12,11 +12,11 @@ VideoEditing? webVideoEditor() => WebVideoEditor();
 
 /// Edits a video in the browser: the kept part plays, hidden, into a
 /// canvas (its frames) and a Web Audio graph (its sound, or the new
-/// track's), and the browser's MediaRecorder records both, so it takes
-/// as long as the kept part is. The result is WebM (MP4 where only that
-/// records, Safari). The sound alone is rendered offline, faster than it
-/// plays ([OfflineAudioContext]), as a WAV. All in the browser: nothing
-/// is uploaded to make it.
+/// track's, through a gain at its volume), and the browser's MediaRecorder
+/// records both, so it takes as long as the kept part is. The result is
+/// WebM (MP4 where only that records, Safari). The sound alone is rendered
+/// offline, faster than it plays ([OfflineAudioContext]), as a WAV. All
+/// in the browser: nothing is uploaded to make it.
 class WebVideoEditor implements VideoEditing {
   /// The first of these the browser records (Safari: MP4 only).
   static const _types = [
@@ -92,7 +92,15 @@ class WebVideoEditor implements VideoEditing {
         } else {
           source = player;
         }
-        graph.createMediaElementSource(source).connect(sink);
+        final input = graph.createMediaElementSource(source);
+        if (track != null && edit.trackVolume != 1) {
+          // The track as loud as the edit says.
+          final gain = graph.createGain()..gain.value = edit.trackVolume;
+          input.connect(gain);
+          gain.connect(sink);
+        } else {
+          input.connect(sink);
+        }
         for (final t in sink.stream.getAudioTracks().toDart) {
           stream.addTrack(t);
         }
@@ -200,7 +208,14 @@ class WebVideoEditor implements VideoEditing {
       rate,
     );
     final player = context.createBufferSource()..buffer = buffer;
-    player.connect(context.destination);
+    if (edit.sound == EditSound.track && edit.trackVolume != 1) {
+      // The track as loud as the edit says.
+      final gain = context.createGain()..gain.value = edit.trackVolume;
+      player.connect(gain);
+      gain.connect(context.destination);
+    } else {
+      player.connect(context.destination);
+    }
     if (edit.sound == EditSound.original) {
       player.start(0, edit.start.inMilliseconds / 1000, clip);
     } else {

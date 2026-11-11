@@ -86,7 +86,8 @@ review notes ([app stores](app-stores.md)).
 - [Video edit](video-edit.md): basic edits of a video from its file
   screen: trim its start and end; keep its sound, take it out, or
   replace it with a new track (one of the capture's recordings, or a
-  sound file, added to them), shifted to fit the video. The edit is kept
+  sound file, added to them), shifted to fit the video, at a volume set
+  at the left of its bar. The edit is kept
   with the video and played as it says (muted, the track along it), no
   file made; Download makes one on the device: the video, the video
   without sound, or the sound only.

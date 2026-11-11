@@ -3292,6 +3292,30 @@ abstract class AppLocalizations {
   /// **'A tenth of a second later'**
   String get videoEditTrackLater;
 
+  /// Video edit: the track's volume control, at the left of the track bar (tooltip, screen reader); opens a slider
+  ///
+  /// In en, this message translates to:
+  /// **'Track volume'**
+  String get videoEditTrackVolume;
+
+  /// Video edit: the track's volume, as a percentage (0 to 100), under the volume control and beside its slider
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}%'**
+  String videoEditTrackVolumeLevel(int percent);
+
+  /// Video edit: the volume slider's speaker button, while the track has sound; silences it
+  ///
+  /// In en, this message translates to:
+  /// **'Mute the track'**
+  String get videoEditTrackMute;
+
+  /// Video edit: the volume slider's speaker button, while the track is muted; puts back its level
+  ///
+  /// In en, this message translates to:
+  /// **'Unmute the track'**
+  String get videoEditTrackUnmute;
+
   /// Video edit: the part of the track used, once trimmed (times like 0:01.5)
   ///
   /// In en, this message translates to:
