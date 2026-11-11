@@ -14,11 +14,16 @@ Each kind asks, or doesn't, on its own:
 |---|---|---|
 | A capture of the user's own | Home, a card's ⋮ menu, **Delete** ([library](library.md)) | `capture` |
 | A capture shared with the user | Home, a card's ⋮ menu, **Remove** ([shared captures](shared-captures.md)) | `shared-capture` |
-| One of a capture's files | the event screen's list, **Delete file** ([event screen](event-screen.md)) | `file` |
-| One of a reader's own files | the event screen's **Your files**, Delete ([contributions](contributions.md)) | `contribution` |
+| One of a capture's files | the event screen's list, **Delete file** ([event screen](event-screen.md)); the play-along sidebar's Delete on its row ([Cam](cam.md#deleting-from-the-sidebar)) | `file` |
+| One of a reader's own files | the event screen's **Your files**, Delete ([contributions](contributions.md)); the play-along sidebar's Delete on its row (their takes) | `contribution` |
 
-The file screen's **Delete** never asked and still doesn't (it deletes
-the file and goes back to the list).
+The list and the play-along sidebar (beside the Text view, in Cam, on
+the file screen) delete a file through the same code
+([`file_delete.dart`](../tabcam_app/lib/screens/file_delete.dart),
+`deleteFile`), so they ask, or don't, as one: Don't ask again ticked in
+the sidebar holds in the list too, and the other way round. The file
+screen's own **Delete** (its app bar's) never asked and still doesn't
+(it deletes the file and goes back to the list).
 
 ## Don't ask again
 

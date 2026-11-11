@@ -9,6 +9,7 @@ import 'package:tabcam_app/library/capture_event.dart';
 import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
 import 'package:tabcam_app/screens/event_screen.dart';
+import 'package:tabcam_app/screens/file_screen.dart';
 
 Future<void> frames(WidgetTester tester) async {
   for (var i = 0; i < 20; i++) {
@@ -124,9 +125,14 @@ void main() {
     await tester.tap(find.byKey(ValueKey('file-${photo.id}')));
     await frames(tester);
 
-    // Rename sits just before Delete.
+    // Rename sits just before Delete (the screen's, not the sidebar's).
     final rename = tester.getCenter(find.byIcon(Icons.edit_outlined));
-    final delete = tester.getCenter(find.byIcon(Icons.delete_outline));
+    final delete = tester.getCenter(
+      find.descendant(
+        of: find.byType(EventTool),
+        matching: find.byIcon(Icons.delete_outline),
+      ),
+    );
     expect(rename.dx, lessThan(delete.dx));
     expect(rename.dy, delete.dy);
 

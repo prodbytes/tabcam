@@ -1162,6 +1162,12 @@ abstract class AppLocalizations {
   /// **'Follow a PDF'**
   String get camAlongPdfs;
 
+  /// Play-along sidebar: tooltip of the Delete button at the right of a file's row; it asks first, as the capture's list does
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}'**
+  String camAlongDelete(String name);
+
   /// Cam sidebar: tooltip of a PDF not showing
   ///
   /// In en, this message translates to:

@@ -2574,6 +2574,53 @@ spec.
    while a take plays back, and with the sidebar showing it starts the
    song with the take. See [Cam](cam.md#rec-key).
 
+7. **In the mini player sidebar, to the right of files, add the delete
+   button. So I can delete anything, especially the takes.** Each file
+   in the play-along sidebar (in Cam, beside the Text view and on the
+   file screen) now ends in a **Delete** button (a bin, its tooltip
+   "Delete <name>", in English, Spanish and Portuguese), after the
+   playing or followed mark; the text tab's row has none. It's the
+   capture's list's Delete file, moved into one shared function
+   (`deleteFile` and `mayDeleteFile`, `file_delete.dart`, which the
+   list now uses too): the same question, the last file kept, and the
+   same rules on who may delete what (on a capture shared to read, none
+   of the owner's files). It's greyed while a take records, saves or
+   plays back, and isn't in Cam's Premium preview or on a capture
+   opened by its link. The file the sidebar's player had loaded, once
+   deleted (from the sidebar or anywhere else), is let go of: it stops
+   and the frame closes; a followed PDF or page closes its pane; Cam's
+   Play has no take once its take is deleted. On a recording's file
+   screen, the recording's own row has no Delete (the screen's own
+   Delete deletes it and goes back). New tests: Delete at the right of
+   a take's row, asking first, cancelled keeping it, confirmed deleting
+   it and its file; deleting the song playing stops it; a followed PDF
+   deleted closes its pane; a reader sees none on the owner's files;
+   the file screen's own recording has none. See
+   [Cam](cam.md#deleting-from-the-sidebar).
+   From the review: on a capture shared to read, the sidebar now lists
+   the reader's own files (their takes) after the capture's, not those
+   published, so a reader deletes their takes there too (the known
+   limitation that it didn't is gone from
+   [contributions](contributions.md)); beside the Text view, the
+   sidebar's Delete also stops the file if the list plays it (the list
+   plays on in the Text view) and shows in the screen's progress bar,
+   as the list's Delete does. New tests: a reader's take listed after
+   the owner's files, the only one with Delete, deleted from their
+   contribution with its file; a recording the list plays, deleted from
+   the Text view's sidebar, stops.
+   Merged with main's takes-last and Don't ask again: the takes' rows
+   under **Takes** have Delete too (a reader's own takes listed there
+   with the capture's, theirs first), and the sidebar's Delete asks in
+   the shared delete confirm with **Don't ask again** (the list's "file"
+   kind, or "contribution" for a reader's own), so a choice made in the
+   sidebar or the list holds in both; its messages show at the top. A
+   test that Don't ask again ticked in the sidebar skips the list's
+   confirm too. See [delete confirmations](delete-confirms.md).
+   From the merge's review: in Cam, the sidebar's Delete is now greyed
+   too while "." saves a take for the next, until the next take has
+   started, where between saving one and starting the next it was
+   live (with Don't ask again ticked, the song could be deleted and
+   the new take start without it). A test checks it's greyed then.
 7. **take the takes be the last thing on the sidebar.** The play-along
    sidebar (Cam, the Text view, the file screen) now lists Cam's takes
    last, after the text tab, the files to play along and the PDFs or

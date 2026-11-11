@@ -287,7 +287,8 @@ class _FileScreenState extends State<FileScreen> {
   }
 
   /// Whether [page] opens in the sidebar: a recording of the capture's
-  /// own (a contribution's isn't listed there: it plays on its page).
+  /// own (a contribution's opens on its own page, not in the sidebar,
+  /// though a reader's own are listed in it, [PlayAlong.filesOf]).
   static bool _inSidebar(CaptureEvent event, EventPage page) =>
       page.isAudio && event.pages.contains(page);
 
@@ -295,9 +296,18 @@ class _FileScreenState extends State<FileScreen> {
   static bool _withSidebar(CaptureEvent event, EventPage page) =>
       page.isPdf || page.isImage || _inSidebar(event, page);
 
+  /// The sidebar's files show Delete, as the capture's list does, all but
+  /// this screen's own (its app bar's Delete deletes it and goes back).
   Widget _beside(CaptureEvent event, EventPage page, Widget child) =>
       _withSidebar(event, page)
-      ? PlayAlongBeside(along: _alongFor(event, page), child: child)
+      ? PlayAlongBeside(
+          along: _alongFor(event, page),
+          deletes: true,
+          canDelete: !_busy,
+          keepId: page.id,
+          run: _run,
+          child: child,
+        )
       : child;
 
   /// Playing along beside the file, made when it first shows: for a

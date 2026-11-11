@@ -7,6 +7,7 @@ import 'package:video_player/video_player.dart';
 import '../l10n/language.dart';
 import '../library/capture_event.dart';
 import '../library/library.dart';
+import '../screens/file_delete.dart';
 import '../screens/file_screen.dart';
 import '../screens/page_image.dart';
 import '../screens/pdf_page.dart';
@@ -31,7 +32,8 @@ import 'link_frame.dart';
 /// file screen lists its pages as well ([withImages]), to follow one
 /// while it plays. With [withText] (Cam and the file screen), the
 /// capture's text tab is listed first, to follow in the same pane
-/// ([followsText]).
+/// ([followsText]). On a capture shared to read, the reader's own files
+/// (their takes) are listed too, after the capture's ([filesOf]).
 class PlayAlong extends ChangeNotifier {
   PlayAlong(
     this.library,
@@ -50,6 +52,20 @@ class PlayAlong extends ChangeNotifier {
   final Library library;
   final String eventId;
   final BackingTrack track;
+
+  /// The files of [event] the sidebar may list: the capture's own, then,
+  /// on one the user contributes to, their own contribution's (Cam's
+  /// takes among them), but those published (the capture's copy is
+  /// listed already).
+  static List<EventPage> filesOf(CaptureEvent event) => [
+    ...event.pages,
+    for (final page in event.myContribution?.pages ?? const <EventPage>[])
+      if (!event.isPublished(page)) page,
+  ];
+
+  /// Whether [event] still has [page] among the files the sidebar lists.
+  static bool _has(CaptureEvent? event, EventPage page) =>
+      event != null && filesOf(event).any((p) => p.id == page.id);
 
   /// Whether the sidebar lists the capture's PDFs, to follow one.
   final bool withPdfs;
@@ -96,8 +112,11 @@ class PlayAlong extends ChangeNotifier {
   /// Whether the capture has anything to play along with (or, with
   /// [withPdfs], a PDF to follow; with [withText], its text). The text
   /// alone doesn't open the sidebar by itself: ♫ does.
-  bool get available =>
-      text != null || (library.byId(eventId)?.pages.any(_listed) ?? false);
+  bool get available {
+    if (text != null) return true;
+    final event = library.byId(eventId);
+    return event != null && filesOf(event).any(_listed);
+  }
 
   /// Whether the sidebar lists [page].
   bool _listed(EventPage page) => BackingTrack.plays(page) || follows(page);
@@ -108,7 +127,8 @@ class PlayAlong extends ChangeNotifier {
 
   /// The capture's PDFs and images the sidebar lists, to follow one.
   List<EventPage> get toFollow => [
-    ...?library.byId(eventId)?.pages.where(follows),
+    if (library.byId(eventId) case final event?)
+      ...filesOf(event).where(follows),
   ];
 
   /// Shows [page] (a PDF or an image) beside the screen, or hides it,
@@ -170,12 +190,22 @@ class PlayAlong extends ChangeNotifier {
   void _loadFirst() {
     final event = library.byId(eventId);
     if (event == null || track.page != null) return;
-    final playing = event.pages.where(BackingTrack.plays);
+    final playing = filesOf(event).where(BackingTrack.plays);
     final first =
         playing.where((p) => p.id == startId).firstOrNull ??
         playing.where((p) => !isTake(p)).firstOrNull ??
         playing.lastOrNull;
     if (first != null) unawaited(track.choose(event, first, play: false));
+  }
+
+  /// Lets go of [page], about to be deleted: it stops playing (the
+  /// track closes) and stops showing beside the screen.
+  Future<void> letGo(EventPage page) async {
+    if (_followed?.id == page.id) {
+      _followed = null;
+      notifyListeners();
+    }
+    if (track.page?.id == page.id) await track.close();
   }
 
   /// Plays [page] along (or pauses it, chosen again).
@@ -187,10 +217,13 @@ class PlayAlong extends ChangeNotifier {
   void _changed() {
     final event = library.byId(eventId);
     // The file followed, deleted (or synced away): the pane closes.
-    if (_followed case final followed?
-        when event?.pages.any((p) => p.id == followed.id) != true) {
+    if (_followed case final followed? when !_has(event, followed)) {
       _followed = null;
       notifyListeners();
+    }
+    // The file playing, deleted (or synced away): the player lets go.
+    if (track.page case final playing? when !_has(event, playing)) {
+      unawaited(track.close());
     }
     // The text, cleared: its pane closes.
     if (_followsText && text == null) {
@@ -198,7 +231,7 @@ class PlayAlong extends ChangeNotifier {
       notifyListeners();
     }
     if (_opened || !opensByItself) return;
-    if (event == null || !event.pages.any(_listed)) return;
+    if (event == null || !filesOf(event).any(_listed)) return;
     _opened = true;
     _open = true;
     _loadFirst();
@@ -312,10 +345,38 @@ class PlayAlongBeside extends StatelessWidget {
     this.pdfView = pdfViewFor,
     this.onUse,
     this.footer,
+    this.deletes = false,
+    this.canDelete = true,
+    this.keepId,
+    this.letGo,
+    this.run,
   });
 
   final PlayAlong along;
   final Widget child;
+
+  /// Whether the sidebar's files show Delete (those the user may delete,
+  /// [mayDeleteFile]); false (a preview), none does.
+  final bool deletes;
+
+  /// Whether Delete works now; false (Cam recording or saving a take, the
+  /// screen busy), it's greyed.
+  final bool canDelete;
+
+  /// A file that shows no Delete in the sidebar: the file screen's own
+  /// (its app bar deletes it, and the screen with it).
+  final String? keepId;
+
+  /// Before a file deleted from the sidebar goes, once the user confirms,
+  /// besides the sidebar's own player: the screen lets go of it too (the
+  /// event screen's list player, which may be playing it).
+  final Future<void> Function(EventPage page)? letGo;
+
+  /// Runs a delete from the sidebar ([deleteFile]'s `run`): the screen's
+  /// own, as its list's Delete does (its progress bar, its message on a
+  /// failure); without it, a failure shows in a snack bar.
+  final Future<void> Function(String failure, Future<void> Function() task)?
+  run;
   final Widget Function(LinkFrameController controller) linkFrame;
 
   /// Under the sidebar's list, if anything (the Text view's notation
@@ -336,6 +397,29 @@ class PlayAlongBeside extends StatelessWidget {
 
   /// The narrowest the PDF's pane gets dragged.
   static const minPdf = 120.0;
+
+  /// Deletes [page] from the sidebar, as the capture's list does
+  /// ([deleteFile]), once the user confirms: if it's what plays, the
+  /// player lets go of it first (the screen's too, [letGo]); if it's
+  /// followed, its pane closes.
+  Future<void> _delete(BuildContext context, EventPage page) async {
+    onUse?.call();
+    final event = along.library.byId(along.eventId);
+    if (event != null) {
+      await deleteFile(
+        context,
+        along.library,
+        event,
+        page,
+        letGo: () async {
+          await along.letGo(page);
+          await letGo?.call(page);
+        },
+        run: run,
+      );
+    }
+    onUse?.call();
+  }
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -446,6 +530,9 @@ class PlayAlongBeside extends StatelessWidget {
                     hasText: along.text != null,
                     followsText: along.followsText,
                     footer: footer,
+                    keepId: keepId,
+                    canDelete: canDelete,
+                    onDelete: deletes ? (page) => _delete(context, page) : null,
                     onFollow: (page) {
                       onUse?.call();
                       along.follow(page);
@@ -929,6 +1016,9 @@ class PlayAlongSidebar extends StatelessWidget {
     this.followsText = false,
     this.onFollowText,
     this.footer,
+    this.onDelete,
+    this.canDelete = true,
+    this.keepId,
     required this.onToggle,
     required this.onStop,
     required this.onSkip,
@@ -957,6 +1047,17 @@ class PlayAlongSidebar extends StatelessWidget {
   final bool followsText;
   final VoidCallback? onFollowText;
   final Widget? footer;
+
+  /// Deletes one of the files listed; null: none shows Delete. With it,
+  /// those the user may delete ([mayDeleteFile]) do, at the right of
+  /// their row, all but [keepId]'s.
+  final void Function(EventPage page)? onDelete;
+
+  /// Whether Delete works now; false, it's greyed.
+  final bool canDelete;
+
+  /// The file that shows no Delete (the file screen's own).
+  final String? keepId;
   final VoidCallback onToggle;
   final VoidCallback onStop;
   final void Function(Duration by) onSkip;
@@ -1059,6 +1160,37 @@ class PlayAlongSidebar extends StatelessWidget {
     ),
   );
 
+  /// The end of a file's row: its [mark] (playing, followed), if any, and
+  /// at the right, Delete, if it shows ([onDelete]).
+  Widget? _trailing(
+    BuildContext context,
+    AppLocalizations l10n,
+    CaptureEvent event,
+    EventPage page,
+    IconData? mark,
+  ) {
+    final onDelete = this.onDelete;
+    final deletes =
+        onDelete != null && page.id != keepId && mayDeleteFile(event, page);
+    if (!deletes) return mark == null ? null : Icon(mark, size: 18);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (mark != null) Icon(mark, size: 18),
+        IconButton(
+          key: ValueKey('cam-along-delete-${page.id}'),
+          tooltip: l10n.camAlongDelete(fileLabel(l10n, event, page)),
+          visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+          color: Colors.white70,
+          disabledColor: Colors.white24,
+          iconSize: 18,
+          icon: const Icon(Icons.delete_outline),
+          onPressed: canDelete ? () => onDelete(page) : null,
+        ),
+      ],
+    );
+  }
+
   /// The files to play along, under the frame, then the PDFs to follow,
   /// then Cam's takes.
   Widget _list(BuildContext context, AppLocalizations l10n) =>
@@ -1066,12 +1198,16 @@ class PlayAlongSidebar extends StatelessWidget {
         listenable: Listenable.merge([library, track]),
         builder: (context, _) {
           final event = library.byId(eventId);
-          final playing = [...?event?.pages.where(BackingTrack.plays)];
+          final playing = [
+            if (event != null)
+              ...PlayAlong.filesOf(event).where(BackingTrack.plays),
+          ];
           final pages = [...playing.where((p) => !isTake(p))];
           // The most recent first.
           final takes = [...playing.where(isTake)].reversed.toList();
           final primary = Theme.of(context).colorScheme.primary;
-          // A file to play along (a song or a take): the one playing marked.
+          // A file to play along (a song or a take): the one playing marked,
+          // Delete at its right.
           Widget fileRow(EventPage page) => ListTile(
             key: ValueKey('cam-along-${page.id}'),
             dense: true,
@@ -1085,9 +1221,15 @@ class PlayAlongSidebar extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            trailing: track.page?.id == page.id && track.playing
-                ? const Icon(Icons.graphic_eq, size: 18)
-                : null,
+            trailing: _trailing(
+              context,
+              l10n,
+              event,
+              page,
+              track.page?.id == page.id && track.playing
+                  ? Icons.graphic_eq
+                  : null,
+            ),
             onTap: () => onChoose(page),
           );
           return ListView(
@@ -1148,9 +1290,13 @@ class PlayAlongSidebar extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      trailing: followed?.id == page.id
-                          ? const Icon(Icons.vertical_split, size: 18)
-                          : null,
+                      trailing: _trailing(
+                        context,
+                        l10n,
+                        event,
+                        page,
+                        followed?.id == page.id ? Icons.vertical_split : null,
+                      ),
                       onTap: () => onFollow?.call(page),
                     ),
                   ),
