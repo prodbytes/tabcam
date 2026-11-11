@@ -2701,5 +2701,21 @@
         "type": "String"
       }
     }
+  },
+  "deleteDontAskAgain": "Don't ask again",
+  "@deleteDontAskAgain": {
+    "description": "Delete confirmation (a capture, a file): the checkbox that stops this kind of delete asking on this device"
+  },
+  "deleteAskTitle": "Ask before deleting",
+  "@deleteAskTitle": {
+    "description": "Profile: the device setting that brings the delete confirmations back"
+  },
+  "deleteAskOn": "Deleting a capture or a file asks first, on this device.",
+  "@deleteAskOn": {
+    "description": "Profile: under Ask before deleting, when it's on"
+  },
+  "deleteAskOff": "Some deletes happen at once, without asking. Turn it on to be asked again.",
+  "@deleteAskOff": {
+    "description": "Profile: under Ask before deleting, when it's off"
   }
 }

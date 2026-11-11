@@ -3399,6 +3399,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The metronome can\'t play here: {error}'**
   String metronomeFailed(String error);
+
+  /// Delete confirmation (a capture, a file): the checkbox that stops this kind of delete asking on this device
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t ask again'**
+  String get deleteDontAskAgain;
+
+  /// Profile: the device setting that brings the delete confirmations back
+  ///
+  /// In en, this message translates to:
+  /// **'Ask before deleting'**
+  String get deleteAskTitle;
+
+  /// Profile: under Ask before deleting, when it's on
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting a capture or a file asks first, on this device.'**
+  String get deleteAskOn;
+
+  /// Profile: under Ask before deleting, when it's off
+  ///
+  /// In en, this message translates to:
+  /// **'Some deletes happen at once, without asking. Turn it on to be asked again.'**
+  String get deleteAskOff;
 }
 
 class _AppLocalizationsDelegate

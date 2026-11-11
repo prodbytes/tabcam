@@ -548,5 +548,9 @@
   "metronomeEighths": "Cada clique é uma colcheia; o primeiro de cada grupo é acentuado.",
   "metronomeStart": "Iniciar",
   "metronomeStop": "Parar",
-  "metronomeFailed": "O metrônomo não pode tocar aqui: {error}"
+  "metronomeFailed": "O metrônomo não pode tocar aqui: {error}",
+  "deleteDontAskAgain": "Não perguntar de novo",
+  "deleteAskTitle": "Perguntar antes de excluir",
+  "deleteAskOn": "Excluir uma captura ou um arquivo pergunta antes, neste dispositivo.",
+  "deleteAskOff": "Algumas exclusões acontecem na hora, sem perguntar. Ative para voltar a perguntar."
 }

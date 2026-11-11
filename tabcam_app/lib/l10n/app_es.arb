@@ -548,5 +548,9 @@
   "metronomeEighths": "Cada clic es una corchea; el primero de cada grupo se acentúa.",
   "metronomeStart": "Iniciar",
   "metronomeStop": "Detener",
-  "metronomeFailed": "El metrónomo no puede sonar aquí: {error}"
+  "metronomeFailed": "El metrónomo no puede sonar aquí: {error}",
+  "deleteDontAskAgain": "No volver a preguntar",
+  "deleteAskTitle": "Preguntar antes de eliminar",
+  "deleteAskOn": "Eliminar una captura o un archivo pregunta antes, en este dispositivo.",
+  "deleteAskOff": "Algunas eliminaciones ocurren de inmediato, sin preguntar. Actívalo para que vuelva a preguntar."
 }

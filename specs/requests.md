@@ -2444,3 +2444,29 @@ spec.
    passes made after (Auto-pass on) are noted and marked again; only
    those are kept. Now a test checks it, and the spec says so. See
    [Cam](cam.md#phrase-passes).
+
+## 2026-11-11
+
+3. **Add a "dont ask again" checkbox on delete confirms.** Every delete
+   confirmation (a capture from its card on Home, removing a capture
+   shared with the user, a file from a capture's list, a reader's own
+   file under Your files) now goes through one shared dialog
+   (`confirmDelete`, `lib/screens/delete_confirm.dart`) with a **Don't
+   ask again** checkbox, in English, Spanish and Portuguese. Ticked and
+   confirmed, that kind of delete no longer asks on this device: the
+   next one deletes at once; ticked and cancelled, nothing changes. Each
+   kind is skipped on its own (a file's doesn't skip a capture's), kept
+   in the library's `delete-confirms` meta file, not synced. The way
+   back is a new device setting on the Profile tab, **Ask before
+   deleting** (under Language): on when every kind asks, and turned on
+   it brings them all back (off, none asks). Deleting the account keeps
+   its own confirm, which always asks. New tests: the checkbox shows;
+   ticked and cancelled changes nothing; ticked and confirmed deletes and
+   the next one doesn't ask, read back from the device; kinds are
+   independent; the Profile switch brings the confirms back; deleting
+   the account still asks. See the new
+   [delete confirmations](delete-confirms.md) spec, and
+   [library](library.md), [event screen](event-screen.md),
+   [contributions](contributions.md),
+   [shared captures](shared-captures.md) and
+   [navigation](navigation.md#profile).

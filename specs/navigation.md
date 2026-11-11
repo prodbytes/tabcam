@@ -115,7 +115,12 @@ apps, [cloud OCR](cloud-ocr.md#in-the-store-apps)). The same panel opens
 in a sheet from Home's Premium banner's **Upgrade**. In
 a build without sign-in, a line says so. Then **Language**
 ([localization](localization.md)): the device's language (the default),
-English, Español or Português; the app changes at once. Then **About**: the app's name
+English, Español or Português; the app changes at once. Then **Ask
+before deleting**, a switch kept on the device: on (the default), every
+delete of a capture or a file asks first; off once a confirm's **Don't
+ask again** was ticked, and turned on, they all ask again
+([delete confirmations](delete-confirms.md)). Delete account asks
+whatever it says. Then **About**: the app's name
 and version (X.Y.Z, or "(development build)"), what it does,
 **Privacy policy** (opens https://tabcam.nu01.com/privacy in the browser,
 [privacy](privacy.md)) and **Licenses**.

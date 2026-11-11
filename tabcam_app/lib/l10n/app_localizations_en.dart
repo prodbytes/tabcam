@@ -1987,4 +1987,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String metronomeFailed(String error) {
     return 'The metronome can\'t play here: $error';
   }
+
+  @override
+  String get deleteDontAskAgain => 'Don\'t ask again';
+
+  @override
+  String get deleteAskTitle => 'Ask before deleting';
+
+  @override
+  String get deleteAskOn =>
+      'Deleting a capture or a file asks first, on this device.';
+
+  @override
+  String get deleteAskOff =>
+      'Some deletes happen at once, without asking. Turn it on to be asked again.';
 }

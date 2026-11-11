@@ -10,6 +10,7 @@ import '../library/search.dart';
 import '../l10n/language.dart';
 import 'card_preview.dart';
 import 'clone.dart';
+import 'delete_confirm.dart';
 import 'rename_dialog.dart';
 import 'event_screen.dart';
 import 'place.dart';
@@ -438,24 +439,16 @@ class _EventCard extends StatelessWidget {
       case _CardAction.share:
         await shareCapture(context, event, sync: sync);
       case _CardAction.delete when event.isShared:
-        final ok = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(l10n.homeLibraryRemoveTitle(event.title)),
-            content: Text(l10n.homeLibraryRemoveBody('${event.sharedBy}')),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: Text(l10n.homeLibraryCancel),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: Text(l10n.homeLibraryRemove),
-              ),
-            ],
-          ),
+        final ok = await confirmDelete(
+          context,
+          library: library,
+          kind: DeleteKind.sharedCapture,
+          title: l10n.homeLibraryRemoveTitle(event.title),
+          body: l10n.homeLibraryRemoveBody('${event.sharedBy}'),
+          confirm: l10n.homeLibraryRemove,
+          cancel: l10n.homeLibraryCancel,
         );
-        if (ok != true || !context.mounted) return;
+        if (!ok || !context.mounted) return;
         try {
           await sync?.leave(event);
         } on Object catch (e) {
@@ -464,24 +457,16 @@ class _EventCard extends StatelessWidget {
           }
         }
       case _CardAction.delete:
-        final ok = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(l10n.homeLibraryDeleteTitle(event.title)),
-            content: Text(l10n.homeLibraryDeleteBody),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: Text(l10n.homeLibraryCancel),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: Text(l10n.homeLibraryDelete),
-              ),
-            ],
-          ),
+        final ok = await confirmDelete(
+          context,
+          library: library,
+          kind: DeleteKind.capture,
+          title: l10n.homeLibraryDeleteTitle(event.title),
+          body: l10n.homeLibraryDeleteBody,
+          confirm: l10n.homeLibraryDelete,
+          cancel: l10n.homeLibraryCancel,
         );
-        if (ok == true) await library.delete(event);
+        if (ok) await library.delete(event);
     }
   }
 
