@@ -2531,7 +2531,7 @@ spec.
    [contributions](contributions.md),
    [shared captures](shared-captures.md) and
    [navigation](navigation.md#profile).
-5. **When editing a recording, add a volume control to the side of the
+4. **When editing a recording, add a volume control to the side of the
    audio track. Left side.** The video edit screen's track bar (Sound:
    New track) now has the track's volume at its left, on the same row,
    the bar narrowing to make room: a speaker over the level (`100%`);
@@ -2558,7 +2558,7 @@ spec.
    text; and, in Chrome, the web editor's track at half volume is half
    as loud, in the sound alone and in the recorded video. See
    [Video edit](video-edit.md).
-6. **In the cam screen make the "1" key be a shortcut to toggle
+5. **In the cam screen make the "1" key be a shortcut to toggle
    recording on/off.** In Cam, **1** (on the top row or the keypad)
    now presses Rec / Stop as the button does: it starts a take (and the
    sidebar's song with it) or stops it and saves the take, with the
@@ -2574,7 +2574,7 @@ spec.
    while a take plays back, and with the sidebar showing it starts the
    song with the take. See [Cam](cam.md#rec-key).
 
-7. **In the mini player sidebar, to the right of files, add the delete
+6. **In the mini player sidebar, to the right of files, add the delete
    button. So I can delete anything, especially the takes.** Each file
    in the play-along sidebar (in Cam, beside the Text view and on the
    file screen) now ends in a **Delete** button (a bin, its tooltip
@@ -2701,3 +2701,33 @@ spec.
    where it types "," (Brazilian, German and most European layouts) and
    its logical key is the comma, it's still a new take, not a turn of
    the tab. Tests for both. See [Cam](cam.md#new-take-key).
+10. **(Found in review) Device settings forgotten: on the web at every
+    reload, and the count-in on the phones.** The library's device
+    settings (its metas: Cam's Auto-pass, the count-in, Don't ask again,
+    the sidebars' widths and the dictionary's turn, the language, the
+    metronome) were kept in memory on the web, so every reload forgot
+    them; and on Android, iOS and the desktop the count-in's meta was
+    named `play-along`, which the apps' store refuses (`checkId`: letters
+    and digits only), so it was never kept there. Now every meta name is
+    in one list (`MetaNames`, `lib/library/meta_names.dart`), the
+    count-in's renamed `playalong` (every other name already passed); the
+    web keeps the device settings, and only them, in the browser's
+    localStorage (`tabcam.meta.<name>`), falling back to memory silently
+    where storage is refused; cloud sync's and cloud OCR's state, like
+    the captures and their files, stay in memory there (a reload brings
+    the captures down again). The web's store refuses the names the
+    apps' store does, so a bad one fails in tests. Signing out and
+    deleting the account keep the settings, as on the apps (they're the
+    device's). New tests (`test/meta_names_test.dart`): every name passes
+    `checkId`, the classes' names are the ones listed, `lib/` names metas
+    only through `MetaNames`, the apps' store round-trips each, the web's
+    store keeps the settings across a new store in a fake localStorage
+    and nothing else, falls back to memory when storage throws, and
+    refuses a bad name. A capture opened by its link has a library of
+    its own, whose settings stay in memory (`PlatformEventStore.memoryOnly`),
+    as on the apps: it neither reads nor changes the device's settings in
+    localStorage, where it would otherwise have shared them with the
+    user's library and disagreed with its in-memory copy (tests in
+    `test/meta_names_test.dart` and `test/public_capture_test.dart`). See
+    [library](library.md#device-settings), [sharing](sharing.md),
+    [delete confirmations](delete-confirms.md).

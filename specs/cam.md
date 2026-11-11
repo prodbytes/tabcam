@@ -452,7 +452,8 @@ view).
   goes back to the start and keeps counting. Repeat and a section's
   loop start over without one; the count-in is real time, whatever the
   speed. The setting is kept on the device (the meta file
-  `play-along`, `{"countIn": false}`), for Cam, the Text view and the
+  `playalong`, `{"countIn": false}`; until 2026-11-11 it was named
+  `play-along`, which the apps' store refuses, so it was never kept there), for Cam, the Text view and the
   file screen alike.
 - **The space bar** pauses and plays it while the sidebar shows (a key
   down; held, it doesn't repeat), and doesn't turn the tab; with the

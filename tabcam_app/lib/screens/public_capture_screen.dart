@@ -14,7 +14,10 @@ import 'event_screen.dart';
 /// A capture opened by its link ([PublicCaptures]), read only: for
 /// someone signed out (it's then the whole app, with **Sign in**), or
 /// signed in but not one of the people it's shared with. It's kept in
-/// memory only, apart from the user's library, and goes when this does.
+/// memory only, apart from the user's library, and goes when this does;
+/// its settings too (the count-in, the sidebars' widths…): on the web
+/// they neither read nor change the device's, kept in localStorage for the
+/// user's library alone, as on the apps.
 /// While it shows, it looks for the owner's changes every [refreshEvery]
 /// while in front (none behind, a hidden tab say) and as the app comes
 /// back to the front; a link that's gone for good (a wrong key, the
@@ -42,7 +45,8 @@ class PublicCaptureScreen extends StatefulWidget {
 
 class _PublicCaptureScreenState extends State<PublicCaptureScreen>
     with WidgetsBindingObserver {
-  final Library _library = Library(memory.PlatformEventStore())..load();
+  final Library _library = Library(memory.PlatformEventStore.memoryOnly())
+    ..load();
   late Future<CaptureEvent> _opening = widget.captures.open(
     widget.link,
     _library,

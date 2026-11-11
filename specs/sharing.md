@@ -69,7 +69,10 @@ reload opens it again.
 asks the share API, without signing in, for read-only credentials to the
 capture's folder (`POST /public/{captureId}/credentials` with the key),
 then downloads its `event.json` and files into a library of its own, in
-memory, apart from the user's, and gone with the screen. While it
+memory, apart from the user's, and gone with the screen; its settings
+too (the count-in, the sidebars' widths…), so on the web they neither
+read nor change the device's, which the user's library keeps in
+localStorage ([library](library.md#device-settings)). While it
 shows, it reads the capture's `event.json` again every 5 minutes while
 the app is in front (not while it's behind, a hidden tab say) and when
 it comes back to the front: when it changed (a rename, a file added,
