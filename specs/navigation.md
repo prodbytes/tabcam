@@ -19,8 +19,23 @@ tabs, and a compact **app bar** on top names the open one
   - Signed in only (signed out, there's only the welcome, below); tabs
     keep their state (the list's scroll) while another is open.
 - **App bar**: the open tab's name on the left, bold (22 sp, weight 700):
-  "TabCam" on Home, "Capture", "Profile". No buttons: what was there
+  "TabCam" on Home, "Capture", "Profile". On Home only, at its right,
+  **Dictionary** (a book icon) and **Metronome** (a stopwatch icon), as
+  on every file viewer: they open the [dictionary](dictionary.md)'s and
+  the [metronome](metronome.md)'s sidebars beside the captures (below).
+  Two icons leave the title its room on any phone, so Home has no
+  **More** menu. Capture and Profile have no buttons: what was there
   (Import photos, About, the cloud button) is on the tabs.
+- **The sidebars on Home**: open, they're at the right of the captures
+  (the dictionary's, or its panel turned under them, left of the
+  metronome's), between the app bar (and the Premium banner, across the
+  top) and the navigation bar, which they never cover. They're the same
+  sidebars as everywhere, app-wide: open on Home, they're open in the
+  capture opened from it, at the same widths, and the other way round.
+  On Capture and Profile they don't show (those tabs span the screen)
+  but stay open, to show again back on Home; the metronome stops there,
+  as when leaving any screen that has it, and when a screen without it
+  opens over Home (a capture link loading, or unavailable).
 - An event opens over the tabs as its own screen ([event screen](event-screen.md)),
   with a back button.
 - Messages show at the top, just under the app bar, covering neither the

@@ -2447,6 +2447,34 @@ spec.
 
 ## 2026-11-11
 
+1. **Show the metronome and dictionary on the home screen.** Home's app
+   bar now has **Dictionary** (book) and **Metronome** (stopwatch), on
+   the Home tab only, as on every file viewer; two icons fit any phone
+   beside the title, so there's no More menu. Their sidebars are the
+   same widgets (`DictionaryBeside`, `MetronomeBeside`) with the same
+   app-wide state, widths and Rotate choice, at the right of the
+   captures (the dictionary turned: a panel under them), between the app
+   bar and the navigation bar, never over it. On Capture and Profile the
+   buttons and sidebars don't show (still open, they show again on
+   Home), and the metronome stops there, as when leaving a screen that
+   has it; both widgets gained an `enabled` flag for that, which keeps
+   the captures' state. Going back from a capture to Home no longer stops
+   the metronome, since Home has it now. Squeezed on a phone, a capture's
+   card drops its ⋮ rather than overflow, and Home's empty, loading and
+   couldn't-load messages scroll. New tests
+   (`home_sidebars_test.dart`): the buttons open and close each sidebar
+   beside working captures, above the navigation bar; the other tabs hide
+   them and stop the metronome; it plays on into a capture and back; the
+   panel under the captures; and a small phone, with captures and
+   without, overflows nothing. After review: Home stays under every
+   screen opened from it, so a metronome sidebar counts as a place that
+   has the metronome only while it's on screen, not covered by another
+   screen (a dialog or a menu over it doesn't count); a capture link
+   still loading, or unavailable, over Home now stops it. A card too
+   narrow for its ⋮ opens that menu on a long-press, so its actions (and
+   a read-only shared capture's) stay in reach. Tests for both. See
+   [Navigation](navigation.md), [Library](library.md),
+   [Dictionary](dictionary.md) and [Metronome](metronome.md).
 2. **Make notification messages show from the top and without
    dislocating page elements so that buttons in nav are not covered;
    make notification background 42% transparent.** The app's messages
