@@ -345,6 +345,49 @@ class TakeTab {
   int get hashCode => Object.hash(Object.hashAll(lines), Object.hashAll(marks));
 }
 
+/// A neckline in a take: which one ([line]), from [start] to [end] (null:
+/// to the end of the take).
+@immutable
+class TabBand {
+  const TabBand(this.line, this.start, [this.end]);
+
+  final int line;
+  final Duration start;
+  final Duration? end;
+
+  @override
+  bool operator ==(Object other) =>
+      other is TabBand &&
+      other.line == line &&
+      other.start == start &&
+      other.end == end;
+
+  @override
+  int get hashCode => Object.hash(line, start, end);
+
+  @override
+  String toString() => 'TabBand($line, $start, $end)';
+}
+
+/// When each neckline showed in a take, from the times the tab moved
+/// ([marks]: when, and to which neckline, the first at the start): one
+/// band per neckline shown, each until the next.
+List<TabBand> bandsOf(List<(Duration, int)> marks) {
+  final bands = <TabBand>[];
+  for (final (i, (start, line)) in marks.indexed) {
+    // Moved twice at once: only the last counts.
+    final end = i + 1 < marks.length ? marks[i + 1].$1 : null;
+    if (end != null && end <= start) continue;
+    // Back to the neckline showing: the same band goes on.
+    if (bands.lastOrNull case final last? when last.line == line) {
+      bands[bands.length - 1] = TabBand(line, last.start, end);
+      continue;
+    }
+    bands.add(TabBand(line, start, end));
+  }
+  return bands;
+}
+
 /// A stretch of a take with a song playing along: from [at] to [to] on
 /// the take's clock, page [page] played from [from] (ms in the song) at
 /// [speed]. Where the song was at take time t: `from + (t - at) * speed`.

@@ -382,6 +382,7 @@ void main() {
       trackEnd: s(7),
       offset: s(-1.5),
       trackVolume: 0.35,
+      tab: false,
       extra: const {'nudgeMs': -120},
     );
     expect(_read(edit.toJson()), edit);
@@ -401,6 +402,7 @@ void main() {
       edit.copyWith(trackEnd: null),
       edit.copyWith(offset: s(1)),
       edit.copyWith(trackVolume: 0.3),
+      edit.copyWith(tab: true),
       edit.copyWith(extra: const {}),
     ];
     for (final other in changed) {

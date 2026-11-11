@@ -3,11 +3,14 @@ import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 import 'dart:math';
 
+import 'dart:ui' show Size;
+
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart';
 import 'package:web/web.dart' as web;
 
 import 'edit_formats.dart';
+import 'edit_layers.dart';
 import 'm4a.dart';
 import 'video_edit.dart';
 
@@ -19,7 +22,9 @@ VideoEditing? webVideoEditor() => WebVideoEditor();
 /// are mixed offline first, exact to the sample ([OfflineAudioContext]);
 /// then the kept part plays, hidden and muted, into a canvas (its
 /// frames), the mix plays into the recording beside it, the video
-/// following the mix's clock, and the browser's MediaRecorder records
+/// following the mix's clock, the plan's layers drawn over each frame
+/// (each PNG an ImageBitmap once, drawn where its anchor puts it, as
+/// opaque as it is then), and the browser's MediaRecorder records
 /// both, so it takes as long as the kept part is (a long video's own
 /// sound, or one that won't decode, streams from the playing video
 /// instead, [streamedOver]). The result is
@@ -112,6 +117,7 @@ class WebVideoEditor implements VideoEditing {
     if (!plan.video) return _sound(video, plan, onProgress);
     final urls = <String>[];
     final elements = <web.HTMLMediaElement>[];
+    final bitmaps = <web.ImageBitmap>[];
     web.AudioContext? audio;
     int? frame;
     try {
@@ -137,6 +143,12 @@ class WebVideoEditor implements VideoEditing {
             ..height = player.videoHeight;
       final context = canvas.getContext('2d') as web.CanvasRenderingContext2D;
       final stream = canvas.captureStream(30);
+      // What's drawn over it: each look's image, made a bitmap once.
+      for (final png in await layerImages(plan)) {
+        bitmaps.add(await _bitmap(png));
+      }
+      final frameSize = Size(canvas.width.toDouble(), canvas.height.toDouble());
+      final looks = {for (final (i, look) in plan.looks.indexed) look: i};
 
       // The sound: both lanes mixed offline first (exact, to the sample),
       // then played into the recorded stream (not the speakers) as the
@@ -226,6 +238,25 @@ class WebVideoEditor implements VideoEditing {
         if (done.isCompleted) return;
         context.drawImage(player, 0, 0, canvas.width, canvas.height);
         final at = player.currentTime;
+        final out = Duration(milliseconds: ((at - start) * 1000).round());
+        for (final layer in plan.layers) {
+          final alpha = layer.alphaAt(out);
+          if (alpha <= 0) continue;
+          final bitmap = bitmaps[looks[layer.look]!];
+          final rect = layer.rectIn(
+            frameSize,
+            Size(bitmap.width.toDouble(), bitmap.height.toDouble()),
+          );
+          context.globalAlpha = alpha;
+          context.drawImage(
+            bitmap,
+            rect.left,
+            rect.top,
+            rect.width,
+            rect.height,
+          );
+          context.globalAlpha = 1;
+        }
         onProgress?.call(((at - start) / clip).clamp(0, 1).toDouble());
         if (began != null && graph != null) {
           // The video follows the sound's clock: a little slower or
@@ -273,6 +304,9 @@ class WebVideoEditor implements VideoEditing {
       );
     } finally {
       if (frame case final f?) web.window.cancelAnimationFrame(f);
+      for (final bitmap in bitmaps) {
+        bitmap.close();
+      }
       for (final element in elements) {
         element.pause();
         element.removeAttribute('src');
@@ -283,6 +317,13 @@ class WebVideoEditor implements VideoEditing {
       if (audio != null) unawaited(audio.close().toDart);
     }
   }
+
+  /// [png] as a bitmap to draw.
+  static Future<web.ImageBitmap> _bitmap(Uint8List png) => web.window
+      .createImageBitmap(
+        web.Blob([png.toJS].toJS, web.BlobPropertyBag(type: 'image/png')),
+      )
+      .toDart;
 
   /// A file longer than this is decoded at [_longRate], and a kept part
   /// longer than this is mixed at it for the video, so the decoded sound

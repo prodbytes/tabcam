@@ -8,8 +8,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
+import '../capture/edit_layers.dart';
 import '../capture/media.dart';
 import '../capture/play_along_sidebar.dart' show isTake;
+import '../capture/take_log.dart';
 import '../capture/video_edit.dart';
 import '../export/download.dart';
 import '../l10n/language.dart';
@@ -29,12 +31,14 @@ import 'messages.dart';
 /// capture's recordings, videos or takes, or a sound file (added to
 /// them), placed along the video by hand (dragged, trimmed by its ends,
 /// nudged by a tenth of a second); ⋮ changes or removes it. Each lane has
-/// its volume and Mute at its left. The edit is kept with the page as
-/// it's made ([PageEdit]), and played as it says ([EditedPlayback]: the
-/// kept part, both lanes at their volumes); the video's file stays as it
-/// is. Download renders the same plan ([RenderPlan]) to a file on the
-/// device ([VideoEditor]): the video, the video without sound, or the
-/// sound alone.
+/// its volume and Mute at its left. Under them, **On the video**: what's
+/// drawn over it, for now a take's tab (the Tab chip). The edit is kept
+/// with the page as it's made ([PageEdit]), and played as it says
+/// ([EditedPlayback]: the kept part, both lanes at their volumes, the
+/// layers over it, [EditLayers]); the video's file stays as it is.
+/// Download renders the same plan ([RenderPlan]) to a file on the device
+/// ([VideoEditor]): the video, the video without sound, or the sound
+/// alone.
 class VideoEditScreen extends StatefulWidget {
   const VideoEditScreen({
     super.key,
@@ -148,6 +152,14 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// The shortest part of a song that can be used.
   static const minTrack = Duration(milliseconds: 500);
 
+  /// Whether the take's tab is drawn over it (where it can be,
+  /// [tabOffered]).
+  bool _tab = true;
+
+  /// The layers the preview draws, and what they were worked out from.
+  List<PlanLayer> _layers = const [];
+  Object? _layersOf;
+
   /// The edit as last kept with the page, and the wait before the next
   /// change is kept (a drag makes many).
   PageEdit? _saved;
@@ -184,6 +196,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// Whether the video is one of Cam's takes: its lanes are then "Take"
   /// and "Song" ("Video sound" and "Track" otherwise).
   bool get _take => isTake(widget.page);
+
+  /// What Cam noted while the take recorded (none: not a take, or one
+  /// saved before takes kept one).
+  TakeLog? get _takeLog => widget.page.takeLog;
 
   /// Whether the Song lane has a song in it (as [PageEdit.hasSong]: a
   /// song picked, its lane not `off`; none said, a newer app's default).
@@ -246,6 +262,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           _own = _Level(edit.ownVolume, edit.ownMuted);
           _song = edit.song;
           _songLevel = _Level(edit.trackVolume, edit.songMuted);
+          _tab = edit.tab;
         }
       });
       final track = edit?.trackId == null
@@ -293,11 +310,12 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     trackEnd: _trackEnd >= _trackLength ? null : _trackEnd,
     offset: _offset,
     trackVolume: _songLevel.volume,
+    tab: _tab,
     extra: _extra,
   );
 
-  /// Whether the edit changes the video: anything but the whole video
-  /// with its own sound as it is (the defaults).
+  /// Whether the edit is anything but the defaults: the whole video with
+  /// its own sound as it is (and a take's tab over it).
   bool get _edited =>
       _current.copyWith(extra: const {}) !=
       PageEdit(start: Duration.zero, end: _duration);
@@ -320,9 +338,37 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 
   /// The preview plays the edit as it is now: the plan Download renders.
   Future<void> _played() async => _playback?.set(
-    EditedPlayback.planOf(_pageEdit, songLength: _trackLength),
+    EditedPlayback.planOf(
+      _pageEdit,
+      songLength: _trackLength,
+      duration: _duration,
+      takeLog: _takeLog,
+    ),
     song: _trackPlayer,
   );
+
+  /// The layers the preview draws over the video, as Download's plan has
+  /// them: worked out again only when the part kept or the tab changes.
+  List<PlanLayer> get _previewLayers {
+    final of = (_start, _end, _tab, _duration);
+    if (of != _layersOf) {
+      _layersOf = of;
+      _layers = RenderPlan.of(
+        _pageEdit,
+        duration: _duration,
+        takeLog: _takeLog,
+        preview: true,
+      ).layers;
+    }
+    return _layers;
+  }
+
+  /// The Tab chip: the take's tab drawn over it, or not.
+  void _setTab(bool on) {
+    if (on == _tab) return;
+    setState(() => _tab = on);
+    _changed();
+  }
 
   /// Keeps the edit with the page, when it changed.
   Future<void> _keep() async {
@@ -532,7 +578,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     String name, {
     PageEdit? from,
   }) async {
-    await _playback?.set(EditedPlayback.planOf(_pageEdit));
+    await _playback?.set(
+      EditedPlayback.planOf(_pageEdit, duration: _duration, takeLog: _takeLog),
+    );
     await _trackPlayer?.dispose();
     _trackPlayer = null;
     VideoPlayerController? player;
@@ -684,6 +732,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       _end = _duration;
       _own = _Level();
       _song = null;
+      _tab = true;
       _clearSong();
     });
     _changed();
@@ -702,6 +751,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     songLength: _trackLength,
     kind: kind,
     formats: _formats,
+    takeLog: _takeLog,
   );
 
   /// Whether the song lane can be rendered: it isn't heard (a muted song
@@ -841,6 +891,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                   _transport(video, l10n),
                   const SizedBox(height: 8),
                   _timeline(video, l10n),
+                  if (_onTheVideo(l10n) case final layers?) ...[
+                    const SizedBox(height: 8),
+                    layers,
+                  ],
                   if (_hasSong) ...[
                     const SizedBox(height: 8),
                     _songDetails(l10n),
@@ -961,9 +1015,11 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     );
   }
 
-  /// The video, at most a third of the screen (a tap plays or pauses it).
+  /// The video, at most a third of the screen (a tap plays or pauses it),
+  /// with what Download draws over it ([EditLayers]).
   Widget _preview(VideoPlayerController video) {
     final height = MediaQuery.sizeOf(context).height / 3;
+    final layers = _previewLayers;
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: height),
       child: GestureDetector(
@@ -971,10 +1027,57 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         child: Center(
           child: AspectRatio(
             aspectRatio: video.value.aspectRatio,
-            child: VideoPlayer(video),
+            child: layers.isEmpty
+                ? VideoPlayer(video)
+                : Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      VideoPlayer(video),
+                      EditLayers(video: video, layers: layers, start: _start),
+                    ],
+                  ),
           ),
         ),
       ),
+    );
+  }
+
+  /// **On the video**: what's drawn over it, as chips. For now a take's
+  /// **Tab** (on by default): where its log has its tab, not in its
+  /// picture already; off, with why, on a take whose tab is (burned in as
+  /// it was saved, or saved before takes kept their tab apart). None on a
+  /// video that isn't a take, nor on a take without a tab.
+  Widget? _onTheVideo(AppLocalizations l10n) {
+    if (!_take) return null;
+    final log = _takeLog;
+    final offered = tabOffered(log);
+    // A take that kept its log, with no tab to draw.
+    if (log != null && log.tab == null) return null;
+    return Column(
+      key: const Key('video-edit-on-video'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.videoEditOnTheVideo,
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            FilterChip(
+              key: const Key('video-edit-tab'),
+              label: Text(l10n.videoEditLayerTab),
+              tooltip: offered
+                  ? l10n.videoEditLayerTabAbout
+                  : l10n.videoEditTabInPicture,
+              selected: offered && _tab,
+              onSelected: offered ? _setTab : null,
+            ),
+          ],
+        ),
+      ],
     );
   }
 

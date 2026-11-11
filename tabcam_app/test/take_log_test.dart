@@ -10,7 +10,6 @@ import 'package:tabcam_app/capture/auto_pass.dart';
 import 'package:tabcam_app/capture/media.dart';
 import 'package:tabcam_app/capture/mp4_length.dart';
 import 'package:tabcam_app/capture/take_log.dart';
-import 'package:tabcam_app/capture/take_overlay.dart';
 import 'package:tabcam_app/library/capture_event.dart';
 import 'package:tabcam_app/library/event_store_io.dart';
 import 'package:tabcam_app/library/library.dart';

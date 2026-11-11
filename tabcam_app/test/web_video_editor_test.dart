@@ -121,6 +121,45 @@ void main() {
     return (length, sound);
   }
 
+  /// How bright [file]'s frame at [at] seconds is (0 to 255) at its
+  /// bottom and at its top, in the middle across.
+  Future<(double, double)> brightness(XFile file, double at) async {
+    final blob = web.Blob(
+      [(await file.readAsBytes()).toJS].toJS,
+      web.BlobPropertyBag(type: file.mimeType ?? ''),
+    );
+    final url = web.URL.createObjectURL(blob);
+    try {
+      final video = web.document.createElement('video') as web.HTMLVideoElement
+        ..muted = true
+        ..src = url;
+      final loaded = Completer<void>();
+      video.onloadeddata = ((web.Event _) => loaded.complete()).toJS;
+      video.load();
+      await loaded.future.timeout(const Duration(seconds: 10));
+      final seeked = Completer<void>();
+      video.onseeked = ((web.Event _) => seeked.complete()).toJS;
+      video.currentTime = at;
+      await seeked.future.timeout(const Duration(seconds: 10));
+      final width = video.videoWidth;
+      final height = video.videoHeight;
+      final canvas =
+          web.document.createElement('canvas') as web.HTMLCanvasElement
+            ..width = width
+            ..height = height;
+      final paint = canvas.getContext('2d') as web.CanvasRenderingContext2D;
+      paint.drawImage(video, 0, 0, width, height);
+      double level(int y) {
+        final d = paint.getImageData(width ~/ 2, y, 1, 1).data.toDart;
+        return (d[0] + d[1] + d[2]) / 3;
+      }
+
+      return (level(height - 2), level(1));
+    } finally {
+      web.URL.revokeObjectURL(url);
+    }
+  }
+
   /// The type of [file]'s first box (an MP4's or M4A's is `ftyp`) and
   /// its brand.
   Future<(String, String)> firstBox(XFile file) async {
@@ -490,6 +529,30 @@ void main() {
       wavs.render(mutePlan(muteEdit, kind: RenderKind.sound)),
       throwsA(anything),
     );
+
+    // A layer: the tab's band (dark, see-through) along the bottom while
+    // it shows, the first 0.7 s of the kept part, and not after.
+    final layered = await editor.render(
+      RenderPlan(
+        start: const Duration(milliseconds: 500),
+        end: const Duration(milliseconds: 2000),
+        input: video,
+        duration: videoLength,
+        own: null,
+        layers: const [
+          PlanLayer(
+            id: 'tab',
+            look: BandLook('e|--3--5--7--|'),
+            anchor: LayerAnchor.bottomFull,
+            to: Duration(milliseconds: 700),
+          ),
+        ],
+      ),
+    );
+    final (bandBottom, bandTop) = await brightness(layered, 0.3);
+    expect(bandBottom, lessThan(bandTop * 0.6));
+    final (afterBottom, afterTop) = await brightness(layered, 1.2);
+    expect((afterBottom - afterTop).abs(), lessThan(afterTop * 0.25));
   }
 
   testWidgets('the kept part, with its sound, without, or with a track; '

@@ -1,6 +1,9 @@
 package com.nu01.tabcam
 
+import android.graphics.Bitmap
+import android.graphics.Color
 import android.media.MediaMetadataRetriever
+import java.io.ByteArrayOutputStream
 import androidx.media3.common.util.UnstableApi
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -130,6 +133,79 @@ class VideoRenderTest {
                 RenderPlan(
                     input = video, output = File(dir, "none.m4a"), video = false, startMs = 0,
                     endMs = 1000, ownVolume = null, song = null,
+                ),
+            ).first,
+        )
+    }
+
+    /** A [color] PNG, [width] x [height]. */
+    private fun png(color: Int, width: Int, height: Int): ByteArray {
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        bitmap.eraseColor(color)
+        val out = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+        bitmap.recycle()
+        return out.toByteArray()
+    }
+
+    /** [file]'s frame at [ms], and its colour at ([x], [y]) (fractions of it). */
+    private fun pixel(file: File, ms: Long, x: Float, y: Float): Int {
+        val retriever = MediaMetadataRetriever()
+        try {
+            retriever.setDataSource(file.path)
+            val frame = retriever.getFrameAtTime(ms * 1000, MediaMetadataRetriever.OPTION_CLOSEST)!!
+            return frame.getPixel((x * (frame.width - 1)).toInt(), (y * (frame.height - 1)).toInt())
+        } finally {
+            retriever.release()
+        }
+    }
+
+    private fun isRed(color: Int) = Color.red(color) > 180 && Color.green(color) < 90 && Color.blue(color) < 90
+
+    @Test
+    fun drawsTheLayersOverThePictureWhileTheyShow() {
+        val video = asset("riff.mp4")
+        // A red band along the bottom for the first half second of the kept
+        // part (which starts 0.5 s in), and a red square at the top left,
+        // 20% of the short side, 5% in, all along.
+        val output = File(dir, "layers.mp4")
+        val (error, _) = render(
+            RenderPlan(
+                input = video, output = output, video = true, startMs = 500, endMs = 1500,
+                ownVolume = 1f, song = null,
+                images = listOf(png(Color.RED, 64, 16), png(Color.RED, 32, 32)),
+                layers = listOf(
+                    PlanLayer("tab", 0, LayerAnchor.BOTTOM_FULL, fromMs = 0, toMs = 500),
+                    PlanLayer("title", 1, LayerAnchor.TOP_LEFT, heightU = 0.2f, marginU = 0.05f),
+                ),
+            ),
+        )
+        assertNull(error)
+        // The band while it shows (from the kept part's start: the time base
+        // is the first frame's), not after.
+        assertTrue(isRed(pixel(output, 250, 0.5f, 0.99f)))
+        assertTrue(!isRed(pixel(output, 800, 0.5f, 0.99f)) || isRed(pixel(asset("riff.mp4"), 1300, 0.5f, 0.99f)))
+        // The square, by its anchor.
+        val (w, h) = MediaMetadataRetriever().let { r ->
+            try {
+                r.setDataSource(output.path)
+                val frame = r.getFrameAtTime(0)!!
+                frame.width to frame.height
+            } finally {
+                r.release()
+            }
+        }
+        val short = minOf(w, h)
+        val inside = (0.05f + 0.1f) * short
+        assertTrue(isRed(pixel(output, 600, inside / w, inside / h)))
+        // The sound alone: no layers, nothing to draw them on.
+        val sound = File(dir, "layers.m4a")
+        assertNull(
+            render(
+                RenderPlan(
+                    input = video, output = sound, video = false, startMs = 500, endMs = 1500,
+                    ownVolume = 1f, song = null, images = listOf(png(Color.RED, 4, 4)),
+                    layers = listOf(PlanLayer("tab", 0, LayerAnchor.BOTTOM_FULL)),
                 ),
             ).first,
         )

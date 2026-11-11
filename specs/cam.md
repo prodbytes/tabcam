@@ -133,7 +133,9 @@ its **Not now** leaving. With Premium it opens the camera view
   neckline shows along the bottom of the video while it showed in Cam,
   as a band as wide as the video (white monospaced text on a dark,
   see-through strip, about a third of a landscape take for a six-string
-  staff; [`take_overlay.dart`](../tabcam_app/lib/capture/take_overlay.dart)).
+  staff; [`take_overlay.dart`](../tabcam_app/lib/capture/take_overlay.dart),
+  the band's drawing in [`edit_layers.dart`](../tabcam_app/lib/capture/edit_layers.dart),
+  shared with the editor's tab layer).
   The app draws each band itself (`renderBand`, 1280 px wide, scaled to
   the video), the same on every platform, and puts it in on the device:
   nothing is uploaded to make it, and no server is involved.
@@ -545,10 +547,13 @@ on its page (`takeLog` in the capture's details, `EventPage.takeLog`,
 once, as the take is saved, and never changed after. It syncs, is
 published and goes into the user's [contribution](contributions.md)
 with the page as its name does; a [clone](library.md)'s copy names the
-copy's files; renamed or edited, it stays. From it a later version of
-the [editor](video-edit.md) draws the tab over the take, instead of the
-tab being burned into its picture, and lines the song played along up
-with it. For now Play uses it (above). A few KB for a ten-minute take:
+copy's files; renamed or edited, it stays. From it the
+[editor](video-edit.md#layers) draws the tab over a take whose tab
+isn't in its picture (`burned: false`: for now, one whose burn failed;
+once Cam stops burning the tab in, every take), in the preview, the
+file screen's player and the editor's Download, with its **Tab** chip
+to turn it off; a later step lines the song played along up with it.
+Play uses it too (above). A few KB for a ten-minute take:
 ```json
 "takeLog": {
   "v": 1, "burned": true,

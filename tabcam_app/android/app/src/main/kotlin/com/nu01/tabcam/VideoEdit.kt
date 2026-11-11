@@ -1,14 +1,19 @@
 package com.nu01.tabcam
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import androidx.media3.common.Effect
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.audio.DefaultGainProvider
 import androidx.media3.common.audio.GainProcessor
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.effect.OverlayEffect
+import androidx.media3.effect.TextureOverlay
 import androidx.media3.transformer.Composition
 import androidx.media3.transformer.EditedMediaItem
 import androidx.media3.transformer.EditedMediaItemSequence
@@ -21,6 +26,7 @@ import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
+import java.util.concurrent.Executors
 
 /**
  * Renders an edit's plan (lib/capture/render_plan.dart) on the device, with
@@ -39,6 +45,11 @@ import java.io.File
  *   toMs, speed}`: from `atMs` in the output (0 is the kept part's start),
  *   the song from `fromMs` to `toMs` (the app works the times out and cuts
  *   them to the output; only speed 1 for now);
+ * - `images`: the layers' PNGs (each look once), and `layers`: what's drawn
+ *   over the picture, each `{id, image (its index in images), anchor
+ *   (topLeft, bottomRight or bottomFull), heightU, marginU, liftU (fractions
+ *   of the frame's short side), fromMs, toMs (null: the end), fadeInMs,
+ *   opacity}`, in the output's times; ignored for the sound alone;
  * - `job`: when given, `progress` calls back to the app with `{job, done}`
  *   (0 to 1) every quarter of a second while it renders.
  *
@@ -77,6 +88,7 @@ class VideoEdit(context: Context, messenger: BinaryMessenger) :
 
     fun dispose() {
         channel.setMethodCallHandler(null)
+        renderer.dispose()
     }
 
     companion object {
@@ -100,6 +112,9 @@ data class RenderPlan(
     /** The video's own sound's volume; null: removed. */
     val ownVolume: Float?,
     val song: SongLane?,
+    /** What's drawn over the picture, each naming one of [images] (PNGs). */
+    val layers: List<PlanLayer> = emptyList(),
+    val images: List<ByteArray> = emptyList(),
 ) {
     companion object {
         fun fromArgs(args: Map<*, *>): RenderPlan {
@@ -128,6 +143,12 @@ data class RenderPlan(
                 }
                 SongLane(File(path), volume(s), clips)
             }
+            val images = (args["images"] as? List<*>).orEmpty().map {
+                it as? ByteArray ?: throw IllegalArgumentException("Bad layer image")
+            }
+            val layers = (args["layers"] as? List<*>).orEmpty().map {
+                PlanLayer.fromArgs(it as? Map<*, *> ?: throw IllegalArgumentException("Bad layer"), images.size)
+            }
             return RenderPlan(
                 input = File(input),
                 output = File(output),
@@ -136,6 +157,8 @@ data class RenderPlan(
                 endMs = endMs,
                 ownVolume = own?.let { volume(it) },
                 song = song,
+                layers = layers,
+                images = images,
             )
         }
     }
@@ -154,6 +177,11 @@ data class RenderPlan(
  * sequence longer than the primary is cut to it. The sound alone has no
  * picture: the video's own sound clipped (when kept) and the song's
  * sequence, so it ends where the sound does.
+ *
+ * The layers (with the picture only) are an `OverlayEffect` on the video:
+ * one [LayersOverlay] per kind of layer (`id`: the tab's bands; later a title,
+ * a watermark), its PNGs decoded off the main thread and let go once it's
+ * done.
  */
 @UnstableApi
 class VideoRenderer(private val context: Context) {
@@ -162,6 +190,9 @@ class VideoRenderer(private val context: Context) {
     // Exports in progress, held so nothing collects them midway (main thread
     // only).
     private val running = mutableSetOf<Transformer>()
+
+    // PNG decoding and the composition, off the main thread; one at a time.
+    private val worker = Executors.newSingleThreadExecutor()
 
     /**
      * Renders [plan]; [progress] (on the main thread) gets how much is done,
@@ -177,19 +208,55 @@ class VideoRenderer(private val context: Context) {
             mainHandler.post { done("Output must differ from input") }
             return
         }
-        val composition = try {
-            compose(plan)
-        } catch (e: Exception) {
-            val message = e.message ?: e.toString()
-            mainHandler.post { done(message) }
-            return
+        worker.execute {
+            val bitmaps = mutableListOf<Bitmap>()
+            fun free() = bitmaps.forEach { it.recycle() }
+            val composition = try {
+                if (plan.video) bitmaps.addAll(decode(plan.images))
+                compose(plan, bitmaps)
+            } catch (e: Exception) {
+                free()
+                val message = e.message ?: e.toString()
+                mainHandler.post { done(message) }
+                return@execute
+            }
+            // Transformer must be built and started on a Looper thread; the
+            // main one is fine, the export itself runs on its own threads.
+            mainHandler.post {
+                start(composition, plan.output, progress) { error ->
+                    free()
+                    done(error)
+                }
+            }
         }
-        // Transformer must be built and started on a Looper thread; the main
-        // one is fine, the export itself runs on its own threads.
-        mainHandler.post { start(composition, plan.output, progress, done) }
     }
 
-    private fun compose(plan: RenderPlan): Composition {
+    /** Lets the worker thread go (a render under way finishes first). */
+    fun dispose() = worker.shutdown()
+
+    private fun decode(images: List<ByteArray>): List<Bitmap> {
+        val bitmaps = mutableListOf<Bitmap>()
+        try {
+            for (png in images) {
+                bitmaps.add(
+                    BitmapFactory.decodeByteArray(png, 0, png.size)
+                        ?: throw IllegalArgumentException("A layer's image isn't a PNG"),
+                )
+            }
+        } catch (e: Exception) {
+            bitmaps.forEach { it.recycle() }
+            throw e
+        }
+        return bitmaps
+    }
+
+    /** The overlays of [layers] (their images [bitmaps]): one per kind. */
+    private fun overlays(layers: List<PlanLayer>, bitmaps: List<Bitmap>): List<TextureOverlay> =
+        layers.groupBy { it.id }.values.map { group ->
+            LayersOverlay(group.sortedBy { it.fromMs }, bitmaps)
+        }
+
+    private fun compose(plan: RenderPlan, bitmaps: List<Bitmap>): Composition {
         require(plan.endMs > plan.startMs) { "Nothing to keep" }
         val song = plan.song
         if (song != null) {
@@ -201,7 +268,15 @@ class VideoRenderer(private val context: Context) {
         if (plan.video) {
             val video = EditedMediaItem.Builder(clipped(plan.input, plan.startMs, plan.endMs))
                 .setRemoveAudio(plan.ownVolume == null)
-            plan.ownVolume?.let { gain(it) }?.let { video.setEffects(it) }
+            val audioEffects = plan.ownVolume?.let { gain(it) }?.audioProcessors.orEmpty()
+            val videoEffects = if (plan.layers.isEmpty()) {
+                emptyList<Effect>()
+            } else {
+                listOf<Effect>(OverlayEffect(overlays(plan.layers, bitmaps)))
+            }
+            if (audioEffects.isNotEmpty() || videoEffects.isNotEmpty()) {
+                video.setEffects(Effects(audioEffects, videoEffects))
+            }
             sequences.add(EditedMediaItemSequence.Builder(video.build()).build())
             songSequence?.let { sequences.add(it) }
             return Composition.Builder(sequences)

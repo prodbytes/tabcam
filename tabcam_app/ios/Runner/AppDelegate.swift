@@ -326,9 +326,11 @@ enum TakeOverlayBurner {
 /// part kept (`startMs`–`endMs`), the video's own sound (`own`: `volume`, 0
 /// to 1; left out: removed) and the song lane (`song`: `path`, `volume` and
 /// `clips`, each `atMs` in the output, the song from `fromMs` to `toMs`, at
-/// `speed`, 1 for now). With a `job`, `progress` calls back with `job` and
-/// `done` (0 to 1) every quarter of a second while it renders. Replies with
-/// the output path.
+/// `speed`, 1 for now), and what's drawn over the picture: `images` (PNGs)
+/// and `layers` (each its `image`'s index, `anchor`, `heightU`, `marginU`,
+/// `liftU`, `fromMs`, `toMs`, `fadeInMs` and `opacity`). With a `job`,
+/// `progress` calls back with `job` and `done` (0 to 1) every quarter of a
+/// second while it renders. Replies with the output path.
 enum VideoEdit {
   static func handle(
     _ call: FlutterMethodCall, result: @escaping FlutterResult, channel: FlutterMethodChannel?
@@ -369,8 +371,10 @@ enum VideoEdit {
 /// part of the video (its orientation kept as the track's transform), its
 /// own sound cut the same when kept, and the song lane's clips inserted on
 /// one track where they start, with their volumes through an audio mix;
-/// exported as H.264 and AAC in MP4, or, without the video, the sound alone
-/// as AAC in M4A.
+/// the layers (with the picture) through a video composition, one Core
+/// Animation layer each, shown and faded by opacity animations; exported as
+/// H.264 and AAC in MP4, or, without the video, the sound alone as AAC in
+/// M4A.
 enum VideoEditor {
   /// A piece of the song lane: from `atMs` in the output, the song from
   /// `fromMs` to `toMs`.
@@ -379,6 +383,49 @@ enum VideoEditor {
     let fromMs: Int64
     let toMs: Int64
     var speed: Double = 1
+  }
+
+  /// Where a layer sits (lib/capture/render_plan.dart, `LayerAnchor`).
+  enum Anchor: String {
+    case topLeft, bottomRight, bottomFull
+  }
+
+  /// Something drawn over the picture (`PlanLayer`): the plan's `image`th
+  /// image, placed by `anchor` (`heightU` high, `marginU` in from the
+  /// corner and `liftU` higher, as fractions of the frame's short side; a
+  /// bottom band as wide as the frame), from `fromMs` to `toMs` (nil: the
+  /// end) in the output, fading in over `fadeInMs` to `opacity`.
+  struct Layer: Equatable {
+    var id = ""
+    let image: Int
+    let anchor: Anchor
+    var heightU: CGFloat = 0
+    var marginU: CGFloat = 0
+    var liftU: CGFloat = 0
+    var fromMs: Int64 = 0
+    var toMs: Int64?
+    var fadeInMs: Int64 = 0
+    var opacity: Float = 1
+
+    /// Where it's drawn on a `frame` (upright, its origin at the top left),
+    /// an `image` that size scaled into it: as `PlanLayer.rectIn` places it.
+    func rect(in frame: CGSize, image: CGSize) -> CGRect {
+      guard image.width > 0, image.height > 0 else { return .zero }
+      let short = min(frame.width, frame.height)
+      if anchor == .bottomFull {
+        let height = frame.width * image.height / image.width
+        return CGRect(x: 0, y: frame.height - height, width: frame.width, height: height)
+      }
+      let height = heightU * short
+      let width = height * image.width / image.height
+      let margin = marginU * short
+      if anchor == .topLeft {
+        return CGRect(x: margin, y: margin, width: width, height: height)
+      }
+      return CGRect(
+        x: frame.width - margin - width, y: frame.height - margin - liftU * short - height,
+        width: width, height: height)
+    }
   }
 
   /// The song lane: its file, its volume, and its clips in output order.
@@ -398,6 +445,9 @@ enum VideoEditor {
     /// The video's own sound's volume; nil: removed.
     var ownVolume: Float? = 1
     var song: Song?
+    /// What's drawn over the picture, each naming one of `images` (PNGs).
+    var layers: [Layer] = []
+    var images: [Data] = []
 
     /// The plan the channel's arguments describe; nil when they're bad.
     init?(args: [String: Any]) {
@@ -428,15 +478,37 @@ enum VideoEditor {
         }
         song = Song(url: URL(fileURLWithPath: path), volume: volume(lane), clips: clips)
       }
+      var images: [Data] = []
+      for image in (args["images"] as? [Any]) ?? [] {
+        guard let png = image as? FlutterStandardTypedData else { return nil }
+        images.append(png.data)
+      }
+      var layers: [Layer] = []
+      for case let layer as [String: Any] in (args["layers"] as? [Any]) ?? [] {
+        func number(_ key: String) -> CGFloat {
+          CGFloat((layer[key] as? NSNumber)?.doubleValue ?? 0)
+        }
+        guard let image = (layer["image"] as? NSNumber)?.intValue, images.indices.contains(image),
+          let anchor = (layer["anchor"] as? String).flatMap(Anchor.init(rawValue:))
+        else { return nil }
+        layers.append(
+          Layer(
+            id: layer["id"] as? String ?? "", image: image, anchor: anchor,
+            heightU: number("heightU"), marginU: number("marginU"), liftU: number("liftU"),
+            fromMs: int64(layer, "fromMs") ?? 0, toMs: int64(layer, "toMs"),
+            fadeInMs: int64(layer, "fadeInMs") ?? 0,
+            opacity: min(max((layer["opacity"] as? NSNumber)?.floatValue ?? 1, 0), 1)))
+      }
       self.init(
         input: URL(fileURLWithPath: input), output: URL(fileURLWithPath: output),
         video: args["video"] as? Bool ?? true, startMs: startMs, endMs: endMs,
-        ownVolume: (args["own"] as? [String: Any]).map { volume($0) }, song: song)
+        ownVolume: (args["own"] as? [String: Any]).map { volume($0) }, song: song,
+        layers: layers, images: images)
     }
 
     init(
       input: URL, output: URL, video: Bool = true, startMs: Int64, endMs: Int64,
-      ownVolume: Float? = 1, song: Song? = nil
+      ownVolume: Float? = 1, song: Song? = nil, layers: [Layer] = [], images: [Data] = []
     ) {
       self.input = input
       self.output = output
@@ -445,6 +517,8 @@ enum VideoEditor {
       self.endMs = endMs
       self.ownVolume = ownVolume
       self.song = song
+      self.layers = layers
+      self.images = images
     }
   }
 
@@ -494,13 +568,22 @@ enum VideoEditor {
       parameters.setVolume(volume, at: .zero)
       volumes.append(parameters)
     }
+    var videoComposition: AVMutableVideoComposition?
     if plan.video {
       guard
         let compVideo = composition.addMutableTrack(
           withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
       else { throw Failure("Could not add the video track.") }
       try compVideo.insertTimeRange(range, of: videoTrack, at: .zero)
-      compVideo.preferredTransform = transform
+      if plan.layers.isEmpty {
+        compVideo.preferredTransform = transform
+      } else {
+        // The video composition turns it upright instead.
+        let (naturalSize, frameRate) = try await videoTrack.load(.naturalSize, .nominalFrameRate)
+        videoComposition = try layered(
+          compVideo, naturalSize: naturalSize, transform: transform, frameRate: frameRate,
+          duration: range.duration, layers: plan.layers, images: plan.images)
+      }
     }
 
     if let ownVolume = plan.ownVolume {
@@ -555,6 +638,7 @@ enum VideoEditor {
     else { throw Failure("Could not start the export.") }
     export.outputURL = plan.output
     export.outputFileType = plan.video ? .mp4 : .m4a
+    export.videoComposition = videoComposition
     if !volumes.isEmpty {
       let audioMix = AVMutableAudioMix()
       audioMix.inputParameters = volumes
@@ -578,5 +662,95 @@ enum VideoEditor {
       throw Failure(export.error?.localizedDescription ?? "The export did not complete.")
     }
     progress?(1)
+  }
+
+  /// A video composition of `track` (the video's kept part, from 0,
+  /// `duration` long) turned upright (`transform`, as its frames show), with
+  /// `layers` (their `images`) over it: each a Core Animation layer where
+  /// its anchor puts it, its opacity 0 outside its time, rising to its
+  /// opacity over its fade, as `PlanLayer.alphaAt` says.
+  static func layered(
+    _ track: AVMutableCompositionTrack, naturalSize: CGSize, transform: CGAffineTransform,
+    frameRate: Float, duration: CMTime, layers: [Layer], images: [Data]
+  ) throws -> AVMutableVideoComposition {
+    // The frame as displayed: the transform rotates (and maybe mirrors) the
+    // natural frame; its bounding box is moved back to the origin.
+    let shown = CGRect(origin: .zero, size: naturalSize).applying(transform)
+    let renderSize = CGSize(width: evenRound(shown.width), height: evenRound(shown.height))
+    let layerTransform = transform.concatenating(
+      CGAffineTransform(translationX: -shown.minX, y: -shown.minY))
+    let layerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: track)
+    layerInstruction.setTransform(layerTransform, at: .zero)
+    let instruction = AVMutableVideoCompositionInstruction()
+    instruction.timeRange = CMTimeRange(start: .zero, duration: duration)
+    instruction.layerInstructions = [layerInstruction]
+    let videoComposition = AVMutableVideoComposition()
+    videoComposition.renderSize = renderSize
+    let fps = frameRate > 0 ? frameRate : 30
+    videoComposition.frameDuration = CMTime(value: 1, timescale: CMTimeScale(fps.rounded()))
+    videoComposition.instructions = [instruction]
+
+    var pictures: [CGImage] = []
+    for png in images {
+      guard let source = CGImageSourceCreateWithData(png as CFData, nil),
+        let image = CGImageSourceCreateImageAtIndex(source, 0, nil), image.width > 0
+      else { throw Failure("A layer's image is not a valid PNG.") }
+      pictures.append(image)
+    }
+    // Core Animation in a video composition has its origin at the bottom
+    // left, so y = 0 is the bottom of the frame.
+    let frame = CGRect(origin: .zero, size: renderSize)
+    let parent = CALayer()
+    parent.frame = frame
+    let videoLayer = CALayer()
+    videoLayer.frame = frame
+    parent.addSublayer(videoLayer)
+    let total = duration.seconds
+    for layer in layers {
+      let start = max(0, Double(layer.fromMs) / 1000)
+      let end = min(total, layer.toMs.map { Double($0) / 1000 } ?? total)
+      guard end > start else { continue }
+      let image = pictures[layer.image]
+      let box = layer.rect(
+        in: renderSize, image: CGSize(width: image.width, height: image.height))
+      let shape = CALayer()
+      shape.frame = CGRect(
+        x: box.minX, y: renderSize.height - box.maxY, width: box.width, height: box.height)
+      shape.contents = image
+      shape.contentsGravity = .resize
+      shape.opacity = 0
+      // Outside each animation's time it has no effect: opacity stays 0.
+      let fade = min(Double(layer.fadeInMs) / 1000, end - start)
+      if fade > 0 {
+        let fadeIn = CABasicAnimation(keyPath: "opacity")
+        fadeIn.fromValue = 0
+        fadeIn.toValue = layer.opacity
+        fadeIn.beginTime = AVCoreAnimationBeginTimeAtZero + start
+        fadeIn.duration = fade
+        fadeIn.isRemovedOnCompletion = false
+        fadeIn.fillMode = .removed
+        shape.add(fadeIn, forKey: "fade")
+      }
+      if end - start > fade {
+        let show = CABasicAnimation(keyPath: "opacity")
+        show.fromValue = layer.opacity
+        show.toValue = layer.opacity
+        show.beginTime = AVCoreAnimationBeginTimeAtZero + start + fade
+        show.duration = end - start - fade
+        show.isRemovedOnCompletion = false
+        show.fillMode = .removed
+        shape.add(show, forKey: "show")
+      }
+      parent.addSublayer(shape)
+    }
+    videoComposition.animationTool = AVVideoCompositionCoreAnimationTool(
+      postProcessingAsVideoLayer: videoLayer, in: parent)
+    return videoComposition
+  }
+
+  /// Rounds a render dimension to an even number of pixels, as H.264 wants.
+  private static func evenRound(_ value: CGFloat) -> CGFloat {
+    let rounded = Int(abs(value).rounded())
+    return CGFloat(max(2, rounded + rounded % 2))
   }
 }

@@ -3478,6 +3478,30 @@ abstract class AppLocalizations {
   /// **'Couldn\'t make the file'**
   String get videoEditCouldntDownload;
 
+  /// Video edit: the heading of what's drawn over the video (the tab; later a title and a watermark)
+  ///
+  /// In en, this message translates to:
+  /// **'On the video'**
+  String get videoEditOnTheVideo;
+
+  /// Video edit: the chip that draws the tab over a take, as it showed while recording
+  ///
+  /// In en, this message translates to:
+  /// **'Tab'**
+  String get videoEditLayerTab;
+
+  /// Video edit: the Tab chip's tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'The tab along the bottom, as it showed while recording'**
+  String get videoEditLayerTabAbout;
+
+  /// Video edit: the tooltip of the Tab chip, off, on a take whose tab is already in its picture (recorded before the tab was kept apart)
+  ///
+  /// In en, this message translates to:
+  /// **'This take has the tab in its picture'**
+  String get videoEditTabInPicture;
+
   /// The metronome's button and its sidebar's title
   ///
   /// In en, this message translates to:

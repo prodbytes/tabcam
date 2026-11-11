@@ -4,7 +4,8 @@ Basic edits of a video (a take from [Cam](cam.md), or a video added) on
 one time axis, in **two sound lanes, mixed**: trim its start and end,
 set its own sound's level, and add a song (one of the capture's
 recordings, videos or takes, or a sound file) placed along it at a
-level of its own. Opened
+level of its own; and, **on the video**, a take's tab drawn over it as
+it showed while recording ([layers](#layers)). Opened
 with **Edit** (scissors, before Rename) on a video's
 [file screen](event-screen.md#file-screen), in the user's own captures
 and those shared to edit (not read only, nor a contribution's file, nor
@@ -26,9 +27,11 @@ both play, the song's place is compared with where the plan has it, and
 it's sought again when it's more than 150 ms off, so a long video's song
 doesn't drift on (the downloaded file is exact whatever the preview
 does). A change that moves nothing (a level, or Mute: a muted lane plays
-on at 0) doesn't stop or re-seek the song. The
+on at 0) doesn't stop or re-seek the song. The plan's
+[layers](#layers) are drawn over the picture as it plays. The
 [file screen](event-screen.md#file-screen)'s player does the same,
-looping the kept part (a muted song isn't opened there); it finds the
+looping the kept part (a muted song isn't opened there), a take's tab
+over it also when it has no edit (the tab is on by default); it finds the
 song's length as the editor does (its player's, or, where the player
 can't say, as for a take the browser recorded, the editor's), and when
 neither can say, takes the end the edit keeps for it (none: the song
@@ -49,7 +52,9 @@ with the file's name in its app bar and **ⓘ** at its right (it says
 makes a file of it."), opening with the video's edit as it was left:
 
 - **The preview**, at the top, at most a third of the screen: the video
-  (a tap on it plays or pauses); nothing over the frame. It plays the
+  (a tap on it plays or pauses), with what Download draws over it (the
+  [layers](#layers): a take's tab), drawn by the same code, so the
+  preview is what the file will be. It plays the
   **kept part** only, from its start when outside it, paused back at its
   start at its end, with both lanes as set, as the edit is played
   everywhere.
@@ -119,7 +124,17 @@ makes a file of it."), opening with the video's edit as it was left:
     ([Cam](cam.md)), a take's own sound has the song from the speaker in
     it too: the levels and Mute are the remedy (headphones while
     recording give a clean mix).
-- **Under the lanes, the song's details** (when there's one): its lane
+- **Under the lanes, On the video**: what's drawn over the video, as
+  chips (on a take only; none on a take that kept no tab). For now
+  **Tab**: on by default, for a take whose tab is kept apart from its
+  picture (its [log](cam.md#what-a-take-keeps) has its tab, not burned
+  in); tapped, it's off (kept as `tab: false`; Reset turns it on again),
+  and its bands leave the preview and the download. On a take whose tab
+  is already in its picture (burned in as it was saved, or saved before
+  takes kept a log) the chip is off and can't be turned on, saying
+  "This take has the tab in its picture", so the tab is never drawn
+  twice. (A later step adds a Title and a Watermark here.)
+- **Under them, the song's details** (when there's one): its lane
   and name ("Song · Recording 1"), **‹** and **›**, which nudge it a
   tenth of a second earlier or later, with where it starts in words
   between them ("The song starts 0:01.5 after the video": silence
@@ -131,9 +146,11 @@ makes a file of it."), opening with the video's edit as it was left:
   silence after. (Later steps put the layer chips here, the song's
   details then showing when its lane is selected.)
 - **At the bottom**: **Reset** (on once the edit is anything but the
-  defaults: the whole video, its own sound at 100%, and no song said,
-  so a song Removed, `song: off`, keeps it on; Reset goes back to them,
-  the song taken out, and the edit is none) and
+  defaults: the whole video, its own sound at 100%, no song said (so a
+  song Removed, `song: off`, keeps it on) and a take's tab on; Reset
+  goes back to them, the song taken out, and the edit is none: none
+  means the defaults, a take's tab over it included, not the file as
+  it is) and
   **Download**, a split button (both shrink to fit at the largest text
   sizes). Pressed, it downloads **the video** as edited, both lanes
   mixed; its arrow opens a menu of **The video (MP4)**, **The video
@@ -153,7 +170,8 @@ makes a file of it."), opening with the video's edit as it was left:
   download, or the system's "save as" on Android and iOS), named as the
   video is in the list with the made format's extension (`.mp4`,
   `.m4a`; `.webm`, `.wav` where those are made); a video the edit
-  doesn't change downloads as it is when it's already MPEG-4 (an
+  doesn't change (nothing drawn over it either) downloads as it is when
+  it's already MPEG-4 (an
   `.mp4` or `.m4v`, on every platform: in Firefox too, which would make
   it again only as a WebM) or already in the format made here (a
   `.webm` where the browser records WebM), and is made again otherwise
@@ -204,6 +222,8 @@ version 2 (`v: 2`):
   levels and the keys that app doesn't know are kept. The track keys
   are the manual lane itself, so a track an older app moved is simply
   where it put it.
+- `tab`: `false` when the Tab chip is off (written only then; absent,
+  the tab is drawn on a take that can have it).
 - Muting keeps the level (`ownMuted`/`songMuted` beside the volumes),
   so an edit reopens muted at the level it had.
 - Values that aren't numbers are read as the default; volumes out of
@@ -236,26 +256,73 @@ never stored. It says:
   before its start or past its end. Where the song is at a time in the
   output is one function, shared by the preview and the web's renderer
   (`songAt`, a binary search over the clips; none in a gap);
+- the **layers** drawn over the picture ([layers](#layers)): none for
+  the sound only;
 - whether it's a **passthrough**: the whole video, its own sound at
-  100%, no song, and the input already in the format made (an MP4 or
-  M4V anywhere; a WebM where WebM is made). Only then does Download save
-  the file as it is; everything else is rendered.
+  100%, no song, nothing drawn over it, and the input already in the
+  format made (an MP4 or M4V anywhere; a WebM where WebM is made). Only
+  then does Download save the file as it is; everything else is
+  rendered.
 
 Download's three items are three plans of the same edit: **the video**;
 **the video without sound** (the same plan with neither lane: only the
-sound is dropped); **the sound only** (no picture, both lanes mixed).
+sound is dropped, the layers kept); **the sound only** (no picture,
+both lanes mixed, no layers).
 The preview's plan (`preview: true`) leaves the files out and keeps a
 lane that isn't heard at level 0, so muting and unmuting only change a
 level and move nothing (what moves sound, the plan's `timeline`: the
 kept part, the song's page and clips, is what makes the preview seek
-the song again). Layers drawn over the video (the tab, a title, a
-watermark) and fades in and out (by default 3 s, set by the user: the
-picture from and to black, both lanes' levels ramping with it) come in
-later steps of the editor's redesign, as more of the plan; for now a
-plan has none, and each lane's level is one level throughout. The tab
-layer will come from the take's [log](cam.md#what-a-take-keeps), which
-Cam keeps with each take it saves (the tab's turns, the necklines shown
-and the lag), unused by the editor for now.
+the song again). A title and a watermark (later steps) are more layers;
+fades in and out (by default 3 s, set by the user: the picture from and
+to black, both lanes' levels ramping with it) come later too: for now
+each lane's level is one level throughout.
+
+### Layers
+
+What's drawn over the picture is a list of **layers** in the plan
+([`render_plan.dart`](../tabcam_app/lib/capture/render_plan.dart),
+`PlanLayer`), each: what it shows (its *look*, drawn by the app), when
+(`from`–`to` in the output, `to` none: to the end), how (an `opacity`,
+reached over a `fadeIn` from its start; 0 outside its time) and where:
+by an **anchor**, `topLeft` or `bottomRight` (a corner, `heightU` high,
+`marginU` in from it, the bottom right's `liftU` higher) or
+`bottomFull` (along the whole bottom, as wide as the frame, as high as
+its image makes it). Sizes are **fractions of the frame's short side**,
+so a layer is the same on a portrait and a landscape video, and no one
+but the renderer needs the frame's size: each platform places it on
+its own upright frame (`PlanLayer.rectIn` in Dart; the same layout in
+Kotlin and Swift). Layers of one kind (`id`) never overlap in time.
+Fades and anchors are supported everywhere, though only the tab uses
+them so far (no fade, along the bottom).
+
+**The tab** ([`edit_layers.dart`](../tabcam_app/lib/capture/edit_layers.dart)):
+on a take whose [log](cam.md#what-a-take-keeps) has its tab and says
+it isn't in the picture (`burned: false`), unless the edit turns it off
+(`tab: false`), one layer per band: each neckline from when it showed
+until the next turn (a turn back to the line showing carries its band
+on), at its time in the file (the turn's time on the take's clock plus
+the log's `lagMs`, the first from the file's start), then in the output
+(less the kept part's start), cut to the kept part (a trimmed start cuts
+the first band, a trimmed end the last). Its text is the log's own copy
+of the neckline, so a later change to the capture's tab changes nothing.
+It looks as the burned tab did: white monospaced text on a 70% black
+strip along the bottom, as wide as the video (`renderBand`, 1280 px
+wide, scaled). A take with its tab in its picture (`burned: true`, or
+no log: saved before takes kept one) gets none. A build with
+`--dart-define=TABCAM_TAB_OVER_BURNED=true` draws it over burned takes
+too, to check by eye that the drawn bands sit over the burned ones at
+the same frames (the time base and the lag); never in a release.
+
+**One drawing for the preview and the file.** Each look is drawn once
+as a picture (`LayerPicture`): painted, scaled, over the preview, and
+made a PNG for Download (`layerImages`: one per look, however many
+layers use it). Over the preview, `EditLayers` (a `CustomPaint` in the
+video's box, letting taps through) follows the video: between the
+player's reports (every tenth of a second) the frame clock carries its
+place on while it plays (at most 0.4 s past the last report), so fades
+and bands change smoothly; on a seek or a pause it's where the player
+says, and nothing runs while it's paused. The editor and the file
+screen's player both draw them.
 
 **How it's rendered**, on the device
 ([platforms](platforms.md)): each platform gets the plan and only
@@ -274,8 +341,22 @@ carries it out; the times are all worked out in Dart.
   volume, the composition forcing an audio track when the primary has
   none; with both lanes, Transformer's audio graph mixes the two
   sequences (converting sample rates and channels; two real inputs
-  mixed on a phone are still to be checked by hand). H.264 and AAC in
-  MP4. The sound only has no picture: the own
+  mixed on a phone are still to be checked by hand). The layers (the
+  channel's `images`, PNGs, and `layers`, each naming its image) are an
+  `OverlayEffect` on the video
+  ([`EditLayers.kt`](../tabcam_app/android/app/src/main/kotlin/com/nu01/tabcam/EditLayers.kt)):
+  one `LayersOverlay` per kind of layer, giving at each frame the
+  layer showing then (found by a binary search; a transparent pixel in
+  the gaps) with its `StaticOverlaySettings`: scaled from its pixels to
+  its size, anchored in normalized device coordinates (the band's
+  bottom middle on the frame's; a corner on the corner a margin in),
+  `setAlphaScale` for its fade, in 64 steps. Frames reach the effects
+  upright, so the frame size it's given is the frame as shown. The
+  first frame's time is taken as the output's 0, so it's right whether
+  Media3 counts a clipped video's frames from its clip's start or from
+  the file's (to check on a phone: the `TABCAM_TAB_OVER_BURNED` build).
+  The PNGs are decoded off the main thread and let go when it's done.
+  H.264 and AAC in MP4. The sound only has no picture: the own
   lane's sound clipped, and the song's sequence, AAC in M4A; it ends
   where the sound does. A clip at a speed other than 1 is refused (not
   yet). While it renders, `Transformer.getProgress` is read every quarter
@@ -288,7 +369,14 @@ carries it out; the times are all worked out in Dart.
   transform), its own audio tracks cut the same when the own lane keeps
   them, and the song lane's clips inserted on one audio track, each where
   it starts, so both lanes are mixed; one `AVMutableAudioMix` sets the
-  levels that aren't 1, one input per audio track.
+  levels that aren't 1, one input per audio track. With layers, an
+  `AVMutableVideoComposition` turns the video upright (the render size
+  and transform as the tab's burn had them) and
+  `AVVideoCompositionCoreAnimationTool` draws one `CALayer` per layer
+  (its PNG as contents, placed by its anchor on the upright frame), its
+  opacity 0 but while it shows: a `CABasicAnimation` from 0 to its
+  opacity over its fade, then one holding it to its end, from
+  `AVCoreAnimationBeginTimeAtZero`.
   Exported as MP4 (highest quality); the sound only leaves the video
   track out and exports M4A (`AVAssetExportPresetAppleM4A`), and ends
   where the sound does. The track's asset is held until the export is
@@ -317,7 +405,10 @@ carries it out; the times are all worked out in Dart.
   sound's clock**: the kept
   part plays, hidden and muted (unless its own sound streams), into a
   canvas (its frames, at 30 a
-  second), and the mix plays from a buffer into the recorded stream
+  second), the layers drawn over each frame (each look's PNG made an
+  `ImageBitmap` once; each layer showing then drawn where its anchor
+  puts it on the video's own frame size, with `globalAlpha` its
+  opacity then, put back to 1 after), and the mix plays from a buffer into the recorded stream
   beside it (the `AudioContext` it plays in made and started at
   Download's tap, before the files are decoded), started as the video
   starts playing; at each frame, while the video is more than 40 ms
@@ -392,6 +483,13 @@ instrumented test in `android/app/src/androidTest` (on a phone on USB:
 `./gradlew :app:connectedDebugAndroidTest` in `android/`), each
 rendering a trimmed plan with its own sound and a song clip at half its
 volume, the sound alone, and refusing a plan with neither picture nor
-sound; and each reading the channel's arguments. (ML Kit's pods leave
+sound; a plan with a red band along the bottom for the kept part's first
+half second and a red square at the top left (the band's pixels red
+while it shows and not after, the square where its anchor puts it); and
+each reading the channel's arguments, the layers' too. The layers'
+layout and timing are also JVM tests (`android/app/src/test`,
+`EditLayersTest`) and an XCTest that needs no video. (These native
+render tests are compiled here, not yet run on a phone or a simulator
+for the layers.) (ML Kit's pods leave
 the arm64 simulator out, so the XCTest needs a simulator that runs
 x86_64.)

@@ -223,7 +223,8 @@ The file is shown whole, as what it is:
   by it); no PDFs or pages to follow.
 - **Videos** show a play button; tapped, they play in place, looping
   (as their [edit](video-edit.md) says: the kept part, its own sound and
-  its song mixed, each at its volume), with a bar at the bottom: a **play / pause**
+  its song mixed, each at its volume, and a take's tab drawn over it,
+  [layers](video-edit.md#layers), also with no edit), with a bar at the bottom: a **play / pause**
   button and a scrubbable progress bar. A tap on the video also pauses and resumes. A video that
   can't play says so. **Edit** (below) trims it and mixes a song with
   its sound ([video edit](video-edit.md)).

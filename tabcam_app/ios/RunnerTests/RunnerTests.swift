@@ -70,6 +70,97 @@ class RunnerTests: XCTestCase {
     XCTAssertNotNil(nothingError)
   }
 
+  func testDrawsTheLayersWhileTheyShow() async throws {
+    let video = dir.appendingPathComponent("riff.mp4")
+    try await makeVideo(video, seconds: 2)
+    // A red band along the bottom for the kept part's first half second,
+    // and a red square at the top left, 20% of the short side, 5% in.
+    let output = dir.appendingPathComponent("layers.mp4")
+    let plan = VideoEditor.Plan(
+      input: video, output: output, startMs: 500, endMs: 1500, ownVolume: nil,
+      layers: [
+        VideoEditor.Layer(id: "tab", image: 0, anchor: .bottomFull, fromMs: 0, toMs: 500),
+        VideoEditor.Layer(
+          id: "title", image: 1, anchor: .topLeft, heightU: 0.2, marginU: 0.05),
+      ],
+      images: [try red(64, 16), try red(32, 32)])
+    let error = await render(plan, progress: nil)
+    XCTAssertNil(error)
+    let asset = AVURLAsset(url: output)
+    let duration = try await asset.load(.duration)
+    XCTAssertEqual(duration.seconds, 1, accuracy: 0.15)
+    // 160 x 120: the band at the bottom while it shows, not after; the
+    // square 6 + 12 px in.
+    XCTAssertTrue(try isRed(asset, at: 0.25, x: 80, y: 118))
+    XCTAssertFalse(try isRed(asset, at: 0.8, x: 80, y: 118))
+    XCTAssertTrue(try isRed(asset, at: 0.6, x: 18, y: 18))
+  }
+
+  func testPlacesLayersAsTheAppDoes() {
+    let frame = CGSize(width: 1920, height: 1080)
+    let band = VideoEditor.Layer(image: 0, anchor: .bottomFull)
+    XCTAssertEqual(
+      band.rect(in: frame, image: CGSize(width: 1280, height: 240)),
+      CGRect(x: 0, y: 720, width: 1920, height: 360))
+    // Of the short side (1024): half high, a quarter in, an eighth higher.
+    let mark = VideoEditor.Layer(
+      image: 0, anchor: .bottomRight, heightU: 0.5, marginU: 0.25, liftU: 0.125)
+    XCTAssertEqual(
+      mark.rect(in: CGSize(width: 1920, height: 1024), image: CGSize(width: 400, height: 200)),
+      CGRect(x: 640, y: 128, width: 1024, height: 512))
+    let plan = VideoEditor.Plan(args: [
+      "input": "/tmp/in.mp4", "output": "/tmp/out.mp4", "startMs": 0, "endMs": 1000,
+      "images": [FlutterStandardTypedData(bytes: Data([1, 2, 3]))],
+      "layers": [
+        [
+          "id": "tab", "image": 0, "anchor": "bottomFull", "fromMs": 0, "toMs": 500,
+          "fadeInMs": 0, "opacity": 1,
+        ]
+      ],
+    ])
+    XCTAssertEqual(
+      plan?.layers, [VideoEditor.Layer(id: "tab", image: 0, anchor: .bottomFull, toMs: 500)])
+    XCTAssertNil(
+      VideoEditor.Plan(args: [
+        "input": "/tmp/in.mp4", "output": "/tmp/out.mp4", "startMs": 0, "endMs": 1000,
+        "layers": [["image": 0, "anchor": "bottomFull"]],
+      ]))
+  }
+
+  /// A red PNG, `width` x `height`.
+  private func red(_ width: Int, _ height: Int) throws -> Data {
+    let size = CGSize(width: width, height: height)
+    let format = UIGraphicsImageRendererFormat()
+    format.scale = 1
+    let image = UIGraphicsImageRenderer(size: size, format: format).image { context in
+      UIColor.red.setFill()
+      context.fill(CGRect(origin: .zero, size: size))
+    }
+    return try XCTUnwrap(image.pngData())
+  }
+
+  /// Whether `asset`'s frame at `seconds` is red at (`x`, `y`), from its top
+  /// left.
+  private func isRed(_ asset: AVAsset, at seconds: Double, x: Int, y: Int) throws -> Bool {
+    let generator = AVAssetImageGenerator(asset: asset)
+    generator.requestedTimeToleranceBefore = .zero
+    generator.requestedTimeToleranceAfter = .zero
+    let image = try generator.copyCGImage(
+      at: CMTime(seconds: seconds, preferredTimescale: 600), actualTime: nil)
+    var pixel = [UInt8](repeating: 0, count: 4)
+    let context = try XCTUnwrap(
+      CGContext(
+        data: &pixel, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 4,
+        space: CGColorSpaceCreateDeviceRGB(),
+        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+    context.draw(
+      image,
+      in: CGRect(
+        x: -CGFloat(x), y: -CGFloat(image.height - 1 - y), width: CGFloat(image.width),
+        height: CGFloat(image.height)))
+    return pixel[0] > 180 && pixel[1] < 90 && pixel[2] < 90
+  }
+
   func testReadsTheChannelsArguments() {
     let plan = VideoEditor.Plan(args: [
       "input": "/tmp/in.mp4", "output": "/tmp/out.mp4", "video": true, "startMs": 500,

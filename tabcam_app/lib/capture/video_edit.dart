@@ -4,11 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'edit_formats.dart';
+import 'edit_layers.dart';
 import 'render_plan.dart';
 import 'web_video_editor_stub.dart'
     if (dart.library.js_interop) 'web_video_editor.dart';
 
-export '../library/page_edit.dart' show EditSound, PageEdit, SongMode, trackSpan;
+export '../library/page_edit.dart'
+    show EditSound, PageEdit, SongMode, trackSpan;
 export 'edit_formats.dart' show EditFormat, EditFormats;
 export 'render_plan.dart';
 
@@ -64,7 +66,10 @@ abstract final class VideoEditor {
 /// picture goes in (`video`), the part kept in ms, the video's own sound
 /// (`own`: its `volume`, 0 to 1; left out: none) and the song lane
 /// (`song`: its `path`, `volume` and `clips`, each `atMs` in the output,
-/// the song from `fromMs` to `toMs`, at `speed`), and `job`, which the
+/// the song from `fromMs` to `toMs`, at `speed`), the layers drawn over
+/// the picture (`images`, PNGs, and `layers`, each naming its `image`,
+/// with its `anchor`, `heightU`, `marginU`, `liftU`, `fromMs`, `toMs`,
+/// `fadeInMs` and `opacity`), and `job`, which the
 /// platform's `progress` calls back name, with `done` (0 to 1), every
 /// quarter of a second while it renders. It replies with the output
 /// path.
@@ -108,6 +113,9 @@ class ChannelVideoEditor implements VideoEditing {
     if (plan.song case final song? when song.file == null) {
       throw ArgumentError('A song lane needs a file');
     }
+    final images = plan.layers.isEmpty
+        ? const <Uint8List>[]
+        : await layerImages(plan);
     final dir = await getTemporaryDirectory();
     final format = plan.video ? EditFormat.mp4 : EditFormat.m4a;
     final output =
@@ -125,7 +133,7 @@ class ChannelVideoEditor implements VideoEditing {
     try {
       final path = await channel.invokeMethod<String>(
         'render',
-        plan.toChannel(output: output, job: job),
+        plan.toChannel(output: output, job: job, images: images),
       );
       if (path == null) throw StateError('The video was not written');
       return XFile(path, mimeType: format.mimeType);
