@@ -58,7 +58,7 @@ review notes ([app stores](app-stores.md)).
 - [Cam](cam.md): record yourself playing along with the tab: the camera,
   the tab under it one neckline (staff) at a time, any key (↓) to the
   next and Backspace / ↑ (← with nothing playing along) to the one before, or a strong nod up / right and
-  down / left (Android, iOS); Rec adds each take to the
+  down / left (Android, iOS); Rec (or the 1 key) adds each take to the
   capture, Play plays it back with the tab turning as it did; Play
   along plays one of the capture's recordings, videos or links in a
   frame above the camera, the space bar pausing and playing it, 0
