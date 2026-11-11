@@ -120,7 +120,12 @@ class Library extends ChangeNotifier {
     for (final page in event.pages) {
       if (page.isLink) {
         pages.add(
-          EventPage.link(id: ids[page.id]!, url: page.url!, title: page.title),
+          EventPage.link(
+            id: ids[page.id]!,
+            url: page.url!,
+            title: page.title,
+            extra: page.extra,
+          ),
         );
         continue;
       }
@@ -131,6 +136,7 @@ class Library extends ChangeNotifier {
         extension: page.extension,
         edit: page.edit?.withTrackId(ids[page.edit?.trackId]),
         take: page.take,
+        extra: page.extra,
       );
       await _arrival(event.id, page);
       final (bytes, _) = await _store.pageStream(event.id, page);
@@ -341,6 +347,7 @@ class Library extends ChangeNotifier {
         url: page.url!,
         title: page.title,
         from: page.id,
+        extra: page.extra,
       );
     } else {
       copy = EventPage(
@@ -351,6 +358,7 @@ class Library extends ChangeNotifier {
         title: page.title,
         from: page.id,
         take: page.take,
+        extra: page.extra,
       );
       await _arrival(event.id, page);
       final (bytes, _) = await _store.pageStream(event.id, page);
@@ -521,6 +529,7 @@ class Library extends ChangeNotifier {
       filter: page.filter,
       kind: page.kind,
       extension: page.extension,
+      extra: page.extra,
     );
     await _store.putPage(event.id, turned, rotated);
     final updated = await _save(
@@ -537,8 +546,9 @@ class Library extends ChangeNotifier {
 
   /// Puts [media] (an edited video, say) in [page]'s place: a new page
   /// (a new ID, as [rotatePage] makes: page files never change once
-  /// written) of [media]'s kind and extension, with [page]'s name and
-  /// filter; [page]'s own file goes.
+  /// written) of [media]'s kind and extension, with [page]'s name,
+  /// filter, take mark and the keys a newer app wrote
+  /// ([EventPage.extra]); [page]'s own file goes.
   Future<CaptureEvent> replacePage(
     CaptureEvent event,
     EventPage page,
@@ -552,6 +562,7 @@ class Library extends ChangeNotifier {
       extension: media.extension,
       title: page.title,
       take: page.take,
+      extra: page.extra,
     );
     await _store.putPageFile(event.id, replaced, media.file);
     final updated = await _save(

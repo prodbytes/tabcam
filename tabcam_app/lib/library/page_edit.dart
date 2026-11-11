@@ -1,3 +1,5 @@
+import 'json_extra.dart';
+
 /// What happens to a video's sound when it's edited.
 enum EditSound {
   /// Its own sound stays.
@@ -21,7 +23,8 @@ enum EditSound {
 /// [trackStart] to [trackEnd] (null: its end) is used, starting [offset]
 /// after the kept part's start (before it, when negative), at
 /// [trackVolume]. The video's file stays as it is: players play it as
-/// edited, and a download makes a file of it.
+/// edited, and a download makes a file of it. Keys a newer app wrote that
+/// this one doesn't know are kept in [extra], and written back.
 class PageEdit {
   const PageEdit({
     required this.start,
@@ -32,7 +35,20 @@ class PageEdit {
     this.trackEnd,
     this.offset = Duration.zero,
     this.trackVolume = 1,
+    this.extra = const {},
   });
+
+  /// The keys [toJson] writes, and [fromJson] reads (and checks).
+  static const Set<String> knownKeys = {
+    'startMs',
+    'endMs',
+    'sound',
+    'trackId',
+    'trackStartMs',
+    'trackEndMs',
+    'offsetMs',
+    'trackVolume',
+  };
 
   final Duration start;
   final Duration end;
@@ -49,6 +65,11 @@ class PageEdit {
   /// default): the players can't play it louder than it is.
   final double trackVolume;
 
+  /// The keys of its JSON this version doesn't know (a newer app's, see
+  /// `unknownKeys`), written back as they came, after the known ones,
+  /// which win.
+  final Map<String, Object?> extra;
+
   /// [volume] as a track's: within 0–1, to the hundredth; 1 when it
   /// isn't a number.
   static double volume(Object? volume) => volume is num && volume.isFinite
@@ -64,6 +85,8 @@ class PageEdit {
     if (trackEnd != null) 'trackEndMs': trackEnd!.inMilliseconds,
     if (offset != Duration.zero) 'offsetMs': offset.inMilliseconds,
     if (trackVolume != 1) 'trackVolume': trackVolume,
+    for (final MapEntry(:key, :value) in extraEntries(extra, knownKeys))
+      key: value,
   };
 
   /// Null when [json] isn't an edit (one from a newer app, or broken).
@@ -85,6 +108,7 @@ class PageEdit {
       trackEnd: ms('trackEndMs'),
       offset: ms('offsetMs') ?? Duration.zero,
       trackVolume: volume(json['trackVolume']),
+      extra: unknownKeys(json, knownKeys),
     );
   }
 
@@ -98,6 +122,7 @@ class PageEdit {
     trackEnd: trackEnd,
     offset: offset,
     trackVolume: trackVolume,
+    extra: extra,
   );
 
   /// This edit with its track at [volume] (as [PageEdit.volume] has it).
@@ -110,6 +135,7 @@ class PageEdit {
     trackEnd: trackEnd,
     offset: offset,
     trackVolume: PageEdit.volume(volume),
+    extra: extra,
   );
 
   @override
@@ -122,7 +148,8 @@ class PageEdit {
       other.trackStart == trackStart &&
       other.trackEnd == trackEnd &&
       other.offset == offset &&
-      other.trackVolume == trackVolume;
+      other.trackVolume == trackVolume &&
+      jsonEquals(other.extra, extra);
 
   @override
   int get hashCode => Object.hash(
@@ -134,12 +161,13 @@ class PageEdit {
     trackEnd,
     offset,
     trackVolume,
+    jsonHash(extra),
   );
 
   @override
   String toString() =>
       'PageEdit($start–$end, $sound, $trackId $trackStart–$trackEnd, '
-      '$offset, $trackVolume)';
+      '$offset, $trackVolume${extra.isEmpty ? '' : ', $extra'})';
 }
 
 /// The part of a track [trackLength] long that goes into a clip [clip]
