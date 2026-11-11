@@ -2447,7 +2447,23 @@ spec.
 
 ## 2026-11-11
 
-8. **take the takes be the last thing on the sidebar.** The play-along
+6. **In the cam screen make the "1" key be a shortcut to toggle
+   recording on/off.** In Cam, **1** (on the top row or the keypad)
+   now presses Rec / Stop as the button does: it starts a take (and the
+   sidebar's song with it) or stops it and saves the take, with the
+   play-along sidebar showing or not, and no longer turns the tab. It
+   acts on the key down only, so holding it doesn't start and stop a
+   take; while the button is dead (a take saving or playing back) it
+   does nothing; with Ctrl, ⌘ or Alt it's left to the other shortcut
+   and turns the tab as before. The button's tooltip now names the key
+   ("Rec (1)", "Stop (1)"), in English, Spanish and Portuguese, like
+   the sidebar's "Play (space)". New tests: 1 starts a take and 1 again
+   saves it, the keypad's 1 too, its repeats don't toggle, it doesn't
+   turn the tab while other keys still do, Ctrl + 1 does, it's dead
+   while a take plays back, and with the sidebar showing it starts the
+   song with the take. See [Cam](cam.md#rec-key).
+
+7. **take the takes be the last thing on the sidebar.** The play-along
    sidebar (Cam, the Text view, the file screen) now lists Cam's takes
    last, after the text tab, the files to play along and the PDFs or
    pages to follow, under a heading of their own, **Takes** (Spanish
@@ -2462,4 +2478,6 @@ spec.
    and an old one), the rows run text, songs, PDF, then the takes under
    Takes, and a song is loaded first; with only takes, the first loads;
    which pages count as takes and that the mark survives renaming and
-   JSON. See [Cam](cam.md#playing-along-with-a-file).
+   JSON; on a recording's file screen, the take comes after the pages
+   and PDFs to follow. See [Cam](cam.md#playing-along-with-a-file) and
+   the [file screen](event-screen.md#file-screen).

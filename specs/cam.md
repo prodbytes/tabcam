@@ -31,8 +31,9 @@ its **Not now** leaving. With Premium it opens the camera view
   shrunk to fit the screen's width (a long staff reads best with the
   phone turned sideways), with its number under it ("2 / 14"). A
   capture with no text tab yet says to read it first.
-- **Moving along the tab**: any key (but the space bar, 0, ← and →
-  while a file [plays along](#playing-along-with-a-file)) goes to the
+- **Moving along the tab**: any key (but **1**, which is
+  [Rec / Stop](#rec-key), and the space bar, 0, ← and → while a file
+  [plays along](#playing-along-with-a-file)) goes to the
   next neckline (a keyboard, or a Bluetooth page-turner pedal), **↓**
   among them; **Backspace**, **↑** and **Page Up** go to the one
   before, and so does **←** while nothing plays along. Shift, Control, Alt,
@@ -82,7 +83,17 @@ its **Not now** leaving. With Premium it opens the camera view
   in the theme's primary colour while it sees a face; off, nothing
   watches for faces. While a take plays back, gestures do nothing.
 - **Rec** records video and sound (`camera`, `ResolutionPreset.high`)
-  from the neckline showing, until **Stop**. The take is then added to
+  from the neckline showing, until **Stop**.
+  <a id="rec-key"></a>The **1** key (on the top row or the keypad)
+  presses it too, Rec and then Stop, with the sidebar showing or not
+  (so it also starts the sidebar's song, as Rec does); it doesn't turn
+  the tab. It acts on the key down: held, it doesn't repeat (it
+  doesn't start a take and stop it again). While the button can't be
+  pressed (a take being saved or playing back, no camera, the
+  preview), 1 does nothing. With Ctrl, ⌘ or Alt held, 1 is another
+  shortcut's (the browser's) and turns the tab as any key. The button's
+  tooltip says so: "Rec (1)", and "Stop (1)" while recording, in
+  English, Spanish and Portuguese. The take is then added to
   the capture as a video, at the end of its files, named "Take 1",
   "Take 2"… (the first number no file has), and a message says so. It
   is marked as a take (`take` on its page, `EventPage.take`), which

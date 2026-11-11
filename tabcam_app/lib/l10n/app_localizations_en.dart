@@ -583,6 +583,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camStop => 'Stop';
 
   @override
+  String get camRecKey => 'Rec (1)';
+
+  @override
+  String get camStopKey => 'Stop (1)';
+
+  @override
   String get camPlay => 'Play';
 
   @override
