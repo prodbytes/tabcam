@@ -290,7 +290,13 @@ under **Takes** (Spanish **Tomas**), **the most recent first** (the
 reverse of the order they were made: Take 3, Take 2, Take 1), played along as the others
 are. A take is one Cam marked as such (renamed, it still is one), or,
 saved before takes were marked, a video named as Cam names them in any
-of the app's languages ("Take 3", "Toma 3"; `isTake`). The list
+of the app's languages ("Take 3", "Toma 3"; `isTake`). On a capture
+shared to read, the reader's own files (their
+[contribution](contributions.md)'s, their takes among them) are listed
+too, after the capture's (their takes under **Takes**, above the
+capture's, theirs being the more recent), but not one published (the
+capture's copy is listed) (`PlayAlong.filesOf`). Each file's row ends
+in [Delete](#deleting-from-the-sidebar). The list
 scrolls, the frame stays.
 **Play along** (♫ in the app bar, in the primary colour while open)
 hides and shows the sidebar, frame and all; hiding it pauses what plays
@@ -308,6 +314,40 @@ would (after the [count-in](#count-in), from where it is, or from its
 start, its section's, at its end), once the take is recording; one
 that plays already plays on, and with the sidebar hidden nothing
 starts. Stop (the take's) leaves it playing.
+
+<a id="deleting-from-the-sidebar"></a>**Deleting from the sidebar**: each
+file in it (the recordings, videos and links, Cam's takes among them,
+and the PDFs and pages to [follow](#following-a-pdf); not the text tab)
+has **Delete** (a bin; its tooltip "Delete <name>") at the right end of
+its row, after its mark (playing, or followed). It's the capture's
+list's [Delete file](event-screen.md), from the same code (`deleteFile`,
+`mayDeleteFile`,
+[`file_delete.dart`](../tabcam_app/lib/screens/file_delete.dart)): it
+asks "Delete "<name>"?" (Cancel, Delete, and **Don't ask again**) in the
+app's shared [delete confirm](delete-confirms.md), as the list's
+"file" kind for one of the capture's files and its "contribution" kind
+for one of a reader's own, so a Don't ask again ticked in either place
+holds in both; the capture's last file can't
+be deleted (the message says to delete the event instead), and a
+failure shows "Couldn't delete". It shows only where the list would
+offer it: on the user's own captures and those shared with them to
+edit, on every file; on a capture shared to read, on none of the
+owner's, only on the reader's own (their takes, listed after the
+capture's files and under **Takes**), which it deletes from their
+[contribution](contributions.md), file and all. Not in Cam's Premium
+preview, nor on a capture opened by its link. It's greyed while a take
+records, saves (with ".", until the next take has started) or plays
+back, and while the screen works. Once deleted, the file loaded in the
+player (playing or paused) is let go of: it stops and the frame closes,
+nothing else loading by itself; a PDF or page followed closes its pane;
+the take Cam's Play would play back gone, Play is greyed. Beside the
+Text view, a recording the capture's list was playing (it plays on in
+the Text view) stops too, as the list's Delete stops it, and the delete
+shows in the screen's progress bar, as the list's does. A file
+deleted anywhere else (the list, a sync) is let go of the same way. On
+the [file screen](event-screen.md#file-screen), the file it shows (a
+recording, listed in its own sidebar) has no Delete there: the screen's
+own Delete deletes it and goes back to the list.
 
 <a id="following-a-pdf"></a>**Following a PDF**: in Cam and in the
 [Text view](tab-recognition.md#text-view) (not beside a PDF), the
@@ -412,7 +452,8 @@ view).
   goes back to the start and keeps counting. Repeat and a section's
   loop start over without one; the count-in is real time, whatever the
   speed. The setting is kept on the device (the meta file
-  `play-along`, `{"countIn": false}`), for Cam, the Text view and the
+  `playalong`, `{"countIn": false}`; until 2026-11-11 it was named
+  `play-along`, which the apps' store refuses, so it was never kept there), for Cam, the Text view and the
   file screen alike.
 - **The space bar** pauses and plays it while the sidebar shows (a key
   down; held, it doesn't repeat), and doesn't turn the tab; with the

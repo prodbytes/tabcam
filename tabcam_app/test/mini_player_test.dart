@@ -471,6 +471,76 @@ void main() {
     );
   });
 
+  testWidgets('on a recording\'s file screen, the sidebar\'s files show '
+      'Delete, all but the recording\'s own', (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final (library, id) = await captureWith(tester, [
+      (PageKind.pdf, 'pdf'),
+      (PageKind.video, 'mp4'),
+      (PageKind.audio, 'm4a'),
+    ]);
+    await tester.pumpWidget(
+      host(FileScreen(library: library, eventId: id, pageId: 'k2')),
+    );
+    await _frames(tester);
+    expect(find.byKey(const Key('cam-along-k2')), findsOneWidget);
+    expect(find.byKey(const Key('cam-along-delete-k2')), findsNothing);
+    expect(find.byKey(const Key('cam-along-delete-k1')), findsOneWidget);
+    expect(find.byKey(const Key('cam-along-delete-k0')), findsOneWidget);
+
+    // The video deleted from it: the recording's screen stays.
+    await tester.tap(find.byKey(const Key('cam-along-delete-k1')));
+    await _frames(tester);
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await _frames(tester);
+    expect(library.byId(id)!.pages.map((p) => p.id), ['k0', 'k2']);
+    expect(find.byKey(const Key('cam-along-k1')), findsNothing);
+    expect(find.byKey(const Key('recording-aside')), findsOneWidget);
+  });
+
+  testWidgets('a recording playing in the list, deleted from the Text '
+      'view\'s sidebar, stops, as the list\'s Delete stops it', (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final (library, id) = await captureWith(tester, [
+      (PageKind.image, 'jpg'),
+      (PageKind.audio, 'm4a'),
+      (PageKind.audio, 'm4a'),
+    ], tab: true);
+    await tester.pumpWidget(host(EventScreen(library: library, eventId: id)));
+    await _frames(tester);
+    // The second recording plays in the list, and plays on in the Text
+    // view (the sidebar loads the first, paused).
+    await tester.tap(find.byKey(const ValueKey('mini-play-k2')));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await _frames(tester);
+    expect(platform.playing, hasLength(1));
+    final inList = platform.playing.single;
+    await tester.tap(find.byKey(const Key('text')));
+    await _frames(tester);
+    expect(find.byKey(const Key('cam-along-sidebar')), findsOneWidget);
+    expect(platform.playing, {inList});
+    // Scrolled to, above the notation sheet.
+    await tester.ensureVisible(find.byKey(const Key('cam-along-delete-k2')));
+    await _frames(tester);
+
+    await tester.tap(find.byKey(const Key('cam-along-delete-k2')));
+    await _frames(tester);
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await _frames(tester);
+    expect(library.byId(id)!.pages.map((p) => p.id), ['k0', 'k1']);
+    expect(platform.playing, isEmpty);
+    expect(platform.disposed, contains(inList));
+  });
+
   testWidgets('a recording opens in the sidebar: loaded in its frame, '
       'paused, with the pages and PDFs listed to follow; one tapped shows '
       'in a pane beside it', (tester) async {

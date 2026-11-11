@@ -113,7 +113,13 @@ plays along.
   [delete confirmations](delete-confirms.md)) and deletes the file (stopping it
   if it plays in the list); the last file can't be deleted (the message
   says to delete the event instead), and a failure shows "Couldn't
-  delete". Rename and Delete aren't there read only. A tap opens the file alone on the file screen, except a link's:
+  delete". Rename and Delete aren't there read only. The play-along
+  sidebar's Delete (beside the Text view, in Cam, on the file screen)
+  is the same, from the same code, Don't ask again and all (one ticked
+  in either place holds in both)
+  ([Cam](cam.md#deleting-from-the-sidebar)): beside the Text view it
+  also stops the file if it plays in the list, and shows in the
+  screen's progress bar. A tap opens the file alone on the file screen, except a link's:
   a tap opens the link itself, outside the app, as the file screen's
   **Open** does (a new tab on the web; the browser, or the app for it
   such as YouTube, on Android and iOS). A link's chevron (**Details**)
@@ -278,7 +284,10 @@ Its tools, along the bottom:
   prefilled, as on the list (saving it empty goes back to the default
   name).
 - **Delete**: deletes the file and goes back to the list. The last file
-  can't be deleted (the message says to delete the event instead).
+  can't be deleted (the message says to delete the event instead). The
+  play-along sidebar beside a recording has no Delete on the recording's
+  own row (it has on the other files,
+  [as in Cam](cam.md#deleting-from-the-sidebar)).
 
 Edit, Rename and Delete are off while a tool works and on a capture
 shared read only. The tools share the bar equally, so all four (an

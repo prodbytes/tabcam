@@ -6,9 +6,11 @@ import 'capture_event.dart';
 import 'event_store_memory.dart'
     if (dart.library.io) 'event_store_io.dart'
     as platform;
+import 'meta_names.dart';
 
-/// Where events are kept: files in the app's documents folder on Android and
-/// iOS (scan_store_io.dart), memory on the web (scan_store_memory.dart).
+/// Where events are kept: files in the app's documents folder on Android,
+/// iOS and the desktop (event_store_io.dart), memory on the web
+/// (event_store_memory.dart, the device's settings in localStorage).
 abstract class EventStore {
   factory EventStore() = platform.PlatformEventStore;
 
@@ -50,8 +52,9 @@ abstract class EventStore {
     Stream<List<int>> bytes,
   );
 
-  /// A small JSON document of the app's own, such as cloud sync's state;
-  /// null if there's none.
+  /// A small JSON document of the app's own, such as cloud sync's state
+  /// or a device setting, by one of [MetaNames]; null if there's none. A
+  /// name that fails `checkId` is refused (it names a file on the apps).
   Future<String?> readMeta(String name);
 
   Future<void> writeMeta(String name, String json);

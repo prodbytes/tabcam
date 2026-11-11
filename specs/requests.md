@@ -2531,7 +2531,7 @@ spec.
    [contributions](contributions.md),
    [shared captures](shared-captures.md) and
    [navigation](navigation.md#profile).
-5. **When editing a recording, add a volume control to the side of the
+4. **When editing a recording, add a volume control to the side of the
    audio track. Left side.** The video edit screen's track bar (Sound:
    New track) now has the track's volume at its left, on the same row,
    the bar narrowing to make room: a speaker over the level (`100%`);
@@ -2558,7 +2558,7 @@ spec.
    text; and, in Chrome, the web editor's track at half volume is half
    as loud, in the sound alone and in the recorded video. See
    [Video edit](video-edit.md).
-6. **In the cam screen make the "1" key be a shortcut to toggle
+5. **In the cam screen make the "1" key be a shortcut to toggle
    recording on/off.** In Cam, **1** (on the top row or the keypad)
    now presses Rec / Stop as the button does: it starts a take (and the
    sidebar's song with it) or stops it and saves the take, with the
@@ -2574,6 +2574,53 @@ spec.
    while a take plays back, and with the sidebar showing it starts the
    song with the take. See [Cam](cam.md#rec-key).
 
+6. **In the mini player sidebar, to the right of files, add the delete
+   button. So I can delete anything, especially the takes.** Each file
+   in the play-along sidebar (in Cam, beside the Text view and on the
+   file screen) now ends in a **Delete** button (a bin, its tooltip
+   "Delete <name>", in English, Spanish and Portuguese), after the
+   playing or followed mark; the text tab's row has none. It's the
+   capture's list's Delete file, moved into one shared function
+   (`deleteFile` and `mayDeleteFile`, `file_delete.dart`, which the
+   list now uses too): the same question, the last file kept, and the
+   same rules on who may delete what (on a capture shared to read, none
+   of the owner's files). It's greyed while a take records, saves or
+   plays back, and isn't in Cam's Premium preview or on a capture
+   opened by its link. The file the sidebar's player had loaded, once
+   deleted (from the sidebar or anywhere else), is let go of: it stops
+   and the frame closes; a followed PDF or page closes its pane; Cam's
+   Play has no take once its take is deleted. On a recording's file
+   screen, the recording's own row has no Delete (the screen's own
+   Delete deletes it and goes back). New tests: Delete at the right of
+   a take's row, asking first, cancelled keeping it, confirmed deleting
+   it and its file; deleting the song playing stops it; a followed PDF
+   deleted closes its pane; a reader sees none on the owner's files;
+   the file screen's own recording has none. See
+   [Cam](cam.md#deleting-from-the-sidebar).
+   From the review: on a capture shared to read, the sidebar now lists
+   the reader's own files (their takes) after the capture's, not those
+   published, so a reader deletes their takes there too (the known
+   limitation that it didn't is gone from
+   [contributions](contributions.md)); beside the Text view, the
+   sidebar's Delete also stops the file if the list plays it (the list
+   plays on in the Text view) and shows in the screen's progress bar,
+   as the list's Delete does. New tests: a reader's take listed after
+   the owner's files, the only one with Delete, deleted from their
+   contribution with its file; a recording the list plays, deleted from
+   the Text view's sidebar, stops.
+   Merged with main's takes-last and Don't ask again: the takes' rows
+   under **Takes** have Delete too (a reader's own takes listed there
+   with the capture's, theirs first), and the sidebar's Delete asks in
+   the shared delete confirm with **Don't ask again** (the list's "file"
+   kind, or "contribution" for a reader's own), so a choice made in the
+   sidebar or the list holds in both; its messages show at the top. A
+   test that Don't ask again ticked in the sidebar skips the list's
+   confirm too. See [delete confirmations](delete-confirms.md).
+   From the merge's review: in Cam, the sidebar's Delete is now greyed
+   too while "." saves a take for the next, until the next take has
+   started, where between saving one and starting the next it was
+   live (with Don't ask again ticked, the song could be deleted and
+   the new take start without it). A test checks it's greyed then.
 7. **take the takes be the last thing on the sidebar.** The play-along
    sidebar (Cam, the Text view, the file screen) now lists Cam's takes
    last, after the text tab, the files to play along and the PDFs or
@@ -2654,7 +2701,37 @@ spec.
    where it types "," (Brazilian, German and most European layouts) and
    its logical key is the comma, it's still a new take, not a turn of
    the tab. Tests for both. See [Cam](cam.md#new-take-key).
-10. **let the user download as MP3 only the audio, or MP4 the entire
+10. **(Found in review) Device settings forgotten: on the web at every
+    reload, and the count-in on the phones.** The library's device
+    settings (its metas: Cam's Auto-pass, the count-in, Don't ask again,
+    the sidebars' widths and the dictionary's turn, the language, the
+    metronome) were kept in memory on the web, so every reload forgot
+    them; and on Android, iOS and the desktop the count-in's meta was
+    named `play-along`, which the apps' store refuses (`checkId`: letters
+    and digits only), so it was never kept there. Now every meta name is
+    in one list (`MetaNames`, `lib/library/meta_names.dart`), the
+    count-in's renamed `playalong` (every other name already passed); the
+    web keeps the device settings, and only them, in the browser's
+    localStorage (`tabcam.meta.<name>`), falling back to memory silently
+    where storage is refused; cloud sync's and cloud OCR's state, like
+    the captures and their files, stay in memory there (a reload brings
+    the captures down again). The web's store refuses the names the
+    apps' store does, so a bad one fails in tests. Signing out and
+    deleting the account keep the settings, as on the apps (they're the
+    device's). New tests (`test/meta_names_test.dart`): every name passes
+    `checkId`, the classes' names are the ones listed, `lib/` names metas
+    only through `MetaNames`, the apps' store round-trips each, the web's
+    store keeps the settings across a new store in a fake localStorage
+    and nothing else, falls back to memory when storage throws, and
+    refuses a bad name. A capture opened by its link has a library of
+    its own, whose settings stay in memory (`PlatformEventStore.memoryOnly`),
+    as on the apps: it neither reads nor changes the device's settings in
+    localStorage, where it would otherwise have shared them with the
+    user's library and disagreed with its in-memory copy (tests in
+    `test/meta_names_test.dart` and `test/public_capture_test.dart`). See
+    [library](library.md#device-settings), [sharing](sharing.md),
+    [delete confirmations](delete-confirms.md).
+11. **let the user download as MP3 only the audio, or MP4 the entire
     video** — the user then chose the sound only as **M4A (AAC)** rather
     than MP3 (no MP3 encoder is bundled), in the video editor's Download
     menu only. Android (Media3 Transformer) and iOS (AVFoundation)

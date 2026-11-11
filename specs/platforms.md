@@ -12,7 +12,7 @@
 | [Cam's head gestures](cam.md#head-gestures) | ✅ ML Kit face detection | ✅ ML Kit face detection | ✅ MediaPipe Face Landmarker, in the browser (library and model from jsDelivr and Google when Cam opens) |
 | Open links, YouTube's too (`url_launcher`, outside the app) | The browser, or the app for the link (YouTube) | Safari, or the app for the link (YouTube) | A new tab |
 | Reading tabs (by itself), Premium only where Premium is set up | ✅ Premium's cloud (ML Kit on the device in builds without the service) | ✅ Premium's cloud (ML Kit on the device in builds without the service) | Premium's cloud (else the Text view says it needs the app) |
-| Library | Files in the app's documents | Files in the app's documents | Memory, until the tab closes |
+| Library | Files in the app's documents | Files in the app's documents | Memory, until the tab closes; the device settings in `localStorage` ([library](library.md#device-settings)) |
 | Share | Copies the link | Copies the link | Copies the link |
 | Capture links ([opening](sharing.md#opening-a-link)) | App Links: the site's links open in the app | In Safari (the web app) | The web app |
 | Sign-in ([cloud sync](cloud-sync.md)) | Credential Manager | Google Sign-In SDK; Sign in with Apple too, with `TABCAM_APPLE_SIGN_IN=1` | Google's button (FedCM); the session kept in `localStorage` |

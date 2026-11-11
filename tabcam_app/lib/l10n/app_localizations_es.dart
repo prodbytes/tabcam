@@ -684,6 +684,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get camAlongPdfs => 'Seguir un PDF';
 
   @override
+  String camAlongDelete(String name) {
+    return 'Eliminar $name';
+  }
+
+  @override
   String get camAlongPdfShow => 'Mostrar el PDF junto a la cámara';
 
   @override

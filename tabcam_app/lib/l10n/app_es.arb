@@ -176,6 +176,7 @@
   "camAlongTitle": "Tocar junto",
   "camAlongTakes": "Tomas",
   "camAlongPdfs": "Seguir un PDF",
+  "camAlongDelete": "Eliminar {name}",
   "camAlongPdfShow": "Mostrar el PDF junto a la cámara",
   "camAlongPdfHide": "Ocultar el PDF",
   "camAlongFollow": "Seguir una página o un PDF",

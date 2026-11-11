@@ -14,11 +14,16 @@ Each kind asks, or doesn't, on its own:
 |---|---|---|
 | A capture of the user's own | Home, a card's ⋮ menu, **Delete** ([library](library.md)) | `capture` |
 | A capture shared with the user | Home, a card's ⋮ menu, **Remove** ([shared captures](shared-captures.md)) | `shared-capture` |
-| One of a capture's files | the event screen's list, **Delete file** ([event screen](event-screen.md)) | `file` |
-| One of a reader's own files | the event screen's **Your files**, Delete ([contributions](contributions.md)) | `contribution` |
+| One of a capture's files | the event screen's list, **Delete file** ([event screen](event-screen.md)); the play-along sidebar's Delete on its row ([Cam](cam.md#deleting-from-the-sidebar)) | `file` |
+| One of a reader's own files | the event screen's **Your files**, Delete ([contributions](contributions.md)); the play-along sidebar's Delete on its row (their takes) | `contribution` |
 
-The file screen's **Delete** never asked and still doesn't (it deletes
-the file and goes back to the list).
+The list and the play-along sidebar (beside the Text view, in Cam, on
+the file screen) delete a file through the same code
+([`file_delete.dart`](../tabcam_app/lib/screens/file_delete.dart),
+`deleteFile`), so they ask, or don't, as one: Don't ask again ticked in
+the sidebar holds in the list too, and the other way round. The file
+screen's own **Delete** (its app bar's) never asked and still doesn't
+(it deletes the file and goes back to the list).
 
 ## Don't ask again
 
@@ -31,9 +36,12 @@ the file and goes back to the list).
   `deleteconfirms` meta file, `{"skip": ["file", …]}`; letters and digits
   only, since on the apps it names a file and the store refuses anything
   else), not synced: each device asks until it's told not to.
-- On the web the library's meta files are kept in memory, like its
-  captures ([library](library.md)), so there the choice lasts until the
-  tab is reloaded or closed; after that every kind asks again.
+- On the web it's kept in the browser's localStorage, as every device
+  setting is ([library](library.md#device-settings)), so it lasts
+  reloads and closing the tab; only where the browser refuses storage (a
+  private window, say) does it last only until the tab is reloaded.
+  Signing out or deleting the account keeps it, as on the apps: it's the
+  device's, not the account's.
 
 ## Ask before deleting
 
@@ -56,8 +64,8 @@ Cam's untaken pages) aren't either.
 
 ## Tests
 
-`test/delete_confirm_test.dart`: the meta name is one the apps' store
-takes (and the file test runs on a store that refuses any other, as the
+`test/delete_confirm_test.dart` (and `test/meta_names_test.dart` for
+every meta name): the meta name is one the apps' store takes (and the file test runs on a store that refuses any other, as the
 apps' does); the checkbox shows, unticked; ticked and cancelled nothing
 is deleted and it asks again; ticked and confirmed the file is deleted,
 the next file's delete doesn't ask, and the setting is read back from the
