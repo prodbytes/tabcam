@@ -71,7 +71,7 @@ review notes ([app stores](app-stores.md)).
   average time), and **Auto-pass** turns the tab there the next time
   through.
 - [Dictionary](dictionary.md): a book icon at the top of every file
-  viewer and Cam opens a search in a sidebar on the right: a chord shows
+  viewer, Cam and Home opens a search in a sidebar on the right: a chord shows
   its notes and voicings as chord diagrams, a scale its notes on the
   fretboard (both worked out on the device); anything else is searched
   on YouTube. Its Rotate button makes it a panel under the screen, the

@@ -8,7 +8,8 @@ nothing leaves it, and no server is involved.
 
 - **Metronome** (a stopwatch icon, `Icons.av_timer`) in the app bar of
   every capture ([event screen](event-screen.md), all its views), every
-  file screen and [Cam](cam.md), right after **Dictionary**; in the
+  file screen, [Cam](cam.md) and Home's captures
+  ([navigation](navigation.md)), right after **Dictionary**; in the
   primary colour while its sidebar shows. On a phone's Text view it's in
   the **More** menu (⋮), with Dictionary. The button shows and hides the
   sidebar.
@@ -22,9 +23,11 @@ nothing leaves it, and no server is involved.
   ([`SidebarWidths`](../tabcam_app/lib/screens/sidebar_widths.dart),
   `metronome`).
 - Open on one screen, it's open on the next (app-wide,
-  `MetronomeState`), and keeps playing there. It **stops** when its
-  sidebar is closed (its close button, or the app bar's button), and when
-  the user leaves for a screen that has no metronome (Home, Profile).
+  `MetronomeState`), and keeps playing there: from Home into a capture
+  and back. It **stops** when its sidebar is closed (its close button, or
+  the app bar's button), and when the user leaves for a place that has no
+  metronome: Home's Capture and Profile tabs, where its sidebar doesn't
+  show (still open, it shows again, stopped, back on Home).
 - In Cam, closing it gives the keys back to the tab, as the dictionary
   does.
 
@@ -96,3 +99,15 @@ and louder for accents:
   - Start plays and lights the beats in turn, and Stop stops it;
   - the close button stops it;
   - leaving the screens that have it stops it.
+- **On Home** (`tabcam_app/test/home_sidebars_test.dart`, with the
+  dictionary):
+  - Dictionary and Metronome are in Home's app bar and open their
+    sidebars at the right of the captures, above the navigation bar; the
+    search still works beside them, and both buttons hide them again;
+  - Capture and Profile show neither button nor sidebar, and stop the
+    metronome; back on Home both sidebars show again;
+  - it plays on from Home into a capture and back;
+  - the dictionary turned is a panel under the captures, above the
+    navigation bar;
+  - a small phone (320 × 568), with captures and with none, overflows
+    nothing with both sidebars open, at the side or turned.

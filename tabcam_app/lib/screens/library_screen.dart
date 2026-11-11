@@ -317,12 +317,34 @@ Future<void> openEvent(
   );
 }
 
+/// [child] in the middle of its room, scrolling where it doesn't fit (a
+/// small phone with the dictionary's or the metronome's sidebar beside
+/// Home, or the dictionary's panel under it).
+class _Centered extends StatelessWidget {
+  const _Centered({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, box) => SingleChildScrollView(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minWidth: box.maxWidth,
+          minHeight: box.maxHeight,
+        ),
+        child: Center(child: child),
+      ),
+    ),
+  );
+}
+
 /// Signed in, while the first pass brings the user's captures.
 class _Loading extends StatelessWidget {
   const _Loading();
 
   @override
-  Widget build(BuildContext context) => Center(
+  Widget build(BuildContext context) => _Centered(
     child: Column(
       key: const Key('library-loading'),
       mainAxisSize: MainAxisSize.min,
@@ -345,7 +367,7 @@ class _LoadFailed extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return Center(
+    return _Centered(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
@@ -381,7 +403,7 @@ class _Empty extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
-    return Center(
+    return _Centered(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
@@ -525,69 +547,75 @@ class _EventCard extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 8, 0, 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          event.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: smaller(theme.textTheme.titleSmall),
-                        ),
-                        Text(
-                          [
-                            if (event.artist.isNotEmpty) event.artist,
-                            if (event.hideImages)
-                              l10n.homeLibraryImagesHidden
-                            else if (pages > 0 || pages == event.pages.length)
-                              l10n.homePages(pages),
-                            if (videos > 0) l10n.homeVideos(videos),
-                            if (audio > 0) l10n.homeAudio(audio),
-                            if (pdfs > 0) l10n.homePdfs(pdfs),
-                            if (links > 0) l10n.homeLinks(links),
-                            if (event.tabText != null) l10n.homeLibraryText,
-                            if (event.sharedBy case final owner?)
-                              l10n.homeLibrarySharedBy(owner),
-                          ].join(' · '),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: smaller(theme.textTheme.bodySmall),
-                        ),
-                      ],
+              // Squeezed (a phone with the dictionary's and the metronome's
+              // sidebars beside Home), the card drops its ⋮ rather than
+              // overflow; long-press still renames it.
+              child: LayoutBuilder(
+                builder: (context, box) => Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            event.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: smaller(theme.textTheme.titleSmall),
+                          ),
+                          Text(
+                            [
+                              if (event.artist.isNotEmpty) event.artist,
+                              if (event.hideImages)
+                                l10n.homeLibraryImagesHidden
+                              else if (pages > 0 || pages == event.pages.length)
+                                l10n.homePages(pages),
+                              if (videos > 0) l10n.homeVideos(videos),
+                              if (audio > 0) l10n.homeAudio(audio),
+                              if (pdfs > 0) l10n.homePdfs(pdfs),
+                              if (links > 0) l10n.homeLinks(links),
+                              if (event.tabText != null) l10n.homeLibraryText,
+                              if (event.sharedBy case final owner?)
+                                l10n.homeLibrarySharedBy(owner),
+                            ].join(' · '),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: smaller(theme.textTheme.bodySmall),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  PopupMenuButton<_CardAction>(
-                    tooltip: l10n.homeLibraryMore,
-                    iconSize: narrow ? 20 : null,
-                    onSelected: (a) => _action(context, a),
-                    itemBuilder: (_) => [
-                      if (!event.readOnly)
-                        PopupMenuItem(
-                          value: _CardAction.rename,
-                          child: Text(l10n.homeLibraryRename),
-                        ),
-                      PopupMenuItem(
-                        value: _CardAction.share,
-                        child: Text(l10n.homeLibraryShare),
+                    if (box.maxWidth >= _menuRoom)
+                      PopupMenuButton<_CardAction>(
+                        tooltip: l10n.homeLibraryMore,
+                        iconSize: narrow ? 20 : null,
+                        onSelected: (a) => _action(context, a),
+                        itemBuilder: (_) => [
+                          if (!event.readOnly)
+                            PopupMenuItem(
+                              value: _CardAction.rename,
+                              child: Text(l10n.homeLibraryRename),
+                            ),
+                          PopupMenuItem(
+                            value: _CardAction.share,
+                            child: Text(l10n.homeLibraryShare),
+                          ),
+                          PopupMenuItem(
+                            value: _CardAction.clone,
+                            child: Text(l10n.homeLibraryClone),
+                          ),
+                          PopupMenuItem(
+                            value: _CardAction.delete,
+                            child: Text(
+                              event.isShared
+                                  ? l10n.homeLibraryRemove
+                                  : l10n.homeLibraryDelete,
+                            ),
+                          ),
+                        ],
                       ),
-                      PopupMenuItem(
-                        value: _CardAction.clone,
-                        child: Text(l10n.homeLibraryClone),
-                      ),
-                      PopupMenuItem(
-                        value: _CardAction.delete,
-                        child: Text(
-                          event.isShared
-                              ? l10n.homeLibraryRemove
-                              : l10n.homeLibraryDelete,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
@@ -595,6 +623,10 @@ class _EventCard extends StatelessWidget {
       ),
     );
   }
+
+  /// The narrowest the card's line under its preview is with its ⋮: the
+  /// button (48) and a little of the title.
+  static const _menuRoom = 72.0;
 }
 
 void _snack(BuildContext context, String message) =>

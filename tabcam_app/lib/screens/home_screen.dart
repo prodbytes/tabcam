@@ -14,11 +14,13 @@ import '../capture/page_source.dart';
 import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
 import '../cloud/public_capture.dart';
+import '../dictionary/dictionary_sidebar.dart';
 import '../export/capture_link.dart';
 import '../export/incoming_links.dart';
 import '../import/tab_page_import.dart';
 import '../library/capture_event.dart';
 import '../library/library.dart';
+import '../metronome/metronome.dart';
 import 'account_panel.dart';
 import 'install_links.dart';
 import 'premium_card.dart' show storeApp;
@@ -52,7 +54,8 @@ enum HomeTab {
 /// Home (the events), Capture (Scan, and Add for uploads) and Profile (the
 /// account and About), each with its name in the app bar. A capture lands
 /// on Home, at the top of the list, outlined, with Open in the message
-/// that confirms it.
+/// that confirms it. On Home, the app bar has Dictionary and Metronome,
+/// their sidebars beside the captures, as on every file viewer.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
@@ -346,6 +349,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final onHome = _tab == HomeTab.home;
     return Scaffold(
       appBar: AppBar(
         centerTitle: false,
@@ -353,21 +357,38 @@ class _HomeScreenState extends State<HomeScreen> {
           _tab.title(context.l10n),
           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
         ),
+        // On Home, as on every file viewer: the dictionary's and the
+        // metronome's sidebars, beside the captures. Two icons leave the
+        // title room on any phone, so there's no More menu.
+        actions: [
+          if (onHome) ...const [DictionaryButton(), MetronomeButton()],
+        ],
       ),
       body: Column(
         children: [
           if ((widget.sync, widget.ocr) case (final sync?, final ocr?)
-              when _tab == HomeTab.home)
+              when onHome)
             _PremiumBanner(sync: sync, ocr: ocr),
           Expanded(
             child: IndexedStack(
               index: _tab.index,
               children: [
-                LibraryView(
-                  library: library,
-                  sync: widget.sync,
-                  ocr: widget.ocr,
-                  fresh: _fresh,
+                // The sidebars, open, at the right of the captures (the
+                // banner across the top, the navigation bar under them). On
+                // Capture and Profile they're hidden (still open, to show
+                // again on Home) and the metronome stops, as when leaving a
+                // screen that has it.
+                MetronomeBeside(
+                  enabled: onHome,
+                  child: DictionaryBeside(
+                    enabled: onHome,
+                    child: LibraryView(
+                      library: library,
+                      sync: widget.sync,
+                      ocr: widget.ocr,
+                      fresh: _fresh,
+                    ),
+                  ),
                 ),
                 // Files dragged onto Capture make a new capture of them.
                 FileDropArea(

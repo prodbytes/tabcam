@@ -1,4 +1,4 @@
-/// The metronome: a button at the top of every file viewer and Cam, and
+/// The metronome: a button at the top of every file viewer, Cam and Home, and
 /// the sidebar it opens on the right of the screen, as the dictionary
 /// does: the tempo (BPM), the time signature, the beats lit as they click,
 /// and Start / Stop.
@@ -250,12 +250,22 @@ class MetronomeButton extends StatelessWidget {
 /// ([SplitHandle]) to make it wider or narrower, the same on every screen
 /// ([SidebarWidths]); a double tap puts its default width back.
 class MetronomeBeside extends StatefulWidget {
-  const MetronomeBeside({super.key, required this.child, this.onClosed});
+  const MetronomeBeside({
+    super.key,
+    required this.child,
+    this.onClosed,
+    this.enabled = true,
+  });
 
   final Widget child;
 
   /// After the sidebar's own close button hides it.
   final VoidCallback? onClosed;
+
+  /// False, [child] shows alone, and this isn't a place that has the
+  /// metronome (Home's tabs other than Home): with none left, it stops, as
+  /// when the screen goes. [child] keeps its state either way.
+  final bool enabled;
 
   /// The narrowest [child] gets when the sidebar is dragged wider.
   static const minChild = 96.0;
@@ -273,12 +283,19 @@ class _MetronomeBesideState extends State<MetronomeBeside> {
   @override
   void initState() {
     super.initState();
-    _state.attach();
+    if (widget.enabled) _state.attach();
+  }
+
+  @override
+  void didUpdateWidget(MetronomeBeside old) {
+    super.didUpdateWidget(old);
+    if (widget.enabled == old.enabled) return;
+    widget.enabled ? _state.attach() : _state.detach();
   }
 
   @override
   void dispose() {
-    _state.detach();
+    if (widget.enabled) _state.detach();
     super.dispose();
   }
 
@@ -302,7 +319,7 @@ class _MetronomeBesideState extends State<MetronomeBeside> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(child: widget.child),
-              if (_state.open) ...[
+              if (_state.open && widget.enabled) ...[
                 SplitHandle(
                   key: const Key('metronome-split'),
                   axis: Axis.horizontal,
