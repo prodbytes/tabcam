@@ -14,10 +14,11 @@ import 'video_edit.dart';
 /// In the browser, videos are edited by playing them through again.
 VideoEditing? webVideoEditor() => WebVideoEditor();
 
-/// Edits a video in the browser: the kept part plays, hidden, into a
-/// canvas (its frames) and a Web Audio graph (its sound, or the new
-/// track's, through a gain at its volume), and the browser's MediaRecorder
-/// records both, so it takes as long as the kept part is. The result is
+/// Renders a [RenderPlan] in the browser: the kept part plays, hidden,
+/// into a canvas (its frames) and a Web Audio graph (its own sound and
+/// the song lane's clips, each through a gain at its volume), and the
+/// browser's MediaRecorder records both, so it takes as long as the kept
+/// part is. The result is
 /// MP4 (H.264 and AAC) where the browser records it (Chrome, Edge,
 /// Safari), WebM where it can't (Firefox) ([videoRecorderTypes]). The
 /// sound alone is mixed offline, faster than it plays
@@ -89,13 +90,16 @@ class WebVideoEditor implements VideoEditing {
   );
 
   @override
-  Future<XFile> apply(
-    XFile video,
-    VideoEdit edit, {
-    bool soundOnly = false,
+  Future<XFile> render(
+    RenderPlan plan, {
     void Function(double done)? onProgress,
   }) async {
-    if (soundOnly) return _sound(video, edit, onProgress);
+    final video =
+        plan.input ?? (throw ArgumentError('A render needs its video'));
+    if (plan.song?.clips.any((c) => c.speed != 1) ?? false) {
+      throw UnsupportedError('A song at another speed can\'t be rendered yet');
+    }
+    if (!plan.video) return _sound(video, plan, onProgress);
     final urls = <String>[];
     final elements = <web.HTMLMediaElement>[];
     web.AudioContext? audio;
@@ -103,8 +107,8 @@ class WebVideoEditor implements VideoEditing {
     try {
       final player = await _load(video, urls, elements) as web.HTMLVideoElement;
       final total = player.duration;
-      final start = edit.start.inMilliseconds / 1000;
-      final end = (edit.end.inMilliseconds / 1000).clamp(start, total);
+      final start = plan.start.inMilliseconds / 1000;
+      final end = (plan.end.inMilliseconds / 1000).clamp(start, total);
       final clip = end - start;
       if (clip <= 0) throw StateError('nothing to keep');
 
@@ -116,13 +120,14 @@ class WebVideoEditor implements VideoEditing {
       final context = canvas.getContext('2d') as web.CanvasRenderingContext2D;
       final stream = canvas.captureStream(30);
 
-      // The sound: the video's own, or the track's, through a Web Audio
-      // graph into the recorded stream (not the speakers).
+      // The sound: the video's own and the song lane's, each through a
+      // gain at its volume, into the recorded stream (not the speakers).
+      final own = plan.own;
+      final song = plan.song;
       web.HTMLMediaElement? track;
-      ({Duration gap, Duration from, Duration to})? span;
-      if (edit.sound != EditSound.none) {
+      if (own != null || song != null) {
         final graph = audio = web.AudioContext();
-        // Started by Save's tap; without one the browser keeps it
+        // Started by Download's tap; without one the browser keeps it
         // suspended, and the recorder would wait for sound for ever.
         await graph.resume().toDart.timeout(
           const Duration(seconds: 2),
@@ -132,36 +137,27 @@ class WebVideoEditor implements VideoEditing {
           throw StateError('the browser won\'t play sound here');
         }
         final sink = graph.createMediaStreamDestination();
-        web.HTMLMediaElement source;
-        if (edit.sound == EditSound.track) {
-          final file = edit.track;
-          if (file == null) {
-            throw ArgumentError('A new sound track needs a file');
+        void route(web.HTMLMediaElement element, double volume) {
+          final input = graph.createMediaElementSource(element);
+          if (volume != 1) {
+            final gain = graph.createGain()..gain.value = volume;
+            input.connect(gain);
+            gain.connect(sink);
+          } else {
+            input.connect(sink);
           }
-          source = track = await _load(file, urls, elements);
-          player.muted = true;
-          // The part of it that fits, as the edit says; worked out here
-          // when the edit doesn't know the track's length.
-          span =
-              edit.trackPart ??
-              trackSpan(
-                Duration(milliseconds: (clip * 1000).round()),
-                Duration(milliseconds: (track.duration * 1000).round()),
-                edit.offset,
-                trackStart: edit.trackStart,
-                trackEnd: edit.trackEnd,
-              );
-        } else {
-          source = player;
         }
-        final input = graph.createMediaElementSource(source);
-        if (track != null && edit.trackVolume != 1) {
-          // The track as loud as the edit says.
-          final gain = graph.createGain()..gain.value = edit.trackVolume;
-          input.connect(gain);
-          gain.connect(sink);
+
+        if (own != null) {
+          route(player, own.volume);
         } else {
-          input.connect(sink);
+          player.muted = true;
+        }
+        if (song != null) {
+          final file =
+              song.file ?? (throw ArgumentError('A song lane needs a file'));
+          track = await _load(file, urls, elements);
+          route(track, song.volume);
         }
         for (final t in sink.stream.getAudioTracks().toDart) {
           stream.addTrack(t);
@@ -190,19 +186,28 @@ class WebVideoEditor implements VideoEditing {
 
       await _seek(player, start);
       final done = Completer<void>();
-      var trackStarted = false;
+      var songPlaying = false;
       void tick(num _) {
         if (done.isCompleted) return;
         context.drawImage(player, 0, 0, canvas.width, canvas.height);
         final at = player.currentTime;
         onProgress?.call(((at - start) / clip).clamp(0, 1).toDouble());
-        if (track != null && span != null && !trackStarted) {
-          // The track starts once the video reaches where it comes in.
-          final gap = span.gap.inMilliseconds / 1000;
-          if (at - start >= gap) {
-            trackStarted = true;
-            track.currentTime = span.from.inMilliseconds / 1000;
-            unawaited(track.play().toDart);
+        if (track != null && song != null) {
+          // The song plays in its clips, from where the plan says, and
+          // pauses between them.
+          final into = songAtIn(
+            song.clips,
+            Duration(milliseconds: ((at - start) * 1000).round()),
+          );
+          if (into != null && !songPlaying) {
+            songPlaying = true;
+            track.currentTime = into.inMilliseconds / 1000;
+            unawaited(
+              track.play().toDart.then<void>((_) {}, onError: (Object _) {}),
+            );
+          } else if (into == null && songPlaying) {
+            songPlaying = false;
+            track.pause();
           }
         }
         if (at >= end || player.ended) {
@@ -247,25 +252,19 @@ class WebVideoEditor implements VideoEditing {
     }
   }
 
-  /// The edit's sound alone: the video's own (the kept part) or the
-  /// track's (silence first, then the part that fits), decoded and mixed
-  /// offline as long as the kept part, then made AAC in an M4A (or a WAV)
-  /// as [_soundWay] says.
+  /// The plan's sound alone: the video's own (the kept part) and the song
+  /// lane's clips (silence between them), decoded and mixed offline as
+  /// long as the kept part, then made AAC in an M4A (or a WAV) as
+  /// [_soundWay] says.
   Future<XFile> _sound(
     XFile video,
-    VideoEdit edit,
+    RenderPlan plan,
     void Function(double done)? onProgress,
   ) async {
-    final clip = edit.length.inMilliseconds / 1000;
+    final clip = plan.length.inMilliseconds / 1000;
     if (clip <= 0) throw StateError('nothing to keep');
-    final XFile source;
-    switch (edit.sound) {
-      case EditSound.none:
-        throw ArgumentError('A video without sound has no sound to save');
-      case EditSound.original:
-        source = video;
-      case EditSound.track:
-        source = edit.track ?? (throw ArgumentError('No track'));
+    if (plan.own == null && plan.song == null) {
+      throw ArgumentError('A video without sound has no sound to save');
     }
     // Where it'll be recorded as it plays, the context it plays in is
     // started now, while Download's tap still lets it start: reading,
@@ -277,7 +276,7 @@ class WebVideoEditor implements VideoEditing {
       onError: (Object _) {},
     );
     try {
-      return await _mix(source, edit, clip, playing, started, onProgress);
+      return await _mix(video, plan, clip, playing, started, onProgress);
     } finally {
       if (playing != null && playing.state != 'closed') {
         unawaited(
@@ -287,12 +286,12 @@ class WebVideoEditor implements VideoEditing {
     }
   }
 
-  /// [_sound]'s work: [source]'s sound decoded, mixed offline as long as
-  /// the kept part ([clip] seconds), then made AAC in an M4A (or a WAV);
-  /// recorded, if so, in [playing], once [started].
+  /// [_sound]'s work: [video]'s sound and the song's decoded, mixed
+  /// offline as long as the kept part ([clip] seconds), then made AAC in
+  /// an M4A (or a WAV); recorded, if so, in [playing], once [started].
   Future<XFile> _mix(
-    XFile source,
-    VideoEdit edit,
+    XFile video,
+    RenderPlan plan,
     double clip,
     web.AudioContext? playing,
     Future<void>? started,
@@ -300,46 +299,58 @@ class WebVideoEditor implements VideoEditing {
   ) async {
     const rate = _rate;
     final decoder = web.OfflineAudioContext(1.toJS, 1, rate);
-    final bytes = await source.readAsBytes();
-    final buffer = await decoder
-        .decodeAudioData(Uint8List.fromList(bytes).buffer.toJS)
-        .toDart;
-    final channels = buffer.numberOfChannels.clamp(1, 2);
+    Future<web.AudioBuffer> decode(XFile file) async {
+      final bytes = await file.readAsBytes();
+      return decoder
+          .decodeAudioData(Uint8List.fromList(bytes).buffer.toJS)
+          .toDart;
+    }
+
+    final own = plan.own;
+    final song = plan.song;
+    final ownBuffer = own == null ? null : await decode(video);
+    final songBuffer = song == null
+        ? null
+        : await decode(
+            song.file ?? (throw ArgumentError('A song lane needs a file')),
+          );
+    final channels = [
+      ?ownBuffer?.numberOfChannels,
+      ?songBuffer?.numberOfChannels,
+    ].fold<int>(1, max).clamp(1, 2);
     final context = web.OfflineAudioContext(
       channels.toJS,
       (clip * rate).ceil(),
       rate,
     );
-    final player = context.createBufferSource()..buffer = buffer;
-    if (edit.sound == EditSound.track && edit.trackVolume != 1) {
-      // The track as loud as the edit says.
-      final gain = context.createGain()..gain.value = edit.trackVolume;
-      player.connect(gain);
-      gain.connect(context.destination);
-    } else {
-      player.connect(context.destination);
+    void play(
+      web.AudioBuffer buffer,
+      double volume,
+      Duration at,
+      Duration from,
+      Duration length,
+    ) {
+      final player = context.createBufferSource()..buffer = buffer;
+      if (volume != 1) {
+        final gain = context.createGain()..gain.value = volume;
+        player.connect(gain);
+        gain.connect(context.destination);
+      } else {
+        player.connect(context.destination);
+      }
+      player.start(
+        at.inMilliseconds / 1000,
+        from.inMilliseconds / 1000,
+        length.inMilliseconds / 1000,
+      );
     }
-    if (edit.sound == EditSound.original) {
-      player.start(0, edit.start.inMilliseconds / 1000, clip);
-    } else {
-      // The part of it that fits, as the edit says; worked out here when
-      // the edit doesn't know the track's length.
-      final span =
-          edit.trackPart ??
-          trackSpan(
-            edit.length,
-            Duration(milliseconds: (buffer.duration * 1000).round()),
-            edit.offset,
-            trackStart: edit.trackStart,
-            trackEnd: edit.trackEnd,
-          );
-      // None of it falls in the kept part: silence.
-      if (span != null) {
-        player.start(
-          span.gap.inMilliseconds / 1000,
-          span.from.inMilliseconds / 1000,
-          (span.to - span.from).inMilliseconds / 1000,
-        );
+
+    if (own != null && ownBuffer != null) {
+      play(ownBuffer, own.volume, Duration.zero, plan.start, plan.length);
+    }
+    if (song != null && songBuffer != null) {
+      for (final c in song.clips) {
+        play(songBuffer, song.volume, c.at, c.from, c.to - c.from);
       }
     }
     final mixed = await context.startRendering().toDart;

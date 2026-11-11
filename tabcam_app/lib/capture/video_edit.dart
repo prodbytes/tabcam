@@ -3,118 +3,22 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
-import '../library/page_edit.dart';
 import 'edit_formats.dart';
+import 'render_plan.dart';
 import 'web_video_editor_stub.dart'
     if (dart.library.js_interop) 'web_video_editor.dart';
 
-export '../library/page_edit.dart' show EditSound, trackSpan;
+export '../library/page_edit.dart' show EditSound, PageEdit, trackSpan;
 export 'edit_formats.dart' show EditFormat, EditFormats;
+export 'render_plan.dart';
 
-/// A basic edit of a video: the part kept, from [start] to [end], and its
-/// sound: kept, removed, or replaced by [track], a recording or sound
-/// file, of which the part from [trackStart] to [trackEnd] is used,
-/// starting [offset] after the kept part's start (before it, when
-/// negative), cut to fit the kept part ([trackPart]), at [trackVolume].
-@immutable
-class VideoEdit {
-  const VideoEdit({
-    required this.start,
-    required this.end,
-    this.sound = EditSound.original,
-    this.track,
-    this.trackLength = Duration.zero,
-    this.trackStart = Duration.zero,
-    this.trackEnd,
-    this.offset = Duration.zero,
-    this.trackVolume = 1,
-  });
-
-  final Duration start;
-  final Duration end;
-  final EditSound sound;
-
-  /// The new sound track's file (a path on Android and iOS, bytes on the
-  /// web), when [sound] is [EditSound.track].
-  final XFile? track;
-
-  /// How long [track] is (zero: not known, and nothing of it can be fitted).
-  final Duration trackLength;
-
-  /// The part of [track] used: from [trackStart] to [trackEnd] (null: to
-  /// its end).
-  final Duration trackStart;
-  final Duration? trackEnd;
-
-  /// Where the used part of [track] starts, from the kept part's start:
-  /// positive, it starts that much after the video; negative, that much
-  /// more of its start is cut.
-  final Duration offset;
-
-  /// How loud [track] goes in: a gain from 0 (silent) to 1 (as it is).
-  final double trackVolume;
-
-  /// How long the kept part is.
-  Duration get length => end - start;
-
-  /// The part of [track] that goes into the kept part, as [trackSpan]
-  /// fits it: null when none does (or the track's length isn't known).
-  ({Duration gap, Duration from, Duration to})? get trackPart => trackSpan(
-    length,
-    trackLength,
-    offset,
-    trackStart: trackStart,
-    trackEnd: trackEnd,
-  );
-
-  /// The shortest part that can be kept.
-  static const minLength = Duration(milliseconds: 500);
-
-  /// Whether the edit changes anything of a video [duration] long.
-  bool changes(Duration duration) =>
-      start > Duration.zero || end < duration || sound != EditSound.original;
-
-  @override
-  bool operator ==(Object other) =>
-      other is VideoEdit &&
-      other.start == start &&
-      other.end == end &&
-      other.sound == sound &&
-      other.track == track &&
-      other.trackLength == trackLength &&
-      other.trackStart == trackStart &&
-      other.trackEnd == trackEnd &&
-      other.offset == offset &&
-      other.trackVolume == trackVolume;
-
-  @override
-  int get hashCode => Object.hash(
-    start,
-    end,
-    sound,
-    track,
-    trackLength,
-    trackStart,
-    trackEnd,
-    offset,
-    trackVolume,
-  );
-
-  @override
-  String toString() =>
-      'VideoEdit($start–$end, $sound, $track $trackStart–$trackEnd, $offset, '
-      '$trackVolume)';
-}
-
-/// Applies a [VideoEdit] to a video file, on the device.
+/// Renders an edit's [RenderPlan] to a file, on the device.
 abstract class VideoEditing {
-  /// [video] with [edit] applied: a new file (the original is left as it
-  /// is); with [soundOnly], its sound alone, as edited (a sound file).
-  /// [onProgress] gets how much is done, 0 to 1, where that's known.
-  Future<XFile> apply(
-    XFile video,
-    VideoEdit edit, {
-    bool soundOnly = false,
+  /// [plan] made into a new file (its input is left as it is): the video
+  /// as edited, or its sound alone. [onProgress] gets how much is done, 0
+  /// to 1, where that's known.
+  Future<XFile> render(
+    RenderPlan plan, {
     void Function(double done)? onProgress,
   });
 
@@ -123,7 +27,7 @@ abstract class VideoEditing {
   /// the player knows.
   Future<Duration?> length(XFile file);
 
-  /// The formats [apply] makes here: the video's (MP4, or WebM in a
+  /// The formats [render] makes here: the video's (MP4, or WebM in a
   /// browser that can't record MP4) and the sound's alone (M4A, or WAV in
   /// a browser that can't make AAC).
   Future<EditFormats> formats();
@@ -153,18 +57,36 @@ abstract final class VideoEditor {
   }
 }
 
-/// Edits a video with the platform's own tools (Media3 Transformer on
+/// Renders a plan with the platform's own tools (Media3 Transformer on
 /// Android, AVFoundation on iOS) over the method channel
-/// `tabcam/video_edit`, method `edit`: the input and output paths, the
-/// part kept in ms, the sound (`original`, `none`, `track`) and, for a
-/// track, its path and the part of it that goes in (`gapMs` of silence,
-/// then the track from `fromMs` to `toMs`, at `trackVolume`, a gain from
-/// 0 to 1); `video` false for the sound alone (an `.m4a`). It replies with
-/// the output path.
+/// `tabcam/video_edit`, method `render`, its arguments the plan's
+/// ([RenderPlan.toChannel]): the input and output paths, whether the
+/// picture goes in (`video`), the part kept in ms, the video's own sound
+/// (`own`: its `volume`, 0 to 1; left out: none) and the song lane
+/// (`song`: its `path`, `volume` and `clips`, each `atMs` in the output,
+/// the song from `fromMs` to `toMs`, at `speed`), and `job`, which the
+/// platform's `progress` calls back name, with `done` (0 to 1), every
+/// quarter of a second while it renders. It replies with the output
+/// path.
 class ChannelVideoEditor implements VideoEditing {
   const ChannelVideoEditor();
 
   static const channel = MethodChannel('tabcam/video_edit');
+
+  /// The renders under way, by job, and what their progress goes to.
+  static final _progress = <int, void Function(double done)>{};
+  static var _jobs = 0;
+  static var _listening = false;
+
+  static Future<Object?> _onCall(MethodCall call) async {
+    if (call.method != 'progress') return null;
+    final args = call.arguments;
+    if (args is! Map) return null;
+    final done = args['done'];
+    if (done is! num || !done.isFinite) return null;
+    _progress[args['job']]?.call(done.clamp(0, 1).toDouble());
+    return null;
+  }
 
   /// The platforms' players know every file's length.
   @override
@@ -175,42 +97,48 @@ class ChannelVideoEditor implements VideoEditing {
   Future<EditFormats> formats() async => EditFormats.standard;
 
   @override
-  Future<XFile> apply(
-    XFile video,
-    VideoEdit edit, {
-    bool soundOnly = false,
+  Future<XFile> render(
+    RenderPlan plan, {
     void Function(double done)? onProgress,
   }) async {
-    if (soundOnly && edit.sound == EditSound.none) {
+    if (plan.input == null) throw ArgumentError('A render needs its video');
+    if (!plan.video && !plan.hasSound) {
       throw ArgumentError('A video without sound has no sound to save');
     }
-    final track = edit.sound == EditSound.track ? edit.track : null;
-    if (edit.sound == EditSound.track && track == null) {
-      throw ArgumentError('A new sound track needs a file');
+    if (plan.song case final song? when song.file == null) {
+      throw ArgumentError('A song lane needs a file');
     }
-    final part = track == null ? null : edit.trackPart;
     final dir = await getTemporaryDirectory();
-    final format = soundOnly ? EditFormat.m4a : EditFormat.mp4;
+    final format = plan.video ? EditFormat.mp4 : EditFormat.m4a;
     final output =
         '${dir.path}/edit-${DateTime.now().millisecondsSinceEpoch}'
         '.${format.extension}';
-    final path = await channel.invokeMethod<String>('edit', {
-      'input': video.path,
-      'output': output,
-      'startMs': edit.start.inMilliseconds,
-      'endMs': edit.end.inMilliseconds,
-      'sound': edit.sound.name,
-      'video': !soundOnly,
-      'track': track?.path,
-      if (track != null) 'trackVolume': PageEdit.volume(edit.trackVolume),
-      if (part != null) ...{
-        'gapMs': part.gap.inMilliseconds,
-        'fromMs': part.from.inMilliseconds,
-        'toMs': part.to.inMilliseconds,
-      },
-    });
-    if (path == null) throw StateError('The video was not written');
-    return XFile(path, mimeType: format.mimeType);
+    int? job;
+    if (onProgress != null) {
+      if (!_listening) {
+        _listening = true;
+        channel.setMethodCallHandler(_onCall);
+      }
+      job = ++_jobs;
+      _progress[job] = onProgress;
+    }
+    try {
+      final path = await channel.invokeMethod<String>(
+        'render',
+        plan.toChannel(output: output, job: job),
+      );
+      if (path == null) throw StateError('The video was not written');
+      return XFile(path, mimeType: format.mimeType);
+    } finally {
+      _progress.remove(job);
+    }
+  }
+
+  /// Lets go of the progress calls (tests swap the channel's handler).
+  @visibleForTesting
+  static void reset() {
+    _listening = false;
+    _progress.clear();
   }
 }
 

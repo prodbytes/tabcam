@@ -137,17 +137,29 @@ void main() {
     expect(await editor.formats(), EditFormats.standard);
     // A file the browser recorded says it's endless; the editor finds
     // out its length.
-    expect(
-      (await editor.length(video))!.inMilliseconds / 1000,
-      closeTo(3, 0.6),
-    );
+    final videoLength = (await editor.length(video))!;
+    expect(videoLength.inMilliseconds / 1000, closeTo(3, 0.6));
+
+    /// The plan Download renders of [edit], the video itself as its
+    /// track, if any.
+    RenderPlan plan(PageEdit edit, {RenderKind kind = RenderKind.video}) =>
+        RenderPlan.of(
+          edit,
+          input: video,
+          duration: videoLength,
+          inputExtension: 'webm',
+          songFile: video,
+          songLength: videoLength,
+          kind: kind,
+        );
 
     final progress = <double>[];
-    final trimmed = await editor.apply(
-      video,
-      const VideoEdit(
-        start: Duration(milliseconds: 500),
-        end: Duration(milliseconds: 2000),
+    final trimmed = await editor.render(
+      plan(
+        const PageEdit(
+          start: Duration(milliseconds: 500),
+          end: Duration(milliseconds: 2000),
+        ),
       ),
       onProgress: progress.add,
     );
@@ -162,12 +174,13 @@ void main() {
     // An MP4 the recorder wrote says its length, so it seeks.
     expect(keptKnown, isTrue);
 
-    final silent = await editor.apply(
-      video,
-      const VideoEdit(
-        start: Duration.zero,
-        end: Duration(milliseconds: 1000),
-        sound: EditSound.none,
+    final silent = await editor.render(
+      plan(
+        const PageEdit(
+          start: Duration.zero,
+          end: Duration(milliseconds: 1000),
+          sound: EditSound.none,
+        ),
       ),
     );
     expect(silent.name, 'edit.mp4');
@@ -175,14 +188,14 @@ void main() {
     expect(silentLength, closeTo(1, 0.5));
     expect(silentSound, isFalse);
 
-    final tracked = await editor.apply(
-      video,
-      VideoEdit(
-        start: Duration.zero,
-        end: const Duration(milliseconds: 1000),
-        sound: EditSound.track,
-        track: video,
-        offset: const Duration(milliseconds: -500),
+    final tracked = await editor.render(
+      plan(
+        const PageEdit(
+          start: Duration.zero,
+          end: Duration(milliseconds: 1000),
+          sound: EditSound.track,
+          offset: Duration(milliseconds: -500),
+        ),
       ),
     );
     final (trackedLength, trackedSound) = await probe(tracked);
@@ -203,14 +216,27 @@ void main() {
       }
     }
 
-    final clock = Stopwatch()..start();
-    final own = await editor.apply(
-      video,
-      const VideoEdit(
-        start: Duration(milliseconds: 500),
-        end: Duration(milliseconds: 2500),
+    /// The track's sound alone, starting a second in, at [volume].
+    RenderPlan gappedAt(double volume) => plan(
+      PageEdit(
+        start: Duration.zero,
+        end: const Duration(milliseconds: 2000),
+        sound: EditSound.track,
+        offset: const Duration(milliseconds: 1000),
+        trackVolume: volume,
       ),
-      soundOnly: true,
+      kind: RenderKind.sound,
+    );
+
+    final clock = Stopwatch()..start();
+    final own = await editor.render(
+      plan(
+        const PageEdit(
+          start: Duration(milliseconds: 500),
+          end: Duration(milliseconds: 2500),
+        ),
+        kind: RenderKind.sound,
+      ),
     );
     expect(clock.elapsedMilliseconds, lessThan(1500));
     expect(own.mimeType, 'audio/mp4');
@@ -219,17 +245,7 @@ void main() {
     final ownSound = await decode(own);
     expect(ownSound.duration, closeTo(2, 0.01));
 
-    final gapped = await editor.apply(
-      video,
-      VideoEdit(
-        start: Duration.zero,
-        end: const Duration(milliseconds: 2000),
-        sound: EditSound.track,
-        track: video,
-        offset: const Duration(milliseconds: 1000),
-      ),
-      soundOnly: true,
-    );
+    final gapped = await editor.render(gappedAt(1));
     final gappedSound = await decode(gapped);
     expect(gapped.name, 'sound.m4a');
     expect(gappedSound.duration, closeTo(2, 0.01));
@@ -249,44 +265,21 @@ void main() {
     expect(loudest(gappedSound, 1.02, 1.9), greaterThan(0.1));
 
     // At half its volume, the track is half as loud.
-    final quieter = await decode(
-      await editor.apply(
-        video,
-        VideoEdit(
-          start: Duration.zero,
-          end: const Duration(milliseconds: 2000),
-          sound: EditSound.track,
-          track: video,
-          offset: const Duration(milliseconds: 1000),
-          trackVolume: 0.5,
-        ),
-        soundOnly: true,
-      ),
-    );
+    final quieter = await decode(await editor.render(gappedAt(0.5)));
     expect(
       loudest(quieter, 1.2, 1.9),
       closeTo(loudest(gappedSound, 1.2, 1.9) / 2, 0.02),
     );
     // Recorded as it plays, where WebCodecs can't make AAC (an older
     // Safari): an M4A about as long, the track at its volume too.
-    VideoEdit gappedAt(double volume) => VideoEdit(
-      start: Duration.zero,
-      end: const Duration(milliseconds: 2000),
-      sound: EditSound.track,
-      track: video,
-      offset: const Duration(milliseconds: 1000),
-      trackVolume: volume,
-    );
     final recorder = WebVideoEditor(soundWay: WebSoundWay.recorder);
-    final recorded = await recorder.apply(video, gappedAt(1), soundOnly: true);
+    final recorded = await recorder.render(gappedAt(1));
     expect(recorded.mimeType, 'audio/mp4');
     expect(recorded.name, 'sound.m4a');
     expect((await firstBox(recorded)).$1, 'ftyp');
     final recordedSound = await decode(recorded);
     expect(recordedSound.duration, closeTo(2, 0.3));
-    final recordedQuieter = await decode(
-      await recorder.apply(video, gappedAt(0.5), soundOnly: true),
-    );
+    final recordedQuieter = await decode(await recorder.render(gappedAt(0.5)));
     expect(
       loudest(recordedQuieter, 1.3, 1.7) / loudest(recordedSound, 1.3, 1.7),
       closeTo(0.5, 0.1),
@@ -297,14 +290,14 @@ void main() {
     final unplayed = await WebVideoEditor(
       soundWay: WebSoundWay.recorder,
       soundContext: () => web.AudioContext()..close(),
-    ).apply(video, gappedAt(0.5), soundOnly: true);
+    ).render(gappedAt(0.5));
     expect(unplayed.mimeType, 'audio/wav');
     expect(unplayed.name, 'sound.wav');
     expect((await decode(unplayed)).duration, closeTo(2, 0.001));
 
     // Where AAC can't be made at all (Firefox): a WAV, as long exactly.
     final wav = await WebVideoEditor(soundWay: WebSoundWay.wav)
-        .apply(video, gappedAt(0.5), soundOnly: true);
+        .render(gappedAt(0.5));
     expect(wav.mimeType, 'audio/wav');
     expect(wav.name, 'sound.wav');
     final wavSound = await decode(wav);
@@ -314,20 +307,74 @@ void main() {
       closeTo(loudest(gappedSound, 1.2, 1.9) / 2, 0.02),
     );
 
+    // The song lane in pieces (as later steps make it): each clip where
+    // it comes in, silence between them.
+    final pieces = await decode(
+      await WebVideoEditor(soundWay: WebSoundWay.wav).render(
+        RenderPlan(
+          start: Duration.zero,
+          end: const Duration(milliseconds: 2000),
+          input: video,
+          video: false,
+          format: EditFormat.wav,
+          own: null,
+          song: SongLane(
+            file: video,
+            clips: const [
+              SongClip(
+                at: Duration(milliseconds: 200),
+                from: Duration(milliseconds: 500),
+                to: Duration(milliseconds: 800),
+              ),
+              SongClip(
+                at: Duration(milliseconds: 1200),
+                from: Duration(milliseconds: 500),
+                to: Duration(milliseconds: 800),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    expect(loudest(pieces, 0, 0.18), lessThan(0.01));
+    expect(loudest(pieces, 0.25, 0.45), greaterThan(0.1));
+    expect(loudest(pieces, 0.55, 1.15), lessThan(0.01));
+    expect(loudest(pieces, 1.25, 1.45), greaterThan(0.1));
+    expect(loudest(pieces, 1.55, 1.95), lessThan(0.01));
+
+    // With the video, a track trimmed at its end stops there: the rest
+    // of the video is silent.
+    final cut = await decode(
+      await editor.render(
+        plan(
+          const PageEdit(
+            start: Duration.zero,
+            end: Duration(milliseconds: 1500),
+            sound: EditSound.track,
+            trackStart: Duration(milliseconds: 500),
+            trackEnd: Duration(milliseconds: 900),
+          ),
+        ),
+      ),
+    );
+    expect(loudest(cut, 0.1, 0.3), greaterThan(0.05));
+    expect(loudest(cut, 0.75, 1.3), lessThan(0.02));
+
     // And with the video, it goes through the gain too: its recorded
     // sound is about half as loud as the same edit's at 100%.
-    VideoEdit withVideo(double volume) => VideoEdit(
-      start: Duration.zero,
-      end: const Duration(milliseconds: 1500),
-      sound: EditSound.track,
-      track: video,
-      trackVolume: volume,
+    RenderPlan withVideo(double volume) => plan(
+      PageEdit(
+        start: Duration.zero,
+        end: const Duration(milliseconds: 1500),
+        sound: EditSound.track,
+        trackVolume: volume,
+      ),
     );
-    final quietVideo = await editor.apply(video, withVideo(0.5));
+    final quietVideo = await editor.render(withVideo(0.5));
     expect(quietVideo.name, 'edit.mp4');
     final (_, quietVideoSound) = await probe(quietVideo);
     expect(quietVideoSound, isTrue);
-    final loudVideo = await editor.apply(video, withVideo(1));
+    final loudVideo = await editor.render(withVideo(1));
     // Past the recorder's start and before its end; compressed, so
     // within a margin.
     final ratio =

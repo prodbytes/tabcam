@@ -38,6 +38,9 @@ class PageEdit {
     this.extra = const {},
   });
 
+  /// The shortest part of a video that can be kept.
+  static const minLength = Duration(milliseconds: 500);
+
   /// The keys [toJson] writes, and [fromJson] reads (and checks).
   static const Set<String> knownKeys = {
     'startMs',
