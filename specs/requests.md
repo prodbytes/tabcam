@@ -2531,7 +2531,7 @@ spec.
    [contributions](contributions.md),
    [shared captures](shared-captures.md) and
    [navigation](navigation.md#profile).
-5. **When editing a recording, add a volume control to the side of the
+4. **When editing a recording, add a volume control to the side of the
    audio track. Left side.** The video edit screen's track bar (Sound:
    New track) now has the track's volume at its left, on the same row,
    the bar narrowing to make room: a speaker over the level (`100%`);
@@ -2558,7 +2558,7 @@ spec.
    text; and, in Chrome, the web editor's track at half volume is half
    as loud, in the sound alone and in the recorded video. See
    [Video edit](video-edit.md).
-6. **In the cam screen make the "1" key be a shortcut to toggle
+5. **In the cam screen make the "1" key be a shortcut to toggle
    recording on/off.** In Cam, **1** (on the top row or the keypad)
    now presses Rec / Stop as the button does: it starts a take (and the
    sidebar's song with it) or stops it and saves the take, with the
@@ -2574,7 +2574,7 @@ spec.
    while a take plays back, and with the sidebar showing it starts the
    song with the take. See [Cam](cam.md#rec-key).
 
-7. **In the mini player sidebar, to the right of files, add the delete
+6. **In the mini player sidebar, to the right of files, add the delete
    button. So I can delete anything, especially the takes.** Each file
    in the play-along sidebar (in Cam, beside the Text view and on the
    file screen) now ends in a **Delete** button (a bin, its tooltip
