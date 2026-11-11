@@ -101,7 +101,9 @@ its **Not now** leaving. With Premium it opens the camera view
   keeps the take. Back on the capture, its takes show: the file list
   (not the Text view), scrolled to its end.
   <a id="new-take-key"></a>The **.** key (on the main keyboard or the
-  keypad's decimal key) starts **a new take** while recording: the
+  keypad's decimal key, also where that key types "," as on Brazilian,
+  German and most European layouts, matched by where it is on the
+  keyboard; the comma key itself turns the tab) starts **a new take** while recording: the
   take is stopped and saved as Stop saves it (added, named, its phrase
   passes kept, the message shown), and once it's saved, the next take
   starts as Rec starts one. The song in the sidebar (when it shows)
@@ -115,7 +117,9 @@ its **Not now** leaving. With Premium it opens the camera view
   pressed, and with Ctrl, ⌘ or Alt it turns the tab as any key. While
   the take is saved for the next, Rec, Play, the camera switch, 1, .
   and going back do nothing, so a second press can't start or stop
-  another take (the camera records one at a time). If the next take
+  another take (the camera records one at a time). Nor do Rec, 1 and .
+  while a take starts (until the camera records), so pressing again at
+  once doesn't start a second recording alongside it. If the next take
   can't start, the one saved is kept and a message says why.
 - <a id="the-tab-in-the-take"></a>**The tab is in the take**: each
   neckline shows along the bottom of the video while it showed in Cam,

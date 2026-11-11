@@ -138,6 +138,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   /// Saving a take to start the next at once ([_nextTake], the . key).
   bool _nextTaking = false;
 
+  /// Starting a take ([_rec]): until it records, Rec, 1 and . wait.
+  bool _starting = false;
+
   /// The last take, and when its necklines showed.
   EventPage? _take;
   List<(Duration, int)> _takeMarks = const [];
@@ -456,7 +459,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     }
     // .: Stop and Rec again, a new take (not recording, Rec); a key down,
     // and nothing while one is saved for the next.
-    if (_alone(event, _nextTakeKeys)) {
+    if (_alone(event, _nextTakeKeys, _nextTakePhysical)) {
       if (event is KeyDownEvent && _canRec) unawaited(_nextTake());
       return KeyEventResult.handled;
     }
@@ -493,12 +496,22 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     LogicalKeyboardKey.numpadDecimal,
   };
 
-  /// Whether [event] is one of [keys] pressed alone (with Ctrl, ⌘ or Alt
-  /// it's another shortcut's, such as the browser's first tab, and turns
-  /// the tab as any key).
-  static bool _alone(KeyEvent event, Set<LogicalKeyboardKey> keys) {
+  /// The keypad's decimal key, whatever it types: on the web, where it
+  /// types "," (Brazilian, German and most European layouts), its logical
+  /// key is the comma, not [LogicalKeyboardKey.numpadDecimal].
+  static final _nextTakePhysical = {PhysicalKeyboardKey.numpadDecimal};
+
+  /// Whether [event] is one of [keys] (or of the [physical] keys) pressed
+  /// alone (with Ctrl, ⌘ or Alt it's another shortcut's, such as the
+  /// browser's first tab, and turns the tab as any key).
+  static bool _alone(
+    KeyEvent event,
+    Set<LogicalKeyboardKey> keys, [
+    Set<PhysicalKeyboardKey> physical = const {},
+  ]) {
     final keyboard = HardwareKeyboard.instance;
-    return keys.contains(event.logicalKey) &&
+    return (keys.contains(event.logicalKey) ||
+            physical.contains(event.physicalKey)) &&
         !keyboard.isControlPressed &&
         !keyboard.isMetaPressed &&
         !keyboard.isAltPressed;
@@ -518,7 +531,20 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   Future<void> _rec() async {
     if (_recording) return _stopRecording();
     final controller = _controller;
-    if (controller == null || _saving) return;
+    // A second press while the first starts would start another recording
+    // alongside it (the camera records one at a time).
+    if (controller == null || _saving || _starting) return;
+    _starting = true;
+    try {
+      await _startRecording(controller);
+    } finally {
+      _starting = false;
+    }
+  }
+
+  /// Starts recording a take with [controller], and the sidebar's song with
+  /// it.
+  Future<void> _startRecording(CameraController controller) async {
     await _stopPlaying();
     try {
       if (controller.value.isStreamingImages) {

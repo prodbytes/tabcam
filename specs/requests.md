@@ -2481,4 +2481,10 @@ spec.
    . too, held it doesn't repeat, Ctrl + . turns the tab, presses while
    saving are ignored, a failed start keeps the take, and with a song in
    the sidebar it stops at once and restarts from its start with the new
-   take. See [Cam](cam.md#new-take-key).
+   take. Review fixes: Rec, 1 and . pressed again while a take starts
+   (before the camera records) are ignored, where they started a second
+   recording alongside the first (on the web, a corrupt take); and the
+   keypad's decimal key is matched by where it is too, so on the web,
+   where it types "," (Brazilian, German and most European layouts) and
+   its logical key is the comma, it's still a new take, not a turn of
+   the tab. Tests for both. See [Cam](cam.md#new-take-key).

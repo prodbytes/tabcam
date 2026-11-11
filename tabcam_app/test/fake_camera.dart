@@ -108,8 +108,14 @@ class FakeCameraPlatform extends CameraPlatform
   /// What the next recording fails with, if it's to (then it's cleared).
   Object? startError;
 
+  /// Recordings asked to start; while set, they start once it completes.
+  int starts = 0;
+  Completer<void>? startHold;
+
   @override
   Future<void> startVideoCapturing(VideoCaptureOptions options) async {
+    starts++;
+    await startHold?.future;
     if (startError case final error?) {
       startError = null;
       throw error;
