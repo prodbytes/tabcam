@@ -566,6 +566,62 @@ void main() {
     expect(find.text('3 / 3'), findsOneWidget);
   });
 
+  testWidgets('a tab with a neckline twice: the take just recorded plays '
+      'back on the copy that showed, and leaves Cam there', (tester) async {
+    // The third staff the same as the second (the log keeps its text once).
+    const twice = '''
+e|--0--3--|
+B|--1--1--|
+
+e|--5--7--|
+B|--5--8--|
+
+e|--5--7--|
+B|--5--8--|
+''';
+    final (library, id) = await capture(tester, tab: twice);
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          burn: (take, _) async => take,
+        ),
+      ),
+    );
+    await frames(tester);
+    await tester.tap(find.byTooltip('Rec (1)'));
+    await frames(tester);
+    await tester.tap(find.byTooltip('Next line'));
+    await tester.pump();
+    await tester.tap(find.byTooltip('Next line'));
+    await tester.pump();
+    expect(find.text('3 / 3'), findsOneWidget);
+    await tester.tap(_camStop);
+    await until(tester, () => recReady(tester));
+    final log = library.byId(id)!.pages.last.takeLog!;
+    expect(log.tab!.lines, hasLength(2));
+    expect([for (final (_, line) in log.tab!.marks) line], [0, 1, 1]);
+
+    // Back to the first line, then Play from the take's end.
+    await tester.tap(find.byTooltip('Previous line'));
+    await tester.pump();
+    await tester.tap(find.byTooltip('Previous line'));
+    await tester.pump();
+    expect(find.text('1 / 3'), findsOneWidget);
+    video.position = const Duration(minutes: 1);
+    await tester.tap(find.byTooltip('Play'));
+    await frames(tester);
+    expect(video.playing, hasLength(1));
+    expect(find.text('3 / 3'), findsOneWidget);
+    await tester.tap(_camStop);
+    await frames(tester);
+    expect(find.text('3 / 3'), findsOneWidget);
+  });
+
   testWidgets('recording comes first: on iOS the take\'s sound is set up '
       'when Cam opens and again as a take starts; while it records, head '
       'gestures look less often and sync waits; the take plays back mixed '

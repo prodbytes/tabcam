@@ -178,8 +178,15 @@ its **Not now** leaving. With Premium it opens the camera view
   where they turned while it was recorded, as its
   [log](#what-a-take-keeps) says (at their times in the file, the lag
   added): a neckline the capture's tab no longer has (its text changed
-  since) shows as it was, without the "2 / 5" under it. Stopped, the tab
-  stays at the last neckline shown that the capture's tab has. A take
+  since) shows as it was, without the "2 / 5" under it. A tab with the
+  same neckline twice (a repeated riff): the take just recorded turns
+  to the copy that showed (Cam keeps its lines while it's open, as long
+  as the tab doesn't change); one recorded before, whose log keeps the
+  text once, to the copy nearest the neckline before, and of two as
+  near, the one the way it was going (forward at first), its first
+  neckline the first copy (`TakeTab.placesIn`, a guess where the take
+  went back and forth over the copies). Stopped, the tab stays at the
+  last neckline shown that the capture's tab has. A take
   from before takes had a log turns none (its tab is in its picture).
 - **Tab** (beside Rec and Play: **Hide tab** with the tab showing,
   **Show tab** with it hidden) hides the tab along the bottom, leaving
@@ -605,8 +612,10 @@ with it. For now Play uses it (above). A few KB for a ten-minute take:
   read from a made-up MP4's index, the log saved with a take (burned,
   not burned, the web's recorder's lag, the web's camera alone), kept
   through a rename and a restart, a clone's naming its copy's song,
-  and Play of an older take after Cam reopens turning its necklines,
-  lag and all (`test/take_log_test.dart`, `test/play_along_test.dart`,
+  Play of an older take after Cam reopens turning its necklines, lag
+  and all, and Play of a take on a tab with a neckline twice turning to
+  the copy that showed (the one just recorded exactly, an older one by
+  the nearest copy) (`test/take_log_test.dart`, `test/play_along_test.dart`,
   in Chrome `test/web_take_recorder_test.dart`). **Not yet on a phone**:
   how big the log grows, and that saving it costs no dropped frames.
 

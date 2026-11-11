@@ -181,10 +181,17 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   VideoPlayerController? _player;
 
   /// The log of the take playing back ([_play]), its necklines turning as
-  /// it says; and the neckline it shows when that isn't one of the
+  /// it says, and for each of its marks the capture's line it is
+  /// ([_placesFor]); and the neckline it shows when that isn't one of the
   /// capture's (its tab changed since).
   TakeLog? _playedLog;
+  List<int> _playedPlaces = const [];
   String? _playedLine;
+
+  /// The take recorded last here and, for each of its log's marks, the
+  /// capture's line it was ([TakeTab.placesOf]): a tab with a line twice
+  /// plays it back on the copy that showed.
+  (String, List<int>)? _recordedPlaces;
 
   /// Head gestures: what watches for them (null where it can't), and
   /// whether the user has them on.
@@ -909,6 +916,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         takePhrases(marks, skip: unpassed),
       );
       _take = page;
+      if (tab != null) {
+        _recordedPlaces = (page.id, TakeTab.placesOf(_lines, marks));
+      }
       if (mounted) _snack(l10n.camSaved(name));
     } on Object catch (e, stack) {
       debugPrint('TabCam: cam: $e\n$stack');
@@ -987,12 +997,34 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       setState(() {
         _player = player;
         _playedLog = take.takeLog;
+        _playedPlaces = _placesFor(take);
       });
       await player.play();
     } on Object catch (e) {
       debugPrint('TabCam: cam: $e');
       if (mounted) _snack(context.l10n.textViewCantPlay);
     }
+  }
+
+  /// For each mark of [take]'s log, the capture's line it is: exact for
+  /// the take recorded here last while the tab is as it was, else from
+  /// the texts ([TakeTab.placesIn]).
+  List<int> _placesFor(EventPage take) {
+    final tab = take.takeLog?.tab;
+    if (tab == null) return const [];
+    if (_recordedPlaces case (final id, final places)
+        when id == take.id && places.length == tab.marks.length) {
+      var same = true;
+      for (final (i, (_, line)) in tab.marks.indexed) {
+        final place = places[i];
+        if (place >= _lines.length || _lines[place] != tab.lines[line]) {
+          same = false;
+          break;
+        }
+      }
+      if (same) return places;
+    }
+    return tab.placesIn(_lines);
   }
 
   /// While a take plays: the neckline that showed then, as its log says
@@ -1003,15 +1035,18 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     if (player == null) return;
     final v = player.value;
     final at = v.position;
-    if (_playedLog?.lineAt(at) case final text?) {
-      final line = _lines.indexOf(text);
-      if (line >= 0 && (line != _line || _playedLine != null)) {
-        setState(() {
-          _line = line;
-          _playedLine = null;
-        });
-      } else if (line < 0 && text != _playedLine) {
-        setState(() => _playedLine = text);
+    if (_playedLog case TakeLog(:final tab?, :final lagMs)) {
+      if (tab.markAt(at, lagMs) case final mark?) {
+        final text = tab.lines[tab.marks[mark].$2];
+        final line = mark < _playedPlaces.length ? _playedPlaces[mark] : -1;
+        if (line >= 0 && (line != _line || _playedLine != null)) {
+          setState(() {
+            _line = line;
+            _playedLine = null;
+          });
+        } else if (line < 0 && text != _playedLine) {
+          setState(() => _playedLine = text);
+        }
       }
     }
     if (v.isCompleted ||
@@ -1025,6 +1060,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     if (player == null) return;
     player.removeListener(_follow);
     _playedLog = null;
+    _playedPlaces = const [];
     if (mounted) {
       setState(() {
         _player = null;

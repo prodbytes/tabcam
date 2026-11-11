@@ -195,8 +195,7 @@ class TakeTab {
     final lines = <String>[];
     final index = <String, int>{};
     final kept = <(int, int)>[];
-    for (final (at, line) in marks.take(maxMarks)) {
-      if (line < 0 || line >= all.length) continue;
+    for (final (at, line) in _kept(all, marks)) {
       final text = all[line];
       final i = index[text] ??= (lines..add(text)).length - 1;
       kept.add((max(0, at.inMilliseconds), i));
@@ -206,6 +205,18 @@ class TakeTab {
       marks: List.unmodifiable(kept),
     );
   }
+
+  /// The [marks] (into [all]) that [TakeTab.of] keeps, in order.
+  static Iterable<(Duration, int)> _kept(
+    List<String> all,
+    List<(Duration, int)> marks,
+  ) => marks.take(maxMarks).where((m) => m.$2 >= 0 && m.$2 < all.length);
+
+  /// For each mark [TakeTab.of] keeps from [marks], the line of [all] it
+  /// came from: what [placesIn] gives exactly, while Cam still has them.
+  static List<int> placesOf(List<String> all, List<(Duration, int)> marks) => [
+    for (final (_, line) in _kept(all, marks)) line,
+  ];
 
   /// The most marks kept: an hour of turning every second, a few tens of
   /// KB.
@@ -231,6 +242,14 @@ class TakeTab {
   /// The neckline showing at [position] in the file, [lagMs] after the
   /// take's clock; null with no marks.
   String? lineAt(Duration position, int lagMs) {
+    final mark = markAt(position, lagMs);
+    return mark == null ? null : lines[marks[mark].$2];
+  }
+
+  /// Which of [marks] is the one at [position] in the file, [lagMs] after
+  /// the take's clock: the last at or before it (before the first, the
+  /// first); null with no marks.
+  int? markAt(Duration position, int lagMs) {
     if (marks.isEmpty) return null;
     // The last turn at or before it (they're in time order); before the
     // first, the first.
@@ -246,7 +265,42 @@ class TakeTab {
         hi = mid - 1;
       }
     }
-    return lines[marks[found].$2];
+    return found;
+  }
+
+  /// For each of [marks], the line of [all] (a capture's necklines now)
+  /// with its text; -1 where none has it (the tab changed since). A text
+  /// in [all] more than once: the copy nearest the line before, and of
+  /// two as near, the one the way the take was going (forward at first,
+  /// as a take mostly moves on); for the first mark, the first copy. The
+  /// exact lines are only known while Cam has them ([placesOf]); this is
+  /// the guess for a take recorded before.
+  List<int> placesIn(List<String> all) {
+    final copies = <String, List<int>>{};
+    for (final (i, text) in all.indexed) {
+      (copies[text] ??= []).add(i);
+    }
+    final places = <int>[];
+    int? before;
+    var back = false;
+    for (final (_, line) in marks) {
+      final found = copies[lines[line]];
+      if (found == null) {
+        places.add(-1);
+        continue;
+      }
+      var place = found.first;
+      if (before != null) {
+        for (final i in found) {
+          final (d, best) = ((i - before).abs(), (place - before).abs());
+          if (d < best || (d == best && !back)) place = i;
+        }
+        if (place != before) back = place < before;
+      }
+      places.add(place);
+      before = place;
+    }
+    return places;
   }
 
   Map<String, Object?> toJson() => {

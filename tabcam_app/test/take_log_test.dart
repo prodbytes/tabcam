@@ -104,6 +104,60 @@ void main() {
       expect(const TakeLog(burned: false).lineAt(Duration.zero), isNull);
     });
 
+    test('played back in Cam, a neckline the tab has twice is the copy '
+        'that showed: exact for the take recorded there, else the copy '
+        'nearest the line before (of two as near, the way it went)', () {
+      // Forward through the riff, its third line the first's text.
+      final forward = [
+        (_ms(0), 0),
+        (_ms(1000), 1),
+        (_ms(2000), 2),
+        (_ms(3000), 3),
+      ];
+      final tab = TakeTab.of(_riff, forward);
+      expect(tab.marks.map((m) => m.$2), [0, 1, 0, 2]);
+      expect(TakeTab.placesOf(_riff, forward), [0, 1, 2, 3]);
+      expect(tab.placesIn(_riff), [0, 1, 2, 3]);
+      expect(tab.markAt(_ms(2500), 0), 2);
+      expect(tab.markAt(_ms(2500), 600), 1);
+
+      // Back from the last: the third is nearer than the first; from the
+      // second, both are as near, and the take was going back.
+      final back = [
+        (_ms(0), 3),
+        (_ms(1000), 2),
+        (_ms(2000), 1),
+        (_ms(3000), 0),
+      ];
+      expect(TakeTab.placesOf(_riff, back), [3, 2, 1, 0]);
+      expect(TakeTab.of(_riff, back).placesIn(_riff), [3, 2, 1, 0]);
+      // Only a guess: back to the second, then forward again, it can't
+      // tell, and keeps going back; Cam's own lines are exact.
+      final turned = [
+        (_ms(0), 3),
+        (_ms(1000), 2),
+        (_ms(2000), 1),
+        (_ms(3000), 2),
+        (_ms(4000), 3),
+      ];
+      expect(TakeTab.placesOf(_riff, turned), [3, 2, 1, 2, 3]);
+      expect(TakeTab.of(_riff, turned).placesIn(_riff), [3, 2, 1, 0, 3]);
+
+      // Out of range or past the most kept: left out of both alike.
+      final odd = [(_ms(0), 3), (_ms(500), 9), (_ms(1000), 2), (_ms(1500), -1)];
+      expect(TakeTab.placesOf(_riff, odd), [3, 2]);
+      expect(TakeTab.of(_riff, odd).placesIn(_riff), [3, 2]);
+
+      // A neckline the capture's tab no longer has: -1; the next is
+      // placed from the one before it.
+      final changed = [_riff[0], _riff[1], _riff[0]];
+      expect(tab.placesIn(changed), [0, 1, 2, -1]);
+      expect(
+        const TakeTab(lines: [], marks: []).markAt(Duration.zero, 0),
+        isNull,
+      );
+    });
+
     test('are at most a few thousand', () {
       final tab = TakeTab.of(_riff, [
         for (var i = 0; i < TakeTab.maxMarks + 10; i++) (_ms(i * 100), i % 2),
