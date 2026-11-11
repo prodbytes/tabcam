@@ -63,7 +63,8 @@ class Place {
 
   /// A capture's link's parameters (`CaptureLink`): gone from the address
   /// once an event is open (the link's, or another the user moved to), so
-  /// its key isn't left there.
+  /// its key isn't left there, and kept only while the link the page
+  /// opened at is still the address's ([PlaceMemory]).
   static const Set<String> linkKeys = {'c', 'k', 'f'};
 
   /// The place [address] holds (no event, Home, if it holds none). Bad
@@ -92,15 +93,15 @@ class Place {
 
   /// [address] (the page's: its path, the app's base `/app/`, and its
   /// fragment kept) with this place in it. Other parameters stay, except
-  /// a sign-in email's code, used at launch, and, with an event open, a
-  /// capture's link.
-  Uri inAddress(Uri address) {
+  /// a sign-in email's code, used at launch, and a capture's link, unless
+  /// [keepLink] and no event is open.
+  Uri inAddress(Uri address, {bool keepLink = false}) {
     final query = {...address.queryParameters}
       ..removeWhere(
         (key, _) =>
             addressKeys.contains(key) ||
             key == 'signin-code' ||
-            (eventId != null && linkKeys.contains(key)),
+            ((eventId != null || !keepLink) && linkKeys.contains(key)),
       );
     if (tab case final tab? when tab != 'home') query['tab'] = tab;
     if (eventId case final id?) {
@@ -126,6 +127,13 @@ abstract class PlaceAddress {
 
   /// Shows [address] in place of [current], adding no history entry.
   void replace(Uri address);
+
+  /// Called each time the browser's Back (or Forward) moves to another
+  /// history entry. Flutter's history handling then shows that entry's
+  /// address, which may be an older place's, or the link the page was
+  /// opened at, before it closes what's open (a route the place doesn't
+  /// follow, Cam say, changes nothing in it).
+  set onMoved(VoidCallback? moved);
 }
 
 /// The [Place] of a library's app: read once at launch, written (soon
@@ -146,7 +154,25 @@ class PlaceMemory {
 
   /// The web page's address, which keeps the place there (null in the
   /// apps: the meta file does). Tests set their own.
-  static PlaceAddress? address = platform.browserAddress();
+  static PlaceAddress? get address => _address;
+  static set address(PlaceAddress? address) {
+    _address = address;
+    _keepLink = null;
+  }
+
+  static PlaceAddress? _address = platform.browserAddress();
+
+  /// Whether a capture's link stays in the address: only the one the page
+  /// was opened at (by the link: the parameters in it at first sight),
+  /// until an event opens. A link the browser's Back brings back later
+  /// (Flutter's history handling restores the first entry's address)
+  /// goes, so its key isn't shown again and a reload doesn't follow it.
+  static bool? _keepLink;
+  static bool _linkKept(PlaceAddress address) => _keepLink ??= address
+      .current
+      .queryParameters
+      .keys
+      .any(Place.linkKeys.contains);
 
   final Library library;
   Place _place = const Place();
@@ -157,6 +183,8 @@ class PlaceMemory {
   /// Where the user was last time (on the web, the address's place).
   Future<Place> load() async {
     if (address case final address?) {
+      _linkKept(address);
+      address.onMoved = _write;
       return _place = Place.fromAddress(address.current);
     }
     try {
@@ -173,17 +201,25 @@ class PlaceMemory {
   /// The user moved: [change] applied, saved half a second later.
   void update(Place Function(Place place) change) {
     _place = change(_place);
-    if (address case final address?) {
-      // Moves that change nothing (the event screen remembers its view at
-      // every rebuild) leave the address alone: browsers limit how often
-      // it may change.
-      final current = address.current;
-      final next = _place.inAddress(current);
-      if (next != current) address.replace(next);
+    if (address != null) {
+      _write();
       return;
     }
     _save?.cancel();
     _save = Timer(const Duration(milliseconds: 500), flush);
+  }
+
+  /// Writes the place in the web page's address.
+  void _write() {
+    final address = PlaceMemory.address;
+    if (address == null) return;
+    if (_place.eventId != null) _keepLink = false;
+    // Moves that change nothing (the event screen remembers its view at
+    // every rebuild) leave the address alone: browsers limit how often it
+    // may change.
+    final current = address.current;
+    final next = _place.inAddress(current, keepLink: _linkKept(address));
+    if (next != current) address.replace(next);
   }
 
   Future<void> flush() async {

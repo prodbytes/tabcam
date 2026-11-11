@@ -27,6 +27,16 @@ class FakeAddress implements PlaceAddress {
   @override
   void replace(Uri address) => current = address;
 
+  @override
+  VoidCallback? onMoved;
+
+  /// The browser's Back: Flutter's history handling shows [url] (the
+  /// first entry's address), then the app hears of it.
+  void back(String url) {
+    current = Uri.parse(url);
+    onMoved?.call();
+  }
+
   Map<String, String> get query => current.queryParameters;
 }
 
@@ -98,11 +108,16 @@ void main() {
         'open': 'abc123',
         'view': 'files',
       });
-      // Still waiting for the link (nothing open): it stays.
+      // Still waiting for the link the page opened at (nothing open): it
+      // stays.
+      expect(
+        const Place(tab: 'profile')
+            .inAddress(link, keepLink: true)
+            .queryParameters,
+        {'c': 'abc123', 'k': 'secret', 'f': 'p1', 'tab': 'profile'},
+      );
+      // Any other time, it goes.
       expect(const Place(tab: 'profile').inAddress(link).queryParameters, {
-        'c': 'abc123',
-        'k': 'secret',
-        'f': 'p1',
         'tab': 'profile',
       });
     });
@@ -117,6 +132,45 @@ void main() {
       );
       final file = Place.fromAddress(Uri.parse('$app?open=abc123&file=../x'));
       expect((file.eventId, file.fileId), ('abc123', null));
+    });
+  });
+
+  group("on the web, a capture's link in the address", () {
+    late PlaceMemory memory;
+    late FakeAddress address;
+
+    setUp(() {
+      memory = PlaceMemory.of(
+        Library(PlatformEventStore(), null, (_) async => null),
+      );
+    });
+    tearDown(() => PlaceMemory.address = null);
+
+    test('the one the page opened at stays until a capture opens', () async {
+      final link = '$app?c=abc123&k=secret';
+      PlaceMemory.address = address = FakeAddress(link);
+      await memory.load();
+      memory.update((p) => p.copyWith(tab: 'profile'));
+      expect(address.query, {'c': 'abc123', 'k': 'secret', 'tab': 'profile'});
+
+      memory.update((p) => p.copyWith(eventId: () => 'abc123'));
+      expect(address.query, {
+        'tab': 'profile',
+        'open': 'abc123',
+        'view': 'files',
+      });
+
+      // Back to Home, the browser's Back showing the link again: it goes.
+      address.back(link);
+      memory.update((p) => p.copyWith(eventId: () => null));
+      expect(address.query, {'tab': 'profile'});
+    });
+
+    test('one the browser\'s Back brings back later goes', () async {
+      PlaceMemory.address = address = FakeAddress(app);
+      await memory.load();
+      address.back('$app?c=abc123&k=secret');
+      expect(address.current.toString(), app);
     });
   });
 
@@ -267,6 +321,60 @@ void main() {
       expect([for (final s in opened) s.eventId], [linked.id]);
       // The link's key isn't left in the address: the capture is.
       expect(address.query, {'open': linked.id, 'view': 'files'});
+
+      // The browser's Back: Flutter shows the address the page opened at,
+      // then closes the capture. The key doesn't come back.
+      address.back('$link&open=${other.id}&view=text');
+      expect(address.query, {'open': linked.id, 'view': 'files'});
+      await tester.pageBack();
+      await frames(tester);
+      expect(find.byType(EventScreen), findsNothing);
+      expect(address.current.toString(), app);
+    });
+
+    testWidgets("Back over a screen the place doesn't follow keeps it", (
+      tester,
+    ) async {
+      final event = await riffEvent(tester);
+      PlaceMemory.address = address = FakeAddress(app);
+      await tester.pumpWidget(TabCamApp(library: library));
+      await settle(tester);
+      await tester.tap(find.text('Made-up riff'));
+      await frames(tester);
+      Navigator.of(tester.element(find.byType(EventScreen)))
+          .push(MaterialPageRoute<void>(builder: (_) => const Scaffold()));
+      await frames(tester);
+
+      // Flutter brings back the first entry's address (Home), then closes
+      // the screen over the capture: the capture is still where the user
+      // is.
+      address.back(app);
+      await tester.binding.handlePopRoute();
+      await frames(tester);
+      expect(find.byType(EventScreen), findsOneWidget);
+      expect(address.query, {'open': event.id, 'view': 'files'});
+    });
+
+    testWidgets('a rotated file is still the one open', (tester) async {
+      final event = await riffEvent(tester, pages: 2);
+      final file = event.pages.first.id;
+      PlaceMemory.address = address = FakeAddress(
+        '$app?open=${event.id}&view=files&file=$file',
+      );
+      await tester.pumpWidget(TabCamApp(library: library));
+      await settle(tester);
+      expect(find.byType(FileScreen), findsOneWidget);
+
+      String now() => library.byId(event.id)!.pages.first.id;
+      await tester.runAsync(() async {
+        await tester.tap(find.byTooltip('Rotate'));
+        for (var i = 0; i < 50 && now() == file; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+        }
+      });
+      await frames(tester);
+      expect(now(), isNot(file));
+      expect(address.query, {'open': event.id, 'view': 'files', 'file': now()});
     });
 
     group('signed in', () {
@@ -347,6 +455,50 @@ void main() {
         expect(find.byType(EventScreen), findsOneWidget);
         expect(find.textContaining('e|--0--2--3--|'), findsWidgets);
         expect(address.query, {'open': id, 'view': 'text'});
+      });
+
+      testWidgets("another tab meanwhile: the capture doesn't open", (
+        tester,
+      ) async {
+        final id = await uploaded(tester);
+        PlaceMemory.address = address = FakeAddress('$app?open=$id&view=text');
+        final hold = Completer<void>();
+        await reload(tester, hold);
+        await settle(tester);
+        await tester.tap(find.text('Profile'));
+        await frames(tester);
+        expect(address.query, {'tab': 'profile'});
+
+        hold.complete();
+        for (var i = 0; i < 4; i++) {
+          await settle(tester);
+        }
+        expect(find.byType(EventScreen), findsNothing);
+        expect(address.query, {'tab': 'profile'});
+      });
+
+      testWidgets("a screen opened over Home meanwhile: it doesn't open", (
+        tester,
+      ) async {
+        final id = await uploaded(tester);
+        PlaceMemory.address = address = FakeAddress('$app?open=$id&view=text');
+        final hold = Completer<void>();
+        await reload(tester, hold);
+        await settle(tester);
+        Navigator.of(tester.element(find.text('Home').first)).push(
+          MaterialPageRoute<void>(
+            builder: (_) => const Scaffold(body: Text('Elsewhere')),
+          ),
+        );
+        await frames(tester);
+
+        hold.complete();
+        for (var i = 0; i < 4; i++) {
+          await settle(tester);
+        }
+        expect(find.byType(EventScreen), findsNothing);
+        expect(find.text('Elsewhere'), findsOneWidget);
+        expect(address.current.toString(), app);
       });
 
       testWidgets('a pass that fails keeps waiting for the next', (

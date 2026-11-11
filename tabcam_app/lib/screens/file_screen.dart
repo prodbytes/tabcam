@@ -15,6 +15,7 @@ import 'link_page.dart';
 import 'mini_player.dart';
 import 'page_image.dart';
 import 'pdf_page.dart';
+import 'place.dart';
 import 'video_edit_screen.dart';
 import 'video_page.dart';
 import 'youtube_link.dart';
@@ -241,7 +242,14 @@ class _FileScreenState extends State<FileScreen> {
       _run(context.l10n.eventCouldntRotate, () async {
         final index = event.pages.indexOf(page);
         final turned = await _library.rotatePage(event, page);
-        if (mounted) setState(() => _pageId = turned.pages[index].id);
+        final id = turned.pages[index].id;
+        // The place names the file by its new ID, for a reload.
+        PlaceMemory.of(_library).update(
+          (p) => p.eventId == widget.eventId && p.fileId == page.id
+              ? p.copyWith(fileId: () => id)
+              : p,
+        );
+        if (mounted) setState(() => _pageId = id);
       });
 
   /// Edits a video (trim, sound): the edit screen over this one, the

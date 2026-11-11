@@ -1,13 +1,16 @@
+import 'dart:js_interop';
+
 import 'package:flutter/foundation.dart';
 import 'package:web/web.dart' as web;
 
 import 'place.dart';
 
 /// The browser's address bar.
-PlaceAddress? browserAddress() => const _BrowserAddress();
+PlaceAddress? browserAddress() => _BrowserAddress();
 
 class _BrowserAddress implements PlaceAddress {
-  const _BrowserAddress();
+  VoidCallback? _moved;
+  bool _listening = false;
 
   @override
   Uri get current => Uri.parse(web.window.location.href);
@@ -23,5 +26,19 @@ class _BrowserAddress implements PlaceAddress {
     } on Object catch (e) {
       debugPrint('TabCam: address not updated: $e');
     }
+  }
+
+  @override
+  set onMoved(VoidCallback? moved) {
+    _moved = moved;
+    if (_listening) return;
+    _listening = true;
+    // Before or after Flutter's own listener, the entry it ends on gets
+    // the place's address: Flutter puts its entry back at the address
+    // shown, and the place is rewritten over the one it brought back.
+    web.window.addEventListener(
+      'popstate',
+      ((web.Event _) => _moved?.call()).toJS,
+    );
   }
 }

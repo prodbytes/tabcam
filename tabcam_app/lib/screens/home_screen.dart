@@ -118,6 +118,23 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Stops waiting for the event [_reopen] waits for.
   VoidCallback? _stopReopen;
 
+  /// The event [_reopen] waits for, if it does.
+  String? _reopening;
+
+  /// The user moved on (another tab, a new capture) while [_reopen]
+  /// waited: it doesn't open over where they are now, and the place
+  /// forgets it.
+  void _cancelReopen() {
+    final id = _reopening;
+    if (id == null) return;
+    _stopReopen?.call();
+    PlaceMemory.of(library).update(
+      (p) => p.eventId == id
+          ? p.copyWith(eventId: () => null, text: false, fileId: () => null)
+          : p,
+    );
+  }
+
   /// Opens the event [place] names, on its view (and its file): at once
   /// if it's here, else once signed in and the first sync pass brings it
   /// (on the web, the library is only in memory: a reload brings it down
@@ -133,6 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
       sync?.removeListener(check);
       widget.auth?.removeListener(check);
       _stopReopen = null;
+      _reopening = null;
     }
 
     check = () {
@@ -144,6 +162,12 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       if (!library.loaded) return;
       if (library.byId(id) case final event?) {
+        // Something else opened over Home meanwhile (the camera for a new
+        // capture, a page opened from Home): the user moved on.
+        if (ModalRoute.isCurrentOf(context) == false) {
+          _cancelReopen();
+          return;
+        }
         stop();
         unawaited(
           openEvent(
@@ -175,6 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     _stopReopen?.call();
     _stopReopen = stop;
+    _reopening = id;
     library.addListener(check);
     sync?.addListener(check);
     widget.auth?.addListener(check);
@@ -328,6 +353,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     if (event == null || !mounted) return;
+    _cancelReopen();
     PlaceMemory.of(library).update((p) => p.copyWith(tab: HomeTab.home.name));
     setState(() {
       _tab = HomeTab.home;
@@ -473,6 +499,9 @@ class _HomeScreenState extends State<HomeScreen> {
               widget.sync?.profiles?.refresh();
             }
             setState(() => _tab = tab);
+            // On a tab, nothing is open over it: a capture a reload still
+            // waits for doesn't open later.
+            _cancelReopen();
             PlaceMemory.of(library).update((p) => p.copyWith(tab: tab.name));
           },
         ),
