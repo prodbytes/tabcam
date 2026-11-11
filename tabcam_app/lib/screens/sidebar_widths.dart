@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 import '../library/library.dart';
+import '../library/meta_names.dart';
 
 /// How wide the user has dragged each sidebar (the play-along player,
 /// the dictionary, the metronome), app-wide: set on one screen, every screen's sidebar
@@ -38,7 +39,7 @@ class SidebarWidths extends ChangeNotifier {
   static const min = 160.0;
 
   /// The meta file they're kept in.
-  static const metaName = 'sidebars';
+  static const metaName = MetaNames.sidebars;
 
   final Map<String, double> _widths = {};
   final Set<String> _below = {};

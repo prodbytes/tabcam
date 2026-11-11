@@ -12,6 +12,7 @@ import '../l10n/language.dart';
 import '../library/capture_event.dart';
 import '../cloud/cloud_ocr.dart';
 import '../library/library.dart';
+import '../library/meta_names.dart';
 import '../metronome/metronome.dart';
 import '../recognition/necklines.dart';
 import '../screens/mono_font.dart';
@@ -188,7 +189,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   static const autoPassTick = Duration(milliseconds: 100);
 
   /// The device's meta file Cam's settings are kept in.
-  static const metaName = 'cam';
+  static const metaName = MetaNames.cam;
 
   @override
   void initState() {

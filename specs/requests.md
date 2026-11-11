@@ -2654,3 +2654,27 @@ spec.
    where it types "," (Brazilian, German and most European layouts) and
    its logical key is the comma, it's still a new take, not a turn of
    the tab. Tests for both. See [Cam](cam.md#new-take-key).
+10. **(Found in review) Device settings forgotten: on the web at every
+    reload, and the count-in on the phones.** The library's device
+    settings (its metas: Cam's Auto-pass, the count-in, Don't ask again,
+    the sidebars' widths and the dictionary's turn, the language, the
+    metronome) were kept in memory on the web, so every reload forgot
+    them; and on Android, iOS and the desktop the count-in's meta was
+    named `play-along`, which the apps' store refuses (`checkId`: letters
+    and digits only), so it was never kept there. Now every meta name is
+    in one list (`MetaNames`, `lib/library/meta_names.dart`), the
+    count-in's renamed `playalong` (every other name already passed); the
+    web keeps the device settings, and only them, in the browser's
+    localStorage (`tabcam.meta.<name>`), falling back to memory silently
+    where storage is refused; cloud sync's and cloud OCR's state, like
+    the captures and their files, stay in memory there (a reload brings
+    the captures down again). The web's store refuses the names the
+    apps' store does, so a bad one fails in tests. Signing out and
+    deleting the account keep the settings, as on the apps (they're the
+    device's). New tests (`test/meta_names_test.dart`): every name passes
+    `checkId`, the classes' names are the ones listed, `lib/` names metas
+    only through `MetaNames`, the apps' store round-trips each, the web's
+    store keeps the settings across a new store in a fake localStorage
+    and nothing else, falls back to memory when storage throws, and
+    refuses a bad name. See [library](library.md#device-settings),
+    [delete confirmations](delete-confirms.md).

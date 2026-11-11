@@ -31,9 +31,12 @@ the file and goes back to the list).
   `deleteconfirms` meta file, `{"skip": ["file", …]}`; letters and digits
   only, since on the apps it names a file and the store refuses anything
   else), not synced: each device asks until it's told not to.
-- On the web the library's meta files are kept in memory, like its
-  captures ([library](library.md)), so there the choice lasts until the
-  tab is reloaded or closed; after that every kind asks again.
+- On the web it's kept in the browser's localStorage, as every device
+  setting is ([library](library.md#device-settings)), so it lasts
+  reloads and closing the tab; only where the browser refuses storage (a
+  private window, say) does it last only until the tab is reloaded.
+  Signing out or deleting the account keeps it, as on the apps: it's the
+  device's, not the account's.
 
 ## Ask before deleting
 
@@ -56,8 +59,8 @@ Cam's untaken pages) aren't either.
 
 ## Tests
 
-`test/delete_confirm_test.dart`: the meta name is one the apps' store
-takes (and the file test runs on a store that refuses any other, as the
+`test/delete_confirm_test.dart` (and `test/meta_names_test.dart` for
+every meta name): the meta name is one the apps' store takes (and the file test runs on a store that refuses any other, as the
 apps' does); the checkbox shows, unticked; ticked and cancelled nothing
 is deleted and it asks again; ticked and confirmed the file is deleted,
 the next file's delete doesn't ask, and the setting is read back from the
