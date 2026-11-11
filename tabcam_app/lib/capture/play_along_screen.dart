@@ -24,6 +24,7 @@ import 'link_frame.dart';
 import 'play_along_sidebar.dart';
 import 'media.dart';
 import 'take_overlay.dart';
+import 'take_priority.dart';
 import '../screens/messages.dart';
 
 /// Cam: the guitarist records themselves playing along with the capture's
@@ -56,6 +57,14 @@ import '../screens/messages.dart';
 /// list ([BackingTrack]), while the user plays and records; the space bar
 /// pauses and plays it. A PDF tapped there shows on the screen's other
 /// side, to follow the tab on it ([PlayAlong.followed]).
+///
+/// **Recording comes first** ([TakePriority]): the take's sound is
+/// recorded as a musician wants it (on iOS, the audio session set for
+/// recording music and mixed with the song; on the web, the microphone
+/// without voice-call processing, at a high bitrate), set up when Cam
+/// opens rather than as the take starts; while it records, head gestures
+/// look less often, the web draws the tab at the camera's rate, and cloud
+/// sync starts no pass.
 class PlayAlongScreen extends StatefulWidget {
   const PlayAlongScreen({
     super.key,
@@ -297,6 +306,13 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     final controller = CameraController(
       _cameras[index],
       ResolutionPreset.high,
+      // The web's takes have the microphone's sound, opened by the take
+      // recorder without the processing for voice calls (the camera's
+      // would have it).
+      enableAudio: !kIsWeb,
+      // iOS (Android's camera takes none): music wants more than the
+      // encoder's default.
+      audioBitrate: TakePriority.iosAudioBitrate,
       // As the face detector reads them.
       imageFormatGroup: HeadTracking.imageFormat,
     );
@@ -311,12 +327,48 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       await controller.dispose();
       return;
     }
+    await _prepareSound(controller);
+    if (!mounted) {
+      await controller.dispose();
+      return;
+    }
     setState(() => _controller = controller);
     _heads ??= widget.headTracking(controller, _gesture);
     _heads
       ?..camera = controller
       ..active = _headsOn;
     await _stream();
+  }
+
+  /// Gets the take's sound ready before any take, so starting one changes
+  /// nothing the song playing along hears: on iOS, the microphone joins
+  /// the camera now (else it would as the take starts, and its first
+  /// moments are lost) and the audio session is set for it ([TakeAudio]);
+  /// on the web, the take recorder opens the microphone (not waited
+  /// for: the preview shows while the browser asks for it).
+  Future<void> _prepareSound(CameraController controller) async {
+    if (TakeAudio.supported) {
+      try {
+        await controller.prepareForVideoRecording();
+      } on Object catch (e) {
+        debugPrint('TabCam: cam: not prepared for recording: $e');
+      }
+      await TakeAudio.prepare();
+    }
+    if (_recorder case final recorder?) {
+      unawaited(
+        recorder.prepare().catchError(
+          (Object e) => debugPrint('TabCam: cam: take recorder: $e'),
+        ),
+      );
+    }
+  }
+
+  /// Whether a take records: what else runs makes way for it
+  /// ([TakePriority]).
+  void _takeRecording(bool recording) {
+    TakePriority.recording.value = recording;
+    _heads?.recording = recording;
   }
 
   /// With head gestures on, the camera's frames go to [_heads].
@@ -549,6 +601,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       if (controller.value.isStreamingImages) {
         await controller.stopImageStream();
       }
+      // Again, in case something changed it since Cam opened (cheap when
+      // nothing did).
+      await TakeAudio.prepare();
       _recordingTab = false;
       if (_recorder case final recorder?) {
         // The tab recorded in as it goes; failing that, the camera alone.
@@ -579,6 +634,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       ..start();
     _marks = [(Duration.zero, _line)];
     _unpassed = {};
+    _takeRecording(true);
     if (mounted) setState(() => _recording = true);
     // The song in the sidebar's player starts with the take (counting in
     // first, from where it is), unless it plays already.
@@ -629,9 +685,14 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     final marks = _marks;
     final unpassed = _unpassed;
     try {
-      var file = await (_recordingTab
-          ? _recorder!.stop()
-          : controller.stopVideoRecording());
+      XFile file;
+      try {
+        file = await (_recordingTab
+            ? _recorder!.stop()
+            : controller.stopVideoRecording());
+      } finally {
+        _takeRecording(false);
+      }
       unawaited(_stream());
       if (!_recordingTab && _lines.isNotEmpty && TakeOverlay.supported) {
         file = await _burn(file, marks) ?? file;
@@ -702,7 +763,15 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     if (take == null || event == null) return;
     await _track.pause();
     try {
-      final player = await openPlayer(widget.library, event, take);
+      // Mixed with others: else (iOS) it takes that from the app's audio
+      // session, and the next take would stop a song playing in another
+      // app (Android: it would take the audio focus from it).
+      final player = await openPlayer(
+        widget.library,
+        event,
+        take,
+        mixWithOthers: true,
+      );
       if (!mounted) {
         await player.dispose();
         return;
@@ -751,6 +820,8 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
 
   @override
   void dispose() {
+    TakePriority.recording.value = false;
+    if (widget.gate == null) unawaited(TakeAudio.release());
     _autoPassTimer?.cancel();
     _track.removeListener(_trackChanged);
     unawaited(_track.savePhrases());

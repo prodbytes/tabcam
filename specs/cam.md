@@ -51,15 +51,16 @@ its **Not now** leaving. With Premium it opens the camera view
   strongest direction wins. Held away longer, such as looking down at
   the fretboard, it's no gesture, and after 3 s there the head rests
   there. After a gesture, the next waits 0.8 s. On Android and iOS the
-  camera's frames (about 10 a second, while recording too) go to ML
+  camera's frames (about 10 a second; about 7 while a take records, see
+  [Recording comes first](#recording-comes-first)) go to ML
   Kit's face detector (`google_mlkit_face_detection`, accurate mode, on
   the device, the nearest face); its angles never leave the phone.
   - **On the web** ([`web_head_tracker.dart`](../tabcam_app/lib/capture/web_head_tracker.dart),
     behind a conditional import, so Android and iOS don't build it), the
     browser's camera streams no frames to the app, so MediaPipe Tasks
     Vision's **Face Landmarker** reads the camera preview's own `<video>`
-    itself, about 10 times a second, one detection at a time, while
-    recording too (`detectForVideo`, `VIDEO` mode, one face, the facial
+    itself, about 10 times a second (about 7 while a take records), one
+    detection at a time (`detectForVideo`, `VIDEO` mode, one face, the facial
     transformation matrix on). camera_web gives that element no id or
     class, so the tracker looks for a `<video>` playing a live camera
     `MediaStream` (`srcObject`), one inside Flutter's
@@ -84,7 +85,8 @@ its **Not now** leaving. With Premium it opens the camera view
   in the theme's primary colour while it sees a face; off, nothing
   watches for faces. While a take plays back, gestures do nothing.
 - **Rec** records video and sound (`camera`, `ResolutionPreset.high`)
-  from the neckline showing, until **Stop**.
+  from the neckline showing, until **Stop**, the sound first
+  ([Recording comes first](#recording-comes-first)).
   <a id="rec-key"></a>The **1** key (on the top row or the keypad)
   presses it too, Rec and then Stop, with the sidebar showing or not
   (so it also starts the sidebar's song, as Rec does); it doesn't turn
@@ -134,11 +136,13 @@ its **Not now** leaving. With Premium it opens the camera view
   nothing is uploaded to make it, and no server is involved.
   - **Web**: recorded in as it goes
     ([`web_take_recorder.dart`](../tabcam_app/lib/capture/web_take_recorder.dart)):
-    every frame, the camera preview's `<video>` and the band go onto a
-    canvas, and the browser's `MediaRecorder` records the canvas
-    (`captureStream(30)`) with the camera's sound (else the
-    microphone's): WebM (VP9 or VP8, Opus), or MP4 where only that
-    records (Safari). Should a band's image fail, its text is drawn on
+    at most 30 times a second (the camera's rate, not the display's),
+    the camera preview's `<video>` and the band go onto a canvas, and
+    the browser's `MediaRecorder` records the canvas
+    (`captureStream(30)`) with the microphone's sound (the recorder's
+    own, see [Recording comes first](#recording-comes-first)): WebM
+    (VP8, else VP9, with Opus), or MP4 where only that records
+    (Safari), the sound at 192 kbps and the video at 5 Mbps. Should a band's image fail, its text is drawn on
     the canvas as it is. Should the recorder fail to start, the camera
     records the take alone and a message says so, with why ("Recording
     without the tab: …"). Checked end to end in Chromium, Firefox and
@@ -467,7 +471,60 @@ capture opened by its link (a take couldn't be saved there), and while a
 tool works. Opening it stops what
 plays in the list.
 
+<a id="recording-comes-first"></a>**Recording comes first**: in a take
+the sound matters most, so Cam records it as a musician wants it, sets it
+up when Cam opens rather than as the take starts (starting a take changes
+nothing the song playing along hears), and makes what else runs wait or
+slow down while a take records
+([`take_priority.dart`](../tabcam_app/lib/capture/take_priority.dart)).
+- **Web**: the camera opens without sound (`enableAudio: false`), and
+  the take recorder opens the microphone itself when Cam opens, and keeps
+  it open until Cam closes, without the processing meant for voice calls:
+  `echoCancellation`, `noiseSuppression`, `autoGainControl` and
+  `voiceIsolation` off (echo cancellation takes out the song playing
+  along, noise suppression takes held notes for noise, automatic gain
+  pumps the level), two channels and 48 kHz where the microphone has
+  them (asked for, not required). What the browser gave is logged
+  (`TabCam: cam: microphone: …`); Safari on iOS may not honour all of it.
+  The take's sound is at 192 kbps, its video at 5 Mbps, in VP8 before
+  VP9 (VP9 is encoded in software and costs the processor several times
+  more), and the tab is drawn into it at most 30 times a second. Should
+  the recorder fail and the camera record the take alone, that take has
+  no sound.
+- **iOS**: the camera records sound at 128 kbps (AAC; its plugin writes
+  mono at 44.1 kHz). When Cam opens, the microphone joins the camera
+  (`prepareForVideoRecording`; else it would as the take starts, and the
+  take's first moments of sound are lost), and the app's audio session is
+  set over the method channel `tabcam/audio` (`prepare`, in
+  [`AppDelegate.swift`](../tabcam_app/ios/Runner/AppDelegate.swift)):
+  play and record, in the `videoRecording` mode (the microphone by the
+  camera, none of a call's voice processing), mixed with others (the
+  song playing along, in the app or another, goes on and isn't lowered:
+  no ducking), the speaker by default, Bluetooth (A2DP) and AirPlay for
+  the sound out, 48 kHz preferred. It's set again as each take starts
+  (changed only where something changed it), and `release` puts the
+  mode back to the default when Cam closes. A take played back in Cam
+  plays mixed with others too, so the next take doesn't stop a song
+  playing in another app.
+- **Android**: the camera (CameraX) records sound as its plugin sets it
+  (the camcorder source, the phone maker's processing, its own bitrate):
+  the plugin takes no audio source or bitrate. A take played back in Cam
+  mixes with others, so it doesn't take the audio focus from a song
+  playing in another app.
+- **While a take records**, everywhere: head gestures look for a face
+  about 7 times a second instead of 10 (enough for a nod, out and back
+  within a second); cloud sync starts no pass (one asked for meanwhile,
+  such as for the take just saved before the **.** key's next one, runs
+  2 s after the take ends, unless another starts by then; a pass already
+  running goes on); phrase passes are kept when the take ends, as
+  before. Auto-pass and the song playing along go on as ever.
+- Not controllable without forking the camera plugins or recording the
+  sound separately: Android's audio source, bitrate and sample rate;
+  iOS's mono 44.1 kHz; the plugins' own thread priorities; the
+  microphone each system picks with a headset connected. iOS's tab
+  burn-in re-encodes the take's sound (AAC to AAC); Android's copies it.
+
 **Permissions**: the camera and the microphone (iOS:
 `NSCameraUsageDescription`, `NSMicrophoneUsageDescription`; Android: the
 `camera` plugin's `CAMERA` and `RECORD_AUDIO`; the web: the browser's
-prompt). On the web a take is WebM, on Android MP4, on iOS MOV.
+prompts, for the camera and then the microphone, when Cam opens). On the web a take is WebM, on Android MP4, on iOS MOV.

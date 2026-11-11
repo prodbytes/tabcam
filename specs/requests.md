@@ -2654,3 +2654,41 @@ spec.
    where it types "," (Brazilian, German and most European layouts) and
    its logical key is the comma, it's still a new take, not a turn of
    the tab. Tests for both. See [Cam](cam.md#new-take-key).
+10. **Make sure that when recording, in the camera view, adequate
+    priority is given to the recording process, so that it don't
+    damages the audio. The audio recording is the most important
+    thing.** Cam now records a take's sound as a musician wants it and
+    makes way for it while it records (new
+    [`take_priority.dart`](../tabcam_app/lib/capture/take_priority.dart)).
+    Web: the camera opens without sound and the take recorder opens the
+    microphone itself when Cam opens, kept open, with echo cancellation,
+    noise suppression, automatic gain and voice isolation off (they took
+    out the song playing along, treated held notes as noise and pumped
+    the level), stereo and 48 kHz where there are; the take's sound at
+    192 kbps (was the browser's default), its video at 5 Mbps, VP8 before
+    VP9 (VP9 is encoded in software), and the tab drawn into it at most
+    30 times a second (was every display refresh, up to 120). iOS: the
+    camera's sound at 128 kbps (was the encoder's default); the
+    microphone joins the camera when Cam opens (was as the take started,
+    losing its first moments and changing the audio route under the
+    song), and a new method channel `tabcam/audio` sets the audio
+    session for it then and as each take starts: play and record in the
+    `videoRecording` mode (the microphone by the camera, no voice
+    processing), mixed with others with no ducking, 48 kHz preferred;
+    its mode goes back to the default when Cam closes. A take played
+    back in Cam now mixes with others (it took that away on iOS, so the
+    next take stopped a song in another app; on Android it took the
+    audio focus). While a take records, head gestures look about 7
+    times a second instead of 10, and cloud sync starts no pass (one
+    asked for runs 2 s after the take ends, so the **.** key's next
+    take isn't shared with the upload of the one before). Android's
+    camera sound can't be set without forking its plugin or recording
+    the sound separately; the spec says what can't be controlled. New
+    tests: the web's microphone constraints, bitrates and formats, the
+    tab drawn at 30 a second whatever the display, the iOS session set
+    on iOS only (and a failure only logged), Cam on iOS preparing the
+    sound when it opens and again at Rec, head gestures told when a
+    take records, the take played back mixed with others, sync held
+    during a take, and, in Chrome, the recorder asking for the
+    microphone without processing. See
+    [Cam](cam.md#recording-comes-first).

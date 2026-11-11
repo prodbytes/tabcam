@@ -10,6 +10,7 @@ import UIKit
   private var takeOverlayChannel: FlutterMethodChannel?
   private var videoEditChannel: FlutterMethodChannel?
   private var soundChannel: FlutterMethodChannel?
+  private var takeAudioChannel: FlutterMethodChannel?
 
   override func application(
     _ application: UIApplication,
@@ -38,6 +39,65 @@ import UIKit
       channel.setMethodCallHandler(Sound.handle)
       soundChannel = channel
     }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "TakeAudio") {
+      let channel = FlutterMethodChannel(
+        name: "tabcam/audio", binaryMessenger: registrar.messenger())
+      channel.setMethodCallHandler(TakeAudio.handle)
+      takeAudioChannel = channel
+    }
+  }
+}
+
+/// The app's audio session for Cam's takes (method channel `tabcam/audio`,
+/// see lib/capture/take_priority.dart). `prepare`, when Cam opens and as a
+/// take starts: play and record in the video recording mode (the
+/// microphone by the camera, none of the voice processing of a call),
+/// mixed with others (the song playing along, in the app or another,
+/// goes on and isn't lowered), the speaker by default, Bluetooth and
+/// AirPlay for the sound out (the camera plugin's own options, so it
+/// changes nothing after), 48 kHz preferred. `release`, when Cam closes:
+/// the mode back to the default, the category as the camera leaves it.
+/// Each changes the session only where it differs, so a song playing
+/// doesn't stutter.
+enum TakeAudio {
+  static let options: AVAudioSession.CategoryOptions = [
+    .mixWithOthers, .defaultToSpeaker, .allowBluetoothA2DP, .allowAirPlay,
+  ]
+
+  static func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    do {
+      switch call.method {
+      case "prepare": try prepare()
+      case "release": try release()
+      default:
+        result(FlutterMethodNotImplemented)
+        return
+      }
+      result(nil)
+    } catch {
+      result(FlutterError(code: "failed", message: error.localizedDescription, details: nil))
+    }
+  }
+
+  static func prepare() throws {
+    let session = AVAudioSession.sharedInstance()
+    // Ducking others would lower the song playing along.
+    let wanted = session.categoryOptions.union(options).subtracting(.duckOthers)
+    if session.category != .playAndRecord || session.mode != .videoRecording
+      || session.categoryOptions != wanted
+    {
+      try session.setCategory(.playAndRecord, mode: .videoRecording, options: wanted)
+    }
+    if session.preferredSampleRate != 48_000 {
+      try? session.setPreferredSampleRate(48_000)
+    }
+    try session.setActive(true)
+  }
+
+  static func release() throws {
+    let session = AVAudioSession.sharedInstance()
+    guard session.mode != .default else { return }
+    try session.setCategory(session.category, mode: .default, options: session.categoryOptions)
   }
 }
 

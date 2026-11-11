@@ -6,6 +6,7 @@ import 'package:cross_file/cross_file.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tabcam_app/capture/media.dart';
+import 'package:tabcam_app/capture/take_priority.dart';
 import 'package:tabcam_app/cloud/cloud_sync.dart';
 import 'package:tabcam_app/cloud/cognito.dart';
 import 'package:tabcam_app/cloud/share_api.dart';
@@ -22,6 +23,7 @@ class Device {
     String identity = 'us-east-1:me',
     ShareApi? shares,
     Duration period = const Duration(days: 1),
+    Duration debounce = const Duration(days: 1),
   }) : credentials = FakeCredentials(identity) {
     library = Library(PlatformEventStore(), () => now);
     sync = CloudSync(
@@ -31,7 +33,7 @@ class Device {
       credentials: credentials,
       shares: shares,
       period: period,
-      debounce: const Duration(days: 1),
+      debounce: debounce,
     );
   }
 
@@ -147,6 +149,29 @@ void main() {
     bucket.requests.clear();
     await phone.sync.syncNow();
     expect(bucket.requests, ['LIST $folder/']);
+  });
+
+  test('while Cam records a take no pass starts; one asked for runs once '
+      'the take ends', () async {
+    final phone = Device(bucket, debounce: const Duration(milliseconds: 10));
+    await phone.start();
+    addTearDown(() => TakePriority.recording.value = false);
+    bucket.requests.clear();
+    TakePriority.recording.value = true;
+    await phone.sync.syncNow();
+    expect(bucket.requests, isEmpty);
+    TakePriority.recording.value = false;
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    for (var i = 0; i < 50; i++) {
+      await Future<void>.delayed(Duration.zero);
+    }
+    expect(bucket.requests, ['LIST $folder/']);
+    // None was asked for during the next: none runs after it.
+    bucket.requests.clear();
+    TakePriority.recording.value = true;
+    TakePriority.recording.value = false;
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(bucket.requests, isEmpty);
   });
 
   test("another device's events come down, pages and all", () async {

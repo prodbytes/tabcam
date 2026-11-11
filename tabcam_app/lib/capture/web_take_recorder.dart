@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:web/web.dart' as web;
 
 import 'take_overlay.dart';
+import 'take_priority.dart';
 import 'web_head_tracker.dart' show cameraVideo;
 
 /// In the browser, takes are recorded with the tab in them.
@@ -15,11 +16,31 @@ TakeRecorder? webTakeRecorder() => WebTakeRecorder();
 /// Records a take in the browser with the tab drawn in: each frame, the
 /// camera preview's `<video>` ([cameraVideo]) and the band for the
 /// neckline showing ([renderBand]) along its bottom go onto a canvas,
-/// and the browser's MediaRecorder records the canvas with the camera's
-/// sound. All in the browser: nothing is uploaded to make it.
+/// at most [TakePriority.webFps] times a second, and the browser's
+/// MediaRecorder records the canvas with the microphone's sound. All in
+/// the browser: nothing is uploaded to make it.
+///
+/// The microphone is its own, not the camera's (Cam opens the camera
+/// without sound on the web): opened when Cam opens ([prepare]) and kept
+/// open until it closes, without the processing meant for voice calls
+/// ([TakePriority.webMicConstraints]), so the instrument and the song
+/// playing along are recorded as they sound.
 class WebTakeRecorder implements TakeRecorder {
+  WebTakeRecorder({this.getUserMedia = _getUserMedia});
+
+  /// Opens a microphone with these constraints (the browser's
+  /// getUserMedia); tests pass their own.
+  final Future<web.MediaStream> Function(web.MediaStreamConstraints)
+  getUserMedia;
+
+  static Future<web.MediaStream> _getUserMedia(
+    web.MediaStreamConstraints constraints,
+  ) => web.window.navigator.mediaDevices.getUserMedia(constraints).toDart;
+
   web.MediaRecorder? _recorder;
   web.MediaStream? _mic;
+  Future<web.MediaStream?>? _opening;
+  bool _disposed = false;
   int? _frame;
   String? Function() _neckline = () => null;
   final List<web.Blob> _chunks = [];
@@ -33,13 +54,50 @@ class WebTakeRecorder implements TakeRecorder {
   /// canvas as it is instead.
   final Set<String> _plain = {};
 
-  /// The first of these the browser records (Safari: MP4 only).
-  static const _types = [
-    'video/webm;codecs=vp9,opus',
-    'video/webm;codecs=vp8,opus',
-    'video/webm',
-    'video/mp4',
-  ];
+  @override
+  Future<void> prepare() async {
+    await _openMic();
+  }
+
+  /// The microphone, open (opened now if it isn't); null if it can't be.
+  Future<web.MediaStream?> _openMic() {
+    if (_mic case final mic? when _live(mic)) return Future.value(mic);
+    return _opening ??= () async {
+      try {
+        final mic = await getUserMedia(
+          web.MediaStreamConstraints(
+            audio: TakePriority.webMicConstraints.jsify()!,
+          ),
+        );
+        if (_disposed) {
+          _stopTracks(mic);
+          return null;
+        }
+        for (final track in mic.getAudioTracks().toDart) {
+          // Whether the browser did as asked (Safari on iOS may not).
+          debugPrint(
+            'TabCam: cam: microphone: '
+            '${track.getSettings().dartify()}',
+          );
+        }
+        return _mic = mic;
+      } on Object catch (e) {
+        debugPrint('TabCam: cam: no microphone: $e');
+        return null;
+      } finally {
+        _opening = null;
+      }
+    }();
+  }
+
+  static bool _live(web.MediaStream stream) =>
+      stream.getAudioTracks().toDart.any((t) => t.readyState == 'live');
+
+  static void _stopTracks(web.MediaStream stream) {
+    for (final track in stream.getTracks().toDart) {
+      track.stop();
+    }
+  }
 
   @override
   Future<void> start(String? Function() neckline) async {
@@ -53,7 +111,13 @@ class WebTakeRecorder implements TakeRecorder {
       ..height = video.videoHeight;
     final context = canvas.getContext('2d') as web.CanvasRenderingContext2D;
 
-    void draw(num _) {
+    // Drawn at the camera's rate, not the display's: what the canvas
+    // doesn't need to draw, the take's encoding has.
+    num? last;
+    void draw(num now) {
+      _frame = web.window.requestAnimationFrame(draw.toJS);
+      if (!TakePriority.frameDue(last, now)) return;
+      last = now;
       final video = cameraVideo(null);
       if (video != null) {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -76,39 +140,36 @@ class WebTakeRecorder implements TakeRecorder {
           unawaited(_drawBand(text));
         }
       }
-      _frame = web.window.requestAnimationFrame(draw.toJS);
     }
 
     if (neckline() case final text?) await _drawBand(text);
-    draw(0);
-
-    // The camera's own sound; else the microphone's.
-    final stream = canvas.captureStream(30);
-    var audio = _audioOf(video.srcObject);
-    if (audio.isEmpty) {
-      try {
-        final mic = _mic = await web.window.navigator.mediaDevices
-            .getUserMedia(web.MediaStreamConstraints(audio: true.toJS))
-            .toDart;
-        audio = mic.getAudioTracks().toDart;
-      } on Object catch (e) {
-        debugPrint('TabCam: cam: no sound: $e');
-      }
-    }
+    final stream = canvas.captureStream(TakePriority.webFps);
+    // The microphone's sound (open since Cam opened); without it, the
+    // camera's, if it has any.
+    var audio = (await _openMic())?.getAudioTracks().toDart ?? const [];
+    if (audio.isEmpty) audio = _audioOf(video.srcObject);
+    if (audio.isEmpty) debugPrint('TabCam: cam: a take without sound');
     for (final track in audio) {
       stream.addTrack(track);
     }
+    draw(web.window.performance.now());
 
-    _type = _types.firstWhere(
+    _type = TakePriority.webTypes.firstWhere(
       (type) => web.MediaRecorder.isTypeSupported(type),
       orElse: () => '',
     );
-    final recorder = _recorder = web.MediaRecorder(
-      stream,
-      _type.isEmpty
-          ? web.MediaRecorderOptions()
-          : web.MediaRecorderOptions(mimeType: _type),
+    final options = web.MediaRecorderOptions(
+      audioBitsPerSecond: TakePriority.webAudioBitrate,
+      videoBitsPerSecond: TakePriority.webVideoBitrate,
     );
+    if (_type.isNotEmpty) options.mimeType = _type;
+    final web.MediaRecorder recorder;
+    try {
+      recorder = _recorder = web.MediaRecorder(stream, options);
+    } on Object {
+      _end(); // no take: no drawing either
+      rethrow;
+    }
     if (_type.isEmpty) _type = recorder.mimeType;
     _chunks.clear();
     final stopped = _stopped = Completer<void>();
@@ -187,20 +248,20 @@ class WebTakeRecorder implements TakeRecorder {
     return XFile.fromData(bytes, name: 'take.$extension', mimeType: type);
   }
 
+  /// The take ended: the microphone stays open for the next.
   void _end() {
     if (_frame case final frame?) web.window.cancelAnimationFrame(frame);
     _frame = null;
-    for (final track in _mic?.getTracks().toDart ?? <web.MediaStreamTrack>[]) {
-      track.stop();
-    }
-    _mic = null;
     _recorder = null;
   }
 
   @override
   void dispose() {
+    _disposed = true;
     if (_recorder case final r? when r.state != 'inactive') r.stop();
     _end();
+    if (_mic case final mic?) _stopTracks(mic);
+    _mic = null;
     for (final band in _bands.values) {
       band?.close();
     }

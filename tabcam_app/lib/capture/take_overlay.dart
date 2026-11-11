@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../screens/mono_font.dart';
+import 'take_priority.dart';
 import 'web_take_recorder_stub.dart'
     if (dart.library.js_interop) 'web_take_recorder.dart';
 
@@ -157,6 +158,11 @@ abstract final class TakeOverlay {
 /// recording can't have it added after (the web: [TakeOverlay] works on
 /// Android and iOS).
 abstract class TakeRecorder {
+  /// Gets ready for takes when Cam opens (the web: opens the microphone,
+  /// as [TakePriority.webMicConstraints], and keeps it open), so a take
+  /// starts without waiting for it.
+  Future<void> prepare();
+
   /// Starts recording the camera with the band for [neckline] (what shows
   /// now; null: none) along its bottom.
   Future<void> start(String? Function() neckline);

@@ -54,6 +54,13 @@ class FakeVideoPlatform extends VideoPlatformBase {
   @override
   Future<void> play(int playerId) async => playing.add(playerId);
 
+  /// Whether each player made mixes with others' sound (iOS).
+  final mixes = <bool>[];
+
+  @override
+  Future<void> setMixWithOthers(bool mixWithOthers) async =>
+      mixes.add(mixWithOthers);
+
   @override
   Future<void> pause(int playerId) async => playing.remove(playerId);
 

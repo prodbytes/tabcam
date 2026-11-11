@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:camera_platform_interface/camera_platform_interface.dart';
 
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,6 +16,7 @@ import 'package:tabcam_app/capture/backing_track.dart';
 import 'package:tabcam_app/capture/play_along_screen.dart';
 import 'package:tabcam_app/capture/play_along_sidebar.dart';
 import 'package:tabcam_app/capture/take_overlay.dart';
+import 'package:tabcam_app/capture/take_priority.dart';
 import 'package:tabcam_app/dictionary/dictionary_sidebar.dart';
 import 'package:tabcam_app/l10n/app_localizations.dart';
 import 'package:tabcam_app/library/capture_event.dart';
@@ -38,6 +40,12 @@ class FakeHeads implements HeadTracking {
 
   @override
   bool active = true;
+
+  /// Whether it was told a take records, each time it was told.
+  final List<bool> recordings = [];
+
+  @override
+  set recording(bool recording) => recordings.add(recording);
 
   @override
   void onImage(CameraImage image) => frames++;
@@ -307,6 +315,77 @@ void main() {
     await frames(tester);
     expect(video.playing, isEmpty);
     expect(find.byKey(const Key('preview')), findsOneWidget);
+  });
+
+  testWidgets('recording comes first: on iOS the take\'s sound is set up '
+      'when Cam opens and again as a take starts; while it records, head '
+      'gestures look less often and sync waits; the take plays back mixed '
+      'with others', (tester) async {
+    final audio = <String>[];
+    final messenger = tester.binding.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(TakeAudio.channel, (call) async {
+      audio.add(call.method);
+      return null;
+    });
+    addTearDown(
+      () => messenger.setMockMethodCallHandler(TakeAudio.channel, null),
+    );
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    try {
+      final (library, id) = await capture(tester, tab: _tab);
+      late FakeHeads heads;
+      await tester.pumpWidget(
+        app(
+          PlayAlongScreen(
+            library: library,
+            eventId: id,
+            cameras: () async => [_front],
+            headTracking: (_, onGesture) => heads = FakeHeads(onGesture),
+            takeRecorder: () => null,
+            burn: (take, _) async => take,
+          ),
+        ),
+      );
+      await frames(tester);
+      // The camera records sound, at a bitrate for music; the microphone
+      // joins it now, and the session is set, before any take.
+      final settings = camera.settings.single!;
+      expect(settings.enableAudio, isTrue);
+      expect(settings.audioBitrate, TakePriority.iosAudioBitrate);
+      expect(camera.prepared, 1);
+      expect(audio, ['prepare']);
+      expect(TakePriority.recording.value, isFalse);
+
+      await tester.tap(find.byTooltip('Rec (1)'));
+      await frames(tester);
+      expect(camera.recording, isTrue);
+      expect(audio, ['prepare', 'prepare']);
+      expect(TakePriority.recording.value, isTrue);
+      expect(heads.recordings, [true]);
+
+      await tester.tap(_camStop);
+      await until(tester, () => recReady(tester));
+      expect(camera.recording, isFalse);
+      expect(library.byId(id)!.pages.last.title, 'Take 1');
+      expect(TakePriority.recording.value, isFalse);
+      expect(heads.recordings, [true, false]);
+
+      // Played back, the take leaves others' sound playing.
+      await tester.tap(find.byTooltip('Play'));
+      await frames(tester);
+      expect(video.playing, hasLength(1));
+      expect(video.mixes, isNotEmpty);
+      expect(video.mixes, everyElement(isTrue));
+      await tester.tap(_camStop);
+      await frames(tester);
+
+      // Closed: the session's mode back to the default.
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+      expect(audio.last, 'release');
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
   });
 
   testWidgets('1 presses Rec and Stop (the top row\'s or the keypad\'s); '

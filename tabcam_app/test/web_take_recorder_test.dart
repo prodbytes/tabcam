@@ -39,13 +39,33 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 20));
       }
 
-      final recorder = WebTakeRecorder();
+      // The "microphone", through the recorder's own seam: what it was
+      // asked for is kept. (It gives no track: a test's page can't make
+      // sound without a tap, and a silent track holds the recording up.)
+      final asked = <Object?>[];
+      final recorder = WebTakeRecorder(
+        getUserMedia: (constraints) async {
+          asked.add(constraints.audio.dartify());
+          return web.MediaStream();
+        },
+      );
+      // Opened when Cam opens, once, without the processing for calls.
+      await recorder.prepare();
+      expect(asked, hasLength(1));
+      final mic = asked.single as Map;
+      expect(mic['echoCancellation'], isFalse);
+      expect(mic['noiseSuppression'], isFalse);
+      expect(mic['autoGainControl'], isFalse);
       var line = 'e|--0--3--|\nB|--1--1--|';
       await recorder.start(() => line);
       await Future<void>.delayed(const Duration(milliseconds: 600));
       line = 'e|--5--7--|\nB|--5--8--|';
       await Future<void>.delayed(const Duration(milliseconds: 600));
       final take = await recorder.stop();
+      // Its microphone had no live track, so the take asked again, the
+      // same way.
+      expect(asked, hasLength(2));
+      expect(asked.last, asked.first);
       recorder.dispose();
       timer.cancel();
       view.remove();
