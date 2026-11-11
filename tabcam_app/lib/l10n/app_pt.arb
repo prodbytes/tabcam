@@ -154,6 +154,8 @@
   "eventCam": "Câmera",
   "camRec": "Gravar",
   "camStop": "Parar",
+  "camRecKey": "Gravar (1)",
+  "camStopKey": "Parar (1)",
   "camPlay": "Tocar",
   "camHideTab": "Ocultar tablatura",
   "camShowTab": "Mostrar tablatura",

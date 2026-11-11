@@ -803,6 +803,14 @@
   "@camStop": {
     "description": "Cam: stop recording or playing"
   },
+  "camRecKey": "Rec (1)",
+  "@camRecKey": {
+    "description": "Cam: the Rec button's tooltip; the 1 key does it too"
+  },
+  "camStopKey": "Stop (1)",
+  "@camStopKey": {
+    "description": "Cam: the Stop button's tooltip while recording; the 1 key does it too"
+  },
   "camPlay": "Play",
   "@camPlay": {
     "description": "Cam: play the last take back"

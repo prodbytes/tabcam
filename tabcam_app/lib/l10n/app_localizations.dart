@@ -1030,6 +1030,18 @@ abstract class AppLocalizations {
   /// **'Stop'**
   String get camStop;
 
+  /// Cam: the Rec button's tooltip; the 1 key does it too
+  ///
+  /// In en, this message translates to:
+  /// **'Rec (1)'**
+  String get camRecKey;
+
+  /// Cam: the Stop button's tooltip while recording; the 1 key does it too
+  ///
+  /// In en, this message translates to:
+  /// **'Stop (1)'**
+  String get camStopKey;
+
   /// Cam: play the last take back
   ///
   /// In en, this message translates to:

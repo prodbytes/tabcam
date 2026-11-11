@@ -2444,3 +2444,21 @@ spec.
    passes made after (Auto-pass on) are noted and marked again; only
    those are kept. Now a test checks it, and the spec says so. See
    [Cam](cam.md#phrase-passes).
+
+## 2026-11-11
+
+6. **In the cam screen make the "1" key be a shortcut to toggle
+   recording on/off.** In Cam, **1** (on the top row or the keypad)
+   now presses Rec / Stop as the button does: it starts a take (and the
+   sidebar's song with it) or stops it and saves the take, with the
+   play-along sidebar showing or not, and no longer turns the tab. It
+   acts on the key down only, so holding it doesn't start and stop a
+   take; while the button is dead (a take saving or playing back) it
+   does nothing; with Ctrl, ⌘ or Alt it's left to the other shortcut
+   and turns the tab as before. The button's tooltip now names the key
+   ("Rec (1)", "Stop (1)"), in English, Spanish and Portuguese, like
+   the sidebar's "Play (space)". New tests: 1 starts a take and 1 again
+   saves it, the keypad's 1 too, its repeats don't toggle, it doesn't
+   turn the tab while other keys still do, Ctrl + 1 does, it's dead
+   while a take plays back, and with the sidebar showing it starts the
+   song with the take. See [Cam](cam.md#rec-key).

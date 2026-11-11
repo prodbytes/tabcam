@@ -74,11 +74,13 @@ e|--12-10-|
 B|--13-12-|
 ''';
 
-/// The bar's Stop (Rec's or Play's), not the sidebar's: a take opens the
-/// sidebar, whose frame has a Stop too.
+/// The bar's Stop (Rec's, "Stop (1)", or Play's), not the sidebar's: a
+/// take opens the sidebar, whose frame has a Stop too.
 final _camStop = find.byElementPredicate((e) {
   final w = e.widget;
-  if (w is! Tooltip || w.message != 'Stop') return false;
+  if (w is! Tooltip || (w.message != 'Stop' && w.message != 'Stop (1)')) {
+    return false;
+  }
   var inSidebar = false;
   e.visitAncestorElements((a) {
     inSidebar = a.widget.key == const Key('cam-along-sidebar');
@@ -142,7 +144,7 @@ void main() {
       matching: find.byType(IconButton),
     );
     final button = tester.widget<IconButton>(rec);
-    return button.tooltip == 'Rec' && button.onPressed != null;
+    return button.tooltip == 'Rec (1)' && button.onPressed != null;
   }
 
   String shown(WidgetTester tester) =>
@@ -256,7 +258,7 @@ void main() {
       isNull,
     );
 
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     expect(camera.recording, isTrue);
     await tester.sendKeyEvent(LogicalKeyboardKey.space);
@@ -283,7 +285,7 @@ void main() {
     expect(saved, [7, 7]);
 
     // A second take is Take 2.
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
@@ -298,6 +300,94 @@ void main() {
     await frames(tester);
     expect(video.playing, isEmpty);
     expect(find.byKey(const Key('preview')), findsOneWidget);
+  });
+
+  testWidgets('1 presses Rec and Stop (the top row\'s or the keypad\'s); '
+      'held, it doesn\'t repeat; it doesn\'t turn the tab', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+          burn: (take, _) async => take,
+        ),
+      ),
+    );
+    await frames(tester);
+    expect(find.text('1 / 3'), findsOneWidget);
+
+    // 1 down: a take starts; held (repeats), it records on.
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.digit1);
+    await frames(tester);
+    expect(camera.recording, isTrue);
+    for (var i = 0; i < 3; i++) {
+      await tester.sendKeyRepeatEvent(LogicalKeyboardKey.digit1);
+      await frames(tester);
+    }
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.digit1);
+    await frames(tester);
+    expect(camera.recording, isTrue);
+    expect(find.text('1 / 3'), findsOneWidget);
+    expect(
+      tester
+          .widget<IconButton>(
+            find.descendant(
+              of: find.byKey(const Key('cam-rec')),
+              matching: find.byType(IconButton),
+            ),
+          )
+          .tooltip,
+      'Stop (1)',
+    );
+    // Other keys still turn the tab.
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+    await tester.pump();
+    expect(find.text('2 / 3'), findsOneWidget);
+
+    // 1 again: Stop, the take saved.
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
+    await until(tester, () => recReady(tester));
+    expect(camera.recording, isFalse);
+    var pages = library.byId(id)!.pages;
+    expect(pages, hasLength(2));
+    expect(pages.last.title, 'Take 1');
+    expect(find.text('2 / 3'), findsOneWidget);
+
+    // The keypad's 1 too.
+    await tester.sendKeyEvent(LogicalKeyboardKey.numpad1);
+    await frames(tester);
+    expect(camera.recording, isTrue);
+    await tester.sendKeyEvent(LogicalKeyboardKey.numpad1);
+    await until(tester, () => recReady(tester));
+    expect(camera.recording, isFalse);
+    pages = library.byId(id)!.pages;
+    expect(pages, hasLength(3));
+    expect(pages.last.title, 'Take 2');
+    expect(find.text('2 / 3'), findsOneWidget);
+
+    // Ctrl + 1 is no Rec: it turns the tab as any key.
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await frames(tester);
+    expect(camera.recording, isFalse);
+    expect(find.text('3 / 3'), findsOneWidget);
+
+    // While a take plays back, Rec is dead, and so is 1.
+    await tester.tap(find.byTooltip('Play'));
+    await frames(tester);
+    expect(video.playing, hasLength(1));
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
+    await frames(tester);
+    expect(camera.recording, isFalse);
+    expect(library.byId(id)!.pages, hasLength(3));
+    await tester.tap(_camStop);
+    await frames(tester);
+    expect(video.playing, isEmpty);
   });
 
   testWidgets('without a text tab, it says so', (tester) async {
@@ -349,7 +439,7 @@ void main() {
     expect(find.text('2 / 3'), findsOneWidget);
 
     // Recording, the frames still go to it.
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     expect(camera.streaming, isTrue);
     heads!.onGesture(HeadGesture.next);
@@ -393,7 +483,7 @@ void main() {
     expect(heads!.active, isTrue);
     expect(find.byKey(const Key('cam-heads')), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     expect(camera.recording, isTrue);
     heads!.onGesture(HeadGesture.next);
@@ -438,7 +528,7 @@ void main() {
     await frames(tester);
     await tester.tap(find.byKey(const Key('cam')));
     await frames(tester);
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
@@ -938,14 +1028,14 @@ void main() {
     video.position = Duration.zero;
     // Loaded in the frame, not playing: Rec plays it.
     expect(video.playing, isEmpty);
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     expect(video.playing, hasLength(1));
     // The take's Stop leaves it playing; Rec again doesn't pause it.
     await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
     expect(video.playing, hasLength(1));
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     expect(video.playing, hasLength(1));
     await tester.tap(_camStop);
@@ -955,11 +1045,23 @@ void main() {
     await tester.tap(find.byKey(const Key('cam-along')));
     await frames(tester);
     expect(video.playing, isEmpty);
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     expect(video.playing, isEmpty);
     await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
+
+    // With it showing again, 1 starts a take and the song, as Rec does.
+    await tester.tap(find.byKey(const Key('cam-along')));
+    await frames(tester);
+    expect(video.playing, isEmpty);
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
+    await frames(tester);
+    expect(camera.recording, isTrue);
+    expect(video.playing, hasLength(1));
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
+    await until(tester, () => recReady(tester));
+    expect(camera.recording, isFalse);
   });
 
   testWidgets('Phrase passes: recording along with a song notes each turn '
@@ -1005,7 +1107,7 @@ void main() {
     video.position = Duration.zero;
     await tester.tap(find.byKey(const Key('cam-along-toggle')));
     await frames(tester);
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     await at(10);
     await pass();
@@ -1146,7 +1248,7 @@ void main() {
     video.position = Duration.zero;
     await tester.tap(find.byKey(const Key('cam-along-toggle')));
     await frames(tester);
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     await at(9);
     expect(find.text('1 / 3'), findsOneWidget);
@@ -1172,7 +1274,7 @@ void main() {
 
     // Another take: two turns back with it off, then it's switched on
     // (the tab goes where the song's pass shows) and a turn then is noted.
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     await at(30);
     await tester.sendKeyEvent(LogicalKeyboardKey.backspace);
@@ -1250,7 +1352,7 @@ void main() {
     final clear = find.byKey(const Key('cam-along-phrases-clear'));
     video.position = Duration.zero;
     // Rec starts the song too.
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     expect(marks, findsNothing);
     await at(10);
@@ -1330,7 +1432,7 @@ void main() {
     video.position = Duration.zero;
     await tester.tap(find.byKey(const Key('cam-along-toggle')));
     await frames(tester);
-    await tester.tap(find.byTooltip('Rec'));
+    await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     await at(10);
     await pass();
