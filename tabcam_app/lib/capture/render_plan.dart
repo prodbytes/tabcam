@@ -177,8 +177,10 @@ const int bandWidth = TabLayout.width;
 /// default size is never higher than [grownTo] of the frame's height (a
 /// frame of unknown shape taken as a landscape 16:9 one), nor than it is
 /// at its default size, if that's more. Drawn [width] pixels wide, or as
-/// wide as the frame, up to [maxWidth]. Its text is outlined in its
-/// background's colour as the background fades below [outlineBelow].
+/// wide as the frame, up to [maxWidth]. Never smaller than the frame's
+/// shape lets it be read ([minSizeOf]). Its text is outlined in its
+/// background's colour as the background fades below its default
+/// opacity ([outlineOf]): fully from [outlineFull] down.
 abstract final class TabLayout {
   static const width = 1280;
   static const maxWidth = 4096;
@@ -187,7 +189,7 @@ abstract final class TabLayout {
   static const pad = 1 / 64;
   static const grownTo = 0.4;
   static const landscape = 16 / 9;
-  static const outlineBelow = 0.5;
+  static const outlineFull = 0.5;
 
   /// TabCam's gold (the app's seed colour).
   static const gold = Color(0xFFE0A030);
@@ -199,6 +201,35 @@ abstract final class TabLayout {
     TabColors.gold => (const Color(0xFF000000), gold),
     TabColors.brand => (gold, const Color(0xFF111111)),
   };
+
+  /// How strong the outline around a band's text is (0: none, 1: opaque)
+  /// at a background [opacity]: none at its default opacity (70%, which
+  /// always carried the text alone) and up, full at [outlineFull] and
+  /// down (a faint background reads poorly on its own), in between in
+  /// proportion.
+  static double outlineOf(double opacity) =>
+      ((EditTabStyle.defaultOpacity - opacity) /
+              (EditTabStyle.defaultOpacity - outlineFull))
+          .clamp(0.0, 1.0);
+
+  /// The smallest size a band is drawn at over a [frame] that size (null:
+  /// not known, taken as a landscape 16:9 one): its text, against the
+  /// frame's short side, never smaller than at [EditTabStyle.minSize] on
+  /// a 16:9 landscape frame (its width is the frame's, so on a portrait
+  /// or square one that's about 90%), to the nearest 5%.
+  static double minSizeOf(Size? frame) {
+    const least = EditTabStyle.minSize;
+    if (frame == null || frame.width <= 0 || frame.height <= 0) return least;
+    final short = min(frame.width, frame.height) / frame.width;
+    return (max(least, least * landscape * short) * 20).round() / 20;
+  }
+
+  /// [style] as it's drawn over a [frame] that size: no smaller than
+  /// [minSizeOf] lets it be.
+  static EditTabStyle drawnOf(EditTabStyle style, Size? frame) {
+    final least = minSizeOf(frame);
+    return style.size >= least ? style : style.copyWith(size: least);
+  }
 
   /// The padding above and below the text of a band at [size].
   static double padAt(double size) => pad * min(1, size);
@@ -434,7 +465,8 @@ bool tabOffered(TakeLog? log) =>
 /// when it showed until the next ([bandsOf], a turn back to the same one
 /// carrying it on), at its time in the file ([TakeTab.fileMarks]), in
 /// the output, cut to it (what falls outside is left out); looking as
-/// [style] says, over a [frame] that size (null: not known; [BandLook]).
+/// [style] says, over a [frame] that size (null: not known; [BandLook]),
+/// never smaller than it can be read there ([TabLayout.drawnOf]).
 List<PlanLayer> tabLayers(
   TakeTab tab,
   int lagMs,
@@ -446,7 +478,8 @@ List<PlanLayer> tabLayers(
   final length = end - start;
   if (length <= Duration.zero) return const [];
   final layers = <PlanLayer>[];
-  final maxAspect = TabLayout.maxAspectOf(style, frame);
+  final drawn = TabLayout.drawnOf(style, frame);
+  final maxAspect = TabLayout.maxAspectOf(drawn, frame);
   final width = TabLayout.widthOf(frame);
   for (final band in bandsOf(tab.fileMarks(lagMs))) {
     var from = band.start - start;
@@ -459,7 +492,7 @@ List<PlanLayer> tabLayers(
         id: 'tab',
         look: BandLook(
           tab.lines[band.line],
-          style: style,
+          style: drawn,
           maxAspect: maxAspect,
           width: width,
         ),

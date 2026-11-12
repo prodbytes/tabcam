@@ -3321,19 +3321,25 @@ spec.
    background's `opacity` 0–1, `colors` `dark`/`light`/`gold`/`brand`,
    each written only when not the default; absent, the bands look as
    they always did). **On the video**'s Tab chip gets a palette button
-   ("Change how the tab looks"), and a tap on the band in the preview
-   opens the style too: on a phone in place of the chips, as the title's
-   fields and the fades' sliders are; on a wide screen always under the
-   fades' sliders. It has **Size** (50%–200% by 5%), **Background**
+   ("Change how the tab looks"), and, on a phone, a long press on the
+   band in the preview opens the style too (a tap on the band still
+   plays or pauses, as anywhere on the picture): on a phone in place of
+   the chips, as the title's fields and the fades' sliders are; on a
+   wide screen always under the fades' sliders. It has **Size** (50%–200%
+   by 5%, offering only the sizes that change the band over the video:
+   from the smallest that reads on its frame, 90% on a portrait one, to
+   the largest at which a band still grows), **Background**
    (0%–100% by 5%, 70% by default), **Colours** (four swatches drawn as
    little bands: White on black, Black on white, Gold on black, Black on
    gold), **Default style** and, on a phone, **Done**; the preview draws
    each change as a slider moves, and a change turns the tab on. The
    style is drawn into the band's picture (`BandLook` carries it;
    `TabLayout` lays it out): bigger text never wider than the band nor,
-   grown, higher than 40% of the frame; the text always opaque and
-   outlined in the background's colour as the background fades below
-   50%. Bands are now drawn as wide as the video's frame (1280–4096
+   grown, higher than 40% of the frame, nor smaller than reads on the
+   frame (its text against the frame's short side, as at 50% on a 16:9
+   one); the text always opaque and outlined in the background's colour
+   as the background fades below 70%, the outline fully opaque from 50%
+   down. Bands are now drawn as wide as the video's frame (1280–4096
    pixels; `RenderPlan.of`'s `frame`, from the player), so no renderer
    scales the text up; the web, Android and iOS get the styled band as
    its image, as before, so their renderers are unchanged. The watermark
@@ -3341,6 +3347,7 @@ spec.
    `test/tab_style_test.dart` (the keys, their bounds, old edits, the
    plan's looks, the frame's width and bound, the watermark's lift, the
    painter's heights, opacities, colours and outline by pixel, the
-   channel's images, the panel on a phone and a wide screen, a tap on
-   the band, the largest text size on a 360-point phone, Reset, the file
+   channel's images, the smallest size on each frame's shape, the Size
+   slider's range, the panel on a phone and a wide screen, a tap (play
+   or pause) and a long press (the style) on the band, the largest text size on a 360-point phone, Reset, the file
    screen's player). See [video edit](video-edit.md#layers).

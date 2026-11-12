@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:video_player/video_player.dart';
 
+import '../library/page_edit.dart' show EditTabStyle;
 import '../screens/mono_font.dart';
 import 'render_plan.dart';
 
@@ -158,48 +159,92 @@ double bandAspect(BandLook band) {
 
 final _aspects = <BandLook, double>{};
 
-/// [band]'s text laid out for it ([TabLayout]): its fill, and, under it,
-/// its outline when its background is faint; the band's height, and the
-/// padding above and below the text.
-(List<TextPainter>, int, double) _bandText(BandLook band) {
-  final width = band.width;
-  final style = band.style;
-  final pad = width * TabLayout.padAt(style.size);
-  final (background, color) = TabLayout.colorsOf(style.colors);
-  TextPainter painter(double size, {Paint? outline}) => TextPainter(
-    text: TextSpan(
-      text: band.line,
-      style: TextStyle(
-        fontFamily: monoFont,
-        fontSize: size,
-        height: TabLayout.lineHeight,
-        color: outline == null ? color : null,
-        foreground: outline,
-      ),
-    ),
-    textDirection: TextDirection.ltr,
-  )..layout();
-  // Measured at 100, then sized to fit (never bigger than its style says:
-  // at its default size, width / 48, so a six-string staff takes about a
-  // third of a landscape take).
-  final probe = painter(100);
-  final fit = probe.width <= 0 ? 100.0 : 100 * (width - 2 * pad) / probe.width;
+/// [line]'s width in a band's monospaced text 100 high.
+double _probeWidth(String line) {
+  final probe = _bandPainter(line, 100, const Color(0xFFFFFFFF));
+  final width = probe.width;
   probe.dispose();
-  final size = min(fit, width * TabLayout.textOf(band));
-  final text = painter(size);
-  // The outline: as strong as the background is faint, none from
-  // [TabLayout.outlineBelow] up.
-  final faint = 1 - style.opacity / TabLayout.outlineBelow;
+  return width;
+}
+
+/// [line] laid out as a band's text, [size] high, filled with [color] or
+/// stroked by [outline].
+TextPainter _bandPainter(
+  String line,
+  double size,
+  Color? color, {
+  Paint? outline,
+}) => TextPainter(
+  text: TextSpan(
+    text: line,
+    style: TextStyle(
+      fontFamily: monoFont,
+      fontSize: size,
+      height: TabLayout.lineHeight,
+      color: outline == null ? color : null,
+      foreground: outline,
+    ),
+  ),
+  textDirection: TextDirection.ltr,
+)..layout();
+
+/// How high [band]'s text is drawn, in pixels: as big as its style says
+/// ([TabLayout.textOf]: at its default size, width / 48, so a six-string
+/// staff takes about a third of a landscape take), or, when its line
+/// wouldn't fit across, as big as fits.
+double _textSize(BandLook band) {
+  final width = band.width;
+  final pad = width * TabLayout.padAt(band.style.size);
+  final probe = _probeWidth(band.line);
+  final fit = probe <= 0 ? 100.0 : 100 * (width - 2 * pad) / probe;
+  return min(fit, width * TabLayout.textOf(band));
+}
+
+/// The largest size ([EditTabStyle.size]) any of [lines]' bands is drawn
+/// bigger at over a [frame] that size (null: not known): past it, each
+/// is as big as fits the frame's width or its bound
+/// ([TabLayout.maxAspectOf]), so the Size slider stops there (to the next
+/// 5%), between 100% (under it, the padding still shrinks) and
+/// [EditTabStyle.maxSize].
+double tabSizeMost(Iterable<String> lines, Size? frame) {
+  const grown = EditTabStyle(size: EditTabStyle.maxSize);
+  final maxAspect = TabLayout.maxAspectOf(grown, frame);
+  final width = TabLayout.widthOf(frame);
+  var most = 0.0;
+  for (final line in lines) {
+    final band = BandLook(
+      line,
+      style: grown,
+      maxAspect: maxAspect,
+      width: width,
+    );
+    most = max(most, _textSize(band) / (width * TabLayout.text));
+  }
+  return ((most * 20 - 1e-6).ceil() / 20).clamp(1.0, EditTabStyle.maxSize);
+}
+
+/// [band]'s text laid out for it ([TabLayout]): its fill, and, under it,
+/// its outline when its background is faint ([TabLayout.outlineOf]); the
+/// band's height, and the padding above and below the text.
+(List<TextPainter>, int, double) _bandText(BandLook band) {
+  final style = band.style;
+  final pad = band.width * TabLayout.padAt(style.size);
+  final (background, color) = TabLayout.colorsOf(style.colors);
+  final size = _textSize(band);
+  final text = _bandPainter(band.line, size, color);
+  final outline = TabLayout.outlineOf(style.opacity);
   return (
     [
-      if (faint > 0)
-        painter(
+      if (outline > 0)
+        _bandPainter(
+          band.line,
           size,
+          null,
           outline: Paint()
             ..style = PaintingStyle.stroke
             ..strokeWidth = size * 0.18
             ..strokeJoin = StrokeJoin.round
-            ..color = background.withValues(alpha: min(1.0, faint * 1.25)),
+            ..color = background.withValues(alpha: outline),
         ),
       text,
     ],

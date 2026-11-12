@@ -38,7 +38,8 @@ import 'mono_font.dart';
 /// its volume and Mute at its left. Under them (beside everything, on a
 /// wide screen), **On the video**: what's drawn over it, as chips: a
 /// take's tab (its style, the size, background and colours, opened by
-/// its palette button or a tap on the band in the preview), the title
+/// its palette button or, on a phone, a long press on the band in the
+/// preview), the title
 /// (its text typed under them on a phone, beside them on a wide screen),
 /// the watermark, which only Premium removes, and the **Fades**: the
 /// video fades in from black at the kept part's start and out to black
@@ -534,21 +535,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// Whether the take's tab can be drawn over it, so styled.
   bool get _tabStyleOffered => _take && tabOffered(_takeLog);
 
-  /// Opens the tab's style: in place of the chips on a phone; on a wide
-  /// screen, it's under them already, and is brought into view.
+  /// Opens the tab's style in place of the chips (on a phone: on a wide
+  /// screen, it's under them always).
   void _editTabStyle() {
-    if (_wide) {
-      final panel = _tabStyleKey.currentContext;
-      if (panel != null) {
-        unawaited(
-          Scrollable.ensureVisible(
-            panel,
-            duration: const Duration(milliseconds: 200),
-          ),
-        );
-      }
-      return;
-    }
+    if (_wide) return;
     setState(() {
       _editingTabStyle = true;
       _editingTitle = false;
@@ -556,7 +546,21 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     });
   }
 
-  final _tabStyleKey = GlobalKey();
+  /// The sizes the Size slider offers over the video's frame: from the
+  /// smallest it can be read at ([TabLayout.minSizeOf]) to the largest
+  /// any of the take's bands still grows at ([tabSizeMost]); worked out
+  /// again only when the frame changes.
+  (double, double) _tabSizes() {
+    final frame = _frame;
+    final known = _tabSizesOf;
+    if (known != null && known.$1 == frame) return (known.$2, known.$3);
+    final least = TabLayout.minSizeOf(frame);
+    final most = tabSizeMost(_takeLog?.tab?.lines ?? const [], frame);
+    _tabSizesOf = (frame, least, most);
+    return (least, most);
+  }
+
+  (Size?, double, double)? _tabSizesOf;
 
   /// The tab's style changed to [style]: the preview draws it at once
   /// (nothing is sought again), the tab on, as typing a title turns it on.
@@ -1429,7 +1433,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   }
 
   /// The video, at most a third of the screen (a tap plays or pauses it;
-  /// on the title, it edits it), with what Download draws over it, and,
+  /// on the title, it edits it; on a phone, a long press on the tab's band
+  /// opens its style), with what Download draws over it, and,
   /// while it plays, the fades' black ([EditLayers]).
   Widget _preview(VideoPlayerController video, AppLocalizations l10n) {
     final height = MediaQuery.sizeOf(context).height / 3;
@@ -1448,6 +1453,13 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                 behavior: HitTestBehavior.opaque,
                 onTapUp: (tap) =>
                     _tapPreview(tap.localPosition, box.biggest, layers),
+                onLongPressStart: _wide
+                    ? null
+                    : (press) => _pressPreview(
+                        press.localPosition,
+                        box.biggest,
+                        layers,
+                      ),
                 child: layers.isEmpty && !fades.any
                     ? VideoPlayer(video)
                     : Stack(
@@ -1470,26 +1482,35 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     );
   }
 
+  /// Whether [layer], at [at] on the preview, [size] big, is under it.
+  bool _hit(PlanLayer layer, Offset at, Size size) =>
+      layer.rectIn(size, _measured.of(layer.look).size).contains(at);
+
   /// A tap at [at] on the preview, [size] big, showing [layers]: on the
-  /// title, it's edited; on the tab's band showing, its style opens;
-  /// anywhere else, the video plays or pauses.
+  /// title (a corner of it), it's edited; anywhere else, the tab's band
+  /// too (as wide as the picture, it's a good part of it), the video
+  /// plays or pauses.
   void _tapPreview(Offset at, Size size, List<PlanLayer> layers) {
-    bool hit(PlanLayer layer) =>
-        layer.rectIn(size, _measured.of(layer.look).size).contains(at);
     final title = layers.where((l) => l.id == 'title').firstOrNull;
-    if (title != null && hit(title)) {
+    if (title != null && _hit(title, at, size)) {
       _editTitle();
       return;
     }
+    unawaited(_playback?.playPause());
+  }
+
+  /// A long press at [at] on the preview, [size] big, showing [layers]
+  /// (on a phone): on the tab's band showing, its style opens in place of
+  /// the chips, as its chip's palette button opens it.
+  void _pressPreview(Offset at, Size size, List<PlanLayer> layers) {
     final now = (_video?.value.position ?? Duration.zero) - _start;
     final band = layers
         .where((l) => l.id == 'tab' && l.alphaAt(now) > 0)
         .firstOrNull;
-    if (band != null && hit(band)) {
+    if (band != null && _hit(band, at, size)) {
+      unawaited(Feedback.forLongPress(context));
       _editTabStyle();
-      return;
     }
-    unawaited(_playback?.playPause());
   }
 
   /// **On the video**: what's drawn over it, as chips (and, on a [wide]
@@ -1704,8 +1725,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     );
   }
 
-  /// The tab's style: **Size** (50% to 200% of its default, by 5%; a
-  /// staff too long for the frame stays as big as fits), **Background**
+  /// The tab's style: **Size** (by 5%, of its default: from 50%, or
+  /// what can still be read on a portrait frame, to 200%, or as far as
+  /// the take's bands still grow over this frame, [_tabSizes]), **Background**
   /// (its opacity, 0% to 100% by 5%: the text stays opaque, outlined as
   /// the background fades out), each its name and value over its slider,
   /// and **Colours** (four swatches, each a bit of band in its colours);
@@ -1716,8 +1738,12 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     final inline = _wide;
     final style = _tabStyle;
     String percent(double v) => l10n.videoEditTabPercent((v * 100).round());
+    // Only the sizes that change the band over this video: shown as drawn
+    // (a size kept past either end is drawn at that end).
+    final (least, most) = _tabSizes();
+    final sizes = ((most - least) * 20).round();
+    final size = style.size.clamp(least, most);
     return Column(
-      key: _tabStyleKey,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
@@ -1733,13 +1759,14 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         _sliderRow(
           name: l10n.videoEditTabSize,
           key: 'video-edit-tab-size',
-          value: style.size,
-          min: EditTabStyle.minSize,
-          max: EditTabStyle.maxSize,
-          divisions: ((EditTabStyle.maxSize - EditTabStyle.minSize) * 20)
-              .round(),
-          shown: percent(style.size),
-          onChanged: (v) => _setTabStyle(style.copyWith(size: v)),
+          value: size,
+          min: least,
+          max: sizes > 0 ? most : least + 0.05,
+          divisions: max(1, sizes),
+          shown: percent(size),
+          onChanged: sizes > 0
+              ? (v) => _setTabStyle(style.copyWith(size: v))
+              : null,
           stacked: true,
         ),
         _sliderRow(

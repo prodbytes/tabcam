@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -222,6 +223,34 @@ void main() {
       );
     });
 
+    test('never smaller than reads on the frame: its text, against the '
+        'frame\'s short side, no smaller than at 50% on a 16:9 one', () {
+      expect(TabLayout.minSizeOf(null), 0.5);
+      expect(TabLayout.minSizeOf(const Size(1920, 1080)), 0.5);
+      expect(TabLayout.minSizeOf(const Size(1920, 1088)), 0.5);
+      expect(TabLayout.minSizeOf(const Size(2560, 1080)), 0.5);
+      expect(TabLayout.minSizeOf(const Size(1440, 1080)), 0.65);
+      expect(TabLayout.minSizeOf(const Size(1080, 1080)), 0.9);
+      expect(TabLayout.minSizeOf(const Size(1080, 1920)), 0.9);
+      // Kept at 50%, a portrait take's band is drawn at 90%; bigger ones,
+      // and a landscape take's, as they are.
+      const small = EditTabStyle(size: 0.5, opacity: 0.3);
+      expect(
+        bands(plan(small, frame: const Size(1080, 1920))).first.style,
+        const EditTabStyle(size: 0.9, opacity: 0.3),
+      );
+      expect(
+        bands(plan(small, frame: const Size(1920, 1080))).first.style,
+        small,
+      );
+      expect(
+        bands(
+          plan(const EditTabStyle(size: 1.2), frame: const Size(1080, 1920)),
+        ).first.style.size,
+        1.2,
+      );
+    });
+
     test('the watermark rises above a bigger band', () {
       double lift(EditTabStyle style) =>
           plan(style).layers.singleWhere((l) => l.id == 'mark').liftW;
@@ -286,6 +315,45 @@ void main() {
       final wide = await _drawn(tester, const BandLook(_riffA, width: 1920));
       expect(wide.width, 1920);
       expect(wide.height / 1920, closeTo(normal / bandWidth, 0.002));
+    });
+
+    testWidgets('grows up to the size the Size slider stops at, and no '
+        'further', (tester) async {
+      for (final (lines, frame) in [
+        (const [_staff], const Size(1920, 1080)),
+        (const [_staff], const Size(320, 240)),
+        (const [_staff], const Size(1080, 1920)),
+        ([_riffA, _long], const Size(1920, 1080)),
+        ([_long], const Size(1920, 1080)),
+      ]) {
+        final most = tabSizeMost(lines, frame);
+        expect(most, greaterThanOrEqualTo(TabLayout.minSizeOf(frame)));
+        expect(most, lessThanOrEqualTo(EditTabStyle.maxSize));
+        double tallest(double size) {
+          final style = EditTabStyle(size: size);
+          return [
+            for (final line in lines)
+              bandAspect(
+                BandLook(
+                  line,
+                  style: style,
+                  maxAspect: TabLayout.maxAspectOf(style, frame),
+                  width: TabLayout.widthOf(frame),
+                ),
+              ),
+          ].reduce(max);
+        }
+
+        final reason = '$lines over $frame: $most';
+        expect(tallest(EditTabStyle.maxSize), tallest(most), reason: reason);
+        if (most - 0.05 >= TabLayout.minSizeOf(frame) && most > 1) {
+          expect(tallest(most - 0.05), lessThan(tallest(most)), reason: reason);
+        }
+      }
+      // A staff over a landscape take stops short of 200% (40% of the
+      // frame's height); short riffs grow all the way.
+      expect(tabSizeMost(const [_staff], const Size(1920, 1080)), lessThan(2));
+      expect(tabSizeMost(const [_riffA], const Size(1920, 1080)), 2);
     });
 
     // (Within a pixel or two: the text's lines are laid out whole.)
@@ -365,6 +433,24 @@ void main() {
         isNotEmpty,
       );
       expect(_pixels(clear).where((p) => p == (0, 0, 0, 255)), isNotEmpty);
+      // A faint background (30% or 45%) doesn't carry the text alone: the
+      // outline is at full strength until 50%, then fades out by 70%.
+      for (final opacity in [0.3, 0.45, 0.5]) {
+        final faint = await _drawn(
+          tester,
+          BandLook(_riffA, style: EditTabStyle(opacity: opacity)),
+        );
+        expect(
+          _pixels(faint).where((p) => p == (0, 0, 0, 255)),
+          isNotEmpty,
+          reason: '$opacity',
+        );
+      }
+      expect(TabLayout.outlineOf(0), 1);
+      expect(TabLayout.outlineOf(0.5), 1);
+      expect(TabLayout.outlineOf(0.6), closeTo(0.5, 1e-9));
+      expect(TabLayout.outlineOf(0.7), 0);
+      expect(TabLayout.outlineOf(1), 0);
       // At 70% the background's there and the text has no outline.
       final normal = await _drawn(tester, const BandLook(_riffA));
       expect(_pixels(normal).where((p) => p == (0, 0, 0, 255)), isEmpty);
@@ -532,9 +618,11 @@ void main() {
       );
       expect(find.byKey(const Key('video-edit-on-video')), findsNothing);
       expect(slider(tester, 'size').value, 1);
-      expect(slider(tester, 'size').min, 0.5);
+      // The fake video is 4:3 (320 × 240): no smaller than reads on it
+      // (as 50% on a 16:9 one); its short riffs grow all the way.
+      expect(slider(tester, 'size').min, 0.65);
       expect(slider(tester, 'size').max, 2);
-      expect(slider(tester, 'size').divisions, 30);
+      expect(slider(tester, 'size').divisions, 27);
       expect(shown(tester, 'size'), '100%');
       expect(shown(tester, 'opacity'), '70%');
       expect(enabled(tester, 'video-edit-tab-style-reset'), isFalse);
@@ -598,9 +686,17 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a tap on the band in the preview opens the style; a change '
-        'to it turns the tab back on; the title\'s fields and the fades\' '
-        'sliders take its place', (tester) async {
+    Future<void> playing(WidgetTester tester, bool playing) async => expect(
+      tester
+          .widget<IconButton>(find.byKey(const Key('video-edit-play')))
+          .tooltip,
+      playing ? 'Pause' : 'Play',
+    );
+
+    testWidgets('on a phone, a long press on the band in the preview opens '
+        'the style (a tap on it plays or pauses, as anywhere on the '
+        'picture); a change to it turns the tab back on; the title\'s '
+        'fields and the fades\' sliders take its place', (tester) async {
       sized(tester, const Size(400, 900));
       final (library, id) = await capture(tester);
       await tester.runAsync(
@@ -612,7 +708,7 @@ void main() {
       );
       await tester.pumpWidget(editScreen(library, id));
       await settle(tester);
-      // Off: no band to tap; its button still opens it.
+      // Off: no band to press; its button still opens it.
       await tapVisible(tester, 'video-edit-tab-style-edit');
       await settle(tester);
       slider(tester, 'size').onChanged!(0.75);
@@ -620,7 +716,7 @@ void main() {
       expect(kept(library, id)!.tab, isTrue);
       expect(previewStyle(tester), const EditTabStyle(size: 0.75));
 
-      // The fades' button closes it; a tap on the band opens it again.
+      // The fades' button closes it.
       await tapVisible(tester, 'video-edit-tab-style-done');
       await settle(tester);
       await tapVisible(tester, 'video-edit-fades-edit');
@@ -629,26 +725,113 @@ void main() {
       await tester.ensureVisible(find.byKey(const Key('video-edit-preview')));
       await settle(tester);
       final box = tester.getRect(find.byKey(const Key('video-edit-preview')));
-      await tester.tapAt(box.bottomCenter - const Offset(0, 2));
+      final onBand = box.bottomCenter - const Offset(0, 2);
+
+      // A tap on the band plays (and pauses) the video; nothing opens.
+      await tester.tapAt(onBand);
+      await settle(tester);
+      await playing(tester, true);
+      expect(find.byKey(const Key('video-edit-tab-style')), findsNothing);
+      expect(find.byKey(const Key('video-edit-fade-fields')), findsOneWidget);
+      await tester.tapAt(onBand);
+      await settle(tester);
+      await playing(tester, false);
+
+      // A long press on it opens the style in the fades' place.
+      await tester.longPressAt(onBand);
       await settle(tester);
       expect(find.byKey(const Key('video-edit-tab-style')), findsOneWidget);
       expect(find.byKey(const Key('video-edit-fade-fields')), findsNothing);
-      // Not a play: the video stays paused.
-      expect(
-        tester
-            .widget<IconButton>(find.byKey(const Key('video-edit-play')))
-            .tooltip,
-        'Play',
-      );
-      // The middle of the picture still plays it.
-      await tester.tapAt(box.center);
+      await playing(tester, false);
+      // Elsewhere on the picture, a long press opens nothing.
+      await tapVisible(tester, 'video-edit-tab-style-done');
+      await settle(tester);
+      await tester.longPressAt(box.center);
+      await settle(tester);
+      expect(find.byKey(const Key('video-edit-tab-style')), findsNothing);
+    });
+
+    testWidgets('on a wide screen a tap on the band plays or pauses the '
+        'video, as anywhere on the picture', (tester) async {
+      sized(tester, const Size(1280, 900));
+      final (library, id) = await capture(tester);
+      await tester.pumpWidget(editScreen(library, id));
+      await settle(tester);
+      final box = tester.getRect(find.byKey(const Key('video-edit-preview')));
+      final onBand = box.bottomCenter - const Offset(0, 2);
+      final side = tester
+          .state<ScrollableState>(
+            find
+                .descendant(
+                  of: find.byKey(const Key('video-edit-side')),
+                  matching: find.byType(Scrollable),
+                )
+                .first,
+          )
+          .position
+          .pixels;
+      await tester.tapAt(onBand);
+      await settle(tester);
+      await playing(tester, true);
+      await tester.tapAt(onBand);
+      await settle(tester);
+      await playing(tester, false);
+      // Nothing scrolls nor opens (the style is always beside it), even on
+      // a long press.
+      await tester.longPressAt(onBand);
       await settle(tester);
       expect(
         tester
-            .widget<IconButton>(find.byKey(const Key('video-edit-play')))
-            .tooltip,
-        'Pause',
+            .state<ScrollableState>(
+              find
+                  .descendant(
+                    of: find.byKey(const Key('video-edit-side')),
+                    matching: find.byType(Scrollable),
+                  )
+                  .first,
+            )
+            .position
+            .pixels,
+        side,
       );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the Size slider offers only the sizes that change the '
+        'band over this video', (tester) async {
+      sized(tester, const Size(1280, 1000));
+      // A six-string staff over the 4:3 fake video: grown, it reaches 40%
+      // of the frame's height before 200%.
+      final (library, id) = await capture(
+        tester,
+        log: TakeLog(
+          burned: false,
+          tab: TakeTab(lines: const [_staff], marks: const [(0, 0)]),
+        ),
+      );
+      await tester.runAsync(
+        () => library.setPageEdit(
+          id,
+          'k0',
+          PageEdit(
+            start: Duration.zero,
+            end: ms(180000),
+            tabStyle: const EditTabStyle(size: 2),
+          ),
+        ),
+      );
+      await tester.pumpWidget(editScreen(library, id));
+      await settle(tester);
+      const frame = Size(320, 240);
+      final most = tabSizeMost(const [_staff], frame);
+      expect(most, lessThan(2));
+      expect(slider(tester, 'size').max, most);
+      expect(slider(tester, 'size').min, TabLayout.minSizeOf(frame));
+      // Kept at 200%, it's drawn (and shown) as big as it gets.
+      expect(slider(tester, 'size').value, most);
+      expect(shown(tester, 'size'), '${(most * 100).round()}%');
+      expect(previewStyle(tester).size, 2);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('on a wide screen the style is under the chips, without a '

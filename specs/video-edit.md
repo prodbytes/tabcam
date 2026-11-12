@@ -64,8 +64,9 @@ with the file's name in its app bar and **ⓘ** at its right (it says
 makes a file of it."), opening with the video's edit as it was left:
 
 - **The preview**, at the top, at most a third of the screen: the video
-  (a tap on it plays or pauses; a tap on the title opens its text, and
-  one on the tab's band its style),
+  (a tap on it plays or pauses, on the tab's band too, as wide as the
+  picture; a tap on the title, a corner of it, opens its text; on a
+  phone, a long press on the tab's band opens its style),
   with what Download draws over it (the [layers](#layers): a take's
   tab, the title, the watermark as this user's download would have
   it), drawn by the same code, so the preview is what the file will be
@@ -166,14 +167,21 @@ makes a file of it."), opening with the video's edit as it was left:
     chip: a disabled chip shows none of its own; no line of text, which
     would stay under every such take.)
     **The tab's style**: on a take whose tab can be drawn, the chip's
-    **palette** button ("Change how the tab looks"), or a tap on the
-    tab's band in the preview, opens it: on a phone in place of the
-    chips ("Tab style · How the tab looks over the video"); on a wide
-    screen it's always under the fades' sliders ("How the tab looks over
-    the video"), without the button or Done (a tap on the band brings it
-    into view). It has **Size** (50% to 200% of the tab's usual size, in
-    steps of 5%) and **Background** (its opacity, 0% to 100% in steps
-    of 5%, 70% by default), each its name and its value ("100%") on a
+    **palette** button ("Change how the tab looks"), or, on a phone, a
+    long press on the tab's band in the preview, opens it: on a phone in
+    place of the chips ("Tab style · How the tab looks over the video");
+    on a wide screen it's always under the fades' sliders ("How the tab
+    looks over the video"), without the button or Done (and the band
+    has no gesture of its own there: a tap on it plays or pauses). It
+    has **Size** (the tab's usual size times 50% to 200%, in steps of
+    5%, but only the sizes that change the band over this video: from
+    the smallest that reads on its frame, 50% on a 16:9 landscape one,
+    90% on a portrait or square one, to the largest at which any of the
+    take's bands still grows, at least 100%, so a staff that fills 40%
+    of the frame by 130% stops there; a size kept past either end shows
+    and is drawn as that end) and **Background** (its opacity, 0% to
+    100% in steps of 5%, 70% by default), each its name and its value
+    ("100%") on a
     line over a slider as wide as the panel (so neither is cut at any
     text size), **Colours** (four swatches under it,
     each a bit of band, "3-5" in its text's colour on its background's:
@@ -451,11 +459,17 @@ the platforms to do: **size** multiplies the text (and, under 100%, the
 padding), never past what fits the width (a long staff stays as big as
 fits) and, grown past 100%, never past **40% of the frame's height**
 (nor below its usual size, whatever that is: a frame of unknown shape
-taken as a landscape 16:9 one); the **background** is the colours'
-background at the style's opacity, the text always opaque, and **outlined
-in the background's colour as the background fades below 50%** (a
-stroke 18% of the text's size, as strong as the background is
-faint), so it reads on any picture with no background at all; the
+taken as a landscape 16:9 one), nor smaller than reads on the frame
+(`TabLayout.minSizeOf`: its text, against the frame's short side, no
+smaller than at 50% on a 16:9 landscape frame; 90% on a portrait or
+square one, 65% on a 4:3 one, to the nearest 5%; a size kept smaller is
+drawn at that); the **background** is the colours' background at the
+style's opacity, the text always opaque, and **outlined in the
+background's colour as the background fades below 70%** (its default,
+which always carried the text alone; `TabLayout.outlineOf`: a stroke
+18% of the text's size, fully opaque from 50% down, so a faint
+background never leaves the text washed out, and in proportion between
+50% and 70%), so it reads on any picture with no background at all; the
 **colours**: white on black, black (`#111`) on white, TabCam's gold
 (`#E0A030`) on black, black on gold. The text is drawn at its size, never
 a bitmap scaled up: the band is drawn **as wide as the video's frame**
