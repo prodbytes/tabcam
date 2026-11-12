@@ -48,8 +48,8 @@ import java.util.concurrent.Executors
  * - `images`: the layers' PNGs (each look once), and `layers`: what's drawn
  *   over the picture, each `{id, image (its index in images), anchor
  *   (topLeft, bottomRight or bottomFull), heightU, marginU, liftU (fractions
- *   of the frame's short side), fromMs, toMs (null: the end), fadeInMs,
- *   opacity}`, in the output's times; ignored for the sound alone;
+ *   of the frame's short side), liftW (a fraction of its width), fromMs, toMs
+ *   (null: the end), fadeInMs, opacity}`, in the output's times; ignored for the sound alone;
  * - `job`: when given, `progress` calls back to the app with `{job, done}`
  *   (0 to 1) every quarter of a second while it renders.
  *

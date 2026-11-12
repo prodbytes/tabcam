@@ -28,11 +28,8 @@ const _futureLog = {
 /// What a newer app might add to an edit (keys this one doesn't know).
 const _editNewer = {
   'nudgeMs': -120,
-  'title': {
-    'on': true,
-    'lines': ['Blue Riff', 'Made-up Band'],
-  },
-  'watermark': false,
+  'fades': {'inMs': 500, 'outMs': 800},
+  'songInMs': 1500,
 };
 
 Uint8List _jpeg(int width, int height) => img.encodeJpg(
@@ -191,7 +188,7 @@ void main() {
       expect(changed.trackVolume, 0.3);
       expect(changed.trackId, 'p9');
       expect(changed.extra, _editNewer);
-      expect(_encoded(changed.toJson())['title'], _editNewer['title']);
+      expect(_encoded(changed.toJson())['fades'], _editNewer['fades']);
     });
 
     test('are equal only with the same extra keys', () {
@@ -214,7 +211,7 @@ void main() {
       expect(page.edit!.extra, _editNewer);
       final json = _encoded(page.copyWith(title: () => 'Take 1').toJson());
       expect(json['edit'], containsPair('v', 2));
-      expect(json['edit'], containsPair('title', _editNewer['title']));
+      expect(json['edit'], containsPair('fades', _editNewer['fades']));
       expect(json['futureLog'], _futureLog);
     });
   });

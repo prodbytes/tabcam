@@ -149,6 +149,7 @@ class _EventScreenState extends State<EventScreen> {
           library: _library,
           eventId: widget.eventId,
           pageId: page.id,
+          ocr: widget.ocr,
         ),
       ),
     );
@@ -314,8 +315,14 @@ class _EventScreenState extends State<EventScreen> {
     );
     await Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
-        builder: (_) =>
-            EventScreen(library: _library, eventId: copy.id, sync: widget.sync),
+        // With Premium's service: the copy is locked as this one is (Text,
+        // Cam, the video editor's watermark).
+        builder: (_) => EventScreen(
+          library: _library,
+          eventId: copy.id,
+          sync: widget.sync,
+          ocr: widget.ocr,
+        ),
       ),
     );
     memory.update(

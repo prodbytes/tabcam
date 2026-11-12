@@ -28,7 +28,8 @@ import 's3.dart';
 /// (`/transcribe`), once each session.
 ///
 /// It also keeps whether the user is premium ([status]), for the account
-/// sheet's upgrade offer.
+/// sheet's upgrade offer, and the last answer on the device, for a week
+/// ([premiumNow]: offline, the video editor's watermark still knows).
 class CloudOcr extends ChangeNotifier {
   CloudOcr({
     required this.library,
@@ -67,11 +68,73 @@ class CloudOcr extends ChangeNotifier {
     'pdf',
   };
 
+  /// The last answer's meta name in the library, and how long it's
+  /// believed for while the service can't be asked.
+  static const String premiumName = MetaNames.premium;
+  static const Duration premiumKept = Duration(days: 7);
+
   PremiumStatus? _status;
 
   /// Null while signed out, or until the service has answered.
   PremiumStatus? get status => _status;
   bool get premium => _status?.premium ?? false;
+
+  /// The service's last answer kept on the device: for whom, and when.
+  ({String user, bool premium, DateTime at})? _kept;
+
+  /// Whether the signed-in user has Premium now, for what they download
+  /// (the video editor's watermark): the service's answer, or, until it
+  /// has answered (offline, say) or when it couldn't check, its last one
+  /// for the same account, if it's at most [premiumKept] old.
+  bool get premiumNow {
+    final status = _status;
+    if (status != null && status.checked) return status.premium;
+    final kept = _kept;
+    final user = auth.user?.id;
+    if (kept == null || user == null || kept.user != user) return false;
+    final age = _now().difference(kept.at);
+    return kept.premium && !age.isNegative && age <= premiumKept;
+  }
+
+  Future<void> _loadKept() async {
+    try {
+      final json = await library.readMeta(premiumName);
+      if (json == null) return;
+      final m = jsonDecode(json);
+      if (m is! Map) return;
+      final user = m['user'];
+      final at = m['at'];
+      if (user is! String || at is! num) return;
+      // An answer since wins.
+      if (_kept != null) return;
+      _kept = (
+        user: user,
+        premium: m['premium'] == true,
+        at: DateTime.fromMillisecondsSinceEpoch(at.toInt()),
+      );
+      notifyListeners();
+    } on Object catch (e) {
+      debugPrint('TabCam: premium answer not kept: $e');
+    }
+  }
+
+  /// Keeps the service's [status] for [user] on the device.
+  Future<void> _keep(String user, PremiumStatus status) async {
+    final at = _now();
+    _kept = (user: user, premium: status.premium, at: at);
+    try {
+      await library.writeMeta(
+        premiumName,
+        jsonEncode({
+          'user': user,
+          'premium': status.premium,
+          'at': at.millisecondsSinceEpoch,
+        }),
+      );
+    } on Object catch (e) {
+      debugPrint('TabCam: premium answer not kept: $e');
+    }
+  }
 
   bool _checking = false;
   bool get checking => _checking;
@@ -112,6 +175,7 @@ class CloudOcr extends ChangeNotifier {
   void start() {
     if (_started) return;
     _started = true;
+    unawaited(_loadKept());
     auth.addListener(_onAuth);
     sync.addListener(_onSync);
     _onAuth();
@@ -146,6 +210,7 @@ class CloudOcr extends ChangeNotifier {
   /// say), then collects transcriptions if they are.
   Future<void> refresh() async {
     final token = _token;
+    final user = _userId;
     if (token == null || _checking) return;
     _checking = true;
     notifyListeners();
@@ -154,6 +219,7 @@ class CloudOcr extends ChangeNotifier {
       if (_token != token) return;
       _status = status;
       _error = status.checked ? null : appL10n.accountPremiumCheckFailedNow;
+      if (status.checked && user != null) unawaited(_keep(user, status));
     } on OcrApiException catch (e) {
       _error = e.needsSignIn
           ? appL10n.accountSignInAgain

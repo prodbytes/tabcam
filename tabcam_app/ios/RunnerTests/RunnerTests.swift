@@ -108,6 +108,13 @@ class RunnerTests: XCTestCase {
     XCTAssertEqual(
       mark.rect(in: CGSize(width: 1920, height: 1024), image: CGSize(width: 400, height: 200)),
       CGRect(x: 640, y: 128, width: 1024, height: 512))
+    // Over the tab: lifted a tenth of the frame's width more (its tallest
+    // band), 192 px of 1920.
+    let lifted = VideoEditor.Layer(
+      image: 0, anchor: .bottomRight, heightU: 0.5, marginU: 0.25, liftW: 0.1)
+    XCTAssertEqual(
+      lifted.rect(in: CGSize(width: 1920, height: 1024), image: CGSize(width: 400, height: 200)),
+      CGRect(x: 640, y: 1024 - 256 - 192 - 512, width: 1024, height: 512))
     let plan = VideoEditor.Plan(args: [
       "input": "/tmp/in.mp4", "output": "/tmp/out.mp4", "startMs": 0, "endMs": 1000,
       "images": [FlutterStandardTypedData(bytes: Data([1, 2, 3]))],

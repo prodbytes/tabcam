@@ -13,6 +13,7 @@ import '../capture/media.dart';
 import '../capture/play_along_sidebar.dart' show isTake;
 import '../capture/take_log.dart';
 import '../capture/video_edit.dart';
+import '../cloud/cloud_ocr.dart';
 import '../export/download.dart';
 import '../l10n/language.dart';
 import '../library/capture_event.dart';
@@ -21,6 +22,7 @@ import '../recognition/necklines.dart';
 import 'edited_playback.dart';
 import 'file_screen.dart';
 import 'media_url.dart';
+import 'premium_card.dart';
 import 'video_page.dart' show mediaLength, openPlayer, pageFile;
 import 'messages.dart';
 
@@ -32,14 +34,16 @@ import 'messages.dart';
 /// capture's recordings, videos or takes, or a sound file (added to
 /// them), placed along the video by hand (dragged, trimmed by its ends,
 /// nudged by a tenth of a second); ⋮ changes or removes it. Each lane has
-/// its volume and Mute at its left. Under them, **On the video**: what's
-/// drawn over it, for now a take's tab (the Tab chip). The edit is kept
-/// with the page as it's made ([PageEdit]), and played as it says
-/// ([EditedPlayback]: the kept part, both lanes at their volumes, the
-/// layers over it, [EditLayers]); the video's file stays as it is.
-/// Download renders the same plan ([RenderPlan]) to a file on the device
-/// ([VideoEditor]): the video, the video without sound, or the sound
-/// alone.
+/// its volume and Mute at its left. Under them (beside everything, on a
+/// wide screen), **On the video**: what's drawn over it, as chips: a
+/// take's tab, the title (its text typed under them on a phone, beside
+/// them on a wide screen) and the watermark, which only Premium removes.
+/// The edit is kept with the page as it's made ([PageEdit]), and played
+/// as it says ([EditedPlayback]: the kept part, both lanes at their
+/// volumes, the layers over it, [EditLayers]); the video's file stays as
+/// it is. Download renders the same plan ([RenderPlan]) to a file on the
+/// device ([VideoEditor]): the video, the video without sound, or the
+/// sound alone.
 class VideoEditScreen extends StatefulWidget {
   const VideoEditScreen({
     super.key,
@@ -48,11 +52,17 @@ class VideoEditScreen extends StatefulWidget {
     required this.page,
     this.editor,
     this.pickFile = _pickFile,
+    this.ocr,
   });
 
   final Library library;
   final String eventId;
   final EventPage page;
+
+  /// TabCam Premium, where the build has it: the watermark can be turned
+  /// off, and is left out of a download, only for a user who has it now
+  /// ([watermarkUnlocked]; null, a build without it: always).
+  final CloudOcr? ocr;
 
   /// What applies the edit; the platform's by default ([VideoEditor]).
   final VideoEditing? editor;
@@ -157,9 +167,25 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// [tabOffered]).
   bool _tab = true;
 
-  /// The layers the preview draws, and what they were worked out from.
+  /// The title: whether it's on, and the text typed for it (null: the
+  /// capture's name, [_captureTitle]); its fields, and whether they're
+  /// open in place of the chips (on a phone).
+  bool _titleOn = true;
+  List<String>? _titleLines;
+  final _title1 = TextEditingController();
+  final _title2 = TextEditingController();
+  final _titleFocus = FocusNode();
+  final _title2Focus = FocusNode();
+  bool _editingTitle = false;
+
+  /// Whether the watermark is drawn (only Premium turns it off).
+  bool _watermark = true;
+
+  /// The layers the preview draws, and what they were worked out from;
+  /// the title's picture, for a tap on it.
   List<PlanLayer> _layers = const [];
   Object? _layersOf;
+  final _measured = LayerPictures();
 
   /// The edit as last kept with the page, and the wait before the next
   /// change is kept (a drag makes many).
@@ -215,11 +241,48 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   Future<XFile> _fileOf(CaptureEvent event, EventPage page) =>
       pageFile(_library, event, page);
 
+  /// The capture's name, as the title's default text.
+  List<String> get _captureTitle {
+    final event = _library.byId(widget.eventId);
+    return event == null
+        ? const []
+        : captureTitleLines(event.title, event.artist);
+  }
+
+  /// The title's text as it is now: what's typed, or the capture's name.
+  List<String> get _titleText => titleText(_titleLines ?? _captureTitle);
+
+  /// The watermark's text: a take's, or another video's.
+  String _watermarkText(AppLocalizations l10n) =>
+      _take ? l10n.videoEditWatermarkTake : l10n.videoEditWatermarkMade;
+
+  /// Whether this user can leave the watermark off ([watermarkUnlocked]).
+  bool get _unlocked => watermarkUnlocked(widget.ocr);
+
+  /// Whether the title's text is being edited: its fields open (a phone),
+  /// or one of them focused (a wide screen). The preview then shows it
+  /// as it ends up, not fading in.
+  bool get _titleBeingEdited =>
+      _editingTitle || _titleFocus.hasFocus || _title2Focus.hasFocus;
+
   @override
   void initState() {
     super.initState();
+    widget.ocr?.addListener(_onPremium);
+    _titleFocus.addListener(_onTitleFocus);
+    _title2Focus.addListener(_onTitleFocus);
     unawaited(_open());
     unawaited(_loadFormats());
+  }
+
+  /// Premium's status arrived, or changed: the Watermark chip unlocks (or
+  /// locks) where it is.
+  void _onPremium() {
+    if (mounted) setState(() {});
+  }
+
+  void _onTitleFocus() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadFormats() async {
@@ -264,7 +327,11 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           _song = edit.song;
           _songLevel = _Level(edit.trackVolume, edit.songMuted);
           _tab = edit.tab;
+          _titleOn = edit.title?.on ?? true;
+          _titleLines = edit.title?.lines;
+          _watermark = edit.watermark;
         }
+        _fillTitle();
       });
       final track = edit?.trackId == null
           ? null
@@ -295,6 +362,12 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     _playback?.dispose();
     _video?.dispose();
     _trackPlayer?.dispose();
+    widget.ocr?.removeListener(_onPremium);
+    _title1.dispose();
+    _title2.dispose();
+    _titleFocus.dispose();
+    _title2Focus.dispose();
+    _measured.dispose();
     super.dispose();
   }
 
@@ -312,11 +385,14 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     offset: _offset,
     trackVolume: _songLevel.volume,
     tab: _tab,
+    title: EditTitle.of(on: _titleOn, lines: _titleLines),
+    watermark: _watermark,
     extra: _extra,
   );
 
   /// Whether the edit is anything but the defaults: the whole video with
-  /// its own sound as it is (and a take's tab over it).
+  /// its own sound as it is (and a take's tab, the capture's name and the
+  /// watermark over it).
   bool get _edited =>
       _current.copyWith(extra: const {}) !=
       PageEdit(start: Duration.zero, end: _duration);
@@ -349,17 +425,50 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   );
 
   /// The layers the preview draws over the video, as Download's plan has
-  /// them: worked out again only when the part kept or the tab changes.
-  List<PlanLayer> get _previewLayers {
-    final of = (_start, _end, _tab, _duration);
+  /// them (for this user: the watermark as [_unlocked] says): worked out
+  /// again only when what they're made of changes. While the title is
+  /// being edited, it shows as it ends up rather than fading in.
+  List<PlanLayer> _previewLayers(AppLocalizations l10n) {
+    final editing = _titleBeingEdited;
+    final watermark = _watermarkText(l10n);
+    final of = (
+      _start,
+      _end,
+      _tab,
+      _duration,
+      _titleOn,
+      _titleLines?.join('\n'),
+      _captureTitle.join('\n'),
+      _watermark,
+      _unlocked,
+      watermark,
+      editing,
+    );
     if (of != _layersOf) {
       _layersOf = of;
-      _layers = RenderPlan.of(
-        _pageEdit,
-        duration: _duration,
-        takeLog: _takeLog,
-        preview: true,
-      ).layers;
+      _layers = [
+        for (final layer in RenderPlan.of(
+          _pageEdit,
+          duration: _duration,
+          takeLog: _takeLog,
+          title: _captureTitle,
+          watermark: watermark,
+          premium: _unlocked,
+          bandAspect: bandAspect,
+          preview: true,
+        ).layers)
+          if (editing && layer.id == 'title')
+            PlanLayer(
+              id: layer.id,
+              look: layer.look,
+              anchor: layer.anchor,
+              heightU: layer.heightU,
+              marginU: layer.marginU,
+            )
+          else
+            layer,
+      ];
+      _measured.keepOnly(_layers.map((l) => l.look));
     }
     return _layers;
   }
@@ -370,6 +479,111 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     setState(() => _tab = on);
     _changed();
   }
+
+  /// The title's fields show its text as it is now (setState's).
+  void _fillTitle() {
+    final lines = _titleLines ?? _captureTitle;
+    _title1.text = lines.firstOrNull ?? '';
+    _title2.text = lines.length > 1 ? lines[1] : '';
+  }
+
+  /// The Title chip: the title on or off (its text kept). With no text to
+  /// show, it opens its fields instead.
+  void _setTitle(bool on) {
+    if (on && _titleText.isEmpty) {
+      _editTitle();
+      return;
+    }
+    if (on == _titleOn) return;
+    setState(() => _titleOn = on);
+    _changed();
+  }
+
+  /// Opens the title's fields: in place of the chips on a phone; on a
+  /// wide screen, they're beside them already, the first one focused.
+  void _editTitle() {
+    setState(() => _editingTitle = !_wide);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _titleFocus.requestFocus();
+    });
+  }
+
+  /// The title's text typed: it's the title's from now on (and on), the
+  /// preview showing it at once, kept a moment later; the song isn't
+  /// sought again (nothing it plays by changed).
+  void _typed(String _) {
+    setState(() {
+      _titleLines = [_title1.text, _title2.text];
+      _titleOn = true;
+    });
+    _changed();
+  }
+
+  /// **Use the capture's name**: the text typed goes, the title is the
+  /// capture's name (and follows it), on.
+  void _titleFromCapture() {
+    setState(() {
+      _titleLines = null;
+      _titleOn = true;
+      _fillTitle();
+    });
+    _changed();
+  }
+
+  /// **No title**: off, its text kept; the fields close.
+  void _noTitle() {
+    setState(() {
+      _titleOn = false;
+      _editingTitle = false;
+    });
+    FocusManager.instance.primaryFocus?.unfocus();
+    _changed();
+  }
+
+  /// **Done**: the fields close.
+  void _titleDone() {
+    setState(() => _editingTitle = false);
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
+
+  /// The Watermark chip: for a user with Premium, it on or off; for
+  /// anyone else, it stays on and the Premium card says how to remove it.
+  void _setWatermark(bool on) {
+    if (!_unlocked) {
+      unawaited(_premiumSheet());
+      return;
+    }
+    if (on == _watermark) return;
+    setState(() => _watermark = on);
+    _changed();
+  }
+
+  /// TabCam Premium's card, in a sheet: Premium removes the watermark.
+  Future<void> _premiumSheet() async {
+    final ocr = widget.ocr;
+    if (ocr == null) return;
+    final l10n = context.l10n;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => SafeArea(
+        child: SingleChildScrollView(
+          key: const Key('video-edit-premium'),
+          padding: const EdgeInsets.all(16),
+          child: PremiumCard(
+            ocr: ocr,
+            email: ocr.auth.user?.email,
+            lead: l10n.videoEditWatermarkLocked,
+            onClose: () => Navigator.pop(context),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Whether the screen is wide: **On the video** beside the rest.
+  bool get _wide => MediaQuery.sizeOf(context).width >= _wideFrom;
+  static const _wideFrom = 840.0;
 
   /// Keeps the edit with the page, when it changed.
   Future<void> _keep() async {
@@ -725,7 +939,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   }
 
   /// Back to the defaults: the whole video, with its own sound as it is,
-  /// and no song (the edit is none).
+  /// no song, and the tab, the capture's name and the watermark over it
+  /// (the edit is none).
   Future<void> _reset() async {
     final player = _trackPlayer;
     setState(() {
@@ -734,6 +949,11 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       _own = _Level();
       _song = null;
       _tab = true;
+      _titleOn = true;
+      _titleLines = null;
+      _editingTitle = false;
+      _watermark = true;
+      _fillTitle();
       _clearSong();
     });
     _changed();
@@ -742,18 +962,25 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   }
 
   /// The plan of the edit as it is now, for [kind]: of [input], the
-  /// video's file, for Download (the preview's has no files).
-  RenderPlan _plan(RenderKind kind, {XFile? input}) => RenderPlan.of(
-    _pageEdit,
-    input: input,
-    duration: _duration,
-    inputExtension: input == null ? null : Media.of(input)?.extension,
-    songFile: _track,
-    songLength: _trackLength,
-    kind: kind,
-    formats: _formats,
-    takeLog: _takeLog,
-  );
+  /// video's file, for Download (the preview's has no files). Whether the
+  /// watermark is left out is this user's Premium as it is now, as they
+  /// download ([_unlocked]).
+  RenderPlan _plan(RenderKind kind, {XFile? input, AppLocalizations? l10n}) =>
+      RenderPlan.of(
+        _pageEdit,
+        input: input,
+        duration: _duration,
+        inputExtension: input == null ? null : Media.of(input)?.extension,
+        songFile: _track,
+        songLength: _trackLength,
+        kind: kind,
+        formats: _formats,
+        takeLog: _takeLog,
+        title: _captureTitle,
+        watermark: _watermarkText(l10n ?? context.l10n),
+        premium: _unlocked,
+        bandAspect: bandAspect,
+      );
 
   /// Whether the song lane can be rendered: it isn't heard (a muted song
   /// is left out of the download), or its song can be fitted (one of
@@ -798,7 +1025,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       final page = widget.page;
       final input = await _fileOf(event, page);
       final label = fileLabel(l10n, event, page);
-      final plan = _plan(what, input: input);
+      final plan = _plan(what, input: input, l10n: l10n);
       if (plan.passthrough) {
         await Downloads.saveFile(_library, event, page, label);
         return;
@@ -883,34 +1110,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           ? Center(child: Text(l10n.textViewCantPlay))
           : video == null
           ? const Center(child: CircularProgressIndicator())
-          : AbsorbPointer(
-              absorbing: _busy,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  _preview(video),
-                  _transport(video, l10n),
-                  const SizedBox(height: 8),
-                  _timeline(video, l10n),
-                  if (_onTheVideo(l10n) case final layers?) ...[
-                    const SizedBox(height: 8),
-                    layers,
-                  ],
-                  if (_hasSong) ...[
-                    const SizedBox(height: 8),
-                    _songDetails(l10n),
-                  ],
-                  if (_busy) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      l10n.videoEditDownloading,
-                      key: const Key('video-edit-downloading'),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ],
-              ),
-            ),
+          : AbsorbPointer(absorbing: _busy, child: _body(video, l10n)),
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -945,6 +1145,56 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       ),
     );
   }
+
+  /// The screen's body: the preview, its transport and the lanes; **On
+  /// the video** under them on a phone (the title's fields in its place
+  /// while they're open), beside them on a wide screen (the fields under
+  /// its chips); the song's details.
+  Widget _body(VideoPlayerController video, AppLocalizations l10n) {
+    final wide = _wide;
+    final main = [
+      _preview(video, l10n),
+      _transport(video, l10n),
+      const SizedBox(height: 8),
+      _timeline(video, l10n),
+      if (!wide) ...[
+        const SizedBox(height: 8),
+        _editingTitle ? _titleFields(l10n) : _onTheVideo(l10n),
+      ],
+      if (_hasSong) ...[const SizedBox(height: 8), _songDetails(l10n)],
+      if (_busy) ...[
+        const SizedBox(height: 16),
+        Text(
+          l10n.videoEditDownloading,
+          key: const Key('video-edit-downloading'),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    ];
+    if (!wide) {
+      return ListView(padding: const EdgeInsets.all(16), children: main);
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: ListView(padding: const EdgeInsets.all(16), children: main),
+        ),
+        const VerticalDivider(width: 1),
+        SizedBox(
+          width: _sideWidth,
+          child: ListView(
+            key: const Key('video-edit-side'),
+            padding: const EdgeInsets.all(16),
+            children: [_onTheVideo(l10n, wide: true)],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// How wide **On the video** is beside the rest, on a wide screen.
+  static const _sideWidth = 320.0;
 
   /// Download, split: the button downloads the video as edited; its menu
   /// also has it without sound, and its sound alone, each saying its
@@ -1016,11 +1266,12 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     );
   }
 
-  /// The video, at most a third of the screen (a tap plays or pauses it),
-  /// with what Download draws over it ([EditLayers]).
-  Widget _preview(VideoPlayerController video) {
+  /// The video, at most a third of the screen (a tap plays or pauses it;
+  /// on the title, it edits it), with what Download draws over it
+  /// ([EditLayers]).
+  Widget _preview(VideoPlayerController video, AppLocalizations l10n) {
     final height = MediaQuery.sizeOf(context).height / 3;
-    final layers = _previewLayers;
+    final layers = _previewLayers(l10n);
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: height),
       child: GestureDetector(
@@ -1028,30 +1279,178 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         child: Center(
           child: AspectRatio(
             aspectRatio: video.value.aspectRatio,
-            child: layers.isEmpty
-                ? VideoPlayer(video)
-                : Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      VideoPlayer(video),
-                      EditLayers(video: video, layers: layers, start: _start),
-                    ],
-                  ),
+            child: LayoutBuilder(
+              builder: (context, box) => GestureDetector(
+                key: const Key('video-edit-preview'),
+                behavior: HitTestBehavior.opaque,
+                onTapUp: (tap) =>
+                    _tapPreview(tap.localPosition, box.biggest, layers),
+                child: layers.isEmpty
+                    ? VideoPlayer(video)
+                    : Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          VideoPlayer(video),
+                          EditLayers(
+                            video: video,
+                            layers: layers,
+                            start: _start,
+                          ),
+                        ],
+                      ),
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  /// **On the video**: what's drawn over it, as chips. For now a take's
-  /// **Tab** (on by default): where its log has its tab, not in its
-  /// picture already; off and disabled, its tooltip saying why, on a take
-  /// whose tab is burned in as it was saved, or one saved before takes
-  /// kept their tab apart. (A disabled chip shows no tooltip of its own,
-  /// so it's in one.) None on a video that isn't a take, nor on a take
-  /// without a tab: its log has none, or, with no log, its capture has
-  /// none to show.
-  Widget? _onTheVideo(AppLocalizations l10n) {
+  /// A tap at [at] on the preview, [size] big, showing [layers]: on the
+  /// title, it's edited; anywhere else, the video plays or pauses.
+  void _tapPreview(Offset at, Size size, List<PlanLayer> layers) {
+    final title = layers.where((l) => l.id == 'title').firstOrNull;
+    if (title != null &&
+        title.rectIn(size, _measured.of(title.look).size).contains(at)) {
+      _editTitle();
+      return;
+    }
+    unawaited(_playback?.playPause());
+  }
+
+  /// **On the video**: what's drawn over it, as chips (and, on a [wide]
+  /// screen, the title's fields under them). A take's **Tab** ([_tabChip]).
+  /// **Title** ✎: on by default, with the capture's name (none when it's
+  /// the name the app gave it: the chip then adds one); tapped, it's on
+  /// or off, its text kept; ✎ (or a tap on the title in the preview)
+  /// edits its text. **Watermark**: for a user with Premium, on or off;
+  /// for anyone else, locked on, and a tap shows the Premium card.
+  Widget _onTheVideo(AppLocalizations l10n, {bool wide = false}) {
+    final theme = Theme.of(context);
+    final text = _titleText;
+    final locked = !_unlocked;
+    return Column(
+      key: const Key('video-edit-on-video'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(l10n.videoEditOnTheVideo, style: theme.textTheme.titleSmall),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            ?_tabChip(l10n),
+            InputChip(
+              key: const Key('video-edit-title'),
+              avatar: text.isEmpty ? const Icon(Icons.add, size: 18) : null,
+              label: Text(l10n.videoEditLayerTitle),
+              selected: _titleOn && text.isNotEmpty,
+              onSelected: _setTitle,
+              deleteIcon: const Icon(
+                Icons.edit_outlined,
+                key: Key('video-edit-title-edit'),
+                size: 18,
+              ),
+              onDeleted: _editTitle,
+              deleteButtonTooltipMessage: l10n.videoEditTitleEdit,
+            ),
+            FilterChip(
+              key: const Key('video-edit-watermark'),
+              avatar: locked ? const Icon(Icons.lock_outline, size: 18) : null,
+              showCheckmark: !locked,
+              label: Text(l10n.videoEditLayerWatermark),
+              tooltip: locked
+                  ? l10n.videoEditWatermarkLocked
+                  : l10n.videoEditWatermarkAbout(_watermarkText(l10n)),
+              selected: locked || _watermark,
+              onSelected: _setWatermark,
+            ),
+          ],
+        ),
+        if (wide) ...[const SizedBox(height: 12), _titleFields(l10n)],
+      ],
+    );
+  }
+
+  /// The title's text: two fields (typing shows it in the preview at
+  /// once), **Use the capture's name** and **No title**; on a phone, in
+  /// place of the chips, with **Done** to close them.
+  Widget _titleFields(AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    final inline = _wide;
+    InputDecoration field(String label) =>
+        InputDecoration(labelText: label, isDense: true, counterText: '');
+    return Column(
+      key: const Key('video-edit-title-fields'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          inline
+              ? l10n.videoEditTitleAbout
+              : '${l10n.videoEditLayerTitle} · ${l10n.videoEditTitleAbout}',
+          style: inline
+              ? theme.textTheme.bodySmall
+              : theme.textTheme.titleSmall,
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          key: const Key('video-edit-title-1'),
+          controller: _title1,
+          focusNode: _titleFocus,
+          maxLength: EditTitle.maxChars,
+          decoration: field(l10n.videoEditTitleLine1),
+          textInputAction: TextInputAction.next,
+          onChanged: _typed,
+          onSubmitted: (_) => _title2Focus.requestFocus(),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          key: const Key('video-edit-title-2'),
+          controller: _title2,
+          focusNode: _title2Focus,
+          maxLength: EditTitle.maxChars,
+          decoration: field(l10n.videoEditTitleLine2),
+          textInputAction: TextInputAction.done,
+          onChanged: _typed,
+          onSubmitted: (_) => _titleDone(),
+        ),
+        const SizedBox(height: 4),
+        Wrap(
+          alignment: WrapAlignment.end,
+          spacing: 8,
+          children: [
+            TextButton(
+              key: const Key('video-edit-title-capture'),
+              onPressed: _titleLines != null || !_titleOn
+                  ? _titleFromCapture
+                  : null,
+              child: Text(l10n.videoEditTitleCapture),
+            ),
+            TextButton(
+              key: const Key('video-edit-title-off'),
+              onPressed: _titleOn ? _noTitle : null,
+              child: Text(l10n.videoEditTitleOff),
+            ),
+            if (!inline)
+              FilledButton.tonal(
+                key: const Key('video-edit-title-done'),
+                onPressed: _titleDone,
+                child: Text(l10n.videoEditTitleDone),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// The **Tab** chip (on by default): where the take's log has its tab,
+  /// not in its picture already; off and disabled, its tooltip saying
+  /// why, on a take whose tab is burned in as it was saved, or one saved
+  /// before takes kept their tab apart. (A disabled chip shows no tooltip
+  /// of its own, so it's in one.) None on a video that isn't a take, nor
+  /// on a take without a tab: its log has none, or, with no log, its
+  /// capture has none to show.
+  Widget? _tabChip(AppLocalizations l10n) {
     if (!_take) return null;
     final log = _takeLog;
     final offered = tabOffered(log);
@@ -1062,7 +1461,6 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         necklines(_library.byId(widget.eventId)?.tabText ?? '').isEmpty) {
       return null;
     }
-    final theme = Theme.of(context);
     final chip = FilterChip(
       key: const Key('video-edit-tab'),
       label: Text(l10n.videoEditLayerTab),
@@ -1070,31 +1468,15 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       selected: offered && _tab,
       onSelected: offered ? _setTab : null,
     );
-    return Column(
-      key: const Key('video-edit-on-video'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(l10n.videoEditOnTheVideo, style: theme.textTheme.titleSmall),
-        const SizedBox(height: 4),
-        Wrap(
-          spacing: 8,
-          runSpacing: 4,
-          children: [
-            if (offered)
-              chip
-            else
-              Tooltip(
-                key: const Key('video-edit-tab-why'),
-                // No log: from before takes kept one, with or without a tab.
-                message: log == null
-                    ? l10n.videoEditTabNotKept
-                    : l10n.videoEditTabInPicture,
-                triggerMode: TooltipTriggerMode.tap,
-                child: chip,
-              ),
-          ],
-        ),
-      ],
+    if (offered) return chip;
+    return Tooltip(
+      key: const Key('video-edit-tab-why'),
+      // No log: from before takes kept one, with or without a tab.
+      message: log == null
+          ? l10n.videoEditTabNotKept
+          : l10n.videoEditTabInPicture,
+      triggerMode: TooltipTriggerMode.tap,
+      child: chip,
     );
   }
 

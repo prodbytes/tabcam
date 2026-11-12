@@ -3,7 +3,9 @@
 TabCam Premium is the [event screen](event-screen.md)'s **Text** and
 **Cam**: the text tab ([tab recognition](tab-recognition.md), the pages
 read into it by itself, on the device or in the cloud) and recording
-oneself playing along ([Cam](cam.md)). Premium users' scans are
+oneself playing along ([Cam](cam.md)); it also removes the **watermark**
+the [video editor](video-edit.md#layers) puts on a downloaded video
+("Recorded by TabCam", "Made with TabCam"). Premium users' scans are
 **transcribed in the cloud as they sync**: the event's text tab appears
 by itself, read more accurately than on the phone, and on the web too.
 Without Premium, nothing is read, and Text and Cam open as **previews**
@@ -17,7 +19,9 @@ A build has Premium only with [cloud sync](cloud-sync.md) set up and
 as before, and nothing is locked: Text and Cam are open to everyone
 (local builds without the service, and the tests). `premiumLocked(ocr)` in
 [premium_card.dart](../tabcam_app/lib/screens/premium_card.dart) is the
-rule: the service is set up and the user isn't premium.
+rule: the service is set up and the user isn't premium. The watermark's
+rule beside it, `watermarkUnlocked(ocr)`, is the other way round: no
+service, or the user has Premium now (`CloudOcr.premiumNow`, below).
 
 ## Who is premium
 
@@ -288,6 +292,18 @@ included):
 - **Nothing is read** by itself without Premium ([tab
   recognition](tab-recognition.md#reading-by-itself)): the reading waits
   and starts once the user has it.
+- **The video editor's watermark** ([video edit](video-edit.md#layers)):
+  without Premium its chip is locked on, and a tap opens the Premium
+  card in a sheet, starting with "Premium removes the watermark"; with
+  it, the chip turns it off. Whether it's left out is decided for the
+  one downloading, at Download: an edit a Premium user made without it
+  still has it when someone without Premium downloads it. For this,
+  the app keeps the service's last answer on the device (the meta
+  `premium`: the account's ID, the answer and when; in localStorage on
+  the web), and `premiumNow` is the service's answer, or, until it has
+  answered (offline, say) or when it couldn't check, that last answer
+  for the same account, if it's at most a week old. The editor listens,
+  so an answer arriving while it's open unlocks the chip in place.
 
 **Upgrade offer** (everywhere, the store apps included):
 

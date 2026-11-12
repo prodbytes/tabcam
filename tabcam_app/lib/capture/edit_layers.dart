@@ -39,15 +39,130 @@ class LayerPicture {
   void dispose() => picture.dispose();
 }
 
+/// The font of the title and the watermark: Roboto, shipped with the app
+/// (assets/fonts), so they're drawn the same in the preview and in the
+/// file on every platform.
+const String layerFont = 'TabCamRoboto';
+
+/// The short side of the frame the title and the watermark are drawn for,
+/// in pixels: the video scales them to its own.
+const double layerShort = 1200;
+
 /// [look] drawn ([LayerPicture]).
 LayerPicture layerPicture(LayerLook look) => switch (look) {
   BandLook(:final line) => bandPicture(line),
+  TitleLook(:final lines) => titlePicture(lines),
+  WatermarkLook(:final text) => watermarkPicture(text),
 };
 
-/// [neckline] drawn as a band to put along the bottom of a take: white
-/// monospaced text on a dark, see-through background, as wide as
-/// [width], its text as big as fits (a long staff gets smaller).
-LayerPicture bandPicture(String neckline, {int width = bandWidth}) {
+/// A soft shadow under white text [size] big, so it reads on a bright
+/// picture too.
+List<Shadow> _shadow(double size) => [
+  Shadow(
+    color: const Color(0x99000000),
+    blurRadius: size * 0.12,
+    offset: Offset(0, size * 0.04),
+  ),
+];
+
+/// [lines] drawn as a video's title, for a frame whose short side is
+/// [short] pixels: the first line in Roboto Medium, the second Regular, 80%
+/// as big, white with a soft shadow, on a 35% black rounded box
+/// ([TitleLayout]: as high as the plan's layer says). A line too long for
+/// the frame ends in "…".
+LayerPicture titlePicture(List<String> lines, {double short = layerShort}) {
+  final shown = lines.isEmpty ? const [''] : lines.take(2).toList();
+  final padV = TitleLayout.padV * short;
+  final padH = TitleLayout.padH * short;
+  final widest = (1 - 2 * TitleLayout.margin) * short - 2 * padH;
+  final sizes = [TitleLayout.line1 * short, TitleLayout.line2 * short];
+  final texts = [
+    for (final (i, line) in shown.indexed)
+      TextPainter(
+        text: TextSpan(
+          text: line,
+          style: TextStyle(
+            fontFamily: layerFont,
+            fontSize: sizes[i],
+            height: TitleLayout.lineHeight,
+            fontWeight: i == 0 ? FontWeight.w500 : FontWeight.w400,
+            color: Colors.white,
+            shadows: _shadow(sizes[i]),
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+        maxLines: 1,
+        ellipsis: '…',
+      )..layout(maxWidth: widest),
+  ];
+  final width = (texts.map((t) => t.width).reduce(max) + 2 * padH)
+      .ceilToDouble();
+  final height = TitleLayout.heightU(texts.length) * short;
+  final recorder = ui.PictureRecorder();
+  final canvas = Canvas(recorder);
+  canvas.drawRRect(
+    RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, 0, width, height),
+      Radius.circular(padV * 1.5),
+    ),
+    Paint()..color = const Color(0x59000000),
+  );
+  var y = padV;
+  for (final (i, text) in texts.indexed) {
+    final slot = sizes[i] * TitleLayout.lineHeight;
+    text.paint(canvas, Offset(padH, y + (slot - text.height) / 2));
+    y += slot;
+    text.dispose();
+  }
+  return LayerPicture(recorder.endRecording(), Size(width, height));
+}
+
+/// [text] drawn as the watermark, for a frame whose short side is [short]
+/// pixels: one small line of Roboto, white at 60% with a soft shadow
+/// ([WatermarkLayout]).
+LayerPicture watermarkPicture(String text, {double short = layerShort}) {
+  final size = WatermarkLayout.text * short;
+  final height = WatermarkLayout.heightU * short;
+  final pad = (height - size) / 2;
+  final painter = TextPainter(
+    text: TextSpan(
+      text: text,
+      style: TextStyle(
+        fontFamily: layerFont,
+        fontSize: size,
+        height: 1,
+        color: const Color(0x99FFFFFF),
+        shadows: _shadow(size),
+      ),
+    ),
+    textDirection: TextDirection.ltr,
+    maxLines: 1,
+  )..layout();
+  final width = (painter.width + 2 * pad).ceilToDouble();
+  final recorder = ui.PictureRecorder();
+  final canvas = Canvas(recorder);
+  painter.paint(canvas, Offset(pad, (height - painter.height) / 2));
+  painter.dispose();
+  return LayerPicture(recorder.endRecording(), Size(width, height));
+}
+
+/// How high [neckline]'s band is, as a fraction of its width (the
+/// frame's): measured once per line ([BandAspect]), so the watermark sits
+/// right above the tallest band.
+double bandAspect(String neckline) {
+  final known = _aspects[neckline];
+  if (known != null) return known;
+  if (_aspects.length >= 256) _aspects.clear();
+  final (text, height) = _bandText(neckline, bandWidth);
+  text.dispose();
+  return _aspects[neckline] = height / bandWidth;
+}
+
+final _aspects = <String, double>{};
+
+/// [neckline]'s text laid out for a band [width] wide, and the band's
+/// height.
+(TextPainter, int) _bandText(String neckline, int width) {
   final pad = width / 64;
   TextPainter painter(double size) => TextPainter(
     text: TextSpan(
@@ -67,7 +182,15 @@ LayerPicture bandPicture(String neckline, {int width = bandWidth}) {
   final fit = probe.width <= 0 ? 100.0 : 100 * (width - 2 * pad) / probe.width;
   probe.dispose();
   final text = painter(min(fit, width / 48));
-  final height = (text.height + 2 * pad).ceil();
+  return (text, (text.height + 2 * pad).ceil());
+}
+
+/// [neckline] drawn as a band to put along the bottom of a take: white
+/// monospaced text on a dark, see-through background, as wide as
+/// [width], its text as big as fits (a long staff gets smaller).
+LayerPicture bandPicture(String neckline, {int width = bandWidth}) {
+  final pad = width / 64;
+  final (text, height) = _bandText(neckline, width);
   final recorder = ui.PictureRecorder();
   final canvas = Canvas(recorder);
   canvas.drawRect(

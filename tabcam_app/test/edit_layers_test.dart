@@ -38,10 +38,12 @@ TakeLog _log({
   tab: TakeTab(lines: const [_riffA, _riffB], marks: marks),
 );
 
-/// The tab layers' times and lines, for comparing.
+/// The tab layers' times and lines, for comparing (the watermark and the
+/// title left out).
 List<(int, int?, String)> _bands(RenderPlan plan) => [
   for (final l in plan.layers)
-    (l.from.inMilliseconds, l.to?.inMilliseconds, (l.look as BandLook).line),
+    if (l.id == 'tab')
+      (l.from.inMilliseconds, l.to?.inMilliseconds, (l.look as BandLook).line),
 ];
 
 void main() {
@@ -155,6 +157,7 @@ void main() {
           'heightU': 0.0,
           'marginU': 0.0,
           'liftU': 0.0,
+          'liftW': 0.0,
           'fromMs': 0,
           'toMs': 1210,
           'fadeInMs': 0,
@@ -404,10 +407,15 @@ void main() {
     FilterChip tabChip(WidgetTester tester) =>
         tester.widget<FilterChip>(find.byKey(const Key('video-edit-tab')));
 
+    /// The tab's bands over the preview (the watermark, always there
+    /// here, left out).
     List<PlanLayer> previewLayers(WidgetTester tester) {
       final found = find.byType(EditLayers);
       if (found.evaluate().isEmpty) return const [];
-      return tester.widget<EditLayers>(found).layers;
+      return [
+        for (final l in tester.widget<EditLayers>(found).layers)
+          if (l.id == 'tab') l,
+      ];
     }
 
     bool enabled(WidgetTester tester, String key) =>
@@ -463,7 +471,7 @@ void main() {
       await tester.tap(find.byKey(const Key('video-edit-tab')));
       await settle(tester);
       expect(tabChip(tester).selected, isFalse);
-      expect(find.byType(EditLayers), findsNothing);
+      expect(previewLayers(tester), isEmpty);
       final edit = library.byId(id)!.pages.first.edit!;
       expect(edit.tab, isFalse);
       expect(edit.toJson()['tab'], false);
@@ -472,9 +480,9 @@ void main() {
       saved.clear();
       await tester.tap(find.byKey(const Key('video-edit-download')));
       await settle(tester);
-      // Nothing else changed: the take as it is.
-      expect(editor.rendered, isEmpty);
-      expect(saved.single.$2, [1, 2, 3]);
+      // Nothing else changed: the take, its watermark alone over it.
+      expect(_bands(editor.rendered.single), isEmpty);
+      expect(editor.rendered.single.layers.single.id, 'mark');
 
       // Reset: the tab on again, and no edit.
       await tester.tap(find.byKey(const Key('video-edit-reset')));
@@ -496,7 +504,7 @@ void main() {
       await settle(tester);
       await tester.tap(find.byKey(const Key('video-edit-download')));
       await settle(tester);
-      expect(editor.rendered.single.looks, const [
+      expect(editor.rendered.single.looks.whereType<BandLook>(), const [
         BandLook(_riffA),
         BandLook(_riffB),
       ]);
@@ -538,20 +546,18 @@ void main() {
         expect(tabChip(tester).selected, isFalse, reason: '$log');
         await tester.pump(const Duration(seconds: 2));
         await frames(tester);
-        expect(find.byType(EditLayers), findsNothing, reason: '$log');
+        expect(previewLayers(tester), isEmpty, reason: '$log');
         editor.rendered.clear();
         saved.clear();
         await tester.tap(find.byKey(const Key('video-edit-download')));
         await settle(tester);
-        expect(editor.rendered, isEmpty, reason: '$log');
-        expect(saved.single.$2, [1, 2, 3], reason: '$log');
+        expect(_bands(editor.rendered.single), isEmpty, reason: '$log');
       }
     });
 
     testWidgets('a video that isn\'t a take, or a take without a tab (its '
-        'log has none; with no log, its capture has none): no chip', (
-      tester,
-    ) async {
+        'log has none; with no log, its capture has none): no Tab chip, '
+        'the title and the watermark only', (tester) async {
       tall(tester);
       for (final (log, take, tabText) in [
         (null, false, '$_riffA\n\n$_riffB'),
@@ -568,8 +574,10 @@ void main() {
         await tester.pumpWidget(editScreen(library, id));
         await settle(tester);
         expect(find.byKey(const Key('video-edit-tab')), findsNothing);
-        expect(find.text('On the video'), findsNothing);
-        expect(find.byType(EditLayers), findsNothing);
+        expect(find.text('On the video'), findsOneWidget);
+        expect(find.byKey(const Key('video-edit-title')), findsOneWidget);
+        expect(find.byKey(const Key('video-edit-watermark')), findsOneWidget);
+        expect(previewLayers(tester), isEmpty);
       }
     });
 

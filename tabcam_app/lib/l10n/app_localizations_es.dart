@@ -2111,6 +2111,48 @@ class AppLocalizationsEs extends AppLocalizations {
       'Esta toma es de una versión anterior: no se puede dibujar su tablatura encima';
 
   @override
+  String get videoEditLayerTitle => 'Título';
+
+  @override
+  String get videoEditTitleEdit => 'Editar el título';
+
+  @override
+  String get videoEditTitleAbout =>
+      'Arriba a la izquierda · aparece poco a poco en 3 s';
+
+  @override
+  String get videoEditTitleLine1 => 'Primera línea';
+
+  @override
+  String get videoEditTitleLine2 => 'Segunda línea';
+
+  @override
+  String get videoEditTitleCapture => 'Usar el nombre de la captura';
+
+  @override
+  String get videoEditTitleOff => 'Sin título';
+
+  @override
+  String get videoEditTitleDone => 'Listo';
+
+  @override
+  String get videoEditLayerWatermark => 'Marca de agua';
+
+  @override
+  String get videoEditWatermarkTake => 'Grabado con TabCam';
+
+  @override
+  String get videoEditWatermarkMade => 'Hecho con TabCam';
+
+  @override
+  String videoEditWatermarkAbout(String text) {
+    return '«$text», en letra pequeña, abajo a la derecha';
+  }
+
+  @override
+  String get videoEditWatermarkLocked => 'Premium quita la marca de agua';
+
+  @override
   String get metronome => 'Metrónomo';
 
   @override

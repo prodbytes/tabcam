@@ -146,15 +146,84 @@ final class BandLook extends LayerLook {
   String toString() => 'BandLook($line)';
 }
 
+/// The video's title, at its top left: one or two [lines] (the first
+/// larger), white on a see-through dark box ([TitleLayout]).
+final class TitleLook extends LayerLook {
+  const TitleLook(this.lines);
+
+  final List<String> lines;
+
+  @override
+  bool operator ==(Object other) =>
+      other is TitleLook && listEquals(other.lines, lines);
+
+  @override
+  int get hashCode => Object.hashAll(lines);
+
+  @override
+  String toString() => 'TitleLook($lines)';
+}
+
+/// The watermark, at the bottom right: [text], one small line, white and
+/// see-through ([WatermarkLayout]).
+final class WatermarkLook extends LayerLook {
+  const WatermarkLook(this.text);
+
+  final String text;
+
+  @override
+  bool operator ==(Object other) =>
+      other is WatermarkLook && other.text == text;
+
+  @override
+  int get hashCode => text.hashCode;
+
+  @override
+  String toString() => 'WatermarkLook($text)';
+}
+
+/// The title's sizes, as fractions of the frame's short side: its first
+/// line's text [line1] high, its second's [line2] (80% of it), each line
+/// [lineHeight] times its text; the box [padV] above and below them and
+/// [padH] either side, [margin] in from the top left. It fades in over
+/// [fadeIn] from the kept part's start, then stays. Lines are at most
+/// [maxChars] long, and there are at most [maxLines].
+abstract final class TitleLayout {
+  static const line1 = 0.05;
+  static const line2 = 0.04;
+  static const lineHeight = 1.25;
+  static const padV = 0.0125;
+  static const padH = 0.02;
+  static const margin = 0.035;
+  static const fadeIn = Duration(seconds: 3);
+  static const maxLines = EditTitle.maxLines;
+  static const maxChars = EditTitle.maxChars;
+
+  /// How high the box is, for [lines] lines (one or two).
+  static double heightU(int lines) =>
+      2 * padV + line1 * lineHeight + (lines > 1 ? line2 * lineHeight : 0);
+}
+
+/// The watermark's sizes, as fractions of the frame's short side: its
+/// text [text] high, in a strip [heightU] high, [margin] in from the
+/// bottom right (and above the tab's bands, where they're drawn).
+abstract final class WatermarkLayout {
+  static const text = 0.022;
+  static const heightU = 0.03;
+  static const margin = 0.03;
+}
+
 /// Something drawn over the video ([look]), from [from] to [to] in the
 /// output (null: to its end), placed by [anchor]: [heightU] high (for a
 /// corner's; a bottom band is as wide as the frame, as high as its image
 /// makes it), [marginU] in from the corner and the watermark [liftU]
 /// higher, all as fractions of the frame's short side, so they're the
 /// same on a portrait and a landscape video, and no one but the renderer
-/// needs the frame's size. It fades in over [fadeIn] from [from], to
-/// [opacity]. Layers of one [id] (`tab`; later `title`, `mark`) never
-/// overlap in time.
+/// needs the frame's size; and [liftW] higher still, as a fraction of the
+/// frame's width (what a band's height goes by: it's as wide as the
+/// frame), so the watermark sits above the tab's tallest band. It fades
+/// in over [fadeIn] from [from], to [opacity]. Layers of one [id] (`tab`,
+/// `title`, `mark`) never overlap in time.
 @immutable
 class PlanLayer {
   const PlanLayer({
@@ -164,6 +233,7 @@ class PlanLayer {
     this.heightU = 0,
     this.marginU = 0,
     this.liftU = 0,
+    this.liftW = 0,
     this.from = Duration.zero,
     this.to,
     this.fadeIn = Duration.zero,
@@ -176,6 +246,7 @@ class PlanLayer {
   final double heightU;
   final double marginU;
   final double liftU;
+  final double liftW;
   final Duration from;
   final Duration? to;
   final Duration fadeIn;
@@ -206,7 +277,7 @@ class PlanLayer {
       LayerAnchor.topLeft => Rect.fromLTWH(margin, margin, width, height),
       _ => Rect.fromLTWH(
         frame.width - margin - width,
-        frame.height - margin - liftU * short - height,
+        frame.height - margin - liftU * short - liftW * frame.width - height,
         width,
         height,
       ),
@@ -222,6 +293,7 @@ class PlanLayer {
     'heightU': heightU,
     'marginU': marginU,
     'liftU': liftU,
+    'liftW': liftW,
     'fromMs': from.inMilliseconds,
     'toMs': to?.inMilliseconds,
     'fadeInMs': fadeIn.inMilliseconds,
@@ -237,6 +309,7 @@ class PlanLayer {
       other.heightU == heightU &&
       other.marginU == marginU &&
       other.liftU == liftU &&
+      other.liftW == liftW &&
       other.from == from &&
       other.to == to &&
       other.fadeIn == fadeIn &&
@@ -250,6 +323,7 @@ class PlanLayer {
     heightU,
     marginU,
     liftU,
+    liftW,
     from,
     to,
     fadeIn,
@@ -305,6 +379,83 @@ List<PlanLayer> tabLayers(
   return layers;
 }
 
+/// How high a band of [line] is drawn, as a fraction of its width (as
+/// wide as the frame): `bandAspect` in edit_layers.dart measures it.
+typedef BandAspect = double Function(String line);
+
+/// The most a band of [line] can be high, as a fraction of its width,
+/// without measuring it: its text at the largest a band draws it (1/48 of
+/// its width, each line 1.2 times that), padded by 1/64 of its width
+/// above and below (`bandPicture`'s look).
+double bandAspectBound(String line) =>
+    ('\n'.allMatches(line).length + 1) * 1.2 / 48 + 2 / 64;
+
+/// The title over the video, showing [lines] (as [titleText] cleans
+/// them): at the top left, fading in over the kept part's first 3 s, then
+/// staying to its end ([TitleLayout]). Null when there's nothing to show.
+PlanLayer? titleLayer(List<String> lines) {
+  final text = titleText(lines);
+  if (text.isEmpty) return null;
+  return PlanLayer(
+    id: 'title',
+    look: TitleLook(text),
+    anchor: LayerAnchor.topLeft,
+    heightU: TitleLayout.heightU(text.length),
+    marginU: TitleLayout.margin,
+    fadeIn: TitleLayout.fadeIn,
+  );
+}
+
+/// [lines] as a title shows them: each trimmed and at most
+/// [TitleLayout.maxChars] long ([clipChars]), the empty ones left out, at most
+/// [TitleLayout.maxLines].
+List<String> titleText(List<String> lines) => [
+  for (final line in lines)
+    if (line.trim() case final t when t.isNotEmpty)
+      clipChars(t, TitleLayout.maxChars),
+].take(TitleLayout.maxLines).toList();
+
+/// The watermark, [text], at the bottom right, the whole video through,
+/// lifted [liftW] (of the frame's width) above the bottom margin: above
+/// the tab's tallest band, where they're drawn ([WatermarkLayout]).
+PlanLayer watermarkLayer(String text, {double liftW = 0}) => PlanLayer(
+  id: 'mark',
+  look: WatermarkLook(text),
+  anchor: LayerAnchor.bottomRight,
+  heightU: WatermarkLayout.heightU,
+  marginU: WatermarkLayout.margin,
+  liftW: liftW,
+);
+
+/// The default title of a capture named [title], by [artist]: the name
+/// (a copy's " (copy)" left off) and the artist, two lines; with no
+/// artist, a name like "Blue Riff by Made-up Band" (or with " – " or
+/// " - ") split into the two. A name the app gave it ("Tab 2026-11-11
+/// 10:00", `defaultTitle`) is no title.
+List<String> captureTitleLines(String title, String artist) {
+  var name = title.trim();
+  const copy = ' (copy)';
+  while (name.endsWith(copy)) {
+    name = name.substring(0, name.length - copy.length).trimRight();
+  }
+  if (_appTitle.hasMatch(name)) name = '';
+  final by = artist.trim();
+  if (by.isEmpty && name.isNotEmpty) {
+    for (final separator in const [' by ', ' – ', ' - ']) {
+      final at = name.indexOf(separator);
+      if (at <= 0) continue;
+      final song = name.substring(0, at).trim();
+      final band = name.substring(at + separator.length).trim();
+      if (song.isNotEmpty && band.isNotEmpty) return titleText([song, band]);
+    }
+  }
+  if (name.isEmpty) return const [];
+  return titleText([name, by]);
+}
+
+/// A name the app gives a new capture (`defaultTitle`).
+final _appTitle = RegExp(r'^Tab \d{4}-\d{2}-\d{2} \d{2}:\d{2}$');
+
 /// What moves sound in a plan: what the preview's players must seek again
 /// for when it changes (a volume alone doesn't move anything).
 @immutable
@@ -335,11 +486,11 @@ class PlanTimeline {
 /// and [end], the kept part of [input].
 ///
 /// The two lanes are mixed: the video's own sound ([own]) and the song
-/// ([song]), each at its volume. Over the picture, its [layers]: for now
-/// the tab, as it showed while a take recorded (from the take's log); a
-/// title and a watermark come in a later step, as do the fades in and out
-/// (the picture from and to black, both lanes' volumes ramping with it):
-/// each lane's volume is one level throughout.
+/// ([song]), each at its volume. Over the picture, its [layers]: the tab,
+/// as it showed while a take recorded (from the take's log), the
+/// watermark and the title. The fades in and out (the picture from and to
+/// black, both lanes' volumes ramping with it) come in a later step: each
+/// lane's volume is one level throughout.
 @immutable
 class RenderPlan {
   const RenderPlan({
@@ -364,7 +515,15 @@ class RenderPlan {
   /// The video's [takeLog] (one of Cam's takes) puts its tab over it
   /// ([tabLayers]), where it can be ([tabOffered]) and the edit doesn't
   /// turn it off ([PageEdit.tab]), even with no edit (the tab is on by
-  /// default); the sound alone has no layers.
+  /// default). The [title] is the capture's ([captureTitleLines]): the
+  /// title's text unless the edit has its own ([PageEdit.title]), drawn
+  /// unless it's turned off. The [watermark] (its text; null: none, as in
+  /// the file screen's player) is drawn unless the edit turns it off
+  /// ([PageEdit.watermark]) and the one downloading has Premium now
+  /// ([premium], or a build without the service): an edit a Premium user
+  /// made downloads with it for anyone else. With the tab, it's lifted
+  /// above its tallest band in this output ([bandAspect]). The sound alone
+  /// has no layers.
   factory RenderPlan.of(
     PageEdit? edit, {
     XFile? input,
@@ -375,6 +534,10 @@ class RenderPlan {
     RenderKind kind = RenderKind.video,
     EditFormats formats = EditFormats.standard,
     TakeLog? takeLog,
+    List<String> title = const [],
+    String? watermark,
+    bool premium = false,
+    BandAspect bandAspect = bandAspectBound,
     bool preview = false,
   }) {
     final start = edit?.start ?? Duration.zero;
@@ -412,6 +575,26 @@ class RenderPlan {
       );
     }
     final video = kind != RenderKind.sound;
+    final layers = <PlanLayer>[];
+    if (video) {
+      if (tabOffered(takeLog) && (edit?.tab ?? true)) {
+        layers.addAll(tabLayers(takeLog!.tab!, takeLog.lagMs, start, end));
+      }
+      if (watermark != null && !(edit?.watermark == false && premium)) {
+        var lift = 0.0;
+        for (final band in layers) {
+          if (band.look case BandLook(:final line)) {
+            lift = max(lift, bandAspect(line));
+          }
+        }
+        layers.add(watermarkLayer(watermark, liftW: lift));
+      }
+      final shown = edit?.title;
+      if (titleLayer(shown == null ? title : shown.linesOr(title))
+          case final layer?) {
+        layers.add(layer);
+      }
+    }
     return RenderPlan(
       start: start,
       end: end,
@@ -421,10 +604,7 @@ class RenderPlan {
       video: video,
       own: own,
       song: song,
-      layers: [
-        if (video && tabOffered(takeLog) && (edit?.tab ?? true))
-          ...tabLayers(takeLog!.tab!, takeLog.lagMs, start, end),
-      ],
+      layers: layers,
       keepsFormat:
           kind != RenderKind.sound && formats.keepsAsIs(inputExtension),
     );

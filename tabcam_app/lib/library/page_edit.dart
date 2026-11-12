@@ -1,3 +1,5 @@
+import 'package:characters/characters.dart';
+
 import 'json_extra.dart';
 
 /// An edit's sound as apps before the two lanes read it (`sound`): still
@@ -38,6 +40,86 @@ enum SongMode {
       values.where((m) => m.name == name).firstOrNull;
 }
 
+/// [text] at most [max] characters long, as a person counts them and a
+/// text field's `maxLength` does (grapheme clusters: an emoji, even one
+/// made of several, is one), never cut inside one; the end trimmed when
+/// cut.
+String clipChars(String text, int max) {
+  final chars = text.characters;
+  return chars.length > max ? chars.take(max).toString().trimRight() : text;
+}
+
+/// The title drawn over an edited video (`title` in its edit): whether
+/// it's [on], and the text typed for it ([lines], at most two, each
+/// trimmed and at most 80 characters ([clipChars]); null: the capture's name, as it is
+/// now, so renaming the capture changes it). Turned off, the text typed
+/// is kept.
+class EditTitle {
+  const EditTitle({this.on = true, this.lines});
+
+  /// The title as [on] and [lines] make it; null when that's the default
+  /// (on, with the capture's name), which isn't kept.
+  static EditTitle? of({bool on = true, List<String>? lines}) =>
+      on && lines == null ? null : EditTitle(on: on, lines: clean(lines));
+
+  final bool on;
+  final List<String>? lines;
+
+  /// The most lines, and characters in each.
+  static const maxLines = 2;
+  static const maxChars = 80;
+
+  /// [lines] as kept: each trimmed and at most [maxChars] long, at most
+  /// [maxLines], the empty ones at the end left off.
+  static List<String>? clean(List<String>? lines) {
+    if (lines == null) return null;
+    final kept = [
+      for (final line in lines.take(maxLines)) clipChars(line.trim(), maxChars),
+    ];
+    while (kept.isNotEmpty && kept.last.isEmpty) {
+      kept.removeLast();
+    }
+    return kept;
+  }
+
+  /// What it shows, with [name] as the capture's name: nothing when off.
+  List<String> linesOr(List<String> name) => on ? lines ?? name : const [];
+
+  Map<String, Object?> toJson() => {'on': on, 'lines': ?lines};
+
+  /// Null when [json] isn't one, or is the default.
+  static EditTitle? fromJson(Object? json) {
+    if (json is! Map) return null;
+    final lines = json['lines'];
+    return of(
+      on: json['on'] != false,
+      lines: lines is List ? [for (final l in lines) '$l'] : null,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is EditTitle &&
+      other.on == on &&
+      (other.lines == null) == (lines == null) &&
+      (lines == null || _same(other.lines!, lines!));
+
+  static bool _same(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(on, lines == null ? null : Object.hashAll(lines!));
+
+  @override
+  String toString() => 'EditTitle(${on ? 'on' : 'off'}, $lines)';
+}
+
 /// A video page's edit, kept with the page (and synced with it): the part
 /// kept, from [start] to [end], and its sound in two lanes, mixed: the
 /// video's own (at [ownVolume], unless [ownMuted]) and a song (one of the
@@ -45,7 +127,10 @@ enum SongMode {
 /// [trackEnd] (null: its end) is used, starting [offset] after the kept
 /// part's start (before it, when negative), at [trackVolume], unless
 /// [songMuted]; placed as [song] says). Muting a lane keeps its level.
-/// Over the picture: the tab of one of Cam's takes, unless [tab] is off.
+/// Over the picture: the tab of one of Cam's takes, unless [tab] is off;
+/// a title ([title]; null: the capture's name), and the watermark, unless
+/// [watermark] is off (which only a Premium user can do, and only a
+/// Premium user's download obeys).
 /// The video's file stays as it is: players play it as edited, and a
 /// download makes a file of it.
 ///
@@ -68,6 +153,8 @@ class PageEdit {
     this.offset = Duration.zero,
     this.trackVolume = 1,
     this.tab = true,
+    this.title,
+    this.watermark = true,
     this.extra = const {},
   });
 
@@ -119,6 +206,8 @@ class PageEdit {
     'songMuted',
     'song',
     'tab',
+    'title',
+    'watermark',
   };
 
   final Duration start;
@@ -149,6 +238,15 @@ class PageEdit {
   /// log has its tab, not already in its picture: `tabOffered`): on by
   /// default, written (`tab: false`) only when turned off.
   final bool tab;
+
+  /// The title drawn over the video: null (the default, not written) is
+  /// the capture's name, on.
+  final EditTitle? title;
+
+  /// Whether the watermark is drawn: on by default, written (`watermark:
+  /// false`) only when a Premium user turns it off; obeyed only when the
+  /// one downloading has Premium (`RenderPlan.of`).
+  final bool watermark;
 
   /// The keys of its JSON this version doesn't know (a newer app's, see
   /// `unknownKeys`), written back as they came, after the known ones,
@@ -220,6 +318,8 @@ class PageEdit {
     if (songMuted) 'songMuted': true,
     if (song != null) 'song': song!.name,
     if (!tab) 'tab': false,
+    if (title case final title?) 'title': title.toJson(),
+    if (!watermark) 'watermark': false,
     for (final MapEntry(:key, :value) in extraEntries(extra, knownKeys))
       key: value,
   };
@@ -243,6 +343,8 @@ class PageEdit {
       offset: ms('offsetMs') ?? Duration.zero,
       trackVolume: volume(json['trackVolume']),
       tab: json['tab'] != false,
+      title: EditTitle.fromJson(json['title']),
+      watermark: json['watermark'] != false,
       extra: unknownKeys(json, knownKeys),
     );
     final stored = json['sound'];
@@ -279,6 +381,8 @@ class PageEdit {
     Duration? offset,
     double? trackVolume,
     bool? tab,
+    Object? title = _same,
+    bool? watermark,
     Map<String, Object?>? extra,
   }) => PageEdit(
     start: start ?? this.start,
@@ -295,6 +399,8 @@ class PageEdit {
     offset: offset ?? this.offset,
     trackVolume: trackVolume == null ? this.trackVolume : volume(trackVolume),
     tab: tab ?? this.tab,
+    title: identical(title, _same) ? this.title : title as EditTitle?,
+    watermark: watermark ?? this.watermark,
     extra: extra ?? this.extra,
   );
 
@@ -315,6 +421,8 @@ class PageEdit {
     offset,
     trackVolume,
     tab,
+    title,
+    watermark,
   ];
 
   @override

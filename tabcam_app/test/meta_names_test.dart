@@ -53,6 +53,7 @@ void main() {
         MetronomeState.metaName,
         CloudSync.stateName,
         CloudOcr.stateName,
+        CloudOcr.premiumName,
       }, MetaNames.all);
       expect(BackingTrack.metaName, 'playalong');
     });

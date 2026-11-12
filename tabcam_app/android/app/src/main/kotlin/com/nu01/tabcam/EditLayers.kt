@@ -28,8 +28,9 @@ enum class LayerAnchor {
  * A layer drawn over the video (the plan's `layers`, see
  * lib/capture/render_plan.dart, `PlanLayer`): the plan's [image]th image,
  * placed by [anchor] ([heightU] high, [marginU] in from the corner and
- * [liftU] higher, as fractions of the frame's short side; a bottom band as
- * wide as the frame), shown from [fromMs] to [toMs] (null: the end) in the
+ * [liftU] higher, as fractions of the frame's short side, and [liftW] higher
+ * still, as a fraction of its width: above the tab's tallest band, which is
+ * as wide as the frame; a bottom band as wide as the frame), shown from [fromMs] to [toMs] (null: the end) in the
  * output, fading in over [fadeInMs] to [opacity].
  */
 data class PlanLayer(
@@ -39,6 +40,7 @@ data class PlanLayer(
     val heightU: Float = 0f,
     val marginU: Float = 0f,
     val liftU: Float = 0f,
+    val liftW: Float = 0f,
     val fromMs: Long = 0,
     val toMs: Long? = null,
     val fadeInMs: Long = 0,
@@ -65,6 +67,7 @@ data class PlanLayer(
                 heightU = float("heightU", 0f),
                 marginU = float("marginU", 0f),
                 liftU = float("liftU", 0f),
+                liftW = float("liftW", 0f),
                 fromMs = fromMs,
                 toMs = (map["toMs"] as? Number)?.toLong(),
                 fadeInMs = (map["fadeInMs"] as? Number)?.toLong() ?: 0L,
@@ -110,7 +113,8 @@ object LayerLayout {
             LayerAnchor.BOTTOM_RIGHT -> Placement(
                 layer.heightU * short / imageH.coerceAtLeast(1),
                 1f, -1f,
-                1f - 2 * margin / w, -1f + 2 * (margin + layer.liftU * short) / h,
+                1f - 2 * margin / w,
+                -1f + 2 * (margin + layer.liftU * short + layer.liftW * w) / h,
             )
         }
     }

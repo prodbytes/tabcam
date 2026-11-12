@@ -241,10 +241,7 @@ void main() {
     /// A two-lane edit as this app writes it, with keys a newer one added.
     Map<String, Object?> written(PageEdit edit) => {
       ...edit.toJson(),
-      'title': {
-        'on': true,
-        'lines': ['Blue Riff', 'Made-up Band'],
-      },
+      'fades': {'inMs': 500, 'outMs': 800},
     };
 
     final both = PageEdit(
@@ -261,7 +258,7 @@ void main() {
       final json = written(both);
       final edit = _read(json);
       expect(edit.copyWith(extra: const {}), both);
-      expect(edit.extra.keys, ['title']);
+      expect(edit.extra.keys, ['fades']);
     });
 
     test('Track picked there: its meaning wins, the own sound muted; the '
@@ -273,7 +270,7 @@ void main() {
       expect(edit.songMuted, isFalse);
       expect(edit.trackVolume, 0.8);
       expect(edit.sound, EditSound.track);
-      expect(edit.extra['title'], isNotNull);
+      expect(edit.extra['fades'], isNotNull);
       final p = plan(edit);
       expect(p.own, isNull);
       expect(p.song!.volume, 0.8);
