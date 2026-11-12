@@ -5,7 +5,9 @@ one time axis, in **two sound lanes, mixed**: trim its start and end,
 set its own sound's level, and add a song (one of the capture's
 recordings, videos or takes, or a sound file) placed along it at a
 level of its own; and, **on the video**, a take's tab drawn over it as
-it showed while recording ([layers](#layers)). Opened
+it showed while recording, a **title** (the capture's name, or text
+typed) and a small **watermark** that only [Premium](cloud-ocr.md#in-the-app)
+removes ([layers](#layers)). Opened
 with **Edit** (scissors, before Rename) on a video's
 [file screen](event-screen.md#file-screen), in the user's own captures
 and those shared to edit (not read only, nor a contribution's file, nor
@@ -31,7 +33,9 @@ on at 0) doesn't stop or re-seek the song. The plan's
 [layers](#layers) are drawn over the picture as it plays. The
 [file screen](event-screen.md#file-screen)'s player does the same,
 looping the kept part (a muted song isn't opened there), a take's tab
-over it also when it has no edit (the tab is on by default); it finds the
+over it also when it has no edit (the tab is on by default), but not
+the title or the watermark: it plays the file, edited; those two are
+the finished video's, shown in the editor and made by its Download; it finds the
 song's length as the editor does (its player's, or, where the player
 can't say, as for a take the browser recorded, the editor's), and when
 neither can say, takes the end the edit keeps for it (none: the song
@@ -54,9 +58,12 @@ with the file's name in its app bar and **ⓘ** at its right (it says
 makes a file of it."), opening with the video's edit as it was left:
 
 - **The preview**, at the top, at most a third of the screen: the video
-  (a tap on it plays or pauses), with what Download draws over it (the
-  [layers](#layers): a take's tab), drawn by the same code, so the
-  preview is what the file will be. It plays the
+  (a tap on it plays or pauses; a tap on the title opens its text),
+  with what Download draws over it (the [layers](#layers): a take's
+  tab, the title, the watermark as this user's download would have
+  it), drawn by the same code, so the preview is what the file will be
+  (while the title's text is being edited, the title shows as it ends
+  up rather than fading in, so it's seen at the start too). It plays the
   **kept part** only, from its start when outside it, paused back at its
   start at its end, with both lanes as set, as the edit is played
   everywhere.
@@ -127,22 +134,51 @@ makes a file of it."), opening with the video's edit as it was left:
     it too: the levels and Mute are the remedy (headphones while
     recording give a clean mix).
 - **Under the lanes, On the video**: what's drawn over the video, as
-  chips (on a take only; none on a take without a tab: its log has
-  none, or, with no log, its capture's tab text has no necklines). For now
-  **Tab**: on by default, for a take whose tab is kept apart from its
-  picture (its [log](cam.md#what-a-take-keeps) has its tab, not burned
-  in: every take Cam saves now); tapped, it's off (kept as `tab: false`;
-  Reset turns it on again), and its bands leave the preview and the
-  download. On a take whose tab is already in its picture (burned in as
-  it was saved, by the versions that did, or saved before takes kept a
-  log) the chip is off and can't be turned on, so the tab
-  is never drawn twice, and its tooltip (shown on a tap, or on hover)
-  says why: "This take has the tab in its picture" (burned in), or
-  "This take is from an earlier version: its tab can't be drawn over
-  it" (no log, in a capture with a tab). (A `Tooltip` around the chip:
-  a disabled chip shows none of its own; no line of text, which would
-  stay under every such take.) (A later step adds a Title and a
-  Watermark here.)
+  chips (on a wide screen, 840 points and more, **On the video** is a
+  panel of its own beside the rest, 320 points wide, the title's fields
+  under its chips):
+  - **Tab** (on a take only; none on a take without a tab: its log has
+    none, or, with no log, its capture's tab text has no necklines): on
+    by default, for a take whose tab is kept apart from its picture (its
+    [log](cam.md#what-a-take-keeps) has its tab, not burned in: every
+    take Cam saves now); tapped, it's off (kept as `tab: false`; Reset
+    turns it on again), and its bands leave the preview and the
+    download. On a take whose tab is already in its picture (burned in
+    as it was saved, by the versions that did, or saved before takes
+    kept a log) the chip is off and can't be turned on, so the tab is
+    never drawn twice, and its tooltip (shown on a tap, or on hover)
+    says why: "This take has the tab in its picture" (burned in), or
+    "This take is from an earlier version: its tab can't be drawn over
+    it" (no log, in a capture with a tab). (A `Tooltip` around the
+    chip: a disabled chip shows none of its own; no line of text, which
+    would stay under every such take.)
+  - **Title** ✎ (every video): on by default, showing the capture's
+    name ([the title](#layers)); with no name to show (the name the
+    app gave the capture, "Tab 2026-11-11 10:00"), the chip says
+    **+ Title** and a tap opens its text. Tapped, it's on or off (its
+    text kept). **✎**, or a tap on the title in the preview, opens its
+    text: on a phone in place of the chips ("Title · Top left · fades
+    in over 3 s"), with **First line** and **Second line** (80
+    characters each), **Use the capture's name** (the text typed goes:
+    the capture's name again, and it follows a rename), **No title**
+    (off, the text typed kept) and **Done**; on a wide screen the same
+    fields are always under the chips, without Done. Typing shows in
+    the preview at once, kept a moment after the last key (as every
+    change), and never seeks the song again (nothing it plays by
+    changed); typing turns the title on.
+  - **Watermark** (every video): on by default, "Recorded by TabCam"
+    on a take, "Made with TabCam" on any other video, small at the
+    bottom right. **Only Premium removes it**: for a user with Premium
+    now ([as the service last said](cloud-ocr.md#in-the-app), a week at
+    most offline), and in a build without the service, it's a plain
+    toggle (off kept as `watermark: false`); for anyone else it's on
+    with a lock (tooltip "Premium removes the watermark"), and a tap
+    opens the [Premium card](cloud-ocr.md#in-the-app) in a sheet,
+    starting with "Premium removes the watermark", the chip staying on.
+    Premium's answer arriving late (the editor open before it) unlocks
+    it where it is. An edit with the watermark off, from a Premium
+    user, still has it for anyone without Premium who downloads it (a
+    collaborator): the rule is the downloader's, at Download.
 - **Under them, the song's details** (when there's one): its lane
   and name ("Song · Recording 1"), **‹** and **›**, which nudge it a
   tenth of a second earlier or later, with where it starts in words
@@ -152,15 +188,18 @@ makes a file of it."), opening with the video's edit as it was left:
   0:01.0–0:42.5 of the song". They name it as its lane does: "song" on
   a take, "track" ("The track starts…", "… of the track") on any other
   video. A song shorter than the kept part leaves
-  silence after. (A later step makes this one context area: the song's
-  details when the Song lane is selected, the On the video chips
-  otherwise.)
+  silence after. On a wide screen they stay under the lanes, beside
+  On the video. (On a phone the title's fields already take the chips'
+  place while they're open; a later step may make the song's details
+  part of that one context area too, shown when the Song lane is
+  selected.)
 - **At the bottom**: **Reset** (on once the edit is anything but the
   defaults: the whole video, its own sound at 100%, no song said (so a
-  song Removed, `song: off`, keeps it on) and a take's tab on; Reset
-  goes back to them, the song taken out, and the edit is none: none
-  means the defaults, a take's tab over it included, not the file as
-  it is) and
+  song Removed, `song: off`, keeps it on), a take's tab on, the title
+  on with the capture's name, and the watermark on; Reset goes back to
+  them, the song taken out, and the edit is none: none means the
+  defaults, a take's tab, the title and the watermark over it
+  included, not the file as it is) and
   **Download**, a split button (both shrink to fit at the largest text
   sizes). Pressed, it downloads **the video** as edited, both lanes
   mixed; its arrow opens a menu of **The video (MP4)**, **The video
@@ -180,8 +219,9 @@ makes a file of it."), opening with the video's edit as it was left:
   download, or the system's "save as" on Android and iOS), named as the
   video is in the list with the made format's extension (`.mp4`,
   `.m4a`; `.webm`, `.wav` where those are made); a video the edit
-  doesn't change (nothing drawn over it either) downloads as it is when
-  it's already MPEG-4 (an
+  doesn't change and with nothing drawn over it (the watermark off, so
+  for a Premium user, or in a build without the service, and no title)
+  downloads as it is when it's already MPEG-4 (an
   `.mp4` or `.m4v`, on every platform: in Firefox too, which would make
   it again only as a WebM) or already in the format made here (a
   `.webm` where the browser records WebM), and is made again otherwise
@@ -190,7 +230,10 @@ makes a file of it."), opening with the video's edit as it was left:
   bar shows meanwhile, saying how far along it is (the browser's as the
   video plays; the phones' as Media3 or AVFoundation report it, every
   quarter of a second), with "Making the file…"; a
-  failure says "Couldn't make the file" and why.
+  failure says "Couldn't make the file" and why. With the watermark on
+  by default, almost every Download now makes the file (on the web,
+  as long as the kept part takes to play); the file list's Download and
+  Download all stay instant, the file as it is.
 
 ### How the edit is stored
 
@@ -234,6 +277,15 @@ version 2 (`v: 2`):
   where it put it.
 - `tab`: `false` when the Tab chip is off (written only then; absent,
   the tab is drawn on a take that can have it).
+- `title`: absent, the default: on, the capture's name as it is now (so
+  renaming the capture changes it). Otherwise `{"on": false}` (off, with
+  the capture's name), or with `lines`, the text typed (at most two,
+  each trimmed and at most 80 characters, trailing empty ones left
+  off; `[]` is typed empty), on or off (`{"on": false, "lines": [...]}`
+  keeps the text while it's off).
+- `watermark`: `false` when a Premium user (or a build without the
+  service) turns it off, written only then; obeyed only for a downloader
+  who has Premium now ([layers](#layers)).
 - Muting keeps the level (`ownMuted`/`songMuted` beside the volumes),
   so an edit reopens muted at the level it had.
 - Values that aren't numbers are read as the default; volumes out of
@@ -282,10 +334,11 @@ The preview's plan (`preview: true`) leaves the files out and keeps a
 lane that isn't heard at level 0, so muting and unmuting only change a
 level and move nothing (what moves sound, the plan's `timeline`: the
 kept part, the song's page and clips, is what makes the preview seek
-the song again). A title and a watermark (later steps) are more layers;
-fades in and out (by default 3 s, set by the user: the picture from and
-to black, both lanes' levels ramping with it) come later too: for now
-each lane's level is one level throughout.
+the song again). The title and the watermark are layers too, so a
+change to them never seeks; fades in and out (by default 3 s, set by
+the user: the picture from and to black, both lanes' levels ramping
+with it) come later: for now each lane's level is one level
+throughout.
 
 ### Layers
 
@@ -295,15 +348,18 @@ What's drawn over the picture is a list of **layers** in the plan
 (`from`–`to` in the output, `to` none: to the end), how (an `opacity`,
 reached over a `fadeIn` from its start; 0 outside its time) and where:
 by an **anchor**, `topLeft` or `bottomRight` (a corner, `heightU` high,
-`marginU` in from it, the bottom right's `liftU` higher) or
+`marginU` in from it, the bottom right's `liftU` higher, and `liftW`
+higher still, a fraction of the frame's width: above the tab's tallest
+band, which is as high as the frame is wide makes it) or
 `bottomFull` (along the whole bottom, as wide as the frame, as high as
 its image makes it). Sizes are **fractions of the frame's short side**,
 so a layer is the same on a portrait and a landscape video, and no one
 but the renderer needs the frame's size: each platform places it on
 its own upright frame (`PlanLayer.rectIn` in Dart; the same layout in
-Kotlin and Swift). Layers of one kind (`id`) never overlap in time.
-Fades and anchors are supported everywhere, though only the tab uses
-them so far (no fade, along the bottom).
+Kotlin and Swift). Layers of one kind (`id`: `tab`, `title`, `mark`)
+never overlap in time; they're drawn in that order. Fades and anchors
+are supported everywhere: the tab along the bottom, the title at the
+top left fading in, the watermark at the bottom right.
 
 **The tab** ([`edit_layers.dart`](../tabcam_app/lib/capture/edit_layers.dart)):
 on a take whose [log](cam.md#what-a-take-keeps) has its tab and says
@@ -325,6 +381,47 @@ takes too, to check by eye that the drawn bands sit over the burned
 ones at the same frames (the time base and the lag); never in a
 release.
 
+**The title**: on unless the edit turns it off, its text the edit's
+(`title.lines`) or the capture's name (`captureTitleLines`): the
+capture's title, a copy's " (copy)" left off, and its artist, two
+lines; with no artist, a title like "Blue Riff by Made-up Band" (or
+with " – " or " - ") split into the two; a title the app gave the
+capture ("Tab 2026-11-11 10:00") is no title. Each line is trimmed and
+at most 80 characters, empty ones left out, at most two. One layer,
+`title`, at the **top left**, 3.5% of the short side in, **fading in
+from nothing to full over the kept part's first 3 seconds**, then
+staying to its end. It looks: white, with a soft shadow, on a 35% black
+rounded box; the first line in Roboto Medium at 5% of the short side,
+the second in Roboto Regular at 80% of that (each line 1.25 times its
+text high); a line too long for the frame ends in "…". The box's height
+is worked out in Dart from the line count alone (`TitleLayout`), so the
+plan knows it without drawing.
+
+**The watermark**: "Recorded by TabCam" on a take, "Made with TabCam"
+on any other video (in the app's language: "Grabado con TabCam" /
+"Hecho con TabCam", "Gravado com TabCam" / "Feito com TabCam"); one
+layer, `mark`, at the **bottom right**, 3% of the short side in, the
+whole video through, one line of Roboto at 2.2% of the short side,
+white at 60% with a soft shadow. With the tab drawn, it's lifted above
+the **tallest band in this output** (`liftW`: that band's height over
+its width, measured as it's drawn, `bandAspect`), so it doesn't jump
+as the bands change. It's left out only when the edit turns it off
+(`watermark: false`) **and** the one downloading has Premium now
+(`watermarkUnlocked`: the service's answer, or its last one for the
+same account kept on the device, a week at most, offline; a build
+without the service counts as Premium, as nothing is locked there).
+So it stays when Premium isn't known (no answer, none kept), and for a
+collaborator without Premium who downloads a Premium user's edit. The
+watermark is branding, not protection: the file list still downloads
+the raw file.
+
+**The fonts**: Roboto Regular and Medium ship with the app
+(`assets/fonts`, Apache 2.0, as the family `TabCamRoboto`, apart from
+the app's own text), so the title and the watermark are drawn the same
+in the preview and the file on every platform, and the web never
+fetches them from a CDN. They're drawn for a frame whose short side is
+1,200 pixels (`layerShort`) and scaled by each renderer.
+
 **One drawing for the preview and the file.** Each look is drawn once
 as a picture (`LayerPicture`): painted, scaled, over the preview, and
 made a PNG for Download (`layerImages`: one per look, however many
@@ -336,7 +433,7 @@ and bands change smoothly; on a seek or a pause it's where the player
 says, and nothing runs while it's paused. Only a new place (a report or
 a seek) restarts the carry: the player's other notices (its volume, as
 a lane's slider is dragged, its buffering) leave it running. The editor and the file
-screen's player both draw them.
+screen's player both draw them (the file screen's player the tab only).
 
 **How it's rendered**, on the device
 ([platforms](platforms.md)): each platform gets the plan and only
@@ -363,7 +460,9 @@ carries it out; the times are all worked out in Dart.
   layer showing then (found by a binary search; a transparent pixel in
   the gaps) with its `StaticOverlaySettings`: scaled from its pixels to
   its size, anchored in normalized device coordinates (the band's
-  bottom middle on the frame's; a corner on the corner a margin in),
+  bottom middle on the frame's; a corner on the corner a margin in, the
+  bottom right's lifted by `liftU` of the short side and `liftW` of the
+  width),
   `setAlphaScale` for its fade, in 64 steps. Frames reach the effects
   upright, so the frame size it's given is the frame as shown. The
   first frame's time is taken as the output's 0, so it's right whether

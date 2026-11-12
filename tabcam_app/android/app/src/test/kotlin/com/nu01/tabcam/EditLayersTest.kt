@@ -43,6 +43,18 @@ class EditLayersTest {
             Placement(0.54f, 1f, -1f, 1f - 2 * 54f / 1920, -1f + 2 * (54f + 216f) / 1080),
             LayerLayout.place(mark, 1920, 1080, 400, 200),
         )
+        // The watermark over the tab: lifted by its tallest band, a tenth of
+        // the frame's width (192 px of 1920), above its margin.
+        val lifted = PlanLayer("mark", 0, LayerAnchor.BOTTOM_RIGHT, heightU = 0.1f, marginU = 0.05f, liftW = 0.1f)
+        assertPlaced(
+            Placement(0.54f, 1f, -1f, 1f - 2 * 54f / 1920, -1f + 2 * (54f + 192f) / 1080),
+            LayerLayout.place(lifted, 1920, 1080, 400, 200),
+        )
+        // Portrait: a tenth of its width is 108 px.
+        assertPlaced(
+            Placement(0.54f, 1f, -1f, 1f - 2 * 54f / 1080, -1f + 2 * (54f + 108f) / 1920),
+            LayerLayout.place(lifted, 1080, 1920, 400, 200),
+        )
     }
 
     @Test
@@ -88,10 +100,21 @@ class EditLayersTest {
                         "marginU" to 0, "liftU" to 0, "fromMs" to 0, "toMs" to 500, "fadeInMs" to 0,
                         "opacity" to 1.0,
                     ),
+                    mapOf(
+                        "id" to "mark", "image" to 0, "anchor" to "bottomRight", "heightU" to 0.03,
+                        "marginU" to 0.03, "liftU" to 0, "liftW" to 0.25, "fromMs" to 0, "toMs" to null,
+                        "fadeInMs" to 0, "opacity" to 1.0,
+                    ),
                 ),
             ),
         )
-        assertEquals(listOf(PlanLayer("tab", 0, LayerAnchor.BOTTOM_FULL, toMs = 500)), plan.layers)
+        assertEquals(
+            listOf(
+                PlanLayer("tab", 0, LayerAnchor.BOTTOM_FULL, toMs = 500),
+                PlanLayer("mark", 0, LayerAnchor.BOTTOM_RIGHT, heightU = 0.03f, marginU = 0.03f, liftW = 0.25f),
+            ),
+            plan.layers,
+        )
         assertEquals(1, plan.images.size)
         // A layer naming an image that isn't there, or a bad anchor: refused.
         for (bad in listOf(mapOf("image" to 1, "anchor" to "topLeft"), mapOf("image" to 0, "anchor" to "middle"))) {

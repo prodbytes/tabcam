@@ -17,6 +17,12 @@ bool get storeApp => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
 /// (null) nothing is locked.
 bool premiumLocked(CloudOcr? ocr) => ocr != null && !ocr.premium;
 
+/// Whether the one downloading may leave the watermark off an edited
+/// video: they have Premium now ([CloudOcr.premiumNow]: the service's
+/// answer, or its last one, a week at most, offline), or the build has no
+/// service ([ocr] null), as [premiumLocked] has it.
+bool watermarkUnlocked(CloudOcr? ocr) => ocr == null || ocr.premiumNow;
+
 /// TabCam Premium: what it does, and for free users the upgrade offer
 /// (subscribe, redeem a voucher, check again after), on every platform,
 /// the store apps included. Over a locked feature ([PremiumGate]) it

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../capture/play_along_sidebar.dart';
+import '../cloud/cloud_ocr.dart';
 import '../dictionary/dictionary_sidebar.dart';
 import '../l10n/language.dart';
 import 'rename_dialog.dart';
@@ -150,11 +151,16 @@ class FileScreen extends StatefulWidget {
     required this.library,
     required this.eventId,
     required this.pageId,
+    this.ocr,
   });
 
   final Library library;
   final String eventId;
   final String pageId;
+
+  /// TabCam Premium, where the build has it: whether the video editor's
+  /// watermark can be turned off ([VideoEditScreen.ocr]).
+  final CloudOcr? ocr;
 
   @override
   State<FileScreen> createState() => _FileScreenState();
@@ -243,6 +249,7 @@ class _FileScreenState extends State<FileScreen> {
             library: _library,
             eventId: widget.eventId,
             page: page,
+            ocr: widget.ocr,
           ),
         ),
       );

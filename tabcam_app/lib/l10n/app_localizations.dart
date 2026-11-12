@@ -3472,7 +3472,7 @@ abstract class AppLocalizations {
   /// **'Couldn\'t make the file'**
   String get videoEditCouldntDownload;
 
-  /// Video edit: the heading of what's drawn over the video (the tab; later a title and a watermark)
+  /// Video edit: the heading of what's drawn over the video (the tab, the title and the watermark)
   ///
   /// In en, this message translates to:
   /// **'On the video'**
@@ -3501,6 +3501,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This take is from an earlier version: its tab can\'t be drawn over it'**
   String get videoEditTabNotKept;
+
+  /// Video edit: the chip that draws a title (the capture's name and artist, or text typed) at the top left of the video
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get videoEditLayerTitle;
+
+  /// Video edit: the pencil on the Title chip, and its tooltip: opens the title's text fields
+  ///
+  /// In en, this message translates to:
+  /// **'Edit the title'**
+  String get videoEditTitleEdit;
+
+  /// Video edit: where the title goes and how it shows, beside the Title heading of its fields
+  ///
+  /// In en, this message translates to:
+  /// **'Top left · fades in over 3 s'**
+  String get videoEditTitleAbout;
+
+  /// Video edit: the title's first text field (a song's name, say)
+  ///
+  /// In en, this message translates to:
+  /// **'First line'**
+  String get videoEditTitleLine1;
+
+  /// Video edit: the title's second text field, smaller (an artist, say)
+  ///
+  /// In en, this message translates to:
+  /// **'Second line'**
+  String get videoEditTitleLine2;
+
+  /// Video edit: puts the capture's name and artist back as the title, forgetting the text typed
+  ///
+  /// In en, this message translates to:
+  /// **'Use the capture\'s name'**
+  String get videoEditTitleCapture;
+
+  /// Video edit: turns the title off, keeping the text typed
+  ///
+  /// In en, this message translates to:
+  /// **'No title'**
+  String get videoEditTitleOff;
+
+  /// Video edit: closes the title's text fields (on a phone)
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get videoEditTitleDone;
+
+  /// Video edit: the chip of the small TabCam line at the bottom right of the video (only Premium can turn it off)
+  ///
+  /// In en, this message translates to:
+  /// **'Watermark'**
+  String get videoEditLayerWatermark;
+
+  /// Video edit: the watermark's text on one of Cam's takes; drawn on the video itself
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded by TabCam'**
+  String get videoEditWatermarkTake;
+
+  /// Video edit: the watermark's text on a video Cam didn't record; drawn on the video itself
+  ///
+  /// In en, this message translates to:
+  /// **'Made with TabCam'**
+  String get videoEditWatermarkMade;
+
+  /// Video edit: the Watermark chip's tooltip, for a Premium user (who can turn it off)
+  ///
+  /// In en, this message translates to:
+  /// **'“{text}”, small, at the bottom right'**
+  String videoEditWatermarkAbout(String text);
+
+  /// Video edit: the locked Watermark chip's tooltip, and what the Premium card it opens starts with
+  ///
+  /// In en, this message translates to:
+  /// **'Premium removes the watermark'**
+  String get videoEditWatermarkLocked;
 
   /// The metronome's button and its sidebar's title
   ///

@@ -10,7 +10,7 @@ import 'web_video_editor_stub.dart'
     if (dart.library.js_interop) 'web_video_editor.dart';
 
 export '../library/page_edit.dart'
-    show EditSound, PageEdit, SongMode, trackSpan;
+    show EditSound, EditTitle, PageEdit, SongMode, trackSpan;
 export 'edit_formats.dart' show EditFormat, EditFormats;
 export 'render_plan.dart';
 

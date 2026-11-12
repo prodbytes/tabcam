@@ -27,6 +27,10 @@ abstract final class MetaNames {
   /// What cloud sync has synced, per event.
   static const String cloudSync = 'cloudsync';
 
+  /// Whether the signed-in user has Premium, as the service last said
+  /// (`CloudOcr.premiumNow`: believed for a week, offline).
+  static const String premium = 'premium';
+
   /// What cloud OCR has filled, per event.
   static const String cloudOcr = 'cloudocr';
 
@@ -42,6 +46,7 @@ abstract final class MetaNames {
     place,
     language,
     metronome,
+    premium,
   };
 
   /// Every meta name the app uses.

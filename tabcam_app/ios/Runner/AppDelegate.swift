@@ -138,7 +138,7 @@ enum Sound {
 /// `clips`, each `atMs` in the output, the song from `fromMs` to `toMs`, at
 /// `speed`, 1 for now), and what's drawn over the picture: `images` (PNGs)
 /// and `layers` (each its `image`'s index, `anchor`, `heightU`, `marginU`,
-/// `liftU`, `fromMs`, `toMs`, `fadeInMs` and `opacity`). With a `job`,
+/// `liftU`, `liftW`, `fromMs`, `toMs`, `fadeInMs` and `opacity`). With a `job`,
 /// `progress` calls back with `job` and `done` (0 to 1) every quarter of a
 /// second while it renders. Replies with the output path.
 ///
@@ -288,9 +288,11 @@ enum VideoEditor {
 
   /// Something drawn over the picture (`PlanLayer`): the plan's `image`th
   /// image, placed by `anchor` (`heightU` high, `marginU` in from the
-  /// corner and `liftU` higher, as fractions of the frame's short side; a
-  /// bottom band as wide as the frame), from `fromMs` to `toMs` (nil: the
-  /// end) in the output, fading in over `fadeInMs` to `opacity`.
+  /// corner and `liftU` higher, as fractions of the frame's short side, and
+  /// `liftW` higher still, as a fraction of its width, above the tab's
+  /// tallest band; a bottom band as wide as the frame), from `fromMs` to
+  /// `toMs` (nil: the end) in the output, fading in over `fadeInMs` to
+  /// `opacity`.
   struct Layer: Equatable {
     var id = ""
     let image: Int
@@ -298,6 +300,7 @@ enum VideoEditor {
     var heightU: CGFloat = 0
     var marginU: CGFloat = 0
     var liftU: CGFloat = 0
+    var liftW: CGFloat = 0
     var fromMs: Int64 = 0
     var toMs: Int64?
     var fadeInMs: Int64 = 0
@@ -319,7 +322,8 @@ enum VideoEditor {
         return CGRect(x: margin, y: margin, width: width, height: height)
       }
       return CGRect(
-        x: frame.width - margin - width, y: frame.height - margin - liftU * short - height,
+        x: frame.width - margin - width,
+        y: frame.height - margin - liftU * short - liftW * frame.width - height,
         width: width, height: height)
     }
   }
@@ -391,6 +395,7 @@ enum VideoEditor {
           Layer(
             id: layer["id"] as? String ?? "", image: image, anchor: anchor,
             heightU: number("heightU"), marginU: number("marginU"), liftU: number("liftU"),
+            liftW: number("liftW"),
             fromMs: int64(layer, "fromMs") ?? 0, toMs: int64(layer, "toMs"),
             fadeInMs: int64(layer, "fadeInMs") ?? 0,
             opacity: min(max((layer["opacity"] as? NSNumber)?.floatValue ?? 1, 0), 1)))

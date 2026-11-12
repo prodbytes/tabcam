@@ -494,6 +494,14 @@ void main() {
   bool enabled(WidgetTester tester, String key) =>
       tester.widget<ButtonStyleButton>(find.byKey(Key(key))).enabled;
 
+  /// Turns the watermark off, as a build without Premium's service (no
+  /// CloudOcr, as here) can: the video as it is can then be saved as it
+  /// is.
+  Future<void> noWatermark(WidgetTester tester) async {
+    await tester.tap(find.byKey(const Key('video-edit-watermark')));
+    await _settle(tester);
+  }
+
   testWidgets('Edit is a video\'s tool, not an image\'s; it opens the '
       'editor with the whole video kept and nothing to reset', (tester) async {
     tall(tester);
@@ -593,14 +601,29 @@ void main() {
     expect(library.byId(id)!.pages.first.edit, isNull);
   });
 
-  testWidgets('a video as it is downloads as it is', (tester) async {
+  testWidgets('a video as it is is made with its watermark; without it, '
+      'it downloads as it is', (tester) async {
     tall(tester);
     final (library, id) = await capture(tester);
     await tester.pumpWidget(editScreen(library, id));
     await _settle(tester);
+    // The edit is none, Reset has nothing to do, yet Download makes it:
+    // the watermark is on by default.
+    expect(library.byId(id)!.pages.first.edit, isNull);
+    expect(enabled(tester, 'video-edit-reset'), isFalse);
     await tester.tap(find.byKey(const Key('video-edit-download')));
     await _settle(tester);
-    expect(editor.rendered, isEmpty);
+    final plan = editor.rendered.single;
+    expect(plan.passthrough, isFalse);
+    expect(plan.layers.map((l) => l.look), const [
+      WatermarkLook('Made with TabCam'),
+    ]);
+
+    await noWatermark(tester);
+    saved.clear();
+    await tester.tap(find.byKey(const Key('video-edit-download')));
+    await _settle(tester);
+    expect(editor.rendered, hasLength(1));
     final (name, bytes, _) = saved.single;
     expect(name, 'Made-up riff.mp4');
     expect(bytes, [1, 2, 3]);
@@ -827,6 +850,7 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pumpWidget(editScreen(library, id));
     await _settle(tester);
+    await noWatermark(tester);
     await tester.tap(find.byKey(const Key('video-edit-download')));
     await _settle(tester);
     expect(editor.rendered, isEmpty);
@@ -845,6 +869,7 @@ void main() {
     final (library, id) = await capture(tester);
     await tester.pumpWidget(editScreen(library, id));
     await _settle(tester);
+    await noWatermark(tester);
     await tester.tap(find.byKey(const Key('video-edit-download')));
     await _settle(tester);
     expect(editor.rendered, isEmpty);
@@ -858,6 +883,7 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pumpWidget(editScreen(library2, id2));
     await _settle(tester);
+    await noWatermark(tester);
     await tester.tap(find.byKey(const Key('video-edit-download')));
     await _settle(tester);
     expect(editor.rendered, isEmpty);
@@ -939,16 +965,18 @@ void main() {
     final (library, id) = await capture(tester);
     const newer = {
       'nudgeMs': -120,
-      'title': {
-        'on': true,
-        'lines': ['Blue Riff', 'Made-up Band'],
-      },
+      'fades': {'inMs': 500, 'outMs': 800},
     };
     await tester.runAsync(
       () => library.setPageEdit(
         id,
         'k0',
-        PageEdit.fromJson({'startMs': 2000, 'endMs': 20000, ...newer}),
+        PageEdit.fromJson({
+          'startMs': 2000,
+          'endMs': 20000,
+          'watermark': false,
+          ...newer,
+        }),
       ),
     );
     await tester.pumpWidget(editScreen(library, id));
@@ -961,14 +989,17 @@ void main() {
     expect(edit.end, s(12));
     expect(edit.extra, newer);
 
-    // Reset: the whole video, its own sound; the newer keys stay, so the
-    // edit does, and the video downloads as it is.
+    // Reset: the whole video, its own sound, the watermark; the newer keys
+    // stay, so the edit does; without the watermark, the video downloads
+    // as it is.
     await tester.tap(find.byKey(const Key('video-edit-reset')));
     await _settle(tester);
     edit = library.byId(id)!.pages.first.edit!;
     expect((edit.start, edit.end), (Duration.zero, s(180)));
+    expect(edit.watermark, isTrue);
     expect(edit.extra, newer);
     expect(enabled(tester, 'video-edit-reset'), isFalse);
+    await noWatermark(tester);
     await tester.tap(find.byKey(const Key('video-edit-download')));
     await _settle(tester);
     expect(editor.rendered, isEmpty);

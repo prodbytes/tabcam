@@ -2813,7 +2813,7 @@
   },
   "videoEditOnTheVideo": "On the video",
   "@videoEditOnTheVideo": {
-    "description": "Video edit: the heading of what's drawn over the video (the tab; later a title and a watermark)"
+    "description": "Video edit: the heading of what's drawn over the video (the tab, the title and the watermark)"
   },
   "videoEditLayerTab": "Tab",
   "@videoEditLayerTab": {
@@ -2830,6 +2830,61 @@
   "videoEditTabNotKept": "This take is from an earlier version: its tab can't be drawn over it",
   "@videoEditTabNotKept": {
     "description": "Video edit: the tooltip of the Tab chip, off and disabled, on a take saved before takes kept their tab apart (its tab, if it had one, is in its picture)"
+  },
+  "videoEditLayerTitle": "Title",
+  "@videoEditLayerTitle": {
+    "description": "Video edit: the chip that draws a title (the capture's name and artist, or text typed) at the top left of the video"
+  },
+  "videoEditTitleEdit": "Edit the title",
+  "@videoEditTitleEdit": {
+    "description": "Video edit: the pencil on the Title chip, and its tooltip: opens the title's text fields"
+  },
+  "videoEditTitleAbout": "Top left · fades in over 3 s",
+  "@videoEditTitleAbout": {
+    "description": "Video edit: where the title goes and how it shows, beside the Title heading of its fields"
+  },
+  "videoEditTitleLine1": "First line",
+  "@videoEditTitleLine1": {
+    "description": "Video edit: the title's first text field (a song's name, say)"
+  },
+  "videoEditTitleLine2": "Second line",
+  "@videoEditTitleLine2": {
+    "description": "Video edit: the title's second text field, smaller (an artist, say)"
+  },
+  "videoEditTitleCapture": "Use the capture's name",
+  "@videoEditTitleCapture": {
+    "description": "Video edit: puts the capture's name and artist back as the title, forgetting the text typed"
+  },
+  "videoEditTitleOff": "No title",
+  "@videoEditTitleOff": {
+    "description": "Video edit: turns the title off, keeping the text typed"
+  },
+  "videoEditTitleDone": "Done",
+  "@videoEditTitleDone": {
+    "description": "Video edit: closes the title's text fields (on a phone)"
+  },
+  "videoEditLayerWatermark": "Watermark",
+  "@videoEditLayerWatermark": {
+    "description": "Video edit: the chip of the small TabCam line at the bottom right of the video (only Premium can turn it off)"
+  },
+  "videoEditWatermarkTake": "Recorded by TabCam",
+  "@videoEditWatermarkTake": {
+    "description": "Video edit: the watermark's text on one of Cam's takes; drawn on the video itself"
+  },
+  "videoEditWatermarkMade": "Made with TabCam",
+  "@videoEditWatermarkMade": {
+    "description": "Video edit: the watermark's text on a video Cam didn't record; drawn on the video itself"
+  },
+  "videoEditWatermarkAbout": "“{text}”, small, at the bottom right",
+  "@videoEditWatermarkAbout": {
+    "description": "Video edit: the Watermark chip's tooltip, for a Premium user (who can turn it off)",
+    "placeholders": {
+      "text": {"type": "String"}
+    }
+  },
+  "videoEditWatermarkLocked": "Premium removes the watermark",
+  "@videoEditWatermarkLocked": {
+    "description": "Video edit: the locked Watermark chip's tooltip, and what the Premium card it opens starts with"
   },
   "metronome": "Metronome",
   "@metronome": {

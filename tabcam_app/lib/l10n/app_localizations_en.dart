@@ -2066,6 +2066,47 @@ class AppLocalizationsEn extends AppLocalizations {
       'This take is from an earlier version: its tab can\'t be drawn over it';
 
   @override
+  String get videoEditLayerTitle => 'Title';
+
+  @override
+  String get videoEditTitleEdit => 'Edit the title';
+
+  @override
+  String get videoEditTitleAbout => 'Top left · fades in over 3 s';
+
+  @override
+  String get videoEditTitleLine1 => 'First line';
+
+  @override
+  String get videoEditTitleLine2 => 'Second line';
+
+  @override
+  String get videoEditTitleCapture => 'Use the capture\'s name';
+
+  @override
+  String get videoEditTitleOff => 'No title';
+
+  @override
+  String get videoEditTitleDone => 'Done';
+
+  @override
+  String get videoEditLayerWatermark => 'Watermark';
+
+  @override
+  String get videoEditWatermarkTake => 'Recorded by TabCam';
+
+  @override
+  String get videoEditWatermarkMade => 'Made with TabCam';
+
+  @override
+  String videoEditWatermarkAbout(String text) {
+    return '“$text”, small, at the bottom right';
+  }
+
+  @override
+  String get videoEditWatermarkLocked => 'Premium removes the watermark';
+
+  @override
   String get metronome => 'Metronome';
 
   @override

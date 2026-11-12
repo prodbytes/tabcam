@@ -149,6 +149,7 @@ class _EventScreenState extends State<EventScreen> {
           library: _library,
           eventId: widget.eventId,
           pageId: page.id,
+          ocr: widget.ocr,
         ),
       ),
     );

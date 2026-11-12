@@ -3205,3 +3205,57 @@ spec.
    RunnerTests case and a Mac harness of the iOS conversion). See
    [Cam](cam.md#the-tab-with-the-take), [video edit](video-edit.md) and
    [platforms](platforms.md).
+
+3. **(Editor redesign, step 6) Title and watermark on the video (Premium
+   removes the watermark).** The video editor's **On the video** now has,
+   for every video, a **Title** ✎ chip and a **Watermark** chip beside a
+   take's Tab. The title is on by default with the capture's name
+   (`captureTitleLines`: the title, a copy's " (copy)" left off, and the
+   artist; with no artist, "Blue Riff by Made-up Band" or " – " / " - "
+   split in two; the name the app gave a capture, "Tab 2026-11-11 10:00",
+   is no title, the chip then saying + Title); ✎ or a tap on the title in
+   the preview opens its two lines (80 characters each), **Use the
+   capture's name**, **No title** (off, the text kept) and **Done**, in
+   place of the chips on a phone; on a wide screen (840 points and more)
+   On the video is a side panel with the fields always under its chips.
+   Typing shows in the preview at once (the title unfaded while it's
+   edited) and never seeks the song again. The title is drawn at the top
+   left, white with a soft shadow on a 35% black box (Roboto Medium at 5%
+   of the short side, the second line Regular at 80%), **fading in over
+   the kept part's first 3 s, then staying to its end** (the user's
+   decision). The watermark reads **"Recorded by TabCam"** on takes and
+   **"Made with TabCam"** on other videos (es "Grabado con" / "Hecho
+   con", pt "Gravado com" / "Feito com"), small, white at 60%, at the
+   bottom right, lifted above the tab's tallest band in the output; both
+   are on by default, and **only Premium removes either**: the chip is a
+   toggle for a user with Premium now, or in a build without the
+   service, and otherwise locked on, a tap opening the Premium card in a
+   sheet ("Premium removes the watermark"); a late Premium answer
+   unlocks it in place. The rule is applied in `RenderPlan.of` for the
+   one downloading, at Download (`watermarkUnlocked`): `watermark: false`
+   from a Premium user still downloads with it for a collaborator
+   without Premium, and when Premium isn't known. `CloudOcr.premiumNow`
+   is the service's answer, or its last one for the same account kept on
+   the device (meta `premium`, a week at most) while it can't answer.
+   `CloudOcr` is handed EventScreen → FileScreen → VideoEditScreen. The
+   edit keeps `title` (`{on, lines}`, absent for the capture's name) and
+   `watermark: false`; a fresh video's edit stays none and Reset off,
+   but Download makes the file (the watermark), so a video downloads as
+   it is only with the watermark off and no title. The file list's
+   Download and Download all keep giving the raw file, and the file
+   screen's player draws the tab only (the user's decision: the editor's
+   Download makes the finished video). Roboto Regular and Medium ship
+   with the app (`assets/fonts`, Apache 2.0, the family `TabCamRoboto`).
+   Layers gain `liftW` (a fraction of the frame's width, what a band's
+   height goes by), read by Android's `LayerLayout` and iOS's
+   `Layer.rect`, so the watermark sits above the bands whatever the
+   frame's shape. Tests (`test/title_watermark_test.dart`: the default
+   title, the fade at 0, 1.5 and 3 s after a start trim, the watermark
+   rule, the lift, the pictures' heights, Premium kept a week per
+   account, typing without a song seek, No title keeping the text, the
+   phone's fields, the locked chip and a late unlock, the largest text
+   size on a phone and a wide screen; passthrough tests in
+   `test/video_edit_test.dart` now turn the watermark off; JVM
+   `EditLayersTest` and an XCTest case for `liftW`). See
+   [video edit](video-edit.md#layers) and
+   [TabCam Premium](cloud-ocr.md#in-the-app).

@@ -116,6 +116,16 @@ flutter:
     - family: RobotoMono
       fonts:
         - asset: assets/fonts/RobotoMono.ttf
+    # The video editor's title and watermark (lib/capture/edit_layers.dart,
+    # `layerFont`): drawn the same in the preview and the downloaded file
+    # on every platform, the web never fetching them from a CDN (Apache
+    # 2.0, see assets/fonts/Roboto-LICENSE.txt). A family of its own, so
+    # the app's text stays in the platform's font.
+    - family: TabCamRoboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Medium.ttf
+          weight: 500
   # fonts:
   #   - family: Schyler
   #     fonts:

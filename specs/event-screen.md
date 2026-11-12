@@ -224,7 +224,8 @@ The file is shown whole, as what it is:
 - **Videos** show a play button; tapped, they play in place, looping
   (as their [edit](video-edit.md) says: the kept part, its own sound and
   its song mixed, each at its volume, and a take's tab drawn over it,
-  [layers](video-edit.md#layers), also with no edit), with a bar at the bottom: a **play / pause**
+  [layers](video-edit.md#layers), also with no edit; the title and the
+  watermark are the editor's Download's only), with a bar at the bottom: a **play / pause**
   button and a scrubbable progress bar. A tap on the video also pauses and resumes. A video that
   can't play says so. **Edit** (below) trims it and mixes a song with
   its sound ([video edit](video-edit.md)).
@@ -278,10 +279,12 @@ Its tools, along the bottom:
   the screen stays on it.
 - **Edit** (scissors, videos only), before Rename: the
   [video edit](video-edit.md) screen over this one (the video's own
-  player let go meanwhile, so only the preview plays): trim, and two
+  player let go meanwhile, so only the preview plays): trim, two
   sound lanes mixed (the video's own and a song, each with its volume
-  and Mute), kept with the video as it's made; back here, the video
-  plays as edited.
+  and Mute), and what's drawn over it (a take's tab, a title, the
+  watermark, which only [Premium](cloud-ocr.md#in-the-app) removes:
+  the event screen hands its Premium status on), kept with the video as
+  it's made; back here, the video plays as edited.
 - **Rename** (pencil), just before Delete: asks for the file's name,
   prefilled, as on the list (saving it empty goes back to the default
   name).
