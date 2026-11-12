@@ -301,6 +301,72 @@ void main() {
       expect(log.tab!.marks, [(0, 0), (1000, 1)]);
       expect(log.song, [const SongSegment(at: 0, to: 10, page: 'p1', from: 0)]);
     });
+
+    test('a newer app\'s is written back as it came, through a rename and '
+        'a clone: what this version can\'t read included', () {
+      final newer = _encoded({
+        'v': 2,
+        'burned': false,
+        'lagMs': 140,
+        'lagFrom': 'sound',
+        'lagRaw': {'startCallMs': -200, 'peak': 1.5, 'note': 'x'},
+        'tab': {
+          'lines': [_riff[0], _riff[1]],
+          'anchor': 'bottom',
+          'marks': [
+            [0, 0, 'tap'],
+            [900, 1],
+            [600, 0],
+          ],
+        },
+        'song': [
+          {
+            'at': 0,
+            'to': 900,
+            'page': 'p7',
+            'from': 0,
+            'speed': 1,
+            'gain': 0.8,
+          },
+          {'at': 900, 'to': 1800, 'page': 'p8', 'from': 0, 'speed': 'fast'},
+          {'at': 1800, 'to': 2000, 'page': 'p9', 'from': 0},
+        ],
+        'pitch': 'A440',
+      }) as Map;
+      final page = EventPage.fromJson(
+        (_encoded({
+          'id': 'p1',
+          'kind': 'video',
+          'extension': 'mp4',
+          'take': true,
+          'takeLog': newer,
+        }) as Map).cast(),
+      );
+      final log = page.takeLog!;
+      // Read as this version can,
+      expect(log.lagFrom, LagFrom.none);
+      expect(log.lagRaw, {'startCallMs': -200, 'peak': 2});
+      expect(log.tab!.marks, [(0, 0), (900, 1)]);
+      expect(log.song.map((s) => s.page), ['p7', 'p9']);
+      // written back as it came.
+      final renamed = page.copyWith(title: () => 'Take 1');
+      expect((_encoded(renamed.toJson()) as Map)['takeLog'], newer);
+      expect(TakeLog.fromJson(newer), log);
+
+      // A clone's: only the pages its segments name change, those this
+      // version can't read too.
+      final copy = log.withPages({'p7': 'q7', 'p8': 'q8'});
+      final song = (_encoded(copy.toJson()) as Map)['song'] as List;
+      expect(song.map((s) => (s as Map)['page']), ['q7', 'q8', 'p9']);
+      expect((song.first as Map)['gain'], 0.8);
+      expect((song[1] as Map)['speed'], 'fast');
+      expect(copy.song.map((s) => s.page), ['q7', 'p9']);
+      expect(
+        {...(_encoded(copy.toJson()) as Map)}..remove('song'),
+        {...newer}..remove('song'),
+      );
+      expect(identical(log.withPages({'p1': 'q1'}), log), isTrue);
+    });
   });
 
   group('a take\'s page', () {

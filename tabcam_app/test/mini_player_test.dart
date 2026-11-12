@@ -26,8 +26,14 @@ class FakeVideoPlatform extends VideoPlatformBase {
   @override
   Future<void> init() async {}
 
+  /// While set, players wait for it to open (a file still downloading).
+  Completer<void>? createHold;
+
   @override
-  Future<int?> createWithOptions(VideoCreationOptions options) async => _next++;
+  Future<int?> createWithOptions(VideoCreationOptions options) async {
+    await createHold?.future;
+    return _next++;
+  }
 
   /// Each player's events: initialized at once, then what a test sends
   /// ([complete]).

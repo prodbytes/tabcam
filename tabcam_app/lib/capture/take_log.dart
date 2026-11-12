@@ -7,7 +7,11 @@ import '../library/json_extra.dart';
 /// What Cam noted while a take recorded, kept with the take's page
 /// (`takeLog` in its details, `EventPage.takeLog`): written once, when the
 /// take is saved, and never changed after (a clone only renames the pages
-/// it names). From it the editor can put the tab over the take as a layer
+/// it names). A log read from JSON is written back as it came ([toJson]),
+/// whatever in it this version doesn't know or can't read included (a
+/// newer app's `lagFrom`, a field in a segment, a turn out of order), so
+/// saving its page again (renamed, edited, published, cloned) loses
+/// nothing. From it the editor can put the tab over the take as a layer
 /// and line the song up with it, instead of the tab being in the picture
 /// (see specs/cam.md, "What a take keeps").
 ///
@@ -26,6 +30,19 @@ class TakeLog {
     this.song = const [],
     this.songLink = false,
     this.extra = const {},
+  }) : _json = null;
+
+  const TakeLog._read(
+    this._json, {
+    required this.version,
+    required this.burned,
+    required this.lagMs,
+    required this.lagFrom,
+    required this.lagRaw,
+    required this.tab,
+    required this.song,
+    required this.songLink,
+    required this.extra,
   });
 
   /// The version this app writes.
@@ -63,6 +80,10 @@ class TakeLog {
   /// Keys a newer app wrote, kept as they came.
   final Map<String, Object?> extra;
 
+  /// The JSON this log was read from ([fromJson]), as it came (a copy):
+  /// what [toJson] writes back. Null for a log Cam made.
+  final Map<String, Object?>? _json;
+
   static const Set<String> knownKeys = {
     'v',
     'burned',
@@ -79,22 +100,62 @@ class TakeLog {
   String? lineAt(Duration position) => tab?.lineAt(position, lagMs);
 
   /// A clone's copy: the songs it names are the copy's pages ([ids], old
-  /// page ID to new; one not there stays as it is).
-  TakeLog withPages(Map<String, String> ids) => song.isEmpty
-      ? this
-      : TakeLog(
-          version: version,
-          burned: burned,
-          lagMs: lagMs,
-          lagFrom: lagFrom,
-          lagRaw: lagRaw,
-          tab: tab,
-          song: [for (final s in song) s.withPage(ids[s.page] ?? s.page)],
-          songLink: songLink,
-          extra: extra,
-        );
+  /// page ID to new; one not there stays as it is). Read from JSON, every
+  /// segment there naming a page is renamed, those this version can't
+  /// read too, and nothing else changes.
+  TakeLog withPages(Map<String, String> ids) {
+    final json = _json;
+    if (json == null) {
+      if (song.isEmpty) return this;
+      return TakeLog(
+        version: version,
+        burned: burned,
+        lagMs: lagMs,
+        lagFrom: lagFrom,
+        lagRaw: lagRaw,
+        tab: tab,
+        song: [for (final s in song) s.withPage(ids[s.page] ?? s.page)],
+        songLink: songLink,
+        extra: extra,
+      );
+    }
+    final segments = json['song'];
+    if (segments is! List ||
+        !segments.any((s) => s is Map && ids.containsKey(s['page']))) {
+      return this;
+    }
+    return TakeLog._read(
+      Map.unmodifiable({
+        ...json,
+        'song': List<Object?>.unmodifiable([
+          for (final s in segments)
+            if (s case final Map m when ids.containsKey(m['page']))
+              Map<String, Object?>.unmodifiable({
+                ...m.cast<String, Object?>(),
+                'page': ids[m['page']],
+              })
+            else
+              s,
+        ]),
+      }),
+      version: version,
+      burned: burned,
+      lagMs: lagMs,
+      lagFrom: lagFrom,
+      lagRaw: lagRaw,
+      tab: tab,
+      song: List.unmodifiable([
+        for (final s in song) s.withPage(ids[s.page] ?? s.page),
+      ]),
+      songLink: songLink,
+      extra: extra,
+    );
+  }
 
-  Map<String, Object?> toJson() => {
+  /// The log as JSON: as it came, when it was read from JSON ([fromJson]).
+  Map<String, Object?> toJson() => _json ?? _made();
+
+  Map<String, Object?> _made() => {
     'v': version,
     'burned': burned,
     'lagMs': lagMs,
@@ -108,11 +169,14 @@ class TakeLog {
   };
 
   /// The log in [json], read leniently (it also comes from the cloud):
-  /// what isn't as expected is left out. Null when it's no log at all.
+  /// what isn't as expected is left out of its fields, but kept in what
+  /// [toJson] writes back. Null when it's no log at all.
   static TakeLog? fromJson(Object? json) {
     if (json is! Map) return null;
     final raw = json['lagRaw'];
-    return TakeLog(
+    return TakeLog._read(
+      // All of it, as it came (a JSON copy: plain JSON only).
+      unknownKeys(json, const {}),
       version: _int(json['v']) ?? 1,
       // Unsaid, taken as burned: the tab is then never drawn twice.
       burned: json['burned'] != false,
@@ -136,31 +200,14 @@ class TakeLog {
     );
   }
 
+  /// Equal when they'd be written the same ([toJson]).
   @override
   bool operator ==(Object other) =>
-      other is TakeLog &&
-      other.version == version &&
-      other.burned == burned &&
-      other.lagMs == lagMs &&
-      other.lagFrom == lagFrom &&
-      mapEquals(other.lagRaw, lagRaw) &&
-      other.tab == tab &&
-      listEquals(other.song, song) &&
-      other.songLink == songLink &&
-      jsonEquals(other.extra, extra);
+      identical(other, this) ||
+      other is TakeLog && jsonEquals(other.toJson(), toJson());
 
   @override
-  int get hashCode => Object.hash(
-    version,
-    burned,
-    lagMs,
-    lagFrom,
-    jsonHash(lagRaw),
-    tab,
-    Object.hashAll(song),
-    songLink,
-    jsonHash(extra),
-  );
+  int get hashCode => jsonHash(toJson());
 
   @override
   String toString() => 'TakeLog(${toJson()})';

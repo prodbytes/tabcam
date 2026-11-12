@@ -156,7 +156,9 @@ page here doesn't drop them (a clone copies them as they are, changing
 nothing in them). The keys this version knows are always read and
 checked as before (IDs, links, extensions) and are never taken from the
 kept ones: when both have one, the known value wins. Only plain JSON is
-kept, at most 32 levels deep; anything else is left out.
+kept, at most 32 levels deep; anything else is left out. A take's
+[log](cam.md#what-a-take-keeps) is kept whole: written back as it came,
+nested fields and values this version can't read included.
 
 ## Storage
 

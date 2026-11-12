@@ -3136,3 +3136,26 @@ spec.
     player; anchors and fades; a band drawn in a browser's render while
     it shows and not after. See [video edit](video-edit.md#layers) and
     [Cam](cam.md#what-a-take-keeps).
+
+## 2026-11-12
+
+1. **(Editor redesign, step 3, review fixes) Cam's take log written back
+   as it came; Play waits safely for a take to open, and skips one the
+   device can't play.** A take's log read from the capture's details is
+   now kept whole and written back exactly as it came when its page is
+   saved again (renamed, edited, published, cloned): before, it was
+   rebuilt from the fields this version reads, so a newer app's
+   `lagFrom`, fields inside the tab, a turn or a song segment, and
+   values it couldn't read were dropped. A clone only renames the pages
+   the log's song segments name, those this version can't read too
+   (`TakeLog.toJson`, `withPages`). In Cam, while the take Play plays
+   opens (a take from another device whose file is still downloading),
+   Play shows Stop, which lets it go, and Rec, 1 and . wait: before,
+   a take could start and the old one then play into it, Rec greyed
+   until it ended. On iOS Play passes over a WebM take (recorded in
+   Chrome or Firefox), which its player can't play, for the last one it
+   can (`takePlaysHere`). Tests (`test/take_log_test.dart`,
+   `test/play_along_test.dart`): a newer app's log through a rename and
+   a clone; Rec, 1 and . waiting while a take opens, Play letting it go;
+   on iOS, Play greyed with only a WebM take and playing the MP4 before
+   one. See [Cam](cam.md#what-a-take-keeps) and [library](library.md).
