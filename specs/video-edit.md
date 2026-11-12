@@ -7,7 +7,9 @@ recordings, videos or takes, or a sound file) placed along it at a
 level of its own; and, **on the video**, a take's tab drawn over it as
 it showed while recording, a **title** (the capture's name, or text
 typed) and a small **watermark** that only [Premium](cloud-ocr.md#in-the-app)
-removes ([layers](#layers)). Opened
+removes ([layers](#layers)); and **fades in and out**, 3 s each by
+default and adjustable: the video from and to black, both sounds with
+it ([fades](#fades)). Opened
 with **Edit** (scissors, before Rename) on a video's
 [file screen](event-screen.md#file-screen), in the user's own captures
 and those shared to edit (not read only, nor a contribution's file, nor
@@ -28,14 +30,17 @@ every tenth of a second, as the
 both play, the song's place is compared with where the plan has it, and
 it's sought again when it's more than 150 ms off, so a long video's song
 doesn't drift on (the downloaded file is exact whatever the preview
-does). A change that moves nothing (a level, or Mute: a muted lane plays
-on at 0) doesn't stop or re-seek the song. The plan's
-[layers](#layers) are drawn over the picture as it plays. The
+does). A change that moves nothing (a level, Mute: a muted lane plays
+on at 0, or a fade) doesn't stop or re-seek the song. The plan's
+[layers](#layers) are drawn over the picture as it plays, and its
+[fades](#fades) with them. The
 [file screen](event-screen.md#file-screen)'s player does the same,
 looping the kept part (a muted song isn't opened there), a take's tab
 and the title over it also when it has no edit (both are on by
 default), but not the watermark, which only the editor's preview and
-its Download add (it's the downloader's, by their Premium); it finds the
+its Download add (it's the downloader's, by their Premium), nor the
+fades (it loops the video: a fade to black and silence at each turn
+would get in the way of watching and playing along); it finds the
 song's length as the editor does (its player's, or, where the player
 can't say, as for a take the browser recorded, the editor's), and when
 neither can say, takes the end the edit keeps for it (none: the song
@@ -63,7 +68,10 @@ makes a file of it."), opening with the video's edit as it was left:
   tab, the title, the watermark as this user's download would have
   it), drawn by the same code, so the preview is what the file will be
   (while the title's text is being edited, the title shows as it ends
-  up rather than fading in, so it's seen at the start too). It plays the
+  up rather than fading in, so it's seen at the start too). While it
+  plays, the [fades](#fades) darken it from and to black and ramp both
+  lanes with it; paused, the frame shows as it is (a trim's grip shows
+  the frame it cuts at, not black). It plays the
   **kept part** only, from its start when outside it, paused back at its
   start at its end, with both lanes as set, as the edit is played
   everywhere.
@@ -90,7 +98,10 @@ makes a file of it."), opening with the video's edit as it was left:
     trimmed start cuts the song's start with it). While paused, the
     preview follows the grip dragged (a seek at most every 150 ms,
     exactly the end it moved when let go). This replaces the Trim
-    section's range and the preview's scrub bar.
+    section's range and the preview's scrub bar. The [fades](#fades)
+    are drawn on the kept part as ramps at its ends (shaded above a
+    line from its corner across the fade's length), as long as they
+    play.
   - **The Song lane**: empty, a dashed **Add a song** (**Add a track**)
     row, which opens a sheet, **Pick a song** (**Pick a track**), of the
     capture's **recordings**, **videos**
@@ -136,7 +147,7 @@ makes a file of it."), opening with the video's edit as it was left:
 - **Under the lanes, On the video**: what's drawn over the video, as
   chips (on a wide screen, 840 points and more, **On the video** is a
   panel of its own beside the rest, 320 points wide, the title's fields
-  under its chips):
+  and the fades' sliders under its chips):
   - **Tab** (on a take only; none on a take without a tab: its log has
     none, or, with no log, its capture's tab text has no necklines): on
     by default, for a take whose tab is kept apart from its picture (its
@@ -179,6 +190,23 @@ makes a file of it."), opening with the video's edit as it was left:
     it where it is. An edit with the watermark off, from a Premium
     user, still has it for anyone without Premium who downloads it (a
     collaborator): the rule is the downloader's, at Download.
+  - **Fades** (every video; tooltip "The video from and to black, both
+    sounds with it"): on by default, 3 s in and 3 s out
+    ([fades](#fades)). Tapped, off (both none, kept as `fadeInMs: 0`,
+    `fadeOutMs: 0`) or on again, as they were before it was turned off
+    (3 s each if they never were). Its **tune** button ("Change the
+    fades") opens the sliders: on a phone in place of the chips ("Fades
+    · The video from and to black, both sounds with it"), with **Fade
+    in** and **Fade out** (each from 0 to 10 s in tenths of a second,
+    its length beside it, "3.0 s"), **No fades** (both none; the chip
+    then puts them back) and **Done**; on a wide screen the same sliders
+    are always under the title's fields, without Done (and the chip has
+    no button). A slider goes at most to half the kept part (a fade kept
+    longer plays that long, and is back when the kept part is long
+    enough again). The preview plays a change at once (it moves no
+    sound: nothing is sought), and it's kept a moment later, as every
+    change. The title's fields and the sliders take each other's place
+    on a phone.
 - **Under them, the song's details** (when there's one): its lane
   and name ("Song · Recording 1"), **‹** and **›**, which nudge it a
   tenth of a second earlier or later, with where it starts in words
@@ -189,17 +217,17 @@ makes a file of it."), opening with the video's edit as it was left:
   a take, "track" ("The track starts…", "… of the track") on any other
   video. A song shorter than the kept part leaves
   silence after. On a wide screen they stay under the lanes, beside
-  On the video. (On a phone the title's fields already take the chips'
-  place while they're open; a later step may make the song's details
+  On the video. (On a phone the title's fields and the fades' sliders
+  already take the chips' place while they're open; a later step may make the song's details
   part of that one context area too, shown when the Song lane is
   selected.)
 - **At the bottom**: **Reset** (on once the edit is anything but the
   defaults: the whole video, its own sound at 100%, no song said (so a
   song Removed, `song: off`, keeps it on), a take's tab on, the title
-  on with the capture's name, and the watermark on; Reset goes back to
-  them, the song taken out, and the edit is none: none means the
-  defaults, a take's tab, the title and the watermark over it
-  included, not the file as it is) and
+  on with the capture's name, the watermark on, and fades of 3 s in and
+  out; Reset goes back to them, the song taken out, and the edit is
+  none: none means the defaults, a take's tab, the title, the watermark
+  and the fades included, not the file as it is) and
   **Download**, a split button (both shrink to fit at the largest text
   sizes). Pressed, it downloads **the video** as edited, both lanes
   mixed; its arrow opens a menu of **The video (MP4)**, **The video
@@ -221,7 +249,7 @@ makes a file of it."), opening with the video's edit as it was left:
   `.m4a`; `.webm`, `.wav` where those are made); a video the edit
   doesn't change and with nothing drawn over it (the watermark off, so
   for a Premium user, or in a build without the service, and no title)
-  downloads as it is when it's already MPEG-4 (an
+  and no fades downloads as it is when it's already MPEG-4 (an
   `.mp4` or `.m4v`, on every platform: in Firefox too, which would make
   it again only as a WebM) or already in the format made here (a
   `.webm` where the browser records WebM), and is made again otherwise
@@ -230,8 +258,8 @@ makes a file of it."), opening with the video's edit as it was left:
   bar shows meanwhile, saying how far along it is (the browser's as the
   video plays; the phones' as Media3 or AVFoundation report it, every
   quarter of a second), with "Making the file…"; a
-  failure says "Couldn't make the file" and why. With the watermark on
-  by default, almost every Download now makes the file (on the web,
+  failure says "Couldn't make the file" and why. With the watermark and
+  the fades on by default, almost every Download now makes the file (on the web,
   as long as the kept part takes to play); the file list's Download and
   Download all stay instant, the file as it is.
 
@@ -286,6 +314,9 @@ version 2 (`v: 2`):
 - `watermark`: `false` when a Premium user (or a build without the
   service) turns it off, written only then; obeyed only for a downloader
   who has Premium now ([layers](#layers)).
+- `fadeInMs`, `fadeOutMs`: the [fades](#fades)' lengths, written only
+  when not the default 3000 (0: none); read within 0 and 10,000.
+  Absent, 3 s: an edit kept before the fades has them too.
 - Muting keeps the level (`ownMuted`/`songMuted` beside the volumes),
   so an edit reopens muted at the level it had.
 - Values that aren't numbers are read as the default; volumes out of
@@ -320,8 +351,11 @@ never stored. It says:
   (`songAt`, a binary search over the clips; none in a gap);
 - the **layers** drawn over the picture ([layers](#layers)): none for
   the sound only;
+- the **fades** (`fadeIn`, `fadeOut`, [fades](#fades)): the edit's (3 s
+  each by default), each at most half the kept part; the same in all
+  three of Download's plans;
 - whether it's a **passthrough**: the whole video, its own sound at
-  100%, no song, nothing drawn over it, and the input already in the
+  100%, no song, nothing drawn over it, no fades, and the input already in the
   format made (an MP4 or M4V anywhere; a WebM where WebM is made). Only
   then does Download save the file as it is; everything else is
   rendered.
@@ -335,10 +369,7 @@ lane that isn't heard at level 0, so muting and unmuting only change a
 level and move nothing (what moves sound, the plan's `timeline`: the
 kept part, the song's page and clips, is what makes the preview seek
 the song again). The title and the watermark are layers too, so a
-change to them never seeks; fades in and out (by default 3 s, set by
-the user: the picture from and to black, both lanes' levels ramping
-with it) come later: for now each lane's level is one level
-throughout.
+change to them never seeks, and nor does a fade's.
 
 ### Layers
 
@@ -416,6 +447,46 @@ collaborator without Premium who downloads a Premium user's edit. The
 watermark is branding, not protection: the file list still downloads
 the raw file.
 
+### Fades
+
+**The video fades in from black at the kept part's start and out to
+black at its end, both sounds with it**: 3 s each by default, each set
+by the user from 0 (none) to 10 s (`PageEdit.fadeIn` / `fadeOut`), and
+never played longer than half the kept part (`PageEdit.fadeWithin`: a
+4 s kept part fades 2 s in and 2 s out, meeting in the middle; the
+length kept stays as set). One function says how much comes through at
+a time in the output (`Fades.levelAt`, in
+[`render_plan.dart`](../tabcam_app/lib/capture/render_plan.dart)): 0 at
+the start, rising in a straight line to 1 at the end of the fade in, 1
+until the fade out, falling in a straight line to 0 at the end; the
+renderers in Kotlin and Swift do the same. **The picture**, with what's
+drawn over it (the tab, the title, the watermark), is covered by black
+at 1 − that (so the fades are over everything, not the video alone);
+**the sound**, both lanes mixed, is multiplied by it. The title still
+fades in over the kept part's first 3 s on its own ([layers](#layers)),
+under the black. The sound only (M4A) and the video without sound get
+the same fades, each what it has of them.
+
+**Edits kept before the fades get them too.** An edit without the keys
+has 3 s fades, as a fresh video has: the fades were asked for by
+default, nothing is made until Download (files downloaded before stay
+as they were), and the watermark and title already changed what an
+older edit downloads as. An edit written by this version with the fades
+turned off keeps them off (`fadeInMs: 0`, `fadeOutMs: 0`); an older app
+keeps those keys as a newer app's and writes them back
+([stored](#how-the-edit-is-stored)).
+
+**In the preview**, `EditLayers` paints the black over the picture and
+its layers, from the same `Fades`, but only while it plays: paused, the
+frame shows as it is, so a trim's grip shows the frame it cuts at, and
+the editor doesn't open on a black frame. `EditedPlayback` ramps both
+players' volumes (each lane's level times the fades' level), set again
+at each of its checks (every tenth of a second, when it's moved 1% or
+more, or reached 0 or the lane's level), and set before Play starts
+(from where it starts, so the first tenth of a second isn't loud);
+paused, the players are at their levels. The file screen's player
+leaves the fades out (`fades: false`), as it does the watermark.
+
 **The fonts**: Roboto Regular and Medium ship with the app
 (`assets/fonts`, Apache 2.0, as the family `TabCamRoboto`, apart from
 the app's own text), so the title and the watermark are drawn the same
@@ -471,6 +542,16 @@ carries it out; the times are all worked out in Dart.
   Media3 counts a clipped video's frames from its clip's start or from
   the file's (to check on a phone: the `TABCAM_TAB_OVER_BURNED` build).
   The PNGs are decoded off the main thread and let go when it's done.
+  **The fades** (the channel's `fadeInMs` and `fadeOutMs`, left out when
+  none): the picture's black is one more overlay over all the others
+  (`FadeOverlay`: a small black bitmap scaled to the frame, its alpha
+  how dark `Fades.levelAt` leaves it, in 64 steps, the same first-frame
+  time base); the sound's is one `GainProcessor` on the composition
+  (`Composition.Builder.setEffects`: Transformer's audio graph runs the
+  composition's audio effects on the mix, after the lanes are mixed),
+  its `DefaultGainProvider` fading in linearly over the start
+  (`FADE_IN_LINEAR`) and out over the end (`FADE_OUT_LINEAR`), on the
+  output's samples, the sound only too.
   H.264 and AAC in MP4. The sound only has no picture: the own
   lane's sound clipped, and the song's sequence, AAC in M4A; it ends
   where the sound does. A clip at a speed other than 1 is refused (not
@@ -495,7 +576,14 @@ carries it out; the times are all worked out in Dart.
   (its PNG as contents, placed by its anchor on the upright frame), its
   opacity 0 but while it shows: a `CABasicAnimation` from 0 to its
   opacity over its fade, then one holding it to its end, from
-  `AVCoreAnimationBeginTimeAtZero`.
+  `AVCoreAnimationBeginTimeAtZero`. **The fades**: a black `CALayer`
+  over the whole frame, over all the others, its opacity a linear
+  `CAKeyframeAnimation` (1 at the start, 0 after the fade in, 0 until
+  the fade out, 1 at the end: `fadeKeyframes`), so the video composition
+  is made for fades alone too; and each audio track's input in the
+  audio mix ramps (`setVolumeRamp`) from silence to its level over the
+  fade in and back over the fade out (`fade`), every track the same, so
+  the mix fades, the sound only too.
   Exported as MP4 (highest quality); the sound only leaves the video
   track out and exports M4A (`AVAssetExportPresetAppleM4A`), and ends
   where the sound does. The track's asset is held until the export is
@@ -527,7 +615,12 @@ carries it out; the times are all worked out in Dart.
   second), the layers drawn over each frame (each look's PNG made an
   `ImageBitmap` once; each layer showing then drawn where its anchor
   puts it on the video's own frame size, with `globalAlpha` its
-  opacity then, put back to 1 after), and the mix plays from a buffer into the recorded stream
+  opacity then, put back to 1 after), then the fades' black over the
+  whole frame (`fillRect`, `globalAlpha` its darkness then); the offline
+  mix fades through one more gain node, after the lanes', ramped
+  (`linearRampToValueAtTime`) from 0 to 1 over the fade in and back to
+  0 over the fade out, to the sample (an own sound streamed as it plays
+  has its gain set at each frame instead), the sound only too; and the mix plays from a buffer into the recorded stream
   beside it (the `AudioContext` it plays in made and started at
   Download's tap, before the files are decoded), started as the video
   starts playing; at each frame, while the video is more than 40 ms
@@ -604,10 +697,13 @@ rendering a trimmed plan with its own sound and a song clip at half its
 volume, the sound alone, and refusing a plan with neither picture nor
 sound; a plan with a red band along the bottom for the kept part's first
 half second and a red square at the top left (the band's pixels red
-while it shows and not after, the square where its anchor puts it); and
-each reading the channel's arguments, the layers' too. The layers'
-layout and timing are also JVM tests (`android/app/src/test`,
-`EditLayersTest`) and an XCTest that needs no video. (These native
+while it shows and not after, the square where its anchor puts it); a
+plan fading in and out, its first frame black, the square too, and its
+middle bright (and, on Android, its sound only made); and each reading
+the channel's arguments, the layers' and the fades' too. The layers'
+layout and timing, and the fades' levels, are also JVM tests
+(`android/app/src/test`, `EditLayersTest`) and XCTests that need no
+video (the fades' keyframes and volume ramps). (These native
 render tests are compiled here, not yet run on a phone or a simulator
 for the layers.) (ML Kit's pods leave
 the arm64 simulator out, so the XCTest needs a simulator that runs

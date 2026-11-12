@@ -18,7 +18,8 @@ import 'media_url.dart';
 /// plan Download renders: the kept part, its own sound and its song mixed,
 /// the song's length found as the editor finds it, [mediaLength]; a take's
 /// tab and the title drawn over it, [EditLayers], also with no edit, as
-/// they're on by default; not the watermark, which only Download adds),
+/// they're on by default; not the watermark, nor the fades in and out,
+/// which only Download adds: it loops the video),
 /// and is let go when the page scrolls away.
 class VideoPage extends StatefulWidget {
   const VideoPage({
@@ -79,6 +80,7 @@ class _VideoPageState extends State<VideoPage> {
         duration: length,
         takeLog: log,
         title: title,
+        fades: false,
       );
       _layers = plan?.layers ?? const [];
       return;
@@ -113,6 +115,7 @@ class _VideoPageState extends State<VideoPage> {
       songLength: songLength,
       takeLog: log,
       title: title,
+      fades: false,
     );
     await edited.set(plan, song: track);
     _layers = plan?.layers ?? const [];

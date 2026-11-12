@@ -135,9 +135,16 @@ void main() {
     });
 
     test('a video with layers is never saved as it is', () {
-      expect(plan(null, null).passthrough, isTrue);
-      expect(plan(null, _log()).passthrough, isFalse);
-      expect(plan(null, _log(burned: true)).passthrough, isTrue);
+      // Without fades (on by default), else nothing is.
+      final still = PageEdit(
+        start: Duration.zero,
+        end: ms(20000),
+        fadeIn: Duration.zero,
+        fadeOut: Duration.zero,
+      );
+      expect(plan(still, null).passthrough, isTrue);
+      expect(plan(still, _log()).passthrough, isFalse);
+      expect(plan(still, _log(burned: true)).passthrough, isTrue);
     });
 
     test('goes to the platforms as images, each look once, and layers '

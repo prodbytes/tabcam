@@ -553,6 +553,57 @@ void main() {
     expect(bandBottom, lessThan(bandTop * 0.6));
     final (afterBottom, afterTop) = await brightness(layered, 1.2);
     expect((afterBottom - afterTop).abs(), lessThan(afterTop * 0.25));
+
+    // The fades (3 s each by default, here half a second): the sound,
+    // mixed offline, is the same sound ramped in and out, to the sample.
+    final still = PageEdit(
+      start: Duration.zero,
+      end: const Duration(milliseconds: 2000),
+      fadeIn: Duration.zero,
+      fadeOut: Duration.zero,
+    );
+    final faded = still.copyWith(
+      fadeIn: const Duration(milliseconds: 500),
+      fadeOut: const Duration(milliseconds: 500),
+    );
+    final plainSound = await decode(
+      await wavs.render(plan(still, kind: RenderKind.sound)),
+    );
+    final fadedSound = await decode(
+      await wavs.render(plan(faded, kind: RenderKind.sound)),
+    );
+    final fades = plan(faded, kind: RenderKind.sound).fades;
+    final plainSamples = plainSound.getChannelData(0).toDart;
+    final fadedSamples = fadedSound.getChannelData(0).toDart;
+    var worst = 0.0;
+    for (var i = 0; i < plainSamples.length; i++) {
+      final at = Duration(
+        microseconds: (i * 1e6 / plainSound.sampleRate).round(),
+      );
+      worst = max(
+        worst,
+        (fadedSamples[i] - plainSamples[i] * fades.levelAt(at)).abs(),
+      );
+    }
+    expect(worst, lessThan(0.01));
+    // Its first and last 20 ms at most 4% as loud.
+    expect(
+      loudest(fadedSound, 0, 0.02),
+      lessThan(loudest(plainSound, 0, 0.02) * 0.05 + 0.001),
+    );
+    expect(
+      loudest(fadedSound, 1.98, 2),
+      lessThan(loudest(plainSound, 1.98, 2) * 0.05 + 0.001),
+    );
+    expect(loudest(fadedSound, 0.6, 1.4), greaterThan(0.05));
+
+    // The picture from black: dark at the start, bright in the middle.
+    final fadedVideo = await editor.render(
+      plan(faded.copyWith(end: const Duration(milliseconds: 1500))),
+    );
+    final (_, fadedStart) = await brightness(fadedVideo, 0.02);
+    final (_, fadedMiddle) = await brightness(fadedVideo, 0.75);
+    expect(fadedStart, lessThan(fadedMiddle * 0.3));
   }
 
   testWidgets('the kept part, with its sound, without, or with a track; '

@@ -211,6 +211,44 @@ class VideoRenderTest {
         )
     }
 
+    private fun brightness(color: Int) = (Color.red(color) + Color.green(color) + Color.blue(color)) / 3
+
+    @Test
+    fun fadesThePictureFromAndToBlackWithItsSound() {
+        val video = asset("riff.mp4")
+        val song = asset("tone.m4a")
+        // A white square over the middle all along, so there's something
+        // bright to fade; 400 ms in and out of a 1.2 s kept part.
+        val output = File(dir, "fades.mp4")
+        val (error, _) = render(
+            RenderPlan(
+                input = video, output = output, video = true, startMs = 300, endMs = 1500,
+                ownVolume = 1f, song = SongLane(song, 1f, listOf(SongClip(0, 0, 1200))),
+                images = listOf(png(Color.WHITE, 32, 32)),
+                layers = listOf(PlanLayer("title", 0, LayerAnchor.TOP_LEFT, heightU = 0.9f, marginU = 0.05f)),
+                fades = Fades(fadeInMs = 400, fadeOutMs = 400, lengthMs = 1200),
+            ),
+        )
+        assertNull(error)
+        val (ms, hasVideo, hasAudio) = probe(output)
+        assertEquals(1200.0, ms.toDouble(), 150.0)
+        assertTrue(hasVideo && hasAudio)
+        // Black at the start (the square too: the black is over the layers),
+        // bright in the middle.
+        assertTrue(brightness(pixel(output, 0, 0.3f, 0.3f)) < 40)
+        assertTrue(brightness(pixel(output, 600, 0.3f, 0.3f)) > 200)
+        // The sound alone fades too (its gain on the mix): still made.
+        assertNull(
+            render(
+                RenderPlan(
+                    input = video, output = File(dir, "fades.m4a"), video = false, startMs = 300,
+                    endMs = 1500, ownVolume = 1f, song = null,
+                    fades = Fades(fadeInMs = 400, fadeOutMs = 400, lengthMs = 1200),
+                ),
+            ).first,
+        )
+    }
+
     @Test
     fun readsTheChannelsArguments() {
         val plan = RenderPlan.fromArgs(

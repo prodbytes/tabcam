@@ -2886,6 +2886,37 @@
   "@videoEditWatermarkLocked": {
     "description": "Video edit: the locked Watermark chip's tooltip, and what the Premium card it opens starts with"
   },
+  "videoEditFades": "Fades",
+  "@videoEditFades": {
+    "description": "Video edit: the Fades chip (the video fades in from black and out to black, both sounds with it)"
+  },
+  "videoEditFadesAbout": "The video from and to black, both sounds with it",
+  "@videoEditFadesAbout": {
+    "description": "Video edit: what the fades do (the Fades chip's tooltip, and above their sliders)"
+  },
+  "videoEditFadesEdit": "Change the fades",
+  "@videoEditFadesEdit": {
+    "description": "Video edit: the Fades chip's button that opens their sliders"
+  },
+  "videoEditFadeIn": "Fade in",
+  "@videoEditFadeIn": {
+    "description": "Video edit: the slider of how long the start fades in from black"
+  },
+  "videoEditFadeOut": "Fade out",
+  "@videoEditFadeOut": {
+    "description": "Video edit: the slider of how long the end fades out to black"
+  },
+  "videoEditFadeSeconds": "{seconds} s",
+  "@videoEditFadeSeconds": {
+    "description": "Video edit: a fade's length, in seconds (one decimal)",
+    "placeholders": {
+      "seconds": {"type": "String"}
+    }
+  },
+  "videoEditFadesOff": "No fades",
+  "@videoEditFadesOff": {
+    "description": "Video edit: turns both fades off"
+  },
   "metronome": "Metronome",
   "@metronome": {
     "description": "The metronome's button and its sidebar's title"

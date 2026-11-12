@@ -2153,6 +2153,30 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoEditWatermarkLocked => 'Premium quita la marca de agua';
 
   @override
+  String get videoEditFades => 'Fundidos';
+
+  @override
+  String get videoEditFadesAbout =>
+      'El video desde y hacia negro, con los dos sonidos';
+
+  @override
+  String get videoEditFadesEdit => 'Cambiar los fundidos';
+
+  @override
+  String get videoEditFadeIn => 'Fundido de entrada';
+
+  @override
+  String get videoEditFadeOut => 'Fundido de salida';
+
+  @override
+  String videoEditFadeSeconds(String seconds) {
+    return '$seconds s';
+  }
+
+  @override
+  String get videoEditFadesOff => 'Sin fundidos';
+
+  @override
   String get metronome => 'Metrónomo';
 
   @override

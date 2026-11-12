@@ -138,7 +138,9 @@ enum Sound {
 /// `clips`, each `atMs` in the output, the song from `fromMs` to `toMs`, at
 /// `speed`, 1 for now), and what's drawn over the picture: `images` (PNGs)
 /// and `layers` (each its `image`'s index, `anchor`, `heightU`, `marginU`,
-/// `liftU`, `liftW`, `fromMs`, `toMs`, `fadeInMs` and `opacity`). With a `job`,
+/// `liftU`, `liftW`, `fromMs`, `toMs`, `fadeInMs` and `opacity`), and the
+/// fades (`fadeInMs`, `fadeOutMs`; left out: none): the picture, with its
+/// layers, from and to black, and the sound with it. With a `job`,
 /// `progress` calls back with `job` and `done` (0 to 1) every quarter of a
 /// second while it renders. Replies with the output path.
 ///
@@ -268,7 +270,10 @@ enum TakeH264 {
 /// own sound cut the same when kept, and the song lane's clips inserted on
 /// one track where they start, with their volumes through an audio mix;
 /// the layers (with the picture) through a video composition, one Core
-/// Animation layer each, shown and faded by opacity animations; exported as
+/// Animation layer each, shown and faded by opacity animations; the fades
+/// a black layer over them all, its opacity animated from 1 to 0 and back
+/// (`fadeKeyframes`), and volume ramps on each audio track (`fade`, every
+/// track's the same: the mix fades); exported as
 /// H.264 and AAC in MP4, or, without the video, the sound alone as AAC in
 /// M4A.
 enum VideoEditor {
@@ -348,6 +353,10 @@ enum VideoEditor {
     /// What's drawn over the picture, each naming one of `images` (PNGs).
     var layers: [Layer] = []
     var images: [Data] = []
+    /// How long the output fades in from black and silence, and out to
+    /// them (0: none; the app keeps each at most half the kept part).
+    var fadeInMs: Int64 = 0
+    var fadeOutMs: Int64 = 0
 
     /// The plan the channel's arguments describe; nil when they're bad.
     init?(args: [String: Any]) {
@@ -404,12 +413,15 @@ enum VideoEditor {
         input: URL(fileURLWithPath: input), output: URL(fileURLWithPath: output),
         video: args["video"] as? Bool ?? true, startMs: startMs, endMs: endMs,
         ownVolume: (args["own"] as? [String: Any]).map { volume($0) }, song: song,
-        layers: layers, images: images)
+        layers: layers, images: images,
+        fadeInMs: max(0, int64(args, "fadeInMs") ?? 0),
+        fadeOutMs: max(0, int64(args, "fadeOutMs") ?? 0))
     }
 
     init(
       input: URL, output: URL, video: Bool = true, startMs: Int64, endMs: Int64,
-      ownVolume: Float? = 1, song: Song? = nil, layers: [Layer] = [], images: [Data] = []
+      ownVolume: Float? = 1, song: Song? = nil, layers: [Layer] = [], images: [Data] = [],
+      fadeInMs: Int64 = 0, fadeOutMs: Int64 = 0
     ) {
       self.input = input
       self.output = output
@@ -420,7 +432,12 @@ enum VideoEditor {
       self.song = song
       self.layers = layers
       self.images = images
+      self.fadeInMs = fadeInMs
+      self.fadeOutMs = fadeOutMs
     }
+
+    /// Whether it fades in or out.
+    var fades: Bool { fadeInMs > 0 || fadeOutMs > 0 }
   }
 
   /// Calls `completion` exactly once, on any thread, with nil on success or
@@ -461,12 +478,15 @@ enum VideoEditor {
     }
 
     let composition = AVMutableComposition()
-    // The volumes that aren't 1, one per audio track.
+    // The volumes that aren't 1 throughout, one per audio track: its lane's,
+    // and the fades.
     var volumes: [AVMutableAudioMixInputParameters] = []
     func mix(_ track: AVMutableCompositionTrack, at volume: Float) {
-      guard volume != 1 else { return }
+      guard volume != 1 || plan.fades else { return }
       let parameters = AVMutableAudioMixInputParameters(track: track)
-      parameters.setVolume(volume, at: .zero)
+      fade(
+        parameters, volume: volume, fadeInMs: plan.fadeInMs, fadeOutMs: plan.fadeOutMs,
+        length: range.duration)
       volumes.append(parameters)
     }
     var videoComposition: AVMutableVideoComposition?
@@ -476,14 +496,15 @@ enum VideoEditor {
           withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
       else { throw Failure("Could not add the video track.") }
       try compVideo.insertTimeRange(range, of: videoTrack, at: .zero)
-      if plan.layers.isEmpty {
+      if plan.layers.isEmpty && !plan.fades {
         compVideo.preferredTransform = transform
       } else {
         // The video composition turns it upright instead.
         let (naturalSize, frameRate) = try await videoTrack.load(.naturalSize, .nominalFrameRate)
         videoComposition = try layered(
           compVideo, naturalSize: naturalSize, transform: transform, frameRate: frameRate,
-          duration: range.duration, layers: plan.layers, images: plan.images)
+          duration: range.duration, layers: plan.layers, images: plan.images,
+          fadeInMs: plan.fadeInMs, fadeOutMs: plan.fadeOutMs)
       }
     }
 
@@ -579,10 +600,13 @@ enum VideoEditor {
   /// `duration` long) turned upright (`transform`, as its frames show), with
   /// `layers` (their `images`) over it: each a Core Animation layer where
   /// its anchor puts it, its opacity 0 outside its time, rising to its
-  /// opacity over its fade, as `PlanLayer.alphaAt` says.
+  /// opacity over its fade, as `PlanLayer.alphaAt` says; and over them all,
+  /// with fades, a black layer, opaque at the start and the end, clear in
+  /// between (`fadeKeyframes`).
   static func layered(
     _ track: AVMutableCompositionTrack, naturalSize: CGSize, transform: CGAffineTransform,
-    frameRate: Float, duration: CMTime, layers: [Layer], images: [Data]
+    frameRate: Float, duration: CMTime, layers: [Layer], images: [Data],
+    fadeInMs: Int64 = 0, fadeOutMs: Int64 = 0
   ) throws -> AVMutableVideoComposition {
     // The frame as displayed: the transform rotates (and maybe mirrors) the
     // natural frame; its bounding box is moved back to the origin.
@@ -654,9 +678,82 @@ enum VideoEditor {
       }
       parent.addSublayer(shape)
     }
+    if let keyframes = fadeKeyframes(
+      fadeIn: Double(fadeInMs) / 1000, fadeOut: Double(fadeOutMs) / 1000, total: total)
+    {
+      let black = CALayer()
+      black.frame = frame
+      black.backgroundColor = CGColor(gray: 0, alpha: 1)
+      black.opacity = 0
+      let fade = CAKeyframeAnimation(keyPath: "opacity")
+      fade.values = keyframes.0
+      fade.keyTimes = keyframes.1
+      fade.calculationMode = .linear
+      fade.beginTime = AVCoreAnimationBeginTimeAtZero
+      fade.duration = total
+      fade.isRemovedOnCompletion = false
+      fade.fillMode = .both
+      black.add(fade, forKey: "fade")
+      parent.addSublayer(black)
+    }
     videoComposition.animationTool = AVVideoCompositionCoreAnimationTool(
       postProcessingAsVideoLayer: videoLayer, in: parent)
     return videoComposition
+  }
+
+  /// The black's opacity over an output `total` seconds long, as a
+  /// keyframe animation's values and key times (fractions of `total`): 1
+  /// at the start, 0 after `fadeIn`, 0 again `fadeOut` before the end, 1
+  /// at the end, straight lines between (each fade at most half the
+  /// output, as `Fades.levelAt` in Dart has them). Nil without a fade.
+  static func fadeKeyframes(fadeIn: Double, fadeOut: Double, total: Double)
+    -> ([Float], [NSNumber])?
+  {
+    guard total > 0 else { return nil }
+    let fadeIn = min(max(0, fadeIn), total / 2)
+    let fadeOut = min(max(0, fadeOut), total / 2)
+    guard fadeIn > 0 || fadeOut > 0 else { return nil }
+    var values: [Float] = []
+    var times: [Double] = []
+    if fadeIn > 0 {
+      values += [1, 0]
+      times += [0, fadeIn]
+    } else {
+      values.append(0)
+      times.append(0)
+    }
+    if fadeOut > 0 {
+      values += [0, 1]
+      times += [total - fadeOut, total]
+    } else {
+      values.append(0)
+      times.append(total)
+    }
+    return (values, times.map { NSNumber(value: $0 / total) })
+  }
+
+  /// A track's `volume` in the mix, faded in from silence over its first
+  /// `fadeInMs` and out to it over its last `fadeOutMs` of `length`
+  /// (straight ramps, each at most half of it; between them, the volume).
+  static func fade(
+    _ parameters: AVMutableAudioMixInputParameters, volume: Float, fadeInMs: Int64,
+    fadeOutMs: Int64, length: CMTime
+  ) {
+    let half = CMTimeMultiplyByRatio(length, multiplier: 1, divisor: 2)
+    let fadeIn = CMTimeMinimum(ms(max(0, fadeInMs)), half)
+    let fadeOut = CMTimeMinimum(ms(max(0, fadeOutMs)), half)
+    if fadeIn > .zero {
+      parameters.setVolumeRamp(
+        fromStartVolume: 0, toEndVolume: volume,
+        timeRange: CMTimeRange(start: .zero, duration: fadeIn))
+    } else {
+      parameters.setVolume(volume, at: .zero)
+    }
+    if fadeOut > .zero {
+      parameters.setVolumeRamp(
+        fromStartVolume: volume, toEndVolume: 0,
+        timeRange: CMTimeRange(start: length - fadeOut, duration: fadeOut))
+    }
   }
 
   /// Rounds a render dimension to an even number of pixels, as H.264 wants.

@@ -257,22 +257,52 @@ class LayerPictures {
 /// Paints [layers] as they are at [at] (in the output: 0 is the kept
 /// part's start) over a frame its size, as Download draws them: each
 /// where its anchor puts it ([PlanLayer.rectIn]), as opaque as it is
-/// then ([PlanLayer.alphaAt]).
+/// then ([PlanLayer.alphaAt]); then, while [playing], the [fades]' black
+/// over it all ([paintFade]). Paused, the frame shows as it is, not
+/// black: a trim's grip shows the frame it cuts at.
 class EditLayersPainter extends CustomPainter {
-  EditLayersPainter(this.layers, this.at, this.pictures) : super(repaint: at);
+  EditLayersPainter(
+    this.layers,
+    this.at,
+    this.pictures, {
+    this.fades = Fades.none,
+    ValueListenable<bool>? playing,
+  }) : playing = playing ?? _paused,
+       super(repaint: Listenable.merge([at, ?playing]));
 
   final List<PlanLayer> layers;
   final ValueListenable<Duration> at;
   final LayerPictures pictures;
+  final Fades fades;
+  final ValueListenable<bool> playing;
+
+  static final _paused = ValueNotifier(false);
 
   @override
   void paint(Canvas canvas, Size size) {
     paintLayers(canvas, size, layers, at.value, pictures);
+    if (playing.value) paintFade(canvas, size, fades, at.value);
   }
 
   @override
   bool shouldRepaint(EditLayersPainter old) =>
-      !listEquals(old.layers, layers) || old.at != at;
+      !listEquals(old.layers, layers) ||
+      old.at != at ||
+      old.fades != fades ||
+      old.playing != playing;
+}
+
+/// The black of [fades] at [at] (in the output) painted over a frame
+/// [size] big: as Download fades the picture (with what's drawn over it)
+/// from and to black.
+void paintFade(Canvas canvas, Size size, Fades fades, Duration at) {
+  if (!fades.any) return;
+  final black = fades.blackAt(at);
+  if (black <= 0) return;
+  canvas.drawRect(
+    Offset.zero & size,
+    Paint()..color = Color.fromRGBO(0, 0, 0, black),
+  );
 }
 
 /// [layers] at [at] painted on [canvas], over a frame [size] big.
@@ -304,8 +334,9 @@ void paintLayers(
   }
 }
 
-/// [layers] over [video], as Download draws them: fill the box the video
-/// is shown in (its shape), and let taps through. They follow where the
+/// [layers] over [video], as Download draws them, and, while it plays,
+/// the black of its [fades] over them: fill the box the video is shown
+/// in (its shape), and let taps through. They follow where the
 /// video is ([start], the kept part's start in it, being 0 in the
 /// output): between the player's reports (every tenth of a second or
 /// so), its place is carried on by the frame clock while it plays, so
@@ -317,11 +348,13 @@ class EditLayers extends StatefulWidget {
     required this.video,
     required this.layers,
     this.start = Duration.zero,
+    this.fades = Fades.none,
   });
 
   final VideoPlayerController video;
   final List<PlanLayer> layers;
   final Duration start;
+  final Fades fades;
 
   @override
   State<EditLayers> createState() => _EditLayersState();
@@ -331,6 +364,7 @@ class _EditLayersState extends State<EditLayers>
     with SingleTickerProviderStateMixin {
   final _pictures = LayerPictures();
   final _at = ValueNotifier(Duration.zero);
+  final _playing = ValueNotifier(false);
   late final Ticker _ticker = createTicker(_onTick);
 
   /// Where the player last said it was, and the frame clock then.
@@ -368,6 +402,7 @@ class _EditLayersState extends State<EditLayers>
   /// reported, else the layers would fall back to it on each.
   void _onVideo() {
     final value = widget.video.value;
+    _playing.value = value.isPlaying;
     final moved = value.position != _reported;
     if (moved) {
       _reported = value.position;
@@ -400,6 +435,7 @@ class _EditLayersState extends State<EditLayers>
     widget.video.removeListener(_onVideo);
     _ticker.dispose();
     _at.dispose();
+    _playing.dispose();
     _pictures.dispose();
     super.dispose();
   }
@@ -409,7 +445,13 @@ class _EditLayersState extends State<EditLayers>
     child: CustomPaint(
       key: const Key('edit-layers'),
       size: Size.infinite,
-      painter: EditLayersPainter(widget.layers, _at, _pictures),
+      painter: EditLayersPainter(
+        widget.layers,
+        _at,
+        _pictures,
+        fades: widget.fades,
+        playing: _playing,
+      ),
     ),
   );
 }

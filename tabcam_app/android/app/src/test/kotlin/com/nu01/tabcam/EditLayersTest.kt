@@ -128,4 +128,38 @@ class EditLayersTest {
             }
         }
     }
+
+    @Test
+    fun fadesFromAndToBlackInStraightLines() {
+        // 3 s in and 2 s out over 10 s.
+        val fades = Fades(fadeInMs = 3000, fadeOutMs = 2000, lengthMs = 10_000)
+        assertEquals(0f, fades.levelAt(0), 0f)
+        assertEquals(0.5f, fades.levelAt(1_500_000), 1e-5f)
+        assertEquals(1f, fades.levelAt(3_000_000), 0f)
+        assertEquals(1f, fades.levelAt(8_000_000), 0f)
+        assertEquals(0.5f, fades.levelAt(9_000_000), 1e-5f)
+        assertEquals(0f, fades.levelAt(10_000_000), 0f)
+        assertEquals(8000L, fades.fadeOutStartMs)
+        // The black over the frame, in 64ths: all black at the start, none
+        // in the middle, half way at 1.5 s.
+        assertEquals(64, fades.darknessAt(0))
+        assertEquals(32, fades.darknessAt(1_500_000))
+        assertEquals(0, fades.darknessAt(5_000_000))
+        // None: never dark; each kept at most half the output.
+        assertEquals(1f, Fades().levelAt(0), 0f)
+        assertEquals(false, Fades(lengthMs = 1000).any)
+        val short = Fades(fadeInMs = 3000, fadeOutMs = 3000, lengthMs = 2000)
+        assertEquals(0.5f, short.levelAt(500_000), 1e-5f)
+        assertEquals(1f, short.levelAt(1_000_000), 0f)
+        assertEquals(1000L, short.fadeOutStartMs)
+    }
+
+    @Test
+    fun readsTheChannelsFades() {
+        val args = mapOf<String, Any?>("input" to "/tmp/in.mp4", "output" to "/tmp/out.mp4", "startMs" to 500, "endMs" to 10_500)
+        val plan = RenderPlan.fromArgs(args + mapOf("fadeInMs" to 3000, "fadeOutMs" to 2000))
+        assertEquals(Fades(3000, 2000, 10_000), plan.fades)
+        // Left out: none.
+        assertEquals(false, RenderPlan.fromArgs(args).fades.any)
+    }
 }

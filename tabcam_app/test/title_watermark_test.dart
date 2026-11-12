@@ -301,6 +301,8 @@ void main() {
         start: Duration.zero,
         end: ms(20000),
         watermark: false,
+        fadeIn: Duration.zero,
+        fadeOut: Duration.zero,
       );
       expect(_ofId(plan(off, premium: true), 'mark'), isEmpty);
       // Not known (no answer, none kept), or a collaborator without

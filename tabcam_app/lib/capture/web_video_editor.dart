@@ -24,7 +24,9 @@ VideoEditing? webVideoEditor() => WebVideoEditor();
 /// frames), the mix plays into the recording beside it, the video
 /// following the mix's clock, the plan's layers drawn over each frame
 /// (each PNG an ImageBitmap once, drawn where its anchor puts it, as
-/// opaque as it is then), and the browser's MediaRecorder records
+/// opaque as it is then), and the fades' black over it all (the mix
+/// fading with it, through a gain ramped in and out: [_mixdown]), and the
+/// browser's MediaRecorder records
 /// both, so it takes as long as the kept part is (a long video's own
 /// sound, or one that won't decode, streams from the playing video
 /// instead, [streamedOver]). The result is
@@ -184,6 +186,10 @@ class WebVideoEditor implements VideoEditing {
               plan.length > _longest ? _longRate : _rate,
             );
       web.AudioBufferSourceNode? source;
+      // The own sound streamed as it plays fades by its gain, set at each
+      // frame (the mix has its fades in it already).
+      final fades = plan.fades;
+      web.GainNode? streamedGain;
       if (graph != null && (mixed != null || streamed)) {
         await started?.timeout(
           const Duration(seconds: 2),
@@ -199,8 +205,9 @@ class WebVideoEditor implements VideoEditing {
         }
         if (streamed && own != null) {
           final input = graph.createMediaElementSource(player);
-          if (own.volume != 1) {
-            final gain = graph.createGain()..gain.value = own.volume;
+          if (own.volume != 1 || fades.any) {
+            final gain = streamedGain = graph.createGain()
+              ..gain.value = own.volume * fades.levelAt(Duration.zero);
             input.connect(gain);
             gain.connect(sink);
           } else {
@@ -256,6 +263,18 @@ class WebVideoEditor implements VideoEditing {
             rect.height,
           );
           context.globalAlpha = 1;
+        }
+        // The fades: the picture, with what's drawn over it, from and to
+        // black.
+        final black = fades.blackAt(out);
+        if (fades.any && black > 0) {
+          context.globalAlpha = black;
+          context.fillStyle = 'black'.toJS;
+          context.fillRect(0, 0, canvas.width, canvas.height);
+          context.globalAlpha = 1;
+        }
+        if (streamedGain != null && own != null) {
+          streamedGain.gain.value = own.volume * fades.levelAt(out);
         }
         onProgress?.call(((at - start) / clip).clamp(0, 1).toDouble());
         if (began != null && graph != null) {
@@ -367,7 +386,9 @@ class WebVideoEditor implements VideoEditing {
   /// [songBuffer], the song's), mixed offline at [rate], as long as the
   /// kept part: the own lane from the kept part's start, each of the
   /// song's clips where it starts, each through a gain node at its lane's
-  /// volume. Null when there's nothing to mix.
+  /// volume; with fades, all through one more gain that rises from 0 over
+  /// the fade in and falls back to 0 over the fade out (straight lines,
+  /// as the picture's). Null when there's nothing to mix.
   static Future<web.AudioBuffer?> _mixdown(
     RenderPlan plan,
     web.AudioBuffer? ownBuffer,
@@ -387,6 +408,7 @@ class WebVideoEditor implements VideoEditing {
       max(1, (clip * rate).ceil()),
       rate,
     );
+    final web.AudioNode out = _faded(context, plan.fades, clip);
     void play(
       web.AudioBuffer buffer,
       double volume,
@@ -398,9 +420,9 @@ class WebVideoEditor implements VideoEditing {
       if (volume != 1) {
         final gain = context.createGain()..gain.value = volume;
         player.connect(gain);
-        gain.connect(context.destination);
+        gain.connect(out);
       } else {
-        player.connect(context.destination);
+        player.connect(out);
       }
       player.start(
         at.inMilliseconds / 1000,
@@ -418,6 +440,29 @@ class WebVideoEditor implements VideoEditing {
       }
     }
     return context.startRendering().toDart;
+  }
+
+  /// Where [context]'s lanes go, [clip] seconds long: its destination,
+  /// or, with [fades], a gain into it, ramped from 0 to 1 over the fade in
+  /// and from 1 to 0 over the fade out ([Fades.levelAt]).
+  static web.AudioNode _faded(
+    web.BaseAudioContext context,
+    Fades fades,
+    double clip,
+  ) {
+    if (!fades.any) return context.destination;
+    final gain = context.createGain();
+    final level = gain.gain;
+    final fadeIn = fades.fadeIn.inMicroseconds / 1e6;
+    final fadeOut = fades.fadeOut.inMicroseconds / 1e6;
+    level.setValueAtTime(fadeIn > 0 ? 0 : 1, 0);
+    if (fadeIn > 0) level.linearRampToValueAtTime(1, fadeIn);
+    if (fadeOut > 0) {
+      level.setValueAtTime(1, max(fadeIn, clip - fadeOut));
+      level.linearRampToValueAtTime(0, clip);
+    }
+    gain.connect(context.destination);
+    return gain;
   }
 
   /// The plan's sound alone: the video's own (the kept part) and the song

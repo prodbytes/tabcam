@@ -3265,3 +3265,49 @@ spec.
    `EditLayersTest` and an XCTest case for `liftW`). See
    [video edit](video-edit.md#layers) and
    [TabCam Premium](cloud-ocr.md#in-the-app).
+
+4. **(Editor redesign, step F) Fade in and out, 3 s by default and
+   adjustable: the video from and to black, both sounds with it.** Asked
+   after the plan: "add a fade-in and fade-out by default 3 seconds
+   configured by the user. For the video track, fade to black." The edit
+   keeps `fadeInMs` and `fadeOutMs` (written only when not 3000; read
+   within 0 and 10 s); absent, 3 s each, so edits kept before this step
+   get the fades too (decided: they were asked for by default, nothing
+   is made until Download, and the watermark already changed what older
+   edits download as). The render plan carries `fadeIn` and `fadeOut`,
+   each at most half the kept part (`PageEdit.fadeWithin`), and one
+   level function (`Fades.levelAt`: straight lines up from 0 over the
+   fade in and down to 0 over the fade out); a plan that fades is never a
+   passthrough. **On the video** gets a **Fades** chip (on by default;
+   tapped, both none or back as they were) whose tune button opens two
+   sliders, **Fade in** and **Fade out** (0 to 10 s by tenths, at most
+   half the kept part, the length beside each), **No fades** and
+   **Done**, in place of the chips on a phone and always under the
+   title's fields on a wide screen; the Take lane draws the fades as
+   ramps at the kept part's ends. The preview paints the black over the
+   picture and its layers while it plays (paused, the frame as it is, so
+   a trim shows where it cuts) and ramps both players' volumes at each
+   tenth-of-a-second check (and before Play starts); the file screen's
+   player leaves the fades out, as it does the watermark. Download: the
+   web draws a black `fillRect` over each frame after the layers, and the
+   offline mix goes through one more gain ramped with
+   `linearRampToValueAtTime` (a streamed own sound's gain set each
+   frame); Android adds a `FadeOverlay` (a black bitmap scaled to the
+   frame, its alpha in 64 steps) over the other overlays and a
+   `GainProcessor` with `DefaultGainProvider`'s linear fades on the
+   composition's mix (`Composition.Builder.setEffects`); iOS adds a black
+   `CALayer` with a linear opacity `CAKeyframeAnimation` over the layers
+   (the video composition made for fades alone too) and
+   `setVolumeRamp` in and out on each audio track's mix input. The sound
+   only (M4A) and the video without sound fade the same. The channel's
+   `render` takes `fadeInMs` and `fadeOutMs`. Strings in en, es and pt.
+   Tests: `test/fades_test.dart` (the level, the edit's keys and limits,
+   the plan and its channel arguments, the black painted, the preview's
+   volume ramp with fake players, the chip, the sliders on a phone and a
+   wide screen, the largest text size, Reset, the file screen's player);
+   passthrough tests elsewhere now turn the fades off too; the browser
+   test checks the offline mix is the plain one ramped, to the sample, and
+   a faded video's first frame dark; the JVM `EditLayersTest` (the levels,
+   the 64ths, the channel's keys), XCTests (keyframes, volume ramps, a
+   rendered fade) and an Android instrumented case (a rendered fade, its
+   sound only). See [video edit](video-edit.md#fades).
