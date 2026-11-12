@@ -614,9 +614,19 @@ enum VideoEditor {
         let compAudio = composition.addMutableTrack(
           withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
       else { throw Failure("Could not add the song's track.") }
+      // With the picture, each clip is cut to the video's kept part
+      // (`range`), as the take's own sound is: the editor's end can pass
+      // the video track's end (the player's duration is the longest
+      // track's), and a song running past the video makes the composition
+      // outlast its video composition's instruction, which the export
+      // rejects (-11841, "could not be composed").
+      let end: CMTime? = plan.video ? range.duration : nil
       for clip in song.clips where clip.toMs > clip.fromMs && clip.fromMs >= 0 && clip.atMs >= 0 {
+        let at = ms(clip.atMs)
+        if let end, at >= end { continue }
         let from = CMTimeMinimum(ms(clip.fromMs), audioRange.duration)
-        let to = CMTimeMinimum(ms(clip.toMs), audioRange.duration)
+        var to = CMTimeMinimum(ms(clip.toMs), audioRange.duration)
+        if let end { to = CMTimeMinimum(to, from + (end - at)) }
         guard to > from else { continue }
         try compAudio.insertTimeRange(
           CMTimeRange(start: audioRange.start + from, end: audioRange.start + to), of: audio,

@@ -131,9 +131,12 @@ makes a file of it."), opening with the video's edit as it was left:
   in); tapped, it's off (kept as `tab: false`; Reset turns it on again),
   and its bands leave the preview and the download. On a take whose tab
   is already in its picture (burned in as it was saved, or saved before
-  takes kept a log) the chip is off and can't be turned on, saying
-  "This take has the tab in its picture", so the tab is never drawn
-  twice. (A later step adds a Title and a Watermark here.)
+  takes kept a log) the chip is off and can't be turned on, so the tab
+  is never drawn twice, and a line under it says why: "This take has
+  the tab in its picture" (burned in), or "This take is from an earlier
+  version: its tab can't be drawn over it" (no log, so whether it had a
+  tab isn't known). (A line, not the chip's tooltip: a disabled chip
+  shows none.) (A later step adds a Title and a Watermark here.)
 - **Under them, the song's details** (when there's one): its lane
   and name ("Song · Recording 1"), **‹** and **›**, which nudge it a
   tenth of a second earlier or later, with where it starts in words
@@ -143,8 +146,9 @@ makes a file of it."), opening with the video's edit as it was left:
   0:01.0–0:42.5 of the song". They name it as its lane does: "song" on
   a take, "track" ("The track starts…", "… of the track") on any other
   video. A song shorter than the kept part leaves
-  silence after. (Later steps put the layer chips here, the song's
-  details then showing when its lane is selected.)
+  silence after. (A later step makes this one context area: the song's
+  details when the Song lane is selected, the On the video chips
+  otherwise.)
 - **At the bottom**: **Reset** (on once the edit is anything but the
   defaults: the whole video, its own sound at 100%, no song said (so a
   song Removed, `song: off`, keeps it on) and a take's tab on; Reset
@@ -368,7 +372,11 @@ carries it out; the times are all worked out in Dart.
   of the video track (its orientation kept as the composition track's
   transform), its own audio tracks cut the same when the own lane keeps
   them, and the song lane's clips inserted on one audio track, each where
-  it starts, so both lanes are mixed; one `AVMutableAudioMix` sets the
+  it starts (with the picture, cut to the video track's kept part too:
+  the editor's end can pass it by a few tens of ms, as the player's
+  duration is the longest track's, and a composition longer than its
+  video composition's instruction fails the export, -11841), so both
+  lanes are mixed; one `AVMutableAudioMix` sets the
   levels that aren't 1, one input per audio track. With layers, an
   `AVMutableVideoComposition` turns the video upright (the render size
   and transform as the tab's burn had them) and

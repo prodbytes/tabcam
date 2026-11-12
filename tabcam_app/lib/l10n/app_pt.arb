@@ -566,6 +566,7 @@
   "videoEditLayerTab": "Tablatura",
   "videoEditLayerTabAbout": "A tablatura embaixo, como aparecia ao gravar",
   "videoEditTabInPicture": "Este take tem a tablatura na imagem",
+  "videoEditTabNotKept": "Este take é de uma versão anterior: a tablatura não pode ser desenhada sobre ele",
   "metronome": "Metrônomo",
   "metronomeHide": "Ocultar o metrônomo",
   "metronomeSlower": "Mais lento",

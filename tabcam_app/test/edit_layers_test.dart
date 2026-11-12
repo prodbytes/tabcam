@@ -350,6 +350,17 @@ void main() {
       expect(tabChip(tester).selected, isTrue);
       expect(tabChip(tester).onSelected, isNotNull);
       expect(tabChip(tester).tooltip, contains('as it showed'));
+      // Enabled, the chip's tooltip is in the tree; no line saying why not.
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('video-edit-tab')),
+          matching: find.byWidgetPredicate(
+            (w) => w is Tooltip && w.message == tabChip(tester).tooltip,
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('video-edit-tab-why')), findsNothing);
       // The whole take (3:00, the fake's), its bands over the preview.
       expect(previewLayers(tester).map((l) => (l.look as BandLook).line), [
         _riffA,
@@ -415,11 +426,17 @@ void main() {
     });
 
     testWidgets('a take with its tab in its picture, or from before takes '
-        'kept a log: the chip off and disabled, saying why; nothing drawn', (
-      tester,
-    ) async {
+        'kept a log: the chip off and disabled, a line under it saying why '
+        '(a disabled chip shows no tooltip); nothing drawn', (tester) async {
       tall(tester);
-      for (final log in [_log(burned: true), null]) {
+      for (final (log, why) in [
+        (_log(burned: true), 'This take has the tab in its picture'),
+        (
+          null,
+          "This take is from an earlier version: its tab can't be drawn "
+              'over it',
+        ),
+      ]) {
         final (library, id) = await capture(tester, log: log);
         await tester.pumpWidget(const SizedBox());
         await tester.pumpWidget(editScreen(library, id));
@@ -427,10 +444,11 @@ void main() {
         expect(tabChip(tester).selected, isFalse, reason: '$log');
         expect(tabChip(tester).onSelected, isNull, reason: '$log');
         expect(
-          tabChip(tester).tooltip,
-          'This take has the tab in its picture',
+          tester.widget<Text>(find.byKey(const Key('video-edit-tab-why'))).data,
+          why,
           reason: '$log',
         );
+        expect(find.text(why), findsOneWidget, reason: '$log');
         expect(find.byType(EditLayers), findsNothing, reason: '$log');
         editor.rendered.clear();
         saved.clear();

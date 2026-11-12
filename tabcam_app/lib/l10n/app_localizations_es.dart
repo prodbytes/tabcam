@@ -2111,6 +2111,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Esta toma tiene la tablatura en la imagen';
 
   @override
+  String get videoEditTabNotKept =>
+      'Esta toma es de una versión anterior: no se puede dibujar su tablatura encima';
+
+  @override
   String get metronome => 'Metrónomo';
 
   @override

@@ -3072,9 +3072,11 @@ spec.
     mapped through the lag and the trim (cut to the kept part), its
     text the log's own copy; `PageEdit.tab` (written `tab: false` only
     when turned off). The editor has an **On the video** row with a
-    **Tab** chip (on by default; off and disabled, "This take has the
-    tab in its picture", on a burned take or one from before take logs;
-    none on other videos or a take without a tab). One drawing serves
+    **Tab** chip (on by default; off and disabled on a burned take or
+    one from before take logs, with a line under it saying why, "This
+    take has the tab in its picture" or "This take is from an earlier
+    version: its tab can't be drawn over it", since a disabled chip
+    shows no tooltip; none on other videos or a take without a tab). One drawing serves
     the preview and the file (`lib/capture/edit_layers.dart`: each look
     a picture, painted over the preview by `EditLayers`, which follows
     the player with the frame clock between its reports, and made a PNG
@@ -3085,7 +3087,9 @@ spec.
     an `OverlayEffect` with one `LayersOverlay` per kind (alpha through
     `setAlphaScale`, the first frame's time as the output's 0), iOS a
     video composition with Core Animation layers (moved over from the
-    burn's code), the web on its canvas with `globalAlpha`. A
+    burn's code; the song lane's clips cut to the video track's kept
+    part, as the take's own sound is, so the composition never outlasts
+    its instruction), the web on its canvas with `globalAlpha`. A
     `--dart-define=TABCAM_TAB_OVER_BURNED=true` build draws the tab over
     burned takes too, to check on each platform that the drawn bands sit
     over the burned ones. Cam still burns the tab in (the next step

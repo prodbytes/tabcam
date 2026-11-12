@@ -1044,23 +1044,22 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 
   /// **On the video**: what's drawn over it, as chips. For now a take's
   /// **Tab** (on by default): where its log has its tab, not in its
-  /// picture already; off, with why, on a take whose tab is (burned in as
-  /// it was saved, or saved before takes kept their tab apart). None on a
-  /// video that isn't a take, nor on a take without a tab.
+  /// picture already; off, with why under it, on a take whose tab is
+  /// burned in as it was saved, or one saved before takes kept their tab
+  /// apart. (Why is a line of its own: a disabled chip shows no tooltip.)
+  /// None on a video that isn't a take, nor on a take without a tab.
   Widget? _onTheVideo(AppLocalizations l10n) {
     if (!_take) return null;
     final log = _takeLog;
     final offered = tabOffered(log);
     // A take that kept its log, with no tab to draw.
     if (log != null && log.tab == null) return null;
+    final theme = Theme.of(context);
     return Column(
       key: const Key('video-edit-on-video'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          l10n.videoEditOnTheVideo,
-          style: Theme.of(context).textTheme.titleSmall,
-        ),
+        Text(l10n.videoEditOnTheVideo, style: theme.textTheme.titleSmall),
         const SizedBox(height: 4),
         Wrap(
           spacing: 8,
@@ -1069,14 +1068,23 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
             FilterChip(
               key: const Key('video-edit-tab'),
               label: Text(l10n.videoEditLayerTab),
-              tooltip: offered
-                  ? l10n.videoEditLayerTabAbout
-                  : l10n.videoEditTabInPicture,
+              tooltip: offered ? l10n.videoEditLayerTabAbout : null,
               selected: offered && _tab,
               onSelected: offered ? _setTab : null,
             ),
           ],
         ),
+        if (!offered) ...[
+          const SizedBox(height: 4),
+          Text(
+            // No log: from before takes kept one, with or without a tab.
+            log == null ? l10n.videoEditTabNotKept : l10n.videoEditTabInPicture,
+            key: const Key('video-edit-tab-why'),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ],
     );
   }

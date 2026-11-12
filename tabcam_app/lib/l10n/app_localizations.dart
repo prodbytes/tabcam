@@ -3496,11 +3496,17 @@ abstract class AppLocalizations {
   /// **'The tab along the bottom, as it showed while recording'**
   String get videoEditLayerTabAbout;
 
-  /// Video edit: the tooltip of the Tab chip, off, on a take whose tab is already in its picture (recorded before the tab was kept apart)
+  /// Video edit: the line under the Tab chip, off, on a take whose tab is already in its picture (burned in as it was saved)
   ///
   /// In en, this message translates to:
   /// **'This take has the tab in its picture'**
   String get videoEditTabInPicture;
+
+  /// Video edit: the line under the Tab chip, off, on a take saved before takes kept their tab apart (its tab, if it had one, is in its picture)
+  ///
+  /// In en, this message translates to:
+  /// **'This take is from an earlier version: its tab can\'t be drawn over it'**
+  String get videoEditTabNotKept;
 
   /// The metronome's button and its sidebar's title
   ///

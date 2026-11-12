@@ -2067,6 +2067,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditTabInPicture => 'This take has the tab in its picture';
 
   @override
+  String get videoEditTabNotKept =>
+      'This take is from an earlier version: its tab can\'t be drawn over it';
+
+  @override
   String get metronome => 'Metronome';
 
   @override
