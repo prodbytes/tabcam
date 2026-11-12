@@ -16,6 +16,8 @@ import 'package:tabcam_app/l10n/app_localizations.dart';
 import 'package:tabcam_app/library/capture_event.dart';
 import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
+import 'package:tabcam_app/screens/event_screen.dart';
+import 'package:tabcam_app/screens/file_screen.dart';
 import 'package:tabcam_app/screens/premium_card.dart';
 import 'package:tabcam_app/screens/video_edit_screen.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
@@ -152,6 +154,32 @@ void main() {
       final long = 'x' * 100;
       expect(titleText([long, '', 'b', 'c']), ['x' * 80, 'b']);
       expect(titleText(const ['', '  ']), isEmpty);
+    });
+
+    test('80 characters as a person counts them, as the fields do: an '
+        'emoji is one, never cut in two', () {
+      const face = '\u{1F600}'; // two UTF-16 units
+      const family = '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}'; // eight
+      // 41 characters (81 units): kept whole.
+      final fits = 'a${face * 40}';
+      expect(titleText([fits]), [fits]);
+      expect(EditTitle.clean([fits]), [fits]);
+      // Longer: 80 of them, each whole.
+      for (final line in ['a${face * 100}', family * 100]) {
+        for (final kept in [
+          titleText([line]),
+          EditTitle.clean([line])!,
+        ]) {
+          expect(kept.single.characters.length, 80);
+          expect(line.startsWith(kept.single), isTrue);
+          final units = kept.single.codeUnits;
+          expect(units.last & 0xFC00, isNot(0xD800), reason: 'no half pair');
+        }
+      }
+      expect(titleText(['${family * 80}x']).single, family * 80);
+      // Kept through the edit's JSON as typed.
+      final edit = EditTitle.of(lines: [fits]);
+      expect(EditTitle.fromJson(jsonDecode(jsonEncode(edit!.toJson()))), edit);
     });
   });
 
@@ -748,6 +776,89 @@ void main() {
       await tester.tap(find.byKey(const Key('video-edit-download')));
       await settle(tester);
       expect(editor.rendered.single.layers.map((l) => l.id), ['title']);
+    });
+
+    testWidgets('the file screen plays a video with its title over it, '
+        'with no edit too, but not the watermark (Download\'s); No title '
+        'takes it off there too', (tester) async {
+      sized(tester, const Size(900, 1600));
+      final (library, id) = await capture(tester);
+      Future<List<PlanLayer>> played() async {
+        await tester.pumpWidget(const SizedBox());
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: FileScreen(library: library, eventId: id, pageId: 'k0'),
+          ),
+        );
+        await settle(tester);
+        await tester.tap(find.byIcon(Icons.play_circle_fill));
+        await settle(tester);
+        return preview(tester);
+      }
+
+      expect((await played()).map((l) => l.look), const [
+        TitleLook(['Blue Riff', 'Made-up Band']),
+      ]);
+      expect((await played()).single.fadeIn, TitleLayout.fadeIn);
+
+      await tester.runAsync(
+        () => library.setPageEdit(
+          id,
+          'k0',
+          PageEdit(
+            start: Duration.zero,
+            end: ms(20000),
+            title: const EditTitle(lines: ['Riff two']),
+          ),
+        ),
+      );
+      expect((await played()).map((l) => l.look), const [
+        TitleLook(['Riff two']),
+      ]);
+
+      await tester.runAsync(
+        () => library.setPageEdit(
+          id,
+          'k0',
+          PageEdit(
+            start: Duration.zero,
+            end: ms(20000),
+            title: const EditTitle(on: false, lines: ['Riff two']),
+          ),
+        ),
+      );
+      expect(await played(), isEmpty);
+    });
+
+    testWidgets('a clone opens with Premium\'s service too: without '
+        'Premium, the copy\'s watermark stays locked', (tester) async {
+      sized(tester, const Size(900, 1600));
+      final (library, id) = await capture(tester);
+      late _Premium p;
+      await tester.runAsync(() async {
+        p = _Premium(library, FakeOcrApi(premium: false), FakeAuth())
+          ..ocr.start();
+        p.auth.signInAs('ana');
+        await _until(() => p.ocr.status != null);
+      });
+      addTearDown(() => p.dispose());
+      expect(watermarkUnlocked(p.ocr), isFalse);
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: EventScreen(library: library, eventId: id, ocr: p.ocr),
+        ),
+      );
+      await settle(tester);
+      await tester.tap(find.byTooltip('Clone'));
+      await settle(tester);
+      await settle(tester);
+      final copy = tester.widget<EventScreen>(find.byType(EventScreen));
+      expect(copy.eventId, isNot(id));
+      expect(copy.ocr, same(p.ocr));
     });
 
     for (final (name, size) in [

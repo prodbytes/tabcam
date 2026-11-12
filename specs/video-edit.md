@@ -33,9 +33,9 @@ on at 0) doesn't stop or re-seek the song. The plan's
 [layers](#layers) are drawn over the picture as it plays. The
 [file screen](event-screen.md#file-screen)'s player does the same,
 looping the kept part (a muted song isn't opened there), a take's tab
-over it also when it has no edit (the tab is on by default), but not
-the title or the watermark: it plays the file, edited; those two are
-the finished video's, shown in the editor and made by its Download; it finds the
+and the title over it also when it has no edit (both are on by
+default), but not the watermark, which only the editor's preview and
+its Download add (it's the downloader's, by their Premium); it finds the
 song's length as the editor does (its player's, or, where the player
 can't say, as for a take the browser recorded, the editor's), and when
 neither can say, takes the end the edit keeps for it (none: the song
@@ -356,8 +356,9 @@ its image makes it). Sizes are **fractions of the frame's short side**,
 so a layer is the same on a portrait and a landscape video, and no one
 but the renderer needs the frame's size: each platform places it on
 its own upright frame (`PlanLayer.rectIn` in Dart; the same layout in
-Kotlin and Swift). Layers of one kind (`id`: `tab`, `title`, `mark`)
-never overlap in time; they're drawn in that order. Fades and anchors
+Kotlin and Swift). Layers of one kind (`id`: `tab`, `mark`, `title`)
+never overlap in time; they're drawn in that order (the list's), the
+title last, over the watermark should they meet. Fades and anchors
 are supported everywhere: the tab along the bottom, the title at the
 top left fading in, the watermark at the bottom right.
 
@@ -433,7 +434,8 @@ and bands change smoothly; on a seek or a pause it's where the player
 says, and nothing runs while it's paused. Only a new place (a report or
 a seek) restarts the carry: the player's other notices (its volume, as
 a lane's slider is dragged, its buffering) leave it running. The editor and the file
-screen's player both draw them (the file screen's player the tab only).
+screen's player both draw them (the file screen's player all but the
+watermark).
 
 **How it's rendered**, on the device
 ([platforms](platforms.md)): each platform gets the plan and only

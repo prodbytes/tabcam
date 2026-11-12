@@ -3242,9 +3242,15 @@ spec.
    `watermark: false`; a fresh video's edit stays none and Reset off,
    but Download makes the file (the watermark), so a video downloads as
    it is only with the watermark off and no title. The file list's
-   Download and Download all keep giving the raw file, and the file
-   screen's player draws the tab only (the user's decision: the editor's
-   Download makes the finished video). Roboto Regular and Medium ship
+   Download and Download all keep giving the raw file (the user's
+   decision: the editor's Download makes the finished video). The file
+   screen's player draws a take's tab and the title, as the plan has it,
+   but not the watermark, which is the downloader's (their Premium) and
+   only the editor's preview and Download show. Title lines are cut at
+   80 characters as a person counts them (`clipChars`: grapheme
+   clusters, as the fields' `maxLength` counts, so an emoji is never
+   split). A clone's copy opens with `CloudOcr` too, so its Text, Cam
+   and watermark stay locked without Premium. Roboto Regular and Medium ship
    with the app (`assets/fonts`, Apache 2.0, the family `TabCamRoboto`).
    Layers gain `liftW` (a fraction of the frame's width, what a band's
    height goes by), read by Android's `LayerLayout` and iOS's

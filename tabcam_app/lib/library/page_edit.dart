@@ -1,3 +1,5 @@
+import 'package:characters/characters.dart';
+
 import 'json_extra.dart';
 
 /// An edit's sound as apps before the two lanes read it (`sound`): still
@@ -38,9 +40,18 @@ enum SongMode {
       values.where((m) => m.name == name).firstOrNull;
 }
 
+/// [text] at most [max] characters long, as a person counts them and a
+/// text field's `maxLength` does (grapheme clusters: an emoji, even one
+/// made of several, is one), never cut inside one; the end trimmed when
+/// cut.
+String clipChars(String text, int max) {
+  final chars = text.characters;
+  return chars.length > max ? chars.take(max).toString().trimRight() : text;
+}
+
 /// The title drawn over an edited video (`title` in its edit): whether
 /// it's [on], and the text typed for it ([lines], at most two, each
-/// trimmed and at most 80 characters; null: the capture's name, as it is
+/// trimmed and at most 80 characters ([clipChars]); null: the capture's name, as it is
 /// now, so renaming the capture changes it). Turned off, the text typed
 /// is kept.
 class EditTitle {
@@ -63,10 +74,7 @@ class EditTitle {
   static List<String>? clean(List<String>? lines) {
     if (lines == null) return null;
     final kept = [
-      for (final line in lines.take(maxLines))
-        line.trim().length > maxChars
-            ? line.trim().substring(0, maxChars).trimRight()
-            : line.trim(),
+      for (final line in lines.take(maxLines)) clipChars(line.trim(), maxChars),
     ];
     while (kept.isNotEmpty && kept.last.isEmpty) {
       kept.removeLast();

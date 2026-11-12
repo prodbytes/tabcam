@@ -407,14 +407,12 @@ PlanLayer? titleLayer(List<String> lines) {
 }
 
 /// [lines] as a title shows them: each trimmed and at most
-/// [TitleLayout.maxChars] long, the empty ones left out, at most
+/// [TitleLayout.maxChars] long ([clipChars]), the empty ones left out, at most
 /// [TitleLayout.maxLines].
 List<String> titleText(List<String> lines) => [
   for (final line in lines)
     if (line.trim() case final t when t.isNotEmpty)
-      t.length > TitleLayout.maxChars
-          ? t.substring(0, TitleLayout.maxChars).trimRight()
-          : t,
+      clipChars(t, TitleLayout.maxChars),
 ].take(TitleLayout.maxLines).toList();
 
 /// The watermark, [text], at the bottom right, the whole video through,

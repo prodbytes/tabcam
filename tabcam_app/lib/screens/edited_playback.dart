@@ -56,19 +56,22 @@ class EditedPlayback {
 
   /// The preview's plan of [edit] (null: the defaults), its song
   /// [songLength] long, of a video [duration] long with [takeLog] (one of
-  /// Cam's takes: its tab is drawn over it); null when that's the video as
-  /// it is.
+  /// Cam's takes: its tab is drawn over it), [title] being the capture's
+  /// name as the title's default text (drawn unless the edit turns it off
+  /// or types another); null when that's the video as it is.
   static RenderPlan? planOf(
     PageEdit? edit, {
     Duration? songLength,
     Duration duration = Duration.zero,
     TakeLog? takeLog,
+    List<String> title = const [],
   }) {
     final plan = RenderPlan.of(
       edit,
       songLength: songLength ?? Duration.zero,
       duration: duration,
       takeLog: takeLog,
+      title: title,
       preview: true,
     );
     return edit == null && plan.layers.isEmpty ? null : plan;

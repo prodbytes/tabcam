@@ -17,8 +17,9 @@ import 'media_url.dart';
 /// (from memory on the web), as its edit says ([EditedPlayback], with the
 /// plan Download renders: the kept part, its own sound and its song mixed,
 /// the song's length found as the editor finds it, [mediaLength]; a take's
-/// tab drawn over it, [EditLayers], also with no edit, as it's on by
-/// default), and is let go when the page scrolls away.
+/// tab and the title drawn over it, [EditLayers], also with no edit, as
+/// they're on by default; not the watermark, which only Download adds),
+/// and is let go when the page scrolls away.
 class VideoPage extends StatefulWidget {
   const VideoPage({
     super.key,
@@ -57,19 +58,28 @@ class _VideoPageState extends State<VideoPage> {
   }
 
   /// Plays [controller] as the page's edit says, when it has one, or with
-  /// its tab over it, when it's a take that has one to show.
+  /// its tab (a take that has one to show) and the title (the capture's
+  /// name) over it.
   Future<void> _edit(VideoPlayerController controller) async {
     final edit = widget.page.edit;
     final log = widget.page.takeLog;
-    if (edit == null && !tabOffered(log)) return;
+    final title = captureTitleLines(widget.event.title, widget.event.artist);
     if (edit == null) {
-      // A take as it is, its tab over it: the whole video, as long as the
-      // player (or, where it can't say, the editor) finds it.
-      final length = await mediaLength(
-        controller,
-        () => pageFile(widget.library, widget.event, widget.page),
+      // The video as it is, its tab and title over it: the whole video,
+      // as long as the player (or, where it can't say, the editor) finds
+      // it, for a tab (the title needs no length).
+      final length = tabOffered(log)
+          ? await mediaLength(
+              controller,
+              () => pageFile(widget.library, widget.event, widget.page),
+            )
+          : Duration.zero;
+      final plan = EditedPlayback.planOf(
+        null,
+        duration: length,
+        takeLog: log,
+        title: title,
       );
-      final plan = EditedPlayback.planOf(null, duration: length, takeLog: log);
       _layers = plan?.layers ?? const [];
       return;
     }
@@ -102,6 +112,7 @@ class _VideoPageState extends State<VideoPage> {
       edit,
       songLength: songLength,
       takeLog: log,
+      title: title,
     );
     await edited.set(plan, song: track);
     _layers = plan?.layers ?? const [];
