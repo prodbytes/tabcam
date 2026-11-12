@@ -130,7 +130,10 @@ class EditTitle {
 /// Over the picture: the tab of one of Cam's takes, unless [tab] is off;
 /// a title ([title]; null: the capture's name), and the watermark, unless
 /// [watermark] is off (which only a Premium user can do, and only a
-/// Premium user's download obeys).
+/// Premium user's download obeys). It fades in from black at the kept
+/// part's start over [fadeIn], and out to black at its end over
+/// [fadeOut], both lanes' sound with it (3 s each by default; 0: none;
+/// never more than half the kept part, [fadeWithin]).
 /// The video's file stays as it is: players play it as edited, and a
 /// download makes a file of it.
 ///
@@ -155,6 +158,8 @@ class PageEdit {
     this.tab = true,
     this.title,
     this.watermark = true,
+    this.fadeIn = defaultFade,
+    this.fadeOut = defaultFade,
     this.extra = const {},
   });
 
@@ -187,6 +192,27 @@ class PageEdit {
   /// The shortest part of a video that can be kept.
   static const minLength = Duration(milliseconds: 500);
 
+  /// How long the fades in and out are by default, and at most.
+  static const defaultFade = Duration(seconds: 3);
+  static const maxFade = Duration(seconds: 10);
+
+  /// [fade] as a fade over a kept part [length] long plays it: within 0
+  /// and [maxFade], and never more than half of [length] (the fades in and
+  /// out then meet in the middle).
+  static Duration fadeWithin(Duration fade, Duration length) {
+    var most = length ~/ 2;
+    if (most > maxFade) most = maxFade;
+    if (most < Duration.zero) most = Duration.zero;
+    return fade < Duration.zero ? Duration.zero : (fade > most ? most : fade);
+  }
+
+  /// [fade] as kept: within 0 and [maxFade], to the millisecond.
+  static Duration fadeLength(Duration fade) => fade < Duration.zero
+      ? Duration.zero
+      : fade > maxFade
+      ? maxFade
+      : Duration(milliseconds: fade.inMilliseconds);
+
   /// The version of the edit this app writes (`v`).
   static const version = 2;
 
@@ -208,6 +234,8 @@ class PageEdit {
     'tab',
     'title',
     'watermark',
+    'fadeInMs',
+    'fadeOutMs',
   };
 
   final Duration start;
@@ -247,6 +275,15 @@ class PageEdit {
   /// false`) only when a Premium user turns it off; obeyed only when the
   /// one downloading has Premium (`RenderPlan.of`).
   final bool watermark;
+
+  /// How long the video fades in from black at the kept part's start, and
+  /// out to black at its end, both lanes' sound with it ([defaultFade]
+  /// by default, written (`fadeInMs`, `fadeOutMs`) only when another; 0:
+  /// no fade; at most [maxFade], and played at most half the kept part
+  /// long, [fadeWithin]). An edit kept before the fades has none written,
+  /// so it has the default ones.
+  final Duration fadeIn;
+  final Duration fadeOut;
 
   /// The keys of its JSON this version doesn't know (a newer app's, see
   /// `unknownKeys`), written back as they came, after the known ones,
@@ -320,6 +357,8 @@ class PageEdit {
     if (!tab) 'tab': false,
     if (title case final title?) 'title': title.toJson(),
     if (!watermark) 'watermark': false,
+    if (fadeIn != defaultFade) 'fadeInMs': fadeIn.inMilliseconds,
+    if (fadeOut != defaultFade) 'fadeOutMs': fadeOut.inMilliseconds,
     for (final MapEntry(:key, :value) in extraEntries(extra, knownKeys))
       key: value,
   };
@@ -345,6 +384,8 @@ class PageEdit {
       tab: json['tab'] != false,
       title: EditTitle.fromJson(json['title']),
       watermark: json['watermark'] != false,
+      fadeIn: fadeLength(ms('fadeInMs') ?? defaultFade),
+      fadeOut: fadeLength(ms('fadeOutMs') ?? defaultFade),
       extra: unknownKeys(json, knownKeys),
     );
     final stored = json['sound'];
@@ -383,6 +424,8 @@ class PageEdit {
     bool? tab,
     Object? title = _same,
     bool? watermark,
+    Duration? fadeIn,
+    Duration? fadeOut,
     Map<String, Object?>? extra,
   }) => PageEdit(
     start: start ?? this.start,
@@ -401,6 +444,8 @@ class PageEdit {
     tab: tab ?? this.tab,
     title: identical(title, _same) ? this.title : title as EditTitle?,
     watermark: watermark ?? this.watermark,
+    fadeIn: fadeIn == null ? this.fadeIn : fadeLength(fadeIn),
+    fadeOut: fadeOut == null ? this.fadeOut : fadeLength(fadeOut),
     extra: extra ?? this.extra,
   );
 
@@ -423,6 +468,8 @@ class PageEdit {
     tab,
     title,
     watermark,
+    fadeIn,
+    fadeOut,
   ];
 
   @override

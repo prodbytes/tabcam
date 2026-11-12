@@ -50,6 +50,10 @@ import java.util.concurrent.Executors
  *   (topLeft, bottomRight or bottomFull), heightU, marginU, liftU (fractions
  *   of the frame's short side), liftW (a fraction of its width), fromMs, toMs
  *   (null: the end), fadeInMs, opacity}`, in the output's times; ignored for the sound alone;
+ * - `fadeInMs`, `fadeOutMs` (left out: none): the output fades in from black
+ *   (the picture, with its layers) and silence over its first `fadeInMs`, and
+ *   out to them over its last `fadeOutMs`, straight lines (the app keeps each
+ *   at most half the kept part);
  * - `job`: when given, `progress` calls back to the app with `{job, done}`
  *   (0 to 1) every quarter of a second while it renders.
  *
@@ -115,6 +119,8 @@ data class RenderPlan(
     /** What's drawn over the picture, each naming one of [images] (PNGs). */
     val layers: List<PlanLayer> = emptyList(),
     val images: List<ByteArray> = emptyList(),
+    /** The fades in and out, over the kept part. */
+    val fades: Fades = Fades(),
 ) {
     companion object {
         fun fromArgs(args: Map<*, *>): RenderPlan {
@@ -159,6 +165,11 @@ data class RenderPlan(
                 song = song,
                 layers = layers,
                 images = images,
+                fades = Fades(
+                    fadeInMs = (long(args, "fadeInMs") ?: 0L).coerceAtLeast(0L),
+                    fadeOutMs = (long(args, "fadeOutMs") ?: 0L).coerceAtLeast(0L),
+                    lengthMs = endMs - startMs,
+                ),
             )
         }
     }
@@ -179,9 +190,12 @@ data class RenderPlan(
  * sequence, so it ends where the sound does.
  *
  * The layers (with the picture only) are an `OverlayEffect` on the video:
- * one [LayersOverlay] per kind of layer (`id`: the tab's bands; later a title,
- * a watermark), its PNGs decoded off the main thread and let go once it's
- * done.
+ * one [LayersOverlay] per kind of layer (`id`: the tab's bands, the title,
+ * the watermark), its PNGs decoded off the main thread and let go once it's
+ * done; then, over them all, the fades' black ([FadeOverlay]). The fades'
+ * sound is one `GainProcessor` on the composition, after the lanes are mixed
+ * (Transformer's `AudioGraph` runs the composition's audio effects on the
+ * mix), its gain ramped in and out on the output's samples.
  */
 @UnstableApi
 class VideoRenderer(private val context: Context) {
@@ -250,11 +264,14 @@ class VideoRenderer(private val context: Context) {
         return bitmaps
     }
 
-    /** The overlays of [layers] (their images [bitmaps]): one per kind. */
-    private fun overlays(layers: List<PlanLayer>, bitmaps: List<Bitmap>): List<TextureOverlay> =
+    /**
+     * The overlays of [layers] (their images [bitmaps]): one per kind; then,
+     * with [fades], their black over them all.
+     */
+    private fun overlays(layers: List<PlanLayer>, bitmaps: List<Bitmap>, fades: Fades): List<TextureOverlay> =
         layers.groupBy { it.id }.values.map { group ->
-            LayersOverlay(group.sortedBy { it.fromMs }, bitmaps)
-        }
+            LayersOverlay(group.sortedBy { it.fromMs }, bitmaps) as TextureOverlay
+        } + listOfNotNull(if (fades.any) FadeOverlay(fades) else null)
 
     private fun compose(plan: RenderPlan, bitmaps: List<Bitmap>): Composition {
         require(plan.endMs > plan.startMs) { "Nothing to keep" }
@@ -269,10 +286,10 @@ class VideoRenderer(private val context: Context) {
             val video = EditedMediaItem.Builder(clipped(plan.input, plan.startMs, plan.endMs))
                 .setRemoveAudio(plan.ownVolume == null)
             val audioEffects = plan.ownVolume?.let { gain(it) }?.audioProcessors.orEmpty()
-            val videoEffects = if (plan.layers.isEmpty()) {
+            val videoEffects = if (plan.layers.isEmpty() && !plan.fades.any) {
                 emptyList<Effect>()
             } else {
-                listOf<Effect>(OverlayEffect(overlays(plan.layers, bitmaps)))
+                listOf<Effect>(OverlayEffect(overlays(plan.layers, bitmaps, plan.fades)))
             }
             if (audioEffects.isNotEmpty() || videoEffects.isNotEmpty()) {
                 video.setEffects(Effects(audioEffects, videoEffects))
@@ -283,6 +300,7 @@ class VideoRenderer(private val context: Context) {
                 // The primary sequence has no audio of its own then:
                 // silence, with the song mixed in.
                 .experimentalSetForceAudioTrack(plan.ownVolume == null && song != null)
+                .faded(plan.fades)
                 .build()
         }
         plan.ownVolume?.let { volume ->
@@ -293,7 +311,20 @@ class VideoRenderer(private val context: Context) {
         }
         songSequence?.let { sequences.add(it) }
         require(sequences.isNotEmpty()) { "There is no sound to keep" }
-        return Composition.Builder(sequences).build()
+        return Composition.Builder(sequences).faded(plan.fades).build()
+    }
+
+    /** The mix of the composition fading in and out as [fades] say. */
+    private fun Composition.Builder.faded(fades: Fades): Composition.Builder {
+        if (!fades.any) return this
+        val gain = DefaultGainProvider.Builder(1f)
+        if (fades.fadeInMs > 0) {
+            gain.addFadeAt(0, fades.fadeInMs * 1000, DefaultGainProvider.FADE_IN_LINEAR)
+        }
+        if (fades.fadeOutMs > 0) {
+            gain.addFadeAt(fades.fadeOutStartMs * 1000, fades.fadeOutMs * 1000, DefaultGainProvider.FADE_OUT_LINEAR)
+        }
+        return setEffects(Effects(listOf(GainProcessor(gain.build())), emptyList()))
     }
 
     /** The song lane as a sequence: gaps of silence, and its clips. */

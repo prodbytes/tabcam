@@ -96,6 +96,81 @@ class RunnerTests: XCTestCase {
     XCTAssertTrue(try isRed(asset, at: 0.6, x: 18, y: 18))
   }
 
+  func testFadesThePictureFromAndToBlack() async throws {
+    let video = dir.appendingPathComponent("riff.mp4")
+    try await makeVideo(video, seconds: 2)
+    // A red square over most of the frame all along, the kept part fading
+    // in and out over 400 ms each: black (the square too) at the start,
+    // red in the middle.
+    let output = dir.appendingPathComponent("fades.mp4")
+    let plan = VideoEditor.Plan(
+      input: video, output: output, startMs: 500, endMs: 1500, ownVolume: nil,
+      layers: [
+        VideoEditor.Layer(id: "title", image: 0, anchor: .topLeft, heightU: 0.9, marginU: 0.05)
+      ],
+      images: [try red(32, 32)], fadeInMs: 400, fadeOutMs: 400)
+    let error = await render(plan, progress: nil)
+    XCTAssertNil(error)
+    let asset = AVURLAsset(url: output)
+    XCTAssertFalse(try isRed(asset, at: 0, x: 40, y: 40))
+    XCTAssertTrue(try isRed(asset, at: 0.5, x: 40, y: 40))
+    // With no layers, the fades alone still need the video composition.
+    let plain = dir.appendingPathComponent("plain.mp4")
+    let plainError = await render(
+      VideoEditor.Plan(
+        input: video, output: plain, startMs: 0, endMs: 1000, ownVolume: nil, fadeInMs: 300),
+      progress: nil)
+    XCTAssertNil(plainError)
+  }
+
+  func testFadesKeyframesAndVolumeRamps() {
+    // 1 s in and 0.5 s out of 4 s: opaque, clear at 1 s, clear until
+    // 3.5 s, opaque at the end.
+    let keyframes = VideoEditor.fadeKeyframes(fadeIn: 1, fadeOut: 0.5, total: 4)
+    XCTAssertEqual(keyframes?.0, [1, 0, 0, 1])
+    XCTAssertEqual(keyframes?.1.map(\.doubleValue), [0, 0.25, 0.875, 1])
+    // Only in; longer than half: half.
+    let only = VideoEditor.fadeKeyframes(fadeIn: 3, fadeOut: 0, total: 4)
+    XCTAssertEqual(only?.0, [1, 0, 0])
+    XCTAssertEqual(only?.1.map(\.doubleValue), [0, 0.5, 1])
+    XCTAssertNil(VideoEditor.fadeKeyframes(fadeIn: 0, fadeOut: 0, total: 4))
+
+    // The sound: up from silence to the lane's volume, and back down.
+    let parameters = AVMutableAudioMixInputParameters()
+    VideoEditor.fade(
+      parameters, volume: 0.5, fadeInMs: 1000, fadeOutMs: 500,
+      length: CMTime(value: 4000, timescale: 1000))
+    var start: Float = -1
+    var end: Float = -1
+    var range = CMTimeRange.zero
+    XCTAssertTrue(
+      parameters.getVolumeRamp(
+        for: CMTime(value: 500, timescale: 1000), startVolume: &start, endVolume: &end,
+        timeRange: &range))
+    XCTAssertEqual(start, 0)
+    XCTAssertEqual(end, 0.5)
+    XCTAssertEqual(range.duration.seconds, 1, accuracy: 0.001)
+    XCTAssertTrue(
+      parameters.getVolumeRamp(
+        for: CMTime(value: 3800, timescale: 1000), startVolume: &start, endVolume: &end,
+        timeRange: &range))
+    XCTAssertEqual(start, 0.5)
+    XCTAssertEqual(end, 0)
+    XCTAssertEqual(range.start.seconds, 3.5, accuracy: 0.001)
+
+    let plan = VideoEditor.Plan(args: [
+      "input": "/tmp/in.mp4", "output": "/tmp/out.mp4", "startMs": 0, "endMs": 4000,
+      "fadeInMs": 1000, "fadeOutMs": 500,
+    ])
+    XCTAssertEqual(plan?.fadeInMs, 1000)
+    XCTAssertEqual(plan?.fadeOutMs, 500)
+    XCTAssertEqual(plan?.fades, true)
+    let none = VideoEditor.Plan(args: [
+      "input": "/tmp/in.mp4", "output": "/tmp/out.mp4", "startMs": 0, "endMs": 4000,
+    ])
+    XCTAssertEqual(none?.fades, false)
+  }
+
   func testPlacesLayersAsTheAppDoes() {
     let frame = CGSize(width: 1920, height: 1080)
     let band = VideoEditor.Layer(image: 0, anchor: .bottomFull)

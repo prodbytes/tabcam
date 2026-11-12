@@ -30,6 +30,14 @@ void main() {
     formats: formats,
   );
 
+  /// The whole video, [end] long, without fades.
+  PageEdit still(Duration end) => PageEdit(
+    start: Duration.zero,
+    end: end,
+    fadeIn: Duration.zero,
+    fadeOut: Duration.zero,
+  );
+
   group('a plan of today\'s edits', () {
     test('Original: the kept part with its own sound as it is', () {
       final p = plan(PageEdit(start: s(2), end: s(8)));
@@ -183,12 +191,14 @@ void main() {
       expect(p.passthrough, isFalse);
     });
 
-    test('no edit: the whole video as it is', () {
+    test('no edit: the whole video as it is, fading in and out over 3 s', () {
       final p = plan(null);
       expect(p.start, Duration.zero);
       expect(p.end, s(20));
       expect(p.own, const OwnLane());
-      expect(p.passthrough, isTrue);
+      expect((p.fadeIn, p.fadeOut), (s(3), s(3)));
+      expect(p.passthrough, isFalse);
+      expect(plan(still(s(20))).passthrough, isTrue);
     });
   });
 
@@ -240,31 +250,27 @@ void main() {
 
   group('passthrough', () {
     test('only for an untouched edit, already in the format made', () {
-      expect(
-        plan(PageEdit(start: Duration.zero, end: s(20))).passthrough,
-        isTrue,
-      );
+      expect(plan(still(s(20))).passthrough, isTrue);
       // An end past the video's is the whole video.
-      expect(
-        plan(PageEdit(start: Duration.zero, end: s(21))).passthrough,
-        isTrue,
-      );
+      expect(plan(still(s(21))).passthrough, isTrue);
       // MPEG-4 is kept wherever; a WebM only where WebM is made.
-      expect(plan(null, extension: 'm4v').passthrough, isTrue);
-      expect(plan(null, extension: 'webm').passthrough, isFalse);
-      expect(plan(null, extension: 'mov').passthrough, isFalse);
+      expect(plan(still(s(20)), extension: 'm4v').passthrough, isTrue);
+      expect(plan(still(s(20)), extension: 'webm').passthrough, isFalse);
+      expect(plan(still(s(20)), extension: 'mov').passthrough, isFalse);
       expect(
         plan(
-          null,
+          still(s(20)),
           extension: 'webm',
           formats: const EditFormats(video: EditFormat.webm),
         ).passthrough,
         isTrue,
       );
-      // Trimmed, silent, or with a track: made.
-      expect(plan(PageEdit(start: s(1), end: s(20))).passthrough, isFalse);
+      // Trimmed, silent, with a track, or fading: made.
+      expect(plan(still(s(20)).copyWith(start: s(1))).passthrough, isFalse);
+      expect(plan(still(s(19))).passthrough, isFalse);
+      expect(plan(still(s(20)).copyWith(fadeOut: s(0.5))).passthrough, isFalse);
       expect(
-        plan(PageEdit(start: Duration.zero, end: s(19))).passthrough,
+        plan(PageEdit(start: Duration.zero, end: s(20))).passthrough,
         isFalse,
       );
       expect(

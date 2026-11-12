@@ -3580,6 +3580,48 @@ abstract class AppLocalizations {
   /// **'Premium removes the watermark'**
   String get videoEditWatermarkLocked;
 
+  /// Video edit: the Fades chip (the video fades in from black and out to black, both sounds with it)
+  ///
+  /// In en, this message translates to:
+  /// **'Fades'**
+  String get videoEditFades;
+
+  /// Video edit: what the fades do (the Fades chip's tooltip, and above their sliders)
+  ///
+  /// In en, this message translates to:
+  /// **'The video from and to black, both sounds with it'**
+  String get videoEditFadesAbout;
+
+  /// Video edit: the Fades chip's button that opens their sliders
+  ///
+  /// In en, this message translates to:
+  /// **'Change the fades'**
+  String get videoEditFadesEdit;
+
+  /// Video edit: the slider of how long the start fades in from black
+  ///
+  /// In en, this message translates to:
+  /// **'Fade in'**
+  String get videoEditFadeIn;
+
+  /// Video edit: the slider of how long the end fades out to black
+  ///
+  /// In en, this message translates to:
+  /// **'Fade out'**
+  String get videoEditFadeOut;
+
+  /// Video edit: a fade's length, in seconds (one decimal)
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds} s'**
+  String videoEditFadeSeconds(String seconds);
+
+  /// Video edit: turns both fades off
+  ///
+  /// In en, this message translates to:
+  /// **'No fades'**
+  String get videoEditFadesOff;
+
   /// The metronome's button and its sidebar's title
   ///
   /// In en, this message translates to:

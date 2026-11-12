@@ -7,6 +7,43 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.BitmapOverlay
 import androidx.media3.effect.StaticOverlaySettings
 import kotlin.math.min
+import kotlin.math.roundToInt
+
+/**
+ * The fades of an output [lengthMs] long (lib/capture/render_plan.dart,
+ * `Fades`): in from black and silence over [fadeInMs] from its start, out to
+ * them over [fadeOutMs] to its end, straight lines. Each is at most half the
+ * output (the app keeps them so; here too, so they never overlap).
+ */
+data class Fades(val fadeInMs: Long = 0, val fadeOutMs: Long = 0, val lengthMs: Long = 0) {
+    private val inMs = fadeInMs.coerceIn(0L, (lengthMs / 2).coerceAtLeast(0L))
+    private val outMs = fadeOutMs.coerceIn(0L, (lengthMs / 2).coerceAtLeast(0L))
+
+    /** Whether there's any. */
+    val any: Boolean get() = inMs > 0 || outMs > 0
+
+    /** Where the fade out starts in the output. */
+    val fadeOutStartMs: Long get() = lengthMs - outMs
+
+    /**
+     * How much of the picture and the sound comes through [us] into the
+     * output, 0 to 1 (as `Fades.levelAt` in Dart). Before its start it's
+     * as at its start, after its end as at its end: black only on a side
+     * that fades, so a frame a little past a hard cut isn't.
+     */
+    fun levelAt(time: Long): Float {
+        if (!any) return 1f
+        val us = time.coerceIn(0L, (lengthMs * 1000).coerceAtLeast(0L))
+        var level = 1f
+        if (inMs > 0 && us < inMs * 1000) level = us.toFloat() / (inMs * 1000)
+        val left = lengthMs * 1000 - us
+        if (outMs > 0 && left < outMs * 1000) level = min(level, left.toFloat() / (outMs * 1000))
+        return level.coerceIn(0f, 1f)
+    }
+
+    /** How dark the fades leave the frame [us] into the output, in 64ths. */
+    fun darknessAt(us: Long): Int = ((1f - levelAt(us)) * 64).roundToInt().coerceIn(0, 64)
+}
 
 /** Where a layer sits on the frame (lib/capture/render_plan.dart, `LayerAnchor`). */
 enum class LayerAnchor {
@@ -142,7 +179,57 @@ object LayerLayout {
 }
 
 /**
- * One kind of layer (the tab's bands; later a title, a watermark), as one
+ * The fades' black over the whole frame: a small black bitmap scaled to it,
+ * as opaque as [Fades.levelAt] leaves it dark (in 64 steps), hidden where
+ * there's no fade. Its time base is [LayersOverlay]'s: the first frame's is
+ * the output's 0.
+ */
+@UnstableApi
+class FadeOverlay(private val fades: Fades) : BitmapOverlay() {
+    private val black: Bitmap = Bitmap.createBitmap(SIDE, SIDE, Bitmap.Config.ARGB_8888).apply {
+        eraseColor(android.graphics.Color.BLACK)
+    }
+    private val hidden: OverlaySettings = StaticOverlaySettings.Builder().setAlphaScale(0f).build()
+
+    // All on Media3's GL thread.
+    private var scaleX = 1f
+    private var scaleY = 1f
+    private var baseUs = Long.MIN_VALUE
+    private val settings = HashMap<Int, OverlaySettings>()
+
+    override fun configure(videoSize: Size) {
+        super.configure(videoSize)
+        scaleX = videoSize.width.toFloat() / SIDE
+        scaleY = videoSize.height.toFloat() / SIDE
+        settings.clear()
+    }
+
+    override fun getBitmap(presentationTimeUs: Long): Bitmap = black
+
+    override fun getOverlaySettings(presentationTimeUs: Long): OverlaySettings {
+        if (baseUs == Long.MIN_VALUE) baseUs = presentationTimeUs
+        val step = fades.darknessAt(presentationTimeUs - baseUs)
+        if (step == 0) return hidden
+        return settings.getOrPut(step) {
+            StaticOverlaySettings.Builder()
+                .setScale(scaleX, scaleY)
+                .setAlphaScale(step / 64f)
+                .build()
+        }
+    }
+
+    override fun release() {
+        super.release()
+        black.recycle()
+    }
+
+    companion object {
+        private const val SIDE = 16
+    }
+}
+
+/**
+ * One kind of layer (the tab's bands, the title, the watermark), as one
  * Media3 overlay: at each frame, the layer showing then (its bitmap, where
  * its anchor puts it, as opaque as it is then), or a transparent pixel.
  *

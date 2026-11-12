@@ -456,6 +456,68 @@ List<String> captureTitleLines(String title, String artist) {
 /// A name the app gives a new capture (`defaultTitle`).
 final _appTitle = RegExp(r'^Tab \d{4}-\d{2}-\d{2} \d{2}:\d{2}$');
 
+/// The fades of an output [length] long: in from black (and silence)
+/// over [fadeIn] from its start, out to black over [fadeOut] to its end,
+/// both straight lines; the picture (with what's drawn over it) is as
+/// bright, and both lanes as loud, as [levelAt] says.
+@immutable
+class Fades {
+  const Fades({
+    this.fadeIn = Duration.zero,
+    this.fadeOut = Duration.zero,
+    this.length = Duration.zero,
+  });
+
+  static const none = Fades();
+
+  final Duration fadeIn;
+  final Duration fadeOut;
+  final Duration length;
+
+  /// Whether there's any.
+  bool get any => fadeIn > Duration.zero || fadeOut > Duration.zero;
+
+  /// How much of the picture and the sound comes through at [at] in the
+  /// output, 0 (black and silent) to 1: rising from 0 at its start over
+  /// [fadeIn], falling to 0 at its end over [fadeOut]. Before its start
+  /// it's as at its start, after its end as at its end: black and silent
+  /// only on a side that fades, so a frame drawn a little past a hard cut
+  /// (a fade of 0) isn't.
+  double levelAt(Duration time) {
+    if (!any) return 1;
+    final at = time < Duration.zero
+        ? Duration.zero
+        : time > length
+        ? length
+        : time;
+    var level = 1.0;
+    if (fadeIn > Duration.zero && at < fadeIn) {
+      level = at.inMicroseconds / fadeIn.inMicroseconds;
+    }
+    final left = length - at;
+    if (fadeOut > Duration.zero && left < fadeOut) {
+      level = min(level, left.inMicroseconds / fadeOut.inMicroseconds);
+    }
+    return level.clamp(0.0, 1.0);
+  }
+
+  /// How dark the black drawn over the picture is at [at]: 1 − [levelAt].
+  double blackAt(Duration at) => 1 - levelAt(at);
+
+  @override
+  bool operator ==(Object other) =>
+      other is Fades &&
+      other.fadeIn == fadeIn &&
+      other.fadeOut == fadeOut &&
+      other.length == length;
+
+  @override
+  int get hashCode => Object.hash(fadeIn, fadeOut, length);
+
+  @override
+  String toString() => 'Fades($fadeIn in, $fadeOut out of $length)';
+}
+
 /// What moves sound in a plan: what the preview's players must seek again
 /// for when it changes (a volume alone doesn't move anything).
 @immutable
@@ -488,9 +550,9 @@ class PlanTimeline {
 /// The two lanes are mixed: the video's own sound ([own]) and the song
 /// ([song]), each at its volume. Over the picture, its [layers]: the tab,
 /// as it showed while a take recorded (from the take's log), the
-/// watermark and the title. The fades in and out (the picture from and to
-/// black, both lanes' volumes ramping with it) come in a later step: each
-/// lane's volume is one level throughout.
+/// watermark and the title. It fades in from black over [fadeIn] and
+/// out to black over [fadeOut] ([fades]): the picture, with what's drawn
+/// over it, and both lanes' volumes ramping with it.
 @immutable
 class RenderPlan {
   const RenderPlan({
@@ -504,6 +566,8 @@ class RenderPlan {
     this.song,
     this.layers = const [],
     this.keepsFormat = false,
+    this.fadeIn = Duration.zero,
+    this.fadeOut = Duration.zero,
   });
 
   /// The plan of [edit] (null: the whole video as it is) for [kind], made
@@ -523,7 +587,10 @@ class RenderPlan {
   /// ([premium], or a build without the service): an edit a Premium user
   /// made downloads with it for anyone else. With the tab, it's lifted
   /// above its tallest band in this output ([bandAspect]). The sound alone
-  /// has no layers.
+  /// has no layers. It fades in and out as the edit says (3 s each by
+  /// default, none at most half the kept part long:
+  /// [PageEdit.fadeWithin]), unless not [fades] (the file screen's player,
+  /// which loops the video, leaves them to Download).
   factory RenderPlan.of(
     PageEdit? edit, {
     XFile? input,
@@ -539,6 +606,7 @@ class RenderPlan {
     bool premium = false,
     BandAspect bandAspect = bandAspectBound,
     bool preview = false,
+    bool fades = true,
   }) {
     final start = edit?.start ?? Duration.zero;
     final end = edit?.end ?? duration;
@@ -607,6 +675,12 @@ class RenderPlan {
       layers: layers,
       keepsFormat:
           kind != RenderKind.sound && formats.keepsAsIs(inputExtension),
+      fadeIn: fades
+          ? PageEdit.fadeWithin(edit?.fadeIn ?? PageEdit.defaultFade, length)
+          : Duration.zero,
+      fadeOut: fades
+          ? PageEdit.fadeWithin(edit?.fadeOut ?? PageEdit.defaultFade, length)
+          : Duration.zero,
     );
   }
 
@@ -641,6 +715,15 @@ class RenderPlan {
   /// the plan doesn't change can be saved as it is.
   final bool keepsFormat;
 
+  /// How long it fades in from black (and silence) at its start, and out
+  /// to black at its end ([fades]); 0: none. At most half its [length]
+  /// each.
+  final Duration fadeIn;
+  final Duration fadeOut;
+
+  /// Its fades, over its [length].
+  Fades get fades => Fades(fadeIn: fadeIn, fadeOut: fadeOut, length: length);
+
   /// The [layers]' looks, each once, in the order first used: the images
   /// the renderers are given ([toChannel]'s `images`).
   List<LayerLook> get looks => {for (final l in layers) l.look}.toList();
@@ -654,12 +737,13 @@ class RenderPlan {
       (song != null && song!.volume > 0 && song!.clips.isNotEmpty);
 
   /// Whether Download can save [input] as it is: the whole video, its own
-  /// sound as it is and nothing else (nothing drawn over it), already in
-  /// the format made. Only then is no file made.
+  /// sound as it is and nothing else (nothing drawn over it, no fades),
+  /// already in the format made. Only then is no file made.
   bool get passthrough =>
       video &&
       keepsFormat &&
       layers.isEmpty &&
+      !fades.any &&
       start <= Duration.zero &&
       end >= duration &&
       own?.volume == 1 &&
@@ -703,6 +787,8 @@ class RenderPlan {
         'images': images,
         'layers': [for (final l in layers) l.toChannel(index[l.look]!)],
       },
+      if (fadeIn > Duration.zero) 'fadeInMs': fadeIn.inMilliseconds,
+      if (fadeOut > Duration.zero) 'fadeOutMs': fadeOut.inMilliseconds,
       'job': ?job,
     };
   }
@@ -719,7 +805,9 @@ class RenderPlan {
       other.own == own &&
       other.song == song &&
       listEquals(other.layers, layers) &&
-      other.keepsFormat == keepsFormat;
+      other.keepsFormat == keepsFormat &&
+      other.fadeIn == fadeIn &&
+      other.fadeOut == fadeOut;
 
   @override
   int get hashCode => Object.hash(
@@ -733,12 +821,15 @@ class RenderPlan {
     song,
     Object.hashAll(layers),
     keepsFormat,
+    fadeIn,
+    fadeOut,
   );
 
   @override
   String toString() =>
       'RenderPlan($start–$end of ${input?.name}, ${format.label}, '
-      'video $video, own $own, song $song, ${layers.length} layers)';
+      'video $video, own $own, song $song, ${layers.length} layers, '
+      'fades $fadeIn/$fadeOut)';
 }
 
 /// Where the song is at [at] in the output, from [clips] (in output

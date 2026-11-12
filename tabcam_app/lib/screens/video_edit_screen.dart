@@ -37,7 +37,11 @@ import 'messages.dart';
 /// its volume and Mute at its left. Under them (beside everything, on a
 /// wide screen), **On the video**: what's drawn over it, as chips: a
 /// take's tab, the title (its text typed under them on a phone, beside
-/// them on a wide screen) and the watermark, which only Premium removes.
+/// them on a wide screen), the watermark, which only Premium removes, and
+/// the **Fades**: the video fades in from black at the kept part's start
+/// and out to black at its end, both sounds with it, 3 s each by default
+/// (their sliders under the chips, or beside them; drawn on the Take
+/// lane as ramps at its ends).
 /// The edit is kept with the page as it's made ([PageEdit]), and played
 /// as it says ([EditedPlayback]: the kept part, both lanes at their
 /// volumes, the layers over it, [EditLayers]); the video's file stays as
@@ -181,6 +185,15 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// Whether the watermark is drawn (only Premium turns it off).
   bool _watermark = true;
 
+  /// How long the video fades in from black, and out to black (both
+  /// sounds with it); the fades the Fades chip puts back when turned on
+  /// again; and whether their sliders are open in place of the chips (on
+  /// a phone).
+  Duration _fadeIn = PageEdit.defaultFade;
+  Duration _fadeOut = PageEdit.defaultFade;
+  (Duration, Duration)? _fadesBack;
+  bool _editingFades = false;
+
   /// The layers the preview draws, and what they were worked out from;
   /// the title's picture, for a tap on it.
   List<PlanLayer> _layers = const [];
@@ -265,6 +278,23 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   bool get _titleBeingEdited =>
       _editingTitle || _titleFocus.hasFocus || _title2Focus.hasFocus;
 
+  /// The fades as the kept part plays them (none longer than half of it).
+  Fades get _fades {
+    final length = _end - _start;
+    return Fades(
+      fadeIn: PageEdit.fadeWithin(_fadeIn, length),
+      fadeOut: PageEdit.fadeWithin(_fadeOut, length),
+      length: length,
+    );
+  }
+
+  /// The longest a fade can be over the kept part: [PageEdit.maxFade], or
+  /// half the kept part, to the tenth of a second.
+  Duration get _fadeMost {
+    final most = PageEdit.fadeWithin(PageEdit.maxFade, _end - _start);
+    return Duration(milliseconds: most.inMilliseconds ~/ 100 * 100);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -330,6 +360,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           _titleOn = edit.title?.on ?? true;
           _titleLines = edit.title?.lines;
           _watermark = edit.watermark;
+          _fadeIn = edit.fadeIn;
+          _fadeOut = edit.fadeOut;
         }
         _fillTitle();
       });
@@ -387,12 +419,14 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     tab: _tab,
     title: EditTitle.of(on: _titleOn, lines: _titleLines),
     watermark: _watermark,
+    fadeIn: _fadeIn,
+    fadeOut: _fadeOut,
     extra: _extra,
   );
 
   /// Whether the edit is anything but the defaults: the whole video with
   /// its own sound as it is (and a take's tab, the capture's name and the
-  /// watermark over it).
+  /// watermark over it, fading in and out over 3 s).
   bool get _edited =>
       _current.copyWith(extra: const {}) !=
       PageEdit(start: Duration.zero, end: _duration);
@@ -502,7 +536,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// Opens the title's fields: in place of the chips on a phone; on a
   /// wide screen, they're beside them already, the first one focused.
   void _editTitle() {
-    setState(() => _editingTitle = !_wide);
+    setState(() {
+      _editingTitle = !_wide;
+      _editingFades = false;
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _titleFocus.requestFocus();
     });
@@ -545,6 +582,58 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     setState(() => _editingTitle = false);
     FocusManager.instance.primaryFocus?.unfocus();
   }
+
+  /// The Fades chip: off, both fades are none (kept, to put back); on,
+  /// they're as they were before (3 s each, if they never were).
+  void _setFades(bool on) {
+    final fading = _fadeIn > Duration.zero || _fadeOut > Duration.zero;
+    if (on == fading) return;
+    setState(() {
+      if (on) {
+        final (fadeIn, fadeOut) =
+            _fadesBack ?? (PageEdit.defaultFade, PageEdit.defaultFade);
+        _fadeIn = fadeIn;
+        _fadeOut = fadeOut;
+      } else {
+        _fadesBack = (_fadeIn, _fadeOut);
+        _fadeIn = Duration.zero;
+        _fadeOut = Duration.zero;
+      }
+    });
+    _changed();
+  }
+
+  /// Opens the fades' sliders: in place of the chips on a phone (a wide
+  /// screen has them beside the chips already).
+  void _editFades() {
+    if (_wide) return;
+    setState(() {
+      _editingFades = true;
+      _editingTitle = false;
+    });
+  }
+
+  /// A fade's slider moved: the fade in ([end] false) or out, to [seconds]
+  /// (to the tenth of a second); the preview plays it at once, nothing
+  /// sought again.
+  void _setFade(double seconds, {required bool end}) {
+    final fade = Duration(milliseconds: (seconds * 10).round() * 100);
+    if (fade == (end ? _fadeOut : _fadeIn)) return;
+    setState(() {
+      if (end) {
+        _fadeOut = fade;
+      } else {
+        _fadeIn = fade;
+      }
+    });
+    _changed();
+  }
+
+  /// **No fades**: both none; the sliders stay open.
+  void _noFades() => _setFades(false);
+
+  /// **Done**: the fades' sliders close.
+  void _fadesDone() => setState(() => _editingFades = false);
 
   /// The Watermark chip: for a user with Premium, it on or off; for
   /// anyone else, it stays on and the Premium card says how to remove it.
@@ -939,8 +1028,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   }
 
   /// Back to the defaults: the whole video, with its own sound as it is,
-  /// no song, and the tab, the capture's name and the watermark over it
-  /// (the edit is none).
+  /// no song, and the tab, the capture's name and the watermark over it,
+  /// fading in and out over 3 s (the edit is none).
   Future<void> _reset() async {
     final player = _trackPlayer;
     setState(() {
@@ -953,6 +1042,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       _titleLines = null;
       _editingTitle = false;
       _watermark = true;
+      _fadeIn = PageEdit.defaultFade;
+      _fadeOut = PageEdit.defaultFade;
+      _fadesBack = null;
+      _editingFades = false;
       _fillTitle();
       _clearSong();
     });
@@ -1159,7 +1252,11 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       _timeline(video, l10n),
       if (!wide) ...[
         const SizedBox(height: 8),
-        _editingTitle ? _titleFields(l10n) : _onTheVideo(l10n),
+        _editingTitle
+            ? _titleFields(l10n)
+            : _editingFades
+            ? _fadeFields(l10n)
+            : _onTheVideo(l10n),
       ],
       if (_hasSong) ...[const SizedBox(height: 8), _songDetails(l10n)],
       if (_busy) ...[
@@ -1267,11 +1364,12 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   }
 
   /// The video, at most a third of the screen (a tap plays or pauses it;
-  /// on the title, it edits it), with what Download draws over it
-  /// ([EditLayers]).
+  /// on the title, it edits it), with what Download draws over it, and,
+  /// while it plays, the fades' black ([EditLayers]).
   Widget _preview(VideoPlayerController video, AppLocalizations l10n) {
     final height = MediaQuery.sizeOf(context).height / 3;
     final layers = _previewLayers(l10n);
+    final fades = _fades;
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: height),
       child: GestureDetector(
@@ -1285,7 +1383,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                 behavior: HitTestBehavior.opaque,
                 onTapUp: (tap) =>
                     _tapPreview(tap.localPosition, box.biggest, layers),
-                child: layers.isEmpty
+                child: layers.isEmpty && !fades.any
                     ? VideoPlayer(video)
                     : Stack(
                         fit: StackFit.expand,
@@ -1295,6 +1393,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                             video: video,
                             layers: layers,
                             start: _start,
+                            fades: fades,
                           ),
                         ],
                       ),
@@ -1325,10 +1424,14 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// or off, its text kept; ✎ (or a tap on the title in the preview)
   /// edits its text. **Watermark**: for a user with Premium, on or off;
   /// for anyone else, locked on, and a tap shows the Premium card.
+  /// **Fades** (on by default): tapped, on or off; its button opens their
+  /// sliders on a phone (on a wide screen, they're under the title's
+  /// fields).
   Widget _onTheVideo(AppLocalizations l10n, {bool wide = false}) {
     final theme = Theme.of(context);
     final text = _titleText;
     final locked = !_unlocked;
+    final fading = _fadeIn > Duration.zero || _fadeOut > Duration.zero;
     return Column(
       key: const Key('video-edit-on-video'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1365,9 +1468,119 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
               selected: locked || _watermark,
               onSelected: _setWatermark,
             ),
+            InputChip(
+              key: const Key('video-edit-fades'),
+              label: Text(l10n.videoEditFades),
+              tooltip: l10n.videoEditFadesAbout,
+              selected: fading,
+              onSelected: _setFades,
+              deleteIcon: wide
+                  ? null
+                  : const Icon(
+                      Icons.tune,
+                      key: Key('video-edit-fades-edit'),
+                      size: 18,
+                    ),
+              onDeleted: wide ? null : _editFades,
+              deleteButtonTooltipMessage: l10n.videoEditFadesEdit,
+            ),
           ],
         ),
-        if (wide) ...[const SizedBox(height: 12), _titleFields(l10n)],
+        if (wide) ...[
+          const SizedBox(height: 12),
+          _titleFields(l10n),
+          const SizedBox(height: 16),
+          _fadeFields(l10n),
+        ],
+      ],
+    );
+  }
+
+  /// The fades' sliders: how long the start fades in from black and the
+  /// end out to black (both sounds with it), 0 to 10 s by tenths of a
+  /// second, never more than half the kept part (a longer one kept plays
+  /// that long, and is back when the kept part is long enough again); **No
+  /// fades**; on a phone, in place of the chips, with **Done** to close
+  /// them.
+  Widget _fadeFields(AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    final inline = _wide;
+    final most = _fadeMost;
+    final tenths = most.inMilliseconds ~/ 100;
+    final fades = _fades;
+    Widget slider(String name, Duration fade, {required bool end}) {
+      final shown = fade > most ? most : fade;
+      final seconds = l10n.videoEditFadeSeconds(
+        (shown.inMilliseconds / 1000).toStringAsFixed(1),
+      );
+      final which = end ? 'out' : 'in';
+      return Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(name, maxLines: 2, overflow: TextOverflow.ellipsis),
+          ),
+          Expanded(
+            flex: 5,
+            child: Slider(
+              key: Key('video-edit-fade-$which'),
+              value: shown.inMilliseconds / 1000,
+              max: max(0.1, most.inMilliseconds / 1000),
+              divisions: max(1, tenths),
+              label: seconds,
+              semanticFormatterCallback: (_) => '$name $seconds',
+              onChanged: tenths <= 0 ? null : (v) => _setFade(v, end: end),
+            ),
+          ),
+          SizedBox(
+            width: 48,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(
+                seconds,
+                key: Key('video-edit-fade-$which-value'),
+                style: const TextStyle(
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      key: const Key('video-edit-fade-fields'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          inline
+              ? l10n.videoEditFadesAbout
+              : '${l10n.videoEditFades} · ${l10n.videoEditFadesAbout}',
+          style: inline
+              ? theme.textTheme.bodySmall
+              : theme.textTheme.titleSmall,
+        ),
+        slider(l10n.videoEditFadeIn, _fadeIn, end: false),
+        slider(l10n.videoEditFadeOut, _fadeOut, end: true),
+        Wrap(
+          alignment: WrapAlignment.end,
+          spacing: 8,
+          children: [
+            TextButton(
+              key: const Key('video-edit-fades-off'),
+              onPressed: fades.any ? _noFades : null,
+              child: Text(l10n.videoEditFadesOff),
+            ),
+            if (!inline)
+              FilledButton.tonal(
+                key: const Key('video-edit-fades-done'),
+                onPressed: _fadesDone,
+                child: Text(l10n.videoEditTitleDone),
+              ),
+          ],
+        ),
       ],
     );
   }
@@ -1605,6 +1818,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                     length: length,
                     start: _start,
                     end: _end,
+                    fades: _fades,
                     name: ownName,
                     label: l10n.videoEditTakeBar,
                     startLabel: l10n.videoEditKeptStart,
@@ -2080,12 +2294,14 @@ class _Playhead extends CustomPainter {
 /// The Take lane: the whole video ([length]), the part kept, from
 /// [start] to [end], bright (the lane's [name] on it), the rest dimmed.
 /// Its two grips trim it ([onTrimStart], [onTrimEnd], by how far they're
-/// dragged; [onTrimmed] as one is let go), and both sounds with it.
+/// dragged; [onTrimmed] as one is let go), and both sounds with it. The
+/// [fades] are drawn on the part kept as ramps at its ends.
 class _TakeBar extends StatelessWidget {
   const _TakeBar({
     required this.length,
     required this.start,
     required this.end,
+    this.fades = Fades.none,
     required this.name,
     required this.label,
     required this.startLabel,
@@ -2098,6 +2314,7 @@ class _TakeBar extends StatelessWidget {
   final Duration length;
   final Duration start;
   final Duration end;
+  final Fades fades;
   final String name;
 
   /// What it does, for screen readers and the mouse; and its grips'.
@@ -2166,6 +2383,30 @@ class _TakeBar extends StatelessWidget {
                         ),
                       ),
                     ),
+                    if (fades.any)
+                      Positioned(
+                        left: left,
+                        width: max(2, right - left),
+                        top: 0,
+                        bottom: 0,
+                        child: IgnorePointer(
+                          child: CustomPaint(
+                            key: const Key('video-edit-take-fades'),
+                            painter: _FadeRamps(
+                              fadeIn: fades.length <= Duration.zero
+                                  ? 0
+                                  : fades.fadeIn.inMicroseconds /
+                                        fades.length.inMicroseconds,
+                              fadeOut: fades.length <= Duration.zero
+                                  ? 0
+                                  : fades.fadeOut.inMicroseconds /
+                                        fades.length.inMicroseconds,
+                              color: theme.colorScheme.onPrimaryContainer
+                                  .withValues(alpha: 0.25),
+                            ),
+                          ),
+                        ),
+                      ),
                     Positioned(
                       left: left.clamp(0, gripMost),
                       top: 0,
@@ -2199,6 +2440,52 @@ class _TakeBar extends StatelessWidget {
       },
     );
   }
+}
+
+/// The fades on the Take lane's part kept: the fade in as a ramp over its
+/// first [fadeIn] (a fraction of its width), shaded above, the fade out
+/// over its last [fadeOut].
+class _FadeRamps extends CustomPainter {
+  _FadeRamps({
+    required this.fadeIn,
+    required this.fadeOut,
+    required this.color,
+  });
+
+  final double fadeIn;
+  final double fadeOut;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color;
+    final w = size.width;
+    final h = size.height;
+    if (fadeIn > 0) {
+      canvas.drawPath(
+        Path()
+          ..moveTo(0, 0)
+          ..lineTo(fadeIn * w, 0)
+          ..lineTo(0, h)
+          ..close(),
+        paint,
+      );
+    }
+    if (fadeOut > 0) {
+      canvas.drawPath(
+        Path()
+          ..moveTo(w - fadeOut * w, 0)
+          ..lineTo(w, 0)
+          ..lineTo(w, h)
+          ..close(),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_FadeRamps old) =>
+      old.fadeIn != fadeIn || old.fadeOut != fadeOut || old.color != color;
 }
 
 /// The Song lane's song along the video ([length]): its used part, [used]

@@ -2147,6 +2147,30 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditWatermarkLocked => 'O Premium remove a marca d\'água';
 
   @override
+  String get videoEditFades => 'Fades';
+
+  @override
+  String get videoEditFadesAbout =>
+      'O vídeo surge do preto e termina no preto, com os dois sons';
+
+  @override
+  String get videoEditFadesEdit => 'Ajustar os fades';
+
+  @override
+  String get videoEditFadeIn => 'Fade de entrada';
+
+  @override
+  String get videoEditFadeOut => 'Fade de saída';
+
+  @override
+  String videoEditFadeSeconds(String seconds) {
+    return '$seconds s';
+  }
+
+  @override
+  String get videoEditFadesOff => 'Sem fades';
+
+  @override
   String get metronome => 'Metrônomo';
 
   @override

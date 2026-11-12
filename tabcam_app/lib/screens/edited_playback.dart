@@ -15,9 +15,11 @@ import '../library/page_edit.dart';
 /// Checked every tenth of a second while it plays; every
 /// [driftChecks] checks, while both play, the song's place is compared
 /// with where the plan has it, and sought again when it's more than
-/// [driftMost] off (a long video's song would otherwise drift on). The
-/// plan's layers (the tab) are drawn over the video by `EditLayers`. The
-/// players stay their owner's to dispose of.
+/// [driftMost] off (a long video's song would otherwise drift on). While
+/// it plays, both lanes fade in and out as the plan's fades say, their
+/// volumes set again at each check (paused, they're at their levels).
+/// The plan's layers (the tab), and its fades' black, are drawn over the
+/// video by `EditLayers`. The players stay their owner's to dispose of.
 class EditedPlayback {
   EditedPlayback(this.video, {this.loop = false}) {
     video.addListener(_onVideo);
@@ -37,6 +39,9 @@ class EditedPlayback {
   Timer? _ticker;
   bool _songPlaying = false;
   Duration? _last;
+
+  /// How far the lanes are faded in now (1: at their volumes).
+  double _level = 1;
 
   /// The checks since the song's place was last compared.
   int _sinceDrift = 0;
@@ -58,13 +63,15 @@ class EditedPlayback {
   /// [songLength] long, of a video [duration] long with [takeLog] (one of
   /// Cam's takes: its tab is drawn over it), [title] being the capture's
   /// name as the title's default text (drawn unless the edit turns it off
-  /// or types another); null when that's the video as it is.
+  /// or types another), and its fades unless not [fades]; null when
+  /// that's the video as it is.
   static RenderPlan? planOf(
     PageEdit? edit, {
     Duration? songLength,
     Duration duration = Duration.zero,
     TakeLog? takeLog,
     List<String> title = const [],
+    bool fades = true,
   }) {
     final plan = RenderPlan.of(
       edit,
@@ -73,8 +80,9 @@ class EditedPlayback {
       takeLog: takeLog,
       title: title,
       preview: true,
+      fades: fades,
     );
-    return edit == null && plan.layers.isEmpty ? null : plan;
+    return edit == null && plan.layers.isEmpty && !plan.fades.any ? null : plan;
   }
 
   /// Plays [plan] from now on (with [song] as the song lane's player);
@@ -86,9 +94,35 @@ class EditedPlayback {
     if (changedSong) await pauseSong();
     _plan = plan;
     _song = song;
-    await video.setVolume(plan == null ? 1 : plan.own?.volume ?? 0);
-    await song?.setVolume(plan?.song?.volume ?? 1);
+    await _setLevel(_levelAt(video.value.position));
     if (moved && !changedSong) await pauseSong();
+  }
+
+  /// How far the lanes are faded in at [position] in the video, while it
+  /// plays (paused: 1, at their levels).
+  double _levelAt(Duration position) {
+    final plan = _plan;
+    if (plan == null || !video.value.isPlaying) return 1;
+    return plan.fades.levelAt(position - start);
+  }
+
+  /// Both lanes at their volumes, faded to [level] (0 to 1).
+  Future<void> _setLevel(double level) async {
+    _level = level;
+    final plan = _plan;
+    await video.setVolume(plan == null ? 1 : (plan.own?.volume ?? 0) * level);
+    await _song?.setVolume((plan?.song?.volume ?? 1) * level);
+  }
+
+  /// The lanes faded as they are at [position] in the video, if that's
+  /// heard to have changed (a step of 1% or more, or to silence or to
+  /// their levels).
+  Future<void> _fade(Duration position) async {
+    final level = _levelAt(position);
+    if (level == _level) return;
+    if ((level - _level).abs() >= 0.01 || level == 0 || level == 1) {
+      await _setLevel(level);
+    }
   }
 
   void _onVideo() {
@@ -113,6 +147,7 @@ class EditedPlayback {
       if (!loop && at >= end) await video.pause();
       return;
     }
+    await _fade(at);
     final plan = _plan;
     final song = _song;
     if (plan == null || song == null || plan.song == null) return;
@@ -160,8 +195,15 @@ class EditedPlayback {
       await video.pause();
       return;
     }
-    final at = video.value.position;
-    if (at < start || at >= end) await video.seekTo(start);
+    var at = video.value.position;
+    if (at < start || at >= end) {
+      await video.seekTo(start);
+      at = start;
+    }
+    // Faded in from where it starts, not loud until the first check.
+    if (_plan?.fades.any ?? false) {
+      await _setLevel(_plan!.fades.levelAt(at - start));
+    }
     await video.play();
   }
 

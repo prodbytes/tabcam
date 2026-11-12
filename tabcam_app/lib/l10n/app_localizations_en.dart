@@ -2107,6 +2107,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditWatermarkLocked => 'Premium removes the watermark';
 
   @override
+  String get videoEditFades => 'Fades';
+
+  @override
+  String get videoEditFadesAbout =>
+      'The video from and to black, both sounds with it';
+
+  @override
+  String get videoEditFadesEdit => 'Change the fades';
+
+  @override
+  String get videoEditFadeIn => 'Fade in';
+
+  @override
+  String get videoEditFadeOut => 'Fade out';
+
+  @override
+  String videoEditFadeSeconds(String seconds) {
+    return '$seconds s';
+  }
+
+  @override
+  String get videoEditFadesOff => 'No fades';
+
+  @override
   String get metronome => 'Metronome';
 
   @override
