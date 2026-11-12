@@ -1114,23 +1114,17 @@ abstract class AppLocalizations {
   /// **'Couldn\'t record: {error}'**
   String camCouldntRecord(String error);
 
-  /// Cam: the tab is being burned into the take
+  /// Cam (iOS): the take, recorded in HEVC, is being made H.264 as it's saved
   ///
   /// In en, this message translates to:
-  /// **'Adding the tab to the video…'**
-  String get camAddingTab;
+  /// **'Saving the take so every browser plays it…'**
+  String get camConvertingTake;
 
-  /// Cam: burning the tab into the take failed, and why
+  /// Cam (iOS): making the HEVC take H.264 failed, and why; the take is kept as recorded
   ///
   /// In en, this message translates to:
-  /// **'The take was saved without the tab: {reason}'**
-  String camNoOverlay(String reason);
-
-  /// Cam (web): the tab couldn't be recorded in, and why
-  ///
-  /// In en, this message translates to:
-  /// **'Recording without the tab: {reason}'**
-  String camRecordingNoTab(String reason);
+  /// **'The take was saved as the camera recorded it, which some browsers can\'t play: {reason}'**
+  String camTakeNotH264(String reason);
 
   /// Cam (web): no microphone (refused or missing), so no take is recorded
   ///

@@ -874,22 +874,13 @@
       }
     }
   },
-  "camAddingTab": "Adding the tab to the video…",
-  "@camAddingTab": {
-    "description": "Cam: the tab is being burned into the take"
+  "camConvertingTake": "Saving the take so every browser plays it…",
+  "@camConvertingTake": {
+    "description": "Cam (iOS): the take, recorded in HEVC, is being made H.264 as it's saved"
   },
-  "camNoOverlay": "The take was saved without the tab: {reason}",
-  "@camNoOverlay": {
-    "description": "Cam: burning the tab into the take failed, and why",
-    "placeholders": {
-      "reason": {
-        "type": "String"
-      }
-    }
-  },
-  "camRecordingNoTab": "Recording without the tab: {reason}",
-  "@camRecordingNoTab": {
-    "description": "Cam (web): the tab couldn't be recorded in, and why",
+  "camTakeNotH264": "The take was saved as the camera recorded it, which some browsers can't play: {reason}",
+  "@camTakeNotH264": {
+    "description": "Cam (iOS): making the HEVC take H.264 failed, and why; the take is kept as recorded",
     "placeholders": {
       "reason": {
         "type": "String"

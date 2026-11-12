@@ -73,9 +73,10 @@ flutter {
 }
 
 dependencies {
-    // Media3 Transformer burns the tab overlay into recorded takes
-    // (TakeOverlay.kt). Same version as video_player_android's ExoPlayer, so
-    // all Media3 modules in the app stay aligned (they must match).
+    // Media3 Transformer renders the video editor's Download, with the
+    // layers drawn over it (VideoEdit.kt, EditLayers.kt). Same version as
+    // video_player_android's ExoPlayer, so all Media3 modules in the app
+    // stay aligned (they must match).
     val media3Version = "1.9.2"
     implementation("androidx.media3:media3-transformer:$media3Version")
     implementation("androidx.media3:media3-effect:$media3Version")

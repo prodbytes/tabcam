@@ -10,6 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:tabcam_app/capture/head_gestures.dart';
 import 'package:tabcam_app/capture/link_frame.dart';
 import 'package:tabcam_app/capture/media.dart';
@@ -18,8 +20,9 @@ import 'package:tabcam_app/capture/play_along_screen.dart';
 import 'package:tabcam_app/capture/play_along_sidebar.dart';
 import 'package:tabcam_app/capture/auto_pass.dart';
 import 'package:tabcam_app/capture/take_log.dart';
-import 'package:tabcam_app/capture/take_overlay.dart';
+import 'package:tabcam_app/capture/take_h264.dart';
 import 'package:tabcam_app/capture/take_priority.dart';
+import 'package:tabcam_app/capture/take_recorder.dart';
 import 'package:tabcam_app/capture/take_sound.dart';
 import 'package:tabcam_app/dictionary/dictionary_sidebar.dart';
 import 'package:tabcam_app/l10n/app_localizations.dart';
@@ -89,7 +92,7 @@ class FakeTakeRecorder implements TakeRecorder {
   }
 
   @override
-  Future<void> start(String? Function() neckline) async {
+  Future<void> start() async {
     if (startError case final error?) throw error;
     started++;
   }
@@ -109,6 +112,16 @@ class FakeTakeRecorder implements TakeRecorder {
 
   @override
   void dispose() {}
+}
+
+/// The temporary folder, in a test's own.
+class _Paths extends PathProviderPlatform with MockPlatformInterfaceMixin {
+  _Paths(this.temporary);
+
+  final String temporary;
+
+  @override
+  Future<String?> getTemporaryPath() async => temporary;
 }
 
 const _back = CameraDescription(
@@ -300,24 +313,27 @@ void main() {
     expect(find.text('Hide tab'), findsOneWidget);
   });
 
-  testWidgets('Rec records a take, the tab burned in, into the capture; '
-      'Play plays it back', (tester) async {
+  testWidgets('Rec records a take into the capture, saved at once as the '
+      'camera recorded it: no tab burned in (no "Adding the tab" card), its '
+      'log keeping the tab apart from its picture; Play plays it back', (
+    tester,
+  ) async {
     final (library, id) = await capture(tester, tab: _tab);
-    final burned = <List<(TabBand, Uint8List)>>[];
+    // What used to burn the tab in: never called.
+    final overlays = <MethodCall>[];
+    const overlay = MethodChannel('tabcam/take_overlay');
+    final messenger = tester.binding.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(overlay, (call) async {
+      overlays.add(call);
+      return (call.arguments as Map)['output'];
+    });
+    addTearDown(() => messenger.setMockMethodCallHandler(overlay, null));
     await tester.pumpWidget(
       app(
         PlayAlongScreen(
           library: library,
           eventId: id,
           cameras: () async => [_back, _front],
-          burn: (take, bands) async {
-            burned.add(bands);
-            return XFile.fromData(
-              Uint8List.fromList([7, 7]),
-              name: 'burned.mp4',
-              mimeType: 'video/mp4',
-            );
-          },
         ),
       ),
     );
@@ -341,8 +357,12 @@ void main() {
     expect(camera.recording, isTrue);
     await tester.sendKeyEvent(LogicalKeyboardKey.space);
     await tester.tap(_camStop);
+    await tester.pump();
+    expect(find.text('Adding the tab to the video…'), findsNothing);
     await until(tester, () => recReady(tester));
     expect(camera.recording, isFalse);
+    expect(overlays, isEmpty);
+    expect(find.text('Adding the tab to the video…'), findsNothing);
     expect(find.text('Take 1 added to the capture'), findsOneWidget);
     var pages = library.byId(id)!.pages;
     expect(pages, hasLength(2));
@@ -350,31 +370,28 @@ void main() {
     expect(pages.last.title, 'Take 1');
     // Marked as Cam's take.
     expect(pages.last.take, isTrue);
-    // The tab burned in: the first neckline, then the second.
-    final bands = burned.single;
-    expect([for (final (b, _) in bands) b.line], [0, 1]);
-    expect(bands.first.$1.start, Duration.zero);
-    expect(bands.first.$1.end, bands.last.$1.start);
-    expect(bands.last.$1.end, isNull);
-    expect(bands.first.$2, isNotEmpty);
-    // What's saved is the take with the tab.
+    // What's saved is the camera's file as it is.
     late Uint8List saved;
     await tester.runAsync(
       () async => saved = await library.original(library.byId(id)!, pages.last),
     );
-    expect(saved, [7, 7]);
-    // Its log: the tab in its picture, the necklines it showed, each turn
-    // (the burn's bands at their times in the file), and the lag, told
-    // from the camera's start and stop.
+    expect(saved, [9, 1]);
+    // Its log: the tab not in its picture (the editor draws it), the
+    // necklines it showed, each turn, and the lag, told from the camera's
+    // start and stop.
     final log = pages.last.takeLog!;
-    expect(log.burned, isTrue);
+    expect(log.burned, isFalse);
     expect(log.tab!.lines, [
       '[Riff]\ne|--0--3--|\nB|--1--1--|',
       'e|--5--7--|\nB|--5--8--|',
     ]);
     expect([for (final (_, line) in log.tab!.marks) line], [0, 1]);
     expect(log.tab!.marks.first.$1, 0);
-    expect(log.tab!.fileMarks(log.lagMs).last.$1, bands.last.$1.start);
+    // The editor's bands: the first neckline, then the second.
+    final bands = bandsOf(log.tab!.fileMarks(log.lagMs));
+    expect([for (final b in bands) b.line], [0, 1]);
+    expect(bands.first.start, Duration.zero);
+    expect(bands.last.end, isNull);
     expect(log.lagFrom, LagFrom.bounds);
     expect(log.lagRaw.keys, [
       'startCallMs',
@@ -406,9 +423,8 @@ void main() {
 
   testWidgets('a take\'s log keeps every turn of the tab as it came (with '
       'Auto-pass off, the tab hidden), the phrase passes as before; '
-      'the tab not burned in, the log says so', (tester) async {
+      'the tab never in its picture, the log says so', (tester) async {
     final (library, id) = await capture(tester, tab: _tab);
-    var burns = 0;
     await tester.pumpWidget(
       app(
         PlayAlongScreen(
@@ -417,7 +433,6 @@ void main() {
           cameras: () async => [_front],
           headTracking: (_, _) => null,
           takeRecorder: () => null,
-          burn: (take, _) async => ++burns == 1 ? take : null,
         ),
       ),
     );
@@ -441,7 +456,7 @@ void main() {
 
     var take = library.byId(id)!.pages.last;
     final log = take.takeLog!;
-    expect(log.burned, isTrue);
+    expect(log.burned, isFalse);
     expect(log.tab!.lines, hasLength(3));
     expect([for (final (_, line) in log.tab!.marks) line], [0, 1, 2, 1]);
     // The phrase passes leave the turn made with Auto-pass off out.
@@ -457,7 +472,7 @@ void main() {
     expect(saved, isNot(passes(takePhrases(marks))));
     expect(saved, isNotEmpty);
 
-    // Not burned in this time: the log says the picture has no tab.
+    // The next take, too: only what it showed.
     await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     await tester.tap(_camStop);
@@ -470,11 +485,8 @@ void main() {
     expect(take.takeLog!.tab!.marks, [(0, 0)]);
   });
 
-  testWidgets('with no tab, a take\'s log has none, and nothing is burned', (
-    tester,
-  ) async {
+  testWidgets('with no tab, a take\'s log has none', (tester) async {
     final (library, id) = await capture(tester);
-    var burns = 0;
     await tester.pumpWidget(
       app(
         PlayAlongScreen(
@@ -483,10 +495,6 @@ void main() {
           cameras: () async => [_front],
           headTracking: (_, _) => null,
           takeRecorder: () => null,
-          burn: (take, _) async {
-            burns++;
-            return take;
-          },
         ),
       ),
     );
@@ -496,7 +504,6 @@ void main() {
     await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
     final log = library.byId(id)!.pages.last.takeLog!;
-    expect(burns, 0);
     expect(log.tab, isNull);
     expect(log.burned, isFalse);
   });
@@ -719,7 +726,6 @@ B|--5--8--|
           cameras: () async => [_front],
           headTracking: (_, _) => null,
           takeRecorder: () => null,
-          burn: (take, _) async => take,
         ),
       ),
     );
@@ -778,7 +784,6 @@ B|--5--8--|
             cameras: () async => [_front],
             headTracking: (_, onGesture) => heads = FakeHeads(onGesture),
             takeRecorder: () => null,
-            burn: (take, _) async => take,
           ),
         ),
       );
@@ -824,6 +829,149 @@ B|--5--8--|
     }
   });
 
+  group('iOS: a take every browser plays', () {
+    /// The calls on `tabcam/video_edit` ([TakeH264]); the codec the take
+    /// is told to be in; while set, `h264` waits for it; and what `h264`
+    /// fails with, if it's to.
+    late List<String> calls;
+    late String? codec;
+    Completer<void>? converting;
+    PlatformException? fail;
+    late Directory dir;
+
+    Future<void> open(WidgetTester tester) async {
+      calls = [];
+      codec = 'avc1';
+      converting = null;
+      fail = null;
+      await tester.runAsync(() async {
+        dir = await Directory.systemTemp.createTemp('take_h264_test');
+      });
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final paths = PathProviderPlatform.instance;
+      addTearDown(() => PathProviderPlatform.instance = paths);
+      PathProviderPlatform.instance = _Paths(dir.path);
+      final messenger = tester.binding.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(TakeAudio.channel, (_) async => null);
+      messenger.setMockMethodCallHandler(TakeH264.channel, (call) async {
+        calls.add(call.method);
+        if (call.method == 'codec') return codec;
+        await converting?.future;
+        if (fail case final error?) throw error;
+        final output = (call.arguments as Map)['output'] as String;
+        File(output).writeAsBytesSync([8, 8]);
+        return output;
+      });
+      addTearDown(() {
+        messenger.setMockMethodCallHandler(TakeAudio.channel, null);
+        messenger.setMockMethodCallHandler(TakeH264.channel, null);
+      });
+    }
+
+    Future<Uint8List> saved(WidgetTester tester, Library library, String id) =>
+        tester
+            .runAsync(
+              () => library.original(
+                library.byId(id)!,
+                library.byId(id)!.pages.last,
+              ),
+            )
+            .then((bytes) => bytes!);
+
+    Future<void> take(WidgetTester tester) async {
+      await tester.tap(find.byTooltip('Rec (1)'));
+      await frames(tester);
+      await tester.tap(_camStop);
+      await frames(tester);
+    }
+
+    testWidgets('an H.264 take is saved as it is; an HEVC one is made H.264 '
+        'as it\'s saved, a card saying so meanwhile', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      try {
+        await open(tester);
+        final (library, id) = await capture(tester, tab: _tab);
+        await tester.pumpWidget(
+          app(
+            PlayAlongScreen(
+              library: library,
+              eventId: id,
+              cameras: () async => [_front],
+              headTracking: (_, _) => null,
+              takeRecorder: () => null,
+            ),
+          ),
+        );
+        await frames(tester);
+
+        await take(tester);
+        await until(tester, () => recReady(tester));
+        expect(calls, ['codec']);
+        expect(await saved(tester, library, id), [9, 1]);
+
+        codec = 'hvc1';
+        converting = Completer<void>();
+        await take(tester);
+        await until(tester, () => calls.length == 3);
+        await tester.pump();
+        expect(calls, ['codec', 'codec', 'h264']);
+        expect(
+          find.text('Saving the take so every browser plays it…'),
+          findsOneWidget,
+        );
+        converting!.complete();
+        await until(tester, () => recReady(tester));
+        expect(
+          find.text('Saving the take so every browser plays it…'),
+          findsNothing,
+        );
+        final pages = library.byId(id)!.pages;
+        expect(pages.last.title, 'Take 2');
+        expect(pages.last.takeLog!.burned, isFalse);
+        expect(await saved(tester, library, id), [8, 8]);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
+    testWidgets('should making it H.264 fail, the take is saved as recorded, '
+        'and a message says so', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      try {
+        await open(tester);
+        codec = 'hvc1';
+        fail = PlatformException(code: 'failed', message: 'export failed');
+        final (library, id) = await capture(tester, tab: _tab);
+        await tester.pumpWidget(
+          app(
+            PlayAlongScreen(
+              library: library,
+              eventId: id,
+              cameras: () async => [_front],
+              headTracking: (_, _) => null,
+              takeRecorder: () => null,
+            ),
+          ),
+        );
+        await frames(tester);
+        await take(tester);
+        await until(tester, () => recReady(tester));
+        expect(calls, ['codec', 'h264']);
+        expect(library.byId(id)!.pages.last.title, 'Take 1');
+        expect(await saved(tester, library, id), [9, 1]);
+        expect(
+          find.textContaining(
+            'The take was saved as the camera recorded it, which some '
+            'browsers can\'t play: export failed',
+          ),
+          findsOneWidget,
+        );
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+  });
+
   testWidgets('1 presses Rec and Stop (the top row\'s or the keypad\'s); '
       'held, it doesn\'t repeat; it doesn\'t turn the tab', (tester) async {
     final (library, id) = await capture(tester, tab: _tab);
@@ -835,7 +983,6 @@ B|--5--8--|
           cameras: () async => [_front],
           headTracking: (_, _) => null,
           takeRecorder: () => null,
-          burn: (take, _) async => take,
         ),
       ),
     );
@@ -924,7 +1071,6 @@ B|--5--8--|
           cameras: () async => [_front],
           headTracking: (_, _) => null,
           takeRecorder: () => null,
-          burn: (take, _) async => take,
         ),
       ),
     );
@@ -994,7 +1140,6 @@ B|--5--8--|
   testWidgets('. pressed again while the take is saved for the next does '
       'nothing, nor does 1; the next starts once it\'s saved', (tester) async {
     final (library, id) = await capture(tester, tab: _tab);
-    Completer<void>? hold;
     await tester.pumpWidget(
       app(
         PlayAlongScreen(
@@ -1003,10 +1148,6 @@ B|--5--8--|
           cameras: () async => [_front],
           headTracking: (_, _) => null,
           takeRecorder: () => null,
-          burn: (take, _) async {
-            await hold?.future;
-            return take;
-          },
         ),
       ),
     );
@@ -1017,7 +1158,7 @@ B|--5--8--|
     await frames(tester);
     expect(camera.recording, isTrue);
 
-    hold = Completer<void>();
+    final hold = camera.stopHold = Completer<void>();
     await tester.sendKeyEvent(LogicalKeyboardKey.period);
     await frames(tester);
     // Saving: the camera stopped, no new take yet.
@@ -1050,7 +1191,7 @@ B|--5--8--|
     expect(camera.recordings, 1);
     expect(camera.recording, isTrue);
 
-    hold = null;
+    camera.stopHold = null;
     await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
     expect(pages(), hasLength(3));
@@ -1068,7 +1209,6 @@ B|--5--8--|
           cameras: () async => [_front],
           headTracking: (_, _) => null,
           takeRecorder: () => null,
-          burn: (take, _) async => take,
         ),
       ),
     );
@@ -1113,7 +1253,6 @@ B|--5--8--|
           cameras: () async => [_front],
           headTracking: (_, _) => null,
           takeRecorder: () => null,
-          burn: (take, _) async => take,
         ),
       ),
     );
@@ -1155,7 +1294,6 @@ B|--5--8--|
           cameras: () async => [_front],
           headTracking: (_, _) => null,
           takeRecorder: () => null,
-          burn: (take, _) async => take,
         ),
       ),
     );
@@ -1347,19 +1485,20 @@ B|--5--8--|
       await frames(tester);
       expect(recorder.lent, 1);
       expect(camera.recording, isTrue);
-      expect(find.textContaining('Recording without the tab'), findsOneWidget);
+      // The same take either way: nothing to say.
+      expect(find.byType(SnackBar), findsNothing);
       await tester.tap(_camStop);
       await until(tester, () => recReady(tester));
       expect(library.byId(id)!.pages.last.title, 'Take 1');
-      // No tab in its picture, its log says.
+      // No tab in its picture, its log says; the lag told by the bounds.
       final log = library.byId(id)!.pages.last.takeLog!;
       expect(log.burned, isFalse);
       expect(log.tab!.lines, hasLength(1));
       expect(log.lagFrom, LagFrom.bounds);
     });
 
-    testWidgets('a take recorded with the tab drawn in: its log says so, '
-        'its lag the recorder\'s', (tester) async {
+    testWidgets('a take recorded by the recorder: no tab in its picture, '
+        'its log says, its lag the recorder\'s', (tester) async {
       final recorder = FakeTakeRecorder()..sinceStart = 86.6;
       final (library, id) = await open(tester, recorder);
       await tester.tap(find.byTooltip('Rec (1)'));
@@ -1370,7 +1509,7 @@ B|--5--8--|
       await tester.tap(_camStop);
       await until(tester, () => recReady(tester));
       final log = library.byId(id)!.pages.last.takeLog!;
-      expect(log.burned, isTrue);
+      expect(log.burned, isFalse);
       expect(log.lagMs, 87);
       expect(log.lagFrom, LagFrom.recorder);
       expect(log.lagRaw['recorderStartMs'], -87);
@@ -1467,28 +1606,23 @@ B|--5--8--|
 
     List<String> methods() => [for (final (m, _, _) in calls) m];
 
-    Widget cam(Library library, String id, {List<String>? burned}) =>
-        PlayAlongScreen(
-          library: library,
-          eventId: id,
-          cameras: () async => [_front],
-          headTracking: (_, _) => null,
-          takeRecorder: () => null,
-          burn: (take, _) async {
-            burned?.add(take.path);
-            return take;
-          },
-        );
+    Widget cam(Library library, String id) => PlayAlongScreen(
+      library: library,
+      eventId: id,
+      cameras: () async => [_front],
+      headTracking: (_, _) => null,
+      takeRecorder: () => null,
+    );
 
     testWidgets('the camera opens without sound; Rec starts the sound before '
-        'the camera, Stop puts it into the take (then the tab is burned in); '
+        'the camera, Stop puts it into the take (and that\'s the take: no '
+        'burn after); '
         '. does it again; closed, the microphone is closed', (tester) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
       try {
         await open(tester, takeCount: 2);
         final (library, id) = await capture(tester, tab: _tab);
-        final burned = <String>[];
-        await tester.pumpWidget(app(cam(library, id, burned: burned)));
+        await tester.pumpWidget(app(cam(library, id)));
         await frames(tester);
         expect(methods(), ['prepare']);
         expect(camera.settings.single!.enableAudio, isFalse);
@@ -1511,11 +1645,11 @@ B|--5--8--|
           ('stop', 1, false),
         ]);
         // The camera's video went to the sound, and what came back is the
-        // take (burned with the tab after).
+        // take, saved as it is.
         expect(stopArgs.single, containsPair('video', isA<String>()));
-        expect(burned.single, endsWith('take-0.mp4'));
-        final pages = library.byId(id)!.pages;
+        var pages = library.byId(id)!.pages;
         expect(pages.last.title, 'Take 1');
+        expect(pages.last.takeLog!.burned, isFalse);
         late Uint8List saved;
         await tester.runAsync(
           () async =>
@@ -1541,7 +1675,12 @@ B|--5--8--|
           'start',
           'videoStarted',
         ]);
-        expect(burned.last, endsWith('take-1.mp4'));
+        pages = library.byId(id)!.pages;
+        await tester.runAsync(
+          () async =>
+              saved = await library.original(library.byId(id)!, pages.last),
+        );
+        expect(saved, [5, 1]);
 
         await tester.pumpWidget(const SizedBox());
         await tester.pump();
@@ -2257,7 +2396,6 @@ B|--5--8--|
           cameras: () async => [_front],
           headTracking: (_, _) => null,
           takeRecorder: () => null,
-          burn: (take, _) async => take,
         ),
       ),
     );
@@ -2313,7 +2451,6 @@ B|--5--8--|
         ),
       ]);
     });
-    Completer<void>? hold;
     await tester.pumpWidget(
       app(
         PlayAlongScreen(
@@ -2322,10 +2459,6 @@ B|--5--8--|
           cameras: () async => [_front],
           headTracking: (_, _) => null,
           takeRecorder: () => null,
-          burn: (take, _) async {
-            await hold?.future;
-            return take;
-          },
         ),
       ),
     );
@@ -2341,7 +2474,7 @@ B|--5--8--|
     // Again: the song stops at once, back at its start, while the take
     // is saved…
     video.position = const Duration(seconds: 40);
-    hold = Completer<void>();
+    final hold = camera.stopHold = Completer<void>();
     await tester.sendKeyEvent(LogicalKeyboardKey.period);
     await frames(tester);
     expect(video.playing, isEmpty);
@@ -2360,7 +2493,7 @@ B|--5--8--|
     expect(video.playing, hasLength(1));
     expect(video.seeks, [Duration.zero]);
 
-    hold = null;
+    camera.stopHold = null;
     await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
     expect(library.byId(id)!.pages.last.title, 'Take 2');
@@ -2390,7 +2523,6 @@ B|--5--8--|
           cameras: () async => [_front],
           headTracking: (_, _) => null,
           takeRecorder: () => null,
-          burn: (take, _) async => take,
         ),
       ),
     );
@@ -2526,7 +2658,6 @@ B|--5--8--|
           cameras: () async => [_front],
           headTracking: (_, _) => null,
           takeRecorder: () => null,
-          burn: (take, _) async => take,
         ),
       ),
     );
@@ -2635,7 +2766,6 @@ B|--5--8--|
           cameras: () async => [_front],
           headTracking: (_, _) => null,
           takeRecorder: () => null,
-          burn: (take, _) async => take,
         ),
       ),
     );
@@ -2714,7 +2844,6 @@ B|--5--8--|
           cameras: () async => [_front],
           headTracking: (_, _) => null,
           takeRecorder: () => null,
-          burn: (take, _) async => take,
         ),
       ),
     );
@@ -3136,11 +3265,6 @@ B|--5--8--|
           cameras: () async => [_front],
           headTracking: (_, _) => null,
           takeRecorder: () => null,
-          burn: (take, _) async => XFile.fromData(
-            Uint8List.fromList([7, 7]),
-            name: 'burned.mp4',
-            mimeType: 'video/mp4',
-          ),
         ),
       ),
     );
@@ -3233,7 +3357,6 @@ B|--5--8--|
           cameras: () async => [_front],
           headTracking: (_, _) => null,
           takeRecorder: () => null,
-          burn: (take, _) async => take,
         ),
       ),
     );

@@ -26,8 +26,9 @@ import 'play_along_sidebar.dart';
 import 'media.dart';
 import 'mp4_length.dart';
 import 'take_log.dart';
-import 'take_overlay.dart';
+import 'take_h264.dart';
 import 'take_priority.dart';
+import 'take_recorder.dart';
 import 'take_sound.dart';
 import '../screens/messages.dart';
 
@@ -51,10 +52,12 @@ bool takePlaysHere(String mimeType) =>
 /// to the right too, a nod down or turn to the left to the one before
 /// ([HeadTracking]). **Rec** (or the 1 key) records (video and sound)
 /// until it's tapped again, and adds the take to the capture as a video
-/// ("Take 1", "Take 2"…); the . key saves the take and starts the next,
-/// the song in the sidebar from its start. Each take keeps a log of what
-/// Cam noted while it recorded ([TakeLog]: the tab's turns, the necklines
-/// shown, how far the file started before the take's clock). **Play**
+/// ("Take 1", "Take 2"…), saved as the camera recorded it, with no tab in
+/// its picture; the . key saves the take and starts the next, the song in
+/// the sidebar from its start. Each take keeps a log of what Cam noted
+/// while it recorded ([TakeLog]: the tab's turns, the necklines shown,
+/// how far the file started before the take's clock), from which the
+/// video editor draws the tab over it. **Play**
 /// plays the capture's last take back, the necklines turning where they
 /// turned while it was recorded (as its log says).
 /// **Tab** hides the tab from the screen, and shows it again.
@@ -83,8 +86,7 @@ bool takePlaysHere(String mimeType) =>
 /// mixed with the song; on the web, the microphone without voice-call
 /// processing, at a high bitrate), set up when Cam opens rather than as
 /// the take starts; while it records, head gestures
-/// look less often, the web draws the tab at the camera's rate, and cloud
-/// sync starts no pass.
+/// look less often, and cloud sync starts no pass.
 class PlayAlongScreen extends StatefulWidget {
   const PlayAlongScreen({
     super.key,
@@ -93,7 +95,6 @@ class PlayAlongScreen extends StatefulWidget {
     this.cameras = availableCameras,
     this.headTracking = HeadTracking.start,
     this.takeRecorder = TakeRecorder.forPlatform,
-    this.burn = TakeOverlay.burn,
     this.linkFrame = linkFrameFor,
     this.pdfView = pdfViewFor,
     this.gate,
@@ -118,13 +119,9 @@ class PlayAlongScreen extends StatefulWidget {
   )
   headTracking;
 
-  /// Records takes with the tab in them as they go (the web); null where
-  /// the tab is burned in after ([TakeOverlay]). Tests pass their own.
+  /// Records takes where the camera plugin doesn't (the web); null where
+  /// it does. Tests pass their own.
   final TakeRecorder? Function() takeRecorder;
-
-  /// Burns the tab into a take ([TakeOverlay.burn]); tests pass their own.
-  final Future<XFile?> Function(XFile take, List<(TabBand, Uint8List)> bands)
-  burn;
 
   /// Shows a link in the backing track's frame; tests pass their own.
   final Widget Function(LinkFrameController controller) linkFrame;
@@ -152,7 +149,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   int _line = 0;
 
   /// Whether the tab shows along the bottom; hidden, it still turns (and
-  /// is still burned into a take), it just isn't on the screen.
+  /// its turns are still in a take's log), it just isn't on the screen.
   bool _tabShown = true;
 
   /// While recording: when it started, and when each neckline showed.
@@ -215,14 +212,14 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   HeadTracking? _heads;
   bool _headsOn = true;
 
-  /// Records takes with the tab in them, where the camera can't.
+  /// Records takes, where the camera plugin doesn't (the web).
   late final TakeRecorder? _recorder = widget.takeRecorder();
 
-  /// Burning the tab into the take just recorded.
-  bool _burning = false;
+  /// iOS: making the take just recorded H.264 ([TakeH264]).
+  bool _converting = false;
 
   /// Whether this take is [_recorder]'s (else the camera's own).
-  bool _recordingTab = false;
+  bool _byRecorder = false;
 
   /// Android: whether the takes' sound is recorded by the app
   /// ([TakeSound]), the camera opened without sound; decided when Cam
@@ -721,7 +718,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       // Again, in case something changed it since Cam opened (cheap when
       // nothing did).
       await TakeAudio.prepare();
-      _recordingTab = false;
+      _byRecorder = false;
       if (_recorder case final recorder?) {
         // No take without its sound (a microphone refused or missing):
         // the sound matters most.
@@ -731,24 +728,23 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
           unawaited(_stream());
           return;
         }
-        // The tab recorded in as it goes; failing that, the camera alone,
-        // with the microphone's sound (the web's camera has none).
+        // The recorder's take; failing that, the camera plugin's own, with
+        // the microphone's sound (the web's camera has none).
         try {
           _startTiming();
-          await recorder.start(() => _lines.isEmpty ? null : _lines[_line]);
+          await recorder.start();
           _startReturn = _span.elapsed;
-          _recordingTab = true;
+          _byRecorder = true;
         } on Object catch (e) {
-          debugPrint('TabCam: cam: recording without the tab: $e');
+          debugPrint('TabCam: cam: the camera records the take: $e');
           if (!await recorder.lendSoundToCamera()) {
             if (mounted) _snack(context.l10n.camNoSound);
             unawaited(_stream());
             return;
           }
-          if (mounted) _snack(context.l10n.camRecordingNoTab('$e'));
         }
       }
-      if (!_recordingTab) {
+      if (!_byRecorder) {
         // Android: the take's sound first, so it has the video's first
         // moment; what came before is dropped when it's put in.
         if (_ownSound) {
@@ -779,7 +775,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       return;
     }
     _clockZero = _span.elapsed;
-    _recorderLag = _recordingTab ? _recorder?.msSinceStart() : null;
+    _recorderLag = _byRecorder ? _recorder?.msSinceStart() : null;
     _clock
       ..reset()
       ..start();
@@ -879,7 +875,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     try {
       XFile file;
       try {
-        file = await (_recordingTab
+        file = await (_byRecorder
             ? _timedStop(_recorder!.stop)
             : _ownSound
             ? _stopWithSound(controller)
@@ -891,19 +887,14 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       // The log: the tab's turns as they came, and the lag (on the phones,
       // with the file's length as recorded).
       final tab = _lines.isEmpty ? null : TakeTab.of(_lines, marks);
-      final fileMs = _recordingTab || kIsWeb ? null : await mp4VideoMs(file);
+      final fileMs = _byRecorder || kIsWeb ? null : await mp4VideoMs(file);
       final lag = _lag(fileMs);
-      // Whether the tab is in the picture: drawn in as the web recorded,
-      // or burned in here.
-      var burned = _recordingTab && tab != null;
-      if (!_recordingTab && tab != null && TakeOverlay.supported) {
-        if (await _burn(file, tab, lag.lagMs) case final withTab?) {
-          file = withTab;
-          burned = true;
-        }
-      }
+      // iOS: an HEVC take made H.264, so every browser plays it.
+      if (await TakeH264.needed(file)) file = await _toH264(file);
+      // The tab isn't in the take's picture: the log keeps it, and the
+      // editor draws it over the take.
       final log = TakeLog(
-        burned: burned,
+        burned: false,
         lagMs: lag.lagMs,
         lagFrom: lag.from,
         lagRaw: lag.raw,
@@ -972,26 +963,21 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     return take;
   }
 
-  /// [take] with [tab] burned in where it showed, at its times in the
-  /// file ([lagMs] after the take's clock, [TakeTab.fileMarks]); null when
-  /// it couldn't be (the take is kept as it is, and a message says so).
-  Future<XFile?> _burn(XFile take, TakeTab tab, int lagMs) async {
+  /// iOS: [take] made H.264 ([TakeH264.convert]); should that fail, the
+  /// take as recorded, and a message says so (it may not play in every
+  /// browser).
+  Future<XFile> _toH264(XFile take) async {
     final l10n = context.l10n;
-    setState(() => _burning = true);
+    if (mounted) setState(() => _converting = true);
     try {
-      final pngs = <int, Uint8List>{};
-      final bands = <(TabBand, Uint8List)>[];
-      for (final band in bandsOf(tab.fileMarks(lagMs))) {
-        final png = pngs[band.line] ??= await renderBand(tab.lines[band.line]);
-        bands.add((band, png));
-      }
-      final burned = await widget.burn(take, bands);
-      if (burned == null && mounted) {
-        _snack(l10n.camNoOverlay(TakeOverlay.lastError ?? '?'));
-      }
-      return burned;
+      return await TakeH264.convert(take);
+    } on Object catch (e) {
+      debugPrint('TabCam: cam: the take wasn\'t made H.264: $e');
+      final reason = e is PlatformException ? e.message ?? e.code : '$e';
+      if (mounted) _snack(l10n.camTakeNotH264(reason));
+      return take;
     } finally {
-      if (mounted) setState(() => _burning = false);
+      if (mounted) setState(() => _converting = false);
     }
   }
 
@@ -1363,7 +1349,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
             alignment: Alignment.center,
             children: [
               Center(child: _view()),
-              if (_burning)
+              if (_converting)
                 Card(
                   color: Colors.black87,
                   child: Padding(
@@ -1380,7 +1366,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
                         // beside it).
                         Flexible(
                           child: Text(
-                            l10n.camAddingTab,
+                            l10n.camConvertingTake,
                             style: const TextStyle(color: Colors.white),
                           ),
                         ),

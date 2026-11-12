@@ -653,16 +653,12 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get camAddingTab => 'Adicionando a tablatura ao vídeo…';
+  String get camConvertingTake =>
+      'Salvando o take para tocar em qualquer navegador…';
 
   @override
-  String camNoOverlay(String reason) {
-    return 'O take foi salvo sem a tablatura: $reason';
-  }
-
-  @override
-  String camRecordingNoTab(String reason) {
-    return 'Gravando sem a tablatura: $reason';
+  String camTakeNotH264(String reason) {
+    return 'O take foi salvo como a câmera o gravou, e alguns navegadores não o reproduzem: $reason';
   }
 
   @override

@@ -131,50 +131,63 @@ its **Not now** leaving. With Premium it opens the camera view
   while a take starts (until the camera records), so pressing again at
   once doesn't start a second recording alongside it. If the next take
   can't start, the one saved is kept and a message says why.
-- <a id="the-tab-in-the-take"></a>**The tab is in the take**: each
-  neckline shows along the bottom of the video while it showed in Cam,
-  as a band as wide as the video (white monospaced text on a dark,
-  see-through strip, about a third of a landscape take for a six-string
-  staff; [`take_overlay.dart`](../tabcam_app/lib/capture/take_overlay.dart),
-  the band's drawing in [`edit_layers.dart`](../tabcam_app/lib/capture/edit_layers.dart),
-  shared with the editor's tab layer).
-  The app draws each band itself (`renderBand`, 1280 px wide, scaled to
-  the video), the same on every platform, and puts it in on the device:
-  nothing is uploaded to make it, and no server is involved.
-  - **Web**: recorded in as it goes
-    ([`web_take_recorder.dart`](../tabcam_app/lib/capture/web_take_recorder.dart)):
-    at most 30 times a second (the camera's rate, not the display's),
-    the camera preview's `<video>` and the band go onto a canvas, and
-    the browser's `MediaRecorder` records the canvas
-    (`captureStream(30)`) with the microphone's sound (the recorder's
-    own, see [Recording comes first](#recording-comes-first)): WebM
-    (VP8, else VP9, with Opus), or MP4 where only that records
-    (Safari), the sound at 192 kbps and the video at 5 Mbps. Should a band's image fail, its text is drawn on
-    the canvas as it is. Should the recorder fail to start, the camera
-    records the take alone, with the microphone's sound (its track added
-    to the camera's stream, which has none), and a message says so, with
-    why ("Recording without the tab: …"). Without a microphone (refused,
-    or none) no take starts at all, the camera's alone neither: a message
-    says to allow or connect one ("No take without its sound: …"). Checked end to end in Chromium, Firefox and
-    WebKit with a fake webcam (the saved take's frames have the band).
-  - **Android and iOS**: burned in after recording (on Android after
-    the take's sound is put in, see
-    [Recording comes first](#recording-comes-first)), by the platform's
-    own video tools over the method channel `tabcam/take_overlay`
-    (`burn`: the take, an output path, and the bands with their times
-    in ms, in the file: each turn's time on the take's clock plus the
-    take's [lag](#what-a-take-keeps), the first band from the file's
-    start): Media3 Transformer with an `OverlayEffect`
-    ([`TakeOverlay.kt`](../tabcam_app/android/app/src/main/kotlin/com/nu01/tabcam/TakeOverlay.kt))
-    on Android; an `AVMutableVideoComposition` with Core Animation
-    layers ([`AppDelegate.swift`](../tabcam_app/ios/Runner/AppDelegate.swift))
-    on iOS. The take comes out upright, as it showed, as H.264 and AAC
-    in MP4. "Adding the tab to the video…" shows meanwhile. If it
-    fails, the take is saved as recorded and a message says it was
-    saved without the tab, and why ("The take was saved without the
-    tab: …"); its log says so (`burned` false).
-  - A capture with no text tab records the camera alone.
-- **Play** plays the capture's last take back in the camera's place (the
+- <a id="the-tab-with-the-take"></a><a id="the-tab-in-the-take"></a>**The tab is kept with the take and
+  added by the editor**: a take is saved at once as the camera recorded
+  it, with no tab in its picture and no second encode (no "Adding the
+  tab…" wait; on iOS, only an HEVC take is encoded again, below). Its
+  [log](#what-a-take-keeps) keeps the necklines it showed and when
+  each showed (`burned: false`), and the
+  [video editor](video-edit.md#layers) draws them over the take, each
+  along the bottom of the video while it showed in Cam (a band as wide
+  as the video: white monospaced text on a dark, see-through strip,
+  `renderBand` in [`edit_layers.dart`](../tabcam_app/lib/capture/edit_layers.dart)):
+  in its preview, in the [file screen](event-screen.md#file-screen)'s
+  player, and in its Download, where its **Tab** chip turns it off.
+  Cam's [Play](#play) turns the necklines along the take from the same
+  log. Everywhere else the take is its file as it is, without the tab:
+  the file list's play buttons, the play-along sidebar, and the list's
+  Download and Download all (and older versions of the app, which don't
+  know the log). Nothing is uploaded, and no server is involved.
+  - **Web**: the take recorder records the camera preview's own video
+    track as it comes, with the microphone's sound
+    ([`web_take_recorder.dart`](../tabcam_app/lib/capture/web_take_recorder.dart),
+    the browser's `MediaRecorder` on a stream of the two tracks; see
+    [Recording comes first](#recording-comes-first)): WebM (VP8, else
+    VP9, with Opus), or MP4 where only that records (Safari), the sound
+    at 192 kbps and the video at 5 Mbps. Nothing is drawn while it
+    records (no canvas, no work per frame), so a take goes on recording
+    while the browser's tab is hidden, without frozen frames. Should the
+    recorder fail to start, the camera plugin records the take itself,
+    with the microphone's sound (its track added to the camera's stream,
+    which has none): the same take, so nothing is said. Without a
+    microphone (refused, or none) no take starts at all, the camera's
+    alone neither: a message says to allow or connect one ("No take
+    without its sound: …"). Checked in Chromium with a fake webcam (the
+    saved take's frames are the camera's, top to bottom).
+  - **Android**: the camera's MP4 (H.264), with the sound the app
+    records put in ([Recording comes first](#recording-comes-first)).
+  - **iOS**: the camera plugin (camera_avfoundation) writes an MP4 in
+    the codec the device recommends. As the take is saved, its codec is
+    asked for ([`take_h264.dart`](../tabcam_app/lib/capture/take_h264.dart),
+    method channel `tabcam/video_edit`, `codec`: the video track's four
+    letters): an H.264 take (`avc1`) is saved as it is; any other (HEVC,
+    `hvc1`, which Chrome and Firefox don't play everywhere) is made
+    H.264 once (`h264`: the whole take through the editor's renderer,
+    nothing drawn on it, its orientation kept, its sound re-encoded to
+    AAC; [`AppDelegate.swift`](../tabcam_app/ios/Runner/AppDelegate.swift),
+    `TakeH264`), "Saving the take so every browser plays it…" showing
+    meanwhile. That costs about what burning the tab in did, and only
+    for an HEVC take. Should it fail, the take is saved as recorded and
+    a message says why ("The take was saved as the camera recorded it,
+    which some browsers can't play: …"). Checked on a Mac, the same
+    AVFoundation code in a command-line harness (an H.264 clip told
+    `avc1`; an HEVC one told `hvc1` and made `avc1`, as long), and by a
+    RunnerTests case (compiled for the simulator, not run there yet);
+    **not yet on an iPhone**: which codec it records, and that an HEVC
+    take made H.264 plays in Chrome and Firefox after sync.
+  - A capture with no text tab records the camera alone, its log
+    without a tab.
+- <a id="play"></a>**Play** plays the capture's last take back in the camera's place (the
   last of the user's own, on a capture shared to read: their
   contribution's), until **Stop** or its end: the one just recorded, or,
   when Cam opens, the last one recorded before (on this device or
@@ -201,9 +214,9 @@ its **Not now** leaving. With Premium it opens the camera view
 - **Tab** (beside Rec and Play: **Hide tab** with the tab showing,
   **Show tab** with it hidden) hides the tab along the bottom, leaving
   the camera more of the screen, and shows it again. Hidden, it still
-  turns (keys, taps, head gestures, a take playing back) and a take
-  still gets it burned in where it showed, and its log notes it; it's
-  only off the screen.
+  turns (keys, taps, head gestures, a take playing back) and a take's
+  log still notes each turn, so the editor draws it where it showed;
+  it's only off the screen.
   It shows again each time Cam opens.
 - <a id="phrase-passes"></a>**Phrase passes**: while recording with
   [Auto-pass](#auto-pass) on, each
@@ -261,8 +274,9 @@ its **Not now** leaving. With Premium it opens the camera view
   - **The take** keeps its own too, from when its necklines showed
     while Auto-pass was on (merged the same way; `takePhrases`), so
     played along later it turns the tab as it turned in it. A turn made
-    while Auto-pass was off is still in the take (burned in, and
-    followed when Play plays it back), but it's no pass of the take's;
+    while Auto-pass was off is still in the take's log (drawn by the
+    editor, and followed when Play plays it back), but it's no pass of
+    the take's;
     a take recorded with Auto-pass off all along has none.
   - **In the player**: a tick across the song's progress bar at each
     pass (in the theme's primary colour), and at the bar's right end, on
@@ -562,14 +576,14 @@ published and goes into the user's [contribution](contributions.md)
 with the page as its name does; a [clone](library.md)'s copy names the
 copy's files; renamed or edited, it stays. From it the
 [editor](video-edit.md#layers) draws the tab over a take whose tab
-isn't in its picture (`burned: false`: for now, one whose burn failed;
-once Cam stops burning the tab in, every take), in the preview, the
-file screen's player and the editor's Download, with its **Tab** chip
-to turn it off; a later step lines the song played along up with it.
+isn't in its picture (`burned: false`: every take Cam saves now), in the
+preview, the file screen's player and the editor's Download, with its
+**Tab** chip to turn it off; a later step lines the song played along
+up with it.
 Play uses it too (above). A few KB for a ten-minute take:
 ```json
 "takeLog": {
-  "v": 1, "burned": true,
+  "v": 1, "burned": false,
   "lagMs": 180, "lagFrom": "bounds",
   "lagRaw": {"startCallMs": -240, "startReturnMs": -10,
              "stopCallMs": 61000, "stopReturnMs": 61310, "fileMs": 61420},
@@ -589,12 +603,13 @@ Play uses it too (above). A few KB for a ten-minute take:
   before (`takePhrases`, the passes leaving out the turns made with
   Auto-pass off); the log keeps them all. At most 4000 turns (the
   first).
-- **Whether the tab is in its picture** (`burned`): true when it was
-  drawn in as the web recorded it or burned in after on Android and
-  iOS; false when there was none, or it couldn't be put in (the web
-  recorder failed and the camera recorded alone; the burn failed). A
-  log that doesn't say counts as burned, so the tab is never drawn
-  twice.
+- **Whether the tab is in its picture** (`burned`): false for every
+  take Cam saves now (the tab is kept apart, see
+  [the tab and the take](#the-tab-with-the-take)). True on takes saved
+  by the versions that put the tab in the picture as they saved it
+  (drawn in as the web recorded, or burned in after on Android and
+  iOS): the editor draws no tab over those. A log that doesn't say
+  counts as burned, so the tab is never drawn twice.
 - **The lag** (`lagMs`): how long the file had been recording when the
   take's clock started (the clock starts once the recording has):
   a time on the clock is `lagMs` later in the file (the start staying
@@ -622,13 +637,17 @@ Play uses it too (above). A few KB for a ten-minute take:
   (`from`) and at what `speed`); empty for now: a later version notes
   them, and `songLink` when it was a link in a frame.
 - A take without a log (saved before takes had one) has its tab in its
-  picture, or never had one.
+  picture, or never had one. A log dropped by an older app that
+  re-saved the page (one from before pages kept the keys they don't
+  know) makes a take look like one of those: the editor then draws no
+  tab over it, and its file has none.
 - Checked: the turns kept unfiltered, the necklines kept once and the
   turns pointing at them, the JSON read back as written (and leniently:
   what isn't as expected is left out), the lag's midpoint for made-up
   timings and the start's range where the two don't agree, the length
-  read from a made-up MP4's index, the log saved with a take (burned,
-  not burned, the web's recorder's lag, the web's camera alone), kept
+  read from a made-up MP4's index, the log saved with a take (never
+  burned: the camera's file saved as it is, nothing burned in; the
+  web's recorder's lag, the web's camera alone), kept
   through a rename and a restart, a clone's naming its copy's song, a
   newer app's log written back as it came through a rename and a clone,
   Play of an older take after Cam reopens turning its necklines, lag
@@ -656,7 +675,7 @@ slow down while a take records
   them (asked for, not required). What the browser gave is logged
   (`TabCam: cam: microphone: …`); Safari on iOS may not honour all of it.
   The take's sound is at 192 kbps, its video at 5 Mbps, in VP8 before
-  VP9, and the tab is drawn into it at most 30 times a second. Chrome
+  VP9, the camera's frames as they come (nothing drawn on them). Chrome
   encodes both in software (libvpx), VP8 at a fraction of VP9's cost.
   H.264, which Chrome can encode in the graphics hardware, isn't asked
   for: in a WebM, Firefox and Safari don't play it, and an MP4 take
@@ -779,10 +798,8 @@ slow down while a take records
     video's rotation kept), the sound after the video's end left out,
     and, should the encoder say how much priming it put first
     (`encoder-delay`), that many whole AAC frames dropped. The camera's
-    file and the `.m4a` are deleted. Then the tab is burned in as before
-    (Media3 Transformer copies the sound, AAC to AAC): one pass more
-    than before, but a copy, about as fast as the storage, and the take
-    has its sound even if the burn fails.
+    file and the `.m4a` are deleted. That file is the take, saved as it
+    is: nothing is burned in after, so the sound is never encoded twice.
   - **Never a silent take unsaid**: should the sound not go in, the
     take is saved as the camera recorded it (without sound) and "The
     take was saved without its sound: …" says why; should the sound
@@ -818,8 +835,9 @@ slow down while a take records
 - Not controllable without forking the camera plugins or recording the
   sound separately (as Android now does): iOS's mono 44.1 kHz; the
   plugins' own thread priorities; the microphone each system picks with
-  a headset connected. iOS's tab burn-in re-encodes the take's sound
-  (AAC to AAC); Android's copies it.
+  a headset connected. On iOS, an HEVC take made H.264 has its sound
+  re-encoded (AAC to AAC); an H.264 take, and every Android take, keep
+  it as recorded.
 
 **Permissions**: the camera and the microphone (iOS:
 `NSCameraUsageDescription`, `NSMicrophoneUsageDescription`; Android:
@@ -827,4 +845,5 @@ slow down while a take records
 opens (for the take's sound), then the camera by the `camera` plugin; the web: the browser's
 prompts, for the camera and then the microphone, when Cam opens; with
 the microphone refused, the preview shows but Rec records nothing). On
-the web a take is WebM, on Android MP4, on iOS MOV.
+the web a take is WebM (MP4 on Safari), on Android MP4 (H.264), on iOS
+MP4 (H.264; an HEVC take made H.264 as it's saved).

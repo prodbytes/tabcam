@@ -3164,3 +3164,44 @@ spec.
    a clone; Rec, 1 and . waiting while a take opens, Play letting it go;
    on iOS, Play greyed with only a WebM take and playing the MP4 before
    one. See [Cam](cam.md#what-a-take-keeps) and [library](library.md).
+
+2. **(Editor redesign, step 5) Cam stops burning the tab into takes.**
+   A take is now saved at once as the camera recorded it, with no tab
+   in its picture and no second encode: `_burn`, the "Adding the tab to
+   the video…" card, the `tabcam/take_overlay` channel
+   (`take_overlay.dart`, Android's `TakeOverlay.kt`, iOS's `TakeOverlay`
+   and `TakeOverlayBurner`) and the strings `camAddingTab`,
+   `camNoOverlay` and `camRecordingNoTab` (en, es, pt) are gone. Every
+   take's log is saved with `burned: false`, so the editor's Tab chip
+   is on and draws the tab in its preview, the file screen's player and
+   its Download (step 4); Cam's Play follows the log as before. On the
+   web, `WebTakeRecorder` records the camera preview's own video track
+   and the microphone's straight into MediaRecorder (no canvas, no
+   per-frame drawing, nothing frozen while the browser's tab is
+   hidden), keeping the microphone's settings, bitrates and formats;
+   `start()` takes no neckline, the recorder's interface moved to
+   `take_recorder.dart`, and `TakePriority.webFps`/`frameDue` went with
+   the canvas. Should the recorder fail, the camera plugin's own
+   recording (with the microphone lent) is the same take, so no message
+   is shown. On Android the take's sound is still put in (`TakeSound`'s
+   remux) and that file is the take. On iOS the take's codec is asked
+   for as it's saved (`take_h264.dart`, methods `codec` and `h264` on
+   `tabcam/video_edit`): H.264 is kept as it is, anything else (HEVC) is
+   exported once as H.264 through the editor's renderer, nothing drawn
+   ("Saving the take so every browser plays it…" meanwhile; should it
+   fail, the take is kept as recorded and "The take was saved as the
+   camera recorded it, which some browsers can't play: …" says so).
+   The file list's play buttons, the play-along sidebar and the list's
+   Download and Download all keep using the raw file, now without the
+   tab; the editor's Download makes the finished video. Tests
+   (`test/play_along_test.dart`: a take saved with no burn call, no
+   "Adding the tab" card, the camera's file as it is and
+   `burned: false`, on the phones, with Android's sound and from the
+   web's recorder; iOS's H.264 kept, HEVC converted with its card, and
+   the conversion failing; `test/take_h264_test.dart`; the band tests
+   moved to `test/take_log_test.dart` and `test/edit_layers_test.dart`;
+   in Chrome `test/web_take_recorder_test.dart`: the take's frames the
+   camera's, top to bottom, no band, the microphone's settings kept; a
+   RunnerTests case and a Mac harness of the iOS conversion). See
+   [Cam](cam.md#the-tab-with-the-take), [video edit](video-edit.md) and
+   [platforms](platforms.md).

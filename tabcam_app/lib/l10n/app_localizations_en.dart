@@ -634,16 +634,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get camAddingTab => 'Adding the tab to the video…';
+  String get camConvertingTake => 'Saving the take so every browser plays it…';
 
   @override
-  String camNoOverlay(String reason) {
-    return 'The take was saved without the tab: $reason';
-  }
-
-  @override
-  String camRecordingNoTab(String reason) {
-    return 'Recording without the tab: $reason';
+  String camTakeNotH264(String reason) {
+    return 'The take was saved as the camera recorded it, which some browsers can\'t play: $reason';
   }
 
   @override

@@ -48,6 +48,33 @@ final _log = TakeLog(
 );
 
 void main() {
+  group('the tab\'s bands (bandsOf)', () {
+    test('each neckline until the next', () {
+      expect(bandsOf([(_ms(0), 0), (_ms(4000), 1), (_ms(9000), 2)]), [
+        TabBand(0, _ms(0), _ms(4000)),
+        TabBand(1, _ms(4000), _ms(9000)),
+        TabBand(2, _ms(9000)),
+      ]);
+    });
+
+    test('moved twice at once: only the last counts', () {
+      expect(bandsOf([(_ms(0), 0), (_ms(3000), 1), (_ms(3000), 2)]), [
+        TabBand(0, _ms(0), _ms(3000)),
+        TabBand(2, _ms(3000)),
+      ]);
+    });
+
+    test('back to the same neckline: one band', () {
+      expect(bandsOf([(_ms(0), 1), (_ms(2000), 2), (_ms(2000), 1)]), [
+        TabBand(1, _ms(0)),
+      ]);
+    });
+
+    test('a take that never moved: one band', () {
+      expect(bandsOf([(_ms(0), 3)]), [TabBand(3, _ms(0))]);
+    });
+  });
+
   group('the tab\'s turns', () {
     test('are kept as they came: Auto-pass off, back to the same line, at '
         'the same time, with the tab hidden (Cam notes them all alike)', () {

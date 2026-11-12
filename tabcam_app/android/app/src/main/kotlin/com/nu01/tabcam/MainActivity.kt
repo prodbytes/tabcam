@@ -9,7 +9,6 @@ import io.flutter.embedding.engine.FlutterEngine
 
 @UnstableApi
 class MainActivity : FlutterActivity() {
-    private var takeOverlay: TakeOverlay? = null
     private var videoEdit: VideoEdit? = null
     private var cameraPermission: CameraPermission? = null
     private var sound: Sound? = null
@@ -17,7 +16,6 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        takeOverlay = TakeOverlay(applicationContext, flutterEngine.dartExecutor.binaryMessenger)
         videoEdit = VideoEdit(applicationContext, flutterEngine.dartExecutor.binaryMessenger)
         cameraPermission = CameraPermission(this, flutterEngine.dartExecutor.binaryMessenger)
         sound = Sound(applicationContext, flutterEngine.dartExecutor.binaryMessenger)
@@ -25,8 +23,6 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
-        takeOverlay?.dispose()
-        takeOverlay = null
         videoEdit?.dispose()
         videoEdit = null
         cameraPermission?.dispose()

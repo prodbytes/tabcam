@@ -161,6 +161,29 @@ class RunnerTests: XCTestCase {
     return pixel[0] > 180 && pixel[1] < 90 && pixel[2] < 90
   }
 
+  /// Cam's takes: an H.264 take is told as such (and kept as it is); an
+  /// HEVC one is made H.264, as long as it was.
+  func testMakesAnHEVCTakeH264() async throws {
+    let h264 = dir.appendingPathComponent("h264.mp4")
+    try await makeVideo(h264, seconds: 1)
+    let told = try await TakeH264.codec(of: h264)
+    XCTAssertEqual(told, "avc1")
+
+    let hevc = dir.appendingPathComponent("hevc.mp4")
+    try await makeVideo(hevc, seconds: 1, codec: .hevc)
+    let toldHEVC = try await TakeH264.codec(of: hevc)
+    XCTAssertEqual(toldHEVC, "hvc1")
+    let output = dir.appendingPathComponent("made.mp4")
+    let error = await withCheckedContinuation { (done: CheckedContinuation<String?, Never>) in
+      TakeH264.convert(input: hevc, output: output) { done.resume(returning: $0) }
+    }
+    XCTAssertNil(error)
+    let made = try await TakeH264.codec(of: output)
+    XCTAssertEqual(made, "avc1")
+    let duration = try await AVURLAsset(url: output).load(.duration)
+    XCTAssertEqual(duration.seconds, 1, accuracy: 0.15)
+  }
+
   func testReadsTheChannelsArguments() {
     let plan = VideoEditor.Plan(args: [
       "input": "/tmp/in.mp4", "output": "/tmp/out.mp4", "video": true, "startMs": 500,
@@ -207,14 +230,16 @@ class RunnerTests: XCTestCase {
     }
   }
 
-  /// A silent H.264 video, 160×120 at 30 frames a second, its colour
-  /// changing.
-  private func makeVideo(_ url: URL, seconds: Int) async throws {
+  /// A silent video (H.264 unless asked otherwise), 160×120 at 30 frames
+  /// a second, its colour changing.
+  private func makeVideo(
+    _ url: URL, seconds: Int, codec: AVVideoCodecType = .h264
+  ) async throws {
     let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
     let input = AVAssetWriterInput(
       mediaType: .video,
       outputSettings: [
-        AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: 160, AVVideoHeightKey: 120,
+        AVVideoCodecKey: codec, AVVideoWidthKey: 160, AVVideoHeightKey: 120,
       ])
     input.expectsMediaDataInRealTime = false
     let adaptor = AVAssetWriterInputPixelBufferAdaptor(

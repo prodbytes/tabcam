@@ -37,7 +37,9 @@ can't say, as for a take the browser recorded, the editor's), and when
 neither can say, takes the end the edit keeps for it (none: the song
 doesn't play); elsewhere (the file list's play buttons, Cam's play
 along, the list's Download and Download all) the video's file is used
-as it is. A cloned capture's video keeps its edit, naming the copy's
+as it is: for a take, without its tab, which [Cam](cam.md#the-tab-with-the-take)
+keeps apart from its picture; the editor's Download makes the finished
+video. A cloned capture's video keeps its edit, naming the copy's
 song. An edit's keys from a newer app (a newer editor's settings) are
 kept with it and written back with every change made here, even a
 Reset: the edit then stays, as the whole video with its own sound, which
@@ -129,10 +131,11 @@ makes a file of it."), opening with the video's edit as it was left:
   none, or, with no log, its capture's tab text has no necklines). For now
   **Tab**: on by default, for a take whose tab is kept apart from its
   picture (its [log](cam.md#what-a-take-keeps) has its tab, not burned
-  in); tapped, it's off (kept as `tab: false`; Reset turns it on again),
-  and its bands leave the preview and the download. On a take whose tab
-  is already in its picture (burned in as it was saved, or saved before
-  takes kept a log) the chip is off and can't be turned on, so the tab
+  in: every take Cam saves now); tapped, it's off (kept as `tab: false`;
+  Reset turns it on again), and its bands leave the preview and the
+  download. On a take whose tab is already in its picture (burned in as
+  it was saved, by the versions that did, or saved before takes kept a
+  log) the chip is off and can't be turned on, so the tab
   is never drawn twice, and its tooltip (shown on a tap, or on hover)
   says why: "This take has the tab in its picture" (burned in), or
   "This take is from an earlier version: its tab can't be drawn over
@@ -312,13 +315,15 @@ the log's `lagMs`, the first from the file's start), then in the output
 (less the kept part's start), cut to the kept part (a trimmed start cuts
 the first band, a trimmed end the last). Its text is the log's own copy
 of the neckline, so a later change to the capture's tab changes nothing.
-It looks as the burned tab did: white monospaced text on a 70% black
-strip along the bottom, as wide as the video (`renderBand`, 1280 px
-wide, scaled). A take with its tab in its picture (`burned: true`, or
-no log: saved before takes kept one) gets none. A build with
-`--dart-define=TABCAM_TAB_OVER_BURNED=true` draws it over burned takes
-too, to check by eye that the drawn bands sit over the burned ones at
-the same frames (the time base and the lag); never in a release.
+It looks as the tab burned into older takes did: white monospaced text
+on a 70% black strip along the bottom, as wide as the video
+(`renderBand`, 1280 px wide, scaled). A take with its tab in its
+picture (`burned: true`: saved by the versions that put it there, or no
+log: saved before takes kept one) gets none. A build with
+`--dart-define=TABCAM_TAB_OVER_BURNED=true` draws it over such burned
+takes too, to check by eye that the drawn bands sit over the burned
+ones at the same frames (the time base and the lag); never in a
+release.
 
 **One drawing for the preview and the file.** Each look is drawn once
 as a picture (`LayerPicture`): painted, scaled, over the preview, and
