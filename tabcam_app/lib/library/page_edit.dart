@@ -120,6 +120,110 @@ class EditTitle {
   String toString() => 'EditTitle(${on ? 'on' : 'off'}, $lines)';
 }
 
+/// The colours of the tab's bands over an edited video (`colors` in its
+/// [EditTabStyle]): the text's and the background's.
+enum TabColors {
+  /// White text on black: the default, as the tab burned into older
+  /// takes looked.
+  dark,
+
+  /// Black text on white.
+  light,
+
+  /// TabCam's gold text on black.
+  gold,
+
+  /// Black text on TabCam's gold.
+  brand;
+
+  /// [name]'s colours; [dark] when it isn't one (none given, or a newer
+  /// app's).
+  static TabColors byName(Object? name) =>
+      values.where((c) => c.name == name).firstOrNull ?? dark;
+}
+
+/// How the tab's bands look over an edited video (`tabStyle` in its
+/// edit): how big ([size], 1 as the tab burned into older takes was, from
+/// [minSize] to [maxSize]), how opaque their background is ([opacity], 0
+/// to 1; the text is always opaque, and outlined as the background fades
+/// out, so it reads on any picture), and their [colors]. The default,
+/// [standard], is how bands have always looked (white on a 70% black
+/// strip), and isn't kept.
+class EditTabStyle {
+  const EditTabStyle({
+    this.size = 1,
+    this.opacity = defaultOpacity,
+    this.colors = TabColors.dark,
+  });
+
+  /// The look bands have by default.
+  static const standard = EditTabStyle();
+
+  /// The smallest and largest [size].
+  static const minSize = 0.5;
+  static const maxSize = 2.0;
+
+  /// The background's opacity by default.
+  static const defaultOpacity = 0.7;
+
+  final double size;
+  final double opacity;
+  final TabColors colors;
+
+  /// Whether it's the default look ([standard]).
+  bool get isStandard => this == standard;
+
+  /// [size] as kept: within [minSize] and [maxSize], to the hundredth; 1
+  /// when it isn't a number.
+  static double sizeOf(Object? size) => size is num && size.isFinite
+      ? (size.clamp(minSize, maxSize) * 100).round() / 100
+      : 1;
+
+  /// [opacity] as kept: within 0 and 1, to the hundredth; the default when
+  /// it isn't a number.
+  static double opacityOf(Object? opacity) => opacity is num && opacity.isFinite
+      ? (opacity.clamp(0, 1) * 100).round() / 100
+      : defaultOpacity;
+
+  /// This style with the fields given changed, each kept within its bounds.
+  EditTabStyle copyWith({double? size, double? opacity, TabColors? colors}) =>
+      EditTabStyle(
+        size: size == null ? this.size : sizeOf(size),
+        opacity: opacity == null ? this.opacity : opacityOf(opacity),
+        colors: colors ?? this.colors,
+      );
+
+  /// Only what isn't the default.
+  Map<String, Object?> toJson() => {
+    if (size != 1) 'size': size,
+    if (opacity != defaultOpacity) 'opacity': opacity,
+    if (colors != TabColors.dark) 'colors': colors.name,
+  };
+
+  /// [standard] when [json] isn't one; each value within its bounds.
+  static EditTabStyle fromJson(Object? json) {
+    if (json is! Map) return standard;
+    return EditTabStyle(
+      size: sizeOf(json['size']),
+      opacity: opacityOf(json['opacity']),
+      colors: TabColors.byName(json['colors']),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is EditTabStyle &&
+      other.size == size &&
+      other.opacity == opacity &&
+      other.colors == colors;
+
+  @override
+  int get hashCode => Object.hash(size, opacity, colors);
+
+  @override
+  String toString() => 'EditTabStyle($size, $opacity, ${colors.name})';
+}
+
 /// A video page's edit, kept with the page (and synced with it): the part
 /// kept, from [start] to [end], and its sound in two lanes, mixed: the
 /// video's own (at [ownVolume], unless [ownMuted]) and a song (one of the
@@ -127,8 +231,8 @@ class EditTitle {
 /// [trackEnd] (null: its end) is used, starting [offset] after the kept
 /// part's start (before it, when negative), at [trackVolume], unless
 /// [songMuted]; placed as [song] says). Muting a lane keeps its level.
-/// Over the picture: the tab of one of Cam's takes, unless [tab] is off;
-/// a title ([title]; null: the capture's name), and the watermark, unless
+/// Over the picture: the tab of one of Cam's takes, unless [tab] is off,
+/// looking as [tabStyle] says; a title ([title]; null: the capture's name), and the watermark, unless
 /// [watermark] is off (which only a Premium user can do, and only a
 /// Premium user's download obeys). It fades in from black at the kept
 /// part's start over [fadeIn], and out to black at its end over
@@ -156,6 +260,7 @@ class PageEdit {
     this.offset = Duration.zero,
     this.trackVolume = 1,
     this.tab = true,
+    this.tabStyle = EditTabStyle.standard,
     this.title,
     this.watermark = true,
     this.fadeIn = defaultFade,
@@ -232,6 +337,7 @@ class PageEdit {
     'songMuted',
     'song',
     'tab',
+    'tabStyle',
     'title',
     'watermark',
     'fadeInMs',
@@ -266,6 +372,11 @@ class PageEdit {
   /// log has its tab, not already in its picture: `tabOffered`): on by
   /// default, written (`tab: false`) only when turned off.
   final bool tab;
+
+  /// How the tab's bands look: their size, their background's opacity
+  /// and their colours ([EditTabStyle]); written (`tabStyle`, with only
+  /// what isn't the default) only when it isn't [EditTabStyle.standard].
+  final EditTabStyle tabStyle;
 
   /// The title drawn over the video: null (the default, not written) is
   /// the capture's name, on.
@@ -355,6 +466,7 @@ class PageEdit {
     if (songMuted) 'songMuted': true,
     if (song != null) 'song': song!.name,
     if (!tab) 'tab': false,
+    if (!tabStyle.isStandard) 'tabStyle': tabStyle.toJson(),
     if (title case final title?) 'title': title.toJson(),
     if (!watermark) 'watermark': false,
     if (fadeIn != defaultFade) 'fadeInMs': fadeIn.inMilliseconds,
@@ -382,6 +494,7 @@ class PageEdit {
       offset: ms('offsetMs') ?? Duration.zero,
       trackVolume: volume(json['trackVolume']),
       tab: json['tab'] != false,
+      tabStyle: EditTabStyle.fromJson(json['tabStyle']),
       title: EditTitle.fromJson(json['title']),
       watermark: json['watermark'] != false,
       fadeIn: fadeLength(ms('fadeInMs') ?? defaultFade),
@@ -422,6 +535,7 @@ class PageEdit {
     Duration? offset,
     double? trackVolume,
     bool? tab,
+    EditTabStyle? tabStyle,
     Object? title = _same,
     bool? watermark,
     Duration? fadeIn,
@@ -442,6 +556,7 @@ class PageEdit {
     offset: offset ?? this.offset,
     trackVolume: trackVolume == null ? this.trackVolume : volume(trackVolume),
     tab: tab ?? this.tab,
+    tabStyle: tabStyle ?? this.tabStyle,
     title: identical(title, _same) ? this.title : title as EditTitle?,
     watermark: watermark ?? this.watermark,
     fadeIn: fadeIn == null ? this.fadeIn : fadeLength(fadeIn),
@@ -466,6 +581,7 @@ class PageEdit {
     offset,
     trackVolume,
     tab,
+    tabStyle,
     title,
     watermark,
     fadeIn,

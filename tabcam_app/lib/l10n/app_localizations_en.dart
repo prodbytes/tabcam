@@ -2131,6 +2131,44 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditFadesOff => 'No fades';
 
   @override
+  String get videoEditTabStyle => 'Tab style';
+
+  @override
+  String get videoEditTabStyleAbout => 'How the tab looks over the video';
+
+  @override
+  String get videoEditTabStyleEdit => 'Change how the tab looks';
+
+  @override
+  String get videoEditTabSize => 'Size';
+
+  @override
+  String get videoEditTabBackground => 'Background';
+
+  @override
+  String get videoEditTabColors => 'Colours';
+
+  @override
+  String videoEditTabPercent(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String get videoEditTabColorsDark => 'White on black';
+
+  @override
+  String get videoEditTabColorsLight => 'Black on white';
+
+  @override
+  String get videoEditTabColorsGold => 'Gold on black';
+
+  @override
+  String get videoEditTabColorsBrand => 'Black on gold';
+
+  @override
+  String get videoEditTabStyleReset => 'Default style';
+
+  @override
   String get metronome => 'Metronome';
 
   @override

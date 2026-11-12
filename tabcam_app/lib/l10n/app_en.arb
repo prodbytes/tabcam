@@ -2917,6 +2917,57 @@
   "@videoEditFadesOff": {
     "description": "Video edit: turns both fades off"
   },
+  "videoEditTabStyle": "Tab style",
+  "@videoEditTabStyle": {
+    "description": "Video edit: the title of the tab's style panel (its size, its background's opacity, its colours)"
+  },
+  "videoEditTabStyleAbout": "How the tab looks over the video",
+  "@videoEditTabStyleAbout": {
+    "description": "Video edit: what the tab's style panel changes (under its title, or alone on a wide screen)"
+  },
+  "videoEditTabStyleEdit": "Change how the tab looks",
+  "@videoEditTabStyleEdit": {
+    "description": "Video edit: the Tab chip's button that opens the tab's style"
+  },
+  "videoEditTabSize": "Size",
+  "@videoEditTabSize": {
+    "description": "Video edit: the slider of how big the tab is drawn over the video"
+  },
+  "videoEditTabBackground": "Background",
+  "@videoEditTabBackground": {
+    "description": "Video edit: the slider of how opaque the tab's background is"
+  },
+  "videoEditTabColors": "Colours",
+  "@videoEditTabColors": {
+    "description": "Video edit: the swatches of the tab's colours"
+  },
+  "videoEditTabPercent": "{percent}%",
+  "@videoEditTabPercent": {
+    "description": "Video edit: a tab style slider's value, in percent",
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "videoEditTabColorsDark": "White on black",
+  "@videoEditTabColorsDark": {
+    "description": "Video edit: the tab's colours: white text on a black background"
+  },
+  "videoEditTabColorsLight": "Black on white",
+  "@videoEditTabColorsLight": {
+    "description": "Video edit: the tab's colours: black text on a white background"
+  },
+  "videoEditTabColorsGold": "Gold on black",
+  "@videoEditTabColorsGold": {
+    "description": "Video edit: the tab's colours: TabCam's gold text on a black background"
+  },
+  "videoEditTabColorsBrand": "Black on gold",
+  "@videoEditTabColorsBrand": {
+    "description": "Video edit: the tab's colours: black text on TabCam's gold background"
+  },
+  "videoEditTabStyleReset": "Default style",
+  "@videoEditTabStyleReset": {
+    "description": "Video edit: puts the tab's style back to its default (white on a 70% black strip, at its usual size)"
+  },
   "metronome": "Metronome",
   "@metronome": {
     "description": "The metronome's button and its sidebar's title"

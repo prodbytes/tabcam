@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show Size;
 
 import 'package:video_player/video_player.dart';
 
@@ -63,8 +64,9 @@ class EditedPlayback {
   /// [songLength] long, of a video [duration] long with [takeLog] (one of
   /// Cam's takes: its tab is drawn over it), [title] being the capture's
   /// name as the title's default text (drawn unless the edit turns it off
-  /// or types another), and its fades unless not [fades]; null when
-  /// that's the video as it is.
+  /// or types another), and its fades unless not [fades], over a [frame]
+  /// that size (the video's, as shown; null: not known; the tab's bands
+  /// go by it); null when that's the video as it is.
   static RenderPlan? planOf(
     PageEdit? edit, {
     Duration? songLength,
@@ -72,6 +74,7 @@ class EditedPlayback {
     TakeLog? takeLog,
     List<String> title = const [],
     bool fades = true,
+    Size? frame,
   }) {
     final plan = RenderPlan.of(
       edit,
@@ -81,6 +84,7 @@ class EditedPlayback {
       title: title,
       preview: true,
       fades: fades,
+      frame: frame,
     );
     return edit == null && plan.layers.isEmpty && !plan.fades.any ? null : plan;
   }

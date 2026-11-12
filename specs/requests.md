@@ -3313,3 +3313,34 @@ spec.
    the 64ths, the channel's keys), XCTests (keyframes, volume ramps, a
    rendered fade) and an Android instrumented case (a rendered fade, its
    sound only). See [video edit](video-edit.md#fades).
+
+5. **"In the editor, when editing the final clip, let the user change the
+   size of the tab in the video. The transparency, the colors, customize
+   a little bit. Make the UX really nice."** The tab's bands over a take
+   get a style, kept with the edit (`tabStyle`: `size` 0.5–2, the
+   background's `opacity` 0–1, `colors` `dark`/`light`/`gold`/`brand`,
+   each written only when not the default; absent, the bands look as
+   they always did). **On the video**'s Tab chip gets a palette button
+   ("Change how the tab looks"), and a tap on the band in the preview
+   opens the style too: on a phone in place of the chips, as the title's
+   fields and the fades' sliders are; on a wide screen always under the
+   fades' sliders. It has **Size** (50%–200% by 5%), **Background**
+   (0%–100% by 5%, 70% by default), **Colours** (four swatches drawn as
+   little bands: White on black, Black on white, Gold on black, Black on
+   gold), **Default style** and, on a phone, **Done**; the preview draws
+   each change as a slider moves, and a change turns the tab on. The
+   style is drawn into the band's picture (`BandLook` carries it;
+   `TabLayout` lays it out): bigger text never wider than the band nor,
+   grown, higher than 40% of the frame; the text always opaque and
+   outlined in the background's colour as the background fades below
+   50%. Bands are now drawn as wide as the video's frame (1280–4096
+   pixels; `RenderPlan.of`'s `frame`, from the player), so no renderer
+   scales the text up; the web, Android and iOS get the styled band as
+   its image, as before, so their renderers are unchanged. The watermark
+   rises above a grown band. Strings in en, es and pt. Tests:
+   `test/tab_style_test.dart` (the keys, their bounds, old edits, the
+   plan's looks, the frame's width and bound, the watermark's lift, the
+   painter's heights, opacities, colours and outline by pixel, the
+   channel's images, the panel on a phone and a wide screen, a tap on
+   the band, the largest text size on a 360-point phone, Reset, the file
+   screen's player). See [video edit](video-edit.md#layers).
