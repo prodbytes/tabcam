@@ -10,11 +10,11 @@ import 'package:web/web.dart' as web;
 
 /// The browser recorder, in a real browser (`flutter test --platform
 /// chrome`): a fake camera (a canvas's stream in a `<video>`, inside a
-/// platform view as camera_web's is) is recorded with the tab drawn in.
+/// platform view as camera_web's is) is recorded as it comes, nothing
+/// drawn over it.
 void main() {
-  testWidgets('a take is recorded with the tab, as a video file', (
-    tester,
-  ) async {
+  testWidgets('a take is the camera as it comes, as a video file: no tab '
+      'drawn in', (tester) async {
     await tester.runAsync(() async {
       // The "camera": a canvas that changes colour, streamed to a video.
       final source =
@@ -34,6 +34,8 @@ void main() {
         ..srcObject = source.captureStream(30);
       view.append(video);
       web.document.body!.append(view);
+      // Gone however the test ends, so the next sees no camera.
+      addTearDown(() => view.remove());
       await video.play().toDart;
       while (video.videoWidth == 0) {
         await Future<void>.delayed(const Duration(milliseconds: 20));
@@ -56,16 +58,13 @@ void main() {
       expect(mic['echoCancellation'], isFalse);
       expect(mic['noiseSuppression'], isFalse);
       expect(mic['autoGainControl'], isFalse);
-      var line = 'e|--0--3--|\nB|--1--1--|';
       expect(recorder.msSinceStart(), isNull);
-      await recorder.start(() => line);
+      await recorder.start();
       // Back once it records: how long ago it started, the take's lag.
       final since = recorder.msSinceStart();
       expect(since, isNotNull);
       expect(since, inInclusiveRange(0, 1000));
-      await Future<void>.delayed(const Duration(milliseconds: 600));
-      line = 'e|--5--7--|\nB|--5--8--|';
-      await Future<void>.delayed(const Duration(milliseconds: 600));
+      await Future<void>.delayed(const Duration(milliseconds: 1200));
       final take = await recorder.stop();
       // Its microphone had no live track, so the take asked again, the
       // same way.
@@ -79,7 +78,9 @@ void main() {
       final bytes = await take.readAsBytes();
       expect(bytes.length, greaterThan(1000));
 
-      // Played back: the band darkens the bottom of the frame, not the top.
+      // Played back: the frame is the camera's, one colour, top to bottom
+      // (no band darkens its bottom: the tab is kept apart, in the take's
+      // log, and the editor draws it).
       final url = web.URL.createObjectURL(
         web.Blob([bytes.toJS].toJS, web.BlobPropertyBag(type: take.mimeType!)),
       );
@@ -90,16 +91,14 @@ void main() {
       final loaded = Completer<void>();
       playback.onloadeddata = ((web.Event _) => loaded.complete()).toJS;
       await loaded.future;
-      // A decoded frame or two in.
+      // Frames as it plays (the first may still be dark while the
+      // decoder starts): the first lit one is looked at.
       await playback.play().toDart;
-      await Future<void>.delayed(const Duration(milliseconds: 400));
-      playback.pause();
       final frame =
           web.document.createElement('canvas') as web.HTMLCanvasElement
             ..width = playback.videoWidth
             ..height = playback.videoHeight;
-      final grab = frame.getContext('2d') as web.CanvasRenderingContext2D
-        ..drawImage(playback, 0, 0);
+      final grab = frame.getContext('2d') as web.CanvasRenderingContext2D;
       double brightness(double y) {
         final d = grab.getImageData(0, y.toInt(), frame.width, 1).data.toDart;
         var sum = 0;
@@ -109,10 +108,30 @@ void main() {
         return sum / (d.length / 4) / 3;
       }
 
-      final top = brightness(frame.height * 0.1);
-      final bottom = brightness(frame.height - 3);
-      expect(bottom, lessThan(top * 0.6));
+      var top = 0.0;
+      var bottom = 0.0;
+      final seen = <String>[];
+      for (var i = 0; i < 20 && top <= 40; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        grab.drawImage(playback, 0, 0);
+        top = brightness(frame.height * 0.1);
+        bottom = brightness(frame.height - 3);
+        seen.add('${playback.currentTime}: $top/$bottom');
+      }
+      playback.pause();
+      expect(top, greaterThan(40), reason: '$seen');
+      expect(bottom, closeTo(top, top * 0.15), reason: '$seen');
       web.URL.revokeObjectURL(url);
+    });
+  });
+
+  testWidgets('no camera showing yet: no take starts', (tester) async {
+    await tester.runAsync(() async {
+      final recorder = WebTakeRecorder(
+        getUserMedia: (_) async => web.MediaStream(),
+      );
+      await expectLater(recorder.start(), throwsStateError);
+      recorder.dispose();
     });
   });
 

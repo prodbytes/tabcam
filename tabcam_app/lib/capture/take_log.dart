@@ -51,9 +51,10 @@ class TakeLog {
   /// `v`: the version of the app's log that wrote it (kept as it came).
   final int version;
 
-  /// Whether the tab is in the take's picture (burned in after it was
-  /// recorded, or drawn in as the web recorded it): then it's never drawn
-  /// over it again. False when it couldn't be put in, or there was none.
+  /// Whether the tab is in the take's picture: true only on takes saved by
+  /// the versions that put it there (burned in after recording, or drawn
+  /// in as the web recorded); it's then never drawn over again. Cam now
+  /// saves every take with false: the editor draws the tab from the log.
   final bool burned;
 
   /// How long the file had been recording when the take's clock started:

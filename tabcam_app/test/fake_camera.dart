@@ -142,12 +142,17 @@ class FakeCameraPlatform extends CameraPlatform
 
   StreamSubscription<CameraImageData>? _recordingFrames;
 
+  /// While set, a recording told to stop (stopped: [recording] false)
+  /// gives its file once it completes, as a slow save would.
+  Completer<void>? stopHold;
+
   @override
   Future<XFile> stopVideoRecording(int cameraId) async {
     await _recordingFrames?.cancel();
     _recordingFrames = null;
     recording = false;
     recordings++;
+    await stopHold?.future;
     return XFile.fromData(
       Uint8List.fromList([9, recordings]),
       name: 'REC_$recordings.mp4',

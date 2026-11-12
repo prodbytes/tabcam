@@ -4,8 +4,7 @@ import 'package:flutter/services.dart';
 /// Recording comes first: while Cam records a take, its sound is what
 /// matters most, so the take's recording gets the microphone as a
 /// musician wants it (not as a voice call does), and what else runs
-/// (sync, head gestures, the tab drawn into the web's take) waits or
-/// slows down. See specs/cam.md, "Recording comes first". Pure Dart (but
+/// (sync, head gestures) waits or slows down. See specs/cam.md, "Recording comes first". Pure Dart (but
 /// for [TakeAudio]'s channel), tested without a camera
 /// (test/take_priority_test.dart).
 abstract final class TakePriority {
@@ -47,10 +46,6 @@ abstract final class TakePriority {
     'video/mp4',
   ];
 
-  /// How many frames a second the tab is drawn into the browser's take:
-  /// the camera's own rate, not the display's (60 to 120).
-  static const int webFps = 30;
-
   /// The camera's sound's bitrate on iOS (AAC, mono, 44.1 kHz there):
   /// left out, the encoder's default is low for music. (Android's camera
   /// takes none.)
@@ -61,13 +56,6 @@ abstract final class TakePriority {
   /// a second out and back).
   static const Duration headInterval = Duration(milliseconds: 100);
   static const Duration headIntervalRecording = Duration(milliseconds: 150);
-
-  /// Whether a frame drawn at [last] (milliseconds, as
-  /// requestAnimationFrame gives them; null: none yet) leaves one due at
-  /// [now], at [fps] a second: a frame comes from the display a little
-  /// early or late, so a few milliseconds early counts.
-  static bool frameDue(num? last, num now, {int fps = webFps}) =>
-      last == null || now - last >= 1000 / fps - 4;
 }
 
 /// iOS: the app's audio session set for a take ([prepare]) when Cam opens

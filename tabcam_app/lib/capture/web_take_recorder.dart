@@ -1,24 +1,24 @@
 import 'dart:async';
 import 'dart:js_interop';
-import 'dart:math';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:web/web.dart' as web;
 
-import 'take_overlay.dart';
+import 'take_recorder.dart';
 import 'take_priority.dart';
 import 'web_head_tracker.dart' show cameraVideo;
 
-/// In the browser, takes are recorded with the tab in them.
+/// In the browser, takes are recorded by the app's own recorder.
 TakeRecorder? webTakeRecorder() => WebTakeRecorder();
 
-/// Records a take in the browser with the tab drawn in: each frame, the
-/// camera preview's `<video>` ([cameraVideo]) and the band for the
-/// neckline showing ([renderBand]) along its bottom go onto a canvas,
-/// at most [TakePriority.webFps] times a second, and the browser's
-/// MediaRecorder records the canvas with the microphone's sound. All in
-/// the browser: nothing is uploaded to make it.
+/// Records a take in the browser: the browser's MediaRecorder records the
+/// camera preview's video track ([cameraVideo]'s stream) with the
+/// microphone's sound, as they come. Nothing is drawn while it records
+/// (no canvas, no per-frame work, and nothing to freeze while the
+/// browser's tab is hidden): the tab isn't in the take's picture, it's
+/// kept with the take (`TakeLog`) and the editor draws it. All in the
+/// browser: nothing is uploaded to make it.
 ///
 /// The microphone is its own, not the camera's (Cam opens the camera
 /// without sound on the web): opened when Cam opens ([prepare]) and kept
@@ -41,8 +41,6 @@ class WebTakeRecorder implements TakeRecorder {
   web.MediaStream? _mic;
   Future<web.MediaStream?>? _opening;
   bool _disposed = false;
-  int? _frame;
-  String? Function() _neckline = () => null;
   final List<web.Blob> _chunks = [];
   Completer<void>? _stopped;
   String _type = 'video/webm';
@@ -53,13 +51,6 @@ class WebTakeRecorder implements TakeRecorder {
 
   /// How long [start] waits for the recording's `start` event at most.
   static const startWait = Duration(seconds: 1);
-
-  /// Bands drawn so far, by their neckline (null while it's being drawn).
-  final Map<String, web.ImageBitmap?> _bands = {};
-
-  /// Necklines whose band couldn't be drawn: their text goes on the
-  /// canvas as it is instead.
-  final Set<String> _plain = {};
 
   @override
   Future<void> prepare() async {
@@ -139,59 +130,23 @@ class WebTakeRecorder implements TakeRecorder {
   }
 
   @override
-  Future<void> start(String? Function() neckline) async {
-    final video = cameraVideo(null);
-    if (video == null || video.videoWidth == 0) {
+  Future<void> start() async {
+    final camera = _cameraStream();
+    final video = [
+      ...?camera?.getVideoTracks().toDart.where((t) => t.readyState == 'live'),
+    ];
+    if (camera == null || video.isEmpty) {
       throw StateError('the camera isn\'t showing yet');
     }
-    _neckline = neckline;
-    final canvas = web.document.createElement('canvas') as web.HTMLCanvasElement
-      ..width = video.videoWidth
-      ..height = video.videoHeight;
-    final context = canvas.getContext('2d') as web.CanvasRenderingContext2D;
-
-    // Drawn at the camera's rate, not the display's: what the canvas
-    // doesn't need to draw, the take's encoding has.
-    num? last;
-    void draw(num now) {
-      _frame = web.window.requestAnimationFrame(draw.toJS);
-      if (!TakePriority.frameDue(last, now)) return;
-      last = now;
-      final video = cameraVideo(null);
-      if (video != null) {
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      }
-      if (_neckline() case final text?) {
-        if (_plain.contains(text)) {
-          _drawPlain(context, canvas.width, canvas.height, text);
-        } else if (_bands[text] case final band?) {
-          // As wide as the video, along its bottom.
-          final height = canvas.width * band.height / band.width;
-          context.drawImage(
-            band,
-            0,
-            canvas.height - height,
-            canvas.width,
-            height,
-          );
-        } else if (!_bands.containsKey(text)) {
-          _bands[text] = null;
-          unawaited(_drawBand(text));
-        }
-      }
-    }
-
-    if (neckline() case final text?) await _drawBand(text);
-    final stream = canvas.captureStream(TakePriority.webFps);
-    // The microphone's sound (open since Cam opened); without it, the
-    // camera's, if it has any.
+    // The camera's picture as it comes, with the microphone's sound (open
+    // since Cam opened); without it, the camera's, if it has any. Nothing
+    // is drawn: the tab isn't in the take, it's kept with it.
     var audio = (await _openMic())?.getAudioTracks().toDart ?? const [];
-    if (audio.isEmpty) audio = _audioOf(video.srcObject);
+    if (audio.isEmpty) audio = camera.getAudioTracks().toDart;
     if (audio.isEmpty) debugPrint('TabCam: cam: a take without sound');
-    for (final track in audio) {
-      stream.addTrack(track);
-    }
-    draw(web.window.performance.now());
+    final stream = web.MediaStream(
+      <web.MediaStreamTrack>[...video, ...audio].toJS,
+    );
 
     _type = TakePriority.webTypes.firstWhere(
       (type) => web.MediaRecorder.isTypeSupported(type),
@@ -202,13 +157,7 @@ class WebTakeRecorder implements TakeRecorder {
       videoBitsPerSecond: TakePriority.webVideoBitrate,
     );
     if (_type.isNotEmpty) options.mimeType = _type;
-    final web.MediaRecorder recorder;
-    try {
-      recorder = _recorder = web.MediaRecorder(stream, options);
-    } on Object {
-      _end(); // no take: no drawing either
-      rethrow;
-    }
+    final recorder = _recorder = web.MediaRecorder(stream, options);
     if (_type.isEmpty) _type = recorder.mimeType;
     _chunks.clear();
     _startedAt = null;
@@ -241,56 +190,6 @@ class WebTakeRecorder implements TakeRecorder {
     null => null,
   };
 
-  static List<web.MediaStreamTrack> _audioOf(JSObject? source) {
-    if (source == null || !source.isA<web.MediaStream>()) return const [];
-    return (source as web.MediaStream).getAudioTracks().toDart;
-  }
-
-  /// Draws [text]'s band, for the frames after.
-  Future<void> _drawBand(String text) async {
-    try {
-      final png = await renderBand(text);
-      final bitmap = await web.window
-          .createImageBitmap(web.Blob([png.toJS].toJS))
-          .toDart;
-      _bands[text] = bitmap;
-    } on Object catch (e) {
-      debugPrint('TabCam: cam: band not drawn, the text instead: $e');
-      _plain.add(text);
-    }
-  }
-
-  /// [text] along the bottom as the canvas draws text, where its band
-  /// couldn't be made: the same look, roughly.
-  static void _drawPlain(
-    web.CanvasRenderingContext2D context,
-    int width,
-    int height,
-    String text,
-  ) {
-    final lines = text.split('\n');
-    var size = width / 48;
-    context.font = '${size}px RobotoMono, monospace';
-    var widest = 0.0;
-    for (final line in lines) {
-      widest = max(widest, context.measureText(line).width);
-    }
-    final pad = width / 64;
-    if (widest > width - 2 * pad) {
-      size *= (width - 2 * pad) / widest;
-      context.font = '${size}px RobotoMono, monospace';
-    }
-    final band = lines.length * size * 1.2 + 2 * pad;
-    context.fillStyle = 'rgba(0, 0, 0, 0.7)'.toJS;
-    context.fillRect(0, height - band, width, band);
-    context.fillStyle = 'white'.toJS;
-    context.textBaseline = 'top';
-    context.textAlign = 'center';
-    for (final (i, line) in lines.indexed) {
-      context.fillText(line, width / 2, height - band + pad + i * size * 1.2);
-    }
-  }
-
   @override
   Future<XFile> stop() async {
     final recorder = _recorder;
@@ -306,12 +205,9 @@ class WebTakeRecorder implements TakeRecorder {
     return XFile.fromData(bytes, name: 'take.$extension', mimeType: type);
   }
 
-  /// The take ended: the microphone stays open for the next.
-  void _end() {
-    if (_frame case final frame?) web.window.cancelAnimationFrame(frame);
-    _frame = null;
-    _recorder = null;
-  }
+  /// The take ended: the microphone stays open for the next (and the
+  /// camera's tracks, the preview's, are left as they are).
+  void _end() => _recorder = null;
 
   @override
   void dispose() {
@@ -320,9 +216,5 @@ class WebTakeRecorder implements TakeRecorder {
     _end();
     if (_mic case final mic?) _stopTracks(mic);
     _mic = null;
-    for (final band in _bands.values) {
-      band?.close();
-    }
-    _bands.clear();
   }
 }

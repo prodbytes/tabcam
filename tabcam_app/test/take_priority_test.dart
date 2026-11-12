@@ -30,29 +30,6 @@ void main() {
     expect(types, contains('video/mp4'));
   });
 
-  test('the tab is drawn into the web\'s take at the camera\'s rate, '
-      'whatever the display\'s', () {
-    int drawn(double hz) {
-      num? last;
-      var n = 0;
-      for (var i = 0; i < hz; i++) {
-        final now = i * 1000 / hz;
-        if (TakePriority.frameDue(last, now)) {
-          last = now;
-          n++;
-        }
-      }
-      return n; // in one second
-    }
-
-    expect(drawn(60), 30);
-    expect(drawn(120), 30);
-    expect(drawn(144), inInclusiveRange(28, 36));
-    // A display slower than the camera: every frame.
-    expect(drawn(30), 30);
-    expect(drawn(24), 24);
-  });
-
   test('head gestures look less often while a take records', () {
     expect(
       TakePriority.headIntervalRecording,

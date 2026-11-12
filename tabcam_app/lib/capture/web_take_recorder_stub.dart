@@ -1,4 +1,4 @@
-import 'take_overlay.dart';
+import 'take_recorder.dart';
 
-/// Off the web, takes have the tab burned in after ([TakeOverlay]).
+/// Off the web, the camera plugin records takes itself.
 TakeRecorder? webTakeRecorder() => null;

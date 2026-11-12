@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
 import 'package:tabcam_app/capture/edit_layers.dart';
 import 'package:tabcam_app/capture/take_log.dart';
 import 'package:tabcam_app/capture/video_edit.dart';
@@ -180,6 +181,20 @@ void main() {
       expect(back, off);
       expect(PageEdit.fromJson(on.toJson())!.tab, isTrue);
     });
+  });
+
+  testWidgets('a band is as wide as asked, a strip along the bottom', (
+    tester,
+  ) async {
+    late img.Image band;
+    await tester.runAsync(() async {
+      band = img.decodePng(
+        await renderBand('e|--0--3--|\nB|--1--1--|\nG|--2--0--|'),
+      )!;
+    });
+    expect(band.width, bandWidth);
+    expect(band.height, lessThan(band.width ~/ 2));
+    expect(band.height, greaterThan(0));
   });
 
   group('a layer', () {
