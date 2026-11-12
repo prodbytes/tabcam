@@ -27,11 +27,13 @@ data class Fades(val fadeInMs: Long = 0, val fadeOutMs: Long = 0, val lengthMs: 
 
     /**
      * How much of the picture and the sound comes through [us] into the
-     * output, 0 to 1 (as `Fades.levelAt` in Dart); 0 outside it.
+     * output, 0 to 1 (as `Fades.levelAt` in Dart). Before its start it's
+     * as at its start, after its end as at its end: black only on a side
+     * that fades, so a frame a little past a hard cut isn't.
      */
-    fun levelAt(us: Long): Float {
+    fun levelAt(time: Long): Float {
         if (!any) return 1f
-        if (us < 0 || us > lengthMs * 1000) return 0f
+        val us = time.coerceIn(0L, (lengthMs * 1000).coerceAtLeast(0L))
         var level = 1f
         if (inMs > 0 && us < inMs * 1000) level = us.toFloat() / (inMs * 1000)
         val left = lengthMs * 1000 - us

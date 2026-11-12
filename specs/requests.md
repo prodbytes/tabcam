@@ -3277,8 +3277,10 @@ spec.
    edits download as). The render plan carries `fadeIn` and `fadeOut`,
    each at most half the kept part (`PageEdit.fadeWithin`), and one
    level function (`Fades.levelAt`: straight lines up from 0 over the
-   fade in and down to 0 over the fade out); a plan that fades is never a
-   passthrough. **On the video** gets a **Fades** chip (on by default;
+   fade in and down to 0 over the fade out; before the start and past
+   the end as at the nearest end, so a fade set to 0 cuts hard and never
+   turns a frame drawn a little past the kept part black, in Dart and
+   Kotlin alike); a plan that fades is never a passthrough. **On the video** gets a **Fades** chip (on by default;
    tapped, both none or back as they were) whose tune button opens two
    sliders, **Fade in** and **Fade out** (0 to 10 s by tenths, at most
    half the kept part, the length beside each), **No fades** and

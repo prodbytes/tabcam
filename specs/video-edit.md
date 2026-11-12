@@ -458,8 +458,12 @@ length kept stays as set). One function says how much comes through at
 a time in the output (`Fades.levelAt`, in
 [`render_plan.dart`](../tabcam_app/lib/capture/render_plan.dart)): 0 at
 the start, rising in a straight line to 1 at the end of the fade in, 1
-until the fade out, falling in a straight line to 0 at the end; the
-renderers in Kotlin and Swift do the same. **The picture**, with what's
+until the fade out, falling in a straight line to 0 at the end; before
+the start as at the start and past the end as at the end, so a side
+whose fade is off never turns black a frame drawn a little past it (the
+web's last frame after `end`, the preview running ahead of its check);
+the renderers in Kotlin and Swift do the same (iOS's keyframes hold
+their ends, `fillMode = .both`). **The picture**, with what's
 drawn over it (the tab, the title, the watermark), is covered by black
 at 1 − that (so the fades are over everything, not the video alone);
 **the sound**, both lanes mixed, is multiplied by it. The title still

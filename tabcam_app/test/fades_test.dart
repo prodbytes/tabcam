@@ -31,7 +31,7 @@ Object? _encoded(Object? json) => jsonDecode(jsonEncode(json));
 void main() {
   group('the fades\' level', () {
     test('rises over the fade in, falls over the fade out, straight lines; '
-        'black and silent outside the output', () {
+        'black and silent past both ends when both fade', () {
       final fades = Fades(fadeIn: s(3), fadeOut: s(2), length: s(20));
       expect(fades.any, isTrue);
       expect(fades.levelAt(Duration.zero), 0);
@@ -53,6 +53,20 @@ void main() {
       final out = Fades(fadeOut: s(4), length: s(8));
       expect(out.levelAt(Duration.zero), 1);
       expect(out.levelAt(s(6)), closeTo(0.5, 1e-9));
+    });
+
+    test('outside the output, as at its nearest end: a side that doesn\'t '
+        'fade cuts hard, never to black', () {
+      // A frame drawn a little past the end with the fade out off (or a
+      // position read a little before the start with the fade in off).
+      final onlyIn = Fades(fadeIn: s(3), length: s(20));
+      expect(onlyIn.levelAt(s(-0.1)), 0);
+      expect(onlyIn.levelAt(s(20.1)), 1);
+      expect(onlyIn.blackAt(s(20.4)), 0);
+      final onlyOut = Fades(fadeOut: s(3), length: s(20));
+      expect(onlyOut.levelAt(s(-0.1)), 1);
+      expect(onlyOut.blackAt(s(-0.1)), 0);
+      expect(onlyOut.levelAt(s(20.1)), 0);
     });
   });
 

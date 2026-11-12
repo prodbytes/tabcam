@@ -152,6 +152,16 @@ class EditLayersTest {
         assertEquals(0.5f, short.levelAt(500_000), 1e-5f)
         assertEquals(1f, short.levelAt(1_000_000), 0f)
         assertEquals(1000L, short.fadeOutStartMs)
+        // Outside the output, as at its nearest end: black only on a side
+        // that fades.
+        assertEquals(0f, fades.levelAt(-1_000_000), 0f)
+        assertEquals(0f, fades.levelAt(11_000_000), 0f)
+        val onlyIn = Fades(fadeInMs = 3000, lengthMs = 10_000)
+        assertEquals(0f, onlyIn.levelAt(-1_000_000), 0f)
+        assertEquals(1f, onlyIn.levelAt(10_500_000), 0f)
+        val onlyOut = Fades(fadeOutMs = 3000, lengthMs = 10_000)
+        assertEquals(1f, onlyOut.levelAt(-1_000_000), 0f)
+        assertEquals(0f, onlyOut.levelAt(10_500_000), 0f)
     }
 
     @Test

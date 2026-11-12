@@ -479,10 +479,17 @@ class Fades {
 
   /// How much of the picture and the sound comes through at [at] in the
   /// output, 0 (black and silent) to 1: rising from 0 at its start over
-  /// [fadeIn], falling to 0 at its end over [fadeOut]; 0 outside it.
-  double levelAt(Duration at) {
+  /// [fadeIn], falling to 0 at its end over [fadeOut]. Before its start
+  /// it's as at its start, after its end as at its end: black and silent
+  /// only on a side that fades, so a frame drawn a little past a hard cut
+  /// (a fade of 0) isn't.
+  double levelAt(Duration time) {
     if (!any) return 1;
-    if (at < Duration.zero || at > length) return 0;
+    final at = time < Duration.zero
+        ? Duration.zero
+        : time > length
+        ? length
+        : time;
     var level = 1.0;
     if (fadeIn > Duration.zero && at < fadeIn) {
       level = at.inMicroseconds / fadeIn.inMicroseconds;
