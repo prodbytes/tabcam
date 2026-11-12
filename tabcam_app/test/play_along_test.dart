@@ -566,6 +566,137 @@ void main() {
     expect(find.text('3 / 3'), findsOneWidget);
   });
 
+  /// Adds a take ([extension]'s) to capture [id], as another device's
+  /// arrives.
+  Future<void> addTake(
+    WidgetTester tester,
+    Library library,
+    String id, {
+    String extension = 'mp4',
+  }) => tester.runAsync(() async {
+    await library.addMedia(
+      library.byId(id)!,
+      [
+        Media(
+          XFile.fromData(Uint8List.fromList([5, 5]), name: 'take.$extension'),
+          PageKind.video,
+          extension,
+        ),
+      ],
+      take: true,
+      takeLog: const TakeLog(burned: true),
+    );
+  });
+
+  bool playEnabled(WidgetTester tester) =>
+      tester
+          .widget<IconButton>(
+            find.descendant(
+              of: find.byKey(const Key('cam-play')),
+              matching: find.byType(IconButton),
+            ),
+          )
+          .onPressed !=
+      null;
+
+  testWidgets('while the take Play plays opens (its file still arriving), '
+      'Rec, 1 and . wait, and Play, showing Stop, lets it go', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    await addTake(tester, library, id);
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+        ),
+      ),
+    );
+    await frames(tester);
+    expect(recReady(tester), isTrue);
+
+    var hold = video.createHold = Completer<void>();
+    await tester.tap(find.byTooltip('Play'));
+    await frames(tester);
+    expect(video.playing, isEmpty);
+    expect(recReady(tester), isFalse);
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
+    await tester.sendKeyEvent(LogicalKeyboardKey.period);
+    await frames(tester);
+    expect(camera.recording, isFalse);
+    // Play again: let go of; it opens to be let go of at once.
+    await tester.tap(_camStop);
+    await frames(tester);
+    expect(recReady(tester), isTrue);
+    hold.complete();
+    await frames(tester);
+    expect(video.playing, isEmpty);
+    expect(video.disposed, [video.lastPlayer]);
+    expect(find.byTooltip('Play'), findsOneWidget);
+
+    // Waited for, it plays.
+    hold = video.createHold = Completer<void>();
+    await tester.tap(find.byTooltip('Play'));
+    await frames(tester);
+    expect(recReady(tester), isFalse);
+    hold.complete();
+    await frames(tester);
+    expect(video.playing, hasLength(1));
+    await tester.tap(_camStop);
+    await frames(tester);
+    expect(video.playing, isEmpty);
+    expect(recReady(tester), isTrue);
+  });
+
+  testWidgets('on iOS, Play passes over a take it can\'t play (a WebM, '
+      'recorded in a browser) for the last it can', (tester) async {
+    final messenger = tester.binding.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(TakeAudio.channel, (_) async => null);
+    addTearDown(
+      () => messenger.setMockMethodCallHandler(TakeAudio.channel, null),
+    );
+    expect(takePlaysHere('video/webm'), isTrue);
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    try {
+      expect(takePlaysHere('video/webm'), isFalse);
+      expect(takePlaysHere('video/mp4'), isTrue);
+      final (library, id) = await capture(tester, tab: _tab);
+      await addTake(tester, library, id, extension: 'webm');
+      Widget cam() => app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+        ),
+      );
+      await tester.pumpWidget(cam());
+      await frames(tester);
+      // Only a WebM: nothing to play.
+      expect(playEnabled(tester), isFalse);
+
+      // An MP4 before it: that one.
+      await tester.pumpWidget(const SizedBox());
+      await addTake(tester, library, id);
+      await addTake(tester, library, id, extension: 'webm');
+      await tester.pumpWidget(cam());
+      await frames(tester);
+      expect(playEnabled(tester), isTrue);
+      await tester.tap(find.byTooltip('Play'));
+      await frames(tester);
+      expect(video.playing, hasLength(1));
+      await tester.tap(_camStop);
+      await frames(tester);
+      await tester.pumpWidget(const SizedBox());
+      await frames(tester);
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
+
   testWidgets('a tab with a neckline twice: the take just recorded plays '
       'back on the copy that showed, and leaves Cam there', (tester) async {
     // The third staff the same as the second (the log keeps its text once).

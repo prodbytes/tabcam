@@ -31,6 +31,17 @@ import 'take_priority.dart';
 import 'take_sound.dart';
 import '../screens/messages.dart';
 
+/// Whether a take of [mimeType] plays here, for Cam's Play: not a WebM (a
+/// take recorded in Chrome or Firefox) on iOS or macOS, whose player
+/// (AVPlayer) can't play one.
+bool takePlaysHere(String mimeType) =>
+    kIsWeb ||
+    mimeType != 'video/webm' ||
+    switch (defaultTargetPlatform) {
+      TargetPlatform.iOS || TargetPlatform.macOS => false,
+      _ => true,
+    };
+
 /// Cam: the guitarist records themselves playing along with the capture's
 /// tab. The camera (the front one first: it faces the player) fills the
 /// screen, with the tab under it one neckline at a time ([necklines]).
@@ -180,6 +191,12 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   EventPage? _take;
   VideoPlayerController? _player;
 
+  /// Play pressed, the take's player opening (its file may still be
+  /// downloading, a take from another device): Rec, 1 and . wait, and
+  /// Play (showing Stop) again lets it go, the player let go of as it
+  /// opens.
+  Object? _opening;
+
   /// The log of the take playing back ([_play]), its necklines turning as
   /// it says, and for each of its marks the capture's line it is
   /// ([_placesFor]); and the neckline it shows when that isn't one of the
@@ -259,12 +276,14 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     }
   }
 
-  /// The capture's last take (of the user's own files, [Library.addedPages]),
-  /// if it has one.
+  /// The capture's last take (of the user's own files, [Library.addedPages])
+  /// that plays here ([takePlaysHere]), if it has one.
   EventPage? _lastTake() {
     final event = widget.library.byId(widget.eventId);
     if (event == null) return null;
-    return Library.addedPages(event).where(isTake).lastOrNull;
+    return Library.addedPages(event)
+        .where((p) => isTake(p) && takePlaysHere(p.mimeType))
+        .lastOrNull;
   }
 
   /// The take Play plays, deleted (from the sidebar, say): the last of
@@ -662,9 +681,13 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   }
 
   /// Whether Rec / Stop can be pressed: a camera, no take being saved
-  /// (nor saved for the next), none playing back.
+  /// (nor saved for the next), none playing back (nor opening to).
   bool get _canRec =>
-      _controller != null && !_saving && !_nextTaking && _player == null;
+      _controller != null &&
+      !_saving &&
+      !_nextTaking &&
+      _player == null &&
+      _opening == null;
 
   /// How far ← and → move the backing track.
   static final _skips = {
@@ -972,14 +995,21 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     }
   }
 
-  /// Plays the take back ([_take]), or stops it.
+  /// Plays the take back ([_take]), or stops it; while it opens, lets it
+  /// go ([_opening]).
   Future<void> _play() async {
     if (_player != null) return _stopPlaying();
+    if (_opening != null) {
+      setState(() => _opening = null);
+      return;
+    }
     final take = _take;
     final event = widget.library.byId(widget.eventId);
     if (take == null || event == null) return;
-    await _track.pause();
+    final opening = Object();
+    setState(() => _opening = opening);
     try {
+      await _track.pause();
       // Mixed with others: else (iOS) it takes that from the app's audio
       // session, and the next take would stop a song playing in another
       // app (Android: it would take the audio focus from it).
@@ -989,12 +1019,14 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         take,
         mixWithOthers: true,
       );
-      if (!mounted) {
+      // Left, or let go of (Play again) while it opened.
+      if (!mounted || _opening != opening) {
         await player.dispose();
         return;
       }
       player.addListener(_follow);
       setState(() {
+        _opening = null;
         _player = player;
         _playedLog = take.takeLog;
         _playedPlaces = _placesFor(take);
@@ -1002,7 +1034,11 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       await player.play();
     } on Object catch (e) {
       debugPrint('TabCam: cam: $e');
-      if (mounted) _snack(context.l10n.textViewCantPlay);
+      if (mounted && _opening == opening) {
+        _snack(context.l10n.textViewCantPlay);
+      }
+    } finally {
+      if (mounted && _opening == opening) setState(() => _opening = null);
     }
   }
 
@@ -1056,6 +1092,10 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   }
 
   Future<void> _stopPlaying() async {
+    if (_opening != null) {
+      _opening = null;
+      if (mounted) setState(() {});
+    }
     final player = _player;
     if (player == null) return;
     player.removeListener(_follow);
@@ -1220,6 +1260,8 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     final controller = _controller;
     final event = widget.library.byId(widget.eventId);
     final playing = _player != null;
+    // Play pressed, its take opening: Play shows Stop, deletes wait.
+    final opening = _opening != null;
     final gate = widget.gate;
     final body = PlayAlongBeside(
       along: _along,
@@ -1229,7 +1271,8 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       // Not in a preview, nor while a take records, saves (or is saved
       // for the next, until it starts) or plays back.
       deletes: gate == null,
-      canDelete: !_recording && !_saving && !_nextTaking && !playing,
+      canDelete:
+          !_recording && !_saving && !_nextTaking && !playing && !opening,
       child: _main(controller, playing),
     );
     return PopScope(
@@ -1366,9 +1409,14 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
                 ),
                 _Control(
                   key: const Key('cam-play'),
-                  icon: playing ? Icons.stop : Icons.play_arrow,
+                  // Opening: Stop lets it go.
+                  icon: playing || _opening != null
+                      ? Icons.stop
+                      : Icons.play_arrow,
                   color: Colors.white,
-                  label: playing ? l10n.camStop : l10n.camPlay,
+                  label: playing || _opening != null
+                      ? l10n.camStop
+                      : l10n.camPlay,
                   onPressed:
                       _take == null || _recording || _saving || _nextTaking
                       ? null
