@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:video_player/video_player.dart';
 
 import '../capture/render_plan.dart';
+import '../capture/take_log.dart';
 import '../library/page_edit.dart';
 
 /// Plays [video] as a [RenderPlan] says (the one Download renders),
@@ -15,6 +16,7 @@ import '../library/page_edit.dart';
 /// [driftChecks] checks, while both play, the song's place is compared
 /// with where the plan has it, and sought again when it's more than
 /// [driftMost] off (a long video's song would otherwise drift on). The
+/// plan's layers (the tab) are drawn over the video by `EditLayers`. The
 /// players stay their owner's to dispose of.
 class EditedPlayback {
   EditedPlayback(this.video, {this.loop = false}) {
@@ -52,16 +54,25 @@ class EditedPlayback {
     return length > Duration.zero && end > length ? length : end;
   }
 
-  /// The preview's plan of [edit] (null: the video as it is), its song
-  /// [songLength] long.
-  static RenderPlan? planOf(PageEdit? edit, {Duration? songLength}) =>
-      edit == null
-      ? null
-      : RenderPlan.of(
-          edit,
-          songLength: songLength ?? Duration.zero,
-          preview: true,
-        );
+  /// The preview's plan of [edit] (null: the defaults), its song
+  /// [songLength] long, of a video [duration] long with [takeLog] (one of
+  /// Cam's takes: its tab is drawn over it); null when that's the video as
+  /// it is.
+  static RenderPlan? planOf(
+    PageEdit? edit, {
+    Duration? songLength,
+    Duration duration = Duration.zero,
+    TakeLog? takeLog,
+  }) {
+    final plan = RenderPlan.of(
+      edit,
+      songLength: songLength ?? Duration.zero,
+      duration: duration,
+      takeLog: takeLog,
+      preview: true,
+    );
+    return edit == null && plan.layers.isEmpty ? null : plan;
+  }
 
   /// Plays [plan] from now on (with [song] as the song lane's player);
   /// where the song plays is found again at the next check, unless only

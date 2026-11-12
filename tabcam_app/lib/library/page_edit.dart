@@ -44,9 +44,10 @@ enum SongMode {
 /// capture's files, [trackId], of which the part from [trackStart] to
 /// [trackEnd] (null: its end) is used, starting [offset] after the kept
 /// part's start (before it, when negative), at [trackVolume], unless
-/// [songMuted]; placed as [song] says). Muting a lane keeps its level. The
-/// video's file stays as it is: players play it as edited, and a download
-/// makes a file of it.
+/// [songMuted]; placed as [song] says). Muting a lane keeps its level.
+/// Over the picture: the tab of one of Cam's takes, unless [tab] is off.
+/// The video's file stays as it is: players play it as edited, and a
+/// download makes a file of it.
 ///
 /// Written as version 2 (`v`), with the `sound` older apps read worked
 /// out from the lanes ([sound]); an edit without `v` is read with the old
@@ -66,6 +67,7 @@ class PageEdit {
     this.trackEnd,
     this.offset = Duration.zero,
     this.trackVolume = 1,
+    this.tab = true,
     this.extra = const {},
   });
 
@@ -116,6 +118,7 @@ class PageEdit {
     'ownMuted',
     'songMuted',
     'song',
+    'tab',
   };
 
   final Duration start;
@@ -141,6 +144,11 @@ class PageEdit {
   /// How loud the song lane plays, from 0 (silent) to 1 (as it is, the
   /// default): the players can't play it louder than it is.
   final double trackVolume;
+
+  /// Whether the tab is drawn over a take that can have it (one whose
+  /// log has its tab, not already in its picture: `tabOffered`): on by
+  /// default, written (`tab: false`) only when turned off.
+  final bool tab;
 
   /// The keys of its JSON this version doesn't know (a newer app's, see
   /// `unknownKeys`), written back as they came, after the known ones,
@@ -211,6 +219,7 @@ class PageEdit {
     if (ownMuted) 'ownMuted': true,
     if (songMuted) 'songMuted': true,
     if (song != null) 'song': song!.name,
+    if (!tab) 'tab': false,
     for (final MapEntry(:key, :value) in extraEntries(extra, knownKeys))
       key: value,
   };
@@ -233,6 +242,7 @@ class PageEdit {
       trackEnd: ms('trackEndMs'),
       offset: ms('offsetMs') ?? Duration.zero,
       trackVolume: volume(json['trackVolume']),
+      tab: json['tab'] != false,
       extra: unknownKeys(json, knownKeys),
     );
     final stored = json['sound'];
@@ -268,6 +278,7 @@ class PageEdit {
     Object? trackEnd = _same,
     Duration? offset,
     double? trackVolume,
+    bool? tab,
     Map<String, Object?>? extra,
   }) => PageEdit(
     start: start ?? this.start,
@@ -283,6 +294,7 @@ class PageEdit {
         : trackEnd as Duration?,
     offset: offset ?? this.offset,
     trackVolume: trackVolume == null ? this.trackVolume : volume(trackVolume),
+    tab: tab ?? this.tab,
     extra: extra ?? this.extra,
   );
 
@@ -302,6 +314,7 @@ class PageEdit {
     trackEnd,
     offset,
     trackVolume,
+    tab,
   ];
 
   @override

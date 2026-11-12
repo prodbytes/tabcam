@@ -4,6 +4,7 @@ import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
+import '../capture/edit_layers.dart';
 import '../capture/video_edit.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
@@ -15,8 +16,9 @@ import 'media_url.dart';
 /// pause button and tap to pause and resume. It plays from the page's file
 /// (from memory on the web), as its edit says ([EditedPlayback], with the
 /// plan Download renders: the kept part, its own sound and its song mixed,
-/// the song's length found as the editor finds it, [mediaLength]), and is
-/// let go when the page scrolls away.
+/// the song's length found as the editor finds it, [mediaLength]; a take's
+/// tab drawn over it, [EditLayers], also with no edit, as it's on by
+/// default), and is let go when the page scrolls away.
 class VideoPage extends StatefulWidget {
   const VideoPage({
     super.key,
@@ -42,6 +44,10 @@ class _VideoPageState extends State<VideoPage> {
   EditedPlayback? _edited;
   VideoPlayerController? _track;
 
+  /// What's drawn over the video, and the kept part's start (0 in them).
+  List<PlanLayer> _layers = const [];
+  Duration _keptFrom = Duration.zero;
+
   @override
   void dispose() {
     _edited?.dispose();
@@ -50,10 +56,23 @@ class _VideoPageState extends State<VideoPage> {
     super.dispose();
   }
 
-  /// Plays [controller] as the page's edit says, when it has one.
+  /// Plays [controller] as the page's edit says, when it has one, or with
+  /// its tab over it, when it's a take that has one to show.
   Future<void> _edit(VideoPlayerController controller) async {
     final edit = widget.page.edit;
-    if (edit == null) return;
+    final log = widget.page.takeLog;
+    if (edit == null && !tabOffered(log)) return;
+    if (edit == null) {
+      // A take as it is, its tab over it: the whole video, as long as the
+      // player (or, where it can't say, the editor) finds it.
+      final length = await mediaLength(
+        controller,
+        () => pageFile(widget.library, widget.event, widget.page),
+      );
+      final plan = EditedPlayback.planOf(null, duration: length, takeLog: log);
+      _layers = plan?.layers ?? const [];
+      return;
+    }
     // The song lane's player, when it's heard (a muted one isn't opened).
     final trackPage = edit.songAudible
         ? widget.event.pages.where((p) => p.id == edit.trackId).firstOrNull
@@ -79,10 +98,14 @@ class _VideoPageState extends State<VideoPage> {
       }
     }
     final edited = _edited = EditedPlayback(controller, loop: true);
-    await edited.set(
-      EditedPlayback.planOf(edit, songLength: songLength),
-      song: track,
+    final plan = EditedPlayback.planOf(
+      edit,
+      songLength: songLength,
+      takeLog: log,
     );
+    await edited.set(plan, song: track);
+    _layers = plan?.layers ?? const [];
+    _keptFrom = edit.start;
     await controller.seekTo(edit.start);
   }
 
@@ -143,6 +166,14 @@ class _VideoPageState extends State<VideoPage> {
             alignment: Alignment.bottomCenter,
             children: [
               VideoPlayer(controller),
+              if (_layers.isNotEmpty)
+                Positioned.fill(
+                  child: EditLayers(
+                    video: controller,
+                    layers: _layers,
+                    start: _keptFrom,
+                  ),
+                ),
               Material(
                 color: Colors.black45,
                 child: Row(

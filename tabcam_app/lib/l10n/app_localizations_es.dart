@@ -2097,6 +2097,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoEditCouldntDownload => 'No se pudo crear el archivo';
 
   @override
+  String get videoEditOnTheVideo => 'En el video';
+
+  @override
+  String get videoEditLayerTab => 'Tablatura';
+
+  @override
+  String get videoEditLayerTabAbout =>
+      'La tablatura abajo, como se mostraba al grabar';
+
+  @override
+  String get videoEditTabInPicture =>
+      'Esta toma tiene la tablatura en la imagen';
+
+  @override
+  String get videoEditTabNotKept =>
+      'Esta toma es de una versión anterior: no se puede dibujar su tablatura encima';
+
+  @override
   String get metronome => 'Metrónomo';
 
   @override

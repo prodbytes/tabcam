@@ -1,104 +1,16 @@
-import 'dart:math';
-import 'dart:ui' as ui;
-
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
-import '../screens/mono_font.dart';
+import 'edit_layers.dart';
+import 'take_log.dart';
 import 'take_priority.dart';
 import 'web_take_recorder_stub.dart'
     if (dart.library.js_interop) 'web_take_recorder.dart';
 
-/// A neckline in a take: which one ([line]), from [start] to [end] (null:
-/// to the end of the take).
-@immutable
-class TabBand {
-  const TabBand(this.line, this.start, [this.end]);
-
-  final int line;
-  final Duration start;
-  final Duration? end;
-
-  @override
-  bool operator ==(Object other) =>
-      other is TabBand &&
-      other.line == line &&
-      other.start == start &&
-      other.end == end;
-
-  @override
-  int get hashCode => Object.hash(line, start, end);
-
-  @override
-  String toString() => 'TabBand($line, $start, $end)';
-}
-
-/// When each neckline showed in a take, from the times the tab moved
-/// ([marks]: when, and to which neckline, the first at the start): one
-/// band per neckline shown, each until the next.
-List<TabBand> bandsOf(List<(Duration, int)> marks) {
-  final bands = <TabBand>[];
-  for (final (i, (start, line)) in marks.indexed) {
-    // Moved twice at once: only the last counts.
-    final end = i + 1 < marks.length ? marks[i + 1].$1 : null;
-    if (end != null && end <= start) continue;
-    // Back to the neckline showing: the same band goes on.
-    if (bands.lastOrNull case final last? when last.line == line) {
-      bands[bands.length - 1] = TabBand(line, last.start, end);
-      continue;
-    }
-    bands.add(TabBand(line, start, end));
-  }
-  return bands;
-}
-
-/// How wide a band is drawn, in pixels; the video scales it to its own
-/// width.
-const int bandWidth = 1280;
-
-/// [neckline] drawn as a band to put along the bottom of a take: white
-/// monospaced text on a dark, see-through background, as wide as
-/// [width], its text as big as fits (a long staff gets smaller). PNG.
-Future<Uint8List> renderBand(String neckline, {int width = bandWidth}) async {
-  final pad = width / 64;
-  TextPainter painter(double size) => TextPainter(
-    text: TextSpan(
-      text: neckline,
-      style: TextStyle(
-        fontFamily: monoFont,
-        fontSize: size,
-        height: 1.2,
-        color: Colors.white,
-      ),
-    ),
-    textDirection: TextDirection.ltr,
-  )..layout();
-  // Measured at 100, then sized to fit (never bigger than width / 48, so
-  // a six-string staff takes about a third of a landscape take).
-  final probe = painter(100);
-  final fit = probe.width <= 0 ? 100.0 : 100 * (width - 2 * pad) / probe.width;
-  probe.dispose();
-  final text = painter(min(fit, width / 48));
-  final height = (text.height + 2 * pad).ceil();
-  final recorder = ui.PictureRecorder();
-  final canvas = Canvas(recorder);
-  canvas.drawRect(
-    Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
-    Paint()..color = const Color(0xB3000000),
-  );
-  text.paint(canvas, Offset((width - text.width) / 2, pad));
-  text.dispose();
-  final image = await recorder.endRecording().toImage(width, height);
-  try {
-    final png = await image.toByteData(format: ui.ImageByteFormat.png);
-    return png!.buffer.asUint8List();
-  } finally {
-    image.dispose();
-  }
-}
+export 'edit_layers.dart' show bandWidth, renderBand;
+export 'take_log.dart' show TabBand, bandsOf;
 
 /// Burns the tab into a take on Android and iOS, after it's recorded: the
 /// platform's own video tools (Media3 Transformer; AVFoundation) put

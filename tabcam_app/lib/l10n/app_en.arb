@@ -2820,6 +2820,26 @@
   "@videoEditCouldntDownload": {
     "description": "Video edit: the download's failure message"
   },
+  "videoEditOnTheVideo": "On the video",
+  "@videoEditOnTheVideo": {
+    "description": "Video edit: the heading of what's drawn over the video (the tab; later a title and a watermark)"
+  },
+  "videoEditLayerTab": "Tab",
+  "@videoEditLayerTab": {
+    "description": "Video edit: the chip that draws the tab over a take, as it showed while recording"
+  },
+  "videoEditLayerTabAbout": "The tab along the bottom, as it showed while recording",
+  "@videoEditLayerTabAbout": {
+    "description": "Video edit: the Tab chip's tooltip"
+  },
+  "videoEditTabInPicture": "This take has the tab in its picture",
+  "@videoEditTabInPicture": {
+    "description": "Video edit: the line under the Tab chip, off, on a take whose tab is already in its picture (burned in as it was saved)"
+  },
+  "videoEditTabNotKept": "This take is from an earlier version: its tab can't be drawn over it",
+  "@videoEditTabNotKept": {
+    "description": "Video edit: the line under the Tab chip, off, on a take saved before takes kept their tab apart (its tab, if it had one, is in its picture)"
+  },
   "metronome": "Metronome",
   "@metronome": {
     "description": "The metronome's button and its sidebar's title"

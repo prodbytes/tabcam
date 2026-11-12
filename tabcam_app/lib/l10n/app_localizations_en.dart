@@ -2054,6 +2054,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditCouldntDownload => 'Couldn\'t make the file';
 
   @override
+  String get videoEditOnTheVideo => 'On the video';
+
+  @override
+  String get videoEditLayerTab => 'Tab';
+
+  @override
+  String get videoEditLayerTabAbout =>
+      'The tab along the bottom, as it showed while recording';
+
+  @override
+  String get videoEditTabInPicture => 'This take has the tab in its picture';
+
+  @override
+  String get videoEditTabNotKept =>
+      'This take is from an earlier version: its tab can\'t be drawn over it';
+
+  @override
   String get metronome => 'Metronome';
 
   @override

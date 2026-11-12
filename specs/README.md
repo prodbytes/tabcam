@@ -96,7 +96,8 @@ review notes ([app stores](app-stores.md)).
   (the video, trimmed by its grips, its own sound's volume and Mute)
   and the Song lane (one of the capture's recordings, videos or takes,
   or a sound file, added to them, placed along the video, with its own
-  volume and Mute). The edit is kept with the video (older apps still
+  volume and Mute); on the video, a take's tab drawn over it (the Tab
+  chip). The edit is kept with the video (older apps still
   read its sound) and played as it says, no file made; Download makes
   one on the device: the video or the video without sound (MP4), or
   the sound only (M4A; WebM and WAV where a browser can't make those).

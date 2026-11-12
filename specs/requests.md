@@ -3090,3 +3090,49 @@ spec.
     [tab recognition](tab-recognition.md#several-files),
     [cloud OCR](cloud-ocr.md#in-the-app), [Cam](cam.md),
     [auto-correct](autocorrect.md) and [hidden images](hidden-images.md).
+19. **(Editor redesign, step 4) Layers in the editor and Download,
+    starting with the tab.** What's drawn over a video is now a list of
+    **layers** in the render plan (`PlanLayer`: a look the app draws,
+    shown from–to in the output, an opacity reached over a fade-in from
+    its start, and an anchor, top left, bottom right or along the whole
+    bottom, sized in fractions of the frame's short side so no one but
+    the renderer needs the frame's size). The first is **the tab**: on
+    a take whose log has its tab and says it isn't in the picture
+    (`burned: false`), one band per neckline from the log's turns,
+    mapped through the lag and the trim (cut to the kept part), its
+    text the log's own copy; `PageEdit.tab` (written `tab: false` only
+    when turned off). The editor has an **On the video** row with a
+    **Tab** chip (on by default; off and disabled on a burned take or
+    one from before take logs, with a line under it saying why, "This
+    take has the tab in its picture" or "This take is from an earlier
+    version: its tab can't be drawn over it", since a disabled chip
+    shows no tooltip; none on other videos or a take without a tab). One drawing serves
+    the preview and the file (`lib/capture/edit_layers.dart`: each look
+    a picture, painted over the preview by `EditLayers`, which follows
+    the player with the frame clock between its reports, and made a PNG
+    for Download); the file screen's player draws them too, also with
+    no edit (an edit of null now means the defaults, a take's tab
+    included, so Download renders it rather than saving the file as it
+    is). All three renderers draw layers with fades and anchors: Android
+    an `OverlayEffect` with one `LayersOverlay` per kind (alpha through
+    `setAlphaScale`, the first frame's time as the output's 0), iOS a
+    video composition with Core Animation layers (moved over from the
+    burn's code; the song lane's clips cut to the video track's kept
+    part, as the take's own sound is, so the composition never outlasts
+    its instruction), the web on its canvas with `globalAlpha`. A
+    `--dart-define=TABCAM_TAB_OVER_BURNED=true` build draws the tab over
+    burned takes too, to check on each platform that the drawn bands sit
+    over the burned ones. Cam still burns the tab in (the next step
+    stops it), so for now only a take whose burn failed shows the chip
+    on. Tests (`test/edit_layers_test.dart`, `test/two_lanes_test.dart`,
+    in Chrome `test/web_video_editor_test.dart`; JVM `EditLayersTest`;
+    the Android instrumented and iOS XCTest render tests gained a layer
+    case, compiled, not yet run on a device): bands through a start trim
+    (marks at 0, 4.21 and 8.38 s from 3 s: 0–1.21, 1.21–5.38, 5.38–end),
+    the lag, a same-line repeat and an end trim; the log's text after
+    the capture's tab changed; the chip only for an unburned log, Tab
+    off stored and out of the preview and the plan, disabled for burned
+    and older takes; the file screen's layers; the painter following the
+    player; anchors and fades; a band drawn in a browser's render while
+    it shows and not after. See [video edit](video-edit.md#layers) and
+    [Cam](cam.md#what-a-take-keeps).
