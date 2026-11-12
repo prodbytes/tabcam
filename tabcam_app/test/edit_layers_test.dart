@@ -14,6 +14,7 @@ import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
 import 'package:tabcam_app/screens/file_screen.dart';
 import 'package:tabcam_app/screens/video_edit_screen.dart';
+import 'package:video_player/video_player.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 
 import 'video_edit_test.dart' show FakeEditor, VolumePlatform;
@@ -242,6 +243,67 @@ void main() {
     });
   });
 
+  group('the layers over a playing video', () {
+    testWidgets('carry on from its last report through notices that don\'t '
+        'move it (its volume, its buffering); a new report or a seek is '
+        'the new start', (tester) async {
+      VideoPlayerPlatform.instance = VolumePlatform();
+      final video = VideoPlayerController.networkUrl(
+        Uri.parse('https://example.com/made-up-take.mp4'),
+      );
+      addTearDown(video.dispose);
+      video.value = const VideoPlayerValue(
+        duration: Duration(seconds: 20),
+        position: Duration(seconds: 12),
+        isInitialized: true,
+        isPlaying: true,
+      );
+      await tester.pumpWidget(
+        EditLayers(video: video, layers: const [], start: ms(2000)),
+      );
+      Duration at() =>
+          (tester
+                      .widget<CustomPaint>(find.byKey(const Key('edit-layers')))
+                      .painter!
+                  as EditLayersPainter)
+              .at
+              .value;
+      for (var i = 0; i < 3; i++) {
+        await tester.pump(ms(50));
+      }
+      // 150 ms past the report, 2 s trimmed off the start.
+      expect(at(), ms(10150));
+      // A volume change (a lane's slider dragged), then buffering: the
+      // same place, so the clock carries on, not back to 10 s.
+      video.value = video.value.copyWith(volume: 0.5);
+      expect(at(), ms(10150));
+      await tester.pump(ms(50));
+      expect(at(), ms(10200));
+      video.value = video.value.copyWith(isBuffering: true);
+      await tester.pump(ms(50));
+      expect(at(), ms(10250));
+      // The player's next report: from there.
+      video.value = video.value.copyWith(position: ms(12300));
+      expect(at(), ms(10300));
+      await tester.pump(ms(50));
+      expect(at(), ms(10350));
+      // A player that stops reporting: carried on 0.4 s at most.
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(ms(50));
+      }
+      expect(at(), ms(10700));
+      // Paused: where it says, and the volume doesn't move it.
+      video.value = video.value.copyWith(isPlaying: false);
+      expect(at(), ms(10300));
+      video.value = video.value.copyWith(volume: 1);
+      await tester.pump(ms(50));
+      expect(at(), ms(10300));
+      // A seek while paused: there.
+      video.value = video.value.copyWith(position: ms(5000));
+      expect(at(), ms(3000));
+    });
+  });
+
   group('the editor and the file screen', () {
     late VolumePlatform platform;
     late FakeEditor editor;
@@ -426,8 +488,9 @@ void main() {
     });
 
     testWidgets('a take with its tab in its picture, or from before takes '
-        'kept a log: the chip off and disabled, a line under it saying why '
-        '(a disabled chip shows no tooltip); nothing drawn', (tester) async {
+        'kept a log: the chip off and disabled, in a tooltip saying why (a '
+        'disabled chip shows none of its own), shown on a tap; no line of '
+        'its own; nothing drawn', (tester) async {
       tall(tester);
       for (final (log, why) in [
         (_log(burned: true), 'This take has the tab in its picture'),
@@ -443,12 +506,23 @@ void main() {
         await settle(tester);
         expect(tabChip(tester).selected, isFalse, reason: '$log');
         expect(tabChip(tester).onSelected, isNull, reason: '$log');
+        final tooltip = find.byKey(const Key('video-edit-tab-why'));
+        expect(tester.widget<Tooltip>(tooltip).message, why, reason: '$log');
         expect(
-          tester.widget<Text>(find.byKey(const Key('video-edit-tab-why'))).data,
-          why,
+          find.descendant(
+            of: tooltip,
+            matching: find.byKey(const Key('video-edit-tab')),
+          ),
+          findsOneWidget,
           reason: '$log',
         );
+        expect(find.text(why), findsNothing, reason: '$log');
+        await tester.tap(find.byKey(const Key('video-edit-tab')));
+        await tester.pump(const Duration(milliseconds: 200));
         expect(find.text(why), findsOneWidget, reason: '$log');
+        expect(tabChip(tester).selected, isFalse, reason: '$log');
+        await tester.pump(const Duration(seconds: 2));
+        await frames(tester);
         expect(find.byType(EditLayers), findsNothing, reason: '$log');
         editor.rendered.clear();
         saved.clear();
@@ -459,14 +533,22 @@ void main() {
       }
     });
 
-    testWidgets('a video that isn\'t a take, or a take without a tab: no '
-        'chip', (tester) async {
+    testWidgets('a video that isn\'t a take, or a take without a tab (its '
+        'log has none; with no log, its capture has none): no chip', (
+      tester,
+    ) async {
       tall(tester);
-      for (final (log, take) in [
-        (null, false),
-        (const TakeLog(burned: false), true),
+      for (final (log, take, tabText) in [
+        (null, false, '$_riffA\n\n$_riffB'),
+        (const TakeLog(burned: false), true, '$_riffA\n\n$_riffB'),
+        (null, true, ''),
       ]) {
-        final (library, id) = await capture(tester, log: log, take: take);
+        final (library, id) = await capture(
+          tester,
+          log: log,
+          take: take,
+          tabText: tabText,
+        );
         await tester.pumpWidget(const SizedBox());
         await tester.pumpWidget(editScreen(library, id));
         await settle(tester);

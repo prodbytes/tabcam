@@ -3103,13 +3103,16 @@ spec.
     text the log's own copy; `PageEdit.tab` (written `tab: false` only
     when turned off). The editor has an **On the video** row with a
     **Tab** chip (on by default; off and disabled on a burned take or
-    one from before take logs, with a line under it saying why, "This
-    take has the tab in its picture" or "This take is from an earlier
-    version: its tab can't be drawn over it", since a disabled chip
-    shows no tooltip; none on other videos or a take without a tab). One drawing serves
-    the preview and the file (`lib/capture/edit_layers.dart`: each look
+    one from before take logs, in a tooltip saying why, shown on a
+    tap, "This take has the tab in its picture" or "This take is from
+    an earlier version: its tab can't be drawn over it", a `Tooltip`
+    around it since a disabled chip shows none of its own; none on
+    other videos or a take without a tab, a take from before the logs
+    counting as one when its capture's tab has no necklines). One
+    drawing serves the preview and the file (`lib/capture/edit_layers.dart`: each look
     a picture, painted over the preview by `EditLayers`, which follows
-    the player with the frame clock between its reports, and made a PNG
+    the player with the frame clock between its reports, restarted only
+    by a new place, not by its volume or buffering notices, and made a PNG
     for Download); the file screen's player draws them too, also with
     no edit (an edit of null now means the defaults, a take's tab
     included, so Download renders it rather than saving the file as it
@@ -3132,8 +3135,10 @@ spec.
     the lag, a same-line repeat and an end trim; the log's text after
     the capture's tab changed; the chip only for an unburned log, Tab
     off stored and out of the preview and the plan, disabled for burned
-    and older takes; the file screen's layers; the painter following the
-    player; anchors and fades; a band drawn in a browser's render while
+    and older takes with its why in a tooltip, none for an older take
+    whose capture has no tab; the file screen's layers; the painter
+    following the player, carrying on through volume and buffering
+    notices; anchors and fades; a band drawn in a browser's render while
     it shows and not after. See [video edit](video-edit.md#layers) and
     [Cam](cam.md#what-a-take-keeps).
 

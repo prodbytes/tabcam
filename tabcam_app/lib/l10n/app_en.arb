@@ -2834,11 +2834,11 @@
   },
   "videoEditTabInPicture": "This take has the tab in its picture",
   "@videoEditTabInPicture": {
-    "description": "Video edit: the line under the Tab chip, off, on a take whose tab is already in its picture (burned in as it was saved)"
+    "description": "Video edit: the tooltip of the Tab chip, off and disabled, on a take whose tab is already in its picture (burned in as it was saved)"
   },
   "videoEditTabNotKept": "This take is from an earlier version: its tab can't be drawn over it",
   "@videoEditTabNotKept": {
-    "description": "Video edit: the line under the Tab chip, off, on a take saved before takes kept their tab apart (its tab, if it had one, is in its picture)"
+    "description": "Video edit: the tooltip of the Tab chip, off and disabled, on a take saved before takes kept their tab apart (its tab, if it had one, is in its picture)"
   },
   "metronome": "Metronome",
   "@metronome": {

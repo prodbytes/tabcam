@@ -125,18 +125,21 @@ makes a file of it."), opening with the video's edit as it was left:
     it too: the levels and Mute are the remedy (headphones while
     recording give a clean mix).
 - **Under the lanes, On the video**: what's drawn over the video, as
-  chips (on a take only; none on a take that kept no tab). For now
+  chips (on a take only; none on a take without a tab: its log has
+  none, or, with no log, its capture's tab text has no necklines). For now
   **Tab**: on by default, for a take whose tab is kept apart from its
   picture (its [log](cam.md#what-a-take-keeps) has its tab, not burned
   in); tapped, it's off (kept as `tab: false`; Reset turns it on again),
   and its bands leave the preview and the download. On a take whose tab
   is already in its picture (burned in as it was saved, or saved before
   takes kept a log) the chip is off and can't be turned on, so the tab
-  is never drawn twice, and a line under it says why: "This take has
-  the tab in its picture" (burned in), or "This take is from an earlier
-  version: its tab can't be drawn over it" (no log, so whether it had a
-  tab isn't known). (A line, not the chip's tooltip: a disabled chip
-  shows none.) (A later step adds a Title and a Watermark here.)
+  is never drawn twice, and its tooltip (shown on a tap, or on hover)
+  says why: "This take has the tab in its picture" (burned in), or
+  "This take is from an earlier version: its tab can't be drawn over
+  it" (no log, in a capture with a tab). (A `Tooltip` around the chip:
+  a disabled chip shows none of its own; no line of text, which would
+  stay under every such take.) (A later step adds a Title and a
+  Watermark here.)
 - **Under them, the song's details** (when there's one): its lane
   and name ("Song · Recording 1"), **‹** and **›**, which nudge it a
   tenth of a second earlier or later, with where it starts in words
@@ -325,7 +328,9 @@ video's box, letting taps through) follows the video: between the
 player's reports (every tenth of a second) the frame clock carries its
 place on while it plays (at most 0.4 s past the last report), so fades
 and bands change smoothly; on a seek or a pause it's where the player
-says, and nothing runs while it's paused. The editor and the file
+says, and nothing runs while it's paused. Only a new place (a report or
+a seek) restarts the carry: the player's other notices (its volume, as
+a lane's slider is dragged, its buffering) leave it running. The editor and the file
 screen's player both draw them.
 
 **How it's rendered**, on the device
