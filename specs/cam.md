@@ -131,7 +131,7 @@ its **Not now** leaving. With Premium it opens the camera view
   while a take starts (until the camera records), so pressing again at
   once doesn't start a second recording alongside it. If the next take
   can't start, the one saved is kept and a message says why.
-- <a id="the-tab-with-the-take"></a>**The tab is kept with the take and
+- <a id="the-tab-with-the-take"></a><a id="the-tab-in-the-take"></a>**The tab is kept with the take and
   added by the editor**: a take is saved at once as the camera recorded
   it, with no tab in its picture and no second encode (no "Adding the
   tab…" wait; on iOS, only an HEVC take is encoded again, below). Its
