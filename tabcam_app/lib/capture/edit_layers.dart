@@ -239,10 +239,17 @@ class _EditLayersState extends State<EditLayers>
     if (old.start != widget.start) _show(_reported);
   }
 
+  /// The player changed: a new place (its report, or a seek) is the
+  /// frame clock's new start. Anything else it says (its volume, its
+  /// buffering) leaves the clock carrying on from the last place it
+  /// reported, else the layers would fall back to it on each.
   void _onVideo() {
     final value = widget.video.value;
-    _reported = value.position;
-    _reportedAt = _now;
+    final moved = value.position != _reported;
+    if (moved) {
+      _reported = value.position;
+      _reportedAt = _now;
+    }
     if (value.isPlaying && !_ticker.isActive) {
       _now = Duration.zero;
       _reportedAt = Duration.zero;
@@ -250,7 +257,8 @@ class _EditLayersState extends State<EditLayers>
     } else if (!value.isPlaying && _ticker.isActive) {
       _ticker.stop();
     }
-    _show(_reported);
+    // Playing, the next frame shows it; paused, where the player says.
+    if (moved || !_ticker.isActive) _show(_reported);
   }
 
   void _onTick(Duration elapsed) {

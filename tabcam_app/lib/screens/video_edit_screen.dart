@@ -17,6 +17,7 @@ import '../export/download.dart';
 import '../l10n/language.dart';
 import '../library/capture_event.dart';
 import '../library/library.dart';
+import '../recognition/necklines.dart';
 import 'edited_playback.dart';
 import 'file_screen.dart';
 import 'media_url.dart';
@@ -1044,17 +1045,31 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 
   /// **On the video**: what's drawn over it, as chips. For now a take's
   /// **Tab** (on by default): where its log has its tab, not in its
-  /// picture already; off, with why under it, on a take whose tab is
-  /// burned in as it was saved, or one saved before takes kept their tab
-  /// apart. (Why is a line of its own: a disabled chip shows no tooltip.)
-  /// None on a video that isn't a take, nor on a take without a tab.
+  /// picture already; off and disabled, its tooltip saying why, on a take
+  /// whose tab is burned in as it was saved, or one saved before takes
+  /// kept their tab apart. (A disabled chip shows no tooltip of its own,
+  /// so it's in one.) None on a video that isn't a take, nor on a take
+  /// without a tab: its log has none, or, with no log, its capture has
+  /// none to show.
   Widget? _onTheVideo(AppLocalizations l10n) {
     if (!_take) return null;
     final log = _takeLog;
     final offered = tabOffered(log);
     // A take that kept its log, with no tab to draw.
     if (log != null && log.tab == null) return null;
+    // One from before the log, in a capture with no tab: it never had one.
+    if (log == null &&
+        necklines(_library.byId(widget.eventId)?.tabText ?? '').isEmpty) {
+      return null;
+    }
     final theme = Theme.of(context);
+    final chip = FilterChip(
+      key: const Key('video-edit-tab'),
+      label: Text(l10n.videoEditLayerTab),
+      tooltip: offered ? l10n.videoEditLayerTabAbout : null,
+      selected: offered && _tab,
+      onSelected: offered ? _setTab : null,
+    );
     return Column(
       key: const Key('video-edit-on-video'),
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1065,26 +1080,20 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           spacing: 8,
           runSpacing: 4,
           children: [
-            FilterChip(
-              key: const Key('video-edit-tab'),
-              label: Text(l10n.videoEditLayerTab),
-              tooltip: offered ? l10n.videoEditLayerTabAbout : null,
-              selected: offered && _tab,
-              onSelected: offered ? _setTab : null,
-            ),
+            if (offered)
+              chip
+            else
+              Tooltip(
+                key: const Key('video-edit-tab-why'),
+                // No log: from before takes kept one, with or without a tab.
+                message: log == null
+                    ? l10n.videoEditTabNotKept
+                    : l10n.videoEditTabInPicture,
+                triggerMode: TooltipTriggerMode.tap,
+                child: chip,
+              ),
           ],
         ),
-        if (!offered) ...[
-          const SizedBox(height: 4),
-          Text(
-            // No log: from before takes kept one, with or without a tab.
-            log == null ? l10n.videoEditTabNotKept : l10n.videoEditTabInPicture,
-            key: const Key('video-edit-tab-why'),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
       ],
     );
   }
