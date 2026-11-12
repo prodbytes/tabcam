@@ -49,7 +49,8 @@ saying how many.
 ## Profile
 
 The account, up to 560 dp wide: signed out, **Sign in** with what it's
-for and the sign-in button; signed in, who, the sync status, **Sync now**
+for and the sign-in button; signed in, who (and, with Premium set up,
+their role: "Role: Premium" or "Role: Free"), the sync status, **Sync now**
 and **Sign out** ([sign-in and cloud sync](cloud-sync.md#signing-in)),
 and with Premium set up the **TabScan Premium** card
 ([cloud OCR](cloud-ocr.md)); opening the tab checks again whether the

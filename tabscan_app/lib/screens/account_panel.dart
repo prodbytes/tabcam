@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../auth/auth_service.dart';
 import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
+import '../cloud/ocr_api.dart';
 import 'premium_card.dart';
 
 /// The [AccountPanel] in a bottom sheet, for places away from the Profile
@@ -30,7 +31,7 @@ Future<void> showAccountSheet(
 
 /// The Profile tab's account: signing in, and once signed in, who it is,
 /// how sync stands, Sync now and Sign out; with Premium set up ([ocr]),
-/// the Premium card too.
+/// the user's role ([roleLabel]) and the Premium card too.
 class AccountPanel extends StatelessWidget {
   const AccountPanel({
     super.key,
@@ -45,7 +46,7 @@ class AccountPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: Listenable.merge([auth, sync]),
+    listenable: Listenable.merge([auth, sync, ?ocr]),
     builder: (context, _) =>
         auth.user == null ? _signedOut(context) : _signedIn(context),
   );
@@ -102,6 +103,12 @@ class AccountPanel extends StatelessWidget {
           title: Text(user.label),
           subtitle: user.label == user.email ? null : Text(user.email),
         ),
+        if (ocr case final ocr?)
+          if (roleLabel(ocr) case final role?)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text('Role: $role', key: const Key('role')),
+            ),
         Text(
           syncStatus(sync),
           style: sync.state == SyncState.failed
@@ -133,6 +140,16 @@ class AccountPanel extends StatelessWidget {
     );
   }
 }
+
+/// The signed-in user's role in TabScan, as rbacr has it (through the
+/// cloud OCR service): Premium, or else Free (`premium` implies `free`);
+/// null before the first check.
+String? roleLabel(CloudOcr ocr) => switch (ocr.status) {
+  null => ocr.checking ? 'Checking…' : null,
+  PremiumStatus(premium: true) => 'Premium',
+  PremiumStatus(checked: false) => 'Free (couldn\'t check)',
+  _ => 'Free',
+};
 
 /// The sync status line: "Syncing…", "Synced at 14:05 (2 uploaded)", or
 /// why it failed.

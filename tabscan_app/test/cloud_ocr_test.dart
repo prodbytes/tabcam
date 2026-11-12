@@ -9,6 +9,7 @@ import 'package:tabscan_app/cloud/ocr_api.dart';
 import 'package:tabscan_app/library/capture_event.dart';
 import 'package:tabscan_app/library/event_store_memory.dart';
 import 'package:tabscan_app/library/library.dart';
+import 'package:tabscan_app/screens/account_panel.dart';
 import 'package:tabscan_app/screens/premium_card.dart';
 
 import 'fakes.dart';
@@ -248,6 +249,34 @@ void main() {
     await tester.pump();
     expect(find.text('Upgrade'), findsNothing);
     expect(find.textContaining('transcribed in the cloud'), findsOneWidget);
+    s.dispose();
+  });
+
+  testWidgets('the profile shows the user\'s role', (tester) async {
+    final s = _Setup();
+    await tester.runAsync(() async {
+      await s.start(syncing: false);
+      s.auth.signInAs('ana');
+      await _until(() => s.ocr.status != null);
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: AccountPanel(auth: s.auth, sync: s.sync, ocr: s.ocr),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Role: Free'), findsOneWidget);
+
+    s.api.premium = true;
+    await tester.runAsync(() async {
+      await s.ocr.refresh();
+      await _until(() => s.ocr.premium);
+    });
+    await tester.pump();
+    expect(find.text('Role: Premium'), findsOneWidget);
     s.dispose();
   });
 }

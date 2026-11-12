@@ -42,7 +42,8 @@ The [Profile](navigation.md#profile) tab shows the account:
   backing up to every device; signed out, capturing stays on this
   device), and **Sign in with Google** (on the web, Google's own button),
   with the last sign-in error under it.
-- **Signed in**: the account's photo, name and email; the sync status
+- **Signed in**: the account's photo, name and email; where Premium is
+  set up, the user's role ([cloud OCR](cloud-ocr.md#in-the-app)); the sync status
   ("Syncing…", "Synced at 14:05 (2 uploaded, 1 downloaded)", or why it
   failed, such as "Sign in again to sync"); **Sync now**; **Sign out**,
   which keeps the events on the device; and, where it's set up, the
