@@ -178,7 +178,13 @@ its **Not now** leaving. With Premium it opens the camera view
   last of the user's own, on a capture shared to read: their
   contribution's), until **Stop** or its end: the one just recorded, or,
   when Cam opens, the last one recorded before (on this device or
-  another); deleted, the one before it. The necklines under it turn
+  another); deleted, the one before it. Only a take this device can
+  play: on iOS a WebM (a take recorded in Chrome or Firefox) is passed
+  over for the last one before it that isn't, and with none Play is
+  greyed (`takePlaysHere`). A take from another device may still be
+  downloading when Play is tapped: until it opens Play shows **Stop**,
+  which lets it go (it doesn't play once it arrives), and Rec, 1 and .
+  wait, so no take starts with it about to play into it. The necklines under it turn
   where they turned while it was recorded, as its
   [log](#what-a-take-keeps) says (at their times in the file, the lag
   added): a neckline the capture's tab no longer has (its text changed
@@ -546,7 +552,12 @@ plays in the list.
 each take Cam saves keeps a **log** of what Cam noted while it recorded,
 on its page (`takeLog` in the capture's details, `EventPage.takeLog`,
 [`take_log.dart`](../tabcam_app/lib/capture/take_log.dart)), written
-once, as the take is saved, and never changed after. It syncs, is
+once, as the take is saved, and never changed after: a log read from
+the capture's details is written back exactly as it came, whatever in
+it this version doesn't know or can't read included (a newer app's
+`lagFrom`, a field in a turn, a segment or the tab, a turn out of
+order), so saving the page again here loses nothing of a newer app's;
+a clone only renames the pages its `song` segments name. It syncs, is
 published and goes into the user's [contribution](contributions.md)
 with the page as its name does; a [clone](library.md)'s copy names the
 copy's files; renamed or edited, it stays. From it the
@@ -618,11 +629,14 @@ Play uses it too (above). A few KB for a ten-minute take:
   timings and the start's range where the two don't agree, the length
   read from a made-up MP4's index, the log saved with a take (burned,
   not burned, the web's recorder's lag, the web's camera alone), kept
-  through a rename and a restart, a clone's naming its copy's song,
+  through a rename and a restart, a clone's naming its copy's song, a
+  newer app's log written back as it came through a rename and a clone,
   Play of an older take after Cam reopens turning its necklines, lag
   and all, and Play of a take on a tab with a neckline twice turning to
   the copy that showed (the one just recorded exactly, an older one by
-  the nearest copy) (`test/take_log_test.dart`, `test/play_along_test.dart`,
+  the nearest copy), Rec, 1 and . waiting while the take to play opens
+  and Play letting it go, and on iOS Play passing over a WebM
+  (`test/take_log_test.dart`, `test/play_along_test.dart`,
   in Chrome `test/web_take_recorder_test.dart`). **Not yet on a phone**:
   how big the log grows, and that saving it costs no dropped frames.
 
