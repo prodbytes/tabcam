@@ -4,6 +4,7 @@ import 'package:image/image.dart' as img;
 import 'package:tabcam_app/library/capture_event.dart';
 import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
+import 'package:tabcam_app/recognition/file_dividers.dart';
 import 'package:tabcam_app/screens/event_screen.dart';
 
 /// Lets the screen settle. Not pumpAndSettle: an image's spinner never
@@ -107,6 +108,38 @@ void main() {
     });
     await _frames(tester);
     expect(find.text('Text tab'), findsNothing);
+  });
+
+  testWidgets('the text tab row skips blank lines and file dividers', (
+    tester,
+  ) async {
+    final library = Library(PlatformEventStore());
+    late String id;
+    await tester.runAsync(() async {
+      await library.load();
+      final event = await library.create(const []);
+      final link = await library.addLink(
+        event,
+        parseLink('example.com/lesson')!,
+      );
+      // Read from two files: each part after its divider.
+      final text = joinFileTexts([
+        (name: 'Page 1', text: 'e|---0---3---|\nB|-1---1-----|'),
+        (name: 'Page 2', text: 'G|-2---2-----|'),
+      ]).text;
+      id = (await library.update(
+        link.copyWith(tabText: '\n$text', hideImages: true),
+      )).id;
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        home: EventScreen(library: library, eventId: id),
+      ),
+    );
+    await _frames(tester);
+    // The first line of tab, not the blank line nor Page 1's divider.
+    expect(find.text('e|---0---3---|'), findsOneWidget);
+    expect(find.text(fileDivider('Page 1')), findsNothing);
   });
 
   testWidgets('only the owner can hide the images', (tester) async {

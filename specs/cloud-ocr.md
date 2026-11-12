@@ -212,12 +212,14 @@ with text but no tab is still `no-tab`.
 - **Results**: after each sync pass, a premium user's app lists
   `<identity>/ocr/`. Once every image page of one of their synced events
   has a result, the `ok` texts, in page order and separated by a blank
-  line, become the event's text tab, which then syncs like any change. It
+  line, each after a divider with its file's name when there are two or
+  more ([several files](tab-recognition.md#several-files): joined on the
+  device, the server untouched), become the event's text tab, which then syncs like any change. It
   writes the text tab only while it's empty or still the text it wrote
   (kept in `cloudocr.json`), and not marked correct, so it never replaces
   the user's edits, an on-device reading or a checked text tab. New pages update it the same way.
   The pages' `doubts` come with it, moved down by the lines of the pages
-  before and the blank lines between them, as the event's
+  before, the blank lines between them and the dividers, as the event's
   `tabTextDoubts`; a doubt whose note isn't at its place in the text is
   dropped.
 - **Read again** (the Text view, or the Text tool tapped on it; also while

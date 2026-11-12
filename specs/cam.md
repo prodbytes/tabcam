@@ -27,7 +27,9 @@ its **Not now** leaving. With Premium it opens the camera view
   ([`necklines`](../tabcam_app/lib/recognition/necklines.dart)). Text
   that isn't over a staff (lyrics under it, notes at the end) is left
   out; a tab with no string lines at all (chords only) shows its
-  blocks between blank lines. The neckline is in the monospace font,
+  blocks between blank lines. A file's divider, in a tab read from
+  several files ([several files](tab-recognition.md#several-files)), is
+  in no neckline: it ends a staff as a blank line does. The neckline is in the monospace font,
   shrunk to fit the screen's width (a long staff reads best with the
   phone turned sideways), with its number under it ("2 / 14"). A
   capture with no text tab yet says to read it first.

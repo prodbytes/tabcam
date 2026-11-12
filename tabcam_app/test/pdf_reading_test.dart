@@ -12,6 +12,7 @@ import 'package:tabcam_app/library/capture_event.dart';
 import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
 import 'package:tabcam_app/recognition/auto_reader.dart';
+import 'package:tabcam_app/recognition/file_dividers.dart';
 import 'package:tabcam_app/recognition/pdf_reader.dart';
 import 'package:tabcam_app/recognition/tab_layout.dart';
 
@@ -119,7 +120,11 @@ void main() {
       ]);
       await settle();
       expect(calls, contains('pdf with ocr'), reason: '$calls');
-      expect(library.byId(event.id)!.tabText, 'B|-1-|\n\ne|-0-|');
+      // Two files: each one's text after its divider.
+      expect(
+        library.byId(event.id)!.tabText,
+        '${fileDivider('Page 1')}\nB|-1-|\n\n${fileDivider('PDF 1')}\ne|-0-|',
+      );
       r.dispose();
     });
 

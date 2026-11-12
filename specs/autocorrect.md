@@ -28,7 +28,8 @@ doesn't turn it on. Each run's fetched pages are capped at 30,000 tokens
 on the text as it is, saved as the user's edit:
 
 - Two or more tab lines in a row are a staff; every other line (title,
-  chord names, lyrics, notes, blank lines) stays exactly as it is, and so
+  chord names, lyrics, notes, blank lines, a file's
+  [divider](tab-recognition.md#several-files)) stays exactly as it is, and so
   does a lone tab-like line.
 - In a staff: OCR's usual slips fixed (long dashes, `O` for 0, `l` for 1,
   spaces as dashes); strings without a name named `e B G D A E` (bass

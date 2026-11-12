@@ -5,8 +5,11 @@ import 'package:flutter/widgets.dart';
 
 import '../auth/auth_service.dart';
 import '../cloud/cloud_ocr.dart';
+import '../l10n/language.dart';
 import '../library/capture_event.dart';
+import '../library/file_label.dart';
 import '../library/library.dart';
+import 'file_dividers.dart';
 import 'pdf_reader.dart';
 import 'tab_reader.dart';
 
@@ -282,16 +285,16 @@ class AutoReader extends ChangeNotifier {
       // PDFs only: their text, read here, is exact and at once; a scanned
       // one (no text) goes to the cloud, which reads its pages as photos.
       if (images == 0) {
-        final parts = <String>[];
+        final parts = <({String name, String text})>[];
         for (final p in event.pages.where((p) => p.isPdf)) {
           if (await _readPdf(await library.original(event, p), null)
               case final t?) {
-            parts.add(t);
+            parts.add((name: _name(event, p), text: t));
           }
         }
         if (parts.isNotEmpty) {
           _log('event $id: read from its PDFs\' text');
-          return _write(id, parts.join('\n\n'));
+          return _write(id, joinFileTexts(parts).text);
         }
       }
       // Its text comes with sync: then it's read (or no tab was found).
@@ -329,33 +332,26 @@ class AutoReader extends ChangeNotifier {
       _log('event $id: this device can\'t read tabs');
       return ReadState.unsupported;
     }
-    // In page order: each run of photos read together by OCR, each PDF by
-    // its text (or OCR).
-    final parts = <String>[];
+    // In page order, file by file: each photo by OCR, each PDF by its text
+    // (or OCR); two files or more with tab, each file's after its divider.
+    final parts = <({String name, String text})>[];
     var read = 0;
-    final photos = <Uint8List>[];
-    Future<void> readPhotos() async {
-      if (photos.isEmpty) return;
-      if (await _read([...photos]) case final t?) parts.add(t);
-      photos.clear();
-    }
-
     for (final p in event.pages) {
       if (p.isImage && _supported) {
         read++;
-        photos.add(await library.original(event, p));
+        if (await _read([await library.original(event, p)]) case final t?) {
+          parts.add((name: _name(event, p), text: t));
+        }
       } else if (p.isPdf) {
         read++;
-        await readPhotos();
         final bytes = await library.original(event, p);
         if (await _readPdf(bytes, _supported ? _read : null) case final t?) {
-          parts.add(t);
+          parts.add((name: _name(event, p), text: t));
         }
       }
     }
-    await readPhotos();
     if (read == 0) return null;
-    final text = parts.isEmpty ? null : parts.join('\n\n');
+    final text = parts.isEmpty ? null : joinFileTexts(parts).text;
     _log(
       'event $id: $read pages, '
       '${text == null ? 'no tab found' : 'read ${text.length} characters'}',
@@ -368,6 +364,10 @@ class AutoReader extends ChangeNotifier {
     if (text == null) return ReadState.noTab;
     return _write(id, text);
   }
+
+  /// [page]'s name in [event]'s list of files, for its divider.
+  static String _name(CaptureEvent event, EventPage page) =>
+      fileLabel(appL10n, event, page);
 
   /// Writes [text], read, as [id]'s text tab, unless the user marked it
   /// correct (never replaced, not even by a Rescan) or edited it (and this

@@ -6,6 +6,7 @@ import 'package:image/image.dart' as img;
 import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
 import 'package:tabcam_app/recognition/auto_reader.dart';
+import 'package:tabcam_app/recognition/file_dividers.dart';
 
 import 'fakes.dart';
 
@@ -13,6 +14,10 @@ Uint8List page() => img.encodeJpg(img.Image(width: 8, height: 8));
 
 /// A made-up riff, as the reader "reads" it: one line per page.
 String riff(int pages) => List.filled(pages, 'e|--0--3--|').join('\n');
+
+/// Two photos' riffs, read file by file: each after its divider.
+String twoPages() =>
+    '${fileDivider('Page 1')}\n${riff(1)}\n\n${fileDivider('Page 2')}\n${riff(1)}';
 
 void main() {
   late Library library;
@@ -47,7 +52,13 @@ void main() {
     final event = await library.create([page(), page()]);
     await settle();
     final read = library.byId(event.id)!;
-    expect(read.tabText, riff(2));
+    // Each file read on its own, its part after its divider.
+    expect(reads, [1, 1]);
+    expect(read.tabText, twoPages());
+    expect(
+      read.tabText!.split('\n').first,
+      '―― Page 1 ――――――――――――――――――――――――――――――',
+    );
     expect(read.tabTextAuto, isTrue);
     expect(r.stateOf(event.id), isNull);
   });
@@ -59,7 +70,7 @@ void main() {
       await settle();
       final event = await library.create([page(), page()]);
       await settle();
-      expect(reads, [2]);
+      expect(reads, [1, 1]);
       var now = library.byId(event.id)!;
       await library.reorderPages(now.id, [now.pages[1].id, now.pages[0].id]);
       await settle();
@@ -72,8 +83,8 @@ void main() {
       now = library.byId(event.id)!;
       await library.deletePage(now, now.pages[0]);
       await settle();
-      expect(reads, [2]);
-      expect(library.byId(event.id)!.tabText, riff(2));
+      expect(reads, [1, 1]);
+      expect(library.byId(event.id)!.tabText, twoPages());
       expect(r.stateOf(event.id), isNull);
     },
   );
@@ -88,10 +99,48 @@ void main() {
     found = true;
     await library.addPages(library.byId(event.id)!, [page()]);
     await settle();
-    expect(reads, [1, 2]);
-    expect(library.byId(event.id)!.tabText, riff(2));
+    expect(reads, [1, 1, 1]);
+    expect(library.byId(event.id)!.tabText, twoPages());
     expect(r.stateOf(event.id), isNull);
   });
+
+  test('one file\'s text has no divider', () async {
+    reader();
+    await settle();
+    final event = await library.create([page()]);
+    await settle();
+    expect(library.byId(event.id)!.tabText, riff(1));
+  });
+
+  test('of two files, only one with tab: its text alone, no divider', () async {
+    var calls = 0;
+    reader(text: (pages) => calls++ == 0 ? null : riff(pages));
+    await settle();
+    final event = await library.create([page(), page()]);
+    await settle();
+    expect(reads, [1, 1]);
+    expect(library.byId(event.id)!.tabText, riff(1));
+  });
+
+  test(
+    'a divider names the file as its list does: its title, renamed',
+    () async {
+      var found = false;
+      final r = reader(text: (pages) => found ? riff(pages) : null);
+      await settle();
+      final event = await library.create([page(), page()]);
+      await settle();
+      await library.renamePage(event.id, event.pages[0].id, 'Intro riff');
+      found = true;
+      r.readSoon(event.id, again: true);
+      await settle();
+      expect(
+        library.byId(event.id)!.tabText,
+        '${fileDivider('Intro riff')}\n${riff(1)}\n\n'
+        '${fileDivider('Page 2')}\n${riff(1)}',
+      );
+    },
+  );
 
   test('Read again replaces the text a read left', () async {
     var lines = 1;
