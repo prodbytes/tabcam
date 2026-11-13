@@ -175,7 +175,10 @@ out, in the app too. Printed numbers read exactly (the image's build reads
 a made-up riff set on drawn lines back, every note); handwriting from
 about 80% to 90% of the notes right, in order and on the right string, on
 the bench's two handwritten pages (crowded pages, numbers written into
-each other, less), so the text is worth checking against the page.
+each other, less), and only 62% and 71% of the frets on the two
+captures the user has marked Verified
+([measured 2026-11-13](#verified-captures)), with no bar line, slide or
+slur read, so the text is worth checking against the page.
 
 Claude (vision, [locr/vision.py](../tabcam_locr/locr/vision.py)) can
 read the pages nothing else does, but it's **off**: on only with
@@ -528,6 +531,37 @@ pages:
   off the strip (Tesseract then reads dashes as `~`); pages at 2400 or
   3200 px; a vertical close of the erased ink; Tesseract on handwritten
   digits.
+
+### Verified captures
+
+<a id="verified-captures"></a>Measured 2026-11-13 on the two captures
+whose text the user marked **Verified** (scanned handwritten pages in
+marker, one page each, 87 and 95 frets; kept in `test_data/verified`, out
+of git: published songs), each fret scored by its string and its order
+against the verified text. No code changed.
+
+| Reader | Page 1 | Page 2 |
+|---|---|---|
+| Cloud OCR as deployed (its stored results) | 71% | 62% |
+| Claude Opus 4.6 on Bedrock, the whole page | 68% | 51% |
+| Claude Opus 4.6, with thinking | 67% | 66% |
+| Claude Sonnet 4.6, the whole page | 33% | 49% |
+| Claude Opus 5.5, the whole page | 99% | 100% |
+| Claude Sonnet 5.5, the whole page | 94% | 97% |
+
+- **The cloud OCR's 61 wrong frets**: 20 phantoms (string numbers at the
+  staff's start, the brace and "2x" at its end, print showing through
+  from the back of the sheet), 17 misread (12 of them a 10, 12 or 13 read
+  as 0, 1, 3 or 6), 13 missed and 11 on the wrong string. It reads no bar
+  line (8 on the pages) and no slide or slur (25).
+- **Claude 4.6** reads the digits (1 to 5 misread a page) but puts them on
+  the wrong strings (16 to 79 a page), as on the bench on 2026-11-07.
+- **Claude 5.5** was run as a Claude Code subagent given the page image
+  (1600 px wide) and the reading prompt only, not through Bedrock: every
+  Claude 5 model still answers "not available for this account" there
+  (the Opus 5.5 quota requests of 2026-10-29 are pending). Opus 5.5's one
+  miss is a note the user added that isn't on the page; it also wrote the
+  bar lines and the slides.
 
 ## Known limitations
 
