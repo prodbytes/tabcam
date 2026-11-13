@@ -570,7 +570,8 @@ against the verified text. No code changed.
 - **The other Bedrock models** (every one that takes an image and
   answers for this account, one reading each, the same prompt): only
   **Kimi K3.1** (Moonshot, `us.moonshotai.kimi-k3.1`) reads the pages,
-  with the slides and slurs but no bar lines. The rest put the notes on
+  with the slides and slurs (its bar lines only on the string that has
+  the notes). The rest put the notes on
   the wrong strings (Kimi K3 put a whole page two strings down) or miss
   most of them. Not available for the account, as Claude 5: every OpenAI
   GPT (5.4 to 6.1), Grok 4.6 and 4.7, GLM 5.3; Llama 4 is refused by
