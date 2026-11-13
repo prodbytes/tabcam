@@ -3313,3 +3313,21 @@ spec.
    the 64ths, the channel's keys), XCTests (keyframes, volume ramps, a
    rendered fade) and an Android instrumented case (a rendered fade, its
    sound only). See [video edit](video-edit.md#fades).
+
+## 2026-11-13
+
+1. **"Text recognition of handwritten tabs is still very poor and
+   inaccurate. What could we do to improve it? Check the ones that are
+   marked as Verified in the system, already marked a couple."** No code
+   change: a measurement. The two captures marked Verified (scanned
+   handwritten pages in marker) were fetched with the cloud's stored
+   readings of them and scored fret by fret: the cloud OCR had 71% and
+   62% of the frets right (phantom notes from the string numbers and
+   the marks at the staves' ends, 10, 12 and 13 misread, notes missed),
+   and no bar line, slide or slur. Read whole by a vision model with one
+   prompt, Claude Opus 4.6 and Sonnet 4.6 (the ones Bedrock gives this
+   account) do no better, putting right digits on wrong strings; Claude
+   Opus 5.5 and Sonnet 5.5 (run outside Bedrock, as a test) read 99% and
+   100%, and 94% and 97%, with the bar lines and slides. The pages, the
+   readings and the scorer are in `test_data/verified` (out of git). See
+   [cloud OCR](cloud-ocr.md#verified-captures).
