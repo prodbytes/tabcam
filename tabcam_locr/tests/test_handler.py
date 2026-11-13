@@ -1,4 +1,5 @@
 import json
+import types
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -356,6 +357,7 @@ def test_warm_is_premium_only_and_once_in_a_while(svc, monkeypatch):
 
 class FakeResult:
     text, doubts, staves, lines, timings = "e|--3--|", [], 1, 6, {"drawn": 1.0}
+    reader = "engines"
 
 
 @pytest.fixture
@@ -382,6 +384,60 @@ def test_a_read_page_is_written_and_unmarked(svc, worker):
     assert handler.ocr({"key": PAGE}) == "ok"
     assert json.loads(svc.s3.put[f"{ID}/ocr/ev1/p1.json"])["text"] == "e|--3--|"
     assert READING in svc.s3.deleted
+
+
+def test_the_vision_model_is_asked_only_when_set_up(svc, worker, monkeypatch):
+    from locr import vision
+    asked = []
+
+    def read(data, *_, vision=None, vision_blank=None, **__):
+        asked.append((vision, vision_blank))
+        return FakeResult()
+    worker.transcribe = read
+    svc._made["s3"] = FakeS3([PAGE, READING])
+    monkeypatch.setattr(vision, "MODEL", "")
+    handler.ocr({"key": PAGE})
+    assert asked[-1] == (None, False)
+    svc._made["s3"] = FakeS3([PAGE, READING])
+    monkeypatch.setattr(vision, "MODEL", "us.moonshotai.kimi-k3.1")
+    monkeypatch.setenv("VISION_BLANK", "1")
+    handler.ocr({"key": PAGE})
+    assert asked[-1] == (handler._vision, True)
+
+
+def test_a_vision_reading_names_its_model(svc, worker, monkeypatch):
+    from locr import vision
+    monkeypatch.setattr(vision, "MODEL", "us.moonshotai.kimi-k3.1")
+
+    class Seen(FakeResult):
+        reader, doubts, agreement = "vision", [], 0.81
+    worker.transcribe = lambda data, *_, **__: Seen()
+    svc._made["s3"] = FakeS3([PAGE, READING])
+    assert handler.ocr({"key": PAGE}) == "ok"
+    result = json.loads(svc.s3.put[f"{ID}/ocr/ev1/p1.json"])
+    assert result["engines"] == ["us.moonshotai.kimi-k3.1"] and result["doubts"] == []
+    assert result["agreement"] == 0.81
+
+
+def test_the_vision_model_gets_the_worker_s_deadline(svc, worker, monkeypatch):
+    import time
+    from locr import vision
+    seen = []
+    monkeypatch.setattr(vision, "read_tab", lambda img, deadline=None: seen.append(deadline) or ("", {}))
+    worker.transcribe = lambda data, *_, vision=None, **__: (vision("page"), FakeResult())[1]
+    monkeypatch.setattr(vision, "MODEL", "us.moonshotai.kimi-k3.1")
+    svc._made["s3"] = FakeS3([PAGE, READING])
+    handler.ocr({"key": PAGE}, types.SimpleNamespace(get_remaining_time_in_millis=lambda: 600_000))
+    assert 560 < seen[0] - time.monotonic() <= 570
+
+
+def test_a_failing_vision_model_leaves_the_engines_reading(monkeypatch):
+    from locr import vision
+
+    def broken(img):
+        raise RuntimeError("throttled")
+    monkeypatch.setattr(vision, "read_tab", broken)
+    assert handler._vision(None) == ""
 
 
 def test_a_page_deleted_while_read_gets_no_transcription(svc, worker):

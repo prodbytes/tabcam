@@ -3343,3 +3343,21 @@ spec.
    wrong strings or miss them; OpenAI's, Grok and GLM aren't available
    for the account, as Claude 5. See
    [cloud OCR](cloud-ocr.md#verified-captures).
+3. **"Let's do it, the best we can with what we have."** Handwritten tabs
+   are now read by Moonshot AI's Kimi K3.1 on Amazon Bedrock too. A page
+   on drawn staves whose engines' reading is unsure (more than a tenth of
+   its frets doubtful: handwriting) is read whole by the model, twice at
+   once, and the reading closest to the engines' replaces theirs; the
+   engines' reading stands when the model fails, is cut short or reads
+   too little. The model gets the page as it came (it read those a little
+   better than the cleaned page), throttles are waited out, and a PDF's
+   handwritten pages are read five at a time. Its text has no red notes.
+   Measured end to end on the four handwritten pages: 95%, 84%, 89% and
+   98% of the frets, against 71%, 62%, 83% and 90%; about $0.44 a
+   handwritten page, Premium only. The stack gives the worker the model
+   through its US inference profile (`VisionModel`, `VisionReads`) and no
+   longer the unused Claude key; the privacy policy says handwritten
+   pages are read by Kimi in Amazon Bedrock. See
+   [cloud OCR](cloud-ocr.md#handwriting-read-by-a-vision-model),
+   [tab recognition](tab-recognition.md#text-view) and
+   [privacy](privacy.md).

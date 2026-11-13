@@ -1,81 +1,208 @@
-"""Reading a page Claude's way: when the OCR engines find no tab on a page
-(a handwritten tab, or one on drawn staff lines, which they don't read),
-Claude (vision) transcribes the image into the app's plain-text tab, with
-the page's other notations (title, chord names, section names, lyrics).
-Off while the Claude API key isn't set up."""
-import base64
-import json
+"""Reading a page a vision model's way: a handwritten tab on drawn staff
+lines, which the OCR engines read poorly (staves.py: about two frets in
+three right), is read whole by a model on Amazon Bedrock, into the app's
+plain-text tab with the page's other notations (title, section names,
+repeat marks).
+
+The model is VISION_MODEL (a Bedrock model or inference profile ID; unset:
+off). The stack sets Moonshot's Kimi K3.1 (us.moonshotai.kimi-k3.1), the
+one model the account can call that reads these pages (specs/cloud-ocr.md,
+"Verified captures"). It thinks before it answers, with most of
+VISION_MAX_TOKENS, and reads worse with less.
+"""
 import os
+import re
 
 import cv2
 
-MODEL = os.environ.get("VISION_MODEL", "claude-opus-5-5")
-MAX_SIDE = 1800
+MODEL = os.environ.get("VISION_MODEL", "")
+MAX_TOKENS = int(os.environ.get("VISION_MAX_TOKENS", "16000"))
+# The page as the model was measured on it.
+MAX_WIDTH, MAX_HEIGHT = 1600, 2400
+NO_TAB = "NO TAB"
 
 PROMPT = """\
-This is a page of guitar or bass tablature: printed, typeset or \
-handwritten, maybe on drawn staff lines, maybe photographed or scanned. \
-Transcribe it into plain-text tab, as written on the page.
+This image is a page of handwritten guitar tablature on staff lines, \
+scanned or photographed. Transcribe it into an ASCII text tab.
 
-- Each staff: one line per string, high to low, `e|`, `B|`, `G|`, `D|`, \
-`A|`, `E|` (bass: `G|`, `D|`, `A|`, `E|`), the notes at their columns with \
-dashes between, `|` for bar lines; the staff's lines all the same length. \
-Strings numbered on the page count from the highest (1 = e).
-- Keep the notes in order and notes played together in the same column; \
-keep techniques as written (h, p, b, r, /, \\, ~, x, and a fret in \
-parentheses).
-- Text around the tab goes where it is: the title first, section names \
-(Intro, Chorus, ...) and repeat marks (2x) above their staff, chord names \
-on a line right above the staff at the columns they're over, lyrics under \
-it. Leave out page furniture (scanner watermarks, page numbers, web \
-addresses).
-- Separate staves with a blank line.
-- If the page has no tablature, say so (found false, empty text)."""
+How to read the page:
+- Each staff is six horizontal lines: the six strings, from the top line \
+down e, B, G, D, A, E (the handwritten 1 to 6 at the left edge of some \
+staves number the strings; they are not notes). A staff of four lines is a \
+bass's: G, D, A, E.
+- A number is a fret. It belongs to the line it is written on, or sits just \
+above. People write a run of notes on neighbouring strings as a little \
+staircase: look carefully at which line each number touches. Numbers \
+stacked in one column are a chord.
+- Frets go from 0 to 24: two digits close together are one number (10, 12, \
+13), two digits apart are two notes (7 5).
+- A short dash or stroke between two numbers on a string is a slide: write \
+`/` when the second is higher, `\\` when lower. An arc or an underline \
+joining numbers is a slur: write `_` between them. A number in brackets \
+after a note is a bend target: write it as on the page, `7(9)`. A wavy line \
+after a note is vibrato: `~`.
+- A vertical stroke across the staff is a bar line: `|` on all six lines.
+- Ignore faint grey print showing through from the back of the sheet, empty \
+staves, and a scanner app's footer.
+- Keep titles, section names and marks like "2x" as a text line above the \
+staff they belong to.
 
-SCHEMA = {
-    "type": "object",
-    "properties": {
-        "found": {"type": "boolean"},
-        "text": {"type": "string", "description": "The plain-text tab"},
-    },
-    "required": ["found", "text"],
-    "additionalProperties": False,
-}
+Output format: for each staff with notes, six lines, in page order, a blank \
+line between staves:
+
+e|--------------|
+B|---8-8--------|
+G|-5-7/9----9---|
+D|--------------|
+A|--------------|
+E|--------------|
+
+Every line of a staff has the same length; notes played one after another \
+are in different columns, left to right as on the page; notes of a chord \
+share a column. Fill with `-`. Output only the tab text, nothing else. If \
+the page has no tablature, output only: """ + NO_TAB
+
+
+class NotSetUp(Exception):
+    pass
+
+
+_client = None
+
+
+def client():
+    """The Bedrock runtime client, made on first use."""
+    global _client
+    if _client is None:
+        import boto3
+        from botocore.config import Config
+        # A page takes the model about a minute. Throttles are waited out
+        # in read_tab; botocore retries the rest once.
+        _client = boto3.client("bedrock-runtime", config=Config(
+            connect_timeout=10, read_timeout=CALL_SECONDS,
+            retries={"max_attempts": 2, "mode": "standard"}))
+    return _client
+
+
+# The account's tokens per minute run out with a dozen pages at once (each
+# reserves its maxTokens): a throttle is waited out, the next minute's
+# tokens come, up to WAITS times (the worker has 15 minutes); then the
+# engines' reading stands.
+WAITS = (20, 40, 60)
+CALL_SECONDS = 180  # a reading takes about 55 s
+
+
+class TooLate(Exception):
+    """No time left for a reading before the worker's deadline."""
+BUSY = {"ThrottlingException", "ServiceUnavailableException", "ModelNotReadyException"}
+
+
+def _busy(e):
+    return getattr(e, "response", {}).get("Error", {}).get("Code") in BUSY
 
 
 def _jpeg(img):
     h, w = img.shape[:2]
-    scale = min(1.0, MAX_SIDE / max(h, w))
+    scale = min(1.0, MAX_WIDTH / w, MAX_HEIGHT / h)
     if scale < 1:
         img = cv2.resize(img, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
     ok, data = cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 85])
     if not ok:
         raise ValueError("couldn't encode the page")
-    return base64.b64encode(data.tobytes()).decode()
+    return data.tobytes()
 
 
-def read_tab(img, client=None):
-    """[img]: the page (BGR). Its tab as text, or "" when it has none."""
-    from . import claude
-    client = client or claude.client()
-    r = client.messages.create(
-        model=MODEL,
-        max_tokens=16000,
-        thinking={"type": "adaptive"},
-        output_config={"effort": "high",
-                       "format": {"type": "json_schema", "schema": SCHEMA}},
+def read_tab(img, client_=None, sleep=None, deadline=None):
+    """[img]: the page (grayscale or BGR). (its tab as text, the tokens
+    used): the text "" when the model finds no tab, or its answer isn't a
+    whole one. TooLate when a reading (and its wait) couldn't end before
+    [deadline] (time.monotonic())."""
+    if not MODEL:
+        raise NotSetUp("no vision model configured")
+    import random
+    import time
+    ask = dict(
+        modelId=MODEL,
         messages=[{"role": "user", "content": [
-            {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg",
-                                         "data": _jpeg(img)}},
-            {"type": "text", "text": PROMPT},
+            {"image": {"format": "jpeg", "source": {"bytes": _jpeg(img)}}},
+            {"text": PROMPT},
         ]}],
+        inferenceConfig={"maxTokens": MAX_TOKENS},
     )
-    if r.stop_reason == "refusal":
+    def time_for(seconds):
+        if deadline is not None and time.monotonic() + seconds > deadline:
+            raise TooLate(f"under {seconds:.0f} s left")
+
+    for wait in WAITS + (None,):
+        time_for(CALL_SECONDS)
+        try:
+            r = (client_ or client()).converse(**ask)
+            break
+        except Exception as e:
+            if wait is None or not _busy(e):
+                raise
+            wait += random.uniform(0, 10)
+            time_for(wait + CALL_SECONDS)
+            (sleep or time.sleep)(wait)
+    usage = r.get("usage", {})
+    if r.get("stopReason") != "end_turn":
+        return "", usage  # cut short (max_tokens), filtered: not a whole reading
+    answer = "".join(b.get("text", "") for b in r["output"]["message"]["content"])
+    return clean(answer), usage
+
+
+_STRING = re.compile(r"^\s*([eBGDAE])\s*\|(.*)$")
+_THINKING = re.compile(r"<think(ing)?>.*?</think(ing)?>", re.S)
+
+
+def clean(answer):
+    """The model's answer as the app's tab text: its staves' lines all one
+    length and closed by a bar, a bar line written on some of a staff's
+    lines put on all of them, the text lines kept above their staves (page
+    furniture left out), a blank line after each staff. "" when it has no
+    staff with a fret."""
+    from .pipeline import is_notation, join
+    lines = [l.rstrip() for l in _THINKING.sub("", answer).splitlines()
+             if not l.strip().startswith("```")]
+    pieces, staff = [], []
+
+    def end():
+        if len(staff) >= 4:
+            pieces.append(("staff", "\n".join(_even(staff))))
+        staff.clear()
+
+    for line in lines:
+        m = _STRING.match(line)
+        if m:
+            staff.append((m.group(1), m.group(2)))
+            continue
+        end()
+        if line.strip() and line.strip() != NO_TAB and is_notation(line):
+            pieces.append(("text", line))
+    end()
+    # Staves without notes go.
+    pieces = [(kind, text) for kind, text in pieces if kind == "text" or frets(text)]
+    if not any(kind == "staff" for kind, _ in pieces):
         return ""
-    text = next((b.text for b in r.content if b.type == "text"), "")
-    try:
-        answer = json.loads(text)
-    except ValueError:
-        return ""
-    tab = (answer.get("text") or "").strip()
-    return tab + "\n" if answer.get("found") and tab else ""
+    return join(pieces) + "\n"
+
+
+def _even(staff):
+    """[(label, body)] of a staff as its lines, ending together."""
+    bodies = [re.sub(r"\s", "-", body.rstrip()).rstrip("|") for _, body in staff]
+    width = max(len(b) for b in bodies)
+    bodies = [list(b.ljust(width, "-")) for b in bodies]
+    # A bar line on some lines is one across the staff, where the others
+    # have room for it.
+    for col in range(width):
+        marked = [b[col] == "|" for b in bodies]
+        if any(marked) and all(m or b[col] == "-" for m, b in zip(marked, bodies)):
+            for b in bodies:
+                b[col] = "|"
+    return [f"{label}|{''.join(b)}|" for (label, _), b in zip(staff, bodies)]
+
+
+def frets(text):
+    """How many fret numbers [text]'s string lines have."""
+    return sum(len(re.findall(r"\d+", m.group(2)))
+               for m in map(_STRING.match, text.splitlines()) if m)

@@ -17,6 +17,7 @@ The pipeline that read tabs best in the OCR bench:
    They go between the staves where they are on the page, chord names at
    the tab's columns.
 """
+import os
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -55,6 +56,11 @@ class Result:
     # Notes read with little confidence, likely wrong: [line, column, note]
     # in text (lines and columns from 0).
     doubts: list = field(default_factory=list)
+    # Who read the tab: "engines" (Tesseract, PaddleOCR, RapidOCR) or
+    # "vision" (the vision model, vision.py).
+    reader: str = "engines"
+    # A vision reading's agreement with the engines' (agreement()).
+    agreement: float = None
 
 
 class TooLarge(ValueError):
@@ -503,12 +509,17 @@ def pdf_pages(data, max_pages=MAX_PDF_PAGES):
         pdf.close()
 
 
-def transcribe_pdf(data, engines, read_page=None, vision=None, read_crop=None):
+def transcribe_pdf(data, engines, read_page=None, vision=None, read_crop=None,
+                   vision_blank=True):
     """A PDF's tab: each page read as a photo of it would be (transcribe),
-    the pages' tabs joined by a blank line."""
+    the pages' tabs joined by a blank line. The engines read the pages one
+    after another; the pages the vision model reads too, it reads together
+    (it takes about a minute a page, waiting)."""
     start = time.monotonic()
-    results = [transcribe_image(img, engines, read_page, vision, read_crop)
-               for img in pdf_pages(data)]
+    read = [_engines_read(img, engines, read_page, read_crop, vision, vision_blank)
+            for img in pdf_pages(data)]
+    with ThreadPoolExecutor(max_workers=VISION_TOGETHER) as pool:
+        results = list(pool.map(lambda page: _seen(*page, vision), read))
     found = [r for r in results if r.text]
     timings = {}
     for r in results:
@@ -520,17 +531,110 @@ def transcribe_pdf(data, engines, read_page=None, vision=None, read_crop=None):
         top += r.text.count("\n") + 1  # and the blank line between pages
     return Result("\n".join(r.text for r in found), staves=sum(r.staves for r in results),
                   lines=sum(r.lines for r in results), seconds=round(time.monotonic() - start, 2),
-                  timings=timings, doubts=doubts)
+                  timings=timings, doubts=doubts,
+                  reader="vision" if any(r.reader == "vision" for r in found) else "engines",
+                  # The least sure of the pages the model read.
+                  agreement=min((r.agreement for r in found if r.agreement is not None),
+                                default=None))
 
 
-def transcribe(data, engines, read_page=None, vision=None, read_crop=None):
+def transcribe(data, engines, read_page=None, vision=None, read_crop=None, vision_blank=True):
     """[data]: an image file's bytes. [engines]: name -> read(strip, line),
     each returning the line's text as read (engines.py). [read_page]: reads
     a whole (grayscale) page into words with their boxes, for the
-    notations around the tab; None leaves them out. [vision]: reads a page
-    the engines find no tab lines on (a handwritten tab, drawn staff
-    lines), image -> its tab text ("" for none); None: no tab."""
-    return transcribe_image(decode(data), engines, read_page, vision, read_crop)
+    notations around the tab; None leaves them out. [vision]: a vision
+    model's reading of a page, image -> its tab text ("" for none), asked
+    for a tab on drawn staff lines the engines are unsure of (handwriting)
+    and, with [vision_blank], for a page they find no tab on; None: the
+    engines' reading only."""
+    return transcribe_image(decode(data), engines, read_page, vision, read_crop, vision_blank)
+
+
+# A tab on drawn staves with more than this share of its frets doubtful is
+# handwriting (from a fifth to two thirds of them, on the pages measured;
+# print reads sure): the vision model reads it too.
+UNSURE = 0.1
+# A vision reading with fewer than this share of the engines' frets is cut
+# short or went wrong: the engines' reading stands.
+VISION_ENOUGH = 0.5
+VISION_TOGETHER = 5  # a PDF's pages the vision model reads at a time
+# Readings of a page by the vision model, side by side: the one closest to
+# the engines' is kept. Its readings vary (79% to 99% of the frets right,
+# one in 25 at 56%); keeping the closer of two read 93.5% on average, at
+# worst 82%, against 91% and 56% for one (specs/cloud-ocr.md).
+VISION_READS = max(1, int(os.environ.get("VISION_READS", "2")))
+
+_STRING_LINE = re.compile(r"^\s*[eBGDAE]?\|(.*)$")
+
+
+def frets(text):
+    """How many fret numbers [text]'s string lines have."""
+    return sum(len(re.findall(r"\d+", m.group(1)))
+               for m in map(_STRING_LINE.match, text.splitlines()) if m)
+
+
+def _notes(text):
+    """[text]'s frets as (string, number), staff by staff, in the order
+    they're played (by column, bars left out; a chord top to bottom)."""
+    out, staff = [], []
+
+    def end():
+        events = []
+        for string, body in enumerate(staff):
+            for m in re.finditer(r"\d+", body):
+                events.append((len(body[:m.start()].replace("|", "")), string, m.group()))
+        out.extend((s, n) for _, s, n in sorted(events))
+        staff.clear()
+
+    for line in text.splitlines():
+        m = _STRING_LINE.match(line)
+        if m:
+            staff.append(m.group(1))
+        else:
+            end()
+    end()
+    return out
+
+
+def agreement(text, engines):
+    """How much of a vision reading [text] the engines' reading [engines]
+    has too, from 0 to 1: the share of its frets (by string and number, in
+    order) left after the edits from one to the other. A reading on the
+    wrong strings, or missing notes, agrees less."""
+    a, b = _notes(text), _notes(engines)
+    return max(0.0, 1 - Levenshtein.distance(a, b) / max(len(a), 1))
+
+
+def unsure(result):
+    """Whether the engines' reading of drawn staves is handwriting's: too
+    many of its frets doubtful."""
+    return len(result.doubts) > UNSURE * max(frets(result.text), 1)
+
+
+def _seen(result, ask, vision):
+    """[result], the engines' reading of a page, or the vision model's
+    reading of [ask] (the page, when it should read it too: else None) in
+    its place: of VISION_READS readings, side by side, the one closest to
+    the engines', unless it's much shorter than theirs (cut short, gone
+    wrong)."""
+    if ask is None:
+        return result
+    t = time.monotonic()
+    with ThreadPoolExecutor(max_workers=VISION_READS) as pool:
+        texts = list(pool.map(lambda _: vision(ask), range(VISION_READS)))
+    took = round(time.monotonic() - t, 2)
+    timings = {**result.timings, "vision": took}
+    seconds = round(result.seconds + took, 2)
+    whole = [x for x in texts if x and frets(x) >= VISION_ENOUGH * frets(result.text)]
+    if not whole:
+        return replace(result, seconds=seconds, timings=timings)
+    scored = [(agreement(x, result.text), x) for x in whole]
+    agree, text = max(scored, key=lambda s: s[0])
+    blocks = [b for b in text.split("\n\n") if frets(b)]
+    lines = sum(1 for l in text.splitlines() if _STRING_LINE.match(l))
+    # The model says nothing of how sure it is: no doubtful notes.
+    return Result(text, staves=len(blocks), lines=lines, seconds=seconds, timings=timings,
+                  reader="vision", agreement=round(agree, 3))
 
 
 def _drawn(gray, read_crop, read_page):
@@ -557,8 +661,15 @@ def _drawn(gray, read_crop, read_page):
     return Result(text, staves=len(blocks), lines=lines, doubts=doubts)
 
 
-def transcribe_image(img, engines, read_page=None, vision=None, read_crop=None):
+def transcribe_image(img, engines, read_page=None, vision=None, read_crop=None,
+                     vision_blank=True):
     """transcribe, for an image already decoded (BGR)."""
+    return _seen(*_engines_read(img, engines, read_page, read_crop, vision, vision_blank), vision)
+
+
+def _engines_read(img, engines, read_page, read_crop, vision, vision_blank):
+    """(the engines' reading of the page, the image for the vision model
+    when it should read the page too: else None)."""
     start = time.monotonic()
     gray = prepare(img)
     # Fewer than four lines isn't a staff (as in the app): stray rows of
@@ -572,17 +683,14 @@ def transcribe_image(img, engines, read_page=None, vision=None, read_crop=None):
         if drawn is not None:
             drawn.timings["drawn"] = round(time.monotonic() - t, 2)
             drawn.seconds = round(time.monotonic() - start, 2)
-            return drawn
+            # Handwriting: the page as it came, for the vision model (it
+            # read the pages as they came a little better than as the
+            # engines see them, 93% of the frets to 91%).
+            return drawn, img if vision is not None and unsure(drawn) else None
     if not jobs:
-        if vision is None:
-            return Result("", seconds=time.monotonic() - start)
-        # Nothing the engines read: Claude's, where it's switched on.
-        t = time.monotonic()
-        text = vision(img)
-        staves_read = len([b for b in text.split("\n\n") if "|" in b])
-        return Result(text, staves=staves_read,
-                      seconds=round(time.monotonic() - start, 2),
-                      timings={"claude": round(time.monotonic() - t, 2)})
+        # Nothing the engines read: the vision model's, where switched on.
+        blank = Result("", seconds=round(time.monotonic() - start, 2))
+        return blank, img if vision is not None and vision_blank else None
 
     def run(read):
         t = time.monotonic()
@@ -619,4 +727,4 @@ def transcribe_image(img, engines, read_page=None, vision=None, read_crop=None):
     text, doubts = unmark(join([(kind, text) for _, kind, text in blocks]) + "\n")
     return Result(text, staves=len(groups), lines=len(jobs),
                   seconds=round(time.monotonic() - start, 2), readings=readings,
-                  timings=timings, doubts=doubts)
+                  timings=timings, doubts=doubts), None
