@@ -39,6 +39,7 @@ class FakeBedrock:
     def converse(self, **kw):
         self.calls.append(kw)
         return {"stopReason": self.stop, "usage": {"inputTokens": 5200, "outputTokens": 12400},
+                "serviceTier": kw.get("serviceTier"),
                 "output": {"message": {"content": [
                     {"reasoningContent": {"reasoningText": {"text": "the staircase..."}}},
                     {"text": self.answer}]}}}
@@ -98,20 +99,45 @@ class Throttled(Exception):
 class Busy(FakeBedrock):
     def __init__(self, fails, code="ThrottlingException"):
         super().__init__(ANSWER)
-        self.fails, self.code = fails, code
+        self.fails, self.code, self.tried = fails, code, []
 
     def converse(self, **kw):
+        self.tried.append((kw.get("serviceTier") or {}).get("type"))
         if self.fails:
             self.fails -= 1
             raise Throttled(self.code)
         return super().converse(**kw)
 
 
+def test_it_reads_on_the_flex_tier(monkeypatch):
+    monkeypatch.setattr(vision, "MODEL", "us.moonshotai.kimi-k3.1")
+    fake = Busy(0)
+    _, usage = vision.read_tab(page(), fake)
+    assert fake.tried == ["flex"] and usage["tier"] == "flex"
+
+
+def test_a_busy_flex_tier_falls_to_the_default_at_once(monkeypatch):
+    monkeypatch.setattr(vision, "MODEL", "us.moonshotai.kimi-k3.1")
+    slept, fake = [], Busy(1)
+    text, usage = vision.read_tab(page(), fake, sleep=slept.append)
+    assert text and fake.tried == ["flex", "default"] and slept == [] and usage["tier"] == "default"
+
+
 def test_a_throttle_is_waited_out(monkeypatch):
     monkeypatch.setattr(vision, "MODEL", "us.moonshotai.kimi-k3.1")
-    slept = []
-    text, _ = vision.read_tab(page(), Busy(2), sleep=slept.append)
-    assert text and len(slept) == 2 and 20 <= slept[0] <= 30 and 40 <= slept[1] <= 50
+    slept, fake = [], Busy(3)
+    text, _ = vision.read_tab(page(), fake, sleep=slept.append)
+    assert text and fake.tried == ["flex", "default", "default", "default"]
+    assert len(slept) == 2 and 20 <= slept[0] <= 30 and 40 <= slept[1] <= 50
+
+
+def test_without_a_tier_none_is_asked(monkeypatch):
+    monkeypatch.setattr(vision, "MODEL", "us.moonshotai.kimi-k3.1")
+    monkeypatch.setattr(vision, "TIER", "")
+    slept, fake = [], Busy(1)
+    vision.read_tab(page(), fake, sleep=slept.append)
+    assert fake.tried == [None, None] and len(slept) == 1  # no flex to fall from: waited
+    assert "serviceTier" not in fake.calls[0]
 
 
 def test_a_lasting_throttle_or_another_error_gives_up(monkeypatch):
@@ -135,7 +161,7 @@ def test_no_reading_starts_too_late_for_the_worker(monkeypatch):
     slept = []
     # Time for one reading, not for a wait and another.
     with pytest.raises(vision.TooLate):
-        vision.read_tab(page(), Busy(1), sleep=slept.append,
+        vision.read_tab(page(), Busy(2), sleep=slept.append,
                         deadline=time.monotonic() + vision.CALL_SECONDS + 5)
     assert slept == []
     assert vision.read_tab(page(), fake, deadline=time.monotonic() + 900)[0]

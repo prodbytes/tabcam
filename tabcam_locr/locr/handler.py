@@ -476,7 +476,7 @@ def _vision(img):
         return ""
     log("vision read", model=vision.MODEL, found=bool(text), frets=vision.frets(text),
         tokens_in=usage.get("inputTokens"), tokens_out=usage.get("outputTokens"),
-        seconds=round(time.monotonic() - t, 2))
+        tier=usage.get("tier"), seconds=round(time.monotonic() - t, 2))
     return text
 
 

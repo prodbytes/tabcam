@@ -17,6 +17,11 @@ import cv2
 
 MODEL = os.environ.get("VISION_MODEL", "")
 MAX_TOKENS = int(os.environ.get("VISION_MAX_TOKENS", "16000"))
+# Bedrock's service tier: flex costs half the default's and read the pages
+# as well, as fast (measured 2026-11-13), but it's served last when Bedrock
+# is busy: then the reading goes to the default tier at once. Empty: the
+# model's own default, no tier asked.
+TIER = os.environ.get("VISION_TIER", "flex")
 # The page as the model was measured on it.
 MAX_WIDTH, MAX_HEIGHT = 1600, 2400
 NO_TAB = "NO TAB"
@@ -90,11 +95,18 @@ def client():
 # engines' reading stands.
 WAITS = (20, 40, 60)
 CALL_SECONDS = 180  # a reading takes about 55 s
+BUSY = {"ThrottlingException", "ServiceUnavailableException", "ModelNotReadyException"}
 
 
 class TooLate(Exception):
     """No time left for a reading before the worker's deadline."""
-BUSY = {"ThrottlingException", "ServiceUnavailableException", "ModelNotReadyException"}
+
+
+def _attempts():
+    """(tier, seconds to wait first) of each try: the cheaper tier once,
+    then the default tier at once and after each of WAITS."""
+    first = [(TIER, 0)] if TIER and TIER != "default" else []
+    return first + [("default" if TIER else "", 0)] + [("default" if TIER else "", w) for w in WAITS]
 
 
 def _busy(e):
@@ -133,18 +145,22 @@ def read_tab(img, client_=None, sleep=None, deadline=None):
         if deadline is not None and time.monotonic() + seconds > deadline:
             raise TooLate(f"under {seconds:.0f} s left")
 
-    for wait in WAITS + (None,):
-        time_for(CALL_SECONDS)
-        try:
-            r = (client_ or client()).converse(**ask)
-            break
-        except Exception as e:
-            if wait is None or not _busy(e):
-                raise
+    attempts = _attempts()
+    for i, (tier, wait) in enumerate(attempts):
+        if wait:
             wait += random.uniform(0, 10)
             time_for(wait + CALL_SECONDS)
             (sleep or time.sleep)(wait)
-    usage = r.get("usage", {})
+        time_for(CALL_SECONDS)
+        try:
+            r = (client_ or client()).converse(
+                **ask, **({"serviceTier": {"type": tier}} if tier else {}))
+            break
+        except Exception as e:
+            if i == len(attempts) - 1 or not _busy(e):
+                raise
+    # The tier that served it, for the log.
+    usage = {**r.get("usage", {}), "tier": (r.get("serviceTier") or {}).get("type")}
     if r.get("stopReason") != "end_turn":
         return "", usage  # cut short (max_tokens), filtered: not a whole reading
     answer = "".join(b.get("text", "") for b in r["output"]["message"]["content"])

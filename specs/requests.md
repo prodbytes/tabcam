@@ -3361,3 +3361,18 @@ spec.
    [cloud OCR](cloud-ocr.md#handwriting-read-by-a-vision-model),
    [tab recognition](tab-recognition.md#text-view) and
    [privacy](privacy.md).
+4. **"Any way we could make it cheaper without making it less
+   reliable?"** The vision model now reads on Bedrock's **flex** service
+   tier: the same model at half the price. Measured on the four
+   handwritten pages, 13 flex readings read as well as the default
+   tier's (93.7% of the frets a reading, 96.1% keeping the closer of two,
+   against 92.7% and 94.7%), as fast (about 52 s), and none was turned
+   away; a reading flex turns away goes to the default tier at once, so a
+   busy Bedrock costs a little more, not the reading. A handwritten page
+   now costs about $0.22, from $0.44. Tried and not taken: a smaller
+   thinking budget (8000 tokens: 31% at worst for one reading, 78% for the
+   closer of two), a single reading (56% at worst), the global profile
+   (9% cheaper, but pages could be read outside the United States). The
+   stack's `VisionTier` (default `flex`) sets it; the log says which tier
+   served each reading. See
+   [cloud OCR](cloud-ocr.md#handwriting-read-by-a-vision-model).
