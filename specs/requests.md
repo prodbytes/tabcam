@@ -3331,3 +3331,15 @@ spec.
    100%, and 94% and 97%, with the bar lines and slides. The pages, the
    readings and the scorer are in `test_data/verified` (out of git). See
    [cloud OCR](cloud-ocr.md#verified-captures).
+2. **"Also test other models that are available on Bedrock, AWS won't
+   grant Claude 5.5 yet."** No code change. Every Bedrock model that
+   takes an image and answers for the account read the two verified
+   pages whole, with the same prompt. One reads them: Kimi K3.1
+   (Moonshot), 93% and 89% of the frets, and 86% to 99% over three
+   readings each of four handwritten pages (the cloud OCR: 62% to 90%),
+   with the slides and slurs, at about $0.12 to $0.22 a page for its
+   thinking. The others (Kimi K3 and K2.5, Claude Opus 4.5 and Haiku
+   4.5, Nova, Mistral, Qwen3-VL, Gemma, Nemotron) put the notes on the
+   wrong strings or miss them; OpenAI's, Grok and GLM aren't available
+   for the account, as Claude 5. See
+   [cloud OCR](cloud-ocr.md#verified-captures).

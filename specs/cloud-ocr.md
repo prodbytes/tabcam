@@ -548,6 +548,11 @@ against the verified text. No code changed.
 | Claude Sonnet 4.6, the whole page | 33% | 49% |
 | Claude Opus 5.5, the whole page | 99% | 100% |
 | Claude Sonnet 5.5, the whole page | 94% | 97% |
+| Kimi K3.1 on Bedrock, the whole page | 93% | 89% |
+| Kimi K3 | 76% | 0% |
+| Claude Opus 4.5 | 68% | 35% |
+| Kimi K2.5, Nova Pro, Mistral Large 3, Magistral Small | 23% to 38% | 0% to 40% |
+| Qwen3-VL, Gemma 3 27B, Ministral 14B, Nova 2 Lite, Nova Lite, Claude Haiku 4.5, Pixtral Large, Nemotron Nano | under 25% | under 25% |
 
 - **The cloud OCR's 61 wrong frets**: 20 phantoms (string numbers at the
   staff's start, the brace and "2x" at its end, print showing through
@@ -562,6 +567,24 @@ against the verified text. No code changed.
   (the Opus 5.5 quota requests of 2026-10-29 are pending). Opus 5.5's one
   miss is a note the user added that isn't on the page; it also wrote the
   bar lines and the slides.
+- **The other Bedrock models** (every one that takes an image and
+  answers for this account, one reading each, the same prompt): only
+  **Kimi K3.1** (Moonshot, `us.moonshotai.kimi-k3.1`) reads the pages,
+  with the slides and slurs (its bar lines only on the string that has
+  the notes). The rest put the notes on
+  the wrong strings (Kimi K3 put a whole page two strings down) or miss
+  most of them. Not available for the account, as Claude 5: every OpenAI
+  GPT (5.4 to 6.1), Grok 4.6 and 4.7, GLM 5.3; Llama 4 is refused by
+  country, Nova Premier is at its end of life.
+- **Kimi K3.1 again**, three readings each of the two pages and of the
+  bench's two handwritten ones (35 and 42 frets): 89, 98, 99%; 86, 89,
+  96%; 89, 89, 94%; 95, 98, 98% (the cloud OCR: 71, 62, 83, 90%). It
+  thinks before it answers, with about 78% of `maxTokens`, and reads
+  worse with less: about 93% of the frets at 16000, 91% at 8000, 79% at
+  4000 and 70% at 2000. A page is 5.2k tokens in and, at 16000, 12.4k
+  out in about 55 s: about $0.22 a page at Kimi K3's list price ($3.30
+  and $16.50 a million tokens; K3.1's isn't listed yet), $0.12 at 8000,
+  against $0.0044 for the cloud OCR.
 
 ## Known limitations
 
