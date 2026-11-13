@@ -13,8 +13,10 @@
 # 1 to take Sign in with Apple's tokens for the bundle ID too),
 # RBACR_TOKEN_PARAMETER (default /tabcam/rbacr-token, an SSM SecureString),
 # ANTHROPIC_KEY_SECRET
-# (default tabcam/anthropic-api-key, read by name: auto-correct and Claude
-# reading the pages the engines can't are off until it exists, then on).
+# (default tabcam/anthropic-api-key, read by name: auto-correct is off until
+# it exists, then on), TABCAM_VISION_MODEL (the Bedrock inference profile
+# that reads handwritten tabs, default us.moonshotai.kimi-k3.1; "off": none)
+# and TABCAM_VISION_READS (readings of a handwritten page, default 2).
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
@@ -89,6 +91,10 @@ profiles_table="$(share_output ProfilesTable)"; subjects_table="$(share_output S
 session_issuer="$(share_output SessionIssuer)"
 [[ "$session_issuer" =~ ^https://[a-z0-9.-]+/session$ ]] || session_issuer=""
 
+# Handwritten tabs: read by a Bedrock vision model too ("off": not).
+vision_model="${TABCAM_VISION_MODEL:-us.moonshotai.kimi-k3.1}"
+[[ "$vision_model" == off ]] && vision_model=""
+
 echo "== Stack tabcam-ocr"
 aws cloudformation deploy --region "$region" --stack-name tabcam-ocr \
   --template-file tabcam_infra/ocr.yaml --capabilities CAPABILITY_IAM \
@@ -104,6 +110,7 @@ aws cloudformation deploy --region "$region" --stack-name tabcam-ocr \
     "IdentityPoolId=${TABCAM_COGNITO_IDENTITY_POOL_ID:-}" \
     "RbacrTokenParameterName=$rbacr_param" \
     "AnthropicKeySecretName=${ANTHROPIC_KEY_SECRET:-tabcam/anthropic-api-key}" \
+    "VisionModel=$vision_model" "VisionReads=${TABCAM_VISION_READS:-2}" \
     "ProfilesTableName=$profiles_table" \
     "SubjectsTableName=$subjects_table" \
     "Version=$version"

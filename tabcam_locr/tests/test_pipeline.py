@@ -213,12 +213,39 @@ def test_a_pdf_s_doubts_count_the_lines_of_the_pages_before():
     first = pipeline.Result("e|-1-|\nB|-2-|\n", doubts=[[0, 3, "1"]])
     second = pipeline.Result("e|-3-|\n", doubts=[[0, 3, "3"]])
     pages = iter([first, second])
-    orig_pages, orig_image = pipeline.pdf_pages, pipeline.transcribe_image
+    orig_pages, orig_read = pipeline.pdf_pages, pipeline._engines_read
     pipeline.pdf_pages = lambda data: [np.zeros(1), np.zeros(1)]
-    pipeline.transcribe_image = lambda *a, **k: next(pages)
+    pipeline._engines_read = lambda *a, **k: (next(pages), None)
     try:
         r = pipeline.transcribe_pdf(b"", {})
     finally:
-        pipeline.pdf_pages, pipeline.transcribe_image = orig_pages, orig_image
+        pipeline.pdf_pages, pipeline._engines_read = orig_pages, orig_read
     assert r.text.splitlines()[3] == "e|-3-|"
     assert r.doubts == [[0, 3, "1"], [3, 3, "3"]]
+
+
+def test_a_pdf_s_handwritten_pages_are_read_by_the_model_together():
+    import threading
+    import numpy as np
+    sure = pipeline.Result("e|-1-|\nB|-2-|\nG|---|\nD|---|\n")
+    unsure = pipeline.Result("e|-9-|\nB|-9-|\nG|---|\nD|---|\n", doubts=[[0, 2, "9"]])
+    pages = iter([(sure, None), (unsure, "page 2"), (unsure, "page 3")])
+    asked, together = [], threading.Barrier(2, timeout=5)
+
+    def model(img):
+        asked.append(img)
+        together.wait()  # both pages at once, or this times out
+        return "e|-3-5-|\nB|-4-6-|\nG|-----|\nD|-----|\n"
+    orig = pipeline.pdf_pages, pipeline._engines_read, pipeline.VISION_READS
+    pipeline.pdf_pages = lambda data: [np.zeros(1)] * 3
+    pipeline._engines_read = lambda *a, **k: next(pages)
+    pipeline.VISION_READS = 1
+    try:
+        r = pipeline.transcribe_pdf(b"", {}, vision=model)
+    finally:
+        pipeline.pdf_pages, pipeline._engines_read, pipeline.VISION_READS = orig
+    assert sorted(asked) == ["page 2", "page 3"]
+    assert r.text.split("\n\n")[0] == "e|-1-|\nB|-2-|\nG|---|\nD|---|"
+    assert r.text.count("e|-3-5-|") == 2 and r.doubts == [] and r.reader == "vision"
+    assert r.agreement == 0.0  # the engines read 9s where the model reads 3 5 and 4 6
+

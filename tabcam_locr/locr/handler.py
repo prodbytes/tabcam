@@ -456,17 +456,28 @@ def _transcribe_missing(identity, event_id, again=False):
 _engines = None
 
 
+# The worker's end (time.monotonic()), less a margin to write the result:
+# the vision model isn't asked past it.
+_deadline = None
+DEADLINE_MARGIN = 30
+
+
 def _vision(img):
-    """Claude's reading of a page the engines find no tab on; "" while the
-    Claude API key isn't set up, or when Claude fails (logged)."""
-    from . import claude, vision
+    """The vision model's reading of a page (vision.py); "" when it finds
+    no tab, fails or there's no time left (logged: the engines' reading
+    stands)."""
+    from . import vision
+    t = time.monotonic()
     try:
-        return vision.read_tab(img)
-    except claude.NotSetUp:
-        return ""
+        text, usage = vision.read_tab(img, deadline=_deadline)
     except Exception as e:
-        log("vision failed", error=f"{type(e).__name__}: {e}")
+        log("vision failed", model=vision.MODEL, error=f"{type(e).__name__}: {e}",
+            seconds=round(time.monotonic() - t, 2))
         return ""
+    log("vision read", model=vision.MODEL, found=bool(text), frets=vision.frets(text),
+        tokens_in=usage.get("inputTokens"), tokens_out=usage.get("outputTokens"),
+        seconds=round(time.monotonic() - t, 2))
+    return text
 
 
 def _load_engines():
@@ -508,6 +519,9 @@ def ocr(event, context=None):
         log("ocr bad key", key=event.get("key"))
         return None
     log("ocr start", key=page.key, engines_loaded=_engines is not None)
+    global _deadline
+    left = context.get_remaining_time_in_millis() / 1000 if context else None
+    _deadline = time.monotonic() + left - DEADLINE_MARGIN if left else None
     try:
         return _read(page)
     finally:
@@ -528,13 +542,17 @@ def _read(page):
         if obj["ContentLength"] > MAX_BYTES:
             raise pipeline.TooLarge("image too large")
         read = pipeline.transcribe_pdf if page.is_pdf else pipeline.transcribe
+        # Handwritten tabs on drawn staves are read by the vision model too
+        # (VISION_MODEL; empty: off); pages with no tab the engines see,
+        # only with VISION_BLANK=1 (each costs a reading).
+        from . import vision
         r = read(obj["Body"].read(), _engines, read_page=engines.read_page,
-                 read_crop=engines.read_crop,
-                 vision=_vision if os.environ.get("VISION_FALLBACK") == "1" else None)
+                 read_crop=engines.read_crop, vision=_vision if vision.MODEL else None,
+                 vision_blank=os.environ.get("VISION_BLANK") == "1")
         result.update(status="ok" if r.text else "no-tab", text=r.text,
                       doubts=r.doubts, staves=r.staves, lines=r.lines, timings=r.timings)
-        if "claude" in r.timings:
-            result["engines"] = ["claude"]
+        if r.reader == "vision":
+            result.update(engines=[vision.MODEL], agreement=r.agreement)
     except services.s3.exceptions.NoSuchKey:
         log("ocr page gone", key=page.key)
         return "gone"  # deleted meanwhile

@@ -318,7 +318,9 @@ unmarking it doesn't bring them back (a text marked Verified shows none
 in any case, one verified before this, or on an older app, too); a **Rescan**
 that finds a tab replaces them with the text, and the new reading
 brings its own. A read on
-the device says nothing of how sure it is: its text has none
+the device, and a handwritten page the cloud's
+[vision model](cloud-ocr.md#handwriting-read-by-a-vision-model) read,
+say nothing of how sure they are: their text has none
 ([lib/recognition/tab_doubts.dart](../tabcam_app/lib/recognition/tab_doubts.dart)).
 
 Above the text, **the editing tools**, on a line of their own

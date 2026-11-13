@@ -80,7 +80,10 @@ most 5 minutes (less if the grant ends sooner), a "no" for 1 minute.
    `{page, status, text, doubts, staves, lines, seconds, engines, version,
    created}`, `status` being `ok`, `no-tab` or `error`; `doubts` the notes
    read with little confidence, likely wrong, `[[line, column, note]]` in
-   `text` (lines and columns from 0; see [doubtful notes](#doubtful-notes)).
+   `text` (lines and columns from 0; see [doubtful notes](#doubtful-notes));
+   `engines` the OCR engines, or the vision model's ID when it read the
+   tab ([handwriting](#handwriting-read-by-a-vision-model)), with its
+   `agreement`.
    A page deleted while it was read gets no result (the worker checks it's
    still there before writing). Read, gone or failed, the marker is
    removed.
@@ -161,6 +164,8 @@ likely wrong (`doubts`), for the app to show them in red:
   handwritten 6s and 8s as letters) and no more wrong ones.
 - A PDF's doubts count the lines of the pages before (and the blank line
   between them).
+- A page the [vision model](#handwriting-read-by-a-vision-model) read has
+  none: the model says nothing of how sure it is.
 
 On the bench's three pages (158 notes) 21 notes were doubtful, 9 of them
 wrong; of the 16 wrong notes, 9 were doubtful. Of the 7 not flagged, 4 only
@@ -172,18 +177,73 @@ full size, each strip between staves on its own and the whole page too
 (each finds words the other misses), and placed as for text tabs; other apps'
 watermarks ("Digitalizado com CamScanner", "Scanned with ...") are left
 out, in the app too. Printed numbers read exactly (the image's build reads
-a made-up riff set on drawn lines back, every note); handwriting from
-about 80% to 90% of the notes right, in order and on the right string, on
-the bench's two handwritten pages (crowded pages, numbers written into
-each other, less), and only 62% and 71% of the frets on the two
-captures the user has marked Verified
-([measured 2026-11-13](#verified-captures)), with no bar line, slide or
-slur read, so the text is worth checking against the page.
+a made-up riff set on drawn lines back, every note). Handwriting the
+engines read poorly: 62% to 90% of the frets on four pages, with no bar
+line, slide or slur ([measured 2026-11-13](#verified-captures)), so a
+handwritten page is read by a vision model too (below).
 
-Claude (vision, [locr/vision.py](../tabcam_locr/locr/vision.py)) can
-read the pages nothing else does, but it's **off**: on only with
-`VISION_FALLBACK=1` on the function and the Claude API key
-(`tabcam/anthropic-api-key`), neither set.
+### Handwriting read by a vision model
+
+A page on drawn staves whose reading by the engines is unsure, more than
+a tenth of its frets [doubtful](#doubtful-notes) (`UNSURE`: handwriting
+had from a fifth to two thirds, on the pages measured; print reads sure),
+is also read whole by a vision model on Amazon Bedrock
+([locr/vision.py](../tabcam_locr/locr/vision.py)): **Moonshot AI's Kimi
+K3.1** (`us.moonshotai.kimi-k3.1`, the stack's `VisionModel`; the one
+model the account can call that reads these pages: Claude 5 isn't
+granted to it, [verified captures](#verified-captures)). Printed pages,
+tabs on dash lines and pages the engines find no tab on aren't sent
+(the last only with `VISION_BLANK=1`).
+
+- **What it gets**: the page as it came (a PDF's page as rendered), at
+  most 1600 px wide and 2400 px high, as a JPEG, and a prompt on how
+  handwritten tabs are read (the strings top to bottom, the staircase of
+  a run across strings, two digits close together being one fret, the
+  string numbers at the staff's start not being notes, slides, slurs,
+  bends, vibrato, bar lines, show-through from the back of the sheet left
+  out) and the output's format. It thinks first, with most of its
+  `maxTokens` (16000, `VISION_MAX_TOKENS`: it reads worse with less), and
+  answers with the tab, or `NO TAB`.
+- **Twice, side by side** (`VisionReads`, 2): its readings of a page vary
+  (79% to 99% of the frets right, one in 25 at 56%, its notes on the
+  wrong strings), so it reads the page twice at once and the reading
+  closest to the engines' is kept: the share of its frets, by string and
+  number in the order they're played, the engines' reading has too
+  (`agreement`, in the result). The engines' reading is mostly right
+  where it's sure, and a reading gone wrong agrees with it least. Over the
+  readings measured, keeping the closer of two read 93.5% of the frets on
+  average and 82% at worst, against 91% and 56% for one reading.
+- **Its answer** becomes the text tab: each staff's lines made one length
+  and closed by a bar, a bar line on some of a staff's lines put across
+  the staff, staves without notes left out, the title, section names and
+  repeat marks above their staves (noise left out as for the engines'
+  [notations](#transcription)). It has no doubtful notes.
+- **The engines' reading stands** when the model's answers aren't whole
+  (cut short at `maxTokens`, no tab, fewer than half the engines' frets),
+  or when it fails: a throttle (the account's 1M tokens a minute for the
+  profile: each reading reserves its 16000, so about a dozen at once) is
+  waited out, 20, 40 then 60 s (and up to 10 s more), the worker having
+  15 minutes; another error is logged (`vision failed`). No reading starts
+  that couldn't end (180 s, its timeout) before the worker's time runs out,
+  less 30 s to write the result (a long PDF whose engines' reading took
+  most of it): the engines' reading is written instead.
+- **A PDF's** handwritten pages are read by the model five at a time,
+  after the engines have read them all; the PDF's `agreement` is its
+  least.
+- **Time and cost**: a reading takes about 55 s (the engines' reading of
+  the page before it, 15 to 50 s); a page is about 5.3k tokens in and
+  12.4k out. At Kimi K3's list price ($3.30 and $16.50 a million tokens;
+  K3.1 isn't in the price list yet) about $0.22 a reading, $0.44 a page
+  read twice, against $0.0044 for the engines. Only Premium pages are
+  read (the worker reads nothing else), and a page read before isn't
+  read again ([its cached result](#transcription)).
+- **Measured** with the image's code on the four handwritten pages
+  (2026-11-13; two readings each, real engines, Kimi K3.1): 95%, 84%,
+  89% and 98% of the frets right, against 71%, 62%, 83% and 90% for the
+  engines; the printed photo wasn't sent (97%, the engines').
+- **Privacy**: Bedrock keeps no prompts or answers and shares none with
+  the model's maker; through the `us.` profile a page may be read in
+  N. Virginia, Ohio or Oregon ([privacy](privacy.md)).
 
 **Notations**: the rest of the page, with the staves blanked out, is read
 by RapidOCR at half size (1400 px). Its words (confidence 0.5 or more) are
@@ -378,6 +438,9 @@ with `CloudOcr.fetchPage` (`OcrApi.page`), its log line the size only.
   answer and its ttl, or why the check failed (HTTP status). `ocr start`,
   `ocr done` (status, staves, lines, engine timings, seconds) and
   `ocr failed` (the exception and traceback, before Lambda retries).
+  `vision read` (the model, whether it found a tab, its frets, tokens in
+  and out, seconds) for each reading by the vision model, `vision
+  failed` (the error) when one fails.
   `transcribe` also counts the pages left alone because they're being
   read (`reading`). `ocr engines loaded` (seconds: a cold start), `ocr
   warm` (a warm-up: whether it loaded the engines, and how long it
@@ -397,7 +460,10 @@ with `CloudOcr.fetchPage` (`OcrApi.page`), its log line the size only.
     PaddlePaddle has no working Linux ARM build of its version; 2560 MB,
     chosen by [measuring](#memory); 15 min, one retry): it may get page
     images, put results, delete `.reading` markers and list the bucket
-    (so a page deleted meanwhile answers 404, not 403);
+    (so a page deleted meanwhile answers 404, not 403), and, with
+    `VisionModel` set, invoke that inference profile and its model only
+    through it (`VISION_MODEL`, `VISION_READS`); no longer the Claude API
+    key's secret, which only auto-correct uses;
   - `tabcam-ocr-api` (512 MB, 300 s for [auto-correct](autocorrect.md)'s
     `/autocorrect`; the other requests take a second or two, `/page` up to
     15 s): it may read
