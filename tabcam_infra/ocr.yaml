@@ -87,10 +87,19 @@ Parameters:
     Default: us.moonshotai.kimi-k3.1
     Description: >
       The Bedrock inference profile that reads handwritten tabs on drawn
-      staves (Premium pages only; about $0.22 a reading). Empty: off, the
+      staves (Premium pages only; about $0.11 a reading on the flex tier).
+      Empty: off, the
       OCR engines' reading only. Measured 2026-11-13: Kimi K3.1 is the one
       model the account can call that reads them (specs/cloud-ocr.md).
     AllowedPattern: '((us|global)\.[a-z0-9.-]+(:[0-9]+)?)?'
+  VisionTier:
+    Type: String
+    Default: flex
+    AllowedValues: [flex, default, '']
+    Description: >
+      Bedrock's service tier for the vision model: flex costs half the
+      default's and read as well (measured 2026-11-13); when it's busy a
+      reading goes to the default tier at once. Empty: no tier asked.
   VisionReads:
     Type: Number
     Default: 2
@@ -323,6 +332,7 @@ Resources:
           USER_DATA_BUCKET: !ImportValue tabcam-user-data-bucket
           VISION_MODEL: !Ref VisionModel
           VISION_READS: !Ref VisionReads
+          VISION_TIER: !Ref VisionTier
           LOCR_VERSION: !Ref Version
 
   # One try more for a failed page, then it's dropped; the app can ask

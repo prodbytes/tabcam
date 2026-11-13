@@ -16,7 +16,8 @@
 # (default tabcam/anthropic-api-key, read by name: auto-correct is off until
 # it exists, then on), TABCAM_VISION_MODEL (the Bedrock inference profile
 # that reads handwritten tabs, default us.moonshotai.kimi-k3.1; "off": none)
-# and TABCAM_VISION_READS (readings of a handwritten page, default 2).
+# TABCAM_VISION_READS (readings of a handwritten page, default 2) and
+# TABCAM_VISION_TIER (Bedrock's service tier, default flex).
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
@@ -111,6 +112,7 @@ aws cloudformation deploy --region "$region" --stack-name tabcam-ocr \
     "RbacrTokenParameterName=$rbacr_param" \
     "AnthropicKeySecretName=${ANTHROPIC_KEY_SECRET:-tabcam/anthropic-api-key}" \
     "VisionModel=$vision_model" "VisionReads=${TABCAM_VISION_READS:-2}" \
+    "VisionTier=${TABCAM_VISION_TIER-flex}" \
     "ProfilesTableName=$profiles_table" \
     "SubjectsTableName=$subjects_table" \
     "Version=$version"

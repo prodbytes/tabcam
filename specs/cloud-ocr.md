@@ -204,6 +204,16 @@ tabs on dash lines and pages the engines find no tab on aren't sent
   out) and the output's format. It thinks first, with most of its
   `maxTokens` (16000, `VISION_MAX_TOKENS`: it reads worse with less), and
   answers with the tab, or `NO TAB`.
+- **On Bedrock's flex tier** (`VisionTier`, `flex`): half the default
+  tier's price, for the same model. On the four pages (13 readings,
+  2026-11-13) it read as well as the default tier (93.7% of the frets a
+  reading, 96.1% keeping the closer of two; the default's 92.7% and
+  94.7%), as fast (about 52 s), and was never turned away. It's served
+  last when Bedrock is busy, so a reading flex turns away (a throttle,
+  unavailable) goes to the default tier at once, then waits out
+  throttles there (below). A smaller thinking budget, the other way to
+  spend less, read worse: at 8000 `maxTokens`, 86.8% a reading and 31% at
+  worst, 92.3% and 78% keeping the closer of two.
 - **Twice, side by side** (`VisionReads`, 2): its readings of a page vary
   (79% to 99% of the frets right, one in 25 at 56%, its notes on the
   wrong strings), so it reads the page twice at once and the reading
@@ -232,9 +242,11 @@ tabs on dash lines and pages the engines find no tab on aren't sent
   least.
 - **Time and cost**: a reading takes about 55 s (the engines' reading of
   the page before it, 15 to 50 s); a page is about 5.3k tokens in and
-  12.4k out. At Kimi K3's list price ($3.30 and $16.50 a million tokens;
-  K3.1 isn't in the price list yet) about $0.22 a reading, $0.44 a page
-  read twice, against $0.0044 for the engines. Only Premium pages are
+  12.4k out, the output (its thinking) nine tenths of the cost. At Kimi
+  K3's flex price ($1.65 and $8.25 a million tokens, half its default
+  tier's; K3.1 isn't in the price list yet) about $0.11 a reading, $0.22
+  a page read twice ($0.44 on the default tier), against $0.0044 for the
+  engines. Only Premium pages are
   read (the worker reads nothing else), and a page read before isn't
   read again ([its cached result](#transcription)).
 - **Measured** with the image's code on the four handwritten pages
@@ -439,7 +451,8 @@ with `CloudOcr.fetchPage` (`OcrApi.page`), its log line the size only.
   `ocr done` (status, staves, lines, engine timings, seconds) and
   `ocr failed` (the exception and traceback, before Lambda retries).
   `vision read` (the model, whether it found a tab, its frets, tokens in
-  and out, seconds) for each reading by the vision model, `vision
+  and out, the service tier that served it, seconds) for each reading by
+  the vision model, `vision
   failed` (the error) when one fails.
   `transcribe` also counts the pages left alone because they're being
   read (`reading`). `ocr engines loaded` (seconds: a cold start), `ocr
@@ -462,7 +475,7 @@ with `CloudOcr.fetchPage` (`OcrApi.page`), its log line the size only.
     images, put results, delete `.reading` markers and list the bucket
     (so a page deleted meanwhile answers 404, not 403), and, with
     `VisionModel` set, invoke that inference profile and its model only
-    through it (`VISION_MODEL`, `VISION_READS`); no longer the Claude API
+    through it (`VISION_MODEL`, `VISION_READS`, `VISION_TIER`); no longer the Claude API
     key's secret, which only auto-correct uses;
   - `tabcam-ocr-api` (512 MB, 300 s for [auto-correct](autocorrect.md)'s
     `/autocorrect`; the other requests take a second or two, `/page` up to
