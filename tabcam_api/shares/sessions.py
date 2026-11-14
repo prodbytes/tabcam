@@ -90,15 +90,22 @@ class Signer:
         return f"{signing_input}.{_b64url(signature)}"
 
     def jwks(self):
-        from cryptography.hazmat.primitives import serialization
-        der, kid = self._public_key()
-        numbers = serialization.load_der_public_key(der).public_numbers()
+        return jwks_of(self._public_key()[0])
 
-        def b64int(n):
-            return _b64url(n.to_bytes((n.bit_length() + 7) // 8, "big"))
 
-        return {"keys": [{"kty": "RSA", "use": "sig", "alg": "RS256", "kid": kid,
-                          "n": b64int(numbers.n), "e": b64int(numbers.e)}]}
+def jwks_of(der):
+    """The JWKS of the session key's public half ([der], as KMS gives it),
+    its kid as Signer's. Also computed by scripts/deploy-share-api.sh: the
+    API serves it without this function (the stack's SessionJwks)."""
+    from cryptography.hazmat.primitives import serialization
+    numbers = serialization.load_der_public_key(der).public_numbers()
+
+    def b64int(n):
+        return _b64url(n.to_bytes((n.bit_length() + 7) // 8, "big"))
+
+    kid = _b64url(hashlib.sha256(der).digest())[:16]
+    return {"keys": [{"kty": "RSA", "use": "sig", "alg": "RS256", "kid": kid,
+                      "n": b64int(numbers.n), "e": b64int(numbers.e)}]}
 
 
 def discovery(issuer):

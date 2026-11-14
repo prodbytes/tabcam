@@ -48,7 +48,7 @@
 <main>
   <p><a class="brand" href="/app/">TabCam</a></p>
   <h1>Privacy Policy</h1>
-  <p class="muted">Last updated: November 9, 2026</p>
+  <p class="muted">Last updated: November 13, 2026</p>
 
   <p>TabCam scans guitar tabs, reads them into text, records you playing
   along, and shares them. It runs as an Android app, an iOS app and a web
@@ -145,7 +145,11 @@
     <li><strong>TabCam Premium:</strong> pages that sync to your cloud
     folder are also transcribed by TabCam's OCR service, running on
     Amazon Web Services (AWS Lambda). The page is read there and the text
-    is saved next to it in your folder. <strong>Fix</strong> sends the
+    is saved next to it in your folder. A handwritten page is also read by
+    an AI vision model, Moonshot AI's Kimi, which runs in Amazon Bedrock,
+    inside Amazon Web Services: Bedrock doesn't keep the page or share it
+    with Moonshot AI, and it isn't used to train the model.
+    <strong>Fix</strong> sends the
     song's name and your tab's text (not the page's image) to Anthropic's
     Claude, which searches the web for the song's published tab and
     proposes corrections; nothing changes until you accept them.</li>
@@ -160,7 +164,8 @@
     captures in AWS KMS, sign-in credentials through Amazon Cognito, and
     the sharing and OCR services on AWS Lambda. All of it is in the AWS
     US East (N. Virginia) region, in the United States, encrypted at rest
-    and sent only over HTTPS. <strong>Amazon CloudFront</strong>, which
+    and sent only over HTTPS. Amazon Bedrock may read a handwritten page
+    in another of its US regions (N. Virginia, Ohio or Oregon). <strong>Amazon CloudFront</strong>, which
     serves TabCam's site, also delivers your captures' files to the apps:
     it keeps copies of them in its locations in the United States, Canada,
     Europe and Israel, for up to a year for pages, photos and videos

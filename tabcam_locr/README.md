@@ -62,6 +62,8 @@ app syncs a page ──► user-data bucket ──S3 event──► EventBridge 
 |---|---|
 | [locr/pipeline.py](locr/pipeline.py) | page → lines → staves → per-line readings → vote → text tab, with the notations off the staves (chords, lyrics) |
 | [locr/engines.py](locr/engines.py) | Tesseract, PaddleOCR, RapidOCR on one line strip; RapidOCR on the page off the staves |
+| [locr/staves.py](locr/staves.py) | frets on drawn staff lines (handwritten, typeset) |
+| [locr/vision.py](locr/vision.py) | a handwritten page read whole by a Bedrock vision model (`VISION_MODEL`, Kimi K3.1) |
 | [locr/handler.py](locr/handler.py) | the two Lambda handlers (`api`, `ocr`) |
 | [locr/autocorrect.py](locr/autocorrect.py) | `/autocorrect`: the reading's notes, Claude's corrections, checked |
 | [locr/auth.py](locr/auth.py) | ID token check (Google, Apple), Cognito identity |

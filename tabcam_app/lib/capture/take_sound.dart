@@ -2,6 +2,8 @@ import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import 'take_recorder.dart' show TakeMic;
+
 /// Android: the take's sound recorded by the app, not by the camera, as a
 /// musician wants it (the microphone's unprocessed source where the phone
 /// has one; the camera's is the camcorder source, with the maker's gain
@@ -26,13 +28,19 @@ abstract final class TakeSound {
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
   /// Asks for the microphone if it isn't allowed (not with [ask] false),
-  /// and opens it: whether takes get their sound here (else the camera
-  /// should record it), and if not, whether the microphone was refused.
-  static Future<TakeSoundReady> prepare({bool ask = true}) async {
+  /// and opens it, from [device] ([inputs]' id; null, or one not
+  /// connected: the system's choice): whether takes get their sound here
+  /// (else the camera should record it), and if not, whether the
+  /// microphone was refused.
+  static Future<TakeSoundReady> prepare({
+    bool ask = true,
+    String? device,
+  }) async {
     if (!supported) return TakeSoundReady.unavailable;
     try {
       final info = await channel.invokeMapMethod<String, Object?>('prepare', {
         'ask': ask,
+        'device': device,
       });
       if (info?['ok'] == true) {
         debugPrint(
@@ -50,6 +58,40 @@ abstract final class TakeSound {
       debugPrint('TabCam: cam: the camera records the take\'s sound: $e');
     }
     return TakeSoundReady.unavailable;
+  }
+
+  /// The microphones the take's sound can be recorded from (the phone's
+  /// own, wired, USB and line inputs; not Bluetooth headsets, whose
+  /// microphones are for calls), each `{id, name}`: [prepare]'s and
+  /// [choose]'s `device`. Empty when it can't tell.
+  static Future<List<TakeMic>> inputs() async {
+    if (!supported) return const [];
+    try {
+      return TakeMic.fromChannel(await channel.invokeMethod<Object?>('inputs'));
+    } on Object catch (e) {
+      debugPrint('TabCam: cam: no list of microphones: $e');
+      return const [];
+    }
+  }
+
+  /// The take's sound is recorded from [device] from now on (null: the
+  /// system's choice), the microphone opened again from it. Whether it
+  /// opened from it (false: it couldn't, and the system's choice is open
+  /// instead). Not while recording.
+  static Future<bool> choose(String? device) async {
+    try {
+      final info = await channel.invokeMapMethod<String, Object?>('choose', {
+        'device': device,
+      });
+      debugPrint(
+        'TabCam: cam: the take\'s sound from ${info?['routed'] ?? '?'}: '
+        '${info?['source']}, ${info?['sampleRate']} Hz',
+      );
+      return info?['ok'] == true && info?['fellBack'] != true;
+    } on Object catch (e) {
+      debugPrint('TabCam: cam: microphone $device: $e');
+      return false;
+    }
   }
 
   /// The microphone records the take's sound; throws when it can't.

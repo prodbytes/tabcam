@@ -118,6 +118,17 @@ Parameters:
       makes the authorizer, and this API serves it: so the first deploy
       passes false, the function's code is uploaded, and a second deploy
       passes true (scripts/deploy-share-api.sh does both).
+  SessionJwks:
+    Type: String
+    Default: ''
+    Description: >
+      The session key's JWKS (its public half; scripts/deploy-share-api.sh
+      reads it from KMS). Set, the discovery document and the JWKS are
+      served by a small function of their own that answers at once, even
+      cold: API Gateway's authorizer gives up on them after 1.5 s, and the
+      main function's cold start took 3.7 s, refusing good tokens (401).
+      Empty (the first deploy, before the key exists): the main function
+      serves them.
   CdnDistributionIds:
     Type: String
     Default: ''
@@ -133,6 +144,7 @@ Conditions:
   HasApple: !Not [!Equals [!Ref AppleClientId, '']]
   HasAppleServicesId: !Not [!Equals [!Ref AppleServicesId, '']]
   HasEmail: !Not [!Equals [!Ref EmailIssuer, '']]
+  HasStaticKeys: !Not [!Equals [!Ref SessionJwks, '']]
   HasAccountsTable: !Not [!Equals [!Ref AccountsTableName, '']]
   HasSessionAuthorizer: !Equals [!Ref EnableSessionAuthorizer, 'true']
 
@@ -737,7 +749,7 @@ Resources:
   # ID tokens (for the authorizer above, and the cloud OCR service).
   Fn::ForEach::SessionRoutes:
     - Route
-    - [Refresh, End, Discovery, Keys]
+    - [Refresh, End]
     - RouteSession${Route}:
         Type: AWS::ApiGatewayV2::Route
         Properties:
@@ -745,6 +757,107 @@ Resources:
           RouteKey: !FindInMap [SessionRoutes, !Ref Route, Key]
           AuthorizationType: NONE
           Target: !Sub integrations/${Integration}
+
+  # The discovery document and the keys, which the /tabcam authorizer reads
+  # (giving up after 1.5 s: a good token is then refused, 401) whenever its
+  # copy expires: from KeysFunction, which only answers them, at once.
+  Fn::ForEach::SessionKeyRoutes:
+    - Route
+    - [Discovery, Keys]
+    - RouteSession${Route}:
+        Type: AWS::ApiGatewayV2::Route
+        Properties:
+          ApiId: !Ref Api
+          RouteKey: !FindInMap [SessionRoutes, !Ref Route, Key]
+          AuthorizationType: NONE
+          Target: !If
+            - HasStaticKeys
+            - !Sub integrations/${KeysIntegration}
+            - !Sub integrations/${Integration}
+
+  KeysLogs:
+    Type: AWS::Logs::LogGroup
+    Condition: HasStaticKeys
+    Properties:
+      LogGroupName: /aws/lambda/tabcam-share-api-keys
+      RetentionInDays: 30
+
+  KeysRole:
+    Type: AWS::IAM::Role
+    Condition: HasStaticKeys
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: {Service: lambda.amazonaws.com}
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: logs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !Sub ${KeysLogs.Arn}:*
+
+  # Answers the two documents from its environment: no library, no AWS
+  # call, so even a cold start answers in a few hundred milliseconds.
+  KeysFunction:
+    Type: AWS::Lambda::Function
+    Condition: HasStaticKeys
+    Properties:
+      FunctionName: tabcam-share-api-keys
+      Description: TabCam sessions' discovery document and JWKS, for the /tabcam authorizer
+      Runtime: python3.13
+      Architectures: [arm64]
+      Handler: index.handler
+      MemorySize: 256
+      Timeout: 3
+      Role: !GetAtt KeysRole.Arn
+      LoggingConfig:
+        LogGroup: !Ref KeysLogs
+      Environment:
+        Variables:
+          JWKS: !Ref SessionJwks
+          # As sessions.discovery() makes it.
+          DISCOVERY: !Sub >-
+            {"issuer": "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/session",
+            "jwks_uri": "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/session/.well-known/jwks.json",
+            "id_token_signing_alg_values_supported": ["RS256"],
+            "subject_types_supported": ["public"], "response_types_supported": ["id_token"]}
+      Code:
+        ZipFile: |
+          import os
+
+          HEADERS = {"content-type": "application/json",
+                     "cache-control": "public, max-age=3600"}
+
+
+          def handler(event, context):
+              path = event.get("rawPath", "")
+              body = os.environ["JWKS" if path.endswith("/jwks.json") else "DISCOVERY"]
+              return {"statusCode": 200, "headers": HEADERS, "body": body}
+
+  KeysIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Condition: HasStaticKeys
+    Properties:
+      ApiId: !Ref Api
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt KeysFunction.Arn
+      PayloadFormatVersion: '2.0'
+      # The authorizer waits 1.5 s at most.
+      TimeoutInMillis: 3000
+
+  KeysPermission:
+    Type: AWS::Lambda::Permission
+    Condition: HasStaticKeys
+    Properties:
+      FunctionName: !Ref KeysFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${Api}/*/*/session/.well-known/*
 
   # Anyone holding a capture's link, signed in or not: no authorizer. The
   # function checks the link's key (POST, so it's in the body).

@@ -318,7 +318,9 @@ unmarking it doesn't bring them back (a text marked Verified shows none
 in any case, one verified before this, or on an older app, too); a **Rescan**
 that finds a tab replaces them with the text, and the new reading
 brings its own. A read on
-the device says nothing of how sure it is: its text has none
+the device, and a handwritten page the cloud's
+[vision model](cloud-ocr.md#handwriting-read-by-a-vision-model) read,
+say nothing of how sure they are: their text has none
 ([lib/recognition/tab_doubts.dart](../tabcam_app/lib/recognition/tab_doubts.dart)).
 
 Above the text, **the editing tools**, on a line of their own
@@ -475,12 +477,13 @@ files or not; the capture's photos aren't listed.
 **Notation sheet**: when the capture has recordings, videos, links or
 PDFs, the play-along sidebar beside the text
 ends, under the mini player and the list of files, in a quick sheet of
-how techniques are written in tab, each symbol in the tab's font with
-what it is: `5h7` hammer-on, `7p5` pull-off, `5_7` a slur (a hammer-on
-or a pull-off), `5/7 7\5` slide up, down, `7b9 r7` bend (to the pitch of
-9), r release, `7(9)` a bend too (the pitch in parentheses after the
-note), `7~` vibrato, `(5)` a ghost note (played softly) and `x` a ghost
-note or palm mute (muted, no pitch)
+how techniques are written in tab, each symbol in the tab's font beside
+the technique's name only, with no explanation: `5h7` hammer-on, `7p5`
+pull-off, `5_7` slur, `5/7 7\5` slide, `7b9 r7` bend, release, `7(9)`
+bend (in tab, parentheses are for bends: no ghost notes in them), `7~`
+vibrato and `x` ghost note / palm mute. Spanish and Portuguese keep the
+English names guitarists use (hammer-on, pull-off, slide, bend, release),
+with "ligado" for the slur and "nota fantasma" for the ghost note
 (`NotationSheet`, [lib/screens/tab_notation.dart](../tabcam_app/lib/screens/tab_notation.dart)).
 It takes at most 30% of the sidebar's height: taller, as in a phone's
 narrow sidebar where its lines wrap, it scrolls, so the player above

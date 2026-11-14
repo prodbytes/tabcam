@@ -589,6 +589,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camStopKey => 'Stop (1) · new take (.)';
 
   @override
+  String get camMicChoose => 'Microphone';
+
+  @override
+  String get camMicHeading => 'Record from';
+
+  @override
+  String get camMicDefault => 'Default microphone';
+
+  @override
+  String get camMicBuiltIn => 'Phone microphone';
+
+  @override
+  String camMicUnnamed(int n) {
+    return 'Microphone $n';
+  }
+
+  @override
+  String camMicFailed(String name) {
+    return 'Couldn\'t open $name: takes record from the default microphone.';
+  }
+
+  @override
   String get camPlay => 'Play';
 
   @override
@@ -1166,27 +1188,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get textViewNotationPullOff => 'pull-off';
 
   @override
-  String get textViewNotationSlide => 'slide up, down';
+  String get textViewNotationSlide => 'slide';
 
   @override
-  String get textViewNotationBend => 'bend (to the pitch of 9), r release';
+  String get textViewNotationBend => 'bend, release';
 
   @override
   String get textViewNotationVibrato => 'vibrato';
 
   @override
-  String get textViewNotationGhost => 'ghost note (played softly)';
+  String get textViewNotationMuted => 'ghost note / palm mute';
 
   @override
-  String get textViewNotationMuted =>
-      'ghost note / palm mute (muted, no pitch)';
+  String get textViewNotationSlur => 'slur';
 
   @override
-  String get textViewNotationSlur => 'slur: a hammer-on or a pull-off';
-
-  @override
-  String get textViewNotationBendParens =>
-      'bend too: the pitch in parentheses after the note';
+  String get textViewNotationBendParens => 'bend';
 
   @override
   String get textViewSongDialogTitle => 'Fix from the song\'s tab';

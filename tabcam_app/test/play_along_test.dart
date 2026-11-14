@@ -79,8 +79,28 @@ class FakeTakeRecorder implements TakeRecorder {
   int started = 0;
   int lent = 0;
 
+  /// The microphones it lists, which it opens from ([opens]: false for
+  /// one that won't), and what it was told, in turn (with `prepare`).
+  List<TakeMic> mics = const [];
+  bool opens = true;
+  final List<String?> used = [];
+  final List<String> order = [];
+
   @override
-  Future<void> prepare() async => prepared++;
+  Future<void> prepare() async {
+    prepared++;
+    order.add('prepare');
+  }
+
+  @override
+  Future<List<TakeMic>> microphones() async => mics;
+
+  @override
+  Future<bool> useMicrophone(String? id) async {
+    used.add(id);
+    order.add('use $id');
+    return opens;
+  }
 
   @override
   Future<bool> hasSound() async => sound;
@@ -230,10 +250,13 @@ void main() {
 
   /// Whether Rec is back (the take saved).
   bool recReady(WidgetTester tester) {
-    final rec = find.descendant(
-      of: find.byKey(const Key('cam-rec')),
-      matching: find.byType(IconButton),
-    );
+    // Rec's own button (its menu's arrow is beside it).
+    final rec = find
+        .descendant(
+          of: find.byKey(const Key('cam-rec')),
+          matching: find.byType(IconButton),
+        )
+        .first;
     final button = tester.widget<IconButton>(rec);
     return button.tooltip == 'Rec (1)' && button.onPressed != null;
   }
@@ -1534,6 +1557,158 @@ B|--5--8--|
     });
   });
 
+  group('Rec\'s menu: the microphone', () {
+    const usb = TakeMic('usb-1', 'USB Audio Interface');
+    const webcam = TakeMic('cam-2', '');
+
+    Future<(Library, String)> open(
+      WidgetTester tester,
+      FakeTakeRecorder recorder, {
+      Library? library,
+      String? id,
+    }) async {
+      camera.imageStreaming = false;
+      final (lib, eventId) = library != null
+          ? (library, id!)
+          : await capture(tester, tab: _tab);
+      await tester.pumpWidget(
+        app(
+          PlayAlongScreen(
+            library: lib,
+            eventId: eventId,
+            cameras: () async => [_front],
+            headTracking: (_, _) => null,
+            takeRecorder: () => recorder,
+          ),
+        ),
+      );
+      await frames(tester);
+      return (lib, eventId);
+    }
+
+    IconButton arrow(WidgetTester tester) =>
+        tester.widget<IconButton>(find.byKey(const Key('cam-rec-device')));
+
+    bool checked(WidgetTester tester, Key key) =>
+        tester.widget<CheckedPopupMenuItem<Object?>>(find.byKey(key)).checked;
+
+    testWidgets('the arrow beside Rec lists the microphones, the default '
+        'checked; one picked opens for the takes, is kept, and opens first '
+        'when Cam opens again', (tester) async {
+      final recorder = FakeTakeRecorder()..mics = [usb, webcam];
+      final (library, id) = await open(tester, recorder);
+      // The default chosen: the recorder told so before it opened.
+      expect(recorder.order, ['use null', 'prepare']);
+      expect(find.byTooltip('Microphone'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('cam-rec-device')));
+      await frames(tester);
+      expect(find.text('Record from'), findsOneWidget);
+      expect(find.text('Default microphone'), findsOneWidget);
+      expect(find.text('USB Audio Interface'), findsOneWidget);
+      // No name from the system: Cam names it by its place in the list.
+      expect(find.text('Microphone 2'), findsOneWidget);
+      expect(checked(tester, const Key('cam-mic-default')), isTrue);
+      expect(checked(tester, const Key('cam-mic-usb-1')), isFalse);
+
+      await tester.tap(find.byKey(const Key('cam-mic-usb-1')));
+      await frames(tester);
+      expect(recorder.used.last, 'usb-1');
+      String? settings;
+      await tester.runAsync(
+        () async => settings = await library.readMeta('cam'),
+      );
+      expect(jsonDecode(settings!), {'autoPass': true, 'mic': 'usb-1'});
+
+      // Checked now; picking it again changes nothing.
+      await tester.tap(find.byKey(const Key('cam-rec-device')));
+      await frames(tester);
+      expect(checked(tester, const Key('cam-mic-usb-1')), isTrue);
+      expect(checked(tester, const Key('cam-mic-default')), isFalse);
+      await tester.tap(find.byKey(const Key('cam-mic-usb-1')));
+      await frames(tester);
+      expect(recorder.used, [null, 'usb-1']);
+
+      // Cam again: the microphone opens from the one kept.
+      await tester.pumpWidget(const SizedBox());
+      await frames(tester);
+      final again = FakeTakeRecorder()..mics = [usb];
+      await open(tester, again, library: library, id: id);
+      expect(again.order, ['use usb-1', 'prepare']);
+
+      // Back to the default.
+      await tester.tap(find.byKey(const Key('cam-rec-device')));
+      await frames(tester);
+      await tester.tap(find.byKey(const Key('cam-mic-default')));
+      await frames(tester);
+      expect(again.used.last, isNull);
+      await tester.runAsync(
+        () async => settings = await library.readMeta('cam'),
+      );
+      expect(jsonDecode(settings!), {'autoPass': true});
+    });
+
+    testWidgets('one that won\'t open says so (the default records); the '
+        'arrow does nothing while a take records', (tester) async {
+      final recorder = FakeTakeRecorder()
+        ..mics = [usb]
+        ..opens = false;
+      await open(tester, recorder);
+      await tester.tap(find.byKey(const Key('cam-rec-device')));
+      await frames(tester);
+      await tester.tap(find.byKey(const Key('cam-mic-usb-1')));
+      await frames(tester);
+      expect(
+        find.text(
+          'Couldn\'t open USB Audio Interface: takes record from the '
+          'default microphone.',
+        ),
+        findsOneWidget,
+      );
+      // The default chosen instead, as it's what records.
+      expect(recorder.used, [null, 'usb-1', null]);
+      await tester.tap(find.byKey(const Key('cam-rec-device')));
+      await frames(tester);
+      expect(checked(tester, const Key('cam-mic-default')), isTrue);
+      expect(checked(tester, const Key('cam-mic-usb-1')), isFalse);
+      await tester.tapAt(Offset.zero);
+      await frames(tester);
+
+      expect(arrow(tester).onPressed, isNotNull);
+      await tester.tap(find.byTooltip('Rec (1)'));
+      await frames(tester);
+      expect(recorder.started, 1);
+      expect(arrow(tester).onPressed, isNull);
+      await tester.tap(_camStop);
+      await until(tester, () => recReady(tester));
+      expect(arrow(tester).onPressed, isNotNull);
+    });
+
+    testWidgets('no arrow in the preview, nor where the camera records the '
+        'sound (Android, the app\'s microphone unavailable)', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      try {
+        final (library, id) = await capture(tester, tab: _tab);
+        await tester.pumpWidget(
+          app(
+            PlayAlongScreen(
+              library: library,
+              eventId: id,
+              cameras: () async => [_front],
+              headTracking: (_, _) => null,
+              takeRecorder: () => null,
+            ),
+          ),
+        );
+        await frames(tester);
+        expect(find.byKey(const Key('cam-rec')), findsOneWidget);
+        expect(find.byKey(const Key('cam-rec-device')), findsNothing);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+  });
+
   group('Android: the take\'s sound recorded by the app', () {
     /// The calls on `tabcam/take_sound`, and what the camera was doing at
     /// each (started recordings, recording).
@@ -1551,7 +1726,13 @@ B|--5--8--|
     late String? warning;
     late Directory dir;
 
+    /// What `inputs` gives, and `choose`'s arguments.
+    late List<Map<String, Object?>> inputs;
+    late List<Object?> chooseArgs;
+
     setUp(() {
+      inputs = [];
+      chooseArgs = [];
       calls = [];
       stopArgs = [];
       prepareArgs = [];
@@ -1588,6 +1769,11 @@ B|--5--8--|
                 ? preparedAgain ?? prepared
                 : prepared;
           }(),
+          'inputs' => inputs,
+          'choose' => () {
+            chooseArgs.add(call.arguments);
+            return {...prepared, 'routed': 'USB', 'fellBack': false};
+          }(),
           'stop' => () {
             stopArgs.add(call.arguments);
             return {
@@ -1613,6 +1799,41 @@ B|--5--8--|
       headTracking: (_, _) => null,
       takeRecorder: () => null,
     );
+
+    testWidgets('Rec\'s menu lists the inputs (the phone\'s own named by '
+        'Cam), picks one, and Cam opens from it the next time', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      try {
+        inputs = [
+          {'id': '15|Pixel|bottom', 'name': 'bottom', 'builtIn': true},
+          {'id': '11|Scarlett 2i2|', 'name': 'Scarlett 2i2', 'builtIn': false},
+        ];
+        await open(tester);
+        final (library, id) = await capture(tester, tab: _tab);
+        await tester.pumpWidget(app(cam(library, id)));
+        await frames(tester);
+        expect(prepareArgs, [
+          {'ask': true, 'device': null},
+        ]);
+        await tester.tap(find.byKey(const Key('cam-rec-device')));
+        await frames(tester);
+        expect(find.text('Phone microphone (bottom)'), findsOneWidget);
+        await tester.tap(find.byKey(const Key('cam-mic-11|Scarlett 2i2|')));
+        await frames(tester);
+        expect(chooseArgs, [
+          {'device': '11|Scarlett 2i2|'},
+        ]);
+        expect(find.textContaining('Couldn\'t open'), findsNothing);
+
+        await tester.pumpWidget(const SizedBox());
+        await frames(tester);
+        await tester.pumpWidget(app(cam(library, id)));
+        await frames(tester);
+        expect(prepareArgs.last, {'ask': true, 'device': '11|Scarlett 2i2|'});
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
 
     testWidgets('the camera opens without sound; Rec starts the sound before '
         'the camera, Stop puts it into the take (and that\'s the take: no '
@@ -1729,8 +1950,8 @@ B|--5--8--|
       // Asked once; prepared again, without asking, once the camera opened.
       expect(camera.settings.single!.enableAudio, isTrue);
       expect(prepareArgs, [
-        {'ask': true},
-        {'ask': false},
+        {'ask': true, 'device': null},
+        {'ask': false, 'device': null},
       ]);
       expect(calls.last, ('prepare', 0, false));
       await tester.tap(find.byTooltip('Rec (1)'));

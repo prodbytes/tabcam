@@ -123,7 +123,21 @@ echo "==> deploying tabcam-share-api"
 # access role trusts the function's by name). AUTO_EXPAND: Fn::ForEach.
 # One API for production and the RC, so tenancy=shared. $1: the sessions'
 # authorizer, true or false.
+# The session key's JWKS, from KMS (empty before the first deploy makes the
+# key): the stack serves it and the discovery document from a small
+# function of their own, which answers the authorizer at once (sessions.py
+# jwks_of, the function's own way).
+session_jwks() {
+  local der
+  der="$(aws kms get-public-key --key-id alias/tabcam-sessions --query PublicKey --output text 2>/dev/null || true)"
+  [[ -n "$der" && "$der" != None ]] || return 0
+  "$work/venv/bin/python" -I -c 'import base64, json, sys
+sys.path.insert(0, "tabcam_api/shares")
+import sessions
+print(json.dumps(sessions.jwks_of(base64.b64decode(sys.argv[1])), separators=(",", ":")))' "$der"
+}
 deploy_stack() {
+  jwks="$(session_jwks)"
   aws cloudformation deploy --stack-name tabcam-share-api \
     --template-file tabcam_infra/share-api.yaml \
     --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
@@ -138,7 +152,7 @@ deploy_stack() {
       "AppleSignInKeyParameterName=$apple_key_param" \
       DeveloperProviderName=login.tabcam.profiles \
       "CdnPublicKey=$cdn_public_key" "CdnDistributionIds=$cdn_distributions" \
-      "EnableSessionAuthorizer=$1" \
+      "EnableSessionAuthorizer=$1" "SessionJwks=$jwks" \
     --no-fail-on-empty-changeset
 }
 existing_url="$(aws cloudformation describe-stacks --stack-name tabcam-share-api \
@@ -197,6 +211,12 @@ issuer="$(curl -s "$url/session/.well-known/openid-configuration" \
 [[ "$issuer" == "$url/session" ]] || { echo "error: the session issuer is '$issuer', not $url/session" >&2; exit 1; }
 curl -sf "$url/session/.well-known/jwks.json" | grep -q '"RS256"' \
   || { echo "error: $url/session/.well-known/jwks.json has no RS256 key" >&2; exit 1; }
+# Served as KMS has it (by the keys function, once the key exists).
+jwks="$(session_jwks)"
+if [[ -n "$jwks" ]]; then
+  served="$(curl -sf "$url/session/.well-known/jwks.json" | python3 -I -c 'import json, sys; print(json.dumps(json.load(sys.stdin), separators=(",", ":")))')"
+  [[ "$served" == "$jwks" ]] || { echo "error: $url/session/.well-known/jwks.json isn't the session key's" >&2; exit 1; }
+fi
 status="$(curl -s -o /dev/null -w '%{http_code}' "$url/tabcam/shared")"
 [[ "$status" == 401 ]] || { echo "error: $url/tabcam/shared answered $status, not 401" >&2; exit 1; }
 status="$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'content-type: application/json' \

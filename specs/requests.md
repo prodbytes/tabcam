@@ -3351,3 +3351,120 @@ spec.
    slider's range, the panel on a phone and a wide screen, a tap (play
    or pause) and a long press (the style) on the band, the largest text size on a 360-point phone, Reset, the file
    screen's player). See [video edit](video-edit.md#layers).
+
+## 2026-11-13
+
+1. **"Text recognition of handwritten tabs is still very poor and
+   inaccurate. What could we do to improve it? Check the ones that are
+   marked as Verified in the system, already marked a couple."** No code
+   change: a measurement. The two captures marked Verified (scanned
+   handwritten pages in marker) were fetched with the cloud's stored
+   readings of them and scored fret by fret: the cloud OCR had 71% and
+   62% of the frets right (phantom notes from the string numbers and
+   the marks at the staves' ends, 10, 12 and 13 misread, notes missed),
+   and no bar line, slide or slur. Read whole by a vision model with one
+   prompt, Claude Opus 4.6 and Sonnet 4.6 (the ones Bedrock gives this
+   account) do no better, putting right digits on wrong strings; Claude
+   Opus 5.5 and Sonnet 5.5 (run outside Bedrock, as a test) read 99% and
+   100%, and 94% and 97%, with the bar lines and slides. The pages, the
+   readings and the scorer are in `test_data/verified` (out of git). See
+   [cloud OCR](cloud-ocr.md#verified-captures).
+2. **"Also test other models that are available on Bedrock, AWS won't
+   grant Claude 5.5 yet."** No code change. Every Bedrock model that
+   takes an image and answers for the account read the two verified
+   pages whole, with the same prompt. One reads them: Kimi K3.1
+   (Moonshot), 93% and 89% of the frets, and 86% to 99% over three
+   readings each of four handwritten pages (the cloud OCR: 62% to 90%),
+   with the slides and slurs, at about $0.12 to $0.22 a page for its
+   thinking. The others (Kimi K3 and K2.5, Claude Opus 4.5 and Haiku
+   4.5, Nova, Mistral, Qwen3-VL, Gemma, Nemotron) put the notes on the
+   wrong strings or miss them; OpenAI's, Grok and GLM aren't available
+   for the account, as Claude 5. See
+   [cloud OCR](cloud-ocr.md#verified-captures).
+3. **"Let's do it, the best we can with what we have."** Handwritten tabs
+   are now read by Moonshot AI's Kimi K3.1 on Amazon Bedrock too. A page
+   on drawn staves whose engines' reading is unsure (more than a tenth of
+   its frets doubtful: handwriting) is read whole by the model, twice at
+   once, and the reading closest to the engines' replaces theirs; the
+   engines' reading stands when the model fails, is cut short or reads
+   too little. The model gets the page as it came (it read those a little
+   better than the cleaned page), throttles are waited out, and a PDF's
+   handwritten pages are read five at a time. Its text has no red notes.
+   Measured end to end on the four handwritten pages: 95%, 84%, 89% and
+   98% of the frets, against 71%, 62%, 83% and 90%; about $0.44 a
+   handwritten page, Premium only. The stack gives the worker the model
+   through its US inference profile (`VisionModel`, `VisionReads`) and no
+   longer the unused Claude key; the privacy policy says handwritten
+   pages are read by Kimi in Amazon Bedrock. See
+   [cloud OCR](cloud-ocr.md#handwriting-read-by-a-vision-model),
+   [tab recognition](tab-recognition.md#text-view) and
+   [privacy](privacy.md).
+4. **"Any way we could make it cheaper without making it less
+   reliable?"** The vision model now reads on Bedrock's **flex** service
+   tier: the same model at half the price. Measured on the four
+   handwritten pages, 13 flex readings read as well as the default
+   tier's (93.7% of the frets a reading, 96.1% keeping the closer of two,
+   against 92.7% and 94.7%), as fast (about 52 s), and none was turned
+   away; a reading flex turns away goes to the default tier at once, so a
+   busy Bedrock costs a little more, not the reading. A handwritten page
+   now costs about $0.22, from $0.44. Tried and not taken: a smaller
+   thinking budget (8000 tokens: 31% at worst for one reading, 78% for the
+   closer of two), a single reading (56% at worst), the global profile
+   (9% cheaper, but pages could be read outside the United States). The
+   stack's `VisionTier` (default `flex`) sets it; the log says which tier
+   served each reading. See
+   [cloud OCR](cloud-ocr.md#handwriting-read-by-a-vision-model).
+
+## 2026-11-14
+
+1. **"Getting a sync failed unauthorized in prod, check and fix."** Every
+   401 the share API gave in two days (15) was its `/tabcam` authorizer
+   refusing a good TabCam token: it fetches the session issuer's
+   discovery document and keys from this same API whenever its copy
+   expires, gives up after 1.5 s, and the function serving them took 3.7 s
+   when cold ("invalid_token: OIDC discovery endpoint communication
+   error"), so after the app sat idle the profile's credentials, the
+   shared list or the profile failed. The two documents are now served by
+   a function of their own, `tabcam-share-api-keys`, that only returns
+   them from its environment (no library, no AWS call), so it answers at
+   once even cold; the deploy reads the key's JWKS from KMS (the stack's
+   `SessionJwks`) and checks the API serves exactly that. See
+   [sessions](sessions.md). (An unmerged branch, `share-api-401-retry`,
+   retries such requests in the app instead; not needed for this.)
+2. **"The tab notation guide: remove the parentheses for ghost notes in
+   the second to last line. Parentheses for bends."** The Text view's
+   notation sheet no longer has `(5)` "ghost note (played softly)": in
+   tab, parentheses are for bends (`7(9)`, already on the sheet). Ghost
+   notes stay as `x` ("ghost note / palm mute"), the last line. Then:
+   **"Also remove the parenthesised phrases in descriptions: only the
+   name of the effect will do (bend, slide, hammer-on, etc.)"**: each
+   line now names its technique only (hammer-on, pull-off, slur, slide,
+   bend, release, bend, vibrato, ghost note / palm mute), with no
+   explanation in parentheses or after a colon. Spanish and Portuguese
+   use the English names guitarists use there, with "ligado" and "nota
+   fantasma". See [tab recognition](tab-recognition.md#text-view).
+3. **"In the cam view, in the rec button, add a drawer menu to select the
+   recording device (like Google Meet)."** Rec now has an arrow beside it
+   that opens a menu of the microphones takes can record from, the
+   default first and the one in use checked; the choice opens at once,
+   for the takes to come, and is kept on the device, so Cam opens from it
+   next time (one not connected: the default, and a message when it's
+   just been picked). The web lists the browser's audio inputs and opens
+   the take recorder's microphone from the device chosen; Android lists
+   the phone's own, wired, USB and line inputs (not Bluetooth headsets)
+   and opens `AudioRecord` with the device preferred; iOS lists the audio
+   session's inputs and sets its preferred input, which the camera
+   records from. No arrow where the camera records the sound on Android,
+   nor in the preview, and it does nothing while a take records. See
+   [Cam](cam.md#rec-menu).
+4. **"Make sure that on browser reload the same view and session is
+   preserved. I still can not see the deployed button drawer in prod.
+   Sync git and redeploy."** The microphone menu (3. above) was merged
+   and released (`0.2.202611140907-RC`, `0.2.202611140908-GA`); it was
+   only on its branch before. A reload already kept the sign-in, the tab,
+   the capture, its view and its file, but not Cam: a reload in Cam came
+   back to the capture. The place now keeps Cam too (`cam=1` in the web's
+   address, `cam` in the apps' place file), and a reload or a restart
+   opens Cam again over the capture, once the service says the user has
+   Premium (never as the preview); closing Cam takes it out. See
+   [navigation](navigation.md#coming-back-where-the-user-was).

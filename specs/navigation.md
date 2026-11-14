@@ -64,13 +64,25 @@ was, on the device only.
 
 A reload (the web) or a restart (the apps) opens where the user was:
 the tab, and the capture that was open over it, on its Text view or its
-list of files, and the file open over that, if one was
+list of files, and the file or [Cam](cam.md) open over that, if one was
 ([lib/screens/place.dart](../tabcam_app/lib/screens/place.dart)). Each
 move updates the place: switching tabs, opening or closing a capture
 (Clone's copy, opened in the original's place, too), switching Files
 and Text, opening or closing a file (and Rotate, which gives the file a
-new ID). Cam isn't kept: a reload with Cam
-open comes back to the capture, on the view under it.
+new ID), opening or closing Cam. Signed in, the user stays signed in
+through it ([sessions](sessions.md)).
+
+**Cam after a reload**: the capture opens on its view, then Cam over it,
+as soon as the service says the user has Premium (until it answers, Cam
+would open as its preview, so it waits, 30 s at most). Without Premium,
+with no answer in time (signed out, say), on a capture the user can't
+add to, or if the user moved on meanwhile (a file opened, the capture
+closed), Cam doesn't open and the place forgets it. A build without the
+service opens it at once. The camera opens as when Cam's button is
+pressed: the browser asks for it again only if it doesn't remember it
+was allowed. What was going on in Cam (the neckline, a take, the song
+playing along) isn't kept: Cam opens as it does from the capture. Its
+preview (no Premium) isn't kept either.
 
 - **The apps** keep it on the device (the library's `place` meta file,
   not synced), saved half a second after each move.
@@ -78,8 +90,9 @@ open comes back to the capture, on the view under it.
   (`history.replaceState`, adding no history entry; the library there
   is only in memory, so the device can't keep it). Its parameters:
   `tab` (`capture` or `profile`; none on Home), `open` (the capture's
-  ID), `view` (`text` or `files`) and `file` (the file's ID), as in
-  `https://tabcam.nu01.com/app/?open=<capture>&view=text`. Only the
+  ID), `view` (`text` or `files`), `file` (the file's ID) and `cam`
+  (`1` with Cam open), as in
+  `https://tabcam.nu01.com/app/?open=<capture>&view=text&cam=1`. Only the
   query changes: the site's base (`/app/`, on prod, RC and the local
   site), its other parameters and Flutter's fragment stay. A capture's
   link's `c`, `k` and `f` ([sharing](sharing.md#opening-a-link)) stay
@@ -91,7 +104,8 @@ open comes back to the capture, on the view under it.
   handling, which first shows the page's first history entry's address
   again, the link it opened at say): the place is written over that at
   once, so neither a link's key nor an older place comes back, and Back
-  over a screen the place doesn't follow (Cam) leaves it as it was. The
+  over a screen the place doesn't follow leaves it as it was (Back over
+  Cam closes it, and `cam` leaves the address). The
   same address in another tab of the same browser (signed in as the
   same user) opens the same place.
 

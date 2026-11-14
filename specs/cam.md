@@ -131,6 +131,62 @@ its **Not now** leaving. With Premium it opens the camera view
   while a take starts (until the camera records), so pressing again at
   once doesn't start a second recording alongside it. If the next take
   can't start, the one saved is kept and a message says why.
+- <a id="rec-menu"></a>**Rec's menu: the microphone.** An arrow beside
+  Rec (its tooltip "Microphone") opens a menu, as a video call's
+  microphone button does: under **Record from**, **Default microphone**
+  (the system's choice) and the microphones takes can record from, the
+  one they record from checked. Picking another opens it at once, for
+  the takes from now on, and Cam keeps it on the device (`mic` in the
+  `cam` meta file, beside Auto-pass), so it opens from it the next time
+  (before any take: the microphone is opened from it as Cam opens). One
+  that won't open (unplugged, say) leaves the default open, so takes
+  still have their sound: picked, "Couldn't open …: takes record from
+  the default microphone." says so, and the default is what's chosen
+  and kept; kept from before and not connected,
+  Cam opens the default without a word, and the menu checks the default
+  (the one kept is tried again the next time). The arrow does nothing
+  while a take starts, records, is saved for the next or plays back, nor
+  while a microphone opens (it changes takes to come, never one
+  recording). In English, Spanish and Portuguese.
+  - **Web**: the browser's audio inputs (`enumerateDevices`), named as
+    the browser names them ("Microphone 2", by their place in the list,
+    when it gives no name, before the microphone is allowed); Chrome's
+    own "default" and "communications" entries are left out (the menu's
+    Default is the browser's). Picked, the microphone the take recorder
+    holds is closed and opened again from that device (`deviceId`
+    exact, the same constraints as ever, see
+    [Recording comes first](#recording-comes-first)); the device's id is
+    what's kept.
+  - **Android**: where the app records the takes' sound
+    ([Recording comes first](#recording-comes-first)), the phone's
+    inputs (`AudioManager.getDevices`): its own microphones ("Phone
+    microphone", with where on the phone, such as "(bottom)", when it
+    says), wired headsets, USB devices and headsets, and line inputs. Not
+    Bluetooth headsets: their microphones are for calls (SCO, 8 or
+    16 kHz), and open only with one. Picked, the microphone is opened
+    again (the same sources and formats, in turn) with that device
+    preferred (`AudioRecord.setPreferredDevice`); should none open from
+    it, the system's choice. Kept by its type, name and address (its
+    system id changes as it's plugged in again). Where the camera records
+    the sound itself (the app's microphone unavailable), there's no
+    arrow: the camera plugin takes no choice.
+  - **iOS**: the audio session's inputs (`availableInputs`: the
+    iPhone's microphone, wired and USB ones; no Bluetooth headsets, which
+    the session's category leaves out), named as the system names them.
+    Picked, it's the session's preferred input (`setPreferredInput`),
+    which the camera records from (its capture session uses the app's
+    audio session); its port's UID is what's kept. Set again as Cam
+    opens, and back to none when it closes.
+  - Checked: the menu, its check, the choice kept and opened first when
+    Cam opens again, the message for one that won't open, the arrow
+    dead while a take records, and none where the camera records the
+    sound (`test/play_along_test.dart`, the web's recorder faked, and
+    Android's channel); in Chrome, the recorder opening from the
+    device, the default when it won't open, and the list without
+    Chrome's own entries (`test/web_take_recorder_test.dart`). The
+    Kotlin built (a debug APK) and the Swift type-checked; **not yet on
+    a phone**: Android's USB and wired inputs, and iOS's route to the
+    camera's sound.
 - <a id="the-tab-with-the-take"></a><a id="the-tab-in-the-take"></a>**The tab is kept with the take and
   added by the editor**: a take is saved at once as the camera recorded
   it, with no tab in its picture and no second encode (no "Adding the
@@ -290,7 +346,8 @@ its **Not now** leaving. With Premium it opens the camera view
     on the file screen.
 - <a id="auto-pass"></a>**Auto-pass** (beside Tab: its icon in the
   primary colour while on, struck through while off; on by default,
-  kept on the device in the `cam` meta file): while a song with phrase
+  kept on the device in the `cam` meta file, with
+  [Rec's menu](#rec-menu)'s microphone): while a song with phrase
   passes plays in the player, Cam turns the tab by itself where they
   are ([`AutoPass`](../tabcam_app/lib/capture/auto_pass.dart)), reading
   the song's position every 100 ms: as the song passes one, the tab
@@ -834,8 +891,8 @@ slow down while a take records
   before. Auto-pass and the song playing along go on as ever.
 - Not controllable without forking the camera plugins or recording the
   sound separately (as Android now does): iOS's mono 44.1 kHz; the
-  plugins' own thread priorities; the microphone each system picks with
-  a headset connected. On iOS, an HEVC take made H.264 has its sound
+  plugins' own thread priorities. (The microphone itself is chosen in
+  [Rec's menu](#rec-menu).) On iOS, an HEVC take made H.264 has its sound
   re-encoded (AAC to AAC); an H.264 take, and every Android take, keep
   it as recorded.
 

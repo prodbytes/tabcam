@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import 'take_recorder.dart' show TakeMic;
+
 /// Recording comes first: while Cam records a take, its sound is what
 /// matters most, so the take's recording gets the microphone as a
 /// musician wants it (not as a voice call does), and what else runs
@@ -74,8 +76,35 @@ abstract final class TakeAudio {
   static Future<void> prepare() => _call('prepare');
 
   /// The session's mode back to the default (the category stays: the
-  /// camera's plugin leaves it so).
+  /// camera's plugin leaves it so), and its preferred input to none.
   static Future<void> release() => _call('release');
+
+  /// The session's inputs (the iPhone's microphone, wired and USB ones;
+  /// not Bluetooth headsets, which the session's category leaves out),
+  /// each `{id, name}`: [choose]'s `input`. Empty when it can't tell.
+  static Future<List<TakeMic>> inputs() async {
+    if (!supported) return const [];
+    try {
+      return TakeMic.fromChannel(await channel.invokeMethod<Object?>('inputs'));
+    } on Object catch (e) {
+      debugPrint('TabCam: cam: no list of microphones: $e');
+      return const [];
+    }
+  }
+
+  /// The session's preferred input, [input] (null: the system's choice),
+  /// which the camera records the take's sound from. Whether it's set
+  /// (false: not connected, or refused).
+  static Future<bool> choose(String? input) async {
+    if (!supported) return false;
+    try {
+      return await channel.invokeMethod<bool>('choose', {'input': input}) ??
+          false;
+    } on Object catch (e) {
+      debugPrint('TabCam: cam: microphone $input: $e');
+      return false;
+    }
+  }
 
   static Future<void> _call(String method) async {
     if (!supported) return;

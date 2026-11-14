@@ -80,7 +80,10 @@ most 5 minutes (less if the grant ends sooner), a "no" for 1 minute.
    `{page, status, text, doubts, staves, lines, seconds, engines, version,
    created}`, `status` being `ok`, `no-tab` or `error`; `doubts` the notes
    read with little confidence, likely wrong, `[[line, column, note]]` in
-   `text` (lines and columns from 0; see [doubtful notes](#doubtful-notes)).
+   `text` (lines and columns from 0; see [doubtful notes](#doubtful-notes));
+   `engines` the OCR engines, or the vision model's ID when it read the
+   tab ([handwriting](#handwriting-read-by-a-vision-model)), with its
+   `agreement`.
    A page deleted while it was read gets no result (the worker checks it's
    still there before writing). Read, gone or failed, the marker is
    removed.
@@ -161,6 +164,8 @@ likely wrong (`doubts`), for the app to show them in red:
   handwritten 6s and 8s as letters) and no more wrong ones.
 - A PDF's doubts count the lines of the pages before (and the blank line
   between them).
+- A page the [vision model](#handwriting-read-by-a-vision-model) read has
+  none: the model says nothing of how sure it is.
 
 On the bench's three pages (158 notes) 21 notes were doubtful, 9 of them
 wrong; of the 16 wrong notes, 9 were doubtful. Of the 7 not flagged, 4 only
@@ -172,15 +177,85 @@ full size, each strip between staves on its own and the whole page too
 (each finds words the other misses), and placed as for text tabs; other apps'
 watermarks ("Digitalizado com CamScanner", "Scanned with ...") are left
 out, in the app too. Printed numbers read exactly (the image's build reads
-a made-up riff set on drawn lines back, every note); handwriting from
-about 80% to 90% of the notes right, in order and on the right string, on
-the bench's two handwritten pages (crowded pages, numbers written into
-each other, less), so the text is worth checking against the page.
+a made-up riff set on drawn lines back, every note). Handwriting the
+engines read poorly: 62% to 90% of the frets on four pages, with no bar
+line, slide or slur ([measured 2026-11-13](#verified-captures)), so a
+handwritten page is read by a vision model too (below).
 
-Claude (vision, [locr/vision.py](../tabcam_locr/locr/vision.py)) can
-read the pages nothing else does, but it's **off**: on only with
-`VISION_FALLBACK=1` on the function and the Claude API key
-(`tabcam/anthropic-api-key`), neither set.
+### Handwriting read by a vision model
+
+A page on drawn staves whose reading by the engines is unsure, more than
+a tenth of its frets [doubtful](#doubtful-notes) (`UNSURE`: handwriting
+had from a fifth to two thirds, on the pages measured; print reads sure),
+is also read whole by a vision model on Amazon Bedrock
+([locr/vision.py](../tabcam_locr/locr/vision.py)): **Moonshot AI's Kimi
+K3.1** (`us.moonshotai.kimi-k3.1`, the stack's `VisionModel`; the one
+model the account can call that reads these pages: Claude 5 isn't
+granted to it, [verified captures](#verified-captures)). Printed pages,
+tabs on dash lines and pages the engines find no tab on aren't sent
+(the last only with `VISION_BLANK=1`).
+
+- **What it gets**: the page as it came (a PDF's page as rendered), at
+  most 1600 px wide and 2400 px high, as a JPEG, and a prompt on how
+  handwritten tabs are read (the strings top to bottom, the staircase of
+  a run across strings, two digits close together being one fret, the
+  string numbers at the staff's start not being notes, slides, slurs,
+  bends, vibrato, bar lines, show-through from the back of the sheet left
+  out) and the output's format. It thinks first, with most of its
+  `maxTokens` (16000, `VISION_MAX_TOKENS`: it reads worse with less), and
+  answers with the tab, or `NO TAB`.
+- **On Bedrock's flex tier** (`VisionTier`, `flex`): half the default
+  tier's price, for the same model. On the four pages (13 readings,
+  2026-11-13) it read as well as the default tier (93.7% of the frets a
+  reading, 96.1% keeping the closer of two; the default's 92.7% and
+  94.7%), as fast (about 52 s), and was never turned away. It's served
+  last when Bedrock is busy, so a reading flex turns away (a throttle,
+  unavailable) goes to the default tier at once, then waits out
+  throttles there (below). A smaller thinking budget, the other way to
+  spend less, read worse: at 8000 `maxTokens`, 86.8% a reading and 31% at
+  worst, 92.3% and 78% keeping the closer of two.
+- **Twice, side by side** (`VisionReads`, 2): its readings of a page vary
+  (79% to 99% of the frets right, one in 25 at 56%, its notes on the
+  wrong strings), so it reads the page twice at once and the reading
+  closest to the engines' is kept: the share of its frets, by string and
+  number in the order they're played, the engines' reading has too
+  (`agreement`, in the result). The engines' reading is mostly right
+  where it's sure, and a reading gone wrong agrees with it least. Over the
+  readings measured, keeping the closer of two read 93.5% of the frets on
+  average and 82% at worst, against 91% and 56% for one reading.
+- **Its answer** becomes the text tab: each staff's lines made one length
+  and closed by a bar, a bar line on some of a staff's lines put across
+  the staff, staves without notes left out, the title, section names and
+  repeat marks above their staves (noise left out as for the engines'
+  [notations](#transcription)). It has no doubtful notes.
+- **The engines' reading stands** when the model's answers aren't whole
+  (cut short at `maxTokens`, no tab, fewer than half the engines' frets),
+  or when it fails: a throttle (the account's 1M tokens a minute for the
+  profile: each reading reserves its 16000, so about a dozen at once) is
+  waited out, 20, 40 then 60 s (and up to 10 s more), the worker having
+  15 minutes; another error is logged (`vision failed`). No reading starts
+  that couldn't end (180 s, its timeout) before the worker's time runs out,
+  less 30 s to write the result (a long PDF whose engines' reading took
+  most of it): the engines' reading is written instead.
+- **A PDF's** handwritten pages are read by the model five at a time,
+  after the engines have read them all; the PDF's `agreement` is its
+  least.
+- **Time and cost**: a reading takes about 55 s (the engines' reading of
+  the page before it, 15 to 50 s); a page is about 5.3k tokens in and
+  12.4k out, the output (its thinking) nine tenths of the cost. At Kimi
+  K3's flex price ($1.65 and $8.25 a million tokens, half its default
+  tier's; K3.1 isn't in the price list yet) about $0.11 a reading, $0.22
+  a page read twice ($0.44 on the default tier), against $0.0044 for the
+  engines. Only Premium pages are
+  read (the worker reads nothing else), and a page read before isn't
+  read again ([its cached result](#transcription)).
+- **Measured** with the image's code on the four handwritten pages
+  (2026-11-13; two readings each, real engines, Kimi K3.1): 95%, 84%,
+  89% and 98% of the frets right, against 71%, 62%, 83% and 90% for the
+  engines; the printed photo wasn't sent (97%, the engines').
+- **Privacy**: Bedrock keeps no prompts or answers and shares none with
+  the model's maker; through the `us.` profile a page may be read in
+  N. Virginia, Ohio or Oregon ([privacy](privacy.md)).
 
 **Notations**: the rest of the page, with the staves blanked out, is read
 by RapidOCR at half size (1400 px). Its words (confidence 0.5 or more) are
@@ -375,6 +450,10 @@ with `CloudOcr.fetchPage` (`OcrApi.page`), its log line the size only.
   answer and its ttl, or why the check failed (HTTP status). `ocr start`,
   `ocr done` (status, staves, lines, engine timings, seconds) and
   `ocr failed` (the exception and traceback, before Lambda retries).
+  `vision read` (the model, whether it found a tab, its frets, tokens in
+  and out, the service tier that served it, seconds) for each reading by
+  the vision model, `vision
+  failed` (the error) when one fails.
   `transcribe` also counts the pages left alone because they're being
   read (`reading`). `ocr engines loaded` (seconds: a cold start), `ocr
   warm` (a warm-up: whether it loaded the engines, and how long it
@@ -394,7 +473,10 @@ with `CloudOcr.fetchPage` (`OcrApi.page`), its log line the size only.
     PaddlePaddle has no working Linux ARM build of its version; 2560 MB,
     chosen by [measuring](#memory); 15 min, one retry): it may get page
     images, put results, delete `.reading` markers and list the bucket
-    (so a page deleted meanwhile answers 404, not 403);
+    (so a page deleted meanwhile answers 404, not 403), and, with
+    `VisionModel` set, invoke that inference profile and its model only
+    through it (`VISION_MODEL`, `VISION_READS`, `VISION_TIER`); no longer the Claude API
+    key's secret, which only auto-correct uses;
   - `tabcam-ocr-api` (512 MB, 300 s for [auto-correct](autocorrect.md)'s
     `/autocorrect`; the other requests take a second or two, `/page` up to
     15 s): it may read
@@ -528,6 +610,60 @@ pages:
   off the strip (Tesseract then reads dashes as `~`); pages at 2400 or
   3200 px; a vertical close of the erased ink; Tesseract on handwritten
   digits.
+
+### Verified captures
+
+<a id="verified-captures"></a>Measured 2026-11-13 on the two captures
+whose text the user marked **Verified** (scanned handwritten pages in
+marker, one page each, 87 and 95 frets; kept in `test_data/verified`, out
+of git: published songs), each fret scored by its string and its order
+against the verified text. No code changed.
+
+| Reader | Page 1 | Page 2 |
+|---|---|---|
+| Cloud OCR as deployed (its stored results) | 71% | 62% |
+| Claude Opus 4.6 on Bedrock, the whole page | 68% | 51% |
+| Claude Opus 4.6, with thinking | 67% | 66% |
+| Claude Sonnet 4.6, the whole page | 33% | 49% |
+| Claude Opus 5.5, the whole page | 99% | 100% |
+| Claude Sonnet 5.5, the whole page | 94% | 97% |
+| Kimi K3.1 on Bedrock, the whole page | 93% | 89% |
+| Kimi K3 | 76% | 0% |
+| Claude Opus 4.5 | 68% | 35% |
+| Kimi K2.5, Nova Pro, Mistral Large 3, Magistral Small | 23% to 38% | 0% to 40% |
+| Qwen3-VL, Gemma 3 27B, Ministral 14B, Nova 2 Lite, Nova Lite, Claude Haiku 4.5, Pixtral Large, Nemotron Nano | under 25% | under 25% |
+
+- **The cloud OCR's 61 wrong frets**: 20 phantoms (string numbers at the
+  staff's start, the brace and "2x" at its end, print showing through
+  from the back of the sheet), 17 misread (12 of them a 10, 12 or 13 read
+  as 0, 1, 3 or 6), 13 missed and 11 on the wrong string. It reads no bar
+  line (8 on the pages) and no slide or slur (25).
+- **Claude 4.6** reads the digits (1 to 5 misread a page) but puts them on
+  the wrong strings (16 to 79 a page), as on the bench on 2026-11-07.
+- **Claude 5.5** was run as a Claude Code subagent given the page image
+  (1600 px wide) and the reading prompt only, not through Bedrock: every
+  Claude 5 model still answers "not available for this account" there
+  (the Opus 5.5 quota requests of 2026-10-29 are pending). Opus 5.5's one
+  miss is a note the user added that isn't on the page; it also wrote the
+  bar lines and the slides.
+- **The other Bedrock models** (every one that takes an image and
+  answers for this account, one reading each, the same prompt): only
+  **Kimi K3.1** (Moonshot, `us.moonshotai.kimi-k3.1`) reads the pages,
+  with the slides and slurs (its bar lines only on the string that has
+  the notes). The rest put the notes on
+  the wrong strings (Kimi K3 put a whole page two strings down) or miss
+  most of them. Not available for the account, as Claude 5: every OpenAI
+  GPT (5.4 to 6.1), Grok 4.6 and 4.7, GLM 5.3; Llama 4 is refused by
+  country, Nova Premier is at its end of life.
+- **Kimi K3.1 again**, three readings each of the two pages and of the
+  bench's two handwritten ones (35 and 42 frets): 89, 98, 99%; 86, 89,
+  96%; 89, 89, 94%; 95, 98, 98% (the cloud OCR: 71, 62, 83, 90%). It
+  thinks before it answers, with about 78% of `maxTokens`, and reads
+  worse with less: about 93% of the frets at 16000, 91% at 8000, 79% at
+  4000 and 70% at 2000. A page is 5.2k tokens in and, at 16000, 12.4k
+  out in about 55 s: about $0.22 a page at Kimi K3's list price ($3.30
+  and $16.50 a million tokens; K3.1's isn't listed yet), $0.12 at 8000,
+  against $0.0044 for the cloud OCR.
 
 ## Known limitations
 

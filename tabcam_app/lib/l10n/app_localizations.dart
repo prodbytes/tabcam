@@ -1042,6 +1042,42 @@ abstract class AppLocalizations {
   /// **'Stop (1) · new take (.)'**
   String get camStopKey;
 
+  /// Cam: the tooltip of the arrow beside Rec, which opens a menu to choose the microphone takes record from
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone'**
+  String get camMicChoose;
+
+  /// Cam: the heading of Rec's menu, over the list of microphones
+  ///
+  /// In en, this message translates to:
+  /// **'Record from'**
+  String get camMicHeading;
+
+  /// Cam: Rec's menu, the system's default microphone
+  ///
+  /// In en, this message translates to:
+  /// **'Default microphone'**
+  String get camMicDefault;
+
+  /// Cam (Android): Rec's menu, the phone's own microphone
+  ///
+  /// In en, this message translates to:
+  /// **'Phone microphone'**
+  String get camMicBuiltIn;
+
+  /// Cam: Rec's menu, a microphone the system gives no name
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone {n}'**
+  String camMicUnnamed(int n);
+
+  /// Cam: the microphone chosen in Rec's menu didn't open
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open {name}: takes record from the default microphone.'**
+  String camMicFailed(String name);
+
   /// Cam: play the last take back
   ///
   /// In en, this message translates to:
@@ -1963,13 +1999,13 @@ abstract class AppLocalizations {
   /// Notation sheet: 5/7 7\5
   ///
   /// In en, this message translates to:
-  /// **'slide up, down'**
+  /// **'slide'**
   String get textViewNotationSlide;
 
   /// Notation sheet: 7b9 r7
   ///
   /// In en, this message translates to:
-  /// **'bend (to the pitch of 9), r release'**
+  /// **'bend, release'**
   String get textViewNotationBend;
 
   /// Notation sheet: 7~
@@ -1978,28 +2014,22 @@ abstract class AppLocalizations {
   /// **'vibrato'**
   String get textViewNotationVibrato;
 
-  /// Notation sheet: (5)
-  ///
-  /// In en, this message translates to:
-  /// **'ghost note (played softly)'**
-  String get textViewNotationGhost;
-
   /// Notation sheet: x
   ///
   /// In en, this message translates to:
-  /// **'ghost note / palm mute (muted, no pitch)'**
+  /// **'ghost note / palm mute'**
   String get textViewNotationMuted;
 
   /// Notation sheet: 5_7
   ///
   /// In en, this message translates to:
-  /// **'slur: a hammer-on or a pull-off'**
+  /// **'slur'**
   String get textViewNotationSlur;
 
   /// Notation sheet: 7(9)
   ///
   /// In en, this message translates to:
-  /// **'bend too: the pitch in parentheses after the note'**
+  /// **'bend'**
   String get textViewNotationBendParens;
 
   /// Title of the dialog asking which song the tab is

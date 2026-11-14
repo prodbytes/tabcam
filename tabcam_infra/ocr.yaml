@@ -79,10 +79,36 @@ Parameters:
     Type: String
     Default: tabcam/anthropic-api-key
     Description: >
-      The Secrets Manager secret with the Claude API key: auto-correct, and
-      reading pages the OCR engines can't (handwritten, drawn staff lines).
+      The Secrets Manager secret with the Claude API key, for auto-correct.
       Read by name, so it works as soon as the secret exists.
     AllowedPattern: '[A-Za-z0-9/_+=.@-]+'
+  VisionModel:
+    Type: String
+    Default: us.moonshotai.kimi-k3.1
+    Description: >
+      The Bedrock inference profile that reads handwritten tabs on drawn
+      staves (Premium pages only; about $0.11 a reading on the flex tier).
+      Empty: off, the
+      OCR engines' reading only. Measured 2026-11-13: Kimi K3.1 is the one
+      model the account can call that reads them (specs/cloud-ocr.md).
+    AllowedPattern: '((us|global)\.[a-z0-9.-]+(:[0-9]+)?)?'
+  VisionTier:
+    Type: String
+    Default: flex
+    AllowedValues: [flex, default, '']
+    Description: >
+      Bedrock's service tier for the vision model: flex costs half the
+      default's and read as well (measured 2026-11-13); when it's busy a
+      reading goes to the default tier at once. Empty: no tier asked.
+  VisionReads:
+    Type: Number
+    Default: 2
+    MinValue: 1
+    MaxValue: 3
+    Description: >
+      Readings of a handwritten page, side by side; the one closest to the
+      OCR engines' is kept (2: 93.5% of the frets on average, at worst 82%;
+      1: 91% and 56%, at half the cost).
   AutocorrectEnabled:
     Type: String
     Default: '0'
@@ -120,6 +146,7 @@ Parameters:
 Conditions:
   HasProfiles: !Not [!Equals [!Ref ProfilesTableName, '']]
   HasLocalClient: !Not [!Equals [!Ref GoogleLocalWebClientId, '']]
+  HasVision: !Not [!Equals [!Ref VisionModel, '']]
 
 Resources:
   # Cognito identity ID -> verified e-mail address. S3 events carry only the
@@ -173,11 +200,6 @@ Resources:
                 Resource: !Sub
                   - ${BucketArn}/*/events/*
                   - BucketArn: !ImportValue tabcam-user-data-bucket-arn
-              # The Claude API key: pages the engines can't read (a
-              # handwritten tab, drawn staff lines) are Claude's.
-              - Effect: Allow
-                Action: secretsmanager:GetSecretValue
-                Resource: !Sub arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AnthropicKeySecretName}-*
               # Results, and the same results by the image's content.
               - Effect: Allow
                 Action: s3:PutObject
@@ -202,6 +224,25 @@ Resources:
               - Effect: Allow
                 Action: [logs:CreateLogStream, logs:PutLogEvents]
                 Resource: !Sub ${OcrLogs.Arn}:*
+        # Handwritten tabs read by the vision model: its inference profile,
+        # and its model in the regions the profile sends requests to, only
+        # through that profile.
+        - !If
+          - HasVision
+          - PolicyName: read-handwriting
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action: bedrock:InvokeModel
+                  Resource: !Sub arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/${VisionModel}
+                - Effect: Allow
+                  Action: bedrock:InvokeModel
+                  Resource: !Sub arn:${AWS::Partition}:bedrock:*::foundation-model/*
+                  Condition:
+                    StringEquals:
+                      bedrock:InferenceProfileArn: !Sub arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/${VisionModel}
+          - !Ref AWS::NoValue
 
   ApiRole:
     Type: AWS::IAM::Role
@@ -266,7 +307,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: tabcam-ocr
-      Description: Transcribes one tab page (Tesseract, PaddleOCR, RapidOCR, per string line, vote)
+      Description: Transcribes one tab page (Tesseract, PaddleOCR, RapidOCR; handwriting by a Bedrock vision model)
       PackageType: Image
       Code:
         ImageUri: !Ref ImageUri
@@ -289,7 +330,9 @@ Resources:
       Environment:
         Variables:
           USER_DATA_BUCKET: !ImportValue tabcam-user-data-bucket
-          ANTHROPIC_KEY_SECRET: !Ref AnthropicKeySecretName
+          VISION_MODEL: !Ref VisionModel
+          VISION_READS: !Ref VisionReads
+          VISION_TIER: !Ref VisionTier
           LOCR_VERSION: !Ref Version
 
   # One try more for a failed page, then it's dropped; the app can ask
