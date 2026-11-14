@@ -281,8 +281,8 @@ class _None extends StatelessWidget {
 }
 
 /// Opens [event]'s [EventScreen] (its Text view, or its files with
-/// [fileId] open over them), and remembers it's open until it's closed
-/// ([PlaceMemory]).
+/// [fileId] open over them, and Cam over it with [cam]: a reload where the
+/// user was), and remembers it's open until it's closed ([PlaceMemory]).
 Future<void> openEvent(
   BuildContext context,
   Library library,
@@ -291,6 +291,7 @@ Future<void> openEvent(
   CloudOcr? ocr,
   String? fileId,
   bool? text,
+  bool cam = false,
 ]) async {
   final memory = PlaceMemory.of(library);
   memory.update(
@@ -298,6 +299,7 @@ Future<void> openEvent(
       eventId: () => event.id,
       text: text ?? false,
       fileId: () => fileId,
+      cam: cam,
     ),
   );
   await Navigator.of(context).push(
@@ -309,6 +311,7 @@ Future<void> openEvent(
         ocr: ocr,
         initialFile: fileId,
         initialText: text,
+        initialCam: cam,
       ),
     ),
   );

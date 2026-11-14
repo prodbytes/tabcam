@@ -67,6 +67,7 @@ class EventScreen extends StatefulWidget {
     this.ocr,
     this.initialFile,
     this.initialText,
+    this.initialCam = false,
     this.byLink = false,
     this.onSignIn,
   });
@@ -87,6 +88,10 @@ class EventScreen extends StatefulWidget {
 
   /// Whether it opens on its Text view (null: if its text is marked correct).
   final bool? initialText;
+
+  /// Whether Cam opens over it at once (a reload: where the user was),
+  /// once Premium is known ([_reopenCam]).
+  final bool initialCam;
 
   /// Cloud sync, for sharing the event with people (null: no sharing).
   final CloudSync? sync;
@@ -120,7 +125,62 @@ class _EventScreenState extends State<EventScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _openFile(page);
       });
+    } else if (widget.initialCam) {
+      // A reload: Cam, where the user was.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _reopenCam();
+      });
     }
+  }
+
+  /// Stops [_reopenCam] waiting.
+  VoidCallback? _stopReopenCam;
+
+  /// How long a reload waits for Premium's answer to reopen Cam.
+  static const camReopenWait = Duration(seconds: 30);
+
+  /// A reload with Cam open: Cam again, once the service says the user has
+  /// Premium (until then Cam would open as its preview). Not if they
+  /// haven't (or it doesn't answer in [camReopenWait], signed out say), nor
+  /// if the user moved on meanwhile (a file opened, the screen left), nor
+  /// where Cam can't add (read only); the place then forgets Cam.
+  void _reopenCam() {
+    final ocr = widget.ocr;
+    final event = _library.byId(widget.eventId);
+    final canAdd =
+        event != null &&
+        !widget.byLink &&
+        (!event.readOnly || event.contributes);
+    void forget() => PlaceMemory.of(
+      _library,
+    ).update((p) => p.eventId == widget.eventId ? p.copyWith(cam: false) : p);
+    if (!canAdd) return forget();
+    late final VoidCallback check;
+    Timer? timer;
+    void stop() {
+      ocr?.removeListener(check);
+      timer?.cancel();
+      _stopReopenCam = null;
+    }
+
+    check = () {
+      if (!mounted) return stop();
+      final ready = ocr == null || ocr.premium;
+      if (!ready && ocr.status == null) return;
+      stop();
+      if (ready && ModalRoute.isCurrentOf(context) == true && !_busy) {
+        unawaited(_cam());
+      } else {
+        forget();
+      }
+    };
+    _stopReopenCam = stop;
+    ocr?.addListener(check);
+    timer = Timer(camReopenWait, () {
+      stop();
+      if (mounted) forget();
+    });
+    check();
   }
 
   /// Whether Text and Cam are Premium's and the user has no Premium.
@@ -164,6 +224,7 @@ class _EventScreenState extends State<EventScreen> {
 
   @override
   void dispose() {
+    _stopReopenCam?.call();
     _stopFollowing();
     _list.dispose();
     _player.dispose();
@@ -407,6 +468,12 @@ class _EventScreenState extends State<EventScreen> {
     // Without Premium, Cam opens as a preview: no camera, nothing works,
     // the Premium card over it.
     final gate = _locked ? (ocr: widget.ocr!, email: _email) : null;
+    // Remembered while it's open, for a reload (not the preview).
+    final memory = PlaceMemory.of(_library);
+    void remember(bool cam) => memory.update(
+      (p) => p.eventId == widget.eventId ? p.copyWith(cam: cam) : p,
+    );
+    remember(gate == null);
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => PlayAlongScreen(
@@ -416,6 +483,7 @@ class _EventScreenState extends State<EventScreen> {
         ),
       ),
     );
+    remember(false);
     final event = _library.byId(widget.eventId);
     if (mounted && event != null) _showAdded(event, before, images: false);
   }
