@@ -2194,6 +2194,44 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoEditFadesOff => 'Sin fundidos';
 
   @override
+  String get videoEditTabStyle => 'Estilo de la tablatura';
+
+  @override
+  String get videoEditTabStyleAbout => 'Cómo se ve la tablatura sobre el video';
+
+  @override
+  String get videoEditTabStyleEdit => 'Cambiar cómo se ve la tablatura';
+
+  @override
+  String get videoEditTabSize => 'Tamaño';
+
+  @override
+  String get videoEditTabBackground => 'Fondo';
+
+  @override
+  String get videoEditTabColors => 'Colores';
+
+  @override
+  String videoEditTabPercent(int percent) {
+    return '$percent %';
+  }
+
+  @override
+  String get videoEditTabColorsDark => 'Blanco sobre negro';
+
+  @override
+  String get videoEditTabColorsLight => 'Negro sobre blanco';
+
+  @override
+  String get videoEditTabColorsGold => 'Dorado sobre negro';
+
+  @override
+  String get videoEditTabColorsBrand => 'Negro sobre dorado';
+
+  @override
+  String get videoEditTabStyleReset => 'Estilo predeterminado';
+
+  @override
   String get metronome => 'Metrónomo';
 
   @override

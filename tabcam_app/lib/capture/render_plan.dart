@@ -1,5 +1,5 @@
 import 'dart:math';
-import 'dart:ui' show Rect, Size;
+import 'dart:ui' show Color, Rect, Size;
 
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart';
@@ -129,21 +129,135 @@ sealed class LayerLook {
   const LayerLook();
 }
 
-/// A neckline of the tab, as a band along the bottom (`renderBand`'s
-/// look).
+/// A neckline of the tab, [line], as a band along the bottom
+/// (`bandPicture`'s look), looking as [style] says ([TabLayout]): drawn
+/// [width] pixels wide (the frame's width, where it's known, so a
+/// renderer never scales it up), and, grown past its default size, never
+/// higher than [maxAspect] of its width (null: no such bound).
 final class BandLook extends LayerLook {
-  const BandLook(this.line);
+  const BandLook(
+    this.line, {
+    this.style = EditTabStyle.standard,
+    this.maxAspect,
+    this.width = bandWidth,
+  });
 
   final String line;
+  final EditTabStyle style;
+  final double? maxAspect;
+  final int width;
+
+  /// How many lines of text it has.
+  int get lines => '\n'.allMatches(line).length + 1;
 
   @override
-  bool operator ==(Object other) => other is BandLook && other.line == line;
+  bool operator ==(Object other) =>
+      other is BandLook &&
+      other.line == line &&
+      other.style == style &&
+      other.maxAspect == maxAspect &&
+      other.width == width;
 
   @override
-  int get hashCode => line.hashCode;
+  int get hashCode => Object.hash(line, style, maxAspect, width);
 
   @override
-  String toString() => 'BandLook($line)';
+  String toString() =>
+      'BandLook($line${style.isStandard ? '' : ', $style'}, $width px)';
+}
+
+/// How wide a band is drawn by default, in pixels; the video scales it to
+/// its own width.
+const int bandWidth = TabLayout.width;
+
+/// The tab's bands' sizes, as fractions of their width (the frame's):
+/// their text at most [text] high (times its style's size; smaller when
+/// a line wouldn't fit), each line [lineHeight] times that, [pad] above
+/// and below (at a size under 1, that much less). A band grown past its
+/// default size is never higher than [grownTo] of the frame's height (a
+/// frame of unknown shape taken as a landscape 16:9 one), nor than it is
+/// at its default size, if that's more. Drawn [width] pixels wide, or as
+/// wide as the frame, up to [maxWidth]. Never smaller than the frame's
+/// shape lets it be read ([minSizeOf]). Its text is outlined in its
+/// background's colour as the background fades below its default
+/// opacity ([outlineOf]): fully from [outlineFull] down.
+abstract final class TabLayout {
+  static const width = 1280;
+  static const maxWidth = 4096;
+  static const text = 1 / 48;
+  static const lineHeight = 1.2;
+  static const pad = 1 / 64;
+  static const grownTo = 0.4;
+  static const landscape = 16 / 9;
+  static const outlineFull = 0.5;
+
+  /// TabCam's gold (the app's seed colour).
+  static const gold = Color(0xFFE0A030);
+
+  /// [colors]' background and text.
+  static (Color, Color) colorsOf(TabColors colors) => switch (colors) {
+    TabColors.dark => (const Color(0xFF000000), const Color(0xFFFFFFFF)),
+    TabColors.light => (const Color(0xFFFFFFFF), const Color(0xFF111111)),
+    TabColors.gold => (const Color(0xFF000000), gold),
+    TabColors.brand => (gold, const Color(0xFF111111)),
+  };
+
+  /// How strong the outline around a band's text is (0: none, 1: opaque)
+  /// at a background [opacity]: none at its default opacity (70%, which
+  /// always carried the text alone) and up, full at [outlineFull] and
+  /// down (a faint background reads poorly on its own), in between in
+  /// proportion.
+  static double outlineOf(double opacity) =>
+      ((EditTabStyle.defaultOpacity - opacity) /
+              (EditTabStyle.defaultOpacity - outlineFull))
+          .clamp(0.0, 1.0);
+
+  /// The smallest size a band is drawn at over a [frame] that size (null:
+  /// not known, taken as a landscape 16:9 one): its text, against the
+  /// frame's short side, never smaller than at [EditTabStyle.minSize] on
+  /// a 16:9 landscape frame (its width is the frame's, so on a portrait
+  /// or square one that's about 90%), to the nearest 5%.
+  static double minSizeOf(Size? frame) {
+    const least = EditTabStyle.minSize;
+    if (frame == null || frame.width <= 0 || frame.height <= 0) return least;
+    final short = min(frame.width, frame.height) / frame.width;
+    return (max(least, least * landscape * short) * 20).round() / 20;
+  }
+
+  /// [style] as it's drawn over a [frame] that size: no smaller than
+  /// [minSizeOf] lets it be.
+  static EditTabStyle drawnOf(EditTabStyle style, Size? frame) {
+    final least = minSizeOf(frame);
+    return style.size >= least ? style : style.copyWith(size: least);
+  }
+
+  /// The padding above and below the text of a band at [size].
+  static double padAt(double size) => pad * min(1, size);
+
+  /// How high [band]'s text is drawn at most (a line too long for the
+  /// band gets smaller), as a fraction of its width.
+  static double textOf(BandLook band) {
+    final size = band.style.size;
+    final wanted = text * size;
+    final most = band.maxAspect;
+    if (most == null || size <= 1) return wanted;
+    final fits = (most - 2 * padAt(size)) / (band.lines * lineHeight);
+    return min(wanted, max(fits, text));
+  }
+
+  /// The bound on a band of [style] over a [frame] that size (null: not
+  /// known): none at its default size or smaller.
+  static double? maxAspectOf(EditTabStyle style, Size? frame) {
+    if (style.size <= 1) return null;
+    final known = frame != null && frame.width > 0 && frame.height > 0;
+    return grownTo * (known ? frame.height / frame.width : 1 / landscape);
+  }
+
+  /// How wide a band is drawn over a [frame] that size (null: not known).
+  static int widthOf(Size? frame) {
+    if (frame == null || frame.width <= 0 || frame.height <= 0) return width;
+    return frame.width.round().clamp(width, maxWidth);
+  }
 }
 
 /// The video's title, at its top left: one or two [lines] (the first
@@ -350,16 +464,23 @@ bool tabOffered(TakeLog? log) =>
 /// file, of a take whose log has [tab] and [lagMs]: each neckline from
 /// when it showed until the next ([bandsOf], a turn back to the same one
 /// carrying it on), at its time in the file ([TakeTab.fileMarks]), in
-/// the output, cut to it (what falls outside is left out).
+/// the output, cut to it (what falls outside is left out); looking as
+/// [style] says, over a [frame] that size (null: not known; [BandLook]),
+/// never smaller than it can be read there ([TabLayout.drawnOf]).
 List<PlanLayer> tabLayers(
   TakeTab tab,
   int lagMs,
   Duration start,
-  Duration end,
-) {
+  Duration end, {
+  EditTabStyle style = EditTabStyle.standard,
+  Size? frame,
+}) {
   final length = end - start;
   if (length <= Duration.zero) return const [];
   final layers = <PlanLayer>[];
+  final drawn = TabLayout.drawnOf(style, frame);
+  final maxAspect = TabLayout.maxAspectOf(drawn, frame);
+  final width = TabLayout.widthOf(frame);
   for (final band in bandsOf(tab.fileMarks(lagMs))) {
     var from = band.start - start;
     var to = (band.end ?? end) - start;
@@ -369,7 +490,12 @@ List<PlanLayer> tabLayers(
     layers.add(
       PlanLayer(
         id: 'tab',
-        look: BandLook(tab.lines[band.line]),
+        look: BandLook(
+          tab.lines[band.line],
+          style: drawn,
+          maxAspect: maxAspect,
+          width: width,
+        ),
         anchor: LayerAnchor.bottomFull,
         from: from,
         to: to,
@@ -379,16 +505,18 @@ List<PlanLayer> tabLayers(
   return layers;
 }
 
-/// How high a band of [line] is drawn, as a fraction of its width (as
-/// wide as the frame): `bandAspect` in edit_layers.dart measures it.
-typedef BandAspect = double Function(String line);
+/// How high a [band] is drawn, as a fraction of its width (as wide as
+/// the frame): `bandAspect` in edit_layers.dart measures it.
+typedef BandAspect = double Function(BandLook band);
 
-/// The most a band of [line] can be high, as a fraction of its width,
-/// without measuring it: its text at the largest a band draws it (1/48 of
-/// its width, each line 1.2 times that), padded by 1/64 of its width
-/// above and below (`bandPicture`'s look).
-double bandAspectBound(String line) =>
-    ('\n'.allMatches(line).length + 1) * 1.2 / 48 + 2 / 64;
+/// The most a [band] can be high, as a fraction of its width, without
+/// measuring it: its text at the largest it draws it ([TabLayout.textOf]:
+/// 1/48 of its width at its default size, each line 1.2 times that),
+/// padded above and below ([TabLayout.padAt]: 1/64 of its width at its
+/// default size; `bandPicture`'s look).
+double bandAspectBound(BandLook band) =>
+    band.lines * TabLayout.lineHeight * TabLayout.textOf(band) +
+    2 * TabLayout.padAt(band.style.size);
 
 /// The title over the video, showing [lines] (as [titleText] cleans
 /// them): at the top left, fading in over the kept part's first 3 s, then
@@ -579,9 +707,11 @@ class RenderPlan {
   /// The video's [takeLog] (one of Cam's takes) puts its tab over it
   /// ([tabLayers]), where it can be ([tabOffered]) and the edit doesn't
   /// turn it off ([PageEdit.tab]), even with no edit (the tab is on by
-  /// default). The [title] is the capture's ([captureTitleLines]): the
-  /// title's text unless the edit has its own ([PageEdit.title]), drawn
-  /// unless it's turned off. The [watermark] (its text; null: none, as in
+  /// default), looking as the edit says ([PageEdit.tabStyle]) over the
+  /// video's [frame] (its size as shown, in pixels; null: not known). The
+  /// [title] is the capture's ([captureTitleLines]): the title's text
+  /// unless the edit has its own ([PageEdit.title]), drawn unless it's
+  /// turned off. The [watermark] (its text; null: none, as in
   /// the file screen's player) is drawn unless the edit turns it off
   /// ([PageEdit.watermark]) and the one downloading has Premium now
   /// ([premium], or a build without the service): an edit a Premium user
@@ -607,6 +737,7 @@ class RenderPlan {
     BandAspect bandAspect = bandAspectBound,
     bool preview = false,
     bool fades = true,
+    Size? frame,
   }) {
     final start = edit?.start ?? Duration.zero;
     final end = edit?.end ?? duration;
@@ -646,13 +777,22 @@ class RenderPlan {
     final layers = <PlanLayer>[];
     if (video) {
       if (tabOffered(takeLog) && (edit?.tab ?? true)) {
-        layers.addAll(tabLayers(takeLog!.tab!, takeLog.lagMs, start, end));
+        layers.addAll(
+          tabLayers(
+            takeLog!.tab!,
+            takeLog.lagMs,
+            start,
+            end,
+            style: edit?.tabStyle ?? EditTabStyle.standard,
+            frame: frame,
+          ),
+        );
       }
       if (watermark != null && !(edit?.watermark == false && premium)) {
         var lift = 0.0;
         for (final band in layers) {
-          if (band.look case BandLook(:final line)) {
-            lift = max(lift, bandAspect(line));
+          if (band.look case final BandLook look) {
+            lift = max(lift, bandAspect(look));
           }
         }
         layers.add(watermarkLayer(watermark, liftW: lift));

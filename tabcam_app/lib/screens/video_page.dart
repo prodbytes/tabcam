@@ -81,6 +81,7 @@ class _VideoPageState extends State<VideoPage> {
         takeLog: log,
         title: title,
         fades: false,
+        frame: frameOf(controller),
       );
       _layers = plan?.layers ?? const [];
       return;
@@ -116,6 +117,7 @@ class _VideoPageState extends State<VideoPage> {
       takeLog: log,
       title: title,
       fades: false,
+      frame: frameOf(controller),
     );
     await edited.set(plan, song: track);
     _layers = plan?.layers ?? const [];

@@ -199,7 +199,9 @@ void main() {
     late img.Image band;
     await tester.runAsync(() async {
       band = img.decodePng(
-        await renderBand('e|--0--3--|\nB|--1--1--|\nG|--2--0--|'),
+        await renderBand(
+          const BandLook('e|--0--3--|\nB|--1--1--|\nG|--2--0--|'),
+        ),
       )!;
     });
     expect(band.width, bandWidth);
@@ -411,8 +413,8 @@ void main() {
       ),
     );
 
-    FilterChip tabChip(WidgetTester tester) =>
-        tester.widget<FilterChip>(find.byKey(const Key('video-edit-tab')));
+    InputChip tabChip(WidgetTester tester) =>
+        tester.widget<InputChip>(find.byKey(const Key('video-edit-tab')));
 
     /// The tab's bands over the preview (the watermark, always there
     /// here, left out).

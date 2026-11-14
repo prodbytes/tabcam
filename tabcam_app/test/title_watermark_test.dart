@@ -326,7 +326,7 @@ void main() {
       expect(mark.liftW, 0);
       // With the tab: lifted by its tallest band (here 0.2 of the width).
       final lifted = _ofId(
-        plan(null, takeLog: log, aspect: (l) => l == _riffB ? 0.2 : 0.1),
+        plan(null, takeLog: log, aspect: (b) => b.line == _riffB ? 0.2 : 0.1),
         'mark',
       ).single;
       expect(lifted.liftW, 0.2);
@@ -336,7 +336,7 @@ void main() {
           plan(
             PageEdit(start: Duration.zero, end: ms(3000)),
             takeLog: log,
-            aspect: (l) => l == _riffB ? 0.2 : 0.1,
+            aspect: (b) => b.line == _riffB ? 0.2 : 0.1,
           ),
           'mark',
         ).single.liftW,
@@ -362,7 +362,10 @@ void main() {
         0,
       );
       // A band's height is never more than the bound says.
-      expect(bandAspectBound(_riffB), closeTo(2 * 1.2 / 48 + 2 / 64, 1e-9));
+      expect(
+        bandAspectBound(const BandLook(_riffB)),
+        closeTo(2 * 1.2 / 48 + 2 / 64, 1e-9),
+      );
     });
 
     test('goes to the platforms with its lift', () {

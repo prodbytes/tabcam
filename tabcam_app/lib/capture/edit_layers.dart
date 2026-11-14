@@ -6,12 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:video_player/video_player.dart';
 
+import '../library/page_edit.dart' show EditTabStyle;
 import '../screens/mono_font.dart';
 import 'render_plan.dart';
-
-/// How wide a band is drawn, in pixels; the video scales it to its own
-/// width.
-const int bandWidth = 1280;
 
 /// A layer's look drawn once ([picture], [size] pixels): painted, scaled,
 /// over the preview ([EditLayers]), and made a PNG for Download
@@ -50,7 +47,7 @@ const double layerShort = 1200;
 
 /// [look] drawn ([LayerPicture]).
 LayerPicture layerPicture(LayerLook look) => switch (look) {
-  BandLook(:final line) => bandPicture(line),
+  final BandLook band => bandPicture(band),
   TitleLook(:final lines) => titlePicture(lines),
   WatermarkLook(:final text) => watermarkPicture(text),
 };
@@ -146,72 +143,155 @@ LayerPicture watermarkPicture(String text, {double short = layerShort}) {
   return LayerPicture(recorder.endRecording(), Size(width, height));
 }
 
-/// How high [neckline]'s band is, as a fraction of its width (the
-/// frame's): measured once per line ([BandAspect]), so the watermark sits
-/// right above the tallest band.
-double bandAspect(String neckline) {
-  final known = _aspects[neckline];
+/// How high [band] is, as a fraction of its width (the frame's):
+/// measured once per look ([BandAspect]), so the watermark sits right
+/// above the tallest band.
+double bandAspect(BandLook band) {
+  final known = _aspects[band];
   if (known != null) return known;
   if (_aspects.length >= 256) _aspects.clear();
-  final (text, height) = _bandText(neckline, bandWidth);
-  text.dispose();
-  return _aspects[neckline] = height / bandWidth;
+  final (texts, height, _) = _bandText(band);
+  for (final text in texts) {
+    text.dispose();
+  }
+  return _aspects[band] = height / band.width;
 }
 
-final _aspects = <String, double>{};
+final _aspects = <BandLook, double>{};
 
-/// [neckline]'s text laid out for a band [width] wide, and the band's
-/// height.
-(TextPainter, int) _bandText(String neckline, int width) {
-  final pad = width / 64;
-  TextPainter painter(double size) => TextPainter(
-    text: TextSpan(
-      text: neckline,
-      style: TextStyle(
-        fontFamily: monoFont,
-        fontSize: size,
-        height: 1.2,
-        color: Colors.white,
-      ),
-    ),
-    textDirection: TextDirection.ltr,
-  )..layout();
-  // Measured at 100, then sized to fit (never bigger than width / 48, so
-  // a six-string staff takes about a third of a landscape take).
-  final probe = painter(100);
-  final fit = probe.width <= 0 ? 100.0 : 100 * (width - 2 * pad) / probe.width;
+/// [line]'s width in a band's monospaced text 100 high.
+double _probeWidth(String line) {
+  final probe = _bandPainter(line, 100, const Color(0xFFFFFFFF));
+  final width = probe.width;
   probe.dispose();
-  final text = painter(min(fit, width / 48));
-  return (text, (text.height + 2 * pad).ceil());
+  return width;
 }
 
-/// [neckline] drawn as a band to put along the bottom of a take: white
-/// monospaced text on a dark, see-through background, as wide as
-/// [width], its text as big as fits (a long staff gets smaller).
-LayerPicture bandPicture(String neckline, {int width = bandWidth}) {
-  final pad = width / 64;
-  final (text, height) = _bandText(neckline, width);
+/// [line] laid out as a band's text, [size] high, filled with [color] or
+/// stroked by [outline].
+TextPainter _bandPainter(
+  String line,
+  double size,
+  Color? color, {
+  Paint? outline,
+}) => TextPainter(
+  text: TextSpan(
+    text: line,
+    style: TextStyle(
+      fontFamily: monoFont,
+      fontSize: size,
+      height: TabLayout.lineHeight,
+      color: outline == null ? color : null,
+      foreground: outline,
+    ),
+  ),
+  textDirection: TextDirection.ltr,
+)..layout();
+
+/// How high [band]'s text is drawn, in pixels: as big as its style says
+/// ([TabLayout.textOf]: at its default size, width / 48, so a six-string
+/// staff takes about a third of a landscape take), or, when its line
+/// wouldn't fit across, as big as fits.
+double _textSize(BandLook band) {
+  final width = band.width;
+  final pad = width * TabLayout.padAt(band.style.size);
+  final probe = _probeWidth(band.line);
+  final fit = probe <= 0 ? 100.0 : 100 * (width - 2 * pad) / probe;
+  return min(fit, width * TabLayout.textOf(band));
+}
+
+/// The largest size ([EditTabStyle.size]) any of [lines]' bands is drawn
+/// bigger at over a [frame] that size (null: not known): past it, each
+/// is as big as fits the frame's width or its bound
+/// ([TabLayout.maxAspectOf]), so the Size slider stops there (to the next
+/// 5%), between 100% (under it, the padding still shrinks) and
+/// [EditTabStyle.maxSize].
+double tabSizeMost(Iterable<String> lines, Size? frame) {
+  const grown = EditTabStyle(size: EditTabStyle.maxSize);
+  final maxAspect = TabLayout.maxAspectOf(grown, frame);
+  final width = TabLayout.widthOf(frame);
+  var most = 0.0;
+  for (final line in lines) {
+    final band = BandLook(
+      line,
+      style: grown,
+      maxAspect: maxAspect,
+      width: width,
+    );
+    most = max(most, _textSize(band) / (width * TabLayout.text));
+  }
+  return ((most * 20 - 1e-6).ceil() / 20).clamp(1.0, EditTabStyle.maxSize);
+}
+
+/// [band]'s text laid out for it ([TabLayout]): its fill, and, under it,
+/// its outline when its background is faint ([TabLayout.outlineOf]); the
+/// band's height, and the padding above and below the text.
+(List<TextPainter>, int, double) _bandText(BandLook band) {
+  final style = band.style;
+  final pad = band.width * TabLayout.padAt(style.size);
+  final (background, color) = TabLayout.colorsOf(style.colors);
+  final size = _textSize(band);
+  final text = _bandPainter(band.line, size, color);
+  final outline = TabLayout.outlineOf(style.opacity);
+  return (
+    [
+      if (outline > 0)
+        _bandPainter(
+          band.line,
+          size,
+          null,
+          outline: Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = size * 0.18
+            ..strokeJoin = StrokeJoin.round
+            ..color = background.withValues(alpha: outline),
+        ),
+      text,
+    ],
+    (text.height + 2 * pad).ceil(),
+    pad,
+  );
+}
+
+/// [band] drawn along the bottom of a take: monospaced text on a
+/// see-through background, as wide as the band, its text as big as its
+/// style says, or as fits (a long staff gets smaller); white on a 70%
+/// black strip by default ([EditTabStyle.standard]).
+LayerPicture bandPicture(BandLook band) {
+  final width = band.width;
+  final (texts, height, pad) = _bandText(band);
+  final (background, _) = TabLayout.colorsOf(band.style.colors);
   final recorder = ui.PictureRecorder();
   final canvas = Canvas(recorder);
-  canvas.drawRect(
-    Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
-    Paint()..color = const Color(0xB3000000),
-  );
-  text.paint(canvas, Offset((width - text.width) / 2, pad));
-  text.dispose();
+  final alpha = _alpha(band.style.opacity);
+  if (alpha > 0) {
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
+      Paint()..color = background.withAlpha(alpha),
+    );
+  }
+  for (final text in texts) {
+    text.paint(canvas, Offset((width - text.width) / 2, pad));
+    text.dispose();
+  }
   return LayerPicture(
     recorder.endRecording(),
     Size(width.toDouble(), height.toDouble()),
   );
 }
 
-/// [neckline]'s band ([bandPicture]) as a PNG.
-Future<Uint8List> renderBand(String neckline, {int width = bandWidth}) async {
-  final band = bandPicture(neckline, width: width);
+/// [opacity] (0 to 1) as an alpha (0 to 255), rounded half up: 70% is
+/// 0xB3, as bands have always been drawn.
+int _alpha(double opacity) =>
+    (opacity * 255 + 0.5 + 1e-9).floor().clamp(0, 255);
+
+/// [band] ([bandPicture]) as a PNG.
+Future<Uint8List> renderBand(BandLook band) async {
+  final picture = bandPicture(band);
   try {
-    return await band.png();
+    return await picture.png();
   } finally {
-    band.dispose();
+    picture.dispose();
   }
 }
 
@@ -228,6 +308,13 @@ Future<Uint8List> _png(LayerLook look) async {
   } finally {
     picture.dispose();
   }
+}
+
+/// The frame [video] shows, in pixels (what the tab's bands are drawn
+/// for, [RenderPlan.of]'s `frame`); null while it isn't known.
+Size? frameOf(VideoPlayerController video) {
+  final size = video.value.size;
+  return size.width > 0 && size.height > 0 ? size : null;
 }
 
 /// The layers' pictures, each look drawn once while it's used.

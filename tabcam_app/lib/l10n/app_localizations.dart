@@ -3652,6 +3652,78 @@ abstract class AppLocalizations {
   /// **'No fades'**
   String get videoEditFadesOff;
 
+  /// Video edit: the title of the tab's style panel (its size, its background's opacity, its colours)
+  ///
+  /// In en, this message translates to:
+  /// **'Tab style'**
+  String get videoEditTabStyle;
+
+  /// Video edit: what the tab's style panel changes (under its title, or alone on a wide screen)
+  ///
+  /// In en, this message translates to:
+  /// **'How the tab looks over the video'**
+  String get videoEditTabStyleAbout;
+
+  /// Video edit: the Tab chip's button that opens the tab's style
+  ///
+  /// In en, this message translates to:
+  /// **'Change how the tab looks'**
+  String get videoEditTabStyleEdit;
+
+  /// Video edit: the slider of how big the tab is drawn over the video
+  ///
+  /// In en, this message translates to:
+  /// **'Size'**
+  String get videoEditTabSize;
+
+  /// Video edit: the slider of how opaque the tab's background is
+  ///
+  /// In en, this message translates to:
+  /// **'Background'**
+  String get videoEditTabBackground;
+
+  /// Video edit: the swatches of the tab's colours
+  ///
+  /// In en, this message translates to:
+  /// **'Colours'**
+  String get videoEditTabColors;
+
+  /// Video edit: a tab style slider's value, in percent
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}%'**
+  String videoEditTabPercent(int percent);
+
+  /// Video edit: the tab's colours: white text on a black background
+  ///
+  /// In en, this message translates to:
+  /// **'White on black'**
+  String get videoEditTabColorsDark;
+
+  /// Video edit: the tab's colours: black text on a white background
+  ///
+  /// In en, this message translates to:
+  /// **'Black on white'**
+  String get videoEditTabColorsLight;
+
+  /// Video edit: the tab's colours: TabCam's gold text on a black background
+  ///
+  /// In en, this message translates to:
+  /// **'Gold on black'**
+  String get videoEditTabColorsGold;
+
+  /// Video edit: the tab's colours: black text on TabCam's gold background
+  ///
+  /// In en, this message translates to:
+  /// **'Black on gold'**
+  String get videoEditTabColorsBrand;
+
+  /// Video edit: puts the tab's style back to its default (white on a 70% black strip, at its usual size)
+  ///
+  /// In en, this message translates to:
+  /// **'Default style'**
+  String get videoEditTabStyleReset;
+
   /// The metronome's button and its sidebar's title
   ///
   /// In en, this message translates to:

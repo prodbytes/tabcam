@@ -25,6 +25,7 @@ import 'media_url.dart';
 import 'premium_card.dart';
 import 'video_page.dart' show mediaLength, openPlayer, pageFile;
 import 'messages.dart';
+import 'mono_font.dart';
 
 /// Basic edits of a video, opened from its file screen, on one time axis:
 /// a ruler (tapped or dragged, the preview goes there) over two lanes,
@@ -36,12 +37,15 @@ import 'messages.dart';
 /// nudged by a tenth of a second); ⋮ changes or removes it. Each lane has
 /// its volume and Mute at its left. Under them (beside everything, on a
 /// wide screen), **On the video**: what's drawn over it, as chips: a
-/// take's tab, the title (its text typed under them on a phone, beside
-/// them on a wide screen), the watermark, which only Premium removes, and
-/// the **Fades**: the video fades in from black at the kept part's start
-/// and out to black at its end, both sounds with it, 3 s each by default
-/// (their sliders under the chips, or beside them; drawn on the Take
-/// lane as ramps at its ends).
+/// take's tab (its style, the size, background and colours, opened by
+/// its palette button or, on a phone, a long press on the band in the
+/// preview), the title
+/// (its text typed under them on a phone, beside them on a wide screen),
+/// the watermark, which only Premium removes, and the **Fades**: the
+/// video fades in from black at the kept part's start and out to black
+/// at its end, both sounds with it, 3 s each by default (their sliders
+/// under the chips, or beside them; drawn on the Take lane as ramps at
+/// its ends).
 /// The edit is kept with the page as it's made ([PageEdit]), and played
 /// as it says ([EditedPlayback]: the kept part, both lanes at their
 /// volumes, the layers over it, [EditLayers]); the video's file stays as
@@ -168,8 +172,11 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   static const minTrack = Duration(milliseconds: 500);
 
   /// Whether the take's tab is drawn over it (where it can be,
-  /// [tabOffered]).
+  /// [tabOffered]), how it looks, and whether its style's controls are
+  /// open in place of the chips (on a phone).
   bool _tab = true;
+  EditTabStyle _tabStyle = EditTabStyle.standard;
+  bool _editingTabStyle = false;
 
   /// The title: whether it's on, and the text typed for it (null: the
   /// capture's name, [_captureTitle]); its fields, and whether they're
@@ -357,6 +364,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           _song = edit.song;
           _songLevel = _Level(edit.trackVolume, edit.songMuted);
           _tab = edit.tab;
+          _tabStyle = edit.tabStyle;
           _titleOn = edit.title?.on ?? true;
           _titleLines = edit.title?.lines;
           _watermark = edit.watermark;
@@ -417,6 +425,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     offset: _offset,
     trackVolume: _songLevel.volume,
     tab: _tab,
+    tabStyle: _tabStyle,
     title: EditTitle.of(on: _titleOn, lines: _titleLines),
     watermark: _watermark,
     fadeIn: _fadeIn,
@@ -454,9 +463,14 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       songLength: _trackLength,
       duration: _duration,
       takeLog: _takeLog,
+      frame: _frame,
     ),
     song: _trackPlayer,
   );
+
+  /// The video's frame as it shows, in pixels (null: not known yet): the
+  /// tab's bands are drawn for it.
+  Size? get _frame => _video == null ? null : frameOf(_video!);
 
   /// The layers the preview draws over the video, as Download's plan has
   /// them (for this user: the watermark as [_unlocked] says): worked out
@@ -465,10 +479,13 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   List<PlanLayer> _previewLayers(AppLocalizations l10n) {
     final editing = _titleBeingEdited;
     final watermark = _watermarkText(l10n);
+    final frame = _frame;
     final of = (
       _start,
       _end,
       _tab,
+      _tabStyle,
+      frame,
       _duration,
       _titleOn,
       _titleLines?.join('\n'),
@@ -490,6 +507,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           premium: _unlocked,
           bandAspect: bandAspect,
           preview: true,
+          frame: frame,
         ).layers)
           if (editing && layer.id == 'title')
             PlanLayer(
@@ -513,6 +531,50 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     setState(() => _tab = on);
     _changed();
   }
+
+  /// Whether the take's tab can be drawn over it, so styled.
+  bool get _tabStyleOffered => _take && tabOffered(_takeLog);
+
+  /// Opens the tab's style in place of the chips (on a phone: on a wide
+  /// screen, it's under them always).
+  void _editTabStyle() {
+    if (_wide) return;
+    setState(() {
+      _editingTabStyle = true;
+      _editingTitle = false;
+      _editingFades = false;
+    });
+  }
+
+  /// The sizes the Size slider offers over the video's frame: from the
+  /// smallest it can be read at ([TabLayout.minSizeOf]) to the largest
+  /// any of the take's bands still grows at ([tabSizeMost]); worked out
+  /// again only when the frame changes.
+  (double, double) _tabSizes() {
+    final frame = _frame;
+    final known = _tabSizesOf;
+    if (known != null && known.$1 == frame) return (known.$2, known.$3);
+    final least = TabLayout.minSizeOf(frame);
+    final most = tabSizeMost(_takeLog?.tab?.lines ?? const [], frame);
+    _tabSizesOf = (frame, least, most);
+    return (least, most);
+  }
+
+  (Size?, double, double)? _tabSizesOf;
+
+  /// The tab's style changed to [style]: the preview draws it at once
+  /// (nothing is sought again), the tab on, as typing a title turns it on.
+  void _setTabStyle(EditTabStyle style) {
+    if (style == _tabStyle && _tab) return;
+    setState(() {
+      _tabStyle = style;
+      _tab = true;
+    });
+    _changed();
+  }
+
+  /// **Done**: the tab's style closes.
+  void _tabStyleDone() => setState(() => _editingTabStyle = false);
 
   /// The title's fields show its text as it is now (setState's).
   void _fillTitle() {
@@ -539,6 +601,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     setState(() {
       _editingTitle = !_wide;
       _editingFades = false;
+      _editingTabStyle = false;
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _titleFocus.requestFocus();
@@ -610,6 +673,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     setState(() {
       _editingFades = true;
       _editingTitle = false;
+      _editingTabStyle = false;
     });
   }
 
@@ -1038,6 +1102,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       _own = _Level();
       _song = null;
       _tab = true;
+      _tabStyle = EditTabStyle.standard;
+      _editingTabStyle = false;
       _titleOn = true;
       _titleLines = null;
       _editingTitle = false;
@@ -1073,6 +1139,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         watermark: _watermarkText(l10n ?? context.l10n),
         premium: _unlocked,
         bandAspect: bandAspect,
+        frame: _frame,
       );
 
   /// Whether the song lane can be rendered: it isn't heard (a muted song
@@ -1256,6 +1323,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
             ? _titleFields(l10n)
             : _editingFades
             ? _fadeFields(l10n)
+            : _editingTabStyle && _tabStyleOffered
+            ? _tabStyleFields(l10n)
             : _onTheVideo(l10n),
       ],
       if (_hasSong) ...[const SizedBox(height: 8), _songDetails(l10n)],
@@ -1364,7 +1433,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   }
 
   /// The video, at most a third of the screen (a tap plays or pauses it;
-  /// on the title, it edits it), with what Download draws over it, and,
+  /// on the title, it edits it; on a phone, a long press on the tab's band
+  /// opens its style), with what Download draws over it, and,
   /// while it plays, the fades' black ([EditLayers]).
   Widget _preview(VideoPlayerController video, AppLocalizations l10n) {
     final height = MediaQuery.sizeOf(context).height / 3;
@@ -1383,6 +1453,13 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                 behavior: HitTestBehavior.opaque,
                 onTapUp: (tap) =>
                     _tapPreview(tap.localPosition, box.biggest, layers),
+                onLongPressStart: _wide
+                    ? null
+                    : (press) => _pressPreview(
+                        press.localPosition,
+                        box.biggest,
+                        layers,
+                      ),
                 child: layers.isEmpty && !fades.any
                     ? VideoPlayer(video)
                     : Stack(
@@ -1405,16 +1482,35 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     );
   }
 
+  /// Whether [layer], at [at] on the preview, [size] big, is under it.
+  bool _hit(PlanLayer layer, Offset at, Size size) =>
+      layer.rectIn(size, _measured.of(layer.look).size).contains(at);
+
   /// A tap at [at] on the preview, [size] big, showing [layers]: on the
-  /// title, it's edited; anywhere else, the video plays or pauses.
+  /// title (a corner of it), it's edited; anywhere else, the tab's band
+  /// too (as wide as the picture, it's a good part of it), the video
+  /// plays or pauses.
   void _tapPreview(Offset at, Size size, List<PlanLayer> layers) {
     final title = layers.where((l) => l.id == 'title').firstOrNull;
-    if (title != null &&
-        title.rectIn(size, _measured.of(title.look).size).contains(at)) {
+    if (title != null && _hit(title, at, size)) {
       _editTitle();
       return;
     }
     unawaited(_playback?.playPause());
+  }
+
+  /// A long press at [at] on the preview, [size] big, showing [layers]
+  /// (on a phone): on the tab's band showing, its style opens in place of
+  /// the chips, as its chip's palette button opens it.
+  void _pressPreview(Offset at, Size size, List<PlanLayer> layers) {
+    final now = (_video?.value.position ?? Duration.zero) - _start;
+    final band = layers
+        .where((l) => l.id == 'tab' && l.alphaAt(now) > 0)
+        .firstOrNull;
+    if (band != null && _hit(band, at, size)) {
+      unawaited(Feedback.forLongPress(context));
+      _editTabStyle();
+    }
   }
 
   /// **On the video**: what's drawn over it, as chips (and, on a [wide]
@@ -1442,7 +1538,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           spacing: 8,
           runSpacing: 4,
           children: [
-            ?_tabChip(l10n),
+            ?_tabChip(l10n, wide: wide),
             InputChip(
               key: const Key('video-edit-title'),
               avatar: text.isEmpty ? const Icon(Icons.add, size: 18) : null,
@@ -1491,6 +1587,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           _titleFields(l10n),
           const SizedBox(height: 16),
           _fadeFields(l10n),
+          if (_tabStyleOffered) ...[
+            const SizedBox(height: 16),
+            _tabStyleFields(l10n),
+          ],
         ],
       ],
     );
@@ -1510,43 +1610,17 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     final fades = _fades;
     Widget slider(String name, Duration fade, {required bool end}) {
       final shown = fade > most ? most : fade;
-      final seconds = l10n.videoEditFadeSeconds(
-        (shown.inMilliseconds / 1000).toStringAsFixed(1),
-      );
-      final which = end ? 'out' : 'in';
-      return Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(name, maxLines: 2, overflow: TextOverflow.ellipsis),
-          ),
-          Expanded(
-            flex: 5,
-            child: Slider(
-              key: Key('video-edit-fade-$which'),
-              value: shown.inMilliseconds / 1000,
-              max: max(0.1, most.inMilliseconds / 1000),
-              divisions: max(1, tenths),
-              label: seconds,
-              semanticFormatterCallback: (_) => '$name $seconds',
-              onChanged: tenths <= 0 ? null : (v) => _setFade(v, end: end),
-            ),
-          ),
-          SizedBox(
-            width: 48,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerRight,
-              child: Text(
-                seconds,
-                key: Key('video-edit-fade-$which-value'),
-                style: const TextStyle(
-                  fontFeatures: [FontFeature.tabularFigures()],
-                ),
-              ),
-            ),
-          ),
-        ],
+      return _sliderRow(
+        name: name,
+        key: 'video-edit-fade-${end ? 'out' : 'in'}',
+        value: shown.inMilliseconds / 1000,
+        min: 0,
+        max: max(0.1, most.inMilliseconds / 1000),
+        divisions: max(1, tenths),
+        shown: l10n.videoEditFadeSeconds(
+          (shown.inMilliseconds / 1000).toStringAsFixed(1),
+        ),
+        onChanged: tenths <= 0 ? null : (v) => _setFade(v, end: end),
       );
     }
 
@@ -1584,6 +1658,175 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       ],
     );
   }
+
+  /// One of the panels' sliders: its [name], the slider ([key], at
+  /// [value] from [min] to [max] in [divisions] steps) and its value as
+  /// [shown] (`[key]-value`), which a screen reader also says. On one
+  /// row (the name in two lines at most, the value shrinking to fit), or,
+  /// [stacked], the name and the value over a slider as wide as the panel
+  /// (so neither is ever cut, at any text size).
+  Widget _sliderRow({
+    required String name,
+    required String key,
+    required double value,
+    required double min,
+    required double max,
+    required int divisions,
+    required String shown,
+    required ValueChanged<double>? onChanged,
+    bool stacked = false,
+  }) {
+    final slider = Slider(
+      key: Key(key),
+      value: value.clamp(min, max),
+      min: min,
+      max: max,
+      divisions: divisions,
+      label: shown,
+      semanticFormatterCallback: (_) => '$name $shown',
+      onChanged: onChanged,
+    );
+    final said = Text(
+      shown,
+      key: Key('$key-value'),
+      style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()]),
+    );
+    if (stacked) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(child: Text(name)),
+              const SizedBox(width: 8),
+              said,
+            ],
+          ),
+          slider,
+        ],
+      );
+    }
+    return Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: Text(name, maxLines: 2, overflow: TextOverflow.ellipsis),
+        ),
+        Expanded(flex: 5, child: slider),
+        SizedBox(
+          width: 48,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: said,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// The tab's style: **Size** (by 5%, of its default: from 50%, or
+  /// what can still be read on a portrait frame, to 200%, or as far as
+  /// the take's bands still grow over this frame, [_tabSizes]), **Background**
+  /// (its opacity, 0% to 100% by 5%: the text stays opaque, outlined as
+  /// the background fades out), each its name and value over its slider,
+  /// and **Colours** (four swatches, each a bit of band in its colours);
+  /// **Default style**; on a phone, in place of the chips, with **Done**
+  /// to close it. The preview draws each change at once.
+  Widget _tabStyleFields(AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    final inline = _wide;
+    final style = _tabStyle;
+    String percent(double v) => l10n.videoEditTabPercent((v * 100).round());
+    // Only the sizes that change the band over this video: shown as drawn
+    // (a size kept past either end is drawn at that end).
+    final (least, most) = _tabSizes();
+    final sizes = ((most - least) * 20).round();
+    final size = style.size.clamp(least, most);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          inline
+              ? l10n.videoEditTabStyleAbout
+              : '${l10n.videoEditTabStyle} · ${l10n.videoEditTabStyleAbout}',
+          key: const Key('video-edit-tab-style'),
+          style: inline
+              ? theme.textTheme.bodySmall
+              : theme.textTheme.titleSmall,
+        ),
+        const SizedBox(height: 8),
+        _sliderRow(
+          name: l10n.videoEditTabSize,
+          key: 'video-edit-tab-size',
+          value: size,
+          min: least,
+          max: sizes > 0 ? most : least + 0.05,
+          divisions: max(1, sizes),
+          shown: percent(size),
+          onChanged: sizes > 0
+              ? (v) => _setTabStyle(style.copyWith(size: v))
+              : null,
+          stacked: true,
+        ),
+        _sliderRow(
+          name: l10n.videoEditTabBackground,
+          key: 'video-edit-tab-opacity',
+          value: style.opacity,
+          min: 0,
+          max: 1,
+          divisions: 20,
+          shown: percent(style.opacity),
+          onChanged: (v) => _setTabStyle(style.copyWith(opacity: v)),
+          stacked: true,
+        ),
+        Text(l10n.videoEditTabColors),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final colors in TabColors.values)
+              _TabSwatch(
+                colors: colors,
+                selected: style.colors == colors,
+                label: _colorsName(l10n, colors),
+                onTap: () => _setTabStyle(style.copyWith(colors: colors)),
+              ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Wrap(
+          alignment: WrapAlignment.end,
+          spacing: 8,
+          children: [
+            TextButton(
+              key: const Key('video-edit-tab-style-reset'),
+              onPressed: style.isStandard
+                  ? null
+                  : () => _setTabStyle(EditTabStyle.standard),
+              child: Text(l10n.videoEditTabStyleReset),
+            ),
+            if (!inline)
+              FilledButton.tonal(
+                key: const Key('video-edit-tab-style-done'),
+                onPressed: _tabStyleDone,
+                child: Text(l10n.videoEditTitleDone),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// [colors]' name, as its swatch says it.
+  static String _colorsName(AppLocalizations l10n, TabColors colors) =>
+      switch (colors) {
+        TabColors.dark => l10n.videoEditTabColorsDark,
+        TabColors.light => l10n.videoEditTabColorsLight,
+        TabColors.gold => l10n.videoEditTabColorsGold,
+        TabColors.brand => l10n.videoEditTabColorsBrand,
+      };
 
   /// The title's text: two fields (typing shows it in the preview at
   /// once), **Use the capture's name** and **No title**; on a phone, in
@@ -1657,13 +1900,14 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   }
 
   /// The **Tab** chip (on by default): where the take's log has its tab,
-  /// not in its picture already; off and disabled, its tooltip saying
-  /// why, on a take whose tab is burned in as it was saved, or one saved
-  /// before takes kept their tab apart. (A disabled chip shows no tooltip
-  /// of its own, so it's in one.) None on a video that isn't a take, nor
-  /// on a take without a tab: its log has none, or, with no log, its
-  /// capture has none to show.
-  Widget? _tabChip(AppLocalizations l10n) {
+  /// not in its picture already, with its style's button (on a phone; on
+  /// a wide screen the style is under the chips already); off and
+  /// disabled, its tooltip saying why, on a take whose tab is burned in
+  /// as it was saved, or one saved before takes kept their tab apart. (A
+  /// disabled chip shows no tooltip of its own, so it's in one.) None on
+  /// a video that isn't a take, nor on a take without a tab: its log has
+  /// none, or, with no log, its capture has none to show.
+  Widget? _tabChip(AppLocalizations l10n, {bool wide = false}) {
     if (!_take) return null;
     final log = _takeLog;
     final offered = tabOffered(log);
@@ -1674,12 +1918,22 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         necklines(_library.byId(widget.eventId)?.tabText ?? '').isEmpty) {
       return null;
     }
-    final chip = FilterChip(
+    final styled = offered && !wide;
+    final chip = InputChip(
       key: const Key('video-edit-tab'),
       label: Text(l10n.videoEditLayerTab),
       tooltip: offered ? l10n.videoEditLayerTabAbout : null,
       selected: offered && _tab,
       onSelected: offered ? _setTab : null,
+      deleteIcon: styled
+          ? const Icon(
+              Icons.palette_outlined,
+              key: Key('video-edit-tab-style-edit'),
+              size: 18,
+            )
+          : null,
+      onDeleted: styled ? _editTabStyle : null,
+      deleteButtonTooltipMessage: l10n.videoEditTabStyleEdit,
     );
     if (offered) return chip;
     return Tooltip(
@@ -1984,6 +2238,102 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// A swatch of the tab's [colors]: a little piece of band in them (a
+/// staff's bit, in the text's colour on the background's), ringed in the
+/// primary colour, with a check, when it's [selected] (else in the
+/// outline's, so a white or black one shows on any theme); named [label]
+/// (its tooltip, and what a screen reader says, with whether it's
+/// picked). Its sample doesn't grow with the text size.
+class _TabSwatch extends StatelessWidget {
+  const _TabSwatch({
+    required this.colors,
+    required this.selected,
+    required this.label,
+    required this.onTap,
+  });
+
+  final TabColors colors;
+  final bool selected;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final (background, text) = TabLayout.colorsOf(colors);
+    final radius = BorderRadius.circular(10);
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: label,
+        onTap: onTap,
+        excludeSemantics: true,
+        child: InkWell(
+          key: Key('video-edit-tab-colors-${colors.name}'),
+          onTap: onTap,
+          borderRadius: radius,
+          child: Container(
+            width: 52,
+            height: 48,
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              borderRadius: radius,
+              border: Border.all(
+                color: selected ? scheme.primary : scheme.outlineVariant,
+                width: selected ? 3 : 1,
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: ColoredBox(
+                color: background,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Center(
+                      child: Text(
+                        '3-5',
+                        maxLines: 1,
+                        softWrap: false,
+                        textScaler: TextScaler.noScaling,
+                        style: TextStyle(
+                          fontFamily: monoFont,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: text,
+                        ),
+                      ),
+                    ),
+                    if (selected)
+                      Align(
+                        alignment: Alignment.topRight,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: scheme.primary,
+                            borderRadius: const BorderRadius.only(
+                              bottomLeft: Radius.circular(6),
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.check,
+                            size: 12,
+                            color: scheme.onPrimary,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

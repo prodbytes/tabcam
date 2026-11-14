@@ -5,7 +5,8 @@ one time axis, in **two sound lanes, mixed**: trim its start and end,
 set its own sound's level, and add a song (one of the capture's
 recordings, videos or takes, or a sound file) placed along it at a
 level of its own; and, **on the video**, a take's tab drawn over it as
-it showed while recording, a **title** (the capture's name, or text
+it showed while recording (its **size**, **background** and **colours**
+the user's to change, [the tab's style](#layers)), a **title** (the capture's name, or text
 typed) and a small **watermark** that only [Premium](cloud-ocr.md#in-the-app)
 removes ([layers](#layers)); and **fades in and out**, 3 s each by
 default and adjustable: the video from and to black, both sounds with
@@ -63,7 +64,9 @@ with the file's name in its app bar and **ⓘ** at its right (it says
 makes a file of it."), opening with the video's edit as it was left:
 
 - **The preview**, at the top, at most a third of the screen: the video
-  (a tap on it plays or pauses; a tap on the title opens its text),
+  (a tap on it plays or pauses, on the tab's band too, as wide as the
+  picture; a tap on the title, a corner of it, opens its text; on a
+  phone, a long press on the tab's band opens its style),
   with what Download draws over it (the [layers](#layers): a take's
   tab, the title, the watermark as this user's download would have
   it), drawn by the same code, so the preview is what the file will be
@@ -146,8 +149,8 @@ makes a file of it."), opening with the video's edit as it was left:
     recording give a clean mix).
 - **Under the lanes, On the video**: what's drawn over the video, as
   chips (on a wide screen, 840 points and more, **On the video** is a
-  panel of its own beside the rest, 320 points wide, the title's fields
-  and the fades' sliders under its chips):
+  panel of its own beside the rest, 320 points wide, the title's fields,
+  the fades' sliders and the tab's style under its chips):
   - **Tab** (on a take only; none on a take without a tab: its log has
     none, or, with no log, its capture's tab text has no necklines): on
     by default, for a take whose tab is kept apart from its picture (its
@@ -163,6 +166,38 @@ makes a file of it."), opening with the video's edit as it was left:
     it" (no log, in a capture with a tab). (A `Tooltip` around the
     chip: a disabled chip shows none of its own; no line of text, which
     would stay under every such take.)
+    **The tab's style**: on a take whose tab can be drawn, the chip's
+    **palette** button ("Change how the tab looks"), or, on a phone, a
+    long press on the tab's band in the preview, opens it: on a phone in
+    place of the chips ("Tab style · How the tab looks over the video");
+    on a wide screen it's always under the fades' sliders ("How the tab
+    looks over the video"), without the button or Done (and the band
+    has no gesture of its own there: a tap on it plays or pauses). It
+    has **Size** (the tab's usual size times 50% to 200%, in steps of
+    5%, but only the sizes that change the band over this video: from
+    the smallest that reads on its frame, 50% on a 16:9 landscape one,
+    90% on a portrait or square one, to the largest at which any of the
+    take's bands still grows, at least 100%, so a staff that fills 40%
+    of the frame by 130% stops there; a size kept past either end shows
+    and is drawn as that end) and **Background** (its opacity, 0% to
+    100% in steps of 5%, 70% by default), each its name and its value
+    ("100%") on a
+    line over a slider as wide as the panel (so neither is cut at any
+    text size), **Colours** (four swatches under it,
+    each a bit of band, "3-5" in its text's colour on its background's:
+    **White on black** (the default), **Black on white**, **Gold on black** and
+    **Black on gold**, TabCam's gold; the one picked ringed in the
+    primary colour with a check; each a button with its name as its
+    tooltip and for screen readers, saying whether it's picked),
+    **Default style** (on once it's anything but the default: back to
+    100%, 70%, white on black) and, on a phone, **Done**. The preview
+    draws each change at once, a slider's as it's dragged (a new
+    picture of the band showing; nothing is sought or rendered), and
+    it's kept a moment later, as every change. A change turns the tab on
+    (as typing turns the title on). The title's fields, the fades'
+    sliders and the tab's style take each other's place on a phone. It
+    fits a 360-point phone at the largest text size (the swatches wrap;
+    their sample text doesn't grow). Reset puts it back with the rest.
   - **Title** ✎ (every video): on by default, showing the capture's
     name ([the title](#layers)); with no name to show (the name the
     app gave the capture, "Tab 2026-11-11 10:00"), the chip says
@@ -305,6 +340,14 @@ version 2 (`v: 2`):
   where it put it.
 - `tab`: `false` when the Tab chip is off (written only then; absent,
   the tab is drawn on a take that can have it).
+- `tabStyle`: how the tab's bands look, written only when it isn't the
+  default, with only what isn't: `size` (1 by default; 0.5 to 2, to the
+  hundredth), `opacity` (the background's, 0.7 by default; 0 to 1, to
+  the hundredth) and `colors` (`dark` by default, white on black;
+  `light`, `gold`, `brand`), e.g. `{"size": 1.5, "colors": "gold"}`.
+  Values out of range are brought within it, ones that aren't numbers
+  (or a colour this version doesn't know) read as the default; absent,
+  the default: an edit kept before it looks as it did.
 - `title`: absent, the default: on, the capture's name as it is now (so
   renaming the capture changes it). Otherwise `{"on": false}` (off, with
   the capture's name), or with `lines`, the text typed (at most two,
@@ -403,9 +446,37 @@ the log's `lagMs`, the first from the file's start), then in the output
 (less the kept part's start), cut to the kept part (a trimmed start cuts
 the first band, a trimmed end the last). Its text is the log's own copy
 of the neckline, so a later change to the capture's tab changes nothing.
-It looks as the tab burned into older takes did: white monospaced text
-on a 70% black strip along the bottom, as wide as the video
-(`renderBand`, 1280 px wide, scaled). A take with its tab in its
+By default it looks as the tab burned into older takes did: white
+monospaced text on a 70% black strip along the bottom, as wide as the
+video, its text 1/48 of the width high at most (smaller when a line
+wouldn't fit), each line 1.2 times that, 1/64 of the width above and
+below. **Its style** (the edit's `tabStyle`, `EditTabStyle`, laid out by
+`TabLayout` in `render_plan.dart`) changes that, and it's all in the
+band's look (`BandLook`: its line, its style, its bound and its width),
+so the band's picture, the preview and every Download (the web, Android
+and iOS, which get it as its image) draw it alike, with nothing new for
+the platforms to do: **size** multiplies the text (and, under 100%, the
+padding), never past what fits the width (a long staff stays as big as
+fits) and, grown past 100%, never past **40% of the frame's height**
+(nor below its usual size, whatever that is: a frame of unknown shape
+taken as a landscape 16:9 one), nor smaller than reads on the frame
+(`TabLayout.minSizeOf`: its text, against the frame's short side, no
+smaller than at 50% on a 16:9 landscape frame; 90% on a portrait or
+square one, 65% on a 4:3 one, to the nearest 5%; a size kept smaller is
+drawn at that); the **background** is the colours' background at the
+style's opacity, the text always opaque, and **outlined in the
+background's colour as the background fades below 70%** (its default,
+which always carried the text alone; `TabLayout.outlineOf`: a stroke
+18% of the text's size, fully opaque from 50% down, so a faint
+background never leaves the text washed out, and in proportion between
+50% and 70%), so it reads on any picture with no background at all; the
+**colours**: white on black, black (`#111`) on white, TabCam's gold
+(`#E0A030`) on black, black on gold. The text is drawn at its size, never
+a bitmap scaled up: the band is drawn **as wide as the video's frame**
+(`frame` in `RenderPlan.of`, the player's size; 1280 to 4096 pixels,
+1280 when not known), so a renderer only scales it down, if at all; the
+preview draws the same picture, scaled. With the default style the
+picture is what it always was. A take with its tab in its
 picture (`burned: true`: saved by the versions that put it there, or no
 log: saved before takes kept one) gets none. A build with
 `--dart-define=TABCAM_TAB_OVER_BURNED=true` draws it over such burned
@@ -436,8 +507,8 @@ layer, `mark`, at the **bottom right**, 3% of the short side in, the
 whole video through, one line of Roboto at 2.2% of the short side,
 white at 60% with a soft shadow. With the tab drawn, it's lifted above
 the **tallest band in this output** (`liftW`: that band's height over
-its width, measured as it's drawn, `bandAspect`), so it doesn't jump
-as the bands change. It's left out only when the edit turns it off
+its width, measured as it's drawn in its style, `bandAspect`), so it
+doesn't jump as the bands change, and rises as the tab grows. It's left out only when the edit turns it off
 (`watermark: false`) **and** the one downloading has Premium now
 (`watermarkUnlocked`: the service's answer, or its last one for the
 same account kept on the device, a week at most, offline; a build
