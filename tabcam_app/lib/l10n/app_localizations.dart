@@ -1042,6 +1042,42 @@ abstract class AppLocalizations {
   /// **'Stop (1) · new take (.)'**
   String get camStopKey;
 
+  /// Cam: the tooltip of the arrow beside Rec, which opens a menu to choose the microphone takes record from
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone'**
+  String get camMicChoose;
+
+  /// Cam: the heading of Rec's menu, over the list of microphones
+  ///
+  /// In en, this message translates to:
+  /// **'Record from'**
+  String get camMicHeading;
+
+  /// Cam: Rec's menu, the system's default microphone
+  ///
+  /// In en, this message translates to:
+  /// **'Default microphone'**
+  String get camMicDefault;
+
+  /// Cam (Android): Rec's menu, the phone's own microphone
+  ///
+  /// In en, this message translates to:
+  /// **'Phone microphone'**
+  String get camMicBuiltIn;
+
+  /// Cam: Rec's menu, a microphone the system gives no name
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone {n}'**
+  String camMicUnnamed(int n);
+
+  /// Cam: the microphone chosen in Rec's menu didn't open
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open {name}: takes record from the default microphone.'**
+  String camMicFailed(String name);
+
   /// Cam: play the last take back
   ///
   /// In en, this message translates to:

@@ -181,4 +181,77 @@ void main() {
       view.remove();
     });
   });
+  testWidgets('the microphone chosen: opened from its device, the default '
+      'when it won\'t open; listed without the browser\'s own default '
+      'entries', (tester) async {
+    await tester.runAsync(() async {
+      final context = web.AudioContext();
+      final asked = <Object?>[];
+      var missing = '';
+      final recorder = WebTakeRecorder(
+        getUserMedia: (constraints) async {
+          final audio = constraints.audio.dartify()! as Map;
+          asked.add(audio['deviceId']);
+          final id = (audio['deviceId'] as Map?)?['exact'];
+          if (id != null && id == missing) {
+            throw StateError('OverconstrainedError');
+          }
+          // Live, silent: a new one each time.
+          return context.createMediaStreamDestination().stream;
+        },
+        enumerateDevices: () async => [
+          for (final (kind, id, label) in [
+            ('audioinput', 'default', 'Default - Built-in'),
+            ('audioinput', 'communications', 'Communications - Built-in'),
+            ('audioinput', 'built-in', 'Built-in'),
+            ('audioinput', 'usb', 'USB Audio Interface'),
+            ('videoinput', 'cam', 'FaceTime HD Camera'),
+            ('audiooutput', 'speakers', 'Speakers'),
+          ])
+            {
+                  'kind': kind,
+                  'deviceId': id,
+                  'label': label,
+                  'groupId': '',
+                }.jsify()
+                as web.MediaDeviceInfo,
+        ],
+      );
+
+      expect(
+        [for (final m in await recorder.microphones()) (m.id, m.name)],
+        [('built-in', 'Built-in'), ('usb', 'USB Audio Interface')],
+      );
+
+      // Chosen before it opens: nothing opens till Cam needs it.
+      expect(await recorder.useMicrophone('usb'), isTrue);
+      expect(asked, isEmpty);
+      await recorder.prepare();
+      expect(asked, [
+        {'exact': 'usb'},
+      ]);
+      // The same again: left open as it is.
+      expect(await recorder.useMicrophone('usb'), isTrue);
+      expect(asked, hasLength(1));
+
+      // Another: opened again from it.
+      expect(await recorder.useMicrophone('built-in'), isTrue);
+      expect(asked.last, {'exact': 'built-in'});
+
+      // One that won't open (unplugged): the default opens instead.
+      missing = 'usb';
+      expect(await recorder.useMicrophone('usb'), isFalse);
+      expect(asked.sublist(asked.length - 2), [
+        {'exact': 'usb'},
+        null,
+      ]);
+      expect(await recorder.hasSound(), isTrue);
+
+      // The default: open already, nothing changes.
+      expect(await recorder.useMicrophone(null), isTrue);
+      expect(asked, hasLength(4));
+      recorder.dispose();
+      await context.close().toDart;
+    });
+  });
 }

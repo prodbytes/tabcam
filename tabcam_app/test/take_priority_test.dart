@@ -135,11 +135,11 @@ void main() {
       expect(
         [for (final c in calls) c.arguments],
         [
-          {'ask': true},
-          {'ask': true},
-          {'ask': false},
-          {'ask': true},
-          {'ask': true},
+          {'ask': true, 'device': null},
+          {'ask': true, 'device': null},
+          {'ask': false, 'device': null},
+          {'ask': true, 'device': null},
+          {'ask': true, 'device': null},
         ],
       );
     });

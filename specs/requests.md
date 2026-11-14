@@ -3405,3 +3405,17 @@ spec.
    explanation in parentheses or after a colon. Spanish and Portuguese
    use the English names guitarists use there, with "ligado" and "nota
    fantasma". See [tab recognition](tab-recognition.md#text-view).
+3. **"In the cam view, in the rec button, add a drawer menu to select the
+   recording device (like Google Meet)."** Rec now has an arrow beside it
+   that opens a menu of the microphones takes can record from, the
+   default first and the one in use checked; the choice opens at once,
+   for the takes to come, and is kept on the device, so Cam opens from it
+   next time (one not connected: the default, and a message when it's
+   just been picked). The web lists the browser's audio inputs and opens
+   the take recorder's microphone from the device chosen; Android lists
+   the phone's own, wired, USB and line inputs (not Bluetooth headsets)
+   and opens `AudioRecord` with the device preferred; iOS lists the audio
+   session's inputs and sets its preferred input, which the camera
+   records from. No arrow where the camera records the sound on Android,
+   nor in the preview, and it does nothing while a take records. See
+   [Cam](cam.md#rec-menu).

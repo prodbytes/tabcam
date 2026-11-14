@@ -608,6 +608,28 @@ class AppLocalizationsPt extends AppLocalizations {
   String get camStopKey => 'Parar (1) · novo take (.)';
 
   @override
+  String get camMicChoose => 'Microfone';
+
+  @override
+  String get camMicHeading => 'Gravar com';
+
+  @override
+  String get camMicDefault => 'Microfone padrão';
+
+  @override
+  String get camMicBuiltIn => 'Microfone do celular';
+
+  @override
+  String camMicUnnamed(int n) {
+    return 'Microfone $n';
+  }
+
+  @override
+  String camMicFailed(String name) {
+    return 'Não foi possível abrir $name: os takes são gravados com o microfone padrão.';
+  }
+
+  @override
   String get camPlay => 'Tocar';
 
   @override

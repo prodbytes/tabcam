@@ -36,6 +36,16 @@ abstract class TakeRecorder {
   /// (`TakeLog.lagMs`).
   double? msSinceStart();
 
+  /// The microphones a take can record from (the browser's audio inputs,
+  /// their names as it gives them), the system's default not among them.
+  Future<List<TakeMic>> microphones();
+
+  /// Takes record from microphone [id] from now on (null: the system's
+  /// default); the microphone, if open, is opened again from it (else it
+  /// is when it opens). Whether it opened from [id] (false: it couldn't,
+  /// and the default is open instead). Not while recording.
+  Future<bool> useMicrophone(String? id);
+
   /// The browser's; null elsewhere.
   static TakeRecorder? forPlatform() => webTakeRecorder();
 
@@ -43,4 +53,42 @@ abstract class TakeRecorder {
   Future<XFile> stop();
 
   void dispose();
+}
+
+/// A microphone Cam can record takes from ([TakeRecorder.microphones],
+/// `TakeSound.inputs`, `TakeAudio.inputs`): its [id], kept in Cam's
+/// settings, and its [name] as the system gives it (empty when it gives
+/// none: Cam names it then). [builtIn]: the phone's own (Android, whose
+/// [name] is then where on the phone, such as "bottom", or empty).
+class TakeMic {
+  const TakeMic(this.id, this.name, {this.builtIn = false});
+
+  final String id;
+  final String name;
+  final bool builtIn;
+
+  /// From a channel's reply: a list of `{id, name, builtIn}` maps.
+  static List<TakeMic> fromChannel(Object? reply) => [
+    if (reply is List)
+      for (final m in reply)
+        if (m is Map && m['id'] is String && (m['id'] as String).isNotEmpty)
+          TakeMic(
+            m['id'] as String,
+            m['name'] is String ? m['name'] as String : '',
+            builtIn: m['builtIn'] == true,
+          ),
+  ];
+
+  @override
+  bool operator ==(Object other) =>
+      other is TakeMic &&
+      other.id == id &&
+      other.name == name &&
+      other.builtIn == builtIn;
+
+  @override
+  int get hashCode => Object.hash(id, name, builtIn);
+
+  @override
+  String toString() => 'TakeMic($id, $name${builtIn ? ', built in' : ''})';
 }
