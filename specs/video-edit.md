@@ -112,7 +112,10 @@ makes a file of it."), opening with the video's edit as it was left:
     device (**a sound file picked is added to the capture's files** as
     a recording, named after its file, so the edit can name it and it
     syncs with the rest). Picked, the song is placed by hand
-    (`song: manual`), from the kept part's start, heard at the lane's
+    (`song: manual`) **at the timeline's end**: one shorter than the
+    kept part ends where it ends (silence before it), one as long or
+    longer starts with the kept part (none of its start cut), as does
+    one whose length can't be told; heard at the lane's
     level; its bar shows its used part (its name on it) where it plays
     along the video, what falls outside the kept part dimmed (it's cut
     off). **Dragged, the song moves** along the video; **dragged by

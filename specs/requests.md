@@ -3468,3 +3468,10 @@ spec.
    opens Cam again over the capture, once the service says the user has
    Premium (never as the preview); closing Cam takes it out. See
    [navigation](navigation.md#coming-back-where-the-user-was).
+5. **"In the video editor, when a new track is added, place it to the
+   right (end) of the timeline."** A song (track) picked in the Song
+   lane, added or changed, now goes at the timeline's end: one shorter
+   than the kept part ends where the kept part ends, with silence before
+   it; one as long or longer still starts with the kept part, so none of
+   its start is cut. A kept edit opens with its song where it was. See
+   [video edit](video-edit.md).
