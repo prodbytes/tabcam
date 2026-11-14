@@ -94,6 +94,25 @@ class UnknownLengthPlatform extends VolumePlatform {
       : super.videoEventsFor(playerId);
 }
 
+/// The fake platform, where every player but the first (the video
+/// edited) plays a file [length] long (a short song).
+class ShortTrackPlatform extends VolumePlatform {
+  ShortTrackPlatform(this.length);
+
+  final Duration length;
+
+  @override
+  Stream<VideoEvent> videoEventsFor(int playerId) => playerId == 0
+      ? super.videoEventsFor(playerId)
+      : Stream.value(
+          VideoEvent(
+            eventType: VideoEventType.initialized,
+            duration: length,
+            size: const Size(320, 240),
+          ),
+        );
+}
+
 class _Paths extends PathProviderPlatform with MockPlatformInterfaceMixin {
   @override
   Future<String?> getTemporaryPath() async => '/tmp/tabcam-test';
@@ -1247,6 +1266,44 @@ void main() {
     await _frames(tester);
     expect(edit()!.toJson()['sound'], 'track');
     expect(await soundOnly(), isTrue);
+  });
+
+  testWidgets('a song picked shorter than the kept part goes at the '
+      'timeline\'s end: it ends where the kept part ends', (tester) async {
+    tall(tester);
+    VideoPlayerPlatform.instance = platform = ShortTrackPlatform(s(40));
+    final (library, id) = await capture(tester);
+    PageEdit? edit() => library.byId(id)!.pages.first.edit;
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-song-add')));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-track-k1')));
+    await _settle(tester);
+    // 40 s in a 3 min video: it starts 2:20 in.
+    expect(edit()!.offset, s(140));
+    expect(
+      find.text('The track starts 2:20.0 after the video'),
+      findsOneWidget,
+    );
+    final take = tester.getRect(find.byKey(const Key('video-edit-take-bar')));
+    final song = tester.getRect(find.byKey(const Key('video-edit-song-move')));
+    expect(song.right, closeTo(take.right, 1));
+
+    // Trimmed to 0:10–1:00, the song changed: it ends at 1:00 again.
+    await tester.runAsync(
+      () => library.setPageEdit(id, 'k0', PageEdit(start: s(10), end: s(60))),
+    );
+    await tester.pumpWidget(const SizedBox());
+    // A new platform: the video opened again is its first player.
+    VideoPlayerPlatform.instance = platform = ShortTrackPlatform(s(40));
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-song-add')));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-track-k1')));
+    await _settle(tester);
+    expect(edit()!.offset, s(10));
   });
 
   testWidgets('the Take lane\'s grips trim the video and both sounds with '
