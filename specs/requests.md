@@ -3376,3 +3376,20 @@ spec.
    stack's `VisionTier` (default `flex`) sets it; the log says which tier
    served each reading. See
    [cloud OCR](cloud-ocr.md#handwriting-read-by-a-vision-model).
+
+## 2026-11-14
+
+1. **"Getting a sync failed unauthorized in prod, check and fix."** Every
+   401 the share API gave in two days (15) was its `/tabcam` authorizer
+   refusing a good TabCam token: it fetches the session issuer's
+   discovery document and keys from this same API whenever its copy
+   expires, gives up after 1.5 s, and the function serving them took 3.7 s
+   when cold ("invalid_token: OIDC discovery endpoint communication
+   error"), so after the app sat idle the profile's credentials, the
+   shared list or the profile failed. The two documents are now served by
+   a function of their own, `tabcam-share-api-keys`, that only returns
+   them from its environment (no library, no AWS call), so it answers at
+   once even cold; the deploy reads the key's JWKS from KMS (the stack's
+   `SessionJwks`) and checks the API serves exactly that. See
+   [sessions](sessions.md). (An unmerged branch, `share-api-401-retry`,
+   retries such requests in the app instead; not needed for this.)
