@@ -3393,3 +3393,15 @@ spec.
    `SessionJwks`) and checks the API serves exactly that. See
    [sessions](sessions.md). (An unmerged branch, `share-api-401-retry`,
    retries such requests in the app instead; not needed for this.)
+2. **"The tab notation guide: remove the parentheses for ghost notes in
+   the second to last line. Parentheses for bends."** The Text view's
+   notation sheet no longer has `(5)` "ghost note (played softly)": in
+   tab, parentheses are for bends (`7(9)`, already on the sheet). Ghost
+   notes stay as `x` ("ghost note / palm mute"), the last line. Then:
+   **"Also remove the parenthesised phrases in descriptions: only the
+   name of the effect will do (bend, slide, hammer-on, etc.)"**: each
+   line now names its technique only (hammer-on, pull-off, slur, slide,
+   bend, release, bend, vibrato, ghost note / palm mute), with no
+   explanation in parentheses or after a colon. Spanish and Portuguese
+   use the English names guitarists use there, with "ligado" and "nota
+   fantasma". See [tab recognition](tab-recognition.md#text-view).

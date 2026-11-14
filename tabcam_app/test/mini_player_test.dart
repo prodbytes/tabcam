@@ -337,12 +337,16 @@ void main() {
     expect(play.bottom, lessThanOrEqualTo(frame.bottom + 0.5));
     expect(frame.bottom, lessThan(footer.top));
     // The sheet's last row is there, scrolled to.
+    final lastRow = find.descendant(
+      of: find.byKey(const Key('text-notation')),
+      matching: find.text('x'),
+    );
     await tester.dragUntilVisible(
-      find.text('(5)'),
+      lastRow,
       find.byKey(const Key('cam-along-footer')),
       const Offset(0, -60),
     );
-    expect(find.text('(5)'), findsOneWidget);
+    expect(lastRow, findsOneWidget);
   });
 
   testWidgets('the Text view has the play-along sidebar, open, with the '
@@ -375,12 +379,17 @@ void main() {
       find.descendant(of: sheet, matching: find.text('7b9 r7')),
       findsOneWidget,
     );
-    for (final symbol in ['5_7', '7(9)', '7~', '(5)', 'x']) {
+    for (final symbol in ['5_7', '7(9)', '7~', 'x']) {
       expect(
         find.descendant(of: sheet, matching: find.text(symbol)),
         findsOneWidget,
       );
     }
+    // Parentheses are bends: no ghost note in them.
+    expect(
+      find.descendant(of: sheet, matching: find.text('(5)')),
+      findsNothing,
+    );
     expect(
       tester.getBottomLeft(sheet).dy,
       greaterThan(
