@@ -589,6 +589,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camStopKey => 'Stop (1) · new take (.)';
 
   @override
+  String get camMicChoose => 'Microphone';
+
+  @override
+  String get camMicHeading => 'Record from';
+
+  @override
+  String get camMicDefault => 'Default microphone';
+
+  @override
+  String get camMicBuiltIn => 'Phone microphone';
+
+  @override
+  String camMicUnnamed(int n) {
+    return 'Microphone $n';
+  }
+
+  @override
+  String camMicFailed(String name) {
+    return 'Couldn\'t open $name: takes record from the default microphone.';
+  }
+
+  @override
   String get camPlay => 'Play';
 
   @override

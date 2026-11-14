@@ -611,6 +611,28 @@ class AppLocalizationsEs extends AppLocalizations {
   String get camStopKey => 'Detener (1) · nueva toma (.)';
 
   @override
+  String get camMicChoose => 'Micrófono';
+
+  @override
+  String get camMicHeading => 'Grabar con';
+
+  @override
+  String get camMicDefault => 'Micrófono predeterminado';
+
+  @override
+  String get camMicBuiltIn => 'Micrófono del teléfono';
+
+  @override
+  String camMicUnnamed(int n) {
+    return 'Micrófono $n';
+  }
+
+  @override
+  String camMicFailed(String name) {
+    return 'No se pudo abrir $name: las tomas se graban con el micrófono predeterminado.';
+  }
+
+  @override
   String get camPlay => 'Reproducir';
 
   @override

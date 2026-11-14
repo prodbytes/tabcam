@@ -231,6 +231,18 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   /// the sound after all ([_open]).
   bool _soundRefused = false;
 
+  /// The microphone takes record from, chosen in Rec's menu ([_micMenu]):
+  /// its id ([TakeMic.id]), kept in Cam's settings; null, the system's
+  /// default. One not connected records from the default.
+  String? _mic;
+
+  /// A microphone being opened from Rec's menu: Rec's menu waits.
+  bool _micBusy = false;
+
+  /// Cam's settings, read as it opens: the camera waits for them (the
+  /// microphone opens from the one chosen).
+  Future<void>? _settingsRead;
+
   /// What plays along, and whether the sidebar to choose it shows.
   late final PlayAlong _along = PlayAlong(
     widget.library,
@@ -269,7 +281,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       _start();
       _track.addListener(_trackChanged);
       widget.library.addListener(_libraryChanged);
-      unawaited(_loadSettings());
+      _settingsRead = _loadSettings();
     }
   }
 
@@ -303,7 +315,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       final json = await widget.library.readMeta(metaName);
       if (json == null) return;
       final map = jsonDecode(json);
-      if (map is Map && map['autoPass'] == false && mounted) {
+      if (map is! Map) return;
+      if (map['mic'] case final String mic when mic.isNotEmpty) _mic = mic;
+      if (map['autoPass'] == false && mounted) {
         setState(() => _autoPassOn = false);
         _trackChanged();
       }
@@ -318,10 +332,15 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     // On again: the tab goes where the passes show at the song's position.
     _autoPass.reset();
     _trackChanged();
+    await _saveSettings();
+  }
+
+  /// Keeps Cam's settings: Auto-pass, and the microphone chosen.
+  Future<void> _saveSettings() async {
     try {
       await widget.library.writeMeta(
         metaName,
-        jsonEncode({'autoPass': _autoPassOn}),
+        jsonEncode({'autoPass': _autoPassOn, 'mic': ?_mic}),
       );
     } on Object catch (e) {
       debugPrint('TabCam: cam settings not saved: $e');
@@ -377,9 +396,12 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         (c) => c.lensDirection == CameraLensDirection.front,
       );
       _cameras = cameras;
+      // The microphone chosen, to open it from.
+      await _settingsRead;
+      if (!mounted) return;
       // Before the camera opens: it opens with sound or without by this.
       if (TakeSound.supported) {
-        final ready = await TakeSound.prepare();
+        final ready = await TakeSound.prepare(device: _mic);
         if (!mounted) return;
         _ownSound = ready == TakeSoundReady.ok;
         _soundRefused = ready == TakeSoundReady.refused;
@@ -430,7 +452,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     // each recording starts, and the app's side hides it).
     if (_soundRefused) {
       _soundRefused = false;
-      _ownSound = await TakeSound.prepare(ask: false) == TakeSoundReady.ok;
+      _ownSound =
+          await TakeSound.prepare(ask: false, device: _mic) ==
+          TakeSoundReady.ok;
       if (!mounted) {
         await controller.dispose();
         return;
@@ -463,14 +487,143 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         debugPrint('TabCam: cam: not prepared for recording: $e');
       }
       await TakeAudio.prepare();
+      // The camera's sound follows the session's input.
+      if (_mic case final mic?) await TakeAudio.choose(mic);
     }
     if (_recorder case final recorder?) {
       unawaited(
-        recorder.prepare().catchError(
+        () async {
+          await recorder.useMicrophone(_mic);
+          await recorder.prepare();
+        }().catchError(
           (Object e) => debugPrint('TabCam: cam: take recorder: $e'),
         ),
       );
     }
+  }
+
+  /// Whether takes' microphone can be chosen here: by the web's recorder,
+  /// by the app on Android ([TakeSound]), by the audio session on iOS
+  /// ([TakeAudio]); not where the camera plugin records the sound on
+  /// Android, nor in the preview.
+  bool get _micChoosable =>
+      widget.gate == null &&
+      _controller != null &&
+      (_recorder != null || _ownSound || TakeAudio.supported);
+
+  /// Rec's menu can open: not while a take starts, records, is saved or
+  /// plays, nor while a microphone opens.
+  bool get _canChooseMic =>
+      _micChoosable && _canRec && !_recording && !_starting && !_micBusy;
+
+  /// The microphones takes can record from here.
+  Future<List<TakeMic>> _microphones() async {
+    if (_recorder case final recorder?) return recorder.microphones();
+    if (_ownSound) return TakeSound.inputs();
+    return TakeAudio.inputs();
+  }
+
+  /// Takes record from [id] from now on (null: the default): whether it
+  /// opened.
+  Future<bool> _useMic(String? id) async {
+    if (_recorder case final recorder?) return recorder.useMicrophone(id);
+    if (_ownSound) return TakeSound.choose(id);
+    return TakeAudio.choose(id);
+  }
+
+  /// [mic]'s name in Rec's menu, the [n]th listed.
+  String _micName(TakeMic mic, int n) {
+    final l10n = context.l10n;
+    if (mic.builtIn) {
+      return mic.name.isEmpty
+          ? l10n.camMicBuiltIn
+          : '${l10n.camMicBuiltIn} (${mic.name})';
+    }
+    return mic.name.isEmpty ? l10n.camMicUnnamed(n) : mic.name;
+  }
+
+  /// Rec's menu (its arrow, [anchor]): the microphones takes can record
+  /// from, the default first, the one they record from checked. Picking
+  /// another opens it, for the takes from now on, and keeps it in Cam's
+  /// settings; one that won't open leaves the default open, and says so.
+  Future<void> _micMenu(BuildContext anchor) async {
+    if (!_canChooseMic) return;
+    final mics = await _microphones();
+    if (!mounted || !anchor.mounted || !_canChooseMic) return;
+    final l10n = context.l10n;
+    final box = anchor.findRenderObject()! as RenderBox;
+    final overlay = Overlay.of(anchor).context.findRenderObject()! as RenderBox;
+    final position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        box.localToGlobal(Offset.zero, ancestor: overlay),
+        box.localToGlobal(box.size.bottomRight(Offset.zero), ancestor: overlay),
+      ),
+      Offset.zero & overlay.size,
+    );
+    final chosen = mics.any((m) => m.id == _mic) ? _mic : null;
+    final picked = await showMenu<({String? id})>(
+      context: context,
+      position: position,
+      items: [
+        PopupMenuItem(
+          enabled: false,
+          height: 32,
+          child: Text(l10n.camMicHeading),
+        ),
+        CheckedPopupMenuItem(
+          key: const Key('cam-mic-default'),
+          value: (id: null),
+          checked: chosen == null,
+          child: Text(l10n.camMicDefault),
+        ),
+        for (final (i, mic) in mics.indexed)
+          CheckedPopupMenuItem(
+            key: Key('cam-mic-${mic.id}'),
+            value: (id: mic.id),
+            checked: chosen == mic.id,
+            child: Text(
+              _micName(mic, i + 1),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+      ],
+    );
+    _focus.requestFocus();
+    if (picked == null || !mounted) return;
+    if (picked.id == chosen && picked.id == _mic) return;
+    await _chooseMic(
+      picked.id,
+      picked.id == null
+          ? l10n.camMicDefault
+          : _micName(
+              mics.firstWhere((m) => m.id == picked.id),
+              mics.indexWhere((m) => m.id == picked.id) + 1,
+            ),
+    );
+  }
+
+  /// Takes record from microphone [id] (null: the default), named [name],
+  /// from now on, kept in Cam's settings. One that won't open leaves the
+  /// default open, and the default chosen.
+  Future<void> _chooseMic(String? id, String name) async {
+    setState(() => _micBusy = true);
+    var opened = false;
+    try {
+      opened = await _useMic(id);
+    } on Object catch (e) {
+      debugPrint('TabCam: cam: microphone $id: $e');
+    }
+    if (!mounted) return;
+    final failed = !opened && id != null;
+    // The default open instead: told so, should it not be already.
+    if (failed) unawaited(_useMic(null).catchError((Object _) => false));
+    setState(() {
+      _micBusy = false;
+      _mic = failed ? null : id;
+    });
+    unawaited(_saveSettings());
+    if (failed) _snack(context.l10n.camMicFailed(name));
   }
 
   /// Whether a take records: what else runs makes way for it
@@ -1392,6 +1545,13 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
                   label: _recording ? l10n.camStop : l10n.camRec,
                   tooltip: _recording ? l10n.camStopKey : l10n.camRecKey,
                   onPressed: _canRec ? _rec : null,
+                  menu: _micChoosable
+                      ? (
+                          key: const Key('cam-rec-device'),
+                          tooltip: l10n.camMicChoose,
+                          onPressed: _canChooseMic ? _micMenu : null,
+                        )
+                      : null,
                 ),
                 _Control(
                   key: const Key('cam-play'),
@@ -1439,7 +1599,8 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   }
 }
 
-/// Rec, Play, Tab or Auto-pass: an icon over its label, on black.
+/// Rec, Play, Tab or Auto-pass: an icon over its label, on black; Rec
+/// with an arrow beside it for its [menu] (the microphone).
 class _Control extends StatelessWidget {
   const _Control({
     super.key,
@@ -1448,6 +1609,7 @@ class _Control extends StatelessWidget {
     required this.label,
     this.tooltip,
     this.onPressed,
+    this.menu,
   });
 
   final IconData icon;
@@ -1458,22 +1620,65 @@ class _Control extends StatelessWidget {
   final String? tooltip;
   final VoidCallback? onPressed;
 
+  /// The arrow's key, tooltip and what it opens, given where the arrow is
+  /// (to open the menu by it); null: no arrow.
+  final ({
+    Key key,
+    String tooltip,
+    void Function(BuildContext anchor)? onPressed,
+  })?
+  menu;
+
   @override
   Widget build(BuildContext context) {
     final on = onPressed != null;
+    final button = IconButton(
+      tooltip: tooltip ?? label,
+      iconSize: 36,
+      color: color,
+      disabledColor: Colors.white24,
+      icon: Icon(icon),
+      onPressed: onPressed,
+    );
     // Narrow (a PDF beside the camera), the labels shorten, not overflow.
     return Flexible(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(
-            tooltip: tooltip ?? label,
-            iconSize: 36,
-            color: color,
-            disabledColor: Colors.white24,
-            icon: Icon(icon),
-            onPressed: onPressed,
-          ),
+          if (menu case final menu?)
+            // Narrow, the two shrink together rather than overflow.
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // As wide as the arrow, so Rec stays over its label.
+                  const SizedBox(width: 28),
+                  button,
+                  Builder(
+                    builder: (anchor) => IconButton(
+                      key: menu.key,
+                      tooltip: menu.tooltip,
+                      constraints: const BoxConstraints(
+                        minWidth: 28,
+                        minHeight: 48,
+                      ),
+                      padding: EdgeInsets.zero,
+                      iconSize: 24,
+                      color: Colors.white,
+                      disabledColor: Colors.white24,
+                      icon: const Icon(Icons.expand_less),
+                      onPressed: switch (menu.onPressed) {
+                        final open? => () => open(anchor),
+                        null => null,
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            button,
           Text(
             label,
             maxLines: 1,

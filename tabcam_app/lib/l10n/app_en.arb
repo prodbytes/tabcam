@@ -811,6 +811,40 @@
   "@camStopKey": {
     "description": "Cam: the Stop button's tooltip while recording; the 1 key does it too, and the . key saves the take and starts a new one"
   },
+  "camMicChoose": "Microphone",
+  "@camMicChoose": {
+    "description": "Cam: the tooltip of the arrow beside Rec, which opens a menu to choose the microphone takes record from"
+  },
+  "camMicHeading": "Record from",
+  "@camMicHeading": {
+    "description": "Cam: the heading of Rec's menu, over the list of microphones"
+  },
+  "camMicDefault": "Default microphone",
+  "@camMicDefault": {
+    "description": "Cam: Rec's menu, the system's default microphone"
+  },
+  "camMicBuiltIn": "Phone microphone",
+  "@camMicBuiltIn": {
+    "description": "Cam (Android): Rec's menu, the phone's own microphone"
+  },
+  "camMicUnnamed": "Microphone {n}",
+  "@camMicUnnamed": {
+    "description": "Cam: Rec's menu, a microphone the system gives no name",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "camMicFailed": "Couldn't open {name}: takes record from the default microphone.",
+  "@camMicFailed": {
+    "description": "Cam: the microphone chosen in Rec's menu didn't open",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "camPlay": "Play",
   "@camPlay": {
     "description": "Cam: play the last take back"

@@ -26,16 +26,34 @@ TakeRecorder? webTakeRecorder() => WebTakeRecorder();
 /// ([TakePriority.webMicConstraints]), so the instrument and the song
 /// playing along are recorded as they sound.
 class WebTakeRecorder implements TakeRecorder {
-  WebTakeRecorder({this.getUserMedia = _getUserMedia});
+  WebTakeRecorder({
+    this.getUserMedia = _getUserMedia,
+    this.enumerateDevices = _enumerateDevices,
+  });
 
   /// Opens a microphone with these constraints (the browser's
   /// getUserMedia); tests pass their own.
   final Future<web.MediaStream> Function(web.MediaStreamConstraints)
   getUserMedia;
 
+  /// The devices the browser has (enumerateDevices); tests pass their own.
+  final Future<List<web.MediaDeviceInfo>> Function() enumerateDevices;
+
   static Future<web.MediaStream> _getUserMedia(
     web.MediaStreamConstraints constraints,
   ) => web.window.navigator.mediaDevices.getUserMedia(constraints).toDart;
+
+  static Future<List<web.MediaDeviceInfo>> _enumerateDevices() async =>
+      (await web.window.navigator.mediaDevices.enumerateDevices().toDart)
+          .toDart;
+
+  /// The microphone takes record from ([useMicrophone]); null: the
+  /// browser's default.
+  String? _micId;
+
+  /// What the open microphone was opened from: [_micId], or null (the
+  /// default, also when the one chosen couldn't be opened).
+  String? _openedFrom;
 
   web.MediaRecorder? _recorder;
   web.MediaStream? _mic;
@@ -62,11 +80,19 @@ class WebTakeRecorder implements TakeRecorder {
     if (_mic case final mic? when _live(mic)) return Future.value(mic);
     return _opening ??= () async {
       try {
-        final mic = await getUserMedia(
-          web.MediaStreamConstraints(
-            audio: TakePriority.webMicConstraints.jsify()!,
-          ),
-        );
+        var from = _micId;
+        web.MediaStream mic;
+        try {
+          mic = await getUserMedia(_constraints(from));
+        } on Object catch (e) {
+          // The one chosen is gone (unplugged, say): the default, so the
+          // take still has its sound.
+          if (from == null) rethrow;
+          debugPrint('TabCam: cam: microphone $from: $e; the default instead');
+          from = null;
+          mic = await getUserMedia(_constraints(null));
+        }
+        _openedFrom = from;
         if (_disposed) {
           _stopTracks(mic);
           return null;
@@ -86,6 +112,50 @@ class WebTakeRecorder implements TakeRecorder {
         _opening = null;
       }
     }();
+  }
+
+  /// The microphone as [TakePriority.webMicConstraints], from [id] (null:
+  /// the browser's default).
+  static web.MediaStreamConstraints _constraints(String? id) =>
+      web.MediaStreamConstraints(
+        audio: {
+          ...TakePriority.webMicConstraints,
+          if (id != null) 'deviceId': {'exact': id},
+        }.jsify()!,
+      );
+
+  /// The browser's own entries for its default (Chrome's "default" and
+  /// "communications"), which Cam's menu has as its "Default".
+  static const _defaults = {'', 'default', 'communications'};
+
+  @override
+  Future<List<TakeMic>> microphones() async {
+    try {
+      return [
+        for (final d in await enumerateDevices())
+          if (d.kind == 'audioinput' && !_defaults.contains(d.deviceId))
+            TakeMic(d.deviceId, d.label),
+      ];
+    } on Object catch (e) {
+      debugPrint('TabCam: cam: no list of microphones: $e');
+      return const [];
+    }
+  }
+
+  @override
+  Future<bool> useMicrophone(String? id) async {
+    if (_recorder != null) throw StateError('recording');
+    // One opening finishes first, so it isn't left open beside the next.
+    await _opening;
+    _micId = id;
+    final was = _mic;
+    // Not open: it opens from [id] when Cam needs it.
+    if (was == null) return true;
+    if (_live(was) && _openedFrom == id) return true;
+    _stopTracks(was);
+    _mic = null;
+    await _openMic();
+    return _mic != null && _openedFrom == id;
   }
 
   static bool _live(web.MediaStream stream) =>

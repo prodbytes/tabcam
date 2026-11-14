@@ -51,9 +51,13 @@ import UIKit
 /// goes on and isn't lowered), the speaker by default, Bluetooth and
 /// AirPlay for the sound out (the camera plugin's own options, so it
 /// changes nothing after), 48 kHz preferred. `release`, when Cam closes:
-/// the mode back to the default, the category as the camera leaves it.
-/// Each changes the session only where it differs, so a song playing
-/// doesn't stutter.
+/// the mode back to the default, the category as the camera leaves it,
+/// and no preferred input. Each changes the session only where it differs,
+/// so a song playing doesn't stutter. `inputs`: the session's inputs, each
+/// `{id, name}` (its port's UID and name); `choose` (`input`: a UID, or
+/// none for the system's choice): the session's preferred input, which
+/// the camera's sound follows (its capture session uses the app's audio
+/// session); replies whether it's set.
 enum TakeAudio {
   static let options: AVAudioSession.CategoryOptions = [
     .mixWithOthers, .defaultToSpeaker, .allowBluetoothA2DP, .allowAirPlay,
@@ -64,6 +68,13 @@ enum TakeAudio {
       switch call.method {
       case "prepare": try prepare()
       case "release": try release()
+      case "inputs":
+        result(inputs())
+        return
+      case "choose":
+        let uid = (call.arguments as? [String: Any])?["input"] as? String
+        result(try choose(uid))
+        return
       default:
         result(FlutterMethodNotImplemented)
         return
@@ -89,8 +100,29 @@ enum TakeAudio {
     try session.setActive(true)
   }
 
+  static func inputs() -> [[String: String]] {
+    (AVAudioSession.sharedInstance().availableInputs ?? []).map {
+      ["id": $0.uid, "name": $0.portName]
+    }
+  }
+
+  static func choose(_ uid: String?) throws -> Bool {
+    let session = AVAudioSession.sharedInstance()
+    guard let uid else {
+      if session.preferredInput != nil { try session.setPreferredInput(nil) }
+      return true
+    }
+    guard let port = session.availableInputs?.first(where: { $0.uid == uid }) else {
+      if session.preferredInput != nil { try session.setPreferredInput(nil) }
+      return false
+    }
+    if session.preferredInput?.uid != uid { try session.setPreferredInput(port) }
+    return true
+  }
+
   static func release() throws {
     let session = AVAudioSession.sharedInstance()
+    if session.preferredInput != nil { try? session.setPreferredInput(nil) }
     guard session.mode != .default else { return }
     try session.setCategory(session.category, mode: .default, options: session.categoryOptions)
   }

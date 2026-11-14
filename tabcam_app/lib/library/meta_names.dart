@@ -3,7 +3,7 @@
 /// must pass `checkId` (lowercase letters and digits only, 32 at most): the
 /// store refuses anything else, and the setting would never be kept.
 abstract final class MetaNames {
-  /// Cam's settings (Auto-pass).
+  /// Cam's settings (Auto-pass, the microphone chosen in Rec's menu).
   static const String cam = 'cam';
 
   /// The play-along player's settings (the count-in).

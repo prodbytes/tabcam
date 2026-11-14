@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
+import android.media.AudioDeviceInfo
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioRecord
@@ -60,6 +61,13 @@ import kotlin.math.min
  *   sound, a new MP4 in the cache, the camera's file deleted. Replies
  *   `{path, leadMs, warning}`, or the error `failed` (the take then has no
  *   sound: the app says so).
+ * - `inputs`: the microphones the sound can come from ([inputs]), each
+ *   `{id, name, builtIn}`; `prepare`'s and `choose`'s `device` is an id
+ *   (none, or one not connected: the system's choice).
+ * - `choose` (`device`): the microphone opened again from that device,
+ *   for the takes from now on (not while one records); replies as
+ *   `prepare`, with `routed` (the device it reads from) and `fellBack`
+ *   (it couldn't open from the device, and opened the system's choice).
  * - `cancel`: stops a take's sound and drops it (the camera didn't start).
  * - `release` (Cam closes): closes the microphone.
  *
@@ -94,9 +102,22 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
     // The prepare call waiting for the user's answer (main thread only).
     private var pendingPermission: MethodChannel.Result? = null
 
+    // The microphone chosen ([inputs]' id; null: the system's choice).
+    @Volatile
+    private var device: String? = null
+
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
-            "prepare" -> prepare(call.argument<Boolean>("ask") != false, result)
+            "prepare" -> prepare(
+                call.argument<Boolean>("ask") != false,
+                call.argument<String>("device"),
+                result,
+            )
+            "inputs" -> result.success(inputs(context))
+            "choose" -> {
+                val chosen = call.argument<String>("device")
+                onControl(result) { choose(chosen) }
+            }
             "start" -> onControl(result) {
                 start()
                 null
@@ -157,7 +178,8 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
         context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) ==
             PackageManager.PERMISSION_GRANTED
 
-    private fun prepare(ask: Boolean, result: MethodChannel.Result) {
+    private fun prepare(ask: Boolean, chosen: String?, result: MethodChannel.Result) {
+        device = chosen
         if (granted()) return onControl(result) { open() }
         if (!ask) {
             result.success(refused())
@@ -190,21 +212,52 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
 
     /** Opens the microphone (control thread); never throws. */
     private fun open(): Map<String, Any?> = try {
-        val m = mic ?: Mic.open(context).also { mic = it }
+        val m = mic ?: openMic().also { mic = it }
         mapOf(
             "ok" to true,
             "source" to TakeSoundMath.sourceName(m.source),
             "sampleRate" to m.format.sampleRate,
             "channels" to m.format.channels,
+            "routed" to m.routed,
+            "fellBack" to m.fellBack,
         )
     } catch (e: Exception) {
         notOk(e.message ?: e.toString())
     }
 
+    /**
+     * The microphone, from [device] where it's connected and opens; else
+     * the system's choice ([Mic.fellBack] then, had one been chosen).
+     */
+    private fun openMic(): Mic {
+        val chosen = device ?: return Mic.open(context, null)
+        val info = connected(context).firstOrNull { idOf(it) == chosen }
+        if (info != null) {
+            try {
+                return Mic.open(context, info)
+            } catch (e: Exception) {
+                Log.w(TAG, "take sound: ${info.productName}: ${e.message}; the system's choice instead")
+            }
+        } else {
+            Log.i(TAG, "take sound: $chosen isn't connected; the system's choice instead")
+        }
+        return Mic.open(context, null).also { it.fellBack = true }
+    }
+
+    /** Takes record from [chosen] from now on: the microphone opened again. */
+    private fun choose(chosen: String?): Map<String, Any?> {
+        check(session == null) { "A take is recording" }
+        check(granted()) { "The microphone isn't allowed" }
+        device = chosen
+        mic?.release()
+        mic = null
+        return open()
+    }
+
     private fun start() {
         check(session == null) { "The take's sound is recording already" }
         check(granted()) { "The microphone isn't allowed" }
-        val m = mic ?: Mic.open(context).also { mic = it }
+        val m = mic ?: openMic().also { mic = it }
         val file = File(context.cacheDir, "take-sound-${System.currentTimeMillis()}.m4a")
         val s = Session(m, file)
         try {
@@ -338,8 +391,19 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
     }
 
     /** The microphone, opened and tried. */
-    private class Mic(val record: AudioRecord, val source: Int, val format: TakeSoundMath.Format) {
+    private class Mic(
+        val record: AudioRecord,
+        val source: Int,
+        val format: TakeSoundMath.Format,
+        device: AudioDeviceInfo?,
+    ) {
         fun release() = record.release()
+
+        /** The chosen device couldn't be opened: this is the system's choice. */
+        var fellBack = false
+
+        /** The device it was opened from, for the log. */
+        val routed: String = device?.let { "${it.productName} (${it.type})" } ?: "the system's choice"
 
         companion object {
             /**
@@ -347,7 +411,7 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
              * gives sound when tried; else throws, saying what was tried.
              */
             @SuppressLint("MissingPermission") // checked by the callers
-            fun open(context: Context): Mic {
+            fun open(context: Context, device: AudioDeviceInfo?): Mic {
                 val audio = context.getSystemService(AudioManager::class.java)
                 val unprocessed = audio?.getProperty(
                     AudioManager.PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED,
@@ -384,12 +448,18 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
                         }
                         val problem = if (record.state != AudioRecord.STATE_INITIALIZED) {
                             "not initialized"
+                        } else if (device != null && !record.setPreferredDevice(device)) {
+                            "${device.productName} refused"
                         } else {
                             tryOut(record, format)
                         }
                         if (problem == null) {
-                            Log.i(TAG, "take sound: $name (unprocessed supported: $unprocessed)")
-                            return Mic(record, source, format)
+                            Log.i(
+                                TAG,
+                                "take sound: $name from ${device?.productName ?: "the system's choice"} " +
+                                    "(unprocessed supported: $unprocessed)",
+                            )
+                            return Mic(record, source, format, device)
                         }
                         failures += "$name: $problem"
                         record.release()
@@ -923,6 +993,54 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
         private const val NO_DRIFT = Long.MIN_VALUE
 
         const val CHANNEL = "tabcam/take_sound"
+
+        /**
+         * The inputs a take's sound can come from: the phone's own
+         * microphones, wired, USB and line inputs. Not Bluetooth headsets
+         * (their microphones are for calls: SCO, 8 or 16 kHz, and opened
+         * only for a call), nor the telephony, tuner or loopback ones.
+         */
+        private val takeInputs = setOf(
+            AudioDeviceInfo.TYPE_BUILTIN_MIC,
+            AudioDeviceInfo.TYPE_WIRED_HEADSET,
+            AudioDeviceInfo.TYPE_USB_DEVICE,
+            AudioDeviceInfo.TYPE_USB_ACCESSORY,
+            AudioDeviceInfo.TYPE_USB_HEADSET,
+            AudioDeviceInfo.TYPE_LINE_ANALOG,
+            AudioDeviceInfo.TYPE_LINE_DIGITAL,
+        )
+
+        /** The inputs connected now that a take can record from. */
+        fun connected(context: Context): List<AudioDeviceInfo> =
+            context.getSystemService(AudioManager::class.java)
+                ?.getDevices(AudioManager.GET_DEVICES_INPUTS)
+                ?.filter { it.type in takeInputs }
+                .orEmpty()
+
+        /**
+         * An input's id, kept in Cam's settings: its type, name and address
+         * ([AudioDeviceInfo.getId] changes as it's plugged in again).
+         */
+        fun idOf(info: AudioDeviceInfo): String {
+            val address = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) info.address else ""
+            return "${info.type}|${info.productName}|$address"
+        }
+
+        /**
+         * [connected] for the app: `{id, name, builtIn}`, the name the
+         * product's (the phone's own microphones: their address, such as
+         * "bottom", the app naming them), each id once.
+         */
+        fun inputs(context: Context): List<Map<String, Any>> =
+            connected(context).distinctBy { idOf(it) }.map {
+                val builtIn = it.type == AudioDeviceInfo.TYPE_BUILTIN_MIC
+                val address = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) it.address else ""
+                mapOf(
+                    "id" to idOf(it),
+                    "name" to if (builtIn) address else it.productName.toString(),
+                    "builtIn" to builtIn,
+                )
+            }
         const val REQUEST_CODE = 2013
         private const val TAG = "TabCam"
 
