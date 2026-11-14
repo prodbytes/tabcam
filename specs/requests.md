@@ -3419,3 +3419,14 @@ spec.
    records from. No arrow where the camera records the sound on Android,
    nor in the preview, and it does nothing while a take records. See
    [Cam](cam.md#rec-menu).
+4. **"Make sure that on browser reload the same view and session is
+   preserved. I still can not see the deployed button drawer in prod.
+   Sync git and redeploy."** The microphone menu (3. above) was merged
+   and released (`0.2.202611140907-RC`, `0.2.202611140908-GA`); it was
+   only on its branch before. A reload already kept the sign-in, the tab,
+   the capture, its view and its file, but not Cam: a reload in Cam came
+   back to the capture. The place now keeps Cam too (`cam=1` in the web's
+   address, `cam` in the apps' place file), and a reload or a restart
+   opens Cam again over the capture, once the service says the user has
+   Premium (never as the preview); closing Cam takes it out. See
+   [navigation](navigation.md#coming-back-where-the-user-was).

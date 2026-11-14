@@ -181,6 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
             widget.ocr,
             place.fileId,
             place.text,
+            place.cam,
           ),
         );
         return;
