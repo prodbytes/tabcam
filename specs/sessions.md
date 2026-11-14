@@ -33,7 +33,16 @@ of its own, in the share API
   link's, so a changed address follows).
 - **Checking them**: the discovery document and the public key are public
   routes (`GET /session/.well-known/openid-configuration` and
-  `…/jwks.json`, cached an hour). The share API's routes take TabCam's
+  `…/jwks.json`, cached an hour), answered by a function of their own,
+  `tabcam-share-api-keys`: a few lines with both documents in its
+  environment (the stack's `SessionJwks`, which the deploy reads from
+  KMS), no library and no AWS call, so it answers at once even cold. The
+  `/tabcam` authorizer fetches them again whenever its copy expires and
+  gives up after 1.5 s; when the main function served them, its cold
+  start (3.7 s) made the authorizer refuse good tokens with 401
+  ("invalid_token: OIDC discovery endpoint communication error"), and
+  the app said "Sync failed: Unauthorized" after it sat idle a while
+  (15 such refusals on 2026-11-13 and 14). The share API's routes take TabCam's
   tokens under `/tabcam` (a JWT authorizer of their own, and the function
   checks the audience and that `idp` is one of the providers), and the
   cloud OCR service checks them like the providers' (`SESSION_ISSUER`,
@@ -128,9 +137,11 @@ the function.
   in two steps (the stack's `EnableSessionAuthorizer` parameter):
   `scripts/deploy-share-api.sh` deploys without the authorizer and its
   routes while the document doesn't answer yet, uploads the code, then
-  deploys again with them; later deploys, in one step.
+  deploys again with them; later deploys, in one step. Before the session
+  key exists (the first step) `SessionJwks` is empty and the main
+  function serves the two documents; once it does, the keys function.
 - `scripts/deploy-share-api.sh` checks, after deploying, the discovery
-  document and keys, that `/tabcam/…` and an unknown refresh token are
+  document and keys (the JWKS served being KMS's), that `/tabcam/…` and an unknown refresh token are
   refused, and that a real TabCam token (signed by the session key, for a
   made-up sign-in) passes the authorizer (`POST /tabcam/session`, which
   refuses it with 400 and writes nothing).

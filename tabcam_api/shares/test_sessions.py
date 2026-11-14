@@ -266,3 +266,58 @@ class SessionsTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class KeysFunctionTest(unittest.TestCase):
+    """The stack's KeysFunction (share-api.yaml) serves the discovery
+    document and the JWKS without this code: they must be the same."""
+
+    TEMPLATE = os.path.join(os.path.dirname(__file__), "..", "..", "tabcam_infra",
+                            "share-api.yaml")
+
+    def setUp(self):
+        with open(self.TEMPLATE) as f:
+            template = f.read()
+        self.template = template[template.index("\n  KeysFunction:\n"):]
+
+    def _block(self, start, indent):
+        """The lines after [start], as long as they're indented past [indent]."""
+        lines = self.template[self.template.index(start) + len(start):].splitlines()[1:]
+        out = []
+        for line in lines:
+            if line.strip() and len(line) - len(line.lstrip()) <= indent:
+                break
+            out.append(line)
+        return out
+
+    def test_the_jwks_the_deploy_computes_is_the_signer_s(self):
+        kms = SigningKms()
+        der = kms.get_public_key(KeyId="k")["PublicKey"]
+        signer = sess.Signer(kms, "k")
+        self.assertEqual(sess.jwks_of(der), signer.jwks())
+        self.assertEqual(sess.jwks_of(der)["keys"][0]["kid"], signer.kid)
+
+    def test_its_discovery_document_is_the_function_s(self):
+        api, region = "abc123", "us-east-1"
+        folded = " ".join(l.strip() for l in self._block("DISCOVERY: !Sub >-", 10))
+        doc = json.loads(folded.replace("${Api}", api).replace("${AWS::Region}", region))
+        issuer = f"https://{api}.execute-api.{region}.amazonaws.com/session"
+        self.assertEqual(doc, sess.discovery(issuer))
+
+    def test_its_code_answers_each_document(self):
+        lines = self._block("ZipFile: |", 8)
+        indent = min(len(l) - len(l.lstrip()) for l in lines if l.strip())
+        scope = {}
+        exec("\n".join(l[indent:] for l in lines), scope)
+        env = {"JWKS": '{"keys": []}', "DISCOVERY": '{"issuer": "x"}'}
+        old = {k: os.environ.get(k) for k in env}
+        os.environ.update(env)
+        try:
+            keys = scope["handler"]({"rawPath": "/session/.well-known/jwks.json"}, None)
+            doc = scope["handler"]({"rawPath": "/session/.well-known/openid-configuration"}, None)
+        finally:
+            for k, v in old.items():
+                os.environ.pop(k) if v is None else os.environ.__setitem__(k, v)
+        self.assertEqual((keys["statusCode"], keys["body"]), (200, env["JWKS"]))
+        self.assertEqual(doc["body"], env["DISCOVERY"])
+        self.assertEqual(keys["headers"]["content-type"], "application/json")
