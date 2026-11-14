@@ -1588,11 +1588,11 @@
   "@textViewNotationPullOff": {
     "description": "Notation sheet: 7p5"
   },
-  "textViewNotationSlide": "slide up, down",
+  "textViewNotationSlide": "slide",
   "@textViewNotationSlide": {
     "description": "Notation sheet: 5/7 7\\5"
   },
-  "textViewNotationBend": "bend (to the pitch of 9), r release",
+  "textViewNotationBend": "bend, release",
   "@textViewNotationBend": {
     "description": "Notation sheet: 7b9 r7"
   },
@@ -1600,19 +1600,15 @@
   "@textViewNotationVibrato": {
     "description": "Notation sheet: 7~"
   },
-  "textViewNotationGhost": "ghost note (played softly)",
-  "@textViewNotationGhost": {
-    "description": "Notation sheet: (5)"
-  },
-  "textViewNotationMuted": "ghost note / palm mute (muted, no pitch)",
+  "textViewNotationMuted": "ghost note / palm mute",
   "@textViewNotationMuted": {
     "description": "Notation sheet: x"
   },
-  "textViewNotationSlur": "slur: a hammer-on or a pull-off",
+  "textViewNotationSlur": "slur",
   "@textViewNotationSlur": {
     "description": "Notation sheet: 5_7"
   },
-  "textViewNotationBendParens": "bend too: the pitch in parentheses after the note",
+  "textViewNotationBendParens": "bend",
   "@textViewNotationBendParens": {
     "description": "Notation sheet: 7(9)"
   },

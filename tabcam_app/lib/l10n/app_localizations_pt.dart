@@ -1214,33 +1214,28 @@ class AppLocalizationsPt extends AppLocalizations {
   String get textViewNotation => 'Notação de tablatura';
 
   @override
-  String get textViewNotationHammerOn => 'ligado ascendente (hammer-on)';
+  String get textViewNotationHammerOn => 'hammer-on';
 
   @override
-  String get textViewNotationPullOff => 'ligado descendente (pull-off)';
+  String get textViewNotationPullOff => 'pull-off';
 
   @override
-  String get textViewNotationSlide => 'deslizar para cima, para baixo';
+  String get textViewNotationSlide => 'slide';
 
   @override
-  String get textViewNotationBend => 'bend (até a nota do 9), r soltar';
+  String get textViewNotationBend => 'bend, release';
 
   @override
   String get textViewNotationVibrato => 'vibrato';
 
   @override
-  String get textViewNotationGhost => 'nota fantasma (tocada de leve)';
+  String get textViewNotationMuted => 'nota fantasma / palm mute';
 
   @override
-  String get textViewNotationMuted =>
-      'nota fantasma / palm mute (abafada, sem altura)';
+  String get textViewNotationSlur => 'ligado';
 
   @override
-  String get textViewNotationSlur => 'ligado: ascendente ou descendente';
-
-  @override
-  String get textViewNotationBendParens =>
-      'bend também: a nota entre parênteses depois da nota';
+  String get textViewNotationBendParens => 'bend';
 
   @override
   String get textViewSongDialogTitle => 'Corrigir pela tablatura da música';
