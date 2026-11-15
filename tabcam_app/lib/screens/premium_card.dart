@@ -28,7 +28,12 @@ bool watermarkUnlocked(CloudOcr? ocr) => ocr == null || ocr.premiumNow;
 /// the store apps included. Over a locked feature ([PremiumGate]) it
 /// starts with [lead], what the feature is, and ends with **Not now**
 /// ([onClose]).
-class PremiumCard extends StatelessWidget {
+///
+/// It checks first ([CloudOcr.checkFirst]): the offer is only for a user
+/// the service said has no Premium ([CloudOcr.free]). Until it has
+/// answered, the card says it's checking, or that it couldn't check, with
+/// **Check again**, and offers nothing.
+class PremiumCard extends StatefulWidget {
   const PremiumCard({
     super.key,
     required this.ocr,
@@ -56,13 +61,46 @@ class PremiumCard extends StatelessWidget {
   final VoidCallback? onClose;
 
   @override
+  State<PremiumCard> createState() => _PremiumCardState();
+
+  static String _date(DateTime t) =>
+      '${t.year}-${t.month.toString().padLeft(2, '0')}-'
+      '${t.day.toString().padLeft(2, '0')}';
+
+  static Future<void> _open(BuildContext context, Uri url) async {
+    final messenger = Messenger.maybeOf(context);
+    final l10n = context.l10n;
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      messenger?.show(l10n.accountPremiumCouldntOpen('$url'));
+    }
+  }
+}
+
+class _PremiumCardState extends State<PremiumCard> {
+  @override
+  void initState() {
+    super.initState();
+    // Before offering Premium, ask whether the user has it (after this
+    // frame: asking notifies the card's listeners).
+    if (widget.email != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) widget.ocr.checkFirst();
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: ocr,
+    listenable: widget.ocr,
     builder: (context, _) {
+      final ocr = widget.ocr;
+      final lead = widget.lead;
+      final privateEmail = widget.privateEmail;
+      final onClose = widget.onClose;
       final theme = Theme.of(context);
       final l10n = context.l10n;
       final status = ocr.status;
-      final email = this.email;
+      final email = widget.email;
       final children = <Widget>[
         Row(
           children: [
@@ -86,12 +124,10 @@ class PremiumCard extends StatelessWidget {
             [
               l10n.accountPremiumActive,
               if (status?.expiresAt case final t?)
-                ' ${l10n.accountPremiumUntil(_date(t))}',
+                ' ${l10n.accountPremiumUntil(PremiumCard._date(t))}',
             ].join(),
           ),
         );
-      } else if (status == null && ocr.checking) {
-        children.add(Text(l10n.accountChecking));
       } else if (email == null) {
         children.add(
           Text(
@@ -99,6 +135,26 @@ class PremiumCard extends StatelessWidget {
             key: const Key('premium-sign-in'),
           ),
         );
+      } else if (!ocr.free) {
+        // Not known yet: no offer until the service says they have none.
+        children.add(
+          ocr.checking
+              ? Text(l10n.accountChecking, key: const Key('premium-checking'))
+              : Text(
+                  ocr.error ?? l10n.accountPremiumCheckFailedNow,
+                  key: const Key('premium-unchecked'),
+                  style: TextStyle(color: theme.colorScheme.error),
+                ),
+        );
+        if (!ocr.checking) {
+          children.addAll([
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: ocr.refresh,
+              child: Text(l10n.accountPremiumCheckAgain),
+            ),
+          ]);
+        }
       } else {
         children.addAll([
           Text(l10n.accountPremiumOffer(email)),
@@ -123,13 +179,13 @@ class PremiumCard extends StatelessWidget {
             children: [
               if (status?.upgradeUrl case final url?)
                 FilledButton.icon(
-                  onPressed: () => _open(context, url),
+                  onPressed: () => PremiumCard._open(context, url),
                   icon: const Icon(Icons.upgrade),
                   label: Text(l10n.accountPremiumUpgrade),
                 ),
               if (status?.voucherUrl case final url?)
                 OutlinedButton(
-                  onPressed: () => _open(context, url),
+                  onPressed: () => PremiumCard._open(context, url),
                   child: Text(l10n.accountPremiumVoucher),
                 ),
               TextButton(
@@ -165,18 +221,6 @@ class PremiumCard extends StatelessWidget {
       );
     },
   );
-
-  static String _date(DateTime t) =>
-      '${t.year}-${t.month.toString().padLeft(2, '0')}-'
-      '${t.day.toString().padLeft(2, '0')}';
-
-  static Future<void> _open(BuildContext context, Uri url) async {
-    final messenger = Messenger.maybeOf(context);
-    final l10n = context.l10n;
-    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      messenger?.show(l10n.accountPremiumCouldntOpen('$url'));
-    }
-  }
 }
 
 /// A Premium feature's screen for a user without Premium: [child], the

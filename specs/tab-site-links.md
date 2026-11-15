@@ -53,7 +53,11 @@ device does the work ([lib/import/tab_page_import.dart](../tabcam_app/lib/import
   cloud OCR service's `POST /page` fetches it, for **Tabs.cam Premium**
   users only ([cloud OCR](cloud-ocr.md#tab-sites-pages-for-the-web)).
   Without Premium, the link is added and it says "Link added. On the web,
-  importing the page from {site} needs Tabs.cam Premium."
+  importing the page from {site} needs Tabs.cam Premium." When the
+  service hasn't said yet whether the user has Premium, it's asked
+  first; if it still can't tell, it says "Link added. Couldn't import the
+  page from {site}.", with no mention of Premium
+  ([offered only when known](cloud-ocr.md#offered-only-when-known)).
 - A Premium user's device asks the service too when its own fetch fails.
 
 While it fetches, it says "Importing the page from {site}…".

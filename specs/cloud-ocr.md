@@ -345,8 +345,9 @@ with text but no tab is still `no-tab`.
 included):
 
 - **Locked tools**: without Premium, the event screen's **Text** and
-  **Cam** tools carry a small lock on their icon (tooltip "Text: Tabs.cam
-  Premium", "Cam: Tabs.cam Premium"). Each still opens: Text shows the
+  **Cam** tools are locked. Once the service said the user has none,
+  they carry a small lock on their icon (tooltip "Text: Tabs.cam
+  Premium", "Cam: Tabs.cam Premium"); until then they show no lock. Each still opens: Text shows the
   [Text view](tab-recognition.md#text-view) as a **preview**, the
   capture's own text if it has one, else a made-up sample tab (captioned
   "A preview with a sample tab"), greyed out and taking no tap or key,
@@ -357,16 +358,19 @@ included):
   Premium", what the feature is ("Text is part of Tabs.cam Premium: your
   scans read into a text tab you can edit, copy, verify, download and
   play along with…"; "Cam is part of Tabs.cam Premium: record yourself
-  playing along…"), the offer and its buttons (below), and **Not now**,
+  playing along…"), the offer and its buttons (below; only once the
+  service said the user has none, else "Checking…" or "Couldn't check
+  Premium" with **Check again**), and **Not now**,
   which goes back to the files (or leaves Cam). Signed out (a capture
   opened by its link), the card says to sign in, then subscribe from the
   profile, with no buttons. A capture whose text is marked correct opens
   on the files, not the Text view, for a locked user.
-- **Home's banner**: signed in without Premium, Home starts with "Text
-  tabs and Cam are Tabs.cam Premium features." with **Upgrade** (the
-  account sheet, with the card) and a close that keeps it away until the
-  app restarts. It waits for the first Premium check, so premium users
-  never see it flash.
+- **Home's banner**: signed in, once the service said the user has no
+  Premium, Home starts with "Text tabs and Cam are Tabs.cam Premium
+  features." with **Upgrade** (the account sheet, with the card) and a
+  close that keeps it away until the app restarts. It never shows while
+  the check runs, nor when it failed or rbacr didn't answer, so premium
+  users never see it.
 - **Nothing is read** by itself without Premium ([tab
   recognition](tab-recognition.md#reading-by-itself)): the reading waits
   and starts once the user has it.
@@ -383,6 +387,20 @@ included):
   for the same account, if it's at most a week old. The editor listens,
   so an answer arriving while it's open unlocks the chip in place.
 
+<a id="offered-only-when-known"></a>**Offered only when known**: Premium is offered (Home's banner, the
+card's offer and its Upgrade and voucher buttons, the locked tools'
+lock, Fix's Upgrade, the web import's "needs Premium") only to a user
+known to have none (`CloudOcr.free`): signed out, or signed in and the
+service checked (rbacr answered `checked`) that they have no Premium.
+Before that answer, while it's asked, offline, when the check failed or
+rbacr didn't answer, nothing offers Premium. Where the offer would show
+it checks first: the card asks the service (`checkFirst`) when it opens
+unless it has a checked answer, and says "Checking…", then either the
+offer, Premium's, or "Couldn't check Premium…" with **Check again**; a
+web import asks before deciding. The locks themselves still go by the
+service's answer (`premium`): a check that hasn't answered unlocks
+nothing (the watermark keeps its week-old last answer, `premiumNow`).
+
 **Upgrade offer** (everywhere, the store apps included):
 
 - The account, on the [Profile](navigation.md#profile) tab, shows the
@@ -395,7 +413,7 @@ included):
   **Tabs.cam Premium** card (`PremiumCard`), the same card the locked tools
   show over their previews. For premium users: "Text tabs and Cam are
   yours: your scans are transcribed in the cloud as they sync…", and
-  until when. For others: the offer, "Read your scans into text tabs,
+  until when. For users the service said have none: the offer, "Read your scans into text tabs,
   transcribed automatically in the cloud, and record yourself playing
   along with Cam. $10 a month or $100 a year: subscribe with <their
   address>." (US$ in es and pt), **Upgrade** (the service's `upgradeUrl`:

@@ -8,24 +8,32 @@ build without sign-in) it copies on the tap itself, before anything else
 pass comes after); "Link copied" says it's done. Signed out, it asks to
 sign in first ([signed out](cloud-sync.md#signed-out)), then copies.
 
-- A file's link adds `&f=<file id>` (`CaptureLink.of(event, file:)`,
+- A file's link adds `f=<file id>` (`CaptureLink.of(event, file:)`,
   the [file names](event-screen.md) in the list): it opens the capture
   with that file open on the file screen over its list (Back goes to the
   list), signed in, signed out by its key, or after joining; an unknown
   or bad file ID opens just the capture.
-- The link is `https://tabs.cam/app/?c=<capture id>&k=<key>`
-  ([`CaptureLink`](../tabcam_app/lib/export/capture_link.dart)): the
-  capture's ID, and its **link key**, which lets anyone holding the link
-  see the capture, read only ([opening a link](#opening-a-link)). On the
-  web it's to the site the app runs on (the RC's, or a local one); in the
-  phone apps, to production's, or the RC's for RC builds.
-- The key is made the first time the owner copies the link (192 random
-  bits, base64url, 32 characters), kept on the capture (`linkKey`, synced,
-  so every device of theirs copies the same link) and recorded by the
-  share API (`PUT /links/{captureId}`, after the copy); if that fails
-  (offline), each sync pass tries again. Someone it's shared with copies
-  the owner's link, key and all, once it has one; without a key yet, or in
-  a build without the share API, the link is `?c=<capture id>` alone,
+- The link is a **short link**, `https://tabs.cam/s/<key>`
+  ([`CaptureLink`](../tabcam_app/lib/export/capture_link.dart)), a file's
+  `https://tabs.cam/s/<key>?f=<file id>`: the capture's **link key**
+  alone, which lets anyone holding the link see the capture, read only
+  ([opening a link](#opening-a-link)). The site answers it with a
+  redirect to the **full link**, `https://tabs.cam/app/?c=<capture
+  id>&k=<key>` ([short links](#short-links)). On the web it's to the
+  site the app runs on (rc.tabs.cam on the RC's); in the phone apps, to
+  production's, or the RC's for RC builds. A site that doesn't answer
+  short links (a local build's) copies the full link instead.
+- The key is made the first time the owner copies the link: 12 random
+  letters and digits (about 71 bits; base62), kept on the capture
+  (`linkKey`, synced, so every device of theirs copies the same link) and
+  recorded by the share API (`PUT /links/{captureId}`, after the copy);
+  if that fails (offline), each sync pass tries again. A key from before
+  short links (32 base64url characters) is replaced by a short one the
+  next time the owner copies the link; links with the old key keep
+  working (the share API keeps every key it was given). Someone it's
+  shared with copies the owner's link, key and all, once it has one (with
+  an old key, `/s/<old key>`); without a key yet, or in a build without
+  the share API, the link is the full one with `?c=<capture id>` alone,
   which opens it only for its owner and the people it's shared with.
   Copying it starts a sync pass, so the capture is in the cloud.
 - It's the only way to share: there's no Share with people any more
@@ -35,6 +43,28 @@ sign in first ([signed out](cloud-sync.md#signed-out)), then copies.
 Files are named from the title and artist (`My riff - Me.pdf`,
 `My riff - Me 1.png`, `My riff - Me 2.mov`), keeping only letters, digits, spaces, `.`, `_` and
 `-`; `tab` if nothing is left. The subject is the event's title.
+
+## Short links
+
+`https://<site>/s/<key>` (any link key, short or old) goes, through the
+site's CloudFront (a `/s/*` behavior, on when the site is deployed with
+the share API's domain, as [previews](#link-previews) are), to the share
+API (`GET /s/{key}`, and `HEAD`; no sign-in;
+[index.py](../tabcam_api/shares/index.py)). The links table is keyed by
+the key's hash, so the key alone finds the capture: the answer is a 302
+to `/app/?c=<capture id>&k=<key>` (`&f=<file id>` kept, when well
+formed) on the same site, which the app opens as below; an unknown or
+malformed key goes to `/app/`. CloudFront keeps the answer, by path and
+`f`: a day for a link (it never changes; a deleted capture says so in
+the app), a minute for an unknown one. Guessing keys gets 10 tries a
+second for everyone, and 2⁷¹ keys.
+
+In the browser the redirect brings the web app the full link itself. On
+Android the app is handed the short link ([App Links](#android-app-links)):
+`IncomingLinks` asks the site for it without following the redirect
+(`CaptureLink.resolve`; the stage's site when Android hands only the
+path) and opens the full link it names; offline, or for an unknown link,
+nothing opens.
 
 ## Opening a link
 
@@ -90,19 +120,12 @@ or by its link again). A wrong key, a deleted capture, one not in the
 cloud yet, or no connection: "This capture can't be opened…", with **Try
 again**.
 
-So the link is what gives access, **read only**: whoever holds a link
-with its key can see the capture's own files (never change them, nor see
-what people [contributed](contributions.md) until the owner publishes
-it). Only the owner changes a capture, those it was shared with by email
-to edit before included ([shared captures](shared-captures.md)). Signed
-in, what they add goes to their own copy of it, a clone whose files stay
-the owner's until they change (copy on write, [library](library.md#events)).
-
-**A clone's link**: a clone's pages may still show the original's files
-([copy on write](library.md#events)), which its link's holders couldn't
-read (their credentials are for its folder alone). So Share copies them
-into it first (`Library.ownFiles`, after the link is copied), and the sync
-pass it starts sends them up with it.
+So the link is what gives access: whoever holds a link with its key can
+see the capture's own files (never change them, nor see what people
+[contributed](contributions.md) until the owner publishes it); signed in,
+it also lets them add files of their own. Edit access is only for the
+people the owner shared it with by email before that was removed
+([shared captures](shared-captures.md)).
 
 ## Link previews
 
@@ -115,14 +138,15 @@ So a capture's link previews as the capture, not as "Tabs.cam":
   sends a known crawler (by its user agent) asking for
   `/app/?c=<id>&k=<key>` (ID and key well formed) to
   `/preview/<id>/<key>` (a 302). People always get the app; so does any
-  other request.
+  other request. A short link gets there too: its redirect to the full
+  link, then this one.
 - `/preview/*` comes from the share API (`GET /preview/{captureId}/{key}`,
   no sign-in; [index.py](../tabcam_api/shares/index.py)), cached by
   CloudFront for 5 minutes. For a key that opens the capture, it reads
   its `event.json` with the link's own read-only credentials and answers
   a small page: the title ("<title> – <artist>"), a description of what
   it holds ("<artist> · 2 pages, 1 PDF, 1 link, a text tab. Shared with
-  Tabs.cam."; images left out when hidden), the link itself as `og:url`
+  Tabs.cam."; images left out when hidden), the short link as `og:url`
   and the app's icon as the image. A wrong key, a deleted capture or a
   malformed link: Tabs.cam's own title and description. Someone who lands
   on the page goes on to the app (a script; crawlers don't run it).
@@ -136,11 +160,12 @@ own copy of a preview already shown).
 
 ## Android App Links
 
-On Android, `https://tabs.cam/app…` and `https://rc.tabs.cam/app…`
-(and the old names', `https://tabcam.nu01.com/app…` and
-`https://rc.tabcam.nu01.com/app…`) open in the Tabs.cam app instead of
-the browser (an `autoVerify` intent filter; every web app address, not
-only capture links: without `?c=` the app just opens). A link that
+On Android, `https://tabs.cam/s/…` and `https://tabs.cam/app…`, the
+RC's (`rc.tabs.cam`) and the old names' (`tabcam.nu01.com`,
+`rc.tabcam.nu01.com`) open in the Tabs.cam app instead of the browser
+(an `autoVerify` intent filter; every web app address, not only capture
+links: without `?c=` the app just opens). A short link is resolved
+first ([short links](#short-links)). A link that
 launches the app, or reaches it while it runs, goes to `IncomingLinks`
 ([lib/export/incoming_links.dart](../tabcam_app/lib/export/incoming_links.dart)),
 a binding observer added before `runApp`, so the Navigator never takes

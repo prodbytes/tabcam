@@ -78,18 +78,13 @@ void main() {
       await tester.tap(find.byTooltip('Share'));
       // Copied at once: no frame, no sheet, no wait. With its key, made
       // now, so anyone holding the link can open it.
-      expect(
-        copied,
-        matches(
-          RegExp(r'^https://tabs\.cam/app/\?c=[a-z0-9]+&k=[A-Za-z0-9_-]{32}$'),
-        ),
-      );
-      expect(copied, startsWith('https://tabs.cam/app/?c=$id&k='));
+      // A short link: the site, /s/ and the key, 12 letters and digits.
+      expect(copied, matches(RegExp(r'^https://tabs\.cam/s/[A-Za-z0-9]{12}$')));
       await frames(tester);
       // The key is kept on the capture and recorded by the share API.
       final key = library.byId(id)!.linkKey!;
       expect(copied, CaptureLink.of(library.byId(id)!).toString());
-      expect(copied, endsWith('/app/?c=$id&k=$key'));
+      expect(copied, 'https://tabs.cam/s/$key');
       expect(FakeShareApi.links[key], '/$id');
       expect(find.text('Link copied'), findsOneWidget);
       // No sheet, no options.
@@ -104,6 +99,26 @@ void main() {
       expect(library.byId(id)!.linkKey, key);
     },
   );
+
+  testWidgets('a key from before short links is replaced by a short one', (
+    tester,
+  ) async {
+    await open(tester);
+    const old = 'riffkey-0123456789abcdefghijklmn'; // 32, base64url
+    await tester.runAsync(
+      () => library.patch(id, (e) => e.copyWith(linkKey: old)),
+    );
+    await frames(tester);
+    await tester.tap(find.byTooltip('Share'));
+    await frames(tester);
+    final key = library.byId(id)!.linkKey!;
+    expect(key, isNot(old));
+    expect(key, hasLength(12));
+    expect(copied, 'https://tabs.cam/s/$key');
+    expect(FakeShareApi.links[key], '/$id');
+    await tester.pump(const Duration(seconds: 3)); // the change's sync
+    await frames(tester);
+  });
 
   testWidgets('a link the API couldn\'t record is recorded at the next pass', (
     tester,

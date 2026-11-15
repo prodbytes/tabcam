@@ -3623,8 +3623,34 @@ spec.
    Developer portal, so the Services ID can't name tabs.cam yet), and
    the Play upload needs gcloud signed in for its service account's
    token. See [app stores](app-stores.md).
-
-N. **"Never physically delete files, only hide them so that they may be
+10. **"Change the share links to use the new domain tabs.cam and use
+   short hashes."** Share now copies a short link,
+   `https://tabs.cam/s/<key>` (a file's adds `?f=<file id>`), on
+   rc.tabs.cam for the RC; the phone apps' links name tabs.cam. A new
+   link key is 12 random letters and digits (about 71 bits) instead of
+   32 base64url characters, and an owner's old key is replaced by a
+   short one the next time they copy the link (old links keep working).
+   The share API answers `GET /s/{key}` with a redirect to the full link
+   (`/app/?c=<id>&k=<key>`), found by the key alone, which the site's
+   CloudFront serves at `/s/*` and keeps a day; Android's App Links take
+   tabs.cam, rc.tabs.cam and `/s/` too, and the app resolves a short link
+   itself; link previews name the short link. Needs the tabs.cam site
+   (entries 2 and 8) live. See [sharing](sharing.md#short-links).
+11. **"Only show premium feature call to non premium users, I saw it even
+   being premium already, always check first."** Premium was offered
+   whenever the app had no "premium" answer: before the check answered,
+   when it failed, or when rbacr didn't answer (Home's banner showed
+   then, and the card showed the offer). Now Premium is offered only to
+   a user known to have none: signed out, or signed in and the service
+   checked they have no Premium (`CloudOcr.free`). Home's banner, the
+   card's offer, the Text and Cam tools' lock badge, Fix's Upgrade and
+   the web import's "needs Premium" all wait for that answer; the card
+   checks first when it opens (`checkFirst`) and, until it's known,
+   says "Checking…" or "Couldn't check Premium" with **Check again**; a
+   web import asks before deciding. See
+   [cloud OCR](cloud-ocr.md#offered-only-when-known),
+   [autocorrect](autocorrect.md), [tab site links](tab-site-links.md).
+12. **"Never physically delete files, only hide them so that they may be
    recovered if the user wants to, until purge is pressed explicitly in
    the profile view."** Deleting a capture now puts it in the trash
    (`trashed`, synced: hidden on every device, files kept), deleting a

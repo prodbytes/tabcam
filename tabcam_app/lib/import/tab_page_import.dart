@@ -89,10 +89,20 @@ class TabPageImporter {
     if (site == null) return null;
     TabImport done(TabImportOutcome outcome, [TabPage? page]) =>
         (site: site, outcome: outcome, event: event, page: page);
+    // Not known yet whether the user has Premium: asked first.
+    if (ocr case final ocr? when !_onDevice && !ocr.premium && !ocr.free) {
+      await ocr.refresh();
+    }
     final premium = ocr?.premium ?? false;
     if (!_onDevice && !premium) {
       _log('$url: on the web, fetched for Premium only');
-      return done(TabImportOutcome.needsPremium);
+      // Premium is offered only to a user the service said has none (or
+      // in a build without the service, where nothing can tell).
+      return done(
+        ocr?.free ?? true
+            ? TabImportOutcome.needsPremium
+            : TabImportOutcome.failed,
+      );
     }
     TabPage? page;
     if (_onDevice) page = await _onDeviceFetch(url, site);
