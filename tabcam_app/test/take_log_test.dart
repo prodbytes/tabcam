@@ -553,4 +553,100 @@ void main() {
       );
     });
   });
+
+  group('SongNotes', () {
+    SongSegment seg(int at, int to, int from, {String page = 'k1'}) =>
+        SongSegment(at: at, to: to, page: page, from: from);
+
+    test('a song played and paused: one segment, from where it was', () {
+      final notes = SongNotes();
+      notes.note(0, page: 'k1', playing: false, position: 2000);
+      expect(
+        notes.note(500, page: 'k1', playing: true, position: 2000),
+        isTrue,
+      );
+      // Playing on, as its player says now and then (a little late).
+      for (var t = 1000; t <= 4000; t += 500) {
+        expect(
+          notes.note(t, page: 'k1', playing: true, position: 2000 + t - 700),
+          isFalse,
+        );
+      }
+      notes.note(4500, page: 'k1', playing: false, position: 5800);
+      expect(notes.finish(9000), [seg(500, 4500, 2000)]);
+    });
+
+    test('a jump (a seek, Repeat, a section over again) starts another', () {
+      final notes = SongNotes();
+      notes.note(0, page: 'k1', playing: true, position: 0);
+      notes.note(3000, page: 'k1', playing: true, position: 3000);
+      // Back to its start.
+      expect(notes.note(3200, page: 'k1', playing: true, position: 0), isTrue);
+      // A skip ahead.
+      notes.note(4200, page: 'k1', playing: true, position: 1000);
+      expect(
+        notes.note(4300, page: 'k1', playing: true, position: 6100),
+        isTrue,
+      );
+      expect(notes.finish(5000), [
+        seg(0, 3200, 0),
+        seg(3200, 4300, 0),
+        seg(4300, 5000, 6100),
+      ]);
+    });
+
+    test('another song, another speed, or a link: another segment', () {
+      final notes = SongNotes();
+      notes.note(0, page: 'k1', playing: true, position: 0);
+      notes.note(1000, page: 'k2', playing: true, position: 500);
+      notes.note(2000, page: 'k2', playing: true, position: 1250, speed: 0.75);
+      // A link playing: no page, no position; the song before ends.
+      notes.noteLink();
+      notes.note(3000, page: null, playing: true, position: 0);
+      expect(notes.link, isTrue);
+      expect(notes.finish(4000), [
+        seg(0, 1000, 0),
+        seg(1000, 2000, 500, page: 'k2'),
+        const SongSegment(
+          at: 2000,
+          to: 3000,
+          page: 'k2',
+          from: 1250,
+          speed: 0.75,
+        ),
+      ]);
+    });
+
+    test('a fresh reading tells the segment playing where it started', () {
+      final notes = SongNotes();
+      // Playing as the take starts: its player's position half a second
+      // old.
+      notes.note(0, page: 'k1', playing: true, position: 9500);
+      notes.anchor(40, page: 'k1', position: 10040);
+      // Another song's reading, or one from before: nothing.
+      notes.anchor(60, page: 'k2', position: 0);
+      expect(notes.finish(1000), [seg(0, 1000, 10000)]);
+      // Nothing playing: nothing to tell.
+      final idle = SongNotes()..anchor(10, page: 'k1', position: 5);
+      expect(idle.finish(100), isEmpty);
+    });
+
+    test('nothing played: no segments; one ended as it started: none', () {
+      final notes = SongNotes();
+      notes.note(0, page: 'k1', playing: false, position: 0);
+      notes.note(100, page: 'k1', playing: true, position: 0);
+      notes.note(100, page: 'k1', playing: false, position: 0);
+      expect(notes.finish(500), isEmpty);
+      expect(notes.link, isFalse);
+    });
+
+    test('kept in the log, and read back', () {
+      final notes = SongNotes()
+        ..note(0, page: 'k1', playing: true, position: 0)
+        ..note(2000, page: 'k1', playing: false, position: 2000);
+      final log = TakeLog(burned: false, song: notes.finish(3000));
+      final back = TakeLog.fromJson(jsonDecode(jsonEncode(log.toJson())))!;
+      expect(back.song, [seg(0, 2000, 0)]);
+    });
+  });
 }

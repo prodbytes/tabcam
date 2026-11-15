@@ -23,10 +23,12 @@ enum EditSound {
 
 /// How the song lane is placed.
 enum SongMode {
-  /// Lined up by itself from the take's log (a later step of the editor's
-  /// redesign). This version plays it as the one clip its track keys
-  /// approximate it by (what older apps play), and a change to it here
-  /// makes it [manual].
+  /// Lined up by itself from the take's log: where Cam noted the song
+  /// playing while the take recorded (`LoggedSong`), moved together by
+  /// as much as [PageEdit.offset] moved its first clip. Its track keys
+  /// place that first clip (what older apps play, and what plays here
+  /// without a log that noted the song); trimming the song here makes it
+  /// [manual]. Never written: it's the default with a song picked.
   auto,
 
   /// Placed by hand: the track keys ([PageEdit.trackId] and the rest).
@@ -408,12 +410,9 @@ class PageEdit {
       : 1;
 
   /// How the song lane is placed: as [song] says, or, by default, none
-  /// without a song picked, and [SongMode.auto] with one. This version
-  /// never writes a song without `song`; a later one leaves `song` out
-  /// when it's the page's default (a take's log lining its song up by
-  /// itself, or a song placed at the start for an older take), and this
-  /// one then plays the one clip its track keys approximate it by (as
-  /// [SongMode.auto] says), rather than dropping it.
+  /// without a song picked, and [SongMode.auto] with one: a take's song
+  /// lined up by itself from its log, the only song written without
+  /// `song`. Apps from before it play the one clip its track keys place.
   SongMode get songMode =>
       song ?? (trackId == null ? SongMode.off : SongMode.auto);
 

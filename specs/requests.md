@@ -3528,7 +3528,39 @@ spec.
    3.0 s") and opens the fades. A tap on the band now picks it before
    playing (then plays and pauses as before); nothing shows while it
    plays. See [video edit](video-edit.md#on-the-picture).
-4. **The domain, tabs.cam (first step: the site).** tabs.cam, registered
+4. **"Add a volume indicator beside the rec button in the cam screen,
+   with green, yellow and red levels, just like rec software."** A level
+   meter now stands left of Rec: 12 segments from -60 dBFS to full scale,
+   finer near the top, green below -18 dBFS, yellow to -6, red above,
+   rising at once, falling 24 dB a second, the peak held 1.5 s. It reads
+   the microphone the app already holds for takes, between takes as in
+   them: on the web a Web Audio analyser on the take recorder's stream;
+   on Android a new channel, `tabcam/take_level`, fed by the take's
+   reader and, between takes, by a thread that keeps the microphone
+   recording (so Android's microphone indicator now shows while Cam is
+   open). None on iOS, where the camera records the sound, nor where the
+   camera records it on Android. See [Cam](cam.md#level-meter).
+5. **"When recording over a playback, in the camera view, save that
+   information along with the media files so that when the take is
+   opened for editing it already contains the video and the track in the
+   editor in the correct times as it was recorded, so there is no need
+   to manually sync the playback."** Cam now notes the song playing
+   along while a take records (`SongNotes`): each stretch of one song
+   playing on, as segments in the take's log (`song`, empty until now),
+   on the take's clock, each start told again from a fresh reading of
+   the player; a pause, a seek, a skip, Repeat or a section starting
+   over, another song or another speed starts another. The editor opens
+   such a take with that song in its Song lane, **lined up by itself**
+   (`song: auto`, at last): its clips where it played in the file (the
+   log's lag after the take's clock), silent between them, in the
+   preview, the file screen's player and Download alike. It's the
+   take's default, so nothing is kept until something changes, and
+   Reset puts it back; ‹ › and a drag move all of it and keep it lined
+   up (for what the lag doesn't catch); trimming it, or picking another
+   song, places it by hand; Remove keeps it out. Its track keys place
+   the first clip, which is what older apps play. See
+   [video edit](video-edit.md), [cam](cam.md#what-a-take-keeps).
+6. **The domain, tabs.cam (first step: the site).** tabs.cam, registered
    at GoDaddy, got its own Route 53 zone (GoDaddy names its name
    servers). Both sites' stacks now serve **tabs.cam** and
    **rc.tabs.cam**, with one ACM certificate for the new name and the

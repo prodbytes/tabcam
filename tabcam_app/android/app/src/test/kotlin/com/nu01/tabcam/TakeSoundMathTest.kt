@@ -128,4 +128,17 @@ class TakeSoundMathTest {
         assertFalse(TakeSoundMath.keepAudio(1_000, 1_000))
         assertTrue(TakeSoundMath.keepAudio(5_000, 0))
     }
+
+    @Test
+    fun peakOfPcm() {
+        // 16-bit little-endian: 1000, -2000, 300 (stereo or mono alike).
+        val pcm = byteArrayOf(0xe8.toByte(), 0x03, 0x30, 0xf8.toByte(), 0x2c, 0x01)
+        assertEquals(2000, TakeSoundMath.peak(pcm, pcm.size))
+        // Only the bytes read count.
+        assertEquals(1000, TakeSoundMath.peak(pcm, 2))
+        // Full scale, both ways; an odd byte at the end is left out.
+        assertEquals(32768, TakeSoundMath.peak(byteArrayOf(0, 0x80.toByte(), 0x7f), 3))
+        assertEquals(32767, TakeSoundMath.peak(byteArrayOf(0xff.toByte(), 0x7f), 2))
+        assertEquals(0, TakeSoundMath.peak(ByteArray(8), 8))
+    }
 }

@@ -134,6 +134,16 @@ abstract final class TakeSound {
     }
   }
 
+  /// Cam's level meter: channel `tabcam/take_level`.
+  static const levelChannel = MethodChannel('tabcam/take_level');
+
+  /// The loudest the microphone has been since the last call, 0 to 1
+  /// (full scale); null when it isn't being read (not prepared, or it
+  /// failed). Read between takes as in them. Throws
+  /// [MissingPluginException] where there's no such channel.
+  static Future<double?> peak() async =>
+      (await levelChannel.invokeMethod<num>('peak'))?.toDouble();
+
   /// Drops the take's sound (the camera didn't start).
   static Future<void> cancel() => _quiet('cancel');
 
