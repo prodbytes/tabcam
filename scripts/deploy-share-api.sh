@@ -44,6 +44,9 @@ if [[ "${TABCAM_APPLE_SIGN_IN:-}" == 1 || "${TABCAM_APPLE_SIGN_IN:-}" == true ]]
   apple_services=com.nu01.tabcam.signin
 fi
 # Passed every time: deploy would keep the stack's old origins otherwise.
+# The sites the users' folders' signed URLs are for (the old names too,
+# for the apps installed before tabs.cam).
+cdn_hosts="tabs.cam,rc.tabs.cam,tabcam.nu01.com,rc.tabcam.nu01.com"
 origins="https://tabs.cam,https://rc.tabs.cam,https://tabcam.nu01.com,https://rc.tabcam.nu01.com,http://localhost:2012,https://local.tabcam.nu01.com:2443"
 if [[ ! "${TABCAM_GOOGLE_WEB_CLIENT_ID:-}" =~ ^[0-9]+-[0-9a-z]+\.apps\.googleusercontent\.com$ ]]; then
   echo "error: TABCAM_GOOGLE_WEB_CLIENT_ID isn't a Google web client ID (environment or .env)" >&2
@@ -146,7 +149,7 @@ deploy_stack() {
       "GoogleLocalWebClientId=${TABCAM_GOOGLE_LOCAL_WEB_CLIENT_ID:-}" \
       "AppleClientId=$apple_client" "AppleServicesId=$apple_services" \
       "EmailIssuer=$email_issuer" "EmailClientId=$email_client" \
-      "AllowedOrigins=$origins" \
+      "AllowedOrigins=$origins" "CdnHosts=$cdn_hosts" \
       "AccountsTableName=$accounts" \
       "RbacrTokenParameterName=$rbacr_param" \
       "AppleSignInKeyParameterName=$apple_key_param" \
