@@ -22,6 +22,12 @@ Parameters:
       access, or it only reaches verified addresses), or Cognito's own
       mail (no-reply@verificationemail.com, at most 50 a day), while SES
       production access is pending.
+  EmailStack:
+    Type: String
+    Default: tabcam-email
+    Description: >
+      The SES identity's stack (email.yaml): tabcam-email (tabcam.nu01.com)
+      or tabcam-email-tabs-cam (tabs.cam); FromAddress is at its domain
   FromAddress:
     Type: String
     Default: TabCam <signin@tabcam.nu01.com>
@@ -165,7 +171,8 @@ Resources:
       EmailConfiguration: !If
         - ViaSes
         - EmailSendingAccount: DEVELOPER
-          SourceArn: !ImportValue tabcam-email-identity-arn
+          SourceArn:
+            Fn::ImportValue: !Sub ${EmailStack}-identity-arn
           From: !Ref FromAddress
         - EmailSendingAccount: COGNITO_DEFAULT
       LambdaConfig:
