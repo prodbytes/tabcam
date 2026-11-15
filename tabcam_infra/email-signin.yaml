@@ -4,7 +4,7 @@ Description: >
   tier: free up to 10,000 monthly active users) whose only sign-in is a
   one-time code emailed to the address (EMAIL_OTP; no passwords): a new
   address signs up and confirms with a code, a known one gets a code each
-  time. The emails go out through SES as tabcam.nu01.com (tabcam-email
+  time. The emails go out through SES as tabs.cam (tabcam-email-tabs-cam
   stack), written by a small function (CustomMessage): the code and a
   link that fills it in, in the app's language (English, Spanish or
   Portuguese). Sender=COGNITO sends through Cognito's own mail instead
@@ -18,23 +18,23 @@ Parameters:
     Default: COGNITO
     AllowedValues: [SES, COGNITO]
     Description: >
-      Who sends the emails: SES as tabcam.nu01.com (needs SES production
+      Who sends the emails: SES as tabs.cam (needs SES production
       access, or it only reaches verified addresses), or Cognito's own
       mail (no-reply@verificationemail.com, at most 50 a day), while SES
       production access is pending.
   EmailStack:
     Type: String
-    Default: tabcam-email
+    Default: tabcam-email-tabs-cam
     Description: >
       The SES identity's stack (email.yaml): tabcam-email (tabcam.nu01.com)
       or tabcam-email-tabs-cam (tabs.cam); FromAddress is at its domain
   FromAddress:
     Type: String
-    Default: TabCam <signin@tabcam.nu01.com>
+    Default: Tabs.cam <signin@tabs.cam>
     Description: The sign-in emails' sender (an address at the SES identity's domain)
   Sites:
     Type: String
-    Default: https://tabcam.nu01.com,https://rc.tabcam.nu01.com,https://local.tabcam.nu01.com:2443
+    Default: https://tabs.cam,https://rc.tabs.cam,https://tabcam.nu01.com,https://rc.tabcam.nu01.com,https://local.tabcam.nu01.com:2443
     Description: >
       The sites a sign-in link may point to (the app says which, in the
       call's ClientMetadata); any other gets the first.

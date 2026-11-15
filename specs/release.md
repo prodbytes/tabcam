@@ -6,9 +6,9 @@ app binaries with `make` and publishes them as a GitHub release.
 - **Triggers:**
   - A pushed tag matching `*QA` or `*RC*` (e.g. `0.2.202610101200-RC`) is
     released as a **prerelease**. `*RC*` tags are also
-    [deployed](deploy.md) to https://rc.tabcam.nu01.com.
+    [deployed](deploy.md) to https://rc.tabs.cam.
   - A pushed tag matching `*GA` is released as a full release (GitHub's
-    latest) and [deployed](deploy.md) to https://tabcam.nu01.com.
+    latest) and [deployed](deploy.md) to https://tabs.cam.
   - **Manual dispatch** takes an optional `tag` (created on the dispatched
     commit if missing; empty uses the selected tag, or `manual-<run>`) and
     a `prerelease` switch (on by default).

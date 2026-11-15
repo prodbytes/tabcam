@@ -26,7 +26,7 @@ class _FakeLauncher extends Fake
 
 void main() {
   test('the privacy policy is on the production site', () {
-    expect(privacyPolicyUrl.toString(), 'https://tabcam.nu01.com/privacy');
+    expect(privacyPolicyUrl.toString(), 'https://tabs.cam/privacy');
   });
 
   testWidgets('About opens the privacy policy', (tester) async {
@@ -38,6 +38,6 @@ void main() {
     expect(find.text('Licenses'), findsOneWidget);
     await tester.tap(find.text('Privacy policy'));
     await tester.pumpAndSettle();
-    expect(launcher.opened, ['https://tabcam.nu01.com/privacy']);
+    expect(launcher.opened, ['https://tabs.cam/privacy']);
   });
 }

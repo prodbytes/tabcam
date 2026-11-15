@@ -167,7 +167,7 @@ review notes ([app stores](app-stores.md)).
   numbers, in camera corners; how the platform icons are generated.
 - [Platforms](platforms.md): Android, iOS and the web, and what each can do.
 - [Privacy](privacy.md): the privacy policy at
-  https://tabcam.nu01.com/privacy (linked from the index page and About),
+  https://tabs.cam/privacy (linked from the index page and About),
   what it says and what it's based on; the iOS privacy manifest and
   export compliance declaration.
 - [Maintenance mode](maintenance-mode.md): administrators switch it on
@@ -182,5 +182,6 @@ review notes ([app stores](app-stores.md)).
   Store under personal accounts: the status of each step, the Android
   upload key and App Bundle, the store listings in `tabcam_store/` and
   their upload to App Store Connect with fastlane, TestFlight.
-- [Deploy](deploy.md): the web app at https://tabcam.nu01.com and the
-  release candidate at https://rc.tabcam.nu01.com.
+- [Deploy](deploy.md): the web app at https://tabs.cam and the
+  release candidate at https://rc.tabs.cam (the old names,
+  tabcam.nu01.com and rc.tabcam.nu01.com, redirect).

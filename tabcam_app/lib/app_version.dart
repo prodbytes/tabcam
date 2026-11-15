@@ -5,7 +5,7 @@ abstract final class AppVersion {
   static const String version = String.fromEnvironment('TABCAM_VERSION');
 
   /// The site the build is deployed to, from scripts/deploy.sh: `rc` for
-  /// rc.tabcam.nu01.com, `prod`, or empty (any other build).
+  /// rc.tabs.cam, `prod`, or empty (any other build).
   static const String stage = String.fromEnvironment('TABCAM_STAGE');
 
   /// The app's title (the browser tab's): marked on the RC site, so its

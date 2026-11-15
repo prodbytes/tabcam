@@ -13,7 +13,7 @@ sign in first ([signed out](cloud-sync.md#signed-out)), then copies.
   with that file open on the file screen over its list (Back goes to the
   list), signed in, signed out by its key, or after joining; an unknown
   or bad file ID opens just the capture.
-- The link is `https://tabcam.nu01.com/app/?c=<capture id>&k=<key>`
+- The link is `https://tabs.cam/app/?c=<capture id>&k=<key>`
   ([`CaptureLink`](../tabcam_app/lib/export/capture_link.dart)): the
   capture's ID, and its **link key**, which lets anyone holding the link
   see the capture, read only ([opening a link](#opening-a-link)). On the
@@ -129,8 +129,9 @@ own copy of a preview already shown).
 
 ## Android App Links
 
-On Android, `https://tabcam.nu01.com/app…` and
-`https://rc.tabcam.nu01.com/app…` open in the Tabs.cam app instead of
+On Android, `https://tabs.cam/app…` and `https://rc.tabs.cam/app…`
+(and the old names', `https://tabcam.nu01.com/app…` and
+`https://rc.tabcam.nu01.com/app…`) open in the Tabs.cam app instead of
 the browser (an `autoVerify` intent filter; every web app address, not
 only capture links: without `?c=` the app just opens). A link that
 launches the app, or reaches it while it runs, goes to `IncomingLinks`

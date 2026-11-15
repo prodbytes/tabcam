@@ -92,7 +92,7 @@ preview (no Premium) isn't kept either.
   `tab` (`capture` or `profile`; none on Home), `open` (the capture's
   ID), `view` (`text` or `files`), `file` (the file's ID) and `cam`
   (`1` with Cam open), as in
-  `https://tabcam.nu01.com/app/?open=<capture>&view=text&cam=1`. Only the
+  `https://tabs.cam/app/?open=<capture>&view=text&cam=1`. Only the
   query changes: the site's base (`/app/`, on prod, RC and the local
   site), its other parameters and Flutter's fragment stay. A capture's
   link's `c`, `k` and `f` ([sharing](sharing.md#opening-a-link)) stay
@@ -185,7 +185,7 @@ ask again** was ticked, and turned on, they all ask again (it only
 turns them on; [delete confirmations](delete-confirms.md)). Delete account asks
 whatever it says. Then **About**: the app's name
 and version (X.Y.Z, or "(development build)"), what it does,
-**Privacy policy** (opens https://tabcam.nu01.com/privacy in the browser,
+**Privacy policy** (opens https://tabs.cam/privacy in the browser,
 [privacy](privacy.md)) and **Licenses**.
 Last, until Tabs.cam is in the app stores, **Get the phone app**: "Tabs.cam
 isn't in the app stores yet", and **iPhone** and **Android** links, each

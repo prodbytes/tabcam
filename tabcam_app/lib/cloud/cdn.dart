@@ -63,6 +63,15 @@ class CdnGrant {
 
 /// Where this build reads users' folders through CloudFront.
 abstract final class CdnConfig {
+  /// Tabs.cam's sites: tabs.cam and rc.tabs.cam, and their old names
+  /// (which redirect the app, but still serve the users' folders).
+  static const _sites = {
+    'tabs.cam',
+    'rc.tabs.cam',
+    'tabcam.nu01.com',
+    'rc.tabcam.nu01.com',
+  };
+
   /// `TABCAM_CDN_URL`: the site the Android and iOS apps read from.
   static const String _url = String.fromEnvironment('TABCAM_CDN_URL');
 
@@ -74,7 +83,7 @@ abstract final class CdnConfig {
       final here = Uri.base;
       final ours =
           here.scheme == 'https' &&
-          (here.host == 'tabcam.nu01.com' || here.host == 'rc.tabcam.nu01.com');
+          _sites.contains(here.host);
       return ours ? Uri.parse(here.origin) : null;
     }
     return _url.isEmpty ? null : Uri.parse(_url);

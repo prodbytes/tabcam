@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!-- TabCam's own privacy manifest (specs/privacy.md; the policy is
-     https://tabcam.nu01.com/privacy). Plugins and SDKs ship their own:
+     https://tabs.cam/privacy). Plugins and SDKs ship their own:
      ML Kit's (MLKitCommon, MLKitFaceDetection, GoogleDataTransport)
      declare its device ID, performance and diagnostic data, not linked,
      for analytics, so they're not repeated here.
