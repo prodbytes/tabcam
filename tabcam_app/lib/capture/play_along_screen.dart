@@ -174,6 +174,10 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   /// The [_marks] (by index) made with auto-pass off: the tab turned in
   /// the take there, but it's no phrase pass of the take's.
   Set<int> _unpassed = {};
+
+  /// While recording: the song played along, as it played (the take's
+  /// log keeps it, so the editor lines the song up with the take).
+  SongNotes? _songNotes;
   bool _recording = false;
   bool _saving = false;
 
@@ -350,6 +354,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   /// The song changed, played or paused: auto-pass follows it while it
   /// plays (another song starts it over).
   void _trackChanged() {
+    _noteSong();
     final song = _track.page?.id;
     if (song != _autoPassSong) {
       _autoPassSong = song;
@@ -936,6 +941,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     _unpassed = {};
     _takeRecording(true);
     if (mounted) setState(() => _recording = true);
+    // A song playing already plays on in the take from here.
+    _songNotes = SongNotes();
+    _noteSong();
     // The song in the sidebar's player starts with the take (counting in
     // first, from where it is), unless it plays already.
     if (mounted &&
@@ -965,6 +973,49 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     } finally {
       _stopReturn = _span.elapsed;
       _span.stop();
+    }
+  }
+
+  /// While recording, notes where the song playing along is now (the
+  /// sidebar's player changed); a segment just started is told again from
+  /// a fresh reading of its player ([SongNotes.anchor]).
+  void _noteSong() {
+    final notes = _songNotes;
+    if (notes == null || !_recording) return;
+    final t = _clock.elapsed.inMilliseconds;
+    if (_track.link?.playing ?? false) notes.noteLink();
+    final media = _track.media;
+    final page = media == null ? null : _track.page?.id;
+    final v = media?.value;
+    final started = notes.note(
+      t,
+      page: page,
+      playing: v?.isPlaying ?? false,
+      position: v?.position.inMilliseconds ?? 0,
+      speed: v?.playbackSpeed ?? 1,
+    );
+    if (started && media != null && page != null) {
+      unawaited(_anchorSong(notes, media, page));
+    }
+  }
+
+  /// Tells the segment [page] started from where [media] says it is now.
+  Future<void> _anchorSong(
+    SongNotes notes,
+    VideoPlayerController media,
+    String page,
+  ) async {
+    try {
+      final at = await media.position;
+      if (at == null || !identical(notes, _songNotes)) return;
+      if (_track.media != media) return;
+      notes.anchor(
+        _clock.elapsed.inMilliseconds,
+        page: page,
+        position: at.inMilliseconds,
+      );
+    } on Object catch (e) {
+      debugPrint('TabCam: cam: where the song is isn\'t known: $e');
     }
   }
 
@@ -1025,6 +1076,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     _clock.stop();
     final marks = _marks;
     final unpassed = _unpassed;
+    final notes = _songNotes;
+    _songNotes = null;
+    final song = notes?.finish(_clock.elapsed.inMilliseconds) ?? const [];
     try {
       XFile file;
       try {
@@ -1052,6 +1106,8 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         lagFrom: lag.from,
         lagRaw: lag.raw,
         tab: tab,
+        song: song,
+        songLink: notes?.link ?? false,
       );
       final known = Media.of(file);
       final media = known?.kind == PageKind.video

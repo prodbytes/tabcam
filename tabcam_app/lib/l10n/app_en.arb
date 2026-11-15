@@ -2692,6 +2692,28 @@
       }
     }
   },
+  "videoEditSongLined": "Lined up as it played while you recorded",
+  "@videoEditSongLined": {
+    "description": "Video edit, a take: the song is placed by itself where it played while the take recorded"
+  },
+  "videoEditSongLinedLater": "Lined up as recorded, moved {time} later",
+  "@videoEditSongLinedLater": {
+    "description": "Video edit, a take: the song lined up as it played while recording, then moved later by hand (time like 0:00.2)",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditSongLinedEarlier": "Lined up as recorded, moved {time} earlier",
+  "@videoEditSongLinedEarlier": {
+    "description": "Video edit, a take: the song lined up as it played while recording, then moved earlier by hand (time like 0:00.2)",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "videoEditSongUsed": "Using {start}–{end} of the song",
   "@videoEditSongUsed": {
     "description": "Video edit, a take: the part of the song used, once trimmed (times like 0:01.5)",
