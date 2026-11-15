@@ -61,7 +61,7 @@ class _PageState extends State<_Page> {
           TextButton(
             onPressed: () => showMessage(
               context,
-              'Checking it is part of TabCam Premium.',
+              'Checking it is part of Tabs.cam Premium.',
               action: MessageAction(label: 'Upgrade', onPressed: () {}),
               persist: true,
             ),
@@ -271,7 +271,7 @@ void main() {
     await tester.tap(find.text('copy'));
     await tester.pump(const Duration(seconds: 10));
     expect(find.text('Link copied'), findsNothing);
-    await tester.tap(find.textContaining('TabCam Premium'));
+    await tester.tap(find.textContaining('Tabs.cam Premium'));
     await tester.pumpAndSettle();
     expect(find.text('Upgrade'), findsNothing);
     expect(find.text('Link copied'), findsOneWidget);

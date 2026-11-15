@@ -30,7 +30,7 @@ roles), the old secret, parameter, log groups and GitHub variables, and
 moved what's still needed under tabcam names: the redirects (above) and
 the account's `accounts.google.com` OIDC provider, which
 `tabscan-identity` owned and `tabcam-identity` now does (imported,
-`DeletionPolicy: Retain`, trusting TabCam's Google clients only;
+`DeletionPolicy: Retain`, trusting Tabs.cam's Google clients only;
 `tabcam-identity-local` uses it by its ARN). rbacr's `tabscan` system is
 separate and stays until Presence's vouchers name `tabcam`.
 
@@ -63,7 +63,7 @@ A pushed `*RC*` tag, or a manual run (with an optional tag; empty deploys
 the selected branch's commit), runs the
 [Deploy RC workflow](../.github/workflows/deploy-rc.yml): the same script
 with `STAGE=rc`, into its own stack, `tabcam-rc-web`. The RC's title is
-"🧪 TabCam RC" in the browser and the app, so it never passes for
+"🧪 Tabs.cam RC" in the browser and the app, so it never passes for
 production.
 
 ## Access
@@ -77,7 +77,7 @@ Repository variables: `TABCAM_AWS_DEPLOY_ROLE_ARN`, `TABCAM_AWS_DEPLOY_RC_ROLE_A
 `TABCAM_GOOGLE_WEB_CLIENT_ID`, `TABCAM_GOOGLE_IOS_CLIENT_ID` (releases only),
 `TABCAM_COGNITO_IDENTITY_POOL_ID`, `TABCAM_USER_DATA_BUCKET` and (for
 [shared captures](shared-captures.md)) `TABCAM_SHARE_API_URL` and (for
-[TabCam Premium](cloud-ocr.md)) `TABCAM_OCR_URL`, compiled into
+[Tabs.cam Premium](cloud-ocr.md)) `TABCAM_OCR_URL`, compiled into
 the builds (empty: no sign-in, no sharing, or no Premium). Their stacks,
 `tabcam-user-data`, `tabcam-identity`, `tabcam-share-api`,
 `tabcam-ocr-repo` and `tabcam-ocr`, are

@@ -1,7 +1,7 @@
 # Tab recognition
 
 Every capture's tab is read **by itself** into its text tab, shown in the
-[event screen](event-screen.md)'s **Text** view. Text tabs are [TabCam
+[event screen](event-screen.md)'s **Text** view. Text tabs are [Tabs.cam
 Premium](cloud-ocr.md)'s: in a build with Premium set up, a user without
 it gets no reading, and Text opens as a preview under the Premium card
 ([in the app](cloud-ocr.md#in-the-app)). With Premium the cloud
@@ -62,7 +62,7 @@ tab…" (with a spinner); "Transcribing in the cloud: about 1 to 3 minutes
 a page. The text appears here when it's done, even if you leave."; "No tab found in the pages. Try rescanning closer and
 flatter." or "Reading the tab failed.", with **Read again**; "Reading
 tabs needs you signed in.", with **Sign in**; "Reading tabs needs the
-Android or iOS app, or TabCam Premium."; "Nothing to read: add a scan or
+Android or iOS app, or Tabs.cam Premium."; "Nothing to read: add a scan or
 a photo."; or, for an event never read (from before), "Not read yet."
 with **Read**. Its log lines start with `TabCam: read tab:`.
 
@@ -198,10 +198,10 @@ OCR, a PDF by its text, else OCR), and their texts joined as
 pages it has: its pages' tabs are joined by a blank line, with no
 divider between them. On the web, a
 PDF's text is read though photos can't be; a scanned PDF there says that
-reading it needs the Android or iOS app, or TabCam Premium (not "no tab
+reading it needs the Android or iOS app, or Tabs.cam Premium (not "no tab
 found").
 
-With **TabCam Premium**, PDFs are read as if their pages were
+With **Tabs.cam Premium**, PDFs are read as if their pages were
 photographed, everywhere: an event of PDFs only first tries their text on
 the device (exact, at once); a scanned PDF, or an event with photos, goes
 to the [cloud](cloud-ocr.md#transcription), which renders each PDF page

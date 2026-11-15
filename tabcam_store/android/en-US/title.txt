@@ -1,1 +1,1 @@
-TabCam: Guitar Tab Camera
+Tabs.cam: Guitar Tab Camera

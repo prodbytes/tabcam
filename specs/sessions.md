@@ -1,11 +1,11 @@
 # Sign-in sessions
 
 Signed in, the user stays signed in: through reloads, restarts and long
-breaks, until they sign out or leave TabCam unused for a **week**. The
+breaks, until they sign out or leave Tabs.cam unused for a **week**. The
 provider's ID token (Google's, Apple's, the email user pool's) lasts only
 an hour, and the app can't always renew it quietly (Google on the web
 needs the browser's FedCM to cooperate, which a background tab, Safari or
-Firefox often don't; Apple can't renew at all), so TabCam keeps a session
+Firefox often don't; Apple can't renew at all), so Tabs.cam keeps a session
 of its own, in the share API
 ([sessions.py](../tabcam_api/shares/sessions.py)).
 
@@ -15,7 +15,7 @@ of its own, in the share API
   provider's ID token to `POST /session` (under `/apple` or `/email` for
   theirs, behind the same authorizers as every route). The share API
   links the sign-in to its [profile](profiles.md) if it isn't yet and
-  answers with a **refresh token** and TabCam's first **ID token**.
+  answers with a **refresh token** and Tabs.cam's first **ID token**.
 - **The refresh token**: 256 random bits (`tcs1.…`), kept on the device
   and, by the API, only as its SHA-256 (table `SessionsTable`). Each use
   moves its end to **7 days later**, never past **90 days** after the
@@ -23,7 +23,7 @@ of its own, in the share API
   tabs of the web app share one session. A tab never overwrites or clears
   a newer session another tab kept on the device; refused, it takes that
   one instead of signing out.
-- **TabCam's ID tokens**: JWTs (RS256) signed by a KMS key
+- **Tabs.cam's ID tokens**: JWTs (RS256) signed by a KMS key
   (`alias/tabcam-sessions`, RSA 2048; the private key never leaves KMS),
   for an hour, issued by the API's own `/session` (`SessionIssuer`), for
   the audience `tabcam-app`. They name the sign-in that started the
@@ -42,7 +42,7 @@ of its own, in the share API
   start (3.7 s) made the authorizer refuse good tokens with 401
   ("invalid_token: OIDC discovery endpoint communication error"), and
   the app said "Sync failed: Unauthorized" after it sat idle a while
-  (15 such refusals on 2026-11-13 and 14). The share API's routes take TabCam's
+  (15 such refusals on 2026-11-13 and 14). The share API's routes take Tabs.cam's
   tokens under `/tabcam` (a JWT authorizer of their own, and the function
   checks the audience and that `idp` is one of the providers), and the
   cloud OCR service checks them like the providers' (`SESSION_ISSUER`,
@@ -64,10 +64,10 @@ of its own, in the share API
   unlinks it (unlinking itself, it stays signed in, with a profile of its
   own); and a sign-in no longer linked to a profile can't refresh. A
   refused renewal (401) signs the user out here, "You were signed out (a week
-  without using TabCam, or your sign-in ended elsewhere): sign in
+  without using Tabs.cam, or your sign-in ended elsewhere): sign in
   again.", unless the provider still has them signed in, in which case a
   new session starts quietly. At launch, an Apple sign-in the user
-  stopped using with TabCam (Settings → Apple ID) ends the session too,
+  stopped using with Tabs.cam (Settings → Apple ID) ends the session too,
   on the device and at the API.
 
 ## In the app
@@ -79,7 +79,7 @@ with the share API:
 
 - Its user is the session's (restored at launch from the device at once,
   even with an expired ID token, which is renewed straight away), or else
-  the provider's; its ID token is TabCam's, or the provider's until a
+  the provider's; its ID token is Tabs.cam's, or the provider's until a
   session starts. A provider losing its own token (Apple's expiring,
   Google's quiet renewal failing) leaves the user signed in, and its
   errors don't show while the session lasts.
@@ -92,7 +92,7 @@ with the share API:
   private Application Support folder on Android and iOS, the browser's
   `localStorage` (`tabcam.signed-in`) on the web: who (ID, email, name,
   photo URL, provider), the refresh token and the last ID token.
-- Requests with TabCam's token go to the share API under `/tabcam`
+- Requests with Tabs.cam's token go to the share API under `/tabcam`
   (`ShareApi`); `AuthProvider.ofToken` names its `idp`.
 - Without sessions at the API (a 404, or offline), the provider's token
   is used as before, and a session is tried again with the provider's
@@ -124,7 +124,7 @@ the function.
   browser's `localStorage`, which a script injected into the site could
   read, as it can the tokens already kept there). The API keeps only its hash,
   and it can't be guessed (256 bits; the refresh route is throttled).
-- A TabCam token can't start another session (so 90 days is a real
+- A Tabs.cam token can't start another session (so 90 days is a real
   limit), and the API takes one only with its own audience and a known
   provider in `idp`.
 - The function may only `kms:Sign` and `kms:GetPublicKey` with the
@@ -142,7 +142,7 @@ the function.
   function serves the two documents; once it does, the keys function.
 - `scripts/deploy-share-api.sh` checks, after deploying, the discovery
   document and keys (the JWKS served being KMS's), that `/tabcam/…` and an unknown refresh token are
-  refused, and that a real TabCam token (signed by the session key, for a
+  refused, and that a real Tabs.cam token (signed by the session key, for a
   made-up sign-in) passes the authorizer (`POST /tabcam/session`, which
   refuses it with 400 and writes nothing).
 
@@ -159,7 +159,7 @@ KMS; tokens checked against the published JWKS): a session's token
 reaches the same profile; a week unused ends it, use keeps it a week
 longer, 90 days ends it anyway; sign-out, unlinking and deleting the
 account end it, unlinking itself doesn't; wrong refresh tokens, other audiences, unknown or
-TabCam's own `idp`, and tampered tokens are refused; an Apple session
+Tabs.cam's own `idp`, and tampered tokens are refused; an Apple session
 keeps the audience for revoking. `tabcam_locr/tests/test_auth.py`: the OCR
 service takes session tokens as the sign-in that started them, and
 refuses them when anything is off or sessions aren't set up.

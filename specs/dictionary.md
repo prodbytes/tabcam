@@ -6,7 +6,7 @@ in all its views (Files, Text, and the locked previews), the
 [file screen](event-screen.md#file-screen) for any file, Cam
 ([cam.md](cam.md)) with or without Premium, a capture opened by its
 link, and Home's captures ([navigation](navigation.md); not the Capture
-and Profile tabs, where the sidebar doesn't show but stays open). It's free for everyone, and takes nothing from TabCam's servers:
+and Profile tabs, where the sidebar doesn't show but stays open). It's free for everyone, and takes nothing from Tabs.cam's servers:
 the chords and scales are worked out on the device
 ([`lib/dictionary/`](../tabcam_app/lib/dictionary/)); only a YouTube
 search leaves it, from the device straight to YouTube.
@@ -156,7 +156,7 @@ search field, focused, and under it, scrolling, what was typed is:
   is free, so misuse can only spend its quota: 10,000 units a day, 100
   a search, so about 100 searches a day for all users until Google
   grants more (the YouTube API Services audit and quota form). No
-  TabCam server is involved. A build without the key shows the button
+  Tabs.cam server is involved. A build without the key shows the button
   only, and Enter opens YouTube's search as the button does.
 
 Nothing typed, the sidebar explains itself and offers examples to tap (`C`,

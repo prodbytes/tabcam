@@ -102,7 +102,7 @@ people the owner shared it with by email before that was removed
 Chat apps (WhatsApp, iMessage, Slack, Telegram, Discord, Teams, X,
 LinkedIn, Facebook...) preview a link by fetching it with their own
 crawler, which reads the page's Open Graph tags and never runs the app.
-So a capture's link previews as the capture, not as "TabCam":
+So a capture's link previews as the capture, not as "Tabs.cam":
 
 - The site's CloudFront function ([site.yaml](../tabcam_infra/site.yaml))
   sends a known crawler (by its user agent) asking for
@@ -115,9 +115,9 @@ So a capture's link previews as the capture, not as "TabCam":
   its `event.json` with the link's own read-only credentials and answers
   a small page: the title ("<title> – <artist>"), a description of what
   it holds ("<artist> · 2 pages, 1 PDF, 1 link, a text tab. Shared with
-  TabCam."; images left out when hidden), the link itself as `og:url`
+  Tabs.cam."; images left out when hidden), the link itself as `og:url`
   and the app's icon as the image. A wrong key, a deleted capture or a
-  malformed link: TabCam's own title and description. Someone who lands
+  malformed link: Tabs.cam's own title and description. Someone who lands
   on the page goes on to the app (a script; crawlers don't run it).
 - The site names itself to the API (`x-tabcam-site`, the RC's or
   production's), so the preview links back to the same site. It's on when
@@ -130,7 +130,7 @@ own copy of a preview already shown).
 ## Android App Links
 
 On Android, `https://tabcam.nu01.com/app…` and
-`https://rc.tabcam.nu01.com/app…` open in the TabCam app instead of
+`https://rc.tabcam.nu01.com/app…` open in the Tabs.cam app instead of
 the browser (an `autoVerify` intent filter; every web app address, not
 only capture links: without `?c=` the app just opens). A link that
 launches the app, or reaches it while it runs, goes to `IncomingLinks`

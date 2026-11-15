@@ -115,17 +115,17 @@ import json
 web = "tabcam_app/build/web"
 with open(f"{web}/index.html", encoding="utf-8") as f:
     html = f.read()
-html = html.replace("<title>TabCam</title>", "<title>🧪 TabCam RC</title>")
+html = html.replace("<title>Tabs.cam</title>", "<title>🧪 Tabs.cam RC</title>")
 with open(f"{web}/index.html", "w", encoding="utf-8") as f:
     f.write(html)
 with open(f"{web}/manifest.json", encoding="utf-8") as f:
     manifest = json.load(f)
-manifest["name"] = "🧪 TabCam RC"
-manifest["short_name"] = "TabCam RC"
+manifest["name"] = "🧪 Tabs.cam RC"
+manifest["short_name"] = "Tabs.cam RC"
 with open(f"{web}/manifest.json", "w", encoding="utf-8") as f:
     json.dump(manifest, f, ensure_ascii=False, indent=4)
 PY
-  grep -q '<title>🧪 TabCam RC</title>' tabcam_app/build/web/index.html
+  grep -q '<title>🧪 Tabs.cam RC</title>' tabcam_app/build/web/index.html
   echo "    RC title in place"
 fi
 test -f tabcam_app/build/web/index.html
@@ -179,7 +179,7 @@ check() {
   [[ "$live" == "$VERSION" ]] || { echo "    /app/version.json says $live, want $VERSION"; return 1; }
   curl -fsS --max-time 20 "https://$DOMAIN/" | grep -q "location.replace('/app/'" || { echo "    / isn't the index page"; return 1; }
   curl -fsS --max-time 20 -o /dev/null "https://$DOMAIN/app/" || { echo "    /app/ failed"; return 1; }
-  curl -fsS --max-time 20 "https://$DOMAIN/privacy" | grep -q "<title>TabCam Privacy Policy</title>" || { echo "    /privacy isn't the privacy policy"; return 1; }
+  curl -fsS --max-time 20 "https://$DOMAIN/privacy" | grep -q "<title>Tabs.cam Privacy Policy</title>" || { echo "    /privacy isn't the privacy policy"; return 1; }
 }
 for attempt in $(seq 1 30); do
   if check; then

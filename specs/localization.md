@@ -29,7 +29,7 @@ The app speaks **English**, **Spanish** (neutral Latin American) and
   ([lib/l10n/language.dart](../tabcam_app/lib/l10n/language.dart)).
 - Counts use ICU plurals; names, addresses and dates go in as
   placeholders.
-- Kept as they are: the product names (TabCam, TabCam Premium), what's
+- Kept as they are: the product names (Tabs.cam, Tabs.cam Premium), what's
   saved or synced (event titles, file names), tab text, and the log.
 - The maintenance message follows the device's language.
 
