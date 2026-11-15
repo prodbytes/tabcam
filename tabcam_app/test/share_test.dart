@@ -136,10 +136,7 @@ void main() {
     });
 
     test('finds no ID in other links, or a bad one', () {
-      expect(
-        CaptureLink.idIn(Uri.parse('https://tabs.cam/app/')),
-        isNull,
-      );
+      expect(CaptureLink.idIn(Uri.parse('https://tabs.cam/app/')), isNull);
       expect(
         CaptureLink.idIn(Uri.parse('https://tabs.cam/app/?c=../x')),
         isNull,

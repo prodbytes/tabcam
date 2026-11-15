@@ -1396,7 +1396,7 @@
       }
     }
   },
-  "homeLibraryDeleteBody": "Its pages and text tab are deleted too.",
+  "homeLibraryDeleteBody": "It goes to Deleted, on the Profile tab, with its files and text tab: you can restore it there until you purge.",
   "@homeLibraryDeleteBody": {
     "description": "Dialog: what deleting an event does"
   },
@@ -3118,5 +3118,117 @@
   "deleteAskOff": "Some deletes happen at once, without asking. Turn it on to be asked again.",
   "@deleteAskOff": {
     "description": "Profile: under Ask before deleting, when it's off"
+  },
+  "trashTitle": "Deleted",
+  "@trashTitle": {
+    "description": "Profile and the trash screen: the deleted captures and files, kept until purged"
+  },
+  "trashEmpty": "Nothing deleted. What you delete waits here until you purge it.",
+  "@trashEmpty": {
+    "description": "Profile / trash screen: nothing in the trash"
+  },
+  "trashSummary": "{items}, kept until you purge them.",
+  "@trashSummary": {
+    "description": "Profile: what's in the trash ({items}: trashCaptures and trashFiles joined)",
+    "placeholders": {
+      "items": {
+        "type": "String"
+      }
+    }
+  },
+  "trashCaptures": "{count, plural, =1{1 capture} other{{count} captures}}",
+  "@trashCaptures": {
+    "description": "Profile: how many captures are in the trash",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "trashFiles": "{count, plural, =1{1 file} other{{count} files}}",
+  "@trashFiles": {
+    "description": "Profile: how many files are in the trash",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "trashShow": "Show",
+  "@trashShow": {
+    "description": "Profile: opens the trash screen"
+  },
+  "trashPurge": "Purge",
+  "@trashPurge": {
+    "description": "Button: deletes everything in the trash for good"
+  },
+  "trashPurgeTitle": "Purge everything deleted?",
+  "@trashPurgeTitle": {
+    "description": "Dialog title before purging the trash"
+  },
+  "trashPurgeBody": "The deleted captures and files are deleted for good, on every device and in the cloud. This can't be undone.",
+  "@trashPurgeBody": {
+    "description": "Dialog body before purging the trash"
+  },
+  "trashPurged": "Purged",
+  "@trashPurged": {
+    "description": "Message after purging the trash"
+  },
+  "trashCouldntPurge": "Couldn't purge: {error}",
+  "@trashCouldntPurge": {
+    "description": "Message when purging fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "trashRestore": "Restore",
+  "@trashRestore": {
+    "description": "Trash screen: puts a deleted capture or file back"
+  },
+  "trashRestored": "Restored \"{name}\"",
+  "@trashRestored": {
+    "description": "Message after restoring a capture or file",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "trashCapturesHeading": "Captures",
+  "@trashCapturesHeading": {
+    "description": "Trash screen: heading of the deleted captures"
+  },
+  "trashFilesOf": "Files deleted from \"{title}\"",
+  "@trashFilesOf": {
+    "description": "Trash screen: heading of one capture's deleted files",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "trashDeletedOn": "Deleted {date}",
+  "@trashDeletedOn": {
+    "description": "Trash screen: when a capture was deleted",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "deletedItem": "Deleted \"{name}\": restore it from Profile until you purge",
+  "@deletedItem": {
+    "description": "Message after deleting a capture or a file, with Undo",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteUndo": "Undo",
+  "@deleteUndo": {
+    "description": "Action on the deleted message: restores it"
   }
 }

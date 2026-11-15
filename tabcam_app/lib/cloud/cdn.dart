@@ -81,9 +81,7 @@ abstract final class CdnConfig {
   static Uri? get site {
     if (kIsWeb) {
       final here = Uri.base;
-      final ours =
-          here.scheme == 'https' &&
-          _sites.contains(here.host);
+      final ours = here.scheme == 'https' && _sites.contains(here.host);
       return ours ? Uri.parse(here.origin) : null;
     }
     return _url.isEmpty ? null : Uri.parse(_url);

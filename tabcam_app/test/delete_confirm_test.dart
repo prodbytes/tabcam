@@ -148,7 +148,7 @@ void main() {
     // A capture's delete still asks; ticked and confirmed, it's deleted.
     await deleteFirstCard();
     expect(find.byType(AlertDialog), findsOneWidget);
-    expect(find.textContaining('pages and text tab'), findsOneWidget);
+    expect(find.textContaining('restore it there'), findsOneWidget);
     await tester.tap(_dontAsk);
     await tester.pump();
     await tester.tap(_confirm);

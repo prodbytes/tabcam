@@ -5,6 +5,8 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
+import '../l10n/app_localizations.dart';
+
 /// The app's messages ("Link copied", "Saved … (Open)"): a banner at the
 /// top of the screen, just under the app bar, floating over the page. It
 /// moves and resizes nothing (no bottom navigation, button or FAB goes up
@@ -57,6 +59,18 @@ class _MessengerScope extends InheritedWidget {
 }
 
 /// An action on a message, a text button at its end ("Open", "Upgrade").
+/// Says [name] was deleted (to the trash, [Library.delete] and
+/// [Library.deletePage]), with **Undo**, which runs [undo].
+void showDeleted(
+  Messenger? messenger,
+  AppLocalizations l10n,
+  String name,
+  VoidCallback undo,
+) => messenger?.show(
+  l10n.deletedItem(name),
+  action: MessageAction(label: l10n.deleteUndo, onPressed: undo),
+);
+
 class MessageAction {
   const MessageAction({required this.label, required this.onPressed});
 

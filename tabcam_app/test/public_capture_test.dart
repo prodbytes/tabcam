@@ -143,6 +143,26 @@ void main() {
     },
   );
 
+  test('a capture its owner deleted (in their trash) opens nothing', () async {
+    await ownerShares();
+    final key = '$owner/events/$id/event.json';
+    final json = (jsonDecode(utf8.decode(bucket.objects[key]!)) as Map)
+        .cast<String, Object?>();
+    bucket.objects[key] = utf8.encode(
+      jsonEncode(
+        CaptureEvent.fromJson(json)
+            .copyWith(trashed: () => DateTime.utc(2026, 11, 15))
+            .toJson(local: false),
+      ),
+    );
+    final library = Library(PlatformEventStore());
+    await library.load();
+    await expectLater(
+      captures().open(link, library),
+      throwsA(isA<LinkUnavailable>()),
+    );
+  });
+
   test('a wrong key, or none, opens nothing', () async {
     await ownerShares();
     final library = Library(PlatformEventStore());

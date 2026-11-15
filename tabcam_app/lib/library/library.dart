@@ -88,9 +88,27 @@ class Library extends ChangeNotifier {
     _all = all..sort((a, b) => b.created.compareTo(a.created));
     _scans = [
       for (final s in _all)
-        if (!s.isDeleted) s,
+        if (!s.isDeleted && !s.isTrashed) s,
     ];
   }
+
+  /// The user's own events in the trash ([CaptureEvent.trashed]), the
+  /// latest deleted first: hidden, kept until restored ([restore]) or
+  /// purged ([purge]).
+  List<CaptureEvent> get trashed => [
+    for (final s in _all)
+      if (s.isTrashed && !s.isDeleted && !s.isShared) s,
+  ]..sort((a, b) => b.trashed!.compareTo(a.trashed!));
+
+  /// The user's own events shown, with files in their trash
+  /// ([CaptureEvent.deletedPages]).
+  List<CaptureEvent> get withDeletedPages => [
+    for (final s in _scans)
+      if (!s.isShared && s.deletedPages.isNotEmpty) s,
+  ];
+
+  /// Whether there's anything in the trash to restore or purge.
+  bool get hasTrash => trashed.isNotEmpty || withDeletedPages.isNotEmpty;
 
   /// A new event of [pages], titled [title], or with its date and time.
   Future<CaptureEvent> create(List<Uint8List> pages, {String? title}) async {
@@ -326,7 +344,8 @@ class Library extends ChangeNotifier {
     };
     final now = _byIdAll(eventId);
     if (now == null || now.deleted != null) return;
-    final songs = {for (final p in now.allPages) p.id};
+    // A deleted file's passes stay with it, in the trash.
+    final songs = {for (final p in now.storedPages) p.id};
     if (now.isShared) {
       final mine = now.myContribution ?? Contribution(updated: _now());
       final updated = _update(
@@ -409,12 +428,23 @@ class Library extends ChangeNotifier {
   }
 
   /// Takes [page] back out of the capture's pages, after [publish]: its
-  /// copy goes; the contribution keeps the original.
+  /// copy goes, with its file and passes (not to the trash: it's a copy;
+  /// the contribution keeps the original, which is what's lost nothing).
   Future<CaptureEvent?> unpublish(CaptureEvent event, EventPage page) async {
     final now = _byIdAll(event.id);
     final copy = now?.publishedCopy(page);
     if (now == null || copy == null) return now;
-    return deletePage(now, copy);
+    final updated = await _save(
+      now.copyWith(
+        pages: [
+          for (final p in now.pages)
+            if (p.id != copy.id) p,
+        ],
+        phrases: _phrasesWithout(now.phrases, [copy]),
+      ),
+    );
+    await _dropFiles(updated, [copy]);
+    return updated;
   }
 
   Future<EventPage> _addFile(
@@ -559,12 +589,15 @@ class Library extends ChangeNotifier {
       extra: page.extra,
     );
     await _store.putPage(event.id, turned, rotated);
+    // The image as it was goes to the trash: files are deleted only when
+    // the trash is purged.
     final updated = await _save(
       event.copyWith(
         pages: [for (final p in event.pages) p.id == page.id ? turned : p],
+        deletedPages: [...event.deletedPages, page],
       ),
     );
-    await _deleteFile(event.id, page);
+    _forget(page);
     _revision++;
     notifyListeners();
     return updated;
@@ -574,7 +607,8 @@ class Library extends ChangeNotifier {
   /// (a new ID, as [rotatePage] makes: page files never change once
   /// written) of [media]'s kind and extension, with [page]'s name,
   /// filter, take mark and the keys a newer app wrote
-  /// ([EventPage.extra]); [page]'s own file goes. Not its take log
+  /// ([EventPage.extra]); [page] goes to the trash
+  /// ([CaptureEvent.deletedPages]), file and all. Not its take log
   /// ([EventPage.takeLog]): that tells of the file recorded, not of
   /// [media].
   Future<CaptureEvent> replacePage(
@@ -595,9 +629,10 @@ class Library extends ChangeNotifier {
     final updated = await _save(
       event.copyWith(
         pages: [for (final p in event.pages) p.id == page.id ? replaced : p],
+        deletedPages: [...event.deletedPages, page],
       ),
     );
-    await _deleteFile(event.id, page);
+    _forget(page);
     _revision++;
     notifyListeners();
     return updated;
@@ -620,24 +655,38 @@ class Library extends ChangeNotifier {
         );
       });
 
-  Future<CaptureEvent> deletePage(CaptureEvent event, EventPage page) async {
-    final updated = await _save(
-      event.copyWith(
-        pages: [
-          for (final p in event.pages)
-            if (p.id != page.id) p,
-        ],
-        phrases: _phrasesWithout(event.phrases, [page]),
-      ),
-    );
-    await _dropFiles(updated, [page]);
-    return updated;
-  }
+  /// Deletes [page] from [event]: it goes to the event's trash
+  /// ([CaptureEvent.deletedPages]) with its file and phrase passes, which
+  /// stay (on the device and in the cloud) until it's restored
+  /// ([restorePage]) or the trash is purged ([purge]).
+  Future<CaptureEvent> deletePage(CaptureEvent event, EventPage page) => _save(
+    event.copyWith(
+      pages: [
+        for (final p in event.pages)
+          if (p.id != page.id) p,
+      ],
+      deletedPages: [...event.deletedPages, page],
+    ),
+  );
+
+  /// Puts [page], deleted from event [eventId] ([deletePage]), back at the
+  /// end of its pages. Null when the event is gone.
+  Future<CaptureEvent?> restorePage(String eventId, EventPage page) =>
+      patch(eventId, (now) {
+        if (!now.deletedPages.any((p) => p.id == page.id)) return now;
+        return now.copyWith(
+          pages: [...now.pages, page],
+          deletedPages: [
+            for (final p in now.deletedPages)
+              if (p.id != page.id) p,
+          ],
+        );
+      });
 
   /// Deletes the files of [gone] (pages [event] had) that it no longer
   /// keeps: a published page and its contribution share one file.
   Future<void> _dropFiles(CaptureEvent event, Iterable<EventPage> gone) async {
-    final kept = {for (final p in event.allPages) p.fileName};
+    final kept = {for (final p in event.storedPages) p.fileName};
     for (final p in gone) {
       if (kept.contains(p.fileName)) continue;
       await _deleteFile(event.id, p);
@@ -662,8 +711,10 @@ class Library extends ChangeNotifier {
   /// for it, since it won't come now.
   Future<void> _keepCopies(String eventId, EventPage page) async {
     final source = FileOrigin(eventId, page.id);
-    for (final e in [..._scans]) {
-      if (e.isShared || !e.pages.any((p) => p.source == source)) continue;
+    // Those in the trash too: they may be restored.
+    for (final e in [..._all]) {
+      if (e.isDeleted || e.isShared) continue;
+      if (!e.storedPages.any((p) => p.source == source)) continue;
       await _ownFiles(e.id, (p) => p.source == source);
     }
   }
@@ -729,9 +780,48 @@ class Library extends ChangeNotifier {
     );
   }
 
-  /// Deletes [event] and its pages. One that has synced leaves a tombstone,
-  /// so the deletion reaches the user's other devices.
+  /// Deletes [event]: it goes to the trash ([CaptureEvent.trashed]),
+  /// hidden, its pages and their files kept (on the device and in the
+  /// cloud) until it's restored ([restore]) or the trash is purged
+  /// ([purge]). Synced, so it goes from the user's other devices too.
   Future<void> delete(CaptureEvent event) async {
+    if (event.isShared) return;
+    await patch(event.id, (now) => now.copyWith(trashed: () => _now()));
+  }
+
+  /// Takes [event] out of the trash ([delete]): shown again, as it was.
+  Future<CaptureEvent?> restore(CaptureEvent event) =>
+      patch(event.id, (now) => now.copyWith(trashed: () => null));
+
+  /// Empties the trash, for good: each of the user's events in it is
+  /// deleted with its files ([_purgeEvent]), and each file deleted from an
+  /// event ([CaptureEvent.deletedPages]) goes with its phrase passes. The
+  /// only way files are deleted (but those of captures shared with the
+  /// user, which are their owners'). Synced: the cloud copies go too, and
+  /// the other devices' at their next pass. Copies of them a clone still
+  /// shows get files of their own first ([_keepCopies]).
+  Future<void> purge() async {
+    // Newest first: a trashed clone goes before its original, so its
+    // original's files aren't copied into it for nothing.
+    for (final e in trashed..sort((a, b) => b.created.compareTo(a.created))) {
+      await _purgeEvent(_byIdAll(e.id) ?? e);
+    }
+    for (final e in withDeletedPages) {
+      final gone = e.deletedPages;
+      final updated = await patch(
+        e.id,
+        (now) => now.copyWith(
+          deletedPages: const [],
+          phrases: _phrasesWithout(now.phrases, gone),
+        ),
+      );
+      if (updated != null) await _dropFiles(updated, gone);
+    }
+  }
+
+  /// Deletes [event] for good, and its files. One that has synced leaves a
+  /// tombstone, so the deletion reaches the user's other devices.
+  Future<void> _purgeEvent(CaptureEvent event) async {
     await _removePages(event);
     if (event.owner == null) {
       await _store.delete(event.id);
@@ -748,7 +838,7 @@ class Library extends ChangeNotifier {
   }
 
   Future<void> _removePages(CaptureEvent event) async {
-    for (final p in {for (final p in event.allPages) p.fileName: p}.values) {
+    for (final p in {for (final p in event.storedPages) p.fileName: p}.values) {
       await _deleteFile(event.id, p);
     }
   }
@@ -770,7 +860,9 @@ class Library extends ChangeNotifier {
     // Contributions sync on their own: the device's stay as they are.
     event = event.copyWith(contributions: local?.contributions ?? const []);
     await _store.save(event);
-    await _dropFiles(event, local?.pages ?? const []);
+    // The pages it no longer has, nor has in its trash (purged on another
+    // device), go.
+    await _dropFiles(event, [...?local?.pages, ...?local?.deletedPages]);
     _set([
       for (final s in _all)
         if (s.id != event.id) s,

@@ -3650,3 +3650,15 @@ spec.
    web import asks before deciding. See
    [cloud OCR](cloud-ocr.md#offered-only-when-known),
    [autocorrect](autocorrect.md), [tab site links](tab-site-links.md).
+12. **"Never physically delete files, only hide them so that they may be
+   recovered if the user wants to, until purge is pressed explicitly in
+   the profile view."** Deleting a capture now puts it in the trash
+   (`trashed`, synced: hidden on every device, files kept), deleting a
+   file moves it to its capture's `deletedPages` (file and passes kept),
+   and Rotate and an edited video keep the file they replaced there too.
+   A message says so, with Undo. Profile has **Deleted**: Show lists the
+   trash to restore each capture or file, and **Purge** (always asking)
+   deletes it all for good, on the device, in the cloud and on the other
+   devices. Files stay in the cloud until purged. See
+   [Deleted and Purge](trash.md).
+

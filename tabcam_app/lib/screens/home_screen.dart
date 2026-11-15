@@ -30,6 +30,7 @@ import 'place.dart';
 import 'public_capture_screen.dart';
 import 'link_page.dart';
 import 'messages.dart';
+import 'trash.dart';
 
 /// The app's tabs, in the bottom navigation bar's order.
 enum HomeTab {
@@ -49,7 +50,8 @@ enum HomeTab {
   };
 
   /// The app bar's title on this tab.
-  String title(AppLocalizations l10n) => this == home ? 'Tabs.cam' : label(l10n);
+  String title(AppLocalizations l10n) =>
+      this == home ? 'Tabs.cam' : label(l10n);
 }
 
 /// The app's frame, as Presence's: a bottom navigation bar flips between
@@ -849,7 +851,8 @@ class _PremiumBannerState extends State<_PremiumBanner> {
 }
 
 /// The Profile tab: the account (in a build with sign-in), the language,
-/// **Ask before deleting** ([AskBeforeDeleting]), About, then, outside a
+/// **Ask before deleting** ([AskBeforeDeleting]), **Deleted** (the trash,
+/// to restore or purge: [DeletedSection]), About, then, outside a
 /// store app, how to install the phone app ([InstallLinks]).
 class ProfileView extends StatelessWidget {
   const ProfileView({
@@ -897,6 +900,8 @@ class ProfileView extends StatelessWidget {
                 if (library case final library?) ...[
                   const Divider(height: 48),
                   AskBeforeDeleting(library: library),
+                  const Divider(height: 48),
+                  DeletedSection(library: library, sync: sync),
                 ],
                 const Divider(height: 48),
                 Text(l10n.homeAbout, style: theme.textTheme.titleMedium),

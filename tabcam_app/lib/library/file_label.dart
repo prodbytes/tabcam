@@ -9,6 +9,8 @@ String fileLabel(AppLocalizations l10n, CaptureEvent event, EventPage page) {
   if (page.isLink) return page.url?.host ?? '';
   final among = event.pages.contains(page)
       ? event.pages
+      : event.deletedPages.contains(page)
+      ? event.deletedPages
       : event.contributions
                 .where((c) => c.pages.contains(page))
                 .firstOrNull

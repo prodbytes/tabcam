@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../capture/play_along_sidebar.dart';
@@ -267,8 +269,18 @@ class _FileScreenState extends State<FileScreen> {
       return;
     }
     final navigator = Navigator.of(context);
-    await _run(context.l10n.eventDelete, () async {
+    final l10n = context.l10n;
+    final messenger = Messenger.maybeOf(context);
+    await _run(l10n.eventDelete, () async {
+      final name = fileLabel(l10n, event, page);
       await _library.deletePage(event, page);
+      // To the capture's trash: Undo, or Profile's Deleted, brings it back.
+      showDeleted(
+        messenger,
+        l10n,
+        name,
+        () => unawaited(_library.restorePage(event.id, page)),
+      );
       navigator.pop();
     });
   }

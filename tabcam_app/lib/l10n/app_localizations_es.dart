@@ -1055,7 +1055,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get homeLibraryDeleteBody =>
-      'Sus páginas y su tablatura en texto también se eliminan.';
+      'Va a Eliminados, en la pestaña Perfil, con sus archivos y su tablatura en texto: puedes restaurarla allí hasta que la borres para siempre.';
 
   @override
   String get homeLibraryDelete => 'Eliminar';
@@ -2316,4 +2316,88 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get deleteAskOff =>
       'Algunas eliminaciones ocurren de inmediato, sin preguntar. Actívalo para que vuelva a preguntar.';
+
+  @override
+  String get trashTitle => 'Eliminados';
+
+  @override
+  String get trashEmpty =>
+      'Nada eliminado. Lo que elimines queda aquí hasta que lo borres para siempre.';
+
+  @override
+  String trashSummary(String items) {
+    return '$items, guardados hasta que los borres para siempre.';
+  }
+
+  @override
+  String trashCaptures(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count capturas',
+      one: '1 captura',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trashFiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count archivos',
+      one: '1 archivo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trashShow => 'Mostrar';
+
+  @override
+  String get trashPurge => 'Borrar para siempre';
+
+  @override
+  String get trashPurgeTitle => '¿Borrar para siempre todo lo eliminado?';
+
+  @override
+  String get trashPurgeBody =>
+      'Las capturas y los archivos eliminados se borran para siempre, en todos los dispositivos y en la nube. No se puede deshacer.';
+
+  @override
+  String get trashPurged => 'Borrado para siempre';
+
+  @override
+  String trashCouldntPurge(String error) {
+    return 'No se pudo borrar para siempre: $error';
+  }
+
+  @override
+  String get trashRestore => 'Restaurar';
+
+  @override
+  String trashRestored(String name) {
+    return '\"$name\" restaurado';
+  }
+
+  @override
+  String get trashCapturesHeading => 'Capturas';
+
+  @override
+  String trashFilesOf(String title) {
+    return 'Archivos eliminados de \"$title\"';
+  }
+
+  @override
+  String trashDeletedOn(String date) {
+    return 'Eliminada el $date';
+  }
+
+  @override
+  String deletedItem(String name) {
+    return '\"$name\" eliminado: restáuralo desde Perfil hasta que lo borres para siempre';
+  }
+
+  @override
+  String get deleteUndo => 'Deshacer';
 }

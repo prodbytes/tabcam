@@ -387,7 +387,8 @@ void main() {
     expect(tablet.library.byId(event.id)!.title, 'Tablet');
   });
 
-  test('pages removed or rotated are removed from the folder too', () async {
+  test('a deleted file stays in the folder, in its capture\'s trash, until '
+      'purged; then it goes from the folder and the other devices', () async {
     final phone = Device(bucket);
     final tablet = Device(bucket);
     await phone.start();
@@ -398,20 +399,38 @@ void main() {
     await phone.sync.syncNow();
     await tablet.start();
     final gone = event.pages.first;
+    final key = '$folder/${event.id}/${gone.fileName}';
     phone.later();
     event = await phone.library.deletePage(phone.library.byId(event.id)!, gone);
     await phone.sync.syncNow();
-    expect(
-      bucket.objects.containsKey('$folder/${event.id}/${gone.fileName}'),
-      isFalse,
-    );
+    expect(bucket.objects.containsKey(key), isTrue);
     await tablet.sync.syncNow();
-    final copy = tablet.library.byId(event.id)!;
+    var copy = tablet.library.byId(event.id)!;
     expect(copy.pages.map((p) => p.id), [event.pages.single.id]);
+    expect(copy.deletedPages.map((p) => p.id), [gone.id]);
+
+    // Restored on the tablet, it's back on the phone.
+    tablet.now = phone.now.add(const Duration(minutes: 1));
+    await tablet.library.restorePage(event.id, gone);
+    await tablet.sync.syncNow();
+    await phone.sync.syncNow();
+    expect(phone.library.byId(event.id)!.pages.last.id, gone.id);
+
+    // Deleted again and purged: it goes from the folder, and the tablet.
+    phone.now = tablet.now.add(const Duration(minutes: 1));
+    await phone.library.deletePage(phone.library.byId(event.id)!, gone);
+    phone.later();
+    await phone.library.purge();
+    await phone.sync.syncNow();
+    expect(bucket.objects.containsKey(key), isFalse);
+    await tablet.sync.syncNow();
+    copy = tablet.library.byId(event.id)!;
+    expect(copy.deletedPages, isEmpty);
     expect(await tablet.library.hasPage(event.id, gone), isFalse);
   });
 
-  test('a deletion reaches the other devices', () async {
+  test('a deleted capture goes to the trash on every device, files kept; '
+      'purged, it goes for good', () async {
     final phone = Device(bucket);
     final tablet = Device(bucket);
     await phone.start();
@@ -425,12 +444,23 @@ void main() {
     phone.later();
     await phone.library.delete(phone.library.byId(event.id)!);
     await phone.sync.syncNow();
+    final file = '$folder/${event.id}/${event.pages.single.fileName}';
+    expect(bucket.objects.containsKey(file), isTrue);
+    expect(bucket.json('$folder/${event.id}/event.json')['trashed'], isNotNull);
+    await tablet.sync.syncNow();
+    expect(tablet.library.events, isEmpty);
+    expect(tablet.library.trashed.map((e) => e.id), [event.id]);
+    expect(await tablet.library.hasPage(event.id, event.pages.single), isTrue);
+
+    phone.later();
+    await phone.library.purge();
+    await phone.sync.syncNow();
     final keys = bucket.objects.keys.toList();
     expect(keys, ['$folder/${event.id}/event.json']);
     expect(bucket.json(keys.single)['deleted'], isNotNull);
 
     await tablet.sync.syncNow();
-    expect(tablet.library.events, isEmpty);
+    expect(tablet.library.trashed, isEmpty);
     expect(await tablet.library.hasPage(event.id, event.pages.single), isFalse);
 
     // A new device doesn't get the deleted event at all.
@@ -678,6 +708,13 @@ void main() {
       final event = await shareOne(ShareRole.edit);
       julio.later();
       await julio.library.delete(event);
+      // In the trash: hidden for her too.
+      await julio.sync.syncNow();
+      await anaPhone.sync.syncNow();
+      expect(anaPhone.library.events, isEmpty);
+      // Purged: gone, and no longer shared.
+      julio.later();
+      await julio.library.purge();
       await julio.sync.syncNow();
       await anaPhone.sync.syncNow();
       expect(anaPhone.library.events, isEmpty);
@@ -794,6 +831,7 @@ void main() {
 
       julio.later();
       await julio.library.delete(julio.library.byId(event.id)!);
+      await julio.library.purge();
       await julio.sync.syncNow();
       expect(
         bucket.objects.keys.where(

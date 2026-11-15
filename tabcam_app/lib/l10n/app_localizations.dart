@@ -1711,7 +1711,7 @@ abstract class AppLocalizations {
   /// Dialog: what deleting an event does
   ///
   /// In en, this message translates to:
-  /// **'Its pages and text tab are deleted too.'**
+  /// **'It goes to Deleted, on the Profile tab, with its files and text tab: you can restore it there until you purge.'**
   String get homeLibraryDeleteBody;
 
   /// Button / menu item: delete an event
@@ -3867,6 +3867,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Some deletes happen at once, without asking. Turn it on to be asked again.'**
   String get deleteAskOff;
+
+  /// Profile and the trash screen: the deleted captures and files, kept until purged
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted'**
+  String get trashTitle;
+
+  /// Profile / trash screen: nothing in the trash
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing deleted. What you delete waits here until you purge it.'**
+  String get trashEmpty;
+
+  /// Profile: what's in the trash ({items}: trashCaptures and trashFiles joined)
+  ///
+  /// In en, this message translates to:
+  /// **'{items}, kept until you purge them.'**
+  String trashSummary(String items);
+
+  /// Profile: how many captures are in the trash
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 capture} other{{count} captures}}'**
+  String trashCaptures(int count);
+
+  /// Profile: how many files are in the trash
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 file} other{{count} files}}'**
+  String trashFiles(int count);
+
+  /// Profile: opens the trash screen
+  ///
+  /// In en, this message translates to:
+  /// **'Show'**
+  String get trashShow;
+
+  /// Button: deletes everything in the trash for good
+  ///
+  /// In en, this message translates to:
+  /// **'Purge'**
+  String get trashPurge;
+
+  /// Dialog title before purging the trash
+  ///
+  /// In en, this message translates to:
+  /// **'Purge everything deleted?'**
+  String get trashPurgeTitle;
+
+  /// Dialog body before purging the trash
+  ///
+  /// In en, this message translates to:
+  /// **'The deleted captures and files are deleted for good, on every device and in the cloud. This can\'t be undone.'**
+  String get trashPurgeBody;
+
+  /// Message after purging the trash
+  ///
+  /// In en, this message translates to:
+  /// **'Purged'**
+  String get trashPurged;
+
+  /// Message when purging fails
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t purge: {error}'**
+  String trashCouldntPurge(String error);
+
+  /// Trash screen: puts a deleted capture or file back
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get trashRestore;
+
+  /// Message after restoring a capture or file
+  ///
+  /// In en, this message translates to:
+  /// **'Restored \"{name}\"'**
+  String trashRestored(String name);
+
+  /// Trash screen: heading of the deleted captures
+  ///
+  /// In en, this message translates to:
+  /// **'Captures'**
+  String get trashCapturesHeading;
+
+  /// Trash screen: heading of one capture's deleted files
+  ///
+  /// In en, this message translates to:
+  /// **'Files deleted from \"{title}\"'**
+  String trashFilesOf(String title);
+
+  /// Trash screen: when a capture was deleted
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted {date}'**
+  String trashDeletedOn(String date);
+
+  /// Message after deleting a capture or a file, with Undo
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted \"{name}\": restore it from Profile until you purge'**
+  String deletedItem(String name);
+
+  /// Action on the deleted message: restores it
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get deleteUndo;
 }
 
 class _AppLocalizationsDelegate

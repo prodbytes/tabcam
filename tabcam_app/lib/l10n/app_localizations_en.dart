@@ -1028,7 +1028,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get homeLibraryDeleteBody => 'Its pages and text tab are deleted too.';
+  String get homeLibraryDeleteBody =>
+      'It goes to Deleted, on the Profile tab, with its files and text tab: you can restore it there until you purge.';
 
   @override
   String get homeLibraryDelete => 'Delete';
@@ -2269,4 +2270,88 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get deleteAskOff =>
       'Some deletes happen at once, without asking. Turn it on to be asked again.';
+
+  @override
+  String get trashTitle => 'Deleted';
+
+  @override
+  String get trashEmpty =>
+      'Nothing deleted. What you delete waits here until you purge it.';
+
+  @override
+  String trashSummary(String items) {
+    return '$items, kept until you purge them.';
+  }
+
+  @override
+  String trashCaptures(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count captures',
+      one: '1 capture',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trashFiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files',
+      one: '1 file',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trashShow => 'Show';
+
+  @override
+  String get trashPurge => 'Purge';
+
+  @override
+  String get trashPurgeTitle => 'Purge everything deleted?';
+
+  @override
+  String get trashPurgeBody =>
+      'The deleted captures and files are deleted for good, on every device and in the cloud. This can\'t be undone.';
+
+  @override
+  String get trashPurged => 'Purged';
+
+  @override
+  String trashCouldntPurge(String error) {
+    return 'Couldn\'t purge: $error';
+  }
+
+  @override
+  String get trashRestore => 'Restore';
+
+  @override
+  String trashRestored(String name) {
+    return 'Restored \"$name\"';
+  }
+
+  @override
+  String get trashCapturesHeading => 'Captures';
+
+  @override
+  String trashFilesOf(String title) {
+    return 'Files deleted from \"$title\"';
+  }
+
+  @override
+  String trashDeletedOn(String date) {
+    return 'Deleted $date';
+  }
+
+  @override
+  String deletedItem(String name) {
+    return 'Deleted \"$name\": restore it from Profile until you purge';
+  }
+
+  @override
+  String get deleteUndo => 'Undo';
 }
