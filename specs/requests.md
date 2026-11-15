@@ -3614,3 +3614,12 @@ spec.
    tabs.cam. Sign in with Apple's return URL stays at the old name,
    which keeps serving it, until the Services ID names tabs.cam. See
    [sharing](sharing.md), [cloud sync](cloud-sync.md).
+9. **"Go ahead"** (with the store listings, Apple's Sign in, after the
+   move to tabs.cam). The store listings' URLs (the App Store's support,
+   marketing and privacy URLs, and the Data safety answers' privacy and
+   deletion URLs) are tabs.cam's now. Not uploaded yet: App Store
+   Connect refuses every change until the account holder accepts
+   Apple's updated Program License Agreement (which also blocks the
+   Developer portal, so the Services ID can't name tabs.cam yet), and
+   the Play upload needs gcloud signed in for its service account's
+   token. See [app stores](app-stores.md).
