@@ -99,6 +99,33 @@ void main() {
     expect(place.copyWith(text: true).cam, isTrue);
   });
 
+  testWidgets("on a capture shared with the user, Cam opens on their own "
+      'copy of it, which takes its place', (tester) async {
+    final event = await riffEvent(tester);
+    await tester.runAsync(
+      () => library.applyRemote(
+        event.copyWith(sharedBy: 'olga@example.com', readOnly: true),
+      ),
+    );
+    PlaceMemory.address = address = FakeAddress(
+      '$app?open=${event.id}&view=files',
+    );
+    await tester.pumpWidget(TabCamApp(library: library));
+    await settle(tester);
+    await tester.tap(find.byKey(const Key('cam')));
+    await settle(tester);
+    final copy = library.copyOf(event.id)!;
+    expect(copy.isShared, isFalse);
+    expect(copy.tabText, riff);
+    expect(
+      tester.widget<PlayAlongScreen>(find.byType(PlayAlongScreen)).eventId,
+      copy.id,
+    );
+    expect(address.query, {'open': copy.id, 'view': 'files', 'cam': '1'});
+    // The shared capture is as it was.
+    expect(library.byId(event.id)!.pages, hasLength(1));
+  });
+
   testWidgets('opening Cam puts it in the address; a reload there opens it '
       'again; closed, it leaves the address', (tester) async {
     final event = await riffEvent(tester);

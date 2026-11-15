@@ -280,9 +280,14 @@ the share API (local web builds) use the sign-in's own identity instead:
 [hid the images](hidden-images.md) (`hideImages`), but without how it's shared with the user (`sharedBy`, `readOnly`); or its tombstone once deleted. Coming down, the folder it's in, not `owner`, says whose it is |
 | `<identity>/events/<event id>/<page id>.<extension>` | each page's file, as stored on the device, with its MIME type by extension (`image/jpeg` for scanned pages, `video/mp4`, `audio/mpeg`, `application/pdf`, ...) |
 
-Links are in `event.json` only: they have no file.
+Links are in `event.json` only: they have no file. Nor does a clone's
+page whose file is still the original's (`source`, [copy on
+write](library.md#events)): it's neither sent nor brought; the device shows
+the original's file, which syncs with the original (the user's own, or a
+capture shared with them). One that has to be the clone's own gets its
+file on the device first, then syncs up like any change.
 Beside `events/`, the user's folder has `contrib/`: what people a capture
-is shared with to read added to it, a folder each
+is shared with added to it before adding went to their own copy, a folder each
 (`<identity>/contrib/<event id>/<their identity>/`), which only they and
 the owner reach; see [contributions](contributions.md).
 
@@ -374,8 +379,8 @@ account. Events made signed out go up to whoever signs in next.
 **Shared captures**: after the user's own folder, each pass lists the
 contributions to the user's own captures (one listing) and brings what
 changed, then syncs the captures shared with them, each in its owner's
-folder, the same way (but never uploading one shared to read), and on
-those shared to read, the user's own contribution, both ways; see
+folder, the same way (but never uploading one: they're all read only),
+and on each, the user's own contribution, both ways; see
 [shared captures](shared-captures.md#how-it-works) and
 [contributions](contributions.md#how-its-stored-and-synced).
 

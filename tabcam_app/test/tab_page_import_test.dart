@@ -215,22 +215,23 @@ void main() {
       },
     );
 
-    test("a reader's print is their own, as the link is", () async {
+    test("on a shared capture, the print goes to the reader's copy, as the "
+        'link does', () async {
       await library.applyRemote(
         event.copyWith(sharedBy: 'julio@example.com', readOnly: true),
       );
-      final shared = await library.addLink(library.byId(event.id)!, _ug);
+      final copy = await library.addLink(library.byId(event.id)!, _ug);
+      expect(copy.id, isNot(event.id));
       final done = await importer(
         () => http.Response(
           _ugPage(),
           200,
           headers: {'content-type': 'text/html; charset=utf-8'},
         ),
-      ).addTo(library, shared, _ug);
+      ).addTo(library, copy, _ug);
       expect(done!.outcome, TabImportOutcome.imported);
-      final now = library.byId(event.id)!;
-      expect(now.pages, isEmpty);
-      expect(now.myContribution!.pages.map((p) => p.kind), [
+      expect(library.byId(event.id)!.pages, isEmpty);
+      expect(library.byId(copy.id)!.pages.map((p) => p.kind), [
         PageKind.link,
         PageKind.pdf,
       ]);
