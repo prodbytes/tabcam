@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:tabcam_app/export/capture_link.dart';
 import 'package:tabcam_app/export/incoming_links.dart';
 import 'package:flutter/widgets.dart';
@@ -46,6 +48,93 @@ void main() {
       );
     });
 
+    test('with its key, the short link: the key alone', () {
+      final keyed = event.copyWith(linkKey: 'Ab3dEf9hJk2L');
+      final site = Uri.parse('https://tabs.cam/app/');
+      final link = CaptureLink.of(keyed, app: site);
+      expect(link.toString(), 'https://tabs.cam/s/Ab3dEf9hJk2L');
+      expect(CaptureLink.isShort(link), isTrue);
+      // A file's adds its ID.
+      expect(
+        CaptureLink.of(keyed, file: event.pages.first, app: site).toString(),
+        'https://tabs.cam/s/Ab3dEf9hJk2L?f=p1',
+      );
+      // The full link it stands for.
+      expect(
+        CaptureLink.full(keyed, app: site).toString(),
+        'https://tabs.cam/app/?c=abc123&k=Ab3dEf9hJk2L',
+      );
+      // A site that doesn't answer short links (a local build): the full one.
+      final local = Uri.parse('https://local.tabcam.nu01.com:2443/app/');
+      expect(
+        CaptureLink.of(keyed, app: local),
+        CaptureLink.full(keyed, app: local),
+      );
+      expect(CaptureLink.isShort(CaptureLink.full(keyed, app: site)), isFalse);
+      expect(
+        CaptureLink.isShort(Uri.parse('https://tabs.cam/s/short')),
+        isFalse,
+      );
+    });
+
+    test('a short link resolves to the full one, by the redirect', () async {
+      final asked = <http.BaseRequest>[];
+      final client = MockClient.streaming((request, _) async {
+        asked.add(request);
+        final known = request.url.path == '/s/Ab3dEf9hJk2L';
+        return http.StreamedResponse(
+          const Stream.empty(),
+          302,
+          headers: {
+            'location': known ? '/app/?c=abc123&k=Ab3dEf9hJk2L&f=p1' : '/app/',
+          },
+        );
+      });
+      expect(
+        await CaptureLink.resolve(
+          Uri.parse('https://rc.tabs.cam/s/Ab3dEf9hJk2L?f=p1'),
+          client: client,
+        ),
+        Uri.parse('https://rc.tabs.cam/app/?c=abc123&k=Ab3dEf9hJk2L&f=p1'),
+      );
+      expect(asked.single.followRedirects, isFalse);
+      // Android hands the path alone: the stage's site is asked.
+      expect(
+        (await CaptureLink.resolve(
+          Uri.parse('/s/Ab3dEf9hJk2L'),
+          client: client,
+        ))?.host,
+        'tabs.cam',
+      );
+      // An unknown one goes to the app: nothing to open.
+      expect(
+        await CaptureLink.resolve(
+          Uri.parse('https://tabs.cam/s/Zz3dEf9hJk2L'),
+          client: client,
+        ),
+        isNull,
+      );
+      // Offline: nothing.
+      expect(
+        await CaptureLink.resolve(
+          Uri.parse('https://tabs.cam/s/Ab3dEf9hJk2L'),
+          client: MockClient((_) => throw http.ClientException('offline')),
+        ),
+        isNull,
+      );
+    });
+
+    test('a new link key is 12 letters and digits, an old one still a key', () {
+      final key = newLinkKey();
+      expect(key, matches(RegExp(r'^[A-Za-z0-9]{12}$')));
+      expect(isShortLinkKey(key), isTrue);
+      expect(newLinkKey(), isNot(key));
+      const old = 'riffkey-0123456789abcdefghijklmn';
+      expect(isLinkKey(old), isTrue);
+      expect(isShortLinkKey(old), isFalse);
+      expect(isLinkKey('short'), isFalse);
+    });
+
     test('finds no ID in other links, or a bad one', () {
       expect(
         CaptureLink.idIn(Uri.parse('https://tabcam.nu01.com/app/')),
@@ -75,6 +164,28 @@ void main() {
     );
     expect(told, 1);
     expect(links.take(), link);
+    expect(links.take(), isNull);
+    // A short link: kept once resolved to the full one.
+    final full = Uri.parse('https://tabs.cam/app/?c=abc123&k=Ab3dEf9hJk2L');
+    final resolve = links.resolve;
+    addTearDown(() => links.resolve = resolve);
+    links.resolve = (short) async =>
+        short.path == '/s/Ab3dEf9hJk2L' ? full : null;
+    expect(
+      await links.didPushRouteInformation(
+        RouteInformation(uri: Uri.parse('https://tabs.cam/s/Ab3dEf9hJk2L')),
+      ),
+      isTrue,
+    );
+    await tester.pump();
+    expect(told, 2);
+    expect(links.take(), full);
+    // One that resolves to nothing: nothing waits.
+    await links.didPushRouteInformation(
+      RouteInformation(uri: Uri.parse('https://tabs.cam/s/Zz3dEf9hJk2L')),
+    );
+    await tester.pump();
+    expect(told, 2);
     expect(links.take(), isNull);
     // Other routes are left to the app.
     expect(

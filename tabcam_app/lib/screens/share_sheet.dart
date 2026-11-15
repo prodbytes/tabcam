@@ -36,13 +36,18 @@ Future<void> shareCapture(
 /// syncs. The owner's first copy, in a build with sharing, makes the
 /// link's key: it's saved on the capture (so every device of theirs copies
 /// the same link) and recorded by the share API, so anyone holding the
-/// link can open it, read only.
+/// link can open it, read only. A key from before short links gets a short
+/// one the same way (links with the old one keep working).
 Future<void> copyCaptureLink(
   BuildContext context,
   CaptureEvent event, {
   CloudSync? sync,
 }) async {
-  final keyed = event.linkKey == null && !event.isShared && sync?.shares != null
+  final key = event.linkKey;
+  final keyed =
+      (key == null || !isShortLinkKey(key)) &&
+          !event.isShared &&
+          sync?.shares != null
       ? event.copyWith(linkKey: newLinkKey())
       : event;
   final copying = Clipboard.setData(
@@ -58,7 +63,7 @@ Future<void> copyCaptureLink(
   if (!identical(keyed, event)) {
     await sync.library.patch(
       event.id,
-      (now) => now.linkKey == null ? now.copyWith(linkKey: keyed.linkKey) : now,
+      (now) => now.linkKey == key ? now.copyWith(linkKey: keyed.linkKey) : now,
     );
   }
   if (!event.isShared) await sync.publishLink(keyed);

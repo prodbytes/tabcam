@@ -78,7 +78,7 @@ void main() {
     }
     expect(bucket.objects.keys, contains('$owner/events/$id/event.json'));
     await sync.publishLink(keyed!);
-    link = CaptureLink.of(keyed);
+    link = CaptureLink.full(keyed);
     sync.dispose();
   }
 
@@ -101,8 +101,11 @@ void main() {
     expect(event.tabText, riff);
     expect(event.owner, owner);
     expect(await library.hasPage(id, event.pages.single), isTrue);
-    // Its Share copies the same link.
-    expect(CaptureLink.of(library.byId(id)!), link);
+    // Its Share copies the same link: the short one.
+    expect(
+      CaptureLink.of(library.byId(id)!).toString(),
+      'https://tabs.cam/s/${CaptureLink.keyIn(link)}',
+    );
   });
 
   test(

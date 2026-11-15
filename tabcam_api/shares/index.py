@@ -71,6 +71,10 @@ And routes without a token (no authorizer): for anyone holding a link,
                                                   for that capture's folder,
                                                   and its content key when
                                                   it's encrypted
+  GET    /s/{key}?f=   (and HEAD)                 a short link (tabs.cam/s/<key>,
+                                                  the site sends it here): a
+                                                  redirect to the full one,
+                                                  /app/?c=<id>&k=<key>&f=
   GET    /preview/{captureId}/{key}               the link's preview page:
                                                   the capture's title and
                                                   what it holds, for chat
@@ -113,9 +117,12 @@ MAX_GRANTS = int(os.environ.get("MAX_GRANTS", "50"))
 MAX_JOINS = int(os.environ.get("MAX_JOINS", "500"))
 ID = re.compile(r"^[a-z0-9]{1,32}$")
 IDENTITY = re.compile(r"^[a-z]{2}(-[a-z]+)+-\d:[0-9a-f-]{36}$")
-# A link's key: random, made by the app (only its SHA-256 is kept).
-LINK_KEY = re.compile(r"^[A-Za-z0-9_-]{32,64}$")
+# A link's key: random, made by the app (only its SHA-256 is kept): 12
+# letters and digits, 32 base64url characters before short links.
+LINK_KEY = re.compile(r"^[A-Za-z0-9_-]{12,64}$")
 PUBLIC_ROUTE = "POST /public/{captureId}/credentials"
+SHORT_ROUTE = "GET /s/{key}"
+SHORT_ROUTES = (SHORT_ROUTE, "HEAD /s/{key}")
 PREVIEW_ROUTE = "GET /preview/{captureId}/{key}"
 APPLE_CALLBACK_ROUTE = "POST /apple/callback"
 # What Apple posts back that the app reads (sign_in_with_apple's
@@ -245,6 +252,8 @@ def _handle(event, clients, log):
             return _json(200, public_credentials(event, clients))
         if event.get("routeKey") == PREVIEW_ROUTE:
             return preview(event, clients)
+        if event.get("routeKey") in SHORT_ROUTES:
+            return short_link(event, clients)
         if event.get("routeKey") == APPLE_CALLBACK_ROUTE:
             return apple_callback(event)
         if event.get("routeKey") in SESSION_ROUTES:
@@ -490,6 +499,36 @@ def _content_key(clients, owner, capture_id, creds):
     return None if key is None else base64.b64encode(key).decode()
 
 
+def short_link(event, clients):
+    """A short link, /s/<key> (a file's adds ?f=<file id>): a redirect to
+    the full one, /app/?c=<capture id>&k=<key>, on the same site (the
+    Location is relative), which the app opens as ever. The key alone finds
+    the capture (links are kept by its hash). An unknown key goes to the
+    app itself. CloudFront keeps the answer: a day for a link (it never
+    changes; a deleted capture says so in the app), a minute otherwise."""
+    key = (event.get("pathParameters") or {}).get("key") or ""
+    query = event.get("queryStringParameters") or {}
+    item = None
+    if LINK_KEY.match(key):
+        item = clients["links"].get_item(Key={"keyHash": _link_key(key)}).get("Item")
+    if item is None:
+        location, max_age = "/app/", 60
+    else:
+        params = {"c": item["captureId"], "k": key}
+        if ID.match(query.get("f") or ""):
+            params["f"] = query["f"]
+        location, max_age = "/app/?" + urllib.parse.urlencode(params), 86400
+    return {
+        "statusCode": 302,
+        "headers": {
+            "location": location,
+            "cache-control": f"public, max-age={max_age}",
+            "x-robots-tag": "noindex",
+        },
+        "body": "",
+    }
+
+
 def preview(event, clients):
     """The page a capture's link shows chat apps (WhatsApp, iMessage,
     Slack...), whose crawlers don't run the app: the capture's title and
@@ -502,8 +541,8 @@ def preview(event, clients):
     capture_id = params.get("captureId") or ""
     key = params.get("key") or ""
     valid = bool(ID.match(capture_id) and LINK_KEY.match(key))
-    link = (f"https://{site}/app/?c={capture_id}&k={key}" if valid
-            else f"https://{site}/app/")
+    # The capture's short link, or the app's for a link that opens nothing.
+    link = f"https://{site}/app/"
     title, description = "Tabs.cam", "Scan and share guitar tabs."
     if valid:
         try:
@@ -513,6 +552,7 @@ def preview(event, clients):
             capture = None
         if capture is not None:
             title, description = _preview_text(capture)
+            link = f"https://{site}/s/{key}"
     page = PREVIEW_PAGE.format(
         title=html.escape(title),
         description=html.escape(description),

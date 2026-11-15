@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:math';
 
 import '../capture/take_log.dart';
@@ -453,8 +452,8 @@ class CaptureEvent {
     }
   }
 
-  /// The key in the capture's link (`…/app/?c=<id>&k=<key>`), made the first
-  /// time its owner copies the link: with it, anyone holding the link may
+  /// The key in the capture's link (`https://tabs.cam/s/<key>`), made the
+  /// first time its owner copies the link: with it, anyone holding the link may
   /// see the capture, read only, signed in or not ([CaptureLink]). Synced,
   /// so every device of the owner's copies the same link.
   final String? linkKey;
@@ -582,18 +581,32 @@ class CaptureEvent {
   }
 }
 
-final RegExp _linkKey = RegExp(r'^[A-Za-z0-9_-]{32,64}$');
+final RegExp _linkKey = RegExp(r'^[A-Za-z0-9_-]{12,64}$');
 
 /// Whether [key] is a link key ([CaptureEvent.linkKey]): what the share
-/// API takes.
+/// API takes. Keys made before short links are 32 characters long.
 bool isLinkKey(String key) => _linkKey.hasMatch(key);
 
-/// A new link key: 192 random bits, base64url (32 characters).
+/// How long a link key made now is ([newLinkKey]).
+const linkKeyLength = 12;
+
+/// Whether [key] is as short as the keys made now: an older (longer) one
+/// is replaced the next time its owner copies the link.
+bool isShortLinkKey(String key) =>
+    key.length == linkKeyLength && isLinkKey(key);
+
+const _base62 =
+    '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+
+/// A new link key: 12 random letters and digits (about 71 bits), short
+/// enough for a short link (`https://tabs.cam/s/<key>`), too many to guess
+/// (the share API lets a few guesses a second through).
 String newLinkKey() {
   final random = Random.secure();
-  return base64Url
-      .encode([for (var i = 0; i < 24; i++) random.nextInt(256)])
-      .replaceAll('=', '');
+  return String.fromCharCodes([
+    for (var i = 0; i < linkKeyLength; i++)
+      _base62.codeUnitAt(random.nextInt(_base62.length)),
+  ]);
 }
 
 final RegExp _id = RegExp(r'^[a-z0-9]{1,32}$');
