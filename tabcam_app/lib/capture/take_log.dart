@@ -71,8 +71,8 @@ class TakeLog {
   /// The tab: the necklines shown, and when. Null with no tab.
   final TakeTab? tab;
 
-  /// The song played along, as segments of the take; empty when none
-  /// played (a later version notes them).
+  /// The song played along, as segments of the take ([SongNotes]); empty
+  /// when none played (and on takes saved before Cam noted them).
   final List<SongSegment> song;
 
   /// Whether a song played along was a link in a frame (no position).
@@ -499,6 +499,96 @@ class SongSegment {
 
   @override
   int get hashCode => Object.hash(at, to, page, from, speed);
+}
+
+/// Notes the song playing along while a take records, as the segments
+/// its log keeps ([TakeLog.song]): each stretch of one song playing on,
+/// from where it was, at one speed, on the take's clock. Told what the
+/// song's player says each time it changes ([note]): a pause, its end,
+/// another song, another speed or a jump (a seek, a skip, its section or
+/// Repeat starting it over) ends a segment, and playing again starts the
+/// next. A segment's start is then told again from a fresh reading of
+/// where the song is ([anchor]): the player's own position is only
+/// updated every so often, so the one it has as it starts may be late.
+class SongNotes {
+  /// How far from where it would be, playing on, the song can be before
+  /// it's taken as a jump: the player's position is updated about every
+  /// half second, and read late by as much.
+  static const jumpMs = 300;
+
+  /// The most segments kept (the first): a section of 5 s played over
+  /// and over for an hour is 720.
+  static const maxSegments = 2000;
+
+  final _segments = <SongSegment>[];
+  ({int at, String page, int from, double speed})? _open;
+  bool _link = false;
+
+  /// Whether a link in a frame played (it has no position to note).
+  bool get link => _link;
+
+  /// The song's player at [t] (ms on the take's clock): playing or not,
+  /// which song ([page]; null: none, or a link), where in it
+  /// ([position], ms) and at what [speed]. Whether a segment started
+  /// (then worth an [anchor]).
+  bool note(
+    int t, {
+    required String? page,
+    required bool playing,
+    required int position,
+    double speed = 1,
+  }) {
+    final open = _open;
+    if (open != null) {
+      final expected = open.from + ((t - open.at) * open.speed).round();
+      if (playing &&
+          page == open.page &&
+          speed == open.speed &&
+          (position - expected).abs() <= jumpMs) {
+        return false;
+      }
+      _close(t);
+    }
+    if (!playing || page == null || _segments.length >= maxSegments) {
+      return false;
+    }
+    _open = (at: t, page: page, from: max(0, position), speed: speed);
+    return true;
+  }
+
+  /// A link in a frame played along: noted as such ([TakeLog.songLink]).
+  void noteLink() => _link = true;
+
+  /// A fresh reading at [t]: [page] was at [position]. The segment
+  /// playing it, if it's still open, is told from it: where it was at its
+  /// start.
+  void anchor(int t, {required String page, required int position}) {
+    final open = _open;
+    if (open == null || open.page != page || t < open.at) return;
+    final from = position - ((t - open.at) * open.speed).round();
+    _open = (at: open.at, page: page, from: max(0, from), speed: open.speed);
+  }
+
+  /// The segments noted, the one playing ended at [t].
+  List<SongSegment> finish(int t) {
+    _close(t);
+    return List.unmodifiable(_segments);
+  }
+
+  void _close(int t) {
+    final open = _open;
+    _open = null;
+    if (open == null || t <= open.at) return;
+    _segments.add(
+      SongSegment(
+        at: open.at,
+        to: t,
+        page: open.page,
+        from: open.from,
+        speed: open.speed,
+      ),
+    );
+  }
 }
 
 /// The browser's take: its recorder started [sinceStartMs] before the

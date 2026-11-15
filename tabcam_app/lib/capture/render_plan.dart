@@ -754,23 +754,33 @@ class RenderPlan {
         edit != null &&
         edit.hasSong &&
         (preview || edit.songAudible)) {
-      // The manual song lane (an auto one too, for now, as the one clip
-      // its track keys approximate it by): one clip, as the bar places it.
-      final span = trackSpan(
-        length,
-        songLength,
-        edit.offset,
-        trackStart: edit.trackStart,
-        trackEnd: edit.trackEnd,
-      );
+      // Lined up by itself (auto): where Cam noted it playing in the
+      // take, moved as the edit moved it. Placed by hand (or auto with no
+      // log to line it up by): one clip, as the bar places it.
+      final logged = edit.songMode == SongMode.auto
+          ? LoggedSong.of(takeLog)
+          : null;
+      final List<SongClip> clips;
+      if (logged != null && logged.page == edit.trackId) {
+        clips = logged.clipsIn(edit, songLength);
+      } else {
+        final span = trackSpan(
+          length,
+          songLength,
+          edit.offset,
+          trackStart: edit.trackStart,
+          trackEnd: edit.trackEnd,
+        );
+        clips = [
+          if (span != null)
+            SongClip(at: span.gap, from: span.from, to: span.to),
+        ];
+      }
       song = SongLane(
         file: songFile,
         page: edit.trackId,
         volume: edit.songAudible ? edit.trackVolume : 0,
-        clips: clampClips([
-          if (span != null)
-            SongClip(at: span.gap, from: span.from, to: span.to),
-        ], length),
+        clips: clampClips(clips, length),
       );
     }
     final video = kind != RenderKind.sound;
@@ -971,6 +981,127 @@ class RenderPlan {
       'video $video, own $own, song $song, ${layers.length} layers, '
       'fades $fadeIn/$fadeOut)';
 }
+
+/// The song a take's log lines up by itself ([SongMode.auto]): the one
+/// Cam noted playing along longest ([page]; at its own speed: a song
+/// played at another speed is noted, but no renderer plays one at another
+/// speed yet, so those segments are left out), and where it played in the
+/// take's file ([clips], in order: each `at` a time in the file, the log's
+/// lag after the take's clock).
+@immutable
+class LoggedSong {
+  const LoggedSong(this.page, this.clips);
+
+  final String page;
+
+  /// Never empty.
+  final List<SongClip> clips;
+
+  /// The song [log] lines up; null when it noted none (a take saved
+  /// before Cam noted the song, or none played along).
+  static LoggedSong? of(TakeLog? log) {
+    if (log == null || log.song.isEmpty) return null;
+    final byPage = <String, List<SongSegment>>{};
+    for (final s in log.song) {
+      if (s.speed == 1 && s.to > s.at) (byPage[s.page] ??= []).add(s);
+    }
+    String? best;
+    var most = 0;
+    for (final MapEntry(key: page, value: segments) in byPage.entries) {
+      final played = segments.fold(0, (sum, s) => sum + s.to - s.at);
+      if (played > most) (best, most) = (page, played);
+    }
+    if (best == null) return null;
+    final lag = log.lagMs;
+    final clips = <SongClip>[];
+    for (final s in byPage[best]!) {
+      var at = s.at + lag;
+      var from = s.from;
+      final to = s.from + (s.to - s.at);
+      // Playing as the take started: it played from the file's first
+      // frame (the lag before the take's clock started) too.
+      if (s.at <= 0) {
+        final back = min(at, from);
+        at -= back;
+        from -= back;
+      }
+      clips.add(
+        SongClip(
+          at: Duration(milliseconds: at),
+          from: Duration(milliseconds: from),
+          to: Duration(milliseconds: to),
+        ),
+      );
+    }
+    clips.sort((a, b) => a.at.compareTo(b.at));
+    return LoggedSong(best, List.unmodifiable(clips));
+  }
+
+  /// [edit] with this song in its lane, lined up by itself (`song` not
+  /// said: [SongMode.auto] with a song picked), its track keys placing
+  /// the first clip as a song placed by hand is: what older apps play,
+  /// and where it starts from when it's placed by hand here.
+  PageEdit placed(PageEdit edit) => edit.copyWith(
+    song: null,
+    trackId: page,
+    trackStart: clips.first.from,
+    trackEnd: clips.first.to,
+    offset: clips.first.at - edit.start,
+  );
+
+  /// How far [edit] moved the song from where the log lines it up (its
+  /// offset, less the first clip's): ‹ and › and a drag move it all.
+  Duration shiftOf(PageEdit edit) =>
+      edit.offset - (clips.first.at - edit.start);
+
+  /// Its clips in [edit]'s output (0 its kept part's start), moved as the
+  /// edit moved it ([shiftOf]), none past the song's end ([songLength],
+  /// when known); not cut to the output yet ([clampClips]).
+  List<SongClip> clipsIn(PageEdit edit, Duration songLength) {
+    final shift = shiftOf(edit);
+    return [
+      for (final c in clips)
+        SongClip(
+          at: c.at - edit.start + shift,
+          from: c.from,
+          to: songLength > Duration.zero && c.to > songLength
+              ? songLength
+              : c.to,
+        ),
+    ];
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is LoggedSong &&
+      other.page == page &&
+      listEquals(other.clips, clips);
+
+  @override
+  int get hashCode => Object.hash(page, Object.hashAll(clips));
+}
+
+/// [edit] with the song [logged] lines up, where that's the page's
+/// default: no edit (the whole video, [duration] long; none when that
+/// isn't known) or one that says no song (none picked, nor taken out:
+/// `song: off` stays out). Any other stays as it is.
+PageEdit? withLoggedSong(
+  PageEdit? edit,
+  LoggedSong? logged, {
+  required Duration duration,
+}) {
+  if (logged == null || !takesLoggedSong(edit)) return edit;
+  if (edit == null) {
+    if (duration <= Duration.zero) return null;
+    return logged.placed(PageEdit(start: Duration.zero, end: duration));
+  }
+  return logged.placed(edit);
+}
+
+/// Whether [edit] leaves a take's song to its log ([withLoggedSong]):
+/// none, or one that says no song.
+bool takesLoggedSong(PageEdit? edit) =>
+    edit == null || (edit.song == null && edit.trackId == null);
 
 /// Where the song is at [at] in the output, from [clips] (in output
 /// order); null in a gap between them, or past them.

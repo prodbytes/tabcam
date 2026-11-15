@@ -1971,6 +1971,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get videoEditSongLined => 'Lined up as it played while you recorded';
+
+  @override
+  String videoEditSongLinedLater(String time) {
+    return 'Lined up as recorded, moved $time later';
+  }
+
+  @override
+  String videoEditSongLinedEarlier(String time) {
+    return 'Lined up as recorded, moved $time earlier';
+  }
+
+  @override
   String videoEditSongUsed(String start, String end) {
     return 'Using $start–$end of the song';
   }

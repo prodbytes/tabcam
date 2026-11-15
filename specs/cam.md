@@ -463,7 +463,10 @@ showing and the one in the frame not playing, Rec plays it as Play
 would (after the [count-in](#count-in), from where it is, or from its
 start, its section's, at its end), once the take is recording; one
 that plays already plays on, and with the sidebar hidden nothing
-starts. Stop (the take's) leaves it playing.
+starts. Stop (the take's) leaves it playing. While the take records,
+its [log](#what-a-take-keeps) notes where the song played (paused,
+skipped or started over too), so the [editor](video-edit.md#a-takes-song-lined-up)
+opens the take with the song already lined up: nothing to sync by hand.
 
 <a id="deleting-from-the-sidebar"></a>**Deleting from the sidebar**: each
 file in it (the recordings, videos and links, Cam's takes among them,
@@ -674,8 +677,8 @@ copy's files; renamed or edited, it stays. From it the
 [editor](video-edit.md#layers) draws the tab over a take whose tab
 isn't in its picture (`burned: false`: every take Cam saves now), in the
 preview, the file screen's player and the editor's Download, with its
-**Tab** chip to turn it off; a later step lines the song played along
-up with it.
+**Tab** chip to turn it off, and lines the song played along up with
+it ([lined up](video-edit.md#a-takes-song-lined-up)).
 Play uses it too (above). A few KB for a ten-minute take:
 ```json
 "takeLog": {
@@ -728,10 +731,21 @@ Play uses it too (above). A few KB for a ten-minute take:
   - `none`: not told, 0.
   The readings it was told from (`lagRaw`, ms on the take's clock) are
   kept, so it can be told again better later.
-- **The song** (`song`): the song played along, as segments of the
-  take (`at`, `to` on the take's clock; the song's page, where in it
-  (`from`) and at what `speed`); empty for now: a later version notes
-  them, and `songLink` when it was a link in a frame.
+- **The song** (`song`): the song played along in the sidebar's
+  player, as segments of the take (`at`, `to` on the take's clock; the
+  song's page, where in it (`from`, ms) and at what `speed`), noted as
+  it records (`SongNotes`, [`take_log.dart`](../tabcam_app/lib/capture/take_log.dart)):
+  each time the player changes, where it is; a pause, its end, another
+  song, another speed or a jump (where it is more than 300 ms from
+  where it would be, playing on: a seek, a skip, Repeat or its section
+  starting over) ends a segment, and playing again starts the next. As
+  one starts, a fresh reading of the player tells again where it
+  started (the player's own position is only updated about every half
+  second). A song playing already as Rec is pressed is noted from the
+  take's start. At most 2000 segments. `songLink` when a link in a
+  frame played (it has no position: no segment). Empty when none
+  played, and on takes saved before Cam noted it. The editor lines the
+  song up from them ([lined up](video-edit.md#a-takes-song-lined-up)).
 - A take without a log (saved before takes had one) has its tab in its
   picture, or never had one. A log dropped by an older app that
   re-saved the page (one from before pages kept the keys they don't

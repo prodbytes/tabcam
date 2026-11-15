@@ -2010,6 +2010,19 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get videoEditSongLined => 'Alinhada como tocou enquanto você gravava';
+
+  @override
+  String videoEditSongLinedLater(String time) {
+    return 'Alinhada como foi gravada, movida $time depois';
+  }
+
+  @override
+  String videoEditSongLinedEarlier(String time) {
+    return 'Alinhada como foi gravada, movida $time antes';
+  }
+
+  @override
   String videoEditSongUsed(String start, String end) {
     return 'Usando $start–$end da música';
   }

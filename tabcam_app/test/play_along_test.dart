@@ -2708,11 +2708,26 @@ B|--5--8--|
     await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
     expect(video.playing, hasLength(1));
+    // The take's log notes the song as it played, from its start, so the
+    // editor lines it up by itself.
+    final riff = library
+        .byId(id)!
+        .pages
+        .singleWhere((p) => p.extension == 'm4a');
+    final first = library.byId(id)!.pages.last.takeLog!.song;
+    expect(first, hasLength(1));
+    expect(first.single.page, riff.id);
+    expect(first.single.from, 0);
+    expect(first.single.to, greaterThan(first.single.at));
     await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     expect(video.playing, hasLength(1));
     await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
+    // Playing already: from the take's start.
+    final second = library.byId(id)!.pages.last.takeLog!.song;
+    expect(second.single.page, riff.id);
+    expect(second.single.at, 0);
 
     // The sidebar hidden (which pauses it): Rec starts nothing.
     await tester.tap(find.byKey(const Key('cam-along')));
@@ -2723,6 +2738,8 @@ B|--5--8--|
     expect(video.playing, isEmpty);
     await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
+    // No song played along: none noted.
+    expect(library.byId(id)!.pages.last.takeLog!.song, isEmpty);
 
     // With it showing again, 1 starts a take and the song, as Rec does.
     await tester.tap(find.byKey(const Key('cam-along')));

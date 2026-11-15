@@ -3540,3 +3540,23 @@ spec.
    recording (so Android's microphone indicator now shows while Cam is
    open). None on iOS, where the camera records the sound, nor where the
    camera records it on Android. See [Cam](cam.md#level-meter).
+5. **"When recording over a playback, in the camera view, save that
+   information along with the media files so that when the take is
+   opened for editing it already contains the video and the track in the
+   editor in the correct times as it was recorded, so there is no need
+   to manually sync the playback."** Cam now notes the song playing
+   along while a take records (`SongNotes`): each stretch of one song
+   playing on, as segments in the take's log (`song`, empty until now),
+   on the take's clock, each start told again from a fresh reading of
+   the player; a pause, a seek, a skip, Repeat or a section starting
+   over, another song or another speed starts another. The editor opens
+   such a take with that song in its Song lane, **lined up by itself**
+   (`song: auto`, at last): its clips where it played in the file (the
+   log's lag after the take's clock), silent between them, in the
+   preview, the file screen's player and Download alike. It's the
+   take's default, so nothing is kept until something changes, and
+   Reset puts it back; ‹ › and a drag move all of it and keep it lined
+   up (for what the lag doesn't catch); trimming it, or picking another
+   song, places it by hand; Remove keeps it out. Its track keys place
+   the first clip, which is what older apps play. See
+   [video edit](video-edit.md), [cam](cam.md#what-a-take-keeps).
