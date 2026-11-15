@@ -815,6 +815,10 @@
   "@camMicChoose": {
     "description": "Cam: the tooltip of the arrow beside Rec, which opens a menu to choose the microphone takes record from"
   },
+  "camMicLevel": "Microphone level",
+  "@camMicLevel": {
+    "description": "Cam: the tooltip of the level meter beside Rec, which shows how loud the microphone is (green, yellow, red)"
+  },
   "camMicHeading": "Record from",
   "@camMicHeading": {
     "description": "Cam: the heading of Rec's menu, over the list of microphones"
@@ -2686,6 +2690,28 @@
   "videoEditSongBefore": "The song starts {time} before the video",
   "@videoEditSongBefore": {
     "description": "Video edit, a take: the song's shift, earlier: its first part is cut (time like 0:01.5)",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditSongLined": "Lined up as it played while you recorded",
+  "@videoEditSongLined": {
+    "description": "Video edit, a take: the song is placed by itself where it played while the take recorded"
+  },
+  "videoEditSongLinedLater": "Lined up as recorded, moved {time} later",
+  "@videoEditSongLinedLater": {
+    "description": "Video edit, a take: the song lined up as it played while recording, then moved later by hand (time like 0:00.2)",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditSongLinedEarlier": "Lined up as recorded, moved {time} earlier",
+  "@videoEditSongLinedEarlier": {
+    "description": "Video edit, a take: the song lined up as it played while recording, then moved earlier by hand (time like 0:00.2)",
     "placeholders": {
       "time": {
         "type": "String"

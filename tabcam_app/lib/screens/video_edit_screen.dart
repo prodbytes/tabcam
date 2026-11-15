@@ -169,6 +169,11 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   Duration _trackStart = Duration.zero;
   Duration _trackEnd = Duration.zero;
 
+  /// The song the take's log lines up by itself (as it played while the
+  /// take recorded), when it has one still in the capture: the default
+  /// Song lane.
+  LoggedSong? _logged;
+
   /// The shortest part of a song that can be used.
   static const minTrack = Duration(milliseconds: 500);
 
@@ -258,6 +263,32 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// Whether the Song lane has a song in it (as [PageEdit.hasSong]: a
   /// song picked, its lane not `off`; none said, a newer app's default).
   bool get _hasSong => _song != SongMode.off && _trackId != null;
+
+  /// Whether the song in the Song lane is lined up by itself, as it
+  /// played while the take recorded ([_logged]; `song` not said).
+  bool get _lined =>
+      _hasSong &&
+      (_song == null || _song == SongMode.auto) &&
+      _trackId == _logged?.page;
+
+  /// A lined-up song's clips, more than one (it was paused, skipped or
+  /// started over while recording), at their times in the video (`at`),
+  /// as the Song lane shows them; null otherwise.
+  List<SongClip>? get _linedClips {
+    final logged = _logged;
+    if (logged == null || !_lined || logged.clips.length < 2) return null;
+    final shift = logged.shiftOf(_current);
+    return [
+      for (final c in logged.clips)
+        SongClip(
+          at: c.at + shift,
+          from: c.from,
+          to: _trackLength > Duration.zero && c.to > _trackLength
+              ? _trackLength
+              : c.to,
+        ),
+    ];
+  }
 
   /// [file]'s length: [player]'s, or the editor's where the player can't
   /// say ([mediaLength], as the file screen finds it).
@@ -353,17 +384,26 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         return;
       }
       await controller.setLooping(false);
-      final edit = event.pages
+      final saved = event.pages
           .where((p) => p.id == widget.page.id)
           .firstOrNull
           ?.edit;
+      // A take's song, lined up by itself as it played while recording,
+      // unless the edit placed one or took it out.
+      final logged = LoggedSong.of(_takeLog);
+      final lined =
+          logged != null && event.pages.any((p) => p.id == logged.page)
+          ? logged
+          : null;
+      final edit = withLoggedSong(saved, lined, duration: length);
       setState(() {
         _video = controller;
         _playback = EditedPlayback(controller);
         _duration = length;
         _end = length;
-        _saved = edit;
-        _extra = edit?.extra ?? const {};
+        _logged = lined;
+        _saved = saved;
+        _extra = saved?.extra ?? const {};
         if (edit != null) {
           _start = _clamp(edit.start, Duration.zero, length);
           _end = _clamp(edit.end, _start, length);
@@ -442,10 +482,38 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 
   /// Whether the edit is anything but the defaults: the whole video with
   /// its own sound as it is (and a take's tab, the capture's name and the
-  /// watermark over it, fading in and out over 3 s).
-  bool get _edited =>
-      _current.copyWith(extra: const {}) !=
-      PageEdit(start: Duration.zero, end: _duration);
+  /// watermark over it, fading in and out over 3 s), and a take's song
+  /// lined up as it played while recording ([_logged]).
+  bool get _edited => _comparable(_current) != _comparable(_defaults);
+
+  /// The defaults ([_edited]).
+  PageEdit get _defaults {
+    final whole = PageEdit(start: Duration.zero, end: _duration);
+    return withLoggedSong(whole, _logged, duration: _duration) ?? whole;
+  }
+
+  /// [edit] as it's compared with the defaults: without the keys a newer
+  /// app wrote, and, for a song lined up by itself, its track keys left
+  /// out but for how far it's been moved (they follow from the log).
+  PageEdit _comparable(PageEdit edit) {
+    edit = edit.copyWith(extra: const {});
+    final logged = _logged;
+    if (logged == null ||
+        edit.songMode != SongMode.auto ||
+        edit.trackId != logged.page) {
+      return edit;
+    }
+    return edit.copyWith(
+      trackStart: Duration.zero,
+      trackEnd: null,
+      offset: logged.shiftOf(edit),
+    );
+  }
+
+  /// The edit the preview plays and Download renders: as kept
+  /// ([_pageEdit]), or, kept as none, the defaults, a take's song lined
+  /// up by itself among them.
+  PageEdit? get _planEdit => _pageEdit ?? (_hasSong ? _current : null);
 
   /// The edit as it is now, as kept with the page: null when it's the
   /// defaults (the video plays as it is) and has no keys a newer app
@@ -466,7 +534,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// The preview plays the edit as it is now: the plan Download renders.
   Future<void> _played() async => _playback?.set(
     EditedPlayback.planOf(
-      _pageEdit,
+      _planEdit,
       songLength: _trackLength,
       duration: _duration,
       takeLog: _takeLog,
@@ -506,7 +574,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       _layersOf = of;
       _layers = [
         for (final layer in RenderPlan.of(
-          _pageEdit,
+          _planEdit,
           duration: _duration,
           takeLog: _takeLog,
           title: _captureTitle,
@@ -956,7 +1024,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     PageEdit? from,
   }) async {
     await _playback?.set(
-      EditedPlayback.planOf(_pageEdit, duration: _duration, takeLog: _takeLog),
+      EditedPlayback.planOf(_planEdit, duration: _duration, takeLog: _takeLog),
     );
     await _trackPlayer?.dispose();
     _trackPlayer = null;
@@ -1065,7 +1133,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     if (offset == _offset) return;
     setState(() {
       _offset = offset;
-      _placedByHand();
+      // Lined up by itself, it all moves, and stays lined up.
+      if (!_lined) _placedByHand();
     });
     _changed();
   }
@@ -1112,8 +1181,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   }
 
   /// Back to the defaults: the whole video, with its own sound as it is,
-  /// no song, and the tab, the capture's name and the watermark over it,
-  /// fading in and out over 3 s (the edit is none).
+  /// no song (a take's lined up as it played while recording), and the
+  /// tab, the capture's name and the watermark over it, fading in and out
+  /// over 3 s (the edit is none).
   Future<void> _reset() async {
     final player = _trackPlayer;
     setState(() {
@@ -1138,6 +1208,24 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     _changed();
     await _played();
     await player?.dispose();
+    await _lineUpSong();
+  }
+
+  /// Puts the take's song in the Song lane, lined up by itself as it
+  /// played while recording ([_logged]), when it has one.
+  Future<void> _lineUpSong() async {
+    final logged = _logged;
+    final event = _library.byId(widget.eventId);
+    final page = event?.pages.where((p) => p.id == logged?.page).firstOrNull;
+    if (logged == null || event == null || page == null) return;
+    final file = await _fileOf(event, page);
+    if (!mounted) return;
+    await _loadTrack(
+      page.id,
+      file,
+      fileLabel(context.l10n, event, page),
+      from: logged.placed(_current.copyWith(song: null, trackId: null)),
+    );
   }
 
   /// The plan of the edit as it is now, for [kind]: of [input], the
@@ -1146,7 +1234,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// download ([_unlocked]).
   RenderPlan _plan(RenderKind kind, {XFile? input, AppLocalizations? l10n}) =>
       RenderPlan.of(
-        _pageEdit,
+        _planEdit,
         input: input,
         duration: _duration,
         inputExtension: input == null ? null : Media.of(input)?.extension,
@@ -2236,6 +2324,22 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     } else if (_trackLength <= Duration.zero || length <= Duration.zero) {
       // Its length unknown: it can't be placed.
       songBar = _SongBar.unplaced(name: _trackName ?? songName);
+    } else if (_linedClips case final clips?) {
+      // Lined up in several clips: moved as one, silent between them; not
+      // trimmed (one clip can't say it).
+      songBar = _SongBar(
+        length: length,
+        start: _start,
+        end: _end,
+        at: clips.first.at,
+        used: clips.last.end - clips.first.at,
+        gaps: [
+          for (final (i, c) in clips.indexed.skip(1)) (clips[i - 1].end, c.at),
+        ],
+        name: _trackName ?? songName,
+        label: l10n.videoEditTrackBar,
+        onMove: _moveTrack,
+      );
     } else {
       songBar = _SongBar(
         length: length,
@@ -2452,7 +2556,22 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
               ),
             ],
           ),
-        if (trimmed && _trackLength > Duration.zero)
+        if (_lined)
+          Text(
+            switch (_logged!.shiftOf(_current)) {
+              final d when d > Duration.zero => l10n.videoEditSongLinedLater(
+                time(d),
+              ),
+              final d when d < Duration.zero => l10n.videoEditSongLinedEarlier(
+                time(-d),
+              ),
+              _ => l10n.videoEditSongLined,
+            },
+            key: const Key('video-edit-song-lined'),
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall,
+          ),
+        if (trimmed && _trackLength > Duration.zero && _linedClips == null)
           Text(
             (take ? l10n.videoEditSongUsed : l10n.videoEditTrackUsed)(
               time(_trackStart),
@@ -3176,8 +3295,9 @@ class _SongBar extends StatelessWidget {
     required this.name,
     required this.label,
     required this.onMove,
-    required this.onTrimStart,
-    required this.onTrimEnd,
+    this.onTrimStart,
+    this.onTrimEnd,
+    this.gaps = const [],
   });
 
   /// A song whose length isn't known, so it can't be placed: its name
@@ -3191,7 +3311,8 @@ class _SongBar extends StatelessWidget {
       label = null,
       onMove = null,
       onTrimStart = null,
-      onTrimEnd = null;
+      onTrimEnd = null,
+      gaps = const [];
 
   final Duration length;
   final Duration start;
@@ -3206,6 +3327,10 @@ class _SongBar extends StatelessWidget {
   final void Function(Duration delta)? onMove;
   final void Function(Duration delta)? onTrimStart;
   final void Function(Duration delta)? onTrimEnd;
+
+  /// Where it's silent along the video, between its clips (from, to);
+  /// none for one clip.
+  final List<(Duration, Duration)> gaps;
 
   /// The lanes' height: a touch target's.
   static const height = 44.0;
@@ -3295,6 +3420,19 @@ class _SongBar extends StatelessWidget {
                         ),
                       ),
                     ),
+                    // Silent between its clips.
+                    for (final (from, to) in gaps)
+                      Positioned(
+                        left: from.inMilliseconds * perMs,
+                        width: max(0.0, (to - from).inMilliseconds * perMs),
+                        top: 0,
+                        bottom: 0,
+                        child: IgnorePointer(
+                          child: ColoredBox(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                          ),
+                        ),
+                      ),
                     // Outside the part kept: cut off, as in the Take lane.
                     Positioned(
                       left: 0,
@@ -3311,7 +3449,9 @@ class _SongBar extends StatelessWidget {
                       child: IgnorePointer(child: ColoredBox(color: dim)),
                     ),
                     // Its ends, to trim it, where they're on the bar.
-                    if (left > -_Grip.width && left < width)
+                    if (onTrimStart != null &&
+                        left > -_Grip.width &&
+                        left < width)
                       Positioned(
                         left: left,
                         top: 0,
@@ -3322,7 +3462,9 @@ class _SongBar extends StatelessWidget {
                           onDrag: (dx) => onTrimStart?.call(ms(dx)),
                         ),
                       ),
-                    if (right > 0 && right < width + _Grip.width)
+                    if (onTrimEnd != null &&
+                        right > 0 &&
+                        right < width + _Grip.width)
                       Positioned(
                         left: right - _Grip.width,
                         top: 0,

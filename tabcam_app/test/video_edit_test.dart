@@ -6,6 +6,7 @@ import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tabcam_app/capture/take_log.dart';
 import 'package:tabcam_app/capture/video_edit.dart';
 import 'package:tabcam_app/export/download.dart';
 import 'package:tabcam_app/l10n/app_localizations.dart';
@@ -452,6 +453,7 @@ void main() {
     String video = 'mp4',
     bool editTake = false,
     bool withTake = false,
+    TakeLog? log,
   }) async {
     final library = Library(PlatformEventStore(), null, (_) async => null);
     late String id;
@@ -470,6 +472,7 @@ void main() {
           extension: ext,
           title: i == 0 ? 'Made-up riff' : null,
           take: (i == 0 && editTake) || i == 4,
+          takeLog: i == 0 ? log : null,
         );
         await library.putPageStream(
           event.id,
@@ -952,6 +955,78 @@ void main() {
     ]);
     expect(event.pages.first.edit?.trackId, added.id);
     expect(find.text('Made-up backing'), findsNWidgets(2));
+  });
+
+  testWidgets('a take opens with the song lined up as it played while it '
+      'recorded: nothing to reset or keep; moved, it all moves; Reset puts '
+      'it back; Download plays its clips', (tester) async {
+    tall(tester);
+    // Played from its start a second in (the lag, 0.2 s, after), paused,
+    // then on from 4 s.
+    final (library, id) = await capture(
+      tester,
+      editTake: true,
+      log: const TakeLog(
+        burned: false,
+        lagMs: 200,
+        song: [
+          SongSegment(at: 1000, to: 5000, page: 'k1', from: 0),
+          SongSegment(at: 8000, to: 12000, page: 'k1', from: 4000),
+        ],
+      ),
+    );
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    expect(find.text('Recording 1'), findsNWidgets(2));
+    expect(
+      find.text('Lined up as it played while you recorded'),
+      findsOneWidget,
+    );
+    // In two clips: moved as one, not trimmed.
+    expect(find.byKey(const Key('video-edit-song-bar')), findsOneWidget);
+    expect(find.byKey(const Key('video-edit-song-left')), findsNothing);
+    expect(enabled(tester, 'video-edit-reset'), isFalse);
+    expect(library.byId(id)!.pages.first.edit, isNull);
+
+    // A tenth of a second earlier: all of it, still lined up.
+    await tester.tap(find.byKey(const Key('video-edit-song-earlier')));
+    await _settle(tester);
+    expect(
+      find.text('Lined up as recorded, moved 0:00.1 earlier'),
+      findsOneWidget,
+    );
+    expect(enabled(tester, 'video-edit-reset'), isTrue);
+    var edit = library.byId(id)!.pages.first.edit!;
+    expect(edit.song, isNull);
+    expect(edit.toJson().containsKey('song'), isFalse);
+    expect((edit.trackId, edit.offset), ('k1', s(1.1)));
+
+    // Reset: lined up as recorded again, and the edit is none.
+    await tester.tap(find.byKey(const Key('video-edit-reset')));
+    await _settle(tester);
+    expect(
+      find.text('Lined up as it played while you recorded'),
+      findsOneWidget,
+    );
+    expect(enabled(tester, 'video-edit-reset'), isFalse);
+    expect(library.byId(id)!.pages.first.edit, isNull);
+
+    await tester.tap(find.byKey(const Key('video-edit-download')));
+    await _settle(tester);
+    expect(editor.rendered.single.song!.page, 'k1');
+    expect(editor.rendered.single.song!.clips, [
+      SongClip(at: s(1.2), from: Duration.zero, to: s(4)),
+      SongClip(at: s(8.2), from: s(4), to: s(8)),
+    ]);
+
+    // Taken out: it stays out.
+    await tester.tap(find.byKey(const Key('video-edit-song-menu')));
+    await _settle(tester);
+    await tester.tap(find.text('Remove'));
+    await _settle(tester);
+    edit = library.byId(id)!.pages.first.edit!;
+    expect(edit.song, SongMode.off);
+    expect(find.byKey(const Key('video-edit-song-add')), findsOneWidget);
   });
 
   testWidgets('a kept edit opens as it was, its track too', (tester) async {

@@ -592,6 +592,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camMicChoose => 'Microphone';
 
   @override
+  String get camMicLevel => 'Microphone level';
+
+  @override
   String get camMicHeading => 'Record from';
 
   @override
@@ -1965,6 +1968,19 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String videoEditSongBefore(String time) {
     return 'The song starts $time before the video';
+  }
+
+  @override
+  String get videoEditSongLined => 'Lined up as it played while you recorded';
+
+  @override
+  String videoEditSongLinedLater(String time) {
+    return 'Lined up as recorded, moved $time later';
+  }
+
+  @override
+  String videoEditSongLinedEarlier(String time) {
+    return 'Lined up as recorded, moved $time earlier';
   }
 
   @override

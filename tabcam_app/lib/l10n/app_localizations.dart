@@ -1048,6 +1048,12 @@ abstract class AppLocalizations {
   /// **'Microphone'**
   String get camMicChoose;
 
+  /// Cam: the tooltip of the level meter beside Rec, which shows how loud the microphone is (green, yellow, red)
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone level'**
+  String get camMicLevel;
+
   /// Cam: the heading of Rec's menu, over the list of microphones
   ///
   /// In en, this message translates to:
@@ -3339,6 +3345,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The song starts {time} before the video'**
   String videoEditSongBefore(String time);
+
+  /// Video edit, a take: the song is placed by itself where it played while the take recorded
+  ///
+  /// In en, this message translates to:
+  /// **'Lined up as it played while you recorded'**
+  String get videoEditSongLined;
+
+  /// Video edit, a take: the song lined up as it played while recording, then moved later by hand (time like 0:00.2)
+  ///
+  /// In en, this message translates to:
+  /// **'Lined up as recorded, moved {time} later'**
+  String videoEditSongLinedLater(String time);
+
+  /// Video edit, a take: the song lined up as it played while recording, then moved earlier by hand (time like 0:00.2)
+  ///
+  /// In en, this message translates to:
+  /// **'Lined up as recorded, moved {time} earlier'**
+  String videoEditSongLinedEarlier(String time);
 
   /// Video edit, a take: the part of the song used, once trimmed (times like 0:01.5)
   ///
