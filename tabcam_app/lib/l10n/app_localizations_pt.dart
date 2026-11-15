@@ -611,6 +611,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get camMicChoose => 'Microfone';
 
   @override
+  String get camMicLevel => 'Nível do microfone';
+
+  @override
   String get camMicHeading => 'Gravar com';
 
   @override

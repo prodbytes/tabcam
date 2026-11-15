@@ -592,6 +592,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camMicChoose => 'Microphone';
 
   @override
+  String get camMicLevel => 'Microphone level';
+
+  @override
   String get camMicHeading => 'Record from';
 
   @override
