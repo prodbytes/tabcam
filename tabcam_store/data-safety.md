@@ -5,7 +5,7 @@ Draft answers for the stores' forms, derived from the code and the specs
 [cloud sync](../specs/cloud-sync.md),
 [shared captures](../specs/shared-captures.md),
 [cloud OCR](../specs/cloud-ocr.md)). Keep them in step with the privacy
-policy (https://tabcam.nu01.com/privacy) and the iOS privacy manifest
+policy (https://tabs.cam/privacy) and the iOS privacy manifest
 (`tabcam_app/ios/Runner/PrivacyInfo.xcprivacy`): when one changes, the
 others change too.
 
@@ -55,7 +55,7 @@ others change too.
 | Does your app collect or share any of the required user data types? | Yes |
 | Is all of the user data collected by your app encrypted in transit? | Yes |
 | Do you provide a way for users to request that their data is deleted? | Yes: in the app (Profile → Delete account) and by the URL below |
-| Account deletion URL (App content → Data deletion) | https://tabcam.nu01.com/privacy (it says how: Profile → Delete account, in the app or the web app at https://tabcam.nu01.com/app/, and what's deleted); also as the URL for deleting some data (captures) without the account |
+| Account deletion URL (App content → Data deletion) | https://tabs.cam/privacy (it says how: Profile → Delete account, in the app or the web app at https://tabs.cam/app/, and what's deleted); also as the URL for deleting some data (captures) without the account |
 | Can users create an account? | Yes, with Google sign-in (OAuth); the app needs one |
 
 **Data types** (collected = sent off the device; none is **shared**: AWS
