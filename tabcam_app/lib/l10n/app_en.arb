@@ -815,6 +815,10 @@
   "@camMicChoose": {
     "description": "Cam: the tooltip of the arrow beside Rec, which opens a menu to choose the microphone takes record from"
   },
+  "camMicLevel": "Microphone level",
+  "@camMicLevel": {
+    "description": "Cam: the tooltip of the level meter beside Rec, which shows how loud the microphone is (green, yellow, red)"
+  },
   "camMicHeading": "Record from",
   "@camMicHeading": {
     "description": "Cam: the heading of Rec's menu, over the list of microphones"

@@ -1048,6 +1048,12 @@ abstract class AppLocalizations {
   /// **'Microphone'**
   String get camMicChoose;
 
+  /// Cam: the tooltip of the level meter beside Rec, which shows how loud the microphone is (green, yellow, red)
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone level'**
+  String get camMicLevel;
+
   /// Cam: the heading of Rec's menu, over the list of microphones
   ///
   /// In en, this message translates to:

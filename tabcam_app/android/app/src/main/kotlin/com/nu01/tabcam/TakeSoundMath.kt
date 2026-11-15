@@ -2,6 +2,7 @@ package com.nu01.tabcam
 
 import android.media.MediaRecorder
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToLong
 
 /**
@@ -180,4 +181,25 @@ object TakeSoundMath {
      */
     fun keepAudio(ptsUs: Long, videoEndUs: Long): Boolean =
         ptsUs >= 0 && (videoEndUs <= 0 || ptsUs < videoEndUs)
+
+    /**
+     * The loudest sample in [length] bytes of 16-bit little-endian PCM
+     * (any number of channels), as its magnitude: 0 (silence) to 32768
+     * (full scale). Cam's level meter shows it.
+     */
+    fun peak(bytes: ByteArray, length: Int): Int {
+        var loudest = 0
+        var i = 0
+        val end = min(length, bytes.size) and 1.inv()
+        while (i < end) {
+            val sample = (bytes[i].toInt() and 0xff) or (bytes[i + 1].toInt() shl 8)
+            val magnitude = if (sample < 0) -sample else sample
+            if (magnitude > loudest) loudest = magnitude
+            i += 2
+        }
+        return loudest
+    }
+
+    /** Full scale for [peak]: what it gives at 0 dBFS. */
+    const val FULL_SCALE = 32768
 }
