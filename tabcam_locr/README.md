@@ -1,4 +1,4 @@
-# tabcam_locr: cloud OCR for TabCam Premium
+# tabcam_locr: cloud OCR for Tabs.cam Premium
 
 Transcribes scanned tab pages in AWS Lambda for **premium** users, as the app
 syncs them. Free users keep on-device reading and see an upgrade offer.
@@ -27,7 +27,7 @@ app syncs a page ──► user-data bucket ──S3 event──► EventBridge 
   **function URL** serves the app, with the user's ID token as
   `Authorization: Bearer`:
   - `POST /account` checks the token by its issuer: Google's (Google's
-    signature, TabCam's web client) or, with `APPLE_CLIENT_ID` set,
+    signature, Tabs.cam's web client) or, with `APPLE_CLIENT_ID` set,
     Apple's (Sign in with Apple: Apple's signature, the bundle ID), with a
     verified e-mail (Apple's `email_verified` is a string). An Apple token
     without `APPLE_CLIENT_ID` gets 403 `google sign-in needed`. It asks the
@@ -122,5 +122,5 @@ and releases).
 - Reads text tabs (dash lines). Typeset staves with drawn lines aren't
   found; the app's on-device reading handles those.
 - The function URL has no rate limit beyond Lambda's; every request needs a
-  valid Google token for TabCam's client (or Apple token for its bundle
+  valid Google token for Tabs.cam's client (or Apple token for its bundle
   ID).

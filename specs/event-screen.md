@@ -5,7 +5,7 @@ its files, each opening alone on the [file screen](#file-screen). It
 always opens on the list (quick to show), a text tab marked correct
 ([tab recognition](tab-recognition.md#text-view)) included: **Text**
 shows the tab, and a reload puts the user back on the view they were on
-([navigation](navigation.md#coming-back-where-the-user-was)). **Text and Cam are TabCam Premium's**
+([navigation](navigation.md#coming-back-where-the-user-was)). **Text and Cam are Tabs.cam Premium's**
 ([cloud OCR](cloud-ocr.md#in-the-app)): in a build with Premium set up, a
 user without it sees both tools with a lock on the icon, and each opens
 its screen as a greyed-out preview that takes nothing, under the Premium
@@ -164,7 +164,7 @@ plays along.
     or Sign in. A tap opens the Text view; tapped on the Text view, it
     does nothing more: reading the tab again is the Text view's
     **Rescan**. **Locked** (no Premium): a lock on the icon, tooltip
-    "Text: TabCam Premium"; it opens the view as a preview (the
+    "Text: Tabs.cam Premium"; it opens the view as a preview (the
     capture's text, or a sample tab) under the Premium card, with no
     sidebar or Play along ([cloud OCR](cloud-ocr.md#in-the-app)).
   - **Add**: more files, [scanned or picked](scanning.md#adding-to-an-event):
@@ -175,7 +175,7 @@ plays along.
     ([Cam](cam.md)), and back from it the list shows, scrolled to them.
     On a capture shared to read, takes are the user's own contribution's.
     Off on a capture opened by its link. **Locked** (no Premium): a lock
-    on the icon, tooltip "Cam: TabCam Premium"; it opens Cam as a
+    on the icon, tooltip "Cam: Tabs.cam Premium"; it opens Cam as a
     preview, no camera, under the Premium card
     ([cloud OCR](cloud-ocr.md#in-the-app)).
   - **Dragging files** onto the screen adds them too, as Files does

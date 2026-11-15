@@ -3,7 +3,7 @@
          plugin declares it too. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <application
-        android:label="TabCam"
+        android:label="Tabs.cam"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity

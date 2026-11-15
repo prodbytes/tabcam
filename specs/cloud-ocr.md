@@ -1,11 +1,11 @@
-# TabCam Premium: Text, Cam and cloud OCR
+# Tabs.cam Premium: Text, Cam and cloud OCR
 
-TabCam Premium is the [event screen](event-screen.md)'s **Text** and
+Tabs.cam Premium is the [event screen](event-screen.md)'s **Text** and
 **Cam**: the text tab ([tab recognition](tab-recognition.md), the pages
 read into it by itself, on the device or in the cloud) and recording
 oneself playing along ([Cam](cam.md)); it also removes the **watermark**
 the [video editor](video-edit.md#layers) puts on a downloaded video
-("Recorded by TabCam", "Made with TabCam"). Premium users' scans are
+("Recorded by Tabs.cam", "Made with Tabs.cam"). Premium users' scans are
 **transcribed in the cloud as they sync**: the event's text tab appears
 by itself, read more accurately than on the phone, and on the web too.
 Without Premium, nothing is read, and Text and Cam open as **previews**
@@ -274,11 +274,11 @@ with text but no tab is still `no-tab`.
 - **Status**: at sign-in, and each time the Profile tab (or the account
   sheet, from an event's Upgrade on the web) opens, the app
   calls `POST /account` with the user's ID token. The service checks the
-  token, by its issuer: Google's (signed by Google, issued for TabCam's
+  token, by its issuer: Google's (signed by Google, issued for Tabs.cam's
   web client or the local web client) or, with `APPLE_CLIENT_ID` set,
   Apple's (signed by Apple's keys, `https://appleid.apple.com/auth/keys`,
   issued for the bundle ID `com.nu01.tabcam`), or, with `SESSION_ISSUER`
-  set, a [TabCam session](sessions.md)'s (signed by its KMS key, the keys
+  set, a [Tabs.cam session](sessions.md)'s (signed by its KMS key, the keys
   at the share API's `/session/.well-known/jwks.json`, for `tabcam-app`,
   taken as the sign-in that started the session); either way unexpired,
   with a verified address. It asks the main identity pool for the token's
@@ -342,25 +342,25 @@ with text but no tab is still `no-tab`.
 included):
 
 - **Locked tools**: without Premium, the event screen's **Text** and
-  **Cam** tools carry a small lock on their icon (tooltip "Text: TabCam
-  Premium", "Cam: TabCam Premium"). Each still opens: Text shows the
+  **Cam** tools carry a small lock on their icon (tooltip "Text: Tabs.cam
+  Premium", "Cam: Tabs.cam Premium"). Each still opens: Text shows the
   [Text view](tab-recognition.md#text-view) as a **preview**, the
   capture's own text if it has one, else a made-up sample tab (captioned
   "A preview with a sample tab"), greyed out and taking no tap or key,
   with no play-along sidebar; Cam opens its screen the same way, with no
   camera (a camera icon in its place), the capture's tab or the sample
   along the bottom, and Rec, Play and the arrows dead. Over the preview,
-  centred, the **Premium card** (`PremiumGate`): the lock, "TabCam
-  Premium", what the feature is ("Text is part of TabCam Premium: your
+  centred, the **Premium card** (`PremiumGate`): the lock, "Tabs.cam
+  Premium", what the feature is ("Text is part of Tabs.cam Premium: your
   scans read into a text tab you can edit, copy, verify, download and
-  play along with…"; "Cam is part of TabCam Premium: record yourself
+  play along with…"; "Cam is part of Tabs.cam Premium: record yourself
   playing along…"), the offer and its buttons (below), and **Not now**,
   which goes back to the files (or leaves Cam). Signed out (a capture
   opened by its link), the card says to sign in, then subscribe from the
   profile, with no buttons. A capture whose text is marked correct opens
   on the files, not the Text view, for a locked user.
 - **Home's banner**: signed in without Premium, Home starts with "Text
-  tabs and Cam are TabCam Premium features." with **Upgrade** (the
+  tabs and Cam are Tabs.cam Premium features." with **Upgrade** (the
   account sheet, with the card) and a close that keeps it away until the
   app restarts. It waits for the first Premium check, so premium users
   never see it flash.
@@ -389,7 +389,7 @@ included):
   first answer. It comes from the same status check as the card; builds
   without the service show no role.
 - It also has a
-  **TabCam Premium** card (`PremiumCard`), the same card the locked tools
+  **Tabs.cam Premium** card (`PremiumCard`), the same card the locked tools
   show over their previews. For premium users: "Text tabs and Cam are
   yours: your scans are transcribed in the cloud as they sync…", and
   until when. For others: the offer, "Read your scans into text tabs,
@@ -405,7 +405,7 @@ offer is the same as on the web (the user's decision: the apps say what
 is Premium and how to subscribe, by the Stripe-backed link, as in-app
 purchases through the App Store or Google Play aren't built). Before,
 the apps hid every purchase link and, for free users, every mention of
-Premium (App Review had taken "TabCam Premium isn't active" for a broken
+Premium (App Review had taken "Tabs.cam Premium isn't active" for a broken
 in-app purchase, guideline 2.1(b), 2026-10-20), and the account panel,
 the card and the event screen took a `store` flag; that flag is gone
 (`storeApp` now only hides the install links, [navigation](navigation.md#profile)).

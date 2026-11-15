@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TabCam Privacy Policy</title>
-  <meta name="description" content="What TabCam collects, why, where it's kept, and how to delete it.">
+  <title>Tabs.cam Privacy Policy</title>
+  <meta name="description" content="What Tabs.cam collects, why, where it's kept, and how to delete it.">
   <!-- Served at /privacy (scripts/deploy.sh uploads this file as the S3
        object "privacy"), and at /privacy/ by the local index server: so
        every link here is absolute. Spec: specs/privacy.md. -->
@@ -46,17 +46,17 @@
 </head>
 <body>
 <main>
-  <p><a class="brand" href="/app/">TabCam</a></p>
+  <p><a class="brand" href="/app/">Tabs.cam</a></p>
   <h1>Privacy Policy</h1>
   <p class="muted">Last updated: November 13, 2026</p>
 
-  <p>TabCam scans guitar tabs, reads them into text, records you playing
+  <p>Tabs.cam scans guitar tabs, reads them into text, records you playing
   along, and shares them. It runs as an Android app, an iOS app and a web
   app at <a href="https://tabcam.nu01.com/app/">tabcam.nu01.com</a>.
-  TabCam is made and run by Julio Faerman, an individual developer ("I",
-  "me"). This policy says what TabCam does with your information.</p>
+  Tabs.cam is made and run by Julio Faerman, an individual developer ("I",
+  "me"). This policy says what Tabs.cam does with your information.</p>
 
-  <p><strong>In short:</strong> TabCam needs an account: you sign in with
+  <p><strong>In short:</strong> Tabs.cam needs an account: you sign in with
   Google, with your email address (a code emailed to you), or in the
   iPhone, iPad and Android apps with Apple too. What you capture is stored
   in your own private cloud folder so it's on all your devices, and is
@@ -69,8 +69,8 @@
   <p>Without signing in, the app shows only a welcome screen with the
   sign-in buttons: nothing can be captured, read or shared, and nothing is
   sent to me. (The one exception is opening a capture's link someone gave
-  you, below.) To use TabCam you sign in with your Google account, with
-  your email address (TabCam emails you a one-time code, and a link that
+  you, below.) To use Tabs.cam you sign in with your Google account, with
+  your email address (Tabs.cam emails you a one-time code, and a link that
   fills it in), or, in the iOS and Android apps, with Sign in with
   Apple.</p>
 
@@ -82,11 +82,11 @@
       and account ID. From Apple: your name and email address (Apple's
       private relay address, if you choose to hide yours) and Apple's user
       ID. Signing in with email: your email address, and the user ID it
-      gets in TabCam's sign-in service (Amazon Cognito)</td>
+      gets in Tabs.cam's sign-in service (Amazon Cognito)</td>
       <td>To show who is signed in (Profile tab), to give you your own
       cloud folder, to let people share captures with your email address,
-      to link your Google and Apple accounts to one TabCam profile, and to
-      check whether you have TabCam Premium. Your email address and
+      to link your Google and Apple accounts to one Tabs.cam profile, and to
+      check whether you have Tabs.cam Premium. Your email address and
       account IDs are stored on my servers; your name and photo are only
       shown in the app.</td></tr>
     <tr><td>Your captures: scanned pages, photos, videos, audio recordings,
@@ -99,20 +99,20 @@
       their role (can edit or read only)</td>
       <td>So those people can open the capture when they sign in with that
       address. No email is sent to them.</td></tr>
-    <tr><td>Your TabCam profile: a random ID, the accounts linked to it
+    <tr><td>Your Tabs.cam profile: a random ID, the accounts linked to it
       (their email addresses and IDs) and when they were linked</td>
       <td>So each of your sign-ins reaches the same captures.</td></tr>
     <tr><td>Transcriptions of your pages, and the song and tab you check
-      with Fix (TabCam Premium only)</td>
+      with Fix (Tabs.cam Premium only)</td>
       <td>To fill in and correct the text tab of your captures.</td></tr>
   </table>
   </div>
-  <p>TabCam does not collect your location, contacts, phone number or
+  <p>Tabs.cam does not collect your location, contacts, phone number or
   browsing activity, and does not use advertising identifiers. The
   diagnostics Google's ML Kit may send are described below.</p>
 
   <h2>Camera, microphone, photos and files</h2>
-  <p>TabCam asks for the camera to scan tabs and to record you in Cam, and
+  <p>Tabs.cam asks for the camera to scan tabs and to record you in Cam, and
   for the microphone to record sound with Cam's takes. It opens your photo
   library or files only to add the items you pick, and doesn't read
   anything else from them. Cam's takes are saved in the capture, and sync
@@ -125,7 +125,7 @@
     ML Kit's document camera). The images are not sent anywhere for
     this.</li>
     <li><strong>Head gestures:</strong> while you record yourself playing
-    along (Cam), TabCam can turn the tab when you nod. For this, it finds
+    along (Cam), Tabs.cam can turn the tab when you nod. For this, it finds
     your face in the camera's picture on your device: in the Android and
     iOS apps with Google's ML Kit face detection, and on the web with
     Google's MediaPipe face landmarker, running in your browser. On the
@@ -142,8 +142,8 @@
     picture, your face or your tabs. Google uses it to measure and improve
     ML Kit; see
     <a href="https://developers.google.com/ml-kit/terms">Google's ML Kit terms</a>.</li>
-    <li><strong>TabCam Premium:</strong> pages that sync to your cloud
-    folder are also transcribed by TabCam's OCR service, running on
+    <li><strong>Tabs.cam Premium:</strong> pages that sync to your cloud
+    folder are also transcribed by Tabs.cam's OCR service, running on
     Amazon Web Services (AWS Lambda). The page is read there and the text
     is saved next to it in your folder. A handwritten page is also read by
     an AI vision model, Moonshot AI's Kimi, which runs in Amazon Bedrock,
@@ -157,7 +157,7 @@
 
   <h2>Where your data is stored, and who processes it</h2>
   <ul>
-    <li><strong>Amazon Web Services</strong> hosts TabCam's cloud: your
+    <li><strong>Amazon Web Services</strong> hosts Tabs.cam's cloud: your
     captures and transcriptions in a private Amazon S3 bucket, your
     profile, the sharing grants, the capture links and the Premium
     account record in Amazon DynamoDB, the keys that encrypt your
@@ -166,7 +166,7 @@
     US East (N. Virginia) region, in the United States, encrypted at rest
     and sent only over HTTPS. Amazon Bedrock may read a handwritten page
     in another of its US regions (N. Virginia, Ohio or Oregon). <strong>Amazon CloudFront</strong>, which
-    serves TabCam's site, also delivers your captures' files to the apps:
+    serves Tabs.cam's site, also delivers your captures' files to the apps:
     it keeps copies of them in its locations in the United States, Canada,
     Europe and Israel, for up to a year for pages, photos and videos
     (which never change) and not at all for a capture's details or its
@@ -180,7 +180,7 @@
     you stop typing for two seconds (or press Enter), your device sends
     it to YouTube's search (the YouTube API Services) and shows the
     videos it finds. Only what you typed is sent, not your account or
-    anything about you, and TabCam doesn't keep it. YouTube's
+    anything about you, and Tabs.cam doesn't keep it. YouTube's
     <a href="https://www.youtube.com/t/terms">Terms of Service</a> and
     <a href="https://policies.google.com/privacy">Google's privacy
     policy</a> apply.</li>
@@ -188,22 +188,22 @@
     Android apps.
     Apple's privacy policy applies to your Apple ID:
     <a href="https://www.apple.com/legal/privacy/">apple.com/legal/privacy</a>.</li>
-    <li><strong>Anthropic</strong> runs Claude, used by Fix for TabCam
+    <li><strong>Anthropic</strong> runs Claude, used by Fix for Tabs.cam
     Premium (above), through its API.</li>
     <li><strong>Links you add</strong>, YouTube videos included, open
-    outside TabCam: in a new browser tab, or on a phone in your browser
+    outside Tabs.cam: in a new browser tab, or on a phone in your browser
     or the app for them (such as YouTube). The one exception is Cam:
-    when you choose a link there to play along with, TabCam shows it in
+    when you choose a link there to play along with, Tabs.cam shows it in
     a frame on that screen (a YouTube video in YouTube's
     privacy-enhanced player, from youtube-nocookie.com). Either way, the
     site you open, and its own privacy policy, take it from
     there.</li>
     <li><strong>rbacr</strong>, my access-control service at rbacr.nu01.com,
-    is asked whether your verified email address has TabCam Premium.
+    is asked whether your verified email address has Tabs.cam Premium.
     You can also redeem a Premium voucher on its page.</li>
-    <li><strong>Substack and Stripe</strong>: TabCam Premium is a
+    <li><strong>Substack and Stripe</strong>: Tabs.cam Premium is a
     subscription on Substack, paid through Stripe. You subscribe on
-    Substack's site, under its own privacy policy, and TabCam never sees
+    Substack's site, under its own privacy policy, and Tabs.cam never sees
     your payment details; only your subscriber email address and the
     subscription's status reach rbacr, to grant Premium.</li>
   </ul>
@@ -264,26 +264,26 @@
     your other devices. A small record that it was deleted (its ID and
     dates, no content) stays, so your other devices delete it too.</li>
     <li><strong>Delete account</strong>, in the app's Profile tab (also in
-    the web app, from any browser), deletes your TabCam account and the
+    the web app, from any browser), deletes your Tabs.cam account and the
     data stored for it: your captures and their transcriptions in the
     cloud and on that device, your sharing grants, your profile and your
     Premium account record, and CloudFront's copies of your files. If you
     signed in with Apple, it also revokes
-    TabCam's Apple sign-in tokens, so TabCam leaves your Apple ID's list
+    Tabs.cam's Apple sign-in tokens, so Tabs.cam leaves your Apple ID's list
     of apps using Sign in with Apple. If you signed in with email, your
-    address is deleted from TabCam's sign-in service. Copies in the 30-day file history
+    address is deleted from Tabs.cam's sign-in service. Copies in the 30-day file history
     and 35-day backups expire on that schedule. It doesn't cancel a
     Premium subscription, which you manage where you bought it.</li>
     <li>You can also ask me to delete your data, or for a copy of it, by
     email (below).</li>
-    <li>To remove TabCam's access to your Google account, visit
+    <li>To remove Tabs.cam's access to your Google account, visit
     <a href="https://myaccount.google.com/connections">myaccount.google.com/connections</a>;
     to your Apple ID, Settings → your name → Sign in with Apple on your
     iPhone or iPad.</li>
   </ul>
 
   <h2>No ads or tracking</h2>
-  <p>TabCam contains no advertising, no crash-reporting services and no
+  <p>Tabs.cam contains no advertising, no crash-reporting services and no
   trackers, and no analytics of its own (ML Kit's diagnostics, above,
   go to Google). Your data is never sold or used for advertising, and is
   shared with nobody except the service providers above, the people you
@@ -294,11 +294,11 @@
   credentials that reach only their own cloud folder, and a shared capture
   is opened with credentials for that capture alone (read only, for a
   link). Stored data is encrypted at rest. No system is perfectly secure,
-  but TabCam is built to keep your data to yourself and the people you
+  but Tabs.cam is built to keep your data to yourself and the people you
   choose.</p>
 
   <h2>Children</h2>
-  <p>TabCam is not directed to children under 13, and I don't knowingly
+  <p>Tabs.cam is not directed to children under 13, and I don't knowingly
   collect their personal information. If you believe a child has signed
   in, contact me and I'll delete the data.</p>
 
@@ -313,11 +313,11 @@
   with a new date at the top.</p>
 
   <h2>Contact</h2>
-  <p>Julio Faerman, the developer of TabCam:
+  <p>Julio Faerman, the developer of Tabs.cam:
   <a href="mailto:privacy@nu01.com">privacy@nu01.com</a></p>
 
   <footer class="muted">
-    <a href="/app/">Open TabCam</a> · <a href="/privacy">Privacy Policy</a>
+    <a href="/app/">Open Tabs.cam</a> · <a href="/privacy">Privacy Policy</a>
   </footer>
 </main>
 </body>

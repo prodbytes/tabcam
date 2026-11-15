@@ -127,7 +127,7 @@ abstract class AppLocalizations {
   /// Account: Premium note when signed out
   ///
   /// In en, this message translates to:
-  /// **'Signed in, TabCam Premium reads your scans into text tabs, transcribed in the cloud as they sync, and records you playing along with Cam.'**
+  /// **'Signed in, Tabs.cam Premium reads your scans into text tabs, transcribed in the cloud as they sync, and records you playing along with Cam.'**
   String get accountSignInPremium;
 
   /// Account: sign-in button
@@ -271,7 +271,7 @@ abstract class AppLocalizations {
   /// Premium card title (product name)
   ///
   /// In en, this message translates to:
-  /// **'TabCam Premium'**
+  /// **'Tabs.cam Premium'**
   String get accountPremiumTitle;
 
   /// Premium card: what Premium does, for premium users
@@ -313,19 +313,19 @@ abstract class AppLocalizations {
   /// Premium card over a locked feature, signed out (a capture opened by its link)
   ///
   /// In en, this message translates to:
-  /// **'Sign in, then subscribe to TabCam Premium from your profile.'**
+  /// **'Sign in, then subscribe to Tabs.cam Premium from your profile.'**
   String get premiumSignInToSubscribe;
 
   /// Premium card over the locked Text view: what the feature is
   ///
   /// In en, this message translates to:
-  /// **'Text is part of TabCam Premium: your scans read into a text tab you can edit, copy, verify, download and play along with. With Premium they\'re transcribed in the cloud as they sync, more accurately than on the phone.'**
+  /// **'Text is part of Tabs.cam Premium: your scans read into a text tab you can edit, copy, verify, download and play along with. With Premium they\'re transcribed in the cloud as they sync, more accurately than on the phone.'**
   String get premiumTextFeature;
 
   /// Premium card over the locked Cam: what the feature is
   ///
   /// In en, this message translates to:
-  /// **'Cam is part of TabCam Premium: record yourself playing along with the tab under the camera, one line at a time, turned by a key, a pedal or a nod of your head; play each take back with the tab turning as it did.'**
+  /// **'Cam is part of Tabs.cam Premium: record yourself playing along with the tab under the camera, one line at a time, turned by a key, a pedal or a nod of your head; play each take back with the tab turning as it did.'**
   String get premiumCamFeature;
 
   /// Locked Text view preview: caption over the made-up sample tab
@@ -337,13 +337,13 @@ abstract class AppLocalizations {
   /// Home: banner for signed-in users without Premium
   ///
   /// In en, this message translates to:
-  /// **'Text tabs and Cam are TabCam Premium features.'**
+  /// **'Text tabs and Cam are Tabs.cam Premium features.'**
   String get homePremiumBanner;
 
   /// Event: tooltip of the locked Text or Cam tool
   ///
   /// In en, this message translates to:
-  /// **'{feature}: TabCam Premium'**
+  /// **'{feature}: Tabs.cam Premium'**
   String eventPremiumTool(String feature);
 
   /// Snackbar: a link didn't open
@@ -397,7 +397,7 @@ abstract class AppLocalizations {
   /// Share sheet: link option description
   ///
   /// In en, this message translates to:
-  /// **'Opens this capture in TabCam, for you and the people it\'s shared with'**
+  /// **'Opens this capture in Tabs.cam, for you and the people it\'s shared with'**
   String get accountShareLinkDetail;
 
   /// Share sheet: PDF option
@@ -571,7 +571,7 @@ abstract class AppLocalizations {
   /// Event Text view: reading not available here
   ///
   /// In en, this message translates to:
-  /// **'Reading tabs needs the Android or iOS app, or TabCam Premium.'**
+  /// **'Reading tabs needs the Android or iOS app, or Tabs.cam Premium.'**
   String get eventReadUnsupported;
 
   /// Event Text view: must sign in to read
@@ -835,7 +835,7 @@ abstract class AppLocalizations {
   /// On the web without Premium, a tab site's page isn't imported
   ///
   /// In en, this message translates to:
-  /// **'Link added. On the web, importing the page from {site} needs TabCam Premium.'**
+  /// **'Link added. On the web, importing the page from {site} needs Tabs.cam Premium.'**
   String linkTabPremium(String site);
 
   /// A tab site's page couldn't be fetched or had no tab text
@@ -961,7 +961,7 @@ abstract class AppLocalizations {
   /// Camera screen: permission denied
   ///
   /// In en, this message translates to:
-  /// **'The camera isn\'t allowed: let TabCam use it in the browser\'s site settings.'**
+  /// **'The camera isn\'t allowed: let Tabs.cam use it in the browser\'s site settings.'**
   String get eventCameraNotAllowed;
 
   /// Camera screen: camera error
@@ -1381,7 +1381,7 @@ abstract class AppLocalizations {
   /// Cam: permission denied
   ///
   /// In en, this message translates to:
-  /// **'The camera or microphone isn\'t allowed: let TabCam use them in the settings.'**
+  /// **'The camera or microphone isn\'t allowed: let Tabs.cam use them in the settings.'**
   String get camNotAllowed;
 
   /// Camera screen: finish
@@ -1465,7 +1465,7 @@ abstract class AppLocalizations {
   /// Scan: the camera permission was refused (follows "Couldn't scan:")
   ///
   /// In en, this message translates to:
-  /// **'the camera isn\'t allowed. Let TabCam use it in the settings.'**
+  /// **'the camera isn\'t allowed. Let Tabs.cam use it in the settings.'**
   String get scanCameraNotAllowed;
 
   /// Message: adding media or a link failed
@@ -1753,7 +1753,7 @@ abstract class AppLocalizations {
   /// Maintenance screen's default message
   ///
   /// In en, this message translates to:
-  /// **'Sorry, TabCam is down for maintenance. Please try again later.'**
+  /// **'Sorry, Tabs.cam is down for maintenance. Please try again later.'**
   String get homeMaintenanceDefault;
 
   /// Snackbar after copying the text tab
@@ -1771,7 +1771,7 @@ abstract class AppLocalizations {
   /// Snackbar when Fix needs Premium
   ///
   /// In en, this message translates to:
-  /// **'Fix is part of TabCam Premium'**
+  /// **'Fix is part of Tabs.cam Premium'**
   String get textViewFixPremium;
 
   /// Snackbar action to upgrade to Premium
@@ -2305,7 +2305,7 @@ abstract class AppLocalizations {
   /// Deleting the account (Profile > Delete account)
   ///
   /// In en, this message translates to:
-  /// **'Your TabCam account was deleted.'**
+  /// **'Your Tabs.cam account was deleted.'**
   String get deleteAccountDone;
 
   /// Deleting the account (Profile > Delete account)
@@ -2353,13 +2353,13 @@ abstract class AppLocalizations {
   /// Deleting the account (Profile > Delete account)
   ///
   /// In en, this message translates to:
-  /// **'A TabCam Premium subscription isn\'t cancelled: cancel it on Substack, where you subscribed.'**
+  /// **'A Tabs.cam Premium subscription isn\'t cancelled: cancel it on Substack, where you subscribed.'**
   String get deleteAccountPremiumWeb;
 
   /// Deleting the account (Profile > Delete account)
   ///
   /// In en, this message translates to:
-  /// **'If TabCam is signed in on your other devices, sign out there first, so they don\'t upload their events again.'**
+  /// **'If Tabs.cam is signed in on your other devices, sign out there first, so they don\'t upload their events again.'**
   String get deleteAccountOtherDevices;
 
   /// Deleting the account (Profile > Delete account)
@@ -2536,10 +2536,10 @@ abstract class AppLocalizations {
   /// **'Your Apple sign-in expired: sign in again.'**
   String get accountAppleSignInExpired;
 
-  /// Account sheet: the TabCam session ended (unused for a week, 90 days old, or ended by the account's deletion or unlinking)
+  /// Account sheet: the Tabs.cam session ended (unused for a week, 90 days old, or ended by the account's deletion or unlinking)
   ///
   /// In en, this message translates to:
-  /// **'You were signed out (a week without using TabCam, or your sign-in ended elsewhere): sign in again.'**
+  /// **'You were signed out (a week without using Tabs.cam, or your sign-in ended elsewhere): sign in again.'**
   String get accountSessionEnded;
 
   /// Why Apple sign-in can't be offered
@@ -2749,10 +2749,10 @@ abstract class AppLocalizations {
   /// Fix without Premium: lined up; the online check is Premium's
   ///
   /// In en, this message translates to:
-  /// **'Tab lined up. Checking it against the song online is part of TabCam Premium.'**
+  /// **'Tab lined up. Checking it against the song online is part of Tabs.cam Premium.'**
   String get textViewFixLinedUpPremium;
 
-  /// Welcome screen (signed out): what TabCam does, and to sign in
+  /// Welcome screen (signed out): what Tabs.cam does, and to sign in
   ///
   /// In en, this message translates to:
   /// **'Scan guitar tabs, read them as text, and share them. Sign in to start: your captures are kept on every device you sign in on.'**
@@ -2935,7 +2935,7 @@ abstract class AppLocalizations {
   /// Home and Capture: who the app is for, and that users must have the right to the tabs they add
   ///
   /// In en, this message translates to:
-  /// **'TabCam is for musicians practicing with their own tabs. Only add what you have the right to use: tabs you wrote, your teacher\'s, ones you bought, or ones free to share.'**
+  /// **'Tabs.cam is for musicians practicing with their own tabs. Only add what you have the right to use: tabs you wrote, your teacher\'s, ones you bought, or ones free to share.'**
   String get ownTabsNote;
 
   /// Profile, last section: title of the phone install links
@@ -2947,7 +2947,7 @@ abstract class AppLocalizations {
   /// Profile, phone app section: intro before the iPhone and Android links
   ///
   /// In en, this message translates to:
-  /// **'TabCam isn\'t in the app stores yet. Install it on your phone from GitHub:'**
+  /// **'Tabs.cam isn\'t in the app stores yet. Install it on your phone from GitHub:'**
   String get installIntro;
 
   /// Profile, phone app section: link to the iPhone install steps
@@ -2971,7 +2971,7 @@ abstract class AppLocalizations {
   /// iPhone install steps: how to build and install the app from GitHub
   ///
   /// In en, this message translates to:
-  /// **'An iPhone only installs apps from the App Store or signed by an Apple developer, and the release on GitHub isn\'t signed. Build it on a Mac with Xcode and Flutter instead, signed with your own Apple account (a free one works):\n\n1. Get TabCam\'s code from GitHub and set your Apple team, as the guide says.\n2. Connect the iPhone to the Mac by USB and turn on Developer Mode on it (Settings → Privacy & Security → Developer Mode).\n3. Build and install the release with the guide\'s command. It installs over TabCam and keeps your events.\n4. The first time, trust the developer on the iPhone: Settings → General → VPN & Device Management.\n\nWith a free Apple account, the app stops opening after 7 days: install it again.'**
+  /// **'An iPhone only installs apps from the App Store or signed by an Apple developer, and the release on GitHub isn\'t signed. Build it on a Mac with Xcode and Flutter instead, signed with your own Apple account (a free one works):\n\n1. Get Tabs.cam\'s code from GitHub and set your Apple team, as the guide says.\n2. Connect the iPhone to the Mac by USB and turn on Developer Mode on it (Settings → Privacy & Security → Developer Mode).\n3. Build and install the release with the guide\'s command. It installs over Tabs.cam and keeps your events.\n4. The first time, trust the developer on the iPhone: Settings → General → VPN & Device Management.\n\nWith a free Apple account, the app stops opening after 7 days: install it again.'**
   String get installIphoneSteps;
 
   /// Android install steps: title
@@ -2983,7 +2983,7 @@ abstract class AppLocalizations {
   /// Android install steps: how to download and install the APK from GitHub
   ///
   /// In en, this message translates to:
-  /// **'1. On the phone, open TabCam\'s latest release on GitHub (the button below).\n2. Under Assets, tap the file ending in -android.apk to download it.\n3. Open the downloaded file. The first time, Android asks you to allow your browser to install apps: allow it (Settings → Apps → Special app access → Install unknown apps).\n4. Tap Install, or Update if TabCam is already installed. Updating keeps your events.\n\nGoogle sign-in doesn\'t work in these builds yet.'**
+  /// **'1. On the phone, open Tabs.cam\'s latest release on GitHub (the button below).\n2. Under Assets, tap the file ending in -android.apk to download it.\n3. Open the downloaded file. The first time, Android asks you to allow your browser to install apps: allow it (Settings → Apps → Special app access → Install unknown apps).\n4. Tap Install, or Update if Tabs.cam is already installed. Updating keeps your events.\n\nGoogle sign-in doesn\'t work in these builds yet.'**
   String get installAndroidSteps;
 
   /// Android install steps: button that opens the latest GitHub release
@@ -3580,7 +3580,7 @@ abstract class AppLocalizations {
   /// **'Done'**
   String get videoEditTitleDone;
 
-  /// Video edit: the chip of the small TabCam line at the bottom right of the video (only Premium can turn it off)
+  /// Video edit: the chip of the small Tabs.cam line at the bottom right of the video (only Premium can turn it off)
   ///
   /// In en, this message translates to:
   /// **'Watermark'**
@@ -3589,13 +3589,13 @@ abstract class AppLocalizations {
   /// Video edit: the watermark's text on one of Cam's takes; drawn on the video itself
   ///
   /// In en, this message translates to:
-  /// **'Recorded by TabCam'**
+  /// **'Recorded by Tabs.cam'**
   String get videoEditWatermarkTake;
 
   /// Video edit: the watermark's text on a video Cam didn't record; drawn on the video itself
   ///
   /// In en, this message translates to:
-  /// **'Made with TabCam'**
+  /// **'Made with Tabs.cam'**
   String get videoEditWatermarkMade;
 
   /// Video edit: the Watermark chip's tooltip, for a Premium user (who can turn it off)
@@ -3706,13 +3706,13 @@ abstract class AppLocalizations {
   /// **'Black on white'**
   String get videoEditTabColorsLight;
 
-  /// Video edit: the tab's colours: TabCam's gold text on a black background
+  /// Video edit: the tab's colours: Tabs.cam's gold text on a black background
   ///
   /// In en, this message translates to:
   /// **'Gold on black'**
   String get videoEditTabColorsGold;
 
-  /// Video edit: the tab's colours: black text on TabCam's gold background
+  /// Video edit: the tab's colours: black text on Tabs.cam's gold background
   ///
   /// In en, this message translates to:
   /// **'Black on gold'**

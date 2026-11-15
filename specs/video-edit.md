@@ -192,7 +192,7 @@ makes a file of it."), opening with the video's edit as it was left:
     text size), **Colours** (four swatches under it,
     each a bit of band, "3-5" in its text's colour on its background's:
     **White on black** (the default), **Black on white**, **Gold on black** and
-    **Black on gold**, TabCam's gold; the one picked ringed in the
+    **Black on gold**, Tabs.cam's gold; the one picked ringed in the
     primary colour with a check; each a button with its name as its
     tooltip and for screen readers, saying whether it's picked),
     **Default style** (on once it's anything but the default: back to
@@ -218,8 +218,8 @@ makes a file of it."), opening with the video's edit as it was left:
     the preview at once, kept a moment after the last key (as every
     change), and never seeks the song again (nothing it plays by
     changed); typing turns the title on.
-  - **Watermark** (every video): on by default, "Recorded by TabCam"
-    on a take, "Made with TabCam" on any other video, small at the
+  - **Watermark** (every video): on by default, "Recorded by Tabs.cam"
+    on a take, "Made with Tabs.cam" on any other video, small at the
     bottom right. **Only Premium removes it**: for a user with Premium
     now ([as the service last said](cloud-ocr.md#in-the-app), a week at
     most offline), and in a build without the service, it's a plain
@@ -476,7 +476,7 @@ which always carried the text alone; `TabLayout.outlineOf`: a stroke
 18% of the text's size, fully opaque from 50% down, so a faint
 background never leaves the text washed out, and in proportion between
 50% and 70%), so it reads on any picture with no background at all; the
-**colours**: white on black, black (`#111`) on white, TabCam's gold
+**colours**: white on black, black (`#111`) on white, Tabs.cam's gold
 (`#E0A030`) on black, black on gold. The text is drawn at its size, never
 a bitmap scaled up: the band is drawn **as wide as the video's frame**
 (`frame` in `RenderPlan.of`, the player's size; 1280 to 4096 pixels,
@@ -506,9 +506,9 @@ text high); a line too long for the frame ends in "…". The box's height
 is worked out in Dart from the line count alone (`TitleLayout`), so the
 plan knows it without drawing.
 
-**The watermark**: "Recorded by TabCam" on a take, "Made with TabCam"
-on any other video (in the app's language: "Grabado con TabCam" /
-"Hecho con TabCam", "Gravado com TabCam" / "Feito com TabCam"); one
+**The watermark**: "Recorded by Tabs.cam" on a take, "Made with Tabs.cam"
+on any other video (in the app's language: "Grabado con Tabs.cam" /
+"Hecho con Tabs.cam", "Gravado com Tabs.cam" / "Feito com Tabs.cam"); one
 layer, `mark`, at the **bottom right**, 3% of the short side in, the
 whole video through, one line of Roboto at 2.2% of the short side,
 white at 60% with a soft shadow. With the tab drawn, it's lifted above
