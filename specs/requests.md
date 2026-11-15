@@ -3511,3 +3511,20 @@ spec.
    graphic (now with the logo) are made again from the new masters, and
    `scripts/app-icon.sh` makes all of it in one go. The name, the domain
    and the sign-in change apart. See [app icon](app-icon.md).
+3. **"On the sidebar, let the user change the font size of the tab.
+   Also, show the settings on the preview, like a video editor such as
+   DaVinci Resolve would do"**, then **"I mean show the preview as the
+   rendered result would be, including the user options for tab, title,
+   watermark and fades"**, choosing on-screen controls on the picture
+   itself. The editor's preview already drew what Download renders; now,
+   paused, it outlines each layer drawn at that frame (the take's band,
+   the title, the watermark), and a tap picks one: outlined in the
+   primary colour, with a toolbar beside it on the picture. The band's
+   has Smaller and Larger tab (a Size step), its four colours, its whole
+   style (on a phone) and Hide; a handle at its top right resizes it
+   (dragged up it grows, on the Size slider's steps). The title's has Edit
+   and Hide; the watermark's Hide with Premium, Premium's card without. A
+   badge at the top right says when a fade covers the frame ("Fade in ·
+   3.0 s") and opens the fades. A tap on the band now picks it before
+   playing (then plays and pauses as before); nothing shows while it
+   plays. See [video edit](video-edit.md#on-the-picture).

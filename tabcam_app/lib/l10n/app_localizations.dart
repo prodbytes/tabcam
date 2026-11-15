@@ -3724,6 +3724,42 @@ abstract class AppLocalizations {
   /// **'Default style'**
   String get videoEditTabStyleReset;
 
+  /// Video edit: on the preview, the tab's toolbar makes it a step smaller
+  ///
+  /// In en, this message translates to:
+  /// **'Smaller tab'**
+  String get videoEditPictureSmaller;
+
+  /// Video edit: on the preview, the tab's toolbar makes it a step larger
+  ///
+  /// In en, this message translates to:
+  /// **'Larger tab'**
+  String get videoEditPictureLarger;
+
+  /// Video edit: on the preview, the handle at the tab's top right
+  ///
+  /// In en, this message translates to:
+  /// **'Drag up or down to resize the tab'**
+  String get videoEditPictureResize;
+
+  /// Video edit: on the preview, the tab's toolbar turns it off
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the tab'**
+  String get videoEditPictureHideTab;
+
+  /// Video edit: on the preview, the title's toolbar turns it off
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the title'**
+  String get videoEditPictureHideTitle;
+
+  /// Video edit: on the preview, the watermark's toolbar turns it off (Premium)
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the watermark'**
+  String get videoEditPictureHideWatermark;
+
   /// The metronome's button and its sidebar's title
   ///
   /// In en, this message translates to:

@@ -738,6 +738,56 @@ void main() {
       expect(find.byKey(const Key('video-edit-title-fields')), findsNothing);
     });
 
+    testWidgets('on the preview, the title picked has a toolbar that edits '
+        'and hides it; the watermark picked offers Premium\'s card, without '
+        'Premium', (tester) async {
+      sized(tester, const Size(900, 1600));
+      final (library, id) = await capture(tester);
+      await tester.pumpWidget(editScreen(library, id));
+      await settle(tester);
+      final box = tester.getRect(find.byKey(const Key('video-edit-preview')));
+      final short = box.shortestSide;
+      await tester.tapAt(box.topLeft + Offset(short * 0.05, short * 0.05));
+      await settle(tester);
+      expect(find.byKey(const Key('video-edit-title-fields')), findsOneWidget);
+      expect(
+        find.byKey(const Key('video-edit-picture-title-edit')),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const Key('video-edit-picture-title-hide')));
+      await settle(tester);
+      expect(find.byKey(const Key('video-edit-picture-title')), findsNothing);
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 500)),
+      );
+      expect(kept(library, id)!.title!.on, isFalse);
+
+      // The watermark, picked (no Premium service here: it's unlocked):
+      // its toolbar hides it.
+      final mark = tester.getRect(
+        find.byKey(const Key('video-edit-picture-watermark')),
+      );
+      await tester.tapAt(mark.center);
+      await settle(tester);
+      expect(
+        find.byKey(const Key('video-edit-picture-watermark-premium')),
+        findsNothing,
+      );
+      await tester.tap(
+        find.byKey(const Key('video-edit-picture-watermark-hide')),
+      );
+      await settle(tester);
+      expect(
+        find.byKey(const Key('video-edit-picture-watermark')),
+        findsNothing,
+      );
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 500)),
+      );
+      expect(kept(library, id)!.watermark, isFalse);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('without Premium the watermark is locked on: a tap shows the '
         'Premium card, and it stays on; Premium arriving late unlocks it '
         'in place', (tester) async {
@@ -765,6 +815,24 @@ void main() {
       await settle(tester);
       expect(find.byKey(const Key('video-edit-premium')), findsNothing);
       expect(markChip(tester).selected, isTrue);
+      expect(kept(library, id), isNull);
+      // Picked on the preview, its toolbar offers Premium's card, no hide.
+      final mark = tester.getRect(
+        find.byKey(const Key('video-edit-picture-watermark')),
+      );
+      await tester.tapAt(mark.center);
+      await settle(tester);
+      expect(
+        find.byKey(const Key('video-edit-picture-watermark-hide')),
+        findsNothing,
+      );
+      await tester.tap(
+        find.byKey(const Key('video-edit-picture-watermark-premium')),
+      );
+      await settle(tester);
+      expect(find.byKey(const Key('video-edit-premium')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('premium-not-now')));
+      await settle(tester);
       expect(kept(library, id), isNull);
 
       // Premium's answer comes: unlocked where it is.
