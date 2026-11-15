@@ -1,5 +1,5 @@
 {
-  "name": "TabCam",
+  "name": "Tabs.cam",
   "build": {
     "dockerfile": "Containerfile",
     "context": ".."

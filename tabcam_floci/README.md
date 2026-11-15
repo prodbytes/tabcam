@@ -1,6 +1,6 @@
 # tabcam_floci
 
-Runs [Floci](https://floci.io/), a local AWS emulator, as the TabCam
+Runs [Floci](https://floci.io/), a local AWS emulator, as the Tabs.cam
 **CloudFront** distribution, over HTTP and HTTPS. Like the deployed
 CloudFront ([tabcam_infra/site.yaml](../tabcam_infra/site.yaml)), it only
 routes. The index and the app keep running on their own dev servers:

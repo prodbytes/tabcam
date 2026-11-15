@@ -11,7 +11,7 @@ templates.
 | [identity.yaml](identity.yaml) | `tabcam-identity-local` | The same for local web builds: the pool `tabcam-local`, trusting the "local - web" client through the same provider, and its own authenticated role on the same bucket |
 | [share-api.yaml](share-api.yaml) | `tabcam-share-api` | Sharing captures by email: the `tabcam-share-api` HTTP API (Google JWT authorizer, and with `AppleClientId` an Apple one for the same routes under `/apple`; throttled), its Python function ([tabcam_api/shares/](../tabcam_api/shares)), the grants table (PITR on) and the `tabcam-share-access` role, which the function assumes with a session policy narrowed to one capture's folder (and to reading, for read-only grants); with `CdnPublicKey`, the `tabcam-user-data` CloudFront key group whose key signs URLs of users' folders |
 | [ocr-repo.yaml](ocr-repo.yaml) | `tabcam-ocr-repo` | The ECR repository `tabcam-ocr` of the cloud OCR image ([tabcam_locr/](../tabcam_locr/README.md)) |
-| [ocr.yaml](ocr.yaml) | `tabcam-ocr` | TabCam Premium's cloud OCR: the `tabcam-accounts` table, the `tabcam-ocr` and `tabcam-ocr-api` functions, the API's function URL (the app's `TABCAM_OCR_URL`) and the EventBridge rule for page uploads. Deployed by `tabcam_locr/scripts/deploy.sh` |
+| [ocr.yaml](ocr.yaml) | `tabcam-ocr` | Tabs.cam Premium's cloud OCR: the `tabcam-accounts` table, the `tabcam-ocr` and `tabcam-ocr-api` functions, the API's function URL (the app's `TABCAM_OCR_URL`) and the EventBridge rule for page uploads. Deployed by `tabcam_locr/scripts/deploy.sh` |
 | [github-deploy.yaml](github-deploy.yaml) | `tabcam-github-deploy` | The `tabcam-github-deploy` role (Deploy workflow, `*GA` tags) and the `tabcam-github-deploy-rc` role (Deploy RC workflow: `*RC*` tags and manual runs from `main`, limited to `tabcam-rc-*` resources and the `rc.tabcam.nu01.com` records), trusting GitHub's OIDC provider |
 
 `scripts/deploy.sh` deploys `tabcam-web`. With `STAGE=rc` it deploys the
@@ -84,7 +84,7 @@ ACM validation names.
    ```
 
    The production role trusts only tokens for `*GA` tags of
-   `prodbytes/tabcam`. Its permissions cover the TabCam stacks:
+   `prodbytes/tabcam`. Its permissions cover the Tabs.cam stacks:
    CloudFormation, S3, CloudFront, ACM, records under `tabcam.nu01.com`
    in the zone, and, until the next GA deploy has deleted them, the site's
    old health check (Route 53 health checks, `tabcam-*` alarms and SNS

@@ -3483,8 +3483,26 @@ spec.
 
 ## 2026-11-15
 
-1. **"Also change app name, logo, google oidc, everything."** (with
-   tabs.cam bought, the app becomes Tabs.cam) The logo part: a new icon,
+1. **"I just bought the tabs.cam domain, add it to CloudFront and ACM
+   and watermark."** / **"Also change app name, logo, Google OIDC,
+   everything."** The app is now called **Tabs.cam** wherever its name
+   shows: the app bar on Home and the welcome screen, a shared
+   capture's page, the browser tab's title and the installed web app's
+   name (the RC's "🧪 Tabs.cam RC"), the phones' home screens (Android's
+   label, iOS's bundle and display names) and iOS's permission texts,
+   every message in English, Spanish and Portuguese ("Tabs.cam
+   Premium"), the video editor's watermark ("Recorded by Tabs.cam" /
+   "Made with Tabs.cam", "Grabado con Tabs.cam", "Gravado com
+   Tabs.cam"…), the sign-in code emails, a shared link's preview page,
+   the PDFs it makes, the index and privacy pages, the store listings'
+   texts ("Tabs.cam: Guitar Tab Camera") and the docs. The store app
+   IDs (`com.nu01.tabcam`), code identifiers, stack and file names stay,
+   as do the app's log lines (`TabCam: …`). The domain (tabs.cam, its
+   certificate and CloudFront, Google sign-in's origins, the sign-in
+   emails' sender) and the new logo come in their own changes. See
+   [navigation](navigation.md), [video edit](video-edit.md).
+2. **"Also change app name, logo, google oidc, everything."** The logo
+   part: a new icon,
    a camera lens reading a line of tab (a gold ring round a cream disc
    with a six-line staff and the fret numbers 3, 5, 7, and a red rec dot
    on the ring), and a logo, the lens and the wordmark "tabs.cam" ("tabs"

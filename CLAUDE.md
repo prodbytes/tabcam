@@ -11,9 +11,9 @@
   web can't, e.g. for CORS), add it there. Server-side parts that cost
   little per use (sign-in, sync, sharing) may serve everyone; the
   expensive ones (paid APIs, heavy Lambda work such as cloud OCR and Fix)
-  are for TabCam Premium users only ([specs/cloud-ocr.md](specs/cloud-ocr.md)).
+  are for Tabs.cam Premium users only ([specs/cloud-ocr.md](specs/cloud-ocr.md)).
 - **"Cam" or "camera", never "scanner".** In labels, descriptions, store
-  listings, docs and specs, call TabCam and its capture "cam" or
+  listings, docs and specs, call Tabs.cam and its capture "cam" or
   "camera" (e.g. "the system document camera"), not "scanner". Keep
   "scanner" only in code identifiers and third-party names
   (`cunning_document_scanner`, CamScanner).

@@ -288,7 +288,7 @@ void main() {
       edit,
       duration: const Duration(seconds: 20),
       inputExtension: 'mp4',
-      watermark: 'Recorded by TabCam',
+      watermark: 'Recorded by Tabs.cam',
       premium: premium,
       takeLog: takeLog,
       bandAspect: aspect,
@@ -318,7 +318,7 @@ void main() {
     test('at the bottom right, small, the whole video through; above the '
         'tab\'s tallest band when it\'s drawn', () {
       final mark = _ofId(plan(null), 'mark').single;
-      expect(mark.look, const WatermarkLook('Recorded by TabCam'));
+      expect(mark.look, const WatermarkLook('Recorded by Tabs.cam'));
       expect(mark.anchor, LayerAnchor.bottomRight);
       expect(mark.heightU, WatermarkLayout.heightU);
       expect(mark.marginU, WatermarkLayout.margin);
@@ -392,7 +392,7 @@ void main() {
     final looks = [
       titlePicture(const ['Blue Riff', 'Made-up Band']),
       titlePicture(const ['Blue Riff']),
-      watermarkPicture('Made with TabCam'),
+      watermarkPicture('Made with Tabs.cam'),
     ];
     expect(looks[0].size.height, TitleLayout.heightU(2) * layerShort);
     expect(looks[1].size.height, TitleLayout.heightU(1) * layerShort);
@@ -611,7 +611,7 @@ void main() {
       expect(markChip(tester).selected, isTrue);
       expect(markChip(tester).avatar, isNull, reason: 'no service: unlocked');
       expect(preview(tester).map((l) => l.look), const [
-        WatermarkLook('Made with TabCam'),
+        WatermarkLook('Made with Tabs.cam'),
         TitleLook(['Blue Riff', 'Made-up Band']),
       ]);
       expect(previewTitle(tester)!.fadeIn, TitleLayout.fadeIn);
@@ -637,7 +637,7 @@ void main() {
       // A take: its watermark says so.
       expect(
         preview(tester).first.look,
-        const WatermarkLook('Recorded by TabCam'),
+        const WatermarkLook('Recorded by Tabs.cam'),
       );
 
       // A song along it, playing.

@@ -8,7 +8,7 @@ nothing leaves the device. It works as Presence's first cloud sync did:
 Google sign-in (and, on iOS, Sign in with Apple), a Cognito identity pool
 that turns the ID token into temporary AWS credentials for the user's own folder, and signed S3
 requests made by the app itself ([lib/cloud/](../tabcam_app/lib/cloud)).
-Sync needs no TabCam server (only [sharing](shared-captures.md) has an
+Sync needs no Tabs.cam server (only [sharing](shared-captures.md) has an
 API).
 
 A build has sign-in only when it has all of `TABCAM_GOOGLE_WEB_CLIENT_ID`,
@@ -47,7 +47,7 @@ The [Profile](navigation.md#profile) tab shows the account:
   ("Syncing…", "Synced at 14:05 (2 uploaded, 1 downloaded)", or why it
   failed, such as "Sign in again to sync"); **Sync now**; **Sign out**,
   which keeps the events on the device; where it's set up, the
-  [TabCam Premium](cloud-ocr.md#in-the-app) card; and last, in the
+  [Tabs.cam Premium](cloud-ocr.md#in-the-app) card; and last, in the
   error color, **Delete account**, "Deletes your events in the cloud and
   on this device, and your shares." ([below](#deleting-the-account)).
 
@@ -61,8 +61,8 @@ Google sign-in (`google_sign_in`,
   while the token has more than a minute left. Sign out forgets it.
 
 Whoever signs in, with builds that have the share API, a
-[TabCam session](sessions.md) then keeps them signed in until they sign
-out or leave TabCam unused for a week (90 days at most), with TabCam's own
+[Tabs.cam session](sessions.md) then keeps them signed in until they sign
+out or leave Tabs.cam unused for a week (90 days at most), with Tabs.cam's own
 ID tokens: the providers' tokens below only start it.
 - **Android**: Credential Manager: a quiet check at launch of the
   accounts that signed in before, and Google's sheet for the button.
@@ -96,11 +96,11 @@ keeps who, the provider and the ID token.
   app keeps the user and token in a file in its private Application
   Support folder (`apple_sign_in.json`) and restores it at launch while
   the token has more than a minute left; that token starts a
-  [TabCam session](sessions.md), which keeps the user signed in after it
+  [Tabs.cam session](sessions.md), which keeps the user signed in after it
   expires. Without one (builds without the share API), the user is signed
   out when it expires, "Your Apple sign-in expired: sign in again." At
-  launch, a user who stopped using Apple ID with TabCam (Settings → Apple
-  ID → Sign in with Apple) is signed out, the TabCam session ended. Sign
+  launch, a user who stopped using Apple ID with Tabs.cam (Settings → Apple
+  ID → Sign in with Apple) is signed out, the Tabs.cam session ended. Sign
   out forgets the session (Apple has no sign-out of its own).
 - **Its ID token** is issued for the bundle ID, `com.nu01.tabcam`, which
   the identity pool and the share API trust when set up (below). Each
@@ -117,7 +117,7 @@ keeps who, the provider and the ID token.
   ([platforms](platforms.md)).
 - **Android** (Apple has no SDK there): Apple's web flow in a Chrome
   Custom Tab (below), the same sheet, nonce check and session file. It
-  can't tell whether the user stopped using Apple ID with TabCam, so the
+  can't tell whether the user stopped using Apple ID with Tabs.cam, so the
   session lasts until its token expires.
 - Not on the web, where Google is the only sign-in.
 
@@ -218,7 +218,7 @@ sign-in, its folder, Premium by address, sharing).
   `tabcam-email-signin-message` (Cognito's CustomMessage trigger, for
   sign-up, a resent code and sign-in): the code, large, and a link to
   `<site>/app/?signin-code=<code>`, in English, Spanish or Portuguese.
-  The app passes `lang` and `site` (one of TabCam's sites; any other gets
+  The app passes `lang` and `site` (one of Tabs.cam's sites; any other gets
   tabcam.nu01.com) in the calls' ClientMetadata. AWS **denied** SES
   production access on 2026-10-21 (case 179257941000946; without it SES
   only sends to verified addresses), so for now the pool sends through
@@ -247,7 +247,7 @@ Every platform's ID token is issued for the **web client** (the server
 client ID on Android and iOS: its `aud`). An app's token also names the
 app's own client (`azp`: the iOS client, or the Android signing key's), so
 the pools trust Google through an IAM OpenID Connect provider for
-`accounts.google.com` that lists every TabCam client (web, iOS, local
+`accounts.google.com` that lists every Tabs.cam client (web, iOS, local
 web, and the Android clients as they're made), not the pools' built-in
 Google login, which takes one client ID and refused the apps' tokens: on
 iOS, sync and the Premium check failed with "Token is not from a supported
@@ -259,7 +259,7 @@ the local origins), and get their credentials from the **local pool**,
 Google account has another identity ID there, so local builds sync to
 another folder ([dev environment](dev-environment.md)).
 Tokens last an hour; five minutes before one expires the app asks Google
-quietly for a new one. With a [TabCam session](sessions.md), failing to
+quietly for a new one. With a [Tabs.cam session](sessions.md), failing to
 get one no longer matters: the session's tokens are used.
 
 ## What's synced, and where
@@ -312,7 +312,7 @@ minutes, or at once when that one is opened or comes back to the front.
 Few passes keep the cloud's cost down. One pass runs at a time; a
 request during one runs another right after. Passes wait for the library
 to load. A pass stops at its next step when the sign-in changes; the same
-user's new ID token (an hourly renewal, or the [TabCam session](sessions.md)
+user's new ID token (an hourly renewal, or the [Tabs.cam session](sessions.md)
 replacing the provider's token just after sign-in) starts it again with
 that token, so the first pass always ends (Home's "Loading your
 captures…" waits for it). Each pass logs (the browser's console, the
@@ -382,7 +382,7 @@ those shared to read, the user's own contribution, both ways; see
 ## Deleting the account
 
 App Store guideline 5.1.1(v) and Google Play want apps that make
-accounts to delete them from inside the app. A TabCam account is the
+accounts to delete them from inside the app. A Tabs.cam account is the
 user's Google sign-in, their Cognito identity and folder, their grants in
 the [share API](shared-captures.md#how-it-works) and their record in the
 [cloud OCR](cloud-ocr.md) service; **Delete account**, on the signed-in
@@ -395,7 +395,7 @@ their events, in the cloud and on this device; their shares, so the
 people they shared captures with lose them; the captures shared with
 them, which stop showing), "It can't be undone." (in the error color),
 that their Google account isn't deleted, and, where Premium is set up,
-that a TabCam Premium subscription isn't cancelled: on the web, "cancel
+that a Tabs.cam Premium subscription isn't cancelled: on the web, "cancel
 it on Substack, where you subscribed"; in the Android and iOS apps only
 "it's managed where you bought it" (no purchase links in the apps). It
 also asks to sign out on their other devices first (below). **Cancel**
@@ -426,7 +426,7 @@ running pass), so nothing goes up while the folder empties:
    included, removed without leaving tombstones; `cloudsync.json` and
    `cloudocr.json` are reset. Events of another account that used the
    device stay.
-4. **Signing out**. The dialog closes and a message says "Your TabCam
+4. **Signing out**. The dialog closes and a message says "Your Tabs.cam
    account was deleted."
 
 **Failures** stop it where they happen and say what was and wasn't
@@ -446,7 +446,7 @@ and told to delete what's left from Home.
 App Store guideline 5.1.1(v) wants an app with Sign in with Apple to
 revoke the user's Apple tokens when their account is deleted, with
 Apple's REST API. Apple's tokens are only had by trading an authorization
-code with a key of TabCam's, so the share API does it
+code with a key of Tabs.cam's, so the share API does it
 ([apple_revoke.py](../tabcam_api/shares/apple_revoke.py)):
 
 - **The app**, signed in with Apple, shows Apple's sheet again when it
@@ -466,7 +466,7 @@ code with a key of TabCam's, so the share API does it
   (else the access token) at `https://appleid.apple.com/auth/revoke`.
   Apple refusing either, or not answering, is a 502 ("…: try again") and
   nothing is deleted; trying again asks Apple for a new code. The reply
-  says `appleTokensRevoked`. TabCam then leaves the user's Sign in with
+  says `appleTokensRevoked`. Tabs.cam then leaves the user's Sign in with
   Apple list, and their next sign-in is a first one (Apple asks for the
   name and email again).
 - **The key**: the SSM SecureString `/tabcam/apple-sign-in-key`
@@ -489,10 +489,10 @@ code with a key of TabCam's, so the share API does it
 - **Backups and logs**: the grants table and the accounts table have
   point-in-time recovery (35 days); the share API's and the OCR
   service's logs (30 days) name identity IDs.
-- **The Google account**, and Google's record that TabCam was granted
+- **The Google account**, and Google's record that Tabs.cam was granted
   sign-in (the user removes it in their Google account's settings).
 - **rbacr and Substack**: a Premium role or subscription is kept by
-  rbacr and Substack, not TabCam; the user cancels it where they
+  rbacr and Substack, not Tabs.cam; the user cancels it where they
   bought it.
 - **Builds without the share API** can't delete the grants nor the
   Cognito identity (only the folder and the device): the identity's role
@@ -502,7 +502,7 @@ code with a key of TabCam's, so the share API does it
 **Other devices** still signed in keep their credentials for up to an
 hour; a pass there in that time would upload their events again, under
 the deleted identity (where no one can reach them). Hence the dialog's
-"sign out there first". Their [TabCam sessions](sessions.md) end with the
+"sign out there first". Their [Tabs.cam sessions](sessions.md) end with the
 account, so within that hour they're signed out ("You were signed out
 …"), and signing in again makes a new, empty identity, to which the
 old account's events on that device aren't uploaded.
@@ -511,7 +511,7 @@ old account's events on that device aren't uploaded.
 has the same panel, so https://tabcam.nu01.com/app/ (sign in, Profile,
 Delete account) deletes an account from any browser. Proposed for the
 store listing: a static page on the index site,
-`https://tabcam.nu01.com/delete-account`, that names TabCam and its
+`https://tabcam.nu01.com/delete-account`, that names Tabs.cam and its
 developer, lists those steps, says what's deleted and what's kept for 30
 days, and gives a contact address for people who can't sign in any more
 (to be done with the privacy policy page, [app stores](app-stores.md);
@@ -641,7 +641,7 @@ Setting it up (the Google OAuth clients, the stacks, the variables):
 - **Web** keeps events in memory, so each visit downloads all of a user's
   events again, videos included.
 - Builds without the share API (local web builds) have no
-  [TabCam sessions](sessions.md): there an ID token that can't be
+  [Tabs.cam sessions](sessions.md): there an ID token that can't be
   refreshed quietly (Google wants the user to choose an account again)
   stops sync after an hour, with "Sign in again to sync", and Sign in
   with Apple lasts as long as Apple's ID token.
