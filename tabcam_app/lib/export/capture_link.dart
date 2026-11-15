@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../app_version.dart';
 import '../library/capture_event.dart';
 
-/// A capture's link, `https://tabcam.nu01.com/app/?c=<capture id>&k=<key>`:
+/// A capture's link, `https://tabs.cam/app/?c=<capture id>&k=<key>`:
 /// it opens the capture in TabCam for whoever has it (its owner, and the
 /// people it's shared with), found by its ID; and, with its key
 /// ([CaptureEvent.linkKey]), for anyone else too, read only, signed in or
@@ -23,7 +23,7 @@ abstract final class CaptureLink {
       );
     }
     return Uri.https(
-      AppVersion.stage == 'rc' ? 'rc.tabcam.nu01.com' : 'tabcam.nu01.com',
+      AppVersion.stage == 'rc' ? 'rc.tabs.cam' : 'tabs.cam',
       '/app/',
     );
   }

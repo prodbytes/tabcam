@@ -4,7 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'capture_link.dart';
 
 /// Capture links the app is opened with: on the web, the page's own
-/// address; on Android, an App Link (https://tabcam.nu01.com/app/…) that
+/// address; on Android, an App Link (https://tabs.cam/app/…) that
 /// launched the app or reached it while running.
 ///
 /// It's a binding observer added before runApp, so it sees a pushed link

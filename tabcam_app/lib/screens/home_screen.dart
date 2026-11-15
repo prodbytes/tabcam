@@ -735,7 +735,7 @@ class _AddTile extends StatelessWidget {
 
 /// TabCam's privacy policy (tabcam_index/site/privacy/), the same for
 /// every build and site.
-final Uri privacyPolicyUrl = Uri.parse('https://tabcam.nu01.com/privacy');
+final Uri privacyPolicyUrl = Uri.parse('https://tabs.cam/privacy');
 
 /// Opens TabCam's privacy policy in the browser.
 Future<void> openPrivacyPolicy(BuildContext context) async {

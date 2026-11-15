@@ -24,9 +24,9 @@ void main() {
     test('names the capture by its ID only', () {
       final link = CaptureLink.of(
         event,
-        app: Uri.parse('https://tabcam.nu01.com/app/'),
+        app: Uri.parse('https://tabs.cam/app/'),
       );
-      expect(link.toString(), 'https://tabcam.nu01.com/app/?c=abc123');
+      expect(link.toString(), 'https://tabs.cam/app/?c=abc123');
       expect(CaptureLink.idIn(link), 'abc123');
     });
 
@@ -34,7 +34,7 @@ void main() {
       final link = CaptureLink.of(
         event,
         file: event.pages.first,
-        app: Uri.parse('https://tabcam.nu01.com/app/'),
+        app: Uri.parse('https://tabs.cam/app/'),
       );
       expect(link.queryParameters['c'], 'abc123');
       expect(link.queryParameters['f'], event.pages.first.id);
@@ -48,11 +48,11 @@ void main() {
 
     test('finds no ID in other links, or a bad one', () {
       expect(
-        CaptureLink.idIn(Uri.parse('https://tabcam.nu01.com/app/')),
+        CaptureLink.idIn(Uri.parse('https://tabs.cam/app/')),
         isNull,
       );
       expect(
-        CaptureLink.idIn(Uri.parse('https://tabcam.nu01.com/app/?c=../x')),
+        CaptureLink.idIn(Uri.parse('https://tabs.cam/app/?c=../x')),
         isNull,
       );
     });
@@ -68,7 +68,7 @@ void main() {
     links.addListener(tell);
     addTearDown(() => links.removeListener(tell));
 
-    final link = Uri.parse('https://tabcam.nu01.com/app/?c=abc123');
+    final link = Uri.parse('https://tabs.cam/app/?c=abc123');
     expect(
       await links.didPushRouteInformation(RouteInformation(uri: link)),
       isTrue,

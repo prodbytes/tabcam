@@ -101,7 +101,7 @@ class EmailAuthService extends AuthService {
   final DateTime Function() _now;
 
   /// The site the email's link goes to (the web app's own origin); null:
-  /// tabcam.nu01.com.
+  /// tabs.cam.
   final String? site;
 
   AuthUser? _user;

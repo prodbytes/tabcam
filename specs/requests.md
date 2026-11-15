@@ -3602,3 +3602,15 @@ spec.
      share goes or is left, or the user deletes their own original), and
      before the clone gets a link (Share). Clones of the user's own
      captures work the same way.
+8. **The domain, tabs.cam (second step: the app).** Once the site
+   answered at tabs.cam, the app moved there: a capture's link
+   (`https://tabs.cam/app/?c=…`), the maintenance notice's
+   `status.json`, the privacy policy's link, the page YouTube's player is
+   embedded from, and the web app's reading of users' folders from its
+   own site (the old names still count as Tabs.cam's). Android opens
+   tabs.cam's and rc.tabs.cam's links as App Links (and the old names').
+   The sign-in emails come from `Tabs.cam <signin@tabs.cam>` (SES as
+   tabs.cam, its own identity stack) and their links default to
+   tabs.cam. Sign in with Apple's return URL stays at the old name,
+   which keeps serving it, until the Services ID names tabs.cam. See
+   [sharing](sharing.md), [cloud sync](cloud-sync.md).

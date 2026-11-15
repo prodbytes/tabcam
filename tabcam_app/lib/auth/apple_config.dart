@@ -27,5 +27,7 @@ abstract final class AppleConfig {
   /// share API: then there's no Sign in with Apple on Android.
   static Uri? get webRedirectUri => ShareConfig.apiUrl.isEmpty
       ? null
+      // Still the old name's: the Services ID's return URL, which the
+      // site keeps serving there (not redirected: Apple posts to it).
       : Uri.parse('https://tabcam.nu01.com/apple/callback');
 }

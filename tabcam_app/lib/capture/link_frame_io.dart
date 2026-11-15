@@ -18,7 +18,7 @@ Widget buildLinkFrame(LinkFrameController controller) =>
     : _WebViewFrame(controller: controller);
 
 /// The site the app is: YouTube's player is embedded from there.
-const _site = 'https://tabcam.nu01.com';
+const _site = 'https://tabs.cam';
 
 class _WebViewFrame extends StatefulWidget {
   const _WebViewFrame({required this.controller});

@@ -211,15 +211,16 @@ sign-in, its folder, Premium by address, sharing).
   session is kept the same way, the ID token renewed from the refresh
   token five minutes before it expires; a refused refresh signs out.
   Signing out revokes the refresh token.
-- **The emails** go out through Amazon SES as `tabcam.nu01.com`
-  ([email.yaml](../tabcam_infra/email.yaml), stack `tabcam-email`: Easy
-  DKIM, MAIL FROM `mail.tabcam.nu01.com` with SPF, DMARC `p=none`), from
-  `TabCam <signin@tabcam.nu01.com>`, written by
+- **The emails** go out through Amazon SES as `tabs.cam`
+  ([email.yaml](../tabcam_infra/email.yaml), stack `tabcam-email-tabs-cam`,
+  picked by the pool's `EmailStack`: Easy DKIM, MAIL FROM
+  `mail.tabs.cam` with SPF, DMARC `p=none`; `tabcam-email` keeps the old
+  name's identity), from `Tabs.cam <signin@tabs.cam>`, written by
   `tabcam-email-signin-message` (Cognito's CustomMessage trigger, for
   sign-up, a resent code and sign-in): the code, large, and a link to
   `<site>/app/?signin-code=<code>`, in English, Spanish or Portuguese.
-  The app passes `lang` and `site` (one of Tabs.cam's sites; any other gets
-  tabcam.nu01.com) in the calls' ClientMetadata. AWS **denied** SES
+  The app passes `lang` and `site` (one of Tabs.cam's sites, the old
+  names among them; any other gets tabs.cam) in the calls' ClientMetadata. AWS **denied** SES
   production access on 2026-10-21 (case 179257941000946; without it SES
   only sends to verified addresses), so for now the pool sends through
   Cognito's own mail (`Sender=COGNITO`: from
@@ -513,10 +514,10 @@ account, so within that hour they're signed out ("You were signed out
 old account's events on that device aren't uploaded.
 
 **Without the app** (Google Play's "delete account URL"): the web app
-has the same panel, so https://tabcam.nu01.com/app/ (sign in, Profile,
+has the same panel, so https://tabs.cam/app/ (sign in, Profile,
 Delete account) deletes an account from any browser. Proposed for the
 store listing: a static page on the index site,
-`https://tabcam.nu01.com/delete-account`, that names Tabs.cam and its
+`https://tabs.cam/delete-account`, that names Tabs.cam and its
 developer, lists those steps, says what's deleted and what's kept for 30
 days, and gives a contact address for people who can't sign in any more
 (to be done with the privacy policy page, [app stores](app-stores.md);
@@ -576,7 +577,8 @@ either):
   so a deletion can be undone), incomplete uploads cleared after a day.
   CORS allows `GET`, `PUT`, `HEAD`, `DELETE` and `POST` (DeleteObjects,
   for [deleting the account](#deleting-the-account)) from
-  `https://tabcam.nu01.com`, `https://rc.tabcam.nu01.com`,
+  `https://tabs.cam`, `https://rc.tabs.cam`, the old names
+  `https://tabcam.nu01.com` and `https://rc.tabcam.nu01.com`,
   `http://localhost:2012` and `https://local.tabcam.nu01.com:2443`.
 - **`identity.yaml`**, stack `tabcam-identity`: the identity pool
   `tabcam`, trusting Google through the `accounts.google.com` OpenID

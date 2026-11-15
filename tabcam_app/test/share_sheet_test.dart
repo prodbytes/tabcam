@@ -82,11 +82,11 @@ void main() {
       copied,
       matches(
         RegExp(
-          r'^https://tabcam\.nu01\.com/app/\?c=[a-z0-9]+&k=[A-Za-z0-9_-]{32}$',
+          r'^https://tabs\.cam/app/\?c=[a-z0-9]+&k=[A-Za-z0-9_-]{32}$',
         ),
       ),
     );
-    expect(copied, startsWith('https://tabcam.nu01.com/app/?c=$id&k='));
+    expect(copied, startsWith('https://tabs.cam/app/?c=$id&k='));
     await frames(tester);
     // The key is kept on the capture and recorded by the share API.
     final key = library.byId(id)!.linkKey!;
@@ -171,7 +171,7 @@ void main() {
     await frames(tester);
     await tester.tap(find.text('Share'));
     await frames(tester);
-    expect(copied, 'https://tabcam.nu01.com/app/?c=$id');
+    expect(copied, 'https://tabs.cam/app/?c=$id');
     expect(find.text('Link copied'), findsOneWidget);
     expect(find.byType(BottomSheet), findsNothing);
   });

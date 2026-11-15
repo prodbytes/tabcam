@@ -15,8 +15,8 @@ The site's `/status.json`, at the root of the site bucket (outside
 
 `message` is optional; without it the apps say "Sorry, Tabs.cam is down
 for maintenance. Please try again later." Production
-(https://tabcam.nu01.com/status.json) and the release candidate
-(https://rc.tabcam.nu01.com/status.json) each have their own. The local
+(https://tabs.cam/status.json) and the release candidate
+(https://rc.tabs.cam/status.json) each have their own. The local
 stack's is [tabcam_index/site/status.json](../tabcam_index/site/status.json),
 off; edit it to try maintenance mode locally (deploys upload only the
 index page, never this file).

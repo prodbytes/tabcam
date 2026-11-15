@@ -642,7 +642,7 @@ view).
     current time, from which « and » `seekTo` 10 seconds back or on, and
     when it ends, for Repeat. On Android and iOS it's in a web view
     (`webview_flutter`), in a page of its own from
-    `https://tabcam.nu01.com/` (YouTube wants to know the site that
+    `https://tabs.cam/` (YouTube wants to know the site that
     embeds it), with media playing inline and without a tap first; on
     the web, an iframe.
   - **Another page**: on Android and iOS loaded in the web view, its
