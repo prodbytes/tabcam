@@ -3475,3 +3475,8 @@ spec.
    it; one as long or longer still starts with the kept part, so none of
    its start is cut. A kept edit opens with its song where it was. See
    [video edit](video-edit.md).
+6. **"In the editor, let the user click the timeline to place the play
+   head."** Besides the ruler, a click or tap on the Take lane's bar or
+   the Song lane's (once it has a song) now takes the preview there,
+   exactly where it's clicked; dragging still trims the take and moves or
+   trims the song. See [video edit](video-edit.md).
