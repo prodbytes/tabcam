@@ -91,7 +91,10 @@ makes a file of it."), opening with the video's edit as it was left:
   left; **where the preview is** is a line across the ruler and both
   lanes. Tapped or dragged, the ruler takes the preview anywhere in the
   video (while dragged, a seek at most every 150 ms; exactly where it's
-  let go); playback stays in the kept part. The lanes are labelled
+  let go); **a click or tap on either lane's bar does too** (the Take
+  lane's, or the Song lane's once it has a song; the empty lane's Add
+  a song opens its sheet), exactly where it's clicked, while a drag on
+  them still trims or moves as below; playback stays in the kept part. The lanes are labelled
   **Take** and **Song** for one of Cam's takes, **Video sound** and
   **Track** for any other video.
   - **The Take lane**: the whole video, the kept part bright (the lane's

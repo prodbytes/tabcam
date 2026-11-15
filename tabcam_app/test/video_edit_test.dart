@@ -1306,6 +1306,50 @@ void main() {
     expect(edit()!.offset, s(10));
   });
 
+  testWidgets('a click on either lane places the preview there, as the '
+      'ruler does; a drag of the song still moves it', (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester);
+    await tester.runAsync(
+      () => library.setPageEdit(
+        id,
+        'k0',
+        PageEdit(
+          start: Duration.zero,
+          end: s(180),
+          song: SongMode.manual,
+          trackId: 'k1',
+        ),
+      ),
+    );
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    final take = tester.getRect(find.byKey(const Key('video-edit-take-bar')));
+    final song = tester.getRect(find.byKey(const Key('video-edit-song-bar')));
+
+    // A quarter in on the Take lane: 0:45.
+    await tester.tapAt(Offset(take.left + take.width / 4, take.center.dy));
+    await _settle(tester);
+    expect(platform.seeks.last.inMilliseconds, closeTo(45000, 500));
+
+    // Halfway on the Song lane: 1:30.
+    await tester.tapAt(Offset(song.left + song.width / 2, song.center.dy));
+    await _settle(tester);
+    expect(platform.seeks.last.inMilliseconds, closeTo(90000, 500));
+
+    // Dragged, the song moves, as before.
+    await tester.drag(
+      find.byKey(const Key('video-edit-song-move')),
+      Offset(song.width / 6, 0),
+    );
+    await _settle(tester);
+    expect(
+      library.byId(id)!.pages.first.edit!.offset.inMilliseconds,
+      // A sixth of the bar, less the drag's slop.
+      inInclusiveRange(15000, 30000),
+    );
+  });
+
   testWidgets('the Take lane\'s grips trim the video and both sounds with '
       'it: the song stays where it is along the video, cut where the '
       'video is', (tester) async {

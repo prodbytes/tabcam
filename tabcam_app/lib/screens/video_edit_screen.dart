@@ -2081,18 +2081,22 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                 ),
                 const SizedBox(width: 4),
                 Expanded(
-                  child: _TakeBar(
+                  child: _SeekOnTap(
                     length: length,
-                    start: _start,
-                    end: _end,
-                    fades: _fades,
-                    name: ownName,
-                    label: l10n.videoEditTakeBar,
-                    startLabel: l10n.videoEditKeptStart,
-                    endLabel: l10n.videoEditKeptEnd,
-                    onTrimStart: _trimStartBy,
-                    onTrimEnd: _trimEndBy,
-                    onTrimmed: _trimmed,
+                    onSeek: _seek,
+                    child: _TakeBar(
+                      length: length,
+                      start: _start,
+                      end: _end,
+                      fades: _fades,
+                      name: ownName,
+                      label: l10n.videoEditTakeBar,
+                      startLabel: l10n.videoEditKeptStart,
+                      endLabel: l10n.videoEditKeptEnd,
+                      onTrimStart: _trimStartBy,
+                      onTrimEnd: _trimEndBy,
+                      onTrimmed: _trimmed,
+                    ),
                   ),
                 ),
                 const SizedBox(width: _trail),
@@ -2114,7 +2118,17 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                 else
                   const SizedBox(width: _LaneVolume.width),
                 const SizedBox(width: 4),
-                Expanded(child: songBar),
+                // Empty, it's Add a song; a song's, a tap places the
+                // preview as the Take lane's does.
+                Expanded(
+                  child: hasSong
+                      ? _SeekOnTap(
+                          length: length,
+                          onSeek: _seek,
+                          child: songBar,
+                        )
+                      : songBar,
+                ),
                 SizedBox(
                   width: _trail,
                   child: hasSong ? _songMenu(l10n) : null,
@@ -2659,6 +2673,36 @@ class _Playhead extends CustomPainter {
 /// Its two grips trim it ([onTrimStart], [onTrimEnd], by how far they're
 /// dragged; [onTrimmed] as one is let go), and both sounds with it. The
 /// [fades] are drawn on the part kept as ramps at its ends.
+/// A lane's bar that, clicked or tapped (not dragged), takes the preview
+/// where it's clicked along the video, as the ruler does: [length] across
+/// its width. Its drags (the grips, the song moved) stay its own.
+class _SeekOnTap extends StatelessWidget {
+  const _SeekOnTap({
+    required this.length,
+    required this.onSeek,
+    required this.child,
+  });
+
+  final Duration length;
+  final void Function(Duration at) onSeek;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, box) => GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapUp: (d) {
+        final width = box.maxWidth;
+        final ms = length.inMilliseconds;
+        if (width <= 0 || ms <= 0) return;
+        final x = d.localPosition.dx.clamp(0.0, width);
+        onSeek(Duration(milliseconds: (x / width * ms).round()));
+      },
+      child: child,
+    ),
+  );
+}
+
 class _TakeBar extends StatelessWidget {
   const _TakeBar({
     required this.length,
