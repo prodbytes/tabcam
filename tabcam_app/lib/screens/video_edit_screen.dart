@@ -938,8 +938,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   }
 
   /// Puts [file], page [id] of the capture, in the Song lane: as [from]
-  /// places it, or, picked, placed by hand from the kept part's start, at
-  /// the lane's level, heard.
+  /// places it, or, picked, placed by hand at the timeline's end (its
+  /// end where the kept part ends; one as long or longer, from the kept
+  /// part's start, so none of its start is cut), at the lane's level,
+  /// heard.
   Future<void> _loadTrack(
     String id,
     XFile file,
@@ -975,13 +977,24 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       _trackEnd = from?.trackEnd == null
           ? length
           : _clamp(from!.trackEnd!, _trackStart, length);
-      _offset = from?.offset ?? Duration.zero;
+      _offset = from?.offset ?? _atEnd(length);
       if (from == null) {
         _song = SongMode.manual;
         _songLevel.muted = false;
       }
     });
     _changed();
+  }
+
+  /// Where a song [length] long, just picked, starts after the kept
+  /// part's start: at the timeline's end, its end where the kept part
+  /// ends; one as long as the kept part or longer (or whose length can't
+  /// be told), with the kept part.
+  Duration _atEnd(Duration length) {
+    final room = _end - _start - length;
+    return length <= Duration.zero || room <= Duration.zero
+        ? Duration.zero
+        : room;
   }
 
   /// Takes the song out of its lane (`song: off`): the lane is empty
