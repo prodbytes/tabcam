@@ -30,7 +30,7 @@ fi
 
 region="${AWS_REGION:-us-east-1}"
 # Passed every time: deploy would keep the stack's old origins otherwise.
-TABCAM_WEB_ORIGINS="https://tabcam.nu01.com,https://rc.tabcam.nu01.com,http://localhost:2012,https://local.tabcam.nu01.com:2443"
+TABCAM_WEB_ORIGINS="https://tabs.cam,https://rc.tabs.cam,https://tabcam.nu01.com,https://rc.tabcam.nu01.com,http://localhost:2012,https://local.tabcam.nu01.com:2443"
 rbacr_param="${RBACR_TOKEN_PARAMETER:-/tabcam/rbacr-token}"
 # Sign in with email, when tabcam-email-signin is deployed: its tokens'
 # issuer and audience.

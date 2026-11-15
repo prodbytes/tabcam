@@ -1,4 +1,4 @@
-# Deploys a release candidate to https://rc.tabcam.nu01.com: every pushed
+# Deploys a release candidate to https://rc.tabs.cam: every pushed
 # tag matching *RC* (e.g. 0.2.202609271200-RC1, from scripts/release-rc.sh),
 # or a manual run. It runs scripts/deploy.sh with STAGE=rc, which uses the
 # RC's own stack (tabcam-rc-web), and ends by checking that the RC site
@@ -7,7 +7,7 @@
 # AWS access is keyless: GitHub's OIDC token is exchanged for the
 # tabcam-github-deploy-rc role (tabcam_infra/github-deploy.yaml). That
 # role trusts only *RC* tag runs and manual runs from main, and may only
-# manage tabcam-rc-* resources and the rc.tabcam.nu01.com records. Its
+# manage tabcam-rc-* resources and the rc.tabs.cam and rc.tabcam.nu01.com records. Its
 # ARN is the repository variable TABCAM_AWS_DEPLOY_RC_ROLE_ARN.
 #
 # The Release workflow runs on the same tags and publishes the binaries as
@@ -63,7 +63,7 @@ jobs:
             exit 1
           fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "Deploying ${tag:-the current commit} to rc.tabcam.nu01.com"
+          echo "Deploying ${tag:-the current commit} to rc.tabs.cam"
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -92,6 +92,7 @@ jobs:
           STAGE: rc
           TAG: ${{ steps.tag.outputs.tag }}
           TABCAM_HOSTED_ZONE_ID: ${{ vars.TABCAM_HOSTED_ZONE_ID }}
+          TABCAM_OLD_HOSTED_ZONE_ID: ${{ vars.TABCAM_OLD_HOSTED_ZONE_ID }}
           # Sign-in and cloud sync (public identifiers; empty turns them off).
           TABCAM_GOOGLE_WEB_CLIENT_ID: ${{ vars.TABCAM_GOOGLE_WEB_CLIENT_ID }}
           TABCAM_COGNITO_IDENTITY_POOL_ID: ${{ vars.TABCAM_COGNITO_IDENTITY_POOL_ID }}

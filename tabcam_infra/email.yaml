@@ -1,6 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  tabcam-email: Amazon SES sending as tabcam.nu01.com, for sign-in
+  tabcam-email: Amazon SES sending as tabcam.nu01.com (and, as
+  tabcam-email-tabs-cam, as tabs.cam), for sign-in
   emails (the email sign-in's codes, sent by the tabcam-email-signin user
   pool). The domain is verified with Easy DKIM (three CNAMEs in its own
   zone), mail comes from mail.tabcam.nu01.com (MX and SPF to SES), and a
@@ -89,4 +90,6 @@ Outputs:
     Description: The SES identity the user pool sends as
     Value: !Sub arn:${AWS::Partition}:ses:${AWS::Region}:${AWS::AccountId}:identity/${DomainName}
     Export:
-      Name: tabcam-email-identity-arn
+      # tabcam-email-identity-arn for tabcam-email (tabcam-email-signin's
+      # EmailStack names which).
+      Name: !Sub ${AWS::StackName}-identity-arn

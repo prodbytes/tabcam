@@ -1,4 +1,4 @@
-# Deploys a *GA tag to production, https://tabcam.nu01.com: the Flutter
+# Deploys a *GA tag to production, https://tabs.cam: the Flutter
 # web app (/app/) and the index page (/), through scripts/deploy.sh. It
 # ends by checking that the live site serves this tag's version.
 #
@@ -60,6 +60,7 @@ jobs:
         env:
           TAG: ${{ github.ref_name }}
           TABCAM_HOSTED_ZONE_ID: ${{ vars.TABCAM_HOSTED_ZONE_ID }}
+          TABCAM_OLD_HOSTED_ZONE_ID: ${{ vars.TABCAM_OLD_HOSTED_ZONE_ID }}
           # Sign-in and cloud sync (public identifiers; empty turns them off).
           TABCAM_GOOGLE_WEB_CLIENT_ID: ${{ vars.TABCAM_GOOGLE_WEB_CLIENT_ID }}
           TABCAM_COGNITO_IDENTITY_POOL_ID: ${{ vars.TABCAM_COGNITO_IDENTITY_POOL_ID }}
