@@ -44,7 +44,7 @@ if [[ "${TABCAM_APPLE_SIGN_IN:-}" == 1 || "${TABCAM_APPLE_SIGN_IN:-}" == true ]]
   apple_services=com.nu01.tabcam.signin
 fi
 # Passed every time: deploy would keep the stack's old origins otherwise.
-origins="https://tabcam.nu01.com,https://rc.tabcam.nu01.com,http://localhost:2012,https://local.tabcam.nu01.com:2443"
+origins="https://tabs.cam,https://rc.tabs.cam,https://tabcam.nu01.com,https://rc.tabcam.nu01.com,http://localhost:2012,https://local.tabcam.nu01.com:2443"
 if [[ ! "${TABCAM_GOOGLE_WEB_CLIENT_ID:-}" =~ ^[0-9]+-[0-9a-z]+\.apps\.googleusercontent\.com$ ]]; then
   echo "error: TABCAM_GOOGLE_WEB_CLIENT_ID isn't a Google web client ID (environment or .env)" >&2
   exit 1

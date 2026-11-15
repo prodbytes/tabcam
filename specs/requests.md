@@ -3501,3 +3501,19 @@ spec.
    certificate and CloudFront, Google sign-in's origins, the sign-in
    emails' sender) and the new logo come in their own changes. See
    [navigation](navigation.md), [video edit](video-edit.md).
+2. **The domain, tabs.cam (first step: the site).** tabs.cam, registered
+   at GoDaddy, got its own Route 53 zone (GoDaddy names its name
+   servers). Both sites' stacks now serve **tabs.cam** and
+   **rc.tabs.cam**, with one ACM certificate for the new name and the
+   old, on the same CloudFront distributions: tabcam.nu01.com and
+   rc.tabcam.nu01.com answer their index page and app with a permanent
+   redirect to the same path and query on tabs.cam, so shared links
+   keep working, but still serve what installed apps ask of them by
+   name (users' folders' signed URLs, Sign in with Apple's return URL,
+   `/.well-known/`). The share API signs CDN URLs for both names and
+   takes both as preview sites (tabs.cam by default); the share API,
+   cloud OCR and user data bucket allow the new origins; the deploy
+   roles may change the new zone's records, and the deploy checks the
+   old name's redirect. The app moves to tabs.cam (its links, CDN,
+   sign-in, sender) once the site is live. See [deploy](deploy.md),
+   [CDN](cdn.md).

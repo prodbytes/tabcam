@@ -3,7 +3,7 @@ Description: >
   tabcam-github-deploy: lets GitHub Actions deploy TabCam. A production
   role that only *GA tag runs can assume, and a release-candidate role for
   *RC* tag runs and manual runs from main, limited to the tabcam-rc-*
-  resources and the rc.tabcam.nu01.com records. Both trust GitHub's OIDC
+  resources and the rc.tabs.cam (and old rc.tabcam.nu01.com) records. Both trust GitHub's OIDC
   identity provider, created here unless the account has it already.
   Deployed once, by hand (see tabcam_infra/README.md).
 
@@ -23,7 +23,10 @@ Parameters:
       repo:<this>:ref:... rather than repo:owner/name:ref:...
   HostedZoneId:
     Type: AWS::Route53::HostedZone::Id
-    Description: The site's zone, where its records and certificate validation live (TABCAM_HOSTED_ZONE_ID in the private .env)
+    Description: The site's zone, tabs.cam's, where its records and certificate validation live (TABCAM_HOSTED_ZONE_ID in the private .env)
+  OldHostedZoneId:
+    Type: AWS::Route53::HostedZone::Id
+    Description: The site's old name's zone, tabcam.nu01.com's, which the site still answers at (TABCAM_OLD_HOSTED_ZONE_ID)
   CreateOidcProvider:
     Type: String
     AllowedValues: ['true', 'false']
@@ -150,15 +153,21 @@ Resources:
                 Action:
                   - route53:ListResourceRecordSets
                   - route53:GetHostedZone
-                Resource: !Sub arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}
+                Resource:
+                  - !Sub arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}
+                  - !Sub arn:${AWS::Partition}:route53:::hostedzone/${OldHostedZoneId}
               # Records may change only for tabcam.nu01.com and the names
               # under it (ACM validation, the RC): never the zone's other sites.
               - Effect: Allow
                 Action: route53:ChangeResourceRecordSets
-                Resource: !Sub arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}
+                Resource:
+                  - !Sub arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}
+                  - !Sub arn:${AWS::Partition}:route53:::hostedzone/${OldHostedZoneId}
                 Condition:
                   ForAllValues:StringLike:
                     route53:ChangeResourceRecordSetsNormalizedRecordNames:
+                      - tabs.cam
+                      - '*.tabs.cam'
                       - tabcam.nu01.com
                       - '*.tabcam.nu01.com'
               - Effect: Allow
@@ -171,7 +180,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: tabcam-github-deploy-rc
-      Description: Assumed by GitHub Actions on *RC* tags and manual runs from main, to deploy the TabCam release candidate (rc.tabcam.nu01.com)
+      Description: Assumed by GitHub Actions on *RC* tags and manual runs from main, to deploy the Tabs.cam release candidate (rc.tabs.cam)
       MaxSessionDuration: 3600
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
@@ -271,15 +280,22 @@ Resources:
                 Action:
                   - route53:ListResourceRecordSets
                   - route53:GetHostedZone
-                Resource: !Sub arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}
-              # Records may change only for rc.tabcam.nu01.com and its ACM
-              # validation name (_<token>.rc.tabcam.nu01.com): never prod's.
+                Resource:
+                  - !Sub arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}
+                  - !Sub arn:${AWS::Partition}:route53:::hostedzone/${OldHostedZoneId}
+              # Records may change only for rc.tabs.cam, rc.tabcam.nu01.com
+              # and their ACM validation names (_<token>.rc.tabs.cam): never
+              # prod's.
               - Effect: Allow
                 Action: route53:ChangeResourceRecordSets
-                Resource: !Sub arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}
+                Resource:
+                  - !Sub arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}
+                  - !Sub arn:${AWS::Partition}:route53:::hostedzone/${OldHostedZoneId}
                 Condition:
                   ForAllValues:StringLike:
                     route53:ChangeResourceRecordSetsNormalizedRecordNames:
+                      - rc.tabs.cam
+                      - '*.rc.tabs.cam'
                       - rc.tabcam.nu01.com
                       - '*.rc.tabcam.nu01.com'
               - Effect: Allow

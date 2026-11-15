@@ -1,11 +1,13 @@
 # Deploy
 
-The web app is served at https://tabcam.nu01.com/app/ (production) and
-https://rc.tabcam.nu01.com/app/ (release candidate), from a private S3
+The web app is served at https://tabs.cam/app/ (production) and
+https://rc.tabs.cam/app/ (release candidate), from a private S3
 bucket behind CloudFront ([tabcam_infra/site.yaml](../tabcam_infra/site.yaml)).
-Both names live in the `tabcam.nu01.com` Route 53 zone
-(`Z01245733BIHST1A417HE`), delegated from `nu01.com`.
-The zone also holds `local.tabcam.nu01.com`, A `127.0.0.1` and AAAA
+Both names live in the `tabs.cam` Route 53 zone
+(`Z0433171ZYGSBVI5JP5S`); the domain is registered at GoDaddy, which
+names the zone's four name servers.
+The old name's zone, `tabcam.nu01.com` (`Z01245733BIHST1A417HE`,
+delegated from `nu01.com`), also holds `local.tabcam.nu01.com`, A `127.0.0.1` and AAAA
 `::1` (TTL 300), so a name under the real domain reaches the
 [local dev servers](dev-environment.md). It was made by hand with the AWS
 CLI; no stack owns it.
@@ -15,9 +17,21 @@ CLI; no stack owns it.
 
 ## The old domains
 
+**tabcam.nu01.com** (and rc.tabcam.nu01.com), the name before tabs.cam
+(2026-11-15), is on the same distributions as the new one (one
+certificate has both names): its index page and app answer with a
+permanent redirect (301) to the same path and query on tabs.cam (and
+rc.tabs.cam), so links shared before still open, and still preview as
+the capture. What installed apps still ask of it by name is served, not
+redirected: users' folders (their [signed URLs](cdn.md) name the host
+they're for, and the share API signs for both names), Sign in with
+Apple's return URL (`/apple/callback`), and `/.well-known/` (App Links).
+The deploy checks the redirect.
+
 TabCam was TabScan: `tabscan.nu01.com` and `rc.tabscan.nu01.com` (zone
 `Z10277161AEN9OU2H73PJ`, kept for them) are permanent redirects (301) to
-the same path and query on `tabcam.nu01.com` and `rc.tabcam.nu01.com`,
+the same path and query on `tabcam.nu01.com` and `rc.tabcam.nu01.com`
+(which send them on to tabs.cam),
 so links shared before the rename still open, and still preview as the
 capture: the `tabcam-old-domain` and `tabcam-rc-old-domain` stacks
 ([site.yaml](../tabcam_infra/site.yaml) with `RedirectTo`). Deploy them
@@ -57,7 +71,7 @@ which runs `scripts/deploy.sh` for that tag:
 
 One production deploy runs at a time; a newer tag waits.
 
-## Release candidates (rc.tabcam.nu01.com)
+## Release candidates (rc.tabs.cam)
 
 A pushed `*RC*` tag, or a manual run (with an optional tag; empty deploys
 the selected branch's commit), runs the
@@ -71,9 +85,10 @@ production.
 AWS access is keyless: GitHub's OIDC token is exchanged for
 `tabcam-github-deploy` (only `*GA` tags) or `tabcam-github-deploy-rc`
 (`*RC*` tags and manual runs from `main`, only `tabcam-rc-*` resources and
-`rc.tabcam.nu01.com` records) ([tabcam_infra/github-deploy.yaml](../tabcam_infra/github-deploy.yaml)).
+the `rc.tabs.cam` and `rc.tabcam.nu01.com` records) ([tabcam_infra/github-deploy.yaml](../tabcam_infra/github-deploy.yaml)).
 Repository variables: `TABCAM_AWS_DEPLOY_ROLE_ARN`, `TABCAM_AWS_DEPLOY_RC_ROLE_ARN`,
-`TABCAM_HOSTED_ZONE_ID`, and for [sign-in and cloud sync](cloud-sync.md)
+`TABCAM_HOSTED_ZONE_ID` (tabs.cam's zone), `TABCAM_OLD_HOSTED_ZONE_ID`
+(tabcam.nu01.com's), and for [sign-in and cloud sync](cloud-sync.md)
 `TABCAM_GOOGLE_WEB_CLIENT_ID`, `TABCAM_GOOGLE_IOS_CLIENT_ID` (releases only),
 `TABCAM_COGNITO_IDENTITY_POOL_ID`, `TABCAM_USER_DATA_BUCKET` and (for
 [shared captures](shared-captures.md)) `TABCAM_SHARE_API_URL` and (for
@@ -88,6 +103,7 @@ for the stacks both stages use; see [tabcam_infra/README.md](../tabcam_infra/REA
 
 Uptime isn't watched by these stacks: the `nu01-monitor` stack (in the nu01
 repository) fetches https://tabcam.nu01.com/app/version.json and the RC's
+(the old names: it follows their redirect to tabs.cam)
 every 5 minutes and emails when one fails. It replaced the sites' Route 53
 health checks, alarms and SNS topics (removed 2026-10-14, to save their
 cost); the deploy roles keep the permissions to delete those until the

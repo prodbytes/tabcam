@@ -123,8 +123,9 @@ APPLE_CALLBACK_ROUTE = "POST /apple/callback"
 APPLE_CALLBACK_FIELDS = ("code", "id_token", "state", "user", "error")
 ANDROID_PACKAGE = "com.nu01.tabcam"
 # The sites a preview may name (the site's CloudFront sends its own in
-# x-tabcam-site); production's by default.
-SITES = ("tabcam.nu01.com", "rc.tabcam.nu01.com")
+# x-tabcam-site); production's by default. The old names (before
+# tabs.cam) answer too, redirecting.
+SITES = ("tabs.cam", "rc.tabs.cam", "tabcam.nu01.com", "rc.tabcam.nu01.com")
 EMAIL = re.compile(r"^[^@\s]{1,64}@[A-Za-z0-9.-]{1,189}\.[A-Za-z]{2,}$")
 
 # The issuers whose tokens the API takes: the path prefix of their routes,
