@@ -10,8 +10,10 @@ app deletes the user's files.
 - **A capture** deleted (Home, a card's ⋮ menu, **Delete**,
   [library](library.md#events)) is marked `trashed` (when): hidden from
   Home, its search and studies, its pages, files and text tab all kept.
-  It syncs, so it's hidden on the user's other devices too, and for the
-  people it's [shared](shared-captures.md) with.
+  It syncs, so it's hidden on the user's other devices too, for the
+  people it's [shared](shared-captures.md) with, and for whoever opens
+  its [link](sharing.md#opening-a-link) ("This capture can't be opened…",
+  as a deleted one).
 - **A file** deleted from a capture (the list's **Delete file**, the file
   screen's **Delete**, the play-along sidebar's Delete,
   [event screen](event-screen.md)) moves to the capture's
@@ -82,7 +84,8 @@ other devices delete their copies of the files.
   goes from the folder and the other device; a deleted capture is in the
   trash on every device, files kept, and purged it's a tombstone with no
   files, which a new device never gets. An owner's capture in the trash
-  is hidden for the people it's shared with; purged, they leave it.
+  is hidden for the people it's shared with; purged, they leave it. Its
+  link opens nothing while it's in the trash.
 - Widget tests: Profile's Deleted summarizes the trash; Show lists it and
   restores a capture; Purge asks, cancelled keeps everything, confirmed
   deletes it all; a file deleted from the list says so with Undo.

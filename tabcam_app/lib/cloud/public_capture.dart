@@ -77,7 +77,8 @@ class PublicCaptures {
       var event = CaptureEvent.fromJson(
         (jsonDecode(utf8.decode(bytes)) as Map).cast<String, Object?>(),
       );
-      if (event.id != id || event.isDeleted) {
+      // One its owner deleted is in their trash: gone for the link too.
+      if (event.id != id || event.isDeleted || event.isTrashed) {
         throw const LinkUnavailable('deleted');
       }
       // Someone else's: it names no file of the user's ([EventPage.source]).
