@@ -68,7 +68,7 @@
   `TABCAM_GOOGLE_WEB_CLIENT_ID`, `TABCAM_GOOGLE_IOS_CLIENT_ID`,
   `AWS_REGION`, `TABCAM_COGNITO_IDENTITY_POOL_ID`,
   `TABCAM_USER_DATA_BUCKET`, `TABCAM_SHARE_API_URL`, for
-  [TabCam Premium](cloud-ocr.md) `TABCAM_OCR_URL`, and
+  [Tabs.cam Premium](cloud-ocr.md) `TABCAM_OCR_URL`, and
   [maintenance mode](maintenance-mode.md)'s `TABCAM_STATUS_URL`, all public
   identifiers); the version is passed as `TABCAM_VERSION`. The
   environment wins over `.env`.
@@ -87,7 +87,7 @@
   client (without it, it warns that the pool will refuse the local
   client's tokens). Local identities are not the production ones, so a
   local build syncs to its own folder in the bucket. Premium and sharing don't work in local web builds: the OCR service and the share API accept the local client's tokens but look the identity up in the main pool, which refuses them.
-- **Setting names**: every TabCam setting is prefixed `TABCAM_`, and
+- **Setting names**: every Tabs.cam setting is prefixed `TABCAM_`, and
   keeps the same name in `.env`, the scripts, the app's dart-defines and
   the GitHub repository variables and secrets. `AWS_REGION` keeps its
   standard name, as the AWS CLI reads it.

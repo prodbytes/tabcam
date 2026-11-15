@@ -637,7 +637,7 @@ void main() {
     final plan = editor.rendered.single;
     expect(plan.passthrough, isFalse);
     expect(plan.layers.map((l) => l.look), const [
-      WatermarkLook('Made with TabCam'),
+      WatermarkLook('Made with Tabs.cam'),
     ]);
     expect((plan.fadeIn, plan.fadeOut), (s(3), s(3)));
 

@@ -130,7 +130,7 @@ class _PublicCaptureScreenState extends State<PublicCaptureScreen>
         final failed = snapshot.hasError;
         return Scaffold(
           key: const Key('link-capture'),
-          appBar: AppBar(title: const Text('TabCam')),
+          appBar: AppBar(title: const Text('Tabs.cam')),
           body: Center(
             child: Padding(
               padding: const EdgeInsets.all(32),

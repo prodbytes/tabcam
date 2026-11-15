@@ -647,7 +647,7 @@ void main() {
         ),
       ),
     );
-    expect(find.text('TabCam Premium'), findsOneWidget);
+    expect(find.text('Tabs.cam Premium'), findsOneWidget);
     expect(find.text('Upgrade'), findsOneWidget);
     expect(find.text('Redeem a voucher'), findsOneWidget);
     expect(
@@ -768,14 +768,14 @@ void main() {
     // No hint any more: the tools say it, with a lock each.
     expect(find.byKey(const Key('tool-locked')), findsNWidgets(2));
     expect(find.byKey(const Key('premium-gate')), findsNothing);
-    expect(find.byTooltip('Text: TabCam Premium'), findsOneWidget);
-    expect(find.byTooltip('Cam: TabCam Premium'), findsOneWidget);
+    expect(find.byTooltip('Text: Tabs.cam Premium'), findsOneWidget);
+    expect(find.byTooltip('Cam: Tabs.cam Premium'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('text')));
     await tester.pump();
     expect(find.byKey(const Key('premium-gate')), findsOneWidget);
     expect(
-      find.textContaining('Text is part of TabCam Premium'),
+      find.textContaining('Text is part of Tabs.cam Premium'),
       findsOneWidget,
     );
     expect(
@@ -852,7 +852,7 @@ void main() {
     expect(find.byType(PlayAlongScreen), findsOneWidget);
     expect(find.byKey(const Key('premium-gate')), findsOneWidget);
     expect(
-      find.textContaining('Cam is part of TabCam Premium'),
+      find.textContaining('Cam is part of Tabs.cam Premium'),
       findsOneWidget,
     );
     expect(find.text('Upgrade'), findsOneWidget);
@@ -948,7 +948,7 @@ void main() {
     final banner = find.byKey(const Key('premium-banner'));
     expect(banner, findsOneWidget);
     expect(
-      find.text('Text tabs and Cam are TabCam Premium features.'),
+      find.text('Text tabs and Cam are Tabs.cam Premium features.'),
       findsOneWidget,
     );
     // Upgrade opens the account sheet, with the offer.
@@ -1064,7 +1064,7 @@ void _fixTests() {
     expect(
       find.text(
         'Tab lined up. Checking it against the song online is part of '
-        'TabCam Premium.',
+        'Tabs.cam Premium.',
       ),
       findsOneWidget,
     );

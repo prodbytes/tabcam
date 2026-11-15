@@ -49,7 +49,7 @@ enum HomeTab {
   };
 
   /// The app bar's title on this tab.
-  String title(AppLocalizations l10n) => this == home ? 'TabCam' : label(l10n);
+  String title(AppLocalizations l10n) => this == home ? 'Tabs.cam' : label(l10n);
 }
 
 /// The app's frame, as Presence's: a bottom navigation bar flips between

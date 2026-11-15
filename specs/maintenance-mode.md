@@ -13,7 +13,7 @@ The site's `/status.json`, at the root of the site bucket (outside
 {"maintenance": true, "message": "Back at 18:00 UTC"}
 ```
 
-`message` is optional; without it the apps say "Sorry, TabCam is down
+`message` is optional; without it the apps say "Sorry, Tabs.cam is down
 for maintenance. Please try again later." Production
 (https://tabcam.nu01.com/status.json) and the release candidate
 (https://rc.tabcam.nu01.com/status.json) each have their own. The local

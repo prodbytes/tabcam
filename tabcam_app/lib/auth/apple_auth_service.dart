@@ -305,7 +305,7 @@ class AppleAuthService extends AuthService {
           _nonEmpty(known['email']);
       if (email == null) {
         throw StateError(
-          "Apple didn't share an email address, which TabCam needs",
+          "Apple didn't share an email address, which Tabs.cam needs",
         );
       }
       final user = AuthUser(

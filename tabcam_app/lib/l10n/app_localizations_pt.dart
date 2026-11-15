@@ -24,7 +24,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get accountSignInPremium =>
-      'Com a sessão iniciada, o TabCam Premium lê suas digitalizações como tablaturas em texto, transcritas na nuvem enquanto sincronizam, e grava você tocando com o Cam.';
+      'Com a sessão iniciada, o Tabs.cam Premium lê suas digitalizações como tablaturas em texto, transcritas na nuvem enquanto sincronizam, e grava você tocando com o Cam.';
 
   @override
   String get accountSignInWithGoogle => 'Entrar com o Google';
@@ -125,7 +125,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível verificar o Premium agora';
 
   @override
-  String get accountPremiumTitle => 'TabCam Premium';
+  String get accountPremiumTitle => 'Tabs.cam Premium';
 
   @override
   String get accountPremiumActive =>
@@ -152,26 +152,26 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get premiumSignInToSubscribe =>
-      'Inicie a sessão e depois assine o TabCam Premium no seu perfil.';
+      'Inicie a sessão e depois assine o Tabs.cam Premium no seu perfil.';
 
   @override
   String get premiumTextFeature =>
-      'Texto faz parte do TabCam Premium: suas digitalizações lidas como uma tablatura em texto que você pode editar, copiar, verificar, baixar e acompanhar enquanto toca. Com o Premium, elas são transcritas na nuvem enquanto sincronizam, com mais precisão do que no celular.';
+      'Texto faz parte do Tabs.cam Premium: suas digitalizações lidas como uma tablatura em texto que você pode editar, copiar, verificar, baixar e acompanhar enquanto toca. Com o Premium, elas são transcritas na nuvem enquanto sincronizam, com mais precisão do que no celular.';
 
   @override
   String get premiumCamFeature =>
-      'O Cam faz parte do TabCam Premium: grave você tocando com a tablatura sob a câmera, uma linha de cada vez, virada com uma tecla, um pedal ou um aceno de cabeça; reproduza cada take com a tablatura virando como virou.';
+      'O Cam faz parte do Tabs.cam Premium: grave você tocando com a tablatura sob a câmera, uma linha de cada vez, virada com uma tecla, um pedal ou um aceno de cabeça; reproduza cada take com a tablatura virando como virou.';
 
   @override
   String get premiumSamplePreview => 'Uma prévia com uma tablatura de exemplo';
 
   @override
   String get homePremiumBanner =>
-      'As tablaturas em texto e o Cam são recursos do TabCam Premium.';
+      'As tablaturas em texto e o Cam são recursos do Tabs.cam Premium.';
 
   @override
   String eventPremiumTool(String feature) {
-    return '$feature: TabCam Premium';
+    return '$feature: Tabs.cam Premium';
   }
 
   @override
@@ -205,7 +205,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get accountShareLinkDetail =>
-      'Abre esta captura no TabCam, para você e as pessoas com quem ela é compartilhada';
+      'Abre esta captura no Tabs.cam, para você e as pessoas com quem ela é compartilhada';
 
   @override
   String get accountSharePdf => 'PDF';
@@ -322,7 +322,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get eventReadUnsupported =>
-      'Para ler tablaturas, use o app para Android ou iOS, ou o TabCam Premium.';
+      'Para ler tablaturas, use o app para Android ou iOS, ou o Tabs.cam Premium.';
 
   @override
   String get eventReadNeedsSignIn =>
@@ -471,7 +471,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String linkTabPremium(String site) {
-    return 'Link adicionado. Na web, importar a página do $site precisa do TabCam Premium.';
+    return 'Link adicionado. Na web, importar a página do $site precisa do Tabs.cam Premium.';
   }
 
   @override
@@ -546,7 +546,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get eventCameraNotAllowed =>
-      'A câmera não está permitida: deixe o TabCam usá-la nas configurações do site no navegador.';
+      'A câmera não está permitida: deixe o Tabs.cam usá-la nas configurações do site no navegador.';
 
   @override
   String eventCameraFailed(String error) {
@@ -806,7 +806,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get camNotAllowed =>
-      'A câmera ou o microfone não estão permitidos: deixe o TabCam usá-los nas configurações.';
+      'A câmera ou o microfone não estão permitidos: deixe o Tabs.cam usá-los nas configurações.';
 
   @override
   String get eventDone => 'Concluir';
@@ -857,7 +857,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get scanCameraNotAllowed =>
-      'a câmera não está permitida. Deixe o TabCam usá-la nas configurações.';
+      'a câmera não está permitida. Deixe o Tabs.cam usá-la nas configurações.';
 
   @override
   String homeAddFailed(String error) {
@@ -1072,7 +1072,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get homeMaintenanceDefault =>
-      'Desculpe, o TabCam está em manutenção. Tente novamente mais tarde.';
+      'Desculpe, o Tabs.cam está em manutenção. Tente novamente mais tarde.';
 
   @override
   String get textViewTabCopied => 'Tablatura copiada';
@@ -1082,7 +1082,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Coloque o cursor sobre um número de traste';
 
   @override
-  String get textViewFixPremium => 'Corrigir faz parte do TabCam Premium';
+  String get textViewFixPremium => 'Corrigir faz parte do Tabs.cam Premium';
 
   @override
   String get textViewUpgrade => 'Assinar';
@@ -1388,7 +1388,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get homePrivacyPolicy => 'Política de privacidade';
 
   @override
-  String get deleteAccountDone => 'Sua conta do TabCam foi excluída.';
+  String get deleteAccountDone => 'Sua conta do Tabs.cam foi excluída.';
 
   @override
   String get deleteAccountTitle => 'Excluir sua conta?';
@@ -1416,11 +1416,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get deleteAccountPremiumWeb =>
-      'Uma assinatura do TabCam Premium não é cancelada: cancele-a no Substack, onde você assinou.';
+      'Uma assinatura do Tabs.cam Premium não é cancelada: cancele-a no Substack, onde você assinou.';
 
   @override
   String get deleteAccountOtherDevices =>
-      'Se o TabCam estiver conectado nos seus outros dispositivos, saia neles primeiro para que não enviem os eventos de novo.';
+      'Se o Tabs.cam estiver conectado nos seus outros dispositivos, saia neles primeiro para que não enviem os eventos de novo.';
 
   @override
   String get deleteAccountCancel => 'Cancelar';
@@ -1537,7 +1537,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get accountSessionEnded =>
-      'Sua sessão foi encerrada (uma semana sem usar o TabCam, ou ela terminou em outro lugar): entre de novo.';
+      'Sua sessão foi encerrada (uma semana sem usar o Tabs.cam, ou ela terminou em outro lugar): entre de novo.';
 
   @override
   String get accountAppleUnavailable =>
@@ -1667,7 +1667,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get textViewFixLinedUpPremium =>
-      'Tablatura alinhada. Conferir com a música online faz parte do TabCam Premium.';
+      'Tablatura alinhada. Conferir com a música online faz parte do Tabs.cam Premium.';
 
   @override
   String get welcomeBody =>
@@ -1779,14 +1779,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get ownTabsNote =>
-      'O TabCam é para músicos praticando com suas próprias tablaturas. Adicione só o que você tem direito de usar: tablaturas que você escreveu, as do seu professor, as que comprou ou as de uso livre.';
+      'O Tabs.cam é para músicos praticando com suas próprias tablaturas. Adicione só o que você tem direito de usar: tablaturas que você escreveu, as do seu professor, as que comprou ou as de uso livre.';
 
   @override
   String get installTitle => 'Instale o app no celular';
 
   @override
   String get installIntro =>
-      'O TabCam ainda não está nas lojas de apps. Instale-o no celular pelo GitHub:';
+      'O Tabs.cam ainda não está nas lojas de apps. Instale-o no celular pelo GitHub:';
 
   @override
   String get installIphone => 'iPhone';
@@ -1799,14 +1799,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get installIphoneSteps =>
-      'O iPhone só instala apps da App Store ou assinados por um desenvolvedor da Apple, e a versão do GitHub não é assinada. Compile-a num Mac com Xcode e Flutter, assinada com a sua própria conta Apple (uma gratuita serve):\n\n1. Baixe o código do TabCam do GitHub e configure o seu time da Apple, como diz o guia.\n2. Conecte o iPhone ao Mac por USB e ative o Modo de Desenvolvedor (Ajustes → Privacidade e Segurança → Modo de Desenvolvedor).\n3. Compile e instale a versão com o comando do guia. Ela é instalada sobre o TabCam e mantém os seus eventos.\n4. Na primeira vez, confie no desenvolvedor no iPhone: Ajustes → Geral → VPN e Gerenciamento de Dispositivos.\n\nCom uma conta Apple gratuita, o app para de abrir depois de 7 dias: instale-o de novo.';
+      'O iPhone só instala apps da App Store ou assinados por um desenvolvedor da Apple, e a versão do GitHub não é assinada. Compile-a num Mac com Xcode e Flutter, assinada com a sua própria conta Apple (uma gratuita serve):\n\n1. Baixe o código do Tabs.cam do GitHub e configure o seu time da Apple, como diz o guia.\n2. Conecte o iPhone ao Mac por USB e ative o Modo de Desenvolvedor (Ajustes → Privacidade e Segurança → Modo de Desenvolvedor).\n3. Compile e instale a versão com o comando do guia. Ela é instalada sobre o Tabs.cam e mantém os seus eventos.\n4. Na primeira vez, confie no desenvolvedor no iPhone: Ajustes → Geral → VPN e Gerenciamento de Dispositivos.\n\nCom uma conta Apple gratuita, o app para de abrir depois de 7 dias: instale-o de novo.';
 
   @override
   String get installAndroidTitle => 'Instalar no Android';
 
   @override
   String get installAndroidSteps =>
-      '1. No celular, abra a versão mais recente do TabCam no GitHub (o botão abaixo).\n2. Em Assets, toque no arquivo que termina em -android.apk para baixá-lo.\n3. Abra o arquivo baixado. Na primeira vez, o Android pede para permitir que o navegador instale apps: permita (Configurações → Apps → Acesso especial a apps → Instalar apps desconhecidos).\n4. Toque em Instalar, ou Atualizar se o TabCam já estiver instalado. Atualizar mantém os seus eventos.\n\nEntrar com o Google ainda não funciona nessas versões.';
+      '1. No celular, abra a versão mais recente do Tabs.cam no GitHub (o botão abaixo).\n2. Em Assets, toque no arquivo que termina em -android.apk para baixá-lo.\n3. Abra o arquivo baixado. Na primeira vez, o Android pede para permitir que o navegador instale apps: permita (Configurações → Apps → Acesso especial a apps → Instalar apps desconhecidos).\n4. Toque em Instalar, ou Atualizar se o Tabs.cam já estiver instalado. Atualizar mantém os seus eventos.\n\nEntrar com o Google ainda não funciona nessas versões.';
 
   @override
   String get installOpenRelease => 'Abrir a versão no GitHub';
@@ -2150,10 +2150,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditLayerWatermark => 'Marca d\'água';
 
   @override
-  String get videoEditWatermarkTake => 'Gravado com TabCam';
+  String get videoEditWatermarkTake => 'Gravado com Tabs.cam';
 
   @override
-  String get videoEditWatermarkMade => 'Feito com TabCam';
+  String get videoEditWatermarkMade => 'Feito com Tabs.cam';
 
   @override
   String videoEditWatermarkAbout(String text) {

@@ -171,7 +171,7 @@ void main() {
       duration: ms(20000),
       inputExtension: 'mp4',
       takeLog: _log(),
-      watermark: 'Recorded by TabCam',
+      watermark: 'Recorded by Tabs.cam',
       frame: frame,
     );
 

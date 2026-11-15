@@ -39,7 +39,7 @@ class WelcomeScreen extends StatelessWidget {
                       color: theme.colorScheme.primary,
                     ),
                     const SizedBox(height: 16),
-                    Text('TabCam', style: theme.textTheme.headlineMedium),
+                    Text('Tabs.cam', style: theme.textTheme.headlineMedium),
                     const SizedBox(height: 8),
                     Text(
                       l10n.welcomeBody,
