@@ -292,7 +292,7 @@ guitar neck.
 | Store | Files | Size |
 |---|---|---|
 | Play | `android/en-US/images/icon.png` | 512 x 512, RGBA (the [app icon](app-icon.md)) |
-| Play | `android/en-US/images/featureGraphic.png` | 1024 x 500, RGB: the icon, "TabCam", "Scan guitar tabs into editable text", a page of tab |
+| Play | `android/en-US/images/featureGraphic.png` | 1024 x 500, RGB: the [logo](app-icon.md) (the lens and "tabs.cam"), "Scan guitar tabs into editable text", a page of tab |
 | Play | `android/en-US/images/phoneScreenshots/1.png` … `6.png` | 1080 x 1920 (411 x 731 dp at 2.625) |
 | App Store | `ios/screenshots/en-US/iphone69_1.png` … `6.png` | 1320 x 2868, the 6.9" iPhone (440 x 956 pt at 3x) |
 | App Store | `ios/screenshots/en-US/ipad13_1.png` … `6.png` | 2064 x 2752, the 13" iPad (1032 x 1376 pt at 2x): the app runs on iPads (`TARGETED_DEVICE_FAMILY` 1,2), so Apple asks for them |
