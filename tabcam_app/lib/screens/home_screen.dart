@@ -783,7 +783,8 @@ class _LanguagePicker extends StatelessWidget {
   }
 }
 
-/// On Home, for a signed-in user without Premium: that text tabs and Cam
+/// On Home, for a signed-in user the service checked has no Premium
+/// ([CloudOcr.free]): that text tabs and Cam
 /// are Premium's, with **Upgrade** (the account sheet, where the offer
 /// is) and a close that keeps it away until the app restarts.
 class _PremiumBanner extends StatefulWidget {
@@ -805,10 +806,9 @@ class _PremiumBannerState extends State<_PremiumBanner> {
     listenable: Listenable.merge([widget.sync.auth, widget.ocr]),
     builder: (context, _) {
       final ocr = widget.ocr;
-      if (closed ||
-          widget.sync.auth.user == null ||
-          ocr.premium ||
-          (ocr.status == null && ocr.checking)) {
+      // Only once the service said the user has no Premium: never while
+      // it's being asked, nor when it couldn't check.
+      if (closed || widget.sync.auth.user == null || !ocr.free) {
         return const SizedBox.shrink();
       }
       final l10n = context.l10n;

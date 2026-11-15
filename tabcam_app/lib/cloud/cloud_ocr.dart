@@ -79,6 +79,26 @@ class CloudOcr extends ChangeNotifier {
   PremiumStatus? get status => _status;
   bool get premium => _status?.premium ?? false;
 
+  /// Whether the user is known to have no Premium, the only case Premium
+  /// is offered to them: signed out, or signed in and the service checked
+  /// (rbacr answered) that they have none. Until then (not asked yet,
+  /// being asked, offline, the check failed, rbacr didn't answer) nothing
+  /// offers Premium, so a premium user never sees the offer.
+  bool get free {
+    if (auth.user == null) return true;
+    final status = _status;
+    return status != null && status.checked && !status.premium;
+  }
+
+  /// Checks first: asks the service whether the user is premium, unless
+  /// it has answered (and could check) or is being asked. Where Premium
+  /// would be offered (the card), before deciding whether to offer it.
+  void checkFirst() {
+    final status = _status;
+    if (_checking || (status != null && status.checked)) return;
+    unawaited(refresh());
+  }
+
   /// The service's last answer kept on the device: for whom, and when.
   ({String user, bool premium, DateTime at})? _kept;
 

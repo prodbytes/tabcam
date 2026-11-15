@@ -378,7 +378,8 @@ class _TabTextViewState extends State<TabTextView> {
     }
     if (ocr == null || !ocr.premium) {
       // The check against the song online is Premium's.
-      final offer = ocr != null && widget.onUpgrade != null;
+      // Offered only to a user the service said has no Premium.
+      final offer = ocr != null && ocr.free && widget.onUpgrade != null;
       _say(
         offer
             ? l10n.textViewFixLinedUpPremium

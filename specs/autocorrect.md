@@ -36,9 +36,10 @@ on the text as it is, saved as the user's edit:
   `G D A E`), names written on every string kept as written; the bars
   lined up, each measure padded with dashes to its widest string, so a
   measure's notes stay in it and every string ends at the same column.
-- It says "Tab lined up", or that the strings already line up. Without
-  Premium (where the upgrade can be offered) it adds that checking it
-  online is Premium's, with **Upgrade**; that message stays until it's
+- It says "Tab lined up", or that the strings already line up. For a
+  user the service said has no Premium (where the upgrade can be
+  offered; [only then](cloud-ocr.md#offered-only-when-known)) it adds
+  that checking it online is Premium's, with **Upgrade**; that message stays until it's
   tapped, swiped away or acted on ([messages](messages.md)).
 
 ## Checking it online (Premium)
