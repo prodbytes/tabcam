@@ -802,16 +802,16 @@ abstract class AppLocalizations {
   /// **'A lesson, a recording, the song online'**
   String get eventAddLinkDetail;
 
-  /// Event banner: who shared it, and the access (eventReadOnly or eventCanEdit)
+  /// Event banner: who shared it, and the access (eventReadOnly)
   ///
   /// In en, this message translates to:
   /// **'Shared by {owner} · {access}'**
   String eventSharedBy(String owner, String access);
 
-  /// Event banner: shared to read (see the owner's files, add one's own)
+  /// Event banner: shared captures are read only; adding a file makes the user's own copy of it
   ///
   /// In en, this message translates to:
-  /// **'Can view and add'**
+  /// **'Read only · What you add goes to your copy'**
   String get eventReadOnly;
 
   /// Banner on a capture opened by its link by someone it isn't shared with
@@ -868,11 +868,17 @@ abstract class AppLocalizations {
   /// **'This capture can\'t be opened. The link may be wrong, its owner may have deleted it, or you may be offline.'**
   String get linkUnavailable;
 
-  /// Event banner: shared, editable
+  /// Message after adding files to a capture shared with the user: they went to the user's own copy, which opens
   ///
   /// In en, this message translates to:
-  /// **'Can edit'**
-  String get eventCanEdit;
+  /// **'Added to your copy, \"{title}\"'**
+  String eventAddedToCopy(String title);
+
+  /// Message when Cam opens on a capture shared with the user: it opens on the user's own copy, where its takes go
+  ///
+  /// In en, this message translates to:
+  /// **'Cam records into your copy, \"{title}\"'**
+  String eventCamOnCopy(String title);
 
   /// Snackbar after cloning an event
   ///

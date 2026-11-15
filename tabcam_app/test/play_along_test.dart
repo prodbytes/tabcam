@@ -3771,9 +3771,10 @@ B|--5--8--|
     expect(find.byKey(ValueKey('cam-along-$pdf')), findsNothing);
   });
 
-  testWidgets('on a capture shared to read, the sidebar lists the reader\'s '
-      'own take after the owner\'s files; only theirs has Delete, and it '
-      'deletes it from their contribution', (tester) async {
+  testWidgets('on a capture shared with them, the sidebar lists the '
+      'reader\'s own take (from before adding went to their copy) after the '
+      'owner\'s files; only theirs has Delete, and it deletes it from their '
+      'contribution', (tester) async {
     final library = Library(PlatformEventStore(), null, (_) async => null);
     late String id;
     late EventPage song, mine;
@@ -3801,14 +3802,14 @@ B|--5--8--|
               readOnly: true,
             ),
       );
-      // The reader's own take: their contribution's.
-      event = await library.addMedia(library.byId(id)!, [
-        Media(
-          XFile.fromData(Uint8List.fromList([2]), name: 'take.mp4'),
-          PageKind.video,
-          'mp4',
-        ),
-      ]);
+      // The reader's own take: their contribution's (an older app's).
+      final take = EventPage(
+        id: newId(),
+        kind: PageKind.video,
+        extension: 'mp4',
+      );
+      await library.putPageStream(id, take, Stream.value([2]));
+      event = (await library.patchContribution(id, (pages) => [take]))!;
       mine = event.myContribution!.pages.single;
     });
     final event = library.byId(id)!;
@@ -3856,13 +3857,6 @@ B|--5--8--|
     await tester.runAsync(() async => kept = await library.hasPage(id, mine));
     expect(kept, isFalse);
     expect(mineRow, findsNothing);
-
-    // Shared to edit, the owner's files show it.
-    await tester.runAsync(
-      () => library.applyRemote(library.byId(id)!.copyWith(readOnly: false)),
-    );
-    await frames(tester);
-    expect(find.byKey(ValueKey('cam-along-delete-${song.id}')), findsOneWidget);
   });
 
   testWidgets('the sidebar\'s Delete asks with "Don\'t ask again", the '

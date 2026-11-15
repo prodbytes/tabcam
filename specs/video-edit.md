@@ -13,8 +13,8 @@ default and adjustable: the video from and to black, both sounds with
 it ([fades](#fades)). Opened
 with **Edit** (scissors, before Rename) on a video's
 [file screen](event-screen.md#file-screen), in the user's own captures
-and those shared to edit (not read only, nor a contribution's file, nor
-while a tool works).
+(not one shared with them, which is read only, nor a contribution's
+file, nor while a tool works).
 
 **The edit is kept, not applied.** It's saved with the video's page as
 it's made (the page's `edit`, see [stored](#how-the-edit-is-stored);

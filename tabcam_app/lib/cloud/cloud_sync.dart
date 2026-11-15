@@ -538,7 +538,8 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
     final there = files[event.id] ?? const <String>{};
     var added = false;
     for (final page in event.pages) {
-      if (!page.hasFile || !there.contains(page.fileName)) continue;
+      // A clone's page still showing the original's file has none here.
+      if (!page.hasOwnFile || !there.contains(page.fileName)) continue;
       final key = '${event.id}/${page.fileName}';
       if (_queued.contains(key)) continue;
       if (await library.hasPage(event.id, page)) continue;
@@ -671,7 +672,9 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
           _shareCredentials[key] = access;
         }
         _check(token);
-        final readOnly = access.role == ShareRole.read;
+        // Only its owner changes a capture: shared ones are read only,
+        // whatever the grant says (those shared to edit before too).
+        const readOnly = true;
         if (local != null) {
           await library.setSharing(local, g.ownerEmail, readOnly: readOnly);
         }
@@ -688,7 +691,7 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
         );
         up += u;
         down += d;
-        if (readOnly && access.contribPrefix != null) {
+        if (access.contribPrefix != null) {
           final (cu, cd) = await _myContribution(
             g.captureId,
             access.contribPrefix!,
@@ -1071,6 +1074,8 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
     String token, {
     CaptureEvent? seen,
   }) async {
+    // Someone else's capture names no file of the user's ([EventPage.source]).
+    if (!folder.own) theirs = theirs.withOwnFiles();
     final taken = await library.applyRemote(
       theirs.copyWith(
         owner: folder.owner,
@@ -1094,7 +1099,9 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
   ) async {
     final there = files[event.id] ?? const <String>{};
     for (final page in event.pages) {
-      if (!page.hasFile || there.contains(page.fileName)) continue;
+      // A clone's page still showing the original's file sends none: the
+      // original's folder has it.
+      if (!page.hasOwnFile || there.contains(page.fileName)) continue;
       final (body, length) = await library.pageStream(event.id, page);
       await bucket.putStream(
         _key(identity, event.id, page.fileName),

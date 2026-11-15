@@ -96,7 +96,8 @@ older events count their creation), its pages, and the text tab once read.
 Once it has synced it also has an `owner`, the Cognito identity it syncs
 with, and one shared with the user has `sharedBy` (the owner's email) and
 `readOnly` (all kept on the device only). Once its link has been copied
-it has a `linkKey` ([sharing](sharing.md)), synced; a clone has none. A page has an ID, a kind (**image**,
+it has a `linkKey` ([sharing](sharing.md)), synced; a clone has none,
+and has `clonedFrom` (the ID of the capture it's a copy of), synced. A page has an ID, a kind (**image**,
 **video**, **audio**, **pdf** or **link**), its file's extension, and a
 [filter](page-filters.md) (used for images only). A video Cam recorded is
 marked `take` ([Cam](cam.md)), kept when it's renamed, edited, cloned or
@@ -104,7 +105,9 @@ published, and synced with the page; it also has its
 [log](cam.md#what-a-take-keeps) (`takeLog`: the tab's turns and the
 lag, written once), kept the same way (a clone's naming the copy's
 files), but not when the page's file is replaced by another (it tells
-of the file recorded). A link has no file
+of the file recorded). A clone's page whose file is still the
+original's has `source` (`{event, page}`: the capture and page whose
+file it shows; see Clone, below). A link has no file
 (its extension is `url`): it has its address (`url`, `http` or `https`
 only, checked again whenever an event is loaded, since events also come
 from the cloud) and an optional `title`. A new event is titled `Tab YYYY-MM-DD HH:MM` (its local time).
@@ -120,11 +123,38 @@ the new title ([sharing](sharing.md)).
 
 **Clone** (a card's menu, or the event screen's app bar, which then opens
 the copy) makes a copy that is a new event of the user's own: titled
-"<title> (copy)", with the same artist, study, text tab and pages, each page a
-new page with its file copied (links copied as they are), created now,
-and never synced or shared yet. So it can be changed, or shared with
-other people, apart from the original. A message says "Cloned as
-"<title> (copy)"".
+"<title> (copy)", with the same artist, study, text tab and pages (each a
+new page, links copied as they are; on a capture shared with the user,
+their own phrase passes where they have some), created now, `clonedFrom`
+the original, and never synced or shared yet. So it can be changed, or
+shared with other people, apart from the original. A message says
+"Cloned as "<title> (copy)"".
+
+**Copy on write**: a clone doesn't copy the files. Each page shows the
+original's file (`source`; a clone of a clone, the first original's),
+which is kept once, on the device and in the cloud (the clone's folder
+has no file of it). Page files never change once written, so the copy
+still shows the file as it was when cloned. A page gets a file of its own
+only when it has to:
+
+- a change that makes a new file (Rotate, an edited video put in its
+  place) makes a new page with its own file, as on any capture; the
+  original's file stays. A rename, a filter, a video's edit or a
+  reorder change only the copy's `event.json`;
+- before the original's file is deleted (the owner deletes the file or
+  the capture, or a shared capture stops being shared with the user, or
+  the user leaves it or deletes their own original), each copy still
+  showing it gets a copy of its own, on the device, which then syncs up
+  like any change. A file that never came to the device can't be copied:
+  that page then has no file;
+- before the copy gets a link ([Share](sharing.md)), its files all
+  become its own: the link's holders read only its folder.
+
+**Adding to a capture shared with the user** (Add, dropped files, a tab
+site's print, Cam's takes) adds to their own copy of it
+(`Library.copyToAdd`): their newest capture `clonedFrom` it, or a new
+clone, made then. Only the owner changes a shared capture
+([shared captures](shared-captures.md)).
 
 **Delete** removes an event and its pages. One that has synced leaves a
 **tombstone** (its ID, `updated` and `deleted` times, no pages), hidden

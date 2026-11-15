@@ -2,14 +2,15 @@
 
 A capture (an event) lives in its owner's folder of the user-data bucket,
 <owner identity>/events/<capture id>/. Its owner grants it to email
-addresses, to edit (the default) or read: to see the owner's files and add
-their own. Someone signed in with a granted address lists what's shared
-with them, and gets temporary credentials for just that capture's folder:
-get and list, plus put and delete to edit. No email is sent. Someone signed
-in who opens the capture's link joins it (a read grant of their own).
+addresses, to read: only the owner changes a capture. Someone signed in
+with a granted address lists what's shared with them, and gets temporary
+credentials for just that capture's folder: get and list. Grants made to
+edit before that are read only too. No email is sent. Someone signed in
+who opens the capture's link joins it (a read grant of their own).
 
-What a reader adds is a contribution, in its own folder beside the
-capture's, <owner>/contrib/<capture id>/<reader's identity>/: their
+What a reader added before what they add went to their own copy of the
+capture (in their own folder) is a contribution, in its own folder beside
+the capture's, <owner>/contrib/<capture id>/<reader's identity>/: their
 credentials also get, put, delete and list that folder, and no other
 reader's. The owner's own credentials reach every contribution (their whole
 folder), so only the owner sees them all, and publishes one by copying it
@@ -107,7 +108,9 @@ import profiles as prof
 import sealed
 import sessions as sess
 
-ROLES = ("edit", "read")
+# Only a capture's owner changes it: every grant is to read (those made to
+# edit before are read as read).
+ROLES = ("read",)
 MAX_GRANTS = int(os.environ.get("MAX_GRANTS", "50"))
 # People who joined by the capture's link (a class), apart from MAX_GRANTS.
 MAX_JOINS = int(os.environ.get("MAX_JOINS", "500"))
@@ -381,14 +384,14 @@ def contrib_prefix(owner, capture_id, contributor):
 
 
 def folder_credentials(sts, owner, capture_id, role, contributor=None):
-    """Credentials for the capture's folder alone: get and list, plus put
-    and delete to edit. With [contributor] (a reader's identity), also get,
-    put, delete and list their own contribution's folder."""
+    """Credentials for the capture's folder alone, read only (get and
+    list): only its owner changes a capture, with their own credentials.
+    [role] is what the credentials say they're for (always "read"). With
+    [contributor] (a reader's identity), also get, put, delete and list
+    their own contribution's folder."""
     bucket = os.environ["BUCKET"]
     prefix = f"{owner}/events/{capture_id}/"
     actions = ["s3:GetObject"]
-    if role == "edit":
-        actions += ["s3:PutObject", "s3:DeleteObject"]
     statements = [
         {
             "Effect": "Allow",
@@ -896,7 +899,7 @@ class Api:
             ExpressionAttributeValues={":c": _key(owner, capture_id)},
         )
         return [
-            {"email": i["email"], "role": i["role"], "grantedAt": int(i["grantedAt"]),
+            {"email": i["email"], "role": "read", "grantedAt": int(i["grantedAt"]),
              # The reader's identity (their contribution's folder), once
              # they've synced; and whether they joined by the link.
              **({"identity": i["identity"]} if i.get("identity") else {}),
@@ -912,9 +915,9 @@ class Api:
         capture_id = _id(self.params.get("captureId"))
         body = self._body()
         email = _email(body.get("email"))
-        role = body.get("role", "edit")
+        role = body.get("role", "read")
         if role not in ROLES:
-            raise ApiError(400, "The role is edit or read")
+            raise ApiError(400, "Shared captures are read only: only their owner changes them")
         if email in self._emails():
             raise ApiError(400, "That's your own address")
         owner = self._me()
@@ -966,15 +969,15 @@ class Api:
                     "owner": i["owner"],
                     "captureId": i["captureId"],
                     "ownerEmail": i["ownerEmail"],
-                    "role": i["role"],
+                    # Read only, whatever an old grant says.
+                    "role": "read",
                 }
                 for i in items
             ]
         }
 
     def _my_grant(self):
-        """The grant of a capture to one of the profile's addresses (edit
-        over read, if there are both)."""
+        """The grant of a capture to one of the profile's addresses."""
         owner = _identity(self.params.get("owner"))
         capture_id = _id(self.params.get("captureId"))
         found = None
@@ -982,7 +985,7 @@ class Api:
             item = self.table.get_item(
                 Key={"capture": _key(owner, capture_id), "email": email}
             ).get("Item")
-            if item is not None and (found is None or item["role"] == "edit"):
+            if item is not None and found is None:
                 found = item
         return owner, capture_id, found
 
@@ -995,18 +998,17 @@ class Api:
         return {}
 
     def credentials(self):
-        """Credentials for a capture shared with the caller: a reader's
-        include their contribution's folder, and their grant records whose
-        it is (their identity), so the owner can tell who added what."""
+        """Credentials for a capture shared with the caller, read only
+        (only its owner changes it; a grant made to edit before too): they
+        include the reader's contribution's folder, and their grant records
+        whose it is (their identity), so the owner can tell who added what."""
         owner, capture_id, item = self._my_grant()
         if item is None:
             raise ApiError(404, "Not shared with you")
-        contributor = None
-        if item["role"] == "read":
-            contributor = self._me()
-            if item.get("identity") != contributor:
-                self.table.put_item(Item={**item, "identity": contributor})
-        creds = folder_credentials(self.sts, owner, capture_id, item["role"], contributor)
+        contributor = self._me()
+        if item.get("identity") != contributor:
+            self.table.put_item(Item={**item, "identity": contributor})
+        creds = folder_credentials(self.sts, owner, capture_id, "read", contributor)
         return with_cdn(self.clients, creds)
 
     def content_key(self):
@@ -1046,9 +1048,10 @@ class Api:
 
     def join_link(self):
         """Someone signed in opens a capture's link: they join it, with a
-        read grant of their own (they see the owner's files and add theirs),
-        so it's in their library from then on. The capture's owner, and
-        whoever has a grant already, keep what they have."""
+        read grant of their own (they see the owner's files; what they add
+        goes to their own copy), so it's in their library from then on. The
+        capture's owner, and whoever has a grant already, keep what they
+        have."""
         capture_id = _id(self.params.get("captureId"))
         digest = _link_key(self._body().get("key"))
         item = self.links.get_item(Key={"keyHash": digest}).get("Item")
@@ -1075,7 +1078,7 @@ class Api:
             }
             self.table.put_item(Item=grant)
         return {"owner": owner, "captureId": capture_id,
-                "ownerEmail": grant["ownerEmail"], "role": grant["role"]}
+                "ownerEmail": grant["ownerEmail"], "role": "read"}
 
     def _email_of(self, identity):
         """A profile's first address, by its folder (links from before

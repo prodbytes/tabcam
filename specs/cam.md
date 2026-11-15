@@ -655,8 +655,11 @@ view).
     page in it gets the space bar) until the user taps Cam again.
 - **Play** (the last take) pauses it first. Leaving Cam stops it.
 
-On a capture shared with the user to read, each take goes to their own
-[contribution](contributions.md), named among its takes. Cam is off on a
+On a capture [shared](shared-captures.md) with the user (read only),
+Cam opens on their own copy of it instead (their newest, or a
+[clone](library.md#events) made then, whose files stay the owner's
+until they change), which takes the capture's place on the event
+screen, so each take is theirs. Cam is off on a
 capture opened by its link (a take couldn't be saved there), and while a
 tool works. Opening it stops what
 plays in the list.

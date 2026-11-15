@@ -454,7 +454,8 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get eventReadOnly => 'Pode ver e adicionar';
+  String get eventReadOnly =>
+      'Somente leitura · O que você adicionar vai para a sua cópia';
 
   @override
   String get eventByLink => 'Aberta pelo link · Somente leitura';
@@ -493,7 +494,14 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível abrir esta captura. O link pode estar errado, o dono pode tê-la apagado ou você pode estar sem conexão.';
 
   @override
-  String get eventCanEdit => 'Pode editar';
+  String eventAddedToCopy(String title) {
+    return 'Adicionado à sua cópia, \"$title\"';
+  }
+
+  @override
+  String eventCamOnCopy(String title) {
+    return 'O Cam grava na sua cópia, \"$title\"';
+  }
 
   @override
   String eventClonedAs(String title) {

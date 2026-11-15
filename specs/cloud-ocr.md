@@ -66,8 +66,11 @@ most 5 minutes (less if the grant ends sooner), a "no" for 1 minute.
    upload to EventBridge, which calls `tabcam-ocr-api`.
 2. It looks up the identity's verified address (recorded by `/account`,
    below), asks rbacr, and for premium users invokes `tabcam-ocr`.
-   Free users' pages stop there. An image read before (the same content:
-   a clone, a published contribution, the same file added again) isn't
+   Free users' pages stop there. A clone's page whose file is still the
+   original's ([copy on write](library.md#events)) isn't uploaded, so
+   isn't read (the clone has the original's text tab), nor waited for
+   or asked for by the app. An image read before (the same content:
+   a clone's page once it's its own, a published contribution, the same file added again) isn't
    read again: the reading kept by its S3 ETag
    (`<identity>/ocrcache/<ETag>-<version>.json`, written by `tabcam-ocr`
    for `ok` and `no-tab` readings) is copied as the page's result, with

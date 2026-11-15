@@ -3576,7 +3576,33 @@ spec.
    old name's redirect. The app moves to tabs.cam (its links, CDN,
    sign-in, sender) once the site is live. See [deploy](deploy.md),
    [CDN](cdn.md).
-5. **The domain, tabs.cam (second step: the app).** Once the site
+
+7. **Change how sharing works: a shared link is read only to others,
+   only the owner changes the capture; adding a file to a shared capture
+   makes a clone for the user; copy on write, so files are copied only
+   when the user changes them.**
+   - **Read only**: every capture shared with the user is read only,
+     those shared by email to edit before too: the app never uploads one,
+     and the share API's credentials only read (a grant to `edit` is
+     refused; one made before lists as `read`). The banner says "Read
+     only · What you add goes to your copy"; "Can edit" is gone
+     ([shared captures](shared-captures.md)).
+   - **Adding makes the user's copy**: Add, dropped files, a tab site's
+     print and Cam's takes on a shared capture go to the user's own copy
+     (`Library.copyToAdd`: their newest capture `clonedFrom` it, or a new
+     clone), which opens in its place ("Added to your copy, …"); Cam
+     opens on the copy. No new [contributions](contributions.md) are made;
+     those from before still show and publish.
+   - **Copy on write** ([library](library.md#events)): a clone's pages
+     show the original's files (`source: {event, page}`) instead of
+     copying them, on the device and in the cloud (sync neither sends nor
+     brings them; cloud OCR doesn't read them). A page gets its own file
+     when a change makes a new one (Rotate, an edited video), before the
+     original's file is deleted (the owner deletes it or the capture, the
+     share goes or is left, or the user deletes their own original), and
+     before the clone gets a link (Share). Clones of the user's own
+     captures work the same way.
+8. **The domain, tabs.cam (second step: the app).** Once the site
    answered at tabs.cam, the app moved there: a capture's link
    (`https://tabs.cam/app/?c=…`), the maintenance notice's
    `status.json`, the privacy policy's link, the page YouTube's player is
