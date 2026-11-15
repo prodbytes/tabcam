@@ -117,8 +117,8 @@ The App Store's are uploaded with `scripts/store-upload-ios.sh`
   but for its sign-in line's order: Apple, Google or the email address
   on iOS; Google, Apple or the email address on Play),
   `keywords.txt`, `promotional_text.txt`, `release_notes.txt`, the
-  support and marketing URLs (https://tabcam.nu01.com/) and the privacy
-  URL (https://tabcam.nu01.com/privacy); `ios/screenshots/en-US/`, the
+  support and marketing URLs (https://tabs.cam/) and the privacy
+  URL (https://tabs.cam/privacy); `ios/screenshots/en-US/`, the
   screenshots ([below](#store-graphics)). `ios/metadata/review_information/notes.txt`
   is App Review's notes (the welcome's Sign in with Apple and Google, any
   Apple ID or Google account working; what to try: Scan, the Text view
@@ -139,7 +139,7 @@ The App Store's are uploaded with `scripts/store-upload-ios.sh`
   by a read-only link; no chat; Cam's play-along web view, answered as
   no unrestricted web access), target audience (not children), category
   (Music & Audio on Play, Music on the App Store) and Play's account
-  deletion URL (https://tabcam.nu01.com/privacy, which says how: Profile,
+  deletion URL (https://tabs.cam/privacy, which says how: Profile,
   Delete account, in the app or the web app).
 
 The text claims only what the app does as it is now (App Store guideline
