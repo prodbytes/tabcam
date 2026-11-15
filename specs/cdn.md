@@ -19,8 +19,9 @@ TTL is 0), and the device keeps them but revalidates each time.
 
 ## Through CloudFront, for signed URLs only
 
-- **The path**: both sites' distributions (tabcam.nu01.com and
-  rc.tabcam.nu01.com, [tabcam_infra/site.yaml](../tabcam_infra/site.yaml))
+- **The path**: both sites' distributions (tabs.cam and rc.tabs.cam,
+  each also at its old name, tabcam.nu01.com and rc.tabcam.nu01.com,
+  [tabcam_infra/site.yaml](../tabcam_infra/site.yaml))
   serve the user-data bucket at its keys' own paths. Every folder is a
   Cognito identity ID (`us-east-1:<uuid>`), so the behavior is
   `/us-east-1:*`, with the bucket as the origin through the site's Origin

@@ -5,18 +5,18 @@ templates.
 
 | Template | Stack | Holds |
 |---|---|---|
-| [site.yaml](site.yaml) | `tabcam-web` | https://tabcam.nu01.com: the ACM certificate (DNS-validated in the `tabcam.nu01.com` zone), a private S3 bucket, a CloudFront distribution (with `CdnKeyGroupId`, also users' folders at `/us-east-1:*` for signed URLs only, [caching](../specs/cdn.md)), and the Route 53 A/AAAA aliases (uptime: the `nu01-monitor` stack, in the nu01 repository, polls `/app/version.json`) |
+| [site.yaml](site.yaml) | `tabcam-web` | https://tabs.cam, also at its old name, tabcam.nu01.com, which redirects ([DNS](#dns)): the ACM certificate for both (DNS-validated in each name's zone), a private S3 bucket, a CloudFront distribution (with `CdnKeyGroupId`, also users' folders at `/us-east-1:*` for signed URLs only, [caching](../specs/cdn.md)), and the Route 53 A/AAAA aliases (uptime: the `nu01-monitor` stack, in the nu01 repository, polls `/app/version.json`) |
 | [user-data.yaml](user-data.yaml) | `tabcam-user-data` | The bucket of signed-in users' events, `nu01-user-events-<account>` (private, SSE-S3, TLS only, object events to EventBridge, versioned: old versions kept 30 days; CORS for the web app's origins; read by the sites' distributions named in `CdnDistributionArns`, and no others). Not `tabcam-*`, so the deploy roles can't reach it. Shared by production and the RC |
 | [identity.yaml](identity.yaml) | `tabcam-identity` | The Cognito identity pool `tabcam` (Google sign-in through the `accounts.google.com` OpenID Connect provider it makes, for the web, iOS and local web clients, and with `AppleClientId` Sign in with Apple, for the bundle ID; no guests, enhanced flow) and its authenticated role: get, put and delete in `<bucket>/<identity ID>/*`, and list that prefix. Shared by production and the RC |
 | [identity.yaml](identity.yaml) | `tabcam-identity-local` | The same for local web builds: the pool `tabcam-local`, trusting the "local - web" client through the same provider, and its own authenticated role on the same bucket |
 | [share-api.yaml](share-api.yaml) | `tabcam-share-api` | Sharing captures by email: the `tabcam-share-api` HTTP API (Google JWT authorizer, and with `AppleClientId` an Apple one for the same routes under `/apple`; throttled), its Python function ([tabcam_api/shares/](../tabcam_api/shares)), the grants table (PITR on) and the `tabcam-share-access` role, which the function assumes with a session policy narrowed to one capture's folder (and to reading, for read-only grants); with `CdnPublicKey`, the `tabcam-user-data` CloudFront key group whose key signs URLs of users' folders |
 | [ocr-repo.yaml](ocr-repo.yaml) | `tabcam-ocr-repo` | The ECR repository `tabcam-ocr` of the cloud OCR image ([tabcam_locr/](../tabcam_locr/README.md)) |
 | [ocr.yaml](ocr.yaml) | `tabcam-ocr` | Tabs.cam Premium's cloud OCR: the `tabcam-accounts` table, the `tabcam-ocr` and `tabcam-ocr-api` functions, the API's function URL (the app's `TABCAM_OCR_URL`) and the EventBridge rule for page uploads. Deployed by `tabcam_locr/scripts/deploy.sh` |
-| [github-deploy.yaml](github-deploy.yaml) | `tabcam-github-deploy` | The `tabcam-github-deploy` role (Deploy workflow, `*GA` tags) and the `tabcam-github-deploy-rc` role (Deploy RC workflow: `*RC*` tags and manual runs from `main`, limited to `tabcam-rc-*` resources and the `rc.tabcam.nu01.com` records), trusting GitHub's OIDC provider |
+| [github-deploy.yaml](github-deploy.yaml) | `tabcam-github-deploy` | The `tabcam-github-deploy` role (Deploy workflow, `*GA` tags) and the `tabcam-github-deploy-rc` role (Deploy RC workflow: `*RC*` tags and manual runs from `main`, limited to `tabcam-rc-*` resources and the `rc.tabs.cam` and `rc.tabcam.nu01.com` records), trusting GitHub's OIDC provider |
 
 `scripts/deploy.sh` deploys `tabcam-web`. With `STAGE=rc` it deploys the
 release candidate's own copy, `tabcam-rc-web`, for
-https://rc.tabcam.nu01.com; `*RC*` tags do that through
+https://rc.tabs.cam (and its old name, rc.tabcam.nu01.com); `*RC*` tags do that through
 [deploy-rc.yml](../.github/workflows/deploy-rc.yml).
 
 Every stack is deployed with the cost-allocation tags `project=tabcam`
@@ -33,6 +33,15 @@ tags): `GA` for `tabcam-web`, `RC` for `tabcam-rc-web`, `dev` for
 | default (`/`) | S3 `index.html`, the [index page](../tabcam_index) that redirects to `/app/` |
 | `/app/*`, `/app` | S3 `app/`, the Flutter web build (`--base-href /app/`). A CloudFront Function redirects `/app` to `/app/` and maps directory URIs to `index.html` |
 
+At the old name (`OldDomainName`: tabcam.nu01.com, rc.tabcam.nu01.com),
+the same function answers the index page and the app with a permanent
+redirect to the same path and query at the new one, so links already
+shared keep working. What installed apps ask of the old name by name is
+still served there, not redirected: the users' folders (`/us-east-1:*`,
+whose signed URLs name their host), Sign in with Apple's return URL
+(`/apple/callback`, posted to) and `/.well-known/` (App Links' keys,
+which Android reads without following redirects).
+
 Every file is uploaded with `Cache-Control: no-cache`, because Flutter's web
 files aren't content-hashed. Each deploy also invalidates `/*`.
 
@@ -45,28 +54,35 @@ Push a GA tag (`bash scripts/release-ga.sh`). The
 1. builds the web app for `/app/`;
 2. deploys `site.yaml`;
 3. uploads the content and invalidates the cache;
-4. checks that `https://tabcam.nu01.com/app/version.json` reports the
-   tag's version.
+4. checks that `https://tabs.cam/app/version.json` reports the
+   tag's version, and that `https://tabcam.nu01.com/app/` redirects there.
 
 `scripts/deploy.sh` also runs by hand with admin credentials (inside
 devbox): `TAG=0.1.<Z>-GA bash scripts/deploy.sh`.
 
 ## DNS
 
-`tabcam.nu01.com` has its own public Route 53 zone,
-`Z01245733BIHST1A417HE` (`TABCAM_HOSTED_ZONE_ID`), delegated from the `nu01.com`
-zone by an NS record (TTL 3600), like `rbacr` and `uplink`. Both stages'
-records live in it: `tabcam.nu01.com`, `rc.tabcam.nu01.com`, and their
+`tabs.cam` (registered at GoDaddy on 2026-11-15) has its own public
+Route 53 zone, `Z0433171ZYGSBVI5JP5S` (`TABCAM_HOSTED_ZONE_ID`); GoDaddy
+names its four name servers (ns-340.awsdns-42.com,
+ns-1900.awsdns-45.co.uk, ns-544.awsdns-04.net, ns-1061.awsdns-04.org).
+Both stages' records live in it: `tabs.cam`, `rc.tabs.cam`, and their
 ACM validation names.
+
+The old name, `tabcam.nu01.com`, keeps its zone, `Z01245733BIHST1A417HE`
+(`TABCAM_OLD_HOSTED_ZONE_ID`), delegated from the `nu01.com` zone by an
+NS record (TTL 3600), like `rbacr` and `uplink`: `tabcam.nu01.com`,
+`rc.tabcam.nu01.com` and their validation names, on the same
+distributions, which redirect them.
 
 ## One-time setup
 
-0. Create the zone and its delegation (done 2026-10-10):
+0. Create the zone and its delegation (done 2026-11-15; the old name's
+   on 2026-10-10, delegated from `nu01.com`):
 
    ```bash
-   aws route53 create-hosted-zone --name tabcam.nu01.com --caller-reference "tabcam-$(date -u +%s)"
-   # then, in the nu01.com zone, an NS record for tabcam.nu01.com with
-   # the new zone's four name servers
+   aws route53 create-hosted-zone --name tabs.cam --caller-reference "tabs-cam-$(date -u +%s)"
+   # then, at the registrar (GoDaddy), the new zone's four name servers
    ```
 
 1. Deploy the GitHub roles. They're IAM resources, so an administrator
@@ -80,13 +96,14 @@ ACM validation names.
      --template-file tabcam_infra/github-deploy.yaml \
      --capabilities CAPABILITY_NAMED_IAM \
      --tags project=tabcam tenancy=shared \
-     --parameter-overrides "HostedZoneId=$TABCAM_HOSTED_ZONE_ID"   # from the private .env
+     --parameter-overrides "HostedZoneId=$TABCAM_HOSTED_ZONE_ID" \
+       "OldHostedZoneId=$TABCAM_OLD_HOSTED_ZONE_ID"   # from the private .env
    ```
 
    The production role trusts only tokens for `*GA` tags of
    `prodbytes/tabcam`. Its permissions cover the Tabs.cam stacks:
-   CloudFormation, S3, CloudFront, ACM, records under `tabcam.nu01.com`
-   in the zone, and, until the next GA deploy has deleted them, the site's
+   CloudFormation, S3, CloudFront, ACM, records under `tabs.cam` and
+   `tabcam.nu01.com` in their zones, and, until the next GA deploy has deleted them, the site's
    old health check (Route 53 health checks, `tabcam-*` alarms and SNS
    topics, the `LanguageExtensions` transform); remove those statements
    then.
@@ -97,7 +114,8 @@ ACM validation names.
    ```bash
    gh variable set TABCAM_AWS_DEPLOY_ROLE_ARN --body "<DeployRoleArn>"
    gh variable set TABCAM_AWS_DEPLOY_RC_ROLE_ARN --body "<RcDeployRoleArn>"
-   gh variable set TABCAM_HOSTED_ZONE_ID --body Z01245733BIHST1A417HE
+   gh variable set TABCAM_HOSTED_ZONE_ID --body Z0433171ZYGSBVI5JP5S
+   gh variable set TABCAM_OLD_HOSTED_ZONE_ID --body Z01245733BIHST1A417HE
    ```
 
 3. Sign-in and cloud sync (once; again when the templates change). An
@@ -108,7 +126,8 @@ ACM validation names.
    1. In the Google Cloud project, create the OAuth clients (APIs &
       Services > Credentials):
       - **Web application**: authorized JavaScript origins
-        `https://tabcam.nu01.com`, `https://rc.tabcam.nu01.com` and
+        `https://tabs.cam`, `https://rc.tabs.cam`, the old names
+        `https://tabcam.nu01.com`, `https://rc.tabcam.nu01.com`, and
         `http://localhost:2012`. Its ID is `TABCAM_GOOGLE_WEB_CLIENT_ID`.
       - **Web application** "local - web", for local web builds: JavaScript
         origin `https://local.tabcam.nu01.com:2443`, no redirect URI. Its
@@ -124,7 +143,7 @@ ACM validation names.
       share API):
 
       ```bash
-      origins=https://tabcam.nu01.com,https://rc.tabcam.nu01.com,http://localhost:2012,https://local.tabcam.nu01.com:2443
+      origins=https://tabs.cam,https://rc.tabs.cam,https://tabcam.nu01.com,https://rc.tabcam.nu01.com,http://localhost:2012,https://local.tabcam.nu01.com:2443
       aws cloudformation deploy --region us-east-1 \
         --stack-name tabcam-user-data \
         --template-file tabcam_infra/user-data.yaml \

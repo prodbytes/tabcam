@@ -9,7 +9,7 @@ Description: >
 Parameters:
   AllowedOrigins:
     Type: CommaDelimitedList
-    Default: https://tabcam.nu01.com,https://rc.tabcam.nu01.com,http://localhost:2012,https://local.tabcam.nu01.com:2443
+    Default: https://tabs.cam,https://rc.tabs.cam,https://tabcam.nu01.com,https://rc.tabcam.nu01.com,http://localhost:2012,https://local.tabcam.nu01.com:2443
     Description: Web origins the app runs on (browser requests need CORS)
   CdnDistributionArns:
     Type: CommaDelimitedList

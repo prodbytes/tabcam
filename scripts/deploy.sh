@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Deploys the TabCam web app to production, https://tabcam.nu01.com, or
-# with STAGE=rc to the release-candidate site, https://rc.tabcam.nu01.com
-# (its own stack, tabcam-rc-web):
+# Deploys the TabCam web app to production, https://tabs.cam, or with
+# STAGE=rc to the release-candidate site, https://rc.tabs.cam (its own
+# stack, tabcam-rc-web); each also answers at its old name
+# (tabcam.nu01.com, rc.tabcam.nu01.com), which redirects to it:
 #   1. builds the Flutter web app for /app/ (make web, WEB_BASE_HREF=/app/)
 #   2. deploys the site (CloudFormation tabcam_infra/site.yaml:
 #      tabcam-web: certificate, bucket, CloudFront, DNS; uptime is
@@ -9,7 +10,8 @@
 #   3. uploads the index page (/), the privacy policy (/privacy) and the
 #      web build (/app/), and invalidates the CloudFront cache
 #   4. smoke-tests the live site: /app/version.json must report this
-#      version, / must be the index page, and /privacy the policy
+#      version, / must be the index page, and /privacy the policy; the
+#      old name must redirect there
 #
 # Run by .github/workflows/deploy.yml on *GA tags (deploy-rc.yml on *RC*
 # tags), or by hand with admin credentials. Settings, from the environment:
@@ -20,8 +22,11 @@
 #   AWS_REGION   default us-east-1 (CloudFront certificates live there)
 #   SKIP_BUILD   1 to deploy an existing tabcam_app/build/web
 #   TABCAM_HOSTED_ZONE_ID
-#                the Route 53 zone of tabcam.nu01.com (default: the
-#                repo's .env, from the private repo)
+#                the Route 53 zone of tabs.cam (default: the repo's
+#                .env, from the private repo)
+#   TABCAM_OLD_HOSTED_ZONE_ID
+#                the Route 53 zone of tabcam.nu01.com, the old name
+#                (default: the repo's .env)
 #   TABCAM_GOOGLE_WEB_CLIENT_ID, TABCAM_COGNITO_IDENTITY_POOL_ID,
 #   TABCAM_USER_DATA_BUCKET, TABCAM_SHARE_API_URL
 #                sign-in, cloud sync and sharing, compiled into the build
@@ -47,12 +52,14 @@ STAGE="${STAGE:-prod}"
 case "$STAGE" in
   prod)
     stack_prefix=tabcam
-    DOMAIN=tabcam.nu01.com
+    DOMAIN=tabs.cam
+    OLD_DOMAIN=tabcam.nu01.com
     tenancy=GA
     ;;
   rc)
     stack_prefix=tabcam-rc
-    DOMAIN=rc.tabcam.nu01.com
+    DOMAIN=rc.tabs.cam
+    OLD_DOMAIN=rc.tabcam.nu01.com
     tenancy=RC
     ;;
   *) echo "error: STAGE must be prod or rc (got '$STAGE')" >&2; exit 2 ;;
@@ -81,7 +88,7 @@ stack_output() { # stack_output <stack> <output key>
 }
 
 # Private settings: from the environment, else the private .env.
-for name in TABCAM_HOSTED_ZONE_ID; do
+for name in TABCAM_HOSTED_ZONE_ID TABCAM_OLD_HOSTED_ZONE_ID; do
   if [[ -z "${!name:-}" && -f .env ]]; then
     printf -v "$name" '%s' "$(sed -n "s/^$name=//p" .env | tail -1)"
   fi
@@ -98,10 +105,12 @@ if [[ -n "${TABCAM_CDN_KEY_GROUP_ID:-}" && ! "$TABCAM_CDN_KEY_GROUP_ID" =~ ^[0-9
   echo "error: TABCAM_CDN_KEY_GROUP_ID must be a CloudFront key group ID" >&2
   exit 1
 fi
-if [[ ! "$TABCAM_HOSTED_ZONE_ID" =~ ^Z[A-Z0-9]+$ ]]; then
-  echo "error: TABCAM_HOSTED_ZONE_ID must be a Route 53 zone ID" >&2
-  exit 1
-fi
+for name in TABCAM_HOSTED_ZONE_ID TABCAM_OLD_HOSTED_ZONE_ID; do
+  if [[ ! "${!name}" =~ ^Z[A-Z0-9]+$ ]]; then
+    echo "error: $name must be a Route 53 zone ID" >&2
+    exit 1
+  fi
+done
 
 # 1. The web app
 if [[ "${SKIP_BUILD:-}" != 1 ]]; then
@@ -146,6 +155,7 @@ aws cloudformation deploy --stack-name "$SITE_STACK" \
   --template-file tabcam_infra/site.yaml \
   --tags project=tabcam "tenancy=$tenancy" \
   --parameter-overrides "DomainName=$DOMAIN" "HostedZoneId=$TABCAM_HOSTED_ZONE_ID" \
+    "OldDomainName=$OLD_DOMAIN" "OldHostedZoneId=$TABCAM_OLD_HOSTED_ZONE_ID" \
     "ShareApiDomain=$share_api_domain" "CdnKeyGroupId=${TABCAM_CDN_KEY_GROUP_ID:-}" \
   --no-fail-on-empty-changeset
 bucket="$(stack_output "$SITE_STACK" SiteBucketName)"
@@ -179,6 +189,10 @@ check() {
   [[ "$live" == "$VERSION" ]] || { echo "    /app/version.json says $live, want $VERSION"; return 1; }
   curl -fsS --max-time 20 "https://$DOMAIN/" | grep -q "location.replace('/app/'" || { echo "    / isn't the index page"; return 1; }
   curl -fsS --max-time 20 -o /dev/null "https://$DOMAIN/app/" || { echo "    /app/ failed"; return 1; }
+  # The old name sends its pages here, path and query kept.
+  local moved
+  moved="$(curl -sS --max-time 20 -o /dev/null -w '%{http_code} %{redirect_url}' "https://$OLD_DOMAIN/app/?deploy=$BUILD_NUMBER")"
+  [[ "$moved" == "301 https://$DOMAIN/app/?deploy=$BUILD_NUMBER" ]] || { echo "    https://$OLD_DOMAIN/app/ answers '$moved'"; return 1; }
   curl -fsS --max-time 20 "https://$DOMAIN/privacy" | grep -q "<title>Tabs.cam Privacy Policy</title>" || { echo "    /privacy isn't the privacy policy"; return 1; }
 }
 for attempt in $(seq 1 30); do

@@ -831,6 +831,9 @@ class ShareApiTest(unittest.TestCase):
         self.assertEqual(used, [])
         # Another site than ours: production's is named.
         page, _ = self.preview(key="x" * 32, site="evil.example.com")
+        self.assertIn("https://tabs.cam/app/", page)
+        # The old name still is ours (it redirects, path and query kept).
+        page, _ = self.preview(key="x" * 32, site="tabcam.nu01.com")
         self.assertIn("https://tabcam.nu01.com/app/", page)
         self.assertNotIn("evil", page)
 

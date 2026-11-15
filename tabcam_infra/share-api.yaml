@@ -106,8 +106,10 @@ Parameters:
     Description: The SSM SecureString parameter (aws/ssm key) with its private half (PEM)
   CdnHosts:
     Type: String
-    Default: tabcam.nu01.com,rc.tabcam.nu01.com
-    Description: The sites a grant is signed for, one policy each
+    Default: tabs.cam,rc.tabs.cam,tabcam.nu01.com,rc.tabcam.nu01.com
+    Description: >
+      The sites a grant is signed for, one policy each (the old names,
+      before tabs.cam, for the apps installed before it)
   EnableSessionAuthorizer:
     Type: String
     Default: 'true'
