@@ -2998,6 +2998,30 @@
   "@videoEditTabStyleReset": {
     "description": "Video edit: puts the tab's style back to its default (white on a 70% black strip, at its usual size)"
   },
+  "videoEditPictureSmaller": "Smaller tab",
+  "@videoEditPictureSmaller": {
+    "description": "Video edit: on the preview, the tab's toolbar makes it a step smaller"
+  },
+  "videoEditPictureLarger": "Larger tab",
+  "@videoEditPictureLarger": {
+    "description": "Video edit: on the preview, the tab's toolbar makes it a step larger"
+  },
+  "videoEditPictureResize": "Drag up or down to resize the tab",
+  "@videoEditPictureResize": {
+    "description": "Video edit: on the preview, the handle at the tab's top right"
+  },
+  "videoEditPictureHideTab": "Hide the tab",
+  "@videoEditPictureHideTab": {
+    "description": "Video edit: on the preview, the tab's toolbar turns it off"
+  },
+  "videoEditPictureHideTitle": "Hide the title",
+  "@videoEditPictureHideTitle": {
+    "description": "Video edit: on the preview, the title's toolbar turns it off"
+  },
+  "videoEditPictureHideWatermark": "Hide the watermark",
+  "@videoEditPictureHideWatermark": {
+    "description": "Video edit: on the preview, the watermark's toolbar turns it off (Premium)"
+  },
   "metronome": "Metronome",
   "@metronome": {
     "description": "The metronome's button and its sidebar's title"

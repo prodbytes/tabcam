@@ -64,9 +64,9 @@ with the file's name in its app bar and **ⓘ** at its right (it says
 makes a file of it."), opening with the video's edit as it was left:
 
 - **The preview**, at the top, at most a third of the screen: the video
-  (a tap on it plays or pauses, on the tab's band too, as wide as the
-  picture; a tap on the title, a corner of it, opens its text; on a
-  phone, a long press on the tab's band opens its style),
+  (its taps are the [on-picture controls'](#on-the-picture): a tap on
+  what's drawn picks it, elsewhere it plays or pauses; on a phone, a
+  long press on the tab's band opens its style),
   with what Download draws over it (the [layers](#layers): a take's
   tab, the title, the watermark as this user's download would have
   it), drawn by the same code, so the preview is what the file will be
@@ -78,6 +78,38 @@ makes a file of it."), opening with the video's edit as it was left:
   **kept part** only, from its start when outside it, paused back at its
   start at its end, with both lanes as set, as the edit is played
   everywhere.
+- <a id="on-the-picture"></a>**On the picture** (a video editor's
+  on-screen controls, [`on_picture.dart`](../tabcam_app/lib/screens/on_picture.dart)):
+  **while the preview is paused**, each layer drawn at that frame has a
+  thin white outline: the take's band showing then, the title (from
+  the start, though it fades in) and the watermark. Nothing of it shows
+  while it plays. **A tap picks** what's drawn (the title also opens its
+  text, as ✎ does, playing or not); paused, a tap on the one picked, or
+  on the picture outside every layer, plays (outside, nothing is picked
+  any more), and playing, a tap anywhere but the title pauses: so a tap
+  on the band, a good part of the picture, picks it first, then plays
+  and pauses. The one picked is outlined in the primary colour with a
+  **toolbar** beside it, on the picture (above it where there's room,
+  else under it, else over its top; across from its centre, and
+  narrowed to fit the picture at any text size):
+  - **The tab's band**: **Smaller tab** and **Larger tab** (a step of
+    the Size slider, greyed at its ends), its four **colours** (small
+    swatches, "3" in each one's colours, the one in use ringed), on a
+    phone its whole **style** (the palette, as the chip's), and **Hide
+    the tab** (the Tab chip off). A **handle** at the band's top right
+    ("Drag up or down to resize the tab") resizes it: dragged up, the
+    band grows by as much as it's dragged (half its height up: half as
+    large again), down, it shrinks, on the Size slider's steps and
+    within its range; each change drawn at once and kept a moment
+    later, as the slider's.
+  - **The title**: **Edit the title** (its text) and **Hide the title**
+    (off, its text kept).
+  - **The watermark**: **Hide the watermark** for a user with Premium;
+    without it, Premium's button ("Premium removes the watermark"),
+    which shows Premium's card, as the chip does.
+  While a fade covers the frame shown, a **badge** at the picture's top
+  right says so ("Fade in · 3.0 s", "Fade out · 3.0 s"); a tap on it
+  opens the fades' sliders (on a phone, in place of the chips).
 - **Under it, on one row**: **Play** / **Pause**, **the current time**
   (`0:12.3`, to the tenth of a second: the trims are set by it), the
   part kept (`Keep 0:02.5–0:41.0`, in the primary colour once trimmed;
@@ -177,8 +209,9 @@ makes a file of it."), opening with the video's edit as it was left:
     long press on the tab's band in the preview, opens it: on a phone in
     place of the chips ("Tab style · How the tab looks over the video");
     on a wide screen it's always under the fades' sliders ("How the tab
-    looks over the video"), without the button or Done (and the band
-    has no gesture of its own there: a tap on it plays or pauses). It
+    looks over the video"), without the button or Done (and no long
+    press on the band there). The band picked on the preview has its
+    size and colours [on the picture](#on-the-picture) too. It
     has **Size** (the tab's usual size times 50% to 200%, in steps of
     5%, but only the sizes that change the band over this video: from
     the smallest that reads on its frame, 50% on a 16:9 landscape one,

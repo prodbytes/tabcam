@@ -694,9 +694,11 @@ void main() {
     );
 
     testWidgets('on a phone, a long press on the band in the preview opens '
-        'the style (a tap on it plays or pauses, as anywhere on the '
-        'picture); a change to it turns the tab back on; the title\'s '
-        'fields and the fades\' sliders take its place', (tester) async {
+        'the style (a tap on it picks it, paused, then plays or pauses, as '
+        'anywhere on the picture); a change to it turns the tab back on; '
+        'the title\'s fields and the fades\' sliders take its place', (
+      tester,
+    ) async {
       sized(tester, const Size(400, 900));
       final (library, id) = await capture(tester);
       await tester.runAsync(
@@ -727,10 +729,19 @@ void main() {
       final box = tester.getRect(find.byKey(const Key('video-edit-preview')));
       final onBand = box.bottomCenter - const Offset(0, 2);
 
-      // A tap on the band plays (and pauses) the video; nothing opens.
+      // A tap on the band picks it (its toolbar shows), paused; another
+      // plays (and pauses) the video; nothing opens.
+      await tester.tapAt(onBand);
+      await settle(tester);
+      await playing(tester, false);
+      expect(
+        find.byKey(const Key('video-edit-picture-toolbar')),
+        findsOneWidget,
+      );
       await tester.tapAt(onBand);
       await settle(tester);
       await playing(tester, true);
+      expect(find.byKey(const Key('video-edit-picture-toolbar')), findsNothing);
       expect(find.byKey(const Key('video-edit-tab-style')), findsNothing);
       expect(find.byKey(const Key('video-edit-fade-fields')), findsOneWidget);
       await tester.tapAt(onBand);
@@ -751,8 +762,8 @@ void main() {
       expect(find.byKey(const Key('video-edit-tab-style')), findsNothing);
     });
 
-    testWidgets('on a wide screen a tap on the band plays or pauses the '
-        'video, as anywhere on the picture', (tester) async {
+    testWidgets('on a wide screen a tap on the band picks it, then plays or '
+        'pauses the video, as anywhere on the picture', (tester) async {
       sized(tester, const Size(1280, 900));
       final (library, id) = await capture(tester);
       await tester.pumpWidget(editScreen(library, id));
@@ -770,6 +781,9 @@ void main() {
           )
           .position
           .pixels;
+      await tester.tapAt(onBand);
+      await settle(tester);
+      await playing(tester, false);
       await tester.tapAt(onBand);
       await settle(tester);
       await playing(tester, true);
@@ -794,6 +808,123 @@ void main() {
             .pixels,
         side,
       );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('paused, the preview outlines what\'s drawn over the video; '
+        'the band picked has a toolbar that steps its size, sets its '
+        'colours and hides it, and a handle that resizes it; a fade\'s '
+        'badge opens the fades', (tester) async {
+      sized(tester, const Size(400, 900));
+      final (library, id) = await capture(tester);
+      await tester.pumpWidget(editScreen(library, id));
+      await settle(tester);
+      for (final layer in ['tab', 'title', 'watermark']) {
+        expect(
+          find.byKey(Key('video-edit-picture-$layer')),
+          findsOneWidget,
+          reason: layer,
+        );
+      }
+      expect(find.byKey(const Key('video-edit-picture-toolbar')), findsNothing);
+      final box = tester.getRect(find.byKey(const Key('video-edit-preview')));
+      await tester.tapAt(box.bottomCenter - const Offset(0, 2));
+      await settle(tester);
+      expect(
+        find.byKey(const Key('video-edit-picture-toolbar')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('video-edit-picture-tab-resize')),
+        findsOneWidget,
+      );
+      // The toolbar on the picture, across it at most.
+      final bar = tester.getRect(
+        find.byKey(const Key('video-edit-picture-toolbar')),
+      );
+      expect(bar.left, greaterThanOrEqualTo(box.left - 0.5));
+      expect(bar.right, lessThanOrEqualTo(box.right + 0.5));
+
+      // Larger, then smaller twice: a step of the Size slider each.
+      await tester.tap(find.byKey(const Key('video-edit-picture-tab-larger')));
+      await settle(tester);
+      expect(previewStyle(tester).size, closeTo(1.05, 1e-9));
+      for (var i = 0; i < 2; i++) {
+        await tester.tap(
+          find.byKey(const Key('video-edit-picture-tab-smaller')),
+        );
+        await settle(tester);
+      }
+      expect(previewStyle(tester).size, closeTo(0.95, 1e-9));
+      await tester.tap(find.byKey(const Key('video-edit-picture-colors-gold')));
+      await settle(tester);
+      expect(previewStyle(tester).colors, TabColors.gold);
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 500)),
+      );
+      expect(kept(library, id)!.tabStyle.size, closeTo(0.95, 1e-9));
+      expect(kept(library, id)!.tabStyle.colors, TabColors.gold);
+
+      // The handle, dragged up half the band's height: half as large again,
+      // on the slider's steps.
+      final band = tester.getRect(
+        find.byKey(const Key('video-edit-picture-tab')),
+      );
+      final handle = find.byKey(const Key('video-edit-picture-tab-resize'));
+      final drag = await tester.startGesture(tester.getCenter(handle));
+      await drag.moveBy(const Offset(0, -20));
+      await tester.pump();
+      await drag.moveBy(Offset(0, -(band.height - 2) / 2));
+      await tester.pump();
+      await drag.up();
+      await settle(tester);
+      expect(previewStyle(tester).size, closeTo(0.95 * 1.5, 0.08));
+      expect(
+        ((previewStyle(tester).size - 0.95) * 20).round() / 20,
+        closeTo(previewStyle(tester).size - 0.95, 1e-9),
+      );
+
+      // Hide: the Tab chip off, its outline gone.
+      await tester.tap(find.byKey(const Key('video-edit-picture-tab-hide')));
+      await settle(tester);
+      expect(find.byKey(const Key('video-edit-picture-tab')), findsNothing);
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 500)),
+      );
+      expect(kept(library, id)!.tab, isFalse);
+
+      // At the start, fading in: its badge opens the fades' sliders.
+      expect(find.text('Fade in · 3.0 s'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('video-edit-picture-fade')));
+      await settle(tester);
+      expect(find.byKey(const Key('video-edit-fade-fields')), findsOneWidget);
+
+      // Playing, nothing of it shows.
+      await tester.tap(find.byKey(const Key('video-edit-play')));
+      await settle(tester);
+      expect(find.byKey(const Key('video-edit-picture-title')), findsNothing);
+      expect(find.byKey(const Key('video-edit-picture-fade')), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the band\'s toolbar fits the picture at the largest text '
+        'size, on a phone', (tester) async {
+      sized(tester, const Size(360, 740));
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final (library, id) = await capture(tester);
+      await tester.pumpWidget(editScreen(library, id));
+      await settle(tester);
+      await tester.ensureVisible(find.byKey(const Key('video-edit-preview')));
+      await settle(tester);
+      final box = tester.getRect(find.byKey(const Key('video-edit-preview')));
+      await tester.tapAt(box.bottomCenter - const Offset(0, 2));
+      await settle(tester);
+      final bar = tester.getRect(
+        find.byKey(const Key('video-edit-picture-toolbar')),
+      );
+      expect(bar.left, greaterThanOrEqualTo(box.left - 0.5));
+      expect(bar.right, lessThanOrEqualTo(box.right + 0.5));
       expect(tester.takeException(), isNull);
     });
 

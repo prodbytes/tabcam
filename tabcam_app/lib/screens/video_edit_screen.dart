@@ -26,6 +26,7 @@ import 'premium_card.dart';
 import 'video_page.dart' show mediaLength, openPlayer, pageFile;
 import 'messages.dart';
 import 'mono_font.dart';
+import 'on_picture.dart';
 
 /// Basic edits of a video, opened from its file screen, on one time axis:
 /// a ruler (tapped or dragged, the preview goes there) over two lanes,
@@ -191,6 +192,12 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 
   /// Whether the watermark is drawn (only Premium turns it off).
   bool _watermark = true;
+
+  /// The layer picked on the preview ([OnPicture]): outlined in the
+  /// primary colour, with its toolbar; and the tab's size when its
+  /// handle's drag began.
+  PictureLayer? _picked;
+  double _resizeFrom = EditTabStyle.standard.size;
 
   /// How long the video fades in from black, and out to black (both
   /// sounds with it); the fades the Fades chip puts back when turned on
@@ -1445,10 +1452,11 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     );
   }
 
-  /// The video, at most a third of the screen (a tap plays or pauses it;
-  /// on the title, it edits it; on a phone, a long press on the tab's band
-  /// opens its style), with what Download draws over it, and,
-  /// while it plays, the fades' black ([EditLayers]).
+  /// The video, at most a third of the screen, with what Download draws
+  /// over it, and, while it plays, the fades' black ([EditLayers]);
+  /// paused, its on-picture controls over that ([OnPicture]). A tap picks
+  /// what's drawn there or plays or pauses it ([_tapPreview]); on a
+  /// phone, a long press on the tab's band opens its style.
   Widget _preview(VideoPlayerController video, AppLocalizations l10n) {
     final height = MediaQuery.sizeOf(context).height / 3;
     final layers = _previewLayers(l10n);
@@ -1485,6 +1493,21 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                             start: _start,
                             fades: fades,
                           ),
+                          OnPicture(
+                            video: video,
+                            layers: layers,
+                            start: _start,
+                            size: box.biggest,
+                            sizeOf: (look) => _measured.of(look).size,
+                            selected: _picked,
+                            toolbar: (kind) => _pictureToolbar(l10n, kind),
+                            resizeLabel: l10n.videoEditPictureResize,
+                            onResizeStart: _resizeStart,
+                            onResize: _resizeTab,
+                            onResizeEnd: () {},
+                            fadeBadge: (at) => _fadeBadge(l10n, at),
+                            onFades: _editFadesHere,
+                          ),
                         ],
                       ),
               ),
@@ -1500,14 +1523,33 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       layer.rectIn(size, _measured.of(layer.look).size).contains(at);
 
   /// A tap at [at] on the preview, [size] big, showing [layers]: on the
-  /// title (a corner of it), it's edited; anywhere else, the tab's band
-  /// too (as wide as the picture, it's a good part of it), the video
-  /// plays or pauses.
+  /// title (a corner of it), it's picked and edited, playing or not.
+  /// Paused, a tap on another layer drawn at that frame (the tab's band
+  /// showing, the watermark) picks it ([OnPicture]: its outline in the
+  /// primary colour, its toolbar beside it); on the one picked, it plays,
+  /// still picked; anywhere else, it plays and nothing is picked. Playing,
+  /// a tap anywhere else pauses it.
   void _tapPreview(Offset at, Size size, List<PlanLayer> layers) {
     final title = layers.where((l) => l.id == 'title').firstOrNull;
     if (title != null && _hit(title, at, size)) {
+      setState(() => _picked = PictureLayer.title);
       _editTitle();
       return;
+    }
+    final video = _video;
+    if (video != null && !video.value.isPlaying) {
+      final now = video.value.position - _start;
+      final hit = OnPicture.shown(
+        layers,
+        now,
+        size,
+        (look) => _measured.of(look).size,
+      ).where((d) => d.$2.contains(at)).map((d) => d.$1).lastOrNull;
+      if (hit != null && hit != _picked) {
+        setState(() => _picked = hit);
+        return;
+      }
+      if (hit == null && _picked != null) setState(() => _picked = null);
     }
     unawaited(_playback?.playPause());
   }
@@ -1522,9 +1564,168 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         .firstOrNull;
     if (band != null && _hit(band, at, size)) {
       unawaited(Feedback.forLongPress(context));
+      setState(() => _picked = PictureLayer.tab);
       _editTabStyle();
     }
   }
+
+  /// The toolbar beside [kind] picked on the preview ([OnPicture]): for
+  /// the tab's band, **smaller** and **larger** (a step of the Size
+  /// slider), its four colours, on a phone its whole style, and **hide**
+  /// (the Tab chip off); for the title, **edit** and **hide**; for the
+  /// watermark, **hide** with Premium, or Premium's card without.
+  Widget _pictureToolbar(AppLocalizations l10n, PictureLayer kind) {
+    Widget button(
+      String key,
+      IconData icon,
+      String tooltip,
+      VoidCallback? onPressed,
+    ) => IconButton(
+      key: Key('video-edit-picture-$key'),
+      tooltip: tooltip,
+      color: Colors.white,
+      disabledColor: Colors.white38,
+      iconSize: 20,
+      visualDensity: VisualDensity.compact,
+      icon: Icon(icon),
+      onPressed: onPressed,
+    );
+    final children = switch (kind) {
+      PictureLayer.tab => () {
+        final style = _tabStyle;
+        final (least, most) = _tabSizes();
+        final size = style.size.clamp(least, most);
+        return [
+          button(
+            'tab-smaller',
+            Icons.text_decrease,
+            l10n.videoEditPictureSmaller,
+            size > least + 0.001 ? () => _stepTabSize(-1) : null,
+          ),
+          button(
+            'tab-larger',
+            Icons.text_increase,
+            l10n.videoEditPictureLarger,
+            size < most - 0.001 ? () => _stepTabSize(1) : null,
+          ),
+          for (final colors in TabColors.values)
+            _PictureSwatch(
+              colors: colors,
+              selected: style.colors == colors,
+              label: _colorsName(l10n, colors),
+              onTap: () => _setTabStyle(style.copyWith(colors: colors)),
+            ),
+          if (!_wide)
+            button(
+              'tab-style',
+              Icons.palette_outlined,
+              l10n.videoEditTabStyleEdit,
+              _editTabStyle,
+            ),
+          button(
+            'tab-hide',
+            Icons.visibility_off_outlined,
+            l10n.videoEditPictureHideTab,
+            () {
+              setState(() => _picked = null);
+              _setTab(false);
+            },
+          ),
+        ];
+      }(),
+      PictureLayer.title => [
+        button('title-edit', Icons.edit, l10n.videoEditTitleEdit, _editTitle),
+        button(
+          'title-hide',
+          Icons.visibility_off_outlined,
+          l10n.videoEditPictureHideTitle,
+          () {
+            setState(() => _picked = null);
+            _setTitle(false);
+          },
+        ),
+      ],
+      PictureLayer.watermark => [
+        if (_unlocked)
+          button(
+            'watermark-hide',
+            Icons.visibility_off_outlined,
+            l10n.videoEditPictureHideWatermark,
+            () {
+              setState(() => _picked = null);
+              _setWatermark(false);
+            },
+          )
+        else
+          button(
+            'watermark-premium',
+            Icons.workspace_premium_outlined,
+            l10n.videoEditWatermarkLocked,
+            widget.ocr == null ? null : () => _setWatermark(false),
+          ),
+      ],
+    };
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Row(mainAxisSize: MainAxisSize.min, children: children),
+    );
+  }
+
+  /// The tab's size on the Size slider's steps (by 5% from the smallest
+  /// it offers), within what it offers ([_tabSizes]).
+  double _onSizeStep(double size) {
+    final (least, most) = _tabSizes();
+    final steps = ((most - least) * 20).round();
+    if (steps <= 0) return least;
+    final k = ((size - least) * 20).round().clamp(0, steps);
+    return least + k / 20;
+  }
+
+  /// **Smaller** or **larger** on the tab's toolbar: a step of the Size
+  /// slider, [by] steps.
+  void _stepTabSize(int by) {
+    final (least, most) = _tabSizes();
+    final now = _tabStyle.size.clamp(least, most);
+    _setTabStyle(_tabStyle.copyWith(size: _onSizeStep(now + by / 20)));
+  }
+
+  /// The tab's handle grabbed: its size now, to scale from.
+  void _resizeStart() {
+    final (least, most) = _tabSizes();
+    _resizeFrom = _tabStyle.size.clamp(least, most);
+  }
+
+  /// The tab's handle dragged: the band [ratio] times as high as when it
+  /// was grabbed, on the Size slider's steps; drawn at once, kept a moment
+  /// later, as the slider's.
+  void _resizeTab(double ratio) {
+    final size = _onSizeStep(_resizeFrom * ratio);
+    if (size == _tabStyle.size) return;
+    _setTabStyle(_tabStyle.copyWith(size: size));
+  }
+
+  /// The badge on the picture at [at] in the output, while a fade covers
+  /// it: "Fade in · 3.0 s", "Fade out · 3.0 s"; else none.
+  String? _fadeBadge(AppLocalizations l10n, Duration at) {
+    final fades = _fades;
+    String seconds(Duration d) =>
+        l10n.videoEditFadeSeconds((d.inMilliseconds / 1000).toStringAsFixed(1));
+    if (fades.fadeIn > Duration.zero &&
+        at >= Duration.zero &&
+        at < fades.fadeIn) {
+      return '${l10n.videoEditFadeIn} · ${seconds(fades.fadeIn)}';
+    }
+    if (fades.fadeOut > Duration.zero &&
+        at > fades.length - fades.fadeOut &&
+        at <= fades.length) {
+      return '${l10n.videoEditFadeOut} · ${seconds(fades.fadeOut)}';
+    }
+    return null;
+  }
+
+  /// The fade badge tapped: the fades' sliders (in place of the chips on
+  /// a phone; beside them, always, on a wide screen).
+  void _editFadesHere() => _editFades();
 
   /// **On the video**: what's drawn over it, as chips (and, on a [wide]
   /// screen, the title's fields under them). A take's **Tab** ([_tabChip]).
@@ -2275,6 +2476,70 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 /// outline's, so a white or black one shows on any theme); named [label]
 /// (its tooltip, and what a screen reader says, with whether it's
 /// picked). Its sample doesn't grow with the text size.
+/// A colour of the tab's on the picture's toolbar ([OnPicture]): a small
+/// bit of band, "3" in its text's colour on its background's, ringed in
+/// the primary colour when it's the one in use.
+class _PictureSwatch extends StatelessWidget {
+  const _PictureSwatch({
+    required this.colors,
+    required this.selected,
+    required this.label,
+    required this.onTap,
+  });
+
+  final TabColors colors;
+  final bool selected;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final (background, text) = TabLayout.colorsOf(colors);
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: label,
+        onTap: onTap,
+        excludeSemantics: true,
+        child: InkWell(
+          key: Key('video-edit-picture-colors-${colors.name}'),
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(6),
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Container(
+              width: 24,
+              height: 24,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: background,
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: selected ? scheme.primary : Colors.white38,
+                  width: selected ? 2 : 1,
+                ),
+              ),
+              child: Text(
+                '3',
+                textScaler: TextScaler.noScaling,
+                style: TextStyle(
+                  fontFamily: monoFont,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: text,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _TabSwatch extends StatelessWidget {
   const _TabSwatch({
     required this.colors,

@@ -2232,6 +2232,25 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoEditTabStyleReset => 'Estilo predeterminado';
 
   @override
+  String get videoEditPictureSmaller => 'Tablatura más pequeña';
+
+  @override
+  String get videoEditPictureLarger => 'Tablatura más grande';
+
+  @override
+  String get videoEditPictureResize =>
+      'Arrastra hacia arriba o abajo para cambiar el tamaño de la tablatura';
+
+  @override
+  String get videoEditPictureHideTab => 'Ocultar la tablatura';
+
+  @override
+  String get videoEditPictureHideTitle => 'Ocultar el título';
+
+  @override
+  String get videoEditPictureHideWatermark => 'Ocultar la marca de agua';
+
+  @override
   String get metronome => 'Metrónomo';
 
   @override
