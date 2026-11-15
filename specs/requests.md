@@ -3528,7 +3528,19 @@ spec.
    3.0 s") and opens the fades. A tap on the band now picks it before
    playing (then plays and pauses as before); nothing shows while it
    plays. See [video edit](video-edit.md#on-the-picture).
-4. **"When recording over a playback, in the camera view, save that
+4. **"Add a volume indicator beside the rec button in the cam screen,
+   with green, yellow and red levels, just like rec software."** A level
+   meter now stands left of Rec: 12 segments from -60 dBFS to full scale,
+   finer near the top, green below -18 dBFS, yellow to -6, red above,
+   rising at once, falling 24 dB a second, the peak held 1.5 s. It reads
+   the microphone the app already holds for takes, between takes as in
+   them: on the web a Web Audio analyser on the take recorder's stream;
+   on Android a new channel, `tabcam/take_level`, fed by the take's
+   reader and, between takes, by a thread that keeps the microphone
+   recording (so Android's microphone indicator now shows while Cam is
+   open). None on iOS, where the camera records the sound, nor where the
+   camera records it on Android. See [Cam](cam.md#level-meter).
+5. **"When recording over a playback, in the camera view, save that
    information along with the media files so that when the take is
    opened for editing it already contains the video and the track in the
    editor in the correct times as it was recorded, so there is no need

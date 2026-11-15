@@ -67,6 +67,14 @@ class WebTakeRecorder implements TakeRecorder {
   /// (`performance.now()`, ms).
   double? _startedAt;
 
+  /// The level meter's: a Web Audio analyser on the microphone's stream
+  /// ([_analysed]), never connected to the speakers, and its samples.
+  web.AudioContext? _audio;
+  web.MediaStreamAudioSourceNode? _source;
+  web.AnalyserNode? _analyser;
+  web.MediaStream? _analysed;
+  JSFloat32Array? _samples;
+
   /// How long [start] waits for the recording's `start` event at most.
   static const startWait = Duration(seconds: 1);
 
@@ -254,6 +262,38 @@ class WebTakeRecorder implements TakeRecorder {
     await started.future.timeout(startWait, onTimeout: () {});
   }
 
+  /// The loudest sample of the latest 2048 (about 43 ms at 48 kHz), read
+  /// as the meter asks (it asks about every 40 ms): an analyser on the
+  /// microphone, set up the first time and again for another microphone.
+  @override
+  Future<double?> peak() async {
+    final mic = _mic;
+    if (mic == null || !_live(mic) || _disposed) return null;
+    try {
+      final audio = _audio ??= web.AudioContext();
+      if (!identical(mic, _analysed)) {
+        _source?.disconnect();
+        final analyser = _analyser ??= audio.createAnalyser()..fftSize = 2048;
+        _source = audio.createMediaStreamSource(mic)..connect(analyser);
+        _analysed = mic;
+      }
+      // Made before the page was touched, the browser may hold it.
+      if (audio.state == 'suspended') audio.resume().toDart.ignore();
+      final analyser = _analyser!;
+      final samples = _samples ??= JSFloat32Array.withLength(analyser.fftSize);
+      analyser.getFloatTimeDomainData(samples);
+      var loudest = 0.0;
+      for (final sample in samples.toDart) {
+        final magnitude = sample.abs();
+        if (magnitude > loudest) loudest = magnitude;
+      }
+      return loudest;
+    } on Object catch (e) {
+      debugPrint('TabCam: cam: level: $e');
+      return null;
+    }
+  }
+
   @override
   double? msSinceStart() => switch (_startedAt) {
     final at? => web.window.performance.now() - at,
@@ -286,5 +326,10 @@ class WebTakeRecorder implements TakeRecorder {
     _end();
     if (_mic case final mic?) _stopTracks(mic);
     _mic = null;
+    _source?.disconnect();
+    _source = null;
+    _analysed = null;
+    _audio?.close().toDart.ignore();
+    _audio = null;
   }
 }

@@ -157,6 +157,7 @@
   "camRecKey": "Grabar (1)",
   "camStopKey": "Detener (1) · nueva toma (.)",
   "camMicChoose": "Micrófono",
+  "camMicLevel": "Nivel del micrófono",
   "camMicHeading": "Grabar con",
   "camMicDefault": "Micrófono predeterminado",
   "camMicBuiltIn": "Micrófono del teléfono",

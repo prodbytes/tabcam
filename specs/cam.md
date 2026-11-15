@@ -187,6 +187,45 @@ its **Not now** leaving. With Premium it opens the camera view
     Kotlin built (a debug APK) and the Swift type-checked; **not yet on
     a phone**: Android's USB and wired inputs, and iOS's route to the
     camera's sound.
+- <a id="level-meter"></a>**The level meter**, left of Rec (in the
+  space that keeps Rec over its label), shows how loud the microphone
+  is, as a recording program's meter does
+  ([`level_meter.dart`](../tabcam_app/lib/capture/level_meter.dart)):
+  a column of 12 segments from -60 dBFS to full scale, finer near the
+  top (bottom edges -60, -48, -40, -34, -28, -24, -20, -16, -12, -9, -6
+  and -3 dBFS), **green** below -18 dBFS, **yellow** from -18 to -6,
+  **red** from -6; those not reached are dim. It shows the loudest
+  sample since it last asked, about every 40 ms: rising at once,
+  falling back 24 dB a second, the highest held for 1.5 s (that segment
+  stays lit) before it falls too. It reads between takes as in them, so
+  the level can be set before Rec. Its tooltip says "Microphone level"
+  (English, Spanish, Portuguese). It shows where the app reads the
+  takes' microphone itself:
+  - **Web**: a Web Audio analyser on the take recorder's microphone
+    (`WebTakeRecorder.peak`: an `AudioContext`, a
+    `MediaStreamAudioSourceNode` and an `AnalyserNode` of 2048 samples,
+    never connected to the speakers, made again for another
+    microphone and closed with Cam), its latest samples' loudest.
+  - **Android**: the app's own microphone ([Recording comes
+    first](#recording-comes-first)), over the method channel
+    `tabcam/take_level` (`peak`: the loudest since the last `peak`, 0
+    to 1; null when it isn't read). In a take, the take's reader notes
+    each 20 ms read's loudest sample; between takes (from `prepare`, and
+    again as soon as a take's sound has stopped, while it's put into the
+    take), a thread of its own (`Monitor`) keeps the microphone recording
+    and does the same, the sound let go; it stops before a take starts,
+    another microphone is chosen, or Cam closes. So on Android the
+    microphone now records the whole time Cam is open (the system's
+    microphone indicator shows), as on the web.
+  - **None** in the preview, on iOS (the camera records the takes'
+    sound, which the app doesn't read), nor on Android where the camera
+    records it (the app's microphone unavailable): there the space is
+    blank.
+  Tested: the ballistics, colours and the meter's asking
+  (`test/level_meter_test.dart`), and in Cam on the web (faked recorder)
+  and Android (the channel faked), and none where the camera records the
+  sound (`test/play_along_test.dart`); `TakeSoundMath.peak` on the JVM.
+  **Not yet checked on a phone or in a browser.**
 - <a id="the-tab-with-the-take"></a><a id="the-tab-in-the-take"></a>**The tab is kept with the take and
   added by the editor**: a take is saved at once as the camera recorded
   it, with no tab in its picture and no second encode (no "Adding the
@@ -791,7 +830,8 @@ slow down while a take records
     `MIC`; 48 kHz stereo, else 48 kHz mono, 44.1 kHz stereo, 44.1 kHz
     mono; 16-bit PCM. Each is tried (started, read from for up to half
     a second, stopped), and the first that gives sound is kept open
-    until Cam closes (`release`). What it got is logged (`Tabs.cam: take
+    until Cam closes (`release`), recording between takes for the
+    [level meter](#level-meter). What it got is logged (`Tabs.cam: take
     sound: unprocessed 48000/2 …`). The camera then opens **without
     sound** (`enableAudio: false`). Should no source work, or the
     microphone be refused, the camera opens with sound and records the

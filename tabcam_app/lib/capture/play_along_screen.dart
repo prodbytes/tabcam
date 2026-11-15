@@ -21,6 +21,7 @@ import '../screens/video_page.dart';
 import 'auto_pass.dart';
 import 'backing_track.dart';
 import 'head_gestures.dart';
+import 'level_meter.dart';
 import 'link_frame.dart';
 import 'play_along_sidebar.dart';
 import 'media.dart';
@@ -515,6 +516,16 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       widget.gate == null &&
       _controller != null &&
       (_recorder != null || _ownSound || TakeAudio.supported);
+
+  /// Where the level meter beside Rec reads the microphone: the web's
+  /// recorder, or the app on Android ([TakeSound.peak]); null where the
+  /// camera records the sound (iOS, and Android's fallback): no meter.
+  Future<double?> Function()? get _level {
+    if (widget.gate != null || _controller == null) return null;
+    if (_recorder case final recorder?) return recorder.peak;
+    if (_ownSound) return TakeSound.peak;
+    return null;
+  }
 
   /// Rec's menu can open: not while a take starts, records, is saved or
   /// plays, nor while a microphone opens.
@@ -1608,6 +1619,14 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
                           onPressed: _canChooseMic ? _micMenu : null,
                         )
                       : null,
+                  meter: switch (_level) {
+                    final read? => LevelMeter(
+                      key: const Key('cam-rec-level'),
+                      read: read,
+                      tooltip: l10n.camMicLevel,
+                    ),
+                    null => null,
+                  },
                 ),
                 _Control(
                   key: const Key('cam-play'),
@@ -1656,7 +1675,8 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
 }
 
 /// Rec, Play, Tab or Auto-pass: an icon over its label, on black; Rec
-/// with an arrow beside it for its [menu] (the microphone).
+/// with an arrow beside it for its [menu] (the microphone), and the
+/// microphone's level ([meter]) on its other side.
 class _Control extends StatelessWidget {
   const _Control({
     super.key,
@@ -1666,6 +1686,7 @@ class _Control extends StatelessWidget {
     this.tooltip,
     this.onPressed,
     this.menu,
+    this.meter,
   });
 
   final IconData icon;
@@ -1684,6 +1705,10 @@ class _Control extends StatelessWidget {
     void Function(BuildContext anchor)? onPressed,
   })?
   menu;
+
+  /// The level meter, left of the button (with a [menu] only); null: a
+  /// space as wide as the arrow.
+  final Widget? meter;
 
   @override
   Widget build(BuildContext context) {
@@ -1709,7 +1734,7 @@ class _Control extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // As wide as the arrow, so Rec stays over its label.
-                  const SizedBox(width: 28),
+                  SizedBox(width: 28, child: Center(child: meter)),
                   button,
                   Builder(
                     builder: (anchor) => IconButton(
