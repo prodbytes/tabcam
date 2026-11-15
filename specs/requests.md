@@ -3501,7 +3501,66 @@ spec.
    certificate and CloudFront, Google sign-in's origins, the sign-in
    emails' sender) and the new logo come in their own changes. See
    [navigation](navigation.md), [video edit](video-edit.md).
-2. **The domain, tabs.cam (first step: the site).** tabs.cam, registered
+2. **"Also change app name, logo, google oidc, everything."** The logo
+   part: a new icon,
+   a camera lens reading a line of tab (a gold ring round a cream disc
+   with a six-line staff and the fret numbers 3, 5, 7, and a red rec dot
+   on the ring), and a logo, the lens and the wordmark "tabs.cam" ("tabs"
+   in cream, ".cam" in gold). Every platform's icon (Android, adaptive
+   too, iOS, the web's favicon and PWA icons), Play's icon and its feature
+   graphic (now with the logo) are made again from the new masters, and
+   `scripts/app-icon.sh` makes all of it in one go. The name, the domain
+   and the sign-in change apart. See [app icon](app-icon.md).
+3. **"On the sidebar, let the user change the font size of the tab.
+   Also, show the settings on the preview, like a video editor such as
+   DaVinci Resolve would do"**, then **"I mean show the preview as the
+   rendered result would be, including the user options for tab, title,
+   watermark and fades"**, choosing on-screen controls on the picture
+   itself. The editor's preview already drew what Download renders; now,
+   paused, it outlines each layer drawn at that frame (the take's band,
+   the title, the watermark), and a tap picks one: outlined in the
+   primary colour, with a toolbar beside it on the picture. The band's
+   has Smaller and Larger tab (a Size step), its four colours, its whole
+   style (on a phone) and Hide; a handle at its top right resizes it
+   (dragged up it grows, on the Size slider's steps). The title's has Edit
+   and Hide; the watermark's Hide with Premium, Premium's card without. A
+   badge at the top right says when a fade covers the frame ("Fade in ·
+   3.0 s") and opens the fades. A tap on the band now picks it before
+   playing (then plays and pauses as before); nothing shows while it
+   plays. See [video edit](video-edit.md#on-the-picture).
+4. **"Add a volume indicator beside the rec button in the cam screen,
+   with green, yellow and red levels, just like rec software."** A level
+   meter now stands left of Rec: 12 segments from -60 dBFS to full scale,
+   finer near the top, green below -18 dBFS, yellow to -6, red above,
+   rising at once, falling 24 dB a second, the peak held 1.5 s. It reads
+   the microphone the app already holds for takes, between takes as in
+   them: on the web a Web Audio analyser on the take recorder's stream;
+   on Android a new channel, `tabcam/take_level`, fed by the take's
+   reader and, between takes, by a thread that keeps the microphone
+   recording (so Android's microphone indicator now shows while Cam is
+   open). None on iOS, where the camera records the sound, nor where the
+   camera records it on Android. See [Cam](cam.md#level-meter).
+5. **"When recording over a playback, in the camera view, save that
+   information along with the media files so that when the take is
+   opened for editing it already contains the video and the track in the
+   editor in the correct times as it was recorded, so there is no need
+   to manually sync the playback."** Cam now notes the song playing
+   along while a take records (`SongNotes`): each stretch of one song
+   playing on, as segments in the take's log (`song`, empty until now),
+   on the take's clock, each start told again from a fresh reading of
+   the player; a pause, a seek, a skip, Repeat or a section starting
+   over, another song or another speed starts another. The editor opens
+   such a take with that song in its Song lane, **lined up by itself**
+   (`song: auto`, at last): its clips where it played in the file (the
+   log's lag after the take's clock), silent between them, in the
+   preview, the file screen's player and Download alike. It's the
+   take's default, so nothing is kept until something changes, and
+   Reset puts it back; ‹ › and a drag move all of it and keep it lined
+   up (for what the lag doesn't catch); trimming it, or picking another
+   song, places it by hand; Remove keeps it out. Its track keys place
+   the first clip, which is what older apps play. See
+   [video edit](video-edit.md), [cam](cam.md#what-a-take-keeps).
+6. **The domain, tabs.cam (first step: the site).** tabs.cam, registered
    at GoDaddy, got its own Route 53 zone (GoDaddy names its name
    servers). Both sites' stacks now serve **tabs.cam** and
    **rc.tabs.cam**, with one ACM certificate for the new name and the
@@ -3517,7 +3576,45 @@ spec.
    old name's redirect. The app moves to tabs.cam (its links, CDN,
    sign-in, sender) once the site is live. See [deploy](deploy.md),
    [CDN](cdn.md).
-3. **"Change the share links to use the new domain tabs.cam and use
+
+7. **Change how sharing works: a shared link is read only to others,
+   only the owner changes the capture; adding a file to a shared capture
+   makes a clone for the user; copy on write, so files are copied only
+   when the user changes them.**
+   - **Read only**: every capture shared with the user is read only,
+     those shared by email to edit before too: the app never uploads one,
+     and the share API's credentials only read (a grant to `edit` is
+     refused; one made before lists as `read`). The banner says "Read
+     only · What you add goes to your copy"; "Can edit" is gone
+     ([shared captures](shared-captures.md)).
+   - **Adding makes the user's copy**: Add, dropped files, a tab site's
+     print and Cam's takes on a shared capture go to the user's own copy
+     (`Library.copyToAdd`: their newest capture `clonedFrom` it, or a new
+     clone), which opens in its place ("Added to your copy, …"); Cam
+     opens on the copy. No new [contributions](contributions.md) are made;
+     those from before still show and publish.
+   - **Copy on write** ([library](library.md#events)): a clone's pages
+     show the original's files (`source: {event, page}`) instead of
+     copying them, on the device and in the cloud (sync neither sends nor
+     brings them; cloud OCR doesn't read them). A page gets its own file
+     when a change makes a new one (Rotate, an edited video), before the
+     original's file is deleted (the owner deletes it or the capture, the
+     share goes or is left, or the user deletes their own original), and
+     before the clone gets a link (Share). Clones of the user's own
+     captures work the same way.
+8. **The domain, tabs.cam (second step: the app).** Once the site
+   answered at tabs.cam, the app moved there: a capture's link
+   (`https://tabs.cam/app/?c=…`), the maintenance notice's
+   `status.json`, the privacy policy's link, the page YouTube's player is
+   embedded from, and the web app's reading of users' folders from its
+   own site (the old names still count as Tabs.cam's). Android opens
+   tabs.cam's and rc.tabs.cam's links as App Links (and the old names').
+   The sign-in emails come from `Tabs.cam <signin@tabs.cam>` (SES as
+   tabs.cam, its own identity stack) and their links default to
+   tabs.cam. Sign in with Apple's return URL stays at the old name,
+   which keeps serving it, until the Services ID names tabs.cam. See
+   [sharing](sharing.md), [cloud sync](cloud-sync.md).
+9. **"Change the share links to use the new domain tabs.cam and use
    short hashes."** Share now copies a short link,
    `https://tabs.cam/s/<key>` (a file's adds `?f=<file id>`), on
    rc.tabs.cam for the RC; the phone apps' links name tabs.cam. A new
@@ -3529,4 +3626,4 @@ spec.
    CloudFront serves at `/s/*` and keeps a day; Android's App Links take
    tabs.cam, rc.tabs.cam and `/s/` too, and the app resolves a short link
    itself; link previews name the short link. Needs the tabs.cam site
-   (the previous entry) live. See [sharing](sharing.md#short-links).
+   (entries 2 and 8) live. See [sharing](sharing.md#short-links).

@@ -456,7 +456,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get eventReadOnly => 'Puede ver y añadir';
+  String get eventReadOnly => 'Solo lectura · Lo que añadas va a tu copia';
 
   @override
   String get eventByLink => 'Abierta por su enlace · Solo lectura';
@@ -495,7 +495,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se puede abrir esta captura. Puede que el enlace esté mal, que su dueño la haya borrado o que no tengas conexión.';
 
   @override
-  String get eventCanEdit => 'Puede editar';
+  String eventAddedToCopy(String title) {
+    return 'Añadido a tu copia, \"$title\"';
+  }
+
+  @override
+  String eventCamOnCopy(String title) {
+    return 'Cam graba en tu copia, \"$title\"';
+  }
 
   @override
   String eventClonedAs(String title) {
@@ -612,6 +619,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get camMicChoose => 'Micrófono';
+
+  @override
+  String get camMicLevel => 'Nivel del micrófono';
 
   @override
   String get camMicHeading => 'Grabar con';
@@ -2012,6 +2022,19 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get videoEditSongLined => 'Alineada como sonó mientras grababas';
+
+  @override
+  String videoEditSongLinedLater(String time) {
+    return 'Alineada como se grabó, movida $time más tarde';
+  }
+
+  @override
+  String videoEditSongLinedEarlier(String time) {
+    return 'Alineada como se grabó, movida $time antes';
+  }
+
+  @override
   String videoEditSongUsed(String start, String end) {
     return 'Se usa $start–$end de la canción';
   }
@@ -2230,6 +2253,25 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get videoEditTabStyleReset => 'Estilo predeterminado';
+
+  @override
+  String get videoEditPictureSmaller => 'Tablatura más pequeña';
+
+  @override
+  String get videoEditPictureLarger => 'Tablatura más grande';
+
+  @override
+  String get videoEditPictureResize =>
+      'Arrastra hacia arriba o abajo para cambiar el tamaño de la tablatura';
+
+  @override
+  String get videoEditPictureHideTab => 'Ocultar la tablatura';
+
+  @override
+  String get videoEditPictureHideTitle => 'Ocultar el título';
+
+  @override
+  String get videoEditPictureHideWatermark => 'Ocultar la marca de agua';
 
   @override
   String get metronome => 'Metrónomo';

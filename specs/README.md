@@ -39,7 +39,7 @@ review notes ([app stores](app-stores.md)).
   transparent, over the page without moving it or covering the bottom
   navigation bar; one at a time, each gone after a few seconds.
 - [Library](library.md): the Home tab, a grid of events (newest first),
-  in My captures and Shared with me sections once something is shared, with Rename, Share, Clone and Delete; how events are stored.
+  in My captures and Shared with me sections once something is shared, with Rename, Share, Clone (copy on write: the original's files until they change) and Delete; how events are stored.
 - [Delete confirmations](delete-confirms.md): deleting a capture or a
   file asks first, with **Don't ask again** (per kind of delete, kept on
   the device); Profile's **Ask before deleting** brings them back.
@@ -67,7 +67,7 @@ review notes ([app stores](app-stores.md)).
   the tab under it one neckline (staff) at a time, any key (↓) to the
   next and Backspace / ↑ (← with nothing playing along) to the one before, or a strong nod up / right and
   down / left (Android, iOS); Rec (or the 1 key) adds each take to the
-  capture, the . key saving it and starting a new one, Play plays it back with the tab turning as it did; Play
+  capture, a green / yellow / red level meter beside it (web, Android), the . key saving it and starting a new one, Play plays it back with the tab turning as it did; Play
   along plays one of the capture's recordings, videos or links in a
   frame above the camera, the space bar pausing and playing it, 0
   going back to its start (its section's) and ← / → skipping in it,
@@ -142,16 +142,17 @@ review notes ([app stores](app-stores.md)).
   (its private key wrapped by one KMS key); each capture its own AES-256
   key, wrapped with the profile's public key; the API unwraps it for the
   owner, the people it's shared with and its link's holders.
-- [Shared captures](shared-captures.md): share a capture of one's own
-  by email, to edit (the default) or read (see and add one's own files); no email is sent, people
-  find it when they sign in. A share API (Lambda, DynamoDB, an HTTP API
+- [Shared captures](shared-captures.md): a capture is shared by its
+  link, read only: only its owner changes it (those shared by email to
+  edit before are read only too). What someone it's shared with adds goes
+  to their own copy of it, a clone whose files stay the owner's until
+  they change (copy on write). A share API (Lambda, DynamoDB, an HTTP API
   with Google and Apple JWT authorizers) keeps the grants and hands out
-  credentials for just that capture's folder.
-- [Contributions](contributions.md): who sees which files of a shared
-  capture. Readers, and people who join by its link signed in, add files
-  of their own that only they and the owner see; the owner publishes the
-  ones they like into the capture, for everyone; signed out, a link shows
-  the owner's files only.
+  read-only credentials for just that capture's folder.
+- [Contributions](contributions.md): what readers added to a shared
+  capture before adding went to their own copy: files of their own that
+  only they and the owner see; the owner publishes the ones they like
+  into the capture, for everyone.
 - [Tabs.cam Premium: Text, Cam and cloud OCR](cloud-ocr.md): Text and
   Cam are Premium's (locked, they open as previews under the Premium
   card, with the offer); premium users' pages
@@ -167,7 +168,7 @@ review notes ([app stores](app-stores.md)).
   numbers, in camera corners; how the platform icons are generated.
 - [Platforms](platforms.md): Android, iOS and the web, and what each can do.
 - [Privacy](privacy.md): the privacy policy at
-  https://tabcam.nu01.com/privacy (linked from the index page and About),
+  https://tabs.cam/privacy (linked from the index page and About),
   what it says and what it's based on; the iOS privacy manifest and
   export compliance declaration.
 - [Maintenance mode](maintenance-mode.md): administrators switch it on
@@ -182,5 +183,6 @@ review notes ([app stores](app-stores.md)).
   Store under personal accounts: the status of each step, the Android
   upload key and App Bundle, the store listings in `tabcam_store/` and
   their upload to App Store Connect with fastlane, TestFlight.
-- [Deploy](deploy.md): the web app at https://tabcam.nu01.com and the
-  release candidate at https://rc.tabcam.nu01.com.
+- [Deploy](deploy.md): the web app at https://tabs.cam and the
+  release candidate at https://rc.tabs.cam (the old names,
+  tabcam.nu01.com and rc.tabcam.nu01.com, redirect).

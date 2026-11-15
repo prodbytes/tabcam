@@ -76,5 +76,5 @@ its signing key: release builds are signed with the upload key when
 ([app stores](app-stores.md#android-signing)).
 The app is named **Tabs.cam** everywhere.
 
-The web build is deployed to https://tabcam.nu01.com/app/
+The web build is deployed to https://tabs.cam/app/
 ([deploy](deploy.md)).

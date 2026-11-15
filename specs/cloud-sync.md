@@ -211,15 +211,16 @@ sign-in, its folder, Premium by address, sharing).
   session is kept the same way, the ID token renewed from the refresh
   token five minutes before it expires; a refused refresh signs out.
   Signing out revokes the refresh token.
-- **The emails** go out through Amazon SES as `tabcam.nu01.com`
-  ([email.yaml](../tabcam_infra/email.yaml), stack `tabcam-email`: Easy
-  DKIM, MAIL FROM `mail.tabcam.nu01.com` with SPF, DMARC `p=none`), from
-  `TabCam <signin@tabcam.nu01.com>`, written by
+- **The emails** go out through Amazon SES as `tabs.cam`
+  ([email.yaml](../tabcam_infra/email.yaml), stack `tabcam-email-tabs-cam`,
+  picked by the pool's `EmailStack`: Easy DKIM, MAIL FROM
+  `mail.tabs.cam` with SPF, DMARC `p=none`; `tabcam-email` keeps the old
+  name's identity), from `Tabs.cam <signin@tabs.cam>`, written by
   `tabcam-email-signin-message` (Cognito's CustomMessage trigger, for
   sign-up, a resent code and sign-in): the code, large, and a link to
   `<site>/app/?signin-code=<code>`, in English, Spanish or Portuguese.
-  The app passes `lang` and `site` (one of Tabs.cam's sites; any other gets
-  tabcam.nu01.com) in the calls' ClientMetadata. AWS **denied** SES
+  The app passes `lang` and `site` (one of Tabs.cam's sites, the old
+  names among them; any other gets tabs.cam) in the calls' ClientMetadata. AWS **denied** SES
   production access on 2026-10-21 (case 179257941000946; without it SES
   only sends to verified addresses), so for now the pool sends through
   Cognito's own mail (`Sender=COGNITO`: from
@@ -280,9 +281,14 @@ the share API (local web builds) use the sign-in's own identity instead:
 [hid the images](hidden-images.md) (`hideImages`), but without how it's shared with the user (`sharedBy`, `readOnly`); or its tombstone once deleted. Coming down, the folder it's in, not `owner`, says whose it is |
 | `<identity>/events/<event id>/<page id>.<extension>` | each page's file, as stored on the device, with its MIME type by extension (`image/jpeg` for scanned pages, `video/mp4`, `audio/mpeg`, `application/pdf`, ...) |
 
-Links are in `event.json` only: they have no file.
+Links are in `event.json` only: they have no file. Nor does a clone's
+page whose file is still the original's (`source`, [copy on
+write](library.md#events)): it's neither sent nor brought; the device shows
+the original's file, which syncs with the original (the user's own, or a
+capture shared with them). One that has to be the clone's own gets its
+file on the device first, then syncs up like any change.
 Beside `events/`, the user's folder has `contrib/`: what people a capture
-is shared with to read added to it, a folder each
+is shared with added to it before adding went to their own copy, a folder each
 (`<identity>/contrib/<event id>/<their identity>/`), which only they and
 the owner reach; see [contributions](contributions.md).
 
@@ -374,8 +380,8 @@ account. Events made signed out go up to whoever signs in next.
 **Shared captures**: after the user's own folder, each pass lists the
 contributions to the user's own captures (one listing) and brings what
 changed, then syncs the captures shared with them, each in its owner's
-folder, the same way (but never uploading one shared to read), and on
-those shared to read, the user's own contribution, both ways; see
+folder, the same way (but never uploading one: they're all read only),
+and on each, the user's own contribution, both ways; see
 [shared captures](shared-captures.md#how-it-works) and
 [contributions](contributions.md#how-its-stored-and-synced).
 
@@ -508,10 +514,10 @@ account, so within that hour they're signed out ("You were signed out
 old account's events on that device aren't uploaded.
 
 **Without the app** (Google Play's "delete account URL"): the web app
-has the same panel, so https://tabcam.nu01.com/app/ (sign in, Profile,
+has the same panel, so https://tabs.cam/app/ (sign in, Profile,
 Delete account) deletes an account from any browser. Proposed for the
 store listing: a static page on the index site,
-`https://tabcam.nu01.com/delete-account`, that names Tabs.cam and its
+`https://tabs.cam/delete-account`, that names Tabs.cam and its
 developer, lists those steps, says what's deleted and what's kept for 30
 days, and gives a contact address for people who can't sign in any more
 (to be done with the privacy policy page, [app stores](app-stores.md);
@@ -571,7 +577,8 @@ either):
   so a deletion can be undone), incomplete uploads cleared after a day.
   CORS allows `GET`, `PUT`, `HEAD`, `DELETE` and `POST` (DeleteObjects,
   for [deleting the account](#deleting-the-account)) from
-  `https://tabcam.nu01.com`, `https://rc.tabcam.nu01.com`,
+  `https://tabs.cam`, `https://rc.tabs.cam`, the old names
+  `https://tabcam.nu01.com` and `https://rc.tabcam.nu01.com`,
   `http://localhost:2012` and `https://local.tabcam.nu01.com:2443`.
 - **`identity.yaml`**, stack `tabcam-identity`: the identity pool
   `tabcam`, trusting Google through the `accounts.google.com` OpenID

@@ -586,7 +586,7 @@
   },
   "eventSharedBy": "Shared by {owner} · {access}",
   "@eventSharedBy": {
-    "description": "Event banner: who shared it, and the access (eventReadOnly or eventCanEdit)",
+    "description": "Event banner: who shared it, and the access (eventReadOnly)",
     "placeholders": {
       "owner": {
         "type": "String"
@@ -596,9 +596,9 @@
       }
     }
   },
-  "eventReadOnly": "Can view and add",
+  "eventReadOnly": "Read only · What you add goes to your copy",
   "@eventReadOnly": {
-    "description": "Event banner: shared to read (see the owner's files, add one's own)"
+    "description": "Event banner: shared captures are read only; adding a file makes the user's own copy of it"
   },
   "eventByLink": "Opened by its link · Read only",
   "@eventByLink": {
@@ -660,9 +660,23 @@
   "@linkUnavailable": {
     "description": "A capture's link that didn't open"
   },
-  "eventCanEdit": "Can edit",
-  "@eventCanEdit": {
-    "description": "Event banner: shared, editable"
+  "eventAddedToCopy": "Added to your copy, \"{title}\"",
+  "@eventAddedToCopy": {
+    "description": "Message after adding files to a capture shared with the user: they went to the user's own copy, which opens",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "eventCamOnCopy": "Cam records into your copy, \"{title}\"",
+  "@eventCamOnCopy": {
+    "description": "Message when Cam opens on a capture shared with the user: it opens on the user's own copy, where its takes go",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
   },
   "eventClonedAs": "Cloned as \"{title}\"",
   "@eventClonedAs": {
@@ -814,6 +828,10 @@
   "camMicChoose": "Microphone",
   "@camMicChoose": {
     "description": "Cam: the tooltip of the arrow beside Rec, which opens a menu to choose the microphone takes record from"
+  },
+  "camMicLevel": "Microphone level",
+  "@camMicLevel": {
+    "description": "Cam: the tooltip of the level meter beside Rec, which shows how loud the microphone is (green, yellow, red)"
   },
   "camMicHeading": "Record from",
   "@camMicHeading": {
@@ -2692,6 +2710,28 @@
       }
     }
   },
+  "videoEditSongLined": "Lined up as it played while you recorded",
+  "@videoEditSongLined": {
+    "description": "Video edit, a take: the song is placed by itself where it played while the take recorded"
+  },
+  "videoEditSongLinedLater": "Lined up as recorded, moved {time} later",
+  "@videoEditSongLinedLater": {
+    "description": "Video edit, a take: the song lined up as it played while recording, then moved later by hand (time like 0:00.2)",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditSongLinedEarlier": "Lined up as recorded, moved {time} earlier",
+  "@videoEditSongLinedEarlier": {
+    "description": "Video edit, a take: the song lined up as it played while recording, then moved earlier by hand (time like 0:00.2)",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "videoEditSongUsed": "Using {start}–{end} of the song",
   "@videoEditSongUsed": {
     "description": "Video edit, a take: the part of the song used, once trimmed (times like 0:01.5)",
@@ -2997,6 +3037,30 @@
   "videoEditTabStyleReset": "Default style",
   "@videoEditTabStyleReset": {
     "description": "Video edit: puts the tab's style back to its default (white on a 70% black strip, at its usual size)"
+  },
+  "videoEditPictureSmaller": "Smaller tab",
+  "@videoEditPictureSmaller": {
+    "description": "Video edit: on the preview, the tab's toolbar makes it a step smaller"
+  },
+  "videoEditPictureLarger": "Larger tab",
+  "@videoEditPictureLarger": {
+    "description": "Video edit: on the preview, the tab's toolbar makes it a step larger"
+  },
+  "videoEditPictureResize": "Drag up or down to resize the tab",
+  "@videoEditPictureResize": {
+    "description": "Video edit: on the preview, the handle at the tab's top right"
+  },
+  "videoEditPictureHideTab": "Hide the tab",
+  "@videoEditPictureHideTab": {
+    "description": "Video edit: on the preview, the tab's toolbar turns it off"
+  },
+  "videoEditPictureHideTitle": "Hide the title",
+  "@videoEditPictureHideTitle": {
+    "description": "Video edit: on the preview, the title's toolbar turns it off"
+  },
+  "videoEditPictureHideWatermark": "Hide the watermark",
+  "@videoEditPictureHideWatermark": {
+    "description": "Video edit: on the preview, the watermark's toolbar turns it off (Premium)"
   },
   "metronome": "Metronome",
   "@metronome": {

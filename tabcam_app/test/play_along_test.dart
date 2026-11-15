@@ -13,6 +13,7 @@ import 'package:image/image.dart' as img;
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:tabcam_app/capture/head_gestures.dart';
+import 'package:tabcam_app/capture/level_meter.dart';
 import 'package:tabcam_app/capture/link_frame.dart';
 import 'package:tabcam_app/capture/media.dart';
 import 'package:tabcam_app/capture/backing_track.dart';
@@ -102,6 +103,12 @@ class FakeTakeRecorder implements TakeRecorder {
     return opens;
   }
 
+  /// What it tells the level meter.
+  double? level;
+
+  @override
+  Future<double?> peak() async => level;
+
   @override
   Future<bool> hasSound() async => sound;
 
@@ -133,6 +140,19 @@ class FakeTakeRecorder implements TakeRecorder {
   @override
   void dispose() {}
 }
+
+/// The level meter beside Rec: how many segments it lights.
+int litSegments(WidgetTester tester) =>
+    (tester
+                .widget<CustomPaint>(
+                  find.descendant(
+                    of: find.byKey(const Key('cam-rec-level')),
+                    matching: find.byType(CustomPaint),
+                  ),
+                )
+                .painter!
+            as LevelMeterPainter)
+        .lit;
 
 /// The temporary folder, in a test's own.
 class _Paths extends PathProviderPlatform with MockPlatformInterfaceMixin {
@@ -1684,6 +1704,30 @@ B|--5--8--|
       expect(arrow(tester).onPressed, isNotNull);
     });
 
+    testWidgets('the level meter beside Rec shows how loud the microphone '
+        'is, in a take and between takes', (tester) async {
+      final recorder = FakeTakeRecorder();
+      await open(tester, recorder);
+      expect(find.byKey(const Key('cam-rec-level')), findsOneWidget);
+      expect(find.byTooltip('Microphone level'), findsOneWidget);
+      expect(litSegments(tester), 0);
+      recorder.level = 0.5;
+      await frames(tester);
+      // -6 dBFS: the greens and yellows, no red.
+      expect(litSegments(tester), 10);
+      await tester.tap(find.byTooltip('Rec (1)'));
+      await frames(tester);
+      recorder.level = 1;
+      await frames(tester);
+      expect(litSegments(tester), LevelBallistics.segments);
+      await tester.tap(_camStop);
+      await until(tester, () => recReady(tester));
+      recorder.level = null;
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pump();
+      expect(litSegments(tester), 0);
+    });
+
     testWidgets('no arrow in the preview, nor where the camera records the '
         'sound (Android, the app\'s microphone unavailable)', (tester) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
@@ -1703,6 +1747,8 @@ B|--5--8--|
         await frames(tester);
         expect(find.byKey(const Key('cam-rec')), findsOneWidget);
         expect(find.byKey(const Key('cam-rec-device')), findsNothing);
+        // Nor a level meter: the camera's sound isn't read.
+        expect(find.byKey(const Key('cam-rec-level')), findsNothing);
       } finally {
         debugDefaultTargetPlatformOverride = null;
       }
@@ -1830,6 +1876,37 @@ B|--5--8--|
         await tester.pumpWidget(app(cam(library, id)));
         await frames(tester);
         expect(prepareArgs.last, {'ask': true, 'device': '11|Scarlett 2i2|'});
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
+    testWidgets('the level meter reads the app\'s microphone '
+        '(tabcam/take_level), apart from the take\'s calls', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      final messenger = tester.binding.defaultBinaryMessenger;
+      double? level = 0.5;
+      var asked = 0;
+      messenger.setMockMethodCallHandler(TakeSound.levelChannel, (call) async {
+        asked++;
+        return call.method == 'peak' ? level : null;
+      });
+      addTearDown(
+        () => messenger.setMockMethodCallHandler(TakeSound.levelChannel, null),
+      );
+      try {
+        await open(tester);
+        final (library, id) = await capture(tester, tab: _tab);
+        await tester.pumpWidget(app(cam(library, id)));
+        await frames(tester);
+        expect(litSegments(tester), 10);
+        expect(asked, greaterThan(0));
+        expect(methods(), ['prepare']);
+        // Not read: nothing lit.
+        level = null;
+        await tester.pump(const Duration(seconds: 4));
+        await tester.pump();
+        expect(litSegments(tester), 0);
       } finally {
         debugDefaultTargetPlatformOverride = null;
       }
@@ -2631,11 +2708,26 @@ B|--5--8--|
     await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
     expect(video.playing, hasLength(1));
+    // The take's log notes the song as it played, from its start, so the
+    // editor lines it up by itself.
+    final riff = library
+        .byId(id)!
+        .pages
+        .singleWhere((p) => p.extension == 'm4a');
+    final first = library.byId(id)!.pages.last.takeLog!.song;
+    expect(first, hasLength(1));
+    expect(first.single.page, riff.id);
+    expect(first.single.from, 0);
+    expect(first.single.to, greaterThan(first.single.at));
     await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     expect(video.playing, hasLength(1));
     await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
+    // Playing already: from the take's start.
+    final second = library.byId(id)!.pages.last.takeLog!.song;
+    expect(second.single.page, riff.id);
+    expect(second.single.at, 0);
 
     // The sidebar hidden (which pauses it): Rec starts nothing.
     await tester.tap(find.byKey(const Key('cam-along')));
@@ -2646,6 +2738,8 @@ B|--5--8--|
     expect(video.playing, isEmpty);
     await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
+    // No song played along: none noted.
+    expect(library.byId(id)!.pages.last.takeLog!.song, isEmpty);
 
     // With it showing again, 1 starts a take and the song, as Rec does.
     await tester.tap(find.byKey(const Key('cam-along')));
@@ -3677,9 +3771,10 @@ B|--5--8--|
     expect(find.byKey(ValueKey('cam-along-$pdf')), findsNothing);
   });
 
-  testWidgets('on a capture shared to read, the sidebar lists the reader\'s '
-      'own take after the owner\'s files; only theirs has Delete, and it '
-      'deletes it from their contribution', (tester) async {
+  testWidgets('on a capture shared with them, the sidebar lists the '
+      'reader\'s own take (from before adding went to their copy) after the '
+      'owner\'s files; only theirs has Delete, and it deletes it from their '
+      'contribution', (tester) async {
     final library = Library(PlatformEventStore(), null, (_) async => null);
     late String id;
     late EventPage song, mine;
@@ -3707,14 +3802,14 @@ B|--5--8--|
               readOnly: true,
             ),
       );
-      // The reader's own take: their contribution's.
-      event = await library.addMedia(library.byId(id)!, [
-        Media(
-          XFile.fromData(Uint8List.fromList([2]), name: 'take.mp4'),
-          PageKind.video,
-          'mp4',
-        ),
-      ]);
+      // The reader's own take: their contribution's (an older app's).
+      final take = EventPage(
+        id: newId(),
+        kind: PageKind.video,
+        extension: 'mp4',
+      );
+      await library.putPageStream(id, take, Stream.value([2]));
+      event = (await library.patchContribution(id, (pages) => [take]))!;
       mine = event.myContribution!.pages.single;
     });
     final event = library.byId(id)!;
@@ -3762,13 +3857,6 @@ B|--5--8--|
     await tester.runAsync(() async => kept = await library.hasPage(id, mine));
     expect(kept, isFalse);
     expect(mineRow, findsNothing);
-
-    // Shared to edit, the owner's files show it.
-    await tester.runAsync(
-      () => library.applyRemote(library.byId(id)!.copyWith(readOnly: false)),
-    );
-    await frames(tester);
-    expect(find.byKey(ValueKey('cam-along-delete-${song.id}')), findsOneWidget);
   });
 
   testWidgets('the sidebar\'s Delete asks with "Don\'t ask again", the '

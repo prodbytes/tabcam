@@ -187,6 +187,45 @@ its **Not now** leaving. With Premium it opens the camera view
     Kotlin built (a debug APK) and the Swift type-checked; **not yet on
     a phone**: Android's USB and wired inputs, and iOS's route to the
     camera's sound.
+- <a id="level-meter"></a>**The level meter**, left of Rec (in the
+  space that keeps Rec over its label), shows how loud the microphone
+  is, as a recording program's meter does
+  ([`level_meter.dart`](../tabcam_app/lib/capture/level_meter.dart)):
+  a column of 12 segments from -60 dBFS to full scale, finer near the
+  top (bottom edges -60, -48, -40, -34, -28, -24, -20, -16, -12, -9, -6
+  and -3 dBFS), **green** below -18 dBFS, **yellow** from -18 to -6,
+  **red** from -6; those not reached are dim. It shows the loudest
+  sample since it last asked, about every 40 ms: rising at once,
+  falling back 24 dB a second, the highest held for 1.5 s (that segment
+  stays lit) before it falls too. It reads between takes as in them, so
+  the level can be set before Rec. Its tooltip says "Microphone level"
+  (English, Spanish, Portuguese). It shows where the app reads the
+  takes' microphone itself:
+  - **Web**: a Web Audio analyser on the take recorder's microphone
+    (`WebTakeRecorder.peak`: an `AudioContext`, a
+    `MediaStreamAudioSourceNode` and an `AnalyserNode` of 2048 samples,
+    never connected to the speakers, made again for another
+    microphone and closed with Cam), its latest samples' loudest.
+  - **Android**: the app's own microphone ([Recording comes
+    first](#recording-comes-first)), over the method channel
+    `tabcam/take_level` (`peak`: the loudest since the last `peak`, 0
+    to 1; null when it isn't read). In a take, the take's reader notes
+    each 20 ms read's loudest sample; between takes (from `prepare`, and
+    again as soon as a take's sound has stopped, while it's put into the
+    take), a thread of its own (`Monitor`) keeps the microphone recording
+    and does the same, the sound let go; it stops before a take starts,
+    another microphone is chosen, or Cam closes. So on Android the
+    microphone now records the whole time Cam is open (the system's
+    microphone indicator shows), as on the web.
+  - **None** in the preview, on iOS (the camera records the takes'
+    sound, which the app doesn't read), nor on Android where the camera
+    records it (the app's microphone unavailable): there the space is
+    blank.
+  Tested: the ballistics, colours and the meter's asking
+  (`test/level_meter_test.dart`), and in Cam on the web (faked recorder)
+  and Android (the channel faked), and none where the camera records the
+  sound (`test/play_along_test.dart`); `TakeSoundMath.peak` on the JVM.
+  **Not yet checked on a phone or in a browser.**
 - <a id="the-tab-with-the-take"></a><a id="the-tab-in-the-take"></a>**The tab is kept with the take and
   added by the editor**: a take is saved at once as the camera recorded
   it, with no tab in its picture and no second encode (no "Adding the
@@ -424,7 +463,10 @@ showing and the one in the frame not playing, Rec plays it as Play
 would (after the [count-in](#count-in), from where it is, or from its
 start, its section's, at its end), once the take is recording; one
 that plays already plays on, and with the sidebar hidden nothing
-starts. Stop (the take's) leaves it playing.
+starts. Stop (the take's) leaves it playing. While the take records,
+its [log](#what-a-take-keeps) notes where the song played (paused,
+skipped or started over too), so the [editor](video-edit.md#a-takes-song-lined-up)
+opens the take with the song already lined up: nothing to sync by hand.
 
 <a id="deleting-from-the-sidebar"></a>**Deleting from the sidebar**: each
 file in it (the recordings, videos and links, Cam's takes among them,
@@ -600,7 +642,7 @@ view).
     current time, from which « and » `seekTo` 10 seconds back or on, and
     when it ends, for Repeat. On Android and iOS it's in a web view
     (`webview_flutter`), in a page of its own from
-    `https://tabcam.nu01.com/` (YouTube wants to know the site that
+    `https://tabs.cam/` (YouTube wants to know the site that
     embeds it), with media playing inline and without a tap first; on
     the web, an iframe.
   - **Another page**: on Android and iOS loaded in the web view, its
@@ -613,8 +655,11 @@ view).
     page in it gets the space bar) until the user taps Cam again.
 - **Play** (the last take) pauses it first. Leaving Cam stops it.
 
-On a capture shared with the user to read, each take goes to their own
-[contribution](contributions.md), named among its takes. Cam is off on a
+On a capture [shared](shared-captures.md) with the user (read only),
+Cam opens on their own copy of it instead (their newest, or a
+[clone](library.md#events) made then, whose files stay the owner's
+until they change), which takes the capture's place on the event
+screen, so each take is theirs. Cam is off on a
 capture opened by its link (a take couldn't be saved there), and while a
 tool works. Opening it stops what
 plays in the list.
@@ -635,8 +680,8 @@ copy's files; renamed or edited, it stays. From it the
 [editor](video-edit.md#layers) draws the tab over a take whose tab
 isn't in its picture (`burned: false`: every take Cam saves now), in the
 preview, the file screen's player and the editor's Download, with its
-**Tab** chip to turn it off; a later step lines the song played along
-up with it.
+**Tab** chip to turn it off, and lines the song played along up with
+it ([lined up](video-edit.md#a-takes-song-lined-up)).
 Play uses it too (above). A few KB for a ten-minute take:
 ```json
 "takeLog": {
@@ -689,10 +734,21 @@ Play uses it too (above). A few KB for a ten-minute take:
   - `none`: not told, 0.
   The readings it was told from (`lagRaw`, ms on the take's clock) are
   kept, so it can be told again better later.
-- **The song** (`song`): the song played along, as segments of the
-  take (`at`, `to` on the take's clock; the song's page, where in it
-  (`from`) and at what `speed`); empty for now: a later version notes
-  them, and `songLink` when it was a link in a frame.
+- **The song** (`song`): the song played along in the sidebar's
+  player, as segments of the take (`at`, `to` on the take's clock; the
+  song's page, where in it (`from`, ms) and at what `speed`), noted as
+  it records (`SongNotes`, [`take_log.dart`](../tabcam_app/lib/capture/take_log.dart)):
+  each time the player changes, where it is; a pause, its end, another
+  song, another speed or a jump (where it is more than 300 ms from
+  where it would be, playing on: a seek, a skip, Repeat or its section
+  starting over) ends a segment, and playing again starts the next. As
+  one starts, a fresh reading of the player tells again where it
+  started (the player's own position is only updated about every half
+  second). A song playing already as Rec is pressed is noted from the
+  take's start. At most 2000 segments. `songLink` when a link in a
+  frame played (it has no position: no segment). Empty when none
+  played, and on takes saved before Cam noted it. The editor lines the
+  song up from them ([lined up](video-edit.md#a-takes-song-lined-up)).
 - A take without a log (saved before takes had one) has its tab in its
   picture, or never had one. A log dropped by an older app that
   re-saved the page (one from before pages kept the keys they don't
@@ -777,7 +833,8 @@ slow down while a take records
     `MIC`; 48 kHz stereo, else 48 kHz mono, 44.1 kHz stereo, 44.1 kHz
     mono; 16-bit PCM. Each is tried (started, read from for up to half
     a second, stopped), and the first that gives sound is kept open
-    until Cam closes (`release`). What it got is logged (`Tabs.cam: take
+    until Cam closes (`release`), recording between takes for the
+    [level meter](#level-meter). What it got is logged (`Tabs.cam: take
     sound: unprocessed 48000/2 …`). The camera then opens **without
     sound** (`enableAudio: false`). Should no source work, or the
     microphone be refused, the camera opens with sound and records the

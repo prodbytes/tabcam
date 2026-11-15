@@ -49,14 +49,20 @@ plays along.
   Metronome (showing or hiding their sidebars), Play along, Rename, Clone, Download all and
   Share go in a **More** menu (⋮) after them, so the title keeps its room.
 - **Shared with the user**: a line under the app bar, "Shared by <email>
-  · Can edit" or "· Can view and add". Shared to read, Rename, reordering,
-  Rotate, Delete and editing the text tab are off for the owner's files
-  (the view still changes what shows, without saving it); Add, dragging
-  files and Cam add to the user's own [contribution](contributions.md).
-- **Contributions**, below the files ([contributions](contributions.md)):
-  on the owner's capture, each reader's files under "From <email>", each
-  with **Publish** (or Published, to take it back); on a reader's, their
-  own under "Your files", each with Delete.
+  · Read only · What you add goes to your copy". Only its owner changes a
+  capture: Rename, reordering, Rotate, Delete and editing the text tab
+  are off (the view still changes what shows, without saving it). Add and
+  dragging files add to the user's **own copy** of it instead
+  ([library](library.md#events), `Library.copyToAdd`): their newest
+  copy of it, or a new [clone](library.md#events) made then, whose files
+  stay the owner's until they change (copy on write); the copy then opens
+  in its place, with "Added to your copy, "<title> (copy)"". Cam opens on
+  that copy too ("Cam records into your copy, …").
+- **Contributions**, below the files ([contributions](contributions.md)),
+  what readers added before adding went to their copy: on the owner's
+  capture, each reader's files under "From <email>", each with
+  **Publish** (or Published, to take it back); on a reader's, their own
+  under "Your files", each with Delete.
 - **Files**: the list of the event's files, in their order, newest last
   (so a page just scanned or added is at the end, and the list scrolls to
   it after Add). Each row has a preview (80 px square, in a row with
@@ -173,15 +179,17 @@ plays along.
   - **Cam**, last: the camera with the tab under it, one neckline at a
     time, to record the user playing along; takes are added as videos
     ([Cam](cam.md)), and back from it the list shows, scrolled to them.
-    On a capture shared to read, takes are the user's own contribution's.
-    Off on a capture opened by its link. **Locked** (no Premium): a lock
+    On a capture shared with the user, Cam opens on their own copy of it
+    (made then, or their newest one), which takes the capture's place, so
+    the takes are theirs. Off on a capture opened by its link. **Locked** (no Premium): a lock
     on the icon, tooltip "Cam: Tabs.cam Premium"; it opens Cam as a
     preview, no camera, under the Premium card
     ([cloud OCR](cloud-ocr.md#in-the-app)).
   - **Dragging files** onto the screen adds them too, as Files does
     (outlined with "Drop files to add" while they're over it; folders and
     files that aren't pages are left out, with the message saying how
-    many); on a capture shared to read, to the user's own contribution.
+    many); on a capture shared with the user, to their own copy of it,
+    which then opens, as Add's do.
     Not on a capture opened by its link, nor while a tool works; not on iOS (see [Capture](navigation.md#capture)).
 
   The Original / Scan view and Rotate are the file screen's, not this

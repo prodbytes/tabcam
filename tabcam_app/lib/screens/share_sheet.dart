@@ -37,7 +37,8 @@ Future<void> shareCapture(
 /// link's key: it's saved on the capture (so every device of theirs copies
 /// the same link) and recorded by the share API, so anyone holding the
 /// link can open it, read only. A key from before short links gets a short
-/// one the same way (links with the old one keep working).
+/// one the same way (links with the old one keep working). A clone's files
+/// that are still the original's become its own first ([Library.ownFiles]).
 Future<void> copyCaptureLink(
   BuildContext context,
   CaptureEvent event, {
@@ -60,6 +61,11 @@ Future<void> copyCaptureLink(
     ?..hide()
     ..show(copied);
   if (sync == null) return;
+  // The link's holders read only its own folder: a clone's files still
+  // the original's (copy on write) are copied into it first.
+  if (!event.isShared && event.sharesFiles) {
+    await sync.library.ownFiles(event);
+  }
   if (!identical(keyed, event)) {
     await sync.library.patch(
       event.id,

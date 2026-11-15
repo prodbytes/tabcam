@@ -13,8 +13,8 @@ default and adjustable: the video from and to black, both sounds with
 it ([fades](#fades)). Opened
 with **Edit** (scissors, before Rename) on a video's
 [file screen](event-screen.md#file-screen), in the user's own captures
-and those shared to edit (not read only, nor a contribution's file, nor
-while a tool works).
+(not one shared with them, which is read only, nor a contribution's
+file, nor while a tool works).
 
 **The edit is kept, not applied.** It's saved with the video's page as
 it's made (the page's `edit`, see [stored](#how-the-edit-is-stored);
@@ -64,9 +64,9 @@ with the file's name in its app bar and **ⓘ** at its right (it says
 makes a file of it."), opening with the video's edit as it was left:
 
 - **The preview**, at the top, at most a third of the screen: the video
-  (a tap on it plays or pauses, on the tab's band too, as wide as the
-  picture; a tap on the title, a corner of it, opens its text; on a
-  phone, a long press on the tab's band opens its style),
+  (its taps are the [on-picture controls'](#on-the-picture): a tap on
+  what's drawn picks it, elsewhere it plays or pauses; on a phone, a
+  long press on the tab's band opens its style),
   with what Download draws over it (the [layers](#layers): a take's
   tab, the title, the watermark as this user's download would have
   it), drawn by the same code, so the preview is what the file will be
@@ -78,6 +78,38 @@ makes a file of it."), opening with the video's edit as it was left:
   **kept part** only, from its start when outside it, paused back at its
   start at its end, with both lanes as set, as the edit is played
   everywhere.
+- <a id="on-the-picture"></a>**On the picture** (a video editor's
+  on-screen controls, [`on_picture.dart`](../tabcam_app/lib/screens/on_picture.dart)):
+  **while the preview is paused**, each layer drawn at that frame has a
+  thin white outline: the take's band showing then, the title (from
+  the start, though it fades in) and the watermark. Nothing of it shows
+  while it plays. **A tap picks** what's drawn (the title also opens its
+  text, as ✎ does, playing or not); paused, a tap on the one picked, or
+  on the picture outside every layer, plays (outside, nothing is picked
+  any more), and playing, a tap anywhere but the title pauses: so a tap
+  on the band, a good part of the picture, picks it first, then plays
+  and pauses. The one picked is outlined in the primary colour with a
+  **toolbar** beside it, on the picture (above it where there's room,
+  else under it, else over its top; across from its centre, and
+  narrowed to fit the picture at any text size):
+  - **The tab's band**: **Smaller tab** and **Larger tab** (a step of
+    the Size slider, greyed at its ends), its four **colours** (small
+    swatches, "3" in each one's colours, the one in use ringed), on a
+    phone its whole **style** (the palette, as the chip's), and **Hide
+    the tab** (the Tab chip off). A **handle** at the band's top right
+    ("Drag up or down to resize the tab") resizes it: dragged up, the
+    band grows by as much as it's dragged (half its height up: half as
+    large again), down, it shrinks, on the Size slider's steps and
+    within its range; each change drawn at once and kept a moment
+    later, as the slider's.
+  - **The title**: **Edit the title** (its text) and **Hide the title**
+    (off, its text kept).
+  - **The watermark**: **Hide the watermark** for a user with Premium;
+    without it, Premium's button ("Premium removes the watermark"),
+    which shows Premium's card, as the chip does.
+  While a fade covers the frame shown, a **badge** at the picture's top
+  right says so ("Fade in · 3.0 s", "Fade out · 3.0 s"); a tap on it
+  opens the fades' sliders (on a phone, in place of the chips).
 - **Under it, on one row**: **Play** / **Pause**, **the current time**
   (`0:12.3`, to the tenth of a second: the trims are set by it), the
   part kept (`Keep 0:02.5–0:41.0`, in the primary colour once trimmed;
@@ -108,7 +140,12 @@ makes a file of it."), opening with the video's edit as it was left:
     are drawn on the kept part as ramps at its ends (shaded above a
     line from its corner across the fade's length), as long as they
     play.
-  - **The Song lane**: empty, a dashed **Add a song** (**Add a track**)
+  - **The Song lane**, on a take recorded while a song played along
+    (one Cam noted in its [log](cam.md#what-a-take-keeps), still in the
+    capture), opens with that song in it, **lined up by itself** as it
+    played while recording ([lined up](#a-takes-song-lined-up)), with
+    no edit kept for it: nothing to sync by hand. Otherwise it's
+    empty, a dashed **Add a song** (**Add a track**)
     row, which opens a sheet, **Pick a song** (**Pick a track**), of the
     capture's **recordings**, **videos**
     and **takes** (not the video edited) and **a sound file** from the
@@ -177,8 +214,9 @@ makes a file of it."), opening with the video's edit as it was left:
     long press on the tab's band in the preview, opens it: on a phone in
     place of the chips ("Tab style · How the tab looks over the video");
     on a wide screen it's always under the fades' sliders ("How the tab
-    looks over the video"), without the button or Done (and the band
-    has no gesture of its own there: a tap on it plays or pauses). It
+    looks over the video"), without the button or Done (and no long
+    press on the band there). The band picked on the preview has its
+    size and colours [on the picture](#on-the-picture) too. It
     has **Size** (the tab's usual size times 50% to 200%, in steps of
     5%, but only the sizes that change the band over this video: from
     the smallest that reads on its frame, 50% on a 16:9 landscape one,
@@ -253,8 +291,12 @@ makes a file of it."), opening with the video's edit as it was left:
   tenth of a second earlier or later, with where it starts in words
   between them ("The song starts 0:01.5 after the video": silence
   first; "… 0:01.5 before the video": that much more of its start is
-  cut; counted from the kept part's start), and, once trimmed, "Using
-  0:01.0–0:42.5 of the song". They name it as its lane does: "song" on
+  cut; counted from the kept part's start; for a song lined up in
+  clips, its first), and, once trimmed, "Using
+  0:01.0–0:42.5 of the song" (not for one lined up in clips). A song
+  lined up by itself says so under them: "Lined up as it played while
+  you recorded", or, once nudged or dragged, "Lined up as recorded,
+  moved 0:00.2 later" (or "earlier"). They name it as its lane does: "song" on
   a take, "track" ("The track starts…", "… of the track") on any other
   video. A song shorter than the kept part leaves
   silence after. On a wide screen they stay under the lanes, beside
@@ -266,9 +308,11 @@ makes a file of it."), opening with the video's edit as it was left:
   defaults: the whole video, its own sound at 100%, no song said (so a
   song Removed, `song: off`, keeps it on), a take's tab on, the title
   on with the capture's name, the watermark on, and fades of 3 s in and
-  out; Reset goes back to them, the song taken out, and the edit is
-  none: none means the defaults, a take's tab, the title, the watermark
-  and the fades included, not the file as it is) and
+  out, and a take's song lined up as it played while recording, where
+  it has one; Reset goes back to them, any other song taken out (that
+  one put back, lined up), and the edit is
+  none: none means the defaults, a take's tab, the title, the watermark,
+  the fades and its song lined up included, not the file as it is) and
   **Download**, a split button (both shrink to fit at the largest text
   sizes). Pressed, it downloads **the video** as edited, both lanes
   mixed; its arrow opens a menu of **The video (MP4)**, **The video
@@ -317,15 +361,14 @@ version 2 (`v: 2`):
   meaning they had before the two lanes, so older apps read them.
 - New keys, each written only when it isn't the default: `ownVolume`
   (the own sound's level, 1 by default), `ownMuted`, `songMuted`, and
-  `song`: `manual` (placed by hand), `off` (none; Remove) or `auto` (a
-  later step lines a take's song up by itself; this version plays it
-  as the one clip its track keys approximate, and a change made here
-  makes it `manual`). Absent, it's the page's default: none without a
-  `trackId`; with one, `auto` (this version never writes a song without
-  `song`, but a later one leaves it out when it's the page's default, a
-  take's song lined up by itself or an older take's placed at the
-  start, and this one then plays its track keys' one clip rather than
-  dropping the song). Written back, it stays absent.
+  `song`: `manual` (placed by hand), `off` (none; Remove) or, absent
+  with a `trackId`, `auto`: a take's song [lined up by
+  itself](#a-takes-song-lined-up) from its log, its track keys placing
+  its first clip (what apps from before it play; without a log that
+  noted that song, it plays that one clip here too). Absent without a
+  `trackId`: the page's default (a take's song lined up, if its log
+  has one, else none). `auto` is never written (`song: auto` read is
+  the same), and written back, absent stays absent.
 - **`sound`, for older apps**, worked out from the lanes and always
   written: `track` when only the song is heard, `none` when neither is,
   `original` otherwise (with both heard, older apps play the video's
@@ -371,6 +414,52 @@ version 2 (`v: 2`):
 - Values that aren't numbers are read as the default; volumes out of
   range are brought within 0–1. `PageEdit` has one `copyWith`, and its
   `==`, `hashCode` and `toString` go by one list of its fields.
+
+### A take's song, lined up
+
+Cam notes the song played along while a take records, in its
+[log](cam.md#what-a-take-keeps) (`song`: segments on the take's clock,
+the song's page, where in it, at what speed). From it the editor lines
+the song up by itself (`LoggedSong`, [`render_plan.dart`](../tabcam_app/lib/capture/render_plan.dart)):
+
+- **Which song**: the one that played longest in the take, at its own
+  speed (one played at another speed is noted, but left out: no
+  renderer plays a song at another speed yet), and only while it's
+  still one of the capture's files.
+- **Where**: each segment is a clip, at its time in the file (the
+  take's clock plus the log's lag, `lagMs`), the song from where it was
+  to where it got; one playing as the take started plays from the
+  file's first frame (the lag before the clock started) too. Between
+  clips the song is silent (it was paused, or moved on): a song paused,
+  skipped, started over by Repeat or its section is several clips.
+- **The default**: a take with such a song opens with it in the Song
+  lane (`withLoggedSong`): with no edit, or an edit that says no song
+  (none picked, nor taken out). It's what plays in the preview, the
+  [file screen](event-screen.md#file-screen)'s player (looping, as any
+  edit) and Download, and the edit stays none until something else
+  changes; then it's written without `song`, its track keys placing the
+  first clip, for older apps.
+- **Moved, it all moves** (‹ ›, or dragging the bar, by as much as the
+  first clip's `offsetMs` moves; a trim of the video leaves it where it
+  is along it), and stays lined up, for what the lag didn't catch (a
+  speaker's or headphones' delay). **Trimmed** by its grips (one clip
+  only: a song in clips has none, its bar spanning them all, dimmed
+  between them), or another song picked, it's placed by hand
+  (`manual`, its one clip as its track keys say). **Remove** keeps it
+  out (`song: off`); **Reset** puts it back.
+- Checked (`test/take_log_test.dart`, `test/render_plan_test.dart`,
+  `test/video_edit_test.dart`, `test/play_along_test.dart`): the notes'
+  segments for a play and pause, jumps, another song, speed or a link,
+  a fresh reading re-telling a start; the song played longest, its
+  clips in the file, the lag, one playing as the take started; the
+  default only where the edit says no song; the clips moved, trimmed
+  and cut to a short song, and manual and another song as their keys;
+  the editor opening a take with its song lined up and nothing kept,
+  ‹ moving it all, Reset, Download's clips and Remove; Cam's takes
+  noting the song Rec started and one already playing, and none with
+  nothing played. **Not yet on a phone**: how close the line-up is on
+  each platform (the player's start and the speaker's delay aren't
+  measured).
 
 ### The render plan
 

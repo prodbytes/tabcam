@@ -46,6 +46,10 @@ abstract class TakeRecorder {
   /// and the default is open instead). Not while recording.
   Future<bool> useMicrophone(String? id);
 
+  /// The loudest the microphone has been lately, 0 to 1 (full scale),
+  /// for Cam's level meter; null when it isn't open.
+  Future<double?> peak();
+
   /// The browser's; null elsewhere.
   static TakeRecorder? forPlatform() => webTakeRecorder();
 

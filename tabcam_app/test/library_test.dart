@@ -255,7 +255,8 @@ void main() {
     );
   });
 
-  test('a clone is a new event of its own, with copies of the pages', () async {
+  test('a clone is a new event of its own, with copies of the pages, whose '
+      "files stay the original's until they must be its own", () async {
     final library = Library(PlatformEventStore(root));
     await library.load();
     var event = await library.create([_jpeg(40, 60)]);
@@ -279,13 +280,37 @@ void main() {
       await library.original(event, event.pages.first),
     );
     expect(library.events.first.id, copy.id);
+    expect(copy.clonedFrom, event.id);
+    // Copy on write: the copy's page shows the original's file, not kept
+    // twice.
+    expect(copy.pages.first.source, FileOrigin(event.id, event.pages.first.id));
+    expect(copy.pages.last.source, isNull);
+    expect(await library.hasPage(copy.id, copy.pages.first), isFalse);
+    // A clone of the copy shows the original's file too.
+    final again = await library.clone(copy);
+    expect(again.pages.first.source, copy.pages.first.source);
 
-    // The original goes; the copy keeps its pages.
+    // Turned, a page of the copy is a file of its own; the original's stays.
+    final turned = await library.rotatePage(copy, copy.pages.first);
+    expect(turned.pages.first.source, isNull);
+    expect(await library.hasPage(copy.id, turned.pages.first), isTrue);
+    expect(await library.hasPage(event.id, event.pages.first), isTrue);
+
+    // The original goes; the copies keep its pages, a copy of their own.
     await library.delete(library.byId(event.id)!);
     final reopened = Library(PlatformEventStore(root));
     await reopened.load();
-    final kept = reopened.events.single;
-    expect(kept.id, copy.id);
-    expect(await reopened.hasPage(kept.id, kept.pages.first), isTrue);
+    expect(reopened.events.map((e) => e.id), [again.id, copy.id]);
+    for (final kept in reopened.events) {
+      expect(kept.pages.first.source, isNull);
+      expect(await reopened.hasPage(kept.id, kept.pages.first), isTrue);
+    }
+    expect(
+      (await reopened.original(
+        reopened.byId(again.id)!,
+        reopened.byId(again.id)!.pages.first,
+      )).length,
+      greaterThan(0),
+    );
   });
 }

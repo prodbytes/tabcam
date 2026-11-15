@@ -26,6 +26,7 @@ import 'premium_card.dart';
 import 'video_page.dart' show mediaLength, openPlayer, pageFile;
 import 'messages.dart';
 import 'mono_font.dart';
+import 'on_picture.dart';
 
 /// Basic edits of a video, opened from its file screen, on one time axis:
 /// a ruler (tapped or dragged, the preview goes there) over two lanes,
@@ -168,6 +169,11 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   Duration _trackStart = Duration.zero;
   Duration _trackEnd = Duration.zero;
 
+  /// The song the take's log lines up by itself (as it played while the
+  /// take recorded), when it has one still in the capture: the default
+  /// Song lane.
+  LoggedSong? _logged;
+
   /// The shortest part of a song that can be used.
   static const minTrack = Duration(milliseconds: 500);
 
@@ -191,6 +197,12 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 
   /// Whether the watermark is drawn (only Premium turns it off).
   bool _watermark = true;
+
+  /// The layer picked on the preview ([OnPicture]): outlined in the
+  /// primary colour, with its toolbar; and the tab's size when its
+  /// handle's drag began.
+  PictureLayer? _picked;
+  double _resizeFrom = EditTabStyle.standard.size;
 
   /// How long the video fades in from black, and out to black (both
   /// sounds with it); the fades the Fades chip puts back when turned on
@@ -251,6 +263,32 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// Whether the Song lane has a song in it (as [PageEdit.hasSong]: a
   /// song picked, its lane not `off`; none said, a newer app's default).
   bool get _hasSong => _song != SongMode.off && _trackId != null;
+
+  /// Whether the song in the Song lane is lined up by itself, as it
+  /// played while the take recorded ([_logged]; `song` not said).
+  bool get _lined =>
+      _hasSong &&
+      (_song == null || _song == SongMode.auto) &&
+      _trackId == _logged?.page;
+
+  /// A lined-up song's clips, more than one (it was paused, skipped or
+  /// started over while recording), at their times in the video (`at`),
+  /// as the Song lane shows them; null otherwise.
+  List<SongClip>? get _linedClips {
+    final logged = _logged;
+    if (logged == null || !_lined || logged.clips.length < 2) return null;
+    final shift = logged.shiftOf(_current);
+    return [
+      for (final c in logged.clips)
+        SongClip(
+          at: c.at + shift,
+          from: c.from,
+          to: _trackLength > Duration.zero && c.to > _trackLength
+              ? _trackLength
+              : c.to,
+        ),
+    ];
+  }
 
   /// [file]'s length: [player]'s, or the editor's where the player can't
   /// say ([mediaLength], as the file screen finds it).
@@ -346,17 +384,26 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         return;
       }
       await controller.setLooping(false);
-      final edit = event.pages
+      final saved = event.pages
           .where((p) => p.id == widget.page.id)
           .firstOrNull
           ?.edit;
+      // A take's song, lined up by itself as it played while recording,
+      // unless the edit placed one or took it out.
+      final logged = LoggedSong.of(_takeLog);
+      final lined =
+          logged != null && event.pages.any((p) => p.id == logged.page)
+          ? logged
+          : null;
+      final edit = withLoggedSong(saved, lined, duration: length);
       setState(() {
         _video = controller;
         _playback = EditedPlayback(controller);
         _duration = length;
         _end = length;
-        _saved = edit;
-        _extra = edit?.extra ?? const {};
+        _logged = lined;
+        _saved = saved;
+        _extra = saved?.extra ?? const {};
         if (edit != null) {
           _start = _clamp(edit.start, Duration.zero, length);
           _end = _clamp(edit.end, _start, length);
@@ -435,10 +482,38 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 
   /// Whether the edit is anything but the defaults: the whole video with
   /// its own sound as it is (and a take's tab, the capture's name and the
-  /// watermark over it, fading in and out over 3 s).
-  bool get _edited =>
-      _current.copyWith(extra: const {}) !=
-      PageEdit(start: Duration.zero, end: _duration);
+  /// watermark over it, fading in and out over 3 s), and a take's song
+  /// lined up as it played while recording ([_logged]).
+  bool get _edited => _comparable(_current) != _comparable(_defaults);
+
+  /// The defaults ([_edited]).
+  PageEdit get _defaults {
+    final whole = PageEdit(start: Duration.zero, end: _duration);
+    return withLoggedSong(whole, _logged, duration: _duration) ?? whole;
+  }
+
+  /// [edit] as it's compared with the defaults: without the keys a newer
+  /// app wrote, and, for a song lined up by itself, its track keys left
+  /// out but for how far it's been moved (they follow from the log).
+  PageEdit _comparable(PageEdit edit) {
+    edit = edit.copyWith(extra: const {});
+    final logged = _logged;
+    if (logged == null ||
+        edit.songMode != SongMode.auto ||
+        edit.trackId != logged.page) {
+      return edit;
+    }
+    return edit.copyWith(
+      trackStart: Duration.zero,
+      trackEnd: null,
+      offset: logged.shiftOf(edit),
+    );
+  }
+
+  /// The edit the preview plays and Download renders: as kept
+  /// ([_pageEdit]), or, kept as none, the defaults, a take's song lined
+  /// up by itself among them.
+  PageEdit? get _planEdit => _pageEdit ?? (_hasSong ? _current : null);
 
   /// The edit as it is now, as kept with the page: null when it's the
   /// defaults (the video plays as it is) and has no keys a newer app
@@ -459,7 +534,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// The preview plays the edit as it is now: the plan Download renders.
   Future<void> _played() async => _playback?.set(
     EditedPlayback.planOf(
-      _pageEdit,
+      _planEdit,
       songLength: _trackLength,
       duration: _duration,
       takeLog: _takeLog,
@@ -499,7 +574,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       _layersOf = of;
       _layers = [
         for (final layer in RenderPlan.of(
-          _pageEdit,
+          _planEdit,
           duration: _duration,
           takeLog: _takeLog,
           title: _captureTitle,
@@ -949,7 +1024,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     PageEdit? from,
   }) async {
     await _playback?.set(
-      EditedPlayback.planOf(_pageEdit, duration: _duration, takeLog: _takeLog),
+      EditedPlayback.planOf(_planEdit, duration: _duration, takeLog: _takeLog),
     );
     await _trackPlayer?.dispose();
     _trackPlayer = null;
@@ -1058,7 +1133,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     if (offset == _offset) return;
     setState(() {
       _offset = offset;
-      _placedByHand();
+      // Lined up by itself, it all moves, and stays lined up.
+      if (!_lined) _placedByHand();
     });
     _changed();
   }
@@ -1105,8 +1181,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   }
 
   /// Back to the defaults: the whole video, with its own sound as it is,
-  /// no song, and the tab, the capture's name and the watermark over it,
-  /// fading in and out over 3 s (the edit is none).
+  /// no song (a take's lined up as it played while recording), and the
+  /// tab, the capture's name and the watermark over it, fading in and out
+  /// over 3 s (the edit is none).
   Future<void> _reset() async {
     final player = _trackPlayer;
     setState(() {
@@ -1131,6 +1208,24 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     _changed();
     await _played();
     await player?.dispose();
+    await _lineUpSong();
+  }
+
+  /// Puts the take's song in the Song lane, lined up by itself as it
+  /// played while recording ([_logged]), when it has one.
+  Future<void> _lineUpSong() async {
+    final logged = _logged;
+    final event = _library.byId(widget.eventId);
+    final page = event?.pages.where((p) => p.id == logged?.page).firstOrNull;
+    if (logged == null || event == null || page == null) return;
+    final file = await _fileOf(event, page);
+    if (!mounted) return;
+    await _loadTrack(
+      page.id,
+      file,
+      fileLabel(context.l10n, event, page),
+      from: logged.placed(_current.copyWith(song: null, trackId: null)),
+    );
   }
 
   /// The plan of the edit as it is now, for [kind]: of [input], the
@@ -1139,7 +1234,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// download ([_unlocked]).
   RenderPlan _plan(RenderKind kind, {XFile? input, AppLocalizations? l10n}) =>
       RenderPlan.of(
-        _pageEdit,
+        _planEdit,
         input: input,
         duration: _duration,
         inputExtension: input == null ? null : Media.of(input)?.extension,
@@ -1445,10 +1540,11 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     );
   }
 
-  /// The video, at most a third of the screen (a tap plays or pauses it;
-  /// on the title, it edits it; on a phone, a long press on the tab's band
-  /// opens its style), with what Download draws over it, and,
-  /// while it plays, the fades' black ([EditLayers]).
+  /// The video, at most a third of the screen, with what Download draws
+  /// over it, and, while it plays, the fades' black ([EditLayers]);
+  /// paused, its on-picture controls over that ([OnPicture]). A tap picks
+  /// what's drawn there or plays or pauses it ([_tapPreview]); on a
+  /// phone, a long press on the tab's band opens its style.
   Widget _preview(VideoPlayerController video, AppLocalizations l10n) {
     final height = MediaQuery.sizeOf(context).height / 3;
     final layers = _previewLayers(l10n);
@@ -1485,6 +1581,21 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                             start: _start,
                             fades: fades,
                           ),
+                          OnPicture(
+                            video: video,
+                            layers: layers,
+                            start: _start,
+                            size: box.biggest,
+                            sizeOf: (look) => _measured.of(look).size,
+                            selected: _picked,
+                            toolbar: (kind) => _pictureToolbar(l10n, kind),
+                            resizeLabel: l10n.videoEditPictureResize,
+                            onResizeStart: _resizeStart,
+                            onResize: _resizeTab,
+                            onResizeEnd: () {},
+                            fadeBadge: (at) => _fadeBadge(l10n, at),
+                            onFades: _editFadesHere,
+                          ),
                         ],
                       ),
               ),
@@ -1500,14 +1611,33 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       layer.rectIn(size, _measured.of(layer.look).size).contains(at);
 
   /// A tap at [at] on the preview, [size] big, showing [layers]: on the
-  /// title (a corner of it), it's edited; anywhere else, the tab's band
-  /// too (as wide as the picture, it's a good part of it), the video
-  /// plays or pauses.
+  /// title (a corner of it), it's picked and edited, playing or not.
+  /// Paused, a tap on another layer drawn at that frame (the tab's band
+  /// showing, the watermark) picks it ([OnPicture]: its outline in the
+  /// primary colour, its toolbar beside it); on the one picked, it plays,
+  /// still picked; anywhere else, it plays and nothing is picked. Playing,
+  /// a tap anywhere else pauses it.
   void _tapPreview(Offset at, Size size, List<PlanLayer> layers) {
     final title = layers.where((l) => l.id == 'title').firstOrNull;
     if (title != null && _hit(title, at, size)) {
+      setState(() => _picked = PictureLayer.title);
       _editTitle();
       return;
+    }
+    final video = _video;
+    if (video != null && !video.value.isPlaying) {
+      final now = video.value.position - _start;
+      final hit = OnPicture.shown(
+        layers,
+        now,
+        size,
+        (look) => _measured.of(look).size,
+      ).where((d) => d.$2.contains(at)).map((d) => d.$1).lastOrNull;
+      if (hit != null && hit != _picked) {
+        setState(() => _picked = hit);
+        return;
+      }
+      if (hit == null && _picked != null) setState(() => _picked = null);
     }
     unawaited(_playback?.playPause());
   }
@@ -1522,9 +1652,168 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         .firstOrNull;
     if (band != null && _hit(band, at, size)) {
       unawaited(Feedback.forLongPress(context));
+      setState(() => _picked = PictureLayer.tab);
       _editTabStyle();
     }
   }
+
+  /// The toolbar beside [kind] picked on the preview ([OnPicture]): for
+  /// the tab's band, **smaller** and **larger** (a step of the Size
+  /// slider), its four colours, on a phone its whole style, and **hide**
+  /// (the Tab chip off); for the title, **edit** and **hide**; for the
+  /// watermark, **hide** with Premium, or Premium's card without.
+  Widget _pictureToolbar(AppLocalizations l10n, PictureLayer kind) {
+    Widget button(
+      String key,
+      IconData icon,
+      String tooltip,
+      VoidCallback? onPressed,
+    ) => IconButton(
+      key: Key('video-edit-picture-$key'),
+      tooltip: tooltip,
+      color: Colors.white,
+      disabledColor: Colors.white38,
+      iconSize: 20,
+      visualDensity: VisualDensity.compact,
+      icon: Icon(icon),
+      onPressed: onPressed,
+    );
+    final children = switch (kind) {
+      PictureLayer.tab => () {
+        final style = _tabStyle;
+        final (least, most) = _tabSizes();
+        final size = style.size.clamp(least, most);
+        return [
+          button(
+            'tab-smaller',
+            Icons.text_decrease,
+            l10n.videoEditPictureSmaller,
+            size > least + 0.001 ? () => _stepTabSize(-1) : null,
+          ),
+          button(
+            'tab-larger',
+            Icons.text_increase,
+            l10n.videoEditPictureLarger,
+            size < most - 0.001 ? () => _stepTabSize(1) : null,
+          ),
+          for (final colors in TabColors.values)
+            _PictureSwatch(
+              colors: colors,
+              selected: style.colors == colors,
+              label: _colorsName(l10n, colors),
+              onTap: () => _setTabStyle(style.copyWith(colors: colors)),
+            ),
+          if (!_wide)
+            button(
+              'tab-style',
+              Icons.palette_outlined,
+              l10n.videoEditTabStyleEdit,
+              _editTabStyle,
+            ),
+          button(
+            'tab-hide',
+            Icons.visibility_off_outlined,
+            l10n.videoEditPictureHideTab,
+            () {
+              setState(() => _picked = null);
+              _setTab(false);
+            },
+          ),
+        ];
+      }(),
+      PictureLayer.title => [
+        button('title-edit', Icons.edit, l10n.videoEditTitleEdit, _editTitle),
+        button(
+          'title-hide',
+          Icons.visibility_off_outlined,
+          l10n.videoEditPictureHideTitle,
+          () {
+            setState(() => _picked = null);
+            _setTitle(false);
+          },
+        ),
+      ],
+      PictureLayer.watermark => [
+        if (_unlocked)
+          button(
+            'watermark-hide',
+            Icons.visibility_off_outlined,
+            l10n.videoEditPictureHideWatermark,
+            () {
+              setState(() => _picked = null);
+              _setWatermark(false);
+            },
+          )
+        else
+          button(
+            'watermark-premium',
+            Icons.workspace_premium_outlined,
+            l10n.videoEditWatermarkLocked,
+            widget.ocr == null ? null : () => _setWatermark(false),
+          ),
+      ],
+    };
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Row(mainAxisSize: MainAxisSize.min, children: children),
+    );
+  }
+
+  /// The tab's size on the Size slider's steps (by 5% from the smallest
+  /// it offers), within what it offers ([_tabSizes]).
+  double _onSizeStep(double size) {
+    final (least, most) = _tabSizes();
+    final steps = ((most - least) * 20).round();
+    if (steps <= 0) return least;
+    final k = ((size - least) * 20).round().clamp(0, steps);
+    return least + k / 20;
+  }
+
+  /// **Smaller** or **larger** on the tab's toolbar: a step of the Size
+  /// slider, [by] steps.
+  void _stepTabSize(int by) {
+    final (least, most) = _tabSizes();
+    final now = _tabStyle.size.clamp(least, most);
+    _setTabStyle(_tabStyle.copyWith(size: _onSizeStep(now + by / 20)));
+  }
+
+  /// The tab's handle grabbed: its size now, to scale from.
+  void _resizeStart() {
+    final (least, most) = _tabSizes();
+    _resizeFrom = _tabStyle.size.clamp(least, most);
+  }
+
+  /// The tab's handle dragged: the band [ratio] times as high as when it
+  /// was grabbed, on the Size slider's steps; drawn at once, kept a moment
+  /// later, as the slider's.
+  void _resizeTab(double ratio) {
+    final size = _onSizeStep(_resizeFrom * ratio);
+    if (size == _tabStyle.size) return;
+    _setTabStyle(_tabStyle.copyWith(size: size));
+  }
+
+  /// The badge on the picture at [at] in the output, while a fade covers
+  /// it: "Fade in · 3.0 s", "Fade out · 3.0 s"; else none.
+  String? _fadeBadge(AppLocalizations l10n, Duration at) {
+    final fades = _fades;
+    String seconds(Duration d) =>
+        l10n.videoEditFadeSeconds((d.inMilliseconds / 1000).toStringAsFixed(1));
+    if (fades.fadeIn > Duration.zero &&
+        at >= Duration.zero &&
+        at < fades.fadeIn) {
+      return '${l10n.videoEditFadeIn} · ${seconds(fades.fadeIn)}';
+    }
+    if (fades.fadeOut > Duration.zero &&
+        at > fades.length - fades.fadeOut &&
+        at <= fades.length) {
+      return '${l10n.videoEditFadeOut} · ${seconds(fades.fadeOut)}';
+    }
+    return null;
+  }
+
+  /// The fade badge tapped: the fades' sliders (in place of the chips on
+  /// a phone; beside them, always, on a wide screen).
+  void _editFadesHere() => _editFades();
 
   /// **On the video**: what's drawn over it, as chips (and, on a [wide]
   /// screen, the title's fields under them). A take's **Tab** ([_tabChip]).
@@ -2035,6 +2324,22 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     } else if (_trackLength <= Duration.zero || length <= Duration.zero) {
       // Its length unknown: it can't be placed.
       songBar = _SongBar.unplaced(name: _trackName ?? songName);
+    } else if (_linedClips case final clips?) {
+      // Lined up in several clips: moved as one, silent between them; not
+      // trimmed (one clip can't say it).
+      songBar = _SongBar(
+        length: length,
+        start: _start,
+        end: _end,
+        at: clips.first.at,
+        used: clips.last.end - clips.first.at,
+        gaps: [
+          for (final (i, c) in clips.indexed.skip(1)) (clips[i - 1].end, c.at),
+        ],
+        name: _trackName ?? songName,
+        label: l10n.videoEditTrackBar,
+        onMove: _moveTrack,
+      );
     } else {
       songBar = _SongBar(
         length: length,
@@ -2251,7 +2556,22 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
               ),
             ],
           ),
-        if (trimmed && _trackLength > Duration.zero)
+        if (_lined)
+          Text(
+            switch (_logged!.shiftOf(_current)) {
+              final d when d > Duration.zero => l10n.videoEditSongLinedLater(
+                time(d),
+              ),
+              final d when d < Duration.zero => l10n.videoEditSongLinedEarlier(
+                time(-d),
+              ),
+              _ => l10n.videoEditSongLined,
+            },
+            key: const Key('video-edit-song-lined'),
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall,
+          ),
+        if (trimmed && _trackLength > Duration.zero && _linedClips == null)
           Text(
             (take ? l10n.videoEditSongUsed : l10n.videoEditTrackUsed)(
               time(_trackStart),
@@ -2275,6 +2595,70 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 /// outline's, so a white or black one shows on any theme); named [label]
 /// (its tooltip, and what a screen reader says, with whether it's
 /// picked). Its sample doesn't grow with the text size.
+/// A colour of the tab's on the picture's toolbar ([OnPicture]): a small
+/// bit of band, "3" in its text's colour on its background's, ringed in
+/// the primary colour when it's the one in use.
+class _PictureSwatch extends StatelessWidget {
+  const _PictureSwatch({
+    required this.colors,
+    required this.selected,
+    required this.label,
+    required this.onTap,
+  });
+
+  final TabColors colors;
+  final bool selected;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final (background, text) = TabLayout.colorsOf(colors);
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: label,
+        onTap: onTap,
+        excludeSemantics: true,
+        child: InkWell(
+          key: Key('video-edit-picture-colors-${colors.name}'),
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(6),
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Container(
+              width: 24,
+              height: 24,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: background,
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: selected ? scheme.primary : Colors.white38,
+                  width: selected ? 2 : 1,
+                ),
+              ),
+              child: Text(
+                '3',
+                textScaler: TextScaler.noScaling,
+                style: TextStyle(
+                  fontFamily: monoFont,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: text,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _TabSwatch extends StatelessWidget {
   const _TabSwatch({
     required this.colors,
@@ -2911,8 +3295,9 @@ class _SongBar extends StatelessWidget {
     required this.name,
     required this.label,
     required this.onMove,
-    required this.onTrimStart,
-    required this.onTrimEnd,
+    this.onTrimStart,
+    this.onTrimEnd,
+    this.gaps = const [],
   });
 
   /// A song whose length isn't known, so it can't be placed: its name
@@ -2926,7 +3311,8 @@ class _SongBar extends StatelessWidget {
       label = null,
       onMove = null,
       onTrimStart = null,
-      onTrimEnd = null;
+      onTrimEnd = null,
+      gaps = const [];
 
   final Duration length;
   final Duration start;
@@ -2941,6 +3327,10 @@ class _SongBar extends StatelessWidget {
   final void Function(Duration delta)? onMove;
   final void Function(Duration delta)? onTrimStart;
   final void Function(Duration delta)? onTrimEnd;
+
+  /// Where it's silent along the video, between its clips (from, to);
+  /// none for one clip.
+  final List<(Duration, Duration)> gaps;
 
   /// The lanes' height: a touch target's.
   static const height = 44.0;
@@ -3030,6 +3420,19 @@ class _SongBar extends StatelessWidget {
                         ),
                       ),
                     ),
+                    // Silent between its clips.
+                    for (final (from, to) in gaps)
+                      Positioned(
+                        left: from.inMilliseconds * perMs,
+                        width: max(0.0, (to - from).inMilliseconds * perMs),
+                        top: 0,
+                        bottom: 0,
+                        child: IgnorePointer(
+                          child: ColoredBox(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                          ),
+                        ),
+                      ),
                     // Outside the part kept: cut off, as in the Take lane.
                     Positioned(
                       left: 0,
@@ -3046,7 +3449,9 @@ class _SongBar extends StatelessWidget {
                       child: IgnorePointer(child: ColoredBox(color: dim)),
                     ),
                     // Its ends, to trim it, where they're on the bar.
-                    if (left > -_Grip.width && left < width)
+                    if (onTrimStart != null &&
+                        left > -_Grip.width &&
+                        left < width)
                       Positioned(
                         left: left,
                         top: 0,
@@ -3057,7 +3462,9 @@ class _SongBar extends StatelessWidget {
                           onDrag: (dx) => onTrimStart?.call(ms(dx)),
                         ),
                       ),
-                    if (right > 0 && right < width + _Grip.width)
+                    if (onTrimEnd != null &&
+                        right > 0 &&
+                        right < width + _Grip.width)
                       Positioned(
                         left: right - _Grip.width,
                         top: 0,

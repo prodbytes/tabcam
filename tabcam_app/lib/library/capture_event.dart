@@ -31,6 +31,7 @@ class EventPage {
     this.edit,
     this.take = false,
     this.takeLog,
+    this.source,
     this.extra = const {},
   });
 
@@ -49,7 +50,8 @@ class EventPage {
        title = (title?.trim().isEmpty ?? true) ? null : title!.trim(),
        edit = null,
        take = false,
-       takeLog = null;
+       takeLog = null,
+       source = null;
 
   final String id;
 
@@ -88,6 +90,16 @@ class EventPage {
   /// other page.
   final TakeLog? takeLog;
 
+  /// For a clone's page whose file is still the original's (copy on
+  /// write): the capture and page whose file it shows, so its file is
+  /// neither copied nor kept twice, on the device or in the cloud. Page
+  /// files never change once written, so the original's stays as it was;
+  /// it's copied into the clone only when it has to be (the original's
+  /// goes, or the clone gets a link of its own), and a change that makes a
+  /// new file (Rotate, an edited video) makes it the clone's own. Null: the
+  /// page's file is its own (or it's a link).
+  final FileOrigin? source;
+
   /// The keys of its JSON this version doesn't know (a newer app's, see
   /// `unknownKeys`), kept wherever the page is rebuilt (renamed, edited,
   /// copied, published, replaced) and written back as they came, after
@@ -107,6 +119,7 @@ class EventPage {
     'edit',
     'take',
     'takeLog',
+    'source',
   };
 
   bool get isVideo => kind == PageKind.video;
@@ -115,8 +128,13 @@ class EventPage {
   bool get isPdf => kind == PageKind.pdf;
   bool get isLink => kind == PageKind.link;
 
-  /// Whether the store keeps a file for it (all but links).
+  /// Whether it has a file (all but links).
   bool get hasFile => !isLink;
+
+  /// Whether its file is kept with its own event (not a link, nor a
+  /// clone's page still showing the original's file, [source]): what
+  /// cloud sync sends and brings, and deleting it deletes.
+  bool get hasOwnFile => hasFile && source == null;
 
   /// The MIME type of its file, by its extension.
   String get mimeType => switch (extension) {
@@ -147,6 +165,7 @@ class EventPage {
     PageFilter? filter,
     String? Function()? title,
     PageEdit? Function()? edit,
+    FileOrigin? Function()? source,
     Map<String, Object?>? extra,
   }) => EventPage(
     id: id,
@@ -159,6 +178,7 @@ class EventPage {
     edit: edit == null ? this.edit : edit(),
     take: take,
     takeLog: takeLog,
+    source: source == null ? this.source : source(),
     extra: extra ?? this.extra,
   );
 
@@ -173,6 +193,7 @@ class EventPage {
     if (edit != null) 'edit': edit!.toJson(),
     if (take) 'take': true,
     if (takeLog != null) 'takeLog': takeLog!.toJson(),
+    if (source != null) 'source': source!.toJson(),
     for (final MapEntry(:key, :value) in extraEntries(extra, knownKeys))
       key: value,
   };
@@ -212,9 +233,43 @@ class EventPage {
       edit: json['kind'] == 'video' ? PageEdit.fromJson(json['edit']) : null,
       take: json['take'] == true,
       takeLog: TakeLog.fromJson(json['takeLog']),
+      source: FileOrigin.fromJson(json['source']),
       extra: extra,
     );
   }
+}
+
+/// Where a clone's page finds its file while it's still the original's
+/// ([EventPage.source]): page [pageId] of capture [eventId] (the user's
+/// own, or one shared with them), its file `<pageId>.<extension>` in that
+/// capture's folder.
+class FileOrigin {
+  const FileOrigin(this.eventId, this.pageId);
+
+  final String eventId;
+  final String pageId;
+
+  Map<String, Object?> toJson() => {'event': eventId, 'page': pageId};
+
+  /// Null for anything but a well-formed source (IDs name files).
+  static FileOrigin? fromJson(Object? json) {
+    if (json is! Map) return null;
+    final event = json['event'];
+    final page = json['page'];
+    if (event is! String || page is! String) return null;
+    try {
+      return FileOrigin(checkId(event), checkId(page));
+    } on FormatException {
+      return null;
+    }
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is FileOrigin && other.eventId == eventId && other.pageId == pageId;
+
+  @override
+  int get hashCode => Object.hash(eventId, pageId);
 }
 
 /// Someone a capture is shared with, as recorded on the event when its
@@ -334,6 +389,7 @@ class CaptureEvent {
     this.linkKey,
     this.contributions = const [],
     this.phrases = const {},
+    this.clonedFrom,
   }) : updated = updated ?? created;
 
   /// What's left of [event] once deleted: a tombstone, so the deletion
@@ -413,16 +469,21 @@ class CaptureEvent {
   final String? sharedBy;
   bool get isShared => sharedBy != null;
 
-  /// Shared to read: the user sees the owner's files, can't change them,
-  /// and adds their own instead ([contributes]).
+  /// Read only: the user sees the owner's files and can't change them.
+  /// Every capture shared with the user is (only its owner changes it);
+  /// what they add goes to their own copy instead
+  /// ([Library.copyToAdd]).
   final bool readOnly;
 
-  /// Shared with the user to read: what they add (files, links, Cam's
-  /// takes) is their [Contribution], not the owner's capture.
-  bool get contributes => isShared && readOnly;
+  /// For a clone: the ID of the capture it's a copy of. Adding to a
+  /// capture shared with the user adds to their copy of it, the newest
+  /// one, made the first time ([Library.copyToAdd]).
+  final String? clonedFrom;
 
-  /// What people added ([Contribution]): on the owner's devices, everyone's
-  /// who did; on a reader's, their own (one at most). Kept on the device
+  /// What people added ([Contribution]), before what a reader adds went
+  /// to their own copy instead: on the owner's devices, everyone's who
+  /// did; on a reader's, their own (one at most), which also keeps their
+  /// phrase passes. Kept on the device
   /// (each syncs with its own folder), never in the capture's event.json.
   final List<Contribution> contributions;
 
@@ -431,9 +492,9 @@ class CaptureEvent {
   /// the rest, no file of its own, so no list shows it.
   final Map<String, PhraseTimes> phrases;
 
-  /// The user's own contribution, on a capture they [contributes] to.
+  /// The user's own contribution, on a capture shared with them.
   Contribution? get myContribution =>
-      contributes ? contributions.firstOrNull : null;
+      isShared ? contributions.firstOrNull : null;
 
   /// Whether [page] (a contribution's) is published: copied into the
   /// capture's own pages.
@@ -485,6 +546,7 @@ class CaptureEvent {
     String? linkKey,
     List<Contribution>? contributions,
     Map<String, PhraseTimes>? phrases,
+    String? clonedFrom,
   }) => CaptureEvent(
     id: id,
     title: title ?? this.title,
@@ -506,6 +568,7 @@ class CaptureEvent {
     linkKey: linkKey ?? this.linkKey,
     contributions: contributions ?? this.contributions,
     phrases: phrases ?? this.phrases,
+    clonedFrom: clonedFrom ?? this.clonedFrom,
   );
 
   /// The event as saved: with its [owner] and [shares]; on the device
@@ -530,6 +593,7 @@ class CaptureEvent {
     if (shares.isNotEmpty) 'shares': [for (final s in shares) s.toJson()],
     if (linkKey != null) 'linkKey': linkKey,
     if (phrases.isNotEmpty) 'phrases': PhraseTimes.mapToJson(phrases),
+    if (clonedFrom != null) 'clonedFrom': clonedFrom,
     if (local && sharedBy != null) 'sharedBy': sharedBy,
     if (local && readOnly) 'readOnly': true,
     if (local && contributions.isNotEmpty)
@@ -577,8 +641,30 @@ class CaptureEvent {
           Contribution.fromJson((c as Map).cast<String, Object?>()),
       ],
       phrases: PhraseTimes.mapFromJson(json['phrases'], checkId),
+      clonedFrom: switch (json['clonedFrom']) {
+        final String id when _id.hasMatch(id) => id,
+        _ => null,
+      },
     );
   }
+
+  /// Whether any of its pages still shows another capture's file
+  /// ([EventPage.source]).
+  bool get sharesFiles => pages.any((p) => p.source != null);
+
+  /// The event with each page's file its own ([EventPage.source] dropped):
+  /// how a capture of someone else's is taken (shared with the user, or
+  /// opened by its link). A source there would name a capture on the
+  /// user's device, not the owner's: honoured, it would show (and a clone
+  /// shared would send) the user's own file, so it never is.
+  CaptureEvent withOwnFiles() => sharesFiles
+      ? copyWith(
+          pages: [
+            for (final p in pages)
+              p.source == null ? p : p.copyWith(source: () => null),
+          ],
+        )
+      : this;
 }
 
 final RegExp _linkKey = RegExp(r'^[A-Za-z0-9_-]{12,64}$');

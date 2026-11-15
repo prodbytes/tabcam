@@ -5,8 +5,8 @@ app, and the iOS privacy declarations.
 
 ## The policy page
 
-- **Where**: https://tabcam.nu01.com/privacy (and the RC's
-  https://rc.tabcam.nu01.com/privacy), from
+- **Where**: https://tabs.cam/privacy (and the RC's
+  https://rc.tabs.cam/privacy; the old names redirect there), from
   [tabcam_index/site/privacy/index.html](../tabcam_index/site/privacy/index.html).
   CloudFront rewrites directory URIs only under `/app/`, so
   [deploy](deploy.md) uploads the file as the S3 object `privacy`

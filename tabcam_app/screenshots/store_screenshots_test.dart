@@ -256,7 +256,12 @@ void main() {
           .writeAsBytes(png!.buffer.asUint8List());
     });
 
-    // The feature graphic, 1024 x 500, no alpha.
+    // The feature graphic, 1024 x 500, no alpha: the logo, not the icon.
+    final logo = await tester.runAsync(() async {
+      final bytes = await File('assets/icon/logo.png').readAsBytes();
+      final codec = await ui.instantiateImageCodec(bytes);
+      return (await codec.getNextFrame()).image;
+    });
     tester.view
       ..physicalSize = const Size(1024, 500)
       ..devicePixelRatio = 1;
@@ -265,7 +270,7 @@ void main() {
     await tester.pumpWidget(
       RepaintBoundary(
         key: frame,
-        child: _FeatureGraphic(icon: icon!),
+        child: _FeatureGraphic(logo: logo!),
       ),
     );
     await tester.pump();
@@ -529,12 +534,12 @@ Future<void> _writeRgb(
   });
 }
 
-/// Play's feature graphic: the icon, the name and what it does, on the
-/// icon's dark background, with a scanned page of a made-up riff.
+/// Play's feature graphic: the logo (the lens and "tabs.cam") and what it
+/// does, on the icon's dark background, with a page of a made-up riff.
 class _FeatureGraphic extends StatelessWidget {
-  const _FeatureGraphic({required this.icon});
+  const _FeatureGraphic({required this.logo});
 
-  final ui.Image icon;
+  final ui.Image logo;
 
   static const _background = Color(0xFF1E1A15);
   static const _cream = Color(0xFFFBF7EF);
@@ -586,20 +591,10 @@ class _FeatureGraphic extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(36),
-                  child: RawImage(image: icon, width: 160, height: 160),
-                ),
-                const SizedBox(height: 28),
-                const Text(
-                  'TabCam',
-                  style: TextStyle(
-                    fontFamily: 'Roboto',
-                    fontSize: 72,
-                    fontWeight: FontWeight.w700,
-                    color: _cream,
-                    height: 1,
-                  ),
+                RawImage(
+                  image: logo,
+                  width: 500,
+                  height: 500 * logo.height / logo.width,
                 ),
                 const SizedBox(height: 14),
                 const Text(

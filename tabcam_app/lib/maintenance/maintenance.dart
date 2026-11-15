@@ -32,8 +32,8 @@ class MaintenanceCheck extends ChangeNotifier with WidgetsBindingObserver {
     if (kIsWeb) return Uri.base.resolve('/status.json');
     return Uri.parse(
       AppVersion.stage == 'rc'
-          ? 'https://rc.tabcam.nu01.com/status.json'
-          : 'https://tabcam.nu01.com/status.json',
+          ? 'https://rc.tabs.cam/status.json'
+          : 'https://tabs.cam/status.json',
     );
   }
 

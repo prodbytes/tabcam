@@ -2,28 +2,33 @@
 
 A capture (event) is shared with other people by its **link**: the
 owner's [Share](sharing.md) copies it, and someone signed in who opens it
-**joins** it to read ("Can view and add": they see the owner's files and
-get its updates, can't change them, and add files of their own that only
-they and the owner see: [contributions](contributions.md)). There's no
+**joins** it, **read only**: they see the owner's files and get its
+updates, and can't change them. **Only the owner changes a capture.**
+What they add (Add, dropped files, Cam's takes) goes to **their own
+copy** of it instead: a [clone](library.md#events), made the first time
+(their newest copy after that), whose files stay the owner's until they
+change (copy on write), and which opens in its place. There's no
 sharing by email address in the app any more, nor a list of people: the
 Share with people button and its sheet were removed (2026-10-17), so the
 owner can't see, change or remove who has joined. Captures shared by
-email before stay shared, **to edit** ("Can edit": they change it as the
-owner does, and the owner sees their changes) or **to read**, as they
-were. No email is sent: someone sees what's shared with them when they
-sign in to Tabs.cam (with Google, or with Apple on iOS). To share a
-capture with other people than the original's, [clone](library.md#events)
-it and share the copy's link.
+email before stay shared, read only, those shared **to edit** too
+(2026-11-15: the app no longer uploads them, and the share API's
+credentials no longer write). No email is sent: someone sees what's
+shared with them when they sign in to Tabs.cam (with Google, or with
+Apple on iOS). To share a capture with other people than the original's,
+[clone](library.md#events) it and share the copy's link (its files are
+copied into it first).
 
 A build has sharing only with [sign-in and cloud sync](cloud-sync.md) and
 `TABCAM_SHARE_API_URL` set.
 
 ## The share API's grants
 
-The share API still keeps who a capture is shared with (by email, to edit
-or read; one's own address and more than 50 people per capture refused;
-up to 500 more by its link), and `CloudSync` still has its client
-(`grants`, `grant`, `revoke`), which only tests use now. The owner's app
+The share API still keeps who a capture is shared with (by email, to
+read: a grant to edit is refused, and one made before reads as `read`;
+one's own address and more than 50 people per capture refused; up to 500
+more by its link), and `CloudSync` still has its client (`grants`,
+`grant`, `revoke`), which only tests use now. The owner's app
 recorded the people and roles on the event (`shares`: `[{email, role}]`,
 `role` `edit` or `read`) when it listed or changed them, so they synced
 with the capture ([event.json](cloud-sync.md#whats-synced-and-where));
@@ -35,24 +40,32 @@ A capture shared with the user comes down at the next
 [sync pass](cloud-sync.md#when-and-how) (within 5 minutes while the app is in front, at once on opening it) and shows in
 the [library](library.md)'s **Shared with me** section, below the user's
 own (**My captures**), with "shared by <their email>" on its card. Its
-event screen says **"Shared by <email> · Can edit"** or **"· Can view and
-add"** under the app bar.
+event screen says **"Shared by <email> · Read only · What you add goes to
+your copy"** under the app bar.
 
-- **Can edit**: everything works as for the user's own. Changes go up to the owner's folder,
-  and the owner's changes come down; the later one wins, as between one's
-  own devices.
-- **Read** ("Can view and add"): Rename, Rotate, Delete (a page) and
-  editing the text tab are off for the owner's files (the view changes
-  only what shows), and nothing reads it here; Share (export) and Clone
-  work. Add, dragging files and Cam add to the user's own
-  [contribution](contributions.md). A clone is the user's own.
+- **Read only**, whatever the grant says: Rename, Rotate, Delete (a page)
+  and editing the text tab are off (the view changes only what shows),
+  nothing reads it here, and nothing of it goes up; Share (its link) and
+  Clone work. The owner's changes come down.
+- **Adding** (Add, dragging files, a tab site's print) adds to the user's
+  own copy of it, and **Cam** opens on that copy
+  ([event screen](event-screen.md)): their newest capture `clonedFrom`
+  it, or a new clone, made then. The copy is the user's own, synced with
+  their folder; its pages show the owner's files until they change, and
+  get copies of their own before the owner's go (the capture deleted, a
+  file deleted, the share removed or left; [copy on
+  write](library.md#events)). Its phrase passes start from the user's
+  own ones on the shared capture.
+- The user's own [contribution](contributions.md), from before adding
+  went to their copy, still shows under **Your files**, with Delete; Cam's
+  phrase passes on the shared capture are kept there.
 - **Remove** (a card's menu, instead of Delete, after a confirmation that
   the owner keeps it, with **Don't ask again**, see
   [delete confirmations](delete-confirms.md)) takes it off the user's devices and leaves the
   share.
 - A share the owner removed, or a capture the owner deleted, goes from
-  the user's devices at the next pass. A role change applies at the next
-  pass too.
+  the user's devices at the next pass (the user's copies keep the files
+  they showed of it).
 
 If the owner [hid its images](hidden-images.md), it shows that way for
 the user too, who can't show them.
@@ -74,9 +87,9 @@ credentials:
 | Route | Who | Does |
 |---|---|---|
 | `GET /shares/{captureId}` | the owner | the capture's grants, with each reader's `identity` once known and `via: "link"` for those who joined |
-| `PUT /shares/{captureId}` | the owner | grants `{email, role}` (role `edit` by default, or `read`) |
+| `PUT /shares/{captureId}` | the owner | grants `{email, role}` (role `read`, the default; `edit` is refused: only the owner changes a capture) |
 | `DELETE /shares/{captureId}?email=` | the owner | removes a grant |
-| `GET /shared` | anyone | the captures shared with them: owner, capture, owner's email, role |
+| `GET /shared` | anyone | the captures shared with them: owner, capture, owner's email, role (always `read`, a grant made to edit before too) |
 | `DELETE /shared/{owner}/{captureId}` | the grantee | leaves a share |
 | `POST /shared/{owner}/{captureId}/credentials` | the grantee | temporary credentials for that capture's folder |
 | `PUT /links/{captureId}` | the owner | records the capture's link key (`{key}`): anyone with the link may read it ([sharing](sharing.md)) |
@@ -125,9 +138,9 @@ reading any token, with nothing but the key to go on.
   every page.
 - **Credentials**: the function assumes the `tabcam-share-access` role
   for an hour with a session policy that allows only
-  `<bucket>/<owner>/events/<capture id>/*` (get; put and delete too to
-  edit) and listing that prefix; for a reader, also get, put, delete and
-  list their own contribution's folder,
+  `<bucket>/<owner>/events/<capture id>/*` (get: read only, for every
+  grant, those made to edit before too) and listing that prefix; also
+  get, put, delete and list the grantee's own contribution's folder,
   `<owner>/contrib/<capture id>/<their identity>/` (`contribPrefix`), and
   their grant records their identity. The role itself allows at most the
   `events/` and `contrib/` folders, and only the function may assume it.
@@ -146,9 +159,10 @@ In the app ([lib/cloud/share_api.dart](../tabcam_app/lib/cloud/share_api.dart)),
 each sync pass, after the user's own folder: lists `GET /shared`, removes
 the local copies of captures no longer listed, then syncs each listed
 capture as a folder of one, with its credentials (reused until five
-minutes before they expire, or the role changes): the same comparison as
-for the user's own ([cloud sync](cloud-sync.md)), but read-only ones
-never upload. A failing share is logged and skipped; the others go on.
+minutes before they expire): the same comparison as for the user's own
+([cloud sync](cloud-sync.md)), but never uploading: shared captures are
+read only, whatever the grant's role. A failing share is logged and
+skipped; the others go on.
 
 ## Infrastructure
 
@@ -168,8 +182,9 @@ The script prints `TABCAM_SHARE_API_URL`.
 
 - The function's tests (`python3 -m unittest discover -s
   tabcam_api/shares`, with in-memory DynamoDB, Cognito and STS): a grant
-  defaults to edit and is listed; read-only grants; bad emails, roles,
-  IDs and one's own address are refused; unverified addresses are
+  is to read and is listed; a grant to edit, bad emails, roles,
+  IDs and one's own address are refused; a grant made to edit before
+  lists as read and its credentials only read; unverified addresses are
   refused; the grantee lists, gets credentials narrowed to the capture's
   folder (read only: get only), and leaves; no grant, no credentials; the
   owner revokes. `DELETE /account` deletes the caller's grants both ways,
@@ -188,12 +203,22 @@ The script prints `TABCAM_SHARE_API_URL`.
   its hash is kept; publishing again is the same; a wrong key, another
   capture's ID, a bad key or body open nothing; a key is one capture's.
 - The app's tests, two devices and a fake share API over the in-memory
-  bucket: a capture shared to edit comes down and edits go back (without
-  the sharing fields); read only uploads nothing; the grantee's own
-  events stay in their folder; revoked, it goes, and shared again it
-  comes back; the grantee removes it and leaves; the owner deletes it and
-  it goes; a role change reaches the copy; a clone of a shared capture is
-  the user's own. The API client's requests. A capture's link with its
+  bucket: a capture shared to edit before is read only (her change
+  uploads nothing, the owner's stays); read only uploads nothing; the
+  grantee's own events stay in their folder; revoked, it goes, and shared
+  again it comes back; the grantee removes it and leaves; the owner
+  deletes it and it goes; a role change leaves it read only; a clone of a
+  shared capture is the user's own, `clonedFrom` it. Adding to a shared
+  capture adds to her own copy, made once (adding again goes to the same
+  one), the shared capture unchanged; her folder gets the copy's
+  `event.json` and her own file, not the owner's file, which her copy
+  shows, on her other device too. The owner deletes the capture: her copy
+  keeps a copy of the file, which goes up to her folder; she removes the
+  shared capture: her copy keeps the file; a file of the copy replaced is
+  its own, the owner's unchanged; before the copy gets a link its files
+  become its own and go up. Cam on a shared capture opens on her copy,
+  in its place. Files dropped on a shared capture go to her copy, which
+  opens. The API client's requests. A capture's link with its
   key opens it read only, signed out (instead of the welcome) and signed
   in when it isn't shared with the user, in a library apart; a wrong key
   says it can't be opened; Share makes the key once, on the tap, and a
@@ -218,3 +243,11 @@ The script prints `TABCAM_SHARE_API_URL`.
   with its key can see the capture, read only, until the capture is
   deleted (or its owner deletes their account). A clone has no key, so
   cloning gives a capture with a new link.
+- A copy's page whose file never came to the user's device before the
+  owner's went (deleted, or the share removed, before a download
+  finished) can't be copied, and has no file. Each of the user's devices
+  makes its own copy of a file that goes (the same file, at the same
+  name: the last one up stays).
+- People shared to edit before have no way left to change what they
+  edited: they add to their own copy, like anyone the capture is shared
+  with.

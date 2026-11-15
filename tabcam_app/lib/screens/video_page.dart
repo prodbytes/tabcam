@@ -62,9 +62,25 @@ class _VideoPageState extends State<VideoPage> {
   /// its tab (a take that has one to show) and the title (the capture's
   /// name) over it.
   Future<void> _edit(VideoPlayerController controller) async {
-    final edit = widget.page.edit;
+    final saved = widget.page.edit;
     final log = widget.page.takeLog;
     final title = captureTitleLines(widget.event.title, widget.event.artist);
+    // A take's song, lined up by itself as it played while it recorded,
+    // unless the edit says otherwise (a song placed or taken out).
+    final logged = LoggedSong.of(log);
+    final edit =
+        logged != null &&
+            widget.event.pages.any((p) => p.id == logged.page) &&
+            takesLoggedSong(saved)
+        ? withLoggedSong(
+            saved,
+            logged,
+            duration: await mediaLength(
+              controller,
+              () => pageFile(widget.library, widget.event, widget.page),
+            ),
+          )
+        : saved;
     if (edit == null) {
       // The video as it is, its tab and title over it: the whole video,
       // as long as the player (or, where it can't say, the editor) finds

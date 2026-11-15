@@ -323,10 +323,10 @@ void main() {
     );
     // In her library from then on, shared to see and add her own files.
     final joined = mine.byId(id)!;
-    expect(joined.contributes, isTrue);
+    expect(joined.readOnly, isTrue);
     expect(find.byType(PublicCaptureScreen), findsNothing);
     expect(find.byKey(const Key('link-banner')), findsNothing);
-    expect(find.textContaining('Can view and add'), findsOneWidget);
+    expect(find.textContaining('Read only'), findsOneWidget);
   });
 
   testWidgets("signed in, when joining fails: it opens by its link", (

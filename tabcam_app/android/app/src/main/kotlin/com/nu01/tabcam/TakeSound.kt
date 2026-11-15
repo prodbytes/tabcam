@@ -29,6 +29,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
 import kotlin.math.min
 
@@ -71,6 +72,13 @@ import kotlin.math.min
  * - `cancel`: stops a take's sound and drops it (the camera didn't start).
  * - `release` (Cam closes): closes the microphone.
  *
+ * Channel `tabcam/take_level`, for Cam's level meter (polled, a few dozen
+ * times a second):
+ * - `peak`: the loudest the microphone has been since the last `peak`,
+ *   0 to 1 (full scale); null when it isn't being read. Between takes a
+ *   [Monitor] reads it (the microphone records, nothing kept); in a take,
+ *   the take's own reader ([Session]).
+ *
  * Threads: calls arrive on the main thread; the microphone is opened,
  * started and stopped, and the sound put into the take, on [control], one
  * at a time. A take's sound has two threads of its own ([Session]).
@@ -82,6 +90,23 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
     private val channel = MethodChannel(messenger, CHANNEL).also {
         it.setMethodCallHandler(this)
     }
+
+    // The loudest sample since the meter last asked ([TakeSoundMath.peak]),
+    // noted by the reading thread, the monitor's or the take's.
+    private val peak = AtomicInteger(0)
+    private val levelChannel = MethodChannel(messenger, LEVEL_CHANNEL).also {
+        it.setMethodCallHandler { call, result ->
+            if (call.method != "peak") return@setMethodCallHandler result.notImplemented()
+            val reading = monitor?.reading == true || session != null
+            val loudest = peak.getAndSet(0)
+            result.success(if (reading) loudest.toDouble() / TakeSoundMath.FULL_SCALE else null)
+        }
+    }
+
+    // Reads the microphone between takes, for the meter (control thread
+    // starts and stops it).
+    @Volatile
+    private var monitor: Monitor? = null
     private val main = Handler(Looper.getMainLooper())
     private val control = Executors.newSingleThreadExecutor { Thread(it, "TakeSound control") }
 
@@ -213,6 +238,7 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
     /** Opens the microphone (control thread); never throws. */
     private fun open(): Map<String, Any?> = try {
         val m = mic ?: openMic().also { mic = it }
+        listen()
         mapOf(
             "ok" to true,
             "source" to TakeSoundMath.sourceName(m.source),
@@ -249,6 +275,7 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
         check(session == null) { "A take is recording" }
         check(granted()) { "The microphone isn't allowed" }
         device = chosen
+        quiet()
         mic?.release()
         mic = null
         return open()
@@ -257,9 +284,11 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
     private fun start() {
         check(session == null) { "The take's sound is recording already" }
         check(granted()) { "The microphone isn't allowed" }
+        // The meter's reading stops: the take's reader reads from here.
+        quiet()
         val m = mic ?: openMic().also { mic = it }
         val file = File(context.cacheDir, "take-sound-${System.currentTimeMillis()}.m4a")
-        val s = Session(m, file)
+        val s = Session(m, file, peak)
         try {
             s.start()
         } catch (e: Exception) {
@@ -300,9 +329,12 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
             s.cancel()
             dropMic(s.finish())
             s.file.delete()
+            listen()
             throw e
         }
         dropMic(outcome)
+        // The meter reads again while the sound is put into the take.
+        listen()
         Log.i(
             TAG,
             "take sound: ${TakeSoundMath.sourceName(s.source)}, ${s.format.sampleRate} Hz, " +
@@ -362,6 +394,22 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
         mic = null
     }
 
+    /**
+     * The meter reads the open microphone between takes (control thread):
+     * a [Monitor] started, unless one reads already or a take records.
+     */
+    private fun listen() {
+        if (session != null || monitor != null) return
+        val m = mic ?: return
+        monitor = Monitor(m.record, m.format, peak).also { it.start() }
+    }
+
+    /** The meter's reading between takes stops (control thread). */
+    private fun quiet() {
+        monitor?.stop()
+        monitor = null
+    }
+
     private fun cancel() {
         hidesMicrophone = false
         val s = session ?: return
@@ -370,16 +418,19 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
         val outcome = s.finish()
         s.file.delete()
         dropMic(outcome)
+        listen()
     }
 
     private fun release() {
         cancel()
+        quiet()
         mic?.release()
         mic = null
     }
 
     fun dispose() {
         channel.setMethodCallHandler(null)
+        levelChannel.setMethodCallHandler(null)
         hidesMicrophone = false
         pendingPermission?.success(notOk("Closed"))
         pendingPermission = null
@@ -496,6 +547,71 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
         }
     }
 
+    /**
+     * Reads the open microphone between takes, for Cam's level meter: it
+     * records (as it then is when a take starts), each 20 ms read's
+     * loudest sample noted in [peak] and the sound let go. Started when
+     * the microphone opens and after each take, stopped before a take
+     * starts, another microphone is chosen, or Cam closes.
+     */
+    private class Monitor(
+        private val record: AudioRecord,
+        format: TakeSoundMath.Format,
+        private val peak: AtomicInteger,
+    ) {
+        @Volatile
+        private var running = true
+
+        /** Whether it reads now (false: not yet, stopped, or it failed). */
+        @Volatile
+        var reading = false
+            private set
+
+        private val buffer = ByteArray(TakeSoundMath.chunkBytes(format))
+        private val thread = Thread(::read, "TakeSound level")
+
+        fun start() = thread.start()
+
+        private fun read() {
+            try {
+                record.startRecording()
+                if (record.recordingState != AudioRecord.RECORDSTATE_RECORDING) {
+                    Log.i(TAG, "take sound: no level between takes (the microphone is in use)")
+                    return
+                }
+                reading = true
+                while (running) {
+                    val n = record.read(buffer, 0, buffer.size)
+                    if (n < 0) {
+                        Log.i(TAG, "take sound: no level between takes (read: $n)")
+                        break
+                    }
+                    if (n > 0) noteLoudest(peak, TakeSoundMath.peak(buffer, n))
+                }
+            } catch (e: Exception) {
+                Log.i(TAG, "take sound: no level between takes: ${e.message}")
+            } finally {
+                reading = false
+            }
+        }
+
+        /** Stops reading and the microphone (as before a take); waits for the thread. */
+        fun stop() {
+            running = false
+            try {
+                record.stop()
+            } catch (_: Exception) {
+            }
+            thread.join(MONITOR_JOIN_MS)
+            // Should it have started recording after the stop above (it
+            // was just starting), it stops now.
+            try {
+                record.stop()
+            } catch (_: Exception) {
+            }
+        }
+    }
+
     /** What a take's sound came to, once [Session.finish]ed. */
     private class Outcome(
         val aacFrames: Long,
@@ -552,7 +668,7 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
      * at a time, as the camera's own sound was (CameraX times each of
      * its buffers by the timestamps).
      */
-    private class Session(private val mic: Mic, val file: File) {
+    private class Session(private val mic: Mic, val file: File, private val peak: AtomicInteger) {
         val source = mic.source
         val format = mic.format
         private val record = mic.record
@@ -702,6 +818,8 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
                     }
                     chunk.length = n
                     chunk.drift = NO_DRIFT
+                    // For the meter: a pass over the 20 ms just read.
+                    noteLoudest(peak, TakeSoundMath.peak(chunk.bytes, n))
                     // When the first frame was captured: the system's
                     // timestamps over the first second (the latest kept),
                     // else when the first read came back.
@@ -993,6 +1111,13 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
         private const val NO_DRIFT = Long.MIN_VALUE
 
         const val CHANNEL = "tabcam/take_sound"
+        const val LEVEL_CHANNEL = "tabcam/take_level"
+        private const val MONITOR_JOIN_MS = 1_000L
+
+        /** [loudest] into [peak], if louder than what it has. */
+        private fun noteLoudest(peak: AtomicInteger, loudest: Int) {
+            peak.accumulateAndGet(loudest) { a, b -> max(a, b) }
+        }
 
         /**
          * The inputs a take's sound can come from: the phone's own

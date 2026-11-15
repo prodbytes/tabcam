@@ -435,7 +435,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get eventReadOnly => 'Can view and add';
+  String get eventReadOnly => 'Read only · What you add goes to your copy';
 
   @override
   String get eventByLink => 'Opened by its link · Read only';
@@ -474,7 +474,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'This capture can\'t be opened. The link may be wrong, its owner may have deleted it, or you may be offline.';
 
   @override
-  String get eventCanEdit => 'Can edit';
+  String eventAddedToCopy(String title) {
+    return 'Added to your copy, \"$title\"';
+  }
+
+  @override
+  String eventCamOnCopy(String title) {
+    return 'Cam records into your copy, \"$title\"';
+  }
 
   @override
   String eventClonedAs(String title) {
@@ -590,6 +597,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get camMicChoose => 'Microphone';
+
+  @override
+  String get camMicLevel => 'Microphone level';
 
   @override
   String get camMicHeading => 'Record from';
@@ -1968,6 +1978,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get videoEditSongLined => 'Lined up as it played while you recorded';
+
+  @override
+  String videoEditSongLinedLater(String time) {
+    return 'Lined up as recorded, moved $time later';
+  }
+
+  @override
+  String videoEditSongLinedEarlier(String time) {
+    return 'Lined up as recorded, moved $time earlier';
+  }
+
+  @override
   String videoEditSongUsed(String start, String end) {
     return 'Using $start–$end of the song';
   }
@@ -2184,6 +2207,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoEditTabStyleReset => 'Default style';
+
+  @override
+  String get videoEditPictureSmaller => 'Smaller tab';
+
+  @override
+  String get videoEditPictureLarger => 'Larger tab';
+
+  @override
+  String get videoEditPictureResize => 'Drag up or down to resize the tab';
+
+  @override
+  String get videoEditPictureHideTab => 'Hide the tab';
+
+  @override
+  String get videoEditPictureHideTitle => 'Hide the title';
+
+  @override
+  String get videoEditPictureHideWatermark => 'Hide the watermark';
 
   @override
   String get metronome => 'Metronome';
