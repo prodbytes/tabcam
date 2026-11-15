@@ -816,7 +816,8 @@ class ShareApiTest(unittest.TestCase):
         self.assertIn('<meta property="og:title" content="Morning &lt;riff&gt; – Me">', page)
         self.assertIn("<title>Morning &lt;riff&gt; – Me</title>", page)
         self.assertIn('content="Me · 2 pages, 1 PDF, 1 link, a text tab. Shared with Tabs.cam."', page)
-        link = f"https://rc.tabcam.nu01.com/app/?c=abc&amp;k={self.KEY}"
+        # Its short link, on the site that asked.
+        link = f"https://rc.tabcam.nu01.com/s/{self.KEY}"
         self.assertIn(f'<meta property="og:url" content="{link}">', page)
         # Read with the link's own read-only credentials, its folder alone.
         self.assertEqual(used, ["ASIA", f"{OWNER}/events/abc/event.json"])
@@ -836,6 +837,45 @@ class ShareApiTest(unittest.TestCase):
         page, _ = self.preview(key="x" * 32, site="tabcam.nu01.com")
         self.assertIn("https://tabcam.nu01.com/app/", page)
         self.assertNotIn("evil", page)
+
+    # --- short links: /s/<key> redirects to the full link -------------------
+
+    def short(self, key, query=None):
+        """GET /s/{key}: its status and headers."""
+        event = {"routeKey": index.SHORT_ROUTE, "pathParameters": {"key": key},
+                 "queryStringParameters": query}
+        response = index.handler(event, None, self.clients)
+        return response["statusCode"], response["headers"]
+
+    def test_a_short_link_redirects_to_the_full_one(self):
+        self.publish()
+        status, headers = self.short(self.KEY)
+        self.assertEqual(status, 302)
+        self.assertEqual(headers["location"], f"/app/?c=abc&k={self.KEY}")
+        self.assertEqual(headers["cache-control"], "public, max-age=86400")
+        # A file's keeps its ID; a bad one is dropped.
+        _, headers = self.short(self.KEY, {"f": "p1"})
+        self.assertEqual(headers["location"], f"/app/?c=abc&k={self.KEY}&f=p1")
+        _, headers = self.short(self.KEY, {"f": "../x"})
+        self.assertEqual(headers["location"], f"/app/?c=abc&k={self.KEY}")
+        # HEAD too.
+        event = {"routeKey": "HEAD /s/{key}", "pathParameters": {"key": self.KEY}}
+        response = index.handler(event, None, self.clients)
+        self.assertEqual(response["headers"]["location"], f"/app/?c=abc&k={self.KEY}")
+
+    def test_a_12_character_key_makes_a_short_link(self):
+        key = "Ab3dEf9hJk2L"
+        self.assertEqual(self.publish(key=key)[0], 200)
+        _, headers = self.short(key)
+        self.assertEqual(headers["location"], f"/app/?c=abc&k={key}")
+
+    def test_an_unknown_short_link_goes_to_the_app_briefly_cached(self):
+        self.publish()
+        for key in ("x" * 12, "Ab3dEf9hJk2", "<script>", ""):
+            status, headers = self.short(key)
+            self.assertEqual(status, 302)
+            self.assertEqual(headers["location"], "/app/")
+            self.assertEqual(headers["cache-control"], "public, max-age=60")
 
     def test_a_deleted_capture_previews_as_tabcam(self):
         self.publish()

@@ -881,6 +881,25 @@ Resources:
       AuthorizationType: NONE
       Target: !Sub integrations/${Integration}
 
+  # A capture's short link (the site sends /s/<key> here): a redirect to
+  # the full link. No authorizer; the function checks the key.
+  RouteShort:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Api
+      RouteKey: GET /s/{key}
+      AuthorizationType: NONE
+      Target: !Sub integrations/${Integration}
+
+  # The same for HEAD (some link checkers ask that first).
+  RouteShortHead:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Api
+      RouteKey: HEAD /s/{key}
+      AuthorizationType: NONE
+      Target: !Sub integrations/${Integration}
+
   # Sign in with Apple on Android: Apple posts its reply here (the
   # Services ID's return URL), and the function sends it back to the app.
   # No token yet, so no authorizer; nothing is kept.
@@ -895,7 +914,7 @@ Resources:
   Stage:
     Type: AWS::ApiGatewayV2::Stage
     # Its route settings name these routes: they must exist first.
-    DependsOn: [RouteLink, RouteLinkCode, RoutePublic, RoutePreview, RouteAppleCallback]
+    DependsOn: [RouteLink, RouteLinkCode, RoutePublic, RoutePreview, RouteShort, RouteShortHead, RouteAppleCallback]
     Properties:
       ApiId: !Ref Api
       StageName: $default
@@ -918,7 +937,7 @@ Resources:
         POST /profile/link-code:
           ThrottlingBurstLimit: 5
           ThrottlingRateLimit: 1
-        # Guessing link keys (128 bits: hopeless anyway), and no token.
+        # Guessing link keys (about 71 bits: hopeless anyway), and no token.
         POST /public/{captureId}/credentials:
           ThrottlingBurstLimit: 10
           ThrottlingRateLimit: 5
@@ -926,6 +945,11 @@ Resources:
         GET /preview/{captureId}/{key}:
           ThrottlingBurstLimit: 10
           ThrottlingRateLimit: 5
+        # Short links, behind CloudFront's cache (a day a link): people
+        # opening them, and guesses (no better than POST /public's).
+        GET /s/{key}:
+          ThrottlingBurstLimit: 20
+          ThrottlingRateLimit: 10
         # Android Apple sign-ins: people, not crawlers.
         POST /apple/callback:
           ThrottlingBurstLimit: 10

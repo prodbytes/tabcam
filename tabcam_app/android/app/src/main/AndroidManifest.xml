@@ -27,9 +27,10 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- App Links: the web app's addresses (a capture's link,
-                 /app/?c=<id>) open here, verified by the sites'
-                 /.well-known/assetlinks.json. -->
+            <!-- App Links: a capture's short link (/s/<key>) and the web
+                 app's addresses (/app/?c=<id>) open here, verified by the
+                 sites' /.well-known/assetlinks.json. The old names'
+                 links (tabcam.nu01.com) too. -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
@@ -40,6 +41,7 @@
                 <data android:host="tabcam.nu01.com"/>
                 <data android:host="rc.tabcam.nu01.com"/>
                 <data android:pathPrefix="/app"/>
+                <data android:pathPrefix="/s/"/>
             </intent-filter>
             <!-- Flutter hands the links to the app (IncomingLinks). -->
             <meta-data

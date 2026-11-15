@@ -35,7 +35,9 @@ Parameters:
     Description: >
       The share API's domain (TABCAM_SHARE_API_URL's host). With it,
       chat apps' crawlers asking for a capture's link get its preview page
-      (/preview/<id>/<key>, from the API): its title, not the app's.
+      (/preview/<id>/<key>, from the API): its title, not the app's. And
+      short links (/s/<key>) are answered by the API, a redirect to the
+      full link.
   RedirectTo:
     Type: String
     Default: ''
@@ -137,6 +139,29 @@ Resources:
           QueryStringsConfig:
             QueryStringBehavior: none
 
+  # Short links' redirects (/s/<key>, a file's with ?f=<id>): kept as the
+  # share API says (a day a link, a minute an unknown one), by path and f.
+  ShortLinkCachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Condition: HasPreviews
+    Properties:
+      CachePolicyConfig:
+        Name: !Sub ${AWS::StackName}-short-links
+        Comment: Short links' redirects, by path and the file ID
+        MinTTL: 0
+        DefaultTTL: 0
+        MaxTTL: 86400
+        ParametersInCacheKeyAndForwardedToOrigin:
+          EnableAcceptEncodingGzip: false
+          EnableAcceptEncodingBrotli: false
+          HeadersConfig:
+            HeaderBehavior: none
+          CookiesConfig:
+            CookieBehavior: none
+          QueryStringsConfig:
+            QueryStringBehavior: whitelist
+            QueryStrings: [f]
+
   SiteBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
@@ -230,7 +255,7 @@ Resources:
               var c = q.c && q.c.value;
               var k = q.k && q.k.value;
               if (agent && CRAWLERS.test(agent.value) && c && k &&
-                  /^[a-z0-9]{1,32}$/.test(c) && /^[A-Za-z0-9_-]{32,64}$/.test(k)) {
+                  /^[a-z0-9]{1,32}$/.test(c) && /^[A-Za-z0-9_-]{12,64}$/.test(k)) {
                 return {
                   statusCode: 302,
                   statusDescription: 'Found',
@@ -363,6 +388,18 @@ Resources:
               AllowedMethods: [GET, HEAD]
               CachedMethods: [GET, HEAD]
               CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 # Managed-CachingOptimized
+              ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03 # Managed-SecurityHeadersPolicy
+            - !Ref AWS::NoValue
+          # A capture's short link, https://<site>/s/<key>: the share API
+          # redirects it to the full one (/app/?c=<id>&k=<key>).
+          - !If
+            - HasPreviews
+            - PathPattern: /s/*
+              TargetOriginId: share-api
+              ViewerProtocolPolicy: redirect-to-https
+              AllowedMethods: [GET, HEAD]
+              CachedMethods: [GET, HEAD]
+              CachePolicyId: !Ref ShortLinkCachePolicy
               ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03 # Managed-SecurityHeadersPolicy
             - !Ref AWS::NoValue
           # A user's folder, at its keys' paths (every folder is a Cognito
