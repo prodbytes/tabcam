@@ -2186,6 +2186,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditTabStyleReset => 'Default style';
 
   @override
+  String get videoEditPictureSmaller => 'Smaller tab';
+
+  @override
+  String get videoEditPictureLarger => 'Larger tab';
+
+  @override
+  String get videoEditPictureResize => 'Drag up or down to resize the tab';
+
+  @override
+  String get videoEditPictureHideTab => 'Hide the tab';
+
+  @override
+  String get videoEditPictureHideTitle => 'Hide the title';
+
+  @override
+  String get videoEditPictureHideWatermark => 'Hide the watermark';
+
+  @override
   String get metronome => 'Metronome';
 
   @override
