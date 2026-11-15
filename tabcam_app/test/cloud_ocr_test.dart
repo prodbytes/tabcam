@@ -40,12 +40,16 @@ class FakeOcrApi implements OcrApi {
   /// Thrown by [account] instead of answering.
   Object? error;
 
+  /// False: the service answers that it couldn't reach rbacr.
+  bool rbacr = true;
+
   @override
   Future<PremiumStatus> account(String idToken) async {
     accountCalls++;
     if (error case final e?) throw e;
     return PremiumStatus(
-      premium: premium,
+      premium: premium && rbacr,
+      checked: rbacr,
       expiresAt: premium ? DateTime(2027, 3, 1) : null,
       upgradeUrl: Uri.parse('https://example.com/subscribe'),
       voucherUrl: Uri.parse('https://example.com/voucher'),
@@ -665,6 +669,64 @@ void main() {
     await tester.pump();
     expect(find.text('Upgrade'), findsNothing);
     expect(find.textContaining('transcribed in the cloud'), findsOneWidget);
+    s.dispose();
+  });
+
+  testWidgets('Premium is offered only once the service said the user has '
+      'none: not while it checks, nor when it couldn\'t', (tester) async {
+    final s = _Setup();
+    s.api.error = OcrApiException(503, 'down');
+    await tester.runAsync(() async {
+      await s.start(syncing: false);
+      expect(s.ocr.free, isTrue, reason: 'signed out');
+      s.auth.signInAs('ana');
+      await _until(() => !s.ocr.checking && s.ocr.error != null);
+    });
+    expect(s.ocr.free, isFalse);
+    await tester.pumpWidget(
+      TabCamApp(library: s.library, auth: s.auth, sync: s.sync, ocr: s.ocr),
+    );
+    await _frames(tester);
+    // No banner on Home.
+    expect(find.byKey(const Key('premium-banner')), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+
+    // The card checks first: failing again, it says so, with no offer.
+    final calls = s.api.accountCalls;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PremiumCard(ocr: s.ocr, email: 'ana@example.com'),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.runAsync(() => _until(() => !s.ocr.checking));
+    await tester.pump();
+    expect(s.api.accountCalls, calls + 1);
+    expect(find.byKey(const Key('premium-unchecked')), findsOneWidget);
+    expect(find.text('Upgrade'), findsNothing);
+    expect(find.text('Redeem a voucher'), findsNothing);
+    expect(find.text('Check again'), findsOneWidget);
+
+    // rbacr unreachable: still not known, still no offer.
+    s.api
+      ..error = null
+      ..rbacr = false;
+    await tester.tap(find.text('Check again'));
+    await tester.runAsync(() => _until(() => !s.ocr.checking));
+    await tester.pump();
+    expect(s.ocr.status?.checked, isFalse);
+    expect(s.ocr.free, isFalse);
+    expect(find.text('Upgrade'), findsNothing);
+
+    // Checked, and free: now it's offered.
+    s.api.rbacr = true;
+    await tester.tap(find.text('Check again'));
+    await tester.runAsync(() => _until(() => s.ocr.free));
+    await tester.pump();
+    expect(find.text('Upgrade'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
     s.dispose();
   });
 

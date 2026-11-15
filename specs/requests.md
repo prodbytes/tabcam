@@ -3636,3 +3636,17 @@ spec.
    tabs.cam, rc.tabs.cam and `/s/` too, and the app resolves a short link
    itself; link previews name the short link. Needs the tabs.cam site
    (entries 2 and 8) live. See [sharing](sharing.md#short-links).
+11. **"Only show premium feature call to non premium users, I saw it even
+   being premium already, always check first."** Premium was offered
+   whenever the app had no "premium" answer: before the check answered,
+   when it failed, or when rbacr didn't answer (Home's banner showed
+   then, and the card showed the offer). Now Premium is offered only to
+   a user known to have none: signed out, or signed in and the service
+   checked they have no Premium (`CloudOcr.free`). Home's banner, the
+   card's offer, the Text and Cam tools' lock badge, Fix's Upgrade and
+   the web import's "needs Premium" all wait for that answer; the card
+   checks first when it opens (`checkFirst`) and, until it's known,
+   says "Checking…" or "Couldn't check Premium" with **Check again**; a
+   web import asks before deciding. See
+   [cloud OCR](cloud-ocr.md#offered-only-when-known),
+   [autocorrect](autocorrect.md), [tab site links](tab-site-links.md).

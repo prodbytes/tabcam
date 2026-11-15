@@ -1181,6 +1181,9 @@ class _EventScreenState extends State<EventScreen> {
         final canAdd = !widget.byLink && (editable || event.isShared);
         final text = _text;
         final locked = _locked;
+        // The tools say they're Premium's only to a user the service said
+        // has none ([CloudOcr.free]); until it has, no lock shows.
+        final offered = locked && widget.ocr!.free;
         final l10n = context.l10n;
         final narrow = MediaQuery.sizeOf(context).width < 600;
         // The Text view shows the tab: its buttons go in the app bar.
@@ -1348,8 +1351,8 @@ class _EventScreenState extends State<EventScreen> {
                     // How the tab stands: being read, there, or not.
                     working: reading,
                     dimmed: !reading && !hasText,
-                    locked: locked,
-                    tooltip: locked
+                    locked: offered,
+                    tooltip: offered
                         ? l10n.eventPremiumTool(l10n.eventText)
                         : reading
                         ? l10n.eventReadingTab
@@ -1368,8 +1371,8 @@ class _EventScreenState extends State<EventScreen> {
                     key: const Key('cam'),
                     icon: Icons.videocam_outlined,
                     label: l10n.eventCam,
-                    locked: locked,
-                    tooltip: locked
+                    locked: offered,
+                    tooltip: offered
                         ? l10n.eventPremiumTool(l10n.eventCam)
                         : null,
                     onPressed: _busy || !canAdd ? null : _cam,
