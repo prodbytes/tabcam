@@ -3501,3 +3501,13 @@ spec.
    certificate and CloudFront, Google sign-in's origins, the sign-in
    emails' sender) and the new logo come in their own changes. See
    [navigation](navigation.md), [video edit](video-edit.md).
+2. **"Also change app name, logo, google oidc, everything."** The logo
+   part: a new icon,
+   a camera lens reading a line of tab (a gold ring round a cream disc
+   with a six-line staff and the fret numbers 3, 5, 7, and a red rec dot
+   on the ring), and a logo, the lens and the wordmark "tabs.cam" ("tabs"
+   in cream, ".cam" in gold). Every platform's icon (Android, adaptive
+   too, iOS, the web's favicon and PWA icons), Play's icon and its feature
+   graphic (now with the logo) are made again from the new masters, and
+   `scripts/app-icon.sh` makes all of it in one go. The name, the domain
+   and the sign-in change apart. See [app icon](app-icon.md).

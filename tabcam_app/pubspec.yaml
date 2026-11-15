@@ -144,12 +144,12 @@ flutter:
   # see https://flutter.dev/to/font-from-package
 
 # App icons for every platform, generated from assets/icon/ by
-# `dart run flutter_launcher_icons`. The masters are SVGs rendered to PNG:
-# a scanned page with a tab staff, framed by camera corners.
+# `dart run flutter_launcher_icons` (all of it: bash scripts/app-icon.sh).
+# The masters are SVGs rendered to PNG: a camera lens reading a tab staff.
 flutter_launcher_icons:
   image_path: assets/icon/icon.png
   android: launcher_icon
-  # Adaptive icon (Android 8+): the page on a solid background layer.
+  # Adaptive icon (Android 8+): the lens on a solid background layer.
   adaptive_icon_background: "#1E1A15"
   adaptive_icon_foreground: assets/icon/icon_foreground.png
   min_sdk_android: 24
