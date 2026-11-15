@@ -66,6 +66,12 @@ void main() {
     await frames(tester);
     expect(library.byId(id)!.pages, hasLength(1));
     expect(find.text('example.com'), findsNothing);
+    // To the trash, with Undo.
+    expect(library.byId(id)!.deletedPages, hasLength(1));
+    expect(find.textContaining('Deleted "example.com"'), findsOneWidget);
+    expect(find.text('Undo'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 10));
+    await frames(tester);
 
     // The last file stays: the event is deleted instead.
     final photo = library.byId(id)!.pages.single;

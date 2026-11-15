@@ -1098,10 +1098,16 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
     String token,
   ) async {
     final there = files[event.id] ?? const <String>{};
-    for (final page in event.pages) {
+    // Its deleted pages' files too, kept until the trash is purged (one
+    // deleted before it ever went up, if it's still here).
+    for (final page in [...event.pages, ...event.deletedPages]) {
       // A clone's page still showing the original's file sends none: the
       // original's folder has it.
       if (!page.hasOwnFile || there.contains(page.fileName)) continue;
+      if (!event.pages.contains(page) &&
+          !await library.hasPage(event.id, page)) {
+        continue;
+      }
       final (body, length) = await library.pageStream(event.id, page);
       await bucket.putStream(
         _key(identity, event.id, page.fileName),
@@ -1121,7 +1127,9 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
       contentType: 'application/json',
       credentials: creds,
     );
-    final kept = {for (final p in event.pages) p.fileName};
+    // Files are deleted from the folder only once purged: those of its
+    // deleted pages stay.
+    final kept = {for (final p in event.storedPages) p.fileName};
     for (final name in there) {
       if (kept.contains(name)) continue;
       await bucket.delete(_key(identity, event.id, name), credentials: creds);

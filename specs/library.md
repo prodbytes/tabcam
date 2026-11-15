@@ -141,9 +141,9 @@ only when it has to:
   place) makes a new page with its own file, as on any capture; the
   original's file stays. A rename, a filter, a video's edit or a
   reorder change only the copy's `event.json`;
-- before the original's file is deleted (the owner deletes the file or
+- before the original's file is deleted (the owner purges the file or
   the capture, or a shared capture stops being shared with the user, or
-  the user leaves it or deletes their own original), each copy still
+  the user leaves it or purges their own original), each copy still
   showing it gets a copy of its own, on the device, which then syncs up
   like any change. A file that never came to the device can't be copied:
   that page then has no file;
@@ -156,14 +156,18 @@ site's print, Cam's takes) adds to their own copy of it
 clone, made then. Only the owner changes a shared capture
 ([shared captures](shared-captures.md)).
 
-**Delete** removes an event and its pages. One that has synced leaves a
-**tombstone** (its ID, `updated` and `deleted` times, no pages), hidden
-from the list, so the deletion reaches the user's other devices; one that
-never synced is gone at once.
+**Delete** puts an event in the trash (`trashed`): hidden, its pages and
+files kept until it's restored or the user purges the trash
+([Deleted and Purge](trash.md)). Deleting a file moves it to the event's
+`deletedPages`, file and all. **Purge** deletes them for good: an event
+that has synced leaves a **tombstone** (its ID, `updated` and `deleted`
+times, no pages), hidden from the list, so the deletion reaches the
+user's other devices; one that never synced is gone at once.
 
 **Rotate** stores the turned image as a new page (a new ID, same filter)
-in the old one's place, and deletes the old file: page files never change
-once written, which is what lets cloud sync compare pages by name.
+in the old one's place, and keeps the old one in `deletedPages` (until
+purged): page files never change once written, which is what lets cloud
+sync compare pages by name.
 
 A video's **edit** ([video edit](video-edit.md): the part kept, its own
 sound's level, a song from the capture's files mixed with it, where it

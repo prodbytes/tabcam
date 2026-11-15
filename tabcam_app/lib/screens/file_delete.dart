@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../l10n/language.dart';
@@ -61,7 +63,15 @@ Future<void> deleteFile(
     final now = library.byId(event.id);
     if (now == null) return;
     if (own) {
+      final name = fileLabel(l10n, now, page);
       await library.deletePage(now, page);
+      // To the capture's trash: Undo, or Profile's Deleted, brings it back.
+      showDeleted(
+        messenger,
+        l10n,
+        name,
+        () => unawaited(library.restorePage(now.id, page)),
+      );
     } else {
       await library.deleteContributionPage(now, page);
     }

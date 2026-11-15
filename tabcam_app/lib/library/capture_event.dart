@@ -391,6 +391,8 @@ class CaptureEvent {
     this.contributions = const [],
     this.phrases = const {},
     this.clonedFrom,
+    this.trashed,
+    this.deletedPages = const [],
   }) : updated = updated ?? created;
 
   /// What's left of [event] once deleted: a tombstone, so the deletion
@@ -452,9 +454,23 @@ class CaptureEvent {
         ]
       : pages;
 
-  /// When it was deleted, for a tombstone: not shown, no pages.
+  /// When it was deleted for good (purged), for a tombstone: not shown, no
+  /// pages.
   final DateTime? deleted;
   bool get isDeleted => deleted != null;
+
+  /// When the user deleted it, while it's in the trash: hidden, its pages
+  /// and their files all kept (on the device and in the cloud), until it's
+  /// restored or the user purges the trash ([Library.purge]). Synced.
+  final DateTime? trashed;
+  bool get isTrashed => trashed != null;
+
+  /// The files the user deleted from it (or replaced: an older version, a
+  /// turned image's original), latest last: no longer shown, their files
+  /// kept until they're restored ([Library.restorePage]) or the trash is
+  /// purged ([Library.purge]). Synced (on the owner's devices; someone
+  /// it's shared with never sees them).
+  final List<EventPage> deletedPages;
 
   /// The Cognito identity ID it syncs with, once it has synced (null
   /// before). Saved in the cloud too, but there the folder it's in says
@@ -505,13 +521,19 @@ class CaptureEvent {
   EventPage? publishedCopy(EventPage page) =>
       pages.where((p) => p.from == page.id).firstOrNull;
 
-  /// Every page whose file is kept with the event: its own and the
-  /// contributions'.
+  /// Every page it shows a file of: its own and the contributions'.
   Iterable<EventPage> get allPages sync* {
     yield* pages;
     for (final c in contributions) {
       yield* c.pages;
     }
+  }
+
+  /// Every page whose file is kept with the event: [allPages] and the
+  /// deleted ones still in the trash ([deletedPages]).
+  Iterable<EventPage> get storedPages sync* {
+    yield* allPages;
+    yield* deletedPages;
   }
 
   /// The key in the capture's link (`…/app/?c=<id>&k=<key>`), made the first
@@ -548,6 +570,8 @@ class CaptureEvent {
     List<Contribution>? contributions,
     Map<String, PhraseTimes>? phrases,
     String? clonedFrom,
+    DateTime? Function()? trashed,
+    List<EventPage>? deletedPages,
   }) => CaptureEvent(
     id: id,
     title: title ?? this.title,
@@ -570,6 +594,8 @@ class CaptureEvent {
     contributions: contributions ?? this.contributions,
     phrases: phrases ?? this.phrases,
     clonedFrom: clonedFrom ?? this.clonedFrom,
+    trashed: trashed == null ? this.trashed : trashed(),
+    deletedPages: deletedPages ?? this.deletedPages,
   );
 
   /// The event as saved: with its [owner] and [shares]; on the device
@@ -595,6 +621,9 @@ class CaptureEvent {
     if (linkKey != null) 'linkKey': linkKey,
     if (phrases.isNotEmpty) 'phrases': PhraseTimes.mapToJson(phrases),
     if (clonedFrom != null) 'clonedFrom': clonedFrom,
+    if (trashed != null) 'trashed': trashed!.toUtc().toIso8601String(),
+    if (deletedPages.isNotEmpty)
+      'deletedPages': [for (final p in deletedPages) p.toJson()],
     if (local && sharedBy != null) 'sharedBy': sharedBy,
     if (local && readOnly) 'readOnly': true,
     if (local && contributions.isNotEmpty)
@@ -642,6 +671,11 @@ class CaptureEvent {
           Contribution.fromJson((c as Map).cast<String, Object?>()),
       ],
       phrases: PhraseTimes.mapFromJson(json['phrases'], checkId),
+      trashed: time('trashed'),
+      deletedPages: [
+        for (final p in json['deletedPages'] as List? ?? const [])
+          EventPage.fromJson((p as Map).cast<String, Object?>()),
+      ],
       clonedFrom: switch (json['clonedFrom']) {
         final String id when _id.hasMatch(id) => id,
         _ => null,
@@ -658,12 +692,16 @@ class CaptureEvent {
   /// opened by its link). A source there would name a capture on the
   /// user's device, not the owner's: honoured, it would show (and a clone
   /// shared would send) the user's own file, so it never is.
-  CaptureEvent withOwnFiles() => sharesFiles
+  ///
+  /// Its [deletedPages] go too: they're its owner's trash, which someone
+  /// it's shared with never sees (nor downloads).
+  CaptureEvent withOwnFiles() => sharesFiles || deletedPages.isNotEmpty
       ? copyWith(
           pages: [
             for (final p in pages)
               p.source == null ? p : p.copyWith(source: () => null),
           ],
+          deletedPages: const [],
         )
       : this;
 }

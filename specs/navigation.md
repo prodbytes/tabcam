@@ -183,7 +183,9 @@ before deleting**, a switch kept on the device: on (the default), every
 delete of a capture or a file asks first; off once a confirm's **Don't
 ask again** was ticked, and turned on, they all ask again (it only
 turns them on; [delete confirmations](delete-confirms.md)). Delete account asks
-whatever it says. Then **About**: the app's name
+whatever it says. Then **Deleted**: what's in the trash, with **Show**
+(to restore) and **Purge** (deletes it for good, after asking;
+[Deleted and Purge](trash.md)). Then **About**: the app's name
 and version (X.Y.Z, or "(development build)"), what it does,
 **Privacy policy** (opens https://tabs.cam/privacy in the browser,
 [privacy](privacy.md)) and **Licenses**.

@@ -3625,16 +3625,17 @@ B|--5--8--|
     expect(library.byId(id)!.pages.map((p) => p.id), contains(take.id));
     expect(find.byKey(const Key('cam-along-frame')), findsOneWidget);
 
-    // Confirmed: it goes, with its file; the frame lets go of it, and
-    // Play has nothing to play back.
+    // Confirmed: it goes (to the trash, its file kept until purged); the
+    // frame lets go of it, and Play has nothing to play back.
     await tester.tap(delete);
     await frames(tester);
     await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
     await frames(tester);
     expect(library.byId(id)!.pages.map((p) => p.id), isNot(contains(take.id)));
+    expect(library.byId(id)!.deletedPages.map((p) => p.id), [take.id]);
     late bool kept;
     await tester.runAsync(() async => kept = await library.hasPage(id, take));
-    expect(kept, isFalse);
+    expect(kept, isTrue);
     expect(row, findsNothing);
     expect(find.byKey(const Key('cam-along-frame')), findsNothing);
     expect(

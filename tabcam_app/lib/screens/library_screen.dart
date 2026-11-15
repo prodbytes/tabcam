@@ -483,6 +483,7 @@ class _EventCard extends StatelessWidget {
           }
         }
       case _CardAction.delete:
+        final messenger = Messenger.maybeOf(context);
         final ok = await confirmDelete(
           context,
           library: library,
@@ -492,7 +493,15 @@ class _EventCard extends StatelessWidget {
           confirm: l10n.homeLibraryDelete,
           cancel: l10n.homeLibraryCancel,
         );
-        if (ok) await library.delete(event);
+        if (!ok) return;
+        await library.delete(event);
+        // To the trash: Undo, or Profile's Deleted, brings it back.
+        showDeleted(
+          messenger,
+          l10n,
+          event.title,
+          () => unawaited(library.restore(event)),
+        );
     }
   }
 

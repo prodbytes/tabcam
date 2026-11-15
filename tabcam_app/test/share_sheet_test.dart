@@ -71,40 +71,39 @@ void main() {
         });
   });
 
-  testWidgets('Share copies the link on the tap itself: the URL, nothing else', (
-    tester,
-  ) async {
-    await open(tester);
-    await tester.tap(find.byTooltip('Share'));
-    // Copied at once: no frame, no sheet, no wait. With its key, made
-    // now, so anyone holding the link can open it.
-    expect(
-      copied,
-      matches(
-        RegExp(
-          r'^https://tabs\.cam/app/\?c=[a-z0-9]+&k=[A-Za-z0-9_-]{32}$',
+  testWidgets(
+    'Share copies the link on the tap itself: the URL, nothing else',
+    (tester) async {
+      await open(tester);
+      await tester.tap(find.byTooltip('Share'));
+      // Copied at once: no frame, no sheet, no wait. With its key, made
+      // now, so anyone holding the link can open it.
+      expect(
+        copied,
+        matches(
+          RegExp(r'^https://tabs\.cam/app/\?c=[a-z0-9]+&k=[A-Za-z0-9_-]{32}$'),
         ),
-      ),
-    );
-    expect(copied, startsWith('https://tabs.cam/app/?c=$id&k='));
-    await frames(tester);
-    // The key is kept on the capture and recorded by the share API.
-    final key = library.byId(id)!.linkKey!;
-    expect(copied, CaptureLink.of(library.byId(id)!).toString());
-    expect(copied, endsWith('/app/?c=$id&k=$key'));
-    expect(FakeShareApi.links[key], '/$id');
-    expect(find.text('Link copied'), findsOneWidget);
-    // No sheet, no options.
-    expect(find.text('PDF'), findsNothing);
-    expect(find.byType(BottomSheet), findsNothing);
+      );
+      expect(copied, startsWith('https://tabs.cam/app/?c=$id&k='));
+      await frames(tester);
+      // The key is kept on the capture and recorded by the share API.
+      final key = library.byId(id)!.linkKey!;
+      expect(copied, CaptureLink.of(library.byId(id)!).toString());
+      expect(copied, endsWith('/app/?c=$id&k=$key'));
+      expect(FakeShareApi.links[key], '/$id');
+      expect(find.text('Link copied'), findsOneWidget);
+      // No sheet, no options.
+      expect(find.text('PDF'), findsNothing);
+      expect(find.byType(BottomSheet), findsNothing);
 
-    // Again: the same link.
-    final first = copied;
-    await tester.tap(find.byTooltip('Share'));
-    await frames(tester);
-    expect(copied, first);
-    expect(library.byId(id)!.linkKey, key);
-  });
+      // Again: the same link.
+      final first = copied;
+      await tester.tap(find.byTooltip('Share'));
+      await frames(tester);
+      expect(copied, first);
+      expect(library.byId(id)!.linkKey, key);
+    },
+  );
 
   testWidgets('a link the API couldn\'t record is recorded at the next pass', (
     tester,

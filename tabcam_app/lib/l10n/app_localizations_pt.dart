@@ -1053,7 +1053,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get homeLibraryDeleteBody =>
-      'Suas páginas e a tablatura em texto também são excluídas.';
+      'Ela vai para Excluídos, na aba Perfil, com seus arquivos e a tablatura em texto: dá para restaurá-la lá até você apagar de vez.';
 
   @override
   String get homeLibraryDelete => 'Excluir';
@@ -2311,4 +2311,88 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get deleteAskOff =>
       'Algumas exclusões acontecem na hora, sem perguntar. Ative para voltar a perguntar.';
+
+  @override
+  String get trashTitle => 'Excluídos';
+
+  @override
+  String get trashEmpty =>
+      'Nada excluído. O que você excluir fica aqui até você apagar de vez.';
+
+  @override
+  String trashSummary(String items) {
+    return '$items, guardados até você apagar de vez.';
+  }
+
+  @override
+  String trashCaptures(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count capturas',
+      one: '1 captura',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trashFiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count arquivos',
+      one: '1 arquivo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trashShow => 'Mostrar';
+
+  @override
+  String get trashPurge => 'Apagar de vez';
+
+  @override
+  String get trashPurgeTitle => 'Apagar de vez tudo o que foi excluído?';
+
+  @override
+  String get trashPurgeBody =>
+      'As capturas e os arquivos excluídos são apagados de vez, em todos os dispositivos e na nuvem. Não dá para desfazer.';
+
+  @override
+  String get trashPurged => 'Apagado de vez';
+
+  @override
+  String trashCouldntPurge(String error) {
+    return 'Não foi possível apagar de vez: $error';
+  }
+
+  @override
+  String get trashRestore => 'Restaurar';
+
+  @override
+  String trashRestored(String name) {
+    return '\"$name\" restaurado';
+  }
+
+  @override
+  String get trashCapturesHeading => 'Capturas';
+
+  @override
+  String trashFilesOf(String title) {
+    return 'Arquivos excluídos de \"$title\"';
+  }
+
+  @override
+  String trashDeletedOn(String date) {
+    return 'Excluída em $date';
+  }
+
+  @override
+  String deletedItem(String name) {
+    return '\"$name\" excluído: restaure pelo Perfil até apagar de vez';
+  }
+
+  @override
+  String get deleteUndo => 'Desfazer';
 }

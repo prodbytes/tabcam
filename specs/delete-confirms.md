@@ -23,7 +23,11 @@ the file screen) delete a file through the same code
 `deleteFile`), so they ask, or don't, as one: Don't ask again ticked in
 the sidebar holds in the list too, and the other way round. The file
 screen's own **Delete** (its app bar's) never asked and still doesn't
-(it deletes the file and goes back to the list).
+(it deletes the file and goes back to the list). Nothing deleted here is
+deleted for good: captures and files go to the trash, which only
+Profile's Purge empties, and which always asks ([Deleted and Purge](trash.md)).
+The capture's confirm says so: "It goes to Deleted, on the Profile tab,
+with its files and text tab: you can restore it there until you purge."
 
 ## Don't ask again
 

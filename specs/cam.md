@@ -360,8 +360,10 @@ its **Not now** leaving. With Premium it opens the camera view
     [contribution](contributions.md) (its `contrib.json`), taking the
     owner's place for them. They're saved when the take is (Stop, or
     leaving Cam), not each pass.
-  - **They go with their file**: a file deleted (from the capture, or
-    from the user's contribution), its passes are deleted with it; a
+  - **They go with their file**: a file deleted from the capture keeps
+    them in the trash (restored, it has them), and they're deleted when
+    it's purged ([Deleted and Purge](trash.md)); one deleted from the
+    user's contribution, they're deleted with it; a
     clone's copies of the files have their originals' passes, and so
     does a file the owner [publishes](contributions.md#what-the-owner-sees-and-publishes)
     from a contribution (the owner's own for it, else its reader's).
@@ -487,7 +489,8 @@ offer it: on the user's own captures and those shared with them to
 edit, on every file; on a capture shared to read, on none of the
 owner's, only on the reader's own (their takes, listed after the
 capture's files and under **Takes**), which it deletes from their
-[contribution](contributions.md), file and all. Not in Cam's Premium
+[contribution](contributions.md), file and all. A capture's file it
+deletes goes to the capture's trash ([Deleted and Purge](trash.md)). Not in Cam's Premium
 preview, nor on a capture opened by its link. It's greyed while a take
 records, saves (with ".", until the next take has started) or plays
 back, and while the screen works. Once deleted, the file loaded in the

@@ -368,10 +368,13 @@ visit) shows the user's captures quickly:
   arriving is already in the folder.
 - A file that fails to come stays loading and is **asked for again at the
   next pass**, as is one the app closed before it came; a file whose page
-  or capture went is dropped, and what waited for it fails. **Deleting** an event that has synced
-leaves a tombstone, which goes up (its page files are deleted from the
-folder) and deletes it on the other devices. An event that never synced is
-simply deleted.
+  or capture went is dropped, and what waited for it fails. **Deleting** an
+event or a file only puts it in the trash (`trashed`, `deletedPages`,
+synced; their files stay in the folder: [Deleted and Purge](trash.md)).
+**Purging** an event that has synced leaves a tombstone, which goes up
+(its page files are deleted from the folder) and deletes it on the other
+devices; a purged file is deleted from the folder once `event.json` no
+longer names it. An event that never synced is simply deleted.
 
 **Another account's events**: events that synced with one account stay on
 the device when another signs in, shown but never uploaded to the new

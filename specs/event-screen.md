@@ -117,7 +117,8 @@ plays along.
   "Delete "<name>"?" (Cancel, Delete, and **Don't ask again**: ticked, a
   file's delete no longer asks on this device, see
   [delete confirmations](delete-confirms.md)) and deletes the file (stopping it
-  if it plays in the list); the last file can't be deleted (the message
+  if it plays in the list) to the capture's trash, with "Deleted "<name>"…"
+  and **Undo** ([Deleted and Purge](trash.md)); the last file can't be deleted (the message
   says to delete the event instead), and a failure shows "Couldn't
   delete". Rename and Delete aren't there read only. The play-along
   sidebar's Delete (beside the Text view, in Cam, on the file screen)
@@ -298,7 +299,8 @@ Its tools, along the bottom:
 - **Rename** (pencil), just before Delete: asks for the file's name,
   prefilled, as on the list (saving it empty goes back to the default
   name).
-- **Delete**: deletes the file and goes back to the list. The last file
+- **Delete**: deletes the file (to the trash, with Undo,
+  [Deleted and Purge](trash.md)) and goes back to the list. The last file
   can't be deleted (the message says to delete the event instead). The
   play-along sidebar beside a recording has no Delete on the recording's
   own row (it has on the other files,

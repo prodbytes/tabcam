@@ -61,16 +61,21 @@ void main() {
     expect(nameOfFile('Riff in E.final.pdf'), 'Riff in E.final');
   });
 
-  test('deleting a page or an event removes its files', () async {
+  test('deleting a page or an event keeps its files (the trash); purging '
+      'removes them', () async {
     final library = Library(PlatformEventStore(root));
     await library.load();
     var event = await library.create([_jpeg(10, 10), _jpeg(10, 10)]);
     event = await library.deletePage(event, event.pages.first);
     expect(event.pages, hasLength(1));
-    expect(Directory('${root.path}/${event.id}').listSync(), hasLength(2));
+    // Both files and event.json.
+    expect(Directory('${root.path}/${event.id}').listSync(), hasLength(3));
 
     await library.delete(event);
     expect(library.events, isEmpty);
+    expect(Directory('${root.path}/${event.id}').listSync(), hasLength(3));
+    await library.purge();
+    expect(library.all, isEmpty);
     expect(Directory('${root.path}/${event.id}').existsSync(), isFalse);
   });
 
@@ -84,28 +89,33 @@ void main() {
     // Page files never change once written (cloud sync relies on it).
     expect(after.id, isNot(before.id));
     expect(after.filter, before.filter);
-    expect(await library.hasPage(event.id, before), isFalse);
+    // The image as it was: in the trash, until purged.
+    expect(rotated.deletedPages, [before]);
+    expect(await library.hasPage(event.id, before), isTrue);
     final page = img.decodeImage(await library.original(rotated, after))!;
     expect((page.width, page.height), (60, 40));
   });
 
-  test('an event that never synced is deleted outright', () async {
+  test('an event that never synced is purged outright', () async {
     final library = Library(PlatformEventStore(root));
     await library.load();
     final event = await library.create([_jpeg(40, 60)]);
     await library.delete(event);
+    expect(library.all.single.isTrashed, isTrue);
+    await library.purge();
     expect(library.all, isEmpty);
     final reopened = Library(PlatformEventStore(root));
     await reopened.load();
     expect(reopened.all, isEmpty);
   });
 
-  test('a synced event leaves a tombstone, without its pages', () async {
+  test('a synced event purged leaves a tombstone, without its pages', () async {
     final library = Library(PlatformEventStore(root));
     await library.load();
     final event = await library.create([_jpeg(40, 60)]);
     await library.setOwner(event, 'us-east-1:me');
     await library.delete(library.all.single);
+    await library.purge();
     expect(library.events, isEmpty);
     final reopened = Library(PlatformEventStore(root));
     await reopened.load();
@@ -296,8 +306,10 @@ void main() {
     expect(await library.hasPage(copy.id, turned.pages.first), isTrue);
     expect(await library.hasPage(event.id, event.pages.first), isTrue);
 
-    // The original goes; the copies keep its pages, a copy of their own.
+    // The original goes (purged); the copies keep its pages, a copy of
+    // their own.
     await library.delete(library.byId(event.id)!);
+    await library.purge();
     final reopened = Library(PlatformEventStore(root));
     await reopened.load();
     expect(reopened.events.map((e) => e.id), [again.id, copy.id]);
