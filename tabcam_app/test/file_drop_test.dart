@@ -69,7 +69,8 @@ void main() {
   });
 
   testWidgets(
-    "files dropped on a capture shared to read are the reader's own",
+    "files dropped on a shared capture go to the reader's own copy, which "
+    'opens',
     (tester) async {
       final library = Library(PlatformEventStore(), null, (_) async => null);
       late String id;
@@ -95,14 +96,17 @@ void main() {
         DropItemFile.fromData(jpeg, name: 'riff.jpg', mimeType: 'image/jpeg'),
       ]);
 
-      // The owner's capture is as it was; the photo is the reader's.
-      final event = library.byId(id)!;
-      expect(event.pages, hasLength(1));
-      expect(event.myContribution!.pages, hasLength(1));
-      expect(find.text('Your files'), findsOneWidget);
+      // The owner's capture is as it was; the photo is in the reader's
+      // copy, whose screen took its place.
+      expect(library.byId(id)!.pages, hasLength(1));
+      final copy = library.copyOf(id)!;
+      expect(copy.pages, hasLength(2));
+      expect(copy.pages.first.source?.eventId, id);
+      await _frames(tester);
+      expect(find.textContaining('Added to your copy'), findsOneWidget);
       expect(
-        find.text('Only you and olga@example.com see these'),
-        findsOneWidget,
+        tester.widget<EventScreen>(find.byType(EventScreen)).eventId,
+        copy.id,
       );
     },
   );

@@ -54,10 +54,15 @@ import 'messages.dart';
 /// others, each tool shows its screen as a preview, greyed out and taking
 /// nothing, under the Premium card ([PremiumGate]).
 ///
-/// Below them, what people added ([Contribution]): on the owner's capture,
-/// each person's files, which the owner publishes into the capture (or
-/// takes back) one by one; on a capture shared with the user to read, their
-/// own, which only they and the owner see. There, Add and Cam add to it.
+/// A capture shared with the user is read only: only its owner changes it.
+/// Add (and files dropped on it) adds to the user's own copy of it instead
+/// ([Library.copyToAdd]), and Cam opens on that copy; either way the copy
+/// opens in its place.
+///
+/// Below the files, what people added before that ([Contribution]): on the
+/// owner's capture, each person's files, which the owner publishes into
+/// the capture (or takes back) one by one; on a capture shared with the
+/// user, their own, which only they and the owner see.
 class EventScreen extends StatefulWidget {
   const EventScreen({
     super.key,
@@ -148,9 +153,7 @@ class _EventScreenState extends State<EventScreen> {
     final ocr = widget.ocr;
     final event = _library.byId(widget.eventId);
     final canAdd =
-        event != null &&
-        !widget.byLink &&
-        (!event.readOnly || event.contributes);
+        event != null && !widget.byLink && (!event.readOnly || event.isShared);
     void forget() => PlaceMemory.of(
       _library,
     ).update((p) => p.eventId == widget.eventId ? p.copyWith(cam: false) : p);
@@ -367,12 +370,22 @@ class _EventScreenState extends State<EventScreen> {
     if (!mounted) return;
     setState(() => _busy = false);
     if (copy == null) return;
+    await _openInstead(copy);
+  }
+
+  /// Opens [copy] (a clone of this one, or the user's copy of this shared
+  /// capture) in this one's place, with Cam over it at once if [cam].
+  Future<void> _openInstead(CaptureEvent copy, {bool cam = false}) async {
     // The copy is where the user is now (a reload opens it), until it's
     // closed.
     final memory = PlaceMemory.of(_library);
     memory.update(
-      (p) =>
-          p.copyWith(eventId: () => copy.id, text: false, fileId: () => null),
+      (p) => p.copyWith(
+        eventId: () => copy.id,
+        text: false,
+        fileId: () => null,
+        cam: cam,
+      ),
     );
     await Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
@@ -383,6 +396,7 @@ class _EventScreenState extends State<EventScreen> {
           eventId: copy.id,
           sync: widget.sync,
           ocr: widget.ocr,
+          initialCam: cam,
         ),
       ),
     );
@@ -421,15 +435,18 @@ class _EventScreenState extends State<EventScreen> {
     final link = source == _AddSource.link ? await askForLink(context) : null;
     if (source == _AddSource.link && link == null) return;
     await _run(l10n.eventCouldntAdd, () async {
-      final before = Library.addedPages(event).length;
+      final before = event.pages.length;
+      // The event they went to: this one, or the user's copy of it when
+      // it's shared with them.
+      CaptureEvent target;
       if (link != null) {
         final url = link.$1;
         final site = importableTabSite(url);
         if (site != null) _snack(l10n.linkTabImporting(site.name));
-        final added = await _library.addLink(event, url, title: link.$2);
+        target = await _library.addLink(event, url, title: link.$2);
         // A tab site's page, printed as a PDF beside the link, to read.
         final imported = await TabPageImporter.create(widget.ocr)
-            .addTo(_library, added, url);
+            .addTo(_library, target, url);
         if (imported != null && mounted) {
           replaceMessage(context, tabImportMessage(l10n, imported));
         }
@@ -437,7 +454,7 @@ class _EventScreenState extends State<EventScreen> {
         widget.ocr?.warm();
         final pages = await PageSource.scan(context);
         if (pages.isEmpty) return;
-        await _library.addPages(event, pages);
+        target = await _library.addPages(event, pages);
       } else {
         final pick = switch (source) {
           _AddSource.document => await MediaSource.documents(),
@@ -448,9 +465,9 @@ class _EventScreenState extends State<EventScreen> {
           _snack(l10n.eventSkippedFiles(pick.skipped));
         }
         if (pick.media.isEmpty) return;
-        await _library.addMedia(event, pick.media);
+        target = await _library.addMedia(event, pick.media);
       }
-      _showAdded(event, before, images: link == null);
+      _showAdded(event, target, before, images: link == null);
     });
   }
 
@@ -461,13 +478,26 @@ class _EventScreenState extends State<EventScreen> {
     await _player.stop();
     await _alongOrNull?.track.pause();
     if (!mounted) return;
-    final before = switch (_library.byId(widget.eventId)) {
-      final event? => Library.addedPages(event).length,
-      null => 0,
-    };
+    final shown = _library.byId(widget.eventId);
+    final before = shown?.pages.length ?? 0;
     // Without Premium, Cam opens as a preview: no camera, nothing works,
     // the Premium card over it.
     final gate = _locked ? (ocr: widget.ocr!, email: _email) : null;
+    // Its takes are the user's: on a capture shared with them, Cam opens
+    // on their copy of it (a preview adds nothing: it opens here).
+    if (shown != null && shown.isShared && gate == null) {
+      final l10n = context.l10n;
+      final CaptureEvent copy;
+      try {
+        copy = await _library.copyToAdd(shown);
+      } on Object catch (e) {
+        if (mounted) _snack('${l10n.eventCouldntAdd}: $e');
+        return;
+      }
+      if (!mounted) return;
+      _snack(l10n.eventCamOnCopy(copy.title));
+      return _openInstead(copy, cam: true);
+    }
     // Remembered while it's open, for a reload (not the preview).
     final memory = PlaceMemory.of(_library);
     void remember(bool cam) => memory.update(
@@ -485,7 +515,9 @@ class _EventScreenState extends State<EventScreen> {
     );
     remember(false);
     final event = _library.byId(widget.eventId);
-    if (mounted && event != null) _showAdded(event, before, images: false);
+    if (mounted && event != null) {
+      _showAdded(event, event, before, images: false);
+    }
   }
 
   void _fileAction(_FileAction action, CaptureEvent event, EventPage page) =>
@@ -555,22 +587,32 @@ class _EventScreenState extends State<EventScreen> {
     final notPages = pick.skipped + skipped;
     if (notPages > 0) _snack(l10n.eventSkippedFiles(notPages));
     if (pick.media.isEmpty) return;
-    final before = Library.addedPages(event).length;
-    await _library.addMedia(event, pick.media);
-    _showAdded(event, before, images: true);
+    final before = event.pages.length;
+    final target = await _library.addMedia(event, pick.media);
+    _showAdded(event, target, before, images: true);
   });
 
-  /// After files were added to [event] (which had [before] pages, or its
-  /// reader's contribution had): says so when its images are hidden, and
-  /// shows them at the end of the list.
-  void _showAdded(CaptureEvent event, int before, {required bool images}) {
-    if (event.hideImages && images && !event.contributes) {
+  /// After files were added to [event] (which had [before] pages): when
+  /// they went to the user's copy of it ([target], [Library.copyToAdd]),
+  /// says so and opens the copy in its place; else says so when its images
+  /// are hidden, and shows them at the end of the list.
+  void _showAdded(
+    CaptureEvent event,
+    CaptureEvent target,
+    int before, {
+    required bool images,
+  }) {
+    if (!mounted) return;
+    if (target.id != event.id) {
+      _snack(context.l10n.eventAddedToCopy(target.title));
+      unawaited(_openInstead(target));
+      return;
+    }
+    if (event.hideImages && images) {
       _snack(context.l10n.eventAddedHidden);
     }
     final now = _library.byId(event.id);
-    if (!mounted || now == null || Library.addedPages(now).length <= before) {
-      return;
-    }
+    if (now == null || now.pages.length <= before) return;
     setState(() => _text = false);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_list.hasClients) {
@@ -821,7 +863,7 @@ class _EventScreenState extends State<EventScreen> {
   Widget? _contributionList(CaptureEvent event) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
-    final mine = event.contributes;
+    final mine = event.isShared;
     final groups = [
       for (final c in event.contributions)
         if (c.pages.isNotEmpty) c,
@@ -1133,10 +1175,10 @@ class _EventScreenState extends State<EventScreen> {
       builder: (context, _) {
         final event = _library.byId(widget.eventId);
         if (event == null) return const Scaffold();
-        // Shared to read: everything that changes it is off, but Add and
-        // Cam add to the user's own contribution.
+        // Shared with the user: read only, everything that changes it is
+        // off, but Add and Cam add to the user's own copy of it.
         final editable = !event.readOnly;
-        final canAdd = !widget.byLink && (editable || event.contributes);
+        final canAdd = !widget.byLink && (editable || event.isShared);
         final text = _text;
         final locked = _locked;
         final l10n = context.l10n;
@@ -1255,7 +1297,7 @@ class _EventScreenState extends State<EventScreen> {
                     if (widget.byLink)
                       _LinkBanner(onSignIn: widget.onSignIn)
                     else if (event.sharedBy case final owner?)
-                      _SharedBanner(owner: owner, readOnly: event.readOnly),
+                      _SharedBanner(owner: owner),
                     Expanded(
                       // Locked, the preview has no sidebar (nothing plays).
                       child: !text
@@ -1430,12 +1472,12 @@ class _LinkBanner extends StatelessWidget {
   }
 }
 
-/// Who shared the event with the user, and whether they can change it.
+/// Who shared the event with the user, and that it's read only (what they
+/// add goes to their copy).
 class _SharedBanner extends StatelessWidget {
-  const _SharedBanner({required this.owner, required this.readOnly});
+  const _SharedBanner({required this.owner});
 
   final String owner;
-  final bool readOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -1448,17 +1490,14 @@ class _SharedBanner extends StatelessWidget {
         child: Row(
           children: [
             Icon(
-              readOnly ? Icons.visibility_outlined : Icons.group_outlined,
+              Icons.visibility_outlined,
               size: 18,
               color: theme.colorScheme.onSecondaryContainer,
             ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                l10n.eventSharedBy(
-                  owner,
-                  readOnly ? l10n.eventReadOnly : l10n.eventCanEdit,
-                ),
+                l10n.eventSharedBy(owner, l10n.eventReadOnly),
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
               ),

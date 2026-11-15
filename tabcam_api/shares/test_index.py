@@ -328,11 +328,11 @@ class ShareApiTest(unittest.TestCase):
         return self.call("PUT /shares/{captureId}", "julio@example.com",
                          path={"captureId": "abc"}, body=body)
 
-    def test_a_grant_defaults_to_edit_and_is_listed(self):
+    def test_a_grant_is_to_read_and_is_listed(self):
         status, body = self.grant(" Ana@Example.com ")
         self.assertEqual(status, 200)
         self.assertEqual(body["grants"][0]["email"], "ana@example.com")
-        self.assertEqual(body["grants"][0]["role"], "edit")
+        self.assertEqual(body["grants"][0]["role"], "read")
         status, body = self.call("GET /shares/{captureId}", "julio@example.com",
                                  path={"captureId": "abc"})
         self.assertEqual([g["email"] for g in body["grants"]], ["ana@example.com"])
@@ -340,6 +340,8 @@ class ShareApiTest(unittest.TestCase):
     def test_read_only_grants_and_bad_input(self):
         self.assertEqual(self.grant("bo@example.com", "read")[1]["grants"][0]["role"], "read")
         self.assertEqual(self.grant("bo@example.com", "admin")[0], 400)
+        # Only the owner changes a capture: no grant to edit.
+        self.assertEqual(self.grant("bo@example.com", "edit")[0], 400)
         self.assertEqual(self.grant("not an email")[0], 400)
         self.assertEqual(self.grant("julio@example.com")[0], 400)  # oneself
         status, _ = self.call("PUT /shares/{captureId}", "julio@example.com",
@@ -355,7 +357,7 @@ class ShareApiTest(unittest.TestCase):
         status, body = self.call("GET /shared", "ana@example.com", token="ana")
         self.assertEqual(body["shared"], [{
             "owner": OWNER, "captureId": "abc",
-            "ownerEmail": "julio@example.com", "role": "edit"}])
+            "ownerEmail": "julio@example.com", "role": "read"}])
 
         path = {"owner": OWNER, "captureId": "abc"}
         status, creds = self.call("POST /shared/{owner}/{captureId}/credentials",
@@ -366,7 +368,7 @@ class ShareApiTest(unittest.TestCase):
         objects = policy["Statement"][0]
         self.assertEqual(objects["Resource"],
                          f"arn:aws:s3:::nu01-user-events-1/{OWNER}/events/abc/*")
-        self.assertIn("s3:PutObject", objects["Action"])
+        self.assertEqual(objects["Action"], ["s3:GetObject"])
 
         self.call("DELETE /shared/{owner}/{captureId}", "ana@example.com",
                   token="ana", path=path)
@@ -908,12 +910,22 @@ class ShareApiTest(unittest.TestCase):
         _, body = self.grant("bo@example.com", "read")
         self.assertEqual(body["grants"][0]["identity"], bo)
 
-    def test_editors_change_the_capture_and_have_no_contribution(self):
-        self.grant("ana@example.com")
+    def test_a_grant_made_to_edit_before_is_read_only(self):
+        self.clients["table"].put_item(Item={
+            "capture": f"{OWNER}#abc", "email": "ana@example.com", "owner": OWNER,
+            "captureId": "abc", "ownerEmail": "julio@example.com", "role": "edit",
+            "grantedAt": 1})
+        _, shared = self.call("GET /shared", "ana@example.com", token="ana")
+        self.assertEqual(shared["shared"][0]["role"], "read")
+        _, grants = self.call("GET /shares/{captureId}", "julio@example.com",
+                              path={"captureId": "abc"})
+        self.assertEqual(grants["grants"][0]["role"], "read")
         _, creds = self.reader_credentials("ana@example.com", "ana")
-        self.assertNotIn("contribPrefix", creds)
+        self.assertEqual(creds["role"], "read")
         statements = json.loads(self.clients["sts"].calls[-1]["Policy"])["Statement"]
-        self.assertEqual(len(statements), 2)
+        self.assertEqual(statements[0]["Action"], ["s3:GetObject"])
+        self.assertFalse(any("s3:PutObject" in st["Action"] for st in statements
+                             if f"/events/abc/" in str(st["Resource"])))
 
     def join(self, email="kim@example.com", token="kim", key=None, capture="abc"):
         return self.call("POST /links/{captureId}/join", email, token=token,
@@ -938,7 +950,7 @@ class ShareApiTest(unittest.TestCase):
         self.publish()
         self.assertEqual(self.join("julio@example.com", "owner-token")[1]["own"], True)
         self.grant("ana@example.com")
-        self.assertEqual(self.join("ana@example.com", "ana")[1]["role"], "edit")
+        self.assertEqual(self.join("ana@example.com", "ana")[1]["role"], "read")
         self.assertEqual(len(self.clients["table"].items), 1)
 
     def test_a_wrong_link_joins_nothing(self):

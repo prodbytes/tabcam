@@ -290,12 +290,12 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     }
   }
 
-  /// The capture's last take (of the user's own files, [Library.addedPages])
-  /// that plays here ([takePlaysHere]), if it has one.
+  /// The capture's last take that plays here ([takePlaysHere]), if it has
+  /// one.
   EventPage? _lastTake() {
     final event = widget.library.byId(widget.eventId);
     if (event == null) return null;
-    return Library.addedPages(event)
+    return event.pages
         .where((p) => isTake(p) && takePlaysHere(p.mimeType))
         .lastOrNull;
   }
@@ -309,7 +309,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     final kept =
         take != null &&
         event != null &&
-        Library.addedPages(event).any((p) => p.id == take.id);
+        event.pages.any((p) => p.id == take.id);
     if (kept) return;
     final last = _lastTake();
     if (last?.id != take?.id) setState(() => _take = last);
@@ -1127,8 +1127,10 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       final library = widget.library;
       final event = library.byId(widget.eventId);
       if (event == null) return;
-      // A reader's take is theirs: in their contribution, named among it.
-      final names = {for (final p in Library.addedPages(event)) p.title};
+      // Cam opens on the user's own copy of a capture shared with them
+      // (the event screen makes it), so takes are always theirs; added to a
+      // shared one, the take would go to their copy ([Library.copyToAdd]).
+      final names = {for (final p in event.pages) p.title};
       var n = 1;
       while (names.contains(l10n.camTake(n))) {
         n++;
@@ -1139,13 +1141,13 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         take: true,
         takeLog: log,
       );
-      final page = Library.addedPages(updated).last;
+      final page = updated.pages.last;
       final name = l10n.camTake(n);
-      await library.renamePage(event.id, page.id, name);
+      await library.renamePage(updated.id, page.id, name);
       // Played along later, the take turns the tab as it turned in it
       // while auto-pass was on (off all along: it has no passes).
       await library.setPhrases(
-        event.id,
+        updated.id,
         page.id,
         takePhrases(marks, skip: unpassed),
       );

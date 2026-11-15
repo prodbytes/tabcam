@@ -328,9 +328,14 @@ class CloudOcr extends ChangeNotifier {
     return api.page(token, url);
   }
 
-  /// A page the service reads: an image, or a PDF.
+  /// A page the service reads: an image, or a PDF, uploaded with its event
+  /// (not a clone's page still showing the original's file,
+  /// [EventPage.source]: its folder has no file of it, and the clone has
+  /// the original's text tab).
   static bool isImage(EventPage page) =>
-      (page.isImage || page.isPdf) && imageExtensions.contains(page.extension);
+      (page.isImage || page.isPdf) &&
+      page.hasOwnFile &&
+      imageExtensions.contains(page.extension);
 
   /// Applies the transcriptions that are complete, and asks for the missing
   /// ones that have waited too long.

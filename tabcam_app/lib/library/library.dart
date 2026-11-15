@@ -108,9 +108,12 @@ class Library extends ChangeNotifier {
   }
 
   /// A copy of [event], as a new event of the user's own: "<title>
-  /// (copy)", the same artist, study, text tab and pages (each a new page, its
-  /// file copied), created now. It's never synced or shared, so it can be
-  /// shared with other people than the original.
+  /// (copy)", the same artist, study, text tab and pages, created now. It's
+  /// never synced or shared, so it can be shared with other people than
+  /// the original. Each page is a new page, but its file isn't copied: it
+  /// shows the original's ([EventPage.source], copy on write) until it has
+  /// to be its own ([_keepCopies], [ownFiles]). On a capture shared with
+  /// the user, the phrase passes are theirs where they have some.
   Future<CaptureEvent> clone(CaptureEvent event) async {
     final now = _now();
     final id = newId();
@@ -130,21 +133,23 @@ class Library extends ChangeNotifier {
         );
         continue;
       }
-      final copy = EventPage(
-        id: ids[page.id]!,
-        filter: page.filter,
-        kind: page.kind,
-        extension: page.extension,
-        edit: page.edit?.copyWith(trackId: ids[page.edit?.trackId]),
-        take: page.take,
-        takeLog: page.takeLog?.withPages(ids),
-        extra: page.extra,
+      pages.add(
+        EventPage(
+          id: ids[page.id]!,
+          filter: page.filter,
+          kind: page.kind,
+          extension: page.extension,
+          title: page.title,
+          edit: page.edit?.copyWith(trackId: ids[page.edit?.trackId]),
+          take: page.take,
+          takeLog: page.takeLog?.withPages(ids),
+          // A clone of a clone shows the first original's file too.
+          source: page.source ?? FileOrigin(event.id, page.id),
+          extra: page.extra,
+        ),
       );
-      await _arrival(event.id, page);
-      final (bytes, _) = await _store.pageStream(event.id, page);
-      await _store.putPageStream(id, copy, bytes);
-      pages.add(copy);
     }
+    final phrases = {...event.phrases, ...?event.myContribution?.phrases};
     final copy = CaptureEvent(
       id: id,
       title: '${event.title} (copy)',
@@ -157,9 +162,9 @@ class Library extends ChangeNotifier {
       tabTextDoubts: event.tabTextDoubts,
       hideImages: event.hideImages,
       phrases: {
-        for (final MapEntry(:key, :value) in event.phrases.entries)
-          ?ids[key]: value,
+        for (final MapEntry(:key, :value) in phrases.entries) ?ids[key]: value,
       },
+      clonedFrom: event.id,
     );
     await _store.save(copy);
     _set([copy, ..._all]);
@@ -167,20 +172,37 @@ class Library extends ChangeNotifier {
     return copy;
   }
 
+  /// Where what the user adds to [event] goes: [event] itself, or, on a
+  /// capture shared with them (only its owner changes it), their own copy
+  /// of it: the newest one they have ([CaptureEvent.clonedFrom]), or a new
+  /// [clone], made now.
+  Future<CaptureEvent> copyToAdd(CaptureEvent event) async {
+    if (!event.isShared) return event;
+    return copyOf(event.id) ?? await clone(event);
+  }
+
+  /// The user's newest copy of capture [id] ([CaptureEvent.clonedFrom]),
+  /// if they have one.
+  CaptureEvent? copyOf(String id) {
+    for (final e in _scans) {
+      if (e.clonedFrom == id && !e.isShared) return e;
+    }
+    return null;
+  }
+
+  /// Adds scanned [pages] to the end of [event], or of the user's copy of
+  /// it when it's shared with them ([copyToAdd]): the event they went to.
   Future<CaptureEvent> addPages(
     CaptureEvent event,
     List<Uint8List> pages,
-  ) async {
-    final added = await _addPages(event, pages);
-    return event.contributes ? added : _update(added);
-  }
+  ) async => _update(await _addPages(await copyToAdd(event), pages));
 
   /// Adds picked photos and videos to the end of [event]. Photos get the
   /// Tab filter, as scanned pages do, and are cropped and straightened to
   /// the page in them when one stands out ([cropToPage]: a JPEG then);
-  /// otherwise, and videos always, they're kept as picked. On a capture the
-  /// user [CaptureEvent.contributes] to, they're added to their own
-  /// contribution instead ([addedPages] says which they are). [take]: Cam's
+  /// otherwise, and videos always, they're kept as picked. On a capture
+  /// shared with the user, they're added to their own copy of it instead
+  /// ([copyToAdd]); the event they went to is returned. [take]: Cam's
   /// takes, marked so ([EventPage.take]), each with [takeLog] if given
   /// ([EventPage.takeLog]: Cam adds one take at a time).
   Future<CaptureEvent> addMedia(
@@ -189,6 +211,7 @@ class Library extends ChangeNotifier {
     bool take = false,
     TakeLog? takeLog,
   }) async {
+    event = await copyToAdd(event);
     final added = <EventPage>[];
     for (final m in media) {
       final page = m.kind == PageKind.image
@@ -205,35 +228,28 @@ class Library extends ChangeNotifier {
   }
 
   /// Adds a link to the end of [event] (see [parseLink]), or of the user's
-  /// contribution to it.
-  Future<CaptureEvent> addLink(CaptureEvent event, Uri url, {String? title}) =>
-      _append(event, [EventPage.link(id: newId(), url: url, title: title)]);
+  /// copy of it when it's shared with them ([copyToAdd]).
+  Future<CaptureEvent> addLink(
+    CaptureEvent event,
+    Uri url, {
+    String? title,
+  }) async => _append(await copyToAdd(event), [
+    EventPage.link(id: newId(), url: url, title: title),
+  ]);
 
-  /// Puts [added] (their files stored) at the end of [event]'s pages, or of
-  /// the user's contribution when they contribute to it: as the event is
-  /// now, not as it was (a read may have written its text meanwhile).
+  /// Puts [added] (their files stored) at the end of [event]'s pages: as
+  /// the event is now, not as it was (a read may have written its text
+  /// meanwhile).
   Future<CaptureEvent> _append(
     CaptureEvent event,
     List<EventPage> added,
   ) async {
-    if (event.contributes) {
-      return await patchContribution(
-            event.id,
-            (pages) => [...pages, ...added],
-          ) ??
-          event;
-    }
     return await patch(
           event.id,
           (now) => now.copyWith(pages: [...now.pages, ...added]),
         ) ??
         _save(event.copyWith(pages: [...event.pages, ...added]));
   }
-
-  /// The pages a user adds to [event] go to: its own, or their
-  /// contribution's when they contribute to it.
-  static List<EventPage> addedPages(CaptureEvent event) =>
-      event.contributes ? event.myContribution?.pages ?? const [] : event.pages;
 
   /// Changes the pages of the user's own contribution to [id] (made the
   /// first time), as it is now. It's a change of theirs (sync sends it), but
@@ -243,7 +259,7 @@ class Library extends ChangeNotifier {
     List<EventPage> Function(List<EventPage> pages) change,
   ) async {
     final now = _byIdAll(id);
-    if (now == null || !now.contributes) return null;
+    if (now == null || !now.isShared) return null;
     final mine = now.myContribution ?? Contribution(updated: _now());
     final pages = change(mine.pages);
     final kept = {for (final p in pages) p.id};
@@ -291,8 +307,9 @@ class Library extends ChangeNotifier {
   }
 
   /// Keeps [times] for song [pageId] of event [eventId] (empty or null:
-  /// none): with the capture, or with the user's own contribution on one
-  /// they contribute to. Songs since deleted are let go of meanwhile.
+  /// none): with the capture, or, on one shared with the user (only its
+  /// owner changes it), with their own contribution to it, which keeps
+  /// them. Songs since deleted are let go of meanwhile.
   Future<void> setPhrases(
     String eventId,
     String pageId,
@@ -310,7 +327,7 @@ class Library extends ChangeNotifier {
     final now = _byIdAll(eventId);
     if (now == null || now.deleted != null) return;
     final songs = {for (final p in now.allPages) p.id};
-    if (now.contributes) {
+    if (now.isShared) {
       final mine = now.myContribution ?? Contribution(updated: _now());
       final updated = _update(
         now.copyWith(
@@ -442,7 +459,6 @@ class Library extends ChangeNotifier {
       await _store.putPage(event.id, page, bytes);
       added.add(page);
     }
-    if (event.contributes) return _append(event, added);
     final updated = event.copyWith(
       pages: [...event.pages, ...added],
       updated: _now(),
@@ -534,8 +550,7 @@ class Library extends ChangeNotifier {
   /// ID): page files never change once written, so cloud sync only has to
   /// look at which pages an event has.
   Future<CaptureEvent> rotatePage(CaptureEvent event, EventPage page) async {
-    await _arrival(event.id, page);
-    final rotated = await rotatedPage(await _store.page(event.id, page));
+    final rotated = await rotatedPage(await original(event, page));
     final turned = EventPage(
       id: newId(),
       filter: page.filter,
@@ -549,8 +564,7 @@ class Library extends ChangeNotifier {
         pages: [for (final p in event.pages) p.id == page.id ? turned : p],
       ),
     );
-    await _store.deletePage(event.id, page);
-    _forget(page);
+    await _deleteFile(event.id, page);
     _revision++;
     notifyListeners();
     return updated;
@@ -568,7 +582,6 @@ class Library extends ChangeNotifier {
     EventPage page,
     Media media,
   ) async {
-    await _arrival(event.id, page);
     final replaced = EventPage(
       id: newId(),
       filter: page.filter,
@@ -584,8 +597,7 @@ class Library extends ChangeNotifier {
         pages: [for (final p in event.pages) p.id == page.id ? replaced : p],
       ),
     );
-    await _store.deletePage(event.id, page);
-    _forget(page);
+    await _deleteFile(event.id, page);
     _revision++;
     notifyListeners();
     return updated;
@@ -627,11 +639,94 @@ class Library extends ChangeNotifier {
   Future<void> _dropFiles(CaptureEvent event, Iterable<EventPage> gone) async {
     final kept = {for (final p in event.allPages) p.fileName};
     for (final p in gone) {
-      if (!p.hasFile || kept.contains(p.fileName)) continue;
-      pageGone(event.id, p);
-      await _store.deletePage(event.id, p);
-      _forget(p);
+      if (kept.contains(p.fileName)) continue;
+      await _deleteFile(event.id, p);
     }
+  }
+
+  /// Deletes [page]'s file, of event [eventId], when it has its own
+  /// ([EventPage.hasOwnFile]), once the clones still showing it have a
+  /// copy of their own ([_keepCopies]).
+  Future<void> _deleteFile(String eventId, EventPage page) async {
+    if (!page.hasOwnFile) return _forget(page);
+    await _keepCopies(eventId, page);
+    pageGone(eventId, page);
+    await _store.deletePage(eventId, page);
+    _forget(page);
+  }
+
+  /// Copy on write's copy: before [page]'s file (of event [eventId]) goes,
+  /// each clone page still showing it ([EventPage.source]) gets a copy of
+  /// its own, a change of the user's that cloud sync sends. One whose file
+  /// isn't on this device (never came) is left as it is: nothing waits
+  /// for it, since it won't come now.
+  Future<void> _keepCopies(String eventId, EventPage page) async {
+    final source = FileOrigin(eventId, page.id);
+    for (final e in [..._scans]) {
+      if (e.isShared || !e.pages.any((p) => p.source == source)) continue;
+      await _ownFiles(e.id, (p) => p.source == source);
+    }
+  }
+
+  /// [event] with a file of its own for each page that still shows
+  /// another capture's ([EventPage.source]): before it gets a link, whose
+  /// holders read only its own folder. A file still on its way is waited
+  /// for (at most [ownFilesWait]); pages whose file isn't on this device
+  /// stay as they are.
+  Future<CaptureEvent> ownFiles(CaptureEvent event) async =>
+      await _ownFiles(event.id, (p) => p.source != null, wait: ownFilesWait) ??
+      event;
+
+  /// How long [ownFiles] waits for a file still on its way.
+  static const ownFilesWait = Duration(seconds: 30);
+
+  /// Copies into event [id] the files of its pages [which] picks that
+  /// still show another capture's, and saves them as its own; null when
+  /// the event is gone. A file still arriving is waited for up to [wait]
+  /// (none: not at all).
+  Future<CaptureEvent?> _ownFiles(
+    String id,
+    bool Function(EventPage page) which, {
+    Duration? wait,
+  }) async {
+    final event = _byIdAll(id);
+    if (event == null) return null;
+    final owned = <String, EventPage>{};
+    for (final page in event.pages) {
+      if (page.source == null || !which(page)) continue;
+      final (fromId, from) = _fileOf(id, page);
+      try {
+        if (wait != null) await _arrival(fromId, from).timeout(wait);
+        if (!await _store.hasPage(fromId, from)) continue;
+        final own = page.copyWith(source: () => null);
+        final (bytes, _) = await _store.pageStream(fromId, from);
+        await _store.putPageStream(id, own, bytes);
+        owned[page.id] = own;
+      } on Object catch (e) {
+        debugPrint('TabCam: ${page.fileName} not copied into $id: $e');
+      }
+    }
+    if (owned.isEmpty) return event;
+    return patch(
+      id,
+      (now) => now.copyWith(
+        pages: [
+          for (final p in now.pages) p.source != null ? owned[p.id] ?? p : p,
+        ],
+      ),
+    );
+  }
+
+  /// Where [page]'s file is kept: with event [eventId], or, for a clone's
+  /// page still showing the original's ([EventPage.source]), with the
+  /// original.
+  (String, EventPage) _fileOf(String eventId, EventPage page) {
+    final source = page.source;
+    if (source == null) return (eventId, page);
+    return (
+      source.eventId,
+      EventPage(id: source.pageId, kind: page.kind, extension: page.extension),
+    );
   }
 
   /// Deletes [event] and its pages. One that has synced leaves a tombstone,
@@ -654,9 +749,7 @@ class Library extends ChangeNotifier {
 
   Future<void> _removePages(CaptureEvent event) async {
     for (final p in {for (final p in event.allPages) p.fileName: p}.values) {
-      pageGone(event.id, p);
-      await _store.deletePage(event.id, p);
-      _forget(p);
+      await _deleteFile(event.id, p);
     }
   }
 
@@ -726,7 +819,7 @@ class Library extends ChangeNotifier {
     if (local == null) return;
     final before = [
       for (final c in local.contributions)
-        if (c.by == contribution.by || (local.contributes && c.by == null)) c,
+        if (c.by == contribution.by || (local.isShared && c.by == null)) c,
     ];
     final others = [
       for (final c in local.contributions)
@@ -858,8 +951,10 @@ class Library extends ChangeNotifier {
 
   /// Whether [page]'s file is still on its way (cloud sync brings it
   /// after its event): its preview shows that it's loading.
-  bool isArriving(String eventId, EventPage page) =>
-      _arriving.containsKey(_arrivalKey(eventId, page));
+  bool isArriving(String eventId, EventPage page) {
+    final (id, file) = _fileOf(eventId, page);
+    return _arriving.containsKey(_arrivalKey(id, file));
+  }
 
   /// Cloud sync shows an event before its pages' files, and brings them
   /// after: until [pageArrived], what needs [page] waits for it.
@@ -892,14 +987,16 @@ class Library extends ChangeNotifier {
   /// The page's file as scanned or picked (once it's here: see
   /// [expectPage]).
   Future<Uint8List> original(CaptureEvent event, EventPage page) async {
-    await _arrival(event.id, page);
-    return _store.page(event.id, page);
+    final (id, file) = _fileOf(event.id, page);
+    await _arrival(id, file);
+    return _store.page(id, file);
   }
 
   /// The page's file on disk (videos play from it); null on the web.
   Future<String?> path(CaptureEvent event, EventPage page) async {
-    await _arrival(event.id, page);
-    return _store.pagePath(event.id, page);
+    final (id, file) = _fileOf(event.id, page);
+    await _arrival(id, file);
+    return _store.pagePath(id, file);
   }
 
   /// An image page with its filter applied (cached); a video as it is.

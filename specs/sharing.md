@@ -90,12 +90,19 @@ or by its link again). A wrong key, a deleted capture, one not in the
 cloud yet, or no connection: "This capture can't be opened…", with **Try
 again**.
 
-So the link is what gives access: whoever holds a link with its key can
-see the capture's own files (never change them, nor see what people
-[contributed](contributions.md) until the owner publishes it); signed in,
-it also lets them add files of their own. Edit access is only for the
-people the owner shared it with by email before that was removed
-([shared captures](shared-captures.md)).
+So the link is what gives access, **read only**: whoever holds a link
+with its key can see the capture's own files (never change them, nor see
+what people [contributed](contributions.md) until the owner publishes
+it). Only the owner changes a capture, those it was shared with by email
+to edit before included ([shared captures](shared-captures.md)). Signed
+in, what they add goes to their own copy of it, a clone whose files stay
+the owner's until they change (copy on write, [library](library.md#events)).
+
+**A clone's link**: a clone's pages may still show the original's files
+([copy on write](library.md#events)), which its link's holders couldn't
+read (their credentials are for its folder alone). So Share copies them
+into it first (`Library.ownFiles`, after the link is copied), and the sync
+pass it starts sends them up with it.
 
 ## Link previews
 

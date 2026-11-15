@@ -74,12 +74,14 @@ class PublicCaptures {
       final folder = '${access.owner}/events/$id';
       final bytes = await bucket.get('$folder/event.json', credentials: creds);
       if (onlyIfChanged && listEquals(_seen[id], bytes)) return null;
-      final event = CaptureEvent.fromJson(
+      var event = CaptureEvent.fromJson(
         (jsonDecode(utf8.decode(bytes)) as Map).cast<String, Object?>(),
       );
       if (event.id != id || event.isDeleted) {
         throw const LinkUnavailable('deleted');
       }
+      // Someone else's: it names no file of the user's ([EventPage.source]).
+      event = event.withOwnFiles();
       for (final page in event.pages) {
         if (!page.hasFile || await library.hasPage(id, page)) continue;
         await library.putPageStream(

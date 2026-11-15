@@ -595,29 +595,24 @@ void main() {
       expect(julio.library.byId(event.id)!.shares, isEmpty);
     });
 
-    test('a capture shared to edit comes down, and edits go back', () async {
+    test('a capture shared to edit before is read only: only its owner '
+        'changes it', () async {
       final event = await shareOne(ShareRole.edit);
       final copy = anaPhone.library.byId(event.id)!;
       expect(copy.sharedBy, 'julio@example.com');
-      expect(copy.readOnly, isFalse);
+      expect(copy.readOnly, isTrue);
       expect(copy.owner, owner);
       expect(await anaPhone.library.original(copy, copy.pages.single), [1, 2]);
 
+      final before = bucket.json('$owner/events/${event.id}/event.json');
       anaPhone.now = julio.now.add(const Duration(minutes: 5));
       await anaPhone.library.update(copy.copyWith(title: 'Riff, by Ana'));
+      bucket.requests.clear();
       await anaPhone.sync.syncNow();
-      expect(
-        bucket.json('$owner/events/${event.id}/event.json')['title'],
-        'Riff, by Ana',
-      );
-      // Sharing stays on Ana's device: the cloud copy doesn't say.
-      expect(
-        bucket.json('$owner/events/${event.id}/event.json'),
-        isNot(contains('sharedBy')),
-      );
+      expect(bucket.requests.where((r) => r.startsWith('PUT')), isEmpty);
+      expect(bucket.json('$owner/events/${event.id}/event.json'), before);
       await julio.sync.syncNow();
-      expect(julio.library.byId(event.id)!.title, 'Riff, by Ana');
-      expect(julio.library.byId(event.id)!.isShared, isFalse);
+      expect(julio.library.byId(event.id)!.title, isNot('Riff, by Ana'));
     });
 
     test('read only: it comes down, and nothing goes up', () async {
@@ -689,9 +684,9 @@ void main() {
       expect(grants['$owner/${event.id}'], isEmpty);
     });
 
-    test('a role change reaches her copy', () async {
-      final event = await shareOne(ShareRole.edit);
-      await julio.sync.grant(event, 'ana@example.com', ShareRole.read);
+    test('a role change leaves it read only', () async {
+      final event = await shareOne(ShareRole.read);
+      await julio.sync.grant(event, 'ana@example.com', ShareRole.edit);
       await anaPhone.sync.syncNow();
       expect(anaPhone.library.byId(event.id)!.readOnly, isTrue);
     });
@@ -703,10 +698,209 @@ void main() {
       );
       expect(copy.isShared, isFalse);
       expect(copy.readOnly, isFalse);
+      expect(copy.clonedFrom, event.id);
       await anaPhone.sync.syncNow();
       expect(
         bucket.objects.containsKey('$ana/events/${copy.id}/event.json'),
         isTrue,
+      );
+    });
+
+    Media take(List<int> b) => Media(
+      XFile.fromData(bytes(b), name: 'take.mp4'),
+      PageKind.video,
+      'mp4',
+    );
+
+    test('adding to a shared capture adds to her own copy, made once, whose '
+        "files stay the owner's until they change", () async {
+      final event = await shareOne(ShareRole.read);
+      final before = bucket.json('$owner/events/${event.id}/event.json');
+      anaPhone.later();
+      final copy = await anaPhone.library.addMedia(
+        anaPhone.library.byId(event.id)!,
+        [
+          take([7, 7]),
+        ],
+      );
+      expect(copy.id, isNot(event.id));
+      expect(copy.isShared, isFalse);
+      expect(copy.clonedFrom, event.id);
+      expect(copy.pages, hasLength(2));
+      final theirs = copy.pages.first;
+      expect(theirs.source, FileOrigin(event.id, event.pages.single.id));
+      expect(await anaPhone.library.original(copy, theirs), [1, 2]);
+      // The shared capture is as it was.
+      expect(anaPhone.library.byId(event.id)!.pages, hasLength(1));
+
+      await anaPhone.sync.syncNow();
+      expect(bucket.json('$owner/events/${event.id}/event.json'), before);
+      // Her folder has the copy and her own file: not the owner's file.
+      expect(
+        bucket.objects.keys.where(
+          (k) => k.startsWith('$ana/events/${copy.id}/'),
+        ),
+        unorderedEquals([
+          '$ana/events/${copy.id}/event.json',
+          '$ana/events/${copy.id}/${copy.pages.last.fileName}',
+        ]),
+      );
+      expect(
+        bucket.json('$ana/events/${copy.id}/event.json')['clonedFrom'],
+        event.id,
+      );
+
+      // Adding again goes to the same copy.
+      anaPhone.later();
+      final again = await anaPhone.library.addLink(
+        anaPhone.library.byId(event.id)!,
+        Uri.parse('https://example.com/ana-cover'),
+      );
+      expect(again.id, copy.id);
+      expect(again.pages, hasLength(3));
+      expect(
+        anaPhone.library.events.where((e) => e.clonedFrom == event.id),
+        hasLength(1),
+      );
+
+      // Her other device shows the owner's file in her copy too.
+      final tablet = Device(
+        bucket,
+        identity: ana,
+        shares: FakeShareApi(grants, email: 'ana@example.com', identity: ana),
+      );
+      await tablet.start();
+      final there = tablet.library.byId(copy.id)!;
+      expect(there.pages.first.source, theirs.source);
+      expect(await tablet.library.original(there, there.pages.first), [1, 2]);
+    });
+
+    test("the owner's file goes: her copy keeps a copy of its own", () async {
+      final event = await shareOne(ShareRole.read);
+      anaPhone.later();
+      final copy = await anaPhone.library.addMedia(
+        anaPhone.library.byId(event.id)!,
+        [
+          take([7, 7]),
+        ],
+      );
+      await anaPhone.sync.syncNow();
+      final theirs = copy.pages.first;
+      // Its file is here (it came with the shared capture).
+      await anaPhone.library.original(
+        anaPhone.library.byId(event.id)!,
+        event.pages.single,
+      );
+
+      julio.later();
+      await julio.library.delete(julio.library.byId(event.id)!);
+      await julio.sync.syncNow();
+      expect(
+        bucket.objects.keys.where(
+          (k) =>
+              k.startsWith('$owner/events/${event.id}/') &&
+              !k.endsWith('event.json'),
+        ),
+        isEmpty,
+      );
+      // Her copy changes as it keeps the file (the clock moves on).
+      anaPhone.later();
+      await anaPhone.sync.syncNow();
+      expect(anaPhone.library.byIdAll(event.id), isNull);
+      final kept = anaPhone.library.byId(copy.id)!;
+      expect(kept.pages.first.id, theirs.id);
+      expect(kept.pages.first.source, isNull);
+      expect(await anaPhone.library.original(kept, kept.pages.first), [1, 2]);
+      await anaPhone.sync.syncNow();
+      expect(bucket.objects['$ana/events/${copy.id}/${theirs.fileName}'], [
+        1,
+        2,
+      ]);
+    });
+
+    test('Ana removes the shared capture: her copy keeps the files', () async {
+      final event = await shareOne(ShareRole.read);
+      final copy = await anaPhone.library.clone(
+        anaPhone.library.byId(event.id)!,
+      );
+      await anaPhone.library.original(
+        anaPhone.library.byId(event.id)!,
+        event.pages.single,
+      );
+      await anaPhone.sync.leave(anaPhone.library.byId(event.id)!);
+      final kept = anaPhone.library.byId(copy.id)!;
+      expect(kept.sharesFiles, isFalse);
+      expect(await anaPhone.library.original(kept, kept.pages.single), [1, 2]);
+    });
+
+    test(
+      "a file of the copy's replaced is its own; the owner's stays",
+      () async {
+        final event = await shareOne(ShareRole.read);
+        final copy = await anaPhone.library.clone(
+          anaPhone.library.byId(event.id)!,
+        );
+        final replaced = await anaPhone.library.replacePage(
+          copy,
+          copy.pages.single,
+          take([5, 5, 5]),
+        );
+        expect(replaced.pages.single.source, isNull);
+        expect(
+          await anaPhone.library.original(replaced, replaced.pages.single),
+          [5, 5, 5],
+        );
+        final shared = anaPhone.library.byId(event.id)!;
+        expect(await anaPhone.library.original(shared, shared.pages.single), [
+          1,
+          2,
+        ]);
+      },
+    );
+
+    test(
+      "a shared capture can't name one of her own files as its page's",
+      () async {
+        final event = await shareOne(ShareRole.read);
+        final mine = await anaPhone.library.create([
+          bytes([6, 6, 6]),
+        ]);
+        // The owner's event.json says its page shows Ana's private file.
+        final key = '$owner/events/${event.id}/event.json';
+        final json = bucket.json(key);
+        final page = (json['pages'] as List).single as Map<String, Object?>;
+        page['source'] = {'event': mine.id, 'page': mine.pages.single.id};
+        json['updated'] = '2026-10-10T13:00:00Z';
+        bucket.objects[key] = bytes(utf8.encode(jsonEncode(json)));
+        await anaPhone.sync.syncNow();
+        final shared = anaPhone.library.byId(event.id)!;
+        expect(shared.updated, DateTime.utc(2026, 10, 10, 13).toLocal());
+        expect(shared.pages.single.source, isNull);
+        expect(await anaPhone.library.original(shared, shared.pages.single), [
+          1,
+          2,
+        ]);
+        // Her copy shows the owner's file, never hers.
+        final copy = await anaPhone.library.clone(shared);
+        expect(
+          copy.pages.single.source,
+          FileOrigin(event.id, page['id']! as String),
+        );
+      },
+    );
+
+    test('before her copy gets a link, its files become its own', () async {
+      final event = await shareOne(ShareRole.read);
+      final copy = await anaPhone.library.clone(
+        anaPhone.library.byId(event.id)!,
+      );
+      expect(copy.sharesFiles, isTrue);
+      final owned = await anaPhone.library.ownFiles(copy);
+      expect(owned.sharesFiles, isFalse);
+      await anaPhone.sync.syncNow();
+      expect(
+        bucket.objects['$ana/events/${copy.id}/${copy.pages.single.fileName}'],
+        [1, 2],
       );
     });
   });
@@ -755,21 +949,32 @@ void main() {
       await boPhone.sync.syncNow();
     });
 
+    /// Ana's take and link, as an app from before what a reader adds went
+    /// to their own copy added them: her contribution.
     Future<CaptureEvent> anaAddsATake() async {
       final copy = anaPhone.library.byId(lesson.id)!;
-      expect(copy.contributes, isTrue);
+      expect(copy.readOnly, isTrue);
       anaPhone.later();
-      await anaPhone.library.addMedia(copy, [
-        Media(
-          XFile.fromData(bytes([7, 7, 7]), name: 'take.mp4'),
-          PageKind.video,
-          'mp4',
-        ),
-      ]);
-      final now = anaPhone.library.byId(lesson.id)!;
-      await anaPhone.library.addLink(
-        now,
-        Uri.parse('https://example.com/ana-cover'),
+      final take = EventPage(
+        id: newId(),
+        kind: PageKind.video,
+        extension: 'mp4',
+      );
+      await anaPhone.library.putPageStream(
+        lesson.id,
+        take,
+        Stream.value([7, 7, 7]),
+      );
+      await anaPhone.library.patchContribution(
+        lesson.id,
+        (pages) => [
+          ...pages,
+          take,
+          EventPage.link(
+            id: newId(),
+            url: Uri.parse('https://example.com/ana-cover'),
+          ),
+        ],
       );
       await anaPhone.sync.syncNow();
       return anaPhone.library.byId(lesson.id)!;
@@ -804,9 +1009,15 @@ void main() {
     test('the teacher sees every student\'s files, by name', () async {
       final copy = await anaAddsATake();
       boPhone.later();
-      await boPhone.library.addLink(
-        boPhone.library.byId(lesson.id)!,
-        Uri.parse('https://example.com/bo-cover'),
+      await boPhone.library.patchContribution(
+        lesson.id,
+        (pages) => [
+          ...pages,
+          EventPage.link(
+            id: newId(),
+            url: Uri.parse('https://example.com/bo-cover'),
+          ),
+        ],
       );
       await boPhone.sync.syncNow();
       await julio.sync.syncNow();
@@ -971,7 +1182,7 @@ void main() {
       expect(await kim.sync.joinLink(lesson.id, key), isTrue);
       await kim.sync.syncNow();
       final copy = kim.library.byId(lesson.id)!;
-      expect(copy.contributes, isTrue);
+      expect(copy.readOnly, isTrue);
       expect(copy.sharedBy, 'julio@example.com');
       // The teacher's own link joins nothing.
       expect(await julio.sync.joinLink(lesson.id, key), isFalse);

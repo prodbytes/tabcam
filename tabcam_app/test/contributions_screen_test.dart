@@ -97,11 +97,14 @@ void main() {
     expect(library.byId(id)!.contributions.single.pages, [cover]);
   });
 
-  testWidgets('a reader adds and deletes their own files, and sees '
+  testWidgets('a reader sees and deletes their own files (added before '
+      'adding went to their copy), and sees '
       "who else sees them", (tester) async {
     final (library, id) = await lesson(tester, reader: true);
     expect(
-      find.text('Shared by julio@example.com · Can view and add'),
+      find.text(
+        'Shared by julio@example.com · Read only · What you add goes to your copy',
+      ),
       findsOneWidget,
     );
     expect(find.text('Your files'), findsOneWidget);
