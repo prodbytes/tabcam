@@ -3250,6 +3250,12 @@ abstract class AppLocalizations {
   /// **'End here'**
   String get videoEditTrimEnd;
 
+  /// Video edit: the space bar's name, in Play / Pause's tooltip (it plays or pauses the preview)
+  ///
+  /// In en, this message translates to:
+  /// **'space'**
+  String get videoEditSpaceKey;
+
   /// Video edit: the sheet's title, and the button to pick the new track
   ///
   /// In en, this message translates to:

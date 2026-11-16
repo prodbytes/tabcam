@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:cross_file/cross_file.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -1424,6 +1425,68 @@ void main() {
       inInclusiveRange(15000, 30000),
     );
   });
+
+  testWidgets('a take the browser recorded, whose player can\'t say how '
+      'long it is, goes where the ruler and the lanes are clicked (its '
+      'player told the length the editor finds)', (tester) async {
+    // video_player_web's unset duration, far below zero: until the player
+    // is told the length, video_player keeps every seek within it.
+    VideoPlayerPlatform.instance = platform = UnknownLengthPlatform({0});
+    editor.lengthHere = s(180);
+    tall(tester);
+    final (library, id) = await capture(tester, editTake: true);
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    expect(find.text('Keep 0:00.0–3:00.0'), findsOneWidget);
+
+    // A quarter along the ruler: 0:45.
+    final ruler = tester.getRect(find.byKey(const Key('video-edit-ruler')));
+    await tester.tapAt(Offset(ruler.left + ruler.width / 4, ruler.center.dy));
+    await _settle(tester);
+    expect(platform.seeks.last.inMilliseconds, closeTo(45000, 500));
+
+    // Halfway along the Take lane: 1:30.
+    final take = tester.getRect(find.byKey(const Key('video-edit-take-bar')));
+    await tester.tapAt(Offset(take.left + take.width / 2, take.center.dy));
+    await _settle(tester);
+    expect(platform.seeks.last.inMilliseconds, closeTo(90000, 500));
+  });
+
+  testWidgets('the space bar plays and pauses the preview, as Play does; '
+      'not while the title is typed in', (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester);
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    Future<void> space() async {
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await _settle(tester);
+    }
+
+    expect(platform.playing, isNot(contains(0)));
+    await space();
+    expect(platform.playing, contains(0));
+    expect(find.byIcon(Icons.pause), findsOneWidget);
+    await space();
+    expect(platform.playing, isNot(contains(0)));
+    expect(find.byIcon(Icons.play_arrow), findsOneWidget);
+
+    // Typing the title: a space is the title's.
+    await tester.tap(find.byKey(const Key('video-edit-title-1')));
+    await _settle(tester);
+    await space();
+    expect(platform.playing, isNot(contains(0)));
+
+    // A click elsewhere (which, on a computer, leaves the title) gives
+    // the editor the keyboard back.
+    await tester.tap(
+      find.byKey(const Key('video-edit-times')),
+      kind: PointerDeviceKind.mouse,
+    );
+    await _settle(tester);
+    await space();
+    expect(platform.playing, contains(0));
+  }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
 
   testWidgets('the Take lane\'s grips trim the video and both sounds with '
       'it: the song stays where it is along the video, cut where the '

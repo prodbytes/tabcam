@@ -6,6 +6,7 @@ import 'package:cross_file/cross_file.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
 import '../capture/edit_layers.dart';
@@ -52,7 +53,8 @@ import 'on_picture.dart';
 /// volumes, the layers over it, [EditLayers]); the video's file stays as
 /// it is. Download renders the same plan ([RenderPlan]) to a file on the
 /// device ([VideoEditor]): the video, the video without sound, or the
-/// sound alone.
+/// sound alone. The space bar plays or pauses it, as Play / Pause and a
+/// tap on the preview do (not while the title is typed).
 class VideoEditScreen extends StatefulWidget {
   const VideoEditScreen({
     super.key,
@@ -242,6 +244,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   Timer? _seekWait;
   Duration? _seekNext;
   static const _seekEvery = Duration(milliseconds: 150);
+
+  /// The editor's keys: the space bar plays or pauses ([_key]).
+  final _keys = FocusNode(debugLabel: 'video edit keys');
 
   Library get _library => widget.library;
 
@@ -454,6 +459,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     _title2.dispose();
     _titleFocus.dispose();
     _title2Focus.dispose();
+    _keys.dispose();
     _measured.dispose();
     super.dispose();
   }
@@ -1344,8 +1350,47 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   static const _lead = _LaneVolume.width + 4;
   static const _trail = 48.0;
 
+  /// A key pressed in the editor: the space bar plays or pauses the
+  /// preview, as Play / Pause does; not while a field is typed in (the
+  /// title's), nor with Ctrl, Alt or ⌘ held.
+  KeyEventResult _key(FocusNode _, KeyEvent event) {
+    if (event.logicalKey != LogicalKeyboardKey.space ||
+        _video == null ||
+        _busy) {
+      return KeyEventResult.ignored;
+    }
+    final keys = HardwareKeyboard.instance;
+    if (keys.isControlPressed || keys.isAltPressed || keys.isMetaPressed) {
+      return KeyEventResult.ignored;
+    }
+    if (FocusManager.instance.primaryFocus?.context
+            ?.findAncestorWidgetOfExactType<EditableText>() !=
+        null) {
+      return KeyEventResult.ignored;
+    }
+    if (event is KeyDownEvent) unawaited(_playback?.playPause());
+    return KeyEventResult.handled;
+  }
+
   @override
   Widget build(BuildContext context) {
+    // A click anywhere gives the editor the keyboard back (a field's tap
+    // outside lets it go), unless something in it already has it.
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerUp: (_) {
+        if (!_keys.hasFocus) _keys.requestFocus();
+      },
+      child: Focus(
+        focusNode: _keys,
+        autofocus: true,
+        onKeyEvent: _key,
+        child: _scaffold(context),
+      ),
+    );
+  }
+
+  Widget _scaffold(BuildContext context) {
     final l10n = context.l10n;
     final event = _library.byId(widget.eventId);
     final video = _video;
@@ -2262,7 +2307,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           valueListenable: video,
           builder: (context, value, _) => IconButton(
             key: const Key('video-edit-play'),
-            tooltip: value.isPlaying ? l10n.textViewPause : l10n.textViewPlay,
+            tooltip:
+                '${value.isPlaying ? l10n.textViewPause : l10n.textViewPlay}'
+                ' (${l10n.videoEditSpaceKey})',
             icon: Icon(value.isPlaying ? Icons.pause : Icons.play_arrow),
             onPressed: _playback?.playPause,
           ),

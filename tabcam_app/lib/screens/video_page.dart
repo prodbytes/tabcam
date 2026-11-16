@@ -281,8 +281,9 @@ Future<XFile> pageFile(
 
 /// How long [file] is: [player]'s word, unless it has none (the browser,
 /// for a take it recorded), then [editor]'s ([VideoEditor.instance] when
-/// not given); zero when neither can say. [file] is only read when the
-/// player can't say.
+/// not given), which [player] is then told, so it seeks in the file
+/// ([knowLength]); zero when neither can say. [file] is only read when
+/// the player can't say.
 Future<Duration> mediaLength(
   VideoPlayerController player,
   Future<XFile> Function() file, {
@@ -291,8 +292,11 @@ Future<Duration> mediaLength(
   final known = player.value.duration;
   if (known > Duration.zero) return known;
   try {
-    return await (editor ?? VideoEditor.instance)?.length(await file()) ??
+    final found =
+        await (editor ?? VideoEditor.instance)?.length(await file()) ??
         Duration.zero;
+    knowLength(player, found);
+    return found;
   } on Object catch (e) {
     debugPrint('TabCam: video: no length: $e');
     return Duration.zero;

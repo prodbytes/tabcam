@@ -690,7 +690,7 @@ void main() {
       tester
           .widget<IconButton>(find.byKey(const Key('video-edit-play')))
           .tooltip,
-      playing ? 'Pause' : 'Play',
+      playing ? 'Pause (space)' : 'Play (space)',
     );
 
     testWidgets('on a phone, a long press on the band in the preview opens '

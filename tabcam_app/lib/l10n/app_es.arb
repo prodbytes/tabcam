@@ -524,6 +524,7 @@
   "videoEditKeep": "Conservar {start}–{end}",
   "videoEditTrimStart": "Empezar aquí",
   "videoEditTrimEnd": "Terminar aquí",
+  "videoEditSpaceKey": "espacio",
   "videoEditPickTrack": "Elegir una pista",
   "videoEditChangeTrack": "Cambiar",
   "videoEditTrackFile": "Un archivo de sonido…",
