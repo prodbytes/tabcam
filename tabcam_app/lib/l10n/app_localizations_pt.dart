@@ -619,7 +619,19 @@ class AppLocalizationsPt extends AppLocalizations {
   String get camMicChoose => 'Microfone';
 
   @override
-  String get camMicLevel => 'Nível do microfone';
+  String get camMicLevel =>
+      'Nível do microfone: toque para ajustar o volume de entrada';
+
+  @override
+  String get camMicGain => 'Volume de entrada';
+
+  @override
+  String camMicGainDb(String db) {
+    return '$db dB';
+  }
+
+  @override
+  String get camMicGainReset => 'Redefinir';
 
   @override
   String get camMicHeading => 'Gravar com';
@@ -2202,6 +2214,12 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get videoEditFadesAbout =>
       'O vídeo surge do preto e termina no preto, com os dois sons';
+
+  @override
+  String get videoEditMaster => 'Master';
+
+  @override
+  String get videoEditMasterAbout => 'Os dois sons juntos, até 200%';
 
   @override
   String get videoEditFadesEdit => 'Ajustar os fades';

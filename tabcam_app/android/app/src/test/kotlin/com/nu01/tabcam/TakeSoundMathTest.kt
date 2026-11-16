@@ -141,4 +141,31 @@ class TakeSoundMathTest {
         assertEquals(32767, TakeSoundMath.peak(byteArrayOf(0xff.toByte(), 0x7f), 2))
         assertEquals(0, TakeSoundMath.peak(ByteArray(8), 8))
     }
+
+    @Test
+    fun gain() {
+        // 1000, -2000, 300, doubled; then halved back.
+        val pcm = byteArrayOf(0xe8.toByte(), 0x03, 0x30, 0xf8.toByte(), 0x2c, 0x01)
+        TakeSoundMath.applyGain(pcm, pcm.size, 2f)
+        assertEquals(4000, TakeSoundMath.peak(pcm, pcm.size))
+        assertEquals(2000, TakeSoundMath.peak(pcm, 2))
+        TakeSoundMath.applyGain(pcm, pcm.size, 0.5f)
+        assertEquals(2000, TakeSoundMath.peak(pcm, pcm.size))
+        // Clipped at full scale, both ways; only the bytes read change.
+        val loud = byteArrayOf(0x00, 0x40, 0x00, 0xc0.toByte(), 0x00, 0x40)
+        TakeSoundMath.applyGain(loud, 4, 4f)
+        assertEquals(32768, TakeSoundMath.peak(loud, 4))
+        assertEquals(32767, TakeSoundMath.peak(loud, 2))
+        assertEquals(0x40, loud[5].toInt())
+        // 1: left as they are.
+        val same = byteArrayOf(0x01, 0x02)
+        TakeSoundMath.applyGain(same, 2, 1f)
+        assertEquals(0x0201, TakeSoundMath.peak(same, 2))
+        // What the channel asks for, kept within ±24 dB.
+        assertEquals(1f, TakeSoundMath.gainOf(null))
+        assertEquals(1f, TakeSoundMath.gainOf(Double.NaN))
+        assertEquals(2f, TakeSoundMath.gainOf(2.0))
+        assertEquals(TakeSoundMath.MAX_GAIN, TakeSoundMath.gainOf(100.0))
+        assertEquals(TakeSoundMath.MIN_GAIN, TakeSoundMath.gainOf(0.0))
+    }
 }

@@ -3727,7 +3727,34 @@ spec.
    it (`RenderPlan.of` lost `bandAspect`); the layers keep `liftU` and
    `liftW` for the renderers, at 0. See
    [video edit](video-edit.md#layers).
-6. **"Instead of Take $NUMBER let's use Take $HOUR:MINUTE [date hidden
+6. **"In the editor let the master track have a volume control as well,
+   if possible up to 200%, right above the fade options."** The video
+   editor has a **Master** volume: Mute and a slider from 0% to 200%
+   (steps of 5%), through which both lanes play, after their own levels.
+   It sits right above the fades' sliders (on a wide screen in the On
+   the video panel; on a phone above On the video, where the Fades chip
+   opens them). It's kept with the edit (`masterVolume`, `masterMuted`;
+   older apps keep the keys and play the lanes without it, and read no
+   sound while it's muted), Reset puts back 100%, and the render plan
+   gives each lane its level times the master's. Past 100%, only the
+   download is louder (the players stop at 100%): Android lifts the
+   sound with a gain of our own that clips (Media3's wraps 16-bit
+   samples around), iOS inserts a louder lane twice at half its level
+   (an audio mix stops at 1), and the web's Web Audio gains go past 1
+   as they are. See [video edit](video-edit.md).
+7. **"In the camera view if the user clicks the volume meter let the
+   input volume be adjusted up or down."** Tapping Cam's level meter
+   beside Rec now opens an Input volume menu: the volume in dB, an
+   upright slider from −24 to +24 dB (up louder, down quieter) and
+   Reset (back to 0 dB, as the microphone gives it). It applies at once,
+   to the meter and the next takes, and is kept in Cam's settings
+   (`gainDb`). On the web a Web Audio gain node sits before the meter's
+   analyser, and a take recorded at anything but 0 dB records through
+   it; on Android the app's microphone multiplies its samples, clipped
+   at full scale (channel `tabcam/take_level`, method `gain`). Between
+   takes only: the meter can't be tapped while a take records. iOS has
+   no meter, so no input volume. See [Cam](cam.md#input-volume).
+8. **"Instead of Take $NUMBER let's use Take $HOUR:MINUTE [date hidden
    but still grouped by day]."** Cam now names a take by the time it
    started, 24-hour ("Take 14:32"; with the seconds, then a number, should
    a take of that day have the name already) instead of "Take 1",

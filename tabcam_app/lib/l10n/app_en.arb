@@ -829,9 +829,26 @@
   "@camMicChoose": {
     "description": "Cam: the tooltip of the arrow beside Rec, which opens a menu to choose the microphone takes record from"
   },
-  "camMicLevel": "Microphone level",
+  "camMicLevel": "Microphone level: tap to set the input volume",
   "@camMicLevel": {
-    "description": "Cam: the tooltip of the level meter beside Rec, which shows how loud the microphone is (green, yellow, red)"
+    "description": "Cam: the tooltip of the level meter beside Rec, which shows how loud the microphone is (green, yellow, red); tapped, it opens the input volume menu"
+  },
+  "camMicGain": "Input volume",
+  "@camMicGain": {
+    "description": "Cam: the heading of the menu that opens when the level meter beside Rec is tapped; its slider sets how loud the microphone records the takes"
+  },
+  "camMicGainDb": "{db} dB",
+  "@camMicGainDb": {
+    "description": "Cam: the input volume in its menu, in decibels; db is signed, such as +6, 0 or −6",
+    "placeholders": {
+      "db": {
+        "type": "String"
+      }
+    }
+  },
+  "camMicGainReset": "Reset",
+  "@camMicGainReset": {
+    "description": "Cam: the button in the input volume menu that puts the volume back to 0 dB, as the microphone gives it"
   },
   "camMicHeading": "Record from",
   "@camMicHeading": {
@@ -2975,6 +2992,14 @@
   "videoEditFadesAbout": "The video from and to black, both sounds with it",
   "@videoEditFadesAbout": {
     "description": "Video edit: what the fades do (the Fades chip's tooltip, and above their sliders)"
+  },
+  "videoEditMaster": "Master",
+  "@videoEditMaster": {
+    "description": "Video edit: the master, where both lanes' sound goes (its volume, up to 200%, and Mute), above the fades"
+  },
+  "videoEditMasterAbout": "Both sounds together, up to 200%",
+  "@videoEditMasterAbout": {
+    "description": "Video edit: what the master volume does (under its name)"
   },
   "videoEditFadesEdit": "Change the fades",
   "@videoEditFadesEdit": {

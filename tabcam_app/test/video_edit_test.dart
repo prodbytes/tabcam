@@ -1588,7 +1588,8 @@ void main() {
     await tester.tap(find.byKey(const Key('video-edit-track-k1')));
     await _settle(tester);
     final track = platform.lastPlayer;
-    expect(find.text('100%'), findsNWidgets(2));
+    // Both lanes' levels, and the master's.
+    expect(find.text('100%'), findsNWidgets(3));
     expect(platform.volumes[track], 1);
 
     // Played: the video, and the track along it.
@@ -1646,7 +1647,8 @@ void main() {
     await _settle(tester);
     await tester.tap(find.byKey(const Key('video-edit-track-k1')));
     await _settle(tester);
-    expect(find.text('100%'), findsNWidgets(2));
+    // Both lanes' levels, and the master's.
+    expect(find.text('100%'), findsNWidgets(3));
     expect(library.byId(id)!.pages.first.edit!.trackVolume, 1);
     expect(platform.volumes[platform.lastPlayer], 1);
   });
@@ -1779,7 +1781,8 @@ void main() {
         expect(control.center.dy, closeTo(bar.center.dy, 1), reason: lane);
         expect(bar.height, greaterThanOrEqualTo(44), reason: lane);
       }
-      expect(find.text('100%'), findsNWidgets(2));
+      // Both lanes' levels, and the master's.
+      expect(find.text('100%'), findsNWidgets(3));
       expect(tester.takeException(), isNull);
     });
   }

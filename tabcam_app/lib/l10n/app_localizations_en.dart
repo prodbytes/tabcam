@@ -599,7 +599,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camMicChoose => 'Microphone';
 
   @override
-  String get camMicLevel => 'Microphone level';
+  String get camMicLevel => 'Microphone level: tap to set the input volume';
+
+  @override
+  String get camMicGain => 'Input volume';
+
+  @override
+  String camMicGainDb(String db) {
+    return '$db dB';
+  }
+
+  @override
+  String get camMicGainReset => 'Reset';
 
   @override
   String get camMicHeading => 'Record from';
@@ -2162,6 +2173,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get videoEditFadesAbout =>
       'The video from and to black, both sounds with it';
+
+  @override
+  String get videoEditMaster => 'Master';
+
+  @override
+  String get videoEditMasterAbout => 'Both sounds together, up to 200%';
 
   @override
   String get videoEditFadesEdit => 'Change the fades';
