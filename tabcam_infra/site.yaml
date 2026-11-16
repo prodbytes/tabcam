@@ -277,7 +277,7 @@ Resources:
     Type: AWS::CloudFront::Distribution
     Properties:
       DistributionConfig:
-        Comment: !Sub Tabs.cam (${DomainName})
+        Comment: !Sub tabs.cam (${DomainName})
         Enabled: true
         HttpVersion: http2and3
         IPV6Enabled: true

@@ -118,7 +118,7 @@ void main() {
     },
   );
 
-  test("the same user's token changing during the first pass (a Tabs.cam "
+  test("the same user's token changing during the first pass (a tabs.cam "
       'session replacing the provider\'s) still ends it', () async {
     final gate = Completer<void>();
     final phone = Device(bucket);

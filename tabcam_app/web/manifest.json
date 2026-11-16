@@ -1,6 +1,6 @@
 {
-    "name": "Tabs.cam",
-    "short_name": "Tabs.cam",
+    "name": "tabs.cam",
+    "short_name": "tabs.cam",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#1E1A15",

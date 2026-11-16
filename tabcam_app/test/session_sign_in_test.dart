@@ -17,7 +17,7 @@ final _now = DateTime.utc(2026, 11, 9, 12);
 String _jwt(Map<String, Object?> claims) =>
     'eyJhbGciOiJub25lIn0.${base64Url.encode(utf8.encode(jsonEncode(claims))).replaceAll('=', '')}.sig';
 
-/// Tabs.cam's ID token for Google's `riff`, number [n], expiring [life] after
+/// tabs.cam's ID token for Google's `riff`, number [n], expiring [life] after
 /// [at].
 String sessionToken({
   int n = 1,

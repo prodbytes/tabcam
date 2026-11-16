@@ -27,7 +27,7 @@ Text view, a dialog's), on the web, Android and iOS
   ("Saved … (Open)" after a capture: 6 seconds, Open included); at once
   on a tap on it, or swiped up. Its action (**Open**, **Upgrade**) runs
   and hides it. The one exception is the Text view's Premium offer
-  (Fix's "… part of Tabs.cam Premium." with **Upgrade**): it stays until
+  (Fix's "… part of tabs.cam Premium." with **Upgrade**): it stays until
   it's tapped, swiped away, acted on or replaced, as it did as a
   SnackBar ([auto-correct](autocorrect.md)); messages after it wait.
 - **One at a time**: a message waits for the one showing to go; where

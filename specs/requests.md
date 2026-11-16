@@ -3702,6 +3702,16 @@ spec.
    start a take as 1 does. Stop's tooltip is now "Stop (1) · new take
    (/) · redo (.)" (Spanish and Portuguese too). See
    [Cam](cam.md#new-take-key).
+3. **"Make tabs.cam lowercase instead of Tabs.cam, every occurrence."**
+   The name is now written "tabs.cam" everywhere, also at the start of a
+   sentence: the app's strings in English, Spanish and Portuguese (and
+   its tests), the iOS app name and permission texts, the web app's
+   title and manifest (and the RC's "🧪 tabs.cam RC"), the shared
+   capture pages' titles and previews, the sign-in email, the site and
+   its privacy policy, the store listings, the infrastructure's
+   descriptions, the READMEs and these specs. The logo's wordmark was
+   lowercase already. Earlier entries of this log keep the spelling they
+   had. CLAUDE.md now says to write it lowercase.
 4. **"Make head gesture disabled by default."** Cam now opens with head
    gestures off (each time; the choice isn't kept): nothing watches for
    faces, the camera streams no frames for them, and on the web the

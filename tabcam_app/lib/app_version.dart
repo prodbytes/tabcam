@@ -10,5 +10,5 @@ abstract final class AppVersion {
 
   /// The app's title (the browser tab's): marked on the RC site, so its
   /// tabs never pass for production's.
-  static const String title = stage == 'rc' ? '🧪 Tabs.cam RC' : 'Tabs.cam';
+  static const String title = stage == 'rc' ? '🧪 tabs.cam RC' : 'tabs.cam';
 }

@@ -1,4 +1,4 @@
-# Tabs.cam
+# tabs.cam
 
 Scan guitar tabs with your phone's camera, read them as text, and share
 them: like a document camera app, made for tablature.
@@ -103,7 +103,7 @@ It installs over an earlier release and keeps your events.
 - **On the phone:** download the APK from the release in the phone's
   browser and open it. The first time, Android asks you to allow
   installing apps from that browser (Settings → Apps → Special app access
-  → Install unknown apps). Then tap **Install**, or **Update** if Tabs.cam
+  → Install unknown apps). Then tap **Install**, or **Update** if tabs.cam
   is already installed.
 - **From a computer**, with the phone connected by USB and USB debugging
   on (Settings → Developer options):
@@ -116,7 +116,7 @@ It installs over an earlier release and keeps your events.
   Leave out `<tag>` to download the latest release.
 
 If Android says the app conflicts with an installed one
-(`INSTALL_FAILED_UPDATE_INCOMPATIBLE` from `adb`), the installed Tabs.cam
+(`INSTALL_FAILED_UPDATE_INCOMPATIBLE` from `adb`), the installed tabs.cam
 was signed with another key, for example a `flutter run` debug build.
 Sign in and let it sync first, then uninstall it and install the
 release. Uninstalling deletes the events that are only on the phone.

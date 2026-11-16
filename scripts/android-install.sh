@@ -28,7 +28,7 @@ if ! out="$(adb_s install -r build/app/outputs/flutter-apk/app-release.apk 2>&1)
   echo "$out" >&2
   if [[ "$out" == *INSTALL_FAILED_UPDATE_INCOMPATIBLE* ]]; then
     # Another key signed the installed app (the debug key, or Google Play's).
-    echo "error: the installed Tabs.cam is signed with another key; uninstall it" \
+    echo "error: the installed tabs.cam is signed with another key; uninstall it" \
       "(adb uninstall $package: its events on the phone go, synced ones come back" \
       "at sign-in) and run this again" >&2
   fi
@@ -42,7 +42,7 @@ adb_s shell am start -f 0x10008000 -n "$package/.MainActivity" >/dev/null
 for _ in $(seq 1 20); do
   pid="$(adb_s shell pidof "$package" | tr -d '\r' || true)"
   if [[ -n "$pid" ]]; then
-    echo "Tabs.cam $VERSION is running on $serial (process $pid)" >&2
+    echo "tabs.cam $VERSION is running on $serial (process $pid)" >&2
     exit 0
   fi
   sleep 1

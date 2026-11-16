@@ -1,6 +1,6 @@
 # Profiles
 
-What a Tabs.cam user's data belongs to, as in Presence: a **profile**, not a
+What a tabs.cam user's data belongs to, as in Presence: a **profile**, not a
 sign-in. The ways its owner signs in (Google, Apple; several accounts) are
 linked to it, and each reaches the same captures. The profile's **roles**
 are every linked account's rbacr roles together.
@@ -23,7 +23,7 @@ are every linked account's rbacr roles together.
 - A sign-in is its **subject**: `<issuer>#<sub>` of its ID token
   (`https://accounts.google.com#…`, `https://appleid.apple.com#…`), never
   the email, which can change hands. Only verified addresses are used. A
-  [Tabs.cam session](sessions.md)'s token stands for the subject that
+  [tabs.cam session](sessions.md)'s token stands for the subject that
   started it (its `idp` and `sub`); unlinking a sign-in, or deleting the
   account, ends its sessions.
 - **First sign-in**: the first request the share API sees from a subject
