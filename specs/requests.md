@@ -3727,7 +3727,22 @@ spec.
    it (`RenderPlan.of` lost `bandAspect`); the layers keep `liftU` and
    `liftW` for the renderers, at 0. See
    [video edit](video-edit.md#layers).
-6. **"In the camera view if the user clicks the volume meter let the
+6. **"In the editor let the master track have a volume control as well,
+   if possible up to 200%, right above the fade options."** The video
+   editor has a **Master** volume: Mute and a slider from 0% to 200%
+   (steps of 5%), through which both lanes play, after their own levels.
+   It sits right above the fades' sliders (on a wide screen in the On
+   the video panel; on a phone above On the video, where the Fades chip
+   opens them). It's kept with the edit (`masterVolume`, `masterMuted`;
+   older apps keep the keys and play the lanes without it, and read no
+   sound while it's muted), Reset puts back 100%, and the render plan
+   gives each lane its level times the master's. Past 100%, only the
+   download is louder (the players stop at 100%): Android lifts the
+   sound with a gain of our own that clips (Media3's wraps 16-bit
+   samples around), iOS inserts a louder lane twice at half its level
+   (an audio mix stops at 1), and the web's Web Audio gains go past 1
+   as they are. See [video edit](video-edit.md).
+7. **"In the camera view if the user clicks the volume meter let the
    input volume be adjusted up or down."** Tapping Cam's level meter
    beside Rec now opens an Input volume menu: the volume in dB, an
    upright slider from −24 to +24 dB (up louder, down quieter) and

@@ -446,6 +446,83 @@ void main() {
     });
   });
 
+  group('the master', () {
+    final edit = PageEdit(
+      start: s(1),
+      end: s(9),
+      ownVolume: 0.6,
+      song: SongMode.manual,
+      trackId: 'k1',
+      offset: s(1),
+      trackVolume: 0.8,
+    );
+
+    test('is written only when not 100% or muted, read back, and kept '
+        'within 0–200% to the hundredth', () {
+      expect(edit.toJson().containsKey('masterVolume'), isFalse);
+      expect(edit.toJson().containsKey('masterMuted'), isFalse);
+      final louder = edit.copyWith(masterVolume: 1.5, masterMuted: true);
+      final json = louder.toJson();
+      expect(json['masterVolume'], 1.5);
+      expect(json['masterMuted'], isTrue);
+      expect(_read(json), louder);
+      expect(edit.copyWith(masterVolume: 3).masterVolume, 2);
+      expect(edit.copyWith(masterVolume: -1).masterVolume, 0);
+      expect(edit.copyWith(masterVolume: 1.234).masterVolume, 1.23);
+      expect(_read({...edit.toJson(), 'masterVolume': 'loud'}).masterVolume, 1);
+    });
+
+    test('muted (or at 0%), no lane is heard: older apps read no sound; '
+        'one that gives it sound back unmutes it', () {
+      final muted = edit.copyWith(masterMuted: true);
+      expect(muted.ownAudible, isFalse);
+      expect(muted.songAudible, isFalse);
+      expect(muted.sound, EditSound.none);
+      expect(edit.copyWith(masterVolume: 0).sound, EditSound.none);
+      final changed = _read({...muted.toJson(), 'sound': 'original'});
+      expect(changed.masterMuted, isFalse);
+      expect(changed.ownAudible, isTrue);
+      final atZero = _read({
+        ...edit.copyWith(masterVolume: 0).toJson(),
+        'sound': 'original',
+      });
+      expect(atZero.masterVolume, 1);
+    });
+
+    test('lifts or lowers both lanes in the plan, up to 200%', () {
+      final louder = plan(edit.copyWith(masterVolume: 1.5));
+      expect(louder.own, const OwnLane(volume: 0.9));
+      expect(louder.song!.volume, 1.2);
+      final channel = louder.toChannel(output: '/tmp/out.mp4');
+      expect(channel['own'], {'volume': 0.9});
+      expect((channel['song']! as Map)['volume'], 1.2);
+      expect(plan(edit.copyWith(masterVolume: 0.5)).own!.volume, 0.3);
+      // The whole video at 200%: rendered, not saved as it is.
+      final whole = PageEdit(
+        start: Duration.zero,
+        end: s(20),
+        fadeIn: Duration.zero,
+        fadeOut: Duration.zero,
+      );
+      expect(plan(whole).passthrough, isTrue);
+      expect(plan(whole.copyWith(masterVolume: 2)).own!.volume, 2);
+      expect(plan(whole.copyWith(masterVolume: 2)).passthrough, isFalse);
+    });
+
+    test('muted: Download leaves both lanes out; the preview keeps them '
+        'at 0, so muting moves nothing', () {
+      final muted = edit.copyWith(masterMuted: true);
+      final download = plan(muted);
+      expect(download.own, isNull);
+      expect(download.song, isNull);
+      expect(download.hasSound, isFalse);
+      final preview = plan(muted, preview: true);
+      expect(preview.own, const OwnLane(volume: 0));
+      expect(preview.song!.volume, 0);
+      expect(preview.timeline, plan(edit, preview: true).timeline);
+    });
+  });
+
   group('EditedPlayback with fake players', () {
     late _Players platform;
     setUp(() => VideoPlayerPlatform.instance = platform = _Players());
@@ -535,6 +612,18 @@ void main() {
       expect(platform.seeksOf[songId], [s(2), s(2)]);
       expect(platform.pauses, isNot(contains(songId)));
       expect(platform.playing, contains(songId));
+
+      // Through the master at 200%: the video (60%) at 100%, as loud as
+      // a player plays; the song (100%) too.
+      await playback.set(previewOf(edit.copyWith(masterVolume: 2)), song: song);
+      expect(platform.volumes[takeId], 1);
+      expect(platform.volumes[songId], 1);
+      await playback.set(
+        previewOf(edit.copyWith(masterVolume: 0.5)),
+        song: song,
+      );
+      expect(platform.volumes[takeId], 0.3);
+      expect(platform.volumes[songId], 0.5);
 
       // Moved: the song finds its place again.
       await playback.set(previewOf(edit.copyWith(offset: s(2))), song: song);

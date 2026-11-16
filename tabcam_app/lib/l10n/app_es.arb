@@ -594,6 +594,8 @@
   "videoEditWatermarkAbout": "«{text}», en letra pequeña, abajo a la derecha",
   "videoEditWatermarkLocked": "Premium quita la marca de agua",
   "videoEditFades": "Fundidos",
+  "videoEditMaster": "Máster",
+  "videoEditMasterAbout": "Los dos sonidos juntos, hasta el 200 %",
   "videoEditFadesAbout": "El video desde y hacia negro, con los dos sonidos",
   "videoEditFadesEdit": "Cambiar los fundidos",
   "videoEditFadeIn": "Fundido de entrada",

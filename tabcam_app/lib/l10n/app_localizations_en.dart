@@ -2169,6 +2169,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'The video from and to black, both sounds with it';
 
   @override
+  String get videoEditMaster => 'Master';
+
+  @override
+  String get videoEditMasterAbout => 'Both sounds together, up to 200%';
+
+  @override
   String get videoEditFadesEdit => 'Change the fades';
 
   @override

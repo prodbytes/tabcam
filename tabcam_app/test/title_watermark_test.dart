@@ -679,18 +679,34 @@ void main() {
       await settle(tester);
       expect(find.byKey(const Key('video-edit-title-fields')), findsNothing);
 
+      await tester.ensureVisible(
+        find.byKey(const Key('video-edit-title-edit')),
+      );
+      await settle(tester);
       await tester.tap(find.byKey(const Key('video-edit-title-edit')));
       await settle(tester);
       expect(find.byKey(const Key('video-edit-title-fields')), findsOneWidget);
       expect(find.byKey(const Key('video-edit-on-video')), findsNothing);
       expect(previewTitle(tester)!.fadeIn, Duration.zero);
+      await tester.ensureVisible(
+        find.byKey(const Key('video-edit-title-done')),
+      );
+      await settle(tester);
       await tester.tap(find.byKey(const Key('video-edit-title-done')));
       await settle(tester);
       expect(find.byKey(const Key('video-edit-title-fields')), findsNothing);
       expect(find.byKey(const Key('video-edit-on-video')), findsOneWidget);
       expect(previewTitle(tester)!.fadeIn, TitleLayout.fadeIn);
 
+      // Back at the top, where the preview is (the master pushes the
+      // fields' Done down the list).
+      Future<void> top() async {
+        await tester.drag(find.byType(ListView).first, const Offset(0, 2000));
+        await settle(tester);
+      }
+
       // A tap on the title, at the preview's top left.
+      await top();
       final box = tester.getRect(find.byKey(const Key('video-edit-preview')));
       final short = box.shortestSide;
       final played = [...platform.playing];
@@ -699,8 +715,13 @@ void main() {
       expect(find.byKey(const Key('video-edit-title-fields')), findsOneWidget);
       expect(platform.playing, played, reason: 'not played');
       // Elsewhere, it plays.
+      await tester.ensureVisible(
+        find.byKey(const Key('video-edit-title-done')),
+      );
+      await settle(tester);
       await tester.tap(find.byKey(const Key('video-edit-title-done')));
       await settle(tester);
+      await top();
       await tester.tapAt(box.bottomRight - const Offset(4, 4));
       await settle(tester);
       expect(platform.playing, isNotEmpty);

@@ -2210,6 +2210,12 @@ class AppLocalizationsPt extends AppLocalizations {
       'O vídeo surge do preto e termina no preto, com os dois sons';
 
   @override
+  String get videoEditMaster => 'Master';
+
+  @override
+  String get videoEditMasterAbout => 'Os dois sons juntos, até 200%';
+
+  @override
   String get videoEditFadesEdit => 'Ajustar os fades';
 
   @override

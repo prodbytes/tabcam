@@ -3676,6 +3676,18 @@ abstract class AppLocalizations {
   /// **'The video from and to black, both sounds with it'**
   String get videoEditFadesAbout;
 
+  /// Video edit: the master, where both lanes' sound goes (its volume, up to 200%, and Mute), above the fades
+  ///
+  /// In en, this message translates to:
+  /// **'Master'**
+  String get videoEditMaster;
+
+  /// Video edit: what the master volume does (under its name)
+  ///
+  /// In en, this message translates to:
+  /// **'Both sounds together, up to 200%'**
+  String get videoEditMasterAbout;
+
   /// Video edit: the Fades chip's button that opens their sliders
   ///
   /// In en, this message translates to:
