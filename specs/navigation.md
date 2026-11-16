@@ -19,7 +19,7 @@ tabs, and a compact **app bar** on top names the open one
   - Signed in only (signed out, there's only the welcome, below); tabs
     keep their state (the list's scroll) while another is open.
 - **App bar**: the open tab's name on the left, bold (22 sp, weight 700):
-  "Tabs.cam" on Home, "Capture", "Profile". On Home only, at its right,
+  "tabs.cam" on Home, "Capture", "Profile". On Home only, at its right,
   **Dictionary** (a book icon) and **Metronome** (a stopwatch icon), as
   on every file viewer: they open the [dictionary](dictionary.md)'s and
   the [metronome](metronome.md)'s sidebars beside the captures (below).
@@ -46,11 +46,11 @@ tabs, and a compact **app bar** on top names the open one
 
 In a build with sign-in, a user who isn't signed in sees only the
 **welcome** ([lib/screens/welcome_screen.dart](../tabcam_app/lib/screens/welcome_screen.dart)):
-Tabs.cam's name, what it does and that signing in starts it ("your
+tabs.cam's name, what it does and that signing in starts it ("your
 captures are kept on every device you sign in on"), the sign-in buttons
 (Google's, and Apple's where it's offered), a sign-in error under them,
 a progress line while a saved session is restored at launch, and
-**Privacy policy**. No tabs, no Capture, no Profile: Tabs.cam's features
+**Privacy policy**. No tabs, no Capture, no Profile: tabs.cam's features
 are for signed-in users, except a capture's link with its key: it opens
 that capture, read only, instead of the welcome, with **Sign in** to go to
 the welcome ([opening a link](sharing.md#opening-a-link)). Signing in opens
@@ -123,7 +123,7 @@ wins over it.
 
 - **Scan**, a large button: the camera, through the
   [document camera](scanning.md) (it finds, straightens and cleans the
-  page, several in a row; on the web, Tabs.cam's camera screen), with a
+  page, several in a row; on the web, tabs.cam's camera screen), with a
   line saying so. Document opens the file chooser for PDFs, Photos &
   videos the photo album, Files the file chooser, Link the link dialog.
 - **Add**, for uploads, each a card:
@@ -134,8 +134,8 @@ wins over it.
   - **Link** ("A lesson, a backing track, a video"): an address and an
     optional title, which then also names the event
     ([adding](scanning.md#adding-to-an-event) has the details).
-- Under them, the note on whose tabs go in Tabs.cam (`OwnTabsNote`, only
-  here, where tabs are added; not on Home): "Tabs.cam is for musicians practicing with their own tabs. Only add what you have the right to use: tabs you wrote, your teacher's, ones you bought, or ones free to share."
+- Under them, the note on whose tabs go in tabs.cam (`OwnTabsNote`, only
+  here, where tabs are added; not on Home): "tabs.cam is for musicians practicing with their own tabs. Only add what you have the right to use: tabs you wrote, your teacher's, ones you bought, or ones free to share."
 
 Each makes a new event. Its title: an upload (Document, Photos &
 videos, Files, or files dropped on Capture), the name of the first file
@@ -169,7 +169,7 @@ their [profile](profiles.md#in-the-app): "Profile: huge_wavy_darter",
 its roles, and **Linked accounts**; without profiles, the role, "Role:
 Premium" or "Role: Free"), the sync status, **Sync now**
 and **Sign out** ([sign-in and cloud sync](cloud-sync.md#signing-in)),
-and with Premium set up the **Tabs.cam Premium** card
+and with Premium set up the **tabs.cam Premium** card
 ([cloud OCR](cloud-ocr.md)), then **Delete account**, which asks first
 and deletes the account in the cloud and on the device
 ([cloud sync](cloud-sync.md#deleting-the-account)); opening the tab checks
@@ -189,7 +189,7 @@ whatever it says. Then **Deleted**: what's in the trash, with **Show**
 and version (X.Y.Z, or "(development build)"), what it does,
 **Privacy policy** (opens https://tabs.cam/privacy in the browser,
 [privacy](privacy.md)) and **Licenses**.
-Last, until Tabs.cam is in the app stores, **Get the phone app**: "Tabs.cam
+Last, until tabs.cam is in the app stores, **Get the phone app**: "tabs.cam
 isn't in the app stores yet", and **iPhone** and **Android** links, each
 opening a sheet with how to install it from GitHub
 ([release](release.md#installing-a-release)):

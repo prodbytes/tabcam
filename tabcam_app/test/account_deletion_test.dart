@@ -298,7 +298,7 @@ void main() {
       }
     });
     await settle(tester);
-    expect(find.text('Your Tabs.cam account was deleted.'), findsOneWidget);
+    expect(find.text('Your tabs.cam account was deleted.'), findsOneWidget);
     expect(find.text('Sign in with Google'), findsOneWidget);
     expect(keysOf(me), isEmpty);
     phone.sync.dispose();
@@ -336,7 +336,7 @@ void main() {
       }
     });
     await settle(tester);
-    expect(find.text('Your Tabs.cam account was deleted.'), findsOneWidget);
+    expect(find.text('Your tabs.cam account was deleted.'), findsOneWidget);
     phone.sync.dispose();
     olgaPhone.sync.dispose();
   });

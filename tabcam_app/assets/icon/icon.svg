@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <!-- Tabs.cam app icon (specs/app-icon.md): a camera lens showing a line of tab -->
+  <!-- tabs.cam app icon (specs/app-icon.md): a camera lens showing a line of tab -->
   <rect width="1024" height="1024" fill="#1E1A15"/>
   <defs><clipPath id="disc"><circle cx="512" cy="512" r="290"/></clipPath></defs>
   <circle cx="512" cy="512" r="290" fill="#FBF7EF"/>

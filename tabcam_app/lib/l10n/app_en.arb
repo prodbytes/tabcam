@@ -16,7 +16,7 @@
   "@accountSignInIntro": {
     "description": "Account: why to sign in"
   },
-  "accountSignInPremium": "Signed in, Tabs.cam Premium reads your scans into text tabs, transcribed in the cloud as they sync, and records you playing along with Cam.",
+  "accountSignInPremium": "Signed in, tabs.cam Premium reads your scans into text tabs, transcribed in the cloud as they sync, and records you playing along with Cam.",
   "@accountSignInPremium": {
     "description": "Account: Premium note when signed out"
   },
@@ -150,7 +150,7 @@
   "@accountPremiumCheckFailedNow": {
     "description": "Premium check error: service unavailable"
   },
-  "accountPremiumTitle": "Tabs.cam Premium",
+  "accountPremiumTitle": "tabs.cam Premium",
   "@accountPremiumTitle": {
     "description": "Premium card title (product name)"
   },
@@ -189,15 +189,15 @@
   "@accountPremiumCheckAgain": {
     "description": "Premium card: re-check button"
   },
-  "premiumSignInToSubscribe": "Sign in, then subscribe to Tabs.cam Premium from your profile.",
+  "premiumSignInToSubscribe": "Sign in, then subscribe to tabs.cam Premium from your profile.",
   "@premiumSignInToSubscribe": {
     "description": "Premium card over a locked feature, signed out (a capture opened by its link)"
   },
-  "premiumTextFeature": "Text is part of Tabs.cam Premium: your scans read into a text tab you can edit, copy, verify, download and play along with. With Premium they're transcribed in the cloud as they sync, more accurately than on the phone.",
+  "premiumTextFeature": "Text is part of tabs.cam Premium: your scans read into a text tab you can edit, copy, verify, download and play along with. With Premium they're transcribed in the cloud as they sync, more accurately than on the phone.",
   "@premiumTextFeature": {
     "description": "Premium card over the locked Text view: what the feature is"
   },
-  "premiumCamFeature": "Cam is part of Tabs.cam Premium: record yourself playing along with the tab under the camera, one line at a time, turned by a key, a pedal or a nod of your head; play each take back with the tab turning as it did.",
+  "premiumCamFeature": "Cam is part of tabs.cam Premium: record yourself playing along with the tab under the camera, one line at a time, turned by a key, a pedal or a nod of your head; play each take back with the tab turning as it did.",
   "@premiumCamFeature": {
     "description": "Premium card over the locked Cam: what the feature is"
   },
@@ -205,11 +205,11 @@
   "@premiumSamplePreview": {
     "description": "Locked Text view preview: caption over the made-up sample tab"
   },
-  "homePremiumBanner": "Text tabs and Cam are Tabs.cam Premium features.",
+  "homePremiumBanner": "Text tabs and Cam are tabs.cam Premium features.",
   "@homePremiumBanner": {
     "description": "Home: banner for signed-in users without Premium"
   },
-  "eventPremiumTool": "{feature}: Tabs.cam Premium",
+  "eventPremiumTool": "{feature}: tabs.cam Premium",
   "@eventPremiumTool": {
     "description": "Event: tooltip of the locked Text or Cam tool",
     "placeholders": {
@@ -262,7 +262,7 @@
   "@accountShareLinkNeedsSync": {
     "description": "Share sheet: link unavailable"
   },
-  "accountShareLinkDetail": "Opens this capture in Tabs.cam, for you and the people it's shared with",
+  "accountShareLinkDetail": "Opens this capture in tabs.cam, for you and the people it's shared with",
   "@accountShareLinkDetail": {
     "description": "Share sheet: link option description"
   },
@@ -408,7 +408,7 @@
   "@eventReadFailed": {
     "description": "Event Text view: reading failed"
   },
-  "eventReadUnsupported": "Reading tabs needs the Android or iOS app, or Tabs.cam Premium.",
+  "eventReadUnsupported": "Reading tabs needs the Android or iOS app, or tabs.cam Premium.",
   "@eventReadUnsupported": {
     "description": "Event Text view: reading not available here"
   },
@@ -624,7 +624,7 @@
       }
     }
   },
-  "linkTabPremium": "Link added. On the web, importing the page from {site} needs Tabs.cam Premium.",
+  "linkTabPremium": "Link added. On the web, importing the page from {site} needs tabs.cam Premium.",
   "@linkTabPremium": {
     "description": "On the web without Premium, a tab site's page isn't imported",
     "placeholders": {
@@ -749,7 +749,7 @@
   "@eventNoCamera": {
     "description": "Camera screen: no camera"
   },
-  "eventCameraNotAllowed": "The camera isn't allowed: let Tabs.cam use it in the browser's site settings.",
+  "eventCameraNotAllowed": "The camera isn't allowed: let tabs.cam use it in the browser's site settings.",
   "@eventCameraNotAllowed": {
     "description": "Camera screen: permission denied"
   },
@@ -1110,7 +1110,7 @@
   "@camHeadsOff": {
     "description": "Cam: head gestures toggle, off"
   },
-  "camNotAllowed": "The camera or microphone isn't allowed: let Tabs.cam use them in the settings.",
+  "camNotAllowed": "The camera or microphone isn't allowed: let tabs.cam use them in the settings.",
   "@camNotAllowed": {
     "description": "Cam: permission denied"
   },
@@ -1184,7 +1184,7 @@
       }
     }
   },
-  "scanCameraNotAllowed": "the camera isn't allowed. Let Tabs.cam use it in the settings.",
+  "scanCameraNotAllowed": "the camera isn't allowed. Let tabs.cam use it in the settings.",
   "@scanCameraNotAllowed": {
     "description": "Scan: the camera permission was refused (follows \"Couldn't scan:\")"
   },
@@ -1441,7 +1441,7 @@
   "@homeLibraryClone": {
     "description": "Event card menu item"
   },
-  "homeMaintenanceDefault": "Sorry, Tabs.cam is down for maintenance. Please try again later.",
+  "homeMaintenanceDefault": "Sorry, tabs.cam is down for maintenance. Please try again later.",
   "@homeMaintenanceDefault": {
     "description": "Maintenance screen's default message"
   },
@@ -1453,7 +1453,7 @@
   "@textViewPutCursorOnFret": {
     "description": "Snackbar when fret up/down has no number under the cursor"
   },
-  "textViewFixPremium": "Fix is part of Tabs.cam Premium",
+  "textViewFixPremium": "Fix is part of tabs.cam Premium",
   "@textViewFixPremium": {
     "description": "Snackbar when Fix needs Premium"
   },
@@ -1854,7 +1854,7 @@
   "@homePrivacyPolicy": {
     "description": "Profile, About: opens the privacy policy"
   },
-  "deleteAccountDone": "Your Tabs.cam account was deleted.",
+  "deleteAccountDone": "Your tabs.cam account was deleted.",
   "@deleteAccountDone": {
     "description": "Deleting the account (Profile > Delete account)"
   },
@@ -1886,11 +1886,11 @@
   "@deleteAccountGoogleKept": {
     "description": "Deleting the account (Profile > Delete account)"
   },
-  "deleteAccountPremiumWeb": "A Tabs.cam Premium subscription isn't cancelled: cancel it on Substack, where you subscribed.",
+  "deleteAccountPremiumWeb": "A tabs.cam Premium subscription isn't cancelled: cancel it on Substack, where you subscribed.",
   "@deleteAccountPremiumWeb": {
     "description": "Deleting the account (Profile > Delete account)"
   },
-  "deleteAccountOtherDevices": "If Tabs.cam is signed in on your other devices, sign out there first, so they don't upload their events again.",
+  "deleteAccountOtherDevices": "If tabs.cam is signed in on your other devices, sign out there first, so they don't upload their events again.",
   "@deleteAccountOtherDevices": {
     "description": "Deleting the account (Profile > Delete account)"
   },
@@ -2069,9 +2069,9 @@
   "@accountAppleSignInExpired": {
     "description": "Error when the Apple sign-in expires"
   },
-  "accountSessionEnded": "You were signed out (a week without using Tabs.cam, or your sign-in ended elsewhere): sign in again.",
+  "accountSessionEnded": "You were signed out (a week without using tabs.cam, or your sign-in ended elsewhere): sign in again.",
   "@accountSessionEnded": {
-    "description": "Account sheet: the Tabs.cam session ended (unused for a week, 90 days old, or ended by the account's deletion or unlinking)"
+    "description": "Account sheet: the tabs.cam session ended (unused for a week, 90 days old, or ended by the account's deletion or unlinking)"
   },
   "accountAppleUnavailable": "Sign in with Apple isn't available on this device.",
   "@accountAppleUnavailable": {
@@ -2239,13 +2239,13 @@
   "@textViewFixAlreadyLinedUp": {
     "description": "Fix: nothing to line up"
   },
-  "textViewFixLinedUpPremium": "Tab lined up. Checking it against the song online is part of Tabs.cam Premium.",
+  "textViewFixLinedUpPremium": "Tab lined up. Checking it against the song online is part of tabs.cam Premium.",
   "@textViewFixLinedUpPremium": {
     "description": "Fix without Premium: lined up; the online check is Premium's"
   },
   "welcomeBody": "Scan guitar tabs, read them as text, and share them. Sign in to start: your captures are kept on every device you sign in on.",
   "@welcomeBody": {
-    "description": "Welcome screen (signed out): what Tabs.cam does, and to sign in"
+    "description": "Welcome screen (signed out): what tabs.cam does, and to sign in"
   },
   "dropFilesToAdd": "Drop files to add",
   "@dropFilesToAdd": {
@@ -2391,7 +2391,7 @@
   "@emailSignInUnavailable": {
     "description": "Email sign-in: not configured."
   },
-  "ownTabsNote": "Tabs.cam is for musicians practicing with their own tabs. Only add what you have the right to use: tabs you wrote, your teacher's, ones you bought, or ones free to share.",
+  "ownTabsNote": "tabs.cam is for musicians practicing with their own tabs. Only add what you have the right to use: tabs you wrote, your teacher's, ones you bought, or ones free to share.",
   "@ownTabsNote": {
     "description": "Home and Capture: who the app is for, and that users must have the right to the tabs they add"
   },
@@ -2399,7 +2399,7 @@
   "@installTitle": {
     "description": "Profile, last section: title of the phone install links"
   },
-  "installIntro": "Tabs.cam isn't in the app stores yet. Install it on your phone from GitHub:",
+  "installIntro": "tabs.cam isn't in the app stores yet. Install it on your phone from GitHub:",
   "@installIntro": {
     "description": "Profile, phone app section: intro before the iPhone and Android links"
   },
@@ -2415,7 +2415,7 @@
   "@installIphoneTitle": {
     "description": "iPhone install steps: title"
   },
-  "installIphoneSteps": "An iPhone only installs apps from the App Store or signed by an Apple developer, and the release on GitHub isn't signed. Build it on a Mac with Xcode and Flutter instead, signed with your own Apple account (a free one works):\n\n1. Get Tabs.cam's code from GitHub and set your Apple team, as the guide says.\n2. Connect the iPhone to the Mac by USB and turn on Developer Mode on it (Settings → Privacy & Security → Developer Mode).\n3. Build and install the release with the guide's command. It installs over Tabs.cam and keeps your events.\n4. The first time, trust the developer on the iPhone: Settings → General → VPN & Device Management.\n\nWith a free Apple account, the app stops opening after 7 days: install it again.",
+  "installIphoneSteps": "An iPhone only installs apps from the App Store or signed by an Apple developer, and the release on GitHub isn't signed. Build it on a Mac with Xcode and Flutter instead, signed with your own Apple account (a free one works):\n\n1. Get tabs.cam's code from GitHub and set your Apple team, as the guide says.\n2. Connect the iPhone to the Mac by USB and turn on Developer Mode on it (Settings → Privacy & Security → Developer Mode).\n3. Build and install the release with the guide's command. It installs over tabs.cam and keeps your events.\n4. The first time, trust the developer on the iPhone: Settings → General → VPN & Device Management.\n\nWith a free Apple account, the app stops opening after 7 days: install it again.",
   "@installIphoneSteps": {
     "description": "iPhone install steps: how to build and install the app from GitHub"
   },
@@ -2423,7 +2423,7 @@
   "@installAndroidTitle": {
     "description": "Android install steps: title"
   },
-  "installAndroidSteps": "1. On the phone, open Tabs.cam's latest release on GitHub (the button below).\n2. Under Assets, tap the file ending in -android.apk to download it.\n3. Open the downloaded file. The first time, Android asks you to allow your browser to install apps: allow it (Settings → Apps → Special app access → Install unknown apps).\n4. Tap Install, or Update if Tabs.cam is already installed. Updating keeps your events.\n\nGoogle sign-in doesn't work in these builds yet.",
+  "installAndroidSteps": "1. On the phone, open tabs.cam's latest release on GitHub (the button below).\n2. Under Assets, tap the file ending in -android.apk to download it.\n3. Open the downloaded file. The first time, Android asks you to allow your browser to install apps: allow it (Settings → Apps → Special app access → Install unknown apps).\n4. Tap Install, or Update if tabs.cam is already installed. Updating keeps your events.\n\nGoogle sign-in doesn't work in these builds yet.",
   "@installAndroidSteps": {
     "description": "Android install steps: how to download and install the APK from GitHub"
   },
@@ -2939,13 +2939,13 @@
   },
   "videoEditLayerWatermark": "Watermark",
   "@videoEditLayerWatermark": {
-    "description": "Video edit: the chip of the small Tabs.cam line at the bottom right of the video (only Premium can turn it off)"
+    "description": "Video edit: the chip of the small tabs.cam line at the bottom right of the video (only Premium can turn it off)"
   },
-  "videoEditWatermarkTake": "Recorded by Tabs.cam",
+  "videoEditWatermarkTake": "Recorded by tabs.cam",
   "@videoEditWatermarkTake": {
     "description": "Video edit: the watermark's text on one of Cam's takes; drawn on the video itself"
   },
-  "videoEditWatermarkMade": "Made with Tabs.cam",
+  "videoEditWatermarkMade": "Made with tabs.cam",
   "@videoEditWatermarkMade": {
     "description": "Video edit: the watermark's text on a video Cam didn't record; drawn on the video itself"
   },
@@ -3032,11 +3032,11 @@
   },
   "videoEditTabColorsGold": "Gold on black",
   "@videoEditTabColorsGold": {
-    "description": "Video edit: the tab's colours: Tabs.cam's gold text on a black background"
+    "description": "Video edit: the tab's colours: tabs.cam's gold text on a black background"
   },
   "videoEditTabColorsBrand": "Black on gold",
   "@videoEditTabColorsBrand": {
-    "description": "Video edit: the tab's colours: black text on Tabs.cam's gold background"
+    "description": "Video edit: the tab's colours: black text on tabs.cam's gold background"
   },
   "videoEditTabStyleReset": "Default style",
   "@videoEditTabStyleReset": {

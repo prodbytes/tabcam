@@ -546,7 +546,7 @@ def preview(event, clients):
     valid = bool(ID.match(capture_id) and LINK_KEY.match(key))
     # The capture's short link, or the app's for a link that opens nothing.
     link = f"https://{site}/app/"
-    title, description = "Tabs.cam", "Scan and share guitar tabs."
+    title, description = "tabs.cam", "Scan and share guitar tabs."
     if valid:
         try:
             capture = _linked_capture(clients, capture_id, key)
@@ -595,7 +595,7 @@ def _linked_capture(clients, capture_id, key):
 def _preview_text(capture):
     """A capture's preview: its title (with the artist), and what it holds:
     "Black Sabbath · 3 pages, 1 PDF, a text tab"."""
-    title = (capture.get("title") or "").strip() or "Tabs.cam"
+    title = (capture.get("title") or "").strip() or "tabs.cam"
     artist = (capture.get("artist") or "").strip()
     counts = {}
     for page in capture.get("pages") or []:
@@ -611,7 +611,7 @@ def _preview_text(capture):
         held.append("a text tab")
     parts = [p for p in (artist, ", ".join(held)) if p]
     description = " · ".join(parts) or "A guitar tab"
-    return (f"{title} – {artist}" if artist else title), f"{description}. Shared with Tabs.cam."
+    return (f"{title} – {artist}" if artist else title), f"{description}. Shared with tabs.cam."
 
 
 PREVIEW_PAGE = """<!DOCTYPE html>
@@ -622,7 +622,7 @@ PREVIEW_PAGE = """<!DOCTYPE html>
 <title>{title}</title>
 <meta name="description" content="{description}">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Tabs.cam">
+<meta property="og:site_name" content="tabs.cam">
 <meta property="og:title" content="{title}">
 <meta property="og:description" content="{description}">
 <meta property="og:url" content="{link}">

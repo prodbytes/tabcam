@@ -1,4 +1,4 @@
-# Tabs.cam — software specification
+# tabs.cam — software specification
 
 The current specification of the product, one file per feature. Update the
 feature files a request changes, and add a file when a request adds a
@@ -7,20 +7,20 @@ it.
 
 ## Product
 
-Tabs.cam is a camera app for guitar tabs, in the style of document camera
+tabs.cam is a camera app for guitar tabs, in the style of document camera
 apps (Adobe Scan, CamScanner), made for tablature. Point the phone at a tab
-and it finds the page, straightens it and cleans it up. Tabs.cam can then
+and it finds the page, straightens it and cleans it up. tabs.cam can then
 read the tab into editable plain text and share it as a read-only link
 (and download a zip of its files). Signed out, the app is a welcome and the
 sign-in buttons only; everything else is for signed-in users (with
 Google, or with Apple on iOS). Signing in
 also syncs the user's events with the cloud, so they're on every device
-the user signs in on. With Tabs.cam Premium, scans are also transcribed in
+the user signs in on. With tabs.cam Premium, scans are also transcribed in
 the cloud as they sync.
 
 **Who it's for**: musicians practicing with their own tabs (tabs they
 wrote, their teacher's lesson sheets, books and printouts they bought,
-tabs free to share). Tabs.cam comes with no songs, tabs, sheet music or
+tabs free to share). tabs.cam comes with no songs, tabs, sheet music or
 lyrics and fetches none: everything in it is what its users capture or
 add, in their own accounts, and they must have the right to use it. The
 app says so where content is added ([library](library.md),
@@ -130,7 +130,7 @@ review notes ([app stores](app-stores.md)).
   Sign in with Apple on iOS) from the Profile tab; signed-in users' events sync both ways with
   their own folder in S3 (Cognito identity pool credentials, no server),
   deletions included; Delete account deletes it all.
-- [Sign-in sessions](sessions.md): Tabs.cam's own session (the share API's
+- [Sign-in sessions](sessions.md): tabs.cam's own session (the share API's
   refresh token and KMS-signed ID tokens) keeps the user signed in until
   they sign out or leave it unused for a week (90 days at most), whatever
   the provider's hour-long token does.
@@ -157,7 +157,7 @@ review notes ([app stores](app-stores.md)).
   capture before adding went to their own copy: files of their own that
   only they and the owner see; the owner publishes the ones they like
   into the capture, for everyone.
-- [Tabs.cam Premium: Text, Cam and cloud OCR](cloud-ocr.md): Text and
+- [tabs.cam Premium: Text, Cam and cloud OCR](cloud-ocr.md): Text and
   Cam are Premium's (locked, they open as previews under the Premium
   card, with the offer); premium users' pages
   transcribed in AWS Lambda as they sync (Tesseract, PaddleOCR and

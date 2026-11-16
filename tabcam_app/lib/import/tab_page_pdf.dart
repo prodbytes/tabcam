@@ -27,7 +27,7 @@ Future<Uint8List> tabPagePdf(TabPage page, {DateTime? printed}) {
     color: PdfColors.grey700,
   );
   final day = (printed ?? DateTime.now()).toIso8601String().substring(0, 10);
-  final doc = pw.Document(title: page.title, creator: 'Tabs.cam')
+  final doc = pw.Document(title: page.title, creator: 'tabs.cam')
     ..addPage(
       pw.MultiPage(
         pageFormat: format,

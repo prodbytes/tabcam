@@ -20,7 +20,7 @@ void main() {
       expect(find.descendant(of: bar, matching: find.text(label)), findsOne);
     }
     // Home: the events, here none, pointing to Capture.
-    expect(find.text('Tabs.cam'), findsOneWidget);
+    expect(find.text('tabs.cam'), findsOneWidget);
     expect(find.text('No tabs yet'), findsOneWidget);
     expect(find.textContaining('Go to Capture'), findsOneWidget);
     // Who it's for is said on Capture, not Home.
@@ -101,7 +101,7 @@ void main() {
     await tester.pumpAndSettle();
     // Nothing shared yet: just the grid, without headings.
     expect(find.text('My riff'), findsOneWidget);
-    // Who Tabs.cam is for is on Capture, not under the captures.
+    // Who tabs.cam is for is on Capture, not under the captures.
     expect(find.byKey(const Key('own-tabs-note')), findsNothing);
     expect(find.text('My captures'), findsNothing);
     expect(find.text('Shared with me'), findsNothing);

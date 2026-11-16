@@ -651,7 +651,7 @@ void main() {
         ),
       ),
     );
-    expect(find.text('Tabs.cam Premium'), findsOneWidget);
+    expect(find.text('tabs.cam Premium'), findsOneWidget);
     expect(find.text('Upgrade'), findsOneWidget);
     expect(find.text('Redeem a voucher'), findsOneWidget);
     expect(
@@ -830,14 +830,14 @@ void main() {
     // No hint any more: the tools say it, with a lock each.
     expect(find.byKey(const Key('tool-locked')), findsNWidgets(2));
     expect(find.byKey(const Key('premium-gate')), findsNothing);
-    expect(find.byTooltip('Text: Tabs.cam Premium'), findsOneWidget);
-    expect(find.byTooltip('Cam: Tabs.cam Premium'), findsOneWidget);
+    expect(find.byTooltip('Text: tabs.cam Premium'), findsOneWidget);
+    expect(find.byTooltip('Cam: tabs.cam Premium'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('text')));
     await tester.pump();
     expect(find.byKey(const Key('premium-gate')), findsOneWidget);
     expect(
-      find.textContaining('Text is part of Tabs.cam Premium'),
+      find.textContaining('Text is part of tabs.cam Premium'),
       findsOneWidget,
     );
     expect(
@@ -914,7 +914,7 @@ void main() {
     expect(find.byType(PlayAlongScreen), findsOneWidget);
     expect(find.byKey(const Key('premium-gate')), findsOneWidget);
     expect(
-      find.textContaining('Cam is part of Tabs.cam Premium'),
+      find.textContaining('Cam is part of tabs.cam Premium'),
       findsOneWidget,
     );
     expect(find.text('Upgrade'), findsOneWidget);
@@ -1010,7 +1010,7 @@ void main() {
     final banner = find.byKey(const Key('premium-banner'));
     expect(banner, findsOneWidget);
     expect(
-      find.text('Text tabs and Cam are Tabs.cam Premium features.'),
+      find.text('Text tabs and Cam are tabs.cam Premium features.'),
       findsOneWidget,
     );
     // Upgrade opens the account sheet, with the offer.
@@ -1126,7 +1126,7 @@ void _fixTests() {
     expect(
       find.text(
         'Tab lined up. Checking it against the song online is part of '
-        'Tabs.cam Premium.',
+        'tabs.cam Premium.',
       ),
       findsOneWidget,
     );
