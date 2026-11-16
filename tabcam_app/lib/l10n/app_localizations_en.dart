@@ -662,8 +662,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'No text tab yet: read the capture\'s tab to play along with it.';
 
   @override
-  String camTake(int number) {
-    return 'Take $number';
+  String camTake(String time) {
+    return 'Take $time';
   }
 
   @override
@@ -712,6 +712,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get camAlongTakes => 'Takes';
+
+  @override
+  String get camAlongToday => 'Today';
+
+  @override
+  String get camAlongYesterday => 'Yesterday';
 
   @override
   String get camAlongPdfs => 'Follow a PDF';

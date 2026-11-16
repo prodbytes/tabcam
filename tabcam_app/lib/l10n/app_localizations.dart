@@ -1162,11 +1162,11 @@ abstract class AppLocalizations {
   /// **'No text tab yet: read the capture\'s tab to play along with it.'**
   String get camNoTab;
 
-  /// Cam: a recording's name
+  /// Cam: a take's name, by the time it started (hours and minutes, 24-hour, such as 14:32; with the seconds should another take that day have that name); the sidebar lists takes under their day, so the date isn't in it
   ///
   /// In en, this message translates to:
-  /// **'Take {number}'**
-  String camTake(int number);
+  /// **'Take {time}'**
+  String camTake(String time);
 
   /// Cam: a take was saved
   ///
@@ -1239,6 +1239,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Takes'**
   String get camAlongTakes;
+
+  /// Cam sidebar: the heading, under Takes, over the takes recorded today
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get camAlongToday;
+
+  /// Cam sidebar: the heading, under Takes, over the takes recorded yesterday (older days show their date)
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get camAlongYesterday;
 
   /// Cam sidebar heading over the capture's PDFs; tapping one shows it beside the camera
   ///

@@ -3754,3 +3754,14 @@ spec.
    at full scale (channel `tabcam/take_level`, method `gain`). Between
    takes only: the meter can't be tapped while a take records. iOS has
    no meter, so no input volume. See [Cam](cam.md#input-volume).
+8. **"Instead of Take $NUMBER let's use Take $HOUR:MINUTE [date hidden
+   but still grouped by day]."** Cam now names a take by the time it
+   started, 24-hour ("Take 14:32"; with the seconds, then a number, should
+   a take of that day have the name already) instead of "Take 1",
+   "Take 2"…; takes saved before keep their names. The sidebar's Takes
+   list, still most recent first, is grouped by day under small headings,
+   Today, Yesterday, else the date ("Sat, Nov 14", with the year when not
+   this one), in English, Spanish and Portuguese. The day comes from the
+   take page's ID (its creation time), so older takes are grouped too.
+   Old number names still count as takes (`isTake`). See
+   [Cam](cam.md#playing-along-with-a-file).

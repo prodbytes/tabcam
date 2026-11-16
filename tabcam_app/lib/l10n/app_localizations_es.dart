@@ -685,8 +685,8 @@ class AppLocalizationsEs extends AppLocalizations {
       'Aún no hay tablatura en texto: lee la tablatura de la captura para tocar con ella.';
 
   @override
-  String camTake(int number) {
-    return 'Toma $number';
+  String camTake(String time) {
+    return 'Toma $time';
   }
 
   @override
@@ -736,6 +736,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get camAlongTakes => 'Tomas';
+
+  @override
+  String get camAlongToday => 'Hoy';
+
+  @override
+  String get camAlongYesterday => 'Ayer';
 
   @override
   String get camAlongPdfs => 'Seguir un PDF';

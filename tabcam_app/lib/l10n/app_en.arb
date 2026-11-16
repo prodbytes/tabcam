@@ -916,12 +916,12 @@
   "@camNoTab": {
     "description": "Cam: the capture has no text tab"
   },
-  "camTake": "Take {number}",
+  "camTake": "Take {time}",
   "@camTake": {
-    "description": "Cam: a recording's name",
+    "description": "Cam: a take's name, by the time it started (hours and minutes, 24-hour, such as 14:32; with the seconds should another take that day have that name); the sidebar lists takes under their day, so the date isn't in it",
     "placeholders": {
-      "number": {
-        "type": "int"
+      "time": {
+        "type": "String"
       }
     }
   },
@@ -997,6 +997,14 @@
   "camAlongTakes": "Takes",
   "@camAlongTakes": {
     "description": "Cam sidebar heading over Cam's takes, listed last; tapping one plays it along"
+  },
+  "camAlongToday": "Today",
+  "@camAlongToday": {
+    "description": "Cam sidebar: the heading, under Takes, over the takes recorded today"
+  },
+  "camAlongYesterday": "Yesterday",
+  "@camAlongYesterday": {
+    "description": "Cam sidebar: the heading, under Takes, over the takes recorded yesterday (older days show their date)"
   },
   "camAlongPdfs": "Follow a PDF",
   "@camAlongPdfs": {

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:video_player/video_player.dart';
 
 import '../l10n/language.dart';
@@ -1160,6 +1161,22 @@ class PlayAlongSidebar extends StatelessWidget {
     ),
   );
 
+  /// The heading of the takes of [day], under Takes: "Today",
+  /// "Yesterday", else the date ("Sat, Nov 14"; with the year when it
+  /// isn't this one).
+  static Widget _dayHeading(
+    BuildContext context,
+    AppLocalizations l10n,
+    DateTime day,
+  ) => Padding(
+    key: ValueKey('cam-along-day-${day.year}-${day.month}-${day.day}'),
+    padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
+    child: Text(
+      dayLabel(context, l10n, day, DateTime.now()),
+      style: const TextStyle(color: Colors.white38, fontSize: 11),
+    ),
+  );
+
   /// The end of a file's row: its [mark] (playing, followed), if any, and
   /// at the right, Delete, if it shows ([onDelete]).
   Widget? _trailing(
@@ -1301,15 +1318,59 @@ class PlayAlongSidebar extends StatelessWidget {
                     ),
                   ),
               ],
-              // Cam's takes, last.
+              // Cam's takes, last, under their days.
               if (takes.isNotEmpty) ...[
                 _heading(l10n.camAlongTakes),
-                for (final page in takes) fileRow(page),
+                for (final (day, group) in takesByDay(takes)) ...[
+                  if (day != null) _dayHeading(context, l10n, day),
+                  for (final page in group) fileRow(page),
+                ],
               ],
             ],
           );
         },
       );
+}
+
+/// [takes] (the most recent first) in runs of the same day, by when each
+/// was made ([timeOfId]): the day, and its takes in the same order. A take
+/// whose time isn't known is in a run of no day (null), where it is.
+List<(DateTime?, List<EventPage>)> takesByDay(List<EventPage> takes) {
+  final runs = <(DateTime?, List<EventPage>)>[];
+  for (final page in takes) {
+    final made = timeOfId(page.id);
+    final day = made == null ? null : DateUtils.dateOnly(made);
+    if (runs.isNotEmpty && runs.last.$1 == day) {
+      runs.last.$2.add(page);
+    } else {
+      runs.add((day, [page]));
+    }
+  }
+  return runs;
+}
+
+/// What a day of takes is called, as of [now]: "Today", "Yesterday",
+/// else its date in the app's language, the weekday, month and day
+/// ("Sat, Nov 14"), and the year when it isn't [now]'s.
+String dayLabel(
+  BuildContext context,
+  AppLocalizations l10n,
+  DateTime day,
+  DateTime now,
+) {
+  if (DateUtils.isSameDay(day, now)) return l10n.camAlongToday;
+  if (DateUtils.isSameDay(day, DateTime(now.year, now.month, now.day - 1))) {
+    return l10n.camAlongYesterday;
+  }
+  final locale = Localizations.localeOf(context).toString();
+  try {
+    return (day.year == now.year
+            ? DateFormat.MMMEd(locale)
+            : DateFormat.yMMMEd(locale))
+        .format(day);
+  } on Object {
+    return MaterialLocalizations.of(context).formatMediumDate(day);
+  }
 }
 
 /// Whether [page] is one of Cam's takes: marked so when Cam saved it
@@ -1320,16 +1381,17 @@ bool isTake(EventPage page) =>
     page.take || (page.isVideo && _takeNames.hasMatch(page.title ?? ''));
 
 /// The names Cam gives its takes ([AppLocalizations.camTake]), in all the
-/// app's languages, any number.
+/// app's languages: by the time ("Take 14:32", "Take 14:32:07"), and as
+/// they were named before, by number ("Take 3").
 final _takeNames = () {
-  const n = 7654321;
+  const n = '7654321';
   final names = {
     for (final locale in AppLocalizations.supportedLocales)
       lookupAppLocalizations(locale)
           .camTake(n)
-          .split('$n')
+          .split(n)
           .map(RegExp.escape)
-          .join(r'\d+'),
+          .join(r'(?:\d+|\d{1,2}:\d{2}(?::\d{2})?)'),
   };
   return RegExp('^(?:${names.join('|')})\$');
 }();
