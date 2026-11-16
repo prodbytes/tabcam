@@ -613,7 +613,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get camRecKey => 'Gravar (1)';
 
   @override
-  String get camStopKey => 'Parar (1) · novo take (.)';
+  String get camStopKey => 'Parar (1) · novo take (/) · refazer (.)';
 
   @override
   String get camMicChoose => 'Microfone';
@@ -684,6 +684,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String camCouldntRecord(String error) {
     return 'Não foi possível gravar: $error';
   }
+
+  @override
+  String get camTakeDiscarded => 'Take descartado: gravando de novo';
 
   @override
   String get camConvertingTake =>

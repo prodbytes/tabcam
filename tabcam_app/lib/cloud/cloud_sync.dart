@@ -198,7 +198,7 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
     if (TakePriority.recording.value || !_held) return;
     _held = false;
     // After a pause, as for a change: the next take may start at once
-    // (Cam's . key), and holds it again.
+    // (Cam's / or . key), and holds it again.
     _soon?.cancel();
     _soon = Timer(debounce, () => unawaited(syncNow()));
   }

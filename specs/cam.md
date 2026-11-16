@@ -34,8 +34,8 @@ its **Not now** leaving. With Premium it opens the camera view
   phone turned sideways), with its number under it ("2 / 14"). A
   capture with no text tab yet says to read it first.
 - **Moving along the tab**: any key (but **1**, which is
-  [Rec / Stop](#rec-key), **.**, which is [a new take](#new-take-key),
-  and the space bar, 0, ← and → while a file
+  [Rec / Stop](#rec-key), **/** and **.**, which are
+  [a new take](#new-take-key), and the space bar, 0, ← and → while a file
   [plays along](#playing-along-with-a-file)) goes to the
   next neckline (a keyboard, or a Bluetooth page-turner pedal), **↓**
   among them; **Backspace**, **↑** and **Page Up** go to the one
@@ -97,7 +97,7 @@ its **Not now** leaving. With Premium it opens the camera view
   pressed (a take being saved or playing back, no camera, the
   preview), 1 does nothing. With Ctrl, ⌘ or Alt held, 1 is another
   shortcut's (the browser's) and turns the tab as any key. The button's
-  tooltip says so: "Rec (1)", and "Stop (1) · new take (.)" while
+  tooltip says so: "Rec (1)", and "Stop (1) · new take (/) · redo (.)" while
   recording, in English, Spanish and Portuguese. The take is then added to
   the capture as a video, at the end of its files, named "Take 1",
   "Take 2"… (the first number no file has), and a message says so. It
@@ -110,27 +110,39 @@ its **Not now** leaving. With Premium it opens the camera view
   [What a take keeps](#what-a-take-keeps)).
   Going back while recording stops it and keeps the take. Back on the capture, its takes show: the file list
   (not the Text view), scrolled to its end.
-  <a id="new-take-key"></a>The **.** key (on the main keyboard or the
-  keypad's decimal key, also where that key types "," as on Brazilian,
-  German and most European layouts, matched by where it is on the
-  keyboard; the comma key itself turns the tab) starts **a new take** while recording: the
-  take is stopped and saved as Stop saves it (added, named, its phrase
-  passes kept, the message shown), and once it's saved, the next take
-  starts as Rec starts one. The song in the sidebar (when it shows)
-  stops at once and goes back to its start (its section's, with one
-  chosen), so it's silent while the take is saved; with the new take
-  it plays from there, after the count-in if that's on, as Rec starts
-  it. The tab stays at the neckline showing, as with Rec (auto-pass
-  turns it along the song, as ever). Not recording, **.** starts a take,
-  as 1 does. It acts on the key
-  down only (held, it doesn't repeat), does nothing while Rec can't be
-  pressed, and with Ctrl, ⌘ or Alt it turns the tab as any key. While
-  the take is saved for the next, Rec, Play, the camera switch, 1, .
-  and going back do nothing, so a second press can't start or stop
-  another take (the camera records one at a time). Nor do Rec, 1 and .
-  while a take starts (until the camera records), so pressing again at
-  once doesn't start a second recording alongside it. If the next take
-  can't start, the one saved is kept and a message says why.
+  <a id="new-take-key"></a>Two keys start **a new take** while
+  recording, the take recorded so far either kept or thrown away:
+  - **/** (on the main keyboard or the keypad) **keeps it**: the take is
+    stopped and saved as Stop saves it (added, named, its phrase passes
+    kept, the message shown), and once it's saved, the next take starts
+    as Rec starts one. Both takes are in the capture.
+  - **.** (on the main keyboard or the keypad's decimal key, also where
+    that key types "," as on Brazilian, German and most European layouts,
+    matched by where it is on the keyboard; the comma key itself turns
+    the tab) **throws it away**: the take is stopped and not saved
+    (nothing added to the capture, nothing synced, its file deleted from
+    the device; on Android the app's sound for it is dropped, not put
+    into the video), a message says "Take thrown away: recording it
+    again", and the next take starts as Rec starts one. Pressed again and
+    again, only the last take is kept, once it's stopped (Stop, 1 or /).
+    A take saved before is never touched: . only throws away the one
+    recording.
+
+  Either way, the song in the sidebar (when it shows) stops at once and
+  goes back to its start (its section's, with one chosen), so it's
+  silent while the take is saved or thrown away; with the new take it
+  plays from there, after the count-in if that's on, as Rec starts it.
+  The tab stays at the neckline showing, as with Rec (auto-pass turns it
+  along the song, as ever). Not recording, **/** and **.** start a take,
+  as 1 does. They act on the key down only (held, they don't repeat), do
+  nothing while Rec can't be pressed, and with Ctrl, ⌘ or Alt they turn
+  the tab as any key. While the take is saved (or thrown away) for the
+  next, Rec, Play, the camera switch, 1, /, . and going back do nothing,
+  so a second press can't start or stop another take (the camera records
+  one at a time). Nor do Rec, 1, / and . while a take starts (until the
+  camera records), so pressing again at once doesn't start a second
+  recording alongside it. If the next take can't start after /, the one
+  saved is kept and a message says why.
 - <a id="rec-menu"></a>**Rec's menu: the microphone.** An arrow beside
   Rec (its tooltip "Microphone") opens a menu, as a video call's
   microphone button does: under **Record from**, **Default microphone**
@@ -492,7 +504,7 @@ capture's files and under **Takes**), which it deletes from their
 [contribution](contributions.md), file and all. A capture's file it
 deletes goes to the capture's trash ([Deleted and Purge](trash.md)). Not in Cam's Premium
 preview, nor on a capture opened by its link. It's greyed while a take
-records, saves (with ".", until the next take has started) or plays
+records, saves (with "/" or ".", until the next take has started) or plays
 back, and while the screen works. Once deleted, the file loaded in the
 player (playing or paused) is let go of: it stops and the frame closes,
 nothing else loading by itself; a PDF or page followed closes its pane;
