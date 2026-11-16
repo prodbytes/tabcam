@@ -144,6 +144,17 @@ abstract final class TakeSound {
   static Future<double?> peak() async =>
       (await levelChannel.invokeMethod<num>('peak'))?.toDouble();
 
+  /// The input volume set in Cam ([gain]: 1 as it comes, 2 twice as
+  /// loud, kept within ±24 dB by the app): what the takes record and
+  /// [peak] reads, from the next read on.
+  static Future<void> setGain(double gain) async {
+    try {
+      await levelChannel.invokeMethod<void>('gain', {'gain': gain});
+    } on Object catch (e) {
+      debugPrint('TabCam: cam: input volume: $e');
+    }
+  }
+
   /// Drops the take's sound (the camera didn't start).
   static Future<void> cancel() => _quiet('cancel');
 

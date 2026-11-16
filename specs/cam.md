@@ -213,8 +213,10 @@ its **Not now** leaving. With Premium it opens the camera view
   sample since it last asked, about every 40 ms: rising at once,
   falling back 24 dB a second, the highest held for 1.5 s (that segment
   stays lit) before it falls too. It reads between takes as in them, so
-  the level can be set before Rec. Its tooltip says "Microphone level"
-  (English, Spanish, Portuguese). It shows where the app reads the
+  the level can be set before Rec, with the [input
+  volume](#input-volume) it opens when tapped. Its tooltip says
+  "Microphone level: tap to set the input volume" (English, Spanish,
+  Portuguese). It shows where the app reads the
   takes' microphone itself:
   - **Web**: a Web Audio analyser on the take recorder's microphone
     (`WebTakeRecorder.peak`: an `AudioContext`, a
@@ -241,6 +243,38 @@ its **Not now** leaving. With Premium it opens the camera view
   and Android (the channel faked), and none where the camera records the
   sound (`test/play_along_test.dart`); `TakeSoundMath.peak` on the JVM.
   **Not yet checked on a phone or in a browser.**
+- <a id="input-volume"></a>**Input volume**: the level meter, tapped
+  (or clicked), opens a menu by it: "Input volume", the volume in dB
+  (+6 dB, 0 dB, −6 dB), an upright slider from −24 to +24 dB in 1 dB
+  steps (up louder, down quieter) and **Reset** (back to 0 dB, greyed at
+  0 dB). The volume changes as the slider moves, and the meter shows
+  the microphone at that volume at once, so it can be set by eye (out
+  of the red); it's kept in Cam's settings (`gainDb`, left out at 0 dB)
+  and set again each time Cam opens. Only between takes: while a take
+  starts or records the meter can't be tapped, and a take keeps the
+  volume it started with. Where there's no meter (iOS, the preview,
+  Android where the camera records the sound) there's no input volume.
+  It's a gain on the sound as read (digital), so it can't undo a
+  microphone that clips before the app gets its sound.
+  - **Web** (`WebTakeRecorder.setGain`): the meter's Web Audio graph
+    gets a `GainNode` between the microphone's source and the analyser.
+    At 0 dB a take records the microphone's own track, as before; at
+    any other volume it records the gain node's output (a
+    `MediaStreamAudioDestinationNode`, two channels), the
+    `AudioContext` resumed as Rec is pressed; should the browser hold
+    it, the take records the microphone as it comes and says so in the
+    log (`TabCam: cam: input volume: …`).
+  - **Android**: `gain` on `tabcam/take_level` (`gain`: the factor,
+    kept within ±24 dB); the between-takes reader and the take's reader
+    multiply each 16-bit sample by it as it's read, clipped at full
+    scale (`TakeSoundMath.applyGain`), before the meter or the encoder
+    sees it. The app's microphone keeps the last one set until Cam sets
+    it again as it opens.
+  Tested: the menu (up, down, the dB shown, kept, set as Cam opens,
+  Reset, not while recording) with the web's recorder faked and on
+  Android with the channel faked (`test/play_along_test.dart`);
+  `TakeSoundMath.applyGain` on the JVM. **Not yet checked on a phone or
+  in a browser.**
 - <a id="the-tab-with-the-take"></a><a id="the-tab-in-the-take"></a>**The tab is kept with the take and
   added by the editor**: a take is saved at once as the camera recorded
   it, with no tab in its picture and no second encode (no "Adding the

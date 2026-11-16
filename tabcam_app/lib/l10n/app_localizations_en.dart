@@ -599,7 +599,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camMicChoose => 'Microphone';
 
   @override
-  String get camMicLevel => 'Microphone level';
+  String get camMicLevel => 'Microphone level: tap to set the input volume';
+
+  @override
+  String get camMicGain => 'Input volume';
+
+  @override
+  String camMicGainDb(String db) {
+    return '$db dB';
+  }
+
+  @override
+  String get camMicGainReset => 'Reset';
 
   @override
   String get camMicHeading => 'Record from';

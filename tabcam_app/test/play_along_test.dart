@@ -110,6 +110,12 @@ class FakeTakeRecorder implements TakeRecorder {
   @override
   Future<double?> peak() async => level;
 
+  /// The input volumes it was told, in turn.
+  final List<double> gains = [];
+
+  @override
+  void setGain(double gain) => gains.add(gain);
+
   @override
   Future<bool> hasSound() async => sound;
 
@@ -1332,7 +1338,9 @@ B|--5--8--|
   });
 
   testWidgets('/ or . pressed again while the take is saved for the next '
-      'does nothing, nor does 1; the next starts once it\'s saved', (tester) async {
+      'does nothing, nor does 1; the next starts once it\'s saved', (
+    tester,
+  ) async {
     final (library, id) = await capture(tester, tab: _tab);
     await tester.pumpWidget(
       app(
@@ -1879,7 +1887,10 @@ B|--5--8--|
       final recorder = FakeTakeRecorder();
       await open(tester, recorder);
       expect(find.byKey(const Key('cam-rec-level')), findsOneWidget);
-      expect(find.byTooltip('Microphone level'), findsOneWidget);
+      expect(
+        find.byTooltip('Microphone level: tap to set the input volume'),
+        findsOneWidget,
+      );
       expect(litSegments(tester), 0);
       recorder.level = 0.5;
       await frames(tester);
@@ -1896,6 +1907,84 @@ B|--5--8--|
       await tester.pump(const Duration(seconds: 4));
       await tester.pump();
       expect(litSegments(tester), 0);
+    });
+
+    testWidgets('the level meter tapped sets the input volume: up louder, '
+        'down quieter, at once, kept, and Reset back to 0 dB; not while a '
+        'take records', (tester) async {
+      final recorder = FakeTakeRecorder();
+      final (library, id) = await open(tester, recorder);
+      // As it comes, told as Cam opened.
+      expect(recorder.gains, [1.0]);
+      String? settings;
+      Future<Object?> kept() async {
+        await tester.runAsync(
+          () async => settings = await library.readMeta('cam'),
+        );
+        return jsonDecode(settings!);
+      }
+
+      Slider slider() =>
+          tester.widget<Slider>(find.byKey(const Key('cam-gain')));
+      await tester.tap(find.byKey(const Key('cam-rec-gain')));
+      await frames(tester);
+      expect(find.text('Input volume'), findsOneWidget);
+      expect(find.text('0 dB'), findsOneWidget);
+      expect(slider().value, 0);
+      expect(
+        tester
+            .widget<TextButton>(find.byKey(const Key('cam-gain-reset')))
+            .onPressed,
+        isNull,
+      );
+      // Up: louder.
+      await tester.drag(
+        find.byKey(const Key('cam-gain')),
+        const Offset(0, -40),
+      );
+      await frames(tester);
+      expect(slider().value, greaterThan(0));
+      expect(recorder.gains.last, greaterThan(1));
+      // Down: quieter.
+      slider().onChanged!(-6);
+      await frames(tester);
+      expect(find.text('\u22126 dB'), findsOneWidget);
+      expect(recorder.gains.last, closeTo(0.501, 0.001));
+      slider().onChanged!(6);
+      await frames(tester);
+      expect(find.text('+6 dB'), findsOneWidget);
+      expect(recorder.gains.last, closeTo(1.995, 0.001));
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await frames(tester);
+      expect(find.text('Input volume'), findsNothing);
+      expect(await kept(), {'autoPass': true, 'gainDb': 6});
+
+      // Cam again: the volume kept, told as it opens.
+      await tester.pumpWidget(const SizedBox());
+      await frames(tester);
+      final again = FakeTakeRecorder();
+      await open(tester, again, library: library, id: id);
+      expect(again.gains.single, closeTo(1.995, 0.001));
+      await tester.tap(find.byKey(const Key('cam-rec-gain')));
+      await frames(tester);
+      expect(find.text('+6 dB'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('cam-gain-reset')));
+      await frames(tester);
+      expect(find.text('0 dB'), findsOneWidget);
+      expect(again.gains.last, 1);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await frames(tester);
+      expect(await kept(), {'autoPass': true});
+
+      // A take keeps the volume it started with.
+      await tester.tap(find.byTooltip('Rec (1)'));
+      await frames(tester);
+      expect(again.started, 1);
+      await tester.tap(find.byKey(const Key('cam-rec-gain')));
+      await frames(tester);
+      expect(find.text('Input volume'), findsNothing);
+      await tester.tap(_camStop);
+      await until(tester, () => recReady(tester));
     });
 
     testWidgets('no arrow in the preview, nor where the camera records the '
@@ -2077,6 +2166,43 @@ B|--5--8--|
         await tester.pump(const Duration(seconds: 4));
         await tester.pump();
         expect(litSegments(tester), 0);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
+    testWidgets('the input volume goes to the app\'s microphone '
+        '(tabcam/take_level gain)', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      final messenger = tester.binding.defaultBinaryMessenger;
+      final gains = <Object?>[];
+      messenger.setMockMethodCallHandler(TakeSound.levelChannel, (call) async {
+        if (call.method == 'gain') gains.add(call.arguments);
+        return call.method == 'peak' ? 0.1 : null;
+      });
+      addTearDown(
+        () => messenger.setMockMethodCallHandler(TakeSound.levelChannel, null),
+      );
+      try {
+        await open(tester);
+        final (library, id) = await capture(tester, tab: _tab);
+        await tester.pumpWidget(app(cam(library, id)));
+        await frames(tester);
+        // As it comes (the app's microphone keeps the last one set).
+        expect(gains, [
+          {'gain': 1.0},
+        ]);
+        await tester.tap(find.byKey(const Key('cam-rec-gain')));
+        await frames(tester);
+        tester.widget<Slider>(find.byKey(const Key('cam-gain'))).onChanged!(
+          -12,
+        );
+        await frames(tester);
+        expect((gains.last! as Map)['gain'] as double, closeTo(0.251, 0.001));
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await frames(tester);
+        // The take's sound doesn't hear of it: another channel.
+        expect(methods(), ['prepare']);
       } finally {
         debugDefaultTargetPlatformOverride = null;
       }

@@ -1054,11 +1054,29 @@ abstract class AppLocalizations {
   /// **'Microphone'**
   String get camMicChoose;
 
-  /// Cam: the tooltip of the level meter beside Rec, which shows how loud the microphone is (green, yellow, red)
+  /// Cam: the tooltip of the level meter beside Rec, which shows how loud the microphone is (green, yellow, red); tapped, it opens the input volume menu
   ///
   /// In en, this message translates to:
-  /// **'Microphone level'**
+  /// **'Microphone level: tap to set the input volume'**
   String get camMicLevel;
+
+  /// Cam: the heading of the menu that opens when the level meter beside Rec is tapped; its slider sets how loud the microphone records the takes
+  ///
+  /// In en, this message translates to:
+  /// **'Input volume'**
+  String get camMicGain;
+
+  /// Cam: the input volume in its menu, in decibels; db is signed, such as +6, 0 or −6
+  ///
+  /// In en, this message translates to:
+  /// **'{db} dB'**
+  String camMicGainDb(String db);
+
+  /// Cam: the button in the input volume menu that puts the volume back to 0 dB, as the microphone gives it
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get camMicGainReset;
 
   /// Cam: the heading of Rec's menu, over the list of microphones
   ///
