@@ -3712,3 +3712,8 @@ spec.
    descriptions, the READMEs and these specs. The logo's wordmark was
    lowercase already. Earlier entries of this log keep the spelling they
    had. CLAUDE.md now says to write it lowercase.
+4. **"Make head gesture disabled by default."** Cam now opens with head
+   gestures off (each time; the choice isn't kept): nothing watches for
+   faces, the camera streams no frames for them, and on the web the
+   face model loads only once they're switched on with the face icon in
+   the app bar. See [Cam](cam.md#head-gestures).

@@ -217,9 +217,10 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   (String, List<int>)? _recordedPlaces;
 
   /// Head gestures: what watches for them (null where it can't), and
-  /// whether the user has them on.
+  /// whether the user has them on (off when Cam opens: the face icon
+  /// switches them on).
   HeadTracking? _heads;
-  bool _headsOn = true;
+  bool _headsOn = false;
 
   /// Records takes, where the camera plugin doesn't (the web).
   late final TakeRecorder? _recorder = widget.takeRecorder();

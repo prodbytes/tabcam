@@ -1530,7 +1530,8 @@ B|--5--8--|
     expect(find.byKey(const Key('neckline')), findsNothing);
   });
 
-  testWidgets('a nod turns the tab; head gestures switch off', (tester) async {
+  testWidgets('head gestures are off when Cam opens; switched on, a nod '
+      'turns the tab; they switch off', (tester) async {
     final (library, id) = await capture(tester, tab: _tab);
     FakeHeads? heads;
     await tester.pumpWidget(
@@ -1544,8 +1545,19 @@ B|--5--8--|
       ),
     );
     await frames(tester);
-    // The camera's frames go to it.
+    // Off at first: no frames, and a gesture does nothing.
+    expect(find.byTooltip('Head gestures off'), findsOneWidget);
+    expect(camera.streaming, isFalse);
+    expect(heads!.active, isFalse);
+    heads!.onGesture(HeadGesture.next);
+    await tester.pump();
+    expect(find.text('1 / 3'), findsOneWidget);
+
+    // Switched on: the camera's frames go to it.
+    await tester.tap(find.byKey(const Key('cam-heads')));
+    await frames(tester);
     expect(camera.streaming, isTrue);
+    expect(heads!.active, isTrue);
     expect(find.byTooltip(RegExp('^Head gestures on')), findsOneWidget);
     // Seeing a face: the theme's primary colour.
     final context = tester.element(find.byKey(const Key('cam-heads')));
@@ -1614,8 +1626,12 @@ B|--5--8--|
     );
     await frames(tester);
     expect(camera.streaming, isFalse);
+    expect(heads!.active, isFalse);
+    // Switched on: the tracker reads the preview itself.
+    await tester.tap(find.byKey(const Key('cam-heads')));
+    await frames(tester);
+    expect(camera.streaming, isFalse);
     expect(heads!.active, isTrue);
-    expect(find.byKey(const Key('cam-heads')), findsOneWidget);
 
     await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
