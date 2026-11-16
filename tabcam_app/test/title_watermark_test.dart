@@ -283,7 +283,6 @@ void main() {
       PageEdit? edit, {
       bool premium = false,
       TakeLog? takeLog,
-      BandAspect aspect = bandAspectBound,
     }) => RenderPlan.of(
       edit,
       duration: const Duration(seconds: 20),
@@ -291,7 +290,6 @@ void main() {
       watermark: 'Recorded by tabs.cam',
       premium: premium,
       takeLog: takeLog,
-      bandAspect: aspect,
     );
 
     test('turned off, it\'s left out only for a Premium downloader: it '
@@ -315,61 +313,32 @@ void main() {
       expect(plan(null).passthrough, isFalse);
     });
 
-    test('at the bottom right, small, the whole video through; above the '
-        'tab\'s tallest band when it\'s drawn', () {
+    test('in the bottom right corner, small, the whole video through; '
+        'over the tab\'s bands when they\'re drawn', () {
       final mark = _ofId(plan(null), 'mark').single;
       expect(mark.look, const WatermarkLook('Recorded by tabs.cam'));
       expect(mark.anchor, LayerAnchor.bottomRight);
       expect(mark.heightU, WatermarkLayout.heightU);
       expect(mark.marginU, WatermarkLayout.margin);
       expect((mark.from, mark.to, mark.fadeIn), (Duration.zero, null, ms(0)));
-      expect(mark.liftW, 0);
-      // With the tab: lifted by its tallest band (here 0.2 of the width).
-      final lifted = _ofId(
-        plan(null, takeLog: log, aspect: (b) => b.line == _riffB ? 0.2 : 0.1),
-        'mark',
-      ).single;
-      expect(lifted.liftW, 0.2);
-      // Only the bands in this output count: trimmed to before B shows.
-      expect(
-        _ofId(
-          plan(
-            PageEdit(start: Duration.zero, end: ms(3000)),
-            takeLog: log,
-            aspect: (b) => b.line == _riffB ? 0.2 : 0.1,
-          ),
-          'mark',
-        ).single.liftW,
-        0.1,
-      );
-      // Placed: 3% of the short side (1080) in, and the band higher.
+      expect((mark.liftU, mark.liftW), (0, 0));
+      // With the tab: the same, in the corner, drawn after the bands.
+      final withTab = plan(null, takeLog: log);
+      expect(_ofId(withTab, 'mark').single, mark);
+      final ids = [for (final l in withTab.layers) l.id];
+      expect(ids.lastIndexOf('tab'), lessThan(ids.indexOf('mark')));
+      // Placed: 3% of the short side (1080) in from the corner.
       const frame = Size(1920, 1080);
       const image = Size(400, 40);
-      final rect = lifted.rectIn(frame, image);
+      final rect = mark.rectIn(frame, image);
       final height = WatermarkLayout.heightU * 1080;
-      expect(rect.bottom, closeTo(1080 - 0.03 * 1080 - 0.2 * 1920, 1e-6));
+      expect(rect.bottom, closeTo(1080 - 0.03 * 1080, 1e-6));
       expect(rect.height, closeTo(height, 1e-6));
       expect(rect.right, closeTo(1920 - 0.03 * 1080, 1e-6));
-      // The tab off: down at its margin.
-      expect(
-        _ofId(
-          plan(
-            PageEdit(start: Duration.zero, end: ms(20000), tab: false),
-            takeLog: log,
-          ),
-          'mark',
-        ).single.liftW,
-        0,
-      );
-      // A band's height is never more than the bound says.
-      expect(
-        bandAspectBound(const BandLook(_riffB)),
-        closeTo(2 * 1.2 / 48 + 2 / 64, 1e-9),
-      );
     });
 
-    test('goes to the platforms with its lift', () {
-      final p = plan(null, takeLog: log, aspect: (_) => 0.25);
+    test('goes to the platforms unlifted', () {
+      final p = plan(null, takeLog: log);
       final args = p.toChannel(
         output: '/tmp/out.mp4',
         images: [for (final _ in p.looks) Uint8List(1)],
@@ -378,7 +347,7 @@ void main() {
         (args['layers'] as List).last,
         allOf(
           containsPair('anchor', 'bottomRight'),
-          containsPair('liftW', 0.25),
+          containsPair('liftW', 0.0),
           containsPair('id', 'mark'),
         ),
       );

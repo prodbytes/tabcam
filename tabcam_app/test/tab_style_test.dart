@@ -251,22 +251,15 @@ void main() {
       );
     });
 
-    test('the watermark rises above a bigger band', () {
-      double lift(EditTabStyle style) =>
-          plan(style).layers.singleWhere((l) => l.id == 'mark').liftW;
-      expect(
-        lift(const EditTabStyle(size: 1.5)),
-        greaterThan(lift(EditTabStyle.standard)),
-      );
-      expect(
-        lift(const EditTabStyle(size: 0.5)),
-        lessThan(lift(EditTabStyle.standard)),
-      );
-      // Opacity and colours change no size.
-      expect(
-        lift(const EditTabStyle(opacity: 0, colors: TabColors.light)),
-        lift(EditTabStyle.standard),
-      );
+    test('the watermark stays in the corner, whatever the band\'s size', () {
+      for (final style in const [
+        EditTabStyle(size: 0.5),
+        EditTabStyle.standard,
+        EditTabStyle(size: 1.5),
+      ]) {
+        final mark = plan(style).layers.singleWhere((l) => l.id == 'mark');
+        expect((mark.liftU, mark.liftW), (0, 0), reason: '$style');
+      }
     });
   });
 
@@ -354,25 +347,6 @@ void main() {
       // frame's height); short riffs grow all the way.
       expect(tabSizeMost(const [_staff], const Size(1920, 1080)), lessThan(2));
       expect(tabSizeMost(const [_riffA], const Size(1920, 1080)), 2);
-    });
-
-    // (Within a pixel or two: the text's lines are laid out whole.)
-    testWidgets('never higher than the bound the plan places it by', (
-      tester,
-    ) async {
-      for (final band in [
-        const BandLook(_riffA),
-        const BandLook(_staff, style: EditTabStyle(size: 2)),
-        const BandLook(_staff, style: EditTabStyle(size: 0.5)),
-        const BandLook(_staff, style: EditTabStyle(size: 2), maxAspect: 0.25),
-        BandLook(_long, style: const EditTabStyle(size: 1.7)),
-      ]) {
-        expect(
-          bandAspect(band),
-          lessThanOrEqualTo(bandAspectBound(band) + 2 / bandWidth),
-          reason: '$band',
-        );
-      }
     });
 
     testWidgets('its background as opaque as its style says, in its '

@@ -322,7 +322,7 @@ abstract final class TitleLayout {
 
 /// The watermark's sizes, as fractions of the frame's short side: its
 /// text [text] high, in a strip [heightU] high, [margin] in from the
-/// bottom right (and above the tab's bands, where they're drawn).
+/// bottom right corner (over the tab's bands, where they're drawn).
 abstract final class WatermarkLayout {
   static const text = 0.022;
   static const heightU = 0.03;
@@ -332,12 +332,12 @@ abstract final class WatermarkLayout {
 /// Something drawn over the video ([look]), from [from] to [to] in the
 /// output (null: to its end), placed by [anchor]: [heightU] high (for a
 /// corner's; a bottom band is as wide as the frame, as high as its image
-/// makes it), [marginU] in from the corner and the watermark [liftU]
-/// higher, all as fractions of the frame's short side, so they're the
-/// same on a portrait and a landscape video, and no one but the renderer
-/// needs the frame's size; and [liftW] higher still, as a fraction of the
-/// frame's width (what a band's height goes by: it's as wide as the
-/// frame), so the watermark sits above the tab's tallest band. It fades
+/// makes it), [marginU] in from the corner and the bottom right's
+/// [liftU] higher, all as fractions of the frame's short side, so they're
+/// the same on a portrait and a landscape video, and no one but the
+/// renderer needs the frame's size; and [liftW] higher still, as a
+/// fraction of the frame's width (none of today's layers is lifted: the
+/// watermark sits in the corner, over the tab's bands). It fades
 /// in over [fadeIn] from [from], to [opacity]. Layers of one [id] (`tab`,
 /// `title`, `mark`) never overlap in time.
 @immutable
@@ -507,19 +507,6 @@ List<PlanLayer> tabLayers(
   return layers;
 }
 
-/// How high a [band] is drawn, as a fraction of its width (as wide as
-/// the frame): `bandAspect` in edit_layers.dart measures it.
-typedef BandAspect = double Function(BandLook band);
-
-/// The most a [band] can be high, as a fraction of its width, without
-/// measuring it: its text at the largest it draws it ([TabLayout.textOf]:
-/// 1/48 of its width at its default size, each line 1.2 times that),
-/// padded above and below ([TabLayout.padAt]: 1/64 of its width at its
-/// default size; `bandPicture`'s look).
-double bandAspectBound(BandLook band) =>
-    band.lines * TabLayout.lineHeight * TabLayout.textOf(band) +
-    2 * TabLayout.padAt(band.style.size);
-
 /// The title over the video, showing [lines] (as [titleText] cleans
 /// them): at the top left, fading in over the kept part's first 3 s, then
 /// staying to its end ([TitleLayout]). Null when there's nothing to show.
@@ -545,16 +532,14 @@ List<String> titleText(List<String> lines) => [
       clipChars(t, TitleLayout.maxChars),
 ].take(TitleLayout.maxLines).toList();
 
-/// The watermark, [text], at the bottom right, the whole video through,
-/// lifted [liftW] (of the frame's width) above the bottom margin: above
-/// the tab's tallest band, where they're drawn ([WatermarkLayout]).
-PlanLayer watermarkLayer(String text, {double liftW = 0}) => PlanLayer(
+/// The watermark, [text], in the bottom right corner, the whole video
+/// through, over the tab's bands where they're drawn ([WatermarkLayout]).
+PlanLayer watermarkLayer(String text) => PlanLayer(
   id: 'mark',
   look: WatermarkLook(text),
   anchor: LayerAnchor.bottomRight,
   heightU: WatermarkLayout.heightU,
   marginU: WatermarkLayout.margin,
-  liftW: liftW,
 );
 
 /// The default title of a capture named [title], by [artist]: the name
@@ -717,10 +702,10 @@ class RenderPlan {
   /// the file screen's player) is drawn unless the edit turns it off
   /// ([PageEdit.watermark]) and the one downloading has Premium now
   /// ([premium], or a build without the service): an edit a Premium user
-  /// made downloads with it for anyone else. With the tab, it's lifted
-  /// above its tallest band in this output ([bandAspect]). The sound alone
-  /// has no layers. It fades in and out as the edit says (3 s each by
-  /// default, none at most half the kept part long:
+  /// made downloads with it for anyone else; it sits in the bottom right
+  /// corner, over the tab where it's drawn. The sound alone has no
+  /// layers. It fades in and out as the edit says (3 s each by default,
+  /// none at most half the kept part long:
   /// [PageEdit.fadeWithin]), unless not [fades] (the file screen's player,
   /// which loops the video, leaves them to Download).
   factory RenderPlan.of(
@@ -736,7 +721,6 @@ class RenderPlan {
     List<String> title = const [],
     String? watermark,
     bool premium = false,
-    BandAspect bandAspect = bandAspectBound,
     bool preview = false,
     bool fades = true,
     Size? frame,
@@ -801,13 +785,7 @@ class RenderPlan {
         );
       }
       if (watermark != null && !(edit?.watermark == false && premium)) {
-        var lift = 0.0;
-        for (final band in layers) {
-          if (band.look case final BandLook look) {
-            lift = max(lift, bandAspect(look));
-          }
-        }
-        layers.add(watermarkLayer(watermark, liftW: lift));
+        layers.add(watermarkLayer(watermark));
       }
       final shown = edit?.title;
       if (titleLayer(shown == null ? title : shown.linesOr(title))
