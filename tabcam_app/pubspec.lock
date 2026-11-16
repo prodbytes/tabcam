@@ -82,7 +82,7 @@ packages:
     source: hosted
     version: "0.10.3+1"
   camera_platform_interface:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: camera_platform_interface
       sha256: "9365babc7488a9e93d0ed6dcccd917619fb12ea6f9e601519e1191d4890ee2fe"
@@ -90,7 +90,7 @@ packages:
     source: hosted
     version: "2.14.0"
   camera_web:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: camera_web
       sha256: "5aecf1ac4dd4a949c5a7820e590020acb2bc35425384ab87a030e1739bfe12e2"

@@ -3678,6 +3678,16 @@ spec.
    would make old captures unreadable for hours, for about $0.003 per GB a
    month more saved. Nothing changed in the bucket; the storage tiers are
    now described in [cloud sync](cloud-sync.md#whats-synced-and-where).
+2. **"The camera access is granted but fails to open"** (Cam, in Chrome
+   on Windows; it works on the Mac). camera_web lists cameras by opening
+   each one, and fails as a whole when one won't start, which on Windows
+   is common (an infrared Windows Hello camera, a virtual camera, a webcam
+   another app holds); Cam then showed the error, and Flip camera hid
+   with it. Now the web's list leaves out cameras that don't start
+   (`listCameras`), infrared ones go last, Cam and Scan open the next
+   camera when one fails, and the error for one that won't start says
+   another app may be using it, with **Try again** and Flip camera. See
+   [Cam](cam.md#a-camera-that-wont-start).
 
 2. **"Change the keyboard shortcuts in recording: when . is pressed,
    start a new take and delete the previous one (keep only the latest),

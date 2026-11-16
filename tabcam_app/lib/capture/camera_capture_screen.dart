@@ -4,6 +4,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
 import '../l10n/language.dart';
+import 'camera_list.dart';
 import '../screens/messages.dart';
 
 /// What [CameraCaptureScreen] returns: the pages taken (empty when
@@ -21,7 +22,7 @@ class CameraCaptureResult {
 /// preview and a shutter, several pages in a row, then Done. Pages are
 /// kept as taken, uncropped.
 class CameraCaptureScreen extends StatefulWidget {
-  const CameraCaptureScreen({super.key, this.cameras = availableCameras});
+  const CameraCaptureScreen({super.key, this.cameras = listCameras});
 
   /// The cameras there are; tests pass their own.
   final Future<List<CameraDescription>> Function() cameras;
@@ -57,13 +58,24 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen> {
         (c) => c.lensDirection == CameraLensDirection.back,
       );
       _cameras = cameras;
-      await _open(back < 0 ? 0 : back);
+      // One that won't open (another app holds it, an infrared one) gives
+      // way to the next; if none does, the first one's error shows.
+      final first = back < 0 ? 0 : back;
+      String? error;
+      for (var i = 0; i < cameras.length; i++) {
+        if (await _open((first + i) % cameras.length)) return;
+        if (!mounted) return;
+        error ??= _error;
+        if (_error == appL10n.eventCameraNotAllowed) break;
+      }
+      if (error != null) setState(() => _error = error);
     } on Object catch (e) {
       if (mounted) setState(() => _error = _describe(e));
     }
   }
 
-  Future<void> _open(int index) async {
+  /// Opens camera [index] of [_cameras]: false when it didn't.
+  Future<bool> _open(int index) async {
     final old = _controller;
     setState(() {
       _controller = null;
@@ -79,21 +91,24 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen> {
     try {
       await controller.initialize();
     } on Object catch (e) {
+      debugPrint('TabCam: scan: camera ${_cameras[index].name} failed: $e');
       await controller.dispose();
       if (mounted) setState(() => _error = _describe(e));
-      return;
+      return false;
     }
     if (!mounted) {
       await controller.dispose();
-      return;
+      return false;
     }
     setState(() => _controller = controller);
+    return true;
   }
 
   static String _describe(Object e) => switch (e) {
     CameraException(:final code)
         when code.contains('ermission') || code.contains('ccess') =>
       appL10n.eventCameraNotAllowed,
+    _ when cameraNotReadable(e) => appL10n.camNotReadable,
     CameraException(:final description?) => appL10n.eventCameraFailed(
       description,
     ),
@@ -170,7 +185,8 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen> {
             count == 0 ? l10n.eventScanTitle : l10n.eventPageCount(count),
           ),
           actions: [
-            if (_cameras.length > 1 && controller != null)
+            // Also when the camera failed: another may open.
+            if (_cameras.length > 1 && (controller != null || _error != null))
               IconButton(
                 tooltip: l10n.eventFlipCamera,
                 icon: const Icon(Icons.cameraswitch),
@@ -191,6 +207,10 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen> {
                 child: switch ((_error, controller)) {
                   (final error?, _) => _NoCamera(
                     message: error,
+                    onRetry: () {
+                      setState(() => _error = null);
+                      _start();
+                    },
                     onChoose: () => Navigator.pop(
                       context,
                       const CameraCaptureResult([], chooseInstead: true),
@@ -280,10 +300,17 @@ class _Shutter extends StatelessWidget {
 
 /// Why there's no camera, and photos instead.
 class _NoCamera extends StatelessWidget {
-  const _NoCamera({required this.message, required this.onChoose});
+  const _NoCamera({
+    required this.message,
+    required this.onChoose,
+    required this.onRetry,
+  });
 
   final String message;
   final VoidCallback onChoose;
+
+  /// Try again: the camera may open now (another app let go of it).
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -303,10 +330,22 @@ class _NoCamera extends StatelessWidget {
           style: const TextStyle(color: Colors.white),
         ),
         const SizedBox(height: 16),
-        FilledButton.icon(
-          onPressed: onChoose,
-          icon: const Icon(Icons.photo_library_outlined),
-          label: Text(context.l10n.eventChoosePhotos),
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            OutlinedButton(
+              key: const Key('scan-try-again'),
+              onPressed: onRetry,
+              child: Text(context.l10n.camTryAgain),
+            ),
+            FilledButton.icon(
+              onPressed: onChoose,
+              icon: const Icon(Icons.photo_library_outlined),
+              label: Text(context.l10n.eventChoosePhotos),
+            ),
+          ],
         ),
       ],
     ),

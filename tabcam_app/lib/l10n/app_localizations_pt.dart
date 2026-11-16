@@ -2398,4 +2398,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get deleteUndo => 'Desfazer';
+
+  @override
+  String get camNotReadable =>
+      'A câmera não liga: outro app pode estar usando (Teams, Zoom, o app Câmera). Feche-o e tente de novo, ou troque de câmera.';
+
+  @override
+  String get camTryAgain => 'Tentar de novo';
 }

@@ -2357,4 +2357,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteUndo => 'Undo';
+
+  @override
+  String get camNotReadable =>
+      'The camera won\'t start: another app may be using it (Teams, Zoom, the Camera app). Close it and try again, or flip to another camera.';
+
+  @override
+  String get camTryAgain => 'Try again';
 }

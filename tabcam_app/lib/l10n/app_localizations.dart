@@ -3981,6 +3981,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Undo'**
   String get deleteUndo;
+
+  /// Cam and the web's Scan: the browser couldn't start the camera (NotReadableError), most often because another app holds it
+  ///
+  /// In en, this message translates to:
+  /// **'The camera won\'t start: another app may be using it (Teams, Zoom, the Camera app). Close it and try again, or flip to another camera.'**
+  String get camNotReadable;
+
+  /// Cam and the web's Scan: opens the camera again after it failed
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get camTryAgain;
 }
 
 class _AppLocalizationsDelegate
