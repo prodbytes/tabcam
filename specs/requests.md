@@ -3717,3 +3717,13 @@ spec.
    faces, the camera streams no frames for them, and on the web the
    face model loads only once they're switched on with the face icon in
    the app bar. See [Cam](cam.md#head-gestures).
+5. **"In the rendering place the watermark in bottom right."** The
+   watermark no longer rises above the tab: with a take's tab drawn it
+   was lifted above the tallest band in the output (`liftW`), which
+   with a big tab or a staff put it well up the frame. It now always
+   sits in the bottom right corner, 3% of the short side in, drawn over
+   the bands, in the editor's preview, the file screen's player and
+   Download on every platform. The planner no longer measures bands for
+   it (`RenderPlan.of` lost `bandAspect`); the layers keep `liftU` and
+   `liftW` for the renderers, at 0. See
+   [video edit](video-edit.md#layers).
