@@ -302,7 +302,28 @@ is in `event.json` and kept coming back down, for every kind of file.
 
 Page files never change once written: a rotated page is a new page (see
 [library](library.md#events)), so an event's pages are known by their names.
-Uploads use S3 Intelligent-Tiering.
+
+**Storage costs**: the bucket keeps everything in **S3
+Intelligent-Tiering**, so what isn't read gets cheaper by itself, with
+no change to how it's read. The app uploads with that storage class
+(`x-amz-storage-class: INTELLIGENT_TIERING`), and a lifecycle rule
+([user-data.yaml](../tabcam_infra/user-data.yaml)) moves anything else in
+on day 0 (what the servers write, old versions). Its automatic tiers:
+Frequent Access, then Infrequent Access after 30 days unread (about 45%
+less), then **Archive Instant Access** after 90 days unread, at Glacier
+Instant Retrieval's price (about 83% less than Standard), still read in
+milliseconds. Read again, a file moves back to Frequent Access. Objects
+under 128 KB (`event.json`, OCR results) stay in Standard, as S3 doesn't
+tier them; they cost the same either way.
+
+The opt-in **Archive Access** and **Deep Archive Access** tiers (Glacier
+Flexible Retrieval's and Deep Archive's prices) aren't turned on: an
+object there must be restored, which takes hours, before it can be read,
+and the app (sync, the file screens), the sites' CloudFront and cloud OCR
+read files straight away. They'd need a restore flow in the app first,
+for a saving of about $0.003 per GB a month over Archive Instant Access.
+Old versions expire after 30 days, sooner than Glacier's minimum storage
+time, so they don't go there either.
 
 ## When, and how
 
