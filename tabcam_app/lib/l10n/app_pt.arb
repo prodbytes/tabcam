@@ -644,5 +644,7 @@
   "trashFilesOf": "Arquivos excluídos de \"{title}\"",
   "trashDeletedOn": "Excluída em {date}",
   "deletedItem": "\"{name}\" excluído: restaure pelo Perfil até apagar de vez",
-  "deleteUndo": "Desfazer"
+  "deleteUndo": "Desfazer",
+  "camNotReadable": "A câmera não liga: outro app pode estar usando (Teams, Zoom, o app Câmera). Feche-o e tente de novo, ou troque de câmera.",
+  "camTryAgain": "Tentar de novo"
 }

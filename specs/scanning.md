@@ -39,7 +39,8 @@ scan: the camera isn't allowed. Let Tabs.cam use it in the settings."
 No document camera: **Scan** opens Tabs.cam's own camera screen
 ([lib/capture/camera_capture_screen.dart](../tabcam_app/lib/capture/camera_capture_screen.dart)),
 the device's camera through the browser (`camera`, getUserMedia; the
-browser asks for it the first time), the back camera first:
+browser asks for it the first time), the back camera first (from a list
+that leaves out cameras that won't start, [Cam](cam.md#a-camera-that-wont-start)):
 
 - a live preview, a round shutter (**Take a picture**), and the pages
   taken so far as a strip of thumbnails, several in a row, with the
@@ -49,7 +50,11 @@ browser asks for it the first time), the back camera first:
   when there are any;
 - without a camera ("No camera found.") or with it refused ("The camera
   isn't allowed: let Tabs.cam use it in the browser's site settings."), it
-  says so and offers **Choose photos instead** (the photo picker).
+  says so and offers **Choose photos instead** (the photo picker);
+- a camera that won't start (another app holds it, an infrared one)
+  gives way to the next; none starting, it says another app may be using
+  it, with **Try again** beside Choose photos instead, and Flip camera
+  stays ([Cam](cam.md#a-camera-that-wont-start)).
 
 Pages are then cropped to the page in them, as photos added by hand are
 ([Cropping photos to the page](#cropping-photos-to-the-page)); when no

@@ -20,6 +20,7 @@ import '../screens/premium_card.dart';
 import '../screens/video_page.dart';
 import 'auto_pass.dart';
 import 'backing_track.dart';
+import 'camera_list.dart';
 import 'head_gestures.dart';
 import 'level_meter.dart';
 import 'link_frame.dart';
@@ -93,7 +94,7 @@ class PlayAlongScreen extends StatefulWidget {
     super.key,
     required this.library,
     required this.eventId,
-    this.cameras = availableCameras,
+    this.cameras = listCameras,
     this.headTracking = HeadTracking.start,
     this.takeRecorder = TakeRecorder.forPlatform,
     this.linkFrame = linkFrameFor,
@@ -412,13 +413,28 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         _ownSound = ready == TakeSoundReady.ok;
         _soundRefused = ready == TakeSoundReady.refused;
       }
-      await _open(front < 0 ? 0 : front);
+      // The front camera, else the first; one that won't open (another
+      // app holds it, an infrared one) gives way to the next, and if none
+      // does, the first one's error shows.
+      final first = front < 0 ? 0 : front;
+      String? error;
+      for (var i = 0; i < cameras.length; i++) {
+        final index = (first + i) % cameras.length;
+        if (await _open(index)) return;
+        if (!mounted) return;
+        error ??= _error;
+        // Not allowed: no other camera is either.
+        if (_error == appL10n.camNotAllowed) break;
+      }
+      if (error != null) setState(() => _error = error);
     } on Object catch (e) {
       if (mounted) setState(() => _error = _describe(e));
     }
   }
 
-  Future<void> _open(int index) async {
+  /// Opens camera [index] of [_cameras]: false when it didn't (its error
+  /// shows, with Try again and, with others, Flip camera).
+  Future<bool> _open(int index) async {
     final old = _controller;
     setState(() {
       _controller = null;
@@ -443,13 +459,14 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     try {
       await controller.initialize();
     } on Object catch (e) {
+      debugPrint('TabCam: cam: camera ${_cameras[index].name} failed: $e');
       await controller.dispose();
       if (mounted) setState(() => _error = _describe(e));
-      return;
+      return false;
     }
     if (!mounted) {
       await controller.dispose();
-      return;
+      return false;
     }
     // Refused when the app asked, the microphone was allowed at the
     // camera's own prompt (else the camera wouldn't have opened): the app
@@ -463,13 +480,13 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
           TakeSoundReady.ok;
       if (!mounted) {
         await controller.dispose();
-        return;
+        return false;
       }
     }
     await _prepareSound(controller);
     if (!mounted) {
       await controller.dispose();
-      return;
+      return false;
     }
     setState(() => _controller = controller);
     _heads ??= widget.headTracking(controller, _gesture);
@@ -477,6 +494,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       ?..camera = controller
       ..active = _headsOn;
     await _stream();
+    return true;
   }
 
   /// Gets the take's sound ready before any take, so starting one changes
@@ -693,6 +711,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     CameraException(:final code)
         when code.contains('ermission') || code.contains('ccess') =>
       appL10n.camNotAllowed,
+    _ when cameraNotReadable(e) => appL10n.camNotReadable,
     CameraException(:final description?) => appL10n.eventCameraFailed(
       description,
     ),
@@ -1370,6 +1389,18 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.white),
             ),
+            // Once the other app lets go of the camera, say.
+            if (widget.gate == null) ...[
+              const SizedBox(height: 16),
+              OutlinedButton(
+                key: const Key('cam-try-again'),
+                onPressed: () {
+                  setState(() => _error = null);
+                  _start();
+                },
+                child: Text(context.l10n.camTryAgain),
+              ),
+            ],
           ],
         ),
       ),
@@ -1525,7 +1556,8 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
                     onPressed: _toggleHeads,
                   ),
                 ),
-              if (_cameras.length > 1 && controller != null)
+              // Also when the camera failed: another may open.
+              if (_cameras.length > 1 && (controller != null || _error != null))
                 IconButton(
                   tooltip: l10n.eventFlipCamera,
                   icon: const Icon(Icons.cameraswitch),

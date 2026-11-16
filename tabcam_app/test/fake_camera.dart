@@ -19,6 +19,10 @@ class FakeCameraPlatform extends CameraPlatform
   /// How many times a recording was prepared for (iOS).
   int prepared = 0;
 
+  /// Cameras (by name) that won't start, as the browser's NotReadableError
+  /// (another app holds them).
+  final Set<String> unreadable = {};
+
   @override
   Future<int> createCameraWithSettings(
     CameraDescription cameraDescription,
@@ -37,6 +41,13 @@ class FakeCameraPlatform extends CameraPlatform
     int cameraId, {
     ImageFormatGroup imageFormatGroup = ImageFormatGroup.unknown,
   }) async {
+    if (unreadable.contains(opened[cameraId - 1])) {
+      throw CameraException(
+        'cameraNotReadable',
+        'The camera is not readable due to a hardware error that prevented '
+            'access to the device.',
+      );
+    }
     scheduleMicrotask(
       () => _initialized.add(
         CameraInitializedEvent(

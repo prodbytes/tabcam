@@ -17,6 +17,7 @@ import 'package:tabcam_app/capture/level_meter.dart';
 import 'package:tabcam_app/capture/link_frame.dart';
 import 'package:tabcam_app/capture/media.dart';
 import 'package:tabcam_app/capture/backing_track.dart';
+import 'package:tabcam_app/capture/camera_list.dart';
 import 'package:tabcam_app/capture/play_along_screen.dart';
 import 'package:tabcam_app/capture/play_along_sidebar.dart';
 import 'package:tabcam_app/capture/auto_pass.dart';
@@ -283,6 +284,91 @@ void main() {
 
   String shown(WidgetTester tester) =>
       tester.widget<Text>(find.byKey(const Key('neckline'))).data!;
+
+  group("a camera that won't start", () {
+    const webcam = CameraDescription(
+      name: 'USB Webcam',
+      lensDirection: CameraLensDirection.external,
+      sensorOrientation: 0,
+    );
+    const infrared = CameraDescription(
+      name: 'Integrated IR Camera',
+      lensDirection: CameraLensDirection.external,
+      sensorOrientation: 0,
+    );
+
+    test('infrared cameras go last; NotReadable is told apart', () {
+      expect(orderCameras([infrared, webcam, _front]), [
+        webcam,
+        _front,
+        infrared,
+      ]);
+      expect(looksInfrared('Integrated IR Camera'), isTrue);
+      expect(looksInfrared('Windows Hello Infrared'), isTrue);
+      expect(looksInfrared('Logitech BRIO'), isFalse);
+      expect(looksInfrared('Iriun Webcam'), isFalse);
+      expect(
+        cameraNotReadable(CameraException('cameraNotReadable', 'x')),
+        isTrue,
+      );
+      expect(
+        cameraNotReadable(CameraException('CameraAccessDenied', 'x')),
+        isFalse,
+      );
+      expect(cameraNotReadable(StateError('x')), isFalse);
+    });
+
+    testWidgets('Cam opens the next camera when the first won\'t start', (
+      tester,
+    ) async {
+      final (library, id) = await capture(tester, tab: _tab);
+      camera.unreadable.add(infrared.name);
+      await tester.pumpWidget(
+        app(
+          PlayAlongScreen(
+            library: library,
+            eventId: id,
+            cameras: () async => [infrared, webcam],
+          ),
+        ),
+      );
+      await frames(tester);
+      expect(camera.opened, [infrared.name, webcam.name]);
+      expect(find.byKey(const Key('preview')), findsOneWidget);
+      expect(find.byKey(const Key('cam-try-again')), findsNothing);
+    });
+
+    testWidgets('none starting: it says another app may hold it, with Try '
+        'again and Flip camera; Try again opens it once it\'s free', (
+      tester,
+    ) async {
+      final (library, id) = await capture(tester, tab: _tab);
+      camera.unreadable.addAll([webcam.name, _back.name]);
+      await tester.pumpWidget(
+        app(
+          PlayAlongScreen(
+            library: library,
+            eventId: id,
+            cameras: () async => [webcam, _back],
+          ),
+        ),
+      );
+      await frames(tester);
+      expect(find.byKey(const Key('preview')), findsNothing);
+      expect(
+        find.textContaining('another app may be using it'),
+        findsOneWidget,
+      );
+      expect(find.byTooltip('Flip camera'), findsOneWidget);
+
+      // The other app lets go of it.
+      camera.unreadable.clear();
+      await tester.tap(find.byKey(const Key('cam-try-again')));
+      await frames(tester);
+      expect(find.byKey(const Key('preview')), findsOneWidget);
+      expect(camera.opened.last, webcam.name);
+    });
+  });
 
   testWidgets('Cam opens the front camera with the tab, one neckline at a '
       'time; keys move along it', (tester) async {

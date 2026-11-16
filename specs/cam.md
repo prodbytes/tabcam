@@ -21,6 +21,8 @@ its **Not now** leaving. With Premium it opens the camera view
   stopwatch icon) after it opens the [metronome](metronome.md)'s sidebar
   the same way. Without a
   camera, or one that isn't allowed, the view says so.
+  [A camera that won't start](#a-camera-that-wont-start) gives way to the
+  next one.
 - **The tab**, along the bottom, one **neckline** at a time: a staff
   (a run of string lines) with the lines right above it, such as chord
   names and a section name
@@ -964,3 +966,40 @@ prompts, for the camera and then the microphone, when Cam opens; with
 the microphone refused, the preview shows but Rec records nothing). On
 the web a take is WebM (MP4 on Safari), on Android MP4 (H.264), on iOS
 MP4 (H.264; an HEVC take made H.264 as it's saved).
+
+## A camera that won't start
+
+A browser can be allowed the camera and still fail to start one: Chrome's
+NotReadableError, "Could not start video source". On Windows that's
+common, where a webcam another app has open (Teams, Zoom, the Camera
+app) is locked to it, and laptops list cameras a browser can't use (the
+infrared Windows Hello camera, "Integrated IR Camera"; a virtual camera
+whose app isn't running).
+
+- **The list** ([lib/capture/camera_list.dart](../tabcam_app/lib/capture/camera_list.dart),
+  `listCameras`, Cam's and the web's [Scan](scanning.md)'s): camera_web
+  opens every camera to learn which way it faces, and fails as a whole
+  when one won't start. Then the app lists them itself the same way,
+  leaving out those that don't start, and records each for the plugin
+  to open (`CameraPlugin.camerasMetadata`, which the plugin fills only
+  from its own list). Only when none starts does the error stand.
+  Cameras whose name says infrared (`IR`, "infrared") come last.
+- **Opening**: Cam opens the front camera, else the first; one that
+  fails gives way to the next, until one opens (not after "isn't
+  allowed": none would be). None opening, the first one's error shows.
+- **The error** for a camera that won't start says so: "The camera won't
+  start: another app may be using it (Teams, Zoom, the Camera app). Close
+  it and try again, or flip to another camera." It has **Try again**,
+  which lists and opens the cameras again, and **Flip camera** stays in
+  the app bar (with more than one) to try another. Scan on the web says
+  the same, with Try again beside Choose photos instead.
+
+Verified: widget tests (the next camera opens when the first won't start;
+none starting, the message, Try again opening it once free, and Flip
+camera; infrared ones last), and in Chromium (Playwright, a release web
+build of Cam alone, the fake camera, `getUserMedia` patched to fail as
+Windows does): an "Integrated IR Camera" listed first that won't start
+fails camera_web's list, and Cam then opens the other camera, with its
+microphone; every camera busy, the message and Try again show, and Try
+again opens the camera once it's free. Not yet on a Windows PC.
+

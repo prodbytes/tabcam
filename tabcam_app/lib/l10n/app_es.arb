@@ -644,5 +644,7 @@
   "trashFilesOf": "Archivos eliminados de \"{title}\"",
   "trashDeletedOn": "Eliminada el {date}",
   "deletedItem": "\"{name}\" eliminado: restáuralo desde Perfil hasta que lo borres para siempre",
-  "deleteUndo": "Deshacer"
+  "deleteUndo": "Deshacer",
+  "camNotReadable": "La cámara no arranca: otra app puede estar usándola (Teams, Zoom, la app Cámara). Ciérrala y vuelve a intentarlo, o cambia de cámara.",
+  "camTryAgain": "Reintentar"
 }

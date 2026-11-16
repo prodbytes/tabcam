@@ -53,6 +53,10 @@ dependencies:
   web: ^1.1.1
   url_launcher: ^6.3.2
   camera: ^0.12.1
+  # The web's camera list, made tolerant of a camera that won't start
+  # (lib/capture/camera_list_web.dart).
+  camera_platform_interface: ^2.14.0
+  camera_web: ^0.3.5+6
   archive: ^4.4.0
   sign_in_with_apple: 8.2.0
   flutter_localizations:
@@ -76,7 +80,6 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
-  camera_platform_interface: ^2.14.0
   plugin_platform_interface: ^2.1.8
   url_launcher_platform_interface: ^2.3.2
   video_player_platform_interface: ^6.9.0
