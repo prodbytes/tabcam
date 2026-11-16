@@ -144,8 +144,7 @@ LayerPicture watermarkPicture(String text, {double short = layerShort}) {
 }
 
 /// How high [band] is, as a fraction of its width (the frame's):
-/// measured once per look ([BandAspect]), so the watermark sits right
-/// above the tallest band.
+/// measured once per look.
 double bandAspect(BandLook band) {
   final known = _aspects[band];
   if (known != null) return known;
