@@ -78,6 +78,9 @@ import kotlin.math.min
  *   0 to 1 (full scale); null when it isn't being read. Between takes a
  *   [Monitor] reads it (the microphone records, nothing kept); in a take,
  *   the take's own reader ([Session]).
+ * - `gain` (`gain`: 1 as it comes, 2 twice as loud; kept within ±24 dB):
+ *   the input volume set in Cam, which the takes record and the meter
+ *   shows from the next read on ([TakeSoundMath.applyGain]).
  *
  * Threads: calls arrive on the main thread; the microphone is opened,
  * started and stopped, and the sound put into the take, on [control], one
@@ -94,12 +97,25 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
     // The loudest sample since the meter last asked ([TakeSoundMath.peak]),
     // noted by the reading thread, the monitor's or the take's.
     private val peak = AtomicInteger(0)
+    // The input volume set in Cam ([TakeSoundMath.applyGain]): what the
+    // takes record and the meter shows (the readers read it as they go).
+    private val gain = Gain()
     private val levelChannel = MethodChannel(messenger, LEVEL_CHANNEL).also {
         it.setMethodCallHandler { call, result ->
-            if (call.method != "peak") return@setMethodCallHandler result.notImplemented()
-            val reading = monitor?.reading == true || session != null
-            val loudest = peak.getAndSet(0)
-            result.success(if (reading) loudest.toDouble() / TakeSoundMath.FULL_SCALE else null)
+            when (call.method) {
+                "peak" -> {
+                    val reading = monitor?.reading == true || session != null
+                    val loudest = peak.getAndSet(0)
+                    result.success(
+                        if (reading) loudest.toDouble() / TakeSoundMath.FULL_SCALE else null,
+                    )
+                }
+                "gain" -> {
+                    gain.value = TakeSoundMath.gainOf(call.argument<Number>("gain")?.toDouble())
+                    result.success(null)
+                }
+                else -> result.notImplemented()
+            }
         }
     }
 
@@ -288,7 +304,7 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
         quiet()
         val m = mic ?: openMic().also { mic = it }
         val file = File(context.cacheDir, "take-sound-${System.currentTimeMillis()}.m4a")
-        val s = Session(m, file, peak)
+        val s = Session(m, file, peak, gain)
         try {
             s.start()
         } catch (e: Exception) {
@@ -401,7 +417,7 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
     private fun listen() {
         if (session != null || monitor != null) return
         val m = mic ?: return
-        monitor = Monitor(m.record, m.format, peak).also { it.start() }
+        monitor = Monitor(m.record, m.format, peak, gain).also { it.start() }
     }
 
     /** The meter's reading between takes stops (control thread). */
@@ -548,6 +564,16 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
     }
 
     /**
+     * The input volume set in Cam: what the samples read are multiplied
+     * by (1: as they come). Set from the main thread, read by the reading
+     * threads.
+     */
+    private class Gain {
+        @Volatile
+        var value = 1f
+    }
+
+    /**
      * Reads the open microphone between takes, for Cam's level meter: it
      * records (as it then is when a take starts), each 20 ms read's
      * loudest sample noted in [peak] and the sound let go. Started when
@@ -558,6 +584,7 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
         private val record: AudioRecord,
         format: TakeSoundMath.Format,
         private val peak: AtomicInteger,
+        private val gain: Gain,
     ) {
         @Volatile
         private var running = true
@@ -586,7 +613,10 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
                         Log.i(TAG, "take sound: no level between takes (read: $n)")
                         break
                     }
-                    if (n > 0) noteLoudest(peak, TakeSoundMath.peak(buffer, n))
+                    if (n > 0) {
+                        TakeSoundMath.applyGain(buffer, n, gain.value)
+                        noteLoudest(peak, TakeSoundMath.peak(buffer, n))
+                    }
                 }
             } catch (e: Exception) {
                 Log.i(TAG, "take sound: no level between takes: ${e.message}")
@@ -668,7 +698,12 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
      * at a time, as the camera's own sound was (CameraX times each of
      * its buffers by the timestamps).
      */
-    private class Session(private val mic: Mic, val file: File, private val peak: AtomicInteger) {
+    private class Session(
+        private val mic: Mic,
+        val file: File,
+        private val peak: AtomicInteger,
+        private val gain: Gain,
+    ) {
         val source = mic.source
         val format = mic.format
         private val record = mic.record
@@ -818,6 +853,8 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
                     }
                     chunk.length = n
                     chunk.drift = NO_DRIFT
+                    // The input volume set in Cam, before anything reads it.
+                    TakeSoundMath.applyGain(chunk.bytes, n, gain.value)
                     // For the meter: a pass over the 20 ms just read.
                     noteLoudest(peak, TakeSoundMath.peak(chunk.bytes, n))
                     // When the first frame was captured: the system's

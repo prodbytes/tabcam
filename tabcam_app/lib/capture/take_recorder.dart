@@ -50,6 +50,12 @@ abstract class TakeRecorder {
   /// for Cam's level meter; null when it isn't open.
   Future<double?> peak();
 
+  /// The input volume set in Cam by its level meter ([gain]: 1 as it
+  /// comes, 2 twice as loud): what the next takes record and [peak] reads,
+  /// from now on. Not while recording: a take keeps the volume it started
+  /// with.
+  void setGain(double gain);
+
   /// The browser's; null elsewhere.
   static TakeRecorder? forPlatform() => webTakeRecorder();
 

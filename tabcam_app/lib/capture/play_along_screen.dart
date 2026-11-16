@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
@@ -246,6 +247,16 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   /// default. One not connected records from the default.
   String? _mic;
 
+  /// The input volume, set by tapping the level meter ([_gainMenu]), in
+  /// dB (0: as the microphone gives it), from -[maxGainDb] to
+  /// +[maxGainDb]; kept in Cam's settings.
+  int _gainDb = 0;
+
+  static const maxGainDb = 24;
+
+  /// [_gainDb] as a factor (1: as it comes).
+  double get _gain => math.pow(10, _gainDb / 20).toDouble();
+
   /// A microphone being opened from Rec's menu: Rec's menu waits.
   bool _micBusy = false;
 
@@ -327,6 +338,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       final map = jsonDecode(json);
       if (map is! Map) return;
       if (map['mic'] case final String mic when mic.isNotEmpty) _mic = mic;
+      if (map['gainDb'] case final num db when db.isFinite) {
+        _gainDb = db.round().clamp(-maxGainDb, maxGainDb);
+      }
       if (map['autoPass'] == false && mounted) {
         setState(() => _autoPassOn = false);
         _trackChanged();
@@ -345,12 +359,17 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     await _saveSettings();
   }
 
-  /// Keeps Cam's settings: Auto-pass, and the microphone chosen.
+  /// Keeps Cam's settings: Auto-pass, the microphone chosen and the input
+  /// volume.
   Future<void> _saveSettings() async {
     try {
       await widget.library.writeMeta(
         metaName,
-        jsonEncode({'autoPass': _autoPassOn, 'mic': ?_mic}),
+        jsonEncode({
+          'autoPass': _autoPassOn,
+          'mic': ?_mic,
+          if (_gainDb != 0) 'gainDb': _gainDb,
+        }),
       );
     } on Object catch (e) {
       debugPrint('TabCam: cam settings not saved: $e');
@@ -416,6 +435,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         if (!mounted) return;
         _ownSound = ready == TakeSoundReady.ok;
         _soundRefused = ready == TakeSoundReady.refused;
+        // The input volume set (the app's microphone keeps the last one).
+        if (_ownSound) await TakeSound.setGain(_gain);
+        if (!mounted) return;
       }
       // The front camera, else the first; one that won't open (another
       // app holds it, an infrared one) gives way to the next, and if none
@@ -519,6 +541,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       if (_mic case final mic?) await TakeAudio.choose(mic);
     }
     if (_recorder case final recorder?) {
+      _applyGain();
       unawaited(
         () async {
           await recorder.useMicrophone(_mic);
@@ -547,6 +570,78 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     if (_recorder case final recorder?) return recorder.peak;
     if (_ownSound) return TakeSound.peak;
     return null;
+  }
+
+  /// The input volume can be set (the level meter tapped): where the meter
+  /// shows, between takes (a take keeps the volume it started with).
+  bool get _canSetGain =>
+      _level != null && _canRec && !_recording && !_starting;
+
+  /// Takes record at the input volume set ([_gainDb]) from now on, and
+  /// the level meter shows it.
+  void _applyGain() {
+    if (_recorder case final recorder?) {
+      try {
+        recorder.setGain(_gain);
+      } on Object catch (e) {
+        debugPrint('TabCam: cam: input volume: $e');
+      }
+    }
+    if (_ownSound) unawaited(TakeSound.setGain(_gain));
+  }
+
+  /// [db] as the level meter's menu shows it: +6, 0, −6.
+  static String _dbText(int db) => switch (db) {
+    > 0 => '+$db',
+    < 0 => '\u2212${-db}',
+    _ => '0',
+  };
+
+  /// Where a menu opens by [anchor].
+  RelativeRect _menuPosition(BuildContext anchor) {
+    final box = anchor.findRenderObject()! as RenderBox;
+    final overlay = Overlay.of(anchor).context.findRenderObject()! as RenderBox;
+    return RelativeRect.fromRect(
+      Rect.fromPoints(
+        box.localToGlobal(Offset.zero, ancestor: overlay),
+        box.localToGlobal(box.size.bottomRight(Offset.zero), ancestor: overlay),
+      ),
+      Offset.zero & overlay.size,
+    );
+  }
+
+  /// The level meter's menu (the meter tapped, [anchor]): the input
+  /// volume, in dB, and a slider to set it, up louder, down quieter, from
+  /// -[maxGainDb] to +[maxGainDb] dB; Reset puts it back to 0 dB (as the
+  /// microphone gives it). It changes as the slider moves (the meter
+  /// shows it at once), and is kept in Cam's settings.
+  Future<void> _gainMenu(BuildContext anchor) async {
+    if (!_canSetGain) return;
+    final l10n = context.l10n;
+    final was = _gainDb;
+    await showMenu<void>(
+      context: context,
+      position: _menuPosition(anchor),
+      items: [
+        PopupMenuItem(enabled: false, height: 32, child: Text(l10n.camMicGain)),
+        _GainEntry(
+          db: _gainDb,
+          max: maxGainDb,
+          label: (db) => l10n.camMicGainDb(_dbText(db)),
+          reset: l10n.camMicGainReset,
+          onChanged: _setGainDb,
+        ),
+      ],
+    );
+    _focus.requestFocus();
+    if (mounted && _gainDb != was) unawaited(_saveSettings());
+  }
+
+  /// The input volume is [db] dB from now on.
+  void _setGainDb(int db) {
+    if (!mounted || db == _gainDb || !_canSetGain) return;
+    setState(() => _gainDb = db);
+    _applyGain();
   }
 
   /// Rec's menu can open: not while a take starts, records, is saved or
@@ -589,15 +684,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     final mics = await _microphones();
     if (!mounted || !anchor.mounted || !_canChooseMic) return;
     final l10n = context.l10n;
-    final box = anchor.findRenderObject()! as RenderBox;
-    final overlay = Overlay.of(anchor).context.findRenderObject()! as RenderBox;
-    final position = RelativeRect.fromRect(
-      Rect.fromPoints(
-        box.localToGlobal(Offset.zero, ancestor: overlay),
-        box.localToGlobal(box.size.bottomRight(Offset.zero), ancestor: overlay),
-      ),
-      Offset.zero & overlay.size,
-    );
+    final position = _menuPosition(anchor);
     final chosen = mics.any((m) => m.id == _mic) ? _mic : null;
     final picked = await showMenu<({String? id})>(
       context: context,
@@ -1693,10 +1780,25 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
                         )
                       : null,
                   meter: switch (_level) {
-                    final read? => LevelMeter(
-                      key: const Key('cam-rec-level'),
-                      read: read,
-                      tooltip: l10n.camMicLevel,
+                    // Tapped, the input volume's menu.
+                    final read? => Builder(
+                      builder: (anchor) => InkResponse(
+                        key: const Key('cam-rec-gain'),
+                        radius: 18,
+                        onTap: _canSetGain ? () => _gainMenu(anchor) : null,
+                        child: Padding(
+                          // As tall as Rec, and the arrow's width.
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          child: LevelMeter(
+                            key: const Key('cam-rec-level'),
+                            read: read,
+                            tooltip: l10n.camMicLevel,
+                          ),
+                        ),
+                      ),
                     ),
                     null => null,
                   },
@@ -1745,6 +1847,81 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       ],
     );
   }
+}
+
+/// The input volume in the level meter's menu ([_PlayAlongScreenState
+/// ._gainMenu]): what it is ([label] of the dB), over a slider from
+/// -[max] to +[max] dB, up louder, and [reset] to 0 dB. Each change goes
+/// to [onChanged] as the slider moves.
+class _GainEntry extends PopupMenuEntry<Never> {
+  const _GainEntry({
+    required this.db,
+    required this.max,
+    required this.label,
+    required this.reset,
+    required this.onChanged,
+  });
+
+  final int db;
+  final int max;
+  final String Function(int db) label;
+  final String reset;
+  final ValueChanged<int> onChanged;
+
+  @override
+  double get height => 240;
+
+  @override
+  bool represents(Never? value) => false;
+
+  @override
+  State<_GainEntry> createState() => _GainEntryState();
+}
+
+class _GainEntryState extends State<_GainEntry> {
+  late int _db = widget.db;
+
+  void _set(int db) {
+    if (db == _db) return;
+    setState(() => _db = db);
+    widget.onChanged(db);
+  }
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 12),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          widget.label(_db),
+          key: const Key('cam-gain-value'),
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        SizedBox(
+          height: 160,
+          // Upright: up, louder.
+          child: RotatedBox(
+            quarterTurns: 3,
+            child: Slider(
+              key: const Key('cam-gain'),
+              value: _db.toDouble(),
+              min: -widget.max.toDouble(),
+              max: widget.max.toDouble(),
+              divisions: widget.max * 2,
+              semanticFormatterCallback: (v) => widget.label(v.round()),
+              onChanged: (v) => _set(v.round()),
+            ),
+          ),
+        ),
+        TextButton(
+          key: const Key('cam-gain-reset'),
+          onPressed: _db == 0 ? null : () => _set(0),
+          child: Text(widget.reset),
+        ),
+      ],
+    ),
+  );
 }
 
 /// Rec, Play, Tab or Auto-pass: an icon over its label, on black; Rec

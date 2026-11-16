@@ -3727,3 +3727,15 @@ spec.
    it (`RenderPlan.of` lost `bandAspect`); the layers keep `liftU` and
    `liftW` for the renderers, at 0. See
    [video edit](video-edit.md#layers).
+6. **"In the camera view if the user clicks the volume meter let the
+   input volume be adjusted up or down."** Tapping Cam's level meter
+   beside Rec now opens an Input volume menu: the volume in dB, an
+   upright slider from −24 to +24 dB (up louder, down quieter) and
+   Reset (back to 0 dB, as the microphone gives it). It applies at once,
+   to the meter and the next takes, and is kept in Cam's settings
+   (`gainDb`). On the web a Web Audio gain node sits before the meter's
+   analyser, and a take recorded at anything but 0 dB records through
+   it; on Android the app's microphone multiplies its samples, clipped
+   at full scale (channel `tabcam/take_level`, method `gain`). Between
+   takes only: the meter can't be tapped while a take records. iOS has
+   no meter, so no input volume. See [Cam](cam.md#input-volume).
