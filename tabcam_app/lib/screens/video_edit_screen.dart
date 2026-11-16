@@ -586,7 +586,6 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           title: _captureTitle,
           watermark: watermark,
           premium: _unlocked,
-          bandAspect: bandAspect,
           preview: true,
           frame: frame,
         ).layers)
@@ -1252,7 +1251,6 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         title: _captureTitle,
         watermark: _watermarkText(l10n ?? context.l10n),
         premium: _unlocked,
-        bandAspect: bandAspect,
         frame: _frame,
       );
 

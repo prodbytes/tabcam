@@ -527,8 +527,8 @@ What's drawn over the picture is a list of **layers** in the plan
 reached over a `fadeIn` from its start; 0 outside its time) and where:
 by an **anchor**, `topLeft` or `bottomRight` (a corner, `heightU` high,
 `marginU` in from it, the bottom right's `liftU` higher, and `liftW`
-higher still, a fraction of the frame's width: above the tab's tallest
-band, which is as high as the frame is wide makes it) or
+higher still, a fraction of the frame's width; no layer is lifted
+today, both 0) or
 `bottomFull` (along the whole bottom, as wide as the frame, as high as
 its image makes it). Sizes are **fractions of the frame's short side**,
 so a layer is the same on a portrait and a landscape video, and no one
@@ -609,10 +609,9 @@ on any other video (in the app's language: "Grabado con tabs.cam" /
 "Hecho con tabs.cam", "Gravado com tabs.cam" / "Feito com tabs.cam"); one
 layer, `mark`, at the **bottom right**, 3% of the short side in, the
 whole video through, one line of Roboto at 2.2% of the short side,
-white at 60% with a soft shadow. With the tab drawn, it's lifted above
-the **tallest band in this output** (`liftW`: that band's height over
-its width, measured as it's drawn in its style, `bandAspect`), so it
-doesn't jump as the bands change, and rises as the tab grows. It's left out only when the edit turns it off
+white at 60% with a soft shadow. It stays in that corner with the tab
+drawn too, whatever the tab's size: over the bands (drawn after them),
+never lifted above them. It's left out only when the edit turns it off
 (`watermark: false`) **and** the one downloading has Premium now
 (`watermarkUnlocked`: the service's answer, or its last one for the
 same account kept on the device, a week at most, offline; a build
