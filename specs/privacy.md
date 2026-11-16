@@ -1,6 +1,6 @@
 # Privacy
 
-Tabs.cam's privacy policy, for the stores' listings and anyone using the
+tabs.cam's privacy policy, for the stores' listings and anyone using the
 app, and the iOS privacy declarations.
 
 ## The policy page
@@ -18,7 +18,7 @@ app, and the iOS privacy declarations.
   Profile tab's About ([navigation](navigation.md#profile)), which opens
   the production URL in the browser (`url_launcher`, external) on every
   build.
-- **Look**: a single static page with inline CSS, Tabs.cam's amber on warm
+- **Look**: a single static page with inline CSS, tabs.cam's amber on warm
   white, dark in dark mode; readable at phone width.
 - **Who**: Julio Faerman, an individual developer (the personal store
   accounts' seller). **Contact**: privacy@nu01.com (a `mailto:` link).
@@ -41,14 +41,14 @@ app, and the iOS privacy declarations.
 | Premium's Fix sends the song's name and the tab's text (no image) to Anthropic's Claude, which searches the web | [auto-correct](autocorrect.md#checking-it-online-premium) |
 | CloudFront delivers users' files from its US, Canada, Europe and Israel locations (PriceClass_100), cached as each file says (pages up to a year, details and transcriptions not at all), to hour-long signed URLs only; deleting an account invalidates its folder. The apps keep up to 512 MB of downloaded files in a cache, emptied on sign-out | [caching users' files](cdn.md) |
 | AWS (S3, DynamoDB, KMS, Cognito, Lambda), us-east-1, encrypted at rest, HTTPS only; Google, Apple and Cognito's user pool (its emails through Cognito, later SES) for sign-in | [tabcam_infra/](../tabcam_infra): SSE-S3, TLS-only bucket policy; [encryption](encryption.md) |
-| Substack and Stripe for subscriptions; no payment details reach Tabs.cam | [cloud OCR](cloud-ocr.md#who-is-premium) |
-| Web: session (name, email, photo URL, ID token) in `localStorage` until sign-out; iOS: the Apple session in `apple_sign_in.json` until sign-out or expiry; email sign-in: the session in `email_sign_in.json` (web: `localStorage`) until sign-out or the refresh token's 30 days; Tabs.cam's session (name, email, photo URL, its refresh and ID tokens) in `session.json` (web: `localStorage`) until sign-out, a week unused or 90 days, and on the server its refresh token's hash, the sign-in's subject and email, until then | [cloud sync](cloud-sync.md#signing-in), [sign-in sessions](sessions.md) |
+| Substack and Stripe for subscriptions; no payment details reach tabs.cam | [cloud OCR](cloud-ocr.md#who-is-premium) |
+| Web: session (name, email, photo URL, ID token) in `localStorage` until sign-out; iOS: the Apple session in `apple_sign_in.json` until sign-out or expiry; email sign-in: the session in `email_sign_in.json` (web: `localStorage`) until sign-out or the refresh token's 30 days; tabs.cam's session (name, email, photo URL, its refresh and ID tokens) in `session.json` (web: `localStorage`) until sign-out, a week unused or 90 days, and on the server its refresh token's hash, the sign-in's subject and email, until then | [cloud sync](cloud-sync.md#signing-in), [sign-in sessions](sessions.md) |
 | Share copies the capture's link, whose key lets anyone holding it open the capture read only, signed out too, live; it can't be turned off yet (deleting the capture or the account ends it); chat apps' previews show title, artist and contents. No PDF or text export | [sharing](sharing.md), [shared captures](shared-captures.md) |
 | Deleted files kept 30 days (bucket versions); DynamoDB point-in-time recovery 35 days; Lambda logs 30 days, no capture content, OCR logs without emails; the share API logs a line per request for 30 days (route, status, times, the provider and a hash of the account; API Gateway's access log the same, with no IP addresses) | `user-data.yaml`, `share-api.yaml`, `ocr.yaml`, [cloud OCR](cloud-ocr.md#troubleshooting-log) |
 | **Delete account** in the Profile tab (the web app's too) deletes the folder, the device's copies, grants, links, the profile and the Premium record; for Apple sign-ins it revokes Apple's tokens, for email sign-ins it deletes the address from the user pool; Premium isn't cancelled | [cloud sync](cloud-sync.md#deleting-the-account), [revoking Apple's tokens](cloud-sync.md#revoking-apples-tokens) |
-| The dictionary's searches that aren't a chord or a scale go from the device to YouTube's search API (Google), with the build's API key and nothing about the user, two seconds after typing stops; Tabs.cam's servers never see them. The policy names YouTube and links YouTube's terms and Google's privacy policy, as the API's terms require | [dictionary](dictionary.md), `youtube_search.dart`; Play: in-app search history, Apple: search history, not linked ([data safety](../tabcam_store/data-safety.md)) |
-| Links (YouTube's too) open outside Tabs.cam, in the browser or the app for them, under that site's own policy; the one exception is a link chosen to play along with in Cam, shown in a frame on that screen (a YouTube video in its privacy-enhanced player, youtube-nocookie.com) | [event screen](event-screen.md), `link_page.dart` (`launchLink`); [Cam](cam.md#playing-along-with-a-file) |
-| No ads, crash reporting or tracking, no analytics of Tabs.cam's own (ML Kit's diagnostics aside) | No such packages in `pubspec.lock` or `Podfile.lock`; the site keeps no CloudFront access logs |
+| The dictionary's searches that aren't a chord or a scale go from the device to YouTube's search API (Google), with the build's API key and nothing about the user, two seconds after typing stops; tabs.cam's servers never see them. The policy names YouTube and links YouTube's terms and Google's privacy policy, as the API's terms require | [dictionary](dictionary.md), `youtube_search.dart`; Play: in-app search history, Apple: search history, not linked ([data safety](../tabcam_store/data-safety.md)) |
+| Links (YouTube's too) open outside tabs.cam, in the browser or the app for them, under that site's own policy; the one exception is a link chosen to play along with in Cam, shown in a frame on that screen (a YouTube video in its privacy-enhanced player, youtube-nocookie.com) | [event screen](event-screen.md), `link_page.dart` (`launchLink`); [Cam](cam.md#playing-along-with-a-file) |
+| No ads, crash reporting or tracking, no analytics of tabs.cam's own (ML Kit's diagnostics aside) | No such packages in `pubspec.lock` or `Podfile.lock`; the site keeps no CloudFront access logs |
 | Not directed to children under 13 | |
 
 When a change alters what's collected, where it goes or how long it's

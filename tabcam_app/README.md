@@ -1,6 +1,6 @@
 # tabcam_app
 
-The Tabs.cam Flutter app (Android, iOS and web). Build and run it from the
+The tabs.cam Flutter app (Android, iOS and web). Build and run it from the
 repo root with `make` and the `scripts/` (see the [README](../README.md));
 what it does is specified in [specs/](../specs/README.md).
 

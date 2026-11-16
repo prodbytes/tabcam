@@ -1,6 +1,6 @@
 # Library
 
-The **Home** tab ([navigation](navigation.md)), titled **Tabs.cam**.
+The **Home** tab ([navigation](navigation.md)), titled **tabs.cam**.
 
 Home, like the whole app, is for signed-in users: signed out, the app is
 the [welcome](navigation.md#signed-out-the-welcome) alone.
@@ -67,7 +67,7 @@ the [welcome](navigation.md#signed-out-the-welcome) alone.
   only the welcome and sign-in ([navigation](navigation.md)).
 - **Empty**: a music icon, "No tabs yet", and a line pointing to
   Capture (to scan, or add photos, videos, files and links).
-- **Whose tabs**: Home has no note on whose tabs go in Tabs.cam; it's on
+- **Whose tabs**: Home has no note on whose tabs go in tabs.cam; it's on
   [Capture](navigation.md#capture), where tabs are added.
 - New events come from the [Capture](navigation.md#capture) tab: each
   lands at the top of the list, which scrolls up to it, outlined in the

@@ -815,7 +815,7 @@ class ShareApiTest(unittest.TestCase):
         # Escaped, with the artist; what it holds.
         self.assertIn('<meta property="og:title" content="Morning &lt;riff&gt; – Me">', page)
         self.assertIn("<title>Morning &lt;riff&gt; – Me</title>", page)
-        self.assertIn('content="Me · 2 pages, 1 PDF, 1 link, a text tab. Shared with Tabs.cam."', page)
+        self.assertIn('content="Me · 2 pages, 1 PDF, 1 link, a text tab. Shared with tabs.cam."', page)
         # Its short link, on the site that asked.
         link = f"https://rc.tabcam.nu01.com/s/{self.KEY}"
         self.assertIn(f'<meta property="og:url" content="{link}">', page)
@@ -827,7 +827,7 @@ class ShareApiTest(unittest.TestCase):
     def test_a_wrong_key_previews_as_tabcam_and_reads_nothing(self):
         self.publish()
         page, used = self.preview(key="x" * 32, capture_json=self.RIFF)
-        self.assertIn('<meta property="og:title" content="Tabs.cam">', page)
+        self.assertIn('<meta property="og:title" content="tabs.cam">', page)
         self.assertNotIn("riff", page)
         self.assertEqual(used, [])
         # Another site than ours: production's is named.
@@ -880,11 +880,11 @@ class ShareApiTest(unittest.TestCase):
     def test_a_deleted_capture_previews_as_tabcam(self):
         self.publish()
         page, _ = self.preview(capture_json={"id": "abc", "deleted": 1})
-        self.assertIn('<meta property="og:title" content="Tabs.cam">', page)
+        self.assertIn('<meta property="og:title" content="tabs.cam">', page)
 
     def test_a_malformed_link_previews_as_tabcam(self):
         page, used = self.preview(capture="<script>", key="k")
-        self.assertIn('<meta property="og:title" content="Tabs.cam">', page)
+        self.assertIn('<meta property="og:title" content="tabs.cam">', page)
         self.assertNotIn("<script>", page.split("<script>location")[0])
         self.assertEqual(used, [])
 

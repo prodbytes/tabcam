@@ -46,7 +46,7 @@ https() {
         --resolve "$PUBLIC_HOST:$HTTPS_PORT:127.0.0.1" "$HTTPS_URL"
 }
 
-echo "🎸 Tabs.cam: $WEB_URL"
+echo "🎸 tabs.cam: $WEB_URL"
 echo "🏠 index:   $INDEX_URL (redirects to the app)"
 echo "🔒 HTTPS:   $HTTPS_URL (through Floci's CloudFront)"
 

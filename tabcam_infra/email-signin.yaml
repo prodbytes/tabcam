@@ -30,7 +30,7 @@ Parameters:
       or tabcam-email-tabs-cam (tabs.cam); FromAddress is at its domain
   FromAddress:
     Type: String
-    Default: Tabs.cam <signin@tabs.cam>
+    Default: tabs.cam <signin@tabs.cam>
     Description: The sign-in emails' sender (an address at the SES identity's domain)
   Sites:
     Type: String
@@ -65,20 +65,20 @@ Resources:
           import os
 
           TEXT = {
-              "en": ("Your Tabs.cam sign-in code: {code}",
-                     "Your Tabs.cam sign-in code is",
-                     "Sign in to Tabs.cam",
-                     "Or type the code in Tabs.cam. It works once, for a few minutes. "
+              "en": ("Your tabs.cam sign-in code: {code}",
+                     "Your tabs.cam sign-in code is",
+                     "Sign in to tabs.cam",
+                     "Or type the code in tabs.cam. It works once, for a few minutes. "
                      "If you didn't ask to sign in, ignore this email."),
-              "es": ("Tu código para entrar en Tabs.cam: {code}",
-                     "Tu código para entrar en Tabs.cam es",
-                     "Entrar en Tabs.cam",
-                     "O escribe el código en Tabs.cam. Sirve una vez, durante unos minutos. "
+              "es": ("Tu código para entrar en tabs.cam: {code}",
+                     "Tu código para entrar en tabs.cam es",
+                     "Entrar en tabs.cam",
+                     "O escribe el código en tabs.cam. Sirve una vez, durante unos minutos. "
                      "Si no pediste entrar, ignora este correo."),
-              "pt": ("Seu código para entrar no Tabs.cam: {code}",
-                     "Seu código para entrar no Tabs.cam é",
-                     "Entrar no Tabs.cam",
-                     "Ou digite o código no Tabs.cam. Ele vale uma vez, por alguns minutos. "
+              "pt": ("Seu código para entrar no tabs.cam: {code}",
+                     "Seu código para entrar no tabs.cam é",
+                     "Entrar no tabs.cam",
+                     "Ou digite o código no tabs.cam. Ele vale uma vez, por alguns minutos. "
                      "Se você não pediu para entrar, ignore este e-mail."),
           }
 

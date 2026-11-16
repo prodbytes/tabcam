@@ -3,7 +3,7 @@
 | | Android | iOS | Web |
 |---|---|---|---|
 | Minimum | 7.0 (API 24) | 15.5 | A current browser |
-| Scan | System document camera (ML Kit, base mode: no filters): edges, straightening, several pages | System document camera (VisionKit) | Tabs.cam's camera screen (the browser's camera): several pages, cropped to the page when one stands out |
+| Scan | System document camera (ML Kit, base mode: no filters): edges, straightening, several pages | System document camera (VisionKit) | tabs.cam's camera screen (the browser's camera): several pages, cropped to the page when one stands out |
 | Add photos & videos, files | Photo picker; system file picker | Photo library; Files app | Browser file picker (both) |
 | Play videos | From the file | From the file | From memory, through a blob URL |
 | [Cam](cam.md) takes, [the tab kept with them](cam.md#the-tab-with-the-take) (drawn by the [editor](video-edit.md#layers)) | MP4 (H.264) as the camera records it; the sound recorded by the app (`AudioRecord`, the unprocessed source where there is one) and put in after ([sound first](cam.md#recording-comes-first)) | MP4 as the camera records it; an HEVC take made H.264 as it's saved (AVFoundation) | WebM (MP4 on Safari): the camera's track and the microphone's, recorded as they come (MediaRecorder) |
@@ -16,7 +16,7 @@
 | Share | Copies the link | Copies the link | Copies the link |
 | Capture links ([opening](sharing.md#opening-a-link)) | App Links: the site's links open in the app | In Safari (the web app) | The web app |
 | Sign-in ([cloud sync](cloud-sync.md)) | Credential Manager | Google Sign-In SDK; Sign in with Apple too, with `TABCAM_APPLE_SIGN_IN=1` | Google's button (FedCM); the session kept in `localStorage` |
-| Tabs.cam Premium ([cloud OCR](cloud-ocr.md#in-the-app)) | Text and Cam locked without it (previews under the card); Upgrade, Redeem a voucher, Home's banner | Same | Same |
+| tabs.cam Premium ([cloud OCR](cloud-ocr.md#in-the-app)) | Text and Cam locked without it (previews under the card); Upgrade, Redeem a voucher, Home's banner | Same | Same |
 | Synced events | Kept in the app's documents | Kept in the app's documents | Downloaded again on each visit: listed first, files after ([cloud sync](cloud-sync.md#listed-first-files-after)) |
 
 **iOS signing**: automatic, with each developer's own team:
@@ -74,7 +74,7 @@ Google's Android OAuth client matches the app by that ID and the SHA-1 of
 its signing key: release builds are signed with the upload key when
 `tabcam_app/android/key.properties` is set up, else with the debug key
 ([app stores](app-stores.md#android-signing)).
-The app is named **Tabs.cam** everywhere.
+The app is named **tabs.cam** everywhere.
 
 The web build is deployed to https://tabs.cam/app/
 ([deploy](deploy.md)).

@@ -12,7 +12,7 @@ to where they were, with nothing added.
 
 On Android the camera runs in ML Kit's base mode: no filters to pick,
 and no ML clean-up (stain and finger removal); cropping, rotating and
-reordering pages remain. Tabs.cam applies its own Tab filter. VisionKit
+reordering pages remain. tabs.cam applies its own Tab filter. VisionKit
 offers no such option, so the iOS camera keeps its filters. Neither
 camera lets the app set the shutter: both start on auto capture, and
 the user can switch to manual in the camera.
@@ -23,20 +23,20 @@ cache is emptied. The new event shows at the top of the list (see
 
 Needs Android 7.0 (API 24) or later; iOS 15.5 or later (ML Kit text
 recognition's minimum). iOS asks for the camera
-(`NSCameraUsageDescription`: "Tabs.cam uses the camera to scan guitar
+(`NSCameraUsageDescription`: "tabs.cam uses the camera to scan guitar
 tabs.") the first time the camera opens it.
 
-On Android, ML Kit's camera needs no permission of Tabs.cam's. Where it
+On Android, ML Kit's camera needs no permission of tabs.cam's. Where it
 isn't there (no Google Play services), the plugin falls back to its own
 cropper over a photo from the system camera app, which Android won't open
-while Tabs.cam's camera permission (declared for [Cam](cam.md)) isn't
-granted. Then Tabs.cam asks for the camera (`tabcam/camera_permission`, in
+while tabs.cam's camera permission (declared for [Cam](cam.md)) isn't
+granted. Then tabs.cam asks for the camera (`tabcam/camera_permission`, in
 `MainActivity`) and scans again; refused, the scan fails with "Couldn't
-scan: the camera isn't allowed. Let Tabs.cam use it in the settings."
+scan: the camera isn't allowed. Let tabs.cam use it in the settings."
 
 ## Web
 
-No document camera: **Scan** opens Tabs.cam's own camera screen
+No document camera: **Scan** opens tabs.cam's own camera screen
 ([lib/capture/camera_capture_screen.dart](../tabcam_app/lib/capture/camera_capture_screen.dart)),
 the device's camera through the browser (`camera`, getUserMedia; the
 browser asks for it the first time), the back camera first (from a list
@@ -49,7 +49,7 @@ that leaves out cameras that won't start, [Cam](cam.md#a-camera-that-wont-start)
   page) adds them; **Cancel** (×, or back) asks "Discard N pages?" first
   when there are any;
 - without a camera ("No camera found.") or with it refused ("The camera
-  isn't allowed: let Tabs.cam use it in the browser's site settings."), it
+  isn't allowed: let tabs.cam use it in the browser's site settings."), it
   says so and offers **Choose photos instead** (the photo picker);
 - a camera that won't start (another app holds it, an infrared one)
   gives way to the next; none starting, it says another app may be using
@@ -109,7 +109,7 @@ or 1 GB unzipped, by its directory).
 
 A photo added by hand (Photos & videos, Files; from Capture or an
 event's Add), or taken with the web's camera screen, isn't straightened
-by the document camera, so Tabs.cam crops it to the
+by the document camera, so tabs.cam crops it to the
 page itself, when one stands out, so what's under the page (a table, a
 lap) doesn't show ([lib/processing/page_crop.dart](../tabcam_app/lib/processing/page_crop.dart),
 off the UI isolate where there are isolates):

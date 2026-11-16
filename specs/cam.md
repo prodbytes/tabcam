@@ -1,7 +1,7 @@
 # Cam: playing along
 
 **Cam**, a tool on the [event screen](event-screen.md), lets a guitarist
-record themselves playing along with the capture's tab. It's Tabs.cam
+record themselves playing along with the capture's tab. It's tabs.cam
 Premium's ([cloud OCR](cloud-ocr.md#in-the-app)): without Premium it opens
 as a **preview** (`PlayAlongScreen` with `gate` set): no camera is opened
 (a camera icon where the preview would be), no key, nod or tap does
@@ -851,7 +851,7 @@ slow down while a take records
     mono; 16-bit PCM. Each is tried (started, read from for up to half
     a second, stopped), and the first that gives sound is kept open
     until Cam closes (`release`), recording between takes for the
-    [level meter](#level-meter). What it got is logged (`Tabs.cam: take
+    [level meter](#level-meter). What it got is logged (`tabs.cam: take
     sound: unprocessed 48000/2 …`). The camera then opens **without
     sound** (`enableAudio: false`). Should no source work, or the
     microphone be refused, the camera opens with sound and records the

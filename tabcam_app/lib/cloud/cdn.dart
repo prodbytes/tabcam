@@ -63,7 +63,7 @@ class CdnGrant {
 
 /// Where this build reads users' folders through CloudFront.
 abstract final class CdnConfig {
-  /// Tabs.cam's sites: tabs.cam and rc.tabs.cam, and their old names
+  /// tabs.cam's sites: tabs.cam and rc.tabs.cam, and their old names
   /// (which redirect the app, but still serve the users' folders).
   static const _sites = {
     'tabs.cam',

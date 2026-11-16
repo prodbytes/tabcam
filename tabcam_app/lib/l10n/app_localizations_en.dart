@@ -24,7 +24,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountSignInPremium =>
-      'Signed in, Tabs.cam Premium reads your scans into text tabs, transcribed in the cloud as they sync, and records you playing along with Cam.';
+      'Signed in, tabs.cam Premium reads your scans into text tabs, transcribed in the cloud as they sync, and records you playing along with Cam.';
 
   @override
   String get accountSignInWithGoogle => 'Sign in with Google';
@@ -112,7 +112,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Couldn\'t check Premium right now';
 
   @override
-  String get accountPremiumTitle => 'Tabs.cam Premium';
+  String get accountPremiumTitle => 'tabs.cam Premium';
 
   @override
   String get accountPremiumActive =>
@@ -139,26 +139,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get premiumSignInToSubscribe =>
-      'Sign in, then subscribe to Tabs.cam Premium from your profile.';
+      'Sign in, then subscribe to tabs.cam Premium from your profile.';
 
   @override
   String get premiumTextFeature =>
-      'Text is part of Tabs.cam Premium: your scans read into a text tab you can edit, copy, verify, download and play along with. With Premium they\'re transcribed in the cloud as they sync, more accurately than on the phone.';
+      'Text is part of tabs.cam Premium: your scans read into a text tab you can edit, copy, verify, download and play along with. With Premium they\'re transcribed in the cloud as they sync, more accurately than on the phone.';
 
   @override
   String get premiumCamFeature =>
-      'Cam is part of Tabs.cam Premium: record yourself playing along with the tab under the camera, one line at a time, turned by a key, a pedal or a nod of your head; play each take back with the tab turning as it did.';
+      'Cam is part of tabs.cam Premium: record yourself playing along with the tab under the camera, one line at a time, turned by a key, a pedal or a nod of your head; play each take back with the tab turning as it did.';
 
   @override
   String get premiumSamplePreview => 'A preview with a sample tab';
 
   @override
   String get homePremiumBanner =>
-      'Text tabs and Cam are Tabs.cam Premium features.';
+      'Text tabs and Cam are tabs.cam Premium features.';
 
   @override
   String eventPremiumTool(String feature) {
-    return '$feature: Tabs.cam Premium';
+    return '$feature: tabs.cam Premium';
   }
 
   @override
@@ -191,7 +191,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountShareLinkDetail =>
-      'Opens this capture in Tabs.cam, for you and the people it\'s shared with';
+      'Opens this capture in tabs.cam, for you and the people it\'s shared with';
 
   @override
   String get accountSharePdf => 'PDF';
@@ -304,7 +304,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventReadUnsupported =>
-      'Reading tabs needs the Android or iOS app, or Tabs.cam Premium.';
+      'Reading tabs needs the Android or iOS app, or tabs.cam Premium.';
 
   @override
   String get eventReadNeedsSignIn => 'Reading tabs needs you signed in.';
@@ -452,7 +452,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String linkTabPremium(String site) {
-    return 'Link added. On the web, importing the page from $site needs Tabs.cam Premium.';
+    return 'Link added. On the web, importing the page from $site needs tabs.cam Premium.';
   }
 
   @override
@@ -534,7 +534,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventCameraNotAllowed =>
-      'The camera isn\'t allowed: let Tabs.cam use it in the browser\'s site settings.';
+      'The camera isn\'t allowed: let tabs.cam use it in the browser\'s site settings.';
 
   @override
   String eventCameraFailed(String error) {
@@ -798,7 +798,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get camNotAllowed =>
-      'The camera or microphone isn\'t allowed: let Tabs.cam use them in the settings.';
+      'The camera or microphone isn\'t allowed: let tabs.cam use them in the settings.';
 
   @override
   String get eventDone => 'Done';
@@ -849,7 +849,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get scanCameraNotAllowed =>
-      'the camera isn\'t allowed. Let Tabs.cam use it in the settings.';
+      'the camera isn\'t allowed. Let tabs.cam use it in the settings.';
 
   @override
   String homeAddFailed(String error) {
@@ -1062,7 +1062,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeMaintenanceDefault =>
-      'Sorry, Tabs.cam is down for maintenance. Please try again later.';
+      'Sorry, tabs.cam is down for maintenance. Please try again later.';
 
   @override
   String get textViewTabCopied => 'Tab copied';
@@ -1071,7 +1071,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get textViewPutCursorOnFret => 'Put the cursor on a fret number';
 
   @override
-  String get textViewFixPremium => 'Fix is part of Tabs.cam Premium';
+  String get textViewFixPremium => 'Fix is part of tabs.cam Premium';
 
   @override
   String get textViewUpgrade => 'Upgrade';
@@ -1369,7 +1369,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homePrivacyPolicy => 'Privacy policy';
 
   @override
-  String get deleteAccountDone => 'Your Tabs.cam account was deleted.';
+  String get deleteAccountDone => 'Your tabs.cam account was deleted.';
 
   @override
   String get deleteAccountTitle => 'Delete your account?';
@@ -1397,11 +1397,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteAccountPremiumWeb =>
-      'A Tabs.cam Premium subscription isn\'t cancelled: cancel it on Substack, where you subscribed.';
+      'A tabs.cam Premium subscription isn\'t cancelled: cancel it on Substack, where you subscribed.';
 
   @override
   String get deleteAccountOtherDevices =>
-      'If Tabs.cam is signed in on your other devices, sign out there first, so they don\'t upload their events again.';
+      'If tabs.cam is signed in on your other devices, sign out there first, so they don\'t upload their events again.';
 
   @override
   String get deleteAccountCancel => 'Cancel';
@@ -1516,7 +1516,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountSessionEnded =>
-      'You were signed out (a week without using Tabs.cam, or your sign-in ended elsewhere): sign in again.';
+      'You were signed out (a week without using tabs.cam, or your sign-in ended elsewhere): sign in again.';
 
   @override
   String get accountAppleUnavailable =>
@@ -1644,7 +1644,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get textViewFixLinedUpPremium =>
-      'Tab lined up. Checking it against the song online is part of Tabs.cam Premium.';
+      'Tab lined up. Checking it against the song online is part of tabs.cam Premium.';
 
   @override
   String get welcomeBody =>
@@ -1755,14 +1755,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ownTabsNote =>
-      'Tabs.cam is for musicians practicing with their own tabs. Only add what you have the right to use: tabs you wrote, your teacher\'s, ones you bought, or ones free to share.';
+      'tabs.cam is for musicians practicing with their own tabs. Only add what you have the right to use: tabs you wrote, your teacher\'s, ones you bought, or ones free to share.';
 
   @override
   String get installTitle => 'Get the phone app';
 
   @override
   String get installIntro =>
-      'Tabs.cam isn\'t in the app stores yet. Install it on your phone from GitHub:';
+      'tabs.cam isn\'t in the app stores yet. Install it on your phone from GitHub:';
 
   @override
   String get installIphone => 'iPhone';
@@ -1775,14 +1775,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get installIphoneSteps =>
-      'An iPhone only installs apps from the App Store or signed by an Apple developer, and the release on GitHub isn\'t signed. Build it on a Mac with Xcode and Flutter instead, signed with your own Apple account (a free one works):\n\n1. Get Tabs.cam\'s code from GitHub and set your Apple team, as the guide says.\n2. Connect the iPhone to the Mac by USB and turn on Developer Mode on it (Settings → Privacy & Security → Developer Mode).\n3. Build and install the release with the guide\'s command. It installs over Tabs.cam and keeps your events.\n4. The first time, trust the developer on the iPhone: Settings → General → VPN & Device Management.\n\nWith a free Apple account, the app stops opening after 7 days: install it again.';
+      'An iPhone only installs apps from the App Store or signed by an Apple developer, and the release on GitHub isn\'t signed. Build it on a Mac with Xcode and Flutter instead, signed with your own Apple account (a free one works):\n\n1. Get tabs.cam\'s code from GitHub and set your Apple team, as the guide says.\n2. Connect the iPhone to the Mac by USB and turn on Developer Mode on it (Settings → Privacy & Security → Developer Mode).\n3. Build and install the release with the guide\'s command. It installs over tabs.cam and keeps your events.\n4. The first time, trust the developer on the iPhone: Settings → General → VPN & Device Management.\n\nWith a free Apple account, the app stops opening after 7 days: install it again.';
 
   @override
   String get installAndroidTitle => 'Install on Android';
 
   @override
   String get installAndroidSteps =>
-      '1. On the phone, open Tabs.cam\'s latest release on GitHub (the button below).\n2. Under Assets, tap the file ending in -android.apk to download it.\n3. Open the downloaded file. The first time, Android asks you to allow your browser to install apps: allow it (Settings → Apps → Special app access → Install unknown apps).\n4. Tap Install, or Update if Tabs.cam is already installed. Updating keeps your events.\n\nGoogle sign-in doesn\'t work in these builds yet.';
+      '1. On the phone, open tabs.cam\'s latest release on GitHub (the button below).\n2. Under Assets, tap the file ending in -android.apk to download it.\n3. Open the downloaded file. The first time, Android asks you to allow your browser to install apps: allow it (Settings → Apps → Special app access → Install unknown apps).\n4. Tap Install, or Update if tabs.cam is already installed. Updating keeps your events.\n\nGoogle sign-in doesn\'t work in these builds yet.';
 
   @override
   String get installOpenRelease => 'Open the release on GitHub';
@@ -2137,10 +2137,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditLayerWatermark => 'Watermark';
 
   @override
-  String get videoEditWatermarkTake => 'Recorded by Tabs.cam';
+  String get videoEditWatermarkTake => 'Recorded by tabs.cam';
 
   @override
-  String get videoEditWatermarkMade => 'Made with Tabs.cam';
+  String get videoEditWatermarkMade => 'Made with tabs.cam';
 
   @override
   String videoEditWatermarkAbout(String text) {

@@ -180,7 +180,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: tabcam-github-deploy-rc
-      Description: Assumed by GitHub Actions on *RC* tags and manual runs from main, to deploy the Tabs.cam release candidate (rc.tabs.cam)
+      Description: Assumed by GitHub Actions on *RC* tags and manual runs from main, to deploy the tabs.cam release candidate (rc.tabs.cam)
       MaxSessionDuration: 3600
       AssumeRolePolicyDocument:
         Version: '2012-10-17'

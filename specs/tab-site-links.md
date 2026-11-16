@@ -50,10 +50,10 @@ device does the work ([lib/import/tab_page_import.dart](../tabcam_app/lib/import
   (its User-Agent), up to 20 s and 5 MB; no server is involved, for
   everyone. (Android and iOS: not imported, above.)
 - **The web**: the browser can't fetch other sites' pages (CORS), so the
-  cloud OCR service's `POST /page` fetches it, for **Tabs.cam Premium**
+  cloud OCR service's `POST /page` fetches it, for **tabs.cam Premium**
   users only ([cloud OCR](cloud-ocr.md#tab-sites-pages-for-the-web)).
   Without Premium, the link is added and it says "Link added. On the web,
-  importing the page from {site} needs Tabs.cam Premium." When the
+  importing the page from {site} needs tabs.cam Premium." When the
   service hasn't said yet whether the user has Premium, it's asked
   first; if it still can't tell, it says "Link added. Couldn't import the
   page from {site}.", with no mention of Premium

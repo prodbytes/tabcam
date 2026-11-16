@@ -13,7 +13,7 @@
 		<string>pt</string>
 	</array>
 	<key>CFBundleDisplayName</key>
-	<string>Tabs.cam</string>
+	<string>tabs.cam</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -21,13 +21,13 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Tabs.cam</string>
+	<string>tabs.cam</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Tabs.cam uses the camera to scan guitar tabs.</string>
+	<string>tabs.cam uses the camera to scan guitar tabs.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Tabs.cam records sound with the video when you record yourself playing along with a tab.</string>
+	<string>tabs.cam records sound with the video when you record yourself playing along with a tab.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Tabs.cam imports photos of guitar tabs you choose.</string>
+	<string>tabs.cam imports photos of guitar tabs you choose.</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

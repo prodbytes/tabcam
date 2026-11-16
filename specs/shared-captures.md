@@ -14,7 +14,7 @@ owner can't see, change or remove who has joined. Captures shared by
 email before stay shared, read only, those shared **to edit** too
 (2026-11-15: the app no longer uploads them, and the share API's
 credentials no longer write). No email is sent: someone sees what's
-shared with them when they sign in to Tabs.cam (with Google, or with
+shared with them when they sign in to tabs.cam (with Google, or with
 Apple on iOS). To share a capture with other people than the original's,
 [clone](library.md#events) it and share the copy's link (its files are
 copied into it first).
@@ -119,7 +119,7 @@ reading any token, with nothing but the key to go on.
   paths alike. Only verified addresses are used: `email_verified` must be
   true (Apple sends it as the string `"true"`, Google as a boolean), and a
   token without an email is refused (403). Apple's private relay
-  addresses count as verified: each is the user's, for Tabs.cam, and is
+  addresses count as verified: each is the user's, for tabs.cam, and is
   what others share with. The owner's folder is their Cognito identity,
   found from the same token (`GetId`, with the token under its issuer's
   `Logins` key: `accounts.google.com` or `appleid.apple.com`), so a user

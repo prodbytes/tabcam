@@ -1,4 +1,4 @@
-"""Writes the Tabs.cam icon masters and the logo (specs/app-icon.md).
+"""Writes the tabs.cam icon masters and the logo (specs/app-icon.md).
 
 tabcam_app/assets/icon/icon.svg, icon_foreground.svg and logo.svg; the
 logo's wordmark is Roboto Medium (the app's font) turned into paths, so
@@ -49,7 +49,7 @@ def svg(w, h, body, comment):
             f'  <!-- {comment} -->\n  {body}\n</svg>\n')
 
 icon = svg(1024, 1024, f'<rect width="1024" height="1024" fill="{DARK}"/>\n  ' + lens(),
-           "Tabs.cam app icon (specs/app-icon.md): a camera lens showing a line of tab")
+           "tabs.cam app icon (specs/app-icon.md): a camera lens showing a line of tab")
 fg = svg(1024, 1024, '<g transform="translate(512 512) scale(0.75) translate(-512 -512)">\n  '
          + lens() + '\n  </g>',
          "Android adaptive foreground: the lens alone, at 75%, inside the safe zone")
@@ -75,7 +75,7 @@ text = "\n  ".join(f'<path d="{d}" fill="{c}"/>' for d, c in parts)
 logo = svg(width, 480,
            '<g transform="translate(240 240) scale(0.4) translate(-512 -512)">\n  '
            + f'<circle cx="512" cy="512" r="372" fill="{DARK}"/>\n  ' + lens() + '\n  </g>\n  ' + text,
-           "Tabs.cam logo for dark backgrounds: the lens and the wordmark (Roboto Medium as paths)")
+           "tabs.cam logo for dark backgrounds: the lens and the wordmark (Roboto Medium as paths)")
 
 for name, data in (("icon.svg", icon), ("icon_foreground.svg", fg), ("logo.svg", logo)):
     open(f"{root}/tabcam_app/assets/icon/{name}", "w").write(data)

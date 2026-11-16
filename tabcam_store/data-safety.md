@@ -9,14 +9,14 @@ policy (https://tabs.cam/privacy) and the iOS privacy manifest
 (`tabcam_app/ios/Runner/PrivacyInfo.xcprivacy`): when one changes, the
 others change too.
 
-## What Tabs.cam does with data, in short
+## What tabs.cam does with data, in short
 
 - **Signed out**: the app is only a welcome with the sign-in buttons;
   nothing can be captured and nothing leaves the device.
 - **Signed in** (with Google; on iOS, with Apple too): the app gets the
   Google account's name, email, photo and ID, or the Apple ID's name and
   email (Apple's private relay address if the user hides theirs) and
-  user ID. The **email** and the **identity ID** (Cognito) reach Tabs.cam's
+  user ID. The **email** and the **identity ID** (Cognito) reach tabs.cam's
   servers; the name and photo are only shown in the app. The user's
   **captures** (scanned pages, photos, videos, Cam's takes with their
   sound, recordings, PDFs and other files, text tabs, titles, artists,
@@ -29,12 +29,12 @@ others change too.
 - **The dictionary's YouTube results**: what the user types in the
   dictionary, when it's not a chord or a scale, goes from the device to
   Google's YouTube Data API (search) after two seconds without typing,
-  with the build's API key only: no account, no ID. Tabs.cam's servers
+  with the build's API key only: no account, no ID. tabs.cam's servers
   never see it, and nothing keeps it.
 - **Cam's head gestures**: ML Kit face detection on the device; only the
   head's angles are used, nothing about the face is kept or sent.
 - **No** ads, crash reporting or tracking SDKs, and no analytics of
-  Tabs.cam's own (ML Kit's, below, aside); no data sold or shared for
+  tabs.cam's own (ML Kit's, below, aside); no data sold or shared for
   advertising.
 - **ML Kit** (on-device text recognition and, on Android, the document
   camera) may send Google anonymous diagnostics and usage metrics about
@@ -59,7 +59,7 @@ others change too.
 | Can users create an account? | Yes, with Google sign-in (OAuth); the app needs one |
 
 **Data types** (collected = sent off the device; none is **shared**: AWS
-and Google sign-in are service providers acting for Tabs.cam, which Play
+and Google sign-in are service providers acting for tabs.cam, which Play
 doesn't count as sharing). They're **required**: signed out the app is
 only the welcome, so every user signs in (the diagnostics row aside, and
 the dictionary's searches, which are **optional** and the only data
@@ -74,7 +74,7 @@ processed ephemerally).
 | Audio → Voice or sound recordings, Music files, Other audio files | Yes | App functionality | Recordings added to captures, and Cam's takes' sound (in their videos) |
 | Files and docs | Yes | App functionality | PDFs and files added to captures |
 | App activity → Other user-generated content | Yes | App functionality | Text tabs, titles, artists, links |
-| App activity → In-app search history | Yes (conservative), processed ephemerally | App functionality | The dictionary's searches that aren't a chord or a scale, sent from the device to YouTube's search API (Google) for its results; not linked to the account, not kept by Tabs.cam |
+| App activity → In-app search history | Yes (conservative), processed ephemerally | App functionality | The dictionary's searches that aren't a chord or a scale, sent from the device to YouTube's search API (Google) for its results; not linked to the account, not kept by tabs.cam |
 | App info and performance → Diagnostics | Yes, if ML Kit's disclosure says so | Analytics (by Google ML Kit) | Anonymous ML Kit metrics; collected also signed out; confirm against Google's ML Kit page |
 | Device or other IDs | Yes, if ML Kit's disclosure says so | Analytics (by Google ML Kit) | The installation identifier ML Kit's metrics carry; not linked to the account |
 
