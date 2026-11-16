@@ -3662,3 +3662,20 @@ spec.
    devices. Files stay in the cloud until purged. See
    [Deleted and Purge](trash.md).
 
+## 2026-11-16
+
+1. **"Make sure that the user data bucket uses S3 Intelligent-Tiering and
+   if possible Glacier for really old data, so that storage costs are
+   minimal."** Checked: it does. The deployed bucket's lifecycle moves
+   everything (current and old versions) to Intelligent-Tiering on day 0,
+   and the app uploads with that storage class: of its 433 MB, all is in
+   Intelligent-Tiering (the 49 objects in Standard are under 128 KB, 0.1
+   MB together, which S3 doesn't tier). Data unread for 90 days is
+   already in its Archive Instant Access tier, at Glacier Instant
+   Retrieval's price and still read at once. The archive tiers that need
+   a restore (Glacier Flexible Retrieval's and Deep Archive's prices) stay
+   off: the app, CloudFront and cloud OCR read files directly, so those
+   would make old captures unreadable for hours, for about $0.003 per GB a
+   month more saved. Nothing changed in the bucket; the storage tiers are
+   now described in [cloud sync](cloud-sync.md#whats-synced-and-where).
+
