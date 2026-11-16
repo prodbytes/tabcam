@@ -4,7 +4,8 @@ Basic edits of a video (a take from [Cam](cam.md), or a video added) on
 one time axis, in **two sound lanes, mixed**: trim its start and end,
 set its own sound's level, and add a song (one of the capture's
 recordings, videos or takes, or a sound file) placed along it at a
-level of its own; and, **on the video**, a take's tab drawn over it as
+level of its own, both through a **master** volume (up to 200%); and,
+**on the video**, a take's tab drawn over it as
 it showed while recording (its **size**, **background** and **colours**
 the user's to change, [the tab's style](#layers)), a **title** (the capture's name, or text
 typed) and a small **watermark** that only [Premium](cloud-ocr.md#in-the-app)
@@ -182,18 +183,32 @@ makes a file of it."), opening with the video's edit as it was left:
     bar's height at any text size: the level stays on one line, and
     speaker and level shrink together when the text is too large; the
     bars are 44 points high. The preview plays each lane at it at once.
-    **100% is the most**: the players can't play a file louder than it
-    is (video_player's volume, the browser's media element and iOS's
-    audio mix all stop at 1), so a boost could only reach the download
-    and would sound different from the preview; none is offered. Both
+    A lane goes **up to 100%**; louder is the master's (below). Both
     lanes default to 100%. With echo cancellation off while recording
     ([Cam](cam.md)), a take's own sound has the song from the speaker in
     it too: the levels and Mute are the remedy (headphones while
     recording give a clean mix).
+- **Master**: both lanes go through it, after their own levels
+  ("Master · Both sounds together, up to 200%"): **Mute** (a speaker,
+  "Mute (Master)"; muted, nothing is heard and the level is kept, as a
+  lane's) and a slider from **0% to 200%** in steps of 5% (sliding
+  unmutes it), its level beside it (in the primary colour when it's not
+  100% or it's muted, struck through while muted). It's **right above
+  the fades' sliders**: on a wide screen in the **On the video** panel,
+  between the title's fields and the fades; on a phone above **On the
+  video** (whose Fades chip opens the sliders in its place, so it's
+  above them too). Keys `video-edit-master`, `-mute`, `-slider`,
+  `-level`. 100% by default; Reset puts it back. **Past 100% only the
+  download is louder**: the players can't play a file louder than it
+  is (video_player's volume and the browser's media element stop at
+  1), so the preview plays a lane at its level times the master's, at
+  most 100%; Download's file has the full level, each renderer clipping
+  what goes past full scale rather than wrapping it
+  (**How it's rendered**, under [fades](#fades)).
 - **Under the lanes, On the video**: what's drawn over the video, as
   chips (on a wide screen, 840 points and more, **On the video** is a
   panel of its own beside the rest, 320 points wide, the title's fields,
-  the fades' sliders and the tab's style under its chips):
+  the master, the fades' sliders and the tab's style under its chips):
   - **Tab** (on a take only; none on a take without a tab: its log has
     none, or, with no log, its capture's tab text has no necklines): on
     by default, for a take whose tab is kept apart from its picture (its
@@ -360,7 +375,9 @@ version 2 (`v: 2`):
   `trackVolume` (its level, 0 to 1, to the hundredth). These keep the
   meaning they had before the two lanes, so older apps read them.
 - New keys, each written only when it isn't the default: `ownVolume`
-  (the own sound's level, 1 by default), `ownMuted`, `songMuted`, and
+  (the own sound's level, 1 by default), `ownMuted`, `songMuted`,
+  `masterVolume` (the master's level, 0 to 2, to the hundredth; 1 by
+  default), `masterMuted`, and
   `song`: `manual` (placed by hand), `off` (none; Remove) or, absent
   with a `trackId`, `auto`: a take's song [lined up by
   itself](#a-takes-song-lined-up) from its log, its track keys placing
@@ -370,9 +387,11 @@ version 2 (`v: 2`):
   has one, else none). `auto` is never written (`song: auto` read is
   the same), and written back, absent stays absent.
 - **`sound`, for older apps**, worked out from the lanes and always
-  written: `track` when only the song is heard, `none` when neither is,
-  `original` otherwise (with both heard, older apps play the video's
-  own sound: a safe fallback).
+  written: `track` when only the song is heard, `none` when neither is
+  (also when the master is muted or at 0%), `original` otherwise (with
+  both heard, older apps play the video's own sound: a safe fallback).
+  Older apps don't know the master: they keep its keys and play the
+  lanes at their own levels.
 - **An edit from before the two lanes** (no `v`) is read by its old
   `sound`: `original` keeps the own sound (a track picked stays, as a
   manual song lane, muted, so it and its settings survive); `none`
@@ -383,7 +402,8 @@ version 2 (`v: 2`):
   differs, an app that only knows the old keys changed it, and its old
   meaning wins for the lanes (the song lane manual with the stored
   track keys, the lanes muted as `sound` says; an own sound to be
-  heard at 0% comes back at 100%, as that app plays it), while the
+  heard at 0% comes back at 100%, as that app plays it, and a lane to be
+  heard unmutes the master, at 100% if it was at 0%), while the
   levels and the keys that app doesn't know are kept. The track keys
   are the manual lane itself, so a track an older app moved is simply
   where it put it.
@@ -409,10 +429,10 @@ version 2 (`v: 2`):
 - `fadeInMs`, `fadeOutMs`: the [fades](#fades)' lengths, written only
   when not the default 3000 (0: none); read within 0 and 10,000.
   Absent, 3 s: an edit kept before the fades has them too.
-- Muting keeps the level (`ownMuted`/`songMuted` beside the volumes),
-  so an edit reopens muted at the level it had.
+- Muting keeps the level (`ownMuted`/`songMuted`/`masterMuted` beside
+  the volumes), so an edit reopens muted at the level it had.
 - Values that aren't numbers are read as the default; volumes out of
-  range are brought within 0–1. `PageEdit` has one `copyWith`, and its
+  range are brought within 0–1 (the master's within 0–2). `PageEdit` has one `copyWith`, and its
   `==`, `hashCode` and `toString` go by one list of its fields.
 
 ### A take's song, lined up
@@ -473,12 +493,14 @@ never stored. It says:
   times count from the kept part's start;
 - the **format** made and whether the **picture** goes in (not for the
   sound only);
-- the **own** lane: the video's own sound at its level, or none (muted,
-  or at 0%);
-- the **song** lane: the song's page and file, its level, and its
+- the **own** lane: the video's own sound at its level through the
+  master's (`PageEdit.ownLevel`: the lane's times the master's, 0 to
+  2), or none (it or the master muted, or at 0%);
+- the **song** lane: the song's page and file, its level through the
+  master's (`songLevel`, as the own lane's), and its
   **clips**, each from a time in the output (`at`) the song from
   `from` to `to` (at a `speed`, 1 for now), silent between them; none
-  when there's no song, or it's muted or at 0%. The two lanes are
+  when there's no song, or it or the master is muted or at 0%. The two lanes are
   **mixed**: both play, each at its level. A song placed by hand makes
   at most one clip: the part of it that fits the kept part, where its
   shift puts it (`trackSpan`: the silence before it, then the song
@@ -650,7 +672,8 @@ keeps those keys as a newer app's and writes them back
 its layers, from the same `Fades`, but only while it plays: paused, the
 frame shows as it is, so a trim's grip shows the frame it cuts at, and
 the editor doesn't open on a black frame. `EditedPlayback` ramps both
-players' volumes (each lane's level times the fades' level), set again
+players' volumes (each lane's level, through the master's and at most
+1, times the fades' level), set again
 at each of its checks (every tenth of a second, when it's moved 1% or
 more, or reached 0 or the lane's level), and set before Play starts
 (from where it starts, so the first tenth of a second isn't loud);
@@ -689,10 +712,13 @@ carries it out; the times are all worked out in Dart.
   `{volume}` and `song` `{path, volume, clips: [{atMs, fromMs, toMs,
   speed}]}`, and a `job`). With the picture: a composition whose
   primary sequence is the video clipped to the kept part, its audio
-  removed unless the own lane keeps it (through a `GainProcessor` at its
-  volume, when not 1); the song lane is a second sequence, a gap
+  removed unless the own lane keeps it (through a gain at its volume,
+  when not 1: a `GainProcessor` below 1, and above it a `ClippingGain`
+  of ours, as Media3's `GainProcessor` wraps 16-bit samples lifted past
+  full scale into loud crackles instead of clipping them; the channel's
+  volumes are read within 0–2); the song lane is a second sequence, a gap
   (silence) up to each clip, then the track clipped to it, at the lane's
-  volume, the composition forcing an audio track when the primary has
+  volume (the same gains), the composition forcing an audio track when the primary has
   none; with both lanes, Transformer's audio graph mixes the two
   sequences (converting sample rates and channels; two real inputs
   mixed on a phone are still to be checked by hand). The layers (the
@@ -753,7 +779,9 @@ carries it out; the times are all worked out in Dart.
   is made for fades alone too; and each audio track's input in the
   audio mix ramps (`setVolumeRamp`) from silence to its level over the
   fade in and back over the fade out (`fade`), every track the same, so
-  the mix fades, the sound only too.
+  the mix fades, the sound only too. An audio mix plays nothing louder
+  than 1, so a lane louder than it is (the master past 100%) is inserted
+  twice, each copy at half its volume (`copies`): they add up to it.
   Exported as MP4 (highest quality); the sound only leaves the video
   track out and exports M4A (`AVAssetExportPresetAppleM4A`), and ends
   where the sound does. The track's asset is held until the export is
@@ -766,7 +794,8 @@ carries it out; the times are all worked out in Dart.
   two lanes are decoded (Web Audio's `decodeAudioData`, each file once)
   and mixed in an `OfflineAudioContext` as long as the kept part (the
   own lane from the kept part's start, each of the song's clips where
-  it starts, each through a gain node at its lane's level), at 44.1 kHz
+  it starts, each through a gain node at its lane's level, which may be
+  over 1: the mix is float, and the WAV writer clips it), at 44.1 kHz
   (22.05 kHz for a kept part over 8 minutes). `decodeAudioData` decodes
   a whole file, whatever part of it is kept, so the rate a file is
   decoded at goes by its own length: over 8 minutes, 22.05 kHz (about

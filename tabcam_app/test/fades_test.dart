@@ -538,6 +538,81 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('the master: right above the fades\' sliders on a wide '
+        'screen, above On the video on a phone; 0–200%, kept and '
+        'downloaded through both lanes, the preview at most 100%; Mute and '
+        'Reset', (tester) async {
+      sized(tester, const Size(1280, 1000));
+      final (library, id) = await capture(tester);
+      await tester.pumpWidget(editScreen(library, id));
+      await settle(tester);
+      final side = find.byKey(const Key('video-edit-side'));
+      final master = find.byKey(const Key('video-edit-master'));
+      expect(find.descendant(of: side, matching: master), findsOneWidget);
+      final fades = tester.getRect(
+        find.byKey(const Key('video-edit-fade-fields')),
+      );
+      final above = tester.getRect(master);
+      expect(above.bottom, lessThanOrEqualTo(fades.top));
+      expect(fades.top - above.bottom, lessThan(16));
+      final slider = tester.widget<Slider>(
+        find.byKey(const Key('video-edit-master-slider')),
+      );
+      expect((slider.min, slider.max, slider.divisions), (0, 200, 40));
+      expect(slider.value, 100);
+
+      // 150%: kept; Download lifts the video's own sound to it; the
+      // preview plays it as loud as a player can.
+      slider.onChanged!(150);
+      await settle(tester);
+      expect(kept(library, id)!.masterVolume, 1.5);
+      final level = find.byKey(const Key('video-edit-master-level'));
+      expect(tester.widget<Text>(level).data, '150%');
+      final video = platform.lastPlayer;
+      expect(platform.volumes[video], 1);
+      await tester.tap(find.byKey(const Key('video-edit-download')));
+      await settle(tester);
+      expect(editor.rendered.single.own, const OwnLane(volume: 1.5));
+
+      // Muted: silent, its level kept; nothing to download as sound.
+      await tester.tap(find.byKey(const Key('video-edit-master-mute')));
+      await settle(tester);
+      expect(kept(library, id)!.masterMuted, isTrue);
+      expect(kept(library, id)!.masterVolume, 1.5);
+      expect(platform.volumes[video], 0);
+      editor.rendered.clear();
+      await tester.tap(find.byKey(const Key('video-edit-download')));
+      await settle(tester);
+      expect(editor.rendered.single.own, isNull);
+
+      // Reset: 100% again, and the edit none.
+      await tester.tap(find.byKey(const Key('video-edit-reset')));
+      await settle(tester);
+      expect(kept(library, id), isNull);
+      expect(tester.widget<Text>(level).data, '100%');
+
+      // On a phone: above On the video (where the Fades chip is), and
+      // above the fades' sliders when they open in its place.
+      sized(tester, const Size(400, 900));
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(editScreen(library, id));
+      await settle(tester);
+      final onVideo = find.byKey(const Key('video-edit-on-video'));
+      expect(
+        tester.getRect(master).bottom,
+        lessThanOrEqualTo(tester.getRect(onVideo).top),
+      );
+      await tapVisible(tester, 'video-edit-fades-edit');
+      await settle(tester);
+      expect(
+        tester.getRect(master).bottom,
+        lessThanOrEqualTo(
+          tester.getRect(find.byKey(const Key('video-edit-fade-fields'))).top,
+        ),
+      );
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('the preview draws the black only while it plays: paused, '
         'the frame shows as it is (a trim shows where it cuts)', (
       tester,

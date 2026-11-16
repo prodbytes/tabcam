@@ -36,7 +36,9 @@ import 'on_picture.dart';
 /// capture's recordings, videos or takes, or a sound file (added to
 /// them), placed along the video by hand (dragged, trimmed by its ends,
 /// nudged by a tenth of a second); ⋮ changes or removes it. Each lane has
-/// its volume and Mute at its left. Under them (beside everything, on a
+/// its volume and Mute at its left; both go through the **Master**, its
+/// volume (up to 200%) and Mute right above the fades' sliders (on a
+/// phone, above **On the video**). Under them (beside everything, on a
 /// wide screen), **On the video**: what's drawn over it, as chips: a
 /// take's tab (its style, the size, background and colours, opened by
 /// its palette button or, on a phone, a long press on the band in the
@@ -102,12 +104,21 @@ class VideoEditScreen extends StatefulWidget {
   State<VideoEditScreen> createState() => _VideoEditScreenState();
 }
 
-/// A lane's level: its [volume] (0 to 1), whether it's [muted] (the level
-/// kept), and the level Unmute puts back after a slide down to 0%
-/// ([unmuted]).
+/// A lane's level: its [volume] (0 to 1; the master's, 0 to 2), whether
+/// it's [muted] (the level kept), and the level Unmute puts back after a
+/// slide down to 0% ([unmuted]).
 class _Level {
   _Level([this.volume = 1, this.muted = false])
-    : unmuted = volume > 0 ? volume : 1;
+    : unmuted = volume > 0 ? volume : 1,
+      master = false;
+
+  /// The master's level, up to [PageEdit.maxMaster].
+  _Level.master([this.volume = 1, this.muted = false])
+    : unmuted = volume > 0 ? volume : 1,
+      master = true;
+
+  /// Whether it's the master's (up to 200%).
+  final bool master;
 
   double volume;
   bool muted;
@@ -123,7 +134,7 @@ class _Level {
 
   /// Slid to [to] (which unmutes it); whether that changed anything.
   bool slide(double to) {
-    to = PageEdit.volume(to);
+    to = master ? PageEdit.master(to) : PageEdit.volume(to);
     if (to == volume && !muted) return false;
     volume = to;
     muted = false;
@@ -152,6 +163,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 
   /// The Take lane's level: the video's own sound.
   var _own = _Level();
+
+  /// The master's level: both lanes through it, up to 200%.
+  var _master = _Level.master();
 
   /// The Song lane: how it's placed (null: the default, none), its level,
   /// its page in the capture, its file, its name, and its player (for its
@@ -410,6 +424,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           _own = _Level(edit.ownVolume, edit.ownMuted);
           _song = edit.song;
           _songLevel = _Level(edit.trackVolume, edit.songMuted);
+          _master = _Level.master(edit.masterVolume, edit.masterMuted);
           _tab = edit.tab;
           _tabStyle = edit.tabStyle;
           _titleOn = edit.title?.on ?? true;
@@ -471,6 +486,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     trackEnd: _trackEnd >= _trackLength ? null : _trackEnd,
     offset: _offset,
     trackVolume: _songLevel.volume,
+    masterVolume: _master.volume,
+    masterMuted: _master.muted,
     tab: _tab,
     tabStyle: _tabStyle,
     title: EditTitle.of(on: _titleOn, lines: _titleLines),
@@ -1180,16 +1197,17 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     _changed();
   }
 
-  /// Back to the defaults: the whole video, with its own sound as it is,
-  /// no song (a take's lined up as it played while recording), and the
-  /// tab, the capture's name and the watermark over it, fading in and out
-  /// over 3 s (the edit is none).
+  /// Back to the defaults: the whole video, with its own sound as it is
+  /// (the master at 100%), no song (a take's lined up as it played while
+  /// recording), and the tab, the capture's name and the watermark over
+  /// it, fading in and out over 3 s (the edit is none).
   Future<void> _reset() async {
     final player = _trackPlayer;
     setState(() {
       _start = Duration.zero;
       _end = _duration;
       _own = _Level();
+      _master = _Level.master();
       _song = null;
       _tab = true;
       _tabStyle = EditTabStyle.standard;
@@ -1426,6 +1444,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       const SizedBox(height: 8),
       _timeline(video, l10n),
       if (!wide) ...[
+        const SizedBox(height: 8),
+        _masterFields(l10n),
         const SizedBox(height: 8),
         _editingTitle
             ? _titleFields(l10n)
@@ -1888,12 +1908,97 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           const SizedBox(height: 12),
           _titleFields(l10n),
           const SizedBox(height: 16),
+          _masterFields(l10n),
+          const SizedBox(height: 8),
           _fadeFields(l10n),
           if (_tabStyleOffered) ...[
             const SizedBox(height: 16),
             _tabStyleFields(l10n),
           ],
         ],
+      ],
+    );
+  }
+
+  /// **Master**: where both lanes go, after their own levels: Mute (the
+  /// level kept; Unmute puts it back, or, after a slide down to 0%, the
+  /// level before it) and its volume, 0% to 200% in steps of 5% (sliding
+  /// unmutes it), its level beside it, in the primary colour when it's
+  /// not 100%, or muted. Right above the fades' sliders (on a phone, above
+  /// **On the video**, where the Fades chip opens them). The preview plays
+  /// nothing louder than the lanes are; Download's file is.
+  Widget _masterFields(AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    final master = _master;
+    final name = l10n.videoEditMaster;
+    final percent = (master.volume * 100).round();
+    final level = l10n.videoEditTrackVolumeLevel(percent);
+    final silent = master.silent;
+    final changed = master.volume != 1 || master.muted;
+    final color = changed ? theme.colorScheme.primary : null;
+    const most = PageEdit.maxMaster * 100;
+    return Column(
+      key: const Key('video-edit-master'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text.rich(
+          TextSpan(
+            text: name,
+            style: theme.textTheme.titleSmall,
+            children: [
+              TextSpan(
+                text: ' · ${l10n.videoEditMasterAbout}',
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+        Row(
+          children: [
+            IconButton(
+              key: const Key('video-edit-master-mute'),
+              tooltip: silent
+                  ? l10n.videoEditLaneUnmute(name)
+                  : l10n.videoEditLaneMute(name),
+              color: color,
+              icon: Icon(
+                silent
+                    ? Icons.volume_off_outlined
+                    : master.volume < 0.5
+                    ? Icons.volume_down_outlined
+                    : Icons.volume_up_outlined,
+              ),
+              onPressed: () => _mute(master),
+            ),
+            Expanded(
+              child: Slider(
+                key: const Key('video-edit-master-slider'),
+                max: most,
+                divisions: most ~/ 5,
+                value: percent.clamp(0, most).toDouble(),
+                label: level,
+                semanticFormatterCallback: (v) =>
+                    '$name ${l10n.videoEditTrackVolumeLevel(v.round())}',
+                onChangeStart: (_) => master.keep(),
+                onChanged: (v) => _slide(master, v / 100),
+              ),
+            ),
+            ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 48),
+              child: Text(
+                level,
+                key: const Key('video-edit-master-level'),
+                textAlign: TextAlign.end,
+                maxLines: 1,
+                style: TextStyle(
+                  color: color,
+                  decoration: master.muted ? TextDecoration.lineThrough : null,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }

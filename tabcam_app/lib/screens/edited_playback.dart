@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' show min;
 import 'dart:ui' show Size;
 
 import 'package:video_player/video_player.dart';
@@ -110,12 +111,15 @@ class EditedPlayback {
     return plan.fades.levelAt(position - start);
   }
 
-  /// Both lanes at their volumes, faded to [level] (0 to 1).
+  /// Both lanes at their volumes, faded to [level] (0 to 1). The players
+  /// play nothing louder than it is: a lane the master lifts past 100%
+  /// plays at 100% here, and only Download's file is louder.
   Future<void> _setLevel(double level) async {
     _level = level;
     final plan = _plan;
-    await video.setVolume(plan == null ? 1 : (plan.own?.volume ?? 0) * level);
-    await _song?.setVolume((plan?.song?.volume ?? 1) * level);
+    double heard(double volume) => min(1, volume * level);
+    await video.setVolume(plan == null ? 1 : heard(plan.own?.volume ?? 0));
+    await _song?.setVolume(heard(plan?.song?.volume ?? 1));
   }
 
   /// The lanes faded as they are at [position] in the video, if that's

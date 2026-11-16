@@ -6,9 +6,12 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import androidx.media3.common.C
 import androidx.media3.common.Effect
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
+import androidx.media3.common.audio.AudioProcessor
+import androidx.media3.common.audio.BaseAudioProcessor
 import androidx.media3.common.audio.DefaultGainProvider
 import androidx.media3.common.audio.GainProcessor
 import androidx.media3.common.util.UnstableApi
@@ -26,6 +29,7 @@ import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
+import java.nio.ByteBuffer
 import java.util.concurrent.Executors
 
 /**
@@ -39,10 +43,10 @@ import java.util.concurrent.Executors
  * - `video`: false for the sound alone (AAC in MP4, an `.m4a`), true (the
  *   default) for the video (H.264 and AAC in MP4);
  * - `startMs`, `endMs`: the part of the video kept;
- * - `own`: the video's own sound, `{volume}` (a gain from 0 to 1); left out,
- *   it's removed;
- * - `song`: the song lane, `{path, volume, clips}`, each clip `{atMs, fromMs,
- *   toMs, speed}`: from `atMs` in the output (0 is the kept part's start),
+ * - `own`: the video's own sound, `{volume}` (a gain from 0 to 2: its lane's
+ *   level through the master's); left out, it's removed;
+ * - `song`: the song lane, `{path, volume, clips}` (volume from 0 to 2, as
+ *   `own`'s), each clip `{atMs, fromMs, toMs, speed}`: from `atMs` in the output (0 is the kept part's start),
  *   the song from `fromMs` to `toMs` (the app works the times out and cuts
  *   them to the output; only speed 1 for now);
  * - `images`: the layers' PNGs (each look once), and `layers`: what's drawn
@@ -106,6 +110,39 @@ data class SongClip(val atMs: Long, val fromMs: Long, val toMs: Long, val speed:
 /** The song lane: [file], at [volume], heard in [clips] (in output order). */
 data class SongLane(val file: File, val volume: Float, val clips: List<SongClip>)
 
+/** The loudest a lane can be: 200% (its level through the master's). */
+const val MAX_VOLUME = 2f
+
+/**
+ * A constant [gain] above 1 on 16-bit or float PCM, each sample held within
+ * its range (clipped, as the mixer does, rather than wrapped around).
+ */
+@UnstableApi
+class ClippingGain(private val gain: Float) : BaseAudioProcessor() {
+    override fun onConfigure(inputAudioFormat: AudioProcessor.AudioFormat): AudioProcessor.AudioFormat {
+        if (inputAudioFormat.encoding != C.ENCODING_PCM_16BIT && inputAudioFormat.encoding != C.ENCODING_PCM_FLOAT) {
+            throw AudioProcessor.UnhandledAudioFormatException(inputAudioFormat)
+        }
+        return inputAudioFormat
+    }
+
+    override fun queueInput(inputBuffer: ByteBuffer) {
+        if (!inputBuffer.hasRemaining()) return
+        val output = replaceOutputBuffer(inputBuffer.remaining())
+        if (inputAudioFormat.encoding == C.ENCODING_PCM_16BIT) {
+            while (inputBuffer.hasRemaining()) {
+                val v = inputBuffer.getShort() * gain
+                output.putShort(v.coerceIn(Short.MIN_VALUE.toFloat(), Short.MAX_VALUE.toFloat()).toInt().toShort())
+            }
+        } else {
+            while (inputBuffer.hasRemaining()) {
+                output.putFloat((inputBuffer.getFloat() * gain).coerceIn(-1f, 1f))
+            }
+        }
+        output.flip()
+    }
+}
+
 /** What `render` is asked: see [VideoEdit]. */
 data class RenderPlan(
     val input: File,
@@ -126,7 +163,7 @@ data class RenderPlan(
         fun fromArgs(args: Map<*, *>): RenderPlan {
             fun long(map: Map<*, *>, key: String): Long? = (map[key] as? Number)?.toLong()
             fun volume(map: Map<*, *>): Float =
-                ((map["volume"] as? Number)?.toFloat() ?: 1f).let { if (it.isNaN()) 1f else it.coerceIn(0f, 1f) }
+                ((map["volume"] as? Number)?.toFloat() ?: 1f).let { if (it.isNaN()) 1f else it.coerceIn(0f, MAX_VOLUME) }
             val input = args["input"] as? String
             val output = args["output"] as? String
             val startMs = long(args, "startMs")
@@ -181,7 +218,8 @@ data class RenderPlan(
  *
  * The composition (Media3 1.9.2): with the video, the primary sequence is
  * the video clipped to the kept part, its audio removed unless the plan keeps
- * its own sound (through a `GainProcessor` at its volume, unless 1). The song
+ * its own sound (through a gain at its volume, unless 1: a `GainProcessor`,
+ * or, louder than it is, a [ClippingGain]). The song
  * lane is a second sequence: for each clip, silence (a gap) up to where it
  * starts, then the song clipped to its part, at the lane's volume; the
  * composition forces an audio track when the primary has none. A secondary
@@ -347,12 +385,15 @@ class VideoRenderer(private val context: Context) {
         return builder.build()
     }
 
-    /** A gain at [volume], unless 1. */
+    /**
+     * A gain at [volume], unless 1: louder than it is, a [ClippingGain] (a
+     * `GainProcessor` wraps 16-bit samples it lifts past their range).
+     */
     private fun gain(volume: Float): Effects? =
-        if (volume == 1f) {
-            null
-        } else {
-            Effects(listOf(GainProcessor(DefaultGainProvider.Builder(volume).build())), emptyList())
+        when {
+            volume == 1f -> null
+            volume > 1f -> Effects(listOf(ClippingGain(volume)), emptyList())
+            else -> Effects(listOf(GainProcessor(DefaultGainProvider.Builder(volume).build())), emptyList())
         }
 
     private fun clipped(file: File, startMs: Long, endMs: Long): MediaItem =
