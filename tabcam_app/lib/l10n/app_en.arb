@@ -821,9 +821,9 @@
   "@camRecKey": {
     "description": "Cam: the Rec button's tooltip; the 1 key does it too"
   },
-  "camStopKey": "Stop (1) · new take (.)",
+  "camStopKey": "Stop (1) · new take (/) · redo (.)",
   "@camStopKey": {
-    "description": "Cam: the Stop button's tooltip while recording; the 1 key does it too, and the . key saves the take and starts a new one"
+    "description": "Cam: the Stop button's tooltip while recording; the 1 key does it too, the / key saves the take and starts a new one, and the . key throws the take away and starts it again"
   },
   "camMicChoose": "Microphone",
   "@camMicChoose": {
@@ -925,6 +925,10 @@
         "type": "String"
       }
     }
+  },
+  "camTakeDiscarded": "Take thrown away: recording it again",
+  "@camTakeDiscarded": {
+    "description": "Cam: the . key threw the take being recorded away (it isn't saved) and a new one starts"
   },
   "camConvertingTake": "Saving the take so every browser plays it…",
   "@camConvertingTake": {

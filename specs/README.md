@@ -71,7 +71,7 @@ review notes ([app stores](app-stores.md)).
   the tab under it one neckline (staff) at a time, any key (↓) to the
   next and Backspace / ↑ (← with nothing playing along) to the one before, or a strong nod up / right and
   down / left (Android, iOS); Rec (or the 1 key) adds each take to the
-  capture, a green / yellow / red level meter beside it (web, Android), the . key saving it and starting a new one, Play plays it back with the tab turning as it did; Play
+  capture, a green / yellow / red level meter beside it (web, Android), the / key saving it and starting a new one, the . key throwing it away and starting it again, Play plays it back with the tab turning as it did; Play
   along plays one of the capture's recordings, videos or links in a
   frame above the camera, the space bar pausing and playing it, 0
   going back to its start (its section's) and ← / → skipping in it,

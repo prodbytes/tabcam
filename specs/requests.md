@@ -3689,3 +3689,16 @@ spec.
    another app may be using it, with **Try again** and Flip camera. See
    [Cam](cam.md#a-camera-that-wont-start).
 
+2. **"Change the keyboard shortcuts in recording: when . is pressed,
+   start a new take and delete the previous one (keep only the latest),
+   and / cuts but keeps both, the past one and a new one."** In Cam,
+   while recording, **/** (main keyboard or keypad) now does what . did:
+   saves the take and starts the next. **.** (main keyboard or the
+   keypad's decimal key) throws the take being recorded away, never
+   saved or synced, its file deleted from the device (on Android, the
+   app's sound for it dropped), says "Take thrown away: recording it
+   again", and starts the next; only the last take is kept, once
+   stopped. Takes saved before are never touched. Not recording, both
+   start a take as 1 does. Stop's tooltip is now "Stop (1) · new take
+   (/) · redo (.)" (Spanish and Portuguese too). See
+   [Cam](cam.md#new-take-key).

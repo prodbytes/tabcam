@@ -27,6 +27,7 @@ import 'link_frame.dart';
 import 'play_along_sidebar.dart';
 import 'media.dart';
 import 'mp4_length.dart';
+import 'take_file.dart';
 import 'take_log.dart';
 import 'take_h264.dart';
 import 'take_priority.dart';
@@ -55,8 +56,9 @@ bool takePlaysHere(String mimeType) =>
 /// ([HeadTracking]). **Rec** (or the 1 key) records (video and sound)
 /// until it's tapped again, and adds the take to the capture as a video
 /// ("Take 1", "Take 2"…), saved as the camera recorded it, with no tab in
-/// its picture; the . key saves the take and starts the next, the song in
-/// the sidebar from its start. Each take keeps a log of what Cam noted
+/// its picture; the / key saves the take and starts the next, the . key
+/// throws the take away and starts the next (only the last is kept), the
+/// song in the sidebar from its start either way. Each take keeps a log of what Cam noted
 /// while it recorded ([TakeLog]: the tab's turns, the necklines shown,
 /// how far the file started before the take's clock), from which the
 /// video editor draws the tab over it. **Play**
@@ -183,10 +185,11 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   bool _recording = false;
   bool _saving = false;
 
-  /// Saving a take to start the next at once ([_nextTake], the . key).
+  /// Saving a take (the / key) or throwing it away (the . key) to start
+  /// the next at once ([_nextTake]).
   bool _nextTaking = false;
 
-  /// Starting a take ([_rec]): until it records, Rec, 1 and . wait.
+  /// Starting a take ([_rec]): until it records, Rec, 1, / and . wait.
   bool _starting = false;
 
   /// The take Play plays: the capture's last (the user's own last, on a
@@ -195,7 +198,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   VideoPlayerController? _player;
 
   /// Play pressed, the take's player opening (its file may still be
-  /// downloading, a take from another device): Rec, 1 and . wait, and
+  /// downloading, a take from another device): Rec, 1, / and . wait, and
   /// Play (showing Stop) again lets it go, the player let go of as it
   /// opens.
   Object? _opening;
@@ -805,9 +808,16 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       if (event is KeyDownEvent && _canRec) unawaited(_rec());
       return KeyEventResult.handled;
     }
-    // .: Stop and Rec again, a new take (not recording, Rec); a key down,
-    // and nothing while one is saved for the next.
-    if (_alone(event, _nextTakeKeys, _nextTakePhysical)) {
+    // .: the take thrown away and Rec again (only the last is kept); /:
+    // Stop and Rec again, both kept. Not recording, Rec; a key down, and
+    // nothing while one is saved (or thrown away) for the next.
+    if (_alone(event, _retakeKeys, _retakePhysical)) {
+      if (event is KeyDownEvent && _canRec) {
+        unawaited(_nextTake(keep: false));
+      }
+      return KeyEventResult.handled;
+    }
+    if (_alone(event, _nextTakeKeys)) {
       if (event is KeyDownEvent && _canRec) unawaited(_nextTake());
       return KeyEventResult.handled;
     }
@@ -837,9 +847,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     LogicalKeyboardKey.numpad1,
   };
 
-  /// The keys that save the take and start a new one: ., on the main
+  /// The keys that throw the take away and start a new one: ., on the main
   /// keyboard or the keypad.
-  static final _nextTakeKeys = {
+  static final _retakeKeys = {
     LogicalKeyboardKey.period,
     LogicalKeyboardKey.numpadDecimal,
   };
@@ -847,7 +857,14 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   /// The keypad's decimal key, whatever it types: on the web, where it
   /// types "," (Brazilian, German and most European layouts), its logical
   /// key is the comma, not [LogicalKeyboardKey.numpadDecimal].
-  static final _nextTakePhysical = {PhysicalKeyboardKey.numpadDecimal};
+  static final _retakePhysical = {PhysicalKeyboardKey.numpadDecimal};
+
+  /// The keys that save the take and start a new one: /, on the main
+  /// keyboard or the keypad.
+  static final _nextTakeKeys = {
+    LogicalKeyboardKey.slash,
+    LogicalKeyboardKey.numpadDivide,
+  };
 
   /// Whether [event] is one of [keys] (or of the [physical] keys) pressed
   /// alone (with Ctrl, ⌘ or Alt it's another shortcut's, such as the
@@ -1070,11 +1087,13 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     );
   }
 
-  /// The . key: while recording, a new take. The song in the sidebar
-  /// stops at once, back at its start (its section's); the take is saved
-  /// as Stop saves it; then Rec starts the next, and the song with it
-  /// from there (counting in, if that's on). Not recording, Rec.
-  Future<void> _nextTake() async {
+  /// The / key (and, with [keep] false, the . key): while recording, a new
+  /// take. The song in the sidebar stops at once, back at its start (its
+  /// section's); the take is saved as Stop saves it (with [keep] false,
+  /// thrown away: only the next is kept); then Rec starts the next, and
+  /// the song with it from there (counting in, if that's on). Not
+  /// recording, Rec.
+  Future<void> _nextTake({bool keep = true}) async {
     if (!_recording) return _rec();
     setState(() => _nextTaking = true);
     try {
@@ -1085,8 +1104,8 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
           debugPrint('TabCam: cam: the song didn\'t stop: $e');
         }
       }
-      await _stopRecording();
-      // The take is kept whether or not the next one starts.
+      await _stopRecording(keep: keep);
+      // The take is kept (or gone) whether or not the next one starts.
       if (!mounted || _controller == null) return;
       await _rec();
     } finally {
@@ -1094,8 +1113,10 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     }
   }
 
-  /// Stops recording and adds the take to the capture.
-  Future<void> _stopRecording() async {
+  /// Stops recording and adds the take to the capture; with [keep] false
+  /// (the . key), throws it away instead: nothing is added, and its file
+  /// is deleted from the device.
+  Future<void> _stopRecording({bool keep = true}) async {
     final controller = _controller;
     if (!_recording || controller == null) return;
     final l10n = context.l10n;
@@ -1115,12 +1136,17 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         file = await (_byRecorder
             ? _timedStop(_recorder!.stop)
             : _ownSound
-            ? _stopWithSound(controller)
+            ? (keep ? _stopWithSound(controller) : _stopNoSound(controller))
             : _timedStop(controller.stopVideoRecording));
       } finally {
         _takeRecording(false);
       }
       unawaited(_stream());
+      if (!keep) {
+        await discardTakeFile(file);
+        if (mounted) _snack(l10n.camTakeDiscarded);
+        return;
+      }
       // The log: the tab's turns as they came, and the lag (on the phones,
       // with the file's length as recorded).
       final tab = _lines.isEmpty ? null : TakeTab.of(_lines, marks);
@@ -1202,6 +1228,18 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     if (mounted && error != null) _snack(l10n.camTakeNoSound(error));
     if (mounted && warning != null) _snack(l10n.camTakeSoundWarning(warning));
     return take;
+  }
+
+  /// Android, the take's sound recorded by the app, the take thrown away:
+  /// the camera stopped and the sound dropped ([TakeSound.cancel]), its
+  /// file deleted, not put into the video.
+  Future<XFile> _stopNoSound(CameraController controller) async {
+    await TakeSound.videoStopping();
+    try {
+      return await _timedStop(controller.stopVideoRecording);
+    } finally {
+      await TakeSound.cancel();
+    }
   }
 
   /// iOS: [take] made H.264 ([TakeH264.convert]); should that fail, the
