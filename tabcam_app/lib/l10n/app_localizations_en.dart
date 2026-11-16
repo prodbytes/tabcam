@@ -593,7 +593,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camRecKey => 'Rec (1)';
 
   @override
-  String get camStopKey => 'Stop (1) · new take (.)';
+  String get camStopKey => 'Stop (1) · new take (/) · redo (.)';
 
   @override
   String get camMicChoose => 'Microphone';
@@ -664,6 +664,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String camCouldntRecord(String error) {
     return 'Couldn\'t record: $error';
   }
+
+  @override
+  String get camTakeDiscarded => 'Take thrown away: recording it again';
 
   @override
   String get camConvertingTake => 'Saving the take so every browser plays it…';

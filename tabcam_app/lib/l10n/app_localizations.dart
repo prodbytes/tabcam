@@ -1042,10 +1042,10 @@ abstract class AppLocalizations {
   /// **'Rec (1)'**
   String get camRecKey;
 
-  /// Cam: the Stop button's tooltip while recording; the 1 key does it too, and the . key saves the take and starts a new one
+  /// Cam: the Stop button's tooltip while recording; the 1 key does it too, the / key saves the take and starts a new one, and the . key throws the take away and starts it again
   ///
   /// In en, this message translates to:
-  /// **'Stop (1) · new take (.)'**
+  /// **'Stop (1) · new take (/) · redo (.)'**
   String get camStopKey;
 
   /// Cam: the tooltip of the arrow beside Rec, which opens a menu to choose the microphone takes record from
@@ -1161,6 +1161,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t record: {error}'**
   String camCouldntRecord(String error);
+
+  /// Cam: the . key threw the take being recorded away (it isn't saved) and a new one starts
+  ///
+  /// In en, this message translates to:
+  /// **'Take thrown away: recording it again'**
+  String get camTakeDiscarded;
 
   /// Cam (iOS): the take, recorded in HEVC, is being made H.264 as it's saved
   ///
