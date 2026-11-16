@@ -3702,3 +3702,8 @@ spec.
    start a take as 1 does. Stop's tooltip is now "Stop (1) · new take
    (/) · redo (.)" (Spanish and Portuguese too). See
    [Cam](cam.md#new-take-key).
+4. **"Make head gesture disabled by default."** Cam now opens with head
+   gestures off (each time; the choice isn't kept): nothing watches for
+   faces, the camera streams no frames for them, and on the web the
+   face model loads only once they're switched on with the face icon in
+   the app bar. See [Cam](cam.md#head-gestures).

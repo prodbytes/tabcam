@@ -73,7 +73,7 @@ its **Not now** leaving. With Premium it opens the camera view
     (`@mediapipe/tasks-vision@0.10.21`, its WebAssembly from the same
     jsDelivr path) and the model (`face_landmarker.task`, float16 v1,
     from Google's `storage.googleapis.com/mediapipe-models`) load only
-    when Cam opens with head gestures on, with the GPU, or the CPU if
+    once head gestures are switched on, with the GPU, or the CPU if
     that fails. If they can't load (offline, blocked), it's logged
     (`TabCam: head gestures: …`) and no face is seen: Cam works on
     without gestures. The frames never leave the browser.
@@ -85,9 +85,10 @@ its **Not now** leaving. With Premium it opens the camera view
     mirrors the front camera's preview with CSS only) and the user's
     right is on the frame's left.
 
-  A face icon in the app bar switches them on (the default) and off,
-  in the theme's primary colour while it sees a face; off, nothing
-  watches for faces. While a take plays back, gestures do nothing.
+  They're **off when Cam opens** (each time: the choice isn't kept). A
+  face icon in the app bar switches them on and off, in the theme's
+  primary colour while it sees a face; off (struck through), nothing
+  watches for faces and the camera streams no frames for them. While a take plays back, gestures do nothing.
 - **Rec** records video and sound (`camera`, `ResolutionPreset.high`)
   from the neckline showing, until **Stop**, the sound first
   ([Recording comes first](#recording-comes-first)).
@@ -959,7 +960,7 @@ slow down while a take records
   gestures off when the take starts, the camera streams no frames during
   it at all (turned on during a take, they work from the next). Cloud
   sync starts no pass (one asked for meanwhile,
-  such as for the take just saved before the **.** key's next one, runs
+  such as for the take just saved before the **/** key's next one, runs
   2 s after the take ends, unless another starts by then; a pass already
   running goes on); phrase passes are kept when the take ends, as
   before. Auto-pass and the song playing along go on as ever.
