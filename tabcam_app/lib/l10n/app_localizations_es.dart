@@ -2203,6 +2203,12 @@ class AppLocalizationsEs extends AppLocalizations {
       'El video desde y hacia negro, con los dos sonidos';
 
   @override
+  String get videoEditMaster => 'Máster';
+
+  @override
+  String get videoEditMasterAbout => 'Los dos sonidos juntos, hasta el 200 %';
+
+  @override
   String get videoEditFadesEdit => 'Cambiar los fundidos';
 
   @override

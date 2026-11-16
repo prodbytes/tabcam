@@ -66,8 +66,9 @@ class SongClip {
   String toString() => 'SongClip(at $at: $from–$to×$speed)';
 }
 
-/// The video's own sound, at [volume] (0 to 1; 0 only in a preview's
-/// plan, for a lane that isn't heard).
+/// The video's own sound, at [volume] (0 to 2: its lane's level through
+/// the master's, `PageEdit.ownLevel`; 0 only in a preview's plan, for a
+/// lane that isn't heard).
 @immutable
 class OwnLane {
   const OwnLane({this.volume = 1});
@@ -85,7 +86,8 @@ class OwnLane {
 }
 
 /// The song lane: the capture's page [page], its [file] (left out of a
-/// preview's plan), at [volume] (0 to 1), heard in [clips], in output
+/// preview's plan), at [volume] (0 to 2: its lane's level through the
+/// master's, `PageEdit.songLevel`), heard in [clips], in output
 /// order, silent between them.
 @immutable
 class SongLane {
@@ -729,7 +731,7 @@ class RenderPlan {
     final audible = kind != RenderKind.silent;
     OwnLane? own;
     if (audible && (edit == null || edit.ownAudible)) {
-      own = OwnLane(volume: edit?.ownVolume ?? 1);
+      own = OwnLane(volume: edit?.ownLevel ?? 1);
     } else if (audible && preview) {
       own = const OwnLane(volume: 0);
     }
@@ -763,7 +765,7 @@ class RenderPlan {
       song = SongLane(
         file: songFile,
         page: edit.trackId,
-        volume: edit.songAudible ? edit.trackVolume : 0,
+        volume: edit.songAudible ? edit.songLevel : 0,
         clips: clampClips(clips, length),
       );
     }

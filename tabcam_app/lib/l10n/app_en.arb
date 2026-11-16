@@ -2968,6 +2968,14 @@
   "@videoEditFadesAbout": {
     "description": "Video edit: what the fades do (the Fades chip's tooltip, and above their sliders)"
   },
+  "videoEditMaster": "Master",
+  "@videoEditMaster": {
+    "description": "Video edit: the master, where both lanes' sound goes (its volume, up to 200%, and Mute), above the fades"
+  },
+  "videoEditMasterAbout": "Both sounds together, up to 200%",
+  "@videoEditMasterAbout": {
+    "description": "Video edit: what the master volume does (under its name)"
+  },
   "videoEditFadesEdit": "Change the fades",
   "@videoEditFadesEdit": {
     "description": "Video edit: the Fades chip's button that opens their sliders"

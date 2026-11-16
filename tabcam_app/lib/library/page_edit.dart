@@ -233,6 +233,8 @@ class EditTabStyle {
 /// [trackEnd] (null: its end) is used, starting [offset] after the kept
 /// part's start (before it, when negative), at [trackVolume], unless
 /// [songMuted]; placed as [song] says). Muting a lane keeps its level.
+/// Both lanes go through the master, at [masterVolume] (up to 200%),
+/// unless [masterMuted] (its level kept too).
 /// Over the picture: the tab of one of Cam's takes, unless [tab] is off,
 /// looking as [tabStyle] says; a title ([title]; null: the capture's name), and the watermark, unless
 /// [watermark] is off (which only a Premium user can do, and only a
@@ -261,6 +263,8 @@ class PageEdit {
     this.trackEnd,
     this.offset = Duration.zero,
     this.trackVolume = 1,
+    this.masterVolume = 1,
+    this.masterMuted = false,
     this.tab = true,
     this.tabStyle = EditTabStyle.standard,
     this.title,
@@ -337,6 +341,8 @@ class PageEdit {
     'ownVolume',
     'ownMuted',
     'songMuted',
+    'masterVolume',
+    'masterMuted',
     'song',
     'tab',
     'tabStyle',
@@ -369,6 +375,13 @@ class PageEdit {
   /// How loud the song lane plays, from 0 (silent) to 1 (as it is, the
   /// default): the players can't play it louder than it is.
   final double trackVolume;
+
+  /// How loud both lanes play together, after their own levels: 0 to 2
+  /// (200%; 1, as they are, the default), and whether the master is muted
+  /// (its level kept). Written (`masterVolume`, `masterMuted`) only when
+  /// not the default; older apps keep them, and play the lanes without it.
+  final double masterVolume;
+  final bool masterMuted;
 
   /// Whether the tab is drawn over a take that can have it (one whose
   /// log has its tab, not already in its picture: `tabOffered`): on by
@@ -409,6 +422,15 @@ class PageEdit {
       ? (volume.clamp(0, 1) * 100).round() / 100
       : 1;
 
+  /// The most [masterVolume] can be: 200%.
+  static const maxMaster = 2.0;
+
+  /// [volume] as the master's: within 0–[maxMaster], to the hundredth; 1
+  /// when it isn't a number.
+  static double master(Object? volume) => volume is num && volume.isFinite
+      ? (volume.clamp(0, maxMaster) * 100).round() / 100
+      : 1;
+
   /// How the song lane is placed: as [song] says, or, by default, none
   /// without a song picked, and [SongMode.auto] with one: a take's song
   /// lined up by itself from its log, the only song written without
@@ -416,14 +438,29 @@ class PageEdit {
   SongMode get songMode =>
       song ?? (trackId == null ? SongMode.off : SongMode.auto);
 
-  /// Whether the video's own sound is heard.
-  bool get ownAudible => !ownMuted && ownVolume > 0;
+  /// Whether the master lets the lanes be heard.
+  bool get masterAudible => !masterMuted && masterVolume > 0;
+
+  /// Whether the video's own sound is heard (its lane, and the master).
+  bool get ownAudible => masterAudible && !ownMuted && ownVolume > 0;
+
+  /// How loud the video's own sound plays in the mix: its lane's level
+  /// through the master's, 0 to 2.
+  double get ownLevel => _through(ownVolume);
+
+  /// How loud the song plays in the mix: its lane's level through the
+  /// master's, 0 to 2.
+  double get songLevel => _through(trackVolume);
+
+  double _through(double volume) =>
+      (volume * masterVolume * 10000).round() / 10000;
 
   /// Whether the song lane has a song in it (placed, and picked).
   bool get hasSong => songMode != SongMode.off && trackId != null;
 
-  /// Whether the song lane is heard.
-  bool get songAudible => hasSong && !songMuted && trackVolume > 0;
+  /// Whether the song lane is heard (it, and the master).
+  bool get songAudible =>
+      masterAudible && hasSong && !songMuted && trackVolume > 0;
 
   /// The sound apps before the two lanes play (written as `sound`): the
   /// track alone when only the song is heard, none when neither is, and
@@ -438,11 +475,15 @@ class PageEdit {
   /// them: the song lane, with a track picked, becomes [SongMode.manual]
   /// (its track keys), and the lanes are muted or not as [sound] says.
   /// The levels stay (the own sound's put back to 100% if it's to be heard
-  /// at 0%, as an older app plays it as it is).
+  /// at 0%, as an older app plays it as it is), and the master lets a lane
+  /// be heard if one is to be (unmuted, at 100% if it was at 0%).
   PageEdit followingSound(EditSound sound) {
     final own = sound == EditSound.original;
     final picked = trackId != null;
+    final heard = sound != EditSound.none;
     return copyWith(
+      masterMuted: heard ? false : masterMuted,
+      masterVolume: heard && masterVolume <= 0 ? 1 : masterVolume,
       ownMuted: !own,
       ownVolume: own && ownVolume <= 0 ? 1 : ownVolume,
       song: picked ? SongMode.manual : song,
@@ -463,6 +504,8 @@ class PageEdit {
     if (ownVolume != 1) 'ownVolume': ownVolume,
     if (ownMuted) 'ownMuted': true,
     if (songMuted) 'songMuted': true,
+    if (masterVolume != 1) 'masterVolume': masterVolume,
+    if (masterMuted) 'masterMuted': true,
     if (song != null) 'song': song!.name,
     if (!tab) 'tab': false,
     if (!tabStyle.isStandard) 'tabStyle': tabStyle.toJson(),
@@ -510,6 +553,8 @@ class PageEdit {
       ownMuted: json['ownMuted'] == true,
       song: SongMode.byName(json['song']),
       songMuted: json['songMuted'] == true,
+      masterVolume: master(json['masterVolume']),
+      masterMuted: json['masterMuted'] == true,
     );
     // An older app changed `sound` since (it knows only the old keys):
     // their old meaning wins for the lanes.
@@ -533,6 +578,8 @@ class PageEdit {
     Object? trackEnd = _same,
     Duration? offset,
     double? trackVolume,
+    double? masterVolume,
+    bool? masterMuted,
     bool? tab,
     EditTabStyle? tabStyle,
     Object? title = _same,
@@ -554,6 +601,10 @@ class PageEdit {
         : trackEnd as Duration?,
     offset: offset ?? this.offset,
     trackVolume: trackVolume == null ? this.trackVolume : volume(trackVolume),
+    masterVolume: masterVolume == null
+        ? this.masterVolume
+        : master(masterVolume),
+    masterMuted: masterMuted ?? this.masterMuted,
     tab: tab ?? this.tab,
     tabStyle: tabStyle ?? this.tabStyle,
     title: identical(title, _same) ? this.title : title as EditTitle?,
@@ -579,6 +630,8 @@ class PageEdit {
     trackEnd,
     offset,
     trackVolume,
+    masterVolume,
+    masterMuted,
     tab,
     tabStyle,
     title,
