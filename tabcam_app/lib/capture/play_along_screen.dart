@@ -91,6 +91,35 @@ bool takePlaysHere(String mimeType) =>
 /// processing, at a high bitrate), set up when Cam opens rather than as
 /// the take starts; while it records, head gestures
 /// look less often, and cloud sync starts no pass.
+/// A take's name: "Take" and the time it started, [started], as hours and
+/// minutes ("Take 14:32", 24-hour); with the seconds ("Take 14:32:07")
+/// should a take of that day among [pages] have that name already, and a
+/// number after them should that one too ("Take 14:32:07 (2)"). The day
+/// isn't in the name: the sidebar lists the takes under their day.
+String takeName(
+  AppLocalizations l10n,
+  DateTime started,
+  Iterable<EventPage> pages,
+) {
+  final names = {
+    for (final p in pages)
+      if (timeOfId(p.id) case final made?
+          when DateUtils.isSameDay(made, started))
+        p.title,
+  };
+  String two(int n) => n.toString().padLeft(2, '0');
+  final minute = l10n.camTake('${two(started.hour)}:${two(started.minute)}');
+  if (!names.contains(minute)) return minute;
+  final second = l10n.camTake(
+    '${two(started.hour)}:${two(started.minute)}:${two(started.second)}',
+  );
+  var name = second;
+  for (var n = 2; names.contains(name); n++) {
+    name = '$second ($n)';
+  }
+  return name;
+}
+
 class PlayAlongScreen extends StatefulWidget {
   const PlayAlongScreen({
     super.key,
@@ -106,6 +135,11 @@ class PlayAlongScreen extends StatefulWidget {
 
   final Library library;
   final String eventId;
+
+  /// The time now, which names the takes ("Take 14:32"); tests set their
+  /// own.
+  @visibleForTesting
+  static DateTime Function() now = DateTime.now;
 
   /// Set for a user without Premium: the screen is a preview, greyed out
   /// under the Premium card ([PremiumGate]). No camera opens, no key or
@@ -168,6 +202,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   Duration _startCall = Duration.zero;
   Duration _startReturn = Duration.zero;
   Duration _clockZero = Duration.zero;
+
+  /// When the take recording now started (Rec pressed): its name's time.
+  DateTime _takeStarted = DateTime.now();
   Duration _stopCall = Duration.zero;
   Duration _stopReturn = Duration.zero;
 
@@ -981,6 +1018,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       return;
     }
     _clockZero = _span.elapsed;
+    _takeStarted = PlayAlongScreen.now();
     _recorderLag = _byRecorder ? _recorder?.msSinceStart() : null;
     _clock
       ..reset()
@@ -1176,11 +1214,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       // Cam opens on the user's own copy of a capture shared with them
       // (the event screen makes it), so takes are always theirs; added to a
       // shared one, the take would go to their copy ([Library.copyToAdd]).
-      final names = {for (final p in event.pages) p.title};
-      var n = 1;
-      while (names.contains(l10n.camTake(n))) {
-        n++;
-      }
+      final name = takeName(l10n, _takeStarted, event.pages);
       final updated = await library.addMedia(
         event,
         [media],
@@ -1188,7 +1222,6 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         takeLog: log,
       );
       final page = updated.pages.last;
-      final name = l10n.camTake(n);
       await library.renamePage(updated.id, page.id, name);
       // Played along later, the take turns the tab as it turned in it
       // while auto-pass was on (off all along: it has no passes).

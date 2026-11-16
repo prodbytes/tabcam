@@ -102,8 +102,14 @@ its **Not now** leaving. With Premium it opens the camera view
   shortcut's (the browser's) and turns the tab as any key. The button's
   tooltip says so: "Rec (1)", and "Stop (1) · new take (/) · redo (.)" while
   recording, in English, Spanish and Portuguese. The take is then added to
-  the capture as a video, at the end of its files, named "Take 1",
-  "Take 2"… (the first number no file has), and a message says so. It
+  the capture as a video, at the end of its files, named by **the time
+  it started** (Rec, / or . pressed), in hours and minutes, 24-hour:
+  "Take 14:32" (Spanish "Toma 14:32"; `takeName`). The date isn't in the
+  name: the sidebar lists the takes under their day. Should a take of
+  that day have that name already (two takes started in one minute), the
+  seconds are added ("Take 14:32:07"), and should that one be taken too,
+  a number ("Take 14:32:07 (2)"). Takes saved before were named "Take 1",
+  "Take 2"… and keep their names. A message says the take was added. It
   is marked as a take (`take` on its page, `EventPage.take`), which
   stays when it's renamed, edited, cloned or published, so the
   play-along sidebar lists it with the [takes](#playing-along-with-a-file).
@@ -454,10 +460,21 @@ first, if listed; then the files to play along in the capture's order,
 under **Play along**, each with its icon and name; then the
 [PDFs](#following-a-pdf) or pages to follow; and **last, Cam's takes**,
 under **Takes** (Spanish **Tomas**), **the most recent first** (the
-reverse of the order they were made: Take 3, Take 2, Take 1), played along as the others
-are. A take is one Cam marked as such (renamed, it still is one), or,
-saved before takes were marked, a video named as Cam names them in any
-of the app's languages ("Take 3", "Toma 3"; `isTake`). On a capture
+reverse of the order they were made), **grouped by day**: each day's
+takes under a small heading of their own, **Today** (Spanish **Hoy**,
+Portuguese **Hoje**), **Yesterday** (**Ayer**, **Ontem**), else the
+date in the app's language, weekday, month and day ("Sat, Nov 14"),
+with the year when it isn't this one ("Wed, Dec 31, 2025";
+`dayLabel`). The day is when the take was saved, read from its page's
+ID, which is the time it was made in microseconds (`timeOfId`), so
+takes saved before this grouping are grouped too; one whose ID isn't a
+time (none Cam makes) is listed without a day heading, where it falls
+(`takesByDay`). A take copied into another capture gets a new ID, so
+it's listed under the day it was copied. Takes are played along as the
+others are. A take is one Cam marked as such (renamed, it still is
+one), or, saved before takes were marked, a video named as Cam names
+them in any of the app's languages, by number or by time ("Take 3",
+"Toma 3", "Take 14:32"; `isTake`). On a capture
 shared to read, the reader's own files (their
 [contribution](contributions.md)'s, their takes among them) are listed
 too, after the capture's (their takes under **Takes**, above the

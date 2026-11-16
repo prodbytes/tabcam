@@ -784,6 +784,20 @@ String checkExtension(String extension) {
 
 var _lastId = 0;
 
+/// When the item with [id] was made, by the device's clock: the
+/// microseconds a [newId] holds; null for an ID that isn't one (not base
+/// 36, or not a time from 2020 to a day from now).
+DateTime? timeOfId(String id) {
+  final us = int.tryParse(id, radix: 36);
+  if (us == null) return null;
+  final earliest = DateTime.utc(2020).microsecondsSinceEpoch;
+  final latest = DateTime.now()
+      .add(const Duration(days: 1))
+      .microsecondsSinceEpoch;
+  if (us < earliest || us > latest) return null;
+  return DateTime.fromMicrosecondsSinceEpoch(us);
+}
+
 /// A new ID: the time in microseconds, base 36, unique within this run.
 String newId() {
   var now = DateTime.now().microsecondsSinceEpoch;
