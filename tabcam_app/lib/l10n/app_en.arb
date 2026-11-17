@@ -1019,6 +1019,15 @@
       }
     }
   },
+  "camAlongEdit": "Edit {name}",
+  "@camAlongEdit": {
+    "description": "Play-along sidebar: tooltip of the Edit button (scissors) on a take's row, before Delete; it opens the video editor on that take",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "camAlongPdfShow": "Show the PDF beside the camera",
   "@camAlongPdfShow": {
     "description": "Cam sidebar: tooltip of a PDF not showing"
@@ -2968,15 +2977,7 @@
   },
   "videoEditLayerWatermark": "Watermark",
   "@videoEditLayerWatermark": {
-    "description": "Video edit: the chip of the small tabs.cam line at the bottom right of the video (only Premium can turn it off)"
-  },
-  "videoEditWatermarkTake": "Recorded by tabs.cam",
-  "@videoEditWatermarkTake": {
-    "description": "Video edit: the watermark's text on one of Cam's takes; drawn on the video itself"
-  },
-  "videoEditWatermarkMade": "Made with tabs.cam",
-  "@videoEditWatermarkMade": {
-    "description": "Video edit: the watermark's text on a video Cam didn't record; drawn on the video itself"
+    "description": "Video edit: the chip of the small \"tabs.cam\" at the bottom right of the video (only Premium can turn it off)"
   },
   "videoEditWatermarkAbout": "“{text}”, small, at the bottom right",
   "@videoEditWatermarkAbout": {

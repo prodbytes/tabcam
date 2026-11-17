@@ -750,6 +750,11 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String camAlongEdit(String name) {
+    return 'Editar $name';
+  }
+
+  @override
   String get camAlongPdfShow => 'Mostrar o PDF ao lado da câmera';
 
   @override
@@ -2196,12 +2201,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoEditLayerWatermark => 'Marca d\'água';
-
-  @override
-  String get videoEditWatermarkTake => 'Gravado com tabs.cam';
-
-  @override
-  String get videoEditWatermarkMade => 'Feito com tabs.cam';
 
   @override
   String videoEditWatermarkAbout(String text) {

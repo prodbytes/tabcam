@@ -728,6 +728,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String camAlongEdit(String name) {
+    return 'Edit $name';
+  }
+
+  @override
   String get camAlongPdfShow => 'Show the PDF beside the camera';
 
   @override
@@ -2155,12 +2160,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoEditLayerWatermark => 'Watermark';
-
-  @override
-  String get videoEditWatermarkTake => 'Recorded by tabs.cam';
-
-  @override
-  String get videoEditWatermarkMade => 'Made with tabs.cam';
 
   @override
   String videoEditWatermarkAbout(String text) {

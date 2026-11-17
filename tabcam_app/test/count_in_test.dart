@@ -193,6 +193,56 @@ void main() {
     track.dispose();
   });
 
+  testWidgets('0 while it plays or counts in: back to the start, counting '
+      'in again before it plays; paused, it stays paused there', (
+    tester,
+  ) async {
+    final (track, _) = await loaded(tester);
+    // Paused: back to the start, still paused, with no count-in.
+    await track.restart();
+    expect(video.seeks.last, Duration.zero);
+    expect(track.countingIn, isFalse);
+    await tester.pump(const Duration(seconds: 3));
+    expect(track.playing, isFalse);
+
+    // Playing: silent at the start while it counts in, then it plays.
+    await track.toggle();
+    await tester.pump(BackingTrack.countInLength);
+    expect(track.playing, isTrue);
+    final run = track.countInRun;
+    video.seeks.clear();
+    await track.restart();
+    expect(video.seeks, const [Duration.zero]);
+    expect(track.countingIn, isTrue);
+    expect(track.countInRun, run + 1);
+    expect(video.playing, isEmpty);
+    await tester.pump(BackingTrack.countInLength);
+    expect(track.countingIn, isFalse);
+    expect(track.playing, isTrue);
+
+    // Counting in: the count starts over.
+    await track.toggle();
+    await track.toggle();
+    expect(track.countingIn, isTrue);
+    await tester.pump(const Duration(milliseconds: 1500));
+    await track.restart();
+    expect(track.countingIn, isTrue);
+    await tester.pump(const Duration(milliseconds: 1500));
+    expect(track.playing, isFalse);
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(track.playing, isTrue);
+
+    // With the count-in off, it plays on from the start.
+    await tester.runAsync(() => track.setCountIn(false));
+    video.seeks.clear();
+    await track.restart();
+    expect(video.seeks, const [Duration.zero]);
+    expect(track.countingIn, isFalse);
+    expect(track.playing, isTrue);
+    await track.pause();
+    track.dispose();
+  });
+
   testWidgets('space starts the count-in', (tester) async {
     final (track, _) = await loaded(tester);
     await tester.pumpWidget(

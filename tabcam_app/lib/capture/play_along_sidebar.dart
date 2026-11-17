@@ -351,22 +351,41 @@ class PlayAlongBeside extends StatelessWidget {
     this.keepId,
     this.letGo,
     this.run,
+    this.onEdit,
+    this.oneToggles = true,
+    this.keys = true,
   });
 
   final PlayAlong along;
   final Widget child;
 
+  /// Whether the player's keys work ([PlayAlongKeys]); false in a
+  /// preview, where no key does anything.
+  final bool keys;
+
+  /// Whether the 1 key pauses and plays what plays along, as the space
+  /// bar ([PlayAlongKeys]); false in Cam, where 1 is Rec / Stop.
+  final bool oneToggles;
+
   /// Whether the sidebar's files show Delete (those the user may delete,
   /// [mayDeleteFile]); false (a preview), none does.
   final bool deletes;
 
-  /// Whether Delete works now; false (Cam recording or saving a take, the
-  /// screen busy), it's greyed.
+  /// Whether Delete (and a take's Edit, [onEdit]) works now; false (Cam
+  /// recording or saving a take, the screen busy), they're greyed.
   final bool canDelete;
 
-  /// A file that shows no Delete in the sidebar: the file screen's own
-  /// (its app bar deletes it, and the screen with it).
+  /// A file that shows no Delete, nor Edit, in the sidebar: the file
+  /// screen's own (its own tools delete and edit it).
   final String? keepId;
+
+  /// Opens the video editor on one of the sidebar's takes
+  /// ([VideoEditScreen.open], as the file screen's Edit does), done when
+  /// the user is back; null (a preview, a capture opened by its link):
+  /// no take shows Edit. With it, the user's own takes do
+  /// ([PlayAlongSidebar.mayEdit]), before Delete, and work when Delete
+  /// does ([canDelete]).
+  final Future<void> Function(EventPage page)? onEdit;
 
   /// Before a file deleted from the sidebar goes, once the user confirms,
   /// besides the sidebar's own player: the screen lets go of it too (the
@@ -419,6 +438,15 @@ class PlayAlongBeside extends StatelessWidget {
         run: run,
       );
     }
+    onUse?.call();
+  }
+
+  /// Opens the editor on the take [page] ([onEdit]): what plays along
+  /// pauses first, so only the editor's preview sounds.
+  Future<void> _edit(EventPage page) async {
+    onUse?.call();
+    await along.track.pause();
+    await onEdit?.call(page);
     onUse?.call();
   }
 
@@ -520,6 +548,8 @@ class PlayAlongBeside extends StatelessWidget {
                 offstage: !along.open,
                 child: PlayAlongKeys(
                   track: along.track,
+                  active: along.open && keys,
+                  oneToggles: oneToggles,
                   child: PlayAlongSidebar(
                     width: sidebarWidth,
                     library: along.library,
@@ -534,6 +564,7 @@ class PlayAlongBeside extends StatelessWidget {
                     keepId: keepId,
                     canDelete: canDelete,
                     onDelete: deletes ? (page) => _delete(context, page) : null,
+                    onEdit: onEdit == null ? null : _edit,
                     onFollow: (page) {
                       onUse?.call();
                       along.follow(page);
@@ -596,16 +627,33 @@ class PlayAlongBeside extends StatelessWidget {
   );
 }
 
-/// The play-along player's keys, while the keyboard is in the sidebar
-/// (a tap in it takes it there): **0** goes back to the start of the file
-/// or its section ([BackingTrack.restart]), the **space bar** pauses and
-/// plays it. Cam has its own keys and takes the keyboard back after a
-/// tap, handling the same ones.
+/// The play-along player's keys, in every screen with the sidebar, while
+/// it shows ([active]) and its screen is the one in front, wherever the
+/// keyboard is but in a field being typed in: **0** goes back to the
+/// start of the file or its section, count-in and all
+/// ([BackingTrack.restart]); the **space bar** and, where [oneToggles],
+/// **1** pause and play it. They get the keys first
+/// ([FocusManager.addEarlyKeyEventHandler]), so the screen under them
+/// doesn't (Cam's turn the tab). A tap in the sidebar takes the keyboard
+/// out of a field, so the keys are the player's again.
 class PlayAlongKeys extends StatefulWidget {
-  const PlayAlongKeys({super.key, required this.track, required this.child});
+  const PlayAlongKeys({
+    super.key,
+    required this.track,
+    required this.child,
+    this.active = true,
+    this.oneToggles = true,
+  });
 
   final BackingTrack track;
   final Widget child;
+
+  /// Whether the sidebar shows: hidden, the keys are the screen's.
+  final bool active;
+
+  /// Whether 1 pauses and plays, as the space bar; false in Cam, where 1
+  /// is Rec / Stop (which starts the song too).
+  final bool oneToggles;
 
   /// The keys that go back to the start: 0, on the top row or the keypad.
   static final restart = {
@@ -613,14 +661,18 @@ class PlayAlongKeys extends StatefulWidget {
     LogicalKeyboardKey.numpad0,
   };
 
-  /// Whether [event] is 0 pressed alone (Ctrl / ⌘ + 0 is the browser's
-  /// zoom, left to it).
-  static bool isRestart(KeyEvent event) {
-    final keys = HardwareKeyboard.instance;
-    return restart.contains(event.logicalKey) &&
-        !keys.isControlPressed &&
-        !keys.isMetaPressed &&
-        !keys.isAltPressed;
+  /// The keys that pause and play, with the space bar: 1, on the top row
+  /// or the keypad.
+  static final toggle = {LogicalKeyboardKey.digit1, LogicalKeyboardKey.numpad1};
+
+  /// Whether [event] is one of [keys] pressed alone (Ctrl / ⌘ + 0 is the
+  /// browser's zoom, Ctrl / ⌘ + 1 its first tab, left to it).
+  static bool _alone(KeyEvent event, Set<LogicalKeyboardKey> keys) {
+    final keyboard = HardwareKeyboard.instance;
+    return keys.contains(event.logicalKey) &&
+        !keyboard.isControlPressed &&
+        !keyboard.isMetaPressed &&
+        !keyboard.isAltPressed;
   }
 
   @override
@@ -630,29 +682,54 @@ class PlayAlongKeys extends StatefulWidget {
 class _PlayAlongKeysState extends State<PlayAlongKeys> {
   final _focus = FocusNode(debugLabel: 'play-along keys');
 
+  /// The screen the sidebar is in: under another (a dialog, a menu, the
+  /// editor), the keys aren't the player's.
+  ModalRoute<Object?>? _route;
+
+  @override
+  void initState() {
+    super.initState();
+    FocusManager.instance.addEarlyKeyEventHandler(_key);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _route = ModalRoute.of(context);
+  }
+
   @override
   void dispose() {
+    FocusManager.instance.removeEarlyKeyEventHandler(_key);
     _focus.dispose();
     super.dispose();
   }
 
-  KeyEventResult _key(FocusNode _, KeyEvent event) {
-    if (event is KeyUpEvent || widget.track.page == null) {
+  KeyEventResult _key(KeyEvent event) {
+    final track = widget.track;
+    if (event is KeyUpEvent ||
+        !widget.active ||
+        track.page == null ||
+        !(_route?.isCurrent ?? true)) {
       return KeyEventResult.ignored;
     }
     // Typing in a field isn't playing.
-    if (FocusManager.instance.primaryFocus?.context
-            ?.findAncestorWidgetOfExactType<EditableText>() !=
-        null) {
-      return KeyEventResult.ignored;
-    }
-    if (PlayAlongKeys.isRestart(event)) {
-      if (event is KeyDownEvent) unawaited(widget.track.restart());
+    final field = FocusManager.instance.primaryFocus?.context
+        ?.findAncestorWidgetOfExactType<EditableText>();
+    if (field != null && !field.readOnly) return KeyEventResult.ignored;
+    if (PlayAlongKeys._alone(event, PlayAlongKeys.restart)) {
+      if (event is KeyDownEvent) unawaited(track.restart());
       return KeyEventResult.handled;
     }
-    if (event.logicalKey == LogicalKeyboardKey.space &&
-        widget.track.canToggle) {
-      if (event is KeyDownEvent) unawaited(widget.track.toggle());
+    final toggles =
+        event.logicalKey == LogicalKeyboardKey.space ||
+        (widget.oneToggles &&
+            PlayAlongKeys._alone(event, PlayAlongKeys.toggle));
+    if (toggles) {
+      // Nothing to play or pause yet (it's loading): still the player's.
+      if (event is KeyDownEvent && track.canToggle) {
+        unawaited(track.toggle());
+      }
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
@@ -661,12 +738,13 @@ class _PlayAlongKeysState extends State<PlayAlongKeys> {
   @override
   Widget build(BuildContext context) => Listener(
     behavior: HitTestBehavior.translucent,
-    // A tap anywhere in the sidebar gives it the keyboard (its buttons
-    // don't take it), unless something in it already has it.
+    // A tap anywhere in the sidebar takes the keyboard (its buttons
+    // don't), out of a field being typed in, unless something in the
+    // sidebar already has it.
     onPointerDown: (_) {
       if (!_focus.hasFocus) _focus.requestFocus();
     },
-    child: Focus(focusNode: _focus, onKeyEvent: _key, child: widget.child),
+    child: Focus(focusNode: _focus, child: widget.child),
   );
 }
 
@@ -755,9 +833,11 @@ class _FollowPane extends StatelessWidget {
 /// wide: the video or link playing (a recording shows its progress only),
 /// its name, « (10 seconds back), play / pause, stop, » (10 forward) and
 /// repeat (on by default); for a recording or video of the capture's own,
-/// the section that repeats ([_SectionBar]), and for anything playing in
-/// the app, its speed ([_SpeedBar]). Nothing while there's none.
-class _BackingFrame extends StatelessWidget {
+/// the section that repeats ([_SectionBar]; while its range is dragged,
+/// the section shows over the progress bar too, [_SectionMark]), and for
+/// anything playing in the app, its speed ([_SpeedBar]). Nothing while
+/// there's none.
+class _BackingFrame extends StatefulWidget {
   const _BackingFrame({
     required this.eventId,
     required this.track,
@@ -789,206 +869,252 @@ class _BackingFrame extends StatelessWidget {
   final VoidCallback? onCountIn;
 
   @override
-  Widget build(BuildContext context) => ListenableBuilder(
-    listenable: track,
-    builder: (context, _) {
-      final page = track.page;
-      if (page == null) return const SizedBox.shrink();
-      final l10n = context.l10n;
-      final event = track.library.byId(eventId);
-      final media = track.media;
-      final link = track.link;
-      final phrases = track.phrases;
-      // As wide as the sidebar, at most a third of the screen's height
-      // (taller, the sidebar's column runs out of room on a short screen).
-      final maxHeight = MediaQuery.sizeOf(context).height / 3;
-      final Widget? content = switch ((media, link)) {
-        _ when track.error != null => Padding(
-          padding: const EdgeInsets.all(8),
-          child: Text(
-            page.isAudio ? l10n.textViewCantPlayAudio : l10n.textViewCantPlay,
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
-          ),
-        ),
-        (final media?, _) when page.isVideo || media.value.size.width > 0 =>
-          ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: maxHeight),
-            child: AspectRatio(
-              aspectRatio: media.value.aspectRatio,
-              child: VideoPlayer(media),
+  State<_BackingFrame> createState() => _BackingFrameState();
+}
+
+class _BackingFrameState extends State<_BackingFrame> {
+  /// The file whose section's range is being dragged, if any: its section
+  /// shows over the progress bar meanwhile.
+  String? _sectionDrag;
+
+  @override
+  Widget build(BuildContext context) {
+    final _BackingFrame(
+      :eventId,
+      :track,
+      :linkFrame,
+      :onToggle,
+      :onStop,
+      :onSkip,
+      :onRepeat,
+      :onSection,
+      :onSectionHere,
+      :onSectionClear,
+      :onSpeed,
+      :onPhrasesClear,
+      :onCountIn,
+    ) = widget;
+    return ListenableBuilder(
+      listenable: track,
+      builder: (context, _) {
+        final page = track.page;
+        if (page == null) return const SizedBox.shrink();
+        // A drag the range never ended (its file went meanwhile) is over.
+        if (!track.canSection || page.id != _sectionDrag) _sectionDrag = null;
+        final section = _sectionDrag == null ? null : track.section;
+        final l10n = context.l10n;
+        final event = track.library.byId(eventId);
+        final media = track.media;
+        final link = track.link;
+        final phrases = track.phrases;
+        // As wide as the sidebar, at most a third of the screen's height
+        // (taller, the sidebar's column runs out of room on a short screen).
+        final maxHeight = MediaQuery.sizeOf(context).height / 3;
+        final Widget? content = switch ((media, link)) {
+          _ when track.error != null => Padding(
+            padding: const EdgeInsets.all(8),
+            child: Text(
+              page.isAudio ? l10n.textViewCantPlayAudio : l10n.textViewCantPlay,
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
             ),
           ),
-        // 16:9, a YouTube video's shape.
-        (_, final link?) => ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: maxHeight),
-          child: AspectRatio(aspectRatio: 16 / 9, child: linkFrame(link)),
-        ),
-        _ => null,
-      };
-      const compact = VisualDensity(horizontal: -2, vertical: -2);
-      return ColoredBox(
-        key: const Key('cam-along-frame'),
-        color: Colors.black,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // The video gives way first where the frame is short of room
-            // (the sidebar caps the frame's height).
-            if (content != null)
-              Flexible(child: Center(heightFactor: 1, child: content)),
-            // The progress bar's line: the count-in's button and its
-            // seconds, then the progress bar, and at its right, while the
-            // song has phrase passes marked on it, the button that clears
-            // them.
-            if (media != null)
-              Row(
-                children: [
-                  _CountIn(
-                    track: track,
-                    onToggle:
-                        onCountIn ?? () => track.setCountIn(!track.countIn),
-                  ),
-                  Expanded(
-                    child: Stack(
-                      children: [
-                        VideoProgressIndicator(
-                          media,
-                          allowScrubbing: true,
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                        ),
-                        if (phrases.isNotEmpty)
-                          Positioned.fill(
-                            child: IgnorePointer(
-                              child: CustomPaint(
-                                key: const Key('cam-along-phrase-marks'),
-                                painter: _PhraseMarks(
-                                  phrases,
-                                  media.value.duration,
-                                  Theme.of(context).colorScheme.primary,
+          (final media?, _) when page.isVideo || media.value.size.width > 0 =>
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxHeight),
+              child: AspectRatio(
+                aspectRatio: media.value.aspectRatio,
+                child: VideoPlayer(media),
+              ),
+            ),
+          // 16:9, a YouTube video's shape.
+          (_, final link?) => ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxHeight),
+            child: AspectRatio(aspectRatio: 16 / 9, child: linkFrame(link)),
+          ),
+          _ => null,
+        };
+        const compact = VisualDensity(horizontal: -2, vertical: -2);
+        return ColoredBox(
+          key: const Key('cam-along-frame'),
+          color: Colors.black,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // The video gives way first where the frame is short of room
+              // (the sidebar caps the frame's height).
+              if (content != null)
+                Flexible(child: Center(heightFactor: 1, child: content)),
+              // The progress bar's line: the count-in's button and its
+              // seconds, then the progress bar, and at its right, while the
+              // song has phrase passes marked on it, the button that clears
+              // them.
+              if (media != null)
+                Row(
+                  children: [
+                    _CountIn(
+                      track: track,
+                      onToggle:
+                          onCountIn ?? () => track.setCountIn(!track.countIn),
+                    ),
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          VideoProgressIndicator(
+                            media,
+                            allowScrubbing: true,
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                          ),
+                          if (section != null)
+                            Positioned.fill(
+                              child: IgnorePointer(
+                                child: _SectionMark(
+                                  start: section.start,
+                                  end: section.end,
+                                  length: media.value.duration,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                               ),
                             ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  if (phrases.isNotEmpty)
-                    IconButton(
-                      key: const Key('cam-along-phrases-clear'),
-                      tooltip: l10n.camAlongPhrasesClear,
-                      visualDensity: compact,
-                      color: Theme.of(context).colorScheme.primary,
-                      iconSize: 18,
-                      icon: const Icon(Icons.clear_all),
-                      onPressed: onPhrasesClear ?? () => track.clearPhrases(),
-                    )
-                  else
-                    const SizedBox(width: 8),
-                ],
-              ),
-            if (track.canSection)
-              _SectionBar(
-                track: track,
-                onSection: onSection,
-                onSectionHere: onSectionHere,
-                onSectionClear: onSectionClear,
-              ),
-            if (media != null && track.error == null)
-              _SpeedBar(track: track, onSpeed: onSpeed),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
-              child: Row(
-                children: [
-                  Icon(_icon(page), color: Colors.white70, size: 16),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      event == null ? '' : fileLabel(l10n, event, page),
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(
-              height: 44,
-              child: track.loading
-                  ? const Center(
-                      child: SizedBox.square(
-                        dimension: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  // Shrunk to fit a sidebar dragged narrow.
-                  : FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          if (track.canToggle) ...[
-                            IconButton(
-                              key: const Key('cam-along-back'),
-                              tooltip: l10n.camAlongBack,
-                              visualDensity: compact,
-                              color: Colors.white,
-                              icon: const Icon(Icons.fast_rewind),
-                              onPressed: () => onSkip(-skipBy),
-                            ),
-                            IconButton(
-                              key: const Key('cam-along-toggle'),
-                              tooltip: track.playing || track.countingIn
-                                  ? l10n.camAlongPause
-                                  : l10n.camAlongPlay,
-                              visualDensity: compact,
-                              color: Colors.white,
-                              icon: Icon(
-                                track.playing || track.countingIn
-                                    ? Icons.pause
-                                    : Icons.play_arrow,
+                          if (phrases.isNotEmpty)
+                            Positioned.fill(
+                              child: IgnorePointer(
+                                child: CustomPaint(
+                                  key: const Key('cam-along-phrase-marks'),
+                                  painter: _PhraseMarks(
+                                    phrases,
+                                    media.value.duration,
+                                    Theme.of(context).colorScheme.primary,
+                                  ),
+                                ),
                               ),
-                              onPressed: onToggle,
                             ),
-                            IconButton(
-                              key: const Key('cam-along-stop'),
-                              tooltip: l10n.camAlongStop,
-                              visualDensity: compact,
-                              color: Colors.white,
-                              icon: const Icon(Icons.stop),
-                              onPressed: onStop,
-                            ),
-                            IconButton(
-                              key: const Key('cam-along-forward'),
-                              tooltip: l10n.camAlongForward,
-                              visualDensity: compact,
-                              color: Colors.white,
-                              icon: const Icon(Icons.fast_forward),
-                              onPressed: () => onSkip(skipBy),
-                            ),
-                            IconButton(
-                              key: const Key('cam-along-repeat'),
-                              tooltip: track.repeat
-                                  ? l10n.camAlongRepeatOn
-                                  : l10n.camAlongRepeatOff,
-                              isSelected: track.repeat,
-                              visualDensity: compact,
-                              color: track.repeat
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Colors.white54,
-                              icon: const Icon(Icons.repeat),
-                              onPressed: onRepeat,
-                            ),
-                          ],
                         ],
                       ),
                     ),
-            ),
-          ],
-        ),
-      );
-    },
-  );
+                    if (phrases.isNotEmpty)
+                      IconButton(
+                        key: const Key('cam-along-phrases-clear'),
+                        tooltip: l10n.camAlongPhrasesClear,
+                        visualDensity: compact,
+                        color: Theme.of(context).colorScheme.primary,
+                        iconSize: 18,
+                        icon: const Icon(Icons.clear_all),
+                        onPressed: onPhrasesClear ?? () => track.clearPhrases(),
+                      )
+                    else
+                      const SizedBox(width: 8),
+                  ],
+                ),
+              if (track.canSection)
+                _SectionBar(
+                  track: track,
+                  onSection: onSection,
+                  onSectionHere: onSectionHere,
+                  onSectionClear: onSectionClear,
+                  onDrag: (dragging) => setState(
+                    () => _sectionDrag = dragging ? track.page?.id : null,
+                  ),
+                ),
+              if (media != null && track.error == null)
+                _SpeedBar(track: track, onSpeed: onSpeed),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+                child: Row(
+                  children: [
+                    Icon(_icon(page), color: Colors.white70, size: 16),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        event == null ? '' : fileLabel(l10n, event, page),
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 44,
+                child: track.loading
+                    ? const Center(
+                        child: SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    // Shrunk to fit a sidebar dragged narrow.
+                    : FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (track.canToggle) ...[
+                              IconButton(
+                                key: const Key('cam-along-back'),
+                                tooltip: l10n.camAlongBack,
+                                visualDensity: compact,
+                                color: Colors.white,
+                                icon: const Icon(Icons.fast_rewind),
+                                onPressed: () => onSkip(-skipBy),
+                              ),
+                              IconButton(
+                                key: const Key('cam-along-toggle'),
+                                tooltip: track.playing || track.countingIn
+                                    ? l10n.camAlongPause
+                                    : l10n.camAlongPlay,
+                                visualDensity: compact,
+                                color: Colors.white,
+                                icon: Icon(
+                                  track.playing || track.countingIn
+                                      ? Icons.pause
+                                      : Icons.play_arrow,
+                                ),
+                                onPressed: onToggle,
+                              ),
+                              IconButton(
+                                key: const Key('cam-along-stop'),
+                                tooltip: l10n.camAlongStop,
+                                visualDensity: compact,
+                                color: Colors.white,
+                                icon: const Icon(Icons.stop),
+                                onPressed: onStop,
+                              ),
+                              IconButton(
+                                key: const Key('cam-along-forward'),
+                                tooltip: l10n.camAlongForward,
+                                visualDensity: compact,
+                                color: Colors.white,
+                                icon: const Icon(Icons.fast_forward),
+                                onPressed: () => onSkip(skipBy),
+                              ),
+                              IconButton(
+                                key: const Key('cam-along-repeat'),
+                                tooltip: track.repeat
+                                    ? l10n.camAlongRepeatOn
+                                    : l10n.camAlongRepeatOff,
+                                isSelected: track.repeat,
+                                visualDensity: compact,
+                                color: track.repeat
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Colors.white54,
+                                icon: const Icon(Icons.repeat),
+                                onPressed: onRepeat,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
 
 /// The sidebar: the backing track's frame at its top, always there, and
@@ -1018,6 +1144,7 @@ class PlayAlongSidebar extends StatelessWidget {
     this.onFollowText,
     this.footer,
     this.onDelete,
+    this.onEdit,
     this.canDelete = true,
     this.keepId,
     required this.onToggle,
@@ -1054,11 +1181,25 @@ class PlayAlongSidebar extends StatelessWidget {
   /// their row, all but [keepId]'s.
   final void Function(EventPage page)? onDelete;
 
-  /// Whether Delete works now; false, it's greyed.
+  /// Opens the video editor on one of the takes listed; null: none shows
+  /// Edit. With it, the takes the user may edit ([mayEdit]) do, before
+  /// Delete, all but [keepId]'s.
+  final void Function(EventPage page)? onEdit;
+
+  /// Whether Delete and Edit work now; false, they're greyed.
   final bool canDelete;
 
-  /// The file that shows no Delete (the file screen's own).
+  /// The file that shows no Delete, nor Edit (the file screen's own).
   final String? keepId;
+
+  /// Whether [page] is a take the user may edit, as the file screen's
+  /// Edit says: a video of Cam's ([isTake]), one of the capture's own
+  /// files (not a contribution's), in a capture that isn't read only.
+  static bool mayEdit(CaptureEvent event, EventPage page) =>
+      page.isVideo &&
+      isTake(page) &&
+      !event.readOnly &&
+      event.pages.contains(page);
   final VoidCallback onToggle;
   final VoidCallback onStop;
   final void Function(Duration by) onSkip;
@@ -1178,7 +1319,8 @@ class PlayAlongSidebar extends StatelessWidget {
   );
 
   /// The end of a file's row: its [mark] (playing, followed), if any, and
-  /// at the right, Delete, if it shows ([onDelete]).
+  /// at the right, a take's Edit (scissors, as the file screen's), if it
+  /// shows ([onEdit]), then Delete, if it shows ([onDelete]).
   Widget? _trailing(
     BuildContext context,
     AppLocalizations l10n,
@@ -1187,23 +1329,40 @@ class PlayAlongSidebar extends StatelessWidget {
     IconData? mark,
   ) {
     final onDelete = this.onDelete;
+    final onEdit = this.onEdit;
     final deletes =
         onDelete != null && page.id != keepId && mayDeleteFile(event, page);
-    if (!deletes) return mark == null ? null : Icon(mark, size: 18);
+    final edits = onEdit != null && page.id != keepId && mayEdit(event, page);
+    if (!deletes && !edits) return mark == null ? null : Icon(mark, size: 18);
+    Widget button(
+      String name,
+      String tooltip,
+      IconData icon,
+      void Function(EventPage page) onPressed,
+    ) => IconButton(
+      key: ValueKey('cam-along-$name-${page.id}'),
+      tooltip: tooltip,
+      visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+      color: Colors.white70,
+      disabledColor: Colors.white24,
+      iconSize: 18,
+      icon: Icon(icon),
+      onPressed: canDelete ? () => onPressed(page) : null,
+    );
+    final label = fileLabel(l10n, event, page);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         if (mark != null) Icon(mark, size: 18),
-        IconButton(
-          key: ValueKey('cam-along-delete-${page.id}'),
-          tooltip: l10n.camAlongDelete(fileLabel(l10n, event, page)),
-          visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
-          color: Colors.white70,
-          disabledColor: Colors.white24,
-          iconSize: 18,
-          icon: const Icon(Icons.delete_outline),
-          onPressed: canDelete ? () => onDelete(page) : null,
-        ),
+        if (edits)
+          button('edit', l10n.camAlongEdit(label), Icons.content_cut, onEdit),
+        if (deletes)
+          button(
+            'delete',
+            l10n.camAlongDelete(label),
+            Icons.delete_outline,
+            onDelete,
+          ),
       ],
     );
   }
@@ -1224,7 +1383,7 @@ class PlayAlongSidebar extends StatelessWidget {
           final takes = [...playing.where(isTake)].reversed.toList();
           final primary = Theme.of(context).colorScheme.primary;
           // A file to play along (a song or a take): the one playing marked,
-          // Delete at its right.
+          // a take's Edit, then Delete, at its right.
           Widget fileRow(EventPage page) => ListTile(
             key: ValueKey('cam-along-${page.id}'),
             dense: true,
@@ -1524,21 +1683,63 @@ class _PhraseMarks extends CustomPainter {
       old.times != times || old.length != length || old.color != color;
 }
 
+/// The section that repeats, over the progress bar while its range is
+/// dragged ([_SectionBar]): a band from its start to its end, in the
+/// range's colour, over the part played, so the two can be told apart
+/// where the range is set.
+class _SectionMark extends StatelessWidget {
+  const _SectionMark({
+    required this.start,
+    required this.end,
+    required this.length,
+    required this.color,
+  });
+
+  final Duration start;
+  final Duration end;
+  final Duration length;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final ms = length.inMilliseconds;
+    if (ms <= 0) return const SizedBox.shrink();
+    final from = (start.inMilliseconds / ms).clamp(0.0, 1.0);
+    final to = (end.inMilliseconds / ms).clamp(from, 1.0);
+    return LayoutBuilder(
+      builder: (context, box) => Padding(
+        padding: EdgeInsets.only(
+          left: box.maxWidth * from,
+          right: box.maxWidth * (1 - to),
+        ),
+        child: ColoredBox(
+          key: const Key('cam-along-section-mark'),
+          color: color,
+          child: const SizedBox.expand(),
+        ),
+      ),
+    );
+  }
+}
+
 /// The section of a recording or video that repeats: a range over the
-/// whole file (dragging either end sets it), its times, and buttons to
-/// start or end it where it plays now, or to play all of it again.
+/// whole file (dragging either end sets it, and tells [onDrag] while it's
+/// dragged), its times, and buttons to start or end it where it plays
+/// now, or to play all of it again.
 class _SectionBar extends StatelessWidget {
   const _SectionBar({
     required this.track,
     required this.onSection,
     required this.onSectionHere,
     required this.onSectionClear,
+    required this.onDrag,
   });
 
   final BackingTrack track;
   final void Function(Duration start, Duration end) onSection;
   final void Function({required bool end}) onSectionHere;
   final VoidCallback onSectionClear;
+  final void Function(bool dragging) onDrag;
 
   /// m:ss.t: a section's ends are set to the tenth of a second.
   static String time(Duration d) {
@@ -1583,6 +1784,8 @@ class _SectionBar extends StatelessWidget {
                 start.inMilliseconds.clamp(0, ms).toDouble(),
                 end.inMilliseconds.clamp(0, ms).toDouble(),
               ),
+              onChangeStart: (_) => onDrag(true),
+              onChangeEnd: (_) => onDrag(false),
               onChanged: (v) => onSection(
                 Duration(milliseconds: v.start.round()),
                 Duration(milliseconds: v.end.round()),

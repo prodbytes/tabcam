@@ -571,6 +571,25 @@ the [file screen](event-screen.md#file-screen), the file it shows (a
 recording, listed in its own sidebar) has no Delete there: the screen's
 own Delete deletes it and goes back to the list.
 
+<a id="editing-a-take-from-the-sidebar"></a>**Editing a take from the
+sidebar**: each of Cam's takes in it (under **Takes**; not the songs,
+videos that aren't takes, links, PDFs or pages) has **Edit** (scissors,
+as the file screen's; its tooltip "Edit <name>") right before its
+Delete. It opens the [video editor](video-edit.md) on that take, over
+the screen, exactly as **Edit** on the take's own
+[file screen](event-screen.md#file-screen) does (the same call,
+`VideoEditScreen.open`, with the same Premium service for the
+watermark): the take's edit as it was left, its song lined up, its tab
+over it. What played along pauses first (and, beside the Text view, the
+recording the capture's list was playing stops; on the file screen, the
+file it shows is let go of meanwhile), so only the editor's preview
+sounds. Back, the screen is as it was, Cam with its keys. It shows
+where the file screen would offer Edit: on the capture's own takes, in
+a capture that isn't read only (none on one shared to read, nor on a
+reader's own contribution's takes); not in Cam's Premium preview, nor
+on a capture opened by its link. It's greyed when Delete is: while a
+take records, saves or plays back, and while the screen works.
+
 <a id="following-a-pdf"></a>**Following a PDF**: in Cam and in the
 [Text view](tab-recognition.md#text-view) (not beside a PDF), the
 sidebar also lists the capture's PDFs, under **Follow a PDF** (after the
@@ -636,6 +655,12 @@ view).
   plays, its times (`Section 0:12.3–0:45.0`, to the tenth of a second,
   in the primary colour once set), **|◀** and **▶|** (start or end it
   where it plays now) and, once set, **✕** (play all of it again). While
+  either end of the range is dragged, the section shows over the
+  progress bar too: a band in the primary colour from its start to its
+  end, as high as the bar's line, over the part played (red) and under
+  the phrase marks, following the drag and gone when it's let go (the
+  two bars aren't as wide, so the range alone doesn't show where the
+  section falls on the progress bar). While
   one is set the player's own looping is off and its position is checked
   every 100 ms: at the section's end it goes back to the section's
   start, playing on with Repeat, paused without. A section that ends at
@@ -671,8 +696,8 @@ view).
   and the seconds count down (`2s`, `1s`), and Play shows Pause: Play
   (or space) again, Pause, Stop, hiding the sidebar or another file
   stop it without playing; turned off meanwhile, it plays at once; **0**
-  goes back to the start and keeps counting. Repeat and a section's
-  loop start over without one; the count-in is real time, whatever the
+  goes back to the start and counts in again, from the top (below).
+  Repeat and a section's loop start over without one; the count-in is real time, whatever the
   speed. The setting is kept on the device (the meta file
   `playalong`, `{"countIn": false}`; until 2026-11-11 it was named
   `play-along`, which the apps' store refuses, so it was never kept there), for Cam, the Text view and the
@@ -681,23 +706,36 @@ view).
   down; held, it doesn't repeat), and doesn't turn the tab; with the
   sidebar hidden, space turns the tab again. A tap in the sidebar or the
   frame gives the keys back to Cam.
-- **0** (on the top row or the keypad) goes back to the start of the
-  file, or of its section when one is set, playing on if it was playing
-  and staying paused if it wasn't (`BackingTrack.restart`; a link in
-  the frame goes back by Stop, then plays again if it played). Like
-  space, it doesn't turn the tab while the sidebar shows. Ctrl / ⌘ + 0
-  is left to the browser (its zoom).
+- **0** (on the top row or the keypad) always goes back to the
+  beginning: the start of the file, or of its section when one is set,
+  count-in included (`BackingTrack.restart`). Paused, it stays paused
+  there (Play counts in, as ever). Playing, it starts over as Play
+  starts it: with the [count-in](#count-in) on, it goes silent at the
+  start, counts the 2 seconds in and plays; with it off, it plays on
+  from the start. While it counts in, the count starts over. (A link in
+  the frame, which has no count-in, goes back by Stop, then plays again
+  if it played.) Like space, it doesn't turn the tab while the sidebar
+  shows. Ctrl / ⌘ + 0 is left to the browser (its zoom).
 - **← and →** go 10 seconds back and on in it, as « and » do (held,
   again and again), and don't turn the tab while the sidebar shows; the
   tab's phrases go by **↑** (the one before) and **↓** (the next). With
   the sidebar hidden, ← and → turn the tab again. A page-turner pedal
   that sends ← and → skips in the song while the sidebar shows: one
   that sends ↑ / ↓ or Page Up / Page Down turns the tab then.
-- **The keys outside Cam**: in the Text view and on a recording's file
-  screen, a tap in the sidebar gives it the keyboard
-  ([`PlayAlongKeys`](../tabcam_app/lib/capture/play_along_sidebar.dart)),
-  so **0** and the **space bar** work there as in Cam; typing in a field
-  (the Text view's editor) still types them.
+- <a id="keys-in-every-screen"></a>**The keys in every screen**: **0**
+  and the **space bar** are the player's wherever its sidebar shows
+  (Cam, the Text view, a file's screen), without a tap in the sidebar
+  first, whatever has the keyboard
+  ([`PlayAlongKeys`](../tabcam_app/lib/capture/play_along_sidebar.dart)
+  gets the keys before the screen does). In the Text view and on a
+  file's screen, **1** (on the top row or the keypad) pauses and plays
+  too, as the space bar; in Cam, 1 stays [Rec / Stop](#rec-key), which
+  starts the song as well. Ctrl / ⌘ + 1 is left to the browser (its
+  first tab). The exceptions: typing in a field (the Text view's
+  editor, the dictionary's search) still types them, until a tap in the
+  sidebar takes the keyboard out of the field; under a dialog, a menu
+  or another screen the keys are that one's; with the sidebar hidden
+  they're the screen's own; and a Cam preview has no keys.
 - **A link** straight to a sound or video file (its path ends in `.mp3`,
   `.m4a`, `.aac`, `.wav`, `.ogg`, `.oga`, `.opus`, `.flac`, `.mp4`,
   `.m4v`, `.mov` or `.webm`) plays in the app like a recording or video.
