@@ -5,7 +5,7 @@ tabs.cam Premium is the [event screen](event-screen.md)'s **Text** and
 read into it by itself, on the device or in the cloud) and recording
 oneself playing along ([Cam](cam.md)); it also removes the **watermark**
 the [video editor](video-edit.md#layers) puts on a downloaded video
-("Recorded by tabs.cam", "Made with tabs.cam"). Premium users' scans are
+("tabs.cam"). Premium users' scans are
 **transcribed in the cloud as they sync**: the event's text tab appears
 by itself, read more accurately than on the phone, and on the web too.
 Without Premium, nothing is read, and Text and Cam open as **previews**

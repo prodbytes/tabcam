@@ -592,8 +592,6 @@
   "videoEditTitleOff": "Sin título",
   "videoEditTitleDone": "Listo",
   "videoEditLayerWatermark": "Marca de agua",
-  "videoEditWatermarkTake": "Grabado con tabs.cam",
-  "videoEditWatermarkMade": "Hecho con tabs.cam",
   "videoEditWatermarkAbout": "«{text}», en letra pequeña, abajo a la derecha",
   "videoEditWatermarkLocked": "Premium quita la marca de agua",
   "videoEditFades": "Fundidos",

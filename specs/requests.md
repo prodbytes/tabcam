@@ -3783,3 +3783,12 @@ spec.
    (recording, saving, playing back). New string `camAlongEdit` in
    English, Spanish and Portuguese. See
    [Cam](cam.md#editing-a-take-from-the-sidebar).
+2. **"The watermark can be only https://tabs.cam (no 'Recorded by'), or
+   better yet, only tabs.cam."** The video editor's watermark now reads
+   just **"tabs.cam"**, on takes and on every other video, in every
+   language, in place of "Recorded by tabs.cam" / "Made with tabs.cam"
+   (and their Spanish and Portuguese). The text is one constant
+   (`watermarkText`); the strings `videoEditWatermarkTake` and
+   `videoEditWatermarkMade` are gone. Where it sits, its size and that
+   only Premium removes it are as before. See
+   [video edit](video-edit.md#layers).

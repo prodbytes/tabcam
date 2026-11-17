@@ -274,10 +274,10 @@ makes a file of it."), opening with the video's edit as it was left:
     the preview at once, kept a moment after the last key (as every
     change), and never seeks the song again (nothing it plays by
     changed); typing turns the title on.
-  - **Watermark** (every video): on by default, "Recorded by tabs.cam"
-    on a take, "Made with tabs.cam" on any other video, small at the
-    bottom right. **Only Premium removes it**: for a user with Premium
-    now ([as the service last said](cloud-ocr.md#in-the-app), a week at
+  - **Watermark** (every video): on by default, "tabs.cam" and nothing
+    else, small at the bottom right. **Only Premium removes it**: for a
+    user with Premium now
+    ([as the service last said](cloud-ocr.md#in-the-app), a week at
     most offline), and in a build without the service, it's a plain
     toggle (off kept as `watermark: false`); for anyone else it's on
     with a lock (tooltip "Premium removes the watermark"), and a tap
@@ -620,11 +620,10 @@ text high); a line too long for the frame ends in "…". The box's height
 is worked out in Dart from the line count alone (`TitleLayout`), so the
 plan knows it without drawing.
 
-**The watermark**: "Recorded by tabs.cam" on a take, "Made with tabs.cam"
-on any other video (in the app's language: "Grabado con tabs.cam" /
-"Hecho con tabs.cam", "Gravado com tabs.cam" / "Feito com tabs.cam"); one
-layer, `mark`, at the **bottom right**, 3% of the short side in, the
-whole video through, one line of Roboto at 2.2% of the short side,
+**The watermark**: "tabs.cam", the same on a take and on any other
+video, in every language (`watermarkText`; no "Recorded by", no
+address); one layer, `mark`, at the **bottom right**, 3% of the short
+side in, the whole video through, one line of Roboto at 2.2% of the short side,
 white at 60% with a soft shadow. It stays in that corner with the tab
 drawn too, whatever the tab's size: over the bands (drawn after them),
 never lifted above them. It's left out only when the edit turns it off
