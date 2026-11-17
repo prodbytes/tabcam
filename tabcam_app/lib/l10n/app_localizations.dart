@@ -3796,23 +3796,11 @@ abstract class AppLocalizations {
   /// **'White on black'**
   String get videoEditTabColorsDark;
 
-  /// Video edit: the tab's colours: black text on a white background
-  ///
-  /// In en, this message translates to:
-  /// **'Black on white'**
-  String get videoEditTabColorsLight;
-
   /// Video edit: the tab's colours: tabs.cam's gold text on a black background
   ///
   /// In en, this message translates to:
   /// **'Gold on black'**
   String get videoEditTabColorsGold;
-
-  /// Video edit: the tab's colours: black text on tabs.cam's gold background
-  ///
-  /// In en, this message translates to:
-  /// **'Black on gold'**
-  String get videoEditTabColorsBrand;
 
   /// Video edit: the tab's style: where the tab's text sits across its band (left, centre or right)
   ///

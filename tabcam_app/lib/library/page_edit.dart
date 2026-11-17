@@ -129,17 +129,11 @@ enum TabColors {
   /// takes looked.
   dark,
 
-  /// Black text on white.
-  light,
-
   /// TabCam's gold text on black.
-  gold,
+  gold;
 
-  /// Black text on TabCam's gold.
-  brand;
-
-  /// [name]'s colours; [dark] when it isn't one (none given, or a newer
-  /// app's).
+  /// [name]'s colours; [dark] when it isn't one (none given, a newer
+  /// app's, or one of the two that were taken away, `light` and `brand`).
   static TabColors byName(Object? name) =>
       values.where((c) => c.name == name).firstOrNull ?? dark;
 }

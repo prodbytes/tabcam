@@ -2299,7 +2299,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// the take's bands still grow over this frame, [_tabSizes]), **Background**
   /// (its opacity, 0% to 100% by 5%: the text stays opaque, outlined as
   /// the background fades out), each its name and value over its slider,
-  /// **Colours** (four swatches, each a bit of band in its colours) and
+  /// **Colours** (two swatches, each a bit of band in its colours) and
   /// **Alignment** (the text to the left, the default, centre or right);
   /// **Default style**; on a phone, in place of the chips, with **Done**
   /// to close it. The preview draws each change at once.
@@ -2430,9 +2430,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   static String _colorsName(AppLocalizations l10n, TabColors colors) =>
       switch (colors) {
         TabColors.dark => l10n.videoEditTabColorsDark,
-        TabColors.light => l10n.videoEditTabColorsLight,
         TabColors.gold => l10n.videoEditTabColorsGold,
-        TabColors.brand => l10n.videoEditTabColorsBrand,
       };
 
   /// The title's text: two fields (typing shows it in the preview at

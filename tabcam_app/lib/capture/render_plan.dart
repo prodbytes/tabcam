@@ -199,9 +199,7 @@ abstract final class TabLayout {
   /// [colors]' background and text.
   static (Color, Color) colorsOf(TabColors colors) => switch (colors) {
     TabColors.dark => (const Color(0xFF000000), const Color(0xFFFFFFFF)),
-    TabColors.light => (const Color(0xFFFFFFFF), const Color(0xFF111111)),
     TabColors.gold => (const Color(0xFF000000), gold),
-    TabColors.brand => (gold, const Color(0xFF111111)),
   };
 
   /// How strong the outline around a band's text is (0: none, 1: opaque)

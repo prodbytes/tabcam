@@ -3076,17 +3076,9 @@
   "@videoEditTabColorsDark": {
     "description": "Video edit: the tab's colours: white text on a black background"
   },
-  "videoEditTabColorsLight": "Black on white",
-  "@videoEditTabColorsLight": {
-    "description": "Video edit: the tab's colours: black text on a white background"
-  },
   "videoEditTabColorsGold": "Gold on black",
   "@videoEditTabColorsGold": {
     "description": "Video edit: the tab's colours: tabs.cam's gold text on a black background"
-  },
-  "videoEditTabColorsBrand": "Black on gold",
-  "@videoEditTabColorsBrand": {
-    "description": "Video edit: the tab's colours: black text on tabs.cam's gold background"
   },
   "videoEditTabAlign": "Alignment",
   "@videoEditTabAlign": {
