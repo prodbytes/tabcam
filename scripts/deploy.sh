@@ -7,7 +7,7 @@
 #   2. deploys the site (CloudFormation tabcam_infra/site.yaml:
 #      tabcam-web: certificate, bucket, CloudFront, DNS; uptime is
 #      watched by the nu01-monitor stack, outside this repo)
-#   3. uploads the index page (/), the privacy policy (/privacy) and the
+#   3. uploads the index page (/, its pictures at /img/), the privacy policy (/privacy) and the
 #      web build (/app/), and invalidates the CloudFront cache
 #   4. smoke-tests the live site: /app/version.json must report this
 #      version, / must be the index page, and /privacy the policy; the
@@ -167,6 +167,8 @@ echo "    bucket: $bucket, distribution: $distribution"
 echo "==> uploading"
 aws s3 cp tabcam_index/site/index.html "s3://$bucket/index.html" \
   --cache-control no-cache --content-type "text/html; charset=utf-8" --only-show-errors
+# The index page's pictures and logo, at /img/.
+aws s3 sync tabcam_index/site/img/ "s3://$bucket/img/" --delete --cache-control no-cache --only-show-errors
 # The privacy policy at /privacy: an object named privacy, served as HTML
 # (only /app* rewrites directory URIs; locally it's privacy/index.html).
 aws s3 cp tabcam_index/site/privacy/index.html "s3://$bucket/privacy" \
@@ -187,7 +189,8 @@ check() {
   live="$(curl -fsS --max-time 20 "https://$DOMAIN/app/version.json?deploy=$BUILD_NUMBER" \
     | python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])')" || return 1
   [[ "$live" == "$VERSION" ]] || { echo "    /app/version.json says $live, want $VERSION"; return 1; }
-  curl -fsS --max-time 20 "https://$DOMAIN/" | grep -q "location.replace('/app/'" || { echo "    / isn't the index page"; return 1; }
+  curl -fsS --max-time 20 "https://$DOMAIN/" | grep -q '<main id="features">' || { echo "    / isn't the index page"; return 1; }
+  curl -fsS --max-time 20 -o /dev/null "https://$DOMAIN/img/logo.svg" || { echo "    /img/logo.svg failed"; return 1; }
   curl -fsS --max-time 20 -o /dev/null "https://$DOMAIN/app/" || { echo "    /app/ failed"; return 1; }
   # The old name sends its pages here, path and query kept.
   local moved

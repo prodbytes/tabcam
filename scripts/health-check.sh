@@ -47,7 +47,7 @@ https() {
 }
 
 echo "🎸 tabs.cam: $WEB_URL"
-echo "🏠 index:   $INDEX_URL (redirects to the app)"
+echo "🏠 index:   $INDEX_URL (the index page)"
 echo "🔒 HTTPS:   $HTTPS_URL (through Floci's CloudFront)"
 
 while true; do

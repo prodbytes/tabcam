@@ -2,14 +2,273 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>tabs.cam</title>
-  <!-- The site root only sends visitors to the app, which lives under /app/. -->
-  <meta http-equiv="refresh" content="0; url=/app/">
-  <link rel="canonical" href="/app/">
-  <script>location.replace('/app/' + location.search);</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>tabs.cam: a camera for your guitar tabs</title>
+  <meta name="description" content="Scan your guitar and bass tabs into editable text, record yourself playing them, and share them with your students and friends.">
+  <meta name="theme-color" content="#1e1a15">
+  <meta name="color-scheme" content="dark">
+  <meta property="og:title" content="tabs.cam: a camera for your guitar tabs">
+  <meta property="og:description" content="Scan your tabs, record your practice, share and play along.">
+  <link rel="icon" type="image/png" href="/app/favicon.png">
+  <!-- The site root: what tabs.cam does, and the way into the app, which
+       lives under /app/. Spec: specs/index-page.md. Everything is in this
+       file and /img/ (scripts/deploy.sh uploads both); no third-party
+       requests. -->
+  <script>
+    // A capture's link that names the root goes to the app, query kept.
+    if (/[?&]c=/.test(location.search)) location.replace('/app/' + location.search);
+    document.documentElement.classList.add('js');
+  </script>
+  <style>
+    :root {
+      --bg: #1e1a15;
+      --bg-2: #27211a;
+      --fg: #fbf7ef;
+      --muted: #b5aa98;
+      --gold: #e0a030;
+      --red: #e5533b;
+      --rule: #3a332a;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font: 17px/1.65 Roboto, system-ui, -apple-system, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    img { display: block; max-width: 100%; height: auto; }
+    a { color: var(--gold); }
+    h1, h2 { margin: 0; line-height: 1.1; letter-spacing: -0.02em; text-wrap: balance; }
+    p { margin: 0; }
+
+    .button {
+      display: inline-block;
+      padding: 0.95em 2.2em;
+      border: 2px solid var(--gold);
+      border-radius: 4px;
+      color: var(--gold);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: background-color 0.2s, color 0.2s, transform 0.2s;
+    }
+    .button:hover, .button:focus-visible { background: var(--gold); color: var(--bg); }
+    .button.primary { background: var(--gold); color: var(--bg); }
+    .button.primary:hover, .button.primary:focus-visible { background: var(--fg); border-color: var(--fg); transform: translateY(-2px); }
+    .button.small { padding: 0.6em 1.3em; font-size: 0.72rem; }
+
+    /* The top bar: the logo and the way in. */
+    .top {
+      position: sticky; top: 0; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      padding: 10px clamp(16px, 4vw, 48px);
+      background: rgba(30, 26, 21, 0.86);
+      -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--rule);
+    }
+    .top img { height: 44px; width: auto; }
+    .top nav { display: flex; align-items: center; gap: clamp(12px, 2.5vw, 32px); }
+    .top nav a:not(.button) {
+      color: var(--muted); text-decoration: none;
+      font-size: 0.74rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+    }
+    .top nav a:not(.button):hover { color: var(--fg); }
+
+    /* The header: what tabs.cam is, over a six-line staff. */
+    .banner {
+      position: relative; overflow: hidden;
+      padding: clamp(64px, 12vw, 128px) clamp(16px, 4vw, 48px) clamp(72px, 12vw, 136px);
+      text-align: center;
+      background: radial-gradient(ellipse 70% 90% at 50% 0%, rgba(224, 160, 48, 0.16), transparent 70%), var(--bg);
+    }
+    .banner::before {
+      content: ""; position: absolute; left: 0; right: 0; bottom: 22px; height: 51px;
+      background: repeating-linear-gradient(to bottom, rgba(251, 247, 239, 0.13) 0 1px, transparent 1px 10px);
+      -webkit-mask-image: linear-gradient(to right, transparent, #000 30%, #000 70%, transparent);
+      mask-image: linear-gradient(to right, transparent, #000 30%, #000 70%, transparent);
+      pointer-events: none;
+    }
+    .banner > * { position: relative; }
+    .kicker {
+      color: var(--gold);
+      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.24em; text-transform: uppercase;
+    }
+    .banner h1 { margin: 0.35em auto 0; max-width: 14em; font-size: clamp(2.4rem, 7vw, 4.6rem); font-weight: 800; }
+    .banner h1 em { font-style: normal; color: var(--gold); }
+    .lead { margin: 1.2em auto 2em; max-width: 34em; color: var(--muted); font-size: clamp(1.05rem, 2vw, 1.25rem); }
+    .banner .note { margin-top: 1.4em; color: var(--muted); font-size: 0.85rem; }
+
+    /* A key feature: its picture, edge to edge, and its text in a box
+       over one of the picture's corners. */
+    .spotlight { position: relative; max-width: 1376px; margin: 0 auto clamp(56px, 9vw, 120px); }
+    .spotlight img { width: 100%; }
+    .card {
+      position: relative; z-index: 1;
+      margin: -12px 16px 0;
+      padding: 28px 24px 30px;
+      background: rgba(30, 26, 21, 0.9);
+      -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+      border-top: 3px solid var(--gold);
+      border-radius: 4px;
+      box-shadow: 0 28px 70px rgba(0, 0, 0, 0.6), 0 4px 14px rgba(0, 0, 0, 0.4);
+    }
+    .card .kicker { display: flex; align-items: center; gap: 0.8em; }
+    .card .kicker::after { content: ""; flex: 1; height: 1px; background: var(--rule); }
+    .card h2 { margin: 0.45em 0 0.5em; font-size: clamp(1.7rem, 3.4vw, 2.4rem); font-weight: 800; }
+    .card p { color: #d9d0c0; }
+    .card ul { margin: 1em 0 0; padding: 0; list-style: none; color: var(--muted); font-size: 0.93rem; }
+    .card li { padding: 0.45em 0 0.45em 1.5em; border-top: 1px solid var(--rule); position: relative; }
+    .card li::before { content: ""; position: absolute; left: 2px; top: 1.05em; width: 7px; height: 7px; border-radius: 50%; background: var(--gold); }
+    /* Without its picture yet, the box stands alone. */
+    .spotlight.plain { padding: 0 16px; }
+    .spotlight.plain .card { margin: 0 auto; max-width: 560px; }
+
+    @media (min-width: 700px) {
+      .spotlight:not(.plain) .card { margin: -48px 0 0 5%; width: min(620px, 90%); }
+    }
+    @media (min-width: 1200px) {
+      .spotlight { margin-bottom: clamp(120px, 12vw, 170px); }
+      .spotlight:not(.plain) .card { position: absolute; margin: 0; width: min(430px, 38%); padding: 34px 34px 36px; }
+      .card.bl { left: 4%; bottom: -72px; }
+      .card.br { right: 4%; bottom: -72px; }
+      .card.tl { left: 4%; top: 6%; }
+      .card.tr { right: 4%; top: 6%; }
+    }
+    @media (min-width: 1400px) {
+      .spotlight img { border-radius: 6px; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5); }
+    }
+
+    /* The way in, again. */
+    .cta {
+      padding: clamp(56px, 9vw, 110px) clamp(16px, 4vw, 48px);
+      text-align: center;
+      background: var(--bg-2);
+      border-top: 1px solid var(--rule);
+    }
+    .cta h2 { font-size: clamp(1.8rem, 4.4vw, 3rem); font-weight: 800; }
+    .cta p { margin: 1em auto 2em; max-width: 36em; color: var(--muted); }
+
+    footer {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 28px;
+      padding: 28px 16px 36px;
+      border-top: 1px solid var(--rule);
+      color: var(--muted); font-size: 0.85rem;
+    }
+    footer a { color: var(--muted); }
+    footer a:hover { color: var(--gold); }
+
+    /* Boxes rise into place as they're scrolled to. */
+    @media (prefers-reduced-motion: no-preference) {
+      .js .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
+      .js .reveal.in { opacity: 1; transform: none; }
+    }
+    @media (max-width: 520px) {
+      .top nav a:not(.button) { display: none; }
+      .top img { height: 38px; }
+    }
+  </style>
 </head>
 <body>
-  <p><a href="/app/">Open tabs.cam</a></p>
-  <footer><p><a href="/privacy">Privacy Policy</a></p></footer>
+  <header class="top">
+    <a href="/" aria-label="tabs.cam"><img src="/img/logo.svg" width="1573" height="480" alt="tabs.cam"></a>
+    <nav>
+      <a href="#scan">Scan</a>
+      <a href="#record">Record</a>
+      <a href="#share">Share</a>
+      <a class="button primary small" href="/app/">Open the app</a>
+    </nav>
+  </header>
+
+  <section class="banner">
+    <p class="kicker">For guitar and bass players</p>
+    <h1>A camera for your <em>guitar tabs</em></h1>
+    <p class="lead">Scan the tabs you write, learn from and own. Record
+    yourself playing them. Share them with the people you play with.</p>
+    <a class="button primary" href="/app/">Open tabs.cam</a>
+    <p class="note">Runs in your browser, on your phone or your computer.</p>
+  </section>
+
+  <main id="features">
+    <section class="spotlight" id="scan">
+      <img src="/img/scan.webp" srcset="/img/scan-800.webp 800w, /img/scan.webp 1376w" sizes="(min-width: 1376px) 1376px, 100vw"
+           width="1376" height="768"
+           alt="A robot reads a notebook of guitar tab with the beam of its camera eye, while a cat with a guitar and a traveler look on.">
+      <div class="card bl reveal">
+        <p class="kicker">01</p>
+        <h2>Scan your tabs</h2>
+        <p>Point your phone at a tab. tabs.cam finds the page, straightens
+        it and reads it into text, so you find it and use it in seconds.</p>
+        <ul>
+          <li>Reads the tab into plain text you can edit</li>
+          <li>Search by title, artist or the notes in the tab</li>
+          <li>On every device you sign in on</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="spotlight" id="record">
+      <img src="/img/record.webp" srcset="/img/record-800.webp 800w, /img/record.webp 1376w" sizes="(min-width: 1376px) 1376px, 100vw"
+           width="1376" height="768" loading="lazy"
+           alt="A musician in headphones records at a mixing desk, her takes on the screens in front of her, small robots all around the studio.">
+      <div class="card bl reveal">
+        <p class="kicker">02</p>
+        <h2>Record your practice</h2>
+        <p>Cam shows the tab under the camera while you play, one phrase
+        at a time, and keeps every take with its tab in the video.</p>
+        <ul>
+          <li>Next phrase with a tap, a key or a pedal</li>
+          <li>Trim the take, mix in a song, add a title and fades</li>
+          <li>Download the video, ready to post</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="spotlight plain" id="share">
+      <div class="card reveal">
+        <p class="kicker">03</p>
+        <h2>Share and play along</h2>
+        <p>Send a tab's link to your students and friends. They get the
+        tab with its recordings and videos, and play along with them.</p>
+        <ul>
+          <li>One link, read only: your tab stays as you made it</li>
+          <li>Play a recording or a video above the tab as you play</li>
+          <li>What they record goes to their own copy</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <section class="cta">
+    <h2>Start with the tab on your music stand</h2>
+    <p>tabs.cam comes with no songs: everything in it is what you scan or
+    add yourself, kept in your own account. No ads, no tracking.</p>
+    <a class="button primary" href="/app/">Open tabs.cam</a>
+  </section>
+
+  <footer>
+    <span>tabs.cam</span>
+    <a href="/app/">Open the app</a>
+    <a href="/privacy">Privacy Policy</a>
+  </footer>
+
+  <script>
+    (function () {
+      var boxes = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window)) {
+        boxes.forEach(function (box) { box.classList.add('in'); });
+        return;
+      }
+      var seen = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) { entry.target.classList.add('in'); seen.unobserve(entry.target); }
+        });
+      }, { threshold: 0.15 });
+      boxes.forEach(function (box) { seen.observe(box); });
+    })();
+  </script>
 </body>
 </html>
