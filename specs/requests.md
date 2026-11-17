@@ -3895,3 +3895,13 @@ spec.
    comes. Only a capture's link naming the root (`/?c=…`) still goes on
    to `/app/`. The deploy uploads the page's `img/` folder and checks
    the new page and its logo. See [index page](index-page.md).
+
+8. **"In the download button in editor make the download have
+   _$current_timestamp so that multiple renders can be taken and
+   downloaded without overlapping."** The editor's Download (the
+   video, the video without sound and the sound alone, made or as it
+   is) now names the file as the video is in the list followed by the
+   time it's downloaded, `_YYYYMMDD-HHMMSS` in the device's time (e.g.
+   `Made-up riff_20261117-180509.mp4`); a long name is cut so the time
+   always fits. The file list's Download and Download all keep their
+   names. See [video edit](video-edit.md).

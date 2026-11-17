@@ -1432,7 +1432,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     try {
       final page = widget.page;
       final input = await _fileOf(event, page);
-      final label = fileLabel(l10n, event, page);
+      // Each download is named for when it's made, so renders don't clash.
+      final label = timestamped(fileLabel(l10n, event, page));
       final plan = _plan(what, input: input);
       if (plan.passthrough) {
         await Downloads.saveFile(_library, event, page, label);

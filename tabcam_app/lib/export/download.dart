@@ -20,6 +20,23 @@ String safeFileName(String name, String extension) {
   return extension.isEmpty ? base : '$base.$extension';
 }
 
+/// [name] with the time it's saved ([Downloads.now]) after it,
+/// `<name>_YYYYMMDD-HHMMSS`, so that one thing downloaded again (another
+/// render of an edit) doesn't overwrite or clash with the last. [name] is
+/// cut so the time still fits [safeFileName]'s 120 characters.
+String timestamped(String name) {
+  final t = Downloads.now();
+  String two(int n) => n.toString().padLeft(2, '0');
+  final stamp =
+      '_${t.year}${two(t.month)}${two(t.day)}'
+      '-${two(t.hour)}${two(t.minute)}${two(t.second)}';
+  var base = name.trim();
+  if (base.length > 120 - stamp.length) {
+    base = base.substring(0, 120 - stamp.length).trimRight();
+  }
+  return '$base$stamp';
+}
+
 /// The extension [page] downloads with: scanned pages kept as `img` are
 /// JPEGs.
 String downloadExtension(EventPage page) =>
@@ -82,6 +99,10 @@ Future<Uint8List> zipCapture(
 /// Downloads: in the browser, a download; on Android and iOS, the
 /// system's "save as" (`file_picker`). False when the user cancelled.
 abstract final class Downloads {
+  /// The clock [timestamped] reads; tests pass their own.
+  @visibleForTesting
+  static DateTime Function() now = DateTime.now;
+
   /// Tests pass their own.
   @visibleForTesting
   static Future<bool> Function(String name, Uint8List bytes, String type) save =

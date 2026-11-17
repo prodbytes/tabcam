@@ -368,8 +368,12 @@ makes a file of it."), opening with the video's edit as it was left:
   defaults is none.
   Download makes the file on the device and saves it (the browser's
   download, or the system's "save as" on Android and iOS), named as the
-  video is in the list with the made format's extension (`.mp4`,
-  `.m4a`; `.webm`, `.wav` where those are made); a video the edit
+  video is in the list followed by the time it's downloaded,
+  `_YYYYMMDD-HHMMSS` in the device's time (so each render of an edit
+  is a file of its own, never overwriting or clashing with the last; a
+  long name is cut, never the time), with the made format's extension
+  (`.mp4`, `.m4a`; `.webm`, `.wav` where those are made), e.g.
+  `Made-up riff_20261117-180509.mp4`; a video the edit
   doesn't change and with nothing drawn over it (the watermark off, so
   for a Premium user, or in a build without the service, and no title)
   and no fades downloads as it is when it's already MPEG-4 (an
