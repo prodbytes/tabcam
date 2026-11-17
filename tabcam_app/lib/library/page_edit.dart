@@ -144,18 +144,36 @@ enum TabColors {
       values.where((c) => c.name == name).firstOrNull ?? dark;
 }
 
+/// Where the tab's text sits across its band.
+enum TabAlign {
+  /// Against the band's left edge (past its padding): the default.
+  left,
+
+  /// In the middle, as bands were drawn before alignment could be picked.
+  center,
+
+  /// Against the band's right edge.
+  right;
+
+  /// [name]'s alignment; [left] when it isn't one (none given, or a newer
+  /// app's).
+  static TabAlign byName(Object? name) =>
+      values.where((a) => a.name == name).firstOrNull ?? left;
+}
+
 /// How the tab's bands look over an edited video (`tabStyle` in its
 /// edit): how big ([size], 1 as the tab burned into older takes was, from
 /// [minSize] to [maxSize]), how opaque their background is ([opacity], 0
 /// to 1; the text is always opaque, and outlined as the background fades
-/// out, so it reads on any picture), and their [colors]. The default,
-/// [standard], is how bands have always looked (white on a 70% black
-/// strip), and isn't kept.
+/// out, so it reads on any picture), their [colors], and where their
+/// text sits across them ([align]). The default, [standard] (white on a
+/// 70% black strip, the text to the left), isn't kept.
 class EditTabStyle {
   const EditTabStyle({
     this.size = 1,
     this.opacity = defaultOpacity,
     this.colors = TabColors.dark,
+    this.align = TabAlign.left,
   });
 
   /// The look bands have by default.
@@ -171,6 +189,7 @@ class EditTabStyle {
   final double size;
   final double opacity;
   final TabColors colors;
+  final TabAlign align;
 
   /// Whether it's the default look ([standard]).
   bool get isStandard => this == standard;
@@ -188,18 +207,24 @@ class EditTabStyle {
       : defaultOpacity;
 
   /// This style with the fields given changed, each kept within its bounds.
-  EditTabStyle copyWith({double? size, double? opacity, TabColors? colors}) =>
-      EditTabStyle(
-        size: size == null ? this.size : sizeOf(size),
-        opacity: opacity == null ? this.opacity : opacityOf(opacity),
-        colors: colors ?? this.colors,
-      );
+  EditTabStyle copyWith({
+    double? size,
+    double? opacity,
+    TabColors? colors,
+    TabAlign? align,
+  }) => EditTabStyle(
+    size: size == null ? this.size : sizeOf(size),
+    opacity: opacity == null ? this.opacity : opacityOf(opacity),
+    colors: colors ?? this.colors,
+    align: align ?? this.align,
+  );
 
   /// Only what isn't the default.
   Map<String, Object?> toJson() => {
     if (size != 1) 'size': size,
     if (opacity != defaultOpacity) 'opacity': opacity,
     if (colors != TabColors.dark) 'colors': colors.name,
+    if (align != TabAlign.left) 'align': align.name,
   };
 
   /// [standard] when [json] isn't one; each value within its bounds.
@@ -209,6 +234,7 @@ class EditTabStyle {
       size: sizeOf(json['size']),
       opacity: opacityOf(json['opacity']),
       colors: TabColors.byName(json['colors']),
+      align: TabAlign.byName(json['align']),
     );
   }
 
@@ -217,13 +243,16 @@ class EditTabStyle {
       other is EditTabStyle &&
       other.size == size &&
       other.opacity == opacity &&
-      other.colors == colors;
+      other.colors == colors &&
+      other.align == align;
 
   @override
-  int get hashCode => Object.hash(size, opacity, colors);
+  int get hashCode => Object.hash(size, opacity, colors, align);
 
   @override
-  String toString() => 'EditTabStyle($size, $opacity, ${colors.name})';
+  String toString() =>
+      'EditTabStyle($size, $opacity, ${colors.name}'
+      '${align == TabAlign.left ? '' : ', ${align.name}'})';
 }
 
 /// A video page's edit, kept with the page (and synced with it): the part

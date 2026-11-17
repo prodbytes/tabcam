@@ -2286,6 +2286,18 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditTabColorsBrand => 'Preto sobre dourado';
 
   @override
+  String get videoEditTabAlign => 'Alinhamento';
+
+  @override
+  String get videoEditTabAlignLeft => 'Esquerda';
+
+  @override
+  String get videoEditTabAlignCenter => 'Centro';
+
+  @override
+  String get videoEditTabAlignRight => 'Direita';
+
+  @override
   String get videoEditTabStyleReset => 'Estilo padrão';
 
   @override
