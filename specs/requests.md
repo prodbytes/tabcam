@@ -3800,3 +3800,24 @@ spec.
    start to its end, drawn over the part played (red), following the
    drag and gone when it's let go. Nothing else about the section
    changed. See [Cam](cam.md#playing-along-with-a-file).
+4. **"Make '0' key always go back to beginning (including 2s header if
+   marked) in all views when the side bar mini player is open."** 0 now
+   works in every screen whose play-along sidebar shows (Cam, the Text
+   view, a file's screen) without a tap in the sidebar first: the
+   player's keys are read before the screen's
+   (`FocusManager.addEarlyKeyEventHandler`), not only while the sidebar
+   has the keyboard. And it goes back to the beginning with the
+   count-in: playing (or counting in) with the count-in on, the song
+   goes silent at its start (its section's), counts the 2 seconds in
+   again and plays; paused, it stays paused at the start; with the
+   count-in off it plays on from the start, as before. Still not while
+   typing in a field (in the Text view's editor 0 is a fret), under a
+   dialog or menu, or with Ctrl / ⌘ (the browser's zoom). See
+   [Cam](cam.md#keys-in-every-screen).
+5. **"'1' or spacebar toggles play / pause in the mini player, every
+   view as well."** The space bar, like 0, now pauses and plays in
+   every screen with the sidebar showing, with no tap in it first, and
+   in the Text view and on a file's screen **1** (top row or keypad)
+   does the same. In Cam, 1 is still Rec / Stop (which starts the song
+   too), as asked on 2026-11-11; there the space bar pauses and plays.
+   See [Cam](cam.md#keys-in-every-screen).

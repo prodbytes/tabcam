@@ -74,7 +74,7 @@ review notes ([app stores](app-stores.md)).
   capture, a green / yellow / red level meter beside it (web, Android) that, tapped, sets the input volume, the / key saving it and starting a new one, the . key throwing it away and starting it again, Play plays it back with the tab turning as it did; Play
   along plays one of the capture's recordings, videos or links in a
   frame above the camera, the space bar pausing and playing it, 0
-  going back to its start (its section's) and ← / → skipping in it,
+  going back to its start (its section's, count-in included) and ← / → skipping in it (0, space and, outside Cam, 1 work in every screen with the sidebar showing),
   play waiting a 2-second count-in (shown in amber on the progress
   bar's line, with a button to turn it off); turns
   of the tab while recording along with a song, with **Auto-pass** on,

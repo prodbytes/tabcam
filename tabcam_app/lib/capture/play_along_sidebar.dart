@@ -352,10 +352,20 @@ class PlayAlongBeside extends StatelessWidget {
     this.letGo,
     this.run,
     this.onEdit,
+    this.oneToggles = true,
+    this.keys = true,
   });
 
   final PlayAlong along;
   final Widget child;
+
+  /// Whether the player's keys work ([PlayAlongKeys]); false in a
+  /// preview, where no key does anything.
+  final bool keys;
+
+  /// Whether the 1 key pauses and plays what plays along, as the space
+  /// bar ([PlayAlongKeys]); false in Cam, where 1 is Rec / Stop.
+  final bool oneToggles;
 
   /// Whether the sidebar's files show Delete (those the user may delete,
   /// [mayDeleteFile]); false (a preview), none does.
@@ -538,6 +548,8 @@ class PlayAlongBeside extends StatelessWidget {
                 offstage: !along.open,
                 child: PlayAlongKeys(
                   track: along.track,
+                  active: along.open && keys,
+                  oneToggles: oneToggles,
                   child: PlayAlongSidebar(
                     width: sidebarWidth,
                     library: along.library,
@@ -615,16 +627,33 @@ class PlayAlongBeside extends StatelessWidget {
   );
 }
 
-/// The play-along player's keys, while the keyboard is in the sidebar
-/// (a tap in it takes it there): **0** goes back to the start of the file
-/// or its section ([BackingTrack.restart]), the **space bar** pauses and
-/// plays it. Cam has its own keys and takes the keyboard back after a
-/// tap, handling the same ones.
+/// The play-along player's keys, in every screen with the sidebar, while
+/// it shows ([active]) and its screen is the one in front, wherever the
+/// keyboard is but in a field being typed in: **0** goes back to the
+/// start of the file or its section, count-in and all
+/// ([BackingTrack.restart]); the **space bar** and, where [oneToggles],
+/// **1** pause and play it. They get the keys first
+/// ([FocusManager.addEarlyKeyEventHandler]), so the screen under them
+/// doesn't (Cam's turn the tab). A tap in the sidebar takes the keyboard
+/// out of a field, so the keys are the player's again.
 class PlayAlongKeys extends StatefulWidget {
-  const PlayAlongKeys({super.key, required this.track, required this.child});
+  const PlayAlongKeys({
+    super.key,
+    required this.track,
+    required this.child,
+    this.active = true,
+    this.oneToggles = true,
+  });
 
   final BackingTrack track;
   final Widget child;
+
+  /// Whether the sidebar shows: hidden, the keys are the screen's.
+  final bool active;
+
+  /// Whether 1 pauses and plays, as the space bar; false in Cam, where 1
+  /// is Rec / Stop (which starts the song too).
+  final bool oneToggles;
 
   /// The keys that go back to the start: 0, on the top row or the keypad.
   static final restart = {
@@ -632,14 +661,18 @@ class PlayAlongKeys extends StatefulWidget {
     LogicalKeyboardKey.numpad0,
   };
 
-  /// Whether [event] is 0 pressed alone (Ctrl / ⌘ + 0 is the browser's
-  /// zoom, left to it).
-  static bool isRestart(KeyEvent event) {
-    final keys = HardwareKeyboard.instance;
-    return restart.contains(event.logicalKey) &&
-        !keys.isControlPressed &&
-        !keys.isMetaPressed &&
-        !keys.isAltPressed;
+  /// The keys that pause and play, with the space bar: 1, on the top row
+  /// or the keypad.
+  static final toggle = {LogicalKeyboardKey.digit1, LogicalKeyboardKey.numpad1};
+
+  /// Whether [event] is one of [keys] pressed alone (Ctrl / ⌘ + 0 is the
+  /// browser's zoom, Ctrl / ⌘ + 1 its first tab, left to it).
+  static bool _alone(KeyEvent event, Set<LogicalKeyboardKey> keys) {
+    final keyboard = HardwareKeyboard.instance;
+    return keys.contains(event.logicalKey) &&
+        !keyboard.isControlPressed &&
+        !keyboard.isMetaPressed &&
+        !keyboard.isAltPressed;
   }
 
   @override
@@ -649,29 +682,54 @@ class PlayAlongKeys extends StatefulWidget {
 class _PlayAlongKeysState extends State<PlayAlongKeys> {
   final _focus = FocusNode(debugLabel: 'play-along keys');
 
+  /// The screen the sidebar is in: under another (a dialog, a menu, the
+  /// editor), the keys aren't the player's.
+  ModalRoute<Object?>? _route;
+
+  @override
+  void initState() {
+    super.initState();
+    FocusManager.instance.addEarlyKeyEventHandler(_key);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _route = ModalRoute.of(context);
+  }
+
   @override
   void dispose() {
+    FocusManager.instance.removeEarlyKeyEventHandler(_key);
     _focus.dispose();
     super.dispose();
   }
 
-  KeyEventResult _key(FocusNode _, KeyEvent event) {
-    if (event is KeyUpEvent || widget.track.page == null) {
+  KeyEventResult _key(KeyEvent event) {
+    final track = widget.track;
+    if (event is KeyUpEvent ||
+        !widget.active ||
+        track.page == null ||
+        !(_route?.isCurrent ?? true)) {
       return KeyEventResult.ignored;
     }
     // Typing in a field isn't playing.
-    if (FocusManager.instance.primaryFocus?.context
-            ?.findAncestorWidgetOfExactType<EditableText>() !=
-        null) {
-      return KeyEventResult.ignored;
-    }
-    if (PlayAlongKeys.isRestart(event)) {
-      if (event is KeyDownEvent) unawaited(widget.track.restart());
+    final field = FocusManager.instance.primaryFocus?.context
+        ?.findAncestorWidgetOfExactType<EditableText>();
+    if (field != null && !field.readOnly) return KeyEventResult.ignored;
+    if (PlayAlongKeys._alone(event, PlayAlongKeys.restart)) {
+      if (event is KeyDownEvent) unawaited(track.restart());
       return KeyEventResult.handled;
     }
-    if (event.logicalKey == LogicalKeyboardKey.space &&
-        widget.track.canToggle) {
-      if (event is KeyDownEvent) unawaited(widget.track.toggle());
+    final toggles =
+        event.logicalKey == LogicalKeyboardKey.space ||
+        (widget.oneToggles &&
+            PlayAlongKeys._alone(event, PlayAlongKeys.toggle));
+    if (toggles) {
+      // Nothing to play or pause yet (it's loading): still the player's.
+      if (event is KeyDownEvent && track.canToggle) {
+        unawaited(track.toggle());
+      }
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
@@ -680,12 +738,13 @@ class _PlayAlongKeysState extends State<PlayAlongKeys> {
   @override
   Widget build(BuildContext context) => Listener(
     behavior: HitTestBehavior.translucent,
-    // A tap anywhere in the sidebar gives it the keyboard (its buttons
-    // don't take it), unless something in it already has it.
+    // A tap anywhere in the sidebar takes the keyboard (its buttons
+    // don't), out of a field being typed in, unless something in the
+    // sidebar already has it.
     onPointerDown: (_) {
       if (!_focus.hasFocus) _focus.requestFocus();
     },
-    child: Focus(focusNode: _focus, onKeyEvent: _key, child: widget.child),
+    child: Focus(focusNode: _focus, child: widget.child),
   );
 }
 

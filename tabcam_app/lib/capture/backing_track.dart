@@ -437,11 +437,17 @@ class BackingTrack extends ChangeNotifier {
     await _link?.skip(by);
   }
 
-  /// Back to its start (its section's), playing on if it plays, paused
-  /// if it's paused: the **0** key.
+  /// Back to its start (its section's): the **0** key. Paused, it stays
+  /// paused there; playing, or counting in, it starts over as Play starts
+  /// it, so with [countIn] on it counts in again before it plays.
   Future<void> restart() async {
     if (_media case final media?) {
-      return media.seekTo(section?.start ?? Duration.zero);
+      final going = _cancelCountIn() || media.value.isPlaying;
+      final counts = going && _countIn;
+      if (counts) await media.pause();
+      await media.seekTo(section?.start ?? Duration.zero);
+      if (counts && _media == media) await _play(media);
+      return;
     }
     final link = _link;
     if (link == null) return;

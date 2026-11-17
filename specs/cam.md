@@ -696,8 +696,8 @@ view).
   and the seconds count down (`2s`, `1s`), and Play shows Pause: Play
   (or space) again, Pause, Stop, hiding the sidebar or another file
   stop it without playing; turned off meanwhile, it plays at once; **0**
-  goes back to the start and keeps counting. Repeat and a section's
-  loop start over without one; the count-in is real time, whatever the
+  goes back to the start and counts in again, from the top (below).
+  Repeat and a section's loop start over without one; the count-in is real time, whatever the
   speed. The setting is kept on the device (the meta file
   `playalong`, `{"countIn": false}`; until 2026-11-11 it was named
   `play-along`, which the apps' store refuses, so it was never kept there), for Cam, the Text view and the
@@ -706,23 +706,36 @@ view).
   down; held, it doesn't repeat), and doesn't turn the tab; with the
   sidebar hidden, space turns the tab again. A tap in the sidebar or the
   frame gives the keys back to Cam.
-- **0** (on the top row or the keypad) goes back to the start of the
-  file, or of its section when one is set, playing on if it was playing
-  and staying paused if it wasn't (`BackingTrack.restart`; a link in
-  the frame goes back by Stop, then plays again if it played). Like
-  space, it doesn't turn the tab while the sidebar shows. Ctrl / ⌘ + 0
-  is left to the browser (its zoom).
+- **0** (on the top row or the keypad) always goes back to the
+  beginning: the start of the file, or of its section when one is set,
+  count-in included (`BackingTrack.restart`). Paused, it stays paused
+  there (Play counts in, as ever). Playing, it starts over as Play
+  starts it: with the [count-in](#count-in) on, it goes silent at the
+  start, counts the 2 seconds in and plays; with it off, it plays on
+  from the start. While it counts in, the count starts over. (A link in
+  the frame, which has no count-in, goes back by Stop, then plays again
+  if it played.) Like space, it doesn't turn the tab while the sidebar
+  shows. Ctrl / ⌘ + 0 is left to the browser (its zoom).
 - **← and →** go 10 seconds back and on in it, as « and » do (held,
   again and again), and don't turn the tab while the sidebar shows; the
   tab's phrases go by **↑** (the one before) and **↓** (the next). With
   the sidebar hidden, ← and → turn the tab again. A page-turner pedal
   that sends ← and → skips in the song while the sidebar shows: one
   that sends ↑ / ↓ or Page Up / Page Down turns the tab then.
-- **The keys outside Cam**: in the Text view and on a recording's file
-  screen, a tap in the sidebar gives it the keyboard
-  ([`PlayAlongKeys`](../tabcam_app/lib/capture/play_along_sidebar.dart)),
-  so **0** and the **space bar** work there as in Cam; typing in a field
-  (the Text view's editor) still types them.
+- <a id="keys-in-every-screen"></a>**The keys in every screen**: **0**
+  and the **space bar** are the player's wherever its sidebar shows
+  (Cam, the Text view, a file's screen), without a tap in the sidebar
+  first, whatever has the keyboard
+  ([`PlayAlongKeys`](../tabcam_app/lib/capture/play_along_sidebar.dart)
+  gets the keys before the screen does). In the Text view and on a
+  file's screen, **1** (on the top row or the keypad) pauses and plays
+  too, as the space bar; in Cam, 1 stays [Rec / Stop](#rec-key), which
+  starts the song as well. Ctrl / ⌘ + 1 is left to the browser (its
+  first tab). The exceptions: typing in a field (the Text view's
+  editor, the dictionary's search) still types them, until a tap in the
+  sidebar takes the keyboard out of the field; under a dialog, a menu
+  or another screen the keys are that one's; with the sidebar hidden
+  they're the screen's own; and a Cam preview has no keys.
 - **A link** straight to a sound or video file (its path ends in `.mp3`,
   `.m4a`, `.aac`, `.wav`, `.ogg`, `.oga`, `.opus`, `.flac`, `.mp4`,
   `.m4v`, `.mov` or `.webm`) plays in the app like a recording or video.
