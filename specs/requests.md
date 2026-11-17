@@ -3765,3 +3765,23 @@ spec.
    take page's ID (its creation time), so older takes are grouped too.
    Old number names still count as takes (`isTake`). See
    [Cam](cam.md#playing-along-with-a-file).
+
+## 2026-11-17
+
+1. **"Let's improve the index page, make it show a header and I will
+   send you the images right away, one for each key feature: Scan your
+   tabs: OCR, find and use them quickly; Record your practice: video
+   recording and editing; Sharing and playing along: use with your
+   students and friends."** Then, with the first picture: **"make a text
+   box shadow over"**, and **"make it look nice like html5up.com"**. The
+   site's root no longer redirects to the app: it's a page of its own,
+   dark, in the brand's colours, with a top bar (the logo, Open the
+   app), a header ("A camera for your guitar tabs", Open tabs.cam) and
+   the three key features, each a wide picture with its text in a
+   shadowed box over it (over a corner on wide screens, under the
+   picture's edge on narrow ones), then the way in again and the footer
+   with the privacy policy. The first two features have their pictures
+   (WebP, two widths); the third's box stands alone until its picture
+   comes. Only a capture's link naming the root (`/?c=…`) still goes on
+   to `/app/`. The deploy uploads the page's `img/` folder and checks
+   the new page and its logo. See [index page](index-page.md).

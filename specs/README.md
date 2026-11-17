@@ -171,6 +171,10 @@ review notes ([app stores](app-stores.md)).
 - [App icon](app-icon.md): a scanned tab page with a staff and fret
   numbers, in camera corners; how the platform icons are generated.
 - [Platforms](platforms.md): Android, iOS and the web, and what each can do.
+- [Index page](index-page.md): the site's front page at
+  https://tabs.cam/: a header with the way into the app, and the three
+  key features (scan, record, share and play along), each a picture with
+  its text in a box over it.
 - [Privacy](privacy.md): the privacy policy at
   https://tabs.cam/privacy (linked from the index page and About),
   what it says and what it's based on; the iOS privacy manifest and

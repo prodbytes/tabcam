@@ -321,7 +321,7 @@ Resources:
               S3OriginConfig:
                 OriginAccessIdentity: ''
             - !Ref AWS::NoValue
-        # The index page at / (redirects to /app/)
+        # The index page at /, and its pictures at /img/
         DefaultCacheBehavior:
           TargetOriginId: site
           ViewerProtocolPolicy: redirect-to-https

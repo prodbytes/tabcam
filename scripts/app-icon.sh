@@ -30,6 +30,8 @@ render() {
 render "$icons/icon.svg" "$icons/icon.png" 1024 1024
 render "$icons/icon_foreground.svg" "$icons/icon_foreground.png" 1024 1024
 render "$icons/logo.svg" "$icons/logo.png" "$logo_width" 480
+# The index page shows the logo too (specs/index-page.md).
+cp "$icons/logo.svg" "$root/tabcam_index/site/img/logo.svg"
 
 cd tabcam_app
 flutter pub run flutter_launcher_icons
