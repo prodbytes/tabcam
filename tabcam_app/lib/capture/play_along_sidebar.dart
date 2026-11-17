@@ -351,6 +351,7 @@ class PlayAlongBeside extends StatelessWidget {
     this.keepId,
     this.letGo,
     this.run,
+    this.onEdit,
   });
 
   final PlayAlong along;
@@ -360,13 +361,21 @@ class PlayAlongBeside extends StatelessWidget {
   /// [mayDeleteFile]); false (a preview), none does.
   final bool deletes;
 
-  /// Whether Delete works now; false (Cam recording or saving a take, the
-  /// screen busy), it's greyed.
+  /// Whether Delete (and a take's Edit, [onEdit]) works now; false (Cam
+  /// recording or saving a take, the screen busy), they're greyed.
   final bool canDelete;
 
-  /// A file that shows no Delete in the sidebar: the file screen's own
-  /// (its app bar deletes it, and the screen with it).
+  /// A file that shows no Delete, nor Edit, in the sidebar: the file
+  /// screen's own (its own tools delete and edit it).
   final String? keepId;
+
+  /// Opens the video editor on one of the sidebar's takes
+  /// ([VideoEditScreen.open], as the file screen's Edit does), done when
+  /// the user is back; null (a preview, a capture opened by its link):
+  /// no take shows Edit. With it, the user's own takes do
+  /// ([PlayAlongSidebar.mayEdit]), before Delete, and work when Delete
+  /// does ([canDelete]).
+  final Future<void> Function(EventPage page)? onEdit;
 
   /// Before a file deleted from the sidebar goes, once the user confirms,
   /// besides the sidebar's own player: the screen lets go of it too (the
@@ -419,6 +428,15 @@ class PlayAlongBeside extends StatelessWidget {
         run: run,
       );
     }
+    onUse?.call();
+  }
+
+  /// Opens the editor on the take [page] ([onEdit]): what plays along
+  /// pauses first, so only the editor's preview sounds.
+  Future<void> _edit(EventPage page) async {
+    onUse?.call();
+    await along.track.pause();
+    await onEdit?.call(page);
     onUse?.call();
   }
 
@@ -534,6 +552,7 @@ class PlayAlongBeside extends StatelessWidget {
                     keepId: keepId,
                     canDelete: canDelete,
                     onDelete: deletes ? (page) => _delete(context, page) : null,
+                    onEdit: onEdit == null ? null : _edit,
                     onFollow: (page) {
                       onUse?.call();
                       along.follow(page);
@@ -1018,6 +1037,7 @@ class PlayAlongSidebar extends StatelessWidget {
     this.onFollowText,
     this.footer,
     this.onDelete,
+    this.onEdit,
     this.canDelete = true,
     this.keepId,
     required this.onToggle,
@@ -1054,11 +1074,25 @@ class PlayAlongSidebar extends StatelessWidget {
   /// their row, all but [keepId]'s.
   final void Function(EventPage page)? onDelete;
 
-  /// Whether Delete works now; false, it's greyed.
+  /// Opens the video editor on one of the takes listed; null: none shows
+  /// Edit. With it, the takes the user may edit ([mayEdit]) do, before
+  /// Delete, all but [keepId]'s.
+  final void Function(EventPage page)? onEdit;
+
+  /// Whether Delete and Edit work now; false, they're greyed.
   final bool canDelete;
 
-  /// The file that shows no Delete (the file screen's own).
+  /// The file that shows no Delete, nor Edit (the file screen's own).
   final String? keepId;
+
+  /// Whether [page] is a take the user may edit, as the file screen's
+  /// Edit says: a video of Cam's ([isTake]), one of the capture's own
+  /// files (not a contribution's), in a capture that isn't read only.
+  static bool mayEdit(CaptureEvent event, EventPage page) =>
+      page.isVideo &&
+      isTake(page) &&
+      !event.readOnly &&
+      event.pages.contains(page);
   final VoidCallback onToggle;
   final VoidCallback onStop;
   final void Function(Duration by) onSkip;
@@ -1178,7 +1212,8 @@ class PlayAlongSidebar extends StatelessWidget {
   );
 
   /// The end of a file's row: its [mark] (playing, followed), if any, and
-  /// at the right, Delete, if it shows ([onDelete]).
+  /// at the right, a take's Edit (scissors, as the file screen's), if it
+  /// shows ([onEdit]), then Delete, if it shows ([onDelete]).
   Widget? _trailing(
     BuildContext context,
     AppLocalizations l10n,
@@ -1187,23 +1222,40 @@ class PlayAlongSidebar extends StatelessWidget {
     IconData? mark,
   ) {
     final onDelete = this.onDelete;
+    final onEdit = this.onEdit;
     final deletes =
         onDelete != null && page.id != keepId && mayDeleteFile(event, page);
-    if (!deletes) return mark == null ? null : Icon(mark, size: 18);
+    final edits = onEdit != null && page.id != keepId && mayEdit(event, page);
+    if (!deletes && !edits) return mark == null ? null : Icon(mark, size: 18);
+    Widget button(
+      String name,
+      String tooltip,
+      IconData icon,
+      void Function(EventPage page) onPressed,
+    ) => IconButton(
+      key: ValueKey('cam-along-$name-${page.id}'),
+      tooltip: tooltip,
+      visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+      color: Colors.white70,
+      disabledColor: Colors.white24,
+      iconSize: 18,
+      icon: Icon(icon),
+      onPressed: canDelete ? () => onPressed(page) : null,
+    );
+    final label = fileLabel(l10n, event, page);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         if (mark != null) Icon(mark, size: 18),
-        IconButton(
-          key: ValueKey('cam-along-delete-${page.id}'),
-          tooltip: l10n.camAlongDelete(fileLabel(l10n, event, page)),
-          visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
-          color: Colors.white70,
-          disabledColor: Colors.white24,
-          iconSize: 18,
-          icon: const Icon(Icons.delete_outline),
-          onPressed: canDelete ? () => onDelete(page) : null,
-        ),
+        if (edits)
+          button('edit', l10n.camAlongEdit(label), Icons.content_cut, onEdit),
+        if (deletes)
+          button(
+            'delete',
+            l10n.camAlongDelete(label),
+            Icons.delete_outline,
+            onDelete,
+          ),
       ],
     );
   }
@@ -1224,7 +1276,7 @@ class PlayAlongSidebar extends StatelessWidget {
           final takes = [...playing.where(isTake)].reversed.toList();
           final primary = Theme.of(context).colorScheme.primary;
           // A file to play along (a song or a take): the one playing marked,
-          // Delete at its right.
+          // a take's Edit, then Delete, at its right.
           Widget fileRow(EventPage page) => ListTile(
             key: ValueKey('cam-along-${page.id}'),
             dense: true,

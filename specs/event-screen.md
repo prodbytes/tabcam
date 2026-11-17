@@ -304,7 +304,9 @@ Its tools, along the bottom:
   can't be deleted (the message says to delete the event instead). The
   play-along sidebar beside a recording has no Delete on the recording's
   own row (it has on the other files,
-  [as in Cam](cam.md#deleting-from-the-sidebar)).
+  [as in Cam](cam.md#deleting-from-the-sidebar)); the takes listed in it
+  have Edit, which opens the video editor on them
+  ([as in Cam](cam.md#editing-a-take-from-the-sidebar)).
 
 Edit, Rename and Delete are off while a tool works and on a capture
 shared read only. The tools share the bar equally, so all four (an

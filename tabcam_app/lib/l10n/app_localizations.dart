@@ -1264,6 +1264,12 @@ abstract class AppLocalizations {
   /// **'Delete {name}'**
   String camAlongDelete(String name);
 
+  /// Play-along sidebar: tooltip of the Edit button (scissors) on a take's row, before Delete; it opens the video editor on that take
+  ///
+  /// In en, this message translates to:
+  /// **'Edit {name}'**
+  String camAlongEdit(String name);
+
   /// Cam sidebar: tooltip of a PDF not showing
   ///
   /// In en, this message translates to:

@@ -15,7 +15,10 @@ it ([fades](#fades)). Opened
 with **Edit** (scissors, before Rename) on a video's
 [file screen](event-screen.md#file-screen), in the user's own captures
 (not one shared with them, which is read only, nor a contribution's
-file, nor while a tool works).
+file, nor while a tool works); and, for Cam's takes, with the **Edit**
+on the take's row in the play-along sidebar (in Cam, beside the Text
+view and beside a recording), which opens it the same way
+([editing a take from the sidebar](cam.md#editing-a-take-from-the-sidebar)).
 
 **The edit is kept, not applied.** It's saved with the video's page as
 it's made (the page's `edit`, see [stored](#how-the-edit-is-stored);

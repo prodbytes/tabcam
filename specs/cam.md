@@ -571,6 +571,25 @@ the [file screen](event-screen.md#file-screen), the file it shows (a
 recording, listed in its own sidebar) has no Delete there: the screen's
 own Delete deletes it and goes back to the list.
 
+<a id="editing-a-take-from-the-sidebar"></a>**Editing a take from the
+sidebar**: each of Cam's takes in it (under **Takes**; not the songs,
+videos that aren't takes, links, PDFs or pages) has **Edit** (scissors,
+as the file screen's; its tooltip "Edit <name>") right before its
+Delete. It opens the [video editor](video-edit.md) on that take, over
+the screen, exactly as **Edit** on the take's own
+[file screen](event-screen.md#file-screen) does (the same call,
+`VideoEditScreen.open`, with the same Premium service for the
+watermark): the take's edit as it was left, its song lined up, its tab
+over it. What played along pauses first (and, beside the Text view, the
+recording the capture's list was playing stops; on the file screen, the
+file it shows is let go of meanwhile), so only the editor's preview
+sounds. Back, the screen is as it was, Cam with its keys. It shows
+where the file screen would offer Edit: on the capture's own takes, in
+a capture that isn't read only (none on one shared to read, nor on a
+reader's own contribution's takes); not in Cam's Premium preview, nor
+on a capture opened by its link. It's greyed when Delete is: while a
+take records, saves or plays back, and while the screen works.
+
 <a id="following-a-pdf"></a>**Following a PDF**: in Cam and in the
 [Text view](tab-recognition.md#text-view) (not beside a PDF), the
 sidebar also lists the capture's PDFs, under **Follow a PDF** (after the

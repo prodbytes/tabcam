@@ -36,6 +36,7 @@ import 'place.dart';
 import 'sign_in_gate.dart';
 import 'tab_notation.dart';
 import 'tab_text_view.dart';
+import 'video_edit_screen.dart';
 import 'mono_font.dart';
 import 'mini_player.dart';
 import 'messages.dart';
@@ -510,6 +511,7 @@ class _EventScreenState extends State<EventScreen> {
           library: _library,
           eventId: widget.eventId,
           gate: gate,
+          ocr: widget.ocr,
         ),
       ),
     );
@@ -572,6 +574,21 @@ class _EventScreenState extends State<EventScreen> {
   /// in the Text view.
   Future<void> _letGo(EventPage page) async {
     if (_player.holds(page)) await _player.stop();
+  }
+
+  /// Opens the video editor on [take], from the Text view's sidebar, as
+  /// its file screen's Edit does. The list's player, which plays on in the
+  /// Text view, stops first, so only the editor's preview sounds.
+  Future<void> _editTake(EventPage take) async {
+    await _player.stop();
+    if (!mounted) return;
+    await VideoEditScreen.open(
+      context,
+      library: _library,
+      eventId: widget.eventId,
+      page: take,
+      ocr: widget.ocr,
+    );
   }
 
   /// Files the user dragged onto the screen ([FileDropArea]): added, as
@@ -1315,6 +1332,7 @@ class _EventScreenState extends State<EventScreen> {
                               // As the list's Delete: its player, its run.
                               letGo: _letGo,
                               run: _run,
+                              onEdit: widget.byLink ? null : _editTake,
                               child: _textView(event),
                             ),
                     ),

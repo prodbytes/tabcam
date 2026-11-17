@@ -526,6 +526,36 @@ void main() {
     await _settle(tester);
   }
 
+  testWidgets('beside a recording, the sidebar\'s takes have Edit, its '
+      'other videos none: it opens the editor on that take, as the take\'s '
+      'own file screen does', (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester, withTake: true);
+    await tester.pumpWidget(
+      host(FileScreen(library: library, eventId: id, pageId: 'k1')),
+    );
+    await _settle(tester);
+    // k4 is a take; k0 and k3 are videos that aren't.
+    final edit = find.byKey(const ValueKey('cam-along-edit-k4'));
+    expect(edit, findsOneWidget);
+    expect(find.byKey(const ValueKey('cam-along-edit-k0')), findsNothing);
+    expect(find.byKey(const ValueKey('cam-along-edit-k3')), findsNothing);
+    expect(find.byKey(const ValueKey('cam-along-delete-k3')), findsOneWidget);
+
+    await tester.tap(edit);
+    await _settle(tester);
+    final editor = tester.widget<VideoEditScreen>(find.byType(VideoEditScreen));
+    expect(editor.page.id, 'k4');
+    expect(editor.eventId, id);
+    expect(platform.playing, isEmpty);
+
+    await tester.pageBack();
+    await _settle(tester);
+    expect(find.byType(VideoEditScreen), findsNothing);
+    expect(find.byType(FileScreen), findsOneWidget);
+    expect(edit, findsOneWidget);
+  });
+
   testWidgets('Edit is a video\'s tool, not an image\'s; it opens the '
       'editor with the whole video kept and nothing to reset', (tester) async {
     tall(tester);
