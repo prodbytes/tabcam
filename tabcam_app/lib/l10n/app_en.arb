@@ -1019,6 +1019,15 @@
       }
     }
   },
+  "camAlongEdit": "Edit {name}",
+  "@camAlongEdit": {
+    "description": "Play-along sidebar: tooltip of the Edit button (scissors) on a take's row, before Delete; it opens the video editor on that take",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "camAlongPdfShow": "Show the PDF beside the camera",
   "@camAlongPdfShow": {
     "description": "Cam sidebar: tooltip of a PDF not showing"

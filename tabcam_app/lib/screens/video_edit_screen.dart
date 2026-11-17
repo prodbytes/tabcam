@@ -100,6 +100,26 @@ class VideoEditScreen extends StatefulWidget {
     return files.firstOrNull?.xFile;
   }
 
+  /// Opens the editor on [page] over the screen, and completes when the
+  /// user comes back: from the file screen's Edit, and from a take's Edit
+  /// in the play-along sidebar, the same way.
+  static Future<void> open(
+    BuildContext context, {
+    required Library library,
+    required String eventId,
+    required EventPage page,
+    CloudOcr? ocr,
+  }) => Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      builder: (_) => VideoEditScreen(
+        library: library,
+        eventId: eventId,
+        page: page,
+        ocr: ocr,
+      ),
+    ),
+  );
+
   @override
   State<VideoEditScreen> createState() => _VideoEditScreenState();
 }

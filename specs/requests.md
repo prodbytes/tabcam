@@ -3765,3 +3765,21 @@ spec.
    take page's ID (its creation time), so older takes are grouped too.
    Old number names still count as takes (`isTake`). See
    [Cam](cam.md#playing-along-with-a-file).
+
+## 2026-11-17
+
+1. **"In the mini player sidebar, in the list of takes add an edit
+   button besides the delete button to open the editor on that take,
+   including the backing track and all, as if it was opened from the
+   main capture."** Each of Cam's takes in the play-along sidebar (in
+   Cam, beside the Text view, beside a recording's file screen) now has
+   **Edit** (scissors, "Edit <name>") right before Delete. It opens the
+   video editor on that take as the take's own file screen does, from
+   the same code (`VideoEditScreen.open`): its edit, its song lined up,
+   its tab, the watermark as Premium says (Cam now gets the Premium
+   service to pass on). What played along pauses first. Only on the
+   capture's own takes where it isn't read only; not in the Premium
+   preview or a capture opened by its link; greyed when Delete is
+   (recording, saving, playing back). New string `camAlongEdit` in
+   English, Spanish and Portuguese. See
+   [Cam](cam.md#editing-a-take-from-the-sidebar).

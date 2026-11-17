@@ -193,6 +193,7 @@
   "camAlongYesterday": "Ayer",
   "camAlongPdfs": "Seguir un PDF",
   "camAlongDelete": "Eliminar {name}",
+  "camAlongEdit": "Editar {name}",
   "camAlongPdfShow": "Mostrar el PDF junto a la cámara",
   "camAlongPdfHide": "Ocultar el PDF",
   "camAlongFollow": "Seguir una página o un PDF",

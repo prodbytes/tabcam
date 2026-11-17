@@ -728,6 +728,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String camAlongEdit(String name) {
+    return 'Edit $name';
+  }
+
+  @override
   String get camAlongPdfShow => 'Show the PDF beside the camera';
 
   @override
