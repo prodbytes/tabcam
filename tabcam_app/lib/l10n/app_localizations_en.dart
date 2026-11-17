@@ -2007,6 +2007,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditSongLined => 'Lined up as it played while you recorded';
 
   @override
+  String get videoEditSongLinedSound => 'Lined up by its sound in the take';
+
+  @override
+  String get videoEditCutToSong => 'Cut to the song';
+
+  @override
+  String get videoEditCutToSongTip =>
+      'Keep the take from where the song starts to where it stops';
+
+  @override
   String videoEditSongLinedLater(String time) {
     return 'Lined up as recorded, moved $time later';
   }

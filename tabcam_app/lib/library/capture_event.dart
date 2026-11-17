@@ -165,6 +165,7 @@ class EventPage {
     PageFilter? filter,
     String? Function()? title,
     PageEdit? Function()? edit,
+    TakeLog? takeLog,
     FileOrigin? Function()? source,
     Map<String, Object?>? extra,
   }) => EventPage(
@@ -177,7 +178,7 @@ class EventPage {
     from: from,
     edit: edit == null ? this.edit : edit(),
     take: take,
-    takeLog: takeLog,
+    takeLog: takeLog ?? this.takeLog,
     source: source == null ? this.source : source(),
     extra: extra ?? this.extra,
   );

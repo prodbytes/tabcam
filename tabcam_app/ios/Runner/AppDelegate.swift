@@ -182,6 +182,8 @@ enum Sound {
 /// (`avc1` for H.264, `hvc1` for HEVC; nil without a video track), and
 /// `h264` (`input`, `output`) makes the whole video H.264, its sound kept,
 /// replying with the output path.
+///
+/// And `samples` reads a part of a file's sound as samples (`SoundSamples`).
 enum VideoEdit {
   static func handle(
     _ call: FlutterMethodCall, result: @escaping FlutterResult, channel: FlutterMethodChannel?
@@ -193,6 +195,9 @@ enum VideoEdit {
     case "render": break
     case "codec", "h264":
       TakeH264.handle(call, reply: reply)
+      return
+    case "samples":
+      SoundSamples.handle(call, reply: reply)
       return
     default:
       result(FlutterMethodNotImplemented)
@@ -219,6 +224,106 @@ enum VideoEdit {
         reply(plan.output.path)
       }
     }
+  }
+}
+
+/// Reads a part of a sound or video file's sound as samples, for the app to
+/// compare one sound with another (lib/capture/song_sync.dart): `samples`
+/// (`path`, `fromMs`, `lengthMs`, `rate`) replies with the samples (32-bit
+/// floats from -1 to 1, one channel, `rate` a second), fewer where the file
+/// ends, decoded and brought to that rate by AVAssetReader; the error
+/// `failed` when it has no sound or can't be read (a WebM).
+enum SoundSamples {
+  static func handle(_ call: FlutterMethodCall, reply: @escaping (Any?) -> Void) {
+    guard let args = call.arguments as? [String: Any],
+      let path = args["path"] as? String,
+      let from = (args["fromMs"] as? NSNumber)?.int64Value,
+      let length = (args["lengthMs"] as? NSNumber)?.int64Value,
+      let rate = (args["rate"] as? NSNumber)?.intValue,
+      from >= 0, length > 0, rate > 0
+    else {
+      reply(FlutterError(code: "failed", message: "Bad arguments for samples.", details: nil))
+      return
+    }
+    Task.detached(priority: .utility) {
+      do {
+        let samples = try await read(
+          URL(fileURLWithPath: path), fromMs: from, lengthMs: length, rate: rate)
+        reply(FlutterStandardTypedData(float32: samples))
+      } catch {
+        reply(FlutterError(code: "failed", message: error.localizedDescription, details: nil))
+      }
+    }
+  }
+
+  static func read(_ url: URL, fromMs: Int64, lengthMs: Int64, rate: Int) async throws -> Data {
+    let asset = AVURLAsset(url: url)
+    let tracks = try await asset.loadTracks(withMediaType: .audio)
+    guard !tracks.isEmpty else {
+      throw NSError(
+        domain: "tabcam", code: 1,
+        userInfo: [NSLocalizedDescriptionKey: "No sound in the file"])
+    }
+    let reader = try AVAssetReader(asset: asset)
+    let from = CMTime(value: fromMs, timescale: 1000)
+    reader.timeRange = CMTimeRange(start: from, duration: CMTime(value: lengthMs, timescale: 1000))
+    let output = AVAssetReaderAudioMixOutput(
+      audioTracks: tracks,
+      audioSettings: [
+        AVFormatIDKey: kAudioFormatLinearPCM,
+        AVSampleRateKey: rate,
+        AVNumberOfChannelsKey: 1,
+        AVLinearPCMBitDepthKey: 32,
+        AVLinearPCMIsFloatKey: true,
+        AVLinearPCMIsBigEndianKey: false,
+        AVLinearPCMIsNonInterleaved: false,
+      ])
+    output.alwaysCopiesSampleData = false
+    guard reader.canAdd(output) else {
+      throw NSError(
+        domain: "tabcam", code: 2,
+        userInfo: [NSLocalizedDescriptionKey: "The file's sound can't be read"])
+    }
+    reader.add(output)
+    guard reader.startReading() else {
+      throw reader.error
+        ?? NSError(
+          domain: "tabcam", code: 3,
+          userInfo: [NSLocalizedDescriptionKey: "The file's sound can't be read"])
+    }
+    let most = Int(lengthMs) * rate / 1000 * MemoryLayout<Float32>.size
+    var samples = Data()
+    var first = true
+    while samples.count < most, let buffer = output.copyNextSampleBuffer() {
+      guard let block = CMSampleBufferGetDataBuffer(buffer) else { continue }
+      if first {
+        first = false
+        // The first buffer's time: later than asked (the sound starts
+        // after the file does), silence first, so the first sample is
+        // the sound at `from`.
+        let late = CMTimeSubtract(CMSampleBufferGetPresentationTimeStamp(buffer), from)
+        if late.isNumeric, late.seconds > 0 {
+          let frames = min(Int((late.seconds * Double(rate)).rounded()), most / 4)
+          samples.append(Data(count: frames * MemoryLayout<Float32>.size))
+        }
+      }
+      let size = CMBlockBufferGetDataLength(block)
+      var bytes = Data(count: size)
+      let status = bytes.withUnsafeMutableBytes { raw -> OSStatus in
+        guard let base = raw.baseAddress else { return -1 }
+        return CMBlockBufferCopyDataBytes(block, atOffset: 0, dataLength: size, destination: base)
+      }
+      if status == kCMBlockBufferNoErr { samples.append(bytes) }
+    }
+    if reader.status == .failed, samples.isEmpty {
+      throw reader.error
+        ?? NSError(
+          domain: "tabcam", code: 4,
+          userInfo: [NSLocalizedDescriptionKey: "The file's sound can't be read"])
+    }
+    reader.cancelReading()
+    if samples.count > most { samples = samples.prefix(most) }
+    return samples
   }
 }
 

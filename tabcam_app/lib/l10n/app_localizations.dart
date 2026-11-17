@@ -3400,6 +3400,24 @@ abstract class AppLocalizations {
   /// **'Lined up as it played while you recorded'**
   String get videoEditSongLined;
 
+  /// Video edit, a take: the song is placed by itself exactly where the take's own sound has it (the microphone heard it from the speaker), measured to the millisecond
+  ///
+  /// In en, this message translates to:
+  /// **'Lined up by its sound in the take'**
+  String get videoEditSongLinedSound;
+
+  /// Video edit, a take: a button under the song's details that keeps the take from where its song starts to where it stops
+  ///
+  /// In en, this message translates to:
+  /// **'Cut to the song'**
+  String get videoEditCutToSong;
+
+  /// Video edit, a take: the tooltip of the Cut to the song button
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the take from where the song starts to where it stops'**
+  String get videoEditCutToSongTip;
+
   /// Video edit, a take: the song lined up as it played while recording, then moved later by hand (time like 0:00.2)
   ///
   /// In en, this message translates to:

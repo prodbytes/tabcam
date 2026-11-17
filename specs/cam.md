@@ -775,7 +775,8 @@ plays in the list.
 each take Cam saves keeps a **log** of what Cam noted while it recorded,
 on its page (`takeLog` in the capture's details, `EventPage.takeLog`,
 [`take_log.dart`](../tabcam_app/lib/capture/take_log.dart)), written
-once, as the take is saved, and never changed after: a log read from
+once, as the take is saved, and never changed after, but for where its
+song was found in its sound (`sync`, below), added once: a log read from
 the capture's details is written back exactly as it came, whatever in
 it this version doesn't know or can't read included (a newer app's
 `lagFrom`, a field in a turn, a segment or the tab, a turn out of
@@ -798,7 +799,9 @@ Play uses it too (above). A few KB for a ten-minute take:
              "stopCallMs": 61000, "stopReturnMs": 61310, "fileMs": 61420},
   "tab": {"lines": ["e|--3--5--7--|", "e|--5--7--8--|"],
           "marks": [[0, 0], [4210, 1], [8380, 0]]},
-  "song": []
+  "song": [{"at": 2000, "to": 61000, "page": "p3", "from": 0, "speed": 1}],
+  "sync": {"v": 1, "page": "p3", "from": "sound", "ms": 38,
+           "clips": [{"at": 2000, "ms": 38, "score": 21.4}]}
 }
 ```
 - **The tab** (`tab`; none when the capture had no text tab): the
@@ -823,10 +826,16 @@ Play uses it too (above). A few KB for a ten-minute take:
   take's clock started (the clock starts once the recording has):
   a time on the clock is `lagMs` later in the file (the start staying
   the file's start). `lagFrom` says how it was told:
-  - `recorder` (the web): the browser's recorder says when it started
-    (its `start` event's time, on the page's clock; the recorder's
-    `start` returns once it has, at most a second on), and the clock's
-    start less that is the lag.
+  - `recorder` (the web): since the browser's recorder was told to
+    start (on the page's clock, read as the take's clock starts; the
+    recorder's `start` returns once its `start` event says it records,
+    at most a second on). The file starts with the first frame after
+    the recorder is told to; Chrome sends the event about a tenth of a
+    second later, with the file's first frames written already, so the
+    lag counted from the event (as it was until 2026-11-17) was that
+    much short. Measured in Chromium: a sound made a second after the
+    recorder was told to start was in the file 7 to 44 ms later than
+    that, and 87 to 143 ms later counted from the event.
   - `bounds` (Android, iOS, and the web's camera recording alone): the
     file's first frame came between the camera being told to start and
     that returning, so the lag is between those two (on the clock,
@@ -856,6 +865,65 @@ Play uses it too (above). A few KB for a ten-minute take:
   frame played (it has no position: no segment). Empty when none
   played, and on takes saved before Cam noted it. The editor lines the
   song up from them ([lined up](video-edit.md#a-takes-song-lined-up)).
+- <a id="the-song-found-in-the-takes-sound"></a>**Where the song really
+  is** (`sync`): the segments say where the player was and the lag where
+  the file was, each good to a tenth of a second or so; but the take's
+  microphone heard the song from the speaker, so where the song is in
+  the take can be **measured from the take's own sound**, to the
+  millisecond, and the song and the take lined up as well as they can
+  be. It's measured on the device, from the two files
+  ([`song_sync.dart`](../tabcam_app/lib/capture/song_sync.dart),
+  `SongSync`; nothing is uploaded), and kept with the log, the one thing
+  added to it after the take is saved (`TakeLog.withSync`,
+  `Library.setTakeSync`; a take that has one keeps it):
+  - **When**: after Cam saves a take whose log noted a song (once no
+    take records: not between the takes the **/** key runs on, which
+    are measured when the last one stops, or as Cam closes), and when
+    the [editor](video-edit.md#a-takes-song-lined-up) opens a take not
+    measured yet (one from before, or from a device that couldn't read
+    its files); one take at a time, waiting while a take records
+    ([`take_syncer.dart`](../tabcam_app/lib/capture/take_syncer.dart)).
+  - **What**: the song the log lines up (the one played longest, at its
+    own speed), each of its segments of 3 s or more on its own (the six
+    longest): 12 s from the segment's middle (the song's start may be
+    quiet, and a clock a little off is off by half as much at either
+    end), the take's sound there, 0.6 s more either side, against the
+    song's, both mixed to one channel at 8 kHz
+    ([`sound_reader.dart`](../tabcam_app/lib/capture/sound_reader.dart):
+    Web Audio in the browser, the file decoded whole, a WebM's sound
+    put where the file has it start, as a player plays it
+    ([`webm_times.dart`](../tabcam_app/lib/capture/webm_times.dart);
+    see [video edit](video-edit.md#fades), how it's rendered on the
+    web); `MediaExtractor` and `MediaCodec` on Android, each decoded
+    buffer placed by its time, `AVAssetReader` on iOS, only the part
+    asked for, over the channel `tabcam/video_edit`, method `samples`).
+    A sample's time is the sound's in the file as a player plays it.
+  - **How**: the two sounds' cross-correlation with each frequency's
+    level mostly taken out (GCC-PHAT, 100 Hz to 3.6 kHz), so the match
+    is a sharp peak whatever the speaker, the room and the microphone
+    did to the song's tone, and the guitar played over it only raises
+    the floor; the peak's place, to a fraction of a sample, is how much
+    later (or earlier) than the log says the song is: the segment's
+    **shift**, in ms. A match counts when it stands at least 14 times
+    the others' spread above them, and 1.3 times higher than the next
+    best place a twentieth of a second or more away (a guitar in the
+    song's key and time, without the song, stays under 10 or so; music
+    with a beat has other places about as good a beat apart, and one of
+    two could be the wrong one). The work is done off the screen's
+    thread (but on the web, which has one: about a tenth of a second a
+    segment).
+  - **Kept** as `sync`: the song (`page`), how it was told (`from`:
+    `sound`, found; `none`, looked for and not found in any segment,
+    as with headphones, or a song too quiet in the take: the log's
+    line-up stands, and it isn't looked for again), the song's shift
+    (`ms`: the middle one of its segments'), and each segment measured
+    (`clips`: its start on the take's clock, `at`, its own shift, `ms`,
+    and how clearly it was found, `score`). A segment is then
+    `at + lagMs +` its shift into the file (its own, when it was
+    measured, else the song's). Files that can't be read here (a WebM
+    on iOS) leave it unmeasured, for another device to try; a way of
+    telling this version doesn't know (a newer app's `from`) is kept as
+    it came and not used. A clone's names the copy's song.
 - A take without a log (saved before takes had one) has its tab in its
   picture, or never had one. A log dropped by an older app that
   re-saved the page (one from before pages kept the keys they don't
@@ -876,8 +944,26 @@ Play uses it too (above). A few KB for a ten-minute take:
   the nearest copy), Rec, 1 and . waiting while the take to play opens
   and Play letting it go, and on iOS Play passing over a WebM
   (`test/take_log_test.dart`, `test/play_along_test.dart`,
-  in Chrome `test/web_take_recorder_test.dart`). **Not yet on a phone**:
-  how big the log grows, and that saving it costs no dropped frames.
+  in Chrome `test/web_take_recorder_test.dart`); and the song found in
+  the take's sound (`test/song_sync_test.dart`, with made-up riffs: a
+  song heard through a made-up room, under a guitar, found to the
+  millisecond, earlier or later, each segment its own; not found when
+  it isn't there; the sync's JSON, added to a log without changing the
+  rest, through a clone; a take in the library measured once, waiting
+  while a take records, left for later when its files can't be read;
+  Cam asking for it as a take is saved; in Chrome,
+  `test/web_sound_reader_test.dart`: files decoded at the rate asked
+  for, and the song found in a video the browser recorded as it records
+  a take; where a WebM's sound starts, from made-up files
+  (`test/webm_times_test.dart`) and, by hand, the same as `ffprobe`
+  says for three takes recorded in Chromium (72, 7 and 0 ms);
+  Android's way down to 8 kHz by JVM tests, `SampleBinsTest` (written,
+  not run: the Gradle test task doesn't start here);
+  iOS's reader run on a Mac against a WAV and an AAC file, a tone's
+  start read where it is). **Not yet on a phone**: how big the log
+  grows, that saving it costs no dropped frames, and the song found in
+  a real take's sound there (Android's and iOS's readers on a phone's
+  own files; how often a real room and guitar leave it unfound).
 
 <a id="recording-comes-first"></a>**Recording comes first**: in a take
 the sound matters most, so Cam records it as a musician wants it, sets it

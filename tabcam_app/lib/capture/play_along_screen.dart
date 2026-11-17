@@ -34,6 +34,7 @@ import 'take_log.dart';
 import 'take_h264.dart';
 import 'take_priority.dart';
 import 'take_recorder.dart';
+import 'take_syncer.dart';
 import 'take_sound.dart';
 import '../screens/messages.dart';
 
@@ -1128,6 +1129,17 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     }
   }
 
+  /// The takes saved with a song noted, not measured yet: each one's song
+  /// is found in its sound and kept with its log ([TakeSyncer]).
+  final _unsynced = <(String, String)>[];
+
+  void _syncTakes() {
+    for (final (event, page) in _unsynced) {
+      unawaited(TakeSyncer.sync(widget.library, event, page));
+    }
+    _unsynced.clear();
+  }
+
   /// Notes that the recording is told to start now ([_span] from 0).
   void _startTiming() {
     _span
@@ -1320,6 +1332,10 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       if (tab != null) {
         _recordedPlaces = (page.id, TakeTab.placesOf(_lines, marks));
       }
+      // Where its song really is, from its own sound: measured once no
+      // take records (not between takes the / key runs on).
+      if (log.linedSong.isNotEmpty) _unsynced.add((updated.id, page.id));
+      if (!_nextTaking) _syncTakes();
       if (mounted) _snack(l10n.camSaved(name));
     } on Object catch (e, stack) {
       debugPrint('TabCam: cam: $e\n$stack');
@@ -1504,6 +1520,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   @override
   void dispose() {
     TakePriority.recording.value = false;
+    _syncTakes();
     if (widget.gate == null) {
       unawaited(TakeAudio.release());
       unawaited(TakeSound.release());

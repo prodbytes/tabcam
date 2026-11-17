@@ -63,8 +63,10 @@ class WebTakeRecorder implements TakeRecorder {
   Completer<void>? _stopped;
   String _type = 'video/webm';
 
-  /// When the recording started (its `start` event), on the page's clock
-  /// (`performance.now()`, ms).
+  /// When the recording started: when the recorder was told to (its file
+  /// starts with the first frame after that), known once its `start`
+  /// event says it records; on the page's clock (`performance.now()`,
+  /// ms).
   double? _startedAt;
 
   /// The level meter's and the input volume's: a Web Audio graph on the
@@ -255,12 +257,15 @@ class WebTakeRecorder implements TakeRecorder {
     _startedAt = null;
     final stopped = _stopped = Completer<void>();
     final started = Completer<void>();
-    recorder.onstart = ((web.Event e) {
-      // When it happened, not when this ran: the same clock as
-      // `performance.now()` (else, a browser of old, when this ran).
-      final now = web.window.performance.now();
-      final at = e.timeStamp.toDouble();
-      _startedAt = at > 0 && at <= now ? at : now;
+    double? told;
+    recorder.onstart = ((web.Event _) {
+      // It records: since it was told to (below), not since this event.
+      // The file starts with the first frame after it's told to; Chrome
+      // sends the event a tenth of a second later, with the file's first
+      // frames written already (measured: a sound was in the file within
+      // a few hundredths of a second of when it was made, counted from
+      // the call, and a tenth later counted from the event).
+      _startedAt = told ?? web.window.performance.now();
       if (!started.isCompleted) started.complete();
     }).toJS;
     recorder.ondataavailable = ((web.BlobEvent e) {
@@ -270,6 +275,7 @@ class WebTakeRecorder implements TakeRecorder {
       if (!stopped.isCompleted) stopped.complete();
     }).toJS;
     // In pieces, so a long take isn't held in one buffer.
+    told = web.window.performance.now();
     recorder.start(1000);
     // Returns once it records, so the take's clock starts after it does
     // (its lag, [msSinceStart], is then how far ahead the file is).
