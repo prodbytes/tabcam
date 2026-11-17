@@ -655,6 +655,12 @@ view).
   plays, its times (`Section 0:12.3–0:45.0`, to the tenth of a second,
   in the primary colour once set), **|◀** and **▶|** (start or end it
   where it plays now) and, once set, **✕** (play all of it again). While
+  either end of the range is dragged, the section shows over the
+  progress bar too: a band in the primary colour from its start to its
+  end, as high as the bar's line, over the part played (red) and under
+  the phrase marks, following the drag and gone when it's let go (the
+  two bars aren't as wide, so the range alone doesn't show where the
+  section falls on the progress bar). While
   one is set the player's own looping is off and its position is checked
   every 100 ms: at the section's end it goes back to the section's
   start, playing on with Repeat, paused without. A section that ends at
