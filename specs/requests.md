@@ -3792,3 +3792,11 @@ spec.
    `videoEditWatermarkMade` are gone. Where it sits, its size and that
    only Premium removes it are as before. See
    [video edit](video-edit.md#layers).
+3. **"In the mini player loop selector when the user drags the control
+   show the highlighted yellow repeat section over the timeline played
+   (red)."** While either end of the play-along player's section range
+   is dragged, the section now shows on the progress bar above it: a
+   band in the primary colour (the range's yellow) from the section's
+   start to its end, drawn over the part played (red), following the
+   drag and gone when it's let go. Nothing else about the section
+   changed. See [Cam](cam.md#playing-along-with-a-file).

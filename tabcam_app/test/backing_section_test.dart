@@ -395,4 +395,85 @@ void main() {
     expect(calls, contains('range'));
     track.dispose();
   });
+
+  testWidgets('while the range is dragged, the section shows over the '
+      'progress bar, from its start to its end; let go, it is gone', (
+    tester,
+  ) async {
+    final (track, event, _) = await loaded(tester);
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Row(
+            children: [
+              const Expanded(child: SizedBox()),
+              PlayAlongSidebar(
+                library: track.library,
+                eventId: event.id,
+                track: track,
+                linkFrame: (_) => const SizedBox(),
+                onChoose: (_) {},
+                onToggle: () {},
+                onStop: () {},
+                onSkip: (_) {},
+                onRepeat: () {},
+                onSection: track.setSection,
+                onSectionHere: ({required bool end}) {},
+                onSectionClear: track.clearSection,
+                onSpeed: (_) {},
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.runAsync(
+      () => track.setSection(
+        const Duration(seconds: 45),
+        const Duration(seconds: 90),
+      ),
+    );
+    await tester.pump();
+    final mark = find.byKey(const Key('cam-along-section-mark'));
+    // Set, but not being dragged: the range under the bar shows it.
+    expect(mark, findsNothing);
+
+    // Past the end thumb, so the drag takes that one, towards the start.
+    final range = tester.getRect(
+      find.byKey(const Key('cam-along-section-range')),
+    );
+    final gesture = await tester.startGesture(
+      Offset(range.left + range.width * 0.9, range.center.dy),
+    );
+    await gesture.moveBy(const Offset(-30, 0));
+    await tester.pump();
+    final section = track.section!;
+    expect(section.start, const Duration(seconds: 45));
+    expect(section.end, isNot(const Duration(seconds: 90)));
+
+    // Over the progress bar, as far along it as the section is in the file.
+    final bar = tester.getRect(find.byType(VideoProgressIndicator));
+    final band = tester.getRect(mark);
+    const length = Duration(minutes: 3);
+    double at(Duration d) =>
+        bar.left + bar.width * d.inMilliseconds / length.inMilliseconds;
+    expect(band.left, closeTo(at(section.start), 0.5));
+    expect(band.right, closeTo(at(section.end), 0.5));
+    expect(band.top, bar.top);
+    expect(band.bottom, bar.bottom);
+
+    // It follows the drag.
+    await gesture.moveBy(const Offset(-20, 0));
+    await tester.pump();
+    expect(track.section!.end, lessThan(section.end));
+    expect(tester.getRect(mark).right, closeTo(at(track.section!.end), 0.5));
+
+    await gesture.up();
+    await tester.pump();
+    expect(mark, findsNothing);
+    expect(track.section, isNotNull);
+    track.dispose();
+  });
 }

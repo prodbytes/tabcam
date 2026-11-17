@@ -774,9 +774,11 @@ class _FollowPane extends StatelessWidget {
 /// wide: the video or link playing (a recording shows its progress only),
 /// its name, « (10 seconds back), play / pause, stop, » (10 forward) and
 /// repeat (on by default); for a recording or video of the capture's own,
-/// the section that repeats ([_SectionBar]), and for anything playing in
-/// the app, its speed ([_SpeedBar]). Nothing while there's none.
-class _BackingFrame extends StatelessWidget {
+/// the section that repeats ([_SectionBar]; while its range is dragged,
+/// the section shows over the progress bar too, [_SectionMark]), and for
+/// anything playing in the app, its speed ([_SpeedBar]). Nothing while
+/// there's none.
+class _BackingFrame extends StatefulWidget {
   const _BackingFrame({
     required this.eventId,
     required this.track,
@@ -808,206 +810,252 @@ class _BackingFrame extends StatelessWidget {
   final VoidCallback? onCountIn;
 
   @override
-  Widget build(BuildContext context) => ListenableBuilder(
-    listenable: track,
-    builder: (context, _) {
-      final page = track.page;
-      if (page == null) return const SizedBox.shrink();
-      final l10n = context.l10n;
-      final event = track.library.byId(eventId);
-      final media = track.media;
-      final link = track.link;
-      final phrases = track.phrases;
-      // As wide as the sidebar, at most a third of the screen's height
-      // (taller, the sidebar's column runs out of room on a short screen).
-      final maxHeight = MediaQuery.sizeOf(context).height / 3;
-      final Widget? content = switch ((media, link)) {
-        _ when track.error != null => Padding(
-          padding: const EdgeInsets.all(8),
-          child: Text(
-            page.isAudio ? l10n.textViewCantPlayAudio : l10n.textViewCantPlay,
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
-          ),
-        ),
-        (final media?, _) when page.isVideo || media.value.size.width > 0 =>
-          ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: maxHeight),
-            child: AspectRatio(
-              aspectRatio: media.value.aspectRatio,
-              child: VideoPlayer(media),
+  State<_BackingFrame> createState() => _BackingFrameState();
+}
+
+class _BackingFrameState extends State<_BackingFrame> {
+  /// The file whose section's range is being dragged, if any: its section
+  /// shows over the progress bar meanwhile.
+  String? _sectionDrag;
+
+  @override
+  Widget build(BuildContext context) {
+    final _BackingFrame(
+      :eventId,
+      :track,
+      :linkFrame,
+      :onToggle,
+      :onStop,
+      :onSkip,
+      :onRepeat,
+      :onSection,
+      :onSectionHere,
+      :onSectionClear,
+      :onSpeed,
+      :onPhrasesClear,
+      :onCountIn,
+    ) = widget;
+    return ListenableBuilder(
+      listenable: track,
+      builder: (context, _) {
+        final page = track.page;
+        if (page == null) return const SizedBox.shrink();
+        // A drag the range never ended (its file went meanwhile) is over.
+        if (!track.canSection || page.id != _sectionDrag) _sectionDrag = null;
+        final section = _sectionDrag == null ? null : track.section;
+        final l10n = context.l10n;
+        final event = track.library.byId(eventId);
+        final media = track.media;
+        final link = track.link;
+        final phrases = track.phrases;
+        // As wide as the sidebar, at most a third of the screen's height
+        // (taller, the sidebar's column runs out of room on a short screen).
+        final maxHeight = MediaQuery.sizeOf(context).height / 3;
+        final Widget? content = switch ((media, link)) {
+          _ when track.error != null => Padding(
+            padding: const EdgeInsets.all(8),
+            child: Text(
+              page.isAudio ? l10n.textViewCantPlayAudio : l10n.textViewCantPlay,
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
             ),
           ),
-        // 16:9, a YouTube video's shape.
-        (_, final link?) => ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: maxHeight),
-          child: AspectRatio(aspectRatio: 16 / 9, child: linkFrame(link)),
-        ),
-        _ => null,
-      };
-      const compact = VisualDensity(horizontal: -2, vertical: -2);
-      return ColoredBox(
-        key: const Key('cam-along-frame'),
-        color: Colors.black,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // The video gives way first where the frame is short of room
-            // (the sidebar caps the frame's height).
-            if (content != null)
-              Flexible(child: Center(heightFactor: 1, child: content)),
-            // The progress bar's line: the count-in's button and its
-            // seconds, then the progress bar, and at its right, while the
-            // song has phrase passes marked on it, the button that clears
-            // them.
-            if (media != null)
-              Row(
-                children: [
-                  _CountIn(
-                    track: track,
-                    onToggle:
-                        onCountIn ?? () => track.setCountIn(!track.countIn),
-                  ),
-                  Expanded(
-                    child: Stack(
-                      children: [
-                        VideoProgressIndicator(
-                          media,
-                          allowScrubbing: true,
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                        ),
-                        if (phrases.isNotEmpty)
-                          Positioned.fill(
-                            child: IgnorePointer(
-                              child: CustomPaint(
-                                key: const Key('cam-along-phrase-marks'),
-                                painter: _PhraseMarks(
-                                  phrases,
-                                  media.value.duration,
-                                  Theme.of(context).colorScheme.primary,
+          (final media?, _) when page.isVideo || media.value.size.width > 0 =>
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxHeight),
+              child: AspectRatio(
+                aspectRatio: media.value.aspectRatio,
+                child: VideoPlayer(media),
+              ),
+            ),
+          // 16:9, a YouTube video's shape.
+          (_, final link?) => ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxHeight),
+            child: AspectRatio(aspectRatio: 16 / 9, child: linkFrame(link)),
+          ),
+          _ => null,
+        };
+        const compact = VisualDensity(horizontal: -2, vertical: -2);
+        return ColoredBox(
+          key: const Key('cam-along-frame'),
+          color: Colors.black,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // The video gives way first where the frame is short of room
+              // (the sidebar caps the frame's height).
+              if (content != null)
+                Flexible(child: Center(heightFactor: 1, child: content)),
+              // The progress bar's line: the count-in's button and its
+              // seconds, then the progress bar, and at its right, while the
+              // song has phrase passes marked on it, the button that clears
+              // them.
+              if (media != null)
+                Row(
+                  children: [
+                    _CountIn(
+                      track: track,
+                      onToggle:
+                          onCountIn ?? () => track.setCountIn(!track.countIn),
+                    ),
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          VideoProgressIndicator(
+                            media,
+                            allowScrubbing: true,
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                          ),
+                          if (section != null)
+                            Positioned.fill(
+                              child: IgnorePointer(
+                                child: _SectionMark(
+                                  start: section.start,
+                                  end: section.end,
+                                  length: media.value.duration,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                               ),
                             ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  if (phrases.isNotEmpty)
-                    IconButton(
-                      key: const Key('cam-along-phrases-clear'),
-                      tooltip: l10n.camAlongPhrasesClear,
-                      visualDensity: compact,
-                      color: Theme.of(context).colorScheme.primary,
-                      iconSize: 18,
-                      icon: const Icon(Icons.clear_all),
-                      onPressed: onPhrasesClear ?? () => track.clearPhrases(),
-                    )
-                  else
-                    const SizedBox(width: 8),
-                ],
-              ),
-            if (track.canSection)
-              _SectionBar(
-                track: track,
-                onSection: onSection,
-                onSectionHere: onSectionHere,
-                onSectionClear: onSectionClear,
-              ),
-            if (media != null && track.error == null)
-              _SpeedBar(track: track, onSpeed: onSpeed),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
-              child: Row(
-                children: [
-                  Icon(_icon(page), color: Colors.white70, size: 16),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      event == null ? '' : fileLabel(l10n, event, page),
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(
-              height: 44,
-              child: track.loading
-                  ? const Center(
-                      child: SizedBox.square(
-                        dimension: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  // Shrunk to fit a sidebar dragged narrow.
-                  : FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          if (track.canToggle) ...[
-                            IconButton(
-                              key: const Key('cam-along-back'),
-                              tooltip: l10n.camAlongBack,
-                              visualDensity: compact,
-                              color: Colors.white,
-                              icon: const Icon(Icons.fast_rewind),
-                              onPressed: () => onSkip(-skipBy),
-                            ),
-                            IconButton(
-                              key: const Key('cam-along-toggle'),
-                              tooltip: track.playing || track.countingIn
-                                  ? l10n.camAlongPause
-                                  : l10n.camAlongPlay,
-                              visualDensity: compact,
-                              color: Colors.white,
-                              icon: Icon(
-                                track.playing || track.countingIn
-                                    ? Icons.pause
-                                    : Icons.play_arrow,
+                          if (phrases.isNotEmpty)
+                            Positioned.fill(
+                              child: IgnorePointer(
+                                child: CustomPaint(
+                                  key: const Key('cam-along-phrase-marks'),
+                                  painter: _PhraseMarks(
+                                    phrases,
+                                    media.value.duration,
+                                    Theme.of(context).colorScheme.primary,
+                                  ),
+                                ),
                               ),
-                              onPressed: onToggle,
                             ),
-                            IconButton(
-                              key: const Key('cam-along-stop'),
-                              tooltip: l10n.camAlongStop,
-                              visualDensity: compact,
-                              color: Colors.white,
-                              icon: const Icon(Icons.stop),
-                              onPressed: onStop,
-                            ),
-                            IconButton(
-                              key: const Key('cam-along-forward'),
-                              tooltip: l10n.camAlongForward,
-                              visualDensity: compact,
-                              color: Colors.white,
-                              icon: const Icon(Icons.fast_forward),
-                              onPressed: () => onSkip(skipBy),
-                            ),
-                            IconButton(
-                              key: const Key('cam-along-repeat'),
-                              tooltip: track.repeat
-                                  ? l10n.camAlongRepeatOn
-                                  : l10n.camAlongRepeatOff,
-                              isSelected: track.repeat,
-                              visualDensity: compact,
-                              color: track.repeat
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Colors.white54,
-                              icon: const Icon(Icons.repeat),
-                              onPressed: onRepeat,
-                            ),
-                          ],
                         ],
                       ),
                     ),
-            ),
-          ],
-        ),
-      );
-    },
-  );
+                    if (phrases.isNotEmpty)
+                      IconButton(
+                        key: const Key('cam-along-phrases-clear'),
+                        tooltip: l10n.camAlongPhrasesClear,
+                        visualDensity: compact,
+                        color: Theme.of(context).colorScheme.primary,
+                        iconSize: 18,
+                        icon: const Icon(Icons.clear_all),
+                        onPressed: onPhrasesClear ?? () => track.clearPhrases(),
+                      )
+                    else
+                      const SizedBox(width: 8),
+                  ],
+                ),
+              if (track.canSection)
+                _SectionBar(
+                  track: track,
+                  onSection: onSection,
+                  onSectionHere: onSectionHere,
+                  onSectionClear: onSectionClear,
+                  onDrag: (dragging) => setState(
+                    () => _sectionDrag = dragging ? track.page?.id : null,
+                  ),
+                ),
+              if (media != null && track.error == null)
+                _SpeedBar(track: track, onSpeed: onSpeed),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+                child: Row(
+                  children: [
+                    Icon(_icon(page), color: Colors.white70, size: 16),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        event == null ? '' : fileLabel(l10n, event, page),
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 44,
+                child: track.loading
+                    ? const Center(
+                        child: SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    // Shrunk to fit a sidebar dragged narrow.
+                    : FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (track.canToggle) ...[
+                              IconButton(
+                                key: const Key('cam-along-back'),
+                                tooltip: l10n.camAlongBack,
+                                visualDensity: compact,
+                                color: Colors.white,
+                                icon: const Icon(Icons.fast_rewind),
+                                onPressed: () => onSkip(-skipBy),
+                              ),
+                              IconButton(
+                                key: const Key('cam-along-toggle'),
+                                tooltip: track.playing || track.countingIn
+                                    ? l10n.camAlongPause
+                                    : l10n.camAlongPlay,
+                                visualDensity: compact,
+                                color: Colors.white,
+                                icon: Icon(
+                                  track.playing || track.countingIn
+                                      ? Icons.pause
+                                      : Icons.play_arrow,
+                                ),
+                                onPressed: onToggle,
+                              ),
+                              IconButton(
+                                key: const Key('cam-along-stop'),
+                                tooltip: l10n.camAlongStop,
+                                visualDensity: compact,
+                                color: Colors.white,
+                                icon: const Icon(Icons.stop),
+                                onPressed: onStop,
+                              ),
+                              IconButton(
+                                key: const Key('cam-along-forward'),
+                                tooltip: l10n.camAlongForward,
+                                visualDensity: compact,
+                                color: Colors.white,
+                                icon: const Icon(Icons.fast_forward),
+                                onPressed: () => onSkip(skipBy),
+                              ),
+                              IconButton(
+                                key: const Key('cam-along-repeat'),
+                                tooltip: track.repeat
+                                    ? l10n.camAlongRepeatOn
+                                    : l10n.camAlongRepeatOff,
+                                isSelected: track.repeat,
+                                visualDensity: compact,
+                                color: track.repeat
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Colors.white54,
+                                icon: const Icon(Icons.repeat),
+                                onPressed: onRepeat,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
 
 /// The sidebar: the backing track's frame at its top, always there, and
@@ -1576,21 +1624,63 @@ class _PhraseMarks extends CustomPainter {
       old.times != times || old.length != length || old.color != color;
 }
 
+/// The section that repeats, over the progress bar while its range is
+/// dragged ([_SectionBar]): a band from its start to its end, in the
+/// range's colour, over the part played, so the two can be told apart
+/// where the range is set.
+class _SectionMark extends StatelessWidget {
+  const _SectionMark({
+    required this.start,
+    required this.end,
+    required this.length,
+    required this.color,
+  });
+
+  final Duration start;
+  final Duration end;
+  final Duration length;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final ms = length.inMilliseconds;
+    if (ms <= 0) return const SizedBox.shrink();
+    final from = (start.inMilliseconds / ms).clamp(0.0, 1.0);
+    final to = (end.inMilliseconds / ms).clamp(from, 1.0);
+    return LayoutBuilder(
+      builder: (context, box) => Padding(
+        padding: EdgeInsets.only(
+          left: box.maxWidth * from,
+          right: box.maxWidth * (1 - to),
+        ),
+        child: ColoredBox(
+          key: const Key('cam-along-section-mark'),
+          color: color,
+          child: const SizedBox.expand(),
+        ),
+      ),
+    );
+  }
+}
+
 /// The section of a recording or video that repeats: a range over the
-/// whole file (dragging either end sets it), its times, and buttons to
-/// start or end it where it plays now, or to play all of it again.
+/// whole file (dragging either end sets it, and tells [onDrag] while it's
+/// dragged), its times, and buttons to start or end it where it plays
+/// now, or to play all of it again.
 class _SectionBar extends StatelessWidget {
   const _SectionBar({
     required this.track,
     required this.onSection,
     required this.onSectionHere,
     required this.onSectionClear,
+    required this.onDrag,
   });
 
   final BackingTrack track;
   final void Function(Duration start, Duration end) onSection;
   final void Function({required bool end}) onSectionHere;
   final VoidCallback onSectionClear;
+  final void Function(bool dragging) onDrag;
 
   /// m:ss.t: a section's ends are set to the tenth of a second.
   static String time(Duration d) {
@@ -1635,6 +1725,8 @@ class _SectionBar extends StatelessWidget {
                 start.inMilliseconds.clamp(0, ms).toDouble(),
                 end.inMilliseconds.clamp(0, ms).toDouble(),
               ),
+              onChangeStart: (_) => onDrag(true),
+              onChangeEnd: (_) => onDrag(false),
               onChanged: (v) => onSection(
                 Duration(milliseconds: v.start.round()),
                 Duration(milliseconds: v.end.round()),
