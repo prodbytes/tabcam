@@ -102,8 +102,14 @@ its **Not now** leaving. With Premium it opens the camera view
   shortcut's (the browser's) and turns the tab as any key. The button's
   tooltip says so: "Rec (1)", and "Stop (1) · new take (/) · redo (.)" while
   recording, in English, Spanish and Portuguese. The take is then added to
-  the capture as a video, at the end of its files, named "Take 1",
-  "Take 2"… (the first number no file has), and a message says so. It
+  the capture as a video, at the end of its files, named by **the time
+  it started** (Rec, / or . pressed), in hours and minutes, 24-hour:
+  "Take 14:32" (Spanish "Toma 14:32"; `takeName`). The date isn't in the
+  name: the sidebar lists the takes under their day. Should a take of
+  that day have that name already (two takes started in one minute), the
+  seconds are added ("Take 14:32:07"), and should that one be taken too,
+  a number ("Take 14:32:07 (2)"). Takes saved before were named "Take 1",
+  "Take 2"… and keep their names. A message says the take was added. It
   is marked as a take (`take` on its page, `EventPage.take`), which
   stays when it's renamed, edited, cloned or published, so the
   play-along sidebar lists it with the [takes](#playing-along-with-a-file).
@@ -213,8 +219,10 @@ its **Not now** leaving. With Premium it opens the camera view
   sample since it last asked, about every 40 ms: rising at once,
   falling back 24 dB a second, the highest held for 1.5 s (that segment
   stays lit) before it falls too. It reads between takes as in them, so
-  the level can be set before Rec. Its tooltip says "Microphone level"
-  (English, Spanish, Portuguese). It shows where the app reads the
+  the level can be set before Rec, with the [input
+  volume](#input-volume) it opens when tapped. Its tooltip says
+  "Microphone level: tap to set the input volume" (English, Spanish,
+  Portuguese). It shows where the app reads the
   takes' microphone itself:
   - **Web**: a Web Audio analyser on the take recorder's microphone
     (`WebTakeRecorder.peak`: an `AudioContext`, a
@@ -241,6 +249,38 @@ its **Not now** leaving. With Premium it opens the camera view
   and Android (the channel faked), and none where the camera records the
   sound (`test/play_along_test.dart`); `TakeSoundMath.peak` on the JVM.
   **Not yet checked on a phone or in a browser.**
+- <a id="input-volume"></a>**Input volume**: the level meter, tapped
+  (or clicked), opens a menu by it: "Input volume", the volume in dB
+  (+6 dB, 0 dB, −6 dB), an upright slider from −24 to +24 dB in 1 dB
+  steps (up louder, down quieter) and **Reset** (back to 0 dB, greyed at
+  0 dB). The volume changes as the slider moves, and the meter shows
+  the microphone at that volume at once, so it can be set by eye (out
+  of the red); it's kept in Cam's settings (`gainDb`, left out at 0 dB)
+  and set again each time Cam opens. Only between takes: while a take
+  starts or records the meter can't be tapped, and a take keeps the
+  volume it started with. Where there's no meter (iOS, the preview,
+  Android where the camera records the sound) there's no input volume.
+  It's a gain on the sound as read (digital), so it can't undo a
+  microphone that clips before the app gets its sound.
+  - **Web** (`WebTakeRecorder.setGain`): the meter's Web Audio graph
+    gets a `GainNode` between the microphone's source and the analyser.
+    At 0 dB a take records the microphone's own track, as before; at
+    any other volume it records the gain node's output (a
+    `MediaStreamAudioDestinationNode`, two channels), the
+    `AudioContext` resumed as Rec is pressed; should the browser hold
+    it, the take records the microphone as it comes and says so in the
+    log (`TabCam: cam: input volume: …`).
+  - **Android**: `gain` on `tabcam/take_level` (`gain`: the factor,
+    kept within ±24 dB); the between-takes reader and the take's reader
+    multiply each 16-bit sample by it as it's read, clipped at full
+    scale (`TakeSoundMath.applyGain`), before the meter or the encoder
+    sees it. The app's microphone keeps the last one set until Cam sets
+    it again as it opens.
+  Tested: the menu (up, down, the dB shown, kept, set as Cam opens,
+  Reset, not while recording) with the web's recorder faked and on
+  Android with the channel faked (`test/play_along_test.dart`);
+  `TakeSoundMath.applyGain` on the JVM. **Not yet checked on a phone or
+  in a browser.**
 - <a id="the-tab-with-the-take"></a><a id="the-tab-in-the-take"></a>**The tab is kept with the take and
   added by the editor**: a take is saved at once as the camera recorded
   it, with no tab in its picture and no second encode (no "Adding the
@@ -454,10 +494,21 @@ first, if listed; then the files to play along in the capture's order,
 under **Play along**, each with its icon and name; then the
 [PDFs](#following-a-pdf) or pages to follow; and **last, Cam's takes**,
 under **Takes** (Spanish **Tomas**), **the most recent first** (the
-reverse of the order they were made: Take 3, Take 2, Take 1), played along as the others
-are. A take is one Cam marked as such (renamed, it still is one), or,
-saved before takes were marked, a video named as Cam names them in any
-of the app's languages ("Take 3", "Toma 3"; `isTake`). On a capture
+reverse of the order they were made), **grouped by day**: each day's
+takes under a small heading of their own, **Today** (Spanish **Hoy**,
+Portuguese **Hoje**), **Yesterday** (**Ayer**, **Ontem**), else the
+date in the app's language, weekday, month and day ("Sat, Nov 14"),
+with the year when it isn't this one ("Wed, Dec 31, 2025";
+`dayLabel`). The day is when the take was saved, read from its page's
+ID, which is the time it was made in microseconds (`timeOfId`), so
+takes saved before this grouping are grouped too; one whose ID isn't a
+time (none Cam makes) is listed without a day heading, where it falls
+(`takesByDay`). A take copied into another capture gets a new ID, so
+it's listed under the day it was copied. Takes are played along as the
+others are. A take is one Cam marked as such (renamed, it still is
+one), or, saved before takes were marked, a video named as Cam names
+them in any of the app's languages, by number or by time ("Take 3",
+"Toma 3", "Take 14:32"; `isTake`). On a capture
 shared to read, the reader's own files (their
 [contribution](contributions.md)'s, their takes among them) are listed
 too, after the capture's (their takes under **Takes**, above the
@@ -519,6 +570,25 @@ deleted anywhere else (the list, a sync) is let go of the same way. On
 the [file screen](event-screen.md#file-screen), the file it shows (a
 recording, listed in its own sidebar) has no Delete there: the screen's
 own Delete deletes it and goes back to the list.
+
+<a id="editing-a-take-from-the-sidebar"></a>**Editing a take from the
+sidebar**: each of Cam's takes in it (under **Takes**; not the songs,
+videos that aren't takes, links, PDFs or pages) has **Edit** (scissors,
+as the file screen's; its tooltip "Edit <name>") right before its
+Delete. It opens the [video editor](video-edit.md) on that take, over
+the screen, exactly as **Edit** on the take's own
+[file screen](event-screen.md#file-screen) does (the same call,
+`VideoEditScreen.open`, with the same Premium service for the
+watermark): the take's edit as it was left, its song lined up, its tab
+over it. What played along pauses first (and, beside the Text view, the
+recording the capture's list was playing stops; on the file screen, the
+file it shows is let go of meanwhile), so only the editor's preview
+sounds. Back, the screen is as it was, Cam with its keys. It shows
+where the file screen would offer Edit: on the capture's own takes, in
+a capture that isn't read only (none on one shared to read, nor on a
+reader's own contribution's takes); not in Cam's Premium preview, nor
+on a capture opened by its link. It's greyed when Delete is: while a
+take records, saves or plays back, and while the screen works.
 
 <a id="following-a-pdf"></a>**Following a PDF**: in Cam and in the
 [Text view](tab-recognition.md#text-view) (not beside a PDF), the
@@ -585,6 +655,12 @@ view).
   plays, its times (`Section 0:12.3–0:45.0`, to the tenth of a second,
   in the primary colour once set), **|◀** and **▶|** (start or end it
   where it plays now) and, once set, **✕** (play all of it again). While
+  either end of the range is dragged, the section shows over the
+  progress bar too: a band in the primary colour from its start to its
+  end, as high as the bar's line, over the part played (red) and under
+  the phrase marks, following the drag and gone when it's let go (the
+  two bars aren't as wide, so the range alone doesn't show where the
+  section falls on the progress bar). While
   one is set the player's own looping is off and its position is checked
   every 100 ms: at the section's end it goes back to the section's
   start, playing on with Repeat, paused without. A section that ends at
@@ -620,8 +696,8 @@ view).
   and the seconds count down (`2s`, `1s`), and Play shows Pause: Play
   (or space) again, Pause, Stop, hiding the sidebar or another file
   stop it without playing; turned off meanwhile, it plays at once; **0**
-  goes back to the start and keeps counting. Repeat and a section's
-  loop start over without one; the count-in is real time, whatever the
+  goes back to the start and counts in again, from the top (below).
+  Repeat and a section's loop start over without one; the count-in is real time, whatever the
   speed. The setting is kept on the device (the meta file
   `playalong`, `{"countIn": false}`; until 2026-11-11 it was named
   `play-along`, which the apps' store refuses, so it was never kept there), for Cam, the Text view and the
@@ -630,23 +706,36 @@ view).
   down; held, it doesn't repeat), and doesn't turn the tab; with the
   sidebar hidden, space turns the tab again. A tap in the sidebar or the
   frame gives the keys back to Cam.
-- **0** (on the top row or the keypad) goes back to the start of the
-  file, or of its section when one is set, playing on if it was playing
-  and staying paused if it wasn't (`BackingTrack.restart`; a link in
-  the frame goes back by Stop, then plays again if it played). Like
-  space, it doesn't turn the tab while the sidebar shows. Ctrl / ⌘ + 0
-  is left to the browser (its zoom).
+- **0** (on the top row or the keypad) always goes back to the
+  beginning: the start of the file, or of its section when one is set,
+  count-in included (`BackingTrack.restart`). Paused, it stays paused
+  there (Play counts in, as ever). Playing, it starts over as Play
+  starts it: with the [count-in](#count-in) on, it goes silent at the
+  start, counts the 2 seconds in and plays; with it off, it plays on
+  from the start. While it counts in, the count starts over. (A link in
+  the frame, which has no count-in, goes back by Stop, then plays again
+  if it played.) Like space, it doesn't turn the tab while the sidebar
+  shows. Ctrl / ⌘ + 0 is left to the browser (its zoom).
 - **← and →** go 10 seconds back and on in it, as « and » do (held,
   again and again), and don't turn the tab while the sidebar shows; the
   tab's phrases go by **↑** (the one before) and **↓** (the next). With
   the sidebar hidden, ← and → turn the tab again. A page-turner pedal
   that sends ← and → skips in the song while the sidebar shows: one
   that sends ↑ / ↓ or Page Up / Page Down turns the tab then.
-- **The keys outside Cam**: in the Text view and on a recording's file
-  screen, a tap in the sidebar gives it the keyboard
-  ([`PlayAlongKeys`](../tabcam_app/lib/capture/play_along_sidebar.dart)),
-  so **0** and the **space bar** work there as in Cam; typing in a field
-  (the Text view's editor) still types them.
+- <a id="keys-in-every-screen"></a>**The keys in every screen**: **0**
+  and the **space bar** are the player's wherever its sidebar shows
+  (Cam, the Text view, a file's screen), without a tap in the sidebar
+  first, whatever has the keyboard
+  ([`PlayAlongKeys`](../tabcam_app/lib/capture/play_along_sidebar.dart)
+  gets the keys before the screen does). In the Text view and on a
+  file's screen, **1** (on the top row or the keypad) pauses and plays
+  too, as the space bar; in Cam, 1 stays [Rec / Stop](#rec-key), which
+  starts the song as well. Ctrl / ⌘ + 1 is left to the browser (its
+  first tab). The exceptions: typing in a field (the Text view's
+  editor, the dictionary's search) still types them, until a tap in the
+  sidebar takes the keyboard out of the field; under a dialog, a menu
+  or another screen the keys are that one's; with the sidebar hidden
+  they're the screen's own; and a Cam preview has no keys.
 - **A link** straight to a sound or video file (its path ends in `.mp3`,
   `.m4a`, `.aac`, `.wav`, `.ogg`, `.oga`, `.opus`, `.flac`, `.mp4`,
   `.m4v`, `.mov` or `.webm`) plays in the app like a recording or video.
@@ -686,7 +775,8 @@ plays in the list.
 each take Cam saves keeps a **log** of what Cam noted while it recorded,
 on its page (`takeLog` in the capture's details, `EventPage.takeLog`,
 [`take_log.dart`](../tabcam_app/lib/capture/take_log.dart)), written
-once, as the take is saved, and never changed after: a log read from
+once, as the take is saved, and never changed after, but for where its
+song was found in its sound (`sync`, below), added once: a log read from
 the capture's details is written back exactly as it came, whatever in
 it this version doesn't know or can't read included (a newer app's
 `lagFrom`, a field in a turn, a segment or the tab, a turn out of
@@ -709,7 +799,9 @@ Play uses it too (above). A few KB for a ten-minute take:
              "stopCallMs": 61000, "stopReturnMs": 61310, "fileMs": 61420},
   "tab": {"lines": ["e|--3--5--7--|", "e|--5--7--8--|"],
           "marks": [[0, 0], [4210, 1], [8380, 0]]},
-  "song": []
+  "song": [{"at": 2000, "to": 61000, "page": "p3", "from": 0, "speed": 1}],
+  "sync": {"v": 1, "page": "p3", "from": "sound", "ms": 38,
+           "clips": [{"at": 2000, "ms": 38, "score": 21.4}]}
 }
 ```
 - **The tab** (`tab`; none when the capture had no text tab): the
@@ -734,10 +826,16 @@ Play uses it too (above). A few KB for a ten-minute take:
   take's clock started (the clock starts once the recording has):
   a time on the clock is `lagMs` later in the file (the start staying
   the file's start). `lagFrom` says how it was told:
-  - `recorder` (the web): the browser's recorder says when it started
-    (its `start` event's time, on the page's clock; the recorder's
-    `start` returns once it has, at most a second on), and the clock's
-    start less that is the lag.
+  - `recorder` (the web): since the browser's recorder was told to
+    start (on the page's clock, read as the take's clock starts; the
+    recorder's `start` returns once its `start` event says it records,
+    at most a second on). The file starts with the first frame after
+    the recorder is told to; Chrome sends the event about a tenth of a
+    second later, with the file's first frames written already, so the
+    lag counted from the event (as it was until 2026-11-17) was that
+    much short. Measured in Chromium: a sound made a second after the
+    recorder was told to start was in the file 7 to 44 ms later than
+    that, and 87 to 143 ms later counted from the event.
   - `bounds` (Android, iOS, and the web's camera recording alone): the
     file's first frame came between the camera being told to start and
     that returning, so the lag is between those two (on the clock,
@@ -767,6 +865,65 @@ Play uses it too (above). A few KB for a ten-minute take:
   frame played (it has no position: no segment). Empty when none
   played, and on takes saved before Cam noted it. The editor lines the
   song up from them ([lined up](video-edit.md#a-takes-song-lined-up)).
+- <a id="the-song-found-in-the-takes-sound"></a>**Where the song really
+  is** (`sync`): the segments say where the player was and the lag where
+  the file was, each good to a tenth of a second or so; but the take's
+  microphone heard the song from the speaker, so where the song is in
+  the take can be **measured from the take's own sound**, to the
+  millisecond, and the song and the take lined up as well as they can
+  be. It's measured on the device, from the two files
+  ([`song_sync.dart`](../tabcam_app/lib/capture/song_sync.dart),
+  `SongSync`; nothing is uploaded), and kept with the log, the one thing
+  added to it after the take is saved (`TakeLog.withSync`,
+  `Library.setTakeSync`; a take that has one keeps it):
+  - **When**: after Cam saves a take whose log noted a song (once no
+    take records: not between the takes the **/** key runs on, which
+    are measured when the last one stops, or as Cam closes), and when
+    the [editor](video-edit.md#a-takes-song-lined-up) opens a take not
+    measured yet (one from before, or from a device that couldn't read
+    its files); one take at a time, waiting while a take records
+    ([`take_syncer.dart`](../tabcam_app/lib/capture/take_syncer.dart)).
+  - **What**: the song the log lines up (the one played longest, at its
+    own speed), each of its segments of 3 s or more on its own (the six
+    longest): 12 s from the segment's middle (the song's start may be
+    quiet, and a clock a little off is off by half as much at either
+    end), the take's sound there, 0.6 s more either side, against the
+    song's, both mixed to one channel at 8 kHz
+    ([`sound_reader.dart`](../tabcam_app/lib/capture/sound_reader.dart):
+    Web Audio in the browser, the file decoded whole, a WebM's sound
+    put where the file has it start, as a player plays it
+    ([`webm_times.dart`](../tabcam_app/lib/capture/webm_times.dart);
+    see [video edit](video-edit.md#fades), how it's rendered on the
+    web); `MediaExtractor` and `MediaCodec` on Android, each decoded
+    buffer placed by its time, `AVAssetReader` on iOS, only the part
+    asked for, over the channel `tabcam/video_edit`, method `samples`).
+    A sample's time is the sound's in the file as a player plays it.
+  - **How**: the two sounds' cross-correlation with each frequency's
+    level mostly taken out (GCC-PHAT, 100 Hz to 3.6 kHz), so the match
+    is a sharp peak whatever the speaker, the room and the microphone
+    did to the song's tone, and the guitar played over it only raises
+    the floor; the peak's place, to a fraction of a sample, is how much
+    later (or earlier) than the log says the song is: the segment's
+    **shift**, in ms. A match counts when it stands at least 14 times
+    the others' spread above them, and 1.3 times higher than the next
+    best place a twentieth of a second or more away (a guitar in the
+    song's key and time, without the song, stays under 10 or so; music
+    with a beat has other places about as good a beat apart, and one of
+    two could be the wrong one). The work is done off the screen's
+    thread (but on the web, which has one: about a tenth of a second a
+    segment).
+  - **Kept** as `sync`: the song (`page`), how it was told (`from`:
+    `sound`, found; `none`, looked for and not found in any segment,
+    as with headphones, or a song too quiet in the take: the log's
+    line-up stands, and it isn't looked for again), the song's shift
+    (`ms`: the middle one of its segments'), and each segment measured
+    (`clips`: its start on the take's clock, `at`, its own shift, `ms`,
+    and how clearly it was found, `score`). A segment is then
+    `at + lagMs +` its shift into the file (its own, when it was
+    measured, else the song's). Files that can't be read here (a WebM
+    on iOS) leave it unmeasured, for another device to try; a way of
+    telling this version doesn't know (a newer app's `from`) is kept as
+    it came and not used. A clone's names the copy's song.
 - A take without a log (saved before takes had one) has its tab in its
   picture, or never had one. A log dropped by an older app that
   re-saved the page (one from before pages kept the keys they don't
@@ -787,8 +944,26 @@ Play uses it too (above). A few KB for a ten-minute take:
   the nearest copy), Rec, 1 and . waiting while the take to play opens
   and Play letting it go, and on iOS Play passing over a WebM
   (`test/take_log_test.dart`, `test/play_along_test.dart`,
-  in Chrome `test/web_take_recorder_test.dart`). **Not yet on a phone**:
-  how big the log grows, and that saving it costs no dropped frames.
+  in Chrome `test/web_take_recorder_test.dart`); and the song found in
+  the take's sound (`test/song_sync_test.dart`, with made-up riffs: a
+  song heard through a made-up room, under a guitar, found to the
+  millisecond, earlier or later, each segment its own; not found when
+  it isn't there; the sync's JSON, added to a log without changing the
+  rest, through a clone; a take in the library measured once, waiting
+  while a take records, left for later when its files can't be read;
+  Cam asking for it as a take is saved; in Chrome,
+  `test/web_sound_reader_test.dart`: files decoded at the rate asked
+  for, and the song found in a video the browser recorded as it records
+  a take; where a WebM's sound starts, from made-up files
+  (`test/webm_times_test.dart`) and, by hand, the same as `ffprobe`
+  says for three takes recorded in Chromium (72, 7 and 0 ms);
+  Android's way down to 8 kHz by JVM tests, `SampleBinsTest` (written,
+  not run: the Gradle test task doesn't start here);
+  iOS's reader run on a Mac against a WAV and an AAC file, a tone's
+  start read where it is). **Not yet on a phone**: how big the log
+  grows, that saving it costs no dropped frames, and the song found in
+  a real take's sound there (Android's and iOS's readers on a phone's
+  own files; how often a real room and guitar leave it unfound).
 
 <a id="recording-comes-first"></a>**Recording comes first**: in a take
 the sound matters most, so Cam records it as a musician wants it, sets it

@@ -13,6 +13,7 @@ import '../capture/edit_layers.dart';
 import '../capture/media.dart';
 import '../capture/play_along_sidebar.dart' show isTake;
 import '../capture/take_log.dart';
+import '../capture/take_syncer.dart';
 import '../capture/video_edit.dart';
 import '../cloud/cloud_ocr.dart';
 import '../export/download.dart';
@@ -37,7 +38,9 @@ import 'on_picture.dart';
 /// capture's recordings, videos or takes, or a sound file (added to
 /// them), placed along the video by hand (dragged, trimmed by its ends,
 /// nudged by a tenth of a second); ⋮ changes or removes it. Each lane has
-/// its volume and Mute at its left. Under them (beside everything, on a
+/// its volume and Mute at its left; both go through the **Master**, its
+/// volume (up to 200%) and Mute right above the fades' sliders (on a
+/// phone, above **On the video**). Under them (beside everything, on a
 /// wide screen), **On the video**: what's drawn over it, as chips: a
 /// take's tab (its style, the size, background and colours, opened by
 /// its palette button or, on a phone, a long press on the band in the
@@ -100,16 +103,45 @@ class VideoEditScreen extends StatefulWidget {
     return files.firstOrNull?.xFile;
   }
 
+  /// Opens the editor on [page] over the screen, and completes when the
+  /// user comes back: from the file screen's Edit, and from a take's Edit
+  /// in the play-along sidebar, the same way.
+  static Future<void> open(
+    BuildContext context, {
+    required Library library,
+    required String eventId,
+    required EventPage page,
+    CloudOcr? ocr,
+  }) => Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      builder: (_) => VideoEditScreen(
+        library: library,
+        eventId: eventId,
+        page: page,
+        ocr: ocr,
+      ),
+    ),
+  );
+
   @override
   State<VideoEditScreen> createState() => _VideoEditScreenState();
 }
 
-/// A lane's level: its [volume] (0 to 1), whether it's [muted] (the level
-/// kept), and the level Unmute puts back after a slide down to 0%
-/// ([unmuted]).
+/// A lane's level: its [volume] (0 to 1; the master's, 0 to 2), whether
+/// it's [muted] (the level kept), and the level Unmute puts back after a
+/// slide down to 0% ([unmuted]).
 class _Level {
   _Level([this.volume = 1, this.muted = false])
-    : unmuted = volume > 0 ? volume : 1;
+    : unmuted = volume > 0 ? volume : 1,
+      master = false;
+
+  /// The master's level, up to [PageEdit.maxMaster].
+  _Level.master([this.volume = 1, this.muted = false])
+    : unmuted = volume > 0 ? volume : 1,
+      master = true;
+
+  /// Whether it's the master's (up to 200%).
+  final bool master;
 
   double volume;
   bool muted;
@@ -125,7 +157,7 @@ class _Level {
 
   /// Slid to [to] (which unmutes it); whether that changed anything.
   bool slide(double to) {
-    to = PageEdit.volume(to);
+    to = master ? PageEdit.master(to) : PageEdit.volume(to);
     if (to == volume && !muted) return false;
     volume = to;
     muted = false;
@@ -154,6 +186,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 
   /// The Take lane's level: the video's own sound.
   var _own = _Level();
+
+  /// The master's level: both lanes through it, up to 200%.
+  var _master = _Level.master();
 
   /// The Song lane: how it's placed (null: the default, none), its level,
   /// its page in the capture, its file, its name, and its player (for its
@@ -262,8 +297,16 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   bool get _take => isTake(widget.page);
 
   /// What Cam noted while the take recorded (none: not a take, or one
-  /// saved before takes kept one).
-  TakeLog? get _takeLog => widget.page.takeLog;
+  /// saved before takes kept one): the page's, as it is in the library
+  /// now ([_log]: with where its song was found in its sound, once
+  /// that's measured).
+  TakeLog? get _takeLog => _log ?? widget.page.takeLog;
+  TakeLog? _log;
+
+  /// Where the Take lane's grips are without their snap to the song's
+  /// marks, while one is dragged ([_snapped]).
+  Duration? _dragStart;
+  Duration? _dragEnd;
 
   /// Whether the Song lane has a song in it (as [PageEdit.hasSong]: a
   /// song picked, its lane not `off`; none said, a newer app's default).
@@ -314,10 +357,6 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 
   /// The title's text as it is now: what's typed, or the capture's name.
   List<String> get _titleText => titleText(_titleLines ?? _captureTitle);
-
-  /// The watermark's text: a take's, or another video's.
-  String _watermarkText(AppLocalizations l10n) =>
-      _take ? l10n.videoEditWatermarkTake : l10n.videoEditWatermarkMade;
 
   /// Whether this user can leave the watermark off ([watermarkUnlocked]).
   bool get _unlocked => watermarkUnlocked(widget.ocr);
@@ -389,19 +428,24 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         return;
       }
       await controller.setLooping(false);
-      final saved = event.pages
-          .where((p) => p.id == widget.page.id)
-          .firstOrNull
-          ?.edit;
+      final page = event.pages.where((p) => p.id == widget.page.id).firstOrNull;
+      final saved = page?.edit;
+      final log = page?.takeLog ?? widget.page.takeLog;
       // A take's song, lined up by itself as it played while recording,
       // unless the edit placed one or took it out.
-      final logged = LoggedSong.of(_takeLog);
+      final logged = LoggedSong.of(log);
       final lined =
           logged != null && event.pages.any((p) => p.id == logged.page)
           ? logged
           : null;
-      final edit = withLoggedSong(saved, lined, duration: length);
+      var edit = withLoggedSong(saved, lined, duration: length);
+      // Kept where the log alone had it, before the song was found in
+      // the take's sound: it follows what was found.
+      if (edit != null && lined != null && _follows(edit, lined)) {
+        edit = lined.placed(edit);
+      }
       setState(() {
+        _log = log;
         _video = controller;
         _playback = EditedPlayback(controller);
         _duration = length;
@@ -415,6 +459,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           _own = _Level(edit.ownVolume, edit.ownMuted);
           _song = edit.song;
           _songLevel = _Level(edit.trackVolume, edit.songMuted);
+          _master = _Level.master(edit.masterVolume, edit.masterMuted);
           _tab = edit.tab;
           _tabStyle = edit.tabStyle;
           _titleOn = edit.title?.on ?? true;
@@ -439,9 +484,48 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         );
       }
       await _played();
+      // Not measured yet (a take from before, or from a device that
+      // couldn't): the song is looked for in the take's sound now.
+      if (lined != null && log?.sync == null) unawaited(_measureSong());
     } on Object catch (e) {
       if (mounted) setState(() => _error = e);
     }
+  }
+
+  /// Whether [edit] has [logged]'s song lined up by itself and not moved
+  /// from it ([LoggedSong.shiftOf] none).
+  static bool _follows(PageEdit edit, LoggedSong logged) =>
+      edit.songMode == SongMode.auto &&
+      edit.trackId == logged.page &&
+      logged.shiftOf(edit) == Duration.zero;
+
+  /// Has the take's song found in its sound ([TakeSyncer]), and, found,
+  /// lines it up there: the Song lane follows, unless it was moved by
+  /// hand, or holds another song (it stays where it was put).
+  Future<void> _measureSong() async {
+    final log = await TakeSyncer.sync(_library, widget.eventId, widget.page.id);
+    if (!mounted || log == null || log.sync == null || log == _log) return;
+    final logged = LoggedSong.of(log);
+    final was = _logged;
+    final follows =
+        logged != null &&
+        was != null &&
+        logged.page == was.page &&
+        _lined &&
+        _follows(_current, was);
+    setState(() {
+      _log = log;
+      if (logged == null || was == null || logged.page != was.page) return;
+      _logged = logged;
+      if (!follows) return;
+      final placed = logged.placed(_current);
+      _offset = placed.offset;
+      _trackStart = _clamp(placed.trackStart, Duration.zero, _trackLength);
+      _trackEnd = placed.trackEnd == null
+          ? _trackLength
+          : _clamp(placed.trackEnd!, _trackStart, _trackLength);
+    });
+    _changed();
   }
 
   @override
@@ -477,6 +561,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     trackEnd: _trackEnd >= _trackLength ? null : _trackEnd,
     offset: _offset,
     trackVolume: _songLevel.volume,
+    masterVolume: _master.volume,
+    masterMuted: _master.muted,
     tab: _tab,
     tabStyle: _tabStyle,
     title: EditTitle.of(on: _titleOn, lines: _titleLines),
@@ -559,7 +645,6 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// being edited, it shows as it ends up rather than fading in.
   List<PlanLayer> _previewLayers(AppLocalizations l10n) {
     final editing = _titleBeingEdited;
-    final watermark = _watermarkText(l10n);
     final frame = _frame;
     final of = (
       _start,
@@ -573,7 +658,6 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       _captureTitle.join('\n'),
       _watermark,
       _unlocked,
-      watermark,
       editing,
     );
     if (of != _layersOf) {
@@ -584,7 +668,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           duration: _duration,
           takeLog: _takeLog,
           title: _captureTitle,
-          watermark: watermark,
+          watermark: watermarkText,
           premium: _unlocked,
           preview: true,
           frame: frame,
@@ -849,21 +933,72 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     _keepPart(start, end, endMoved: end != _end && start == _start);
   }
 
-  /// The Take lane's start grip, dragged by [delta].
-  void _trimStartBy(Duration delta) => _keepPart(
-    _clamp(_start + delta, Duration.zero, _end - PageEdit.minLength),
-    _end,
-    endMoved: false,
-    exact: false,
-  );
+  /// The Take lane's start grip, dragged by [delta]: near one of the
+  /// song's marks, it's on it ([_snapped]).
+  void _trimStartBy(Duration delta) {
+    final at = _dragStart = (_dragStart ?? _start) + delta;
+    _keepPart(
+      _clamp(_snapped(at), Duration.zero, _end - PageEdit.minLength),
+      _end,
+      endMoved: false,
+      exact: false,
+    );
+  }
 
-  /// The Take lane's end grip, dragged by [delta].
-  void _trimEndBy(Duration delta) => _keepPart(
-    _start,
-    _clamp(_end + delta, _start + PageEdit.minLength, _duration),
-    endMoved: true,
-    exact: false,
-  );
+  /// The Take lane's end grip, dragged by [delta], as the start's.
+  void _trimEndBy(Duration delta) {
+    final at = _dragEnd = (_dragEnd ?? _end) + delta;
+    _keepPart(
+      _start,
+      _clamp(_snapped(at), _start + PageEdit.minLength, _duration),
+      endMoved: true,
+      exact: false,
+    );
+  }
+
+  /// Where a lined-up song starts and stops in the video, clip by clip
+  /// ([LoggedSong.marksIn]): drawn on the ruler and the Take lane, and
+  /// where a grip dragged near snaps to; none without one.
+  List<Duration> get _songMarks {
+    final logged = _logged;
+    if (logged == null || !_lined || _duration <= Duration.zero) {
+      return const [];
+    }
+    return logged.marksIn(_current, _duration, songLength: _trackLength);
+  }
+
+  /// How near one of the song's marks a grip dragged snaps to it: a
+  /// hundredth of the video (a few points of the lane), and no less than
+  /// a twentieth of a second.
+  Duration get _snapWithin =>
+      Duration(milliseconds: max(50, _duration.inMilliseconds ~/ 100));
+
+  /// [at], or the song's mark it's near ([_snapWithin]): the nearest.
+  Duration _snapped(Duration at) {
+    Duration? best;
+    for (final mark in _songMarks) {
+      final off = (mark - at).abs();
+      if (off <= _snapWithin && (best == null || off < (best - at).abs())) {
+        best = mark;
+      }
+    }
+    return best ?? at;
+  }
+
+  /// Keeps the take from where its song starts to where it stops (its
+  /// first clip's start to its last's end, within the video): cut to the
+  /// song, to the millisecond.
+  void _cutToSong() {
+    final marks = _songMarks;
+    if (marks.length < 2) return;
+    _trim(marks.first, marks.last);
+  }
+
+  /// Whether the kept part is the song's already ([_cutToSong]).
+  bool get _cutIsSong {
+    final marks = _songMarks;
+    return marks.length < 2 || (_start == marks.first && _end == marks.last);
+  }
 
   /// Keeps from [start] to [end]. The song stays where it is along the
   /// video (what falls outside is cut off, in both lanes). The preview,
@@ -918,6 +1053,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// A Take grip let go: the preview, while paused, goes exactly to the
   /// end it moved.
   void _trimmed({required bool end}) {
+    _dragStart = _dragEnd = null;
     final video = _video;
     if (video != null && !video.value.isPlaying) {
       _seek(end ? _end : _start);
@@ -1185,16 +1321,17 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     _changed();
   }
 
-  /// Back to the defaults: the whole video, with its own sound as it is,
-  /// no song (a take's lined up as it played while recording), and the
-  /// tab, the capture's name and the watermark over it, fading in and out
-  /// over 3 s (the edit is none).
+  /// Back to the defaults: the whole video, with its own sound as it is
+  /// (the master at 100%), no song (a take's lined up as it played while
+  /// recording), and the tab, the capture's name and the watermark over
+  /// it, fading in and out over 3 s (the edit is none).
   Future<void> _reset() async {
     final player = _trackPlayer;
     setState(() {
       _start = Duration.zero;
       _end = _duration;
       _own = _Level();
+      _master = _Level.master();
       _song = null;
       _tab = true;
       _tabStyle = EditTabStyle.standard;
@@ -1237,8 +1374,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// video's file, for Download (the preview's has no files). Whether the
   /// watermark is left out is this user's Premium as it is now, as they
   /// download ([_unlocked]).
-  RenderPlan _plan(RenderKind kind, {XFile? input, AppLocalizations? l10n}) =>
-      RenderPlan.of(
+  RenderPlan _plan(RenderKind kind, {XFile? input}) => RenderPlan.of(
         _planEdit,
         input: input,
         duration: _duration,
@@ -1249,7 +1385,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         formats: _formats,
         takeLog: _takeLog,
         title: _captureTitle,
-        watermark: _watermarkText(l10n ?? context.l10n),
+        watermark: watermarkText,
         premium: _unlocked,
         frame: _frame,
       );
@@ -1297,7 +1433,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       final page = widget.page;
       final input = await _fileOf(event, page);
       final label = fileLabel(l10n, event, page);
-      final plan = _plan(what, input: input, l10n: l10n);
+      final plan = _plan(what, input: input);
       if (plan.passthrough) {
         await Downloads.saveFile(_library, event, page, label);
         return;
@@ -1469,6 +1605,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       const SizedBox(height: 8),
       _timeline(video, l10n),
       if (!wide) ...[
+        const SizedBox(height: 8),
+        _masterFields(l10n),
         const SizedBox(height: 8),
         _editingTitle
             ? _titleFields(l10n)
@@ -1905,7 +2043,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
               label: Text(l10n.videoEditLayerWatermark),
               tooltip: locked
                   ? l10n.videoEditWatermarkLocked
-                  : l10n.videoEditWatermarkAbout(_watermarkText(l10n)),
+                  : l10n.videoEditWatermarkAbout(watermarkText),
               selected: locked || _watermark,
               onSelected: _setWatermark,
             ),
@@ -1931,12 +2069,97 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           const SizedBox(height: 12),
           _titleFields(l10n),
           const SizedBox(height: 16),
+          _masterFields(l10n),
+          const SizedBox(height: 8),
           _fadeFields(l10n),
           if (_tabStyleOffered) ...[
             const SizedBox(height: 16),
             _tabStyleFields(l10n),
           ],
         ],
+      ],
+    );
+  }
+
+  /// **Master**: where both lanes go, after their own levels: Mute (the
+  /// level kept; Unmute puts it back, or, after a slide down to 0%, the
+  /// level before it) and its volume, 0% to 200% in steps of 5% (sliding
+  /// unmutes it), its level beside it, in the primary colour when it's
+  /// not 100%, or muted. Right above the fades' sliders (on a phone, above
+  /// **On the video**, where the Fades chip opens them). The preview plays
+  /// nothing louder than the lanes are; Download's file is.
+  Widget _masterFields(AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    final master = _master;
+    final name = l10n.videoEditMaster;
+    final percent = (master.volume * 100).round();
+    final level = l10n.videoEditTrackVolumeLevel(percent);
+    final silent = master.silent;
+    final changed = master.volume != 1 || master.muted;
+    final color = changed ? theme.colorScheme.primary : null;
+    const most = PageEdit.maxMaster * 100;
+    return Column(
+      key: const Key('video-edit-master'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text.rich(
+          TextSpan(
+            text: name,
+            style: theme.textTheme.titleSmall,
+            children: [
+              TextSpan(
+                text: ' · ${l10n.videoEditMasterAbout}',
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+        Row(
+          children: [
+            IconButton(
+              key: const Key('video-edit-master-mute'),
+              tooltip: silent
+                  ? l10n.videoEditLaneUnmute(name)
+                  : l10n.videoEditLaneMute(name),
+              color: color,
+              icon: Icon(
+                silent
+                    ? Icons.volume_off_outlined
+                    : master.volume < 0.5
+                    ? Icons.volume_down_outlined
+                    : Icons.volume_up_outlined,
+              ),
+              onPressed: () => _mute(master),
+            ),
+            Expanded(
+              child: Slider(
+                key: const Key('video-edit-master-slider'),
+                max: most,
+                divisions: most ~/ 5,
+                value: percent.clamp(0, most).toDouble(),
+                label: level,
+                semanticFormatterCallback: (v) =>
+                    '$name ${l10n.videoEditTrackVolumeLevel(v.round())}',
+                onChangeStart: (_) => master.keep(),
+                onChanged: (v) => _slide(master, v / 100),
+              ),
+            ),
+            ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 48),
+              child: Text(
+                level,
+                key: const Key('video-edit-master-level'),
+                textAlign: TextAlign.end,
+                maxLines: 1,
+                style: TextStyle(
+                  color: color,
+                  decoration: master.muted ? TextDecoration.lineThrough : null,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -2360,6 +2583,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     final songName = _take ? l10n.videoEditLaneSong : l10n.videoEditLaneTrack;
     final length = _duration;
     final hasSong = _hasSong;
+    final marks = _songMarks;
     final Widget songBar;
     if (!hasSong) {
       songBar = _AddSong(
@@ -2409,6 +2633,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                 Expanded(
                   child: _Ruler(
                     length: length,
+                    marks: marks,
                     label: l10n.videoEditRuler,
                     timeOf: _rulerTime,
                     onSeek: (at, {required exact}) => _seek(at, exact: exact),
@@ -2438,6 +2663,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                       length: length,
                       start: _start,
                       end: _end,
+                      marks: marks,
                       fades: _fades,
                       name: ownName,
                       label: l10n.videoEditTakeBar,
@@ -2610,11 +2836,29 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
               final d when d < Duration.zero => l10n.videoEditSongLinedEarlier(
                 time(-d),
               ),
-              _ => l10n.videoEditSongLined,
+              // Found in the take's own sound, or as Cam noted it.
+              _ =>
+                _logged!.measured
+                    ? l10n.videoEditSongLinedSound
+                    : l10n.videoEditSongLined,
             },
             key: const Key('video-edit-song-lined'),
             textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall,
+          ),
+        // The take cut to its song: from where it starts to where it
+        // stops, as the marks on the ruler show.
+        if (_lined && _songMarks.length >= 2)
+          Align(
+            child: Tooltip(
+              message: l10n.videoEditCutToSongTip,
+              child: TextButton.icon(
+                key: const Key('video-edit-cut-to-song'),
+                icon: const Icon(Icons.content_cut, size: 18),
+                label: Text(l10n.videoEditCutToSong),
+                onPressed: _cutIsSong ? null : _cutToSong,
+              ),
+            ),
           ),
         if (trimmed && _trackLength > Duration.zero && _linedClips == null)
           Text(
@@ -2942,12 +3186,17 @@ class _LaneVolume extends StatelessWidget {
 class _Ruler extends StatefulWidget {
   const _Ruler({
     required this.length,
+    this.marks = const [],
     required this.label,
     required this.timeOf,
     required this.onSeek,
   });
 
   final Duration length;
+
+  /// Where the take's song starts and stops (the Take lane's grips snap
+  /// to them): a small flag each, in the primary colour.
+  final List<Duration> marks;
   final String label;
   final String Function(Duration at) timeOf;
   final void Function(Duration at, {required bool exact}) onSeek;
@@ -2999,10 +3248,12 @@ class _RulerState extends State<_Ruler> {
               size: Size(width, height),
               painter: _RulerPainter(
                 length: widget.length,
+                marks: widget.marks,
                 timeOf: widget.timeOf,
                 style: style,
                 scaler: scaler,
                 tick: theme.colorScheme.outline,
+                mark: theme.colorScheme.primary,
               ),
             ),
           ),
@@ -3015,17 +3266,21 @@ class _RulerState extends State<_Ruler> {
 class _RulerPainter extends CustomPainter {
   _RulerPainter({
     required this.length,
+    this.marks = const [],
     required this.timeOf,
     required this.style,
     required this.scaler,
     required this.tick,
+    required this.mark,
   });
 
   final Duration length;
+  final List<Duration> marks;
   final String Function(Duration at) timeOf;
   final TextStyle style;
   final TextScaler scaler;
   final Color tick;
+  final Color mark;
 
   /// The steps between ticks, in seconds: the first with room for a time.
   static const _steps = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 1200, 1800];
@@ -3058,11 +3313,27 @@ class _RulerPainter extends CustomPainter {
       final text = label(timeOf(Duration(seconds: s)));
       if (x + text.width <= size.width) text.paint(canvas, Offset(x + 2, 0));
     }
+    // The song's marks: a small flag pointing down at each, over the
+    // ticks.
+    final flag = Paint()..color = mark;
+    for (final at in marks) {
+      final x = at.inMilliseconds / 1000 * perSecond;
+      canvas.drawPath(
+        Path()
+          ..moveTo(x - 4, size.height - 7)
+          ..lineTo(x + 4, size.height - 7)
+          ..lineTo(x, size.height)
+          ..close(),
+        flag,
+      );
+    }
   }
 
   @override
   bool shouldRepaint(_RulerPainter old) =>
       old.length != length ||
+      !listEquals(old.marks, marks) ||
+      old.mark != mark ||
       old.style != style ||
       old.scaler != scaler ||
       old.tick != tick;
@@ -3137,6 +3408,7 @@ class _TakeBar extends StatelessWidget {
     required this.length,
     required this.start,
     required this.end,
+    this.marks = const [],
     this.fades = Fades.none,
     required this.name,
     required this.label,
@@ -3150,6 +3422,10 @@ class _TakeBar extends StatelessWidget {
   final Duration length;
   final Duration start;
   final Duration end;
+
+  /// Where the take's song starts and stops: a thin line down the bar at
+  /// each, where a grip dragged near snaps to.
+  final List<Duration> marks;
   final Fades fades;
   final String name;
 
@@ -3239,6 +3515,21 @@ class _TakeBar extends StatelessWidget {
                                         fades.length.inMicroseconds,
                               color: theme.colorScheme.onPrimaryContainer
                                   .withValues(alpha: 0.25),
+                            ),
+                          ),
+                        ),
+                      ),
+                    for (final (i, at) in marks.indexed)
+                      Positioned(
+                        key: Key('video-edit-take-mark-$i'),
+                        left: at.inMilliseconds * perMs - 1,
+                        top: 0,
+                        bottom: 0,
+                        width: 2,
+                        child: IgnorePointer(
+                          child: ColoredBox(
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.7,
                             ),
                           ),
                         ),
@@ -3627,6 +3918,7 @@ class _Grip extends StatelessWidget {
           behavior: HitTestBehavior.opaque,
           onHorizontalDragUpdate: (d) => onDrag(d.delta.dx),
           onHorizontalDragEnd: onDone == null ? null : (_) => onDone!(),
+          onHorizontalDragCancel: onDone,
           child: Center(
             child: Container(
               width: 4,

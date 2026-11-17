@@ -30,9 +30,9 @@ abstract class TakeRecorder {
   /// once the recording has started (or, should it not say, soon after).
   Future<void> start();
 
-  /// How long ago the recording started, in ms, as of now (the web: the
-  /// MediaRecorder's `start` event, on the page's clock); null when it
-  /// isn't known. Cam reads it as the take's clock starts: the take's lag
+  /// How long ago the recording started, in ms, as of now (the web:
+  /// since the MediaRecorder was told to start, once its `start` event
+  /// says it records, on the page's clock); null when it isn't known. Cam reads it as the take's clock starts: the take's lag
   /// (`TakeLog.lagMs`).
   double? msSinceStart();
 
@@ -49,6 +49,12 @@ abstract class TakeRecorder {
   /// The loudest the microphone has been lately, 0 to 1 (full scale),
   /// for Cam's level meter; null when it isn't open.
   Future<double?> peak();
+
+  /// The input volume set in Cam by its level meter ([gain]: 1 as it
+  /// comes, 2 twice as loud): what the next takes record and [peak] reads,
+  /// from now on. Not while recording: a take keeps the volume it started
+  /// with.
+  void setGain(double gain);
 
   /// The browser's; null elsewhere.
   static TakeRecorder? forPlatform() => webTakeRecorder();

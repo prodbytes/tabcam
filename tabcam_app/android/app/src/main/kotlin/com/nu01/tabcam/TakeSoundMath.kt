@@ -3,6 +3,7 @@ package com.nu01.tabcam
 import android.media.MediaRecorder
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
 /**
@@ -202,4 +203,36 @@ object TakeSoundMath {
 
     /** Full scale for [peak]: what it gives at 0 dBFS. */
     const val FULL_SCALE = 32768
+
+    /**
+     * The input volume set in Cam (by its level meter), applied to
+     * [length] bytes of 16-bit little-endian PCM in place: each sample
+     * [gain] times as loud, clipped at full scale. 1 leaves them as they
+     * are.
+     */
+    fun applyGain(bytes: ByteArray, length: Int, gain: Float) {
+        if (gain == 1f) return
+        var i = 0
+        val end = min(length, bytes.size) and 1.inv()
+        while (i < end) {
+            val sample = (bytes[i].toInt() and 0xff) or (bytes[i + 1].toInt() shl 8)
+            val scaled = (sample * gain).roundToInt().coerceIn(-32768, 32767)
+            bytes[i] = scaled.toByte()
+            bytes[i + 1] = (scaled shr 8).toByte()
+            i += 2
+        }
+    }
+
+    /**
+     * The gain asked for over the channel, kept within [MIN_GAIN] and
+     * [MAX_GAIN] (none, or not a number: 1).
+     */
+    fun gainOf(asked: Double?): Float =
+        if (asked == null || asked.isNaN()) 1f else asked.toFloat().coerceIn(MIN_GAIN, MAX_GAIN)
+
+    /** -24 dB… */
+    const val MIN_GAIN = 0.063f
+
+    /** …to +24 dB. */
+    const val MAX_GAIN = 15.85f
 }

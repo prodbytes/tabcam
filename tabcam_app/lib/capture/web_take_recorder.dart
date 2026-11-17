@@ -63,17 +63,27 @@ class WebTakeRecorder implements TakeRecorder {
   Completer<void>? _stopped;
   String _type = 'video/webm';
 
-  /// When the recording started (its `start` event), on the page's clock
-  /// (`performance.now()`, ms).
+  /// When the recording started: when the recorder was told to (its file
+  /// starts with the first frame after that), known once its `start`
+  /// event says it records; on the page's clock (`performance.now()`,
+  /// ms).
   double? _startedAt;
 
-  /// The level meter's: a Web Audio analyser on the microphone's stream
-  /// ([_analysed]), never connected to the speakers, and its samples.
+  /// The level meter's and the input volume's: a Web Audio graph on the
+  /// microphone's stream ([_analysed]), never connected to the speakers:
+  /// its source, through [_gain] (the input volume, [setGain]), to an
+  /// analyser (the meter's samples) and to a stream a take records when
+  /// the volume isn't as it comes ([_volumed]).
   web.AudioContext? _audio;
   web.MediaStreamAudioSourceNode? _source;
+  web.GainNode? _gainNode;
   web.AnalyserNode? _analyser;
+  web.MediaStreamAudioDestinationNode? _volumed;
   web.MediaStream? _analysed;
   JSFloat32Array? _samples;
+
+  /// The input volume set in Cam: 1, as it comes.
+  double _gain = 1;
 
   /// How long [start] waits for the recording's `start` event at most.
   static const startWait = Duration(seconds: 1);
@@ -219,7 +229,13 @@ class WebTakeRecorder implements TakeRecorder {
     // The camera's picture as it comes, with the microphone's sound (open
     // since Cam opened); without it, the camera's, if it has any. Nothing
     // is drawn: the tab isn't in the take, it's kept with it.
-    var audio = (await _openMic())?.getAudioTracks().toDart ?? const [];
+    final mic = await _openMic();
+    var audio = mic?.getAudioTracks().toDart ?? const [];
+    // The input volume set: the microphone through it (as it comes, the
+    // microphone's own track, nothing in between).
+    if (mic != null && audio.isNotEmpty && _gain != 1) {
+      if (await _volumedTracks(mic) case final tracks?) audio = tracks;
+    }
     if (audio.isEmpty) audio = camera.getAudioTracks().toDart;
     if (audio.isEmpty) debugPrint('TabCam: cam: a take without sound');
     final stream = web.MediaStream(
@@ -241,12 +257,15 @@ class WebTakeRecorder implements TakeRecorder {
     _startedAt = null;
     final stopped = _stopped = Completer<void>();
     final started = Completer<void>();
-    recorder.onstart = ((web.Event e) {
-      // When it happened, not when this ran: the same clock as
-      // `performance.now()` (else, a browser of old, when this ran).
-      final now = web.window.performance.now();
-      final at = e.timeStamp.toDouble();
-      _startedAt = at > 0 && at <= now ? at : now;
+    double? told;
+    recorder.onstart = ((web.Event _) {
+      // It records: since it was told to (below), not since this event.
+      // The file starts with the first frame after it's told to; Chrome
+      // sends the event a tenth of a second later, with the file's first
+      // frames written already (measured: a sound was in the file within
+      // a few hundredths of a second of when it was made, counted from
+      // the call, and a tenth later counted from the event).
+      _startedAt = told ?? web.window.performance.now();
       if (!started.isCompleted) started.complete();
     }).toJS;
     recorder.ondataavailable = ((web.BlobEvent e) {
@@ -256,27 +275,80 @@ class WebTakeRecorder implements TakeRecorder {
       if (!stopped.isCompleted) stopped.complete();
     }).toJS;
     // In pieces, so a long take isn't held in one buffer.
+    told = web.window.performance.now();
     recorder.start(1000);
     // Returns once it records, so the take's clock starts after it does
     // (its lag, [msSinceStart], is then how far ahead the file is).
     await started.future.timeout(startWait, onTimeout: () {});
   }
 
+  /// The graph on [mic] ([_audio]): set up the first time, and its source
+  /// again for another microphone.
+  web.AudioContext _graph(web.MediaStream mic) {
+    final audio = _audio ??= web.AudioContext();
+    final gain = _gainNode ??= audio.createGain();
+    gain.gain.value = _gain;
+    if (_analyser == null) {
+      final analyser = _analyser = audio.createAnalyser()..fftSize = 2048;
+      gain.connect(analyser);
+    }
+    if (!identical(mic, _analysed)) {
+      _source?.disconnect();
+      _source = audio.createMediaStreamSource(mic)..connect(gain);
+      _analysed = mic;
+    }
+    return audio;
+  }
+
+  /// [mic]'s sound at the input volume set, for a take: the graph's
+  /// stream's tracks; null should the graph not run (the browser holding
+  /// it), and the take then records the microphone as it comes.
+  Future<List<web.MediaStreamTrack>?> _volumedTracks(
+    web.MediaStream mic,
+  ) async {
+    try {
+      final audio = _graph(mic);
+      final volumed = _volumed ??= audio.createMediaStreamDestination()
+        ..channelCount = 2;
+      if (!_routed) {
+        _gainNode!.connect(volumed);
+        _routed = true;
+      }
+      // Rec was pressed: the browser lets it run now.
+      if (audio.state != 'running') {
+        await audio.resume().toDart.timeout(startWait);
+      }
+      if (audio.state != 'running') {
+        debugPrint('TabCam: cam: input volume: the browser holds the sound');
+        return null;
+      }
+      final tracks = volumed.stream.getAudioTracks().toDart;
+      return tracks.isEmpty ? null : tracks;
+    } on Object catch (e) {
+      debugPrint('TabCam: cam: input volume: $e');
+      return null;
+    }
+  }
+
+  /// Whether [_volumed] is connected to the graph.
+  bool _routed = false;
+
+  @override
+  void setGain(double gain) {
+    if (_recorder != null) throw StateError('recording');
+    _gain = gain;
+    _gainNode?.gain.value = gain;
+  }
+
   /// The loudest sample of the latest 2048 (about 43 ms at 48 kHz), read
-  /// as the meter asks (it asks about every 40 ms): an analyser on the
-  /// microphone, set up the first time and again for another microphone.
+  /// as the meter asks (it asks about every 40 ms), at the input volume
+  /// set: an analyser on the microphone ([_graph]).
   @override
   Future<double?> peak() async {
     final mic = _mic;
     if (mic == null || !_live(mic) || _disposed) return null;
     try {
-      final audio = _audio ??= web.AudioContext();
-      if (!identical(mic, _analysed)) {
-        _source?.disconnect();
-        final analyser = _analyser ??= audio.createAnalyser()..fftSize = 2048;
-        _source = audio.createMediaStreamSource(mic)..connect(analyser);
-        _analysed = mic;
-      }
+      final audio = _graph(mic);
       // Made before the page was touched, the browser may hold it.
       if (audio.state == 'suspended') audio.resume().toDart.ignore();
       final analyser = _analyser!;
@@ -329,6 +401,10 @@ class WebTakeRecorder implements TakeRecorder {
     _source?.disconnect();
     _source = null;
     _analysed = null;
+    _gainNode = null;
+    _analyser = null;
+    _volumed = null;
+    _routed = false;
     _audio?.close().toDart.ignore();
     _audio = null;
   }

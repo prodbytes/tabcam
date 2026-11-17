@@ -287,7 +287,7 @@ void main() {
       edit,
       duration: const Duration(seconds: 20),
       inputExtension: 'mp4',
-      watermark: 'Recorded by tabs.cam',
+      watermark: watermarkText,
       premium: premium,
       takeLog: takeLog,
     );
@@ -316,7 +316,7 @@ void main() {
     test('in the bottom right corner, small, the whole video through; '
         'over the tab\'s bands when they\'re drawn', () {
       final mark = _ofId(plan(null), 'mark').single;
-      expect(mark.look, const WatermarkLook('Recorded by tabs.cam'));
+      expect(mark.look, const WatermarkLook('tabs.cam'));
       expect(mark.anchor, LayerAnchor.bottomRight);
       expect(mark.heightU, WatermarkLayout.heightU);
       expect(mark.marginU, WatermarkLayout.margin);
@@ -361,7 +361,7 @@ void main() {
     final looks = [
       titlePicture(const ['Blue Riff', 'Made-up Band']),
       titlePicture(const ['Blue Riff']),
-      watermarkPicture('Made with tabs.cam'),
+      watermarkPicture(watermarkText),
     ];
     expect(looks[0].size.height, TitleLayout.heightU(2) * layerShort);
     expect(looks[1].size.height, TitleLayout.heightU(1) * layerShort);
@@ -580,7 +580,7 @@ void main() {
       expect(markChip(tester).selected, isTrue);
       expect(markChip(tester).avatar, isNull, reason: 'no service: unlocked');
       expect(preview(tester).map((l) => l.look), const [
-        WatermarkLook('Made with tabs.cam'),
+        WatermarkLook('tabs.cam'),
         TitleLook(['Blue Riff', 'Made-up Band']),
       ]);
       expect(previewTitle(tester)!.fadeIn, TitleLayout.fadeIn);
@@ -603,11 +603,8 @@ void main() {
       final (library, id) = await capture(tester, take: true);
       await tester.pumpWidget(editScreen(library, id));
       await settle(tester);
-      // A take: its watermark says so.
-      expect(
-        preview(tester).first.look,
-        const WatermarkLook('Recorded by tabs.cam'),
-      );
+      // A take: the same watermark as any other video's.
+      expect(preview(tester).first.look, const WatermarkLook('tabs.cam'));
 
       // A song along it, playing.
       await tester.tap(find.byKey(const Key('video-edit-song-add')));
@@ -679,18 +676,34 @@ void main() {
       await settle(tester);
       expect(find.byKey(const Key('video-edit-title-fields')), findsNothing);
 
+      await tester.ensureVisible(
+        find.byKey(const Key('video-edit-title-edit')),
+      );
+      await settle(tester);
       await tester.tap(find.byKey(const Key('video-edit-title-edit')));
       await settle(tester);
       expect(find.byKey(const Key('video-edit-title-fields')), findsOneWidget);
       expect(find.byKey(const Key('video-edit-on-video')), findsNothing);
       expect(previewTitle(tester)!.fadeIn, Duration.zero);
+      await tester.ensureVisible(
+        find.byKey(const Key('video-edit-title-done')),
+      );
+      await settle(tester);
       await tester.tap(find.byKey(const Key('video-edit-title-done')));
       await settle(tester);
       expect(find.byKey(const Key('video-edit-title-fields')), findsNothing);
       expect(find.byKey(const Key('video-edit-on-video')), findsOneWidget);
       expect(previewTitle(tester)!.fadeIn, TitleLayout.fadeIn);
 
+      // Back at the top, where the preview is (the master pushes the
+      // fields' Done down the list).
+      Future<void> top() async {
+        await tester.drag(find.byType(ListView).first, const Offset(0, 2000));
+        await settle(tester);
+      }
+
       // A tap on the title, at the preview's top left.
+      await top();
       final box = tester.getRect(find.byKey(const Key('video-edit-preview')));
       final short = box.shortestSide;
       final played = [...platform.playing];
@@ -699,8 +712,13 @@ void main() {
       expect(find.byKey(const Key('video-edit-title-fields')), findsOneWidget);
       expect(platform.playing, played, reason: 'not played');
       // Elsewhere, it plays.
+      await tester.ensureVisible(
+        find.byKey(const Key('video-edit-title-done')),
+      );
+      await settle(tester);
       await tester.tap(find.byKey(const Key('video-edit-title-done')));
       await settle(tester);
+      await top();
       await tester.tapAt(box.bottomRight - const Offset(4, 4));
       await settle(tester);
       expect(platform.playing, isNotEmpty);

@@ -1054,11 +1054,29 @@ abstract class AppLocalizations {
   /// **'Microphone'**
   String get camMicChoose;
 
-  /// Cam: the tooltip of the level meter beside Rec, which shows how loud the microphone is (green, yellow, red)
+  /// Cam: the tooltip of the level meter beside Rec, which shows how loud the microphone is (green, yellow, red); tapped, it opens the input volume menu
   ///
   /// In en, this message translates to:
-  /// **'Microphone level'**
+  /// **'Microphone level: tap to set the input volume'**
   String get camMicLevel;
+
+  /// Cam: the heading of the menu that opens when the level meter beside Rec is tapped; its slider sets how loud the microphone records the takes
+  ///
+  /// In en, this message translates to:
+  /// **'Input volume'**
+  String get camMicGain;
+
+  /// Cam: the input volume in its menu, in decibels; db is signed, such as +6, 0 or −6
+  ///
+  /// In en, this message translates to:
+  /// **'{db} dB'**
+  String camMicGainDb(String db);
+
+  /// Cam: the button in the input volume menu that puts the volume back to 0 dB, as the microphone gives it
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get camMicGainReset;
 
   /// Cam: the heading of Rec's menu, over the list of microphones
   ///
@@ -1144,11 +1162,11 @@ abstract class AppLocalizations {
   /// **'No text tab yet: read the capture\'s tab to play along with it.'**
   String get camNoTab;
 
-  /// Cam: a recording's name
+  /// Cam: a take's name, by the time it started (hours and minutes, 24-hour, such as 14:32; with the seconds should another take that day have that name); the sidebar lists takes under their day, so the date isn't in it
   ///
   /// In en, this message translates to:
-  /// **'Take {number}'**
-  String camTake(int number);
+  /// **'Take {time}'**
+  String camTake(String time);
 
   /// Cam: a take was saved
   ///
@@ -1222,6 +1240,18 @@ abstract class AppLocalizations {
   /// **'Takes'**
   String get camAlongTakes;
 
+  /// Cam sidebar: the heading, under Takes, over the takes recorded today
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get camAlongToday;
+
+  /// Cam sidebar: the heading, under Takes, over the takes recorded yesterday (older days show their date)
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get camAlongYesterday;
+
   /// Cam sidebar heading over the capture's PDFs; tapping one shows it beside the camera
   ///
   /// In en, this message translates to:
@@ -1233,6 +1263,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete {name}'**
   String camAlongDelete(String name);
+
+  /// Play-along sidebar: tooltip of the Edit button (scissors) on a take's row, before Delete; it opens the video editor on that take
+  ///
+  /// In en, this message translates to:
+  /// **'Edit {name}'**
+  String camAlongEdit(String name);
 
   /// Cam sidebar: tooltip of a PDF not showing
   ///
@@ -3370,6 +3406,24 @@ abstract class AppLocalizations {
   /// **'Lined up as it played while you recorded'**
   String get videoEditSongLined;
 
+  /// Video edit, a take: the song is placed by itself exactly where the take's own sound has it (the microphone heard it from the speaker), measured to the millisecond
+  ///
+  /// In en, this message translates to:
+  /// **'Lined up by its sound in the take'**
+  String get videoEditSongLinedSound;
+
+  /// Video edit, a take: a button under the song's details that keeps the take from where its song starts to where it stops
+  ///
+  /// In en, this message translates to:
+  /// **'Cut to the song'**
+  String get videoEditCutToSong;
+
+  /// Video edit, a take: the tooltip of the Cut to the song button
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the take from where the song starts to where it stops'**
+  String get videoEditCutToSongTip;
+
   /// Video edit, a take: the song lined up as it played while recording, then moved later by hand (time like 0:00.2)
   ///
   /// In en, this message translates to:
@@ -3622,23 +3676,11 @@ abstract class AppLocalizations {
   /// **'Done'**
   String get videoEditTitleDone;
 
-  /// Video edit: the chip of the small tabs.cam line at the bottom right of the video (only Premium can turn it off)
+  /// Video edit: the chip of the small "tabs.cam" at the bottom right of the video (only Premium can turn it off)
   ///
   /// In en, this message translates to:
   /// **'Watermark'**
   String get videoEditLayerWatermark;
-
-  /// Video edit: the watermark's text on one of Cam's takes; drawn on the video itself
-  ///
-  /// In en, this message translates to:
-  /// **'Recorded by tabs.cam'**
-  String get videoEditWatermarkTake;
-
-  /// Video edit: the watermark's text on a video Cam didn't record; drawn on the video itself
-  ///
-  /// In en, this message translates to:
-  /// **'Made with tabs.cam'**
-  String get videoEditWatermarkMade;
 
   /// Video edit: the Watermark chip's tooltip, for a Premium user (who can turn it off)
   ///
@@ -3663,6 +3705,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The video from and to black, both sounds with it'**
   String get videoEditFadesAbout;
+
+  /// Video edit: the master, where both lanes' sound goes (its volume, up to 200%, and Mute), above the fades
+  ///
+  /// In en, this message translates to:
+  /// **'Master'**
+  String get videoEditMaster;
+
+  /// Video edit: what the master volume does (under its name)
+  ///
+  /// In en, this message translates to:
+  /// **'Both sounds together, up to 200%'**
+  String get videoEditMasterAbout;
 
   /// Video edit: the Fades chip's button that opens their sliders
   ///

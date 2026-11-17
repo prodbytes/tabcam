@@ -171,7 +171,7 @@ void main() {
       duration: ms(20000),
       inputExtension: 'mp4',
       takeLog: _log(),
-      watermark: 'Recorded by tabs.cam',
+      watermark: watermarkText,
       frame: frame,
     );
 
@@ -544,6 +544,15 @@ void main() {
     );
 
     Future<void> tapVisible(WidgetTester tester, String key) async {
+      // Scrolled to first when the list hasn't built it yet (a small
+      // phone at a large text size).
+      if (find.byKey(Key(key)).evaluate().isEmpty) {
+        await tester.dragUntilVisible(
+          find.byKey(Key(key)),
+          find.byType(ListView).first,
+          const Offset(0, -200),
+        );
+      }
       await tester.ensureVisible(find.byKey(Key(key)));
       await settle(tester);
       await tester.tap(find.byKey(Key(key)));

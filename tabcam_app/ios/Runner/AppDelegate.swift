@@ -166,7 +166,8 @@ enum Sound {
 /// `tabcam/video_edit`, method `render`, the plan's `toChannel`): `input`
 /// and `output` paths, `video` (false for the sound alone, an `.m4a`), the
 /// part kept (`startMs`–`endMs`), the video's own sound (`own`: `volume`, 0
-/// to 1; left out: removed) and the song lane (`song`: `path`, `volume` and
+/// to 2, its lane's level through the master's; left out: removed) and the
+/// song lane (`song`: `path`, `volume` (as `own`'s) and
 /// `clips`, each `atMs` in the output, the song from `fromMs` to `toMs`, at
 /// `speed`, 1 for now), and what's drawn over the picture: `images` (PNGs)
 /// and `layers` (each its `image`'s index, `anchor`, `heightU`, `marginU`,
@@ -181,6 +182,8 @@ enum Sound {
 /// (`avc1` for H.264, `hvc1` for HEVC; nil without a video track), and
 /// `h264` (`input`, `output`) makes the whole video H.264, its sound kept,
 /// replying with the output path.
+///
+/// And `samples` reads a part of a file's sound as samples (`SoundSamples`).
 enum VideoEdit {
   static func handle(
     _ call: FlutterMethodCall, result: @escaping FlutterResult, channel: FlutterMethodChannel?
@@ -192,6 +195,9 @@ enum VideoEdit {
     case "render": break
     case "codec", "h264":
       TakeH264.handle(call, reply: reply)
+      return
+    case "samples":
+      SoundSamples.handle(call, reply: reply)
       return
     default:
       result(FlutterMethodNotImplemented)
@@ -218,6 +224,106 @@ enum VideoEdit {
         reply(plan.output.path)
       }
     }
+  }
+}
+
+/// Reads a part of a sound or video file's sound as samples, for the app to
+/// compare one sound with another (lib/capture/song_sync.dart): `samples`
+/// (`path`, `fromMs`, `lengthMs`, `rate`) replies with the samples (32-bit
+/// floats from -1 to 1, one channel, `rate` a second), fewer where the file
+/// ends, decoded and brought to that rate by AVAssetReader; the error
+/// `failed` when it has no sound or can't be read (a WebM).
+enum SoundSamples {
+  static func handle(_ call: FlutterMethodCall, reply: @escaping (Any?) -> Void) {
+    guard let args = call.arguments as? [String: Any],
+      let path = args["path"] as? String,
+      let from = (args["fromMs"] as? NSNumber)?.int64Value,
+      let length = (args["lengthMs"] as? NSNumber)?.int64Value,
+      let rate = (args["rate"] as? NSNumber)?.intValue,
+      from >= 0, length > 0, rate > 0
+    else {
+      reply(FlutterError(code: "failed", message: "Bad arguments for samples.", details: nil))
+      return
+    }
+    Task.detached(priority: .utility) {
+      do {
+        let samples = try await read(
+          URL(fileURLWithPath: path), fromMs: from, lengthMs: length, rate: rate)
+        reply(FlutterStandardTypedData(float32: samples))
+      } catch {
+        reply(FlutterError(code: "failed", message: error.localizedDescription, details: nil))
+      }
+    }
+  }
+
+  static func read(_ url: URL, fromMs: Int64, lengthMs: Int64, rate: Int) async throws -> Data {
+    let asset = AVURLAsset(url: url)
+    let tracks = try await asset.loadTracks(withMediaType: .audio)
+    guard !tracks.isEmpty else {
+      throw NSError(
+        domain: "tabcam", code: 1,
+        userInfo: [NSLocalizedDescriptionKey: "No sound in the file"])
+    }
+    let reader = try AVAssetReader(asset: asset)
+    let from = CMTime(value: fromMs, timescale: 1000)
+    reader.timeRange = CMTimeRange(start: from, duration: CMTime(value: lengthMs, timescale: 1000))
+    let output = AVAssetReaderAudioMixOutput(
+      audioTracks: tracks,
+      audioSettings: [
+        AVFormatIDKey: kAudioFormatLinearPCM,
+        AVSampleRateKey: rate,
+        AVNumberOfChannelsKey: 1,
+        AVLinearPCMBitDepthKey: 32,
+        AVLinearPCMIsFloatKey: true,
+        AVLinearPCMIsBigEndianKey: false,
+        AVLinearPCMIsNonInterleaved: false,
+      ])
+    output.alwaysCopiesSampleData = false
+    guard reader.canAdd(output) else {
+      throw NSError(
+        domain: "tabcam", code: 2,
+        userInfo: [NSLocalizedDescriptionKey: "The file's sound can't be read"])
+    }
+    reader.add(output)
+    guard reader.startReading() else {
+      throw reader.error
+        ?? NSError(
+          domain: "tabcam", code: 3,
+          userInfo: [NSLocalizedDescriptionKey: "The file's sound can't be read"])
+    }
+    let most = Int(lengthMs) * rate / 1000 * MemoryLayout<Float32>.size
+    var samples = Data()
+    var first = true
+    while samples.count < most, let buffer = output.copyNextSampleBuffer() {
+      guard let block = CMSampleBufferGetDataBuffer(buffer) else { continue }
+      if first {
+        first = false
+        // The first buffer's time: later than asked (the sound starts
+        // after the file does), silence first, so the first sample is
+        // the sound at `from`.
+        let late = CMTimeSubtract(CMSampleBufferGetPresentationTimeStamp(buffer), from)
+        if late.isNumeric, late.seconds > 0 {
+          let frames = min(Int((late.seconds * Double(rate)).rounded()), most / 4)
+          samples.append(Data(count: frames * MemoryLayout<Float32>.size))
+        }
+      }
+      let size = CMBlockBufferGetDataLength(block)
+      var bytes = Data(count: size)
+      let status = bytes.withUnsafeMutableBytes { raw -> OSStatus in
+        guard let base = raw.baseAddress else { return -1 }
+        return CMBlockBufferCopyDataBytes(block, atOffset: 0, dataLength: size, destination: base)
+      }
+      if status == kCMBlockBufferNoErr { samples.append(bytes) }
+    }
+    if reader.status == .failed, samples.isEmpty {
+      throw reader.error
+        ?? NSError(
+          domain: "tabcam", code: 4,
+          userInfo: [NSLocalizedDescriptionKey: "The file's sound can't be read"])
+    }
+    reader.cancelReading()
+    if samples.count > most { samples = samples.prefix(most) }
+    return samples
   }
 }
 
@@ -300,7 +406,9 @@ enum TakeH264 {
 /// RunnerTests smoke test calls it): an `AVMutableComposition` of the kept
 /// part of the video (its orientation kept as the track's transform), its
 /// own sound cut the same when kept, and the song lane's clips inserted on
-/// one track where they start, with their volumes through an audio mix;
+/// one track where they start, with their volumes through an audio mix (a
+/// lane louder than it is, which a mix can't play, is inserted twice, each
+/// at half its volume: `copies`);
 /// the layers (with the picture) through a video composition, one Core
 /// Animation layer each, shown and faded by opacity animations; the fades
 /// a black layer over them all, its opacity animated from 1 to 0 and back
@@ -397,7 +505,7 @@ enum VideoEditor {
       }
       func volume(_ map: [String: Any]) -> Float {
         let v = (map["volume"] as? NSNumber)?.floatValue ?? 1
-        return v.isNaN ? 1 : min(max(v, 0), 1)
+        return v.isNaN ? 1 : min(max(v, 0), VideoEditor.maxVolume)
       }
       guard let input = args["input"] as? String,
         let output = args["output"] as? String,
@@ -541,15 +649,20 @@ enum VideoEditor {
     }
 
     if let ownVolume = plan.ownVolume {
+      let (count, each) = copies(ownVolume)
       for audio in try await asset.loadTracks(withMediaType: .audio) {
         let audioRange = CMTimeRangeGetIntersection(
           try await audio.load(.timeRange), otherRange: range)
-        guard audioRange.duration > .zero,
-          let compAudio = composition.addMutableTrack(
-            withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
-        else { continue }
-        try compAudio.insertTimeRange(audioRange, of: audio, at: audioRange.start - range.start)
-        mix(compAudio, at: ownVolume)
+        guard audioRange.duration > .zero else { continue }
+        for _ in 0..<count {
+          guard
+            let compAudio = composition.addMutableTrack(
+              withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
+          else { continue }
+          try compAudio.insertTimeRange(
+            audioRange, of: audio, at: audioRange.start - range.start)
+          mix(compAudio, at: each)
+        }
       }
     }
 
@@ -564,29 +677,32 @@ enum VideoEditor {
       guard let audio = try await asset.loadTracks(withMediaType: .audio).first
       else { throw Failure("The song has no sound.") }
       let audioRange = try await audio.load(.timeRange)
-      guard
-        let compAudio = composition.addMutableTrack(
-          withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
-      else { throw Failure("Could not add the song's track.") }
-      // With the picture, each clip is cut to the video's kept part
-      // (`range`), as the take's own sound is: the editor's end can pass
-      // the video track's end (the player's duration is the longest
-      // track's), and a song running past the video makes the composition
-      // outlast its video composition's instruction, which the export
-      // rejects (-11841, "could not be composed").
-      let end: CMTime? = plan.video ? range.duration : nil
-      for clip in song.clips where clip.toMs > clip.fromMs && clip.fromMs >= 0 && clip.atMs >= 0 {
-        let at = ms(clip.atMs)
-        if let end, at >= end { continue }
-        let from = CMTimeMinimum(ms(clip.fromMs), audioRange.duration)
-        var to = CMTimeMinimum(ms(clip.toMs), audioRange.duration)
-        if let end { to = CMTimeMinimum(to, from + (end - at)) }
-        guard to > from else { continue }
-        try compAudio.insertTimeRange(
-          CMTimeRange(start: audioRange.start + from, end: audioRange.start + to), of: audio,
-          at: ms(clip.atMs))
+      let (count, each) = copies(song.volume)
+      for _ in 0..<count {
+        guard
+          let compAudio = composition.addMutableTrack(
+            withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
+        else { throw Failure("Could not add the song's track.") }
+        // With the picture, each clip is cut to the video's kept part
+        // (`range`), as the take's own sound is: the editor's end can pass
+        // the video track's end (the player's duration is the longest
+        // track's), and a song running past the video makes the composition
+        // outlast its video composition's instruction, which the export
+        // rejects (-11841, "could not be composed").
+        let end: CMTime? = plan.video ? range.duration : nil
+        for clip in song.clips where clip.toMs > clip.fromMs && clip.fromMs >= 0 && clip.atMs >= 0 {
+          let at = ms(clip.atMs)
+          if let end, at >= end { continue }
+          let from = CMTimeMinimum(ms(clip.fromMs), audioRange.duration)
+          var to = CMTimeMinimum(ms(clip.toMs), audioRange.duration)
+          if let end { to = CMTimeMinimum(to, from + (end - at)) }
+          guard to > from else { continue }
+          try compAudio.insertTimeRange(
+            CMTimeRange(start: audioRange.start + from, end: audioRange.start + to), of: audio,
+            at: ms(clip.atMs))
+        }
+        mix(compAudio, at: each)
       }
-      mix(compAudio, at: song.volume)
     }
 
     if FileManager.default.fileExists(atPath: plan.output.path) {
@@ -762,6 +878,16 @@ enum VideoEditor {
       times.append(total)
     }
     return (values, times.map { NSNumber(value: $0 / total) })
+  }
+
+  /// The loudest a lane can be: 200% (its level through the master's).
+  static let maxVolume: Float = 2
+
+  /// How many times a lane at `volume` is inserted, and at what volume
+  /// each: once, at it, up to 1 (an audio mix plays nothing louder); twice,
+  /// at half of it each, above (the copies add up to it).
+  static func copies(_ volume: Float) -> (count: Int, each: Float) {
+    volume > 1 ? (2, volume / 2) : (1, volume)
   }
 
   /// A track's `volume` in the mix, faded in from silence over its first

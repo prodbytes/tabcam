@@ -3727,7 +3727,46 @@ spec.
    it (`RenderPlan.of` lost `bandAspect`); the layers keep `liftU` and
    `liftW` for the renderers, at 0. See
    [video edit](video-edit.md#layers).
-6. **"The editor does not seem to be working, make sure that space bar
+6. **"In the editor let the master track have a volume control as well,
+   if possible up to 200%, right above the fade options."** The video
+   editor has a **Master** volume: Mute and a slider from 0% to 200%
+   (steps of 5%), through which both lanes play, after their own levels.
+   It sits right above the fades' sliders (on a wide screen in the On
+   the video panel; on a phone above On the video, where the Fades chip
+   opens them). It's kept with the edit (`masterVolume`, `masterMuted`;
+   older apps keep the keys and play the lanes without it, and read no
+   sound while it's muted), Reset puts back 100%, and the render plan
+   gives each lane its level times the master's. Past 100%, only the
+   download is louder (the players stop at 100%): Android lifts the
+   sound with a gain of our own that clips (Media3's wraps 16-bit
+   samples around), iOS inserts a louder lane twice at half its level
+   (an audio mix stops at 1), and the web's Web Audio gains go past 1
+   as they are. See [video edit](video-edit.md).
+7. **"In the camera view if the user clicks the volume meter let the
+   input volume be adjusted up or down."** Tapping Cam's level meter
+   beside Rec now opens an Input volume menu: the volume in dB, an
+   upright slider from −24 to +24 dB (up louder, down quieter) and
+   Reset (back to 0 dB, as the microphone gives it). It applies at once,
+   to the meter and the next takes, and is kept in Cam's settings
+   (`gainDb`). On the web a Web Audio gain node sits before the meter's
+   analyser, and a take recorded at anything but 0 dB records through
+   it; on Android the app's microphone multiplies its samples, clipped
+   at full scale (channel `tabcam/take_level`, method `gain`). Between
+   takes only: the meter can't be tapped while a take records. iOS has
+   no meter, so no input volume. See [Cam](cam.md#input-volume).
+8. **"Instead of Take $NUMBER let's use Take $HOUR:MINUTE [date hidden
+   but still grouped by day]."** Cam now names a take by the time it
+   started, 24-hour ("Take 14:32"; with the seconds, then a number, should
+   a take of that day have the name already) instead of "Take 1",
+   "Take 2"…; takes saved before keep their names. The sidebar's Takes
+   list, still most recent first, is grouped by day under small headings,
+   Today, Yesterday, else the date ("Sat, Nov 14", with the year when not
+   this one), in English, Spanish and Portuguese. The day comes from the
+   take page's ID (its creation time), so older takes are grouped too.
+   Old number names still count as takes (`isTake`). See
+   [Cam](cam.md#playing-along-with-a-file).
+
+9. **"The editor does not seem to be working, make sure that space bar
    toggles play and there are buttons to do the same and clicking the
    timeline moves the playhead and that the editor works, testing with
    latest 'take 5'."** Opened on Take 5 (a take recorded in the
@@ -3745,3 +3784,96 @@ spec.
    now plays and pauses the editor's preview, as **Play** / **Pause**
    (whose tooltip names it) and a tap on the preview do; not while the
    title is typed in. See [Video edit](video-edit.md).
+
+## 2026-11-17
+
+1. **"In the mini player sidebar, in the list of takes add an edit
+   button besides the delete button to open the editor on that take,
+   including the backing track and all, as if it was opened from the
+   main capture."** Each of Cam's takes in the play-along sidebar (in
+   Cam, beside the Text view, beside a recording's file screen) now has
+   **Edit** (scissors, "Edit <name>") right before Delete. It opens the
+   video editor on that take as the take's own file screen does, from
+   the same code (`VideoEditScreen.open`): its edit, its song lined up,
+   its tab, the watermark as Premium says (Cam now gets the Premium
+   service to pass on). What played along pauses first. Only on the
+   capture's own takes where it isn't read only; not in the Premium
+   preview or a capture opened by its link; greyed when Delete is
+   (recording, saving, playing back). New string `camAlongEdit` in
+   English, Spanish and Portuguese. See
+   [Cam](cam.md#editing-a-take-from-the-sidebar).
+2. **"The watermark can be only https://tabs.cam (no 'Recorded by'), or
+   better yet, only tabs.cam."** The video editor's watermark now reads
+   just **"tabs.cam"**, on takes and on every other video, in every
+   language, in place of "Recorded by tabs.cam" / "Made with tabs.cam"
+   (and their Spanish and Portuguese). The text is one constant
+   (`watermarkText`); the strings `videoEditWatermarkTake` and
+   `videoEditWatermarkMade` are gone. Where it sits, its size and that
+   only Premium removes it are as before. See
+   [video edit](video-edit.md#layers).
+3. **"In the mini player loop selector when the user drags the control
+   show the highlighted yellow repeat section over the timeline played
+   (red)."** While either end of the play-along player's section range
+   is dragged, the section now shows on the progress bar above it: a
+   band in the primary colour (the range's yellow) from the section's
+   start to its end, drawn over the part played (red), following the
+   drag and gone when it's let go. Nothing else about the section
+   changed. See [Cam](cam.md#playing-along-with-a-file).
+4. **"Make '0' key always go back to beginning (including 2s header if
+   marked) in all views when the side bar mini player is open."** 0 now
+   works in every screen whose play-along sidebar shows (Cam, the Text
+   view, a file's screen) without a tap in the sidebar first: the
+   player's keys are read before the screen's
+   (`FocusManager.addEarlyKeyEventHandler`), not only while the sidebar
+   has the keyboard. And it goes back to the beginning with the
+   count-in: playing (or counting in) with the count-in on, the song
+   goes silent at its start (its section's), counts the 2 seconds in
+   again and plays; paused, it stays paused at the start; with the
+   count-in off it plays on from the start, as before. Still not while
+   typing in a field (in the Text view's editor 0 is a fret), under a
+   dialog or menu, or with Ctrl / ⌘ (the browser's zoom). See
+   [Cam](cam.md#keys-in-every-screen).
+5. **"'1' or spacebar toggles play / pause in the mini player, every
+   view as well."** The space bar, like 0, now pauses and plays in
+   every screen with the sidebar showing, with no tap in it first, and
+   in the Text view and on a file's screen **1** (top row or keypad)
+   does the same. In Cam, 1 is still Rec / Stop (which starts the song
+   too), as asked on 2026-11-11; there the space bar pauses and plays.
+   See [Cam](cam.md#keys-in-every-screen).
+6. **"Also make sure that recording and backing track aligns as well as
+   possible and marked on timings file so that when opened in editor it
+   can help to cut precisely."** A take's song is now **found in the
+   take's own sound** and lined up there, to the millisecond: the log
+   (the take's timings) had where Cam noted the song playing, a tenth
+   of a second or so off at worst; the microphone heard the song from
+   the speaker, so the take's sound is compared with the song's, on the
+   device (cross-correlation, phase weighted; `SongSync`), each of the
+   song's longer segments on its own, and what's found is **kept with
+   the take's log** as `sync` (the song, each segment's shift in ms and
+   how clearly it was found; "not found" too, as with headphones, where
+   the line-up stays as noted). Cam has each take measured once it's
+   saved (never while a take records); the editor measures one that
+   wasn't as it opens. New readers of a file's sound as samples: Web
+   Audio in the browser, `MediaCodec` on Android, `AVAssetReader` on
+   iOS (channel `tabcam/video_edit`, method `samples`). **In the
+   editor**, the Song lane then lies exactly over the song heard in the
+   take ("Lined up by its sound in the take"), and **the song's marks**
+   (where it starts and stops, clip by clip) are drawn on the ruler and
+   the Take lane: **a Take grip dragged near a mark snaps to it**, and
+   **Cut to the song** keeps the take from the song's first start to
+   its last stop. An edit kept before the song was found follows it,
+   unless the song was moved by hand. Two things found on the way, on
+   the web, fixed: the take's **lag is now counted from when the
+   recorder is told to start**, not from its `start` event (Chrome
+   sends it a tenth of a second late, so the tab and a song not found
+   by sound were that much early); and **a WebM's sound is placed where
+   the file has it start** (often some tens of ms in), in the
+   measurement and in Download's mix, which had the take's own sound
+   that much early against its picture. New strings
+   `videoEditSongLinedSound`, `videoEditCutToSong` and
+   `videoEditCutToSongTip` in English, Spanish and Portuguese. Checked
+   with made-up riffs, in Chrome with a video recorded as a take is,
+   and iOS's reader on a Mac; not yet on a phone (Android's reader is
+   compiled, not run). See
+   [Cam](cam.md#the-song-found-in-the-takes-sound) and
+   [video edit](video-edit.md#the-songs-marks).

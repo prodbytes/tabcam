@@ -455,5 +455,85 @@ void main() {
       final other = lined.copyWith(trackId: 'k2');
       expect(taken(other, take).song!.clips, [clip(1.2, 0, 4)]);
     });
+
+    test('found in the take\'s sound: where it was found, each clip its '
+        'own; an edit kept where the log had it follows, one moved by hand '
+        'stays', () {
+      final noted = log([seg(1000, 5000, 0), seg(8000, 12000, 4000)]);
+      final take = noted.withSync(
+        const TakeSync(
+          page: 'k1',
+          from: SyncFrom.sound,
+          ms: 60,
+          clips: [SyncClip(at: 1000, ms: 60), SyncClip(at: 8000, ms: 80)],
+        ),
+      );
+      final logged = LoggedSong.of(take)!;
+      expect(logged.measured, isTrue);
+      expect(LoggedSong.of(noted)!.measured, isFalse);
+      expect(logged.clips, [clip(1.26, 0, 4), clip(8.28, 4, 8)]);
+      final lined = withLoggedSong(null, logged, duration: s(20))!;
+      expect(lined.offset, s(1.26));
+      expect(logged.shiftOf(lined), Duration.zero);
+      expect(taken(lined, take).song!.clips, logged.clips);
+      // Kept before it was found, where the log alone had it: not moved,
+      // so it plays where it was found.
+      final before = withLoggedSong(
+        PageEdit(start: s(1), end: s(10)),
+        LoggedSong.of(noted),
+        duration: s(20),
+      )!;
+      expect(before.offset, s(0.2));
+      expect(logged.shiftOf(before), Duration.zero);
+      expect(taken(before, take).song!.clips, [
+        clip(0.26, 0, 4),
+        clip(7.28, 4, 5.72),
+      ]);
+      // Moved by hand before it was found: it stays where it was put.
+      final moved = before.copyWith(offset: before.offset + s(0.1));
+      expect(logged.shiftOf(moved), s(0.04));
+      expect(taken(moved, take).song!.clips.first, clip(0.3, 0, 4));
+      // Looked for and not found, or another song's: the log's line-up.
+      for (final sync in const [
+        TakeSync(page: 'k1', from: SyncFrom.none),
+        TakeSync(page: 'k2', from: SyncFrom.sound, ms: 90),
+      ]) {
+        final plain = LoggedSong.of(noted.withSync(sync))!;
+        expect(plain.measured, isFalse);
+        expect(plain.clips, [clip(1.2, 0, 4), clip(8.2, 4, 8)]);
+      }
+      // Found before the file starts: cut there, the song from further in.
+      final early = LoggedSong.of(
+        log([
+          seg(100, 5000, 0),
+        ]).withSync(const TakeSync(page: 'k1', from: SyncFrom.sound, ms: -400)),
+      )!;
+      expect(early.clips, [clip(0, 0.1, 4.9)]);
+    });
+
+    test('its marks: where it starts and stops in the take, as the edit '
+        'has it', () {
+      final take = log([seg(1000, 5000, 0), seg(8000, 12000, 4000)]);
+      final logged = LoggedSong.of(take)!;
+      final lined = withLoggedSong(null, logged, duration: s(20))!;
+      expect(logged.marksIn(lined, s(20)), [s(1.2), s(5.2), s(8.2), s(12.2)]);
+      // Trimmed: still the video's times. Moved: with it.
+      final trimmed = withLoggedSong(
+        PageEdit(start: s(2), end: s(10)),
+        logged,
+        duration: s(20),
+      )!;
+      expect(logged.marksIn(trimmed, s(20)), [s(1.2), s(5.2), s(8.2), s(12.2)]);
+      final later = lined.copyWith(offset: lined.offset + s(0.5));
+      expect(logged.marksIn(later, s(20)).first, s(1.7));
+      // None past the video's end, nor past the song's.
+      expect(logged.marksIn(lined, s(10)), [s(1.2), s(5.2), s(8.2)]);
+      expect(logged.marksIn(lined, s(20), songLength: s(6)), [
+        s(1.2),
+        s(5.2),
+        s(8.2),
+        s(10.2),
+      ]);
+    });
   });
 }

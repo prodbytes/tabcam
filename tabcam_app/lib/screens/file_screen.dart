@@ -245,15 +245,12 @@ class _FileScreenState extends State<FileScreen> {
   Future<void> _edit(CaptureEvent event, EventPage page) async {
     setState(() => _editing = true);
     try {
-      await Navigator.of(context).push<void>(
-        MaterialPageRoute(
-          builder: (_) => VideoEditScreen(
-            library: _library,
-            eventId: widget.eventId,
-            page: page,
-            ocr: widget.ocr,
-          ),
-        ),
+      await VideoEditScreen.open(
+        context,
+        library: _library,
+        eventId: widget.eventId,
+        page: page,
+        ocr: widget.ocr,
       );
     } finally {
       if (mounted) setState(() => _editing = false);
@@ -296,7 +293,8 @@ class _FileScreenState extends State<FileScreen> {
       page.isPdf || page.isImage || _inSidebar(event, page);
 
   /// The sidebar's files show Delete, as the capture's list does, all but
-  /// this screen's own (its app bar's Delete deletes it and goes back).
+  /// this screen's own (its app bar's Delete deletes it and goes back);
+  /// its takes show Edit, which opens the editor as this screen's does.
   Widget _beside(CaptureEvent event, EventPage page, Widget child) =>
       _withSidebar(event, page)
       ? PlayAlongBeside(
@@ -305,6 +303,7 @@ class _FileScreenState extends State<FileScreen> {
           canDelete: !_busy,
           keepId: page.id,
           run: _run,
+          onEdit: (take) => _edit(event, take),
           child: child,
         )
       : child;

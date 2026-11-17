@@ -599,7 +599,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camMicChoose => 'Microphone';
 
   @override
-  String get camMicLevel => 'Microphone level';
+  String get camMicLevel => 'Microphone level: tap to set the input volume';
+
+  @override
+  String get camMicGain => 'Input volume';
+
+  @override
+  String camMicGainDb(String db) {
+    return '$db dB';
+  }
+
+  @override
+  String get camMicGainReset => 'Reset';
 
   @override
   String get camMicHeading => 'Record from';
@@ -651,8 +662,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'No text tab yet: read the capture\'s tab to play along with it.';
 
   @override
-  String camTake(int number) {
-    return 'Take $number';
+  String camTake(String time) {
+    return 'Take $time';
   }
 
   @override
@@ -703,11 +714,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camAlongTakes => 'Takes';
 
   @override
+  String get camAlongToday => 'Today';
+
+  @override
+  String get camAlongYesterday => 'Yesterday';
+
+  @override
   String get camAlongPdfs => 'Follow a PDF';
 
   @override
   String camAlongDelete(String name) {
     return 'Delete $name';
+  }
+
+  @override
+  String camAlongEdit(String name) {
+    return 'Edit $name';
   }
 
   @override
@@ -1988,6 +2010,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditSongLined => 'Lined up as it played while you recorded';
 
   @override
+  String get videoEditSongLinedSound => 'Lined up by its sound in the take';
+
+  @override
+  String get videoEditCutToSong => 'Cut to the song';
+
+  @override
+  String get videoEditCutToSongTip =>
+      'Keep the take from where the song starts to where it stops';
+
+  @override
   String videoEditSongLinedLater(String time) {
     return 'Lined up as recorded, moved $time later';
   }
@@ -2140,12 +2172,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditLayerWatermark => 'Watermark';
 
   @override
-  String get videoEditWatermarkTake => 'Recorded by tabs.cam';
-
-  @override
-  String get videoEditWatermarkMade => 'Made with tabs.cam';
-
-  @override
   String videoEditWatermarkAbout(String text) {
     return '“$text”, small, at the bottom right';
   }
@@ -2159,6 +2185,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get videoEditFadesAbout =>
       'The video from and to black, both sounds with it';
+
+  @override
+  String get videoEditMaster => 'Master';
+
+  @override
+  String get videoEditMasterAbout => 'Both sounds together, up to 200%';
 
   @override
   String get videoEditFadesEdit => 'Change the fades';

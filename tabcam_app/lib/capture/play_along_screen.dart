@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
@@ -17,6 +18,7 @@ import '../metronome/metronome.dart';
 import '../recognition/necklines.dart';
 import '../screens/mono_font.dart';
 import '../screens/premium_card.dart';
+import '../screens/video_edit_screen.dart';
 import '../screens/video_page.dart';
 import 'auto_pass.dart';
 import 'backing_track.dart';
@@ -32,6 +34,7 @@ import 'take_log.dart';
 import 'take_h264.dart';
 import 'take_priority.dart';
 import 'take_recorder.dart';
+import 'take_syncer.dart';
 import 'take_sound.dart';
 import '../screens/messages.dart';
 
@@ -91,6 +94,35 @@ bool takePlaysHere(String mimeType) =>
 /// processing, at a high bitrate), set up when Cam opens rather than as
 /// the take starts; while it records, head gestures
 /// look less often, and cloud sync starts no pass.
+/// A take's name: "Take" and the time it started, [started], as hours and
+/// minutes ("Take 14:32", 24-hour); with the seconds ("Take 14:32:07")
+/// should a take of that day among [pages] have that name already, and a
+/// number after them should that one too ("Take 14:32:07 (2)"). The day
+/// isn't in the name: the sidebar lists the takes under their day.
+String takeName(
+  AppLocalizations l10n,
+  DateTime started,
+  Iterable<EventPage> pages,
+) {
+  final names = {
+    for (final p in pages)
+      if (timeOfId(p.id) case final made?
+          when DateUtils.isSameDay(made, started))
+        p.title,
+  };
+  String two(int n) => n.toString().padLeft(2, '0');
+  final minute = l10n.camTake('${two(started.hour)}:${two(started.minute)}');
+  if (!names.contains(minute)) return minute;
+  final second = l10n.camTake(
+    '${two(started.hour)}:${two(started.minute)}:${two(started.second)}',
+  );
+  var name = second;
+  for (var n = 2; names.contains(name); n++) {
+    name = '$second ($n)';
+  }
+  return name;
+}
+
 class PlayAlongScreen extends StatefulWidget {
   const PlayAlongScreen({
     super.key,
@@ -102,16 +134,27 @@ class PlayAlongScreen extends StatefulWidget {
     this.linkFrame = linkFrameFor,
     this.pdfView = pdfViewFor,
     this.gate,
+    this.ocr,
   });
 
   final Library library;
   final String eventId;
+
+  /// The time now, which names the takes ("Take 14:32"); tests set their
+  /// own.
+  @visibleForTesting
+  static DateTime Function() now = DateTime.now;
 
   /// Set for a user without Premium: the screen is a preview, greyed out
   /// under the Premium card ([PremiumGate]). No camera opens, no key or
   /// tap does anything, and the tab along the bottom is the capture's, or
   /// a sample where it has none.
   final ({CloudOcr ocr, String? email})? gate;
+
+  /// TabCam Premium, where the build has it, for the video editor a
+  /// take's Edit opens from the sidebar (its watermark, as from the file
+  /// screen).
+  final CloudOcr? ocr;
 
   /// The cameras there are; tests pass their own.
   final Future<List<CameraDescription>> Function() cameras;
@@ -168,6 +211,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   Duration _startCall = Duration.zero;
   Duration _startReturn = Duration.zero;
   Duration _clockZero = Duration.zero;
+
+  /// When the take recording now started (Rec pressed): its name's time.
+  DateTime _takeStarted = DateTime.now();
   Duration _stopCall = Duration.zero;
   Duration _stopReturn = Duration.zero;
 
@@ -245,6 +291,16 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   /// its id ([TakeMic.id]), kept in Cam's settings; null, the system's
   /// default. One not connected records from the default.
   String? _mic;
+
+  /// The input volume, set by tapping the level meter ([_gainMenu]), in
+  /// dB (0: as the microphone gives it), from -[maxGainDb] to
+  /// +[maxGainDb]; kept in Cam's settings.
+  int _gainDb = 0;
+
+  static const maxGainDb = 24;
+
+  /// [_gainDb] as a factor (1: as it comes).
+  double get _gain => math.pow(10, _gainDb / 20).toDouble();
 
   /// A microphone being opened from Rec's menu: Rec's menu waits.
   bool _micBusy = false;
@@ -327,6 +383,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       final map = jsonDecode(json);
       if (map is! Map) return;
       if (map['mic'] case final String mic when mic.isNotEmpty) _mic = mic;
+      if (map['gainDb'] case final num db when db.isFinite) {
+        _gainDb = db.round().clamp(-maxGainDb, maxGainDb);
+      }
       if (map['autoPass'] == false && mounted) {
         setState(() => _autoPassOn = false);
         _trackChanged();
@@ -345,12 +404,17 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     await _saveSettings();
   }
 
-  /// Keeps Cam's settings: Auto-pass, and the microphone chosen.
+  /// Keeps Cam's settings: Auto-pass, the microphone chosen and the input
+  /// volume.
   Future<void> _saveSettings() async {
     try {
       await widget.library.writeMeta(
         metaName,
-        jsonEncode({'autoPass': _autoPassOn, 'mic': ?_mic}),
+        jsonEncode({
+          'autoPass': _autoPassOn,
+          'mic': ?_mic,
+          if (_gainDb != 0) 'gainDb': _gainDb,
+        }),
       );
     } on Object catch (e) {
       debugPrint('TabCam: cam settings not saved: $e');
@@ -416,6 +480,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         if (!mounted) return;
         _ownSound = ready == TakeSoundReady.ok;
         _soundRefused = ready == TakeSoundReady.refused;
+        // The input volume set (the app's microphone keeps the last one).
+        if (_ownSound) await TakeSound.setGain(_gain);
+        if (!mounted) return;
       }
       // The front camera, else the first; one that won't open (another
       // app holds it, an infrared one) gives way to the next, and if none
@@ -519,6 +586,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       if (_mic case final mic?) await TakeAudio.choose(mic);
     }
     if (_recorder case final recorder?) {
+      _applyGain();
       unawaited(
         () async {
           await recorder.useMicrophone(_mic);
@@ -547,6 +615,78 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     if (_recorder case final recorder?) return recorder.peak;
     if (_ownSound) return TakeSound.peak;
     return null;
+  }
+
+  /// The input volume can be set (the level meter tapped): where the meter
+  /// shows, between takes (a take keeps the volume it started with).
+  bool get _canSetGain =>
+      _level != null && _canRec && !_recording && !_starting;
+
+  /// Takes record at the input volume set ([_gainDb]) from now on, and
+  /// the level meter shows it.
+  void _applyGain() {
+    if (_recorder case final recorder?) {
+      try {
+        recorder.setGain(_gain);
+      } on Object catch (e) {
+        debugPrint('TabCam: cam: input volume: $e');
+      }
+    }
+    if (_ownSound) unawaited(TakeSound.setGain(_gain));
+  }
+
+  /// [db] as the level meter's menu shows it: +6, 0, −6.
+  static String _dbText(int db) => switch (db) {
+    > 0 => '+$db',
+    < 0 => '\u2212${-db}',
+    _ => '0',
+  };
+
+  /// Where a menu opens by [anchor].
+  RelativeRect _menuPosition(BuildContext anchor) {
+    final box = anchor.findRenderObject()! as RenderBox;
+    final overlay = Overlay.of(anchor).context.findRenderObject()! as RenderBox;
+    return RelativeRect.fromRect(
+      Rect.fromPoints(
+        box.localToGlobal(Offset.zero, ancestor: overlay),
+        box.localToGlobal(box.size.bottomRight(Offset.zero), ancestor: overlay),
+      ),
+      Offset.zero & overlay.size,
+    );
+  }
+
+  /// The level meter's menu (the meter tapped, [anchor]): the input
+  /// volume, in dB, and a slider to set it, up louder, down quieter, from
+  /// -[maxGainDb] to +[maxGainDb] dB; Reset puts it back to 0 dB (as the
+  /// microphone gives it). It changes as the slider moves (the meter
+  /// shows it at once), and is kept in Cam's settings.
+  Future<void> _gainMenu(BuildContext anchor) async {
+    if (!_canSetGain) return;
+    final l10n = context.l10n;
+    final was = _gainDb;
+    await showMenu<void>(
+      context: context,
+      position: _menuPosition(anchor),
+      items: [
+        PopupMenuItem(enabled: false, height: 32, child: Text(l10n.camMicGain)),
+        _GainEntry(
+          db: _gainDb,
+          max: maxGainDb,
+          label: (db) => l10n.camMicGainDb(_dbText(db)),
+          reset: l10n.camMicGainReset,
+          onChanged: _setGainDb,
+        ),
+      ],
+    );
+    _focus.requestFocus();
+    if (mounted && _gainDb != was) unawaited(_saveSettings());
+  }
+
+  /// The input volume is [db] dB from now on.
+  void _setGainDb(int db) {
+    if (!mounted || db == _gainDb || !_canSetGain) return;
+    setState(() => _gainDb = db);
+    _applyGain();
   }
 
   /// Rec's menu can open: not while a take starts, records, is saved or
@@ -589,15 +729,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     final mics = await _microphones();
     if (!mounted || !anchor.mounted || !_canChooseMic) return;
     final l10n = context.l10n;
-    final box = anchor.findRenderObject()! as RenderBox;
-    final overlay = Overlay.of(anchor).context.findRenderObject()! as RenderBox;
-    final position = RelativeRect.fromRect(
-      Rect.fromPoints(
-        box.localToGlobal(Offset.zero, ancestor: overlay),
-        box.localToGlobal(box.size.bottomRight(Offset.zero), ancestor: overlay),
-      ),
-      Offset.zero & overlay.size,
-    );
+    final position = _menuPosition(anchor);
     final chosen = mics.any((m) => m.id == _mic) ? _mic : null;
     final picked = await showMenu<({String? id})>(
       context: context,
@@ -822,16 +954,8 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       if (event is KeyDownEvent && _canRec) unawaited(_nextTake());
       return KeyEventResult.handled;
     }
-    // Space: the backing track's play / pause, while its sidebar shows.
-    if (key == LogicalKeyboardKey.space && _along.open && _track.page != null) {
-      if (event is KeyDownEvent) unawaited(_track.toggle());
-      return KeyEventResult.handled;
-    }
-    // 0: back to its start (its section's).
-    if (PlayAlongKeys.isRestart(event) && _along.open && _track.page != null) {
-      if (event is KeyDownEvent) unawaited(_track.restart());
-      return KeyEventResult.handled;
-    }
+    // Space and 0, while the sidebar shows, are the backing track's
+    // (play / pause, back to its start): [PlayAlongKeys] gets them first.
     // ← and →: the backing track [skipBy] back and on, as « and » (held,
     // again and again); with no track showing, they turn the tab.
     if (_skips[key] case final by? when _along.open && _track.page != null) {
@@ -981,6 +1105,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       return;
     }
     _clockZero = _span.elapsed;
+    _takeStarted = PlayAlongScreen.now();
     _recorderLag = _byRecorder ? _recorder?.msSinceStart() : null;
     _clock
       ..reset()
@@ -1002,6 +1127,17 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         !_track.countingIn) {
       unawaited(_track.toggle());
     }
+  }
+
+  /// The takes saved with a song noted, not measured yet: each one's song
+  /// is found in its sound and kept with its log ([TakeSyncer]).
+  final _unsynced = <(String, String)>[];
+
+  void _syncTakes() {
+    for (final (event, page) in _unsynced) {
+      unawaited(TakeSyncer.sync(widget.library, event, page));
+    }
+    _unsynced.clear();
   }
 
   /// Notes that the recording is told to start now ([_span] from 0).
@@ -1176,11 +1312,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       // Cam opens on the user's own copy of a capture shared with them
       // (the event screen makes it), so takes are always theirs; added to a
       // shared one, the take would go to their copy ([Library.copyToAdd]).
-      final names = {for (final p in event.pages) p.title};
-      var n = 1;
-      while (names.contains(l10n.camTake(n))) {
-        n++;
-      }
+      final name = takeName(l10n, _takeStarted, event.pages);
       final updated = await library.addMedia(
         event,
         [media],
@@ -1188,7 +1320,6 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         takeLog: log,
       );
       final page = updated.pages.last;
-      final name = l10n.camTake(n);
       await library.renamePage(updated.id, page.id, name);
       // Played along later, the take turns the tab as it turned in it
       // while auto-pass was on (off all along: it has no passes).
@@ -1201,6 +1332,10 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       if (tab != null) {
         _recordedPlaces = (page.id, TakeTab.placesOf(_lines, marks));
       }
+      // Where its song really is, from its own sound: measured once no
+      // take records (not between takes the / key runs on).
+      if (log.linedSong.isNotEmpty) _unsynced.add((updated.id, page.id));
+      if (!_nextTaking) _syncTakes();
       if (mounted) _snack(l10n.camSaved(name));
     } on Object catch (e, stack) {
       debugPrint('TabCam: cam: $e\n$stack');
@@ -1385,6 +1520,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   @override
   void dispose() {
     TakePriority.recording.value = false;
+    _syncTakes();
     if (widget.gate == null) {
       unawaited(TakeAudio.release());
       unawaited(TakeSound.release());
@@ -1546,11 +1682,24 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       linkFrame: widget.linkFrame,
       pdfView: widget.pdfView,
       onUse: _focus.requestFocus,
+      // 1 is Rec / Stop here; a preview has no keys.
+      oneToggles: false,
+      keys: gate == null,
       // Not in a preview, nor while a take records, saves (or is saved
       // for the next, until it starts) or plays back.
       deletes: gate == null,
       canDelete:
           !_recording && !_saving && !_nextTaking && !playing && !opening,
+      // A take's Edit: the editor over Cam, as the file screen opens it.
+      onEdit: gate == null
+          ? (take) => VideoEditScreen.open(
+              context,
+              library: widget.library,
+              eventId: widget.eventId,
+              page: take,
+              ocr: widget.ocr,
+            )
+          : null,
       child: _main(controller, playing),
     );
     return PopScope(
@@ -1693,10 +1842,25 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
                         )
                       : null,
                   meter: switch (_level) {
-                    final read? => LevelMeter(
-                      key: const Key('cam-rec-level'),
-                      read: read,
-                      tooltip: l10n.camMicLevel,
+                    // Tapped, the input volume's menu.
+                    final read? => Builder(
+                      builder: (anchor) => InkResponse(
+                        key: const Key('cam-rec-gain'),
+                        radius: 18,
+                        onTap: _canSetGain ? () => _gainMenu(anchor) : null,
+                        child: Padding(
+                          // As tall as Rec, and the arrow's width.
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          child: LevelMeter(
+                            key: const Key('cam-rec-level'),
+                            read: read,
+                            tooltip: l10n.camMicLevel,
+                          ),
+                        ),
+                      ),
                     ),
                     null => null,
                   },
@@ -1745,6 +1909,81 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       ],
     );
   }
+}
+
+/// The input volume in the level meter's menu ([_PlayAlongScreenState
+/// ._gainMenu]): what it is ([label] of the dB), over a slider from
+/// -[max] to +[max] dB, up louder, and [reset] to 0 dB. Each change goes
+/// to [onChanged] as the slider moves.
+class _GainEntry extends PopupMenuEntry<Never> {
+  const _GainEntry({
+    required this.db,
+    required this.max,
+    required this.label,
+    required this.reset,
+    required this.onChanged,
+  });
+
+  final int db;
+  final int max;
+  final String Function(int db) label;
+  final String reset;
+  final ValueChanged<int> onChanged;
+
+  @override
+  double get height => 240;
+
+  @override
+  bool represents(Never? value) => false;
+
+  @override
+  State<_GainEntry> createState() => _GainEntryState();
+}
+
+class _GainEntryState extends State<_GainEntry> {
+  late int _db = widget.db;
+
+  void _set(int db) {
+    if (db == _db) return;
+    setState(() => _db = db);
+    widget.onChanged(db);
+  }
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 12),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          widget.label(_db),
+          key: const Key('cam-gain-value'),
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        SizedBox(
+          height: 160,
+          // Upright: up, louder.
+          child: RotatedBox(
+            quarterTurns: 3,
+            child: Slider(
+              key: const Key('cam-gain'),
+              value: _db.toDouble(),
+              min: -widget.max.toDouble(),
+              max: widget.max.toDouble(),
+              divisions: widget.max * 2,
+              semanticFormatterCallback: (v) => widget.label(v.round()),
+              onChanged: (v) => _set(v.round()),
+            ),
+          ),
+        ),
+        TextButton(
+          key: const Key('cam-gain-reset'),
+          onPressed: _db == 0 ? null : () => _set(0),
+          child: Text(widget.reset),
+        ),
+      ],
+    ),
+  );
 }
 
 /// Rec, Play, Tab or Auto-pass: an icon over its label, on black; Rec
