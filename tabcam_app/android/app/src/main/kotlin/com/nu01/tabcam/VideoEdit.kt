@@ -62,6 +62,8 @@ import java.util.concurrent.Executors
  *   (0 to 1) every quarter of a second while it renders.
  *
  * Replies with the output path, or the error `failed`.
+ *
+ * Method `samples` reads a part of a file's sound as samples ([SoundSamples]).
  */
 @UnstableApi
 class VideoEdit(context: Context, messenger: BinaryMessenger) :
@@ -72,7 +74,30 @@ class VideoEdit(context: Context, messenger: BinaryMessenger) :
     }
     private val renderer = VideoRenderer(context)
 
+    // A file's sound read as samples (`samples`), off the main thread.
+    private val reader = Executors.newSingleThreadExecutor()
+    private val main = Handler(Looper.getMainLooper())
+
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
+        if (call.method == "samples") {
+            val path = call.argument<String>("path")
+            val from = call.argument<Number>("fromMs")?.toLong()
+            val length = call.argument<Number>("lengthMs")?.toLong()
+            val rate = call.argument<Number>("rate")?.toInt()
+            if (path == null || from == null || length == null || rate == null) {
+                result.error("failed", "samples needs path, fromMs, lengthMs and rate", null)
+                return
+            }
+            reader.execute {
+                try {
+                    val samples = SoundSamples.read(path, from, length, rate)
+                    main.post { result.success(samples) }
+                } catch (e: Exception) {
+                    main.post { result.error("failed", e.message ?: e.toString(), null) }
+                }
+            }
+            return
+        }
         if (call.method != "render") {
             result.notImplemented()
             return
@@ -97,6 +122,7 @@ class VideoEdit(context: Context, messenger: BinaryMessenger) :
     fun dispose() {
         channel.setMethodCallHandler(null)
         renderer.dispose()
+        reader.shutdown()
     }
 
     companion object {

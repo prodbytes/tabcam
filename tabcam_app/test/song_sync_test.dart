@@ -1,0 +1,517 @@
+import 'dart:io';
+import 'dart:math';
+import 'dart:typed_data';
+
+import 'package:cross_file/cross_file.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:tabcam_app/capture/media.dart';
+import 'package:tabcam_app/capture/song_sync.dart';
+import 'package:tabcam_app/capture/sound_reader.dart';
+import 'package:tabcam_app/capture/take_log.dart';
+import 'package:tabcam_app/capture/take_priority.dart';
+import 'package:tabcam_app/capture/take_syncer.dart';
+import 'package:tabcam_app/library/capture_event.dart';
+import 'package:tabcam_app/library/event_store_io.dart';
+import 'package:tabcam_app/library/library.dart';
+
+const rate = SongSync.rate;
+
+/// A made-up riff, [seconds] long: plucked notes (a few harmonics each,
+/// dying away) on a beat, with a noise burst on every other one, from
+/// [seed].
+Float32List riff(double seconds, int seed, {double bpm = 96}) {
+  final random = Random(seed);
+  final out = Float32List((seconds * rate).round());
+  const scale = [110.0, 123.5, 130.8, 146.8, 164.8, 196.0, 220.0, 246.9];
+  final beat = (60 / bpm / 2 * rate).round();
+  for (var start = 0, n = 0; start < out.length; start += beat, n++) {
+    if (random.nextDouble() < 0.2) continue;
+    final f = scale[random.nextInt(scale.length)] * (random.nextBool() ? 1 : 2);
+    final length = beat * (1 + random.nextInt(3));
+    for (var i = 0; i < length && start + i < out.length; i++) {
+      final t = i / rate;
+      final env = exp(-3 * t);
+      out[start + i] +=
+          0.3 *
+          env *
+          (sin(2 * pi * f * t) +
+              0.5 * sin(2 * pi * 2 * f * t) +
+              0.25 * sin(2 * pi * 3 * f * t));
+    }
+    if (n.isOdd) {
+      for (var i = 0; i < rate ~/ 20 && start + i < out.length; i++) {
+        out[start + i] +=
+            0.2 * (random.nextDouble() * 2 - 1) * exp(-60 * i / rate);
+      }
+    }
+  }
+  return out;
+}
+
+/// [song] as a microphone in a room hears it from a speaker: [delay]
+/// samples late, with a few echoes after, at [level].
+Float32List heardFrom(
+  Float32List song, {
+  required int length,
+  required double delay,
+  double level = 0.3,
+}) {
+  final out = Float32List(length);
+  // The direct sound, then the room's echoes: (samples later, level).
+  const echoes = [(0, 1.0), (37, -0.5), (113, 0.35), (290, 0.25), (731, -0.15)];
+  final whole = delay.floor();
+  final part = delay - whole;
+  for (final (later, gain) in echoes) {
+    for (var i = 0; i < song.length; i++) {
+      final at = i + whole + later;
+      if (at < 0 || at + 1 >= length) continue;
+      // Between two samples: shared by both.
+      out[at] += song[i] * gain * level * (1 - part);
+      out[at + 1] += song[i] * gain * level * part;
+    }
+  }
+  return out;
+}
+
+Float32List mixed(List<Float32List> sounds) {
+  final out = Float32List(sounds.first.length);
+  for (final s in sounds) {
+    for (var i = 0; i < out.length && i < s.length; i++) {
+      out[i] += s[i];
+    }
+  }
+  return out;
+}
+
+Float32List hiss(int length, int seed, double level) {
+  final random = Random(seed);
+  return Float32List.fromList([
+    for (var i = 0; i < length; i++) (random.nextDouble() * 2 - 1) * level,
+  ]);
+}
+
+/// Files that are samples in memory, by path (or its end: a page's file
+/// in a library is `…/<page>.<extension>`), or, for a file in memory
+/// (which has no path), by its type.
+class FakeReader implements SoundReader {
+  FakeReader(this.files);
+
+  final Map<String, Float32List> files;
+  final asked = <(String, Duration, Duration)>[];
+  bool closed = false;
+
+  @override
+  Future<Float32List?> samples(
+    XFile file, {
+    required Duration from,
+    required Duration length,
+    required int rate,
+  }) async {
+    asked.add((file.path, from, length));
+    final all =
+        files[file.path] ??
+        files.entries
+            .where((e) => file.path.endsWith(e.key))
+            .firstOrNull
+            ?.value ??
+        files[file.mimeType];
+    if (all == null) return null;
+    final start = from.inMicroseconds * rate ~/ 1000000;
+    final end = min(
+      all.length,
+      start + length.inMicroseconds * rate ~/ 1000000,
+    );
+    if (end <= start) return null;
+    return Float32List.sublistView(all, start, end);
+  }
+
+  @override
+  void close() => closed = true;
+}
+
+void main() {
+  setUp(() => SongSync.inline = true);
+  tearDown(() => SongSync.inline = false);
+
+  test('the transform, and back again', () {
+    final re = Float64List.fromList([1, 2, 3, 4, 0, -1, -2, 5]);
+    final im = Float64List(8);
+    final was = [...re];
+    SongSync.fft(re, im);
+    // Its first term is the sum.
+    expect(re[0], closeTo(12, 1e-9));
+    SongSync.fft(re, im, inverse: true);
+    for (var i = 0; i < 8; i++) {
+      expect(re[i] / 8, closeTo(was[i], 1e-9));
+      expect(im[i] / 8, closeTo(0, 1e-9));
+    }
+  });
+
+  group('a song found in a take', () {
+    final song = riff(12, 1);
+    const reach = 600 * rate ~/ 1000;
+
+    SoundOffset? found(double delay, {double level = 0.3, int guitar = 2}) {
+      final length = song.length + 2 * reach;
+      final heard = mixed([
+        heardFrom(song, length: length, delay: reach + delay, level: level),
+        if (guitar > 0) riff(length / rate, guitar, bpm: 103),
+        hiss(length, 9, 0.01),
+      ]);
+      return SongSync.offsetOf(heard, song, expected: reach, reach: reach);
+    }
+
+    test('where it is, to a fraction of a millisecond', () {
+      for (final delay in [0.0, 37.0, -212.0, 1900.5, -3333.25]) {
+        final at = found(delay)!;
+        expect(at.samples, closeTo(delay, 0.5), reason: '$delay');
+        expect(at.score, greaterThan(SongSync.clear * 2), reason: '$delay');
+      }
+    });
+
+    test('quiet under a loud guitar', () {
+      final at = found(480, level: 0.12)!;
+      expect(at.samples, closeTo(480, 1));
+      expect(at.score, greaterThan(SongSync.clear));
+      expect(at.lead, greaterThan(SongSync.ahead));
+    });
+
+    test('not there (headphones): no clear match', () {
+      for (final guitar in [2, 3, 4, 5, 6]) {
+        final at = found(0, level: 0, guitar: guitar);
+        expect(
+          at == null || at.score < SongSync.clear * 0.75,
+          isTrue,
+          reason: '$guitar: $at',
+        );
+      }
+    });
+
+    test('further out than it\'s looked for: no clear match', () {
+      // 0.7 s late, 0.6 s looked through.
+      final at = found(5600);
+      expect(at == null || at.score < SongSync.clear * 0.75, isTrue);
+      // Right at the edge of it: the top may be further out, so none.
+      expect(
+        SongSync.offsetOf(
+          heardFrom(song, length: song.length + 2 * reach, delay: 2.0 * reach),
+          song,
+          expected: reach,
+          reach: reach,
+        ),
+        isNull,
+      );
+    });
+
+    test('silence, or too little, is none', () {
+      expect(
+        SongSync.offsetOf(
+          Float32List(song.length + 2 * reach),
+          song,
+          expected: reach,
+          reach: reach,
+        ),
+        isNull,
+      );
+      expect(
+        SongSync.offsetOf(
+          Float32List(100),
+          Float32List(100),
+          expected: 0,
+          reach: reach,
+        ),
+        isNull,
+      );
+    });
+  });
+
+  group('a take measured', () {
+    // A take 40 s long; the song (30 s) played from 5 s on the take's
+    // clock, the file 200 ms ahead of the clock (the lag), and the
+    // speaker 83 ms late on top.
+    final song = riff(30, 11);
+    const lag = 200;
+    Float32List take({int late = 83, double level = 0.3}) => mixed([
+      heardFrom(
+        song,
+        length: 40 * rate,
+        delay: (5000 + lag + late) * rate / 1000,
+        level: level,
+      ),
+      riff(40, 12, bpm: 103),
+      hiss(40 * rate, 13, 0.01),
+    ]);
+    const log = TakeLog(
+      burned: false,
+      lagMs: lag,
+      song: [SongSegment(at: 5000, to: 35000, page: 'song', from: 0)],
+    );
+
+    test('the shift, from the middle of the segment', () async {
+      final reader = FakeReader({'take': take(), 'song': song});
+      final sync = await SongSync.measure(
+        log: log,
+        take: XFile('take'),
+        song: XFile('song'),
+        reader: reader,
+      );
+      expect(sync!.found, isTrue);
+      expect(sync.page, 'song');
+      expect(sync.ms, 83);
+      expect(sync.clips.single.at, 5000);
+      expect(sync.clips.single.ms, 83);
+      expect(sync.clips.single.score, greaterThan(SongSync.clear));
+      // 12 s from the segment's middle: 9 s into it, 14.2 s into the
+      // file, and 0.6 s more of the take either side.
+      expect(reader.asked, [
+        (
+          'take',
+          const Duration(milliseconds: 13600),
+          const Duration(milliseconds: 13200),
+        ),
+        ('song', const Duration(seconds: 9), const Duration(seconds: 12)),
+      ]);
+      // The segment then starts where it's heard.
+      expect(log.withSync(sync).songFileMs(log.song.single), 5283);
+      expect(
+        log.withSync(sync).songFileMs(log.song.single, synced: false),
+        5200,
+      );
+    });
+
+    test('earlier than noted', () async {
+      final sync = await SongSync.measure(
+        log: log,
+        take: XFile('take'),
+        song: XFile('song'),
+        reader: FakeReader({'take': take(late: -141), 'song': song}),
+      );
+      expect(sync!.ms, -141);
+    });
+
+    test('not heard in the take: said so, and no shift', () async {
+      final sync = await SongSync.measure(
+        log: log,
+        take: XFile('take'),
+        song: XFile('song'),
+        reader: FakeReader({'take': take(level: 0), 'song': song}),
+      );
+      expect(sync, const TakeSync(page: 'song', from: SyncFrom.none));
+      expect(log.withSync(sync!).songFileMs(log.song.single), 5200);
+    });
+
+    test('a file that can\'t be read: not told', () async {
+      final sync = await SongSync.measure(
+        log: log,
+        take: XFile('take'),
+        song: XFile('song'),
+        reader: FakeReader({'song': song}),
+      );
+      expect(sync, isNull);
+    });
+
+    test('each segment its own, short ones the song\'s', () async {
+      // Paused and played on: two segments, the second 20 ms later than
+      // the first; a third too short to measure.
+      const paused = TakeLog(
+        burned: false,
+        lagMs: lag,
+        song: [
+          SongSegment(at: 2000, to: 12000, page: 'song', from: 0),
+          SongSegment(at: 14000, to: 26000, page: 'song', from: 10000),
+          SongSegment(at: 27000, to: 28500, page: 'song', from: 22000),
+        ],
+      );
+      Float32List part(int from, int to) =>
+          Float32List.sublistView(song, from * rate ~/ 1000, to * rate ~/ 1000);
+      Float32List placed(Float32List sound, int at) {
+        final out = Float32List(40 * rate);
+        final start = at * rate ~/ 1000;
+        for (var i = 0; i < sound.length && start + i < out.length; i++) {
+          out[start + i] = sound[i];
+        }
+        return out;
+      }
+
+      final heard = mixed([
+        heardFrom(
+          placed(part(0, 10000), 2000 + lag),
+          length: 40 * rate,
+          delay: 50 * rate / 1000,
+        ),
+        heardFrom(
+          placed(part(10000, 22000), 14000 + lag),
+          length: 40 * rate,
+          delay: 70 * rate / 1000,
+        ),
+        riff(40, 12, bpm: 103),
+      ]);
+      final sync = await SongSync.measure(
+        log: paused,
+        take: XFile('take'),
+        song: XFile('song'),
+        reader: FakeReader({'take': heard, 'song': song}),
+      );
+      expect(
+        [for (final c in sync!.clips) (c.at, c.ms)],
+        [(2000, 50), (14000, 70)],
+      );
+      expect(sync.ms, 50);
+      final synced = paused.withSync(sync);
+      expect(
+        [for (final s in paused.song) synced.songFileMs(s)],
+        [2250, 14270, 27250],
+      );
+    });
+
+    test('no song noted: nothing to measure', () async {
+      final reader = FakeReader({'take': take(), 'song': song});
+      final sync = await SongSync.measure(
+        log: const TakeLog(burned: false),
+        take: XFile('take'),
+        song: XFile('song'),
+        reader: reader,
+      );
+      expect(sync, isNull);
+      expect(reader.asked, isEmpty);
+    });
+  });
+  group('a take in the library (TakeSyncer)', () {
+    late Directory root;
+    late Library library;
+    late FakeReader reader;
+    var opened = 0;
+    final song = riff(30, 11);
+
+    setUp(() async {
+      root = await Directory.systemTemp.createTemp('tabcam');
+      library = Library(PlatformEventStore(root));
+      await library.load();
+      opened = 0;
+      TakeSyncer.reset();
+      SoundReader.opener = () {
+        opened++;
+        return reader;
+      };
+    });
+    tearDown(() async {
+      SoundReader.opener = null;
+      TakePriority.recording.value = false;
+      await root.delete(recursive: true);
+    });
+
+    /// A capture with a song and a take that noted it from 5 s on its
+    /// clock (the lag 200 ms), heard [late] ms after that in its sound.
+    Future<(String, EventPage, EventPage)> capture({int late = 83}) async {
+      var event = await library.create(const []);
+      event = await library.addMedia(event, [
+        Media(
+          XFile.fromData(Uint8List.fromList([1, 2]), name: 'song.m4a'),
+          PageKind.audio,
+          'm4a',
+        ),
+      ]);
+      final songPage = event.pages.last;
+      event = await library.addMedia(
+        event,
+        [
+          Media(
+            XFile.fromData(Uint8List.fromList([3, 4]), name: 'take.mp4'),
+            PageKind.video,
+            'mp4',
+          ),
+        ],
+        take: true,
+        takeLog: TakeLog(
+          burned: false,
+          lagMs: 200,
+          song: [SongSegment(at: 5000, to: 35000, page: songPage.id, from: 0)],
+        ),
+      );
+      final take = event.pages.last;
+      reader = FakeReader({
+        take.fileName: mixed([
+          heardFrom(
+            song,
+            length: 40 * rate,
+            delay: (5200 + late) * rate / 1000,
+          ),
+          riff(40, 12, bpm: 103),
+        ]),
+        songPage.fileName: song,
+      });
+      return (event.id, take, songPage);
+    }
+
+    test('is measured once, and what\'s found kept with its log', () async {
+      final (id, take, songPage) = await capture();
+      final log = await TakeSyncer.sync(library, id, take.id);
+      expect(log!.sync!.found, isTrue);
+      expect(log.sync!.page, songPage.id);
+      expect(log.sync!.ms, 83);
+      expect(library.byId(id)!.pages.last.takeLog, log);
+      expect(reader.closed, isTrue);
+      // Again: as it is, nothing read.
+      reader.asked.clear();
+      expect(await TakeSyncer.sync(library, id, take.id), log);
+      expect(reader.asked, isEmpty);
+      expect(opened, 1);
+      // Kept through a restart.
+      final reopened = Library(PlatformEventStore(root));
+      await reopened.load();
+      expect(reopened.byId(id)!.pages.last.takeLog!.sync!.ms, 83);
+    });
+
+    test('asked twice at once: measured once', () async {
+      final (id, take, _) = await capture();
+      final both = await Future.wait([
+        TakeSyncer.sync(library, id, take.id),
+        TakeSyncer.sync(library, id, take.id),
+      ]);
+      expect(both.first!.sync!.ms, 83);
+      expect(both.last, both.first);
+      expect(opened, 1);
+    });
+
+    test('waits while a take records', () async {
+      final (id, take, _) = await capture();
+      TakePriority.recording.value = true;
+      var done = false;
+      final syncing = TakeSyncer.sync(
+        library,
+        id,
+        take.id,
+      ).whenComplete(() => done = true);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(done, isFalse);
+      expect(reader.asked, isEmpty);
+      TakePriority.recording.value = false;
+      expect((await syncing)!.sync!.ms, 83);
+    });
+
+    test(
+      'files that can\'t be read here: not told, asked again later',
+      () async {
+        final (id, take, _) = await capture();
+        final sounds = {...reader.files};
+        reader.files.clear();
+        expect((await TakeSyncer.sync(library, id, take.id))!.sync, isNull);
+        expect(library.byId(id)!.pages.last.takeLog!.sync, isNull);
+        reader.files.addAll(sounds);
+        expect((await TakeSyncer.sync(library, id, take.id))!.sync!.ms, 83);
+      },
+    );
+
+    test('no reader here, the song deleted, or not a take: nothing', () async {
+      final (id, take, songPage) = await capture();
+      SoundReader.opener = () => null;
+      expect((await TakeSyncer.sync(library, id, take.id))!.sync, isNull);
+      SoundReader.opener = () => reader;
+      expect(await TakeSyncer.sync(library, id, songPage.id), isNull);
+      expect(await TakeSyncer.sync(library, 'gone', take.id), isNull);
+      await library.deletePage(library.byId(id)!, songPage);
+      expect((await TakeSyncer.sync(library, id, take.id))!.sync, isNull);
+      expect(reader.asked, isEmpty);
+    });
+  });
+}

@@ -3821,3 +3821,40 @@ spec.
    does the same. In Cam, 1 is still Rec / Stop (which starts the song
    too), as asked on 2026-11-11; there the space bar pauses and plays.
    See [Cam](cam.md#keys-in-every-screen).
+6. **"Also make sure that recording and backing track aligns as well as
+   possible and marked on timings file so that when opened in editor it
+   can help to cut precisely."** A take's song is now **found in the
+   take's own sound** and lined up there, to the millisecond: the log
+   (the take's timings) had where Cam noted the song playing, a tenth
+   of a second or so off at worst; the microphone heard the song from
+   the speaker, so the take's sound is compared with the song's, on the
+   device (cross-correlation, phase weighted; `SongSync`), each of the
+   song's longer segments on its own, and what's found is **kept with
+   the take's log** as `sync` (the song, each segment's shift in ms and
+   how clearly it was found; "not found" too, as with headphones, where
+   the line-up stays as noted). Cam has each take measured once it's
+   saved (never while a take records); the editor measures one that
+   wasn't as it opens. New readers of a file's sound as samples: Web
+   Audio in the browser, `MediaCodec` on Android, `AVAssetReader` on
+   iOS (channel `tabcam/video_edit`, method `samples`). **In the
+   editor**, the Song lane then lies exactly over the song heard in the
+   take ("Lined up by its sound in the take"), and **the song's marks**
+   (where it starts and stops, clip by clip) are drawn on the ruler and
+   the Take lane: **a Take grip dragged near a mark snaps to it**, and
+   **Cut to the song** keeps the take from the song's first start to
+   its last stop. An edit kept before the song was found follows it,
+   unless the song was moved by hand. Two things found on the way, on
+   the web, fixed: the take's **lag is now counted from when the
+   recorder is told to start**, not from its `start` event (Chrome
+   sends it a tenth of a second late, so the tab and a song not found
+   by sound were that much early); and **a WebM's sound is placed where
+   the file has it start** (often some tens of ms in), in the
+   measurement and in Download's mix, which had the take's own sound
+   that much early against its picture. New strings
+   `videoEditSongLinedSound`, `videoEditCutToSong` and
+   `videoEditCutToSongTip` in English, Spanish and Portuguese. Checked
+   with made-up riffs, in Chrome with a video recorded as a take is,
+   and iOS's reader on a Mac; not yet on a phone (Android's reader is
+   compiled, not run). See
+   [Cam](cam.md#the-song-found-in-the-takes-sound) and
+   [video edit](video-edit.md#the-songs-marks).

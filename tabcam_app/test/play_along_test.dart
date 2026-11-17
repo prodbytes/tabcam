@@ -21,9 +21,11 @@ import 'package:tabcam_app/capture/camera_list.dart';
 import 'package:tabcam_app/capture/play_along_screen.dart';
 import 'package:tabcam_app/capture/play_along_sidebar.dart';
 import 'package:tabcam_app/capture/auto_pass.dart';
+import 'package:tabcam_app/capture/sound_reader.dart';
 import 'package:tabcam_app/capture/take_log.dart';
 import 'package:tabcam_app/capture/take_h264.dart';
 import 'package:tabcam_app/capture/take_priority.dart';
+import 'package:tabcam_app/capture/take_syncer.dart';
 import 'package:tabcam_app/capture/take_recorder.dart';
 import 'package:tabcam_app/capture/take_sound.dart';
 import 'package:tabcam_app/dictionary/dictionary_sidebar.dart';
@@ -3017,15 +3019,26 @@ B|--5--8--|
     );
     await frames(tester);
     video.position = Duration.zero;
+    // Each take saved with a song noted has it looked for in its sound
+    // (a reader is opened for it), once the take is saved.
+    var readers = 0;
+    TakeSyncer.reset();
+    SoundReader.opener = () {
+      readers++;
+      return null;
+    };
+    addTearDown(() => SoundReader.opener = null);
     // Loaded in the frame, not playing: Rec plays it.
     expect(video.playing, isEmpty);
     await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     expect(video.playing, hasLength(1));
+    expect(readers, 0);
     // The take's Stop leaves it playing; Rec again doesn't pause it.
     await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
     expect(video.playing, hasLength(1));
+    await until(tester, () => readers == 1);
     // The take's log notes the song as it played, from its start, so the
     // editor lines it up by itself.
     final riff = library
@@ -3056,8 +3069,10 @@ B|--5--8--|
     expect(video.playing, isEmpty);
     await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
-    // No song played along: none noted.
+    // No song played along: none noted, and none looked for.
     expect(library.byId(id)!.pages.last.takeLog!.song, isEmpty);
+    await frames(tester);
+    expect(readers, 2);
 
     // With it showing again, 1 starts a take and the song, as Rec does.
     await tester.tap(find.byKey(const Key('cam-along')));
