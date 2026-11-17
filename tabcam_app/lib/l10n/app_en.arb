@@ -2477,7 +2477,7 @@
   "@dictionaryHint": {
     "description": "Dictionary: the search field's hint"
   },
-  "dictionaryIntro": "Type a chord (C, Am7, F#m7b5, G/B) or a scale (A minor pentatonic, D dorian, C major scale) to see it on the guitar. Anything else is searched on YouTube.",
+  "dictionaryIntro": "Type a chord (C, Am7, F#m7b5, G/B) or a scale (A minor pentatonic, D dorian, C major scale) to see it on the guitar. Anything else is searched on YouTube and Cifra Club.",
   "@dictionaryIntro": {
     "description": "Dictionary: what it does, under the empty field"
   },
@@ -2521,6 +2521,26 @@
   "dictionaryYouTubeOpen": "Open on YouTube",
   "@dictionaryYouTubeOpen": {
     "description": "Dictionary: tooltip of a YouTube result, which opens it in a new tab"
+  },
+  "dictionaryCifraClub": "Tabs on Cifra Club",
+  "@dictionaryCifraClub": {
+    "description": "Dictionary: heading of Cifra Club's results (tabs of the song searched), under YouTube's videos"
+  },
+  "dictionaryCifraClubSearching": "Searching Cifra Club…",
+  "@dictionaryCifraClubSearching": {
+    "description": "Dictionary: Cifra Club's results are on their way"
+  },
+  "dictionaryCifraClubNone": "Cifra Club found no tabs.",
+  "@dictionaryCifraClubNone": {
+    "description": "Dictionary: the Cifra Club search found nothing"
+  },
+  "dictionaryCifraClubFailed": "Couldn't load Cifra Club's results.",
+  "@dictionaryCifraClubFailed": {
+    "description": "Dictionary: the Cifra Club search failed (offline, the site's index down)"
+  },
+  "dictionaryCifraClubOpen": "Open on Cifra Club",
+  "@dictionaryCifraClubOpen": {
+    "description": "Dictionary: tooltip of a Cifra Club result, which opens its page in a new tab"
   },
   "dictionaryFret": "{fret}fr",
   "@dictionaryFret": {

@@ -3067,7 +3067,7 @@ abstract class AppLocalizations {
   /// Dictionary: what it does, under the empty field
   ///
   /// In en, this message translates to:
-  /// **'Type a chord (C, Am7, F#m7b5, G/B) or a scale (A minor pentatonic, D dorian, C major scale) to see it on the guitar. Anything else is searched on YouTube.'**
+  /// **'Type a chord (C, Am7, F#m7b5, G/B) or a scale (A minor pentatonic, D dorian, C major scale) to see it on the guitar. Anything else is searched on YouTube and Cifra Club.'**
   String get dictionaryIntro;
 
   /// Dictionary: a chord result's kind
@@ -3123,6 +3123,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open on YouTube'**
   String get dictionaryYouTubeOpen;
+
+  /// Dictionary: heading of Cifra Club's results (tabs of the song searched), under YouTube's videos
+  ///
+  /// In en, this message translates to:
+  /// **'Tabs on Cifra Club'**
+  String get dictionaryCifraClub;
+
+  /// Dictionary: Cifra Club's results are on their way
+  ///
+  /// In en, this message translates to:
+  /// **'Searching Cifra Club…'**
+  String get dictionaryCifraClubSearching;
+
+  /// Dictionary: the Cifra Club search found nothing
+  ///
+  /// In en, this message translates to:
+  /// **'Cifra Club found no tabs.'**
+  String get dictionaryCifraClubNone;
+
+  /// Dictionary: the Cifra Club search failed (offline, the site's index down)
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load Cifra Club\'s results.'**
+  String get dictionaryCifraClubFailed;
+
+  /// Dictionary: tooltip of a Cifra Club result, which opens its page in a new tab
+  ///
+  /// In en, this message translates to:
+  /// **'Open on Cifra Club'**
+  String get dictionaryCifraClubOpen;
 
   /// Dictionary: the fret a chord diagram starts at
   ///
