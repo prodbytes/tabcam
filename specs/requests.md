@@ -3766,6 +3766,25 @@ spec.
    Old number names still count as takes (`isTake`). See
    [Cam](cam.md#playing-along-with-a-file).
 
+9. **"The editor does not seem to be working, make sure that space bar
+   toggles play and there are buttons to do the same and clicking the
+   timeline moves the playhead and that the editor works, testing with
+   latest 'take 5'."** Opened on Take 5 (a take recorded in the
+   browser), the editor's ruler and lane clicks left the playhead at
+   the start, the time read "-150119987579:00.1", and Play went black,
+   stuck at the start: the browser's player says a WebM it recorded is
+   endless, video_player_web reports that as a duration far below zero,
+   and video_player kept every seek within it. A player that can't say
+   its length is now told it as it opens (on the web, from the editor's
+   length, as the editor's own timeline already found it; and wherever
+   the editor finds a length for a player), so seeks go where they're
+   asked: the ruler, the lanes, Start here / End here, Play from the
+   kept part's start, the song lane lined up, and other players of
+   recorded files (Cam's play along, the file screen). The **space bar**
+   now plays and pauses the editor's preview, as **Play** / **Pause**
+   (whose tooltip names it) and a tap on the preview do; not while the
+   title is typed in. See [Video edit](video-edit.md).
+
 ## 2026-11-17
 
 1. **"In the mini player sidebar, in the list of takes add an edit

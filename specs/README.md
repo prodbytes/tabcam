@@ -96,7 +96,8 @@ review notes ([app stores](app-stores.md)).
   12/8), a light per beat, Start / Stop; clicks made on the device (Web
   Audio on the web, a looping WAV on the phones), accented on the bar.
 - [Video edit](video-edit.md): basic edits of a video from its file
-  screen, on one time axis in two sound lanes, mixed: the Take lane
+  screen, on one time axis (a click on it places the preview; Play /
+  Pause or the space bar plays it) in two sound lanes, mixed: the Take lane
   (the video, trimmed by its grips, its own sound's volume and Mute)
   and the Song lane (one of the capture's recordings, videos or takes,
   or a sound file, added to them, placed along the video, with its own

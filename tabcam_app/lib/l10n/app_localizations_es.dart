@@ -1981,6 +1981,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoEditTrimEnd => 'Terminar aquí';
 
   @override
+  String get videoEditSpaceKey => 'espacio';
+
+  @override
   String get videoEditPickTrack => 'Elegir una pista';
 
   @override
