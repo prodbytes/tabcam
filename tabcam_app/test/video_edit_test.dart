@@ -443,6 +443,7 @@ void main() {
     VideoPlayerPlatform.instance = platform = VolumePlatform();
     VideoEditor.instance = editor = FakeEditor();
     saved.clear();
+    Downloads.now = () => DateTime(2026, 11, 17, 18, 5, 9);
     Downloads.save = (name, bytes, type) async {
       saved.add((name, bytes, type));
       return true;
@@ -657,7 +658,7 @@ void main() {
     expect(plan.format, EditFormat.mp4);
     expect(plan.passthrough, isFalse);
     final (name, bytes, type) = saved.single;
-    expect(name, 'Made-up riff.mp4');
+    expect(name, 'Made-up riff_20261117-180509.mp4');
     expect(bytes, [9, 9, 9]);
     expect(type, 'video/mp4');
     // The video's own file is as it was.
@@ -695,7 +696,7 @@ void main() {
     await _settle(tester);
     expect(editor.rendered, hasLength(1));
     final (name, bytes, _) = saved.single;
-    expect(name, 'Made-up riff.mp4');
+    expect(name, 'Made-up riff_20261117-180509.mp4');
     expect(bytes, [1, 2, 3]);
   });
 
@@ -853,9 +854,9 @@ void main() {
     expect(
       [for (final (name, _, type) in saved) (name, type)],
       [
-        ('Made-up riff.mp4', 'video/mp4'),
-        ('Made-up riff.mp4', 'video/mp4'),
-        ('Made-up riff.m4a', 'audio/mp4'),
+        ('Made-up riff_20261117-180509.mp4', 'video/mp4'),
+        ('Made-up riff_20261117-180509.mp4', 'video/mp4'),
+        ('Made-up riff_20261117-180509.m4a', 'audio/mp4'),
       ],
     );
   });
@@ -887,7 +888,7 @@ void main() {
     await tester.tap(find.byKey(const Key('video-edit-download-sound')));
     await _settle(tester);
     final (name, _, type) = saved.single;
-    expect(name, 'Made-up riff.wav');
+    expect(name, 'Made-up riff_20261117-180509.wav');
     expect(type, 'audio/wav');
   });
 
@@ -908,7 +909,7 @@ void main() {
     expect(plan.keepsFormat, isFalse);
     expect(plan.passthrough, isFalse);
     final (name, bytes, type) = saved.single;
-    expect(name, 'Made-up riff.mp4');
+    expect(name, 'Made-up riff_20261117-180509.mp4');
     expect(bytes, [9, 9, 9]);
     expect(type, 'video/mp4');
 
@@ -924,7 +925,7 @@ void main() {
     await tester.tap(find.byKey(const Key('video-edit-download')));
     await _settle(tester);
     expect(editor.rendered, isEmpty);
-    expect(saved.single.$1, 'Made-up riff.webm');
+    expect(saved.single.$1, 'Made-up riff_20261117-180509.webm');
     expect(saved.single.$2, [1, 2, 3]);
   });
 
@@ -943,7 +944,7 @@ void main() {
     await tester.tap(find.byKey(const Key('video-edit-download')));
     await _settle(tester);
     expect(editor.rendered, isEmpty);
-    expect(saved.single.$1, 'Made-up riff.mp4');
+    expect(saved.single.$1, 'Made-up riff_20261117-180509.mp4');
     expect(saved.single.$2, [1, 2, 3]);
 
     // An M4V (MPEG-4 too), where MP4 is made: as it is, not made again.
@@ -957,7 +958,7 @@ void main() {
     await tester.tap(find.byKey(const Key('video-edit-download')));
     await _settle(tester);
     expect(editor.rendered, isEmpty);
-    expect(saved.single.$1, 'Made-up riff.m4v');
+    expect(saved.single.$1, 'Made-up riff_20261117-180509.m4v');
     expect(saved.single.$2, [1, 2, 3]);
   });
 
