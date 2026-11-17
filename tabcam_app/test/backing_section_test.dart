@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -254,61 +256,154 @@ void main() {
     track.dispose();
   });
 
-  testWidgets('in the sidebar, 0 goes back to the start and space plays '
-      'and pauses, once a tap gives it the keyboard; not Ctrl+0, nor '
-      'typing in a field', (tester) async {
+  /// A screen with a field to type in and the sidebar's keys around a
+  /// stand-in for it.
+  Widget keysHost(
+    BackingTrack track,
+    TextEditingController field, {
+    bool active = true,
+    bool oneToggles = true,
+  }) => MaterialApp(
+    home: Scaffold(
+      body: Row(
+        children: [
+          Expanded(child: TextField(controller: field)),
+          PlayAlongKeys(
+            track: track,
+            active: active,
+            oneToggles: oneToggles,
+            child: const SizedBox(
+              key: Key('sidebar'),
+              width: 200,
+              height: 200,
+              child: ColoredBox(color: Colors.black),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  testWidgets('with the sidebar showing, wherever the keyboard is: 0 goes '
+      'back to the start, space and 1 play and pause; not with Ctrl, nor '
+      'typing in a field, until a tap in the sidebar', (tester) async {
     final (track, _, _) = await loaded(tester);
     final field = TextEditingController();
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: Row(
-            children: [
-              Expanded(child: TextField(controller: field)),
-              PlayAlongKeys(
-                track: track,
-                child: const SizedBox(
-                  key: Key('sidebar'),
-                  width: 200,
-                  height: 200,
-                  child: ColoredBox(color: Colors.black),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-    await tester.tap(find.byKey(const Key('sidebar')));
-    await tester.pump();
+    await tester.pumpWidget(keysHost(track, field));
+    Future<bool> press(LogicalKeyboardKey key) async =>
+        (await tester.runAsync(() => tester.sendKeyEvent(key)))!;
+
+    // No tap in the sidebar first: the keys are the player's already.
     video.seeks.clear();
-    await tester.runAsync(() => tester.sendKeyEvent(LogicalKeyboardKey.digit0));
+    expect(await press(LogicalKeyboardKey.digit0), isTrue);
     expect(video.seeks, const [Duration.zero]);
-    await tester.runAsync(
-      () => tester.sendKeyEvent(LogicalKeyboardKey.numpad0),
-    );
+    expect(await press(LogicalKeyboardKey.numpad0), isTrue);
     expect(video.seeks, hasLength(2));
 
+    for (final key in [
+      LogicalKeyboardKey.space,
+      LogicalKeyboardKey.digit1,
+      LogicalKeyboardKey.numpad1,
+    ]) {
+      expect(await press(key), isTrue);
+      await tester.pump();
+      expect(track.playing, isTrue, reason: '$key plays');
+      expect(await press(key), isTrue);
+      await tester.pump();
+      expect(track.playing, isFalse, reason: '$key pauses');
+    }
+
+    // Ctrl + 0 and Ctrl + 1 are the browser's.
     await tester.runAsync(() async {
       await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
       await tester.sendKeyEvent(LogicalKeyboardKey.digit0);
+      await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
       await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
     });
     expect(video.seeks, hasLength(2));
-
-    await tester.runAsync(() => tester.sendKeyEvent(LogicalKeyboardKey.space));
-    await tester.pump();
-    expect(track.playing, isTrue);
-    await tester.runAsync(() => tester.sendKeyEvent(LogicalKeyboardKey.space));
-    await tester.pump();
     expect(track.playing, isFalse);
 
-    // In the field, 0 and space are typed.
+    // In the field, 0, 1 and space are typed.
     await tester.tap(find.byType(TextField));
     await tester.pump();
     await tester.enterText(find.byType(TextField), '');
-    await tester.runAsync(() => tester.sendKeyEvent(LogicalKeyboardKey.digit0));
+    for (final key in [
+      LogicalKeyboardKey.digit0,
+      LogicalKeyboardKey.digit1,
+      LogicalKeyboardKey.space,
+    ]) {
+      await press(key);
+    }
     expect(video.seeks, hasLength(2));
+    expect(track.playing, isFalse);
+
+    // A tap in the sidebar takes the keyboard out of the field.
+    await tester.tap(find.byKey(const Key('sidebar')));
+    await tester.pump();
+    expect(await press(LogicalKeyboardKey.digit0), isTrue);
+    expect(video.seeks, hasLength(3));
+    expect(await press(LogicalKeyboardKey.digit1), isTrue);
+    await tester.pump();
+    expect(track.playing, isTrue);
+    await tester.runAsync(() => track.pause());
+    track.dispose();
+  });
+
+  testWidgets('the keys are not the player\'s with the sidebar hidden, '
+      'under a dialog, nor 1 where it is another key (Cam\'s Rec)', (
+    tester,
+  ) async {
+    final (track, _, _) = await loaded(tester);
+    final field = TextEditingController();
+    Future<bool> press(LogicalKeyboardKey key) async =>
+        (await tester.runAsync(() => tester.sendKeyEvent(key)))!;
+    video.seeks.clear();
+
+    // Hidden: none of them.
+    await tester.pumpWidget(keysHost(track, field, active: false));
+    for (final key in [
+      LogicalKeyboardKey.digit0,
+      LogicalKeyboardKey.digit1,
+      LogicalKeyboardKey.space,
+    ]) {
+      expect(await press(key), isFalse);
+    }
+    expect(video.seeks, isEmpty);
+    expect(track.playing, isFalse);
+
+    // In Cam: 0 and space, not 1.
+    await tester.pumpWidget(keysHost(track, field, oneToggles: false));
+    expect(await press(LogicalKeyboardKey.digit1), isFalse);
+    expect(await press(LogicalKeyboardKey.numpad1), isFalse);
+    await tester.pump();
+    expect(track.playing, isFalse);
+    expect(await press(LogicalKeyboardKey.digit0), isTrue);
+    expect(video.seeks, hasLength(1));
+    expect(await press(LogicalKeyboardKey.space), isTrue);
+    await tester.pump();
+    expect(track.playing, isTrue);
+
+    // Under a dialog, the keys are the dialog's.
+    await tester.pumpWidget(keysHost(track, field));
+    unawaited(
+      showDialog<void>(
+        context: tester.element(find.byKey(const Key('sidebar'))),
+        builder: (_) => const AlertDialog(content: Text('Sure?')),
+      ),
+    );
+    await tester.pump();
+    await press(LogicalKeyboardKey.digit0);
+    await press(LogicalKeyboardKey.digit1);
+    await tester.pump();
+    expect(video.seeks, hasLength(1));
+    expect(track.playing, isTrue);
+
+    // The dialog gone, they're the player's again.
+    Navigator.of(tester.element(find.text('Sure?'))).pop();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(await press(LogicalKeyboardKey.digit1), isTrue);
+    await tester.pump();
     expect(track.playing, isFalse);
     track.dispose();
   });

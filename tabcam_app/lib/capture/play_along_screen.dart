@@ -953,16 +953,8 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       if (event is KeyDownEvent && _canRec) unawaited(_nextTake());
       return KeyEventResult.handled;
     }
-    // Space: the backing track's play / pause, while its sidebar shows.
-    if (key == LogicalKeyboardKey.space && _along.open && _track.page != null) {
-      if (event is KeyDownEvent) unawaited(_track.toggle());
-      return KeyEventResult.handled;
-    }
-    // 0: back to its start (its section's).
-    if (PlayAlongKeys.isRestart(event) && _along.open && _track.page != null) {
-      if (event is KeyDownEvent) unawaited(_track.restart());
-      return KeyEventResult.handled;
-    }
+    // Space and 0, while the sidebar shows, are the backing track's
+    // (play / pause, back to its start): [PlayAlongKeys] gets them first.
     // ← and →: the backing track [skipBy] back and on, as « and » (held,
     // again and again); with no track showing, they turn the tab.
     if (_skips[key] case final by? when _along.open && _track.page != null) {
@@ -1673,6 +1665,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       linkFrame: widget.linkFrame,
       pdfView: widget.pdfView,
       onUse: _focus.requestFocus,
+      // 1 is Rec / Stop here; a preview has no keys.
+      oneToggles: false,
+      keys: gate == null,
       // Not in a preview, nor while a take records, saves (or is saved
       // for the next, until it starts) or plays back.
       deletes: gate == null,

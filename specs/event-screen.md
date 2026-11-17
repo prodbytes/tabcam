@@ -243,9 +243,10 @@ The file is shown whole, as what it is:
   sidebar, as usual: it opens with the recording loaded in its player
   frame, paused, marked in its list (not the first file to play, as
   elsewhere), with the frame's controls, section and speed, and its
-  keys once a tap gives the sidebar the keyboard (**0** back to the
-  start of the file or section, the **space bar** to pause and play)
-  ([Cam](cam.md#playing-along-with-a-file)); ♫ hides the sidebar and
+  keys (**0** back to the start of the file or section, count-in
+  included, the **space bar** or **1** to pause and play, with no tap
+  in the sidebar first)
+  ([Cam](cam.md#keys-in-every-screen)); ♫ hides the sidebar and
   pauses it. The screen itself shows a card with a music note,
   "Recording" and "It plays in the sidebar. Pick a page or PDF there to
   follow along." Under the files to play along (Cam's takes aside),
