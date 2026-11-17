@@ -86,13 +86,13 @@ void main() {
       const style = EditTabStyle(
         size: 1.5,
         opacity: 0.35,
-        colors: TabColors.light,
+        colors: TabColors.gold,
       );
       final styled = edit.copyWith(tabStyle: style);
       expect(styled.toJson()['tabStyle'], {
         'size': 1.5,
         'opacity': 0.35,
-        'colors': 'light',
+        'colors': 'gold',
       });
       expect(
         edit
@@ -161,7 +161,10 @@ void main() {
         EditTabStyle.standard,
       );
       expect(read('large').tabStyle, EditTabStyle.standard);
-      expect(read({'colors': 'brand'}).tabStyle.colors, TabColors.brand);
+      // The colours taken away (black on white, black on gold) read as the
+      // default, as any unknown.
+      expect(read({'colors': 'brand'}).tabStyle.colors, TabColors.dark);
+      expect(read({'colors': 'light'}).tabStyle.colors, TabColors.dark);
       // copyWith keeps them within too.
       expect(
         EditTabStyle.standard.copyWith(size: 5, opacity: 0.333),
@@ -425,15 +428,12 @@ void main() {
         _at(
           await _drawn(
             tester,
-            const BandLook(
-              _riffA,
-              style: EditTabStyle(opacity: 0.4, colors: TabColors.light),
-            ),
+            const BandLook(_riffA, style: EditTabStyle(opacity: 0.4)),
           ),
           0,
           0,
         ),
-        (255, 255, 255, 102),
+        (0, 0, 0, 102),
       );
       final gold = await _drawn(
         tester,
@@ -444,18 +444,14 @@ void main() {
         isNotEmpty,
         reason: 'gold text',
       );
-      final brand = await _drawn(
+      final opaque = await _drawn(
         tester,
         const BandLook(
           _riffA,
-          style: EditTabStyle(opacity: 1, colors: TabColors.brand),
+          style: EditTabStyle(opacity: 1, colors: TabColors.gold),
         ),
       );
-      expect(_at(brand, 0, 0), (0xE0, 0xA0, 0x30, 255));
-      expect(
-        _pixels(brand).where((p) => p == (0x11, 0x11, 0x11, 255)),
-        isNotEmpty,
-      );
+      expect(_at(opaque, 0, 0), (0, 0, 0, 255));
 
       // No background: nothing but the text, white, outlined in black.
       final clear = await _drawn(
@@ -521,7 +517,7 @@ void main() {
       final normal = await images(plan(EditTabStyle.standard));
       final styled = await images(
         plan(
-          const EditTabStyle(size: 1.5, opacity: 0, colors: TabColors.light),
+          const EditTabStyle(size: 1.5, opacity: 0, colors: TabColors.gold),
         ),
       );
       expect(normal.first.width, 1920);
@@ -1039,13 +1035,13 @@ void main() {
         ),
         findsOneWidget,
       );
-      await tapVisible(tester, 'video-edit-tab-colors-light');
+      await tapVisible(tester, 'video-edit-tab-colors-gold');
       await settle(tester);
       slider(tester, 'opacity').onChanged!(1);
       await settle(tester);
       expect(
         previewStyle(tester),
-        const EditTabStyle(opacity: 1, colors: TabColors.light),
+        const EditTabStyle(opacity: 1, colors: TabColors.gold),
       );
       await tester.tap(find.byKey(const Key('video-edit-reset')));
       await settle(tester);
@@ -1092,7 +1088,7 @@ void main() {
         );
         await settle(tester);
         expect(
-          find.byKey(const Key('video-edit-tab-colors-brand')),
+          find.byKey(const Key('video-edit-tab-colors-gold')),
           findsOneWidget,
         );
         expect(tester.takeException(), isNull);
@@ -1104,7 +1100,7 @@ void main() {
     ) async {
       sized(tester, const Size(900, 1600));
       final (library, id) = await capture(tester);
-      const style = EditTabStyle(size: 1.2, colors: TabColors.brand);
+      const style = EditTabStyle(size: 1.2, colors: TabColors.gold);
       await tester.runAsync(
         () => library.setPageEdit(
           id,

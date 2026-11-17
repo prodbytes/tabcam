@@ -259,10 +259,12 @@ makes a file of it."), opening with the video's edit as it was left:
     100% in steps of 5%, 70% by default), each its name and its value
     ("100%") on a
     line over a slider as wide as the panel (so neither is cut at any
-    text size), **Colours** (four swatches under it,
+    text size), **Colours** (two swatches under it,
     each a bit of band, "3-5" in its text's colour on its background's:
-    **White on black** (the default), **Black on white**, **Gold on black** and
-    **Black on gold**, tabs.cam's gold; the one picked ringed in the
+    **White on black** (the default) and **Gold on black**, tabs.cam's
+    gold; black on white and black on gold were offered once and taken
+    away: an edit kept with either draws white on black now; the one
+    picked ringed in the
     primary colour with a check; each a button with its name as its
     tooltip and for screen readers, saying whether it's picked),
     **Alignment** (three buttons, each an icon with its name as its
@@ -667,8 +669,8 @@ which always carried the text alone; `TabLayout.outlineOf`: a stroke
 18% of the text's size, fully opaque from 50% down, so a faint
 background never leaves the text washed out, and in proportion between
 50% and 70%), so it reads on any picture with no background at all; the
-**colours**: white on black, black (`#111`) on white, tabs.cam's gold
-(`#E0A030`) on black, black on gold. The text is drawn at its size, never
+**colours**: white on black, or tabs.cam's gold (`#E0A030`) on black. The
+text is drawn at its size, never
 a bitmap scaled up: the band is drawn **as wide as the video's frame**
 (`frame` in `RenderPlan.of`, the player's size; 1280 to 4096 pixels,
 1280 when not known), so a renderer only scales it down, if at all; the

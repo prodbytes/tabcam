@@ -3917,3 +3917,10 @@ spec.
    centred, so edits made before draw their tab to the left now.
    Default style puts it back to the left. See
    [video edit](video-edit.md).
+
+10. **"The 'black on white' color scheme is awful remove that"** and
+    **"the black on gold too remove"**. The tab's style offers two
+    colours now, White on black (the default) and Gold on black. An
+    edit kept with black on white or black on gold draws white on
+    black, as any colour the app doesn't know. See
+    [video edit](video-edit.md).
