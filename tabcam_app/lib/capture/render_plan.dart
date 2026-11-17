@@ -532,6 +532,10 @@ List<String> titleText(List<String> lines) => [
       clipChars(t, TitleLayout.maxChars),
 ].take(TitleLayout.maxLines).toList();
 
+/// The watermark's text, on every video and in every language: the
+/// app's name, nothing else.
+const watermarkText = 'tabs.cam';
+
 /// The watermark, [text], in the bottom right corner, the whole video
 /// through, over the tab's bands where they're drawn ([WatermarkLayout]).
 PlanLayer watermarkLayer(String text) => PlanLayer(

@@ -344,10 +344,6 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// The title's text as it is now: what's typed, or the capture's name.
   List<String> get _titleText => titleText(_titleLines ?? _captureTitle);
 
-  /// The watermark's text: a take's, or another video's.
-  String _watermarkText(AppLocalizations l10n) =>
-      _take ? l10n.videoEditWatermarkTake : l10n.videoEditWatermarkMade;
-
   /// Whether this user can leave the watermark off ([watermarkUnlocked]).
   bool get _unlocked => watermarkUnlocked(widget.ocr);
 
@@ -590,7 +586,6 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// being edited, it shows as it ends up rather than fading in.
   List<PlanLayer> _previewLayers(AppLocalizations l10n) {
     final editing = _titleBeingEdited;
-    final watermark = _watermarkText(l10n);
     final frame = _frame;
     final of = (
       _start,
@@ -604,7 +599,6 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       _captureTitle.join('\n'),
       _watermark,
       _unlocked,
-      watermark,
       editing,
     );
     if (of != _layersOf) {
@@ -615,7 +609,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           duration: _duration,
           takeLog: _takeLog,
           title: _captureTitle,
-          watermark: watermark,
+          watermark: watermarkText,
           premium: _unlocked,
           preview: true,
           frame: frame,
@@ -1269,8 +1263,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// video's file, for Download (the preview's has no files). Whether the
   /// watermark is left out is this user's Premium as it is now, as they
   /// download ([_unlocked]).
-  RenderPlan _plan(RenderKind kind, {XFile? input, AppLocalizations? l10n}) =>
-      RenderPlan.of(
+  RenderPlan _plan(RenderKind kind, {XFile? input}) => RenderPlan.of(
         _planEdit,
         input: input,
         duration: _duration,
@@ -1281,7 +1274,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         formats: _formats,
         takeLog: _takeLog,
         title: _captureTitle,
-        watermark: _watermarkText(l10n ?? context.l10n),
+        watermark: watermarkText,
         premium: _unlocked,
         frame: _frame,
       );
@@ -1329,7 +1322,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       final page = widget.page;
       final input = await _fileOf(event, page);
       final label = fileLabel(l10n, event, page);
-      final plan = _plan(what, input: input, l10n: l10n);
+      final plan = _plan(what, input: input);
       if (plan.passthrough) {
         await Downloads.saveFile(_library, event, page, label);
         return;
@@ -1900,7 +1893,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
               label: Text(l10n.videoEditLayerWatermark),
               tooltip: locked
                   ? l10n.videoEditWatermarkLocked
-                  : l10n.videoEditWatermarkAbout(_watermarkText(l10n)),
+                  : l10n.videoEditWatermarkAbout(watermarkText),
               selected: locked || _watermark,
               onSelected: _setWatermark,
             ),

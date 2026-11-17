@@ -3652,23 +3652,11 @@ abstract class AppLocalizations {
   /// **'Done'**
   String get videoEditTitleDone;
 
-  /// Video edit: the chip of the small tabs.cam line at the bottom right of the video (only Premium can turn it off)
+  /// Video edit: the chip of the small "tabs.cam" at the bottom right of the video (only Premium can turn it off)
   ///
   /// In en, this message translates to:
   /// **'Watermark'**
   String get videoEditLayerWatermark;
-
-  /// Video edit: the watermark's text on one of Cam's takes; drawn on the video itself
-  ///
-  /// In en, this message translates to:
-  /// **'Recorded by tabs.cam'**
-  String get videoEditWatermarkTake;
-
-  /// Video edit: the watermark's text on a video Cam didn't record; drawn on the video itself
-  ///
-  /// In en, this message translates to:
-  /// **'Made with tabs.cam'**
-  String get videoEditWatermarkMade;
 
   /// Video edit: the Watermark chip's tooltip, for a Premium user (who can turn it off)
   ///

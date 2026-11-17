@@ -2200,12 +2200,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditLayerWatermark => 'Marca d\'água';
 
   @override
-  String get videoEditWatermarkTake => 'Gravado com tabs.cam';
-
-  @override
-  String get videoEditWatermarkMade => 'Feito com tabs.cam';
-
-  @override
   String videoEditWatermarkAbout(String text) {
     return '“$text”, em letras pequenas, no canto inferior direito';
   }
