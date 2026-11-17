@@ -528,6 +528,35 @@ class Library extends ChangeNotifier {
     );
   }
 
+  /// Keeps where the song really is in take [pageId] of event [eventId]
+  /// with its log ([TakeLog.withSync]): measured from the take's sound
+  /// after it was saved, the one thing added to a log later. A take that
+  /// has one already (another device's came first) keeps it.
+  Future<CaptureEvent?> setTakeSync(
+    String eventId,
+    String pageId,
+    TakeSync sync,
+  ) {
+    EventPage synced(EventPage p) {
+      final log = p.takeLog;
+      if (p.id != pageId || log == null || log.sync != null) return p;
+      return p.copyWith(takeLog: log.withSync(sync));
+    }
+
+    final now = _byIdAll(eventId);
+    // One of the user's own contribution (Cam's take on a shared capture).
+    if (now != null && !now.pages.any((p) => p.id == pageId)) {
+      return patchContribution(
+        eventId,
+        (pages) => [for (final p in pages) synced(p)],
+      );
+    }
+    return patch(
+      eventId,
+      (now) => now.copyWith(pages: [for (final p in now.pages) synced(p)]),
+    );
+  }
+
   /// Keeps [edit] with video [pageId] of event [eventId] (null: none, the
   /// video plays as it is).
   Future<CaptureEvent?> setPageEdit(

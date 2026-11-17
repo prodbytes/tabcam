@@ -286,6 +286,109 @@ void main() {
       expect(_encoded(read.toJson()), newer);
     });
 
+    test('where the song was found in the take\'s sound (sync): added '
+        'once, the rest as it came; a clone\'s names the copy\'s song', () {
+      const sync = TakeSync(
+        page: 'p7',
+        from: SyncFrom.sound,
+        ms: 38,
+        clips: [SyncClip(at: 2050, ms: 38, score: 21.4)],
+      );
+      // A log Cam made, and one read back with a newer app's key in it.
+      final newer = TakeLog.fromJson(
+        _encoded({..._log.toJson(), 'pitch': 'A440'}),
+      )!;
+      for (final log in [_log, newer]) {
+        expect(log.sync, isNull);
+        final synced = log.withSync(sync);
+        expect(synced.sync, sync);
+        final json = _encoded(synced.toJson()) as Map<String, Object?>;
+        expect(json['sync'], {
+          'v': 1,
+          'page': 'p7',
+          'from': 'sound',
+          'ms': 38,
+          'clips': [
+            {'at': 2050, 'ms': 38, 'score': 21.4},
+          ],
+        });
+        // Nothing else changed.
+        expect({...json}..remove('sync'), _encoded(log.toJson()));
+        expect(TakeLog.fromJson(json), synced);
+        expect(TakeLog.fromJson(json)!.sync, sync);
+        // The segment measured, its own shift; another, the song's.
+        expect(synced.songFileMs(synced.song.first), 2050 + 180 + 38);
+        expect(sync.shiftAt(2050), 38);
+        expect(sync.shiftAt(9000), 38);
+        // A clone: the song it names is the copy's.
+        final copy = synced.withPages({'p7': 'q1'});
+        expect(copy.sync!.page, 'q1');
+        expect((copy.toJson()['sync'] as Map)['page'], 'q1');
+        expect(copy.song.first.page, 'q1');
+        expect(copy.sync!.clips, sync.clips);
+      }
+      // Looked for and not found: said so, no shift.
+      const none = TakeSync(page: 'p7', from: SyncFrom.none);
+      expect(_encoded(none.toJson()), {
+        'v': 1,
+        'page': 'p7',
+        'from': 'none',
+        'ms': 0,
+      });
+      expect(TakeSync.fromJson(_encoded(none.toJson())), none);
+      expect(_log.withSync(none).songFileMs(_log.song.first), 2050 + 180);
+      // Another song's: not this segment's.
+      expect(
+        _log
+            .withSync(const TakeSync(page: 'p9', from: SyncFrom.sound, ms: 70))
+            .songFileMs(_log.song.first),
+        2050 + 180,
+      );
+      // A way this version doesn't know: not read, written back as it came.
+      final later = {
+        ..._log.toJson(),
+        'sync': {'v': 2, 'page': 'p7', 'from': 'beats', 'ms': 12},
+      };
+      final read = TakeLog.fromJson(_encoded(later))!;
+      expect(read.sync, isNull);
+      expect(_encoded(read.toJson()), _encoded(later));
+      // Read leniently.
+      expect(TakeSync.fromJson('sound'), isNull);
+      expect(TakeSync.fromJson({'from': 'sound'}), isNull);
+      expect(
+        TakeSync.fromJson({
+          'page': 'p7',
+          'from': 'sound',
+          'ms': 'x',
+          'clips': [
+            {'at': 1, 'ms': 2},
+            {'at': 'x'},
+            7,
+          ],
+        }),
+        const TakeSync(
+          page: 'p7',
+          from: SyncFrom.sound,
+          clips: [SyncClip(at: 1, ms: 2)],
+        ),
+      );
+    });
+
+    test('the song it lines up: the one played longest, at its own '
+        'speed', () {
+      expect(_log.linedSong, [_log.song.first]);
+      expect(const TakeLog(burned: false).linedSong, isEmpty);
+      const two = TakeLog(
+        burned: false,
+        song: [
+          SongSegment(at: 0, to: 1000, page: 'a', from: 0),
+          SongSegment(at: 1000, to: 3000, page: 'b', from: 0),
+          SongSegment(at: 3000, to: 4500, page: 'a', from: 1000),
+        ],
+      );
+      expect([for (final s in two.linedSong) s.at], [0, 3000]);
+    });
+
     test('as Cam saves it with no tab and no song', () {
       const log = TakeLog(burned: false, lagFrom: LagFrom.recorder);
       expect(_encoded(log.toJson()), {
@@ -474,6 +577,50 @@ void main() {
         expect(copied.song.single.page, copy.pages[1].id);
         expect(copied.song.single.page, isNot(song.id));
         expect(copied.tab, log.tab);
+      });
+
+      test('where its song was found is kept with it, once', () async {
+        final library = Library(PlatformEventStore(root));
+        await library.load();
+        var event = await library.create([
+          img.encodeJpg(img.Image(width: 8, height: 8)),
+        ]);
+        const log = TakeLog(
+          burned: false,
+          song: [SongSegment(at: 100, to: 9000, page: 'song', from: 0)],
+        );
+        event = await library.addMedia(
+          event,
+          [
+            Media(
+              XFile.fromData(Uint8List.fromList([3, 4]), name: 'take.mp4'),
+              PageKind.video,
+              'mp4',
+            ),
+          ],
+          take: true,
+          takeLog: log,
+        );
+        final take = event.pages.last;
+        const sync = TakeSync(page: 'song', from: SyncFrom.sound, ms: 41);
+        final synced = await library.setTakeSync(event.id, take.id, sync);
+        expect(synced!.pages.last.takeLog, log.withSync(sync));
+        // Its name, and the other pages, as they were.
+        expect(synced.pages.last.title, take.title);
+        expect(synced.pages.first.takeLog, isNull);
+        // One it has already stays: measured once.
+        await library.setTakeSync(
+          event.id,
+          take.id,
+          const TakeSync(page: 'song', from: SyncFrom.none),
+        );
+        expect(library.byId(event.id)!.pages.last.takeLog!.sync, sync);
+        // A page without a log gets none.
+        await library.setTakeSync(event.id, event.pages.first.id, sync);
+        expect(library.byId(event.id)!.pages.first.takeLog, isNull);
+        final reopened = Library(PlatformEventStore(root));
+        await reopened.load();
+        expect(reopened.byId(event.id)!.pages.last.takeLog!.sync, sync);
       });
     });
   });

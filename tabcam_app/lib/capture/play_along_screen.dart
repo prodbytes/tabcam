@@ -18,6 +18,7 @@ import '../metronome/metronome.dart';
 import '../recognition/necklines.dart';
 import '../screens/mono_font.dart';
 import '../screens/premium_card.dart';
+import '../screens/video_edit_screen.dart';
 import '../screens/video_page.dart';
 import 'auto_pass.dart';
 import 'backing_track.dart';
@@ -33,6 +34,7 @@ import 'take_log.dart';
 import 'take_h264.dart';
 import 'take_priority.dart';
 import 'take_recorder.dart';
+import 'take_syncer.dart';
 import 'take_sound.dart';
 import '../screens/messages.dart';
 
@@ -132,6 +134,7 @@ class PlayAlongScreen extends StatefulWidget {
     this.linkFrame = linkFrameFor,
     this.pdfView = pdfViewFor,
     this.gate,
+    this.ocr,
   });
 
   final Library library;
@@ -147,6 +150,11 @@ class PlayAlongScreen extends StatefulWidget {
   /// tap does anything, and the tab along the bottom is the capture's, or
   /// a sample where it has none.
   final ({CloudOcr ocr, String? email})? gate;
+
+  /// TabCam Premium, where the build has it, for the video editor a
+  /// take's Edit opens from the sidebar (its watermark, as from the file
+  /// screen).
+  final CloudOcr? ocr;
 
   /// The cameras there are; tests pass their own.
   final Future<List<CameraDescription>> Function() cameras;
@@ -946,16 +954,8 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       if (event is KeyDownEvent && _canRec) unawaited(_nextTake());
       return KeyEventResult.handled;
     }
-    // Space: the backing track's play / pause, while its sidebar shows.
-    if (key == LogicalKeyboardKey.space && _along.open && _track.page != null) {
-      if (event is KeyDownEvent) unawaited(_track.toggle());
-      return KeyEventResult.handled;
-    }
-    // 0: back to its start (its section's).
-    if (PlayAlongKeys.isRestart(event) && _along.open && _track.page != null) {
-      if (event is KeyDownEvent) unawaited(_track.restart());
-      return KeyEventResult.handled;
-    }
+    // Space and 0, while the sidebar shows, are the backing track's
+    // (play / pause, back to its start): [PlayAlongKeys] gets them first.
     // ← and →: the backing track [skipBy] back and on, as « and » (held,
     // again and again); with no track showing, they turn the tab.
     if (_skips[key] case final by? when _along.open && _track.page != null) {
@@ -1127,6 +1127,17 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         !_track.countingIn) {
       unawaited(_track.toggle());
     }
+  }
+
+  /// The takes saved with a song noted, not measured yet: each one's song
+  /// is found in its sound and kept with its log ([TakeSyncer]).
+  final _unsynced = <(String, String)>[];
+
+  void _syncTakes() {
+    for (final (event, page) in _unsynced) {
+      unawaited(TakeSyncer.sync(widget.library, event, page));
+    }
+    _unsynced.clear();
   }
 
   /// Notes that the recording is told to start now ([_span] from 0).
@@ -1321,6 +1332,10 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       if (tab != null) {
         _recordedPlaces = (page.id, TakeTab.placesOf(_lines, marks));
       }
+      // Where its song really is, from its own sound: measured once no
+      // take records (not between takes the / key runs on).
+      if (log.linedSong.isNotEmpty) _unsynced.add((updated.id, page.id));
+      if (!_nextTaking) _syncTakes();
       if (mounted) _snack(l10n.camSaved(name));
     } on Object catch (e, stack) {
       debugPrint('TabCam: cam: $e\n$stack');
@@ -1505,6 +1520,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   @override
   void dispose() {
     TakePriority.recording.value = false;
+    _syncTakes();
     if (widget.gate == null) {
       unawaited(TakeAudio.release());
       unawaited(TakeSound.release());
@@ -1666,11 +1682,24 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       linkFrame: widget.linkFrame,
       pdfView: widget.pdfView,
       onUse: _focus.requestFocus,
+      // 1 is Rec / Stop here; a preview has no keys.
+      oneToggles: false,
+      keys: gate == null,
       // Not in a preview, nor while a take records, saves (or is saved
       // for the next, until it starts) or plays back.
       deletes: gate == null,
       canDelete:
           !_recording && !_saving && !_nextTaking && !playing && !opening,
+      // A take's Edit: the editor over Cam, as the file screen opens it.
+      onEdit: gate == null
+          ? (take) => VideoEditScreen.open(
+              context,
+              library: widget.library,
+              eventId: widget.eventId,
+              page: take,
+              ocr: widget.ocr,
+            )
+          : null,
       child: _main(controller, playing),
     );
     return PopScope(

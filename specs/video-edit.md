@@ -15,7 +15,10 @@ it ([fades](#fades)). Opened
 with **Edit** (scissors, before Rename) on a video's
 [file screen](event-screen.md#file-screen), in the user's own captures
 (not one shared with them, which is read only, nor a contribution's
-file, nor while a tool works).
+file, nor while a tool works); and, for Cam's takes, with the **Edit**
+on the take's row in the play-along sidebar (in Cam, beside the Text
+view and beside a recording), which opens it the same way
+([editing a take from the sidebar](cam.md#editing-a-take-from-the-sidebar)).
 
 **The edit is kept, not applied.** It's saved with the video's page as
 it's made (the page's `edit`, see [stored](#how-the-edit-is-stored);
@@ -119,7 +122,9 @@ makes a file of it."), opening with the video's edit as it was left:
   kept part is at least half a second long.
 - **The timeline**: a **ruler** (the video's times, m:ss, a tick as
   often as there's room for its time; its times stay small at large
-  text sizes), over two lanes, **one time axis**: each lane's bar spans
+  text sizes; on a take with its song lined up, a small flag in the
+  primary colour at each of [the song's marks](#the-songs-marks), where
+  it starts and stops), over two lanes, **one time axis**: each lane's bar spans
   the whole video, lined up under the ruler, with its **volume** at its
   left; **where the preview is** is a line across the ruler and both
   lanes. Tapped or dragged, the ruler takes the preview anywhere in the
@@ -136,8 +141,11 @@ makes a file of it."), opening with the video's edit as it was left:
     lanes, and **the song stays where it is along the video** (a
     trimmed start cuts the song's start with it). While paused, the
     preview follows the grip dragged (a seek at most every 150 ms,
-    exactly the end it moved when let go). This replaces the Trim
-    section's range and the preview's scrub bar. The [fades](#fades)
+    exactly the end it moved when let go). On a take with its song
+    lined up, [the song's marks](#the-songs-marks) are thin lines down
+    the bar, and **a grip dragged near one is on it** (it snaps: the
+    cut is then exactly where the song starts or stops). This replaces
+    the Trim section's range and the preview's scrub bar. The [fades](#fades)
     are drawn on the kept part as ramps at its ends (shaded above a
     line from its corner across the fade's length), as long as they
     play.
@@ -271,10 +279,10 @@ makes a file of it."), opening with the video's edit as it was left:
     the preview at once, kept a moment after the last key (as every
     change), and never seeks the song again (nothing it plays by
     changed); typing turns the title on.
-  - **Watermark** (every video): on by default, "Recorded by tabs.cam"
-    on a take, "Made with tabs.cam" on any other video, small at the
-    bottom right. **Only Premium removes it**: for a user with Premium
-    now ([as the service last said](cloud-ocr.md#in-the-app), a week at
+  - **Watermark** (every video): on by default, "tabs.cam" and nothing
+    else, small at the bottom right. **Only Premium removes it**: for a
+    user with Premium now
+    ([as the service last said](cloud-ocr.md#in-the-app), a week at
     most offline), and in a build without the service, it's a plain
     toggle (off kept as `watermark: false`); for anyone else it's on
     with a lock (tooltip "Premium removes the watermark"), and a tap
@@ -309,9 +317,15 @@ makes a file of it."), opening with the video's edit as it was left:
   cut; counted from the kept part's start; for a song lined up in
   clips, its first), and, once trimmed, "Using
   0:01.0–0:42.5 of the song" (not for one lined up in clips). A song
-  lined up by itself says so under them: "Lined up as it played while
-  you recorded", or, once nudged or dragged, "Lined up as recorded,
-  moved 0:00.2 later" (or "earlier"). They name it as its lane does: "song" on
+  lined up by itself says so under them: "Lined up by its sound in the
+  take" when it was [found there](#a-takes-song-lined-up), else "Lined
+  up as it played while you recorded", or, once nudged or dragged,
+  "Lined up as recorded, moved 0:00.2 later" (or "earlier"); and under
+  that, **Cut to the song** (scissors; "Keep the take from where the
+  song starts to where it stops"), which keeps the take from the
+  song's first start to its last stop ([the song's
+  marks](#the-songs-marks)), greyed once that's the part kept. They
+  name it as its lane does: "song" on
   a take, "track" ("The track starts…", "… of the track") on any other
   video. A song shorter than the kept part leaves
   silence after. On a wide screen they stay under the lanes, beside
@@ -452,6 +466,40 @@ the song up by itself (`LoggedSong`, [`render_plan.dart`](../tabcam_app/lib/capt
   file's first frame (the lag before the clock started) too. Between
   clips the song is silent (it was paused, or moved on): a song paused,
   skipped, started over by Repeat or its section is several clips.
+- **Found in the take's sound, it's lined up there**: that line-up is
+  what Cam noted (the player's word and the lag), a tenth of a second
+  or so off at worst. The take's microphone heard the song from the
+  speaker, so where it really is gets measured from the take's own
+  sound, to the millisecond, and kept with the log
+  ([`sync`](cam.md#the-song-found-in-the-takes-sound)): each clip is
+  then that much later (or earlier) in the file, each segment measured
+  by its own shift, the others by the song's, one found before the
+  file's start cut there (`LoggedSong.measured`). So the song in the
+  Song lane lies exactly over the song heard in the take: no echo
+  between the two when both are heard, and a cut on the song's edge is
+  on it in both. Cam has a take measured once it's saved; the editor
+  has one that wasn't (a take from before, or from a device that
+  couldn't read its files) measured as it opens, and the Song lane
+  follows when what's found arrives, a moment later. Not found
+  (headphones while recording, or the song too quiet in the take), or
+  not measured yet, it stays as noted. **An edit kept before it was
+  found** follows too, when it had the song where the log alone had it
+  (not moved: `LoggedSong.shiftOf` none); one moved by hand stays
+  exactly where it was put. The file screen's player and Download line
+  it up the same way, from the same log.
+- <a id="the-songs-marks"></a>**The song's marks, to cut by**: where
+  the lined-up song starts and stops in the take, clip by clip
+  (`LoggedSong.marksIn`: the clips' edges as the edit has them, moved
+  with the song, none past the video's end or the song's), are drawn on
+  the timeline: a flag on the ruler and a thin line down the Take lane,
+  in the primary colour. **A Take grip dragged to within a hundredth of
+  the video's length of a mark** (a few points of the lane; at least a
+  twentieth of a second) **is on the mark** (the nearest), so the take
+  is cut exactly where the song starts or stops, to the millisecond;
+  further away it's where it's dragged. **Cut to the song**, under the
+  song's details, does both ends at once: the first mark to the last.
+  Start here and End here don't snap (they cut where the preview is).
+  A song placed by hand, or none, has no marks.
 - **The default**: a take with such a song opens with it in the Song
   lane (`withLoggedSong`): with no edit, or an edit that says no song
   (none picked, nor taken out). It's what plays in the preview, the
@@ -477,9 +525,22 @@ the song up by itself (`LoggedSong`, [`render_plan.dart`](../tabcam_app/lib/capt
   the editor opening a take with its song lined up and nothing kept,
   ‹ moving it all, Reset, Download's clips and Remove; Cam's takes
   noting the song Rec started and one already playing, and none with
-  nothing played. **Not yet on a phone**: how close the line-up is on
-  each platform (the player's start and the speaker's delay aren't
-  measured).
+  nothing played; a song found in the take's sound lined up there, each
+  clip by its own shift, an edit kept where the log had it following
+  and one moved by hand staying, the marks (trimmed, moved, cut to the
+  video and the song); the editor showing "Lined up by its sound in the
+  take" and the marks on the Take lane where they are, Cut to the song
+  keeping the first mark to the last, a grip dragged near a mark on it
+  and one away from them where it's dragged, Download's clips after;
+  and a take not measured yet measured as the editor opens, the Song
+  lane following with nothing kept, one moved by hand staying where it
+  was put. How the song is found is checked with
+  [Cam's log](cam.md#the-song-found-in-the-takes-sound). **Not yet on a
+  phone**: how close the line-up is there once measured (in Chrome, a
+  song played into a video recorded as a take is was found about a
+  tenth of a second from where it was noted, and lined up there), and with headphones, where
+  nothing can be measured (the player's start and the headphones' delay
+  aren't).
 
 ### The render plan
 
@@ -617,11 +678,10 @@ text high); a line too long for the frame ends in "…". The box's height
 is worked out in Dart from the line count alone (`TitleLayout`), so the
 plan knows it without drawing.
 
-**The watermark**: "Recorded by tabs.cam" on a take, "Made with tabs.cam"
-on any other video (in the app's language: "Grabado con tabs.cam" /
-"Hecho con tabs.cam", "Gravado com tabs.cam" / "Feito com tabs.cam"); one
-layer, `mark`, at the **bottom right**, 3% of the short side in, the
-whole video through, one line of Roboto at 2.2% of the short side,
+**The watermark**: "tabs.cam", the same on a take and on any other
+video, in every language (`watermarkText`; no "Recorded by", no
+address); one layer, `mark`, at the **bottom right**, 3% of the short
+side in, the whole video through, one line of Roboto at 2.2% of the short side,
 white at 60% with a soft shadow. It stays in that corner with the tab
 drawn too, whatever the tab's size: over the bands (drawn after them),
 never lifted above them. It's left out only when the edit turns it off
@@ -795,7 +855,16 @@ carries it out; the times are all worked out in Dart.
   own lane from the kept part's start, each of the song's clips where
   it starts, each through a gain node at its lane's level, which may be
   over 1: the mix is float, and the WAV writer clips it), at 44.1 kHz
-  (22.05 kHz for a kept part over 8 minutes). `decodeAudioData` decodes
+  (22.05 kHz for a kept part over 8 minutes). **Each sound at its times
+  in its file**: a WebM's sound may start after the file does (a take
+  the browser recorded often has its first sound some tens of ms in);
+  a player plays it from there, but `decodeAudioData` gives it from its
+  first sample, so the decoded sound is placed that much later
+  ([`webm_times.dart`](../tabcam_app/lib/capture/webm_times.dart),
+  `webmSoundStart`: the sound track's first block's time, read from the
+  file), and both lanes are in the mix where their players play them:
+  the own sound in step with the picture, and a song lined up by its
+  sound exactly over it. `decodeAudioData` decodes
   a whole file, whatever part of it is kept, so the rate a file is
   decoded at goes by its own length: over 8 minutes, 22.05 kHz (about
   176 KB a second in stereo rather than 384 KB at 48 kHz). **A video

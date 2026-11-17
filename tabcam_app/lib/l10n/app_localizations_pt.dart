@@ -750,6 +750,11 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String camAlongEdit(String name) {
+    return 'Editar $name';
+  }
+
+  @override
   String get camAlongPdfShow => 'Mostrar o PDF ao lado da câmera';
 
   @override
@@ -2042,6 +2047,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditSongLined => 'Alinhada como tocou enquanto você gravava';
 
   @override
+  String get videoEditSongLinedSound => 'Alinhada pelo som dela no take';
+
+  @override
+  String get videoEditCutToSong => 'Cortar na música';
+
+  @override
+  String get videoEditCutToSongTip =>
+      'Mantém o take de onde a música começa até onde ela para';
+
+  @override
   String videoEditSongLinedLater(String time) {
     return 'Alinhada como foi gravada, movida $time depois';
   }
@@ -2193,12 +2208,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoEditLayerWatermark => 'Marca d\'água';
-
-  @override
-  String get videoEditWatermarkTake => 'Gravado com tabs.cam';
-
-  @override
-  String get videoEditWatermarkMade => 'Feito com tabs.cam';
 
   @override
   String videoEditWatermarkAbout(String text) {

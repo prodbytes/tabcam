@@ -1019,6 +1019,15 @@
       }
     }
   },
+  "camAlongEdit": "Edit {name}",
+  "@camAlongEdit": {
+    "description": "Play-along sidebar: tooltip of the Edit button (scissors) on a take's row, before Delete; it opens the video editor on that take",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "camAlongPdfShow": "Show the PDF beside the camera",
   "@camAlongPdfShow": {
     "description": "Cam sidebar: tooltip of a PDF not showing"
@@ -2743,6 +2752,18 @@
   "@videoEditSongLined": {
     "description": "Video edit, a take: the song is placed by itself where it played while the take recorded"
   },
+  "videoEditSongLinedSound": "Lined up by its sound in the take",
+  "@videoEditSongLinedSound": {
+    "description": "Video edit, a take: the song is placed by itself exactly where the take's own sound has it (the microphone heard it from the speaker), measured to the millisecond"
+  },
+  "videoEditCutToSong": "Cut to the song",
+  "@videoEditCutToSong": {
+    "description": "Video edit, a take: a button under the song's details that keeps the take from where its song starts to where it stops"
+  },
+  "videoEditCutToSongTip": "Keep the take from where the song starts to where it stops",
+  "@videoEditCutToSongTip": {
+    "description": "Video edit, a take: the tooltip of the Cut to the song button"
+  },
   "videoEditSongLinedLater": "Lined up as recorded, moved {time} later",
   "@videoEditSongLinedLater": {
     "description": "Video edit, a take: the song lined up as it played while recording, then moved later by hand (time like 0:00.2)",
@@ -2964,15 +2985,7 @@
   },
   "videoEditLayerWatermark": "Watermark",
   "@videoEditLayerWatermark": {
-    "description": "Video edit: the chip of the small tabs.cam line at the bottom right of the video (only Premium can turn it off)"
-  },
-  "videoEditWatermarkTake": "Recorded by tabs.cam",
-  "@videoEditWatermarkTake": {
-    "description": "Video edit: the watermark's text on one of Cam's takes; drawn on the video itself"
-  },
-  "videoEditWatermarkMade": "Made with tabs.cam",
-  "@videoEditWatermarkMade": {
-    "description": "Video edit: the watermark's text on a video Cam didn't record; drawn on the video itself"
+    "description": "Video edit: the chip of the small \"tabs.cam\" at the bottom right of the video (only Premium can turn it off)"
   },
   "videoEditWatermarkAbout": "“{text}”, small, at the bottom right",
   "@videoEditWatermarkAbout": {

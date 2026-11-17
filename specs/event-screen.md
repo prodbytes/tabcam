@@ -243,9 +243,10 @@ The file is shown whole, as what it is:
   sidebar, as usual: it opens with the recording loaded in its player
   frame, paused, marked in its list (not the first file to play, as
   elsewhere), with the frame's controls, section and speed, and its
-  keys once a tap gives the sidebar the keyboard (**0** back to the
-  start of the file or section, the **space bar** to pause and play)
-  ([Cam](cam.md#playing-along-with-a-file)); ♫ hides the sidebar and
+  keys (**0** back to the start of the file or section, count-in
+  included, the **space bar** or **1** to pause and play, with no tap
+  in the sidebar first)
+  ([Cam](cam.md#keys-in-every-screen)); ♫ hides the sidebar and
   pauses it. The screen itself shows a card with a music note,
   "Recording" and "It plays in the sidebar. Pick a page or PDF there to
   follow along." Under the files to play along (Cam's takes aside),
@@ -304,7 +305,9 @@ Its tools, along the bottom:
   can't be deleted (the message says to delete the event instead). The
   play-along sidebar beside a recording has no Delete on the recording's
   own row (it has on the other files,
-  [as in Cam](cam.md#deleting-from-the-sidebar)).
+  [as in Cam](cam.md#deleting-from-the-sidebar)); the takes listed in it
+  have Edit, which opens the video editor on them
+  ([as in Cam](cam.md#editing-a-take-from-the-sidebar)).
 
 Edit, Rename and Delete are off while a tool works and on a capture
 shared read only. The tools share the bar equally, so all four (an

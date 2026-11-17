@@ -21,9 +21,11 @@ import 'package:tabcam_app/capture/camera_list.dart';
 import 'package:tabcam_app/capture/play_along_screen.dart';
 import 'package:tabcam_app/capture/play_along_sidebar.dart';
 import 'package:tabcam_app/capture/auto_pass.dart';
+import 'package:tabcam_app/capture/sound_reader.dart';
 import 'package:tabcam_app/capture/take_log.dart';
 import 'package:tabcam_app/capture/take_h264.dart';
 import 'package:tabcam_app/capture/take_priority.dart';
+import 'package:tabcam_app/capture/take_syncer.dart';
 import 'package:tabcam_app/capture/take_recorder.dart';
 import 'package:tabcam_app/capture/take_sound.dart';
 import 'package:tabcam_app/dictionary/dictionary_sidebar.dart';
@@ -36,6 +38,7 @@ import 'package:tabcam_app/screens/event_screen.dart';
 import 'package:tabcam_app/screens/file_delete.dart';
 import 'package:tabcam_app/screens/messages.dart';
 import 'package:tabcam_app/screens/sidebar_widths.dart';
+import 'package:tabcam_app/screens/video_edit_screen.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 
 import 'fake_camera.dart';
@@ -3016,15 +3019,26 @@ B|--5--8--|
     );
     await frames(tester);
     video.position = Duration.zero;
+    // Each take saved with a song noted has it looked for in its sound
+    // (a reader is opened for it), once the take is saved.
+    var readers = 0;
+    TakeSyncer.reset();
+    SoundReader.opener = () {
+      readers++;
+      return null;
+    };
+    addTearDown(() => SoundReader.opener = null);
     // Loaded in the frame, not playing: Rec plays it.
     expect(video.playing, isEmpty);
     await tester.tap(find.byTooltip('Rec (1)'));
     await frames(tester);
     expect(video.playing, hasLength(1));
+    expect(readers, 0);
     // The take's Stop leaves it playing; Rec again doesn't pause it.
     await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
     expect(video.playing, hasLength(1));
+    await until(tester, () => readers == 1);
     // The take's log notes the song as it played, from its start, so the
     // editor lines it up by itself.
     final riff = library
@@ -3055,8 +3069,10 @@ B|--5--8--|
     expect(video.playing, isEmpty);
     await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
-    // No song played along: none noted.
+    // No song played along: none noted, and none looked for.
     expect(library.byId(id)!.pages.last.takeLog!.song, isEmpty);
+    await frames(tester);
+    expect(readers, 2);
 
     // With it showing again, 1 starts a take and the song, as Rec does.
     await tester.tap(find.byKey(const Key('cam-along')));
@@ -4075,6 +4091,171 @@ B|--5--8--|
           .onPressed,
       isNull,
     );
+  });
+
+  testWidgets('a take\'s row in the sidebar has Edit (scissors) before '
+      'Delete, a song\'s none; greyed while a take records; it pauses what '
+      'plays along and opens the editor on that take, as its file screen '
+      'does; back, Cam is as it was', (tester) async {
+    // Tall enough for the sidebar's whole list (the song, the takes).
+    tester.view.physicalSize = const Size(1200, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final (library, id) = await capture(tester, tab: _tab);
+    late EventPage song;
+    await tester.runAsync(() async {
+      final event = await library.addMedia(library.byId(id)!, [
+        Media(
+          XFile.fromData(Uint8List.fromList([1]), name: 'riff.m4a'),
+          PageKind.audio,
+          'm4a',
+        ),
+      ]);
+      song = event.pages.last;
+    });
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+        ),
+      ),
+    );
+    await frames(tester);
+    await tester.tap(rec);
+    await frames(tester);
+    await tester.tap(_camStop);
+    await until(tester, () => recReady(tester));
+    final take = library.byId(id)!.pages.last;
+    expect(take.title, 'Take 10:00');
+
+    // The take's row: Edit, then Delete, at its right. The song's: Delete
+    // only.
+    final row = find.byKey(ValueKey('cam-along-${take.id}'));
+    final edit = find.byKey(ValueKey('cam-along-edit-${take.id}'));
+    final delete = find.byKey(ValueKey('cam-along-delete-${take.id}'));
+    expect(find.descendant(of: row, matching: edit), findsOneWidget);
+    expect(tester.widget<IconButton>(edit).tooltip, 'Edit Take 10:00');
+    expect(
+      find.descendant(of: edit, matching: find.byIcon(Icons.content_cut)),
+      findsOneWidget,
+    );
+    expect(
+      tester.getTopRight(edit).dx,
+      lessThanOrEqualTo(tester.getTopLeft(delete).dx),
+    );
+    final title = find.descendant(of: row, matching: find.text('Take 10:00'));
+    expect(
+      tester.getTopLeft(edit).dx,
+      greaterThan(tester.getTopRight(title).dx),
+    );
+    expect(find.byKey(ValueKey('cam-along-edit-${song.id}')), findsNothing);
+    expect(find.byKey(ValueKey('cam-along-delete-${song.id}')), findsOneWidget);
+    expect(find.byIcon(Icons.content_cut), findsOneWidget);
+
+    // Recording: greyed, as Delete.
+    await tester.tap(rec);
+    await frames(tester);
+    expect(tester.widget<IconButton>(edit).onPressed, isNull);
+    await tester.tap(_camStop);
+    await until(tester, () => recReady(tester));
+    expect(tester.widget<IconButton>(edit).onPressed, isNotNull);
+
+    // The first take plays along; Edit pauses it and opens the editor on
+    // it, over Cam.
+    await tester.tap(title);
+    await frames(tester);
+    expect(video.playing, isNotEmpty);
+    await tester.tap(edit);
+    await frames(tester);
+    final editor = tester.widget<VideoEditScreen>(find.byType(VideoEditScreen));
+    expect(editor.page.id, take.id);
+    expect(editor.eventId, id);
+    expect(editor.library, same(library));
+    expect(find.text('Take 10:00'), findsWidgets);
+    expect(video.playing, isEmpty);
+
+    // Back: Cam, the take still listed, nothing playing.
+    await tester.pageBack();
+    await tester.pump();
+    await frames(tester);
+    expect(find.byType(VideoEditScreen), findsNothing);
+    expect(find.byType(PlayAlongScreen), findsOneWidget);
+    expect(row, findsOneWidget);
+    expect(video.playing, isEmpty);
+  });
+
+  testWidgets('the Text view\'s sidebar has a take\'s Edit too, and opens '
+      'the editor on it; a capture shared to read has none', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    late EventPage take;
+    await tester.runAsync(() async {
+      final event = await library.addMedia(library.byId(id)!, [
+        Media(
+          XFile.fromData(Uint8List.fromList([1]), name: 'take.mp4'),
+          PageKind.video,
+          'mp4',
+        ),
+      ]);
+      // Named as Cam names its takes.
+      final named = await library.update(
+        event.copyWith(
+          pages: [
+            for (final p in event.pages)
+              p.id == event.pages.last.id
+                  ? p.copyWith(title: () => 'Take 3')
+                  : p,
+          ],
+        ),
+      );
+      take = named.pages.last;
+    });
+    final event = library.byId(id)!;
+    expect(PlayAlongSidebar.mayEdit(event, take), isTrue);
+    expect(PlayAlongSidebar.mayEdit(event, event.pages.first), isFalse);
+    expect(
+      PlayAlongSidebar.mayEdit(event.copyWith(readOnly: true), take),
+      isFalse,
+    );
+
+    await tester.pumpWidget(
+      app(EventScreen(library: library, eventId: id, initialText: true)),
+    );
+    await frames(tester);
+    final edit = find.byKey(ValueKey('cam-along-edit-${take.id}'));
+    expect(
+      find.descendant(
+        of: find.byKey(ValueKey('cam-along-${take.id}')),
+        matching: edit,
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(edit);
+    await frames(tester);
+    expect(
+      tester.widget<VideoEditScreen>(find.byType(VideoEditScreen)).page.id,
+      take.id,
+    );
+    await tester.pageBack();
+    await tester.pump();
+    await frames(tester);
+    expect(find.byType(VideoEditScreen), findsNothing);
+    expect(edit, findsOneWidget);
+
+    // Shared to read: the take is listed, without Edit.
+    await tester.runAsync(
+      () => library.update(
+        library
+            .byId(id)!
+            .copyWith(sharedBy: 'owner@example.com', readOnly: true),
+      ),
+    );
+    await frames(tester);
+    expect(find.byKey(ValueKey('cam-along-${take.id}')), findsOneWidget);
+    expect(edit, findsNothing);
   });
 
   testWidgets('deleting the song playing in the sidebar stops it and closes '

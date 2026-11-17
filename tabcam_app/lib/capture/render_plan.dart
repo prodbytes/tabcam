@@ -532,6 +532,10 @@ List<String> titleText(List<String> lines) => [
       clipChars(t, TitleLayout.maxChars),
 ].take(TitleLayout.maxLines).toList();
 
+/// The watermark's text, on every video and in every language: the
+/// app's name, nothing else.
+const watermarkText = 'tabs.cam';
+
 /// The watermark, [text], in the bottom right corner, the whole video
 /// through, over the tab's bands where they're drawn ([WatermarkLayout]).
 PlanLayer watermarkLayer(String text) => PlanLayer(
@@ -967,54 +971,76 @@ class RenderPlan {
 /// played at another speed is noted, but no renderer plays one at another
 /// speed yet, so those segments are left out), and where it played in the
 /// take's file ([clips], in order: each `at` a time in the file, the log's
-/// lag after the take's clock).
+/// lag after the take's clock, moved by what the take's own sound told of
+/// it, [TakeLog.sync], when it was found there: [measured]).
 @immutable
 class LoggedSong {
-  const LoggedSong(this.page, this.clips);
+  const LoggedSong(
+    this.page,
+    this.clips, {
+    this.measured = false,
+    this.notedAt,
+  });
 
   final String page;
 
   /// Never empty.
   final List<SongClip> clips;
 
+  /// Whether [clips] are where the song was found in the take's sound
+  /// ([TakeSync.found]), not only where the log noted it.
+  final bool measured;
+
+  /// Where the first clip is by the log alone (as [clips] were before the
+  /// song was found in the take's sound); null: there.
+  final Duration? notedAt;
+
   /// The song [log] lines up; null when it noted none (a take saved
   /// before Cam noted the song, or none played along).
   static LoggedSong? of(TakeLog? log) {
-    if (log == null || log.song.isEmpty) return null;
-    final byPage = <String, List<SongSegment>>{};
-    for (final s in log.song) {
-      if (s.speed == 1 && s.to > s.at) (byPage[s.page] ??= []).add(s);
-    }
-    String? best;
-    var most = 0;
-    for (final MapEntry(key: page, value: segments) in byPage.entries) {
-      final played = segments.fold(0, (sum, s) => sum + s.to - s.at);
-      if (played > most) (best, most) = (page, played);
-    }
-    if (best == null) return null;
-    final lag = log.lagMs;
-    final clips = <SongClip>[];
-    for (final s in byPage[best]!) {
-      var at = s.at + lag;
-      var from = s.from;
-      final to = s.from + (s.to - s.at);
-      // Playing as the take started: it played from the file's first
-      // frame (the lag before the take's clock started) too.
-      if (s.at <= 0) {
-        final back = min(at, from);
-        at -= back;
-        from -= back;
+    if (log == null) return null;
+    final segments = log.linedSong;
+    if (segments.isEmpty) return null;
+    final measured = log.sync?.page == segments.first.page && log.sync!.found;
+    List<SongClip> clips({required bool synced}) {
+      final clips = <SongClip>[];
+      for (final s in segments) {
+        var at = log.songFileMs(s, synced: synced);
+        var from = s.from;
+        final to = s.from + (s.to - s.at);
+        // Playing as the take started: it played from the file's first
+        // frame (the lag before the take's clock started) too.
+        if (s.at <= 0) {
+          final back = min(at, from);
+          at -= back;
+          from -= back;
+        }
+        // Before the file's start (its sound told so): cut there.
+        if (at < 0) {
+          from -= at;
+          at = 0;
+        }
+        if (to <= from) continue;
+        clips.add(
+          SongClip(
+            at: Duration(milliseconds: at),
+            from: Duration(milliseconds: from),
+            to: Duration(milliseconds: to),
+          ),
+        );
       }
-      clips.add(
-        SongClip(
-          at: Duration(milliseconds: at),
-          from: Duration(milliseconds: from),
-          to: Duration(milliseconds: to),
-        ),
-      );
+      clips.sort((a, b) => a.at.compareTo(b.at));
+      return clips;
     }
-    clips.sort((a, b) => a.at.compareTo(b.at));
-    return LoggedSong(best, List.unmodifiable(clips));
+
+    final lined = clips(synced: true);
+    if (lined.isEmpty) return null;
+    return LoggedSong(
+      segments.first.page,
+      List.unmodifiable(lined),
+      measured: measured,
+      notedAt: measured ? clips(synced: false).firstOrNull?.at : null,
+    );
   }
 
   /// [edit] with this song in its lane, lined up by itself (`song` not
@@ -1029,10 +1055,36 @@ class LoggedSong {
     offset: clips.first.at - edit.start,
   );
 
-  /// How far [edit] moved the song from where the log lines it up (its
-  /// offset, less the first clip's): ‹ and › and a drag move it all.
-  Duration shiftOf(PageEdit edit) =>
-      edit.offset - (clips.first.at - edit.start);
+  /// How far [edit] moved the song from where it's lined up (its offset,
+  /// less the first clip's): ‹ and › and a drag move it all. An edit that
+  /// kept it where the log alone had it (kept before the song was found
+  /// in the take's sound) didn't move it: it follows what was found.
+  Duration shiftOf(PageEdit edit) {
+    if (notedAt case final noted? when edit.offset == noted - edit.start) {
+      return Duration.zero;
+    }
+    return edit.offset - (clips.first.at - edit.start);
+  }
+
+  /// Where the song starts and stops in the take's file, clip by clip, as
+  /// [edit] has it ([shiftOf]; none past the song's end, [songLength],
+  /// when known), in order, each once, those within the file ([duration]
+  /// long): where a cut falls on the song's own edges.
+  List<Duration> marksIn(
+    PageEdit edit,
+    Duration duration, {
+    Duration songLength = Duration.zero,
+  }) {
+    final marks = <Duration>{};
+    for (final c in clipsIn(edit, songLength)) {
+      if (c.to <= c.from) continue;
+      // In the file: the output's times start at the kept part's.
+      for (final at in [c.at + edit.start, c.end + edit.start]) {
+        if (at >= Duration.zero && at <= duration) marks.add(at);
+      }
+    }
+    return marks.toList()..sort();
+  }
 
   /// Its clips in [edit]'s output (0 its kept part's start), moved as the
   /// edit moved it ([shiftOf]), none past the song's end ([songLength],
@@ -1055,10 +1107,13 @@ class LoggedSong {
   bool operator ==(Object other) =>
       other is LoggedSong &&
       other.page == page &&
+      other.measured == measured &&
+      other.notedAt == notedAt &&
       listEquals(other.clips, clips);
 
   @override
-  int get hashCode => Object.hash(page, Object.hashAll(clips));
+  int get hashCode =>
+      Object.hash(page, measured, notedAt, Object.hashAll(clips));
 }
 
 /// [edit] with the song [logged] lines up, where that's the page's
