@@ -2299,7 +2299,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// the take's bands still grow over this frame, [_tabSizes]), **Background**
   /// (its opacity, 0% to 100% by 5%: the text stays opaque, outlined as
   /// the background fades out), each its name and value over its slider,
-  /// and **Colours** (four swatches, each a bit of band in its colours);
+  /// **Colours** (four swatches, each a bit of band in its colours) and
+  /// **Alignment** (the text to the left, the default, centre or right);
   /// **Default style**; on a phone, in place of the chips, with **Done**
   /// to close it. The preview draws each change at once.
   Widget _tabStyleFields(AppLocalizations l10n) {
@@ -2363,6 +2364,43 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                 onTap: () => _setTabStyle(style.copyWith(colors: colors)),
               ),
           ],
+        ),
+        const SizedBox(height: 12),
+        Text(l10n.videoEditTabAlign),
+        const SizedBox(height: 8),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: SegmentedButton<TabAlign>(
+            key: const Key('video-edit-tab-align'),
+            showSelectedIcon: false,
+            segments: [
+              for (final (align, icon, name) in [
+                (
+                  TabAlign.left,
+                  Icons.format_align_left,
+                  l10n.videoEditTabAlignLeft,
+                ),
+                (
+                  TabAlign.center,
+                  Icons.format_align_center,
+                  l10n.videoEditTabAlignCenter,
+                ),
+                (
+                  TabAlign.right,
+                  Icons.format_align_right,
+                  l10n.videoEditTabAlignRight,
+                ),
+              ])
+                ButtonSegment(
+                  value: align,
+                  icon: Icon(icon, key: Key('video-edit-tab-align-${align.name}')),
+                  tooltip: name,
+                ),
+            ],
+            selected: {style.align},
+            onSelectionChanged: (picked) =>
+                _setTabStyle(style.copyWith(align: picked.single)),
+          ),
         ),
         const SizedBox(height: 4),
         Wrap(

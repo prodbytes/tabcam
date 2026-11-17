@@ -3905,3 +3905,15 @@ spec.
    `Made-up riff_20261117-180509.mp4`); a long name is cut so the time
    always fits. The file list's Download and Download all keep their
    names. See [video edit](video-edit.md).
+
+9. **"Also in the editor, in the tab text settings, let the user align
+   tabs to the left, center or right (default left)."** The tab's style
+   has **Alignment** under Colours: Left (the default), Centre and
+   Right, three icon buttons, each with its name as its tooltip. The
+   band's text sits against its left or right padding, or in the
+   middle; the preview and Download draw it the same (it's in the
+   band's picture). Kept as `align` in the edit's `tabStyle`, only when
+   it isn't left; an unknown one reads as left. Bands used to be
+   centred, so edits made before draw their tab to the left now.
+   Default style puts it back to the left. See
+   [video edit](video-edit.md).

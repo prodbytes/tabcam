@@ -265,8 +265,14 @@ makes a file of it."), opening with the video's edit as it was left:
     **Black on gold**, tabs.cam's gold; the one picked ringed in the
     primary colour with a check; each a button with its name as its
     tooltip and for screen readers, saying whether it's picked),
+    **Alignment** (three buttons, each an icon with its name as its
+    tooltip: **Left**, the default, **Centre** and **Right**: where the
+    tab's text sits across its band, past the band's padding on the
+    left or right; bands were centred before it could be picked, and an
+    edit kept then now draws its tab to the left; kept as `align` in
+    the `tabStyle`, only when it isn't left),
     **Default style** (on once it's anything but the default: back to
-    100%, 70%, white on black) and, on a phone, **Done**. The preview
+    100%, 70%, white on black, to the left) and, on a phone, **Done**. The preview
     draws each change at once, a slider's as it's dragged (a new
     picture of the band showing; nothing is sought or rendered), and
     it's kept a moment later, as every change. A change turns the tab on

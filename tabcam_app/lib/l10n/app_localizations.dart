@@ -3814,6 +3814,30 @@ abstract class AppLocalizations {
   /// **'Black on gold'**
   String get videoEditTabColorsBrand;
 
+  /// Video edit: the tab's style: where the tab's text sits across its band (left, centre or right)
+  ///
+  /// In en, this message translates to:
+  /// **'Alignment'**
+  String get videoEditTabAlign;
+
+  /// Video edit: the tab's text against the band's left edge (the default)
+  ///
+  /// In en, this message translates to:
+  /// **'Left'**
+  String get videoEditTabAlignLeft;
+
+  /// Video edit: the tab's text in the middle of its band
+  ///
+  /// In en, this message translates to:
+  /// **'Centre'**
+  String get videoEditTabAlignCenter;
+
+  /// Video edit: the tab's text against the band's right edge
+  ///
+  /// In en, this message translates to:
+  /// **'Right'**
+  String get videoEditTabAlignRight;
+
   /// Video edit: puts the tab's style back to its default (white on a 70% black strip, at its usual size)
   ///
   /// In en, this message translates to:
