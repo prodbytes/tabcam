@@ -1972,6 +1972,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditTrimEnd => 'Terminar aqui';
 
   @override
+  String get videoEditSpaceKey => 'espaço';
+
+  @override
   String get videoEditPickTrack => 'Escolher uma faixa';
 
   @override

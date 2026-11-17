@@ -2634,6 +2634,10 @@
   "@videoEditTrimEnd": {
     "description": "Video edit: keeps until where the preview is"
   },
+  "videoEditSpaceKey": "space",
+  "@videoEditSpaceKey": {
+    "description": "Video edit: the space bar's name, in Play / Pause's tooltip (it plays or pauses the preview)"
+  },
   "videoEditPickTrack": "Pick a track",
   "@videoEditPickTrack": {
     "description": "Video edit: the sheet's title, and the button to pick the new track"

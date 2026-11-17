@@ -111,7 +111,10 @@ makes a file of it."), opening with the video's edit as it was left:
   While a fade covers the frame shown, a **badge** at the picture's top
   right says so ("Fade in · 3.0 s", "Fade out · 3.0 s"); a tap on it
   opens the fades' sliders (on a phone, in place of the chips).
-- **Under it, on one row**: **Play** / **Pause**, **the current time**
+- **Under it, on one row**: **Play** / **Pause** (its tooltip naming
+  the space bar: **the space bar** plays and pauses the preview too, as
+  a tap on it does, wherever the editor is clicked, but not while the
+  title is typed in, nor with Ctrl, Alt or ⌘ held), **the current time**
   (`0:12.3`, to the tenth of a second: the trims are set by it), the
   part kept (`Keep 0:02.5–0:41.0`, in the primary colour once trimmed;
   it shrinks to fit at large text sizes), and **Start here** (|◀) and
@@ -127,7 +130,13 @@ makes a file of it."), opening with the video's edit as it was left:
   let go); **a click or tap on either lane's bar does too** (the Take
   lane's, or the Song lane's once it has a song; the empty lane's Add
   a song opens its sheet), exactly where it's clicked, while a drag on
-  them still trims or moves as below; playback stays in the kept part. The lanes are labelled
+  them still trims or moves as below; playback stays in the kept part.
+  This holds for a take the browser recorded too, whose player can't say
+  how long it is (MediaRecorder writes no length: the browser calls it
+  endless): the player is told the length the editor finds as it opens
+  (on the web, every player of a capture's file is, as it opens), since
+  until it knows it, every seek went to the start, Play stuck there and
+  the time read a huge negative number. The lanes are labelled
   **Take** and **Song** for one of Cam's takes, **Video sound** and
   **Track** for any other video.
   - **The Take lane**: the whole video, the kept part bright (the lane's
