@@ -23,6 +23,7 @@ import 'place.dart';
 import 'video_edit_screen.dart';
 import 'video_page.dart';
 import 'youtube_link.dart';
+import 'keys_help.dart';
 import 'messages.dart';
 
 export '../library/file_label.dart';
@@ -352,6 +353,7 @@ class _FileScreenState extends State<FileScreen> {
               const DictionaryButton(),
               const MetronomeButton(),
               if (sidebar) PlayAlongButton(along: _alongFor(event, page)),
+              const KeysHelpButton(screen: KeysScreen.player),
             ],
             // Tapping the name renames the file (when the user can edit).
             title: InkWell(

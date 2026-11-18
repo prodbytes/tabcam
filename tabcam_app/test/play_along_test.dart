@@ -386,6 +386,42 @@ void main() {
     });
   });
 
+  testWidgets('In Cam, H shows the keyboard shortcuts and doesn\'t turn the '
+      'tab; shut, the keys turn it again', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    await tester.pumpWidget(app(EventScreen(library: library, eventId: id)));
+    await frames(tester);
+    await tester.tap(find.byKey(const Key('cam')));
+    await frames(tester);
+    expect(find.text('1 / 3'), findsOneWidget);
+    // Cam's own button (the capture's, under it, is the capture's).
+    final button = find.descendant(
+      of: find.byType(PlayAlongScreen),
+      matching: find.byKey(const Key('keys-help')),
+    );
+    expect(button, findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyH);
+    await frames(tester);
+    expect(find.byKey(const Key('keys-help-overlay')), findsOneWidget);
+    expect(find.text('Takes'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyH);
+    await frames(tester);
+    expect(find.byKey(const Key('keys-help-overlay')), findsNothing);
+    expect(find.text('1 / 3'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+    await tester.pump();
+    expect(find.text('2 / 3'), findsOneWidget);
+    // The button too, and the keys are Cam's again after it.
+    await tester.tap(button);
+    await frames(tester);
+    expect(find.byKey(const Key('keys-help-overlay')), findsOneWidget);
+    await tester.tap(find.text('Close'));
+    await frames(tester);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+    await tester.pump();
+    expect(find.text('3 / 3'), findsOneWidget);
+  });
+
   testWidgets('Cam opens the front camera with the tab, one neckline at a '
       'time; keys move along it', (tester) async {
     final (library, id) = await capture(tester, tab: _tab);

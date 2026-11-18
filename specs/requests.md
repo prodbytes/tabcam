@@ -4094,3 +4094,14 @@ spec.
    the cut circle and the triangle. See [dictionary](dictionary.md).
    Then **"also add a chord with added 9th, maybe one with 9th and
    11th"**: `Cadd9` (1 3 5 9) and `Am11` (1 b3 5 b7 9 11) follow them.
+
+8. **"Add a help button on top bar or press 'h' to show keyboard
+   shortcuts overlay."** A keyboard button ("Keyboard shortcuts (H)") in
+   the app bar of Cam, a capture's and a file's screens and the video
+   editor, and the **H** key there, open an overlay listing the screen's
+   keys by section (Cam's tab turning and takes, the play-along player's,
+   the editor's preview), each key in a box. The button shows on the web,
+   computers and tablets (a phone's app bar has no room); H works
+   everywhere, not while typing in a field nor with Ctrl, ⌘ or Alt, and
+   in Cam no longer turns the tab. H, Esc or Close shuts the overlay. See
+   [keyboard shortcuts](keyboard-shortcuts.md).

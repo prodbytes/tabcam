@@ -2587,4 +2587,99 @@ class AppLocalizationsEs extends AppLocalizations {
   String videoEditBalanceRight(int percent) {
     return 'D $percent';
   }
+
+  @override
+  String get keysHelp => 'Atajos de teclado';
+
+  @override
+  String get keysHelpTooltip => 'Atajos de teclado (H)';
+
+  @override
+  String get keysTab => 'Pasar la tablatura';
+
+  @override
+  String get keysNextPhrase =>
+      'Frase siguiente (también con un pedal pasapáginas)';
+
+  @override
+  String get keysPreviousPhrase =>
+      'Frase anterior (también ←, si no suena nada)';
+
+  @override
+  String get keysTakes => 'Tomas';
+
+  @override
+  String get keysRetake =>
+      'Empezar una toma con la canción desde el principio; grabando, descartar la toma y grabarla de nuevo';
+
+  @override
+  String get keysCut =>
+      'Empezar una toma con la canción donde está; grabando, guardar la toma y empezar la siguiente';
+
+  @override
+  String get keysPlayAlongCam =>
+      'Tocar junto (con la barra lateral abierta; ↑ y ↓ pasan la tablatura)';
+
+  @override
+  String get keysPlayAlongPlayer =>
+      'Tocar junto (con la barra lateral abierta)';
+
+  @override
+  String get keysPlayPause => 'Reproducir o pausar la canción';
+
+  @override
+  String get keysRestart => 'Volver al principio, con la cuenta';
+
+  @override
+  String get keysSkip => '10 segundos atrás o adelante';
+
+  @override
+  String get keysPreview => 'Vista previa';
+
+  @override
+  String get keysPlayPausePreview => 'Reproducir o pausar la vista previa';
+
+  @override
+  String get keysToStart =>
+      'Al principio de la parte guardada (otra vez: del video)';
+
+  @override
+  String get keysToEnd => 'Al final de la parte guardada (otra vez: del video)';
+
+  @override
+  String get keysStepTenth => 'Una décima de segundo atrás o adelante';
+
+  @override
+  String get keysStepSecond => 'Un segundo atrás o adelante';
+
+  @override
+  String get keysGeneral => 'En todas partes';
+
+  @override
+  String get keysShowHelp => 'Mostrar u ocultar estos atajos';
+
+  @override
+  String get keysInFields =>
+      'Al escribir en un campo, las teclas escriben como siempre.';
+
+  @override
+  String get keySpace => 'Espacio';
+
+  @override
+  String get keyAnyKey => 'Cualquier tecla';
+
+  @override
+  String get keyBackspace => 'Retroceso';
+
+  @override
+  String get keyPageUp => 'Re Pág';
+
+  @override
+  String get keyHome => 'Inicio';
+
+  @override
+  String get keyEnd => 'Fin';
+
+  @override
+  String get keyShift => 'Mayús';
 }

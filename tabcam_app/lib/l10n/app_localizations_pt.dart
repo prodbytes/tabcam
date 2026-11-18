@@ -2583,4 +2583,97 @@ class AppLocalizationsPt extends AppLocalizations {
   String videoEditBalanceRight(int percent) {
     return 'D $percent';
   }
+
+  @override
+  String get keysHelp => 'Atalhos de teclado';
+
+  @override
+  String get keysHelpTooltip => 'Atalhos de teclado (H)';
+
+  @override
+  String get keysTab => 'Passar a tablatura';
+
+  @override
+  String get keysNextPhrase =>
+      'Próxima frase (também com um pedal de virar página)';
+
+  @override
+  String get keysPreviousPhrase =>
+      'Frase anterior (também ←, se nada estiver tocando)';
+
+  @override
+  String get keysTakes => 'Takes';
+
+  @override
+  String get keysRetake =>
+      'Começar um take com a música do início; gravando, descartar o take e gravá-lo de novo';
+
+  @override
+  String get keysCut =>
+      'Começar um take com a música onde está; gravando, salvar o take e começar o próximo';
+
+  @override
+  String get keysPlayAlongCam =>
+      'Tocar junto (com a barra lateral aberta; ↑ e ↓ passam a tablatura)';
+
+  @override
+  String get keysPlayAlongPlayer => 'Tocar junto (com a barra lateral aberta)';
+
+  @override
+  String get keysPlayPause => 'Tocar ou pausar a música';
+
+  @override
+  String get keysRestart => 'Voltar ao início, com a contagem';
+
+  @override
+  String get keysSkip => '10 segundos para trás ou para a frente';
+
+  @override
+  String get keysPreview => 'Prévia';
+
+  @override
+  String get keysPlayPausePreview => 'Tocar ou pausar a prévia';
+
+  @override
+  String get keysToStart => 'Ao início da parte mantida (de novo: do vídeo)';
+
+  @override
+  String get keysToEnd => 'Ao fim da parte mantida (de novo: do vídeo)';
+
+  @override
+  String get keysStepTenth => 'Um décimo de segundo para trás ou para a frente';
+
+  @override
+  String get keysStepSecond => 'Um segundo para trás ou para a frente';
+
+  @override
+  String get keysGeneral => 'Em todo lugar';
+
+  @override
+  String get keysShowHelp => 'Mostrar ou ocultar estes atalhos';
+
+  @override
+  String get keysInFields =>
+      'Digitando em um campo, as teclas digitam normalmente.';
+
+  @override
+  String get keySpace => 'Espaço';
+
+  @override
+  String get keyAnyKey => 'Qualquer tecla';
+
+  @override
+  String get keyBackspace => 'Backspace';
+
+  @override
+  String get keyPageUp => 'Page Up';
+
+  @override
+  String get keyHome => 'Home';
+
+  @override
+  String get keyEnd => 'End';
+
+  @override
+  String get keyShift => 'Shift';
 }

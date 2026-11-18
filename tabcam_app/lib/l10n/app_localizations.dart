@@ -4299,6 +4299,180 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'R {percent}'**
   String videoEditBalanceRight(int percent);
+
+  /// Keyboard shortcuts overlay: its title
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard shortcuts'**
+  String get keysHelp;
+
+  /// App bar: the keyboard shortcuts button; H opens them too
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard shortcuts (H)'**
+  String get keysHelpTooltip;
+
+  /// Keyboard shortcuts, Cam: the section on moving along the tab
+  ///
+  /// In en, this message translates to:
+  /// **'Turning the tab'**
+  String get keysTab;
+
+  /// Keyboard shortcuts, Cam: any key or ↓ goes to the next phrase (neckline)
+  ///
+  /// In en, this message translates to:
+  /// **'Next phrase (a page-turner pedal too)'**
+  String get keysNextPhrase;
+
+  /// Keyboard shortcuts, Cam: ↑, Backspace and Page Up go to the phrase before
+  ///
+  /// In en, this message translates to:
+  /// **'Previous phrase (← too, with nothing playing along)'**
+  String get keysPreviousPhrase;
+
+  /// Keyboard shortcuts, Cam: the section on recording takes
+  ///
+  /// In en, this message translates to:
+  /// **'Takes'**
+  String get keysTakes;
+
+  /// Keyboard shortcuts, Cam: what the . key does
+  ///
+  /// In en, this message translates to:
+  /// **'Start a take with the song from its start; recording, throw the take away and record it again'**
+  String get keysRetake;
+
+  /// Keyboard shortcuts, Cam: what the / key does
+  ///
+  /// In en, this message translates to:
+  /// **'Start a take with the song where it is; recording, save the take and start the next'**
+  String get keysCut;
+
+  /// Keyboard shortcuts, Cam: the section on the play-along player's keys
+  ///
+  /// In en, this message translates to:
+  /// **'Playing along (while the sidebar shows; ↑ and ↓ then turn the tab)'**
+  String get keysPlayAlongCam;
+
+  /// Keyboard shortcuts, a capture's or file's screen: the play-along player's keys
+  ///
+  /// In en, this message translates to:
+  /// **'Playing along (while the sidebar shows)'**
+  String get keysPlayAlongPlayer;
+
+  /// Keyboard shortcuts: what space and 1 do
+  ///
+  /// In en, this message translates to:
+  /// **'Play or pause the song'**
+  String get keysPlayPause;
+
+  /// Keyboard shortcuts: what 0 does
+  ///
+  /// In en, this message translates to:
+  /// **'Back to the start, with the count-in'**
+  String get keysRestart;
+
+  /// Keyboard shortcuts: what ← and → do in the player
+  ///
+  /// In en, this message translates to:
+  /// **'10 seconds back or on'**
+  String get keysSkip;
+
+  /// Keyboard shortcuts, video editor: the section on the preview
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get keysPreview;
+
+  /// Keyboard shortcuts, video editor: what space does
+  ///
+  /// In en, this message translates to:
+  /// **'Play or pause the preview'**
+  String get keysPlayPausePreview;
+
+  /// Keyboard shortcuts, video editor: what Home does
+  ///
+  /// In en, this message translates to:
+  /// **'To the start of the kept part (again: of the video)'**
+  String get keysToStart;
+
+  /// Keyboard shortcuts, video editor: what End does
+  ///
+  /// In en, this message translates to:
+  /// **'To the end of the kept part (again: of the video)'**
+  String get keysToEnd;
+
+  /// Keyboard shortcuts, video editor: what ← and → do
+  ///
+  /// In en, this message translates to:
+  /// **'A tenth of a second back or on'**
+  String get keysStepTenth;
+
+  /// Keyboard shortcuts, video editor: what Shift + ← and → do
+  ///
+  /// In en, this message translates to:
+  /// **'A second back or on'**
+  String get keysStepSecond;
+
+  /// Keyboard shortcuts: the section on keys every screen has
+  ///
+  /// In en, this message translates to:
+  /// **'Everywhere'**
+  String get keysGeneral;
+
+  /// Keyboard shortcuts: what H does
+  ///
+  /// In en, this message translates to:
+  /// **'Show or hide these shortcuts'**
+  String get keysShowHelp;
+
+  /// Keyboard shortcuts: the note under the list
+  ///
+  /// In en, this message translates to:
+  /// **'Typing in a field, the keys type as usual.'**
+  String get keysInFields;
+
+  /// A key's name: the space bar
+  ///
+  /// In en, this message translates to:
+  /// **'Space'**
+  String get keySpace;
+
+  /// A key's name: any key at all
+  ///
+  /// In en, this message translates to:
+  /// **'Any key'**
+  String get keyAnyKey;
+
+  /// A key's name, as on the keyboard
+  ///
+  /// In en, this message translates to:
+  /// **'Backspace'**
+  String get keyBackspace;
+
+  /// A key's name, as on the keyboard
+  ///
+  /// In en, this message translates to:
+  /// **'Page Up'**
+  String get keyPageUp;
+
+  /// A key's name, as on the keyboard
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get keyHome;
+
+  /// A key's name, as on the keyboard
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get keyEnd;
+
+  /// A key's name, as on the keyboard
+  ///
+  /// In en, this message translates to:
+  /// **'Shift'**
+  String get keyShift;
 }
 
 class _AppLocalizationsDelegate

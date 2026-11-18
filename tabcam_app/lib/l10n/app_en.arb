@@ -3484,5 +3484,121 @@
         "type": "int"
       }
     }
+  },
+  "keysHelp": "Keyboard shortcuts",
+  "@keysHelp": {
+    "description": "Keyboard shortcuts overlay: its title"
+  },
+  "keysHelpTooltip": "Keyboard shortcuts (H)",
+  "@keysHelpTooltip": {
+    "description": "App bar: the keyboard shortcuts button; H opens them too"
+  },
+  "keysTab": "Turning the tab",
+  "@keysTab": {
+    "description": "Keyboard shortcuts, Cam: the section on moving along the tab"
+  },
+  "keysNextPhrase": "Next phrase (a page-turner pedal too)",
+  "@keysNextPhrase": {
+    "description": "Keyboard shortcuts, Cam: any key or ↓ goes to the next phrase (neckline)"
+  },
+  "keysPreviousPhrase": "Previous phrase (← too, with nothing playing along)",
+  "@keysPreviousPhrase": {
+    "description": "Keyboard shortcuts, Cam: ↑, Backspace and Page Up go to the phrase before"
+  },
+  "keysTakes": "Takes",
+  "@keysTakes": {
+    "description": "Keyboard shortcuts, Cam: the section on recording takes"
+  },
+  "keysRetake": "Start a take with the song from its start; recording, throw the take away and record it again",
+  "@keysRetake": {
+    "description": "Keyboard shortcuts, Cam: what the . key does"
+  },
+  "keysCut": "Start a take with the song where it is; recording, save the take and start the next",
+  "@keysCut": {
+    "description": "Keyboard shortcuts, Cam: what the / key does"
+  },
+  "keysPlayAlongCam": "Playing along (while the sidebar shows; ↑ and ↓ then turn the tab)",
+  "@keysPlayAlongCam": {
+    "description": "Keyboard shortcuts, Cam: the section on the play-along player's keys"
+  },
+  "keysPlayAlongPlayer": "Playing along (while the sidebar shows)",
+  "@keysPlayAlongPlayer": {
+    "description": "Keyboard shortcuts, a capture's or file's screen: the play-along player's keys"
+  },
+  "keysPlayPause": "Play or pause the song",
+  "@keysPlayPause": {
+    "description": "Keyboard shortcuts: what space and 1 do"
+  },
+  "keysRestart": "Back to the start, with the count-in",
+  "@keysRestart": {
+    "description": "Keyboard shortcuts: what 0 does"
+  },
+  "keysSkip": "10 seconds back or on",
+  "@keysSkip": {
+    "description": "Keyboard shortcuts: what ← and → do in the player"
+  },
+  "keysPreview": "Preview",
+  "@keysPreview": {
+    "description": "Keyboard shortcuts, video editor: the section on the preview"
+  },
+  "keysPlayPausePreview": "Play or pause the preview",
+  "@keysPlayPausePreview": {
+    "description": "Keyboard shortcuts, video editor: what space does"
+  },
+  "keysToStart": "To the start of the kept part (again: of the video)",
+  "@keysToStart": {
+    "description": "Keyboard shortcuts, video editor: what Home does"
+  },
+  "keysToEnd": "To the end of the kept part (again: of the video)",
+  "@keysToEnd": {
+    "description": "Keyboard shortcuts, video editor: what End does"
+  },
+  "keysStepTenth": "A tenth of a second back or on",
+  "@keysStepTenth": {
+    "description": "Keyboard shortcuts, video editor: what ← and → do"
+  },
+  "keysStepSecond": "A second back or on",
+  "@keysStepSecond": {
+    "description": "Keyboard shortcuts, video editor: what Shift + ← and → do"
+  },
+  "keysGeneral": "Everywhere",
+  "@keysGeneral": {
+    "description": "Keyboard shortcuts: the section on keys every screen has"
+  },
+  "keysShowHelp": "Show or hide these shortcuts",
+  "@keysShowHelp": {
+    "description": "Keyboard shortcuts: what H does"
+  },
+  "keysInFields": "Typing in a field, the keys type as usual.",
+  "@keysInFields": {
+    "description": "Keyboard shortcuts: the note under the list"
+  },
+  "keySpace": "Space",
+  "@keySpace": {
+    "description": "A key's name: the space bar"
+  },
+  "keyAnyKey": "Any key",
+  "@keyAnyKey": {
+    "description": "A key's name: any key at all"
+  },
+  "keyBackspace": "Backspace",
+  "@keyBackspace": {
+    "description": "A key's name, as on the keyboard"
+  },
+  "keyPageUp": "Page Up",
+  "@keyPageUp": {
+    "description": "A key's name, as on the keyboard"
+  },
+  "keyHome": "Home",
+  "@keyHome": {
+    "description": "A key's name, as on the keyboard"
+  },
+  "keyEnd": "End",
+  "@keyEnd": {
+    "description": "A key's name, as on the keyboard"
+  },
+  "keyShift": "Shift",
+  "@keyShift": {
+    "description": "A key's name, as on the keyboard"
   }
 }
