@@ -594,9 +594,12 @@ void main() {
       }
     }
 
-    testWidgets('the own lane at 0.6 plays the video at 0.6; the song '
-        'drifting 200 ms is sought back, 100 ms is let be; a volume change '
-        'seeks nothing', (tester) async {
+    testWidgets('the own lane at 0.6 plays the video at 0.6; the song kept '
+        'in step: a few ms off let be, up to 250 ms nudged by its speed and '
+        'put back once in step, further sought back; a late start is sought '
+        'that much ahead the next time; a volume change seeks nothing', (
+      tester,
+    ) async {
       final (take, song) = await players(tester);
       final takeId = take.playerId;
       final songId = song.playerId;
@@ -613,18 +616,53 @@ void main() {
       expect(platform.playing, contains(songId));
       expect(platform.seeksOf[songId], [s(2)]);
 
-      // 100 ms off: let be, even after a check.
+      // 5 ms off: in step, at its speed.
+      platform.positions[songId] = s(2.005);
+      await ticks(tester, 2);
+      expect(platform.seeksOf[songId], [s(2)]);
+      expect(platform.speeds[songId] ?? 1, 1);
+
+      // 100 ms ahead: a little slower (5% at most), not sought.
       platform.positions[songId] = s(2.1);
-      await ticks(tester, EditedPlayback.driftChecks + 2);
+      await ticks(tester, 2);
+      expect(platform.seeksOf[songId], [s(2)]);
+      expect(platform.speeds[songId], 0.95);
+      // 20 ms behind: a little faster.
+      platform.positions[songId] = s(1.98);
+      await ticks(tester, 2);
+      expect(platform.speeds[songId], closeTo(1.02, 0.001));
+      // Back in step: at its speed again.
+      platform.positions[songId] = s(2);
+      await ticks(tester, 2);
+      expect(platform.speeds[songId], 1);
       expect(platform.seeksOf[songId], [s(2)]);
 
-      // 200 ms off: sought back to where the plan has it.
-      platform.positions[songId] = s(2.2);
-      await ticks(tester, EditedPlayback.driftChecks + 2);
+      // 400 ms off: sought back to where the plan has it.
+      platform.positions[songId] = s(2.4);
+      await ticks(tester, 2);
       expect(platform.seeksOf[songId], [s(2), s(2)]);
+
+      // Started late: 120 ms behind at its first check; the next start
+      // is sought that much ahead.
+      await take.pause();
+      await ticks(tester, 2);
+      await take.play();
+      platform.starting[songId] = Completer<void>();
+      await ticks(tester, 1);
+      platform.positions[songId] = s(1.88);
+      platform.starting.remove(songId)!.complete();
+      await ticks(tester, 3);
+      await take.pause();
+      await ticks(tester, 2);
+      await take.play();
+      await ticks(tester, 2);
+      expect(platform.seeksOf[songId]!.last, s(2.12));
+      platform.positions[songId] = s(2);
+      await ticks(tester, 2);
 
       // A volume (and a mute) change: heard at once, nothing sought or
       // paused.
+      final sought = [...platform.seeksOf[songId]!];
       platform.pauses.clear();
       await playback.set(
         previewOf(edit.copyWith(ownVolume: 0.3, trackVolume: 0.5)),
@@ -637,7 +675,7 @@ void main() {
       await ticks(tester, 3);
       expect(platform.volumes[takeId], 0);
       expect(platform.volumes[songId], 0);
-      expect(platform.seeksOf[songId], [s(2), s(2)]);
+      expect(platform.seeksOf[songId], sought);
       expect(platform.pauses, isNot(contains(songId)));
       expect(platform.playing, contains(songId));
 

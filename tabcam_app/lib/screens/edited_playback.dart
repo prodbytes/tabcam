@@ -26,10 +26,17 @@ import '../library/page_edit.dart';
 ///   isn't known has no end to stop at.
 ///
 /// Checked every tenth of a second while it plays (one check at a time,
-/// none while a seek is under way); every [driftChecks] checks, while
-/// both play, the song's place is compared with where the plan has it,
-/// and sought again when it's more than [driftMost] off (a long video's
-/// song would otherwise drift on). While it plays, both lanes fade in
+/// none while a seek is under way). **The song is kept in step with the
+/// video** at every check, while both play: both players are asked where
+/// they are at once, and the song's error against where the plan has it
+/// is corrected. Within [inStep] (a few milliseconds, below what's heard
+/// as two sounds) it plays at its speed; up to [seekBeyond] off, its
+/// speed is nudged (at most [speedMost] either way, so it's heard as the
+/// same song) to catch up over about a second, then put back; further
+/// off (a seek, a stall), it's sought again. Its start is sought a
+/// little ahead of the video ([_lead]), by as much as it was found late
+/// the last times it started (its player's start-up, learnt as it
+/// plays), so it starts in step rather than catching up. While it plays, both lanes fade in
 /// and out as the plan's fades say, their volumes set again at each
 /// check (paused, they're at their levels). The plan's layers (the tab),
 /// and its fades' black, are drawn over the video by `EditLayers`. The
@@ -62,13 +69,28 @@ class EditedPlayback {
   /// How far the lanes are faded in now (1: at their volumes).
   double _level = 1;
 
-  /// The checks since the song's place was last compared.
-  int _sinceDrift = 0;
+  /// How far off the song may be and play at its speed: below what's
+  /// heard as two sounds apart.
+  static const inStep = Duration(milliseconds: 8);
 
-  /// How often the song's drift is checked (every 2 s), and how far off
-  /// it may be.
-  static const driftChecks = 20;
-  static const driftMost = Duration(milliseconds: 150);
+  /// How far off the song is sought again, rather than nudged.
+  static const seekBeyond = Duration(milliseconds: 250);
+
+  /// The most the song's speed is nudged either way to catch up (5%).
+  static const speedMost = 0.05;
+
+  /// The most the song's start is sought ahead of the video ([_lead]).
+  static const leadMost = Duration(milliseconds: 400);
+
+  /// How far ahead of the video the song's start is sought: its player's
+  /// start-up, as found the last times it started.
+  Duration _lead = Duration.zero;
+
+  /// Whether the next check learns [_lead] (the song just started).
+  bool _learnLead = false;
+
+  /// The song's speed now (1, or nudged to catch up).
+  double _songSpeed = 1;
 
   /// A Play or a Pause being carried out: another pressed meanwhile is
   /// dropped (a pause sent while the browser still starts playing fails
@@ -256,30 +278,63 @@ class EditedPlayback {
     final into = plan.songAt(at - start);
     if (into != null && !_songPlaying) {
       _songPlaying = true;
-      _sinceDrift = 0;
-      await song.seekTo(into);
+      _learnLead = true;
+      await _setSongSpeed(song, 1);
+      await song.seekTo(into + _lead);
       // Unless paused meanwhile.
       if (_songPlaying) await _startSong(song);
     } else if (into == null && _songPlaying) {
       await pauseSong();
-    } else if (into != null && ++_sinceDrift >= driftChecks) {
-      _sinceDrift = 0;
-      await _correctDrift(plan, song);
+    } else if (into != null && _songStarting == null) {
+      await _keepInStep(plan, song);
     }
   }
 
-  /// Seeks the song to where the plan has it, if it's more than
-  /// [driftMost] off: both players asked where they are now.
-  Future<void> _correctDrift(
-    RenderPlan plan,
-    VideoPlayerController song,
-  ) async {
-    final videoAt = await video.position;
-    final songAt = await song.position;
+  /// Keeps the song in step with the video: both players asked where
+  /// they are at once, the song nudged or sought to where the plan has
+  /// it (see the class's doc).
+  Future<void> _keepInStep(RenderPlan plan, VideoPlayerController song) async {
+    final (videoAt, songAt) = await (video.position, song.position).wait;
     if (videoAt == null || songAt == null || !_songPlaying) return;
     final want = plan.songAt(videoAt - start);
     if (want == null) return;
-    if ((songAt - want).abs() > driftMost) await song.seekTo(want);
+    final error = songAt - want;
+    // Just started: how late it was is how far ahead the next start goes.
+    if (_learnLead) {
+      _learnLead = false;
+      if (error.abs() <= seekBeyond * 2) {
+        final lead = _lead - error;
+        _lead = lead < Duration.zero
+            ? Duration.zero
+            : lead > leadMost
+            ? leadMost
+            : lead;
+      }
+    }
+    if (error.abs() > seekBeyond) {
+      await _setSongSpeed(song, 1);
+      await song.seekTo(want + _lead);
+      _learnLead = true;
+      return;
+    }
+    if (error.abs() <= inStep) {
+      await _setSongSpeed(song, 1);
+      return;
+    }
+    // Caught up over about a second: ahead, a little slower; behind, a
+    // little faster.
+    final speed = (1 - error.inMicroseconds / 1e6).clamp(
+      1 - speedMost,
+      1 + speedMost,
+    );
+    await _setSongSpeed(song, speed);
+  }
+
+  /// The song at [speed], unless it's that (or within 0.2% of it) already.
+  Future<void> _setSongSpeed(VideoPlayerController song, double speed) async {
+    if ((speed - _songSpeed).abs() < 0.002) return;
+    _songSpeed = speed;
+    await song.setPlaybackSpeed(speed);
   }
 
   /// Starts [song], waited for [_startMost] at most.

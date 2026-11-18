@@ -35,11 +35,20 @@ playhead is, [below](#the-edit-screen)), the two lanes mixed: the video's own so
 level (through the video's player), and the song's player along it, in
 its clip (from where the plan says it is, paused outside it; checked
 every tenth of a second, as the
-[section](cam.md#playing-along-with-a-file) is). Every 2 seconds, while
-both play, the song's place is compared with where the plan has it, and
-it's sought again when it's more than 150 ms off, so a long video's song
-doesn't drift on (the downloaded file is exact whatever the preview
-does). A change that moves nothing (a level, Mute: a muted lane plays
+[section](cam.md#playing-along-with-a-file) is). <a id="preview-in-step"></a>**The song is
+kept in step with the video** at every check while both play: both
+players are asked where they are at once, and the song's error against
+where the plan has it is corrected. Within 8 ms (below what's heard as
+two sounds) it plays at its speed; up to 250 ms off, its speed is nudged
+by up to 5% either way (heard as the same song) to catch up over about
+a second, then put back; further off (a seek, a stall), it's sought
+again. Its start is sought a little ahead of the video, by as much as it
+was found late the last times it started (its player's start-up, learnt
+as it plays, 400 ms at most), so it starts in step instead of catching
+up. Until 2026-11-18 it was only checked every 2 seconds and sought when
+more than 150 ms off, which left a start-up lag of up to that, heard as
+the song behind the take (the downloaded file is exact whatever the
+preview does). A change that moves nothing (a level, Mute: a muted lane plays
 on at 0, or a fade) doesn't stop or re-seek the song. The plan's
 [layers](#layers) are drawn over the picture as it plays, and its
 [fades](#fades) with them. The
