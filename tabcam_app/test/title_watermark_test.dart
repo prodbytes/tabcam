@@ -279,18 +279,15 @@ void main() {
       ),
     );
 
-    RenderPlan plan(
-      PageEdit? edit, {
-      bool premium = false,
-      TakeLog? takeLog,
-    }) => RenderPlan.of(
-      edit,
-      duration: const Duration(seconds: 20),
-      inputExtension: 'mp4',
-      watermark: watermarkText,
-      premium: premium,
-      takeLog: takeLog,
-    );
+    RenderPlan plan(PageEdit? edit, {bool premium = false, TakeLog? takeLog}) =>
+        RenderPlan.of(
+          edit,
+          duration: const Duration(seconds: 20),
+          inputExtension: 'mp4',
+          watermark: watermarkText,
+          premium: premium,
+          takeLog: takeLog,
+        );
 
     test('turned off, it\'s left out only for a Premium downloader: it '
         'stays when their Premium isn\'t known, or for a collaborator '
@@ -938,6 +935,8 @@ void main() {
           await tester.ensureVisible(
             find.byKey(const Key('video-edit-title-edit')),
           );
+          // Scrolled to (it's under the cut's steps, further down now).
+          await tester.pump();
           await tester.tap(find.byKey(const Key('video-edit-title-edit')));
           await settle(tester);
         }

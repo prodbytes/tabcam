@@ -3947,3 +3947,19 @@ spec.
    font the tabs are shown in, instead of Roboto; its size, colour,
    shadow and place are unchanged, in the preview and the downloaded
    file alike. See [video edit](video-edit.md).
+2. **"Adjustments can be in steps of 0:00.1"**, then **"half of that to
+   be sure."** The video editor's adjustments now step by **0.05 s** (a
+   twentieth of a second). **The cut's two ends** have steps of their
+   own, under the lanes: **Start 0:02.5** and **End 0:41.0**, each
+   between **‹** and **›**, which move that end 0.05 s earlier or later
+   (the preview, paused, shows the frame cut at; the song stays where
+   it is along the video). **The song's ‹ and ›** nudge it 0.05 s too
+   (they were a tenth). A cut's or the song's time is shown to the
+   hundredth when it isn't on a tenth (`0:02.55`), so every step shows.
+   The grips still drag freely and snap to the song's marks; Start here
+   and End here cut where the preview is. New strings
+   `videoEditCutStartAt`, `videoEditCutEndAt`, `videoEditStartEarlier`,
+   `videoEditStartLater`, `videoEditEndEarlier` and `videoEditEndLater`,
+   and `videoEditTrackEarlier` / `videoEditTrackLater` reworded, in
+   English, Spanish and Portuguese. See
+   [video edit](video-edit.md#the-cuts-steps).
