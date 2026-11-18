@@ -68,39 +68,45 @@ class SongClip {
 
 /// The video's own sound, at [volume] (0 to 2: its lane's level through
 /// the master's, `PageEdit.ownLevel`; 0 only in a preview's plan, for a
-/// lane that isn't heard).
+/// lane that isn't heard), its channels and balance as [stereo] says
+/// (`PageEdit.ownStereo`).
 @immutable
 class OwnLane {
-  const OwnLane({this.volume = 1});
+  const OwnLane({this.volume = 1, this.stereo = LaneStereo.standard});
 
   final double volume;
+  final LaneStereo stereo;
 
   @override
-  bool operator ==(Object other) => other is OwnLane && other.volume == volume;
+  bool operator ==(Object other) =>
+      other is OwnLane && other.volume == volume && other.stereo == stereo;
 
   @override
-  int get hashCode => volume.hashCode;
+  int get hashCode => Object.hash(volume, stereo);
 
   @override
-  String toString() => 'OwnLane($volume)';
+  String toString() => 'OwnLane($volume, $stereo)';
 }
 
 /// The song lane: the capture's page [page], its [file] (left out of a
 /// preview's plan), at [volume] (0 to 2: its lane's level through the
-/// master's, `PageEdit.songLevel`), heard in [clips], in output
-/// order, silent between them.
+/// master's, `PageEdit.songLevel`), its channels and balance as [stereo]
+/// says (`PageEdit.songStereo`), heard in [clips], in output order,
+/// silent between them.
 @immutable
 class SongLane {
   const SongLane({
     this.file,
     this.page,
     this.volume = 1,
+    this.stereo = LaneStereo.standard,
     this.clips = const [],
   });
 
   final XFile? file;
   final String? page;
   final double volume;
+  final LaneStereo stereo;
   final List<SongClip> clips;
 
   @override
@@ -109,13 +115,15 @@ class SongLane {
       other.file == file &&
       other.page == page &&
       other.volume == volume &&
+      other.stereo == stereo &&
       listEquals(other.clips, clips);
 
   @override
-  int get hashCode => Object.hash(file, page, volume, Object.hashAll(clips));
+  int get hashCode =>
+      Object.hash(file, page, volume, stereo, Object.hashAll(clips));
 
   @override
-  String toString() => 'SongLane($page, $volume, $clips)';
+  String toString() => 'SongLane($page, $volume, $stereo, $clips)';
 }
 
 /// Where a layer sits on the frame: by a corner, a margin in from it
@@ -733,9 +741,15 @@ class RenderPlan {
     final audible = kind != RenderKind.silent;
     OwnLane? own;
     if (audible && (edit == null || edit.ownAudible)) {
-      own = OwnLane(volume: edit?.ownLevel ?? 1);
+      own = OwnLane(
+        volume: edit?.ownLevel ?? 1,
+        stereo: edit?.ownStereo ?? LaneStereo.standard,
+      );
     } else if (audible && preview) {
-      own = const OwnLane(volume: 0);
+      own = OwnLane(
+        volume: 0,
+        stereo: edit?.ownStereo ?? LaneStereo.standard,
+      );
     }
     SongLane? song;
     if (audible &&
@@ -768,6 +782,7 @@ class RenderPlan {
         file: songFile,
         page: edit.trackId,
         volume: edit.songAudible ? edit.songLevel : 0,
+        stereo: edit.songStereo,
         clips: clampClips(clips, length),
       );
     }
@@ -869,7 +884,7 @@ class RenderPlan {
       (song != null && song!.volume > 0 && song!.clips.isNotEmpty);
 
   /// Whether Download can save [input] as it is: the whole video, its own
-  /// sound as it is and nothing else (nothing drawn over it, no fades),
+  /// sound as it is (its level, channels and balance) and nothing else (nothing drawn over it, no fades),
   /// already in the format made. Only then is no file made.
   bool get passthrough =>
       video &&
@@ -879,6 +894,7 @@ class RenderPlan {
       start <= Duration.zero &&
       end >= duration &&
       own?.volume == 1 &&
+      own!.stereo.isStandard &&
       song == null;
 
   /// What moves sound in it ([PlanTimeline]).
@@ -908,11 +924,16 @@ class RenderPlan {
       'video': video,
       'startMs': start.inMilliseconds,
       'endMs': end.inMilliseconds,
-      if (own case final own?) 'own': {'volume': own.volume},
+      if (own case final own?)
+        'own': {
+          'volume': own.volume,
+          if (!own.stereo.isStandard) 'mix': own.stereo.matrix,
+        },
       if (song case final song?)
         'song': {
           'path': song.file?.path,
           'volume': song.volume,
+          if (!song.stereo.isStandard) 'mix': song.stereo.matrix,
           'clips': [for (final c in song.clips) c.toJson()],
         },
       if (layers.isNotEmpty) ...{
