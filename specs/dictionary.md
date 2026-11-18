@@ -8,8 +8,8 @@ in all its views (Files, Text, and the locked previews), the
 link, and Home's captures ([navigation](navigation.md); not the Capture
 and Profile tabs, where the sidebar doesn't show but stays open). It's free for everyone, and takes nothing from tabs.cam's servers:
 the chords and scales are worked out on the device
-([`lib/dictionary/`](../tabcam_app/lib/dictionary/)); only a YouTube
-search leaves it, from the device straight to YouTube.
+([`lib/dictionary/`](../tabcam_app/lib/dictionary/)); only a song's
+searches leave it, from the device straight to YouTube and Cifra Club.
 
 It shows and hides the **Dictionary sidebar**: on the right of the
 screen, as the play-along player's sidebar opens
@@ -136,7 +136,7 @@ search field, focused, and under it, scrolling, what was typed is:
   browser or YouTube app), as any link opens
   ([event screen](event-screen.md)). Under it, once typing stops for
   **two seconds** ("Searching YouTube…" and a progress bar meanwhile),
-  come **YouTube's results**, right there in the sidebar: eight videos,
+  come **YouTube's results**, right there in the sidebar: three videos,
   each with its thumbnail, title (two lines at most) and channel, and
   an open-in-new mark; a tap opens the video on YouTube outside the app,
   in a new tab on the web ("Open on YouTube" as its tooltip). Enter (the
@@ -158,8 +158,27 @@ search field, focused, and under it, scrolling, what was typed is:
   grants more (the YouTube API Services audit and quota form). No
   tabs.cam server is involved. A build without the key shows the button
   only, and Enter opens YouTube's search as the button does.
+  **Under YouTube's, Cifra Club's results** ("Tabs on Cifra Club"):
+  three songs it has a tab or chords of, each with the artist's picture
+  (where it has one), the song's title (two lines at most) and artist,
+  and an open-in-new mark; a tap opens the song's page on Cifra Club
+  outside the app ("Open on Cifra Club"). They're searched with
+  YouTube's (the same two seconds, and Enter at once) and told on their
+  own: "Searching Cifra Club…" with a progress bar, "Couldn't load Cifra
+  Club's results." when the search fails, "Cifra Club found no tabs."
+  when it finds nothing; the device keeps the last 50 searches' results
+  as it does YouTube's. **How**: the device asks Cifra Club's own search
+  index (`solr.sscdn.co/cc/h2/`, the site's Solr, which answers any
+  origin, so the browser asks it too), for ten results, of which the
+  songs (not the artists among them) are kept, the first three shown;
+  no key, no quota, no tabs.cam server
+  ([`cifraclub_search.dart`](../tabcam_app/lib/dictionary/cifraclub_search.dart)).
+  A build without the YouTube key still searches Cifra Club.
 
-Nothing typed, the sidebar explains itself and offers examples to tap (`C`,
-`Am7`, `F#m7b5`, `G/B`, `A minor pentatonic`, `E blues`, `D dorian`).
+Nothing typed, the sidebar explains itself and offers pills to tap: **the
+capture's title first**, on a capture's screens (the capture, a file, Cam;
+Home has none), so a song's tabs and videos are a tap away, then the
+examples (`C`, `Am7`, `F#m7b5`, `G/B`, `A minor pentatonic`, `E blues`,
+`D dorian`). A long title is cut to the sidebar's width.
 In English, Spanish and Portuguese (the chord names and qualities are
 the same in every language).

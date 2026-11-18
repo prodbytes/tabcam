@@ -1762,6 +1762,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
           body: MetronomeBeside(
             onClosed: _focus.requestFocus,
             child: DictionaryBeside(
+              title: event?.title,
               onClosed: _focus.requestFocus,
               child: gate == null
                   ? body

@@ -3945,3 +3945,27 @@ spec.
     tooltip is now "Rec (.)" and Stop's "Stop · new take (/) · redo (.)"
     (Spanish and Portuguese too); `PlayAlongKeys` lost its `oneToggles`
     switch. See [Cam](cam.md#rec-key).
+
+12. **"On the dictionary view, on the pills, always offer the capture
+    title as first pill. if not found, search also cifraclub besides
+    youtube and show it below. show top 3 of each is fine."** Nothing
+    typed, the dictionary's first pill is the capture's title (on the
+    capture, a file and Cam; Home has no capture), before the examples.
+    Anything that's not a chord or a scale is now searched on Cifra
+    Club too, from the device (the site's own search index, which
+    answers the browser as well; no key, no server), and its three
+    songs show under YouTube's three videos ("Tabs on Cifra Club"),
+    each opening its page outside the app; searching, failing and
+    finding nothing are told for each on its own. New strings
+    `dictionaryCifraClub*` in English, Spanish and Portuguese; the
+    intro says YouTube and Cifra Club. See
+    [dictionary](dictionary.md).
+
+## 2026-11-18
+
+1. **"Make the tabs watermark fixed width font."** The watermark
+   ("tabs.cam", bottom right) is drawn in Roboto Mono, the fixed-width
+   font the tabs are shown in, instead of Roboto; its size, colour,
+   shadow and place are unchanged, in the preview and the downloaded
+   file alike. See [video edit](video-edit.md).
+

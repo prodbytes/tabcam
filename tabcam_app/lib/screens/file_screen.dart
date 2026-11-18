@@ -373,6 +373,7 @@ class _FileScreenState extends State<FileScreen> {
           // plays in it.
           body: MetronomeBeside(
             child: DictionaryBeside(
+              title: event.title,
               child: _beside(
                 event,
                 page,
