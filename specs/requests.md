@@ -4189,3 +4189,14 @@ spec.
    (a millisecond at 32×), not of the whole video. The zoom's buttons
    use the PDF view's "Zoom in" / "Zoom out" strings. See
    [video edit](video-edit.md#zoom).
+
+14. **"Make tracks show waveform if possible."** Each of the editor's
+   lanes draws its sound as a waveform over its bar: the Take lane the
+   video's own, the Song lane the song's, where it plays along the
+   video (each clip of one lined up in clips), brighter in the part kept
+   and dim outside it, each scaled to its loudest. The sound is read on
+   the device once (as the editor opens, or a song is picked) with the
+   readers the song's line-up uses (Web Audio, MediaCodec,
+   AVAssetReader), kept as its loudest every 5 ms, so it stays fine at
+   the timeline's highest zoom; until then, or where it can't be read,
+   the lanes show as before. See [video edit](video-edit.md#waveforms).

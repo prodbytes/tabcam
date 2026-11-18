@@ -173,6 +173,24 @@ them, the cut's steps go first, then the lanes, then the transport.
   tenth of a second when it's on one, else **to the hundredth**
   (`0:02.55`, `0:01.26`), so every step of ‹ and › shows, and a cut on
   one of the song's marks reads as it is.
+- <a id="waveforms"></a>**Each lane draws its sound**: a waveform over
+  its bar, the Take lane's from the video's own sound, the Song lane's
+  from the song's file where the song plays along the video (each clip
+  of one lined up in clips, the part used of one placed by hand), each
+  point's loudest mirrored about the bar's middle, in the text's colour,
+  brighter in the part kept and dim outside it, scaled so the loudest of
+  each is the bar's height (a quiet take shows as well as a loud song).
+  The sound is read once, as the editor opens or a song is picked, on
+  the device with the same readers as [the song's line-up](#a-takes-song-lined-up)
+  ([`SoundReader`](../tabcam_app/lib/capture/sound_reader.dart): Web
+  Audio in the browser, `MediaCodec` on Android, `AVAssetReader` on
+  iOS), at 4000 samples a second and kept as its loudest every 5 ms
+  ([`waveform.dart`](../tabcam_app/lib/capture/waveform.dart); at most
+  30 minutes), so it stays fine zoomed in all the way ([zoom](#zoom)).
+  Until it's read, and where it can't be (no reader on a desktop build,
+  no sound in the file, a format not decoded), the bar shows without
+  it, as before; it never holds anything back, and nothing is sent
+  anywhere.
 - <a id="zoom"></a>**The timeline zooms**: **Zoom out** and **Zoom in**
   (magnifiers) sit in the corner left of the ruler, over the lanes'
   headers, with the zoom between them once it isn't the whole video
