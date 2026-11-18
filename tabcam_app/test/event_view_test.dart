@@ -170,15 +170,31 @@ void main() {
     expect(find.text('Page 2'), findsNothing);
   });
 
-  testWidgets('the last file can\'t be deleted', (tester) async {
+  testWidgets('the last file deletes the capture with it, once confirmed',
+      (tester) async {
     await open(tester);
+    final title = event().title;
     await tester.tap(find.text('Page 1'));
     await frames(tester);
     await tester.tap(find.byTooltip('Delete'));
     await frames(tester);
+    expect(find.text('Delete "$title"?'), findsOneWidget);
+    expect(
+      find.textContaining('"Page 1" is its only file'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Cancel'));
+    await frames(tester);
     expect(event().pages, hasLength(1));
-    expect(find.textContaining('delete the event instead'), findsOneWidget);
     expect(find.byType(FileScreen), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Delete'));
+    await frames(tester);
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await frames(tester);
+    expect(library.byId(id), isNull);
+    expect(library.byIdAll(id)!.isTrashed, isTrue);
+    expect(find.byType(FileScreen), findsNothing);
   });
 
   testWidgets('a tap on a link opens it outside the app', (tester) async {

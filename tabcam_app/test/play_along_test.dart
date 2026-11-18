@@ -4542,4 +4542,71 @@ B|--5--8--|
     expect(find.byType(AlertDialog), findsNothing);
     expect(ids(), isNot(contains(songs[2])));
   });
+
+
+  testWidgets('a take that is its capture\'s only file deletes the capture '
+      'from the sidebar, once confirmed, and Cam goes back to Home', (
+    tester,
+  ) async {
+    late String id;
+    late Library library;
+    await tester.runAsync(() async {
+      library = Library(PlatformEventStore(), null, (_) async => null);
+      await library.load();
+      final event = await library.addMedia(
+        await library.create([img.encodeJpg(img.Image(width: 8, height: 8))]),
+        [
+          Media(
+            XFile.fromData(Uint8List.fromList([1]), name: 'take.mp4'),
+            PageKind.video,
+            'mp4',
+          ),
+        ],
+        take: true,
+      );
+      // The photo gone: the take is all that's left.
+      id = (await library.deletePage(event, event.pages.first)).id;
+    });
+    expect(library.byId(id)!.pages.single.take, isTrue);
+    final take = library.byId(id)!.pages.single;
+    await tester.pumpWidget(
+      app(
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => PlayAlongScreen(
+                  library: library,
+                  eventId: id,
+                  cameras: () async => [_front],
+                  headTracking: (_, _) => null,
+                  takeRecorder: () => null,
+                ),
+              ),
+            ),
+            child: const Text('Home'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Home'));
+    await frames(tester);
+    final delete = find.byKey(ValueKey('cam-along-delete-${take.id}'));
+    expect(delete, findsOneWidget);
+    await tester.tap(delete);
+    await frames(tester);
+    expect(
+      find.textContaining('is its only file, so the capture goes with it'),
+      findsOneWidget,
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await frames(tester);
+    expect(library.byId(id), isNull);
+    expect(library.byIdAll(id)!.isTrashed, isTrue);
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.byType(PlayAlongScreen), findsNothing);
+    expect(find.text('Home'), findsOneWidget);
+  });
 }

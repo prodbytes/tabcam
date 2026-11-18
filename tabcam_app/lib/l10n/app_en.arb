@@ -432,9 +432,18 @@
   "@eventRead": {
     "description": "Event Text view: button to read the tab"
   },
-  "eventKeepOnePage": "An event keeps at least one page; delete the event instead.",
+  "eventKeepOnePage": "A shared capture keeps at least one file: only its owner deletes the capture.",
   "@eventKeepOnePage": {
-    "description": "Event: snackbar on deleting the last page"
+    "description": "Event: snackbar on deleting the last file of a capture shared with the user"
+  },
+  "eventDeleteLastFile": "\"{name}\" is its only file, so the capture goes with it, to Deleted on the Profile tab: you can restore it there until you purge.",
+  "@eventDeleteLastFile": {
+    "description": "Delete confirmation body: the file deleted is the capture's last, so the capture is deleted with it",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "eventRename": "Rename",
   "@eventRename": {
