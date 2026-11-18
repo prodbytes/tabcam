@@ -4031,3 +4031,31 @@ spec.
      them (on a phone, hold o for ø and º; on a Mac ⌥O, ⌥J and ⌥0; or the
      letters or the name).
    See [dictionary](dictionary.md).
+
+5. **"In the track editor also add a balance to tracks. Let user clone
+   the audio of a track to both channels (my recording take is only left
+   and I want it left and right)."** Each lane of the
+   [video editor](video-edit.md#a-lanes-channels-and-balance) (Take or
+   Video sound, and Song or Track) has, in its volume's popup under the
+   slider:
+   - **Channels**: Stereo (as recorded), **Left** (its left channel on
+     both sides: the take recorded on the left only plays left and
+     right), Right, and Mono (both mixed, on both sides).
+   - **Balance**: left 100% through Centre to right 100%, in steps of 5%;
+     the other side turned down in a straight line.
+   - Kept with the edit (`ownChannels`, `ownBalance`, `songChannels`,
+     `songBalance`, only when not the default; older apps keep them and
+     play the sound as it is), and Reset clears them. Download applies
+     them on every platform from one matrix the plan works out: Web Audio
+     (splitter, gains, merger) in the browser, Media3's
+     `ChannelMixingAudioProcessor` on Android, an `MTAudioProcessingTap`
+     on iOS (where a one-channel track stays in the middle). The preview
+     can't pan (the players have no balance), so it plays the sound as
+     recorded, and the popup says Download has them.
+   - Checked: the model, the stored keys and the plan's matrix
+     (`test/lane_stereo_test.dart`), the popup kept and reopened
+     (`test/video_edit_test.dart`), and in Chrome a tone recorded on the
+     left only made both sides, panned, and a one-channel tone panned
+     (`test/web_lane_stereo_test.dart`); the Kotlin and Swift argument
+     readers and the Swift sample math have native tests (compiled, not
+     run on a phone).
