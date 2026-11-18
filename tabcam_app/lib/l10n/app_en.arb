@@ -2493,6 +2493,48 @@
   "@dictionaryNoVoicings": {
     "description": "Dictionary: a chord with no voicing found"
   },
+  "dictionaryAlsoWritten": "Also written {forms}",
+  "@dictionaryAlsoWritten": {
+    "description": "Dictionary: a chord's other symbols, under its degrees (Bø, Bø7)",
+    "placeholders": {
+      "forms": {
+        "type": "String",
+        "example": "Bø, Bø7"
+      }
+    }
+  },
+  "dictionaryHalfDiminished": "half-diminished",
+  "@dictionaryHalfDiminished": {
+    "description": "Dictionary: the m7b5 chord in words, written ø (the cut circle)"
+  },
+  "dictionaryMajorSeventh": "major seventh",
+  "@dictionaryMajorSeventh": {
+    "description": "Dictionary: the maj7 chord in words, written Δ (the triangle)"
+  },
+  "dictionaryMinorMajorSeventh": "minor major seventh",
+  "@dictionaryMinorMajorSeventh": {
+    "description": "Dictionary: the m(maj7) chord in words"
+  },
+  "dictionaryDiminished": "diminished",
+  "@dictionaryDiminished": {
+    "description": "Dictionary: the dim chord in words, written °"
+  },
+  "dictionaryDiminishedSeventh": "diminished seventh",
+  "@dictionaryDiminishedSeventh": {
+    "description": "Dictionary: the dim7 chord in words, written °7"
+  },
+  "dictionaryAugmented": "augmented",
+  "@dictionaryAugmented": {
+    "description": "Dictionary: the aug chord in words, written +"
+  },
+  "dictionarySymbols": "Chord symbols",
+  "@dictionarySymbols": {
+    "description": "Dictionary: the heading of the symbols key under the examples"
+  },
+  "dictionarySymbolsTyping": "To type them: on a phone, hold o for ø and º; on a Mac, ⌥O types ø, ⌥J ∆ and ⌥0 º. Or write the letters (m7b5, maj7 or ^7, dim or o, aug) or the name (half diminished).",
+  "@dictionarySymbolsTyping": {
+    "description": "Dictionary: how to type the chord symbols, under the symbols key"
+  },
   "dictionaryYouTube": "Not a chord or a scale. Search YouTube for “{query}”.",
   "@dictionaryYouTube": {
     "description": "Dictionary: the query is neither",

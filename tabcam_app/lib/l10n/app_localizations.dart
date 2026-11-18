@@ -3088,6 +3088,60 @@ abstract class AppLocalizations {
   /// **'No way to play it within four frets.'**
   String get dictionaryNoVoicings;
 
+  /// Dictionary: a chord's other symbols, under its degrees (Bø, Bø7)
+  ///
+  /// In en, this message translates to:
+  /// **'Also written {forms}'**
+  String dictionaryAlsoWritten(String forms);
+
+  /// Dictionary: the m7b5 chord in words, written ø (the cut circle)
+  ///
+  /// In en, this message translates to:
+  /// **'half-diminished'**
+  String get dictionaryHalfDiminished;
+
+  /// Dictionary: the maj7 chord in words, written Δ (the triangle)
+  ///
+  /// In en, this message translates to:
+  /// **'major seventh'**
+  String get dictionaryMajorSeventh;
+
+  /// Dictionary: the m(maj7) chord in words
+  ///
+  /// In en, this message translates to:
+  /// **'minor major seventh'**
+  String get dictionaryMinorMajorSeventh;
+
+  /// Dictionary: the dim chord in words, written °
+  ///
+  /// In en, this message translates to:
+  /// **'diminished'**
+  String get dictionaryDiminished;
+
+  /// Dictionary: the dim7 chord in words, written °7
+  ///
+  /// In en, this message translates to:
+  /// **'diminished seventh'**
+  String get dictionaryDiminishedSeventh;
+
+  /// Dictionary: the aug chord in words, written +
+  ///
+  /// In en, this message translates to:
+  /// **'augmented'**
+  String get dictionaryAugmented;
+
+  /// Dictionary: the heading of the symbols key under the examples
+  ///
+  /// In en, this message translates to:
+  /// **'Chord symbols'**
+  String get dictionarySymbols;
+
+  /// Dictionary: how to type the chord symbols, under the symbols key
+  ///
+  /// In en, this message translates to:
+  /// **'To type them: on a phone, hold o for ø and º; on a Mac, ⌥O types ø, ⌥J ∆ and ⌥0 º. Or write the letters (m7b5, maj7 or ^7, dim or o, aug) or the name (half diminished).'**
+  String get dictionarySymbolsTyping;
+
   /// Dictionary: the query is neither
   ///
   /// In en, this message translates to:

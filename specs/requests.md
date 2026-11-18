@@ -3947,3 +3947,28 @@ spec.
    font the tabs are shown in, instead of Roboto; its size, colour,
    shadow and place are unchanged, in the preview and the downloaded
    file alike. See [video edit](video-edit.md).
+2. **"Add to the dictionary 'half diminished' (the cut circle) and
+   whatever the triangle is, and how to write it."** The dictionary reads
+   the chord symbols however they're typed and says what they are:
+   - **ø** (the cut circle) is half-diminished, `m7b5`: `Bø`, `BØ`,
+     `B∅`, `Bø7`, `Bm7(b5)`, `B-7b5`, or in words `B half diminished`
+     (`half-diminished`, `half dim`), `Si semidisminuido`, `Si
+     meio-diminuto`.
+   - **Δ** (the triangle) is a major seventh, `maj7`: `CΔ`, `CΔ7`, and
+     the triangle as `∆` (a Mac's ⌥J), `△` or `^` (`C^7`), `C7M`, `C
+     major 7`, `C major seventh`, `Do séptima mayor`, `Dó sétima maior`;
+     `CΔ9` is `Cmaj9`, `CmΔ7` and `C-Δ7` are `Cm(maj7)`. (`CΔ7` was
+     already listed but didn't work: lower-casing the query turned the Δ
+     into a δ.)
+   - `˚` is read as `°`, `C diminished 7` as `Cdim7`, `C augmented` and
+     `C(#5)` as `Caug`; `C diminished` alone stays the scale.
+   - A chord's result says, under its degrees, the quality in words where
+     it has a symbol (half-diminished, major seventh, minor major seventh,
+     diminished, diminished seventh, augmented) and **"Also written"**
+     its other symbols (`Bø, Bø7, Bm7(b5), B-7b5`).
+   - The empty sidebar has a **Chord symbols** key under its examples:
+     ø, Δ, °, °7 and +, each with its name, an example to tap (`Bø`,
+     `CΔ7`, `B°`, `B°7`, `C+`) and how else it's written, then how to type
+     them (on a phone, hold o for ø and º; on a Mac ⌥O, ⌥J and ⌥0; or the
+     letters or the name).
+   See [dictionary](dictionary.md).

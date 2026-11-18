@@ -1871,6 +1871,36 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dictionaryNoVoicings => 'Não há como tocá-lo em quatro casas.';
 
   @override
+  String dictionaryAlsoWritten(String forms) {
+    return 'Também se escreve $forms';
+  }
+
+  @override
+  String get dictionaryHalfDiminished => 'meio-diminuto';
+
+  @override
+  String get dictionaryMajorSeventh => 'sétima maior';
+
+  @override
+  String get dictionaryMinorMajorSeventh => 'menor com sétima maior';
+
+  @override
+  String get dictionaryDiminished => 'diminuto';
+
+  @override
+  String get dictionaryDiminishedSeventh => 'sétima diminuta';
+
+  @override
+  String get dictionaryAugmented => 'aumentado';
+
+  @override
+  String get dictionarySymbols => 'Símbolos de acordes';
+
+  @override
+  String get dictionarySymbolsTyping =>
+      'Para digitá-los: no celular, segure o o para ø e º; no Mac, ⌥O digita ø, ⌥J ∆ e ⌥0 º. Ou escreva as letras (m7b5, 7M ou ^7, dim ou o, aug) ou o nome (meio-diminuto).';
+
+  @override
   String dictionaryYouTube(String query) {
     return 'Não é um acorde nem uma escala. Pesquisar “$query” no YouTube.';
   }

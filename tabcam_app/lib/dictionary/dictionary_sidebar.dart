@@ -603,10 +603,111 @@ class _Intro extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(height: 24),
+        _Symbols(onExample: onExample),
       ],
     );
   }
 }
+
+/// The chord symbols a chart writes instead of letters (the cut circle,
+/// the triangle…): what each one is, how else it's written, and how to
+/// type it; a row's tap looks its example up.
+class _Symbols extends StatelessWidget {
+  const _Symbols({required this.onExample});
+
+  final ValueChanged<String> onExample;
+
+  /// The symbol, the example a tap looks up, and how else it's written.
+  static const rows = [
+    ('ø', 'Bø', 'Bø7 = Bm7b5 = Bm7(b5)'),
+    ('Δ', 'CΔ7', 'CΔ = Cmaj7 = CM7 = C7M = C^7'),
+    ('°', 'B°', 'Bdim = Bo'),
+    ('°7', 'B°7', 'Bdim7 = Bo7'),
+    ('+', 'C+', 'Caug = C(#5)'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final names = {
+      'ø': l10n.dictionaryHalfDiminished,
+      'Δ': l10n.dictionaryMajorSeventh,
+      '°': l10n.dictionaryDiminished,
+      '°7': l10n.dictionaryDiminishedSeventh,
+      '+': l10n.dictionaryAugmented,
+    };
+    return Column(
+      key: const Key('dictionary-symbols'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.dictionarySymbols, style: theme.textTheme.titleSmall),
+        const SizedBox(height: 4),
+        for (final (symbol, example, written) in rows)
+          InkWell(
+            key: Key('dictionary-symbol-$example'),
+            onTap: () => onExample(example),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 40,
+                    child: Text(
+                      symbol,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${names[symbol]} · $example',
+                          style: theme.textTheme.bodyLarge,
+                        ),
+                        Text(
+                          written,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        const SizedBox(height: 8),
+        Text(
+          l10n.dictionarySymbolsTyping,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The name in words of the qualities written with a symbol (`ø` is
+/// half-diminished), or null.
+String? chordQualityName(AppLocalizations l10n, ChordQuality quality) =>
+    switch (quality.symbol) {
+      'm7b5' => l10n.dictionaryHalfDiminished,
+      'maj7' => l10n.dictionaryMajorSeventh,
+      'm(maj7)' => l10n.dictionaryMinorMajorSeventh,
+      'dim' => l10n.dictionaryDiminished,
+      'dim7' => l10n.dictionaryDiminishedSeventh,
+      'aug' => l10n.dictionaryAugmented,
+      _ => null,
+    };
 
 class _Heading extends StatelessWidget {
   const _Heading({
@@ -614,12 +715,16 @@ class _Heading extends StatelessWidget {
     required this.kind,
     required this.notes,
     required this.degrees,
+    this.also,
   });
 
   final String title;
   final String kind;
   final List<Note> notes;
   final List<Degree> degrees;
+
+  /// A chord's name in words and its other symbols, under the degrees.
+  final String? also;
 
   @override
   Widget build(BuildContext context) {
@@ -639,6 +744,14 @@ class _Heading extends StatelessWidget {
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
+        if (also case final also?)
+          Text(
+            also,
+            key: const Key('dictionary-also'),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
       ],
     );
   }
@@ -703,6 +816,12 @@ class _ChordResult extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final named = chordQualityName(l10n, chord.quality);
+    final others = chord.otherNames;
+    final also = [
+      ?named,
+      if (others.isNotEmpty) l10n.dictionaryAlsoWritten(others.join(', ')),
+    ].join(' · ');
     return _Result(
       key: const Key('dictionary-chord'),
       below: below,
@@ -711,6 +830,7 @@ class _ChordResult extends StatelessWidget {
         kind: l10n.dictionaryChord,
         notes: chord.notes,
         degrees: chord.quality.degrees,
+        also: also.isEmpty ? null : also,
       ),
       picture: voicings.isEmpty
           ? Text(l10n.dictionaryNoVoicings)

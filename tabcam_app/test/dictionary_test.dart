@@ -67,6 +67,85 @@ void main() {
       expect(chord('Fá maior').name, 'F');
     });
 
+    test('the cut circle is half-diminished, in symbols and words', () {
+      for (final q in [
+        'Bø',
+        'BØ',
+        'Bø7',
+        'B∅',
+        'Bm7(b5)',
+        'B-7b5',
+        'B half diminished',
+        'B half-diminished',
+        'b half dim',
+        'B half diminished chord',
+        'Si semidisminuido',
+        'Si meio-diminuto',
+        'Si meio diminuto',
+      ]) {
+        expect(chord(q).name, 'Bm7b5', reason: q);
+      }
+      expect(chord('Bbø').name, 'Bbm7b5');
+      expect(chord('Bb half diminished').name, 'Bbm7b5');
+    });
+
+    test('the triangle is a major seventh, however it\'s typed', () {
+      for (final q in [
+        'CΔ',
+        'CΔ7',
+        'C∆',
+        'C∆7',
+        'C△7',
+        'C^7',
+        'C^',
+        'C7M',
+        'C major 7',
+        'C major seventh',
+        'Do séptima mayor',
+        'Dó sétima maior',
+      ]) {
+        expect(chord(q).name, 'Cmaj7', reason: q);
+      }
+      expect(chord('CΔ9').name, 'Cmaj9');
+      expect(chord('CmΔ7').name, 'Cm(maj7)');
+      expect(chord('C-Δ7').name, 'Cm(maj7)');
+      expect(chord('Cm7M').name, 'Cm(maj7)');
+      expect(chord('BbΔ7').name, 'Bbmaj7');
+      expect(chord('Bb^7').name, 'Bbmaj7');
+    });
+
+    test('the circle is diminished; "diminished" alone is the scale', () {
+      expect(chord('C˚').name, 'Cdim');
+      expect(chord('C˚7').name, 'Cdim7');
+      expect(chord('C diminished 7').name, 'Cdim7');
+      expect(chord('C diminished seventh').name, 'Cdim7');
+      expect(chord('C augmented').name, 'Caug');
+      expect(Lookup.of('C diminished'), isA<ScaleLookup>());
+    });
+
+    test('tell their other symbols', () {
+      expect(chord('Bm7b5').otherNames, ['Bø', 'Bø7', 'Bm7(b5)', 'B-7b5']);
+      expect(chord('Cmaj7').otherNames, ['CΔ7', 'CΔ', 'CM7', 'C7M']);
+      expect(chord('Cmaj7/E').otherNames.first, 'CΔ7/E');
+      expect(chord('C').otherNames, isEmpty);
+      // Every symbol shown reads back as the same chord.
+      for (final q in [
+        'Bm7b5',
+        'Cmaj7',
+        'Cm(maj7)',
+        'Bdim',
+        'Bdim7',
+        'Caug',
+        'Caug7',
+        'Cm7',
+        'Cmaj9',
+      ]) {
+        for (final other in chord(q).otherNames) {
+          expect(chord(other).name, q, reason: other);
+        }
+      }
+    });
+
     test('with another bass note', () {
       final c = chord('G/B');
       expect(c.name, 'G/B');
@@ -488,6 +567,41 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('dictionary-chord')), findsOneWidget);
       expect(find.text('Am7'), findsWidgets);
+    });
+
+    testWidgets('keys the chord symbols and how to type them; a row\'s '
+        'tap looks it up', (tester) async {
+      await open(tester);
+      expect(find.byKey(const Key('dictionary-symbols')), findsOneWidget);
+      expect(find.text('half-diminished · Bø'), findsOneWidget);
+      expect(find.text('major seventh · CΔ7'), findsOneWidget);
+      expect(find.textContaining('hold o for ø'), findsOneWidget);
+      await tester.ensureVisible(find.byKey(const Key('dictionary-symbol-Bø')));
+      await tester.tap(find.byKey(const Key('dictionary-symbol-Bø')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('dictionary-chord')), findsOneWidget);
+      expect(find.text('Bm7b5'), findsOneWidget);
+      expect(
+        find.text('half-diminished · Also written Bø, Bø7, Bm7(b5), B-7b5'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a chord with no other symbol has no such line', (
+      tester,
+    ) async {
+      await open(tester);
+      await tester.enterText(query, 'C major 7');
+      await tester.pumpAndSettle();
+      expect(find.text('Cmaj7'), findsOneWidget);
+      expect(
+        find.text('major seventh · Also written CΔ7, CΔ, CM7, C7M'),
+        findsOneWidget,
+      );
+      await tester.enterText(query, 'G7');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('dictionary-chord')), findsOneWidget);
+      expect(find.byKey(const Key('dictionary-also')), findsNothing);
     });
 
     testWidgets('offers examples to tap', (tester) async {
