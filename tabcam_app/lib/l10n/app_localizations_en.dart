@@ -1829,6 +1829,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dictionaryScale => 'Scale';
 
   @override
+  String dictionaryWriteChord(String frets) {
+    return 'Write $frets in the text';
+  }
+
+  @override
+  String dictionaryWriteScale(String scale) {
+    return 'Write $scale in the text';
+  }
+
+  @override
+  String get dictionaryWriteBusy => 'The text can\'t be changed right now';
+
+  @override
   String get dictionaryNoVoicings => 'No way to play it within four frets.';
 
   @override

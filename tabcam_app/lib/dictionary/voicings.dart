@@ -221,3 +221,32 @@ double _score(Voicing v, Chord chord) {
   }
   return score;
 }
+
+/// [scale] as written in a tab: one position on the neck, its notes going
+/// up one at a time (a column each, a fret on one string, low E to high E
+/// as a [Voicing]'s), from the root on the low E string. The position is
+/// five frets, from the fret under that root (the open strings and the
+/// first four frets for a root on the open string): each note is played
+/// on the highest string that reaches it there (its lowest fret), up to
+/// the last note the high E reaches.
+List<List<int?>> scalePosition(Scale scale) {
+  final root = (scale.root.pitchClass - standardTuning.first) % 12;
+  final low = root == 0 ? 0 : root - 1;
+  final high = low + 4;
+  final classes = scale.pitchClasses;
+  final columns = <List<int?>>[];
+  var string = 0;
+  for (var pitch = standardTuning.first + root; ; pitch++) {
+    if (!classes.contains(pitch % 12)) continue;
+    while (string + 1 < standardTuning.length &&
+        pitch - standardTuning[string + 1] >= low) {
+      string++;
+    }
+    final fret = pitch - standardTuning[string];
+    if (fret > high) break;
+    columns.add([
+      for (var s = 0; s < standardTuning.length; s++) s == string ? fret : null,
+    ]);
+  }
+  return columns;
+}
