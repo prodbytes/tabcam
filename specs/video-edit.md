@@ -4,7 +4,10 @@ Basic edits of a video (a take from [Cam](cam.md), or a video added) on
 one time axis, in **two sound lanes, mixed**: trim its start and end,
 set its own sound's level, and add a song (one of the capture's
 recordings, videos or takes, or a sound file) placed along it at a
-level of its own, both through a **master** volume (up to 200%); and,
+level of its own, each lane with its **channels** (a take recorded on
+the left only can play on both sides) and **balance**
+([stereo](#a-lanes-channels-and-balance)), both through a **master**
+volume (up to 200%); and,
 **on the video**, a take's tab drawn over it as
 it showed while recording (its **size**, **background** and **colours**
 the user's to change, [the tab's style](#layers)), a **title** (the capture's name, or text
@@ -272,7 +275,36 @@ them, the cut's steps go first, then the lanes, then the transport.
     lanes default to 100%. With echo cancellation off while recording
     ([Cam](cam.md)), a take's own sound has the song from the speaker in
     it too: the levels and Mute are the remedy (headphones while
-    recording give a clean mix).
+    recording give a clean mix). Under the slider, the lane's
+    [channels and balance](#a-lanes-channels-and-balance); the level and
+    speaker are in the primary colour too once either is changed.
+  - <a id="a-lanes-channels-and-balance"></a>**A lane's channels and
+    balance** (in its volume's popup, under the slider; `LaneStereo` in
+    [`page_edit.dart`](../tabcam_app/lib/library/page_edit.dart)):
+    - **Channels**, four segments, each with its tooltip: **Stereo** ("As
+      recorded", the default), **Left** ("The left channel on both
+      sides"), **Right** ("The right channel on both sides") and **Mono**
+      ("Both channels mixed, on both sides", each at half). Asked for a
+      take recorded on the left only (a guitar into one input of an
+      interface): Left puts it on both sides. A one-channel sound plays
+      on both sides whatever is picked.
+    - **Balance**: a slider from left 100% through **Centre** to right
+      100%, in steps of 5%, its value beside it ("L 30", "Centre", "R
+      30"): the side it leans away from is turned down in a straight line
+      (R 30: the left at 70%), the other stays as it is; after the
+      channels (Left, then R 50: the left at 50%, the right at 100%).
+    - Once either isn't the default, a note under them: "Download has the
+      channels and balance; the preview plays the sound as recorded." The
+      players (video_player, the browser's media element) can't pan, so
+      the preview and the file screen's player play the sound as it is;
+      Download's file has them. Kept as every change (a moment later),
+      reopened as left, and Reset puts both lanes back as recorded. A
+      song taken out of the lane, or another one picked, starts as
+      recorded.
+    - Keys `video-edit-<lane>-channels` (the segments
+      `video-edit-<lane>-stereo`, `-left`, `-right`, `-mono`),
+      `-balance`, `-balance-level` and `-stereo-note`. The segments
+      shrink to fit the popup at large text sizes.
 - **Master**: both lanes go through it, after their own levels
   ("Master · Both sounds together, up to 200%"): **Mute** (a speaker,
   "Mute (Master)"; muted, nothing is heard and the level is kept, as a
@@ -480,7 +512,11 @@ version 2 (`v: 2`):
 - New keys, each written only when it isn't the default: `ownVolume`
   (the own sound's level, 1 by default), `ownMuted`, `songMuted`,
   `masterVolume` (the master's level, 0 to 2, to the hundredth; 1 by
-  default), `masterMuted`, and
+  default), `masterMuted`, `ownChannels` and `songChannels` (a lane's
+  [channels](#a-lanes-channels-and-balance): `left`, `right` or `mono`;
+  absent, or one this version doesn't know, `stereo`), `ownBalance` and
+  `songBalance` (-1, the left only, to 1, the right only, to the
+  hundredth; absent or not a number, 0), and
   `song`: `manual` (placed by hand), `off` (none; Remove) or, absent
   with a `trackId`, `auto`: a take's song [lined up by
   itself](#a-takes-song-lined-up) from its log, its track keys placing
@@ -645,9 +681,11 @@ never stored. It says:
   sound only);
 - the **own** lane: the video's own sound at its level through the
   master's (`PageEdit.ownLevel`: the lane's times the master's, 0 to
-  2), or none (it or the master muted, or at 0%);
+  2), and its channels and balance (`stereo`), or none (it or the master
+  muted, or at 0%);
 - the **song** lane: the song's page and file, its level through the
-  master's (`songLevel`, as the own lane's), and its
+  master's (`songLevel`, as the own lane's), its channels and balance,
+  and its
   **clips**, each from a time in the output (`at`) the song from
   `from` to `to` (at a `speed`, 1 for now), silent between them; none
   when there's no song, or it or the master is muted or at 0%. The two lanes are
@@ -665,7 +703,7 @@ never stored. It says:
   each by default), each at most half the kept part; the same in all
   three of Download's plans;
 - whether it's a **passthrough**: the whole video, its own sound at
-  100%, no song, nothing drawn over it, no fades, and the input already in the
+  100% and as recorded (its channels and balance), no song, nothing drawn over it, no fades, and the input already in the
   format made (an MP4 or M4V anywhere; a WebM where WebM is made). Only
   then does Download save the file as it is; everything else is
   rendered.
@@ -853,16 +891,25 @@ watermark).
 
 **How it's rendered**, on the device
 ([platforms](platforms.md)): each platform gets the plan and only
-carries it out; the times are all worked out in Dart.
+carries it out; the times are all worked out in Dart. **A lane's
+channels and balance** reach every renderer as one 2×2 matrix, `mix`
+in the lane's channel arguments (`LaneStereo.matrix`: `[ll, lr, rl,
+rr]`, each side of the output from the sound's left and right; left out
+when it's as recorded), worked out in Dart, so the three apply the
+same thing.
 
 - **Android**: Media3 Transformer
   ([`VideoEdit.kt`](../tabcam_app/android/app/src/main/kotlin/com/nu01/tabcam/VideoEdit.kt),
   method channel `tabcam/video_edit`, method `render`, the plan's
   `toChannel`: `input`, `output`, `video`, `startMs`, `endMs`, `own`
-  `{volume}` and `song` `{path, volume, clips: [{atMs, fromMs, toMs,
-  speed}]}`, and a `job`). With the picture: a composition whose
-  primary sequence is the video clipped to the kept part, its audio
-  removed unless the own lane keeps it (through a gain at its volume,
+  `{volume, mix}` and `song` `{path, volume, mix, clips: [{atMs, fromMs,
+  toMs, speed}]}`, and a `job`). A lane's `mix` is a Media3
+  `ChannelMixingAudioProcessor` first in its effects, with a matrix for
+  a stereo sound and one for a one-channel sound (its channel as both),
+  each into two channels (`StereoMix.matrices`). With the picture: a
+  composition whose primary sequence is the video clipped to the kept
+  part, its audio removed unless the own lane keeps it (through a gain
+  at its volume,
   when not 1: a `GainProcessor` below 1, and above it a `ClippingGain`
   of ours, as Media3's `GainProcessor` wraps 16-bit samples lifted past
   full scale into loud crackles instead of clipping them; the channel's
@@ -915,7 +962,11 @@ carries it out; the times are all worked out in Dart.
   duration is the longest track's, and a composition longer than its
   video composition's instruction fails the export, -11841), so both
   lanes are mixed; one `AVMutableAudioMix` sets the
-  levels that aren't 1, one input per audio track. With layers, an
+  levels that aren't 1, one input per audio track. A lane's `mix` is an
+  `MTAudioProcessingTap` on its tracks' inputs (`stereoTap`), giving each
+  side of a two-channel track's float samples what the matrix says of
+  them (`applyStereo`); a one-channel track is left as it is, on both
+  sides in the middle (its balance isn't applied on iOS). With layers, an
   `AVMutableVideoComposition` turns the video upright (the render size
   and transform as the tab's burn had them) and
   `AVVideoCompositionCoreAnimationTool` draws one `CALayer` per layer
@@ -945,7 +996,11 @@ carries it out; the times are all worked out in Dart.
   and mixed in an `OfflineAudioContext` as long as the kept part (the
   own lane from the kept part's start, each of the song's clips where
   it starts, each through a gain node at its lane's level, which may be
-  over 1: the mix is float, and the WAV writer clips it), at 44.1 kHz
+  over 1: the mix is float, and the WAV writer clips it; a lane's `mix`
+  before it, `_stereo`: a gain node made two channels (`explicit`,
+  `speakers`, so a one-channel sound is on both), a channel splitter,
+  a gain per matrix entry and a channel merger; the mix is then in
+  stereo, and an own sound streamed as it plays goes through it too), at 44.1 kHz
   (22.05 kHz for a kept part over 8 minutes). **Each sound at its times
   in its file**: a WebM's sound may start after the file does (a take
   the browser recorded often has its first sound some tens of ms in);

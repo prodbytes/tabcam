@@ -3418,5 +3418,71 @@
   "camTryAgain": "Try again",
   "@camTryAgain": {
     "description": "Cam and the web's Scan: opens the camera again after it failed"
+  },
+  "videoEditLaneChannels": "Channels",
+  "@videoEditLaneChannels": {
+    "description": "Video edit: a lane's channels (which of its sound's channels play on both sides)"
+  },
+  "videoEditChannelsStereo": "Stereo",
+  "@videoEditChannelsStereo": {
+    "description": "Video edit: a lane's channels: as recorded"
+  },
+  "videoEditChannelsStereoTip": "As recorded",
+  "@videoEditChannelsStereoTip": {
+    "description": "Video edit: tooltip of the Stereo channels choice"
+  },
+  "videoEditChannelsLeft": "Left",
+  "@videoEditChannelsLeft": {
+    "description": "Video edit: a lane's channels: its left channel on both sides"
+  },
+  "videoEditChannelsLeftTip": "The left channel on both sides",
+  "@videoEditChannelsLeftTip": {
+    "description": "Video edit: tooltip of the Left channels choice"
+  },
+  "videoEditChannelsRight": "Right",
+  "@videoEditChannelsRight": {
+    "description": "Video edit: a lane's channels: its right channel on both sides"
+  },
+  "videoEditChannelsRightTip": "The right channel on both sides",
+  "@videoEditChannelsRightTip": {
+    "description": "Video edit: tooltip of the Right channels choice"
+  },
+  "videoEditChannelsMono": "Mono",
+  "@videoEditChannelsMono": {
+    "description": "Video edit: a lane's channels: both mixed, on both sides"
+  },
+  "videoEditChannelsMonoTip": "Both channels mixed, on both sides",
+  "@videoEditChannelsMonoTip": {
+    "description": "Video edit: tooltip of the Mono channels choice"
+  },
+  "videoEditLaneBalance": "Balance",
+  "@videoEditLaneBalance": {
+    "description": "Video edit: a lane's balance between left and right"
+  },
+  "videoEditBalanceCentre": "Centre",
+  "@videoEditBalanceCentre": {
+    "description": "Video edit: a lane's balance, in the middle"
+  },
+  "videoEditStereoPreviewNote": "Download has the channels and balance; the preview plays the sound as recorded.",
+  "@videoEditStereoPreviewNote": {
+    "description": "Video edit: under a lane's channels and balance, when they are changed: the preview can't play them"
+  },
+  "videoEditBalanceLeft": "L {percent}",
+  "@videoEditBalanceLeft": {
+    "description": "Video edit: a lane's balance towards the left, percent 5 to 100",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditBalanceRight": "R {percent}",
+  "@videoEditBalanceRight": {
+    "description": "Video edit: a lane's balance towards the right, percent 5 to 100",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
   }
 }

@@ -4215,6 +4215,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Try again'**
   String get camTryAgain;
+
+  /// Video edit: a lane's channels (which of its sound's channels play on both sides)
+  ///
+  /// In en, this message translates to:
+  /// **'Channels'**
+  String get videoEditLaneChannels;
+
+  /// Video edit: a lane's channels: as recorded
+  ///
+  /// In en, this message translates to:
+  /// **'Stereo'**
+  String get videoEditChannelsStereo;
+
+  /// Video edit: tooltip of the Stereo channels choice
+  ///
+  /// In en, this message translates to:
+  /// **'As recorded'**
+  String get videoEditChannelsStereoTip;
+
+  /// Video edit: a lane's channels: its left channel on both sides
+  ///
+  /// In en, this message translates to:
+  /// **'Left'**
+  String get videoEditChannelsLeft;
+
+  /// Video edit: tooltip of the Left channels choice
+  ///
+  /// In en, this message translates to:
+  /// **'The left channel on both sides'**
+  String get videoEditChannelsLeftTip;
+
+  /// Video edit: a lane's channels: its right channel on both sides
+  ///
+  /// In en, this message translates to:
+  /// **'Right'**
+  String get videoEditChannelsRight;
+
+  /// Video edit: tooltip of the Right channels choice
+  ///
+  /// In en, this message translates to:
+  /// **'The right channel on both sides'**
+  String get videoEditChannelsRightTip;
+
+  /// Video edit: a lane's channels: both mixed, on both sides
+  ///
+  /// In en, this message translates to:
+  /// **'Mono'**
+  String get videoEditChannelsMono;
+
+  /// Video edit: tooltip of the Mono channels choice
+  ///
+  /// In en, this message translates to:
+  /// **'Both channels mixed, on both sides'**
+  String get videoEditChannelsMonoTip;
+
+  /// Video edit: a lane's balance between left and right
+  ///
+  /// In en, this message translates to:
+  /// **'Balance'**
+  String get videoEditLaneBalance;
+
+  /// Video edit: a lane's balance, in the middle
+  ///
+  /// In en, this message translates to:
+  /// **'Centre'**
+  String get videoEditBalanceCentre;
+
+  /// Video edit: under a lane's channels and balance, when they are changed: the preview can't play them
+  ///
+  /// In en, this message translates to:
+  /// **'Download has the channels and balance; the preview plays the sound as recorded.'**
+  String get videoEditStereoPreviewNote;
+
+  /// Video edit: a lane's balance towards the left, percent 5 to 100
+  ///
+  /// In en, this message translates to:
+  /// **'L {percent}'**
+  String videoEditBalanceLeft(int percent);
+
+  /// Video edit: a lane's balance towards the right, percent 5 to 100
+  ///
+  /// In en, this message translates to:
+  /// **'R {percent}'**
+  String videoEditBalanceRight(int percent);
 }
 
 class _AppLocalizationsDelegate

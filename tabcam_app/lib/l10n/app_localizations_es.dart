@@ -2539,4 +2539,52 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get camTryAgain => 'Reintentar';
+
+  @override
+  String get videoEditLaneChannels => 'Canales';
+
+  @override
+  String get videoEditChannelsStereo => 'Estéreo';
+
+  @override
+  String get videoEditChannelsStereoTip => 'Como se grabó';
+
+  @override
+  String get videoEditChannelsLeft => 'Izquierdo';
+
+  @override
+  String get videoEditChannelsLeftTip => 'El canal izquierdo en ambos lados';
+
+  @override
+  String get videoEditChannelsRight => 'Derecho';
+
+  @override
+  String get videoEditChannelsRightTip => 'El canal derecho en ambos lados';
+
+  @override
+  String get videoEditChannelsMono => 'Mono';
+
+  @override
+  String get videoEditChannelsMonoTip =>
+      'Ambos canales mezclados, en ambos lados';
+
+  @override
+  String get videoEditLaneBalance => 'Balance';
+
+  @override
+  String get videoEditBalanceCentre => 'Centro';
+
+  @override
+  String get videoEditStereoPreviewNote =>
+      'La descarga tiene los canales y el balance; la vista previa reproduce el sonido como se grabó.';
+
+  @override
+  String videoEditBalanceLeft(int percent) {
+    return 'I $percent';
+  }
+
+  @override
+  String videoEditBalanceRight(int percent) {
+    return 'D $percent';
+  }
 }

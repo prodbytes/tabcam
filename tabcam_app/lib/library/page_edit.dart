@@ -42,6 +42,84 @@ enum SongMode {
       values.where((m) => m.name == name).firstOrNull;
 }
 
+/// Which of a sound's channels a lane plays, on both sides of the mix.
+enum LaneChannels {
+  /// As recorded: its left on the left, its right on the right.
+  stereo,
+
+  /// Its left channel on both sides (a take recorded on the left only).
+  left,
+
+  /// Its right channel on both sides.
+  right,
+
+  /// Both its channels mixed, at half each, on both sides.
+  mono;
+
+  /// [stereo] when [name] isn't one (none given, or a newer app's).
+  static LaneChannels byName(Object? name) => values.firstWhere(
+    (c) => c.name == name,
+    orElse: () => LaneChannels.stereo,
+  );
+}
+
+/// A lane's stereo: which of its sound's [channels] it plays, and its
+/// [balance], from -1 (the left only) through 0 (as it is, the default)
+/// to 1 (the right only): the side it leans away from is quieter, in a
+/// straight line, the other as it is. One-channel sounds play on both
+/// sides, as their channel's left and right alike.
+class LaneStereo {
+  const LaneStereo({this.channels = LaneChannels.stereo, this.balance = 0});
+
+  /// As recorded, in the middle.
+  static const standard = LaneStereo();
+
+  final LaneChannels channels;
+  final double balance;
+
+  bool get isStandard => channels == LaneChannels.stereo && balance == 0;
+
+  /// [balance] as kept: within -1 and 1, to the hundredth; 0 when it
+  /// isn't a number.
+  static double balanceOf(Object? balance) =>
+      balance is num && balance.isFinite
+      ? (balance.clamp(-1, 1) * 100).round() / 100
+      : 0;
+
+  /// What the renderers do with it: each side of the output from the
+  /// sound's two channels, `[ll, lr, rl, rr]` (the left from the left, the
+  /// left from the right, the right from the left, the right from the
+  /// right); [channels] picks them, then [balance] turns one side down.
+  List<double> get matrix {
+    final (ll, lr, rl, rr) = switch (channels) {
+      LaneChannels.stereo => (1.0, 0.0, 0.0, 1.0),
+      LaneChannels.left => (1.0, 0.0, 1.0, 0.0),
+      LaneChannels.right => (0.0, 1.0, 0.0, 1.0),
+      LaneChannels.mono => (0.5, 0.5, 0.5, 0.5),
+    };
+    final left = balance > 0 ? 1 - balance : 1.0;
+    final right = balance < 0 ? 1 + balance : 1.0;
+    return [ll * left, lr * left, rl * right, rr * right];
+  }
+
+  LaneStereo copyWith({LaneChannels? channels, double? balance}) => LaneStereo(
+    channels: channels ?? this.channels,
+    balance: balance == null ? this.balance : balanceOf(balance),
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      other is LaneStereo &&
+      other.channels == channels &&
+      other.balance == balance;
+
+  @override
+  int get hashCode => Object.hash(channels, balance);
+
+  @override
+  String toString() => 'LaneStereo(${channels.name}, $balance)';
+}
+
 /// [text] at most [max] characters long, as a person counts them and a
 /// text field's `maxLength` does (grapheme clusters: an emoji, even one
 /// made of several, is one), never cut inside one; the end trimmed when
@@ -257,7 +335,9 @@ class EditTabStyle {
 /// part's start (before it, when negative), at [trackVolume], unless
 /// [songMuted]; placed as [song] says). Muting a lane keeps its level.
 /// Both lanes go through the master, at [masterVolume] (up to 200%),
-/// unless [masterMuted] (its level kept too).
+/// unless [masterMuted] (its level kept too). Each lane has its stereo
+/// ([ownStereo], [songStereo]): which of its sound's channels it plays,
+/// and its balance.
 /// Over the picture: the tab of one of Cam's takes, unless [tab] is off,
 /// looking as [tabStyle] says; a title ([title]; null: the capture's name), and the watermark, unless
 /// [watermark] is off (which only a Premium user can do, and only a
@@ -279,6 +359,7 @@ class PageEdit {
     required this.end,
     this.ownVolume = 1,
     this.ownMuted = false,
+    this.ownStereo = LaneStereo.standard,
     this.song,
     this.songMuted = false,
     this.trackId,
@@ -286,6 +367,7 @@ class PageEdit {
     this.trackEnd,
     this.offset = Duration.zero,
     this.trackVolume = 1,
+    this.songStereo = LaneStereo.standard,
     this.masterVolume = 1,
     this.masterMuted = false,
     this.tab = true,
@@ -366,6 +448,10 @@ class PageEdit {
     'songMuted',
     'masterVolume',
     'masterMuted',
+    'ownChannels',
+    'ownBalance',
+    'songChannels',
+    'songBalance',
     'song',
     'tab',
     'tabStyle',
@@ -382,6 +468,14 @@ class PageEdit {
   /// default), and whether it's muted (its level kept).
   final double ownVolume;
   final bool ownMuted;
+
+  /// Which of the video's own sound's channels play, and its balance
+  /// ([LaneStereo]); written (`ownChannels`, `ownBalance`) only when not
+  /// the default. Older apps keep them, and play the sound as it is.
+  final LaneStereo ownStereo;
+
+  /// The song lane's, as [ownStereo] (`songChannels`, `songBalance`).
+  final LaneStereo songStereo;
 
   /// How the song lane is placed; null: the default ([songMode]).
   final SongMode? song;
@@ -529,6 +623,12 @@ class PageEdit {
     if (songMuted) 'songMuted': true,
     if (masterVolume != 1) 'masterVolume': masterVolume,
     if (masterMuted) 'masterMuted': true,
+    if (ownStereo.channels != LaneChannels.stereo)
+      'ownChannels': ownStereo.channels.name,
+    if (ownStereo.balance != 0) 'ownBalance': ownStereo.balance,
+    if (songStereo.channels != LaneChannels.stereo)
+      'songChannels': songStereo.channels.name,
+    if (songStereo.balance != 0) 'songBalance': songStereo.balance,
     if (song != null) 'song': song!.name,
     if (!tab) 'tab': false,
     if (!tabStyle.isStandard) 'tabStyle': tabStyle.toJson(),
@@ -558,6 +658,14 @@ class PageEdit {
       trackEnd: ms('trackEndMs'),
       offset: ms('offsetMs') ?? Duration.zero,
       trackVolume: volume(json['trackVolume']),
+      ownStereo: LaneStereo(
+        channels: LaneChannels.byName(json['ownChannels']),
+        balance: LaneStereo.balanceOf(json['ownBalance']),
+      ),
+      songStereo: LaneStereo(
+        channels: LaneChannels.byName(json['songChannels']),
+        balance: LaneStereo.balanceOf(json['songBalance']),
+      ),
       tab: json['tab'] != false,
       tabStyle: EditTabStyle.fromJson(json['tabStyle']),
       title: EditTitle.fromJson(json['title']),
@@ -594,6 +702,7 @@ class PageEdit {
     Duration? end,
     double? ownVolume,
     bool? ownMuted,
+    LaneStereo? ownStereo,
     Object? song = _same,
     bool? songMuted,
     Object? trackId = _same,
@@ -601,6 +710,7 @@ class PageEdit {
     Object? trackEnd = _same,
     Duration? offset,
     double? trackVolume,
+    LaneStereo? songStereo,
     double? masterVolume,
     bool? masterMuted,
     bool? tab,
@@ -615,6 +725,7 @@ class PageEdit {
     end: end ?? this.end,
     ownVolume: ownVolume == null ? this.ownVolume : volume(ownVolume),
     ownMuted: ownMuted ?? this.ownMuted,
+    ownStereo: ownStereo ?? this.ownStereo,
     song: identical(song, _same) ? this.song : song as SongMode?,
     songMuted: songMuted ?? this.songMuted,
     trackId: identical(trackId, _same) ? this.trackId : trackId as String?,
@@ -624,6 +735,7 @@ class PageEdit {
         : trackEnd as Duration?,
     offset: offset ?? this.offset,
     trackVolume: trackVolume == null ? this.trackVolume : volume(trackVolume),
+    songStereo: songStereo ?? this.songStereo,
     masterVolume: masterVolume == null
         ? this.masterVolume
         : master(masterVolume),
@@ -646,6 +758,7 @@ class PageEdit {
     end,
     ownVolume,
     ownMuted,
+    ownStereo,
     song,
     songMuted,
     trackId,
@@ -653,6 +766,7 @@ class PageEdit {
     trackEnd,
     offset,
     trackVolume,
+    songStereo,
     masterVolume,
     masterMuted,
     tab,
