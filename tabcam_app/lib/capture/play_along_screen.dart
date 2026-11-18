@@ -935,15 +935,11 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     }
     final key = event.logicalKey;
     if (_modifiers.contains(key)) return KeyEventResult.ignored;
-    // 1: Rec / Stop, as the button (when it can be pressed), sidebar or
-    // not. A key down: held, it doesn't start and stop again.
-    if (_alone(event, _recKeys)) {
-      if (event is KeyDownEvent && _canRec) unawaited(_rec());
-      return KeyEventResult.handled;
-    }
-    // .: the take thrown away and Rec again (only the last is kept); /:
-    // Stop and Rec again, both kept. Not recording, Rec; a key down, and
-    // nothing while one is saved (or thrown away) for the next.
+    // .: the song back at its start, the take thrown away and Rec again
+    // (only the last is kept); /: Stop and Rec again here, both kept. Not
+    // recording, Rec (. from the song's start). A key down (held, they
+    // don't repeat), and nothing while a take is saved (or thrown away)
+    // for the next, or can't be recorded.
     if (_alone(event, _retakeKeys, _retakePhysical)) {
       if (event is KeyDownEvent && _canRec) {
         unawaited(_nextTake(keep: false));
@@ -954,7 +950,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       if (event is KeyDownEvent && _canRec) unawaited(_nextTake());
       return KeyEventResult.handled;
     }
-    // Space and 0, while the sidebar shows, are the backing track's
+    // Space, 1 and 0, while the sidebar shows, are the backing track's
     // (play / pause, back to its start): [PlayAlongKeys] gets them first.
     // ← and →: the backing track [skipBy] back and on, as « and » (held,
     // again and again); with no track showing, they turn the tab.
@@ -966,14 +962,8 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     return KeyEventResult.handled;
   }
 
-  /// The keys that press Rec / Stop: 1, on the top row or the keypad.
-  static final _recKeys = {
-    LogicalKeyboardKey.digit1,
-    LogicalKeyboardKey.numpad1,
-  };
-
-  /// The keys that throw the take away and start a new one: ., on the main
-  /// keyboard or the keypad.
+  /// The keys that throw the take away and start a new one from the
+  /// song's start: ., on the main keyboard or the keypad.
   static final _retakeKeys = {
     LogicalKeyboardKey.period,
     LogicalKeyboardKey.numpadDecimal,
@@ -992,8 +982,8 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   };
 
   /// Whether [event] is one of [keys] (or of the [physical] keys) pressed
-  /// alone (with Ctrl, ⌘ or Alt it's another shortcut's, such as the
-  /// browser's first tab, and turns the tab as any key).
+  /// alone (with Ctrl, ⌘ or Alt it's another shortcut's, the browser's,
+  /// and turns the tab as any key).
   static bool _alone(
     KeyEvent event,
     Set<LogicalKeyboardKey> keys, [
@@ -1224,29 +1214,38 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     );
   }
 
-  /// The / key (and, with [keep] false, the . key): while recording, a new
-  /// take. The song in the sidebar stops at once, back at its start (its
-  /// section's); the take is saved as Stop saves it (with [keep] false,
-  /// thrown away: only the next is kept); then Rec starts the next, and
-  /// the song with it from there (counting in, if that's on). Not
-  /// recording, Rec.
+  /// The / key: while recording, a new take, cut here: the take so far is
+  /// saved as Stop saves it, then Rec starts the next, the song in the
+  /// sidebar playing on through both. The . key ([keep] false): the song
+  /// stops at once, back at its start (its section's), the take is thrown
+  /// away (only the next is kept), then Rec starts the next, and the song
+  /// with it from its start (counting in, if that's on). Not recording, /
+  /// is Rec, and . is Rec with the song back at its start.
   Future<void> _nextTake({bool keep = true}) async {
-    if (!_recording) return _rec();
+    if (!_recording) {
+      if (!keep) await _songBack();
+      return _rec();
+    }
     setState(() => _nextTaking = true);
     try {
-      if (_along.open && _track.page != null) {
-        try {
-          await _track.stop();
-        } on Object catch (e) {
-          debugPrint('TabCam: cam: the song didn\'t stop: $e');
-        }
-      }
+      if (!keep) await _songBack();
       await _stopRecording(keep: keep);
       // The take is kept (or gone) whether or not the next one starts.
       if (!mounted || _controller == null) return;
       await _rec();
     } finally {
       if (mounted) setState(() => _nextTaking = false);
+    }
+  }
+
+  /// The song in the sidebar (when it shows) stopped, back at its start
+  /// (its section's): silent until the next take starts it again.
+  Future<void> _songBack() async {
+    if (!_along.open || _track.page == null) return;
+    try {
+      await _track.stop();
+    } on Object catch (e) {
+      debugPrint('TabCam: cam: the song didn\'t stop: $e');
     }
   }
 
@@ -1682,8 +1681,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       linkFrame: widget.linkFrame,
       pdfView: widget.pdfView,
       onUse: _focus.requestFocus,
-      // 1 is Rec / Stop here; a preview has no keys.
-      oneToggles: false,
+      // A preview has no keys.
       keys: gate == null,
       // Not in a preview, nor while a take records, saves (or is saved
       // for the next, until it starts) or plays back.

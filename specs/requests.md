@@ -3924,3 +3924,24 @@ spec.
     edit kept with black on white or black on gold draws white on
     black, as any colour the app doesn't know. See
     [video edit](video-edit.md).
+11. **"The shortcuts are wrong, here is how it should be: 0 => back to
+    the beginning (keep playing if playing, stopped if stopped); 1 =>
+    play / pause; spacebar -> play / pause; . => back to the beginning,
+    recording and playing, delete current take and start a new one; /
+    => cut and start a new take, preserve current and new one separately
+    at this time."** In Cam, **1** (top row or keypad) is now the
+    sidebar's song's play / pause, as the space bar, while the sidebar
+    shows (recording or not: the take records on), as it already was in
+    the other screens; it no longer presses Rec / Stop. **/** cuts: the
+    take so far is saved and the next starts, and the song **plays on**
+    through the cut (it stopped and restarted before). **.** starts
+    over: the song stops at once, back at its start, the take recording
+    is thrown away, and the next take starts with the song from its
+    start (after the count-in, if on); not recording, . starts a take
+    with the song back at its start, where / starts one as Rec does.
+    **0** goes back to the start as before (paused, it stays paused;
+    playing, it plays on, counting in first when that's on, as asked
+    earlier today), and the space bar pauses and plays, as before. Rec's
+    tooltip is now "Rec (.)" and Stop's "Stop · new take (/) · redo (.)"
+    (Spanish and Portuguese too); `PlayAlongKeys` lost its `oneToggles`
+    switch. See [Cam](cam.md#rec-key).

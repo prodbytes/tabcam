@@ -610,10 +610,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get camStop => 'Parar';
 
   @override
-  String get camRecKey => 'Gravar (1)';
+  String get camRecKey => 'Gravar (.)';
 
   @override
-  String get camStopKey => 'Parar (1) · novo take (/) · refazer (.)';
+  String get camStopKey => 'Parar · novo take (/) · refazer (.)';
 
   @override
   String get camMicChoose => 'Microfone';

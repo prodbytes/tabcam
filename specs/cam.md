@@ -35,10 +35,9 @@ its **Not now** leaving. With Premium it opens the camera view
   shrunk to fit the screen's width (a long staff reads best with the
   phone turned sideways), with its number under it ("2 / 14"). A
   capture with no text tab yet says to read it first.
-- **Moving along the tab**: any key (but **1**, which is
-  [Rec / Stop](#rec-key), **/** and **.**, which are
-  [a new take](#new-take-key), and the space bar, 0, ← and → while a file
-  [plays along](#playing-along-with-a-file)) goes to the
+- **Moving along the tab**: any key (but **/** and **.**, which are
+  [a new take](#new-take-key), and the space bar, **1**, 0, ← and →
+  while a file [plays along](#playing-along-with-a-file)) goes to the
   next neckline (a keyboard, or a Bluetooth page-turner pedal), **↓**
   among them; **Backspace**, **↑** and **Page Up** go to the one
   before, and so does **←** while nothing plays along. Shift, Control, Alt,
@@ -92,16 +91,15 @@ its **Not now** leaving. With Premium it opens the camera view
 - **Rec** records video and sound (`camera`, `ResolutionPreset.high`)
   from the neckline showing, until **Stop**, the sound first
   ([Recording comes first](#recording-comes-first)).
-  <a id="rec-key"></a>The **1** key (on the top row or the keypad)
-  presses it too, Rec and then Stop, with the sidebar showing or not
-  (so it also starts the sidebar's song, as Rec does); it doesn't turn
-  the tab. It acts on the key down: held, it doesn't repeat (it
-  doesn't start a take and stop it again). While the button can't be
-  pressed (a take being saved or playing back, no camera, the
-  preview), 1 does nothing. With Ctrl, ⌘ or Alt held, 1 is another
-  shortcut's (the browser's) and turns the tab as any key. The button's
-  tooltip says so: "Rec (1)", and "Stop (1) · new take (/) · redo (.)" while
-  recording, in English, Spanish and Portuguese. The take is then added to
+  <a id="rec-key"></a>Rec has no key of its own: **.** starts a take
+  with the sidebar's song back at its start, and **/** one with the
+  song where it is, as Rec does ([a new take](#new-take-key)); Stop is
+  the button (or / and ., which start the next take). **1** is the
+  song's play / pause, as the space bar
+  ([the keys in every screen](#keys-in-every-screen)); until 2026-11-17
+  it was Rec / Stop. The button's tooltip names the keys: "Rec (.)",
+  and "Stop · new take (/) · redo (.)" while recording, in English,
+  Spanish and Portuguese. The take is then added to
   the capture as a video, at the end of its files, named by **the time
   it started** (Rec, / or . pressed), in hours and minutes, 24-hour:
   "Take 14:32" (Spanish "Toma 14:32"; `takeName`). The date isn't in the
@@ -121,37 +119,42 @@ its **Not now** leaving. With Premium it opens the camera view
   (not the Text view), scrolled to its end.
   <a id="new-take-key"></a>Two keys start **a new take** while
   recording, the take recorded so far either kept or thrown away:
-  - **/** (on the main keyboard or the keypad) **keeps it**: the take is
+  - **/** (on the main keyboard or the keypad) **cuts**: the take is
     stopped and saved as Stop saves it (added, named, its phrase passes
     kept, the message shown), and once it's saved, the next take starts
-    as Rec starts one. Both takes are in the capture.
+    as Rec starts one. Both takes are in the capture, one ending and the
+    other starting where / was pressed. The song in the sidebar (when it
+    shows) **plays on** through the cut, so the next take's log notes it
+    from where it is and [the editor](video-edit.md#a-takes-song-lined-up)
+    lines it up there; paused, it stays paused until the next take
+    starts it, as Rec does.
   - **.** (on the main keyboard or the keypad's decimal key, also where
     that key types "," as on Brazilian, German and most European layouts,
     matched by where it is on the keyboard; the comma key itself turns
-    the tab) **throws it away**: the take is stopped and not saved
-    (nothing added to the capture, nothing synced, its file deleted from
-    the device; on Android the app's sound for it is dropped, not put
-    into the video), a message says "Take thrown away: recording it
-    again", and the next take starts as Rec starts one. Pressed again and
-    again, only the last take is kept, once it's stopped (Stop, 1 or /).
-    A take saved before is never touched: . only throws away the one
-    recording.
+    the tab) **starts over**: the song in the sidebar (when it shows)
+    stops at once and goes back to its start (its section's, with one
+    chosen), so it's silent while the take is thrown away; the take is
+    stopped and not saved (nothing added to the capture, nothing synced,
+    its file deleted from the device; on Android the app's sound for it
+    is dropped, not put into the video), a message says "Take thrown
+    away: recording it again", and the next take starts as Rec starts
+    one, the song with it from its start, after the count-in if that's
+    on. Pressed again and again, only the last take is kept, once it's
+    stopped (Stop or /). A take saved before is never touched: . only
+    throws away the one recording.
 
-  Either way, the song in the sidebar (when it shows) stops at once and
-  goes back to its start (its section's, with one chosen), so it's
-  silent while the take is saved or thrown away; with the new take it
-  plays from there, after the count-in if that's on, as Rec starts it.
   The tab stays at the neckline showing, as with Rec (auto-pass turns it
-  along the song, as ever). Not recording, **/** and **.** start a take,
-  as 1 does. They act on the key down only (held, they don't repeat), do
-  nothing while Rec can't be pressed, and with Ctrl, ⌘ or Alt they turn
-  the tab as any key. While the take is saved (or thrown away) for the
-  next, Rec, Play, the camera switch, 1, /, . and going back do nothing,
-  so a second press can't start or stop another take (the camera records
-  one at a time). Nor do Rec, 1, / and . while a take starts (until the
-  camera records), so pressing again at once doesn't start a second
-  recording alongside it. If the next take can't start after /, the one
-  saved is kept and a message says why.
+  along the song, as ever). Not recording, **/** starts a take as Rec
+  does (the song playing on, or started from where it is), and **.**
+  starts one with the song back at its start. They act on the key down
+  only (held, they don't repeat), do nothing while Rec can't be pressed,
+  and with Ctrl, ⌘ or Alt they turn the tab as any key. While the take
+  is saved (or thrown away) for the next, Rec, Play, the camera switch,
+  /, . and going back do nothing, so a second press can't start or stop
+  another take (the camera records one at a time). Nor do Rec, / and .
+  while a take starts (until the camera records), so pressing again at
+  once doesn't start a second recording alongside it. If the next take
+  can't start after /, the one saved is kept and a message says why.
 - <a id="rec-menu"></a>**Rec's menu: the microphone.** An arrow beside
   Rec (its tooltip "Microphone") opens a menu, as a video call's
   microphone button does: under **Record from**, **Default microphone**
@@ -702,10 +705,11 @@ view).
   `playalong`, `{"countIn": false}`; until 2026-11-11 it was named
   `play-along`, which the apps' store refuses, so it was never kept there), for Cam, the Text view and the
   file screen alike.
-- **The space bar** pauses and plays it while the sidebar shows (a key
-  down; held, it doesn't repeat), and doesn't turn the tab; with the
-  sidebar hidden, space turns the tab again. A tap in the sidebar or the
-  frame gives the keys back to Cam.
+- **The space bar and 1** (on the top row or the keypad) pause and play
+  it while the sidebar shows (a key down; held, they don't repeat),
+  recording or not (the take records on), and don't turn the tab; with
+  the sidebar hidden, they turn the tab again. A tap in the sidebar or
+  the frame gives the keys back to Cam.
 - **0** (on the top row or the keypad) always goes back to the
   beginning: the start of the file, or of its section when one is set,
   count-in included (`BackingTrack.restart`). Paused, it stays paused
@@ -722,16 +726,16 @@ view).
   the sidebar hidden, ← and → turn the tab again. A page-turner pedal
   that sends ← and → skips in the song while the sidebar shows: one
   that sends ↑ / ↓ or Page Up / Page Down turns the tab then.
-- <a id="keys-in-every-screen"></a>**The keys in every screen**: **0**
-  and the **space bar** are the player's wherever its sidebar shows
-  (Cam, the Text view, a file's screen), without a tap in the sidebar
-  first, whatever has the keyboard
+- <a id="keys-in-every-screen"></a>**The keys in every screen**: **0**,
+  **1** and the **space bar** are the player's wherever its sidebar
+  shows (Cam, the Text view, a file's screen), without a tap in the
+  sidebar first, whatever has the keyboard
   ([`PlayAlongKeys`](../tabcam_app/lib/capture/play_along_sidebar.dart)
-  gets the keys before the screen does). In the Text view and on a
-  file's screen, **1** (on the top row or the keypad) pauses and plays
-  too, as the space bar; in Cam, 1 stays [Rec / Stop](#rec-key), which
-  starts the song as well. Ctrl / ⌘ + 1 is left to the browser (its
-  first tab). The exceptions: typing in a field (the Text view's
+  gets the keys before the screen does): 0 goes back to the start, 1
+  (on the top row or the keypad) and the space bar pause and play, in
+  Cam too (where 1 was [Rec / Stop](#rec-key) until 2026-11-17).
+  Ctrl / ⌘ + 1 is left to the browser (its first tab). The exceptions:
+  typing in a field (the Text view's
   editor, the dictionary's search) still types them, until a tap in the
   sidebar takes the keyboard out of the field; under a dialog, a menu
   or another screen the keys are that one's; with the sidebar hidden
