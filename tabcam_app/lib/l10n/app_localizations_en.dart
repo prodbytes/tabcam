@@ -1845,6 +1845,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dictionaryNoVoicings => 'No way to play it within four frets.';
 
   @override
+  String dictionaryAlsoWritten(String forms) {
+    return 'Also written $forms';
+  }
+
+  @override
+  String get dictionaryHalfDiminished => 'half-diminished';
+
+  @override
+  String get dictionaryMajorSeventh => 'major seventh';
+
+  @override
+  String get dictionaryMinorMajorSeventh => 'minor major seventh';
+
+  @override
+  String get dictionaryDiminished => 'diminished';
+
+  @override
+  String get dictionaryDiminishedSeventh => 'diminished seventh';
+
+  @override
+  String get dictionaryAugmented => 'augmented';
+
+  @override
+  String get dictionarySymbols => 'Chord symbols';
+
+  @override
+  String get dictionarySymbolsTyping =>
+      'To type them: on a phone, hold o for ø and º; on a Mac, ⌥O types ø, ⌥J ∆ and ⌥0 º. Or write the letters (m7b5, maj7 or ^7, dim or o, aug) or the name (half diminished).';
+
+  @override
   String dictionaryYouTube(String query) {
     return 'Not a chord or a scale. Search YouTube for “$query”.';
   }

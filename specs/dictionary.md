@@ -100,14 +100,27 @@ search field, focused, and under it, scrolling, what was typed is:
   **How a chord is written**: a root (`A`–`G`, or `Do Re Mi Fa Sol La
   Si`; `#`, `b`, `♯`, `♭`) and a quality: major (`C`, `Cmaj`, `C
   major`, `Do mayor`, `Dó maior`), minor (`m`, `min`, `minor`, `menor`,
-  `-`), `5`, `dim` (`°`, `o`), `aug` (`+`), `sus2`, `sus4` (`sus`), `6`,
-  `m6`, `7`, `maj7` (`M7`, `Δ7`), `m7` (`-7`), `m(maj7)`, `dim7` (`°7`),
-  `m7b5` (`ø`, `ø7`), `7sus4`, `7sus2`, `aug7` (`7#5`), `7b5`, `add9`
-  (`add2`), `madd9`, `add11`, `6/9`, `9`, `maj9`, `m9`, `7b9`, `7#9`,
-  `11`, `m11`, `13`, `maj13`, `m13`; `/` and a bass note after it;
-  spaces and case don't matter (`CM7` is major seventh, `Cm7` minor
-  seventh), nor a trailing "chord"/"acorde". `C major` and `A minor` are
-  chords.
+  `-`), `5`, `dim` (`°`, `o`, `˚`), `aug` (`+`, `(#5)`, `augmented`,
+  `aumentado`), `sus2`, `sus4` (`sus`), `6`, `m6`, `7`, `maj7` (`M7`,
+  `7M`, `major 7`, `major seventh`, `séptima mayor`, `sétima maior`, and
+  **the triangle**: `Δ`, `Δ7`, typed as `Δ`, `∆`, `△` or `^`), `m7`
+  (`-7`), `m(maj7)` (`mΔ7`, `-Δ7`, `m7M`), `dim7` (`°7`, `diminished
+  7`, `diminished seventh`), `m7b5` (**the cut circle**, half-diminished:
+  `ø`, `ø7`, typed as `ø`, `Ø` or `∅`; `m7(b5)`, `-7b5`, `half
+  diminished`, `half-diminished`, `half dim`, `semidisminuido`,
+  `semidiminuto`, `meio-diminuto`), `7sus4`, `7sus2`, `aug7` (`+7`,
+  `7#5`), `7b5`, `add9` (`add2`), `madd9`, `add11`, `6/9`, `9`, `maj9`
+  (`Δ9`), `m9`, `7b9`, `7#9`, `11`, `m11`, `13`, `maj13`, `m13`; `/` and
+  a bass note after it; spaces and case don't matter (`CM7` is major
+  seventh, `Cm7` minor seventh), nor a trailing "chord"/"acorde". `C
+  major` and `A minor` are chords; `C diminished` alone is the scale.
+  **Other symbols**: under the degrees, a chord written with a symbol
+  says its quality in words (half-diminished, major seventh, minor major
+  seventh, diminished, diminished seventh, augmented) and **"Also
+  written"** its other symbols, each of which reads back as the same
+  chord: `Bm7b5` is "half-diminished · Also written Bø, Bø7, Bm7(b5),
+  B-7b5", `Cmaj7` "major seventh · Also written CΔ7, CΔ, CM7, C7M"
+  (with the bass after each, `CΔ7/E`).
 - **A scale** (`A minor pentatonic`, `D dorian`, `C major scale`, `E
   blues`, `F# harmonic minor`, `Sol mixolidio`): its name (the type in
   the app's language), its notes and degrees as for a chord, and the
@@ -219,5 +232,14 @@ capture's title first**, on a capture's screens (the capture, a file, Cam;
 Home has none), so a song's tabs and videos are a tap away, then the
 examples (`C`, `Am7`, `F#m7b5`, `G/B`, `A minor pentatonic`, `E blues`,
 `D dorian`). A long title is cut to the sidebar's width.
+Under them, a **Chord symbols** key, for the symbols a chart writes
+instead of letters: **ø** half-diminished (`Bø7 = Bm7b5 = Bm7(b5)`),
+**Δ** major seventh (`CΔ = Cmaj7 = CM7 = C7M = C^7`), **°** diminished
+(`Bdim = Bo`), **°7** diminished seventh (`Bdim7 = Bo7`) and **+**
+augmented (`Caug = C(#5)`), each row with its name and an example
+(`Bø`, `CΔ7`, `B°`, `B°7`, `C+`) that a tap looks up; then how to type
+them: on a phone, hold o for ø and º; on a Mac, ⌥O types ø, ⌥J ∆ and ⌥0
+º; or write the letters (`m7b5`, `maj7` or `^7`, `dim` or `o`, `aug`)
+or the name (half diminished).
 In English, Spanish and Portuguese (the chord names and qualities are
 the same in every language).

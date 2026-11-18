@@ -1888,6 +1888,36 @@ class AppLocalizationsEs extends AppLocalizations {
       'No hay forma de tocarlo en cuatro trastes.';
 
   @override
+  String dictionaryAlsoWritten(String forms) {
+    return 'También se escribe $forms';
+  }
+
+  @override
+  String get dictionaryHalfDiminished => 'semidisminuido';
+
+  @override
+  String get dictionaryMajorSeventh => 'séptima mayor';
+
+  @override
+  String get dictionaryMinorMajorSeventh => 'menor con séptima mayor';
+
+  @override
+  String get dictionaryDiminished => 'disminuido';
+
+  @override
+  String get dictionaryDiminishedSeventh => 'séptima disminuida';
+
+  @override
+  String get dictionaryAugmented => 'aumentado';
+
+  @override
+  String get dictionarySymbols => 'Símbolos de acordes';
+
+  @override
+  String get dictionarySymbolsTyping =>
+      'Para escribirlos: en un teléfono, mantén pulsada la o para ø y º; en un Mac, ⌥O escribe ø, ⌥J ∆ y ⌥0 º. O escribe las letras (m7b5, maj7 o ^7, dim u o, aug) o el nombre (semidisminuido).';
+
+  @override
   String dictionaryYouTube(String query) {
     return 'No es un acorde ni una escala. Buscar “$query” en YouTube.';
   }
