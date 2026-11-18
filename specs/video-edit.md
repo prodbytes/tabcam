@@ -159,7 +159,9 @@ them, the cut's steps go first, then the lanes, then the transport.
   it does, wherever the editor is clicked. **Home** and **End** are To
   the start and To the end, and **←** / **→** move the preview a tenth
   of a second (with Shift, a second; held, a seek at most every
-  150 ms). No key does while the title is typed in, nor with Ctrl, Alt
+  150 ms). **H** lists these keys ([keyboard
+  shortcuts](keyboard-shortcuts.md), also the app bar's keyboard
+  button). No key does while the title is typed in, nor with Ctrl, Alt
   or ⌘ held; Home, End and the arrows only while nothing in the editor
   has the keyboard (a slider's arrows are its own; a click on an empty
   spot gives it back). During a download the row says "Making the

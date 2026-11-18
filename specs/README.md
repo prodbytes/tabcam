@@ -95,6 +95,10 @@ review notes ([app stores](app-stores.md)).
   with −, + and a slider (30–250), the common time signatures (2/4 to
   12/8), a light per beat, Start / Stop; clicks made on the device (Web
   Audio on the web, a looping WAV on the phones), accented on the bar.
+- [Keyboard shortcuts](keyboard-shortcuts.md): a keyboard button in the
+  app bar of Cam, a capture's and a file's screens and the video editor
+  (on the web, computers and tablets), or the **H** key, opens an overlay
+  listing that screen's keys.
 - [Video edit](video-edit.md): basic edits of a video from its file
   screen, in a fixed frame like a small video editor's: the viewer on
   top, and docked at the bottom the transport (To the start, Play /

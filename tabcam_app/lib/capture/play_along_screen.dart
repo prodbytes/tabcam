@@ -36,6 +36,7 @@ import 'take_priority.dart';
 import 'take_recorder.dart';
 import 'take_syncer.dart';
 import 'take_sound.dart';
+import '../screens/keys_help.dart';
 import '../screens/messages.dart';
 
 /// Whether a take of [mimeType] plays here, for Cam's Play: not a WebM (a
@@ -1706,6 +1707,10 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
               MetronomeButton(onClosed: _focus.requestFocus),
               if (gate == null)
                 PlayAlongButton(along: _along, onPressed: _focus.requestFocus),
+              KeysHelpButton(
+                screen: KeysScreen.cam,
+                onClosed: _focus.requestFocus,
+              ),
               if (_heads case final heads?)
                 ValueListenableBuilder(
                   valueListenable: heads.face,

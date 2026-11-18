@@ -26,6 +26,7 @@ import 'file_screen.dart';
 import 'media_url.dart';
 import 'premium_card.dart';
 import 'video_page.dart' show mediaLength, openPlayer, pageFile;
+import 'keys_help.dart';
 import 'messages.dart';
 import 'mono_font.dart';
 import 'on_picture.dart';
@@ -1750,6 +1751,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         ),
         actions: [
           if (video != null && _error == null) _appBarActions(l10n),
+          const KeysHelpButton(screen: KeysScreen.videoEdit),
           IconButton(
             key: const Key('video-edit-about'),
             tooltip: l10n.videoEditAbout,

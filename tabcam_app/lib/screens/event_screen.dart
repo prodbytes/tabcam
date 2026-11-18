@@ -37,6 +37,7 @@ import 'sign_in_gate.dart';
 import 'tab_notation.dart';
 import 'tab_text_view.dart';
 import 'video_edit_screen.dart';
+import 'keys_help.dart';
 import 'mono_font.dart';
 import 'mini_player.dart';
 import 'messages.dart';
@@ -1268,12 +1269,14 @@ class _EventScreenState extends State<EventScreen> {
                 ),
               // On a phone they leave room for the title only with the
               // other buttons in a menu.
-              if (textActions && narrow)
-                _moreMenu(event, editable: editable)
-              else ...[
+              if (textActions && narrow) ...[
+                const KeysHelpButton(screen: KeysScreen.player, hidden: true),
+                _moreMenu(event, editable: editable),
+              ] else ...[
                 const DictionaryButton(),
                 const MetronomeButton(),
                 if (text && !locked) PlayAlongButton(along: _along),
+                const KeysHelpButton(screen: KeysScreen.player),
                 if (editable)
                   IconButton(
                     tooltip: l10n.eventRename,

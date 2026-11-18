@@ -2539,4 +2539,96 @@ class AppLocalizationsEn extends AppLocalizations {
   String videoEditBalanceRight(int percent) {
     return 'R $percent';
   }
+
+  @override
+  String get keysHelp => 'Keyboard shortcuts';
+
+  @override
+  String get keysHelpTooltip => 'Keyboard shortcuts (H)';
+
+  @override
+  String get keysTab => 'Turning the tab';
+
+  @override
+  String get keysNextPhrase => 'Next phrase (a page-turner pedal too)';
+
+  @override
+  String get keysPreviousPhrase =>
+      'Previous phrase (← too, with nothing playing along)';
+
+  @override
+  String get keysTakes => 'Takes';
+
+  @override
+  String get keysRetake =>
+      'Start a take with the song from its start; recording, throw the take away and record it again';
+
+  @override
+  String get keysCut =>
+      'Start a take with the song where it is; recording, save the take and start the next';
+
+  @override
+  String get keysPlayAlongCam =>
+      'Playing along (while the sidebar shows; ↑ and ↓ then turn the tab)';
+
+  @override
+  String get keysPlayAlongPlayer => 'Playing along (while the sidebar shows)';
+
+  @override
+  String get keysPlayPause => 'Play or pause the song';
+
+  @override
+  String get keysRestart => 'Back to the start, with the count-in';
+
+  @override
+  String get keysSkip => '10 seconds back or on';
+
+  @override
+  String get keysPreview => 'Preview';
+
+  @override
+  String get keysPlayPausePreview => 'Play or pause the preview';
+
+  @override
+  String get keysToStart =>
+      'To the start of the kept part (again: of the video)';
+
+  @override
+  String get keysToEnd => 'To the end of the kept part (again: of the video)';
+
+  @override
+  String get keysStepTenth => 'A tenth of a second back or on';
+
+  @override
+  String get keysStepSecond => 'A second back or on';
+
+  @override
+  String get keysGeneral => 'Everywhere';
+
+  @override
+  String get keysShowHelp => 'Show or hide these shortcuts';
+
+  @override
+  String get keysInFields => 'Typing in a field, the keys type as usual.';
+
+  @override
+  String get keySpace => 'Space';
+
+  @override
+  String get keyAnyKey => 'Any key';
+
+  @override
+  String get keyBackspace => 'Backspace';
+
+  @override
+  String get keyPageUp => 'Page Up';
+
+  @override
+  String get keyHome => 'Home';
+
+  @override
+  String get keyEnd => 'End';
+
+  @override
+  String get keyShift => 'Shift';
 }

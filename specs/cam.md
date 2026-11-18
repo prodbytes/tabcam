@@ -36,7 +36,8 @@ its **Not now** leaving. With Premium it opens the camera view
   phone turned sideways), with its number under it ("2 / 14"). A
   capture with no text tab yet says to read it first.
 - **Moving along the tab**: any key (but **/** and **.**, which are
-  [a new take](#new-take-key), and the space bar, **1**, 0, ← and →
+  [a new take](#new-take-key), **H**, which shows the
+  [keyboard shortcuts](keyboard-shortcuts.md), and the space bar, **1**, 0, ← and →
   while a file [plays along](#playing-along-with-a-file)) goes to the
   next neckline (a keyboard, or a Bluetooth page-turner pedal), **↓**
   among them; **Backspace**, **↑** and **Page Up** go to the one
