@@ -3962,6 +3962,14 @@ spec.
     (Spanish and Portuguese too); `PlayAlongKeys` lost its `oneToggles`
     switch. See [Cam](cam.md#rec-key).
 
+13. **"In timestamped take name only hour and minute is fine, no need
+    to break more."** A take is now named by its hour and minute only
+    ("Take 14:32"): takes started in the same minute share the name,
+    where the seconds, then a number, were added before ("Take
+    14:32:07", "Take 14:32:07 (2)"; takes named so keep their names, and
+    still count as takes). `takeName` no longer looks at the capture's
+    pages. See [Cam](cam.md#rec-key).
+
 ## 2026-11-18
 
 1. **"Make the tabs watermark fixed width font."** The watermark

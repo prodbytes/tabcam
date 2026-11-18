@@ -103,11 +103,12 @@ its **Not now** leaving. With Premium it opens the camera view
   the capture as a video, at the end of its files, named by **the time
   it started** (Rec, / or . pressed), in hours and minutes, 24-hour:
   "Take 14:32" (Spanish "Toma 14:32"; `takeName`). The date isn't in the
-  name: the sidebar lists the takes under their day. Should a take of
-  that day have that name already (two takes started in one minute), the
-  seconds are added ("Take 14:32:07"), and should that one be taken too,
-  a number ("Take 14:32:07 (2)"). Takes saved before were named "Take 1",
-  "Take 2"… and keep their names. A message says the take was added. It
+  name: the sidebar lists the takes under their day. Takes started in
+  the same minute share the name, nothing more is added (until
+  2026-11-17 the seconds, then a number, were: "Take 14:32:07", "Take
+  14:32:07 (2)"; takes named so keep their names). Takes saved before
+  were named "Take 1", "Take 2"… and keep their names. A message says
+  the take was added. It
   is marked as a take (`take` on its page, `EventPage.take`), which
   stays when it's renamed, edited, cloned or published, so the
   play-along sidebar lists it with the [takes](#playing-along-with-a-file).
