@@ -307,9 +307,13 @@ final class WatermarkLook extends LayerLook {
 /// The title's sizes, as fractions of the frame's short side: its first
 /// line's text [line1] high, its second's [line2] (80% of it), each line
 /// [lineHeight] times its text; the box [padV] above and below them and
-/// [padH] either side, [margin] in from the top left. It fades in over
-/// [fadeIn] from the kept part's start, then stays. Lines are at most
-/// [maxChars] long, and there are at most [maxLines].
+/// [padH] either side, [margin] in from the top left. And its times
+/// ([titleLayers]): a [card] at the kept part's start, fading in over
+/// [fade], held for [hold] and fading out over [fade]; and one at its
+/// end, fading in over [fade] and held to the end. On a kept part shorter
+/// than [apart] (no room for both cards apart) it stays on throughout,
+/// fading in over [fade]. Lines are at most [maxChars] long, and there
+/// are at most [maxLines].
 abstract final class TitleLayout {
   static const line1 = 0.05;
   static const line2 = 0.04;
@@ -317,7 +321,10 @@ abstract final class TitleLayout {
   static const padV = 0.0125;
   static const padH = 0.02;
   static const margin = 0.035;
-  static const fadeIn = Duration(seconds: 3);
+  static const fade = Duration(seconds: 6);
+  static const hold = Duration(seconds: 3);
+  static const card = Duration(seconds: 15);
+  static const apart = Duration(seconds: 40);
   static const maxLines = EditTitle.maxLines;
   static const maxChars = EditTitle.maxChars;
 
@@ -344,8 +351,9 @@ abstract final class WatermarkLayout {
 /// renderer needs the frame's size; and [liftW] higher still, as a
 /// fraction of the frame's width (none of today's layers is lifted: the
 /// watermark sits in the corner, over the tab's bands). It fades
-/// in over [fadeIn] from [from], to [opacity]. Layers of one [id] (`tab`,
-/// `title`, `mark`) never overlap in time.
+/// in over [fadeIn] from [from], to [opacity], and out over [fadeOut] to
+/// [to] (none without an end). Layers of one [id] (`tab`, `title`,
+/// `mark`) never overlap in time.
 @immutable
 class PlanLayer {
   const PlanLayer({
@@ -359,6 +367,7 @@ class PlanLayer {
     this.from = Duration.zero,
     this.to,
     this.fadeIn = Duration.zero,
+    this.fadeOut = Duration.zero,
     this.opacity = 1,
   });
 
@@ -372,15 +381,25 @@ class PlanLayer {
   final Duration from;
   final Duration? to;
   final Duration fadeIn;
+  final Duration fadeOut;
   final double opacity;
 
+  /// Whether [at] in the output is in its time, [from] to [to].
+  bool within(Duration at) => at >= from && (to == null || at < to!);
+
   /// How opaque it is at [at] in the output, 0 to [opacity]: 0 outside
-  /// it, rising from 0 over [fadeIn] from its start.
+  /// it, rising from 0 over [fadeIn] from its start, falling to 0 over
+  /// [fadeOut] to its end.
   double alphaAt(Duration at) {
-    if (at < from || (to != null && at >= to!)) return 0;
-    if (fadeIn <= Duration.zero) return opacity;
-    final faded = (at - from).inMicroseconds / fadeIn.inMicroseconds;
-    return opacity * min(1.0, faded);
+    if (!within(at)) return 0;
+    var level = 1.0;
+    if (fadeIn > Duration.zero) {
+      level = min(level, (at - from).inMicroseconds / fadeIn.inMicroseconds);
+    }
+    if (fadeOut > Duration.zero && to != null) {
+      level = min(level, (to! - at).inMicroseconds / fadeOut.inMicroseconds);
+    }
+    return opacity * level;
   }
 
   /// Where it's drawn on a [frame] (upright, as it shows), an [image] that
@@ -419,6 +438,7 @@ class PlanLayer {
     'fromMs': from.inMilliseconds,
     'toMs': to?.inMilliseconds,
     'fadeInMs': fadeIn.inMilliseconds,
+    'fadeOutMs': fadeOut.inMilliseconds,
     'opacity': opacity,
   };
 
@@ -435,6 +455,7 @@ class PlanLayer {
       other.from == from &&
       other.to == to &&
       other.fadeIn == fadeIn &&
+      other.fadeOut == fadeOut &&
       other.opacity == opacity;
 
   @override
@@ -449,6 +470,7 @@ class PlanLayer {
     from,
     to,
     fadeIn,
+    fadeOut,
     opacity,
   );
 
@@ -513,20 +535,43 @@ List<PlanLayer> tabLayers(
   return layers;
 }
 
-/// The title over the video, showing [lines] (as [titleText] cleans
-/// them): at the top left, fading in over the kept part's first 3 s, then
-/// staying to its end ([TitleLayout]). Null when there's nothing to show.
-PlanLayer? titleLayer(List<String> lines) {
+/// The title over a kept part [length] long (zero: not known), showing
+/// [lines] (as [titleText] cleans them) at the top left ([TitleLayout]):
+/// a card at the start, fading in over [TitleLayout.fade], held and
+/// fading out over as long again; and one at the end, fading in over
+/// [TitleLayout.fade] and held to the end (under the video's fade to
+/// black, where there's one). On a kept part shorter than
+/// [TitleLayout.apart] one layer throughout, fading in over
+/// [TitleLayout.fade] (at most half the kept part). Empty when there's
+/// nothing to show.
+List<PlanLayer> titleLayers(List<String> lines, Duration length) {
   final text = titleText(lines);
-  if (text.isEmpty) return null;
-  return PlanLayer(
+  if (text.isEmpty) return const [];
+  PlanLayer card({
+    Duration from = Duration.zero,
+    Duration? to,
+    Duration fadeIn = Duration.zero,
+    Duration fadeOut = Duration.zero,
+  }) => PlanLayer(
     id: 'title',
     look: TitleLook(text),
     anchor: LayerAnchor.topLeft,
     heightU: TitleLayout.heightU(text.length),
     marginU: TitleLayout.margin,
-    fadeIn: TitleLayout.fadeIn,
+    from: from,
+    to: to,
+    fadeIn: fadeIn,
+    fadeOut: fadeOut,
   );
+  const fade = TitleLayout.fade;
+  if (length <= Duration.zero) return [card(fadeIn: fade)];
+  if (length < TitleLayout.apart) {
+    return [card(fadeIn: PageEdit.fadeWithin(fade, length))];
+  }
+  return [
+    card(to: TitleLayout.card, fadeIn: fade, fadeOut: fade),
+    card(from: length - TitleLayout.card, fadeIn: fade),
+  ];
 }
 
 /// [lines] as a title shows them: each trimmed and at most
@@ -708,7 +753,8 @@ class RenderPlan {
   /// video's [frame] (its size as shown, in pixels; null: not known). The
   /// [title] is the capture's ([captureTitleLines]): the title's text
   /// unless the edit has its own ([PageEdit.title]), drawn unless it's
-  /// turned off. The [watermark] (its text; null: none, as in
+  /// turned off, at the kept part's start and its end ([titleLayers]).
+  /// The [watermark] (its text; null: none, as in
   /// the file screen's player) is drawn unless the edit turns it off
   /// ([PageEdit.watermark]) and the one downloading has Premium now
   /// ([premium], or a build without the service): an edit a Premium user
@@ -746,10 +792,7 @@ class RenderPlan {
         stereo: edit?.ownStereo ?? LaneStereo.standard,
       );
     } else if (audible && preview) {
-      own = OwnLane(
-        volume: 0,
-        stereo: edit?.ownStereo ?? LaneStereo.standard,
-      );
+      own = OwnLane(volume: 0, stereo: edit?.ownStereo ?? LaneStereo.standard);
     }
     SongLane? song;
     if (audible &&
@@ -805,10 +848,9 @@ class RenderPlan {
         layers.add(watermarkLayer(watermark));
       }
       final shown = edit?.title;
-      if (titleLayer(shown == null ? title : shown.linesOr(title))
-          case final layer?) {
-        layers.add(layer);
-      }
+      layers.addAll(
+        titleLayers(shown == null ? title : shown.linesOr(title), length),
+      );
     }
     return RenderPlan(
       start: start,

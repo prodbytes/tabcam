@@ -2280,7 +2280,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoEditTitleAbout =>
-      'No canto superior esquerdo · surge aos poucos em 3 s';
+      'No canto superior esquerdo · os primeiros e os últimos 15 s';
 
   @override
   String get videoEditTitleLine1 => 'Primeira linha';

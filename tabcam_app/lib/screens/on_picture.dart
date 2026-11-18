@@ -78,9 +78,9 @@ class OnPicture extends StatelessWidget {
   static const toolbarHeight = 40.0;
 
   /// The layers drawn at [at] in the output, each with where it is on a
-  /// picture [size] big: the take's band showing then, the title and the
-  /// watermark (the title outlined from the start, as it's there to edit
-  /// even while it fades in).
+  /// picture [size] big: the take's band showing then, the title's card
+  /// and the watermark (those two outlined through their whole time, as
+  /// they're there to edit even while they fade).
   static List<(PictureLayer, Rect)> shown(
     List<PlanLayer> layers,
     Duration at,
@@ -89,7 +89,7 @@ class OnPicture extends StatelessWidget {
   ) => [
     for (final layer in layers)
       if (PictureLayer.of(layer) case final kind?)
-        if (kind != PictureLayer.tab || layer.alphaAt(at) > 0)
+        if (kind == PictureLayer.tab ? layer.alphaAt(at) > 0 : layer.within(at))
           if (layer.rectIn(size, sizeOf(layer.look)) case final rect
               when !rect.isEmpty)
             (kind, rect),

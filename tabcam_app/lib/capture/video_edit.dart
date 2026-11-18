@@ -80,7 +80,7 @@ abstract final class VideoEditor {
 /// the song from `fromMs` to `toMs`, at `speed`), the layers drawn over
 /// the picture (`images`, PNGs, and `layers`, each naming its `image`,
 /// with its `anchor`, `heightU`, `marginU`, `liftU`, `fromMs`, `toMs`,
-/// `fadeInMs` and `opacity`), and `job`, which the
+/// `fadeInMs`, `fadeOutMs` and `opacity`), and `job`, which the
 /// platform's `progress` calls back name, with `done` (0 to 1), every
 /// quarter of a second while it renders. It replies with the output
 /// path.
