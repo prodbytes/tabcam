@@ -4087,3 +4087,14 @@ spec.
      (`test/web_lane_stereo_test.dart`); the Kotlin and Swift argument
      readers and the Swift sample math have native tests (compiled, not
      run on a phone).
+7. **"yes do it"** (fix the 3 tests failing on main, in
+   `play_along_test.dart` and `backing_section_test.dart`). They had
+   failed since the Cam keys change (request 12 of 2026-11-17, PR
+   #304), which made **1** the sidebar song's play / pause in Cam, no
+   longer Rec / Stop; the app does what that request asked, the tests
+   were left behind: one still stopped a recording with 1 (it taps Stop
+   now), one expected 1 to wait while a take's Play opens as Rec does
+   (only Rec and . are checked there now: 1 plays the song), and one,
+   rewritten then, left the sidebar hidden before checking that its keys
+   work (it shows the sidebar again first, as before). No change to the
+   app.
