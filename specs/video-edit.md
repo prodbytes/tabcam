@@ -702,7 +702,8 @@ plan knows it without drawing.
 **The watermark**: "tabs.cam", the same on a take and on any other
 video, in every language (`watermarkText`; no "Recorded by", no
 address); one layer, `mark`, at the **bottom right**, 3% of the short
-side in, the whole video through, one line of Roboto at 2.2% of the short side,
+side in, the whole video through, one line of Roboto Mono (fixed width,
+as the tabs are) at 2.2% of the short side,
 white at 60% with a soft shadow. It stays in that corner with the tab
 drawn too, whatever the tab's size: over the bands (drawn after them),
 never lifted above them. It's left out only when the edit turns it off
@@ -762,9 +763,10 @@ leaves the fades out (`fades: false`), as it does the watermark.
 
 **The fonts**: Roboto Regular and Medium ship with the app
 (`assets/fonts`, Apache 2.0, as the family `TabCamRoboto`, apart from
-the app's own text), so the title and the watermark are drawn the same
-in the preview and the file on every platform, and the web never
-fetches them from a CDN. They're drawn for a frame whose short side is
+the app's own text) for the title, and Roboto Mono (`monoFont`, the
+tabs' font) for the watermark, so both are drawn the same in the
+preview and the file on every platform, and the web never fetches them
+from a CDN. They're drawn for a frame whose short side is
 1,200 pixels (`layerShort`) and scaled by each renderer.
 
 **One drawing for the preview and the file.** Each look is drawn once
