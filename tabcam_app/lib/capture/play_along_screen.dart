@@ -95,32 +95,13 @@ bool takePlaysHere(String mimeType) =>
 /// the take starts; while it records, head gestures
 /// look less often, and cloud sync starts no pass.
 /// A take's name: "Take" and the time it started, [started], as hours and
-/// minutes ("Take 14:32", 24-hour); with the seconds ("Take 14:32:07")
-/// should a take of that day among [pages] have that name already, and a
-/// number after them should that one too ("Take 14:32:07 (2)"). The day
-/// isn't in the name: the sidebar lists the takes under their day.
-String takeName(
-  AppLocalizations l10n,
-  DateTime started,
-  Iterable<EventPage> pages,
-) {
-  final names = {
-    for (final p in pages)
-      if (timeOfId(p.id) case final made?
-          when DateUtils.isSameDay(made, started))
-        p.title,
-  };
+/// minutes ("Take 14:32", 24-hour). The day isn't in the name: the
+/// sidebar lists the takes under their day. Takes started in the same
+/// minute share the name (until 2026-11-17 the seconds, then a number,
+/// told them apart).
+String takeName(AppLocalizations l10n, DateTime started) {
   String two(int n) => n.toString().padLeft(2, '0');
-  final minute = l10n.camTake('${two(started.hour)}:${two(started.minute)}');
-  if (!names.contains(minute)) return minute;
-  final second = l10n.camTake(
-    '${two(started.hour)}:${two(started.minute)}:${two(started.second)}',
-  );
-  var name = second;
-  for (var n = 2; names.contains(name); n++) {
-    name = '$second ($n)';
-  }
-  return name;
+  return l10n.camTake('${two(started.hour)}:${two(started.minute)}');
 }
 
 class PlayAlongScreen extends StatefulWidget {
@@ -1312,7 +1293,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       // Cam opens on the user's own copy of a capture shared with them
       // (the event screen makes it), so takes are always theirs; added to a
       // shared one, the take would go to their copy ([Library.copyToAdd]).
-      final name = takeName(l10n, _takeStarted, event.pages);
+      final name = takeName(l10n, _takeStarted);
       final updated = await library.addMedia(
         event,
         [media],

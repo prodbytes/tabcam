@@ -3866,31 +3866,12 @@ B|--5--8--|
       take: true,
     );
 
-    test('a take is named by the time it started, hours and minutes; with '
-        'the seconds, then a number, when that day has the name already', () {
+    test('a take is named by the time it started, hours and minutes, no '
+        'more, whatever that day\'s takes are named', () {
       final started = DateTime(2026, 11, 16, 9, 5, 7);
-      expect(takeName(l10n, started, const []), 'Take 09:05');
-      expect(takeName(es, started, const []), 'Toma 09:05');
-      final made = DateTime(2026, 11, 16, 9, 6);
-      expect(
-        takeName(l10n, started, [take(made, 'Take 09:05')]),
-        'Take 09:05:07',
-      );
-      expect(
-        takeName(l10n, started, [
-          take(made, 'Take 09:05'),
-          take(made, 'Take 09:05:07'),
-          take(made, 'Take 09:05:07 (2)'),
-        ]),
-        'Take 09:05:07 (3)',
-      );
-      // Another day's take of that name: a day of its own in the list.
-      expect(
-        takeName(l10n, started, [
-          take(DateTime(2026, 11, 15, 9), 'Take 09:05'),
-        ]),
-        'Take 09:05',
-      );
+      expect(takeName(l10n, started), 'Take 09:05');
+      expect(takeName(es, started), 'Toma 09:05');
+      expect(takeName(l10n, DateTime(2026, 11, 16, 14, 32, 59)), 'Take 14:32');
     });
 
     test('a page\'s time is in its ID; an ID that isn\'t a time has none', () {

@@ -3924,3 +3924,10 @@ spec.
     edit kept with black on white or black on gold draws white on
     black, as any colour the app doesn't know. See
     [video edit](video-edit.md).
+12. **"In timestamped take name only hour and minute is fine, no need
+    to break more."** A take is now named by its hour and minute only
+    ("Take 14:32"): takes started in the same minute share the name,
+    where the seconds, then a number, were added before ("Take
+    14:32:07", "Take 14:32:07 (2)"; takes named so keep their names, and
+    still count as takes). `takeName` no longer looks at the capture's
+    pages. See [Cam](cam.md#rec-key).
