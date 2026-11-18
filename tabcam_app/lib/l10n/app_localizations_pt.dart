@@ -610,10 +610,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get camStop => 'Parar';
 
   @override
-  String get camRecKey => 'Gravar (1)';
+  String get camRecKey => 'Gravar (.)';
 
   @override
-  String get camStopKey => 'Parar (1) · novo take (/) · refazer (.)';
+  String get camStopKey => 'Parar · novo take (/) · refazer (.)';
 
   @override
   String get camMicChoose => 'Microfone';
@@ -1859,7 +1859,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dictionaryIntro =>
-      'Digite um acorde (C, Am7, F#m7b5, G/B) ou uma escala (A minor pentatonic, D dorian, C major scale) para vê-lo no violão. Qualquer outra coisa é pesquisada no YouTube.';
+      'Digite um acorde (C, Am7, F#m7b5, G/B) ou uma escala (A minor pentatonic, D dorian, C major scale) para vê-lo no violão. Qualquer outra coisa é pesquisada no YouTube e no Cifra Club.';
 
   @override
   String get dictionaryChord => 'Acorde';
@@ -1890,6 +1890,23 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dictionaryYouTubeOpen => 'Abrir no YouTube';
+
+  @override
+  String get dictionaryCifraClub => 'Tablaturas no Cifra Club';
+
+  @override
+  String get dictionaryCifraClubSearching => 'Pesquisando no Cifra Club…';
+
+  @override
+  String get dictionaryCifraClubNone =>
+      'O Cifra Club não encontrou tablaturas.';
+
+  @override
+  String get dictionaryCifraClubFailed =>
+      'Não foi possível carregar os resultados do Cifra Club.';
+
+  @override
+  String get dictionaryCifraClubOpen => 'Abrir no Cifra Club';
 
   @override
   String dictionaryFret(int fret) {
