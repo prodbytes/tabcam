@@ -323,7 +323,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventKeepOnePage =>
-      'An event keeps at least one page; delete the event instead.';
+      'A shared capture keeps at least one file: only its owner deletes the capture.';
+
+  @override
+  String eventDeleteLastFile(String name) {
+    return '\"$name\" is its only file, so the capture goes with it, to Deleted on the Profile tab: you can restore it there until you purge.';
+  }
 
   @override
   String get eventRename => 'Rename';

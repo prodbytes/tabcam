@@ -553,9 +553,10 @@ asks "Delete "<name>"?" (Cancel, Delete, and **Don't ask again**) in the
 app's shared [delete confirm](delete-confirms.md), as the list's
 "file" kind for one of the capture's files and its "contribution" kind
 for one of a reader's own, so a Don't ask again ticked in either place
-holds in both; the capture's last file can't
-be deleted (the message says to delete the event instead), and a
-failure shows "Couldn't delete". It shows only where the list would
+holds in both; the capture's last file deletes the capture with it, once the user confirms ("Delete "<capture>"?", saying "<file>" is its only file, so the capture goes with it, to Deleted: the capture's own Delete confirmation, its Don't ask again included), to the trash as Home's Delete does, with Undo, and the app goes back to Home; on a capture shared with the user to edit, which only its owner deletes, the last file stays ("A shared capture keeps at least one file…") (a take that's its capture's only file, as a
+capture of one video recorded into, deletes the capture and leaves
+Cam; until 2026-11-18 it couldn't be deleted at all, "An event keeps at
+least one page"), and a failure shows "Couldn't delete". It shows only where the list would
 offer it: on the user's own captures and those shared with them to
 edit, on every file; on a capture shared to read, on none of the
 owner's, only on the reader's own (their takes, listed after the

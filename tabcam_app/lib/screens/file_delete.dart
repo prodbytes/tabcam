@@ -19,11 +19,18 @@ bool mayDeleteFile(CaptureEvent event, EventPage page) {
 }
 
 /// Deletes [page] from [event] once the user confirms, wherever it's
-/// offered (the capture's list, the play-along sidebar): one of the
-/// capture's own files ([Library.deletePage]; the last one stays, and
-/// the user is told so), or one of the user's own contribution's
-/// ([Library.deleteContributionPage]). Nothing for a file the user may
-/// not delete ([mayDeleteFile]).
+/// offered (the capture's list, the play-along sidebar, a file's screen):
+/// one of the capture's own files ([Library.deletePage]), or one of the
+/// user's own contribution's ([Library.deleteContributionPage]). Nothing
+/// for a file the user may not delete ([mayDeleteFile]).
+///
+/// A capture keeps at least one file, so its last one (a take recorded
+/// into a capture of one video, say) deletes the capture with it, as
+/// Home's Delete does ([Library.delete]: to the trash, Undo bringing it
+/// back), once the user confirms that; then the app goes back to Home,
+/// the capture's screens having nothing left to show. On a capture shared
+/// with the user, which only its owner deletes, its last file stays, and
+/// the user is told so.
 ///
 /// It asks first ([confirmDelete]: [DeleteKind.file] for one of the
 /// capture's, [DeleteKind.contribution] for one of the user's own), unless
@@ -45,8 +52,18 @@ Future<void> deleteFile(
   final messenger = Messenger.maybeOf(context);
   final own = event.pages.any((p) => p.id == page.id);
   if (own && event.pages.length == 1) {
-    messenger?.show(l10n.eventKeepOnePage);
-    return;
+    if (event.isShared) {
+      messenger?.show(l10n.eventKeepOnePage);
+      return;
+    }
+    return _deleteWithCapture(
+      context,
+      library,
+      event,
+      page,
+      letGo: letGo,
+      run: run,
+    );
   }
   final sure = await confirmDelete(
     context,
@@ -75,6 +92,54 @@ Future<void> deleteFile(
     } else {
       await library.deleteContributionPage(now, page);
     }
+  }
+
+  if (run != null) return run(l10n.eventCouldntDelete, task);
+  try {
+    await task();
+  } on Object catch (e, stack) {
+    debugPrint('TabCam: ${l10n.eventCouldntDelete}: $e\n$stack');
+    messenger?.show('${l10n.eventCouldntDelete}: $e');
+  }
+}
+
+/// Deletes [event] with [page], its last file, once the user confirms:
+/// the capture to the trash, as Home's Delete does, and back to Home.
+Future<void> _deleteWithCapture(
+  BuildContext context,
+  Library library,
+  CaptureEvent event,
+  EventPage page, {
+  Future<void> Function()? letGo,
+  Future<void> Function(String failure, Future<void> Function() task)? run,
+}) async {
+  final l10n = context.l10n;
+  final messenger = Messenger.maybeOf(context);
+  final sure = await confirmDelete(
+    context,
+    library: library,
+    kind: DeleteKind.capture,
+    title: l10n.homeLibraryDeleteTitle(event.title),
+    body: l10n.eventDeleteLastFile(fileLabel(l10n, event, page)),
+    confirm: l10n.eventDelete,
+    cancel: l10n.eventCancel,
+  );
+  if (!sure || !context.mounted) return;
+  final navigator = Navigator.of(context);
+  await letGo?.call();
+  Future<void> task() async {
+    final now = library.byId(event.id);
+    if (now == null) return;
+    await library.delete(now);
+    // To the trash: Undo, or Profile's Deleted, brings it back.
+    showDeleted(
+      messenger,
+      l10n,
+      now.title,
+      () => unawaited(library.restore(now)),
+    );
+    // Its screens (the capture, Cam, a file's) have nothing left to show.
+    if (navigator.mounted) navigator.popUntil((route) => route.isFirst);
   }
 
   if (run != null) return run(l10n.eventCouldntDelete, task);

@@ -604,11 +604,17 @@ abstract class AppLocalizations {
   /// **'Read'**
   String get eventRead;
 
-  /// Event: snackbar on deleting the last page
+  /// Event: snackbar on deleting the last file of a capture shared with the user
   ///
   /// In en, this message translates to:
-  /// **'An event keeps at least one page; delete the event instead.'**
+  /// **'A shared capture keeps at least one file: only its owner deletes the capture.'**
   String get eventKeepOnePage;
+
+  /// Delete confirmation body: the file deleted is the capture's last, so the capture is deleted with it
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" is its only file, so the capture goes with it, to Deleted on the Profile tab: you can restore it there until you purge.'**
+  String eventDeleteLastFile(String name);
 
   /// Event app bar tooltip, rename dialog title, and the file screen tool (beside Delete) that renames the file
   ///

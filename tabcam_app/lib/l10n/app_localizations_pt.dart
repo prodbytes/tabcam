@@ -342,7 +342,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get eventKeepOnePage =>
-      'Uma captura mantém pelo menos uma página; exclua a captura.';
+      'Uma captura compartilhada mantém pelo menos um arquivo: só o dono exclui a captura.';
+
+  @override
+  String eventDeleteLastFile(String name) {
+    return '\"$name\" é o único arquivo dela, então a captura vai junto, para Excluídos na aba Perfil: dá para restaurá-la lá até você apagar de vez.';
+  }
 
   @override
   String get eventRename => 'Renomear';

@@ -4135,3 +4135,22 @@ spec.
     times and levels, the short kept part, a layer's fade out in Dart,
     Kotlin (JVM) and an XCTest render. See
     [video edit](video-edit.md#layers).
+
+11. **"Delete take button does not seem to be working properly."** On
+   tabs.cam the user's only capture was one video, and a capture's last
+   file couldn't be deleted: Delete (in Cam's sidebar, the capture's list
+   or the file's screen) only said "An event keeps at least one page;
+   delete the event instead", so a take there never went (Profile's
+   Deleted was empty). Deleting a capture's last file now deletes the
+   capture with it, once the user confirms ("Delete "<capture>"?",
+   saying the file is its only one, so the capture goes with it, to
+   Deleted), to the trash as Home's Delete does, with Undo, and the app
+   goes back to Home (Cam, the capture and the file's screen having
+   nothing left to show). On a capture shared with the user to edit,
+   which only its owner deletes, the last file still stays, the message
+   now "A shared capture keeps at least one file: only its owner deletes
+   the capture." New string `eventDeleteLastFile` in English, Spanish
+   and Portuguese. Deleting takes otherwise worked (checked in Cam with
+   three takes deleted one by one). See
+   [Cam](cam.md#deleting-from-the-sidebar) and the
+   [event screen](event-screen.md).

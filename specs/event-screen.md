@@ -118,8 +118,7 @@ plays along.
   file's delete no longer asks on this device, see
   [delete confirmations](delete-confirms.md)) and deletes the file (stopping it
   if it plays in the list) to the capture's trash, with "Deleted "<name>"…"
-  and **Undo** ([Deleted and Purge](trash.md)); the last file can't be deleted (the message
-  says to delete the event instead), and a failure shows "Couldn't
+  and **Undo** ([Deleted and Purge](trash.md)); the capture's last file deletes the capture with it, once the user confirms ("Delete "<capture>"?", saying "<file>" is its only file, so the capture goes with it, to Deleted: the capture's own Delete confirmation, its Don't ask again included), to the trash as Home's Delete does, with Undo, and the app goes back to Home; on a capture shared with the user to edit, which only its owner deletes, the last file stays ("A shared capture keeps at least one file…"), and a failure shows "Couldn't
   delete". Rename and Delete aren't there read only. The play-along
   sidebar's Delete (beside the Text view, in Cam, on the file screen)
   is the same, from the same code, Don't ask again and all (one ticked
@@ -302,7 +301,8 @@ Its tools, along the bottom:
   name).
 - **Delete**: deletes the file (to the trash, with Undo,
   [Deleted and Purge](trash.md)) and goes back to the list. The last file
-  can't be deleted (the message says to delete the event instead). The
+  deletes the capture with it, once confirmed, as from the list (above),
+  and goes back to Home. The
   play-along sidebar beside a recording has no Delete on the recording's
   own row (it has on the other files,
   [as in Cam](cam.md#deleting-from-the-sidebar)); the takes listed in it
