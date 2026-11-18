@@ -230,8 +230,10 @@ can't be changed right now" and writes nothing
 Nothing typed, the sidebar explains itself and offers pills to tap: **the
 capture's title first**, on a capture's screens (the capture, a file, Cam;
 Home has none), so a song's tabs and videos are a tap away, then the
-examples (`C`, `Am7`, `F#m7b5`, `G/B`, `A minor pentatonic`, `E blues`,
-`D dorian`). A long title is cut to the sidebar's width.
+examples (`C`, `Am7`, `F#m7b5`, `G/B`, `Bø`, `GΔ7`, `Cadd9`, `Am11`, `A
+minor pentatonic`, `E blues`, `D dorian`; `Bø` and `GΔ7` show the
+half-diminished and major seventh symbols, `Cadd9` an added ninth and
+`Am11` a ninth and an eleventh). A long title is cut to the sidebar's width.
 Under them, a **Chord symbols** key, for the symbols a chart writes
 instead of letters: **ø** half-diminished (`Bø7 = Bm7b5 = Bm7(b5)`),
 **Δ** major seventh (`CΔ = Cmaj7 = CM7 = C7M = C^7`), **°** diminished
