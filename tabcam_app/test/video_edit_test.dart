@@ -2221,4 +2221,68 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('the song\'s delay: steps of 1 and 10 ms either way, a value '
+      'typed, kept with the edit; Reset clears it', (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester, withTake: true);
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-song-add')));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-track-k1')));
+    await _settle(tester);
+
+    String shown() => tester
+        .widget<Text>(
+          find.descendant(
+            of: find.byKey(const Key('video-edit-delay-value')),
+            matching: find.byType(Text),
+          ),
+        )
+        .data!;
+    Duration kept() => library.byId(id)!.pages.first.edit!.offset;
+    expect(find.byKey(const Key('video-edit-delay')), findsOneWidget);
+    expect(shown(), '0 ms');
+    expect(
+      find.textContaining("Bluetooth speaker's or headphones' delay"),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const Key('video-edit-delay-plus10')));
+    await tester.tap(find.byKey(const Key('video-edit-delay-plus1')));
+    await _settle(tester);
+    expect(shown(), '+11 ms');
+    expect(kept(), const Duration(milliseconds: 11));
+    await tester.tap(find.byKey(const Key('video-edit-delay-minus1')));
+    await _settle(tester);
+    expect(shown(), '+10 ms');
+    expect(
+      tester
+          .widget<IconButton>(
+            find.byKey(const Key('video-edit-delay-minus10')),
+          )
+          .tooltip,
+      '10 ms earlier',
+    );
+
+    // Typed: −35 ms, the song that much earlier.
+    await tester.tap(find.byKey(const Key('video-edit-delay-value')));
+    await _settle(tester);
+    expect(find.text('Song delay'), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const Key('video-edit-delay-field')),
+      '-35',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Set'));
+    await _settle(tester);
+    expect(shown(), '−35 ms');
+    expect(kept(), const Duration(milliseconds: -35));
+
+    // Reset: no song, so no delay, and no edit.
+    await tester.tap(find.byKey(const Key('video-edit-reset')));
+    await _settle(tester);
+    expect(find.byKey(const Key('video-edit-delay')), findsNothing);
+    expect(library.byId(id)!.pages.first.edit, isNull);
+  });
 }
