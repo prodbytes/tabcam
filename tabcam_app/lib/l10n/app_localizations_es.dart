@@ -2035,10 +2035,32 @@ class AppLocalizationsEs extends AppLocalizations {
       'A lo largo del video: arrástrala para moverla, sus extremos para recortarla';
 
   @override
-  String get videoEditTrackEarlier => 'Una décima de segundo antes';
+  String videoEditCutStartAt(String time) {
+    return 'Inicio $time';
+  }
 
   @override
-  String get videoEditTrackLater => 'Una décima de segundo después';
+  String videoEditCutEndAt(String time) {
+    return 'Fin $time';
+  }
+
+  @override
+  String get videoEditStartEarlier => 'Empezar 0,05 s antes';
+
+  @override
+  String get videoEditStartLater => 'Empezar 0,05 s después';
+
+  @override
+  String get videoEditEndEarlier => 'Terminar 0,05 s antes';
+
+  @override
+  String get videoEditEndLater => 'Terminar 0,05 s después';
+
+  @override
+  String get videoEditTrackEarlier => '0,05 s antes';
+
+  @override
+  String get videoEditTrackLater => '0,05 s después';
 
   @override
   String videoEditTrackVolumeLevel(int percent) {

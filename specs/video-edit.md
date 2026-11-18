@@ -118,11 +118,16 @@ makes a file of it."), opening with the video's edit as it was left:
   the space bar: **the space bar** plays and pauses the preview too, as
   a tap on it does, wherever the editor is clicked, but not while the
   title is typed in, nor with Ctrl, Alt or ⌘ held), **the current time**
-  (`0:12.3`, to the tenth of a second: the trims are set by it), the
+  (`0:12.3`, to the tenth of a second), the
   part kept (`Keep 0:02.5–0:41.0`, in the primary colour once trimmed;
   it shrinks to fit at large text sizes), and **Start here** (|◀) and
   **End here** (▶|), which set either end where the preview is. The
-  kept part is at least half a second long.
+  kept part is at least half a second long. **A cut's or the song's
+  time** (the part kept, the cut's ends under the lanes, where the song
+  starts, how far it was moved, the part of it used) is shown to the
+  tenth of a second when it's on one, else **to the hundredth**
+  (`0:02.55`, `0:01.26`), so every step of ‹ and › shows, and a cut on
+  one of the song's marks reads as it is.
 - **The timeline**: a **ruler** (the video's times, m:ss, a tick as
   often as there's room for its time; its times stay small at large
   text sizes; on a take with its song lined up, a small flag in the
@@ -153,7 +158,21 @@ makes a file of it."), opening with the video's edit as it was left:
     exactly the end it moved when let go). On a take with its song
     lined up, [the song's marks](#the-songs-marks) are thin lines down
     the bar, and **a grip dragged near one is on it** (it snaps: the
-    cut is then exactly where the song starts or stops). This replaces
+    cut is then exactly where the song starts or stops).
+    <a id="the-cuts-steps"></a>**Under the lanes, the cut's two ends,
+    each stepped by ‹ and ›**: at the left **Start 0:02.5**, at the
+    right **End 0:41.0**, each between **‹** and **›**, which move that
+    end **0.05 s** (a twentieth of a second) earlier or later ("Start
+    0.05 s earlier", "End 0.05 s later"…), from wherever it is (a cut on
+    a mark at 0:01.26 steps to 0:01.31), within the video and no nearer
+    the other end than half a second (greyed where there's no further
+    to go). The song stays where it is along the video, and the
+    preview, while paused, shows the frame cut at, as with a grip. Keys
+    `video-edit-start-earlier`, `-later`, `-at`, `video-edit-end-…`. On
+    a phone they fit at the largest text size (the times shrink).
+    Checked (`test/video_edit_test.dart`): each end stepped earlier and
+    later, the times shown, the edit kept, the song where it was, the
+    preview sought to the end moved, and no step past the video's ends. This replaces
     the Trim section's range and the preview's scrub bar. The [fades](#fades)
     are drawn on the kept part as ramps at its ends (shaded above a
     line from its corner across the fade's length), as long as they
@@ -327,8 +346,9 @@ makes a file of it."), opening with the video's edit as it was left:
     change. The title's fields and the sliders take each other's place
     on a phone.
 - **Under them, the song's details** (when there's one): its lane
-  and name ("Song · Recording 1"), **‹** and **›**, which nudge it a
-  tenth of a second earlier or later, with where it starts in words
+  and name ("Song · Recording 1"), **‹** and **›**, which nudge it
+  **0.05 s** (a twentieth of a second, the cut's step too; "0.05 s
+  earlier", "0.05 s later") earlier or later, with where it starts in words
   between them ("The song starts 0:01.5 after the video": silence
   first; "… 0:01.5 before the video": that much more of its start is
   cut; counted from the kept part's start; for a song lined up in
