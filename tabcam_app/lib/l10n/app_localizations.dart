@@ -4479,6 +4479,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Shift'**
   String get keyShift;
+
+  /// Video edit: the song delay control's label, beside its millisecond steps
+  ///
+  /// In en, this message translates to:
+  /// **'Delay'**
+  String get videoEditDelay;
+
+  /// Video edit: under the delay control, what it is for
+  ///
+  /// In en, this message translates to:
+  /// **'To correct a Bluetooth speaker\'s or headphones\' delay, a millisecond at a time.'**
+  String get videoEditDelayHint;
+
+  /// Video edit: tooltip of a delay step moving the song earlier
+  ///
+  /// In en, this message translates to:
+  /// **'{ms} ms earlier'**
+  String videoEditDelayEarlier(int ms);
+
+  /// Video edit: tooltip of a delay step moving the song later
+  ///
+  /// In en, this message translates to:
+  /// **'{ms} ms later'**
+  String videoEditDelayLater(int ms);
+
+  /// Video edit: tooltip of the delay value, which opens a field to type it
+  ///
+  /// In en, this message translates to:
+  /// **'Type the delay'**
+  String get videoEditDelayType;
+
+  /// Video edit: title of the dialog to type the song delay
+  ///
+  /// In en, this message translates to:
+  /// **'Song delay'**
+  String get videoEditDelayTitle;
+
+  /// Video edit: helper under the delay field
+  ///
+  /// In en, this message translates to:
+  /// **'Milliseconds: + later, − earlier'**
+  String get videoEditDelayHelp;
+
+  /// Video edit: the delay dialog's confirm button
+  ///
+  /// In en, this message translates to:
+  /// **'Set'**
+  String get videoEditDelaySet;
 }
 
 class _AppLocalizationsDelegate

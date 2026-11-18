@@ -438,7 +438,22 @@ them, the cut's steps go first, then the lanes, then the transport.
   first; "… 0:01.5 before the video": that much more of its start is
   cut; counted from the kept part's start; for a song lined up in
   clips, its first), and, once trimmed, "Using
-  0:01.0–0:42.5 of the song" (not for one lined up in clips). A song
+  0:01.0–0:42.5 of the song" (not for one lined up in clips).
+  <a id="the-songs-delay"></a>Under ‹ and ›, **the song's delay, to the
+  millisecond** ("Delay · To correct a Bluetooth speaker's or
+  headphones' delay, a millisecond at a time."): its value, signed
+  (`+120 ms`: the song that much later; `−35 ms`: earlier; `0 ms`), in
+  the primary colour when it isn't 0, between **−10** and **−1** on its
+  left and **+1** and **+10** on its right ("10 ms earlier", "1 ms
+  later"…), a millisecond being about the smallest difference heard
+  between two sounds. Tapped, the value opens **Song delay**, a field
+  to type it in milliseconds ("Milliseconds: + later, − earlier"; Set,
+  Cancel), at most 10 s either way. For a song lined up by itself it's
+  how far it's been moved from that line-up (0 as lined up); for one
+  placed by hand, where it starts against the kept part. It moves the
+  song as ‹ and › do (the first clip's offset, the whole line-up with
+  it), is kept with the edit, and Reset clears it. It shrinks to fit a
+  narrow panel. A song
   lined up by itself says so under them: "Lined up by its sound in the
   take" when it was [found there](#a-takes-song-lined-up), else "Lined
   up as it played while you recorded", or, once nudged or dragged,

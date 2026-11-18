@@ -2636,4 +2636,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keyShift => 'Shift';
+
+  @override
+  String get videoEditDelay => 'Delay';
+
+  @override
+  String get videoEditDelayHint =>
+      'To correct a Bluetooth speaker\'s or headphones\' delay, a millisecond at a time.';
+
+  @override
+  String videoEditDelayEarlier(int ms) {
+    return '$ms ms earlier';
+  }
+
+  @override
+  String videoEditDelayLater(int ms) {
+    return '$ms ms later';
+  }
+
+  @override
+  String get videoEditDelayType => 'Type the delay';
+
+  @override
+  String get videoEditDelayTitle => 'Song delay';
+
+  @override
+  String get videoEditDelayHelp => 'Milliseconds: + later, − earlier';
+
+  @override
+  String get videoEditDelaySet => 'Set';
 }

@@ -3609,5 +3609,47 @@
   "keyShift": "Shift",
   "@keyShift": {
     "description": "A key's name, as on the keyboard"
+  },
+  "videoEditDelay": "Delay",
+  "@videoEditDelay": {
+    "description": "Video edit: the song delay control's label, beside its millisecond steps"
+  },
+  "videoEditDelayHint": "To correct a Bluetooth speaker's or headphones' delay, a millisecond at a time.",
+  "@videoEditDelayHint": {
+    "description": "Video edit: under the delay control, what it is for"
+  },
+  "videoEditDelayEarlier": "{ms} ms earlier",
+  "@videoEditDelayEarlier": {
+    "description": "Video edit: tooltip of a delay step moving the song earlier",
+    "placeholders": {
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditDelayLater": "{ms} ms later",
+  "@videoEditDelayLater": {
+    "description": "Video edit: tooltip of a delay step moving the song later",
+    "placeholders": {
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditDelayType": "Type the delay",
+  "@videoEditDelayType": {
+    "description": "Video edit: tooltip of the delay value, which opens a field to type it"
+  },
+  "videoEditDelayTitle": "Song delay",
+  "@videoEditDelayTitle": {
+    "description": "Video edit: title of the dialog to type the song delay"
+  },
+  "videoEditDelayHelp": "Milliseconds: + later, − earlier",
+  "@videoEditDelayHelp": {
+    "description": "Video edit: helper under the delay field"
+  },
+  "videoEditDelaySet": "Set",
+  "@videoEditDelaySet": {
+    "description": "Video edit: the delay dialog's confirm button"
   }
 }

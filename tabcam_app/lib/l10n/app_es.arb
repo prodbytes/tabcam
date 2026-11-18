@@ -728,5 +728,13 @@
   "keyPageUp": "Re Pág",
   "keyHome": "Inicio",
   "keyEnd": "Fin",
-  "keyShift": "Mayús"
+  "keyShift": "Mayús",
+  "videoEditDelay": "Retraso",
+  "videoEditDelayHint": "Para corregir el retraso de un altavoz o auriculares Bluetooth, milisegundo a milisegundo.",
+  "videoEditDelayEarlier": "{ms} ms antes",
+  "videoEditDelayLater": "{ms} ms después",
+  "videoEditDelayType": "Escribe el retraso",
+  "videoEditDelayTitle": "Retraso de la canción",
+  "videoEditDelayHelp": "Milisegundos: + después, − antes",
+  "videoEditDelaySet": "Aplicar"
 }

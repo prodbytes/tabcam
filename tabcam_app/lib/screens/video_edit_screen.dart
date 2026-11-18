@@ -1399,6 +1399,36 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     _changed();
   }
 
+  /// How far the song is from where it was put, in the delay control
+  /// ([_delayControl]): for a song lined up by itself, how far it's been
+  /// moved from that line-up; else where it starts against the kept part
+  /// ([_offset]). Later is positive.
+  Duration get _delay => _lined ? _logged!.shiftOf(_current) : _offset;
+
+  /// The furthest the delay control's typed value goes either way.
+  static const maxDelay = Duration(seconds: 10);
+
+  /// The delay control's steps: a millisecond (about the smallest
+  /// difference heard between two sounds) and ten.
+  static const delaySteps = [1, 10];
+
+  /// Asks for the song's delay in milliseconds ([_delay]) and moves it
+  /// there, as ‹ and › do.
+  Future<void> _typeDelay() async {
+    final typed = await showDialog<int>(
+      context: context,
+      builder: (_) => _DelayDialog(ms: _delay.inMilliseconds),
+    );
+    if (typed == null || !mounted) return;
+    final to = Duration(
+      milliseconds: typed.clamp(
+        -maxDelay.inMilliseconds,
+        maxDelay.inMilliseconds,
+      ),
+    );
+    _moveTrack(to - _delay);
+  }
+
   /// Trims the song's start by [delta]: what's left stays where it is
   /// along the video.
   void _trimTrackStart(Duration delta) {
@@ -3403,6 +3433,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
               ),
             ],
           ),
+        if (_trackLength > Duration.zero) _delayControl(l10n),
         if (_lined)
           Text(
             switch (_logged!.shiftOf(_current)) {
@@ -3449,6 +3480,134 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
               fontFeatures: tabular,
             ),
           ),
+      ],
+    );
+  }
+}
+
+/// Asks for the song's delay in milliseconds, from [ms]: + later, −
+/// earlier; pops it, or nothing when cancelled.
+class _DelayDialog extends StatefulWidget {
+  const _DelayDialog({required this.ms});
+
+  final int ms;
+
+  @override
+  State<_DelayDialog> createState() => _DelayDialogState();
+}
+
+class _DelayDialogState extends State<_DelayDialog> {
+  late final _field = TextEditingController(text: '${widget.ms}');
+
+  @override
+  void dispose() {
+    _field.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final text = _field.text.trim().replaceAll('+', '').replaceAll('−', '-');
+    final ms = int.tryParse(text);
+    if (ms != null) Navigator.of(context).pop(ms);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return AlertDialog(
+      title: Text(l10n.videoEditDelayTitle),
+      content: TextField(
+        key: const Key('video-edit-delay-field'),
+        controller: _field,
+        autofocus: true,
+        keyboardType: const TextInputType.numberWithOptions(signed: true),
+        inputFormatters: [
+          FilteringTextInputFormatter.allow(RegExp(r'^[+\-−]?\d{0,5}')),
+        ],
+        decoration: InputDecoration(
+          suffixText: 'ms',
+          helperText: l10n.videoEditDelayHelp,
+        ),
+        onSubmitted: (_) => _submit(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.eventCancel),
+        ),
+        FilledButton(onPressed: _submit, child: Text(l10n.videoEditDelaySet)),
+      ],
+    );
+  }
+}
+
+/// The song's delay, to the millisecond (`+120 ms`: later; `−35 ms`:
+/// earlier), between steps of 10 and 1 ms either way; tapped, a value is
+/// typed. For a Bluetooth speaker's or headphones' delay, which the
+/// line-up can't see.
+extension on _VideoEditScreenState {
+  Widget _delayControl(AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    final ms = _delay.inMilliseconds;
+    final shown = ms > 0 ? '+$ms ms' : ms < 0 ? '−${-ms} ms' : '0 ms';
+    Widget stepButton(int by) => IconButton(
+      key: Key('video-edit-delay-${by < 0 ? 'minus' : 'plus'}${by.abs()}'),
+      tooltip: by < 0
+          ? l10n.videoEditDelayEarlier(by.abs())
+          : l10n.videoEditDelayLater(by),
+      visualDensity: VisualDensity.compact,
+      onPressed: () => _moveTrack(Duration(milliseconds: by)),
+      icon: Text(
+        by < 0 ? '−${by.abs()}' : '+$by',
+        style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()]),
+      ),
+    );
+    return Column(
+      key: const Key('video-edit-delay'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text: '${l10n.videoEditDelay} · ',
+                style: theme.textTheme.bodyMedium,
+              ),
+              TextSpan(
+                text: l10n.videoEditDelayHint,
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+          ),
+          textAlign: TextAlign.center,
+        ),
+        // Shrunk to fit a narrow panel rather than overflow it.
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final by in _VideoEditScreenState.delaySteps.reversed)
+                stepButton(-by),
+              Tooltip(
+                message: l10n.videoEditDelayType,
+                child: TextButton(
+                  key: const Key('video-edit-delay-value'),
+                  onPressed: _typeDelay,
+                  child: Text(
+                    shown,
+                    style: TextStyle(
+                      color: ms == 0 ? null : theme.colorScheme.primary,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ),
+              ),
+              for (final by in _VideoEditScreenState.delaySteps)
+                stepButton(by),
+            ],
+          ),
+        ),
       ],
     );
   }

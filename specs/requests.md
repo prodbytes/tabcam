@@ -4154,3 +4154,24 @@ spec.
    three takes deleted one by one). See
    [Cam](cam.md#deleting-from-the-sidebar) and the
    [event screen](event-screen.md).
+
+12. **"Besides that, show the control to offset the difference,
+   precisely, in steps of the minimal audible difference, to correct
+   Bluetooth delays and things like that"** and **"in the editor add a
+   reset button to roll everything back to as it was untouched
+   (alignments, volumes, all)."** The editor's song details have a
+   **delay control** under ‹ and ›: the song's delay in milliseconds,
+   signed (`+120 ms` later, `−35 ms` earlier), with −10, −1, +1 and +10
+   ms steps (a millisecond being about the smallest difference heard),
+   tapped to type a value (at most 10 s either way), and a note that
+   it's for a Bluetooth speaker's or headphones' delay. For a song lined
+   up by itself it's how far it's moved from that line-up. It moves the
+   song as ‹ and › do, is kept with the edit, and Reset clears it. New
+   strings `videoEditDelay*` in English, Spanish and Portuguese. **Reset**
+   was already there (in the app bar since today's layout: named on a
+   wide screen, an icon on a narrow one, greyed while nothing's changed)
+   and already puts back everything the edit keeps: the cut, both lanes'
+   volumes, mutes and balance, the master, the song and its line-up
+   (this delay included), the tab and its style (alignment, colour), the
+   title, the watermark and the fades; so it's unchanged. See
+   [video edit](video-edit.md#the-songs-delay).

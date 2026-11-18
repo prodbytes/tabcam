@@ -2681,4 +2681,33 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get keyShift => 'Shift';
+
+  @override
+  String get videoEditDelay => 'Atraso';
+
+  @override
+  String get videoEditDelayHint =>
+      'Para corrigir o atraso de uma caixa de som ou fones Bluetooth, um milissegundo de cada vez.';
+
+  @override
+  String videoEditDelayEarlier(int ms) {
+    return '$ms ms antes';
+  }
+
+  @override
+  String videoEditDelayLater(int ms) {
+    return '$ms ms depois';
+  }
+
+  @override
+  String get videoEditDelayType => 'Digite o atraso';
+
+  @override
+  String get videoEditDelayTitle => 'Atraso da música';
+
+  @override
+  String get videoEditDelayHelp => 'Milissegundos: + depois, − antes';
+
+  @override
+  String get videoEditDelaySet => 'Aplicar';
 }
