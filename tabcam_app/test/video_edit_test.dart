@@ -2285,4 +2285,91 @@ void main() {
     expect(find.byKey(const Key('video-edit-delay')), findsNothing);
     expect(library.byId(id)!.pages.first.edit, isNull);
   });
+
+  testWidgets('the timeline zooms in and out: the ruler and both lanes '
+      'together, scrolled sideways, a tap and a drag as precise as the zoom',
+      (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester);
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    Rect rect(String key) => tester.getRect(find.byKey(Key(key)));
+    final whole = rect('video-edit-take-bar');
+    expect(find.byKey(const Key('video-edit-zoom')), findsNothing);
+    expect(
+      tester.widget<IconButton>(find.byKey(const Key('video-edit-zoom-out'))).onPressed,
+      isNull,
+    );
+
+    // Zoomed in twice: 4×, the lanes and the ruler four times as wide,
+    // on one axis, starting where they did.
+    await tester.tap(find.byKey(const Key('video-edit-zoom-in')));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-zoom-in')));
+    await _settle(tester);
+    expect(find.text('4×'), findsOneWidget);
+    final take = rect('video-edit-take-bar');
+    expect(take.width, closeTo(whole.width * 4, 1));
+    expect(rect('video-edit-ruler').width, closeTo(take.width, 0.5));
+    expect(take.left, closeTo(whole.left, 0.5));
+
+    // A tap a quarter across the view is a sixteenth of the video in:
+    // 0:11.25 of 3 minutes.
+    await tester.tapAt(
+      Offset(whole.left + whole.width / 4, take.center.dy),
+    );
+    await _settle(tester);
+    expect(platform.seeks.last.inMilliseconds, closeTo(11250, 200));
+
+    // The start grip dragged a tenth of the view: a fortieth of the video.
+    final grip = await tester.startGesture(
+      tester.getCenter(find.byKey(const Key('video-edit-take-start'))),
+    );
+    // (Past the touch slop first, then measured.)
+    await grip.moveBy(const Offset(30, 0));
+    await _settle(tester);
+    // Where the cut starts, as the Keep label says it (m:ss.hh).
+    int keptFrom() {
+      final label = tester
+          .widgetList<Text>(find.textContaining('Keep '))
+          .first
+          .data!;
+      final m = RegExp(r'(\d+):(\d+)(?:\.(\d+))?').firstMatch(label)!;
+      final frac = (m.group(3) ?? '0').padRight(3, '0');
+      return int.parse(m.group(1)!) * 60000 +
+          int.parse(m.group(2)!) * 1000 +
+          int.parse(frac.substring(0, 3));
+    }
+
+    final from = keptFrom();
+    await grip.moveBy(Offset(whole.width / 10, 0));
+    await _settle(tester);
+    expect(keptFrom() - from, closeTo(4500, 100));
+    await grip.up();
+    await _settle(tester);
+
+    // Scrolled sideways, the bars move under the headers, which stay.
+    final header = rect('video-edit-take-volume');
+    tester
+        .state<ScrollableState>(
+          find.descendant(
+            of: find.byKey(const Key('video-edit-timeline-scroll')),
+            matching: find.byType(Scrollable),
+          ),
+        )
+        .position
+        .jumpTo(whole.width);
+    await _settle(tester);
+    expect(rect('video-edit-take-bar').left, closeTo(whole.left - whole.width, 1));
+    expect(rect('video-edit-take-volume'), header);
+
+    // Zoomed out all the way: the whole video again, no scroll.
+    await tester.tap(find.byKey(const Key('video-edit-zoom-out')));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-zoom-out')));
+    await _settle(tester);
+    expect(find.byKey(const Key('video-edit-zoom')), findsNothing);
+    expect(rect('video-edit-take-bar'), whole);
+    expect(find.byKey(const Key('video-edit-timeline-scroll')), findsNothing);
+  });
 }

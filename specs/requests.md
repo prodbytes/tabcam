@@ -4175,3 +4175,17 @@ spec.
    (this delay included), the tab and its style (alignment, colour), the
    title, the watermark and the fades; so it's unchanged. See
    [video edit](video-edit.md#the-songs-delay).
+
+13. **"Zoom in the timeline a little more so edits are more precise."**
+   The editor's timeline zooms: Zoom out and Zoom in in the corner
+   left of the ruler (1× to 32×, the zoom shown between them), and Ctrl
+   / ⌘ + the wheel or a trackpad's pinch. Zoomed in, the ruler, both
+   lanes and the playhead are that many times wider and scroll sideways
+   together under fixed lane headers; the playhead stays where it was
+   on screen as the zoom changes, and the timeline follows it while the
+   preview plays. Taps, drags, grips and the song's moves work at the
+   zoom's precision, the ruler ticks down to tenths of a second, and a
+   grip's snap to the song's marks is a hundredth of the part in view
+   (a millisecond at 32×), not of the whole video. The zoom's buttons
+   use the PDF view's "Zoom in" / "Zoom out" strings. See
+   [video edit](video-edit.md#zoom).

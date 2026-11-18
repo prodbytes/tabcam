@@ -173,9 +173,29 @@ them, the cut's steps go first, then the lanes, then the transport.
   tenth of a second when it's on one, else **to the hundredth**
   (`0:02.55`, `0:01.26`), so every step of ‹ and › shows, and a cut on
   one of the song's marks reads as it is.
+- <a id="zoom"></a>**The timeline zooms**: **Zoom out** and **Zoom in**
+  (magnifiers) sit in the corner left of the ruler, over the lanes'
+  headers, with the zoom between them once it isn't the whole video
+  (`4×`, in the primary colour). Zoom goes 1×, 2×, 4×, 8×, 16× and 32×
+  (at 32×, a 3-minute take's lanes show under 6 s at once), each a step;
+  Ctrl / ⌘ + the mouse wheel, and a trackpad's pinch, zoom too while
+  zoomed in. Zoomed in, the ruler, both lanes' bars and the playhead
+  are as many times wider, on their one time axis, and scroll sideways
+  together (a scrollbar under them; the wheel or a trackpad's sideways
+  swipe), the lanes' headers staying put at their left. Zooming keeps
+  the playhead where it was on screen. While the preview plays, the
+  timeline scrolls to keep the playhead in view (a quarter in from the
+  left once it would leave it). Everything on the lanes works as at 1×,
+  at the zoom's precision: a tap or a drag on the ruler or a lane is
+  where it is in time, a grip or the song dragged moves as many times
+  less time per point, and **a grip snaps to the song's marks within a
+  hundredth of the part in view** (no less than a twentieth of a second
+  at 1×, down to a millisecond at 32×) rather than of the whole video.
+  The zoom isn't kept: the editor opens on the whole video.
 - **The timeline**, docked at the bottom: a **ruler** 32 points high
   (the video's times, m:ss, a tick as
-  often as there's room for its time; its times stay small at large
+  often as there's room for its time, down to a tenth of a second
+  zoomed in, "0:01.5"; its times stay small at large
   text sizes; on a take with its song lined up, a small flag in the
   primary colour at each of [the song's marks](#the-songs-marks), where
   it starts and stops), right over two lanes, 2 points apart, **one
@@ -637,8 +657,9 @@ the song up by itself (`LoggedSong`, [`render_plan.dart`](../tabcam_app/lib/capt
   with the song, none past the video's end or the song's), are drawn on
   the timeline: a flag on the ruler and a thin line down the Take lane,
   in the primary colour. **A Take grip dragged to within a hundredth of
-  the video's length of a mark** (a few points of the lane; at least a
-  twentieth of a second) **is on the mark** (the nearest), so the take
+  the part in view of a mark** (the whole video at 1×; a few points of
+  the lane; at least a twentieth of a second at 1×, a millisecond at
+  32×, [zoomed](#zoom)) **is on the mark** (the nearest), so the take
   is cut exactly where the song starts or stops, to the millisecond;
   further away it's where it's dragged. **Cut to the song**, under the
   song's details, does both ends at once: the first mark to the last.
