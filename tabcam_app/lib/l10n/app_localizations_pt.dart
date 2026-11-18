@@ -1980,6 +1980,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditSpaceKey => 'espaço';
 
   @override
+  String get videoEditToStart => 'Ao início';
+
+  @override
+  String get videoEditToEnd => 'Ao fim';
+
+  @override
   String get videoEditPickTrack => 'Escolher uma faixa';
 
   @override

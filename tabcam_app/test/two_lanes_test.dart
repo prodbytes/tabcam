@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:ui' show Size;
 
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,13 +18,37 @@ Object? _encoded(Object? json) => jsonDecode(jsonEncode(json));
 
 PageEdit _read(Map<String, Object?> json) => PageEdit.fromJson(_encoded(json))!;
 
-/// The fake platform, each player where a test puts it, with its volume
-/// and its seeks.
+/// The fake platform, each player where a test puts it, with its volume,
+/// its seeks, its plays and its pauses; the players in [unknown] can't
+/// say how long their file is (the browser, for a take it recorded), and
+/// those in [starting] are still starting to play until their hold is
+/// let go (the browser's players, a moment).
 class _Players extends FakeVideoPlatform {
   final positions = <int, Duration>{};
   final volumes = <int, double>{};
   final seeksOf = <int, List<Duration>>{};
+  final plays = <int>[];
   final pauses = <int>[];
+  final unknown = <int>{};
+  final starting = <int, Completer<void>>{};
+
+  @override
+  Stream<VideoEvent> videoEventsFor(int playerId) => unknown.contains(playerId)
+      ? Stream.value(
+          VideoEvent(
+            eventType: VideoEventType.initialized,
+            duration: const Duration(milliseconds: -9007199254740991),
+            size: const Size(320, 240),
+          ),
+        )
+      : super.videoEventsFor(playerId);
+
+  @override
+  Future<void> play(int playerId) async {
+    plays.add(playerId);
+    await starting[playerId]?.future;
+    return super.play(playerId);
+  }
 
   @override
   Future<Duration> getPosition(int playerId) async =>
@@ -545,6 +571,8 @@ void main() {
         await pair!.$1.dispose();
         await pair.$2.dispose();
       });
+      // Opened, each player is told it's paused: no pause of a test's.
+      platform.pauses.clear();
       return pair!;
     }
 
@@ -629,6 +657,319 @@ void main() {
       await playback.set(previewOf(edit.copyWith(offset: s(2))), song: song);
       await ticks(tester, 3);
       expect(platform.seeksOf[songId]!.last, s(1));
+      await take.pause();
+      await ticks(tester, 2);
+    });
+
+    testWidgets('the editor\'s player plays from where it is in a cut '
+        'part: no seek to the kept start, the own lane at its level; the '
+        'fades and the song begin at the kept part\'s start', (tester) async {
+      final (take, song) = await players(tester);
+      final takeId = take.playerId;
+      final songId = song.playerId;
+      final playback = EditedPlayback(take, whole: true);
+      addTearDown(playback.dispose);
+      await playback.set(previewOf(edit), song: song);
+
+      // 0.4 s in: cut off, before the kept part.
+      await playback.seek(s(0.4));
+      platform.seeksOf[takeId]!.clear();
+      await playback.playPause();
+      expect(platform.playing, contains(takeId));
+      expect(platform.seeksOf[takeId], isEmpty);
+      expect(platform.volumes[takeId], 0.6);
+
+      // It plays on there: not brought to the kept part, not faded, no
+      // song.
+      for (final at in [0.5, 0.7, 0.9]) {
+        platform.positions[takeId] = s(at);
+        await ticks(tester, 2);
+        expect(platform.seeksOf[takeId], isEmpty, reason: '$at');
+        expect(platform.volumes[takeId], 0.6, reason: '$at');
+      }
+      expect(platform.pauses, isEmpty);
+      expect(platform.playing, isNot(contains(songId)));
+
+      // 1.5 s into the kept part: half way up its fade in, the song from
+      // where the plan has it.
+      platform.positions[takeId] = s(2.5);
+      await ticks(tester, 3);
+      expect(platform.volumes[takeId], closeTo(0.3, 1e-9));
+      expect(platform.seeksOf[songId], [s(0.5)]);
+      expect(platform.playing, contains(songId));
+      expect(platform.seeksOf[takeId], isEmpty);
+      await take.pause();
+      await ticks(tester, 2);
+    });
+
+    testWidgets('reaching the kept part\'s end it pauses there; Play then '
+        'starts at the kept start', (tester) async {
+      final (take, song) = await players(tester);
+      final takeId = take.playerId;
+      final songId = song.playerId;
+      final playback = EditedPlayback(take, whole: true);
+      addTearDown(playback.dispose);
+      await playback.set(previewOf(edit), song: song);
+
+      await playback.seek(s(8.5));
+      await playback.playPause();
+      await ticks(tester, 2);
+      expect(platform.playing, containsAll([takeId, songId]));
+      platform.positions[takeId] = s(8.95);
+      await ticks(tester, 2);
+      expect(platform.pauses, isEmpty);
+
+      // Past the end, 9 s: paused, both, and shown at the end.
+      platform.positions[takeId] = s(9.05);
+      await ticks(tester, 3);
+      expect(platform.playing, isEmpty);
+      expect(platform.pauses, containsAll([takeId, songId]));
+      expect(platform.seeksOf[takeId]!.last, s(9));
+      expect(take.value.position, s(9));
+
+      // Play: from the kept part's start.
+      await playback.playPause();
+      expect(platform.seeksOf[takeId]!.last, s(1));
+      expect(platform.playing, contains(takeId));
+      await ticks(tester, 2);
+      await take.pause();
+      await ticks(tester, 2);
+
+      // Paused 30 ms before the end, then played: the end is still seen
+      // passed at the first check.
+      await playback.seek(s(8.97));
+      await playback.playPause();
+      platform.positions[takeId] = s(9.07);
+      await ticks(tester, 3);
+      expect(platform.playing, isNot(contains(takeId)));
+      expect(platform.seeksOf[takeId]!.last, s(9));
+
+      // The kept part made longer since (the edit reset): where it
+      // stopped is inside it now, and Play plays on from there.
+      await playback.set(previewOf(edit.copyWith(end: s(20))), song: song);
+      await playback.playPause();
+      expect(platform.seeksOf[takeId]!.last, s(9));
+      expect(platform.playing, contains(takeId));
+      await take.pause();
+      await ticks(tester, 2);
+    });
+
+    testWidgets('sought past the kept end, it plays on to the video\'s '
+        'end; Play there starts at the kept start', (tester) async {
+      final (take, song) = await players(tester);
+      final takeId = take.playerId;
+      final songId = song.playerId;
+      final playback = EditedPlayback(take, whole: true);
+      addTearDown(playback.dispose);
+      await playback.set(previewOf(edit), song: song);
+
+      await playback.seek(s(8));
+      await playback.playPause();
+      await ticks(tester, 3);
+      expect(platform.playing, containsAll([takeId, songId]));
+
+      // Sought over the end while it plays: it plays on, as the video
+      // is (at its lane's level, the song paused).
+      await playback.seek(s(9.5));
+      await ticks(tester, 3);
+      platform.positions[takeId] = s(10.5);
+      await ticks(tester, 3);
+      expect(platform.pauses, isNot(contains(takeId)));
+      expect(platform.playing, contains(takeId));
+      expect(platform.playing, isNot(contains(songId)));
+      expect(platform.volumes[takeId], 0.6);
+      expect(platform.seeksOf[takeId]!.last, s(9.5));
+
+      // The video's end: its player stops by itself, there.
+      platform.complete(takeId);
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 20)),
+      );
+      await ticks(tester, 2);
+      expect(platform.playing, isNot(contains(takeId)));
+      expect(take.value.position, const Duration(minutes: 3));
+
+      await playback.playPause();
+      expect(platform.seeksOf[takeId]!.last, s(1));
+      expect(platform.playing, contains(takeId));
+      await take.pause();
+      await ticks(tester, 2);
+    });
+
+    testWidgets('a seek while it plays keeps it playing, the song found '
+        'again once', (tester) async {
+      final (take, song) = await players(tester);
+      final takeId = take.playerId;
+      final songId = song.playerId;
+      final playback = EditedPlayback(take, whole: true);
+      addTearDown(playback.dispose);
+      await playback.set(previewOf(edit), song: song);
+
+      // 4 s into the video: 2 s into the song.
+      await playback.seek(s(4));
+      await playback.playPause();
+      await ticks(tester, 3);
+      expect(platform.seeksOf[songId], [s(2)]);
+      platform.pauses.clear();
+
+      // Half a second on, less than a check takes for a seek.
+      await playback.seek(s(4.5));
+      await ticks(tester, 3);
+      expect(platform.pauses, isNot(contains(takeId)));
+      expect(platform.playing, containsAll([takeId, songId]));
+      expect(platform.seeksOf[songId], [s(2), s(2.5)]);
+
+      // Further on: once, too.
+      await playback.seek(s(7));
+      await ticks(tester, 3);
+      expect(platform.pauses, isNot(contains(takeId)));
+      expect(platform.playing, containsAll([takeId, songId]));
+      expect(platform.seeksOf[songId], [s(2), s(2.5), s(5)]);
+      expect(platform.seeksOf[takeId], [s(4), s(4.5), s(7)]);
+      await take.pause();
+      await ticks(tester, 2);
+    });
+
+    testWidgets('a video whose length isn\'t known never stops by itself', (
+      tester,
+    ) async {
+      // The take is the first player made.
+      platform.unknown.add(0);
+      final (take, _) = await players(tester);
+      final takeId = take.playerId;
+      expect(take.value.duration, lessThan(Duration.zero));
+      for (final plan in [
+        null,
+        // As the editor plans it then: nothing kept, no length to keep.
+        RenderPlan.of(
+          PageEdit(start: Duration.zero, end: Duration.zero, ownVolume: 0.6),
+          preview: true,
+        ),
+      ]) {
+        final playback = EditedPlayback(take, whole: true);
+        await playback.set(plan);
+        await playback.playPause();
+        for (final at in [0.1, 5.0, 60.0]) {
+          platform.positions[takeId] = s(at);
+          await ticks(tester, 3);
+        }
+        expect(platform.playing, contains(takeId), reason: '$plan');
+        expect(platform.pauses, isEmpty, reason: '$plan');
+        await playback.playPause();
+        await ticks(tester, 2);
+        expect(platform.pauses, [takeId], reason: '$plan');
+        platform.pauses.clear();
+        playback.dispose();
+      }
+    });
+
+    testWidgets('the file screen\'s player still starts at the kept start '
+        'when outside it', (tester) async {
+      final (take, song) = await players(tester);
+      final takeId = take.playerId;
+      final playback = EditedPlayback(take);
+      addTearDown(playback.dispose);
+      await playback.set(previewOf(edit), song: song);
+
+      // 0.4 s in, before the kept part: Play starts at 1 s.
+      await take.seekTo(s(0.4));
+      await playback.playPause();
+      expect(platform.seeksOf[takeId], [s(0.4), s(1)]);
+      expect(platform.playing, contains(takeId));
+
+      // Found before it while it plays: brought back, playing on.
+      platform.positions[takeId] = s(0.2);
+      await ticks(tester, 2);
+      expect(platform.seeksOf[takeId], [s(0.4), s(1), s(1)]);
+      expect(platform.playing, contains(takeId));
+
+      // At its end: back to its start, paused.
+      platform.positions[takeId] = s(9.05);
+      await ticks(tester, 2);
+      expect(platform.seeksOf[takeId], [s(0.4), s(1), s(1), s(1)]);
+      expect(platform.playing, isNot(contains(takeId)));
+      await ticks(tester, 2);
+    });
+
+    testWidgets('Play pressed twice at once plays once', (tester) async {
+      final (take, song) = await players(tester);
+      final takeId = take.playerId;
+      for (final whole in [true, false]) {
+        final playback = EditedPlayback(take, whole: whole);
+        await playback.set(previewOf(edit), song: song);
+        await take.seekTo(s(4));
+        platform.plays.clear();
+        platform.pauses.clear();
+        await Future.wait([playback.playPause(), playback.playPause()]);
+        expect(platform.plays, [takeId], reason: '$whole');
+        expect(platform.pauses, isEmpty, reason: '$whole');
+        expect(platform.playing, contains(takeId), reason: '$whole');
+        // Pressed again once it plays: paused.
+        await playback.playPause();
+        expect(platform.pauses, contains(takeId), reason: '$whole');
+        await ticks(tester, 2);
+        playback.dispose();
+      }
+    });
+
+    testWidgets('a player still starting to play isn\'t paused: Play '
+        'pressed again is dropped, until it has waited 3 s; the song is '
+        'paused once it has started', (tester) async {
+      final (take, song) = await players(tester);
+      final takeId = take.playerId;
+      final songId = song.playerId;
+      final playback = EditedPlayback(take, whole: true);
+      addTearDown(playback.dispose);
+      await playback.set(previewOf(edit), song: song);
+      await playback.seek(s(4));
+
+      // The video's player takes its time to start: a second press does
+      // nothing meanwhile.
+      platform.starting[takeId] = Completer();
+      final played = playback.playPause();
+      await ticks(tester, 2);
+      await playback.playPause();
+      expect(platform.plays.where((id) => id == takeId), hasLength(1));
+      expect(platform.pauses, isNot(contains(takeId)));
+      // It started: the next press pauses it.
+      platform.starting.remove(takeId)!.complete();
+      await played;
+      await playback.playPause();
+      expect(platform.pauses, contains(takeId));
+      await ticks(tester, 2);
+
+      // One that doesn't start in 3 s can be paused all the same.
+      platform.pauses.clear();
+      final stuck = platform.starting[takeId] = Completer();
+      unawaited(playback.playPause());
+      await ticks(tester, 20);
+      await playback.playPause();
+      expect(platform.pauses, isNot(contains(takeId)));
+      await ticks(tester, 12);
+      await playback.playPause();
+      expect(platform.pauses, contains(takeId));
+      platform.starting.remove(takeId);
+      stuck.complete();
+      await take.pause();
+      await ticks(tester, 2);
+
+      // The song's player takes its time to start: sought meanwhile, it's
+      // paused only once it has, then found again where the video is.
+      platform.pauses.clear();
+      platform.starting[songId] = Completer();
+      await playback.playPause();
+      await ticks(tester, 3);
+      expect(platform.plays.last, songId);
+      expect(platform.playing, isNot(contains(songId)));
+      final sought = playback.seek(s(6));
+      await ticks(tester, 2);
+      expect(platform.pauses, isNot(contains(songId)));
+      platform.starting.remove(songId)!.complete();
+      await sought;
+      expect(platform.pauses, contains(songId));
+      await ticks(tester, 3);
+      expect(platform.seeksOf[songId]!.last, s(4));
+      expect(platform.playing, containsAll([takeId, songId]));
       await take.pause();
       await ticks(tester, 2);
     });

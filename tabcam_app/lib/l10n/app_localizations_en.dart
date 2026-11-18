@@ -1940,6 +1940,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditSpaceKey => 'space';
 
   @override
+  String get videoEditToStart => 'To the start';
+
+  @override
+  String get videoEditToEnd => 'To the end';
+
+  @override
   String get videoEditPickTrack => 'Pick a track';
 
   @override

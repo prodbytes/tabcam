@@ -52,11 +52,14 @@ import 'on_picture.dart';
 /// its ends).
 /// The edit is kept with the page as it's made ([PageEdit]), and played
 /// as it says ([EditedPlayback]: the kept part, both lanes at their
-/// volumes, the layers over it, [EditLayers]); the video's file stays as
-/// it is. Download renders the same plan ([RenderPlan]) to a file on the
-/// device ([VideoEditor]): the video, the video without sound, or the
-/// sound alone. The space bar plays or pauses it, as Play / Pause and a
-/// tap on the preview do (not while the title is typed).
+/// volumes, the layers over it, [EditLayers]; from where the preview is,
+/// so a part cut off plays too, as the video is, and it stops at the
+/// kept part's end); the video's file stays as it is. A player that
+/// fails says so, with Try again. Download renders the same plan
+/// ([RenderPlan]) to a file on the device ([VideoEditor]): the video,
+/// the video without sound, or the sound alone. The space bar plays or
+/// pauses it, as Play / Pause and a tap on the preview do (not while the
+/// title is typed).
 class VideoEditScreen extends StatefulWidget {
   const VideoEditScreen({
     super.key,
@@ -279,6 +282,14 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   Duration? _seekNext;
   static const _seekEvery = Duration(milliseconds: 150);
 
+  /// Where the preview was last asked to go, until its player got there
+  /// (null: where the player says): the playhead and the time show it at
+  /// once, and follow a drag held back.
+  final _headAt = ValueNotifier<Duration?>(null);
+
+  /// Where the preview is: where it's going, or where its player says.
+  Duration get _at => _headAt.value ?? _video?.value.position ?? Duration.zero;
+
   /// The editor's keys: the space bar plays or pauses ([_key]).
   final _keys = FocusNode(debugLabel: 'video edit keys');
 
@@ -408,8 +419,13 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   Future<void> _open() async {
     final event = _library.byId(widget.eventId);
     if (event == null) return;
+    VideoPlayerController? opened;
     try {
-      final controller = await openPlayer(_library, event, widget.page);
+      final controller = opened = await openPlayer(
+        _library,
+        event,
+        widget.page,
+      );
       final length = await _lengthOf(
         controller,
         await _fileOf(event, widget.page),
@@ -433,7 +449,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       final edit = withLoggedSong(saved, lined, duration: length);
       setState(() {
         _video = controller;
-        _playback = EditedPlayback(controller);
+        _playback = EditedPlayback(controller, whole: true);
         _duration = length;
         _end = length;
         _logged = lined;
@@ -456,6 +472,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         }
         _fillTitle();
       });
+      controller.addListener(_onPlayer);
       final track = edit?.trackId == null
           ? null
           : event.pages.where((p) => p.id == edit!.trackId).firstOrNull;
@@ -471,8 +488,52 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       }
       await _played();
     } on Object catch (e) {
+      // A player opened but not the screen's yet has no one else to let
+      // go of it.
+      if (opened != null && !identical(opened, _video)) {
+        unawaited(opened.dispose());
+      }
       if (mounted) setState(() => _error = e);
     }
+  }
+
+  /// The video's player said something: when it failed after it opened
+  /// (a play the browser refused, a file it can't read on), the screen
+  /// says the video can't be played, with Try again ([_retry]).
+  void _onPlayer() {
+    final video = _video;
+    if (video == null || _error != null || !video.value.hasError) return;
+    final error = video.value.errorDescription ?? 'the player failed';
+    debugPrint('TabCam: video edit: the player failed: $error');
+    if (mounted) setState(() => _error = error);
+  }
+
+  /// Try again, where the video couldn't be opened or its player failed:
+  /// the edit as it is kept with the page, the players let go of, and the
+  /// video opened again, with that edit.
+  Future<void> _retry() async {
+    if (_error == null) return;
+    final video = _video;
+    final song = _trackPlayer;
+    final unkept = _saveTimer?.isActive ?? false;
+    _saveTimer?.cancel();
+    _seekWait?.cancel();
+    _seekWait = null;
+    _seekNext = null;
+    _headAt.value = null;
+    video?.removeListener(_onPlayer);
+    _playback?.dispose();
+    setState(() {
+      _error = null;
+      _video = null;
+      _playback = null;
+      _trackPlayer = null;
+      _picked = null;
+    });
+    if (unkept) await _keep();
+    await video?.dispose();
+    await song?.dispose();
+    if (mounted) await _open();
   }
 
   @override
@@ -482,9 +543,11 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       unawaited(_keep());
     }
     _seekWait?.cancel();
+    _video?.removeListener(_onPlayer);
     _playback?.dispose();
     _video?.dispose();
     _trackPlayer?.dispose();
+    _headAt.dispose();
     widget.ocr?.removeListener(_onPremium);
     _title1.dispose();
     _title2.dispose();
@@ -921,29 +984,42 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 
   /// The preview goes to [at]: at once when [exact] (a grip let go, a
   /// tap), else at most every [_seekEvery] (a drag), the last asked for
-  /// last.
+  /// last. Playing, it plays on from there; paused, it stays paused
+  /// ([EditedPlayback.seek]). The playhead and the time are there at
+  /// once ([_headAt]). Nowhere in a video whose length isn't known.
   void _seek(Duration at, {bool exact = true}) {
-    final video = _video;
-    if (video == null) return;
+    final playback = _playback;
+    if (playback == null || _duration <= Duration.zero) return;
     at = _clamp(at, Duration.zero, _duration);
+    _headAt.value = at;
     if (exact) {
       _seekWait?.cancel();
       _seekWait = null;
       _seekNext = null;
-      unawaited(video.seekTo(at));
+      _seekNow(playback, at);
       return;
     }
     if (_seekWait != null) {
       _seekNext = at;
       return;
     }
-    unawaited(video.seekTo(at));
+    _seekNow(playback, at);
     _seekWait = Timer(_seekEvery, () {
       _seekWait = null;
       final next = _seekNext;
       _seekNext = null;
       if (next != null && mounted) _seek(next, exact: false);
     });
+  }
+
+  /// Asks [playback] to go to [at] now. Once it got there, the playhead
+  /// and the time follow the player again (unless asked elsewhere since).
+  void _seekNow(EditedPlayback playback, Duration at) {
+    unawaited(
+      playback.seek(at).whenComplete(() {
+        if (mounted && _headAt.value == at) _headAt.value = null;
+      }),
+    );
   }
 
   /// A Take grip let go: the preview, while paused, goes exactly to the
@@ -958,10 +1034,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   static Duration _clamp(Duration d, Duration low, Duration high) =>
       d < low ? low : (d > high ? high : d);
 
-  /// Keeps from, or until, where the preview is (asked of the player: a
-  /// paused one isn't polled).
+  /// Keeps from, or until, where the preview is: where it's going, or
+  /// where its player is (asked of it: a paused one isn't polled).
   Future<void> _trimHere({required bool end}) async {
-    final at = await _video?.position ?? Duration.zero;
+    final at = _headAt.value ?? await _video?.position ?? Duration.zero;
     if (!mounted) return;
     end ? _trim(_start, at) : _trim(at, _end);
   }
@@ -1385,6 +1461,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   KeyEventResult _key(FocusNode _, KeyEvent event) {
     if (event.logicalKey != LogicalKeyboardKey.space ||
         _video == null ||
+        _error != null ||
         _busy) {
       return KeyEventResult.ignored;
     }
@@ -1449,7 +1526,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
             : null,
       ),
       body: _error != null
-          ? Center(child: Text(l10n.textViewCantPlay))
+          ? _cantPlay(l10n)
           : video == null
           ? const Center(child: CircularProgressIndicator())
           : AbsorbPointer(absorbing: _busy, child: _body(video, l10n)),
@@ -1487,6 +1564,26 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       ),
     );
   }
+
+  /// In the body's place where the video couldn't be opened, or its
+  /// player failed: it says so, with Try again ([_retry]).
+  Widget _cantPlay(AppLocalizations l10n) => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(l10n.textViewCantPlay, textAlign: TextAlign.center),
+          const SizedBox(height: 8),
+          TextButton(
+            key: const Key('video-edit-retry'),
+            onPressed: _retry,
+            child: Text(l10n.homeLibraryTryAgain),
+          ),
+        ],
+      ),
+    ),
+  );
 
   /// The screen's body: the preview, its transport and the lanes; **On
   /// the video** under them on a phone (the title's fields in its place
@@ -1656,6 +1753,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                             layers: layers,
                             start: _start,
                             fades: fades,
+                            kept: _end - _start,
                           ),
                           OnPicture(
                             video: video,
@@ -2418,7 +2516,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     const tabular = [FontFeature.tabularFigures()];
     return Row(
       children: [
-        // Its own button: the kept part plays, not the whole video.
+        // Its own button: it plays as edited, from where the preview is.
         ValueListenableBuilder(
           valueListenable: video,
           builder: (context, value, _) => IconButton(
@@ -2430,10 +2528,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
             onPressed: _playback?.playPause,
           ),
         ),
-        ValueListenableBuilder(
-          valueListenable: video,
-          builder: (context, value, _) => Text(
-            time(value.position),
+        ListenableBuilder(
+          listenable: Listenable.merge([video, _headAt]),
+          builder: (context, _) => Text(
+            time(_at),
             key: const Key('video-edit-time'),
             style: const TextStyle(fontFeatures: tabular),
           ),
@@ -2608,13 +2706,13 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         // Where the preview is, across the ruler and the lanes.
         Positioned.fill(
           child: IgnorePointer(
-            child: ValueListenableBuilder(
-              valueListenable: video,
-              builder: (context, value, _) => CustomPaint(
+            child: ListenableBuilder(
+              listenable: Listenable.merge([video, _headAt]),
+              builder: (context, _) => CustomPaint(
                 painter: _Playhead(
                   at: length <= Duration.zero
                       ? 0
-                      : value.position.inMilliseconds / length.inMilliseconds,
+                      : _at.inMilliseconds / length.inMilliseconds,
                   lead: _lead,
                   trail: _trail,
                   color: theme.colorScheme.primary,

@@ -3292,6 +3292,18 @@ abstract class AppLocalizations {
   /// **'space'**
   String get videoEditSpaceKey;
 
+  /// Video edit: the button (and the Home key) that takes the preview to the kept part's start, or from there to the video's start
+  ///
+  /// In en, this message translates to:
+  /// **'To the start'**
+  String get videoEditToStart;
+
+  /// Video edit: the button (and the End key) that takes the preview to the kept part's end, or from there to the video's end
+  ///
+  /// In en, this message translates to:
+  /// **'To the end'**
+  String get videoEditToEnd;
+
   /// Video edit: the sheet's title, and the button to pick the new track
   ///
   /// In en, this message translates to:
@@ -3526,7 +3538,7 @@ abstract class AppLocalizations {
   /// **'Open to play along'**
   String get eventPlayFile;
 
-  /// Video edit: the note beside Reset and Download
+  /// Video edit: what the app bar's ⓘ says
   ///
   /// In en, this message translates to:
   /// **'Your edit is kept as you make it and plays with the video; Download makes a file of it.'**

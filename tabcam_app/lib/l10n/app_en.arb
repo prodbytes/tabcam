@@ -2647,6 +2647,14 @@
   "@videoEditSpaceKey": {
     "description": "Video edit: the space bar's name, in Play / Pause's tooltip (it plays or pauses the preview)"
   },
+  "videoEditToStart": "To the start",
+  "@videoEditToStart": {
+    "description": "Video edit: the button (and the Home key) that takes the preview to the kept part's start, or from there to the video's start"
+  },
+  "videoEditToEnd": "To the end",
+  "@videoEditToEnd": {
+    "description": "Video edit: the button (and the End key) that takes the preview to the kept part's end, or from there to the video's end"
+  },
   "videoEditPickTrack": "Pick a track",
   "@videoEditPickTrack": {
     "description": "Video edit: the sheet's title, and the button to pick the new track"
@@ -2871,7 +2879,7 @@
   },
   "videoEditKept": "Your edit is kept as you make it and plays with the video; Download makes a file of it.",
   "@videoEditKept": {
-    "description": "Video edit: the note beside Reset and Download"
+    "description": "Video edit: what the app bar's ⓘ says"
   },
   "videoEditReset": "Reset",
   "@videoEditReset": {

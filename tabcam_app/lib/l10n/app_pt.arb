@@ -531,6 +531,8 @@
   "videoEditTrimStart": "Começar aqui",
   "videoEditTrimEnd": "Terminar aqui",
   "videoEditSpaceKey": "espaço",
+  "videoEditToStart": "Ao início",
+  "videoEditToEnd": "Ao fim",
   "videoEditPickTrack": "Escolher uma faixa",
   "videoEditChangeTrack": "Trocar",
   "videoEditTrackFile": "Um arquivo de som…",
