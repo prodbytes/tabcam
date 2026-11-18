@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
+import '../capture/waveform.dart';
 import '../capture/edit_layers.dart';
 import '../capture/media.dart';
 import '../capture/play_along_sidebar.dart' show isTake;
@@ -443,14 +444,13 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         event,
         widget.page,
       );
-      final length = await _lengthOf(
-        controller,
-        await _fileOf(event, widget.page),
-      );
+      final videoFile = await _fileOf(event, widget.page);
+      final length = await _lengthOf(controller, videoFile);
       if (!mounted) {
         await controller.dispose();
         return;
       }
+      unawaited(_readTakeWave(videoFile, length));
       await controller.setLooping(false);
       final page = event.pages.where((p) => p.id == widget.page.id).firstOrNull;
       final saved = page?.edit;
@@ -1090,6 +1090,63 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// width; 2, half of it, and so on ([zooms]), scrolled sideways.
   double _zoom = 1;
 
+  /// The lanes' sound, drawn over their bars once read ([Waveform.read]):
+  /// the video's own, and the song's (with its page ID); none where it
+  /// can't be read.
+  Waveform? _takeWave;
+  Waveform? _songWave;
+  String? _songWaveId;
+
+  /// Reads the video's own sound for the Take lane's waveform.
+  Future<void> _readTakeWave(XFile file, Duration length) async {
+    final wave = await Waveform.read(file, length);
+    if (mounted && wave != null) setState(() => _takeWave = wave);
+  }
+
+  /// Reads song [id]'s sound for the Song lane's waveform, unless it's
+  /// read already.
+  Future<void> _readSongWave(String id, XFile file, Duration length) async {
+    if (_songWaveId == id && _songWave != null) return;
+    _songWaveId = id;
+    _songWave = null;
+    final wave = await Waveform.read(file, length);
+    if (mounted && wave != null && _songWaveId == id && _trackId == id) {
+      setState(() => _songWave = wave);
+    }
+  }
+
+  /// Where the song's sound is along the video, for its waveform: each of
+  /// its clips lined up by itself, else its one placed part.
+  List<WaveSpan> get _songSpans {
+    if (_linedClips case final clips?) {
+      return [for (final c in clips) (at: c.at, end: c.end, from: c.from)];
+    }
+    final at = _start + _offset;
+    return [
+      (at: at, end: at + (_trackEnd - _trackStart), from: _trackStart),
+    ];
+  }
+
+  /// [wave] over a lane's bar ([key]'s), where [spans] put it.
+  Widget _waveOver(String key, Waveform? wave, List<WaveSpan> spans) =>
+      wave == null
+      ? const SizedBox.shrink()
+      : Positioned.fill(
+          child: IgnorePointer(
+            child: CustomPaint(
+              key: Key(key),
+              painter: WavePainter(
+                wave: wave,
+                length: _duration,
+                spans: spans,
+                start: _start,
+                end: _end,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ),
+        );
+
   /// The timeline's zooms ([_zoom]).
   static const zooms = [1.0, 2.0, 4.0, 8.0, 16.0, 32.0];
 
@@ -1377,6 +1434,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       }
     });
     _changed();
+    unawaited(_readSongWave(id, file, length));
   }
 
   /// Where a song [length] long, just picked, starts after the kept
@@ -3326,11 +3384,15 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                 onSeek: (at, {required exact}) => _seek(at, exact: exact),
               ),
               SizedBox(
+                width: width,
                 height: _SongBar.height,
-                child: _SeekOnTap(
-                  length: length,
-                  onSeek: _seek,
-                  child: _TakeBar(
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: _SeekOnTap(
+                        length: length,
+                        onSeek: _seek,
+                        child: _TakeBar(
                     length: length,
                     start: _start,
                     end: _end,
@@ -3339,19 +3401,43 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                     label: l10n.videoEditTakeBar,
                     startLabel: l10n.videoEditKeptStart,
                     endLabel: l10n.videoEditKeptEnd,
-                    onTrimStart: _trimStartBy,
-                    onTrimEnd: _trimEndBy,
-                    onTrimmed: _trimmed,
-                  ),
+                          onTrimStart: _trimStartBy,
+                          onTrimEnd: _trimEndBy,
+                          onTrimmed: _trimmed,
+                        ),
+                      ),
+                    ),
+                    _waveOver('video-edit-take-wave', _takeWave, [
+                      (at: Duration.zero, end: length, from: Duration.zero),
+                    ]),
+                  ],
                 ),
               ),
               const SizedBox(height: _laneGap),
               // Empty, it's Add a song; a song's, a tap places the
               // preview as the Take lane's does.
               SizedBox(
+                width: width,
                 height: _SongBar.height,
                 child: hasSong
-                    ? _SeekOnTap(length: length, onSeek: _seek, child: songBar)
+                    ? Stack(
+                        children: [
+                          Positioned.fill(
+                            child: _SeekOnTap(
+                              length: length,
+                              onSeek: _seek,
+                              child: songBar,
+                            ),
+                          ),
+                          if (_trackLength > Duration.zero &&
+                              _songWaveId == _trackId)
+                            _waveOver(
+                              'video-edit-song-wave',
+                              _songWave,
+                              _songSpans,
+                            ),
+                        ],
+                      )
                     : songBar,
               ),
             ],

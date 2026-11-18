@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:cross_file/cross_file.dart';
@@ -2372,4 +2373,73 @@ void main() {
     expect(rect('video-edit-take-bar'), whole);
     expect(find.byKey(const Key('video-edit-timeline-scroll')), findsNothing);
   });
+
+  testWidgets('each lane draws its sound: the video\'s own and the song\'s, '
+      'once read; none where it can\'t be read', (tester) async {
+    tall(tester);
+    final read = <String>[];
+    SoundReader.opener = () => _WaveReader(read);
+    addTearDown(() => SoundReader.opener = null);
+    final (library, id) = await capture(tester, withTake: true);
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await _settle(tester);
+    expect(find.byKey(const Key('video-edit-take-wave')), findsOneWidget);
+    expect(find.byKey(const Key('video-edit-song-wave')), findsNothing);
+    // Drawn over the Take lane, as wide as it.
+    expect(
+      tester.getRect(find.byKey(const Key('video-edit-take-wave'))).width,
+      closeTo(
+        tester.getRect(find.byKey(const Key('video-edit-take-bar'))).width,
+        1,
+      ),
+    );
+
+    // A song picked: its sound read, and drawn on the Song lane.
+    await tester.tap(find.byKey(const Key('video-edit-song-add')));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-track-k1')));
+    await _settle(tester);
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await _settle(tester);
+    expect(find.byKey(const Key('video-edit-song-wave')), findsOneWidget);
+    expect(read, hasLength(2));
+    expect(tester.takeException(), isNull);
+
+    // No reader (a desktop build): no waveforms, the lanes as before.
+    SoundReader.opener = () => null;
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    expect(find.byKey(const Key('video-edit-take-wave')), findsNothing);
+    expect(find.byKey(const Key('video-edit-take-bar')), findsOneWidget);
+  });
+}
+
+/// Reads every file as a second of a made-up note, noting each file read.
+class _WaveReader implements SoundReader {
+  _WaveReader(this.read);
+
+  final List<String> read;
+
+  @override
+  Future<Float32List?> samples(
+    XFile file, {
+    required Duration from,
+    required Duration length,
+    required int rate,
+  }) async {
+    read.add(file.name);
+    return Float32List.fromList([
+      for (var i = 0; i < rate; i++) sin(2 * pi * 220 * i / rate) / 2,
+    ]);
+  }
+
+  @override
+  void close() {}
 }
