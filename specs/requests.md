@@ -4094,8 +4094,19 @@ spec.
    the cut circle and the triangle. See [dictionary](dictionary.md).
    Then **"also add a chord with added 9th, maybe one with 9th and
    11th"**: `Cadd9` (1 3 5 9) and `Am11` (1 b3 5 b7 9 11) follow them.
+8. **"yes do it"** (fix the 3 tests failing on main, in
+   `play_along_test.dart` and `backing_section_test.dart`). They had
+   failed since the Cam keys change (request 12 of 2026-11-17, PR
+   #304), which made **1** the sidebar song's play / pause in Cam, no
+   longer Rec / Stop; the app does what that request asked, the tests
+   were left behind: one still stopped a recording with 1 (it taps Stop
+   now), one expected 1 to wait while a take's Play opens as Rec does
+   (only Rec and . are checked there now: 1 plays the song), and one,
+   rewritten then, left the sidebar hidden before checking that its keys
+   work (it shows the sidebar again first, as before). No change to the
+   app.
 
-8. **"Add a help button on top bar or press 'h' to show keyboard
+9. **"Add a help button on top bar or press 'h' to show keyboard
    shortcuts overlay."** A keyboard button ("Keyboard shortcuts (H)") in
    the app bar of Cam, a capture's and a file's screens and the video
    editor, and the **H** key there, open an overlay listing the screen's

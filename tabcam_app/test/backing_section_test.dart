@@ -367,9 +367,9 @@ void main() {
     expect(video.seeks, isEmpty);
     expect(track.playing, isFalse);
 
-    // Tapped in the sidebar, the keys are the player's: 0 goes back,
-    // 1 and space play and pause.
-    await tester.tap(find.byKey(const Key('sidebar')));
+    // Showing, the keys are the player's: 0 goes back, 1 and space play
+    // and pause.
+    await tester.pumpWidget(keysHost(track, field));
     await tester.pump();
     expect(await press(LogicalKeyboardKey.digit0), isTrue);
     expect(video.seeks, hasLength(1));

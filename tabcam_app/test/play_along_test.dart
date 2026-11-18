@@ -788,7 +788,7 @@ void main() {
       null;
 
   testWidgets('while the take Play plays opens (its file still arriving), '
-      'Rec, 1 and . wait, and Play, showing Stop, lets it go', (tester) async {
+      'Rec and . wait, and Play, showing Stop, lets it go', (tester) async {
     final (library, id) = await capture(tester, tab: _tab);
     await addTake(tester, library, id);
     await tester.pumpWidget(
@@ -810,7 +810,7 @@ void main() {
     await frames(tester);
     expect(video.playing, isEmpty);
     expect(recReady(tester), isFalse);
-    await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
+    // (1 is the sidebar song's play / pause, not Rec.)
     await tester.sendKeyEvent(LogicalKeyboardKey.period);
     await frames(tester);
     expect(camera.recording, isFalse);
@@ -1296,7 +1296,7 @@ B|--5--8--|
     expect(find.text('3 / 3'), findsOneWidget);
 
     // Stop saves the last: Take 10:02.
-    await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
+    await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
     expect(camera.recording, isFalse);
     expect(pages(), hasLength(4));
