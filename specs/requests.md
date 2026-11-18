@@ -3942,7 +3942,12 @@ spec.
 
 ## 2026-11-18
 
-1. **"Adjustments can be in steps of 0:00.1"**, then **"half of that to
+1. **"Make the tabs watermark fixed width font."** The watermark
+   ("tabs.cam", bottom right) is drawn in Roboto Mono, the fixed-width
+   font the tabs are shown in, instead of Roboto; its size, colour,
+   shadow and place are unchanged, in the preview and the downloaded
+   file alike. See [video edit](video-edit.md).
+2. **"Adjustments can be in steps of 0:00.1"**, then **"half of that to
    be sure."** The video editor's adjustments now step by **0.05 s** (a
    twentieth of a second). **The cut's two ends** have steps of their
    own, under the lanes: **Start 0:02.5** and **End 0:41.0**, each
