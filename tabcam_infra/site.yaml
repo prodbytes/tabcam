@@ -147,7 +147,7 @@ Resources:
     Properties:
       CachePolicyConfig:
         Name: !Sub ${AWS::StackName}-short-links
-        Comment: Short links' redirects, by path and the file ID
+        Comment: Short links' redirects, by path, the file ID and its edit view
         MinTTL: 0
         DefaultTTL: 0
         MaxTTL: 86400
@@ -160,7 +160,7 @@ Resources:
             CookieBehavior: none
           QueryStringsConfig:
             QueryStringBehavior: whitelist
-            QueryStrings: [f]
+            QueryStrings: [f, e]
 
   SiteBucketPolicy:
     Type: AWS::S3::BucketPolicy

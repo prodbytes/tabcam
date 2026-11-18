@@ -3924,3 +3924,27 @@ spec.
     edit kept with black on white or black on gold draws white on
     black, as any colour the app doesn't know. See
     [video edit](video-edit.md).
+
+## 2026-11-18
+
+1. **"When a link is shared open as well as possible in the same
+   context, for example, if a capture is shared, open in the capture
+   (list of files), if a file is shared open the capture in the file,
+   if it was being edited, the edit view for that file on that
+   capture. remember that source capture is always shared read only
+   and copied on write to the sharee capture (different id, copy on
+   write content)."** Share is now on the file screen too (the file's
+   link, `f`) and in the video editor (the file's edit view's link,
+   `f` and `e=1`), besides the capture's. A link opens where it was
+   shared from: the capture's list, the file over it, or the editor
+   over the file; on a capture shared with the user (read only), the
+   editor opens on their copy (made then, as Add and Cam do), over the
+   copy's page of that file (copy on write); by its key, signed out,
+   the file opens, and the editor once signed in and joined. A reload
+   or restart also comes back to the editor (`edit` in the place). The
+   short link's redirect and its CloudFront cache key keep `e`. See
+   [sharing](sharing.md), [shared
+   captures](shared-captures.md#shared-with-me),
+   [navigation](navigation.md#coming-back-where-the-user-was),
+   [event screen](event-screen.md#file-screen) and
+   [video edit](video-edit.md).

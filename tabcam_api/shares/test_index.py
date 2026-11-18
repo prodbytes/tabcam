@@ -858,6 +858,13 @@ class ShareApiTest(unittest.TestCase):
         self.assertEqual(headers["location"], f"/app/?c=abc&k={self.KEY}&f=p1")
         _, headers = self.short(self.KEY, {"f": "../x"})
         self.assertEqual(headers["location"], f"/app/?c=abc&k={self.KEY}")
+        # A file's edit view keeps e=1, only with a file.
+        _, headers = self.short(self.KEY, {"f": "p1", "e": "1"})
+        self.assertEqual(headers["location"], f"/app/?c=abc&k={self.KEY}&f=p1&e=1")
+        _, headers = self.short(self.KEY, {"e": "1"})
+        self.assertEqual(headers["location"], f"/app/?c=abc&k={self.KEY}")
+        _, headers = self.short(self.KEY, {"f": "p1", "e": "yes"})
+        self.assertEqual(headers["location"], f"/app/?c=abc&k={self.KEY}&f=p1")
         # HEAD too.
         event = {"routeKey": "HEAD /s/{key}", "pathParameters": {"key": self.KEY}}
         response = index.handler(event, None, self.clients)

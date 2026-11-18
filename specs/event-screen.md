@@ -208,7 +208,8 @@ the app bar's buttons, for every kind of file) shows and hides the chord
 and scale [dictionary](dictionary.md) in a resizable sidebar on the
 right (or, turned by its Rotate button, a panel under the file), and
 **Metronome** (a stopwatch icon) after it the
-[metronome](metronome.md)'s.
+[metronome](metronome.md)'s; **Share** (a link icon, last, for the
+capture's own files) copies the file's link ([sharing](sharing.md)).
 The file is shown whole, as what it is:
 
 - **Images** are pinch-zoomable (up to 5×), as the view says. When the

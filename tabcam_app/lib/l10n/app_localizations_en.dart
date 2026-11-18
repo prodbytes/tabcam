@@ -479,6 +479,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String eventEditOnCopy(String title) {
+    return 'The editor opens on your copy, \"$title\"';
+  }
+
+  @override
   String eventCamOnCopy(String title) {
     return 'Cam records into your copy, \"$title\"';
   }

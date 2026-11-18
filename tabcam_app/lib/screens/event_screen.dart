@@ -74,6 +74,7 @@ class EventScreen extends StatefulWidget {
     this.initialFile,
     this.initialText,
     this.initialCam = false,
+    this.initialEdit = false,
     this.byLink = false,
     this.onSignIn,
   });
@@ -98,6 +99,13 @@ class EventScreen extends StatefulWidget {
   /// Whether Cam opens over it at once (a reload: where the user was),
   /// once Premium is known ([_reopenCam]).
   final bool initialCam;
+
+  /// With [initialFile], whether the video editor opens over it (a link to
+  /// the file's edit view, or a reload with the editor open). On a capture
+  /// shared with the user (read only) the editor opens on their copy of it
+  /// instead ([_editOnCopy]); opened by its link ([byLink]), the file
+  /// alone.
+  final bool initialEdit;
 
   /// Cloud sync, for sharing the event with people (null: no sharing).
   final CloudSync? sync;
@@ -128,8 +136,14 @@ class _EventScreenState extends State<EventScreen> {
     // A reload: the file the user had open, over the list again.
     final file = event?.allPages.where((p) => p.id == widget.initialFile);
     if (file?.firstOrNull case final page?) {
+      final edit = widget.initialEdit && !widget.byLink;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _openFile(page);
+        if (!mounted) return;
+        if (edit && event!.isShared) {
+          unawaited(_editOnCopy(event, page));
+        } else {
+          unawaited(_openFile(page, edit: edit));
+        }
       });
     } else if (widget.initialCam) {
       // A reload: Cam, where the user was.
@@ -198,7 +212,9 @@ class _EventScreenState extends State<EventScreen> {
       .update((p) => p.eventId == widget.eventId ? p.copyWith(text: _text) : p);
 
   /// Opens [page] alone on its [FileScreen], remembered until it's closed.
-  Future<void> _openFile(EventPage page) async {
+  /// Opens [page]'s file screen over the list, and, with [edit], the
+  /// video editor over that.
+  Future<void> _openFile(EventPage page, {bool edit = false}) async {
     // The file screen has its own player: the list's stops.
     await _player.stop();
     if (!mounted) return;
@@ -213,7 +229,9 @@ class _EventScreenState extends State<EventScreen> {
           library: _library,
           eventId: widget.eventId,
           pageId: page.id,
+          sync: widget.sync,
           ocr: widget.ocr,
+          initialEdit: edit,
         ),
       ),
     );
@@ -376,7 +394,34 @@ class _EventScreenState extends State<EventScreen> {
 
   /// Opens [copy] (a clone of this one, or the user's copy of this shared
   /// capture) in this one's place, with Cam over it at once if [cam].
-  Future<void> _openInstead(CaptureEvent copy, {bool cam = false}) async {
+  /// A link to a file's edit view on a capture shared with the user (read
+  /// only: the editor doesn't open on it): the editor opens on their copy
+  /// of it ([Library.copyToAdd], as Cam and Add do), over the copy's page
+  /// of that file (the one showing it: copy on write), in this screen's
+  /// place. A copy that owns its files already (shared since) opens on
+  /// its list.
+  Future<void> _editOnCopy(CaptureEvent shown, EventPage page) async {
+    final l10n = context.l10n;
+    final CaptureEvent copy;
+    try {
+      copy = await _library.copyToAdd(shown);
+    } on Object catch (e) {
+      if (mounted) _snack('${l10n.eventCouldntAdd}: $e');
+      return;
+    }
+    if (!mounted) return;
+    final origin = FileOrigin(shown.id, page.id);
+    final own = copy.pages.where((p) => p.source == origin).firstOrNull;
+    _snack(l10n.eventEditOnCopy(copy.title));
+    await _openInstead(copy, file: own?.id, edit: own != null);
+  }
+
+  Future<void> _openInstead(
+    CaptureEvent copy, {
+    bool cam = false,
+    String? file,
+    bool edit = false,
+  }) async {
     // The copy is where the user is now (a reload opens it), until it's
     // closed.
     final memory = PlaceMemory.of(_library);
@@ -384,8 +429,9 @@ class _EventScreenState extends State<EventScreen> {
       (p) => p.copyWith(
         eventId: () => copy.id,
         text: false,
-        fileId: () => null,
+        fileId: () => file,
         cam: cam,
+        edit: edit,
       ),
     );
     await Navigator.of(context).pushReplacement(
@@ -398,6 +444,8 @@ class _EventScreenState extends State<EventScreen> {
           sync: widget.sync,
           ocr: widget.ocr,
           initialCam: cam,
+          initialFile: file,
+          initialEdit: edit,
         ),
       ),
     );
@@ -588,6 +636,7 @@ class _EventScreenState extends State<EventScreen> {
       eventId: widget.eventId,
       page: take,
       ocr: widget.ocr,
+      sync: widget.sync,
     );
   }
 
