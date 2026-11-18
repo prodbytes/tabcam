@@ -2238,7 +2238,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditTitleEdit => 'Edit the title';
 
   @override
-  String get videoEditTitleAbout => 'Top left · fades in over 3 s';
+  String get videoEditTitleAbout => 'Top left · the first and last 15 s';
 
   @override
   String get videoEditTitleLine1 => 'First line';

@@ -58,7 +58,7 @@ import java.util.concurrent.Executors
  *   over the picture, each `{id, image (its index in images), anchor
  *   (topLeft, bottomRight or bottomFull), heightU, marginU, liftU (fractions
  *   of the frame's short side), liftW (a fraction of its width), fromMs, toMs
- *   (null: the end), fadeInMs, opacity}`, in the output's times; ignored for the sound alone;
+ *   (null: the end), fadeInMs, fadeOutMs, opacity}`, in the output's times; ignored for the sound alone;
  * - `fadeInMs`, `fadeOutMs` (left out: none): the output fades in from black
  *   (the picture, with its layers) and silence over its first `fadeInMs`, and
  *   out to them over its last `fadeOutMs`, straight lines (the app keeps each

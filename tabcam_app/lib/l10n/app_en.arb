@@ -3081,7 +3081,7 @@
   "@videoEditTitleEdit": {
     "description": "Video edit: the pencil on the Title chip, and its tooltip: opens the title's text fields"
   },
-  "videoEditTitleAbout": "Top left · fades in over 3 s",
+  "videoEditTitleAbout": "Top left · the first and last 15 s",
   "@videoEditTitleAbout": {
     "description": "Video edit: where the title goes and how it shows, beside the Title heading of its fields"
   },

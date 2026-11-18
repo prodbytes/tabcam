@@ -718,7 +718,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// The layers the preview draws over the video, as Download's plan has
   /// them (for this user: the watermark as [_unlocked] says): worked out
   /// again only when what they're made of changes. While the title is
-  /// being edited, it shows as it ends up rather than fading in.
+  /// being edited, it shows throughout, as it ends up, rather than as its
+  /// cards fade in and out.
   List<PlanLayer> _previewLayers(AppLocalizations l10n) {
     final editing = _titleBeingEdited;
     final frame = _frame;
@@ -738,27 +739,31 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     );
     if (of != _layersOf) {
       _layersOf = of;
+      final planned = RenderPlan.of(
+        _planEdit,
+        duration: _duration,
+        takeLog: _takeLog,
+        title: _captureTitle,
+        watermark: watermarkText,
+        premium: _unlocked,
+        preview: true,
+        frame: frame,
+      ).layers;
+      final title = editing
+          ? planned.where((l) => l.id == 'title').firstOrNull
+          : null;
       _layers = [
-        for (final layer in RenderPlan.of(
-          _planEdit,
-          duration: _duration,
-          takeLog: _takeLog,
-          title: _captureTitle,
-          watermark: watermarkText,
-          premium: _unlocked,
-          preview: true,
-          frame: frame,
-        ).layers)
-          if (editing && layer.id == 'title')
-            PlanLayer(
-              id: layer.id,
-              look: layer.look,
-              anchor: layer.anchor,
-              heightU: layer.heightU,
-              marginU: layer.marginU,
-            )
-          else
-            layer,
+        for (final layer in planned)
+          if (title == null || layer.id != 'title') layer,
+        // Its cards as one, the whole kept part through, unfaded.
+        if (title != null)
+          PlanLayer(
+            id: title.id,
+            look: title.look,
+            anchor: title.anchor,
+            heightU: title.heightU,
+            marginU: title.marginU,
+          ),
       ];
       _measured.keepOnly(_layers.map((l) => l.look));
     }

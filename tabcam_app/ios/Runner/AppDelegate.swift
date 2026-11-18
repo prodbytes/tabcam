@@ -174,7 +174,8 @@ enum Sound {
 /// `clips`, each `atMs` in the output, the song from `fromMs` to `toMs`, at
 /// `speed`, 1 for now), and what's drawn over the picture: `images` (PNGs)
 /// and `layers` (each its `image`'s index, `anchor`, `heightU`, `marginU`,
-/// `liftU`, `liftW`, `fromMs`, `toMs`, `fadeInMs` and `opacity`), and the
+/// `liftU`, `liftW`, `fromMs`, `toMs`, `fadeInMs`, `fadeOutMs` and
+/// `opacity`), and the
 /// fades (`fadeInMs`, `fadeOutMs`; left out: none): the picture, with its
 /// layers, from and to black, and the sound with it. With a `job`,
 /// `progress` calls back with `job` and `done` (0 to 1) every quarter of a
@@ -440,7 +441,7 @@ enum VideoEditor {
   /// `liftW` higher still, as a fraction of its width, above the tab's
   /// tallest band; a bottom band as wide as the frame), from `fromMs` to
   /// `toMs` (nil: the end) in the output, fading in over `fadeInMs` to
-  /// `opacity`.
+  /// `opacity` and out over `fadeOutMs` to its end.
   struct Layer: Equatable {
     var id = ""
     let image: Int
@@ -452,6 +453,7 @@ enum VideoEditor {
     var fromMs: Int64 = 0
     var toMs: Int64?
     var fadeInMs: Int64 = 0
+    var fadeOutMs: Int64 = 0
     var opacity: Float = 1
 
     /// Where it's drawn on a `frame` (upright, its origin at the top left),
@@ -561,7 +563,7 @@ enum VideoEditor {
             heightU: number("heightU"), marginU: number("marginU"), liftU: number("liftU"),
             liftW: number("liftW"),
             fromMs: int64(layer, "fromMs") ?? 0, toMs: int64(layer, "toMs"),
-            fadeInMs: int64(layer, "fadeInMs") ?? 0,
+            fadeInMs: int64(layer, "fadeInMs") ?? 0, fadeOutMs: int64(layer, "fadeOutMs") ?? 0,
             opacity: min(max((layer["opacity"] as? NSNumber)?.floatValue ?? 1, 0), 1)))
       }
       let own = args["own"] as? [String: Any]
@@ -824,26 +826,39 @@ enum VideoEditor {
       shape.contentsGravity = .resize
       shape.opacity = 0
       // Outside each animation's time it has no effect: opacity stays 0.
-      let fade = min(Double(layer.fadeInMs) / 1000, end - start)
-      if fade > 0 {
-        let fadeIn = CABasicAnimation(keyPath: "opacity")
-        fadeIn.fromValue = 0
-        fadeIn.toValue = layer.opacity
-        fadeIn.beginTime = AVCoreAnimationBeginTimeAtZero + start
-        fadeIn.duration = fade
-        fadeIn.isRemovedOnCompletion = false
-        fadeIn.fillMode = .removed
-        shape.add(fadeIn, forKey: "fade")
+      // Its fade in, its time at its opacity, then its fade out (the fades
+      // cut to fit its time, the fade in first).
+      let fadeIn = min(Double(layer.fadeInMs) / 1000, end - start)
+      let fadeOut = min(Double(layer.fadeOutMs) / 1000, end - start - fadeIn)
+      if fadeIn > 0 {
+        let rise = CABasicAnimation(keyPath: "opacity")
+        rise.fromValue = 0
+        rise.toValue = layer.opacity
+        rise.beginTime = AVCoreAnimationBeginTimeAtZero + start
+        rise.duration = fadeIn
+        rise.isRemovedOnCompletion = false
+        rise.fillMode = .removed
+        shape.add(rise, forKey: "fade")
       }
-      if end - start > fade {
+      if end - start > fadeIn + fadeOut {
         let show = CABasicAnimation(keyPath: "opacity")
         show.fromValue = layer.opacity
         show.toValue = layer.opacity
-        show.beginTime = AVCoreAnimationBeginTimeAtZero + start + fade
-        show.duration = end - start - fade
+        show.beginTime = AVCoreAnimationBeginTimeAtZero + start + fadeIn
+        show.duration = end - start - fadeIn - fadeOut
         show.isRemovedOnCompletion = false
         show.fillMode = .removed
         shape.add(show, forKey: "show")
+      }
+      if fadeOut > 0 {
+        let fall = CABasicAnimation(keyPath: "opacity")
+        fall.fromValue = layer.opacity
+        fall.toValue = 0
+        fall.beginTime = AVCoreAnimationBeginTimeAtZero + end - fadeOut
+        fall.duration = fadeOut
+        fall.isRemovedOnCompletion = false
+        fall.fillMode = .removed
+        shape.add(fall, forKey: "fadeOut")
       }
       parent.addSublayer(shape)
     }

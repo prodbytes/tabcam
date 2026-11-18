@@ -169,6 +169,7 @@ void main() {
           'fromMs': 0,
           'toMs': 1210,
           'fadeInMs': 0,
+          'fadeOutMs': 0,
           'opacity': 1.0,
         },
         containsPair('image', 1),
@@ -235,6 +236,21 @@ void main() {
       expect(band.alphaAt(ms(1000)), 1);
       expect(band.alphaAt(ms(1999)), 1);
       expect(band.alphaAt(ms(2000)), 0);
+      // Fading out to its end.
+      const card = PlanLayer(
+        id: 'title',
+        look: BandLook('x'),
+        anchor: LayerAnchor.topLeft,
+        to: Duration(seconds: 12),
+        fadeIn: Duration(seconds: 6),
+        fadeOut: Duration(seconds: 4),
+      );
+      expect(card.alphaAt(ms(3000)), closeTo(0.5, 1e-9));
+      expect(card.alphaAt(ms(7000)), 1);
+      expect(card.alphaAt(ms(10000)), closeTo(0.5, 1e-9));
+      expect(card.alphaAt(ms(12000)), 0);
+      expect(card.within(ms(11999)), isTrue);
+      expect(card.within(ms(12000)), isFalse);
     });
 
     test('is placed by its anchor, in fractions of the short side', () {

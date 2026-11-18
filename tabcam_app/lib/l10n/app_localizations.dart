@@ -3793,7 +3793,7 @@ abstract class AppLocalizations {
   /// Video edit: where the title goes and how it shows, beside the Title heading of its fields
   ///
   /// In en, this message translates to:
-  /// **'Top left · fades in over 3 s'**
+  /// **'Top left · the first and last 15 s'**
   String get videoEditTitleAbout;
 
   /// Video edit: the title's first text field (a song's name, say)

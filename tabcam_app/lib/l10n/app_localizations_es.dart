@@ -2284,7 +2284,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get videoEditTitleAbout =>
-      'Arriba a la izquierda · aparece poco a poco en 3 s';
+      'Arriba a la izquierda · los primeros y los últimos 15 s';
 
   @override
   String get videoEditTitleLine1 => 'Primera línea';
