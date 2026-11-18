@@ -685,9 +685,7 @@ void main() {
     await _settle(tester);
     final plan = editor.rendered.single;
     expect(plan.passthrough, isFalse);
-    expect(plan.layers.map((l) => l.look), const [
-      WatermarkLook('tabs.cam'),
-    ]);
+    expect(plan.layers.map((l) => l.look), const [WatermarkLook('tabs.cam')]);
     expect((plan.fadeIn, plan.fadeOut), (s(3), s(3)));
 
     await asItIs(tester);
@@ -1034,7 +1032,20 @@ void main() {
     expect(enabled(tester, 'video-edit-reset'), isFalse);
     expect(library.byId(id)!.pages.first.edit, isNull);
 
-    // A tenth of a second earlier: all of it, still lined up.
+    // A twentieth of a second earlier (‹'s step): all of it, still lined
+    // up; again, a tenth.
+    await tester.tap(find.byKey(const Key('video-edit-song-earlier')));
+    await _settle(tester);
+    expect(
+      find.text('Lined up as recorded, moved 0:00.05 earlier'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('The song starts 0:01.15 after the video'),
+      findsOneWidget,
+    );
+    expect(find.byTooltip('0.05 s earlier'), findsOneWidget);
+    expect(find.byTooltip('0.05 s later'), findsOneWidget);
     await tester.tap(find.byKey(const Key('video-edit-song-earlier')));
     await _settle(tester);
     expect(
@@ -1242,18 +1253,89 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('video-edit-song-later')));
     await _settle(tester);
-    expect(library2.byId(id2)!.pages.first.edit!.offset, s(5.3));
+    expect(library2.byId(id2)!.pages.first.edit!.offset, s(5.25));
     await tester.pumpWidget(const SizedBox());
     await _settle(tester);
     reader.files.addAll(sounds);
     await tester.pumpWidget(editScreen(library2, id2));
     await measured(tester, library2, id2);
     expect(library2.byId(id2)!.pages.first.takeLog!.sync!.ms, 83);
+    // 5.25 s, 33 ms before where it was found (5.283 s): to the
+    // hundredth.
     expect(
-      find.text('Lined up as recorded, moved 0:00.0 later'),
+      find.text('Lined up as recorded, moved 0:00.03 earlier'),
       findsOneWidget,
     );
-    expect(library2.byId(id2)!.pages.first.edit!.offset, s(5.3));
+    expect(library2.byId(id2)!.pages.first.edit!.offset, s(5.25));
+  });
+
+  testWidgets('the cut\'s ends step a twentieth of a second: ‹ and › under '
+      'the lanes move the start and the end, shown to the hundredth, the '
+      'song staying where it is along the video', (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester);
+    await tester.runAsync(
+      () => library.setPageEdit(
+        id,
+        'k0',
+        PageEdit.fromSound(
+          start: s(2),
+          end: s(12),
+          sound: EditSound.track,
+          trackId: 'k1',
+          offset: s(1.5),
+        ),
+      ),
+    );
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    String at(String end) =>
+        tester.widget<Text>(find.byKey(Key('video-edit-$end-at'))).data!;
+    PageEdit edit() => library.byId(id)!.pages.first.edit!;
+    expect((at('start'), at('end')), ('Start 0:02.0', 'End 0:12.0'));
+    expect(find.byTooltip('Start 0.05 s earlier'), findsOneWidget);
+    expect(find.byTooltip('End 0.05 s later'), findsOneWidget);
+
+    // The start a step later, then two earlier.
+    await tester.tap(find.byKey(const Key('video-edit-start-later')));
+    await _settle(tester);
+    expect(at('start'), 'Start 0:02.05');
+    expect(find.text('Keep 0:02.05–0:12.0'), findsOneWidget);
+    expect(edit().start, s(2.05));
+    // The song where it was along the video (3.5 s in).
+    expect(edit().offset, s(1.45));
+    expect(platform.seeks, contains(s(2.05)));
+    await tester.tap(find.byKey(const Key('video-edit-start-earlier')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('video-edit-start-earlier')));
+    await _settle(tester);
+    expect(at('start'), 'Start 0:01.95');
+    expect((edit().start, edit().offset), (s(1.95), s(1.55)));
+
+    // The end a step earlier, then two later: the preview at the frame
+    // it cuts at.
+    await tester.tap(find.byKey(const Key('video-edit-end-earlier')));
+    await _settle(tester);
+    expect(at('end'), 'End 0:11.95');
+    expect(edit().end, s(11.95));
+    expect(platform.seeks, contains(s(11.95)));
+    await tester.tap(find.byKey(const Key('video-edit-end-later')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('video-edit-end-later')));
+    await _settle(tester);
+    expect((at('end'), edit().end), ('End 0:12.05', s(12.05)));
+    expect(edit().offset, s(1.55));
+
+    // At the video's ends there's no further to step.
+    await tester.tap(find.byKey(const Key('video-edit-reset')));
+    await _settle(tester);
+    IconButton button(String key) =>
+        tester.widget<IconButton>(find.byKey(Key(key)));
+    expect((at('start'), at('end')), ('Start 0:00.0', 'End 3:00.0'));
+    expect(button('video-edit-start-earlier').onPressed, isNull);
+    expect(button('video-edit-end-later').onPressed, isNull);
+    expect(button('video-edit-start-later').onPressed, isNotNull);
+    expect(button('video-edit-end-earlier').onPressed, isNotNull);
   });
 
   testWidgets('a kept edit opens as it was, its track too', (tester) async {
@@ -1546,6 +1628,12 @@ void main() {
     expect(find.text('Song · '), findsOneWidget);
     expect(find.text('The song starts with the video'), findsOneWidget);
     expect(find.textContaining('The track'), findsNothing);
+    await tester.tap(find.byKey(const Key('video-edit-song-later')));
+    await _settle(tester);
+    expect(
+      find.text('The song starts 0:00.05 after the video'),
+      findsOneWidget,
+    );
     await tester.tap(find.byKey(const Key('video-edit-song-later')));
     await _settle(tester);
     expect(find.text('The song starts 0:00.1 after the video'), findsOneWidget);
