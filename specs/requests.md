@@ -4005,3 +4005,31 @@ spec.
    progression on one phrase). No + where there's no text to write in.
    See [dictionary](dictionary.md#writing-in-the-text) and
    [tab recognition](tab-recognition.md#text-view).
+4. **"make the video editor simple but working super nicely. for some
+   reason it is not playing. make the play position click on the ruler
+   work and play from there. there should be play buttons. tracks in the
+   botton without so much space. like a mini 'da vinci resolve' or track
+   based editor."** (asked 2026-11-17) Play in a cut part jumped back to
+   the kept part's start, so a click on the ruler there couldn't be
+   played from, and a double press could leave the player dead with
+   Pause showing; the editor was one scrolling list (the preview at most
+   a third of the screen, a small Play at the far left, the lanes mid-list
+   with room kept at their right, Reset and Download in a bottom bar).
+   The editor is now a **fixed frame**: the viewer on top, as large as
+   it fits; on a phone the master, On the video and the song's details
+   scroll under it (beside it on a wide screen or a phone on its side);
+   and docked at the bottom edge the **transport** (the time over the
+   part kept; **To the start**, **Play** / **Pause**, **To the end**,
+   centred; **Start here** / **End here**) right over **the lanes**: the
+   ruler directly on them, each lane with a header (its name, then its
+   volume; the Song lane's name opens Change and Remove), the playhead
+   with a handle, and the cut's steps under them. A click or drag on the
+   ruler or a lane moves the playhead and keeps playing if it was;
+   paused, Play or the space bar plays from exactly there, anywhere in
+   the video (the plain video in the cut parts; it stops and rests at
+   the kept part's end, and Play then starts at its start). **Home**,
+   **End** and **←** / **→** (Shift: a second) move it too. **Reset** and
+   **Download** are in the app bar. The transport and the lanes give way
+   to the on-screen keyboard. A player that fails says so, with **Try
+   again**. New strings `videoEditToStart` and `videoEditToEnd` in
+   English, Spanish and Portuguese. See [video edit](video-edit.md#the-edit-screen).

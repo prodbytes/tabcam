@@ -27,7 +27,8 @@ it is: no Save, and no waiting for the video to be made again. Players
 play the video as its edit says, from the same
 [render plan](#the-render-plan) Download renders
 ([`edited_playback.dart`](../tabcam_app/lib/screens/edited_playback.dart)):
-the kept part only, the two lanes mixed: the video's own sound at its
+the kept part only (the editor's own preview plays from wherever its
+playhead is, [below](#the-edit-screen)), the two lanes mixed: the video's own sound at its
 level (through the video's player), and the song's player along it, in
 its clip (from where the plan says it is, paused outside it; checked
 every tenth of a second, as the
@@ -62,12 +63,28 @@ plays and downloads as the video itself ([library](library.md#events)).
 ([`video_edit.dart`](../tabcam_app/lib/capture/video_edit.dart)): nothing
 is uploaded to make it, and no server is involved.
 
-**The edit screen** ([`video_edit_screen.dart`](../tabcam_app/lib/screens/video_edit_screen.dart)),
-with the file's name in its app bar and **ⓘ** at its right (it says
-"Your edit is kept as you make it and plays with the video; Download
-makes a file of it."), opening with the video's edit as it was left:
+<a id="the-edit-screen"></a>**The edit screen** ([`video_edit_screen.dart`](../tabcam_app/lib/screens/video_edit_screen.dart)),
+with the file's name in its app bar, then **Reset** and **Download**
+([below](#reset-and-download)), then **ⓘ** (it says "Your edit is kept
+as you make it and plays with the video; Download makes a file of
+it."), opening with the video's edit as it was left. It's **a frame
+that doesn't scroll**, as a small video editor's: **the viewer** on
+top; on a phone, under it, the rest (the **Master**, **On the video**
+or the fields one of its chips opened, the song's details) in a list
+that scrolls; and docked at the bottom edge, the whole width, **the
+transport** right over **the lanes** (the ruler, the Take lane, the
+Song lane and the cut's steps). From 840 points wide, or 560 in a
+window under 480 high (a phone on its side), the rest is a panel
+beside the viewer instead (320 points, at most 40% of the width),
+scrolling on its own. On a phone the viewer is as high as the picture
+needs, leaving the list at least 160 points (a tall video takes the
+rest of the room). While the on-screen keyboard is open (the title
+typed in), the transport and the lanes give their room to the viewer
+and the field, and come back as it closes; in a window too short for
+them, the cut's steps go first, then the lanes, then the transport.
 
-- **The preview**, at the top, at most a third of the screen: the video
+- **The viewer**, at the top: the video as large as its box allows, on
+  black (a tap on the black plays or pauses it): the video
   (its taps are the [on-picture controls'](#on-the-picture): a tap on
   what's drawn picks it, elsewhere it plays or pauses; on a phone, a
   long press on the tab's band opens its style),
@@ -78,10 +95,20 @@ makes a file of it."), opening with the video's edit as it was left:
   up rather than fading in, so it's seen at the start too). While it
   plays, the [fades](#fades) darken it from and to black and ramp both
   lanes with it; paused, the frame shows as it is (a trim's grip shows
-  the frame it cuts at, not black). It plays the
-  **kept part** only, from its start when outside it, paused back at its
-  start at its end, with both lanes as set, as the edit is played
-  everywhere.
+  the frame it cuts at, not black). **It plays from where the playhead
+  is**, anywhere in the video: in the kept part as the edit plays it
+  (both lanes as set, the fades, what's drawn over it); in a cut part
+  (dimmed on the lanes) the video as it is, its own sound at its lane's
+  level, no song, nothing drawn over it and no black. Playing into the
+  kept part from before it, the edit takes over there; reaching **the
+  kept part's end** it stops and rests there, on its last frame, and
+  Play then starts again from the kept part's start; started after the
+  kept end, it plays on to the video's end. A click on the ruler or a
+  lane while it plays keeps it playing from there. (The file screen's
+  player plays the kept part only, as above.) A player that fails (a
+  play the browser refused, a file it can't read on) says "This video
+  can't be played here" with **Try again**, which opens it again with
+  the edit as it was kept.
 - <a id="on-the-picture"></a>**On the picture** (a video editor's
   on-screen controls, [`on_picture.dart`](../tabcam_app/lib/screens/on_picture.dart)):
   **while the preview is paused**, each layer drawn at that frame has a
@@ -114,33 +141,52 @@ makes a file of it."), opening with the video's edit as it was left:
   While a fade covers the frame shown, a **badge** at the picture's top
   right says so ("Fade in · 3.0 s", "Fade out · 3.0 s"); a tap on it
   opens the fades' sliders (on a phone, in place of the chips).
-- **Under it, on one row**: **Play** / **Pause** (its tooltip naming
-  the space bar: **the space bar** plays and pauses the preview too, as
-  a tap on it does, wherever the editor is clicked, but not while the
-  title is typed in, nor with Ctrl, Alt or ⌘ held), **the current time**
-  (`0:12.3`, to the tenth of a second), the
-  part kept (`Keep 0:02.5–0:41.0`, in the primary colour once trimmed;
-  it shrinks to fit at large text sizes), and **Start here** (|◀) and
-  **End here** (▶|), which set either end where the preview is. The
-  kept part is at least half a second long. **A cut's or the song's
+- **The transport**, one row 48 points high right over the lanes: at
+  its left **the current time** (`0:12.3`, to the tenth of a second)
+  over the part kept (`Keep 0:02.5–0:41.0`, in the primary colour once
+  trimmed; both shrink to fit at large text sizes); in the middle **To
+  the start** (⏮), **Play** / **Pause** (filled, larger) and **To the
+  end** (⏭); at its right **Start here** (|◀) and **End here** (▶|),
+  which set either end where the preview is (icons with tooltips,
+  named from 720 points wide). **To the start** goes to the kept
+  part's start, or, there already, the video's, playing on if it
+  played; **To the end** pauses and goes to the kept part's end, or,
+  there already, the video's. Play / Pause's tooltip names the space
+  bar: **the space bar** plays and pauses the preview too, as a tap on
+  it does, wherever the editor is clicked. **Home** and **End** are To
+  the start and To the end, and **←** / **→** move the preview a tenth
+  of a second (with Shift, a second; held, a seek at most every
+  150 ms). No key does while the title is typed in, nor with Ctrl, Alt
+  or ⌘ held; Home, End and the arrows only while nothing in the editor
+  has the keyboard (a slider's arrows are its own; a click on an empty
+  spot gives it back). During a download the row says "Making the
+  file…" instead. The kept part is at least half a second long. **A cut's or the song's
   time** (the part kept, the cut's ends under the lanes, where the song
   starts, how far it was moved, the part of it used) is shown to the
   tenth of a second when it's on one, else **to the hundredth**
   (`0:02.55`, `0:01.26`), so every step of ‹ and › shows, and a cut on
   one of the song's marks reads as it is.
-- **The timeline**: a **ruler** (the video's times, m:ss, a tick as
+- **The timeline**, docked at the bottom: a **ruler** 32 points high
+  (the video's times, m:ss, a tick as
   often as there's room for its time; its times stay small at large
   text sizes; on a take with its song lined up, a small flag in the
   primary colour at each of [the song's marks](#the-songs-marks), where
-  it starts and stops), over two lanes, **one time axis**: each lane's bar spans
-  the whole video, lined up under the ruler, with its **volume** at its
-  left; **where the preview is** is a line across the ruler and both
-  lanes. Tapped or dragged, the ruler takes the preview anywhere in the
-  video (while dragged, a seek at most every 150 ms; exactly where it's
-  let go); **a click or tap on either lane's bar does too** (the Take
-  lane's, or the Song lane's once it has a song; the empty lane's Add
-  a song opens its sheet), exactly where it's clicked, while a drag on
-  them still trims or moves as below; playback stays in the kept part.
+  it starts and stops), right over two lanes, 2 points apart, **one
+  time axis**: each lane's bar spans the whole video, lined up under
+  the ruler, after the lane's **header** at its left: its name (small,
+  two lines at most on a phone, 56 points; one line, 120 points, on a
+  wide screen), then its **volume**. **The playhead**, where the
+  preview is, is a line across the ruler and both lanes with a small
+  handle on the ruler; it and the time move at once on a click, before
+  the player gets there. Tapped or dragged, the ruler takes the preview
+  anywhere in the video (while dragged, a seek at most every 150 ms;
+  exactly where it's let go); **a click or tap on either lane's bar
+  does too** (the Take lane's, or the Song lane's once it has a song;
+  the empty lane's Add a song opens its sheet), exactly where it's
+  clicked, while a drag on them still trims or moves as below. Playing,
+  it plays on from there; paused, it stays paused, and Play starts from
+  exactly there. Neither moves anything while the video's length isn't
+  known.
   This holds for a take the browser recorded too, whose player can't say
   how long it is (MediaRecorder writes no length: the browser calls it
   endless): the player is told the length the editor finds as it opens
@@ -149,8 +195,8 @@ makes a file of it."), opening with the video's edit as it was left:
   the time read a huge negative number. The lanes are labelled
   **Take** and **Song** for one of Cam's takes, **Video sound** and
   **Track** for any other video.
-  - **The Take lane**: the whole video, the kept part bright (the lane's
-    name on it) and the rest dimmed. **Its two grips trim it**, and both
+  - **The Take lane**: the whole video, the kept part bright and the
+    rest dimmed (its name is in its header). **Its two grips trim it**, and both
     sounds with it: what's outside the kept part is dimmed in both
     lanes, and **the song stays where it is along the video** (a
     trimmed start cuts the song's start with it). While paused, the
@@ -168,8 +214,11 @@ makes a file of it."), opening with the video's edit as it was left:
     the other end than half a second (greyed where there's no further
     to go). The song stays where it is along the video, and the
     preview, while paused, shows the frame cut at, as with a grip. Keys
-    `video-edit-start-earlier`, `-later`, `-at`, `video-edit-end-…`. On
-    a phone they fit at the largest text size (the times shrink).
+    `video-edit-start-earlier`, `-later`, `-at`, `video-edit-end-…`.
+    They're a row 40 points high under the lanes, as wide as the bars;
+    a window too short for them (a phone on its side) leaves them out
+    and keeps the lanes. On a phone they fit at the largest text size
+    (the times shrink).
     Checked (`test/video_edit_test.dart`): each end stepped earlier and
     later, the times shown, the edit kept, the song where it was, the
     preview sought to the end moved, and no step past the video's ends. This replaces
@@ -198,8 +247,8 @@ makes a file of it."), opening with the video's edit as it was left:
     off). **Dragged, the song moves** along the video; **dragged by
     either end, it's trimmed** (a grip at each end; the start moves
     with what's cut, so the rest stays put; at least half a second
-    stays). **⋮** at its right: **Change** (the sheet again) and
-    **Remove** (the lane empty again, the edit keeping `song: off`, so
+    stays). **Its name in the lane's header**, with a ⋮, opens
+    **Change** (the sheet again) and **Remove** (the lane empty again, the edit keeping `song: off`, so
     a song a later version would add by default isn't put back; Reset
     stays on, and clears it).
     A song whose length can't be told shows its name alone, unplaced,
@@ -218,7 +267,7 @@ makes a file of it."), opening with the video's edit as it was left:
     their own (`video-edit-take-…`, `video-edit-song-…`). It fits its
     bar's height at any text size: the level stays on one line, and
     speaker and level shrink together when the text is too large; the
-    bars are 44 points high. The preview plays each lane at it at once.
+    bars are 44 points high, a touch target's. The preview plays each lane at it at once.
     A lane goes **up to 100%**; louder is the master's (below). Both
     lanes default to 100%. With echo cancellation off while recording
     ([Cam](cam.md)), a take's own sound has the song from the speaker in
@@ -231,9 +280,9 @@ makes a file of it."), opening with the video's edit as it was left:
   unmutes it), its level beside it (in the primary colour when it's not
   100% or it's muted, struck through while muted). It's **right above
   the fades' sliders**: on a wide screen in the **On the video** panel,
-  between the title's fields and the fades; on a phone above **On the
-  video** (whose Fades chip opens the sliders in its place, so it's
-  above them too). Keys `video-edit-master`, `-mute`, `-slider`,
+  between the title's fields and the fades; on a phone at the top of
+  the list under the viewer, above **On the video** (whose Fades chip
+  opens the sliders in its place, so it's above them too). Keys `video-edit-master`, `-mute`, `-slider`,
   `-level`. 100% by default; Reset puts it back. **Past 100% only the
   download is louder**: the players can't play a file louder than it
   is (video_player's volume and the browser's media element stop at
@@ -365,12 +414,9 @@ makes a file of it."), opening with the video's edit as it was left:
   name it as its lane does: "song" on
   a take, "track" ("The track starts…", "… of the track") on any other
   video. A song shorter than the kept part leaves
-  silence after. On a wide screen they stay under the lanes, beside
-  On the video. (On a phone the title's fields and the fades' sliders
-  already take the chips' place while they're open; a later step may make the song's details
-  part of that one context area too, shown when the Song lane is
-  selected.)
-- **At the bottom**: **Reset** (on once the edit is anything but the
+  silence after. They're at the end of the list under the viewer on a
+  phone, and of the panel beside it on a wide screen.
+- <a id="reset-and-download"></a>**In the app bar**: **Reset** (on once the edit is anything but the
   defaults: the whole video, its own sound at 100%, no song said (so a
   song Removed, `song: off`, keeps it on), a take's tab on, the title
   on with the capture's name, the watermark on, and fades of 3 s in and
@@ -379,8 +425,9 @@ makes a file of it."), opening with the video's edit as it was left:
   one put back, lined up), and the edit is
   none: none means the defaults, a take's tab, the title, the watermark,
   the fades and its song lined up included, not the file as it is) and
-  **Download**, a split button (both shrink to fit at the largest text
-  sizes). Pressed, it downloads **the video** as edited, both lanes
+  **Download**, a split button: named from 840 points wide, icons with
+  their names as tooltips under it (⟲ and ⤓), both shrinking to fit
+  rather than crowd out the file's name, at the largest text sizes too. Pressed, it downloads **the video** as edited, both lanes
   mixed; its arrow opens a menu of **The video (MP4)**, **The video
   without sound (MP4)** and **The sound only (M4A)** (both lanes mixed;
   off when neither lane is heard): **the whole video as an MP4** (H.264
@@ -410,9 +457,10 @@ makes a file of it."), opening with the video's edit as it was left:
   `.webm` where the browser records WebM), and is made again otherwise
   (a WebM take in Chrome, a MOV), so the video is an MP4 wherever MP4
   is made (the plan is a [passthrough](#the-render-plan)). A progress
-  bar shows meanwhile, saying how far along it is (the browser's as the
-  video plays; the phones' as Media3 or AVFoundation report it, every
-  quarter of a second), with "Making the file…"; a
+  bar shows meanwhile under the app bar, saying how far along it is (the
+  browser's as the video plays; the phones' as Media3 or AVFoundation
+  report it, every quarter of a second), with "Making the file…" in the
+  transport's place; a
   failure says "Couldn't make the file" and why. With the watermark and
   the fades on by default, almost every Download now makes the file (on the web,
   as long as the kept part takes to play); the file list's Download and
