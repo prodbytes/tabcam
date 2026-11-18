@@ -554,10 +554,12 @@ void main() {
       expect(find.text('Chord · F#  A  C  E'), findsOneWidget);
       expect(find.text('1  b3  b5  b7'), findsOneWidget);
       expect(find.byKey(const Key('chord-diagram')), findsWidgets);
-      // Enter does nothing more for a chord.
+      // Enter does nothing more for a chord, and nothing is searched.
       await tester.testTextInput.receiveAction(TextInputAction.search);
       await tester.pump();
       expect(launcher.launched, isEmpty);
+      await tester.pump(const Duration(seconds: 3));
+      expect(askedSongs, isEmpty);
     });
 
     testWidgets('shows a scale on the neck: standing in the sidebar, across '
@@ -650,8 +652,15 @@ void main() {
         await tester.enterText(query, 'made-up riff lesson');
         await tester.pump();
         expect(find.text('made-up riff lesson, part 2'), findsOneWidget);
+        // Cifra Club's too, at once.
+        expect(find.text('made-up riff lesson (tab)'), findsOneWidget);
+        expect(
+          find.byKey(const Key('dictionary-cifraclub-searching')),
+          findsNothing,
+        );
         await tester.pump(const Duration(seconds: 3));
         expect(asked, hasLength(1));
+        expect(askedSongs, hasLength(1));
       });
 
       testWidgets('shows Cifra Club\'s tabs under YouTube\'s videos; each '
@@ -704,6 +713,7 @@ void main() {
           await tester.pump(const Duration(seconds: 3));
         }
         expect(asked, isEmpty);
+        expect(askedSongs, isEmpty);
       });
 
       testWidgets('says so when it fails or finds nothing', (tester) async {
