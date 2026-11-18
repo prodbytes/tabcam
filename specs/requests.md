@@ -4087,3 +4087,10 @@ spec.
      (`test/web_lane_stereo_test.dart`); the Kotlin and Swift argument
      readers and the Swift sample math have native tests (compiled, not
      run on a phone).
+
+7. **"Add the B half diminished and Gmaj7 with symbols in the pills as
+   examples."** The dictionary's example pills, nothing typed, add `Bø`
+   and `GΔ7` after `G/B`: a tap looks up Bm7b5 and Gmaj7, written with
+   the cut circle and the triangle. See [dictionary](dictionary.md).
+   Then **"also add a chord with added 9th, maybe one with 9th and
+   11th"**: `Cadd9` (1 3 5 9) and `Am11` (1 b3 5 b7 9 11) follow them.

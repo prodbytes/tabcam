@@ -753,6 +753,64 @@ void main() {
       expect(find.byKey(const Key('dictionary-also')), findsNothing);
     });
 
+    test('the extended pills have voicings', () {
+      for (final q in ['Bø', 'GΔ7', 'Cadd9', 'Am11']) {
+        final c = (Lookup.of(q) as ChordLookup).chord;
+        expect(voicingsOf(c), isNotEmpty, reason: q);
+      }
+      final am11 = (Lookup.of('Am11') as ChordLookup).chord;
+      expect(am11.quality.degrees.map((d) => d.label), contains('9'));
+      expect(am11.quality.degrees.map((d) => d.label), contains('11'));
+    });
+
+    testWidgets('offers an added ninth and a ninth and eleventh as pills', (
+      tester,
+    ) async {
+      await open(tester);
+      await tester.tap(find.widgetWithText(ActionChip, 'Cadd9'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('dictionary-chord')),
+          matching: find.text('Cadd9'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('1  3  5  9'), findsOneWidget);
+      await tester.enterText(query, '');
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.widgetWithText(ActionChip, 'Am11'));
+      await tester.tap(find.widgetWithText(ActionChip, 'Am11'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('dictionary-chord')),
+          matching: find.text('Am11'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('1  b3  5  b7  9  11'), findsOneWidget);
+      expect(find.byKey(const Key('chord-diagram')), findsWidgets);
+    });
+
+    testWidgets('offers the symbols\' chords as pills: Bø and GΔ7', (
+      tester,
+    ) async {
+      await open(tester);
+      await tester.tap(find.widgetWithText(ActionChip, 'Bø'));
+      await tester.pumpAndSettle();
+      expect(find.text('Bm7b5'), findsOneWidget);
+      await tester.enterText(query, '');
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ActionChip, 'GΔ7'));
+      await tester.pumpAndSettle();
+      expect(find.text('Gmaj7'), findsOneWidget);
+      expect(
+        find.text('major seventh · Also written GΔ7, GΔ, GM7, G7M'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('offers examples to tap', (tester) async {
       await open(tester);
       await tester.tap(find.widgetWithText(ActionChip, 'Am7'));
