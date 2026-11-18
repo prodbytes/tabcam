@@ -36,9 +36,9 @@ class LayerPicture {
   void dispose() => picture.dispose();
 }
 
-/// The font of the title and the watermark: Roboto, shipped with the app
-/// (assets/fonts), so they're drawn the same in the preview and in the
-/// file on every platform.
+/// The font of the title: Roboto, shipped with the app (assets/fonts), so
+/// it's drawn the same in the preview and in the file on every platform.
+/// The watermark is in [monoFont], shipped the same way.
 const String layerFont = 'TabCamRoboto';
 
 /// The short side of the frame the title and the watermark are drawn for,
@@ -115,8 +115,8 @@ LayerPicture titlePicture(List<String> lines, {double short = layerShort}) {
 }
 
 /// [text] drawn as the watermark, for a frame whose short side is [short]
-/// pixels: one small line of Roboto, white at 60% with a soft shadow
-/// ([WatermarkLayout]).
+/// pixels: one small line of Roboto Mono (fixed width, as the tabs are),
+/// white at 60% with a soft shadow ([WatermarkLayout]).
 LayerPicture watermarkPicture(String text, {double short = layerShort}) {
   final size = WatermarkLayout.text * short;
   final height = WatermarkLayout.heightU * short;
@@ -125,7 +125,7 @@ LayerPicture watermarkPicture(String text, {double short = layerShort}) {
     text: TextSpan(
       text: text,
       style: TextStyle(
-        fontFamily: layerFont,
+        fontFamily: monoFont,
         fontSize: size,
         height: 1,
         color: const Color(0x99FFFFFF),

@@ -3939,3 +3939,11 @@ spec.
     `dictionaryCifraClub*` in English, Spanish and Portuguese; the
     intro says YouTube and Cifra Club. See
     [dictionary](dictionary.md).
+
+## 2026-11-18
+
+1. **"Make the tabs watermark fixed width font."** The watermark
+   ("tabs.cam", bottom right) is drawn in Roboto Mono, the fixed-width
+   font the tabs are shown in, instead of Roboto; its size, colour,
+   shadow and place are unchanged, in the preview and the downloaded
+   file alike. See [video edit](video-edit.md).
