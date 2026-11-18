@@ -3924,7 +3924,23 @@ spec.
     edit kept with black on white or black on gold draws white on
     black, as any colour the app doesn't know. See
     [video edit](video-edit.md).
-11. **"The shortcuts are wrong, here is how it should be: 0 => back to
+
+11. **"On the dictionary view, on the pills, always offer the capture
+    title as first pill. if not found, search also cifraclub besides
+    youtube and show it below. show top 3 of each is fine."** Nothing
+    typed, the dictionary's first pill is the capture's title (on the
+    capture, a file and Cam; Home has no capture), before the examples.
+    Anything that's not a chord or a scale is now searched on Cifra
+    Club too, from the device (the site's own search index, which
+    answers the browser as well; no key, no server), and its three
+    songs show under YouTube's three videos ("Tabs on Cifra Club"),
+    each opening its page outside the app; searching, failing and
+    finding nothing are told for each on its own. New strings
+    `dictionaryCifraClub*` in English, Spanish and Portuguese; the
+    intro says YouTube and Cifra Club. See
+    [dictionary](dictionary.md).
+
+12. **"The shortcuts are wrong, here is how it should be: 0 => back to
     the beginning (keep playing if playing, stopped if stopped); 1 =>
     play / pause; spacebar -> play / pause; . => back to the beginning,
     recording and playing, delete current take and start a new one; /
@@ -3946,21 +3962,6 @@ spec.
     (Spanish and Portuguese too); `PlayAlongKeys` lost its `oneToggles`
     switch. See [Cam](cam.md#rec-key).
 
-12. **"On the dictionary view, on the pills, always offer the capture
-    title as first pill. if not found, search also cifraclub besides
-    youtube and show it below. show top 3 of each is fine."** Nothing
-    typed, the dictionary's first pill is the capture's title (on the
-    capture, a file and Cam; Home has no capture), before the examples.
-    Anything that's not a chord or a scale is now searched on Cifra
-    Club too, from the device (the site's own search index, which
-    answers the browser as well; no key, no server), and its three
-    songs show under YouTube's three videos ("Tabs on Cifra Club"),
-    each opening its page outside the app; searching, failing and
-    finding nothing are told for each on its own. New strings
-    `dictionaryCifraClub*` in English, Spanish and Portuguese; the
-    intro says YouTube and Cifra Club. See
-    [dictionary](dictionary.md).
-
 ## 2026-11-18
 
 1. **"Make the tabs watermark fixed width font."** The watermark
@@ -3968,4 +3969,19 @@ spec.
    font the tabs are shown in, instead of Roboto; its size, colour,
    shadow and place are unchanged, in the preview and the downloaded
    file alike. See [video edit](video-edit.md).
-
+2. **"Adjustments can be in steps of 0:00.1"**, then **"half of that to
+   be sure."** The video editor's adjustments now step by **0.05 s** (a
+   twentieth of a second). **The cut's two ends** have steps of their
+   own, under the lanes: **Start 0:02.5** and **End 0:41.0**, each
+   between **‹** and **›**, which move that end 0.05 s earlier or later
+   (the preview, paused, shows the frame cut at; the song stays where
+   it is along the video). **The song's ‹ and ›** nudge it 0.05 s too
+   (they were a tenth). A cut's or the song's time is shown to the
+   hundredth when it isn't on a tenth (`0:02.55`), so every step shows.
+   The grips still drag freely and snap to the song's marks; Start here
+   and End here cut where the preview is. New strings
+   `videoEditCutStartAt`, `videoEditCutEndAt`, `videoEditStartEarlier`,
+   `videoEditStartLater`, `videoEditEndEarlier` and `videoEditEndLater`,
+   and `videoEditTrackEarlier` / `videoEditTrackLater` reworded, in
+   English, Spanish and Portuguese. See
+   [video edit](video-edit.md#the-cuts-steps).
