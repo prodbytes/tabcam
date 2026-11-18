@@ -261,15 +261,18 @@ void main() {
       expect(sync.clips.single.at, 5000);
       expect(sync.clips.single.ms, 83);
       expect(sync.clips.single.score, greaterThan(SongSync.clear));
-      // 12 s from the segment's middle: 9 s into it, 14.2 s into the
-      // file, and 0.6 s more of the take either side.
+      // Four windows of 8 s spread along the 30 s: 0, 7.333, 14.666 and
+      // 22 s into it (5.2 s on into the file), and 0.6 s more of the take
+      // either side of each.
       expect(reader.asked, [
-        (
-          'take',
-          const Duration(milliseconds: 13600),
-          const Duration(milliseconds: 13200),
-        ),
-        ('song', const Duration(seconds: 9), const Duration(seconds: 12)),
+        for (final skip in [0, 7333, 14666, 22000]) ...[
+          (
+            'take',
+            Duration(milliseconds: 5200 + skip - 600),
+            const Duration(milliseconds: 9200),
+          ),
+          ('song', Duration(milliseconds: skip), const Duration(seconds: 8)),
+        ],
       ]);
       // The segment then starts where it's heard.
       expect(log.withSync(sync).songFileMs(log.song.single), 5283);
@@ -512,6 +515,115 @@ void main() {
       await library.deletePage(library.byId(id)!, songPage);
       expect((await TakeSyncer.sync(library, id, take.id))!.sync, isNull);
       expect(reader.asked, isEmpty);
+    });
+  });
+
+
+  group('harder takes: the windows added up, the drift taken out', () {
+    // A take 50 s long, a 40 s song from 5 s on its clock, 200 ms lag.
+    final song = riff(40, 21);
+    const lag = 200;
+    const log = TakeLog(
+      burned: false,
+      lagMs: lag,
+      song: [SongSegment(at: 5000, to: 45000, page: 'song', from: 0)],
+    );
+
+    /// [sound] played [ppm] parts per million fast (its clock ahead).
+    Float32List stretched(Float32List sound, double ppm) {
+      final factor = 1 + ppm / 1e6;
+      final out = Float32List((sound.length / factor).floor());
+      for (var i = 0; i < out.length; i++) {
+        final x = i * factor;
+        final j = x.floor();
+        final f = x - j;
+        out[i] = j + 1 < sound.length
+            ? sound[j] * (1 - f) + sound[j + 1] * f
+            : sound[j];
+      }
+      return out;
+    }
+
+    Float32List take({
+      required int late,
+      double level = 0.3,
+      double guitar = 1,
+      double ppm = 0,
+    }) => mixed([
+      heardFrom(
+        ppm == 0 ? song : stretched(song, ppm),
+        length: 50 * rate,
+        delay: (5000 + lag + late) * rate / 1000,
+        level: level,
+      ),
+      Float32List.fromList([
+        for (final v in riff(50, 22, bpm: 103)) v * guitar,
+      ]),
+      hiss(50 * rate, 23, 0.02),
+    ]);
+
+    /// The old way, for comparison: one 12 s window from the middle.
+    SoundOffset? oldWay(Float32List heard) {
+      const reach = 600 * rate ~/ 1000;
+      const inFile = 5200 + 14000; // the 40 s segment's middle 12 s
+      final from = (inFile - 600) * rate ~/ 1000;
+      return SongSync.offsetOf(
+        Float32List.sublistView(heard, from, from + 13200 * rate ~/ 1000),
+        Float32List.sublistView(song, 14000 * rate ~/ 1000, 26000 * rate ~/ 1000),
+        expected: reach,
+        reach: reach,
+      );
+    }
+
+    Future<int?> newWay(Float32List heard) async {
+      final sync = await SongSync.measure(
+        log: log,
+        take: XFile('take'),
+        song: XFile('song'),
+        reader: FakeReader({'take': heard, 'song': song}),
+      );
+      return sync!.found ? sync.ms : null;
+    }
+
+    String said(SoundOffset? at) => at == null
+        ? 'none'
+        : '${(at.samples * 1000 / rate).toStringAsFixed(1)} ms '
+              '(score ${at.score.toStringAsFixed(1)}, '
+              'lead ${at.lead.toStringAsFixed(2)})';
+
+    test('a quiet song under a loud guitar: found, to the millisecond, '
+        'where one window alone wasn\'t clear', () async {
+      final heard = take(late: 117, level: 0.06, guitar: 1.6);
+      final old = oldWay(heard)!;
+      // ignore: avoid_print
+      print('quiet: old ${said(old)}, new ${await newWay(heard)} ms');
+      expect(old.score, lessThan(SongSync.clear));
+      expect(await newWay(heard), 117);
+    });
+
+    test('clocks 150 ppm apart (6 ms over the song): the middle\'s shift, '
+        'clear', () async {
+      // The song's player 150 ppm fast: 20 s into it, its middle, is
+      // heard 3 ms sooner than at its start, 114 ms rather than 117.
+      final heard = take(late: 117, ppm: 150);
+      final old = oldWay(heard)!;
+      // ignore: avoid_print
+      print('drift: old ${said(old)}, new ${await newWay(heard)} ms');
+      expect(old.score, lessThan(SongSync.clear));
+      expect(await newWay(heard), 114);
+    });
+
+    test('a speaker\'s Bluetooth delay, a quarter of a second', () async {
+      final heard = take(late: 263, level: 0.15, guitar: 1.2);
+      final now = await newWay(heard);
+      // ignore: avoid_print
+      print('bluetooth: old ${said(oldWay(heard))}, new $now ms');
+      expect(now!, closeTo(263, 1));
+    });
+
+    test('headphones (no song in the take): none, as before', () async {
+      final heard = take(late: 0, level: 0, guitar: 1.6);
+      expect(await newWay(heard), isNull);
     });
   });
 }

@@ -892,10 +892,10 @@ Play uses it too (above). A few KB for a ten-minute take:
     ([`take_syncer.dart`](../tabcam_app/lib/capture/take_syncer.dart)).
   - **What**: the song the log lines up (the one played longest, at its
     own speed), each of its segments of 3 s or more on its own (the six
-    longest): 12 s from the segment's middle (the song's start may be
-    quiet, and a clock a little off is off by half as much at either
-    end), the take's sound there, 0.6 s more either side, against the
-    song's, both mixed to one channel at 8 kHz
+    longest): in up to four **windows** of 8 s spread along the segment
+    (one every 8 s or so; a segment of 8 s or less, one, from its
+    middle), the take's sound in each, 0.6 s more either side, against
+    the song's, both mixed to one channel at 8 kHz
     ([`sound_reader.dart`](../tabcam_app/lib/capture/sound_reader.dart):
     Web Audio in the browser, the file decoded whole, a WebM's sound
     put where the file has it start, as a player plays it
@@ -909,9 +909,21 @@ Play uses it too (above). A few KB for a ten-minute take:
     level mostly taken out (GCC-PHAT, 100 Hz to 3.6 kHz), so the match
     is a sharp peak whatever the speaker, the room and the microphone
     did to the song's tone, and the guitar played over it only raises
-    the floor; the peak's place, to a fraction of a sample, is how much
-    later (or earlier) than the log says the song is: the segment's
-    **shift**, in ms. A match counts when it stands at least 14 times
+    the floor. Each window's own best match tells where the song is
+    there; a straight line through the clear ones is the **drift**
+    between the take's clock and the song player's (some parts per
+    million; 300 at most, more being a window's wrong match; logged, not
+    kept). Then the windows' correlations, each as a score (its spread
+    1), are **added up**, each moved by the drift to the windows'
+    middle: the song stands out about √(windows) times more clearly than
+    in any one (a song too quiet under the guitar for one window is
+    found in four), and where it is is told for the segment's middle,
+    off by half the drift at either end. That sum's peak, to a fraction
+    of a sample, is how much later (or earlier) than the log says the
+    song is: the segment's **shift**, in ms. (Until 2026-11-18 one 12 s
+    window from the middle was measured: a song about 4 dB quieter in
+    the take is found now, and a drift's error no longer blurs a long
+    segment's match.) A match counts when it stands at least 14 times
     the others' spread above them, and 1.3 times higher than the next
     best place a twentieth of a second or more away (a guitar in the
     song's key and time, without the song, stays under 10 or so; music

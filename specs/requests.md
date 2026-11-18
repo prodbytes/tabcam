@@ -4214,3 +4214,22 @@ spec.
    ahead by its player's start-up, learnt each time it starts. The
    downloaded file was already exact and is unchanged. See
    [video edit](video-edit.md#preview-in-step).
+
+16. **"Let's try to have a very smart signal processing algorithm to sync
+   the backing track and the take as well as possible."** Finding the
+   song in a take's sound now measures each segment in up to four 8 s
+   windows spread along it (it was one 12 s window from its middle),
+   fits the drift between the take's clock and the song player's
+   through the windows' own matches, and adds up the windows'
+   phase-weighted correlations (GCC-PHAT, as before), each moved by
+   that drift to the segment's middle, before finding the peak to a
+   fraction of a sample. So a song quieter in the take is found (in
+   tests with a made-up riff under a louder guitar, at 0.06 of full
+   level where one window needed 0.1, about 4 dB better; the old way's
+   peak at 0.03–0.04 was 400 ms off, the new one's right though not yet
+   clear enough to count), a drifting clock no longer blurs the match
+   (150 ppm over 40 s: the old window's match wasn't clear, the new one
+   is, at the middle's 114 ms), and a Bluetooth speaker's quarter
+   second is found to the millisecond, as before. The log's format is
+   unchanged (the drift is logged, not kept). See
+   [Cam](cam.md#the-song-found-in-the-takes-sound).
