@@ -1529,6 +1529,64 @@ void main() {
     expect(edit.trackId, isNot('k1'));
   });
 
+  testWidgets('a lane\'s Channels and Balance are kept with the edit, '
+      'and say only Download has them', (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester, editTake: true);
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    PageEdit? edit() => library.byId(id)!.pages.first.edit;
+
+    await tester.tap(find.byKey(const Key('video-edit-take-volume')));
+    await _frames(tester);
+    expect(find.text('Centre'), findsOneWidget);
+    expect(find.byKey(const Key('video-edit-take-stereo-note')), findsNothing);
+
+    // The left channel on both sides.
+    await tester.tap(find.byKey(const Key('video-edit-take-left')));
+    await _settle(tester);
+    expect(edit()!.ownStereo.channels, LaneChannels.left);
+    expect(edit()!.toJson()['ownChannels'], 'left');
+    expect(
+      find.byKey(const Key('video-edit-take-stereo-note')),
+      findsOneWidget,
+    );
+
+    // Leaning right: the left turned down.
+    tester
+        .widget<Slider>(find.byKey(const Key('video-edit-take-balance')))
+        .onChanged!(30);
+    await _settle(tester);
+    expect(edit()!.ownStereo.balance, 0.3);
+    expect(find.text('R 30'), findsOneWidget);
+
+    // Opened again: as it was left.
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-take-volume')));
+    await _frames(tester);
+    expect(
+      tester
+          .widget<SegmentedButton<LaneChannels>>(
+            find.byKey(const Key('video-edit-take-channels')),
+          )
+          .selected,
+      {LaneChannels.left},
+    );
+    expect(find.text('R 30'), findsOneWidget);
+
+    // Back to Stereo, in the middle: as recorded, nothing kept for it.
+    await tester.tap(find.byKey(const Key('video-edit-take-stereo')));
+    await _settle(tester);
+    tester
+        .widget<Slider>(find.byKey(const Key('video-edit-take-balance')))
+        .onChanged!(0);
+    await _settle(tester);
+    expect(edit()?.ownStereo ?? LaneStereo.standard, LaneStereo.standard);
+    expect(edit()?.toJson().containsKey('ownChannels') ?? false, isFalse);
+  });
+
   testWidgets('the current time shows beside the preview\'s progress', (
     tester,
   ) async {
