@@ -98,13 +98,23 @@ class Degree {
 
 /// A chord quality: its symbol after the root (`m7`), its degrees, and
 /// which of them a voicing can leave out (the fifth of a seventh chord,
-/// the ninth of an eleventh…).
+/// the ninth of an eleventh…), and the other symbols it's written with
+/// ([also]: `ø` for `m7b5`, `Δ7` for `maj7`).
 class ChordQuality {
-  const ChordQuality(this.symbol, this._degrees, {this._optional = ''});
+  const ChordQuality(
+    this.symbol,
+    this._degrees, {
+    this._optional = '',
+    this.also = const [],
+  });
 
   final String symbol;
   final String _degrees;
   final String _optional;
+
+  /// Other symbols the chord is written with after its root, as a chart
+  /// shows them (the ones the dictionary reads too).
+  final List<String> also;
 
   List<Degree> get degrees =>
       _degrees.split(' ').map(Degree.parse).toList(growable: false);
@@ -128,28 +138,42 @@ const Map<String, ChordQuality> chordQualities = {
   '': ChordQuality('', '1 3 5'),
   'm': ChordQuality('m', '1 b3 5'),
   '5': ChordQuality('5', '1 5'),
-  'dim': ChordQuality('dim', '1 b3 b5'),
-  'aug': ChordQuality('aug', '1 3 #5'),
+  'dim': ChordQuality('dim', '1 b3 b5', also: ['°', 'o']),
+  'aug': ChordQuality('aug', '1 3 #5', also: ['+', '(#5)']),
   'sus2': ChordQuality('sus2', '1 2 5'),
   'sus4': ChordQuality('sus4', '1 4 5'),
   '6': ChordQuality('6', '1 3 5 6', optional: '5'),
   'm6': ChordQuality('m6', '1 b3 5 6', optional: '5'),
   '7': ChordQuality('7', '1 3 5 b7', optional: '5'),
-  'maj7': ChordQuality('maj7', '1 3 5 7', optional: '5'),
-  'm7': ChordQuality('m7', '1 b3 5 b7', optional: '5'),
-  'mmaj7': ChordQuality('m(maj7)', '1 b3 5 7', optional: '5'),
-  'dim7': ChordQuality('dim7', '1 b3 b5 bb7'),
-  'm7b5': ChordQuality('m7b5', '1 b3 b5 b7'),
+  'maj7': ChordQuality(
+    'maj7',
+    '1 3 5 7',
+    optional: '5',
+    also: ['Δ7', 'Δ', 'M7', '7M'],
+  ),
+  'm7': ChordQuality('m7', '1 b3 5 b7', optional: '5', also: ['-7']),
+  'mmaj7': ChordQuality(
+    'm(maj7)',
+    '1 b3 5 7',
+    optional: '5',
+    also: ['mΔ7', '-Δ7', 'm7M'],
+  ),
+  'dim7': ChordQuality('dim7', '1 b3 b5 bb7', also: ['°7', 'o7']),
+  'm7b5': ChordQuality(
+    'm7b5',
+    '1 b3 b5 b7',
+    also: ['ø', 'ø7', 'm7(b5)', '-7b5'],
+  ),
   '7sus4': ChordQuality('7sus4', '1 4 5 b7', optional: '5'),
   '7sus2': ChordQuality('7sus2', '1 2 5 b7', optional: '5'),
-  'aug7': ChordQuality('aug7', '1 3 #5 b7'),
+  'aug7': ChordQuality('aug7', '1 3 #5 b7', also: ['+7', '7#5']),
   '7b5': ChordQuality('7b5', '1 3 b5 b7'),
   'add9': ChordQuality('add9', '1 3 5 9', optional: '5'),
   'madd9': ChordQuality('madd9', '1 b3 5 9', optional: '5'),
   'add11': ChordQuality('add11', '1 3 5 11', optional: '5'),
   '69': ChordQuality('6/9', '1 3 5 6 9', optional: '5'),
   '9': ChordQuality('9', '1 3 5 b7 9', optional: '5'),
-  'maj9': ChordQuality('maj9', '1 3 5 7 9', optional: '5'),
+  'maj9': ChordQuality('maj9', '1 3 5 7 9', optional: '5', also: ['Δ9']),
   'm9': ChordQuality('m9', '1 b3 5 b7 9', optional: '5'),
   '7b9': ChordQuality('7b9', '1 3 5 b7 b9', optional: '5'),
   '7#9': ChordQuality('7#9', '1 3 5 b7 #9', optional: '5'),
@@ -161,8 +185,52 @@ const Map<String, ChordQuality> chordQualities = {
 };
 
 /// Other ways the qualities are written, normalised as [chordQualities]'s
-/// keys are.
+/// keys are: lower case, no spaces, every triangle (`Δ`, `∆`, `△`, `^`)
+/// as `δ`, `Ø` and `∅` as `ø`, `˚` as `°` (see [_normalise]).
 const Map<String, String> _chordAliases = {
+  // The triangle: a major seventh (a 9 after it, a major ninth).
+  'δ': 'maj7',
+  'δ7': 'maj7',
+  'δ9': 'maj9',
+  '7m': 'maj7',
+  'major7': 'maj7',
+  'majorseventh': 'maj7',
+  'major7th': 'maj7',
+  'maj7th': 'maj7',
+  'septimamayor': 'maj7',
+  'setimamaior': 'maj7',
+  'mδ': 'mmaj7',
+  'mδ7': 'mmaj7',
+  '-δ': 'mmaj7',
+  '-δ7': 'mmaj7',
+  'm7m': 'mmaj7',
+  // The cut circle: half-diminished, a minor seventh with a flat fifth.
+  'm7(b5)': 'm7b5',
+  'm7(-5)': 'm7b5',
+  '-7b5': 'm7b5',
+  'halfdiminished': 'm7b5',
+  'half-diminished': 'm7b5',
+  'halfdiminished7': 'm7b5',
+  'half-diminished7': 'm7b5',
+  'halfdiminishedseventh': 'm7b5',
+  'half-diminishedseventh': 'm7b5',
+  'halfdim': 'm7b5',
+  'half-dim': 'm7b5',
+  'halfdim7': 'm7b5',
+  'semidisminuido': 'm7b5',
+  'semi-disminuido': 'm7b5',
+  'semidiminuto': 'm7b5',
+  'semi-diminuto': 'm7b5',
+  'meiodiminuto': 'm7b5',
+  'meio-diminuto': 'm7b5',
+  // The circle: diminished (`diminished` alone is the scale).
+  'diminished7': 'dim7',
+  'diminishedseventh': 'dim7',
+  'diminished7th': 'dim7',
+  'augmented': 'aug',
+  '(#5)': 'aug',
+  '(+5)': 'aug',
+  'aumentado': 'aug',
   'maj': '',
   'major': '',
   'mayor': '',
@@ -183,8 +251,6 @@ const Map<String, String> _chordAliases = {
   'dom7': '7',
   'maj7': 'maj7',
   'ma7': 'maj7',
-  'Δ': 'maj7',
-  'Δ7': 'maj7',
   'min7': 'm7',
   'minor7': 'm7',
   '-7': 'm7',
@@ -340,6 +406,13 @@ class Chord {
   String get name =>
       root.name + quality.symbol + (bass == null ? '' : '/${bass!.name}');
 
+  /// The chord's other names, as its quality's other symbols write it
+  /// (`Bø`, `Bø7` for `Bm7b5`).
+  List<String> get otherNames => [
+    for (final symbol in quality.also)
+      root.name + symbol + (bass == null ? '' : '/${bass!.name}'),
+  ];
+
   /// The chord's notes, root first, as the degrees spell them.
   List<Note> get notes =>
       quality.degrees.map((d) => d.on(root)).toList(growable: false);
@@ -444,6 +517,14 @@ String _normalise(String query) {
     '♭': 'b',
     '♮': '',
     '’': "'",
+    // The triangle as any of its characters (`Δ` is lower case by now),
+    // the cut circle as `ø`, the ring above as the degree sign.
+    '∆': 'δ',
+    '△': 'δ',
+    '▵': 'δ',
+    '^': 'δ',
+    '∅': 'ø',
+    '˚': '°',
   };
   for (final e in accents.entries) {
     text = text.replaceAll(e.key, e.value);
@@ -500,7 +581,11 @@ const _qualityStarts = [
   'sus',
   'add',
   'ø',
-  'Δ',
+  'δ',
+  'half',
+  'semi',
+  'meio',
+  'aument',
   'º',
   '°',
   '+',
