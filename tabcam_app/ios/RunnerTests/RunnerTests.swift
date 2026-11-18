@@ -171,6 +171,32 @@ class RunnerTests: XCTestCase {
     XCTAssertEqual(none?.fades, false)
   }
 
+  func testReadsAndAppliesTheLanesStereo() {
+    let plan = VideoEditor.Plan(args: [
+      "input": "/tmp/in.mp4", "output": "/tmp/out.mp4", "startMs": 0, "endMs": 1000,
+      "own": ["volume": 1, "mix": [1, 0, 1, 0]],
+      "song": [
+        "path": "/tmp/song.m4a", "volume": 1, "mix": [0.5, 0.5, 0.25, 0.25],
+        "clips": [["atMs": 0, "fromMs": 0, "toMs": 800]],
+      ],
+    ])
+    XCTAssertEqual(plan?.ownMix, [1, 0, 1, 0])
+    XCTAssertEqual(plan?.song?.mix, [0.5, 0.5, 0.25, 0.25])
+    let plain = VideoEditor.Plan(args: [
+      "input": "/tmp/in.mp4", "output": "/tmp/out.mp4", "startMs": 0, "endMs": 1000,
+      "own": ["volume": 1],
+    ])
+    XCTAssertNil(plain?.ownMix)
+    // The left on both sides, interleaved.
+    var samples: [Float] = [0.5, 0, -0.25, 0]
+    samples.withUnsafeMutableBufferPointer { p in
+      VideoEditor.applyStereo(
+        [1, 0, 1, 0], left: p.baseAddress!, right: p.baseAddress! + 1, stride: 2, frames: 2)
+    }
+    XCTAssertEqual(samples, [0.5, 0.5, -0.25, -0.25])
+    XCTAssertNotNil(VideoEditor.stereoTap([1, 0, 1, 0]))
+  }
+
   func testPlacesLayersAsTheAppDoes() {
     let frame = CGSize(width: 1920, height: 1080)
     let band = VideoEditor.Layer(image: 0, anchor: .bottomFull)
