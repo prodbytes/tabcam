@@ -627,11 +627,14 @@ void main() {
       expect(titleChip(tester).selected, isTrue);
       expect(markChip(tester).selected, isTrue);
       expect(markChip(tester).avatar, isNull, reason: 'no service: unlocked');
+      // The fake video is long enough for both of the title's cards.
       expect(preview(tester).map((l) => l.look), const [
         WatermarkLook('tabs.cam'),
         TitleLook(['Blue Riff', 'Made-up Band']),
+        TitleLook(['Blue Riff', 'Made-up Band']),
       ]);
       expect(previewTitle(tester)!.fadeIn, TitleLayout.fade);
+      expect(previewTitle(tester)!.fadeOut, TitleLayout.fade);
       expect(kept(library, id), isNull);
       expect(enabled(tester, 'video-edit-reset'), isFalse);
 
@@ -639,8 +642,9 @@ void main() {
       await settle(tester);
       final plan = editor.rendered.single;
       expect(plan.passthrough, isFalse);
-      expect(plan.layers.map((l) => l.id), ['mark', 'title']);
+      expect(plan.layers.map((l) => l.id), ['mark', 'title', 'title']);
       expect(plan.layers.last.fadeIn, TitleLayout.fade);
+      expect(plan.layers.last.fadeOut, Duration.zero);
       expect(saved.single.$2, [9, 9, 9]);
     });
 
@@ -883,7 +887,10 @@ void main() {
       expect(kept(library, id)!.watermark, isFalse);
       await tester.tap(find.byKey(const Key('video-edit-download')));
       await settle(tester);
-      expect(editor.rendered.single.layers.map((l) => l.id), ['title']);
+      expect(editor.rendered.single.layers.map((l) => l.id), [
+        'title',
+        'title',
+      ]);
     });
 
     testWidgets('the file screen plays a video with its title over it, '
