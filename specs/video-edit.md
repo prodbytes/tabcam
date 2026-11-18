@@ -95,7 +95,8 @@ them, the cut's steps go first, then the lanes, then the transport.
   tab, the title, the watermark as this user's download would have
   it), drawn by the same code, so the preview is what the file will be
   (while the title's text is being edited, the title shows as it ends
-  up rather than fading in, so it's seen at the start too). While it
+  up, the whole kept part through, rather than as its cards fade in and
+  out, so it's seen wherever the preview is). While it
   plays, the [fades](#fades) darken it from and to black and ramp both
   lanes with it; paused, the frame shows as it is (a trim's grip shows
   the frame it cuts at, not black). **It plays from where the playhead
@@ -115,8 +116,9 @@ them, the cut's steps go first, then the lanes, then the transport.
 - <a id="on-the-picture"></a>**On the picture** (a video editor's
   on-screen controls, [`on_picture.dart`](../tabcam_app/lib/screens/on_picture.dart)):
   **while the preview is paused**, each layer drawn at that frame has a
-  thin white outline: the take's band showing then, the title (from
-  the start, though it fades in) and the watermark. Nothing of it shows
+  thin white outline: the take's band showing then, the title while one
+  of its cards is on (all through it, though it fades in and out) and
+  the watermark. Nothing of it shows
   while it plays. **A tap picks** what's drawn (the title also opens its
   text, as ✎ does, playing or not); paused, a tap on the one picked, or
   on the picture outside every layer, plays (outside, nothing is picked
@@ -389,8 +391,8 @@ them, the cut's steps go first, then the lanes, then the transport.
     app gave the capture, "Tab 2026-11-11 10:00"), the chip says
     **+ Title** and a tap opens its text. Tapped, it's on or off (its
     text kept). **✎**, or a tap on the title in the preview, opens its
-    text: on a phone in place of the chips ("Title · Top left · fades
-    in over 3 s"), with **First line** and **Second line** (80
+    text: on a phone in place of the chips ("Title · Top left · the
+    first and last 15 s"), with **First line** and **Second line** (80
     characters each), **Use the capture's name** (the text typed goes:
     the capture's name again, and it follows a rename), **No title**
     (off, the text typed kept) and **Done**; on a wide screen the same
@@ -727,7 +729,8 @@ What's drawn over the picture is a list of **layers** in the plan
 ([`render_plan.dart`](../tabcam_app/lib/capture/render_plan.dart),
 `PlanLayer`), each: what it shows (its *look*, drawn by the app), when
 (`from`–`to` in the output, `to` none: to the end), how (an `opacity`,
-reached over a `fadeIn` from its start; 0 outside its time) and where:
+reached over a `fadeIn` from its start and left over a `fadeOut` to its
+end, straight lines; 0 outside its time) and where:
 by an **anchor**, `topLeft` or `bottomRight` (a corner, `heightU` high,
 `marginU` in from it, the bottom right's `liftU` higher, and `liftW`
 higher still, a fraction of the frame's width; no layer is lifted
@@ -741,7 +744,10 @@ Kotlin and Swift). Layers of one kind (`id`: `tab`, `mark`, `title`)
 never overlap in time; they're drawn in that order (the list's), the
 title last, over the watermark should they meet. Fades and anchors
 are supported everywhere: the tab along the bottom, the title at the
-top left fading in, the watermark at the bottom right.
+top left fading in and out, the watermark at the bottom right. (Android's
+`PlanLayer.alphaAt` and iOS's opacity animations, a rise, a hold and a
+fall, take the `fadeOutMs` the channel gives each layer; an older app's
+renderer has none.)
 
 **The tab** ([`edit_layers.dart`](../tabcam_app/lib/capture/edit_layers.dart)):
 on a take whose [log](cam.md#what-a-take-keeps) has its tab and says
@@ -797,10 +803,17 @@ capture's title, a copy's " (copy)" left off, and its artist, two
 lines; with no artist, a title like "Blue Riff by Made-up Band" (or
 with " – " or " - ") split into the two; a title the app gave the
 capture ("Tab 2026-11-11 10:00") is no title. Each line is trimmed and
-at most 80 characters, empty ones left out, at most two. One layer,
-`title`, at the **top left**, 3.5% of the short side in, **fading in
-from nothing to full over the kept part's first 3 seconds**, then
-staying to its end. It looks: white, with a soft shadow, on a 35% black
+at most 80 characters, empty ones left out, at most two. At the **top
+left**, 3.5% of the short side in, as **two cards** (`titleLayers`,
+two layers `title`, `TitleLayout`): **at the start**, fading in from
+nothing to full over the kept part's first 6 seconds, held 3 s, then
+fading out over 6 s (gone 15 s in); and **at the end**, fading in over
+6 s from 15 s before the end and held to it (under the video's fade to
+black). Between them, none. On a kept part shorter than 40 s (no room
+for both cards apart) it's one layer instead, fading in over its first
+6 s (at most half of it) and staying to its end. The fades are twice
+the 3 s the title faded in over before, and the video's own fades are
+unchanged. It looks: white, with a soft shadow, on a 35% black
 rounded box; the first line in Roboto Medium at 5% of the short side,
 the second in Roboto Regular at 80% of that (each line 1.25 times its
 text high); a line too long for the frame ends in "…". The box's height
@@ -843,9 +856,9 @@ the renderers in Kotlin and Swift do the same (iOS's keyframes hold
 their ends, `fillMode = .both`). **The picture**, with what's
 drawn over it (the tab, the title, the watermark), is covered by black
 at 1 − that (so the fades are over everything, not the video alone);
-**the sound**, both lanes mixed, is multiplied by it. The title still
-fades in over the kept part's first 3 s on its own ([layers](#layers)),
-under the black. The sound only (M4A) and the video without sound get
+**the sound**, both lanes mixed, is multiplied by it. The title's cards
+still fade in and out on their own ([layers](#layers)), under the
+black. The sound only (M4A) and the video without sound get
 the same fades, each what it has of them.
 
 **Edits kept before the fades get them too.** An edit without the keys

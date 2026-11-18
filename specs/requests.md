@@ -4116,3 +4116,22 @@ spec.
    everywhere, not while typing in a field nor with Ctrl, ⌘ or Alt, and
    in Cam no longer turns the tab. H, Esc or Close shuts the overlay. See
    [keyboard shortcuts](keyboard-shortcuts.md).
+
+10. **"When title is on, fade it out after start and in before end,
+    double the time of fades."** The video's title (on by default) no
+    longer stays on to the end: it shows as **two cards**, at the kept
+    part's start (fading in over 6 s, held 3 s, fading out over 6 s) and
+    at its end (fading in over 6 s, 15 s before it, and held to it). Its
+    fades are 6 s, twice the 3 s it faded in over before; the hold of
+    3 s is ours, so it's read at full strength, and the video's own fades
+    (3 s by default) are unchanged. A kept part shorter than 40 s, with
+    no room for both cards apart, keeps one title throughout, fading in
+    over 6 s (at most half of it). Plan layers gain a `fadeOut`
+    (`fadeOutMs` on the channel), read by the web's render, Android's
+    `PlanLayer.alphaAt` and iOS's opacity animations. While the title's
+    text is edited the preview shows it throughout, unfaded; paused,
+    it's outlined only while a card is on. The title's fields say "Top
+    left · the first and last 15 s" (es, pt too). Tests: the cards'
+    times and levels, the short kept part, a layer's fade out in Dart,
+    Kotlin (JVM) and an XCTest render. See
+    [video edit](video-edit.md#layers).
