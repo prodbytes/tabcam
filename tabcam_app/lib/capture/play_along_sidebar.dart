@@ -352,7 +352,6 @@ class PlayAlongBeside extends StatelessWidget {
     this.letGo,
     this.run,
     this.onEdit,
-    this.oneToggles = true,
     this.keys = true,
   });
 
@@ -362,10 +361,6 @@ class PlayAlongBeside extends StatelessWidget {
   /// Whether the player's keys work ([PlayAlongKeys]); false in a
   /// preview, where no key does anything.
   final bool keys;
-
-  /// Whether the 1 key pauses and plays what plays along, as the space
-  /// bar ([PlayAlongKeys]); false in Cam, where 1 is Rec / Stop.
-  final bool oneToggles;
 
   /// Whether the sidebar's files show Delete (those the user may delete,
   /// [mayDeleteFile]); false (a preview), none does.
@@ -549,7 +544,6 @@ class PlayAlongBeside extends StatelessWidget {
                 child: PlayAlongKeys(
                   track: along.track,
                   active: along.open && keys,
-                  oneToggles: oneToggles,
                   child: PlayAlongSidebar(
                     width: sidebarWidth,
                     library: along.library,
@@ -631,8 +625,8 @@ class PlayAlongBeside extends StatelessWidget {
 /// it shows ([active]) and its screen is the one in front, wherever the
 /// keyboard is but in a field being typed in: **0** goes back to the
 /// start of the file or its section, count-in and all
-/// ([BackingTrack.restart]); the **space bar** and, where [oneToggles],
-/// **1** pause and play it. They get the keys first
+/// ([BackingTrack.restart]); the **space bar** and **1** pause and play
+/// it. They get the keys first
 /// ([FocusManager.addEarlyKeyEventHandler]), so the screen under them
 /// doesn't (Cam's turn the tab). A tap in the sidebar takes the keyboard
 /// out of a field, so the keys are the player's again.
@@ -642,7 +636,6 @@ class PlayAlongKeys extends StatefulWidget {
     required this.track,
     required this.child,
     this.active = true,
-    this.oneToggles = true,
   });
 
   final BackingTrack track;
@@ -650,10 +643,6 @@ class PlayAlongKeys extends StatefulWidget {
 
   /// Whether the sidebar shows: hidden, the keys are the screen's.
   final bool active;
-
-  /// Whether 1 pauses and plays, as the space bar; false in Cam, where 1
-  /// is Rec / Stop (which starts the song too).
-  final bool oneToggles;
 
   /// The keys that go back to the start: 0, on the top row or the keypad.
   static final restart = {
@@ -723,8 +712,7 @@ class _PlayAlongKeysState extends State<PlayAlongKeys> {
     }
     final toggles =
         event.logicalKey == LogicalKeyboardKey.space ||
-        (widget.oneToggles &&
-            PlayAlongKeys._alone(event, PlayAlongKeys.toggle));
+        PlayAlongKeys._alone(event, PlayAlongKeys.toggle);
     if (toggles) {
       // Nothing to play or pause yet (it's loading): still the player's.
       if (event is KeyDownEvent && track.canToggle) {

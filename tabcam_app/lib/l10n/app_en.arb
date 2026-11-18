@@ -817,11 +817,11 @@
   "@camStop": {
     "description": "Cam: stop recording or playing"
   },
-  "camRecKey": "Rec (1)",
+  "camRecKey": "Rec (.)",
   "@camRecKey": {
     "description": "Cam: the Rec button's tooltip; the 1 key does it too"
   },
-  "camStopKey": "Stop (1) · new take (/) · redo (.)",
+  "camStopKey": "Stop · new take (/) · redo (.)",
   "@camStopKey": {
     "description": "Cam: the Stop button's tooltip while recording; the 1 key does it too, the / key saves the take and starts a new one, and the . key throws the take away and starts it again"
   },

@@ -1039,13 +1039,13 @@ abstract class AppLocalizations {
   /// Cam: the Rec button's tooltip; the 1 key does it too
   ///
   /// In en, this message translates to:
-  /// **'Rec (1)'**
+  /// **'Rec (.)'**
   String get camRecKey;
 
   /// Cam: the Stop button's tooltip while recording; the 1 key does it too, the / key saves the take and starts a new one, and the . key throws the take away and starts it again
   ///
   /// In en, this message translates to:
-  /// **'Stop (1) · new take (/) · redo (.)'**
+  /// **'Stop · new take (/) · redo (.)'**
   String get camStopKey;
 
   /// Cam: the tooltip of the arrow beside Rec, which opens a menu to choose the microphone takes record from
