@@ -429,21 +429,32 @@ TextEditingValue? _endTogether(
 /// How wide New phrase makes each line, its name and both bars included.
 const newStaffWidth = 80;
 
+/// The strings' names in a new phrase, top to bottom (high E first).
+const _stringNames = ['e', 'B', 'G', 'D', 'A', 'E'];
+
 /// New phrase: an empty six-line phrase in standard tuning,
 /// `e B G D A E`, each line its string's name, a bar, dashes and a
 /// closing bar, [newStaffWidth] characters in all. It goes under the
 /// cursor's line, or under its whole phrase when the cursor is on one,
 /// with a blank line between it and the text around it. The cursor ends
 /// on the first line, just after its bar, to write the first note.
-TextEditingValue newStaff(TextEditingValue value) {
-  final staff = [
-    for (final name in const ['e', 'B', 'G', 'D', 'A', 'E'])
-      '$name|${'-' * (newStaffWidth - 3)}|',
-  ];
+TextEditingValue newStaff(TextEditingValue value) => _addStaff(value, [
+  for (final name in _stringNames) '$name|${'-' * (newStaffWidth - 3)}|',
+], 2);
+
+/// [value] with [staff] under the cursor's line, or under its whole
+/// phrase when the cursor is on one (at the end without a cursor), a
+/// blank line between it and the text around it; the cursor on its first
+/// line, at [column].
+TextEditingValue _addStaff(
+  TextEditingValue value,
+  List<String> staff,
+  int column,
+) {
   if (value.text.trim().isEmpty) {
     return TextEditingValue(
       text: staff.join('\n'),
-      selection: const TextSelection.collapsed(offset: 2),
+      selection: TextSelection.collapsed(offset: column),
     );
   }
   final lines = value.text.split('\n');
@@ -460,7 +471,72 @@ TextEditingValue newStaff(TextEditingValue value) {
   return TextEditingValue(
     text: lines.join('\n'),
     selection: TextSelection.collapsed(
-      offset: _offsetOf(lines, after + 1 + before.length, 2),
+      offset: _offsetOf(lines, after + 1 + before.length, column),
     ),
   );
+}
+
+/// What one string gets of [columns] (each a fret per string, low E to
+/// high E, null for a string not played): each column as wide as its
+/// widest fret, its fret or dashes, and a dash after it.
+String _columnsOn(List<List<int?>> columns, int string) => [
+  for (final column in columns)
+    '${(column[string]?.toString() ?? '').padRight(column.map((f) => '${f ?? ''}'.length).reduce(math.max), '-')}-',
+].join();
+
+/// The dictionary's +: writes [columns] (each a fret per string, low E to
+/// high E, null for a string not played: a chord's voicing is one, a
+/// scale one per note) into the tab. With the cursor on a six-line
+/// phrase, they go in at the cursor's column across it (high E on its
+/// first line), pushing the rest of each line right, so the columns stay
+/// lined up: a line too short to reach the column is lengthened with
+/// dashes before its closing bar, and none goes into a line's name or
+/// opening bar. Anywhere else (another line, a phrase of other than six
+/// lines, no cursor), they go in a new phrase as [newStaff]'s (at least
+/// [newStaffWidth] wide) under the cursor's line or phrase. Either way
+/// the cursor ends just after them on its line, so the next one written
+/// follows them.
+TextEditingValue writeColumns(
+  TextEditingValue value,
+  List<List<int?>> columns,
+) {
+  final strings = _stringNames.length;
+  // Line k of a phrase is string strings - 1 - k (high E on top).
+  String on(int k) => _columnsOn(columns, strings - 1 - k);
+  final lines = value.text.split('\n');
+  if (value.selection.isValid && value.text.isNotEmpty) {
+    final (row, column) = _rowColumn(lines, value.selection.start);
+    if (_isStringLine(lines[row])) {
+      final (first, last) = _staffAround(lines, row);
+      if (last - first + 1 == strings) {
+        final line = lines[row].trimRight();
+        final end = line.length - _closingBars(line).length;
+        final opening = _opening.firstMatch(line)?.end ?? 0;
+        final at = opening > end
+            ? line.length
+            : math.max(math.min(column, end), opening);
+        for (var k = first; k <= last; k++) {
+          final line = lines[k].trimRight();
+          final closing = _closingBars(line);
+          var body = line.substring(0, line.length - closing.length);
+          if (body.length < at) body = body.padRight(at, '-');
+          lines[k] =
+              '${body.substring(0, at)}${on(k - first)}'
+              '${body.substring(at)}$closing';
+        }
+        return TextEditingValue(
+          text: lines.join('\n'),
+          selection: TextSelection.collapsed(
+            offset: _offsetOf(lines, row, at + on(row - first).length),
+          ),
+        );
+      }
+    }
+  }
+  final written = on(0).length;
+  final width = math.max(newStaffWidth - 4, written);
+  return _addStaff(value, [
+    for (var k = 0; k < strings; k++)
+      '${_stringNames[k]}|-${on(k).padRight(width, '-')}|',
+  ], 3 + written);
 }

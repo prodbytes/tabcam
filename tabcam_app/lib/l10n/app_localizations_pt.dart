@@ -1868,6 +1868,19 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dictionaryScale => 'Escala';
 
   @override
+  String dictionaryWriteChord(String frets) {
+    return 'Escrever $frets no texto';
+  }
+
+  @override
+  String dictionaryWriteScale(String scale) {
+    return 'Escrever $scale no texto';
+  }
+
+  @override
+  String get dictionaryWriteBusy => 'O texto não pode ser alterado agora';
+
+  @override
   String get dictionaryNoVoicings => 'Não há como tocá-lo em quatro casas.';
 
   @override

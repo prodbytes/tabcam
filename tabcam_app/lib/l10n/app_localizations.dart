@@ -3082,6 +3082,24 @@ abstract class AppLocalizations {
   /// **'Scale'**
   String get dictionaryScale;
 
+  /// Dictionary: tooltip of the + under a chord's voicing, which writes it into the Text view's tab; frets is the voicing as x32010
+  ///
+  /// In en, this message translates to:
+  /// **'Write {frets} in the text'**
+  String dictionaryWriteChord(String frets);
+
+  /// Dictionary: tooltip of the + beside a scale's name, which writes it into the Text view's tab; scale is its name, as A Minor pentatonic
+  ///
+  /// In en, this message translates to:
+  /// **'Write {scale} in the text'**
+  String dictionaryWriteScale(String scale);
+
+  /// Dictionary: message when + is pressed while the Text view is rescanning or reviewing Fix
+  ///
+  /// In en, this message translates to:
+  /// **'The text can\'t be changed right now'**
+  String get dictionaryWriteBusy;
+
   /// Dictionary: a chord with no voicing found
   ///
   /// In en, this message translates to:

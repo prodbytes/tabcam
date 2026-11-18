@@ -464,6 +464,10 @@ under the Premium card
   tap region (`TextFieldTapRegion`), so on a computer, where a click
   outside the field unfocuses it, the next keys still go to the text.
 
+**From the dictionary**: with the [dictionary](dictionary.md#writing-in-the-text)
+open beside the text, a chord's or a scale's **+** writes it in the
+text as tab, at the cursor's phrase or in a new phrase under it.
+
 **Following a PDF**: the play-along sidebar beside the text
 ([Cam](cam.md#playing-along-with-a-file)) lists the capture's PDFs under
 **Follow a PDF**, exactly as [Cam's](cam.md#following-a-pdf) does: a tap

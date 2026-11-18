@@ -2489,6 +2489,20 @@
   "@dictionaryScale": {
     "description": "Dictionary: a scale result's kind"
   },
+  "dictionaryWriteChord": "Write {frets} in the text",
+  "@dictionaryWriteChord": {
+    "description": "Dictionary: tooltip of the + under a chord's voicing, which writes it into the Text view's tab; frets is the voicing as x32010",
+    "placeholders": {"frets": {"type": "String"}}
+  },
+  "dictionaryWriteScale": "Write {scale} in the text",
+  "@dictionaryWriteScale": {
+    "description": "Dictionary: tooltip of the + beside a scale's name, which writes it into the Text view's tab; scale is its name, as A Minor pentatonic",
+    "placeholders": {"scale": {"type": "String"}}
+  },
+  "dictionaryWriteBusy": "The text can't be changed right now",
+  "@dictionaryWriteBusy": {
+    "description": "Dictionary: message when + is pressed while the Text view is rescanning or reviewing Fix"
+  },
   "dictionaryNoVoicings": "No way to play it within four frets.",
   "@dictionaryNoVoicings": {
     "description": "Dictionary: a chord with no voicing found"

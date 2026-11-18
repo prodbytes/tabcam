@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../cloud/cloud_ocr.dart';
 import '../cloud/ocr_api.dart';
+import '../dictionary/dictionary_sidebar.dart' show DictionaryState, TabWriter;
 import '../library/library.dart';
 import '../recognition/tab_doubts.dart';
 import '../recognition/tab_layout.dart';
@@ -125,7 +126,7 @@ class TabTextActions extends ChangeNotifier {
   }
 }
 
-class _TabTextViewState extends State<TabTextView> {
+class _TabTextViewState extends State<TabTextView> implements TabWriter {
   final _text = DoubtController();
 
   /// The text as last loaded or saved: what's on screen unless edited.
@@ -163,6 +164,12 @@ class _TabTextViewState extends State<TabTextView> {
     _text.text = _known ?? '';
     widget.library.addListener(_onLibrary);
     widget.ocr?.addListener(_onPremium);
+    // The dictionary's + writes here, in a text that can be changed (not
+    // the locked preview's sample, or a capture shared to read).
+    final event = widget.library.byId(widget.eventId);
+    if (widget.sample == null && event != null && !event.readOnly) {
+      DictionaryState.instance.attach(this);
+    }
   }
 
   /// Premium's status came: Fix shows or hides.
@@ -204,6 +211,7 @@ class _TabTextViewState extends State<TabTextView> {
 
   @override
   void dispose() {
+    DictionaryState.instance.detach(this);
     if (widget.actions?._view == this) widget.actions!._attach(null);
     widget.library.removeListener(_onLibrary);
     widget.ocr?.removeListener(_onPremium);
@@ -358,6 +366,22 @@ class _TabTextViewState extends State<TabTextView> {
   /// phrase.
   void _newStaff() {
     final value = newStaff(_text.value);
+    _text.value = value;
+    _changed(value.text);
+  }
+
+  /// The dictionary's +: a chord's voicing or a scale written at the
+  /// cursor's phrase, or in a new phrase ([writeColumns]); the cursor
+  /// after it, so the next one follows. Not while Rescan reads or Fix's
+  /// review shows.
+  @override
+  void write(List<List<int?>> columns) {
+    if (!mounted) return;
+    if (_busy || _review != null) {
+      _say(context.l10n.dictionaryWriteBusy);
+      return;
+    }
+    final value = writeColumns(_text.value, columns);
     _text.value = value;
     _changed(value.text);
   }
