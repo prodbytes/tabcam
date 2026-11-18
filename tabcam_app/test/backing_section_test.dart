@@ -262,7 +262,6 @@ void main() {
     BackingTrack track,
     TextEditingController field, {
     bool active = true,
-    bool oneToggles = true,
   }) => MaterialApp(
     home: Scaffold(
       body: Row(
@@ -271,7 +270,6 @@ void main() {
           PlayAlongKeys(
             track: track,
             active: active,
-            oneToggles: oneToggles,
             child: const SizedBox(
               key: Key('sidebar'),
               width: 200,
@@ -349,10 +347,8 @@ void main() {
     track.dispose();
   });
 
-  testWidgets('the keys are not the player\'s with the sidebar hidden, '
-      'under a dialog, nor 1 where it is another key (Cam\'s Rec)', (
-    tester,
-  ) async {
+  testWidgets('the keys are not the player\'s with the sidebar hidden, nor '
+      'under a dialog', (tester) async {
     final (track, _, _) = await loaded(tester);
     final field = TextEditingController();
     Future<bool> press(LogicalKeyboardKey key) async =>
@@ -371,15 +367,19 @@ void main() {
     expect(video.seeks, isEmpty);
     expect(track.playing, isFalse);
 
-    // In Cam: 0 and space, not 1.
-    await tester.pumpWidget(keysHost(track, field, oneToggles: false));
-    expect(await press(LogicalKeyboardKey.digit1), isFalse);
-    expect(await press(LogicalKeyboardKey.numpad1), isFalse);
+    // Tapped in the sidebar, the keys are the player's: 0 goes back,
+    // 1 and space play and pause.
+    await tester.tap(find.byKey(const Key('sidebar')));
     await tester.pump();
-    expect(track.playing, isFalse);
     expect(await press(LogicalKeyboardKey.digit0), isTrue);
     expect(video.seeks, hasLength(1));
+    expect(await press(LogicalKeyboardKey.numpad1), isTrue);
+    await tester.pump();
+    expect(track.playing, isTrue);
     expect(await press(LogicalKeyboardKey.space), isTrue);
+    await tester.pump();
+    expect(track.playing, isFalse);
+    expect(await press(LogicalKeyboardKey.digit1), isTrue);
     await tester.pump();
     expect(track.playing, isTrue);
 

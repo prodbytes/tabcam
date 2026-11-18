@@ -3940,6 +3940,36 @@ spec.
     intro says YouTube and Cifra Club. See
     [dictionary](dictionary.md).
 
+12. **"The shortcuts are wrong, here is how it should be: 0 => back to
+    the beginning (keep playing if playing, stopped if stopped); 1 =>
+    play / pause; spacebar -> play / pause; . => back to the beginning,
+    recording and playing, delete current take and start a new one; /
+    => cut and start a new take, preserve current and new one separately
+    at this time."** In Cam, **1** (top row or keypad) is now the
+    sidebar's song's play / pause, as the space bar, while the sidebar
+    shows (recording or not: the take records on), as it already was in
+    the other screens; it no longer presses Rec / Stop. **/** cuts: the
+    take so far is saved and the next starts, and the song **plays on**
+    through the cut (it stopped and restarted before). **.** starts
+    over: the song stops at once, back at its start, the take recording
+    is thrown away, and the next take starts with the song from its
+    start (after the count-in, if on); not recording, . starts a take
+    with the song back at its start, where / starts one as Rec does.
+    **0** goes back to the start as before (paused, it stays paused;
+    playing, it plays on, counting in first when that's on, as asked
+    earlier today), and the space bar pauses and plays, as before. Rec's
+    tooltip is now "Rec (.)" and Stop's "Stop · new take (/) · redo (.)"
+    (Spanish and Portuguese too); `PlayAlongKeys` lost its `oneToggles`
+    switch. See [Cam](cam.md#rec-key).
+
+13. **"In timestamped take name only hour and minute is fine, no need
+    to break more."** A take is now named by its hour and minute only
+    ("Take 14:32"): takes started in the same minute share the name,
+    where the seconds, then a number, were added before ("Take
+    14:32:07", "Take 14:32:07 (2)"; takes named so keep their names, and
+    still count as takes). `takeName` no longer looks at the capture's
+    pages. See [Cam](cam.md#rec-key).
+
 ## 2026-11-18
 
 1. **"Make the tabs watermark fixed width font."** The watermark
@@ -3947,3 +3977,31 @@ spec.
    font the tabs are shown in, instead of Roboto; its size, colour,
    shadow and place are unchanged, in the preview and the downloaded
    file alike. See [video edit](video-edit.md).
+2. **"Adjustments can be in steps of 0:00.1"**, then **"half of that to
+   be sure."** The video editor's adjustments now step by **0.05 s** (a
+   twentieth of a second). **The cut's two ends** have steps of their
+   own, under the lanes: **Start 0:02.5** and **End 0:41.0**, each
+   between **‹** and **›**, which move that end 0.05 s earlier or later
+   (the preview, paused, shows the frame cut at; the song stays where
+   it is along the video). **The song's ‹ and ›** nudge it 0.05 s too
+   (they were a tenth). A cut's or the song's time is shown to the
+   hundredth when it isn't on a tenth (`0:02.55`), so every step shows.
+   The grips still drag freely and snap to the song's marks; Start here
+   and End here cut where the preview is. New strings
+   `videoEditCutStartAt`, `videoEditCutEndAt`, `videoEditStartEarlier`,
+   `videoEditStartLater`, `videoEditEndEarlier` and `videoEditEndLater`,
+   and `videoEditTrackEarlier` / `videoEditTrackLater` reworded, in
+   English, Spanish and Portuguese. See
+   [video edit](video-edit.md#the-cuts-steps).
+3. **"In the dictionary view, in the chord or scale view cards, add a +
+   button to write it on the text; when pressed add that phrase, scale or
+   chord to the text."** Beside the event's Text view, each chord voicing
+   in the dictionary has a **+** under its diagram, and a scale one beside
+   its name. A chord is written as one column across the six strings (high
+   E on top), a scale as one five-fret position from its root on the low E,
+   a note a column going up. They go in at the cursor's column when it's on
+   a six-line phrase, pushing the rest right, else in a new phrase under the
+   cursor's line; the cursor ends after them, so the next + follows (a
+   progression on one phrase). No + where there's no text to write in.
+   See [dictionary](dictionary.md#writing-in-the-text) and
+   [tab recognition](tab-recognition.md#text-view).

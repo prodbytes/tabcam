@@ -610,10 +610,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get camStop => 'Parar';
 
   @override
-  String get camRecKey => 'Gravar (1)';
+  String get camRecKey => 'Gravar (.)';
 
   @override
-  String get camStopKey => 'Parar (1) · novo take (/) · refazer (.)';
+  String get camStopKey => 'Parar · novo take (/) · refazer (.)';
 
   @override
   String get camMicChoose => 'Microfone';
@@ -1868,6 +1868,19 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dictionaryScale => 'Escala';
 
   @override
+  String dictionaryWriteChord(String frets) {
+    return 'Escrever $frets no texto';
+  }
+
+  @override
+  String dictionaryWriteScale(String scale) {
+    return 'Escrever $scale no texto';
+  }
+
+  @override
+  String get dictionaryWriteBusy => 'O texto não pode ser alterado agora';
+
+  @override
   String get dictionaryNoVoicings => 'Não há como tocá-lo em quatro casas.';
 
   @override
@@ -2038,10 +2051,32 @@ class AppLocalizationsPt extends AppLocalizations {
       'Ao longo do vídeo: arraste para mover, as pontas para cortar';
 
   @override
-  String get videoEditTrackEarlier => 'Um décimo de segundo antes';
+  String videoEditCutStartAt(String time) {
+    return 'Início $time';
+  }
 
   @override
-  String get videoEditTrackLater => 'Um décimo de segundo depois';
+  String videoEditCutEndAt(String time) {
+    return 'Fim $time';
+  }
+
+  @override
+  String get videoEditStartEarlier => 'Começar 0,05 s antes';
+
+  @override
+  String get videoEditStartLater => 'Começar 0,05 s depois';
+
+  @override
+  String get videoEditEndEarlier => 'Terminar 0,05 s antes';
+
+  @override
+  String get videoEditEndLater => 'Terminar 0,05 s depois';
+
+  @override
+  String get videoEditTrackEarlier => '0,05 s antes';
+
+  @override
+  String get videoEditTrackLater => '0,05 s depois';
 
   @override
   String videoEditTrackVolumeLevel(int percent) {

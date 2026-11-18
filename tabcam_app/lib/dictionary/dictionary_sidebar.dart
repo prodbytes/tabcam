@@ -13,6 +13,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import '../l10n/language.dart';
 import '../screens/link_page.dart';
@@ -23,6 +24,15 @@ import 'diagrams.dart';
 import 'music_theory.dart';
 import 'voicings.dart';
 import 'youtube_search.dart';
+
+/// Where the dictionary's + writes a chord or a scale: the event screen's
+/// Text view ([DictionaryState.writer]).
+abstract interface class TabWriter {
+  /// Writes [columns] into the tab: each a fret per string, low E to high
+  /// E, null for a string not played (a chord's voicing is one column, a
+  /// scale one per note).
+  void write(List<List<int?>> columns);
+}
 
 /// Whether the dictionary's sidebar shows, and what's typed in it,
 /// app-wide: open on one screen, it's open on the next (Home, the capture,
@@ -39,6 +49,33 @@ class DictionaryState extends ChangeNotifier {
   /// What's typed in its field.
   String get query => _query;
   String _query = '';
+
+  /// Where a chord's voicing or a scale is written, its + pressed: the
+  /// event's Text view while it shows and can be edited. Null elsewhere,
+  /// and the results have no +.
+  TabWriter? get writer => _writer;
+  TabWriter? _writer;
+
+  /// [writer] takes the dictionary's +, until it [detach]es.
+  void attach(TabWriter writer) {
+    if (identical(_writer, writer)) return;
+    _writer = writer;
+    _notifyLater();
+  }
+
+  void detach(TabWriter writer) {
+    if (!identical(_writer, writer)) return;
+    _writer = null;
+    _notifyLater();
+  }
+
+  /// After the frame: a view attaches and detaches as it's built and
+  /// disposed, when the sidebar can't be rebuilt.
+  void _notifyLater() {
+    SchedulerBinding.instance
+      ..addPostFrameCallback((_) => notifyListeners())
+      ..ensureVisualUpdate();
+  }
 
   void toggle() {
     _open = !_open;
@@ -62,6 +99,7 @@ class DictionaryState extends ChangeNotifier {
   void clear() {
     _open = false;
     _query = '';
+    _writer = null;
     notifyListeners();
   }
 }
@@ -614,6 +652,7 @@ class _Heading extends StatelessWidget {
     required this.kind,
     required this.notes,
     required this.degrees,
+    this.write,
   });
 
   final String title;
@@ -621,13 +660,22 @@ class _Heading extends StatelessWidget {
   final List<Note> notes;
   final List<Degree> degrees;
 
+  /// Its + beside the title (a scale's), shown while there's a text to
+  /// write in.
+  final _WriteButton? write;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: theme.textTheme.headlineSmall),
+        Row(
+          children: [
+            Flexible(child: Text(title, style: theme.textTheme.headlineSmall)),
+            ?write,
+          ],
+        ),
         const SizedBox(height: 4),
         Text(
           '$kind · ${notes.map((n) => n.name).join('  ')}',
@@ -719,7 +767,17 @@ class _ChordResult extends StatelessWidget {
               runSpacing: 12,
               children: [
                 for (final v in voicings)
-                  ChordDiagram(chord: chord, voicing: v, lying: below),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ChordDiagram(chord: chord, voicing: v, lying: below),
+                      _WriteButton(
+                        key: Key('dictionary-write-${v.label}'),
+                        tooltip: l10n.dictionaryWriteChord(v.label),
+                        columns: () => [v.frets],
+                      ),
+                    ],
+                  ),
               ],
             ),
     );
@@ -738,16 +796,50 @@ class _ScaleResult extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final title = '${scale.root.name} ${scaleTypeName(l10n, scale.type)}';
     return _Result(
       key: const Key('dictionary-scale'),
       below: below,
       heading: _Heading(
-        title: '${scale.root.name} ${scaleTypeName(l10n, scale.type)}',
+        title: title,
         kind: l10n.dictionaryScale,
         notes: scale.notes,
         degrees: scale.type.degrees,
+        write: _WriteButton(
+          key: const Key('dictionary-write-scale'),
+          tooltip: l10n.dictionaryWriteScale(title),
+          columns: () => scalePosition(scale),
+        ),
       ),
       picture: ScaleFretboard(scale: scale, lying: below, maxHeight: room),
+    );
+  }
+}
+
+/// A +: writes [columns] into the event's text ([DictionaryState.writer]);
+/// nothing shows while there's no text to write in.
+class _WriteButton extends StatelessWidget {
+  const _WriteButton({super.key, required this.tooltip, required this.columns});
+
+  final String tooltip;
+  final List<List<int?>> Function() columns;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = DictionaryState.instance;
+    return ListenableBuilder(
+      listenable: state,
+      builder: (context, _) {
+        final writer = state.writer;
+        if (writer == null) return const SizedBox.shrink();
+        return IconButton(
+          tooltip: tooltip,
+          visualDensity: VisualDensity.compact,
+          color: Theme.of(context).colorScheme.primary,
+          icon: const Icon(Icons.add_circle_outline),
+          onPressed: () => writer.write(columns()),
+        );
+      },
     );
   }
 }

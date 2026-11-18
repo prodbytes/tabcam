@@ -401,7 +401,24 @@ void main() {
             rect('video-edit-ruler').top - rect('video-edit-play').bottom,
             lessThan(8),
           );
-          expect(size.height - rect('video-edit-song-add').bottom, 6);
+          // Under the lanes, the cut's steps, 40 high, then 6 to the edge;
+          // a phone on its side, too short for them, has the lanes there.
+          final steps = size.height >= 400;
+          expect(
+            size.height - rect('video-edit-song-add').bottom,
+            steps ? 46 : 6,
+          );
+          expect(
+            find.byKey(const Key('video-edit-cut-steps')),
+            steps ? findsOneWidget : findsNothing,
+          );
+          if (steps) {
+            for (final key in ['video-edit-start-at', 'video-edit-end-at']) {
+              final r = rect(key);
+              expect(r.top, greaterThanOrEqualTo(size.height - 46));
+              expect(r.bottom, lessThanOrEqualTo(size.height - 6));
+            }
+          }
           // The bars as wide as the ruler, the playhead over them.
           expect(
             rect('video-edit-take-bar').left,

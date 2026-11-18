@@ -817,11 +817,11 @@
   "@camStop": {
     "description": "Cam: stop recording or playing"
   },
-  "camRecKey": "Rec (1)",
+  "camRecKey": "Rec (.)",
   "@camRecKey": {
     "description": "Cam: the Rec button's tooltip; the 1 key does it too"
   },
-  "camStopKey": "Stop (1) · new take (/) · redo (.)",
+  "camStopKey": "Stop · new take (/) · redo (.)",
   "@camStopKey": {
     "description": "Cam: the Stop button's tooltip while recording; the 1 key does it too, the / key saves the take and starts a new one, and the . key throws the take away and starts it again"
   },
@@ -2489,6 +2489,20 @@
   "@dictionaryScale": {
     "description": "Dictionary: a scale result's kind"
   },
+  "dictionaryWriteChord": "Write {frets} in the text",
+  "@dictionaryWriteChord": {
+    "description": "Dictionary: tooltip of the + under a chord's voicing, which writes it into the Text view's tab; frets is the voicing as x32010",
+    "placeholders": {"frets": {"type": "String"}}
+  },
+  "dictionaryWriteScale": "Write {scale} in the text",
+  "@dictionaryWriteScale": {
+    "description": "Dictionary: tooltip of the + beside a scale's name, which writes it into the Text view's tab; scale is its name, as A Minor pentatonic",
+    "placeholders": {"scale": {"type": "String"}}
+  },
+  "dictionaryWriteBusy": "The text can't be changed right now",
+  "@dictionaryWriteBusy": {
+    "description": "Dictionary: message when + is pressed while the Text view is rescanning or reviewing Fix"
+  },
   "dictionaryNoVoicings": "No way to play it within four frets.",
   "@dictionaryNoVoicings": {
     "description": "Dictionary: a chord with no voicing found"
@@ -2725,11 +2739,45 @@
   "@videoEditTrackBar": {
     "description": "Video edit: the song lane's bar, for screen readers and the mouse"
   },
-  "videoEditTrackEarlier": "A tenth of a second earlier",
+  "videoEditCutStartAt": "Start {time}",
+  "@videoEditCutStartAt": {
+    "description": "Video edit, under the lanes: where the kept part starts (time like 0:01.25), between the buttons that move it 0.05 s earlier or later",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditCutEndAt": "End {time}",
+  "@videoEditCutEndAt": {
+    "description": "Video edit, under the lanes: where the kept part ends (time like 0:12.3), between the buttons that move it 0.05 s earlier or later",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditStartEarlier": "Start 0.05 s earlier",
+  "@videoEditStartEarlier": {
+    "description": "Video edit: moves the kept part's start a twentieth of a second earlier"
+  },
+  "videoEditStartLater": "Start 0.05 s later",
+  "@videoEditStartLater": {
+    "description": "Video edit: moves the kept part's start a twentieth of a second later"
+  },
+  "videoEditEndEarlier": "End 0.05 s earlier",
+  "@videoEditEndEarlier": {
+    "description": "Video edit: moves the kept part's end a twentieth of a second earlier"
+  },
+  "videoEditEndLater": "End 0.05 s later",
+  "@videoEditEndLater": {
+    "description": "Video edit: moves the kept part's end a twentieth of a second later"
+  },
+  "videoEditTrackEarlier": "0.05 s earlier",
   "@videoEditTrackEarlier": {
     "description": "Video edit: nudges the track earlier"
   },
-  "videoEditTrackLater": "A tenth of a second later",
+  "videoEditTrackLater": "0.05 s later",
   "@videoEditTrackLater": {
     "description": "Video edit: nudges the track later"
   },

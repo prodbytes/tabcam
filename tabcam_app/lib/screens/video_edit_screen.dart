@@ -37,7 +37,7 @@ import 'on_picture.dart';
 /// and both sounds with it. The **Song** lane ("Track") holds one of the
 /// capture's recordings, videos or takes, or a sound file (added to
 /// them), placed along the video by hand (dragged, trimmed by its ends,
-/// nudged by a tenth of a second); ⋮ changes or removes it. Each lane has
+/// nudged by a twentieth of a second); ⋮ changes or removes it. Each lane has
 /// its volume and Mute at its left; both go through the **Master**, its
 /// volume (up to 200%) and Mute right above the fades' sliders (on a
 /// phone, above **On the video**). Under them (beside everything, on a
@@ -1028,6 +1028,22 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     );
   }
 
+  /// The kept part's start moved [by] (a press of its ‹ or ›), within the
+  /// video and no nearer its end than the shortest part kept; the
+  /// preview, while paused, shows the frame it cuts at.
+  void _stepStart(Duration by) => _keepPart(
+    _clamp(_start + by, Duration.zero, _end - PageEdit.minLength),
+    _end,
+    endMoved: false,
+  );
+
+  /// The kept part's end moved [by], as the start's.
+  void _stepEnd(Duration by) => _keepPart(
+    _start,
+    _clamp(_end + by, _start + PageEdit.minLength, _duration),
+    endMoved: true,
+  );
+
   /// Where a lined-up song starts and stops in the video, clip by clip
   /// ([LoggedSong.marksIn]): drawn on the ruler and the Take lane, and
   /// where a grip dragged near snaps to; none without one.
@@ -1559,6 +1575,21 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     return '${tenths ~/ 600}:${s.toString().padLeft(2, '0')}.${tenths % 10}';
   }
 
+  /// A cut's or the song's time, which moves by [step]: as [time] on a
+  /// tenth of a second, else to the hundredth (m:ss.hh), so every step
+  /// shows.
+  static String fine(Duration d) {
+    final hundredths = d.inMilliseconds ~/ 10;
+    if (hundredths % 10 == 0) return time(d);
+    final s = (hundredths ~/ 100) % 60;
+    return '${hundredths ~/ 6000}:${s.toString().padLeft(2, '0')}'
+        '.${(hundredths % 100).toString().padLeft(2, '0')}';
+  }
+
+  /// How far a press of ‹ or › moves a cut's end, or the song: a
+  /// twentieth of a second.
+  static const step = Duration(milliseconds: 50);
+
   /// m:ss, for the ruler.
   static String _rulerTime(Duration d) {
     final s = d.inSeconds;
@@ -1576,8 +1607,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// The gap between the two lanes.
   static const _laneGap = 2.0;
 
-  /// The lanes' panel: the ruler and the two lanes, and its padding.
+  /// The lanes' panel: the ruler and the two lanes, and its padding; the
+  /// cut's steps under them where there's room ([_cutStepsHeight]).
   static const _dockPad = EdgeInsets.fromLTRB(8, 0, 8, 6);
+  static const _cutStepsHeight = 40.0;
   static const _dockHeight =
       _Ruler.height + _SongBar.height + _laneGap + _SongBar.height + 6;
 
@@ -1795,14 +1828,18 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       builder: (context, box) {
         final height = box.maxHeight;
         final width = box.maxWidth;
-        final dockHeight = _dockHeight + MediaQuery.paddingOf(context).bottom;
+        final inset = MediaQuery.paddingOf(context).bottom;
+        bool fits(double dock) =>
+            height >= dock + inset + _transportHeight + 1 + _viewerLeast;
         final showTransport =
             !keyboard && height >= _transportHeight + _viewerLeast;
-        final showDock =
-            showTransport &&
-            height >= dockHeight + _transportHeight + 1 + _viewerLeast;
+        final showDock = showTransport && fits(_dockHeight);
+        final showSteps = showDock && fits(_dockHeight + _cutStepsHeight);
+        final dockHeight =
+            (showDock ? _dockHeight + inset : 0) +
+            (showSteps ? _cutStepsHeight : 0);
         final panel = showTransport
-            ? _panel(video, l10n, dock: showDock)
+            ? _panel(video, l10n, dock: showDock, steps: showSteps)
             : null;
         if (wide) {
           return Column(
@@ -1836,9 +1873,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           );
         }
         final free =
-            height -
-            (showTransport ? _transportHeight + 1 : 0) -
-            (showDock ? dockHeight : 0);
+            height - (showTransport ? _transportHeight + 1 : 0) - dockHeight;
         final aspect = video.value.aspectRatio > 0
             ? video.value.aspectRatio
             : 16 / 9;
@@ -1879,11 +1914,13 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   }
 
   /// The bottom panel, the whole width: the transport, and under it, when
-  /// [dock], the lanes, flush with the bottom edge (over the safe area).
+  /// [dock], the lanes, flush with the bottom edge (over the safe area),
+  /// with the cut's steps under them when [steps].
   Widget _panel(
     VideoPlayerController video,
     AppLocalizations l10n, {
     required bool dock,
+    required bool steps,
   }) {
     final theme = Theme.of(context);
     return Material(
@@ -1910,7 +1947,25 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                     )
                   : _transport(video, l10n),
             ),
-            if (dock) Padding(padding: _dockPad, child: _timeline(video, l10n)),
+            if (dock)
+              Padding(
+                padding: _dockPad,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _timeline(video, l10n),
+                    if (steps)
+                      SizedBox(
+                        height: _cutStepsHeight,
+                        child: Padding(
+                          padding: EdgeInsets.only(left: _lead),
+                          child: _cutSteps(l10n),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
@@ -2903,7 +2958,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          l10n.videoEditKeep(time(_start), time(_end)),
+                          l10n.videoEditKeep(fine(_start), fine(_end)),
                           key: const Key('video-edit-times'),
                           maxLines: 1,
                           style: theme.textTheme.labelSmall?.copyWith(
@@ -2976,6 +3031,81 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           );
         },
       ),
+    );
+  }
+
+  /// Under the lanes, the cut's two ends, each with where it is (to the
+  /// hundredth of a second when it isn't on a tenth) between ‹ and ›,
+  /// which move it a [step] earlier or later: the start at the left, the
+  /// end at the right, under the Take lane's grips.
+  Widget _cutSteps(AppLocalizations l10n) {
+    final most = _end - PageEdit.minLength;
+    final least = _start + PageEdit.minLength;
+    Widget end(
+      String name,
+      String at,
+      String earlier,
+      String later,
+      VoidCallback? onEarlier,
+      VoidCallback? onLater,
+    ) => Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          key: Key('video-edit-$name-earlier'),
+          tooltip: earlier,
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.chevron_left),
+          onPressed: onEarlier,
+        ),
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              at,
+              key: Key('video-edit-$name-at'),
+              maxLines: 1,
+              style: const TextStyle(
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+        ),
+        IconButton(
+          key: Key('video-edit-$name-later'),
+          tooltip: later,
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.chevron_right),
+          onPressed: onLater,
+        ),
+      ],
+    );
+    return Row(
+      key: const Key('video-edit-cut-steps'),
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Flexible(
+          child: end(
+            'start',
+            l10n.videoEditCutStartAt(fine(_start)),
+            l10n.videoEditStartEarlier,
+            l10n.videoEditStartLater,
+            _start > Duration.zero ? () => _stepStart(-step) : null,
+            _start < most ? () => _stepStart(step) : null,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Flexible(
+          child: end(
+            'end',
+            l10n.videoEditCutEndAt(fine(_end)),
+            l10n.videoEditEndEarlier,
+            l10n.videoEditEndLater,
+            _end > least ? () => _stepEnd(-step) : null,
+            _end < _duration ? () => _stepEnd(step) : null,
+          ),
+        ),
+      ],
     );
   }
 
@@ -3177,11 +3307,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   );
 
   /// Under the lanes, the song's details: its lane and name, nudges of a
-  /// tenth of a second either way with where it starts in words between
+  /// twentieth of a second either way with where it starts in words between
   /// them, and the part of it used, once trimmed.
   Widget _songDetails(AppLocalizations l10n) {
     final theme = Theme.of(context);
-    const tenth = Duration(milliseconds: 100);
     const tabular = [FontFeature.tabularFigures()];
     final trimmed = _trackStart > Duration.zero || _trackEnd < _trackLength;
     final take = _take;
@@ -3189,10 +3318,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         ? (take ? l10n.videoEditSongWith : l10n.videoEditTrackWith)
         : _offset > Duration.zero
         ? (take ? l10n.videoEditSongAfter : l10n.videoEditTrackAfter)(
-            time(_offset),
+            fine(_offset),
           )
         : (take ? l10n.videoEditSongBefore : l10n.videoEditTrackBefore)(
-            time(-_offset),
+            fine(-_offset),
           );
     return Column(
       key: const Key('video-edit-song-details'),
@@ -3221,7 +3350,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                 key: const Key('video-edit-song-earlier'),
                 tooltip: l10n.videoEditTrackEarlier,
                 icon: const Icon(Icons.chevron_left),
-                onPressed: () => _moveTrack(-tenth),
+                onPressed: () => _moveTrack(-step),
               ),
               Expanded(
                 child: Text(
@@ -3240,7 +3369,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                 key: const Key('video-edit-song-later'),
                 tooltip: l10n.videoEditTrackLater,
                 icon: const Icon(Icons.chevron_right),
-                onPressed: () => _moveTrack(tenth),
+                onPressed: () => _moveTrack(step),
               ),
             ],
           ),
@@ -3248,10 +3377,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           Text(
             switch (_logged!.shiftOf(_current)) {
               final d when d > Duration.zero => l10n.videoEditSongLinedLater(
-                time(d),
+                fine(d),
               ),
               final d when d < Duration.zero => l10n.videoEditSongLinedEarlier(
-                time(-d),
+                fine(-d),
               ),
               // Found in the take's own sound, or as Cam noted it.
               _ =>
@@ -3280,8 +3409,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         if (trimmed && _trackLength > Duration.zero && _linedClips == null)
           Text(
             (take ? l10n.videoEditSongUsed : l10n.videoEditTrackUsed)(
-              time(_trackStart),
-              time(_trackEnd),
+              fine(_trackStart),
+              fine(_trackEnd),
             ),
             key: const Key('video-edit-song-used'),
             textAlign: TextAlign.center,
