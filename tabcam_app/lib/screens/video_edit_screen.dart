@@ -961,9 +961,18 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     );
   }
 
-  /// Whether the screen is wide: **On the video** beside the rest.
-  bool get _wide => MediaQuery.sizeOf(context).width >= _wideFrom;
+  /// Whether the screen is wide: **On the video** beside the viewer. So
+  /// is a short landscape window (a phone on its side), where there's no
+  /// room for it under the viewer.
+  bool get _wide {
+    final size = MediaQuery.sizeOf(context);
+    return size.width >= _wideFrom ||
+        (size.width >= _wideShortFrom && size.height < _shortBelow);
+  }
+
   static const _wideFrom = 840.0;
+  static const _wideShortFrom = 560.0;
+  static const _shortBelow = 480.0;
 
   /// Keeps the edit with the page, when it changed.
   Future<void> _keep() async {
@@ -1451,20 +1460,20 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// watermark is left out is this user's Premium as it is now, as they
   /// download ([_unlocked]).
   RenderPlan _plan(RenderKind kind, {XFile? input}) => RenderPlan.of(
-        _planEdit,
-        input: input,
-        duration: _duration,
-        inputExtension: input == null ? null : Media.of(input)?.extension,
-        songFile: _track,
-        songLength: _trackLength,
-        kind: kind,
-        formats: _formats,
-        takeLog: _takeLog,
-        title: _captureTitle,
-        watermark: watermarkText,
-        premium: _unlocked,
-        frame: _frame,
-      );
+    _planEdit,
+    input: input,
+    duration: _duration,
+    inputExtension: input == null ? null : Media.of(input)?.extension,
+    songFile: _track,
+    songLength: _trackLength,
+    kind: kind,
+    formats: _formats,
+    takeLog: _takeLog,
+    title: _captureTitle,
+    watermark: watermarkText,
+    premium: _unlocked,
+    frame: _frame,
+  );
 
   /// Whether the song lane can be rendered: it isn't heard (a muted song
   /// is left out of the download), or its song can be fitted (one of
@@ -1556,16 +1565,53 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     return '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
   }
 
-  /// The lanes' room at the left (the volume) and at the right (the Song
-  /// lane's menu): the ruler and the bars line up between them.
-  static const _lead = _LaneVolume.width + 4;
-  static const _trail = 48.0;
+  /// How wide a lane's name is in its header: room for "Take" or a short
+  /// name on a phone (two lines at most), more beside a wide screen's.
+  double get _nameWidth => _wide ? 120 : 56;
+
+  /// The lanes' headers at the left (the name, then the volume): the ruler
+  /// and the bars line up after them, as wide as the rest.
+  double get _lead => _nameWidth + _LaneVolume.width + 4;
+
+  /// The gap between the two lanes.
+  static const _laneGap = 2.0;
+
+  /// The lanes' panel: the ruler and the two lanes, and its padding.
+  static const _dockPad = EdgeInsets.fromLTRB(8, 0, 8, 6);
+  static const _dockHeight =
+      _Ruler.height + _SongBar.height + _laneGap + _SongBar.height + 6;
+
+  /// The transport's row, over the lanes.
+  static const _transportHeight = 48.0;
+
+  /// The least the viewer keeps before the lanes, then the transport, give
+  /// way (a tiny window), and the least the phone's list under the viewer
+  /// keeps (a tall video takes the rest).
+  static const _viewerLeast = 96.0;
+  static const _inspectorLeast = 160.0;
+
+  /// To the start / To the end: this close to the kept part's end counts
+  /// as there (the next press goes on to the video's end).
+  static const _near = Duration(milliseconds: 50);
+
+  /// The keys that move the preview ([_key]).
+  static final _moveKeys = {
+    LogicalKeyboardKey.home,
+    LogicalKeyboardKey.end,
+    LogicalKeyboardKey.arrowLeft,
+    LogicalKeyboardKey.arrowRight,
+  };
 
   /// A key pressed in the editor: the space bar plays or pauses the
-  /// preview, as Play / Pause does; not while a field is typed in (the
-  /// title's), nor with Ctrl, Alt or ⌘ held.
+  /// preview, as Play / Pause does; Home and End are To the start and To
+  /// the end; ← and → step a tenth of a second (with Shift, a second).
+  /// Not while a field is typed in (the title's), nor with Ctrl, Alt or ⌘
+  /// held; Home, End and the arrows only while nothing in the editor has
+  /// the keyboard (a slider's arrows are its own).
   KeyEventResult _key(FocusNode _, KeyEvent event) {
-    if (event.logicalKey != LogicalKeyboardKey.space ||
+    final key = event.logicalKey;
+    final space = key == LogicalKeyboardKey.space;
+    if (!space && !_moveKeys.contains(key) ||
         _video == null ||
         _error != null ||
         _busy) {
@@ -1580,9 +1626,47 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         null) {
       return KeyEventResult.ignored;
     }
-    if (event is KeyDownEvent) unawaited(_playback?.playPause());
+    if (space) {
+      if (event is KeyDownEvent) unawaited(_playback?.playPause());
+      return KeyEventResult.handled;
+    }
+    if (!_keys.hasPrimaryFocus || _duration <= Duration.zero) {
+      return KeyEventResult.ignored;
+    }
+    if (event is KeyUpEvent) return KeyEventResult.handled;
+    if (key == LogicalKeyboardKey.home) {
+      if (event is KeyDownEvent) _toStart();
+    } else if (key == LogicalKeyboardKey.end) {
+      if (event is KeyDownEvent) unawaited(_toEnd());
+    } else {
+      final by = keys.isShiftPressed
+          ? const Duration(seconds: 1)
+          : const Duration(milliseconds: 100);
+      _step(
+        key == LogicalKeyboardKey.arrowLeft ? -by : by,
+        exact: event is KeyDownEvent,
+      );
+    }
     return KeyEventResult.handled;
   }
+
+  /// To the start: the kept part's start, or, there already, the video's.
+  /// Playing, it plays on from there.
+  void _toStart() => _seek(_at > _start + _near ? _start : Duration.zero);
+
+  /// To the end: paused, at the kept part's end, or, there already, the
+  /// video's.
+  Future<void> _toEnd() async {
+    final at = _at;
+    if (_video?.value.isPlaying ?? false) await _playback?.playPause();
+    if (!mounted) return;
+    _seek(at < _end - _near ? _end : _duration);
+  }
+
+  /// The preview moved [by] (← and →): at once, or, a key held down, at
+  /// most every [_seekEvery].
+  void _step(Duration by, {required bool exact}) =>
+      _seek(_clamp(_at + by, Duration.zero, _duration), exact: exact);
 
   @override
   Widget build(BuildContext context) {
@@ -1613,6 +1697,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
+          if (video != null && _error == null) _appBarActions(l10n),
           IconButton(
             key: const Key('video-edit-about'),
             tooltip: l10n.videoEditAbout,
@@ -1636,40 +1721,44 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           : video == null
           ? const Center(child: CircularProgressIndicator())
           : AbsorbPointer(absorbing: _busy, child: _body(video, l10n)),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          // At the largest text sizes, both shrink to fit rather than
-          // overflow.
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: TextButton(
-                    key: const Key('video-edit-reset'),
-                    onPressed: _edited && !_busy ? _reset : null,
-                    child: Text(l10n.videoEditReset),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                flex: 3,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerRight,
-                  child: _downloadButton(l10n),
-                ),
-              ),
-            ],
-          ),
+    );
+  }
+
+  /// Reset and Download, in the app bar: named from [_labelsFrom] wide,
+  /// icons with their names as tooltips under it; at the largest text
+  /// sizes, both shrink to fit rather than crowd out the name.
+  Widget _appBarActions(AppLocalizations l10n) {
+    final width = MediaQuery.sizeOf(context).width;
+    final labels = width >= _labelsFrom;
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: width * 0.55),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerRight,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextButton(
+              key: const Key('video-edit-reset'),
+              onPressed: _edited && !_busy ? _reset : null,
+              child: labels
+                  ? Text(l10n.videoEditReset)
+                  : Tooltip(
+                      message: l10n.videoEditReset,
+                      child: const Icon(Icons.restart_alt),
+                    ),
+            ),
+            const SizedBox(width: 4),
+            _downloadButton(l10n, labels: labels),
+          ],
         ),
       ),
     );
   }
+
+  /// How wide the screen is before Reset and Download are named in the
+  /// app bar.
+  static const _labelsFrom = 840.0;
 
   /// In the body's place where the video couldn't be opened, or its
   /// player failed: it says so, with Try again ([_retry]).
@@ -1691,85 +1780,184 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     ),
   );
 
-  /// The screen's body: the preview, its transport and the lanes; **On
-  /// the video** under them on a phone (the title's fields in its place
-  /// while they're open), beside them on a wide screen (the fields under
-  /// its chips); the song's details.
+  /// The screen's body, a frame that doesn't scroll: the viewer on top;
+  /// under it, on a phone, the rest (the master, **On the video** or the
+  /// fields one of its chips opened, the song's details) scrolling; and at
+  /// the bottom edge the transport and the lanes. On a wide screen the
+  /// rest is beside the viewer. While the on-screen keyboard is open (the
+  /// title typed in), the transport and the lanes give their room to the
+  /// viewer and the field; in a tiny window the lanes go first, then the
+  /// transport.
   Widget _body(VideoPlayerController video, AppLocalizations l10n) {
     final wide = _wide;
-    final main = [
-      _preview(video, l10n),
-      _transport(video, l10n),
-      const SizedBox(height: 8),
-      _timeline(video, l10n),
-      if (!wide) ...[
-        const SizedBox(height: 8),
-        _masterFields(l10n),
-        const SizedBox(height: 8),
-        _editingTitle
-            ? _titleFields(l10n)
-            : _editingFades
-            ? _fadeFields(l10n)
-            : _editingTabStyle && _tabStyleOffered
-            ? _tabStyleFields(l10n)
-            : _onTheVideo(l10n),
-      ],
-      if (_hasSong) ...[const SizedBox(height: 8), _songDetails(l10n)],
-      if (_busy) ...[
-        const SizedBox(height: 16),
-        Text(
-          l10n.videoEditDownloading,
-          key: const Key('video-edit-downloading'),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    ];
-    if (!wide) {
-      return ListView(padding: const EdgeInsets.all(16), children: main);
-    }
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(
-          child: ListView(padding: const EdgeInsets.all(16), children: main),
-        ),
-        const VerticalDivider(width: 1),
-        SizedBox(
-          width: _sideWidth,
-          child: ListView(
-            key: const Key('video-edit-side'),
-            padding: const EdgeInsets.all(16),
-            children: [_onTheVideo(l10n, wide: true)],
-          ),
-        ),
-      ],
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
+    return LayoutBuilder(
+      builder: (context, box) {
+        final height = box.maxHeight;
+        final width = box.maxWidth;
+        final dockHeight = _dockHeight + MediaQuery.paddingOf(context).bottom;
+        final showTransport =
+            !keyboard && height >= _transportHeight + _viewerLeast;
+        final showDock =
+            showTransport &&
+            height >= dockHeight + _transportHeight + 1 + _viewerLeast;
+        final panel = showTransport
+            ? _panel(video, l10n, dock: showDock)
+            : null;
+        if (wide) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: _preview(video, l10n)),
+                    const VerticalDivider(width: 1),
+                    SizedBox(
+                      width: min(_sideWidth, width * 0.4),
+                      child: ListView(
+                        key: const Key('video-edit-side'),
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          _onTheVideo(l10n, wide: true),
+                          if (_hasSong) ...[
+                            const SizedBox(height: 16),
+                            _songDetails(l10n),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ?panel,
+            ],
+          );
+        }
+        final free =
+            height -
+            (showTransport ? _transportHeight + 1 : 0) -
+            (showDock ? dockHeight : 0);
+        final aspect = video.value.aspectRatio > 0
+            ? video.value.aspectRatio
+            : 16 / 9;
+        final viewer = max(
+          0.0,
+          min(width / aspect, free - min(_inspectorLeast, free * 0.45)),
+        );
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(height: viewer, child: _preview(video, l10n)),
+            Expanded(
+              child: ListView(
+                key: const Key('video-edit-inspector'),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                children: [
+                  _masterFields(l10n),
+                  const SizedBox(height: 8),
+                  _editingTitle
+                      ? _titleFields(l10n)
+                      : _editingFades
+                      ? _fadeFields(l10n)
+                      : _editingTabStyle && _tabStyleOffered
+                      ? _tabStyleFields(l10n)
+                      : _onTheVideo(l10n),
+                  if (_hasSong) ...[
+                    const SizedBox(height: 8),
+                    _songDetails(l10n),
+                  ],
+                ],
+              ),
+            ),
+            ?panel,
+          ],
+        );
+      },
     );
   }
 
-  /// How wide **On the video** is beside the rest, on a wide screen.
+  /// The bottom panel, the whole width: the transport, and under it, when
+  /// [dock], the lanes, flush with the bottom edge (over the safe area).
+  Widget _panel(
+    VideoPlayerController video,
+    AppLocalizations l10n, {
+    required bool dock,
+  }) {
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.surfaceContainerLow,
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Divider(height: 1),
+            SizedBox(
+              height: _transportHeight,
+              child: _busy
+                  ? Center(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          l10n.videoEditDownloading,
+                          key: const Key('video-edit-downloading'),
+                          maxLines: 1,
+                        ),
+                      ),
+                    )
+                  : _transport(video, l10n),
+            ),
+            if (dock) Padding(padding: _dockPad, child: _timeline(video, l10n)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// How wide **On the video** is beside the viewer, on a wide screen (at
+  /// most 40% of it).
   static const _sideWidth = 320.0;
 
   /// Download, split: the button downloads the video as edited; its menu
   /// also has it without sound, and its sound alone, each saying its
-  /// format.
-  Widget _downloadButton(AppLocalizations l10n) {
+  /// format. Without [labels], the button is its icon, named by its
+  /// tooltip.
+  Widget _downloadButton(AppLocalizations l10n, {bool labels = true}) {
     const radius = Radius.circular(20);
+    const shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.horizontal(left: radius),
+    );
+    final onPressed = _canDownload(RenderKind.video)
+        ? () => _download(RenderKind.video)
+        : null;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        FilledButton.icon(
-          key: const Key('video-edit-download'),
-          style: FilledButton.styleFrom(
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.horizontal(left: radius),
+        if (labels)
+          FilledButton.icon(
+            key: const Key('video-edit-download'),
+            style: FilledButton.styleFrom(shape: shape),
+            icon: const Icon(Icons.download_outlined),
+            label: Text(l10n.videoEditDownload),
+            onPressed: onPressed,
+          )
+        else
+          FilledButton(
+            key: const Key('video-edit-download'),
+            style: FilledButton.styleFrom(
+              shape: shape,
+              minimumSize: const Size(48, 40),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+            onPressed: onPressed,
+            child: Tooltip(
+              message: l10n.videoEditDownload,
+              child: const Icon(Icons.download_outlined),
             ),
           ),
-          icon: const Icon(Icons.download_outlined),
-          label: Text(l10n.videoEditDownload),
-          onPressed: _canDownload(RenderKind.video)
-              ? () => _download(RenderKind.video)
-              : null,
-        ),
         const SizedBox(width: 2),
         MenuAnchor(
           menuChildren: [
@@ -1819,18 +2007,19 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     );
   }
 
-  /// The video, at most a third of the screen, with what Download draws
-  /// over it, and, while it plays, the fades' black ([EditLayers]);
-  /// paused, its on-picture controls over that ([OnPicture]). A tap picks
-  /// what's drawn there or plays or pauses it ([_tapPreview]); on a
+  /// The viewer: the video as large as its box allows, on black, with
+  /// what Download draws over it, and, while the kept part plays, the
+  /// fades' black ([EditLayers]); paused, its on-picture controls over
+  /// that ([OnPicture]). A tap picks what's drawn there or plays or pauses
+  /// it ([_tapPreview]), and on the black around it plays or pauses; on a
   /// phone, a long press on the tab's band opens its style.
   Widget _preview(VideoPlayerController video, AppLocalizations l10n) {
-    final height = MediaQuery.sizeOf(context).height / 3;
     final layers = _previewLayers(l10n);
     final fades = _fades;
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxHeight: height),
+    return ColoredBox(
+      color: Colors.black,
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: _playback?.playPause,
         child: Center(
           child: AspectRatio(
@@ -2491,7 +2680,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
               ])
                 ButtonSegment(
                   value: align,
-                  icon: Icon(icon, key: Key('video-edit-tab-align-${align.name}')),
+                  icon: Icon(
+                    icon,
+                    key: Key('video-edit-tab-align-${align.name}'),
+                  ),
                   tooltip: name,
                 ),
             ],
@@ -2650,68 +2842,147 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     );
   }
 
-  /// Under the preview, on one row: Play / Pause, where it is (to the
-  /// tenth of a second: the trims are set by it), the part kept, and
-  /// Start here and End here, which trim to where it is.
+  /// Over the lanes, on one row: at the left where the preview is (to the
+  /// tenth of a second: the trims are set by it) over the part kept; in
+  /// the middle To the start, Play / Pause and To the end; at the right
+  /// Start here and End here, which trim to where it is (named on a wide
+  /// row).
   Widget _transport(VideoPlayerController video, AppLocalizations l10n) {
+    final theme = Theme.of(context);
     final trimmed = _start > Duration.zero || _end < _duration;
+    final known = _duration > Duration.zero;
     const tabular = [FontFeature.tabularFigures()];
-    return Row(
-      children: [
-        // Its own button: it plays as edited, from where the preview is.
-        ValueListenableBuilder(
-          valueListenable: video,
-          builder: (context, value, _) => IconButton(
-            key: const Key('video-edit-play'),
-            tooltip:
-                '${value.isPlaying ? l10n.textViewPause : l10n.textViewPlay}'
-                ' (${l10n.videoEditSpaceKey})',
-            icon: Icon(value.isPlaying ? Icons.pause : Icons.play_arrow),
-            onPressed: _playback?.playPause,
-          ),
-        ),
-        ListenableBuilder(
-          listenable: Listenable.merge([video, _headAt]),
-          builder: (context, _) => Text(
-            time(_at),
-            key: const Key('video-edit-time'),
-            style: const TextStyle(fontFeatures: tabular),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              l10n.videoEditKeep(time(_start), time(_end)),
-              key: const Key('video-edit-times'),
-              maxLines: 1,
-              style: TextStyle(
-                color: trimmed ? Theme.of(context).colorScheme.primary : null,
-                fontFeatures: tabular,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: LayoutBuilder(
+        builder: (context, box) {
+          final named = box.maxWidth >= 720;
+          Widget trim(String key, String label, IconData icon, bool end) {
+            void onPressed() => _trimHere(end: end);
+            return named
+                ? TextButton.icon(
+                    key: Key(key),
+                    onPressed: onPressed,
+                    icon: Icon(icon),
+                    label: Text(label),
+                  )
+                : IconButton(
+                    key: Key(key),
+                    tooltip: label,
+                    icon: Icon(icon),
+                    onPressed: onPressed,
+                  );
+          }
+
+          return Row(
+            children: [
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: ListenableBuilder(
+                          listenable: Listenable.merge([video, _headAt]),
+                          builder: (context, _) => Text(
+                            time(_at),
+                            key: const Key('video-edit-time'),
+                            maxLines: 1,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontFeatures: tabular,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          l10n.videoEditKeep(time(_start), time(_end)),
+                          key: const Key('video-edit-times'),
+                          maxLines: 1,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: trimmed ? theme.colorScheme.primary : null,
+                            fontFeatures: tabular,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ),
-        ),
-        IconButton(
-          key: const Key('video-edit-start-here'),
-          tooltip: l10n.videoEditTrimStart,
-          icon: const Icon(Icons.first_page),
-          onPressed: () => _trimHere(end: false),
-        ),
-        IconButton(
-          key: const Key('video-edit-end-here'),
-          tooltip: l10n.videoEditTrimEnd,
-          icon: const Icon(Icons.last_page),
-          onPressed: () => _trimHere(end: true),
-        ),
-      ],
+              IconButton(
+                key: const Key('video-edit-to-start'),
+                tooltip: l10n.videoEditToStart,
+                icon: const Icon(Icons.skip_previous),
+                onPressed: known ? _toStart : null,
+              ),
+              // Its own button: it plays as edited, from where the preview
+              // is.
+              ValueListenableBuilder(
+                valueListenable: video,
+                builder: (context, value, _) => IconButton.filled(
+                  key: const Key('video-edit-play'),
+                  tooltip:
+                      '${value.isPlaying ? l10n.textViewPause : l10n.textViewPlay}'
+                      ' (${l10n.videoEditSpaceKey})',
+                  iconSize: 28,
+                  style: IconButton.styleFrom(
+                    minimumSize: const Size(56, 40),
+                    padding: EdgeInsets.zero,
+                  ),
+                  icon: Icon(value.isPlaying ? Icons.pause : Icons.play_arrow),
+                  onPressed: _playback?.playPause,
+                ),
+              ),
+              IconButton(
+                key: const Key('video-edit-to-end'),
+                tooltip: l10n.videoEditToEnd,
+                icon: const Icon(Icons.skip_next),
+                onPressed: known ? () => unawaited(_toEnd()) : null,
+              ),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        trim(
+                          'video-edit-start-here',
+                          l10n.videoEditTrimStart,
+                          Icons.first_page,
+                          false,
+                        ),
+                        trim(
+                          'video-edit-end-here',
+                          l10n.videoEditTrimEnd,
+                          Icons.last_page,
+                          true,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
-  /// The time axis: the ruler over the Take lane and the Song lane, each
-  /// lane's volume at its left, the Song lane's menu at its right, and
-  /// where the preview is drawn across them.
+  /// The time axis: the ruler right over the Take lane and the Song
+  /// lane, each lane's header at its left (its name, then its volume; the
+  /// Song lane's name opens its menu), and where the preview is drawn
+  /// across them, with a handle on the ruler.
   Widget _timeline(VideoPlayerController video, AppLocalizations l10n) {
     final theme = Theme.of(context);
     final ownName = _take ? l10n.videoEditLaneTake : l10n.videoEditLaneVideo;
@@ -2758,13 +3029,15 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         onTrimEnd: _trimTrackEnd,
       );
     }
+    final lead = _lead;
     return Stack(
       children: [
         Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               children: [
-                const SizedBox(width: _lead),
+                SizedBox(width: lead),
                 Expanded(
                   child: _Ruler(
                     length: length,
@@ -2774,22 +3047,24 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                     onSeek: (at, {required exact}) => _seek(at, exact: exact),
                   ),
                 ),
-                const SizedBox(width: _trail),
               ],
             ),
-            const SizedBox(height: 4),
             Row(
               children: [
-                _LaneVolume(
-                  lane: 'take',
+                _LaneHeader(
+                  width: _nameWidth,
+                  wide: _wide,
                   name: ownName,
-                  volume: _own.volume,
-                  muted: _own.muted,
-                  onChanged: (v) => _slide(_own, v),
-                  onChangeStart: _own.keep,
-                  onMute: () => _mute(_own),
+                  volume: _LaneVolume(
+                    lane: 'take',
+                    name: ownName,
+                    volume: _own.volume,
+                    muted: _own.muted,
+                    onChanged: (v) => _slide(_own, v),
+                    onChangeStart: _own.keep,
+                    onMute: () => _mute(_own),
+                  ),
                 ),
-                const SizedBox(width: 4),
                 Expanded(
                   child: _SeekOnTap(
                     length: length,
@@ -2800,7 +3075,6 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                       end: _end,
                       marks: marks,
                       fades: _fades,
-                      name: ownName,
                       label: l10n.videoEditTakeBar,
                       startLabel: l10n.videoEditKeptStart,
                       endLabel: l10n.videoEditKeptEnd,
@@ -2810,25 +3084,28 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: _trail),
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: _laneGap),
             Row(
               children: [
-                if (hasSong)
-                  _LaneVolume(
-                    lane: 'song',
-                    name: songName,
-                    volume: _songLevel.volume,
-                    muted: _songLevel.muted,
-                    onChanged: (v) => _slide(_songLevel, v),
-                    onChangeStart: _songLevel.keep,
-                    onMute: () => _mute(_songLevel),
-                  )
-                else
-                  const SizedBox(width: _LaneVolume.width),
-                const SizedBox(width: 4),
+                _LaneHeader(
+                  width: _nameWidth,
+                  wide: _wide,
+                  name: hasSong ? null : songName,
+                  menu: hasSong ? _songMenu(l10n, songName) : null,
+                  volume: hasSong
+                      ? _LaneVolume(
+                          lane: 'song',
+                          name: songName,
+                          volume: _songLevel.volume,
+                          muted: _songLevel.muted,
+                          onChanged: (v) => _slide(_songLevel, v),
+                          onChangeStart: _songLevel.keep,
+                          onMute: () => _mute(_songLevel),
+                        )
+                      : null,
+                ),
                 // Empty, it's Add a song; a song's, a tap places the
                 // preview as the Take lane's does.
                 Expanded(
@@ -2840,10 +3117,6 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                         )
                       : songBar,
                 ),
-                SizedBox(
-                  width: _trail,
-                  child: hasSong ? _songMenu(l10n) : null,
-                ),
               ],
             ),
           ],
@@ -2854,12 +3127,12 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
             child: ListenableBuilder(
               listenable: Listenable.merge([video, _headAt]),
               builder: (context, _) => CustomPaint(
+                key: const Key('video-edit-playhead'),
                 painter: _Playhead(
                   at: length <= Duration.zero
                       ? 0
                       : _at.inMilliseconds / length.inMilliseconds,
-                  lead: _lead,
-                  trail: _trail,
+                  lead: lead,
                   color: theme.colorScheme.primary,
                 ),
               ),
@@ -2870,8 +3143,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     );
   }
 
-  /// The Song lane's ⋮: Change… and Remove.
-  Widget _songMenu(AppLocalizations l10n) => MenuAnchor(
+  /// The Song lane's name, in its header, with a ⋮: it opens Change… and
+  /// Remove.
+  Widget _songMenu(AppLocalizations l10n, String name) => MenuAnchor(
     menuChildren: [
       MenuItemButton(
         key: const Key('video-edit-song-change'),
@@ -2886,11 +3160,19 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         child: Text(l10n.videoEditRemoveSong),
       ),
     ],
-    builder: (context, menu, _) => IconButton(
-      key: const Key('video-edit-song-menu'),
-      tooltip: MaterialLocalizations.of(context).showMenuTooltip,
-      icon: const Icon(Icons.more_vert),
-      onPressed: () => menu.isOpen ? menu.close() : menu.open(),
+    builder: (context, menu, _) => Tooltip(
+      message: MaterialLocalizations.of(context).showMenuTooltip,
+      child: InkWell(
+        key: const Key('video-edit-song-menu'),
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => menu.isOpen ? menu.close() : menu.open(),
+        child: Row(
+          children: [
+            Expanded(child: _LaneHeader.nameText(context, name, wide: _wide)),
+            const Icon(Icons.more_vert, size: 16),
+          ],
+        ),
+      ),
     ),
   );
 
@@ -3173,6 +3455,70 @@ class _TabSwatch extends StatelessWidget {
   }
 }
 
+/// A lane's header, at its left: its [name] (or, for the Song lane with
+/// a song, the [menu] its name opens), [width] wide, then its [volume]
+/// (room for one when there's none), as high as a lane.
+class _LaneHeader extends StatelessWidget {
+  const _LaneHeader({
+    required this.width,
+    required this.wide,
+    this.name,
+    this.menu,
+    this.volume,
+  });
+
+  final double width;
+
+  /// Whether the editor is wide ([_VideoEditScreenState._wide]).
+  final bool wide;
+  final String? name;
+  final Widget? menu;
+  final Widget? volume;
+
+  /// A lane's [name] as headers show it: small, on two lines at most on a
+  /// phone (one when [wide]), its size kept to 1.3 times.
+  static Widget nameText(
+    BuildContext context,
+    String name, {
+    required bool wide,
+  }) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: 1.3,
+        child: Text(
+          name,
+          maxLines: wide ? 1 : 2,
+          overflow: TextOverflow.ellipsis,
+          style:
+              (wide ? theme.textTheme.labelMedium : theme.textTheme.labelSmall)
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      SizedBox(
+        width: width,
+        height: _SongBar.height,
+        child:
+            menu ??
+            Align(
+              alignment: Alignment.centerLeft,
+              child: nameText(context, name ?? '', wide: wide),
+            ),
+      ),
+      volume ?? const SizedBox(width: _LaneVolume.width),
+      const SizedBox(width: 4),
+    ],
+  );
+}
+
 /// A lane's volume, at the left of its bar: a speaker over the level
 /// (`80%`, in the primary colour when it's not as it is, or muted; the
 /// speaker crossed out when it isn't heard). Tapped, it opens a slider,
@@ -3327,6 +3673,10 @@ class _Ruler extends StatefulWidget {
     required this.onSeek,
   });
 
+  /// How high it is: room for its times (at most 1.3 times their size)
+  /// over the ticks, and a finger.
+  static const height = 32.0;
+
   final Duration length;
 
   /// Where the take's song starts and stops (the Take lane's grips snap
@@ -3354,7 +3704,7 @@ class _RulerState extends State<_Ruler> {
       color: theme.colorScheme.onSurfaceVariant,
       fontFeatures: const [FontFeature.tabularFigures()],
     );
-    final height = 10 + scaler.scale(style.fontSize ?? 11) * 1.4;
+    const height = _Ruler.height;
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
@@ -3475,26 +3825,30 @@ class _RulerPainter extends CustomPainter {
 }
 
 /// Where the preview is ([at], 0 to 1 of the video), a line across the
-/// ruler and the lanes, between [lead] and [trail].
+/// ruler and the lanes, after [lead], with a small handle pointing down
+/// at the top of the ruler (dragging it is dragging the ruler).
 class _Playhead extends CustomPainter {
-  _Playhead({
-    required this.at,
-    required this.lead,
-    required this.trail,
-    required this.color,
-  });
+  _Playhead({required this.at, required this.lead, required this.color});
 
   final double at;
   final double lead;
-  final double trail;
   final Color color;
+
+  /// The handle's size.
+  static const handle = Size(12, 10);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final x = lead + at.clamp(0, 1) * (size.width - lead - trail);
-    canvas.drawRect(
-      Rect.fromLTWH(x - 1, 0, 2, size.height),
-      Paint()..color = color,
+    final x = lead + at.clamp(0, 1) * (size.width - lead);
+    final paint = Paint()..color = color;
+    canvas.drawRect(Rect.fromLTWH(x - 1, 0, 2, size.height), paint);
+    canvas.drawPath(
+      Path()
+        ..moveTo(x - handle.width / 2, 0)
+        ..lineTo(x + handle.width / 2, 0)
+        ..lineTo(x, handle.height)
+        ..close(),
+      paint,
     );
   }
 
@@ -3545,7 +3899,6 @@ class _TakeBar extends StatelessWidget {
     required this.end,
     this.marks = const [],
     this.fades = Fades.none,
-    required this.name,
     required this.label,
     required this.startLabel,
     required this.endLabel,
@@ -3562,7 +3915,6 @@ class _TakeBar extends StatelessWidget {
   /// each, where a grip dragged near snaps to.
   final List<Duration> marks;
   final Fades fades;
-  final String name;
 
   /// What it does, for screen readers and the mouse; and its grips'.
   final String label;
@@ -3610,23 +3962,10 @@ class _TakeBar extends StatelessWidget {
                       width: max(2, right - left),
                       top: 0,
                       bottom: 0,
-                      child: Container(
+                      child: DecoratedBox(
                         decoration: BoxDecoration(
                           color: theme.colorScheme.primaryContainer,
                           borderRadius: BorderRadius.circular(6),
-                        ),
-                        alignment: Alignment.center,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: _Grip.width + 4,
-                        ),
-                        child: Text(
-                          name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: theme.colorScheme.onPrimaryContainer,
-                            fontSize: 12,
-                          ),
                         ),
                       ),
                     ),
@@ -3806,35 +4145,45 @@ class _SongBar extends StatelessWidget {
   /// The lanes' height: a touch target's.
   static const height = 44.0;
 
-  Widget _block(ThemeData theme) => Container(
-    decoration: BoxDecoration(
-      color: theme.colorScheme.primaryContainer,
-      borderRadius: BorderRadius.circular(6),
-    ),
-    alignment: Alignment.center,
-    padding: const EdgeInsets.symmetric(horizontal: _Grip.width + 4),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          Icons.graphic_eq,
-          size: 16,
-          color: theme.colorScheme.onPrimaryContainer,
+  /// The song's block: its name between the grips, after an icon where
+  /// there's room for both.
+  Widget _block(ThemeData theme) => LayoutBuilder(
+    builder: (context, box) {
+      const inset = _Grip.width + 4;
+      final icon = box.maxWidth - 2 * inset >= 36;
+      return Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primaryContainer,
+          borderRadius: BorderRadius.circular(6),
         ),
-        const SizedBox(width: 4),
-        Flexible(
-          child: Text(
-            name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: theme.colorScheme.onPrimaryContainer,
-              fontSize: 12,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: inset),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon) ...[
+              Icon(
+                Icons.graphic_eq,
+                size: 16,
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+              const SizedBox(width: 4),
+            ],
+            Flexible(
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: theme.colorScheme.onPrimaryContainer,
+                  fontSize: 12,
+                ),
+              ),
             ),
-          ),
+          ],
         ),
-      ],
-    ),
+      );
+    },
   );
 
   @override
