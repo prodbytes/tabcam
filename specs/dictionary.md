@@ -188,6 +188,45 @@ search field, focused, and under it, scrolling, what was typed is:
   ([`cifraclub_search.dart`](../tabcam_app/lib/dictionary/cifraclub_search.dart)).
   A build without the YouTube key still searches Cifra Club.
 
+<a id="writing-in-the-text"></a>**Writing it in the text (+)**: beside the event screen's
+[Text view](tab-recognition.md#text-view), a chord's and a scale's
+results have a **+** (a circled plus in the primary colour) that writes
+them into the text tab as tab: under each chord diagram (its tooltip
+"Write x32010 in the text") and beside a scale's name ("Write A minor
+pentatonic in the text"). Anywhere else (Home, a file, Cam, the locked
+preview, a capture shared read only) there's no text to write in, and no
++. What's written:
+
+- **A chord**: that voicing, as one column across the six strings, its
+  frets on the strings it plays and dashes on the others, the high E on
+  the phrase's first line (`x32010` is `0 1 0 2 3 -`, top to bottom),
+  then a dash.
+- **A scale**: one position on the neck, its notes going up one at a
+  time, a column each, from the root on the low E string: five frets
+  from the fret under that root (the open strings and the first four
+  frets for a root on the open string), each note on the highest string
+  that reaches it there, up to the last note the high E reaches; so `A
+  minor pentatonic` is the box at the fifth fret, `5 8` on every string
+  but `5 7` on the A, D and G
+  ([`scalePosition`](../tabcam_app/lib/dictionary/voicings.dart)).
+
+Each column is as wide as its widest fret (`10`), with a dash after it.
+**Where**: with the text's cursor on a six-line phrase (it stays where
+it was while the dictionary's field is typed in), at the cursor's
+column across the phrase, pushing the rest of every line right so the
+columns stay lined up (a line too short to reach it is lengthened with
+dashes before its closing bar, and nothing goes into a line's name or
+opening bar). Anywhere else (a line of words, a phrase of other than six
+lines, no cursor yet), in a **new phrase** like the editing tools' New
+phrase, at least 80 characters wide, under the cursor's line or phrase
+(at the end without a cursor), its lines `e|-`, what's written, dashes,
+`|`. Either way the cursor ends just after what was written, so the next
++ follows it: tapping chord after chord writes a progression on one
+phrase. It's an edit as any other (saved a second later, and the text the
+user's). While Rescan reads or Fix's review shows, it says "The text
+can't be changed right now" and writes nothing
+([`writeColumns`](../tabcam_app/lib/screens/tab_editing.dart)).
+
 Nothing typed, the sidebar explains itself and offers pills to tap: **the
 capture's title first**, on a capture's screens (the capture, a file, Cam;
 Home has none), so a song's tabs and videos are a tap away, then the

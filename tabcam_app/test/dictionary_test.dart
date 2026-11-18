@@ -16,6 +16,7 @@ import 'package:tabcam_app/library/library.dart';
 import 'package:tabcam_app/screens/event_screen.dart';
 import 'package:tabcam_app/screens/file_screen.dart';
 import 'package:tabcam_app/screens/sidebar_widths.dart';
+import 'package:tabcam_app/screens/tab_text_view.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import 'fakes.dart';
@@ -312,6 +313,90 @@ void main() {
       .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
       .replaceAll(RegExp(r'^-|-$'), '');
 
+  group('a scale written in a tab', () {
+    List<List<int?>> position(String query) =>
+        scalePosition((Lookup.of(query) as ScaleLookup).scale);
+
+    /// Each column's string and fret, low E as 0.
+    List<(int, int)> notes(List<List<int?>> columns) => [
+      for (final c in columns)
+        for (final (s, f) in c.indexed)
+          if (f != null) (s, f),
+    ];
+
+    test('A minor pentatonic: the box at the fifth fret, two notes a '
+        'string, root to root and on', () {
+      final columns = position('A minor pentatonic');
+      for (final c in columns) {
+        expect(c, hasLength(6));
+        expect(c.whereType<int>(), hasLength(1));
+      }
+      expect(notes(columns), [
+        (0, 5),
+        (0, 8),
+        (1, 5),
+        (1, 7),
+        (2, 5),
+        (2, 7),
+        (3, 5),
+        (3, 7),
+        (4, 5),
+        (4, 8),
+        (5, 5),
+        (5, 8),
+      ]);
+    });
+
+    test('a root on the open string: the open position', () {
+      expect(notes(position('E minor pentatonic')), [
+        (0, 0),
+        (0, 3),
+        (1, 0),
+        (1, 2),
+        (2, 0),
+        (2, 2),
+        (3, 0),
+        (3, 2),
+        (4, 0),
+        (4, 3),
+        (5, 0),
+        (5, 3),
+      ]);
+    });
+
+    test('every note in the scale and going up, within five frets', () {
+      for (final query in [
+        'C major scale',
+        'F# harmonic minor',
+        'D dorian',
+        'Bb blues',
+        'G chromatic',
+      ]) {
+        final scale = (Lookup.of(query) as ScaleLookup).scale;
+        final played = [
+          for (final (s, f) in notes(scalePosition(scale)))
+            standardTuning[s] + f,
+        ];
+        expect(played.first % 12, scale.root.pitchClass, reason: query);
+        for (var i = 1; i < played.length; i++) {
+          expect(played[i], greaterThan(played[i - 1]), reason: query);
+        }
+        expect(
+          played.every((p) => scale.pitchClasses.contains(p % 12)),
+          isTrue,
+          reason: query,
+        );
+        final frets = notes(scalePosition(scale)).map((n) => n.$2);
+        expect(
+          frets.reduce((a, b) => a > b ? a : b) -
+              frets.reduce((a, b) => a < b ? a : b),
+          lessThanOrEqualTo(4),
+          reason: query,
+        );
+      }
+    });
+  });
+
   group('Cifra Club search', () {
     test('asks the site\'s index from the device, once per search; the '
         'songs only, three at most', () async {
@@ -530,6 +615,70 @@ void main() {
     final query = find.byKey(const Key('dictionary-query'));
     final split = find.byKey(const Key('dictionary-split'));
     double width(WidgetTester tester) => tester.getSize(sidebar).width;
+
+    testWidgets('beside the Text view, + writes a chord or a scale in the '
+        'text; elsewhere there is no +', (tester) async {
+      await open(tester);
+      await tester.enterText(query, 'C');
+      await tester.pump();
+      expect(find.byTooltip('Write x32010 in the text'), findsNothing);
+
+      final library = Library(PlatformEventStore());
+      late String id;
+      await tester.runAsync(() async {
+        await library.load();
+        id = (await library.create(const [])).id;
+      });
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: DictionaryBeside(
+              child: TabTextView(library: library, eventId: id),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      final chord = find.byKey(const Key('dictionary-write-x32010'));
+      expect(chord, findsOneWidget);
+      expect(find.byTooltip('Write x32010 in the text'), findsOneWidget);
+      await tester.tap(chord);
+      await tester.pump();
+      final text = find.byType(TextField).first;
+      String typed() => tester.widget<TextField>(text).controller!.text;
+      expect(typed().split('\n').first, startsWith('e|-0-'));
+      expect(typed().split('\n')[4], startsWith('A|-3-'));
+
+      // A scale follows the chord on its phrase, a note a column.
+      await tester.enterText(query, 'A minor pentatonic');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('dictionary-write-scale')));
+      await tester.pump();
+      expect(typed().split('\n').last, startsWith('E|---5-8-----'));
+      expect(typed().split('\n').first, startsWith('e|-0-${'-' * 20}5-8-'));
+      // Saved as an edit.
+      await tester.pump(const Duration(seconds: 2));
+      expect(library.byId(id)!.tabText, typed());
+
+      // Gone with the Text view.
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(
+            body: DictionaryBeside(child: SizedBox.expand()),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(DictionaryState.instance.writer, isNull);
+      expect(
+        find.byTooltip('Write A minor pentatonic in the text'),
+        findsNothing,
+      );
+    });
 
     testWidgets('the button opens it on the right, beside the screen, and '
         'hides it', (tester) async {

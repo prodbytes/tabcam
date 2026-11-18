@@ -3993,8 +3993,20 @@ spec.
    and `videoEditTrackEarlier` / `videoEditTrackLater` reworded, in
    English, Spanish and Portuguese. See
    [video edit](video-edit.md#the-cuts-steps).
+3. **"In the dictionary view, in the chord or scale view cards, add a +
+   button to write it on the text; when pressed add that phrase, scale or
+   chord to the text."** Beside the event's Text view, each chord voicing
+   in the dictionary has a **+** under its diagram, and a scale one beside
+   its name. A chord is written as one column across the six strings (high
+   E on top), a scale as one five-fret position from its root on the low E,
+   a note a column going up. They go in at the cursor's column when it's on
+   a six-line phrase, pushing the rest right, else in a new phrase under the
+   cursor's line; the cursor ends after them, so the next + follows (a
+   progression on one phrase). No + where there's no text to write in.
+   See [dictionary](dictionary.md#writing-in-the-text) and
+   [tab recognition](tab-recognition.md#text-view).
 
-3. **"Add to the dictionary 'half diminished' (the cut circle) and
+4. **"Add to the dictionary 'half diminished' (the cut circle) and
    whatever the triangle is, and how to write it."** The dictionary reads
    the chord symbols however they're typed and says what they are:
    - **ø** (the cut circle) is half-diminished, `m7b5`: `Bø`, `BØ`,
