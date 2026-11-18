@@ -4200,3 +4200,17 @@ spec.
    AVAssetReader), kept as its loudest every 5 ms, so it stays fine at
    the timeline's highest zoom; until then, or where it can't be read,
    the lanes show as before. See [video edit](video-edit.md#waveforms).
+
+15. **"The audio recording fails to play back in sync when edit."** The
+   preview (the editor's, and the file screen's player of an edit)
+   started the song's player only at the check after the video started,
+   sought it where the video had been and never allowed for its start-up,
+   then compared the two only every 2 seconds and corrected only past
+   150 ms: so the song could play up to 150 ms off the take, heard as an
+   echo or late. Now the song is kept in step at every check (each tenth
+   of a second): both players asked where they are at once, within 8 ms
+   left as is, up to 250 ms caught up by nudging its speed (5% at most)
+   over about a second, further sought again; and its start is sought
+   ahead by its player's start-up, learnt each time it starts. The
+   downloaded file was already exact and is unchanged. See
+   [video edit](video-edit.md#preview-in-step).
