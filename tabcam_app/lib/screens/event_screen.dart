@@ -1309,6 +1309,7 @@ class _EventScreenState extends State<EventScreen> {
           // Files dragged onto the screen are added to the capture.
           body: MetronomeBeside(
             child: DictionaryBeside(
+              title: event.title,
               child: FileDropArea(
                 enabled: !_busy && canAdd,
                 onFiles: (files, skipped) => _addDropped(event, files, skipped),

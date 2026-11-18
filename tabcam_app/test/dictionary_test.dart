@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:image/image.dart' as img;
+import 'package:tabcam_app/dictionary/cifraclub_search.dart';
 import 'package:tabcam_app/dictionary/dictionary_sidebar.dart';
 import 'package:tabcam_app/dictionary/music_theory.dart';
 import 'package:tabcam_app/dictionary/voicings.dart';
@@ -196,6 +197,117 @@ void main() {
     200,
   );
 
+  /// Cifra Club's index's answer, in the parentheses it wraps it in: an
+  /// artist first (not shown), then a song per (artist slug, song slug,
+  /// title), by a made-up band.
+  http.Response cifra(List<(String, String, String)> songs) => http.Response(
+    '(${jsonEncode({
+      'response': {
+        'numFound': songs.length + 1,
+        'docs': [
+          {
+            't': '1',
+            'm': 'Made-up Band',
+            'a': 'Made-up Band',
+            'i': '',
+            'd': 'made-up-band',
+          },
+          for (final (artist, slug, title) in songs)
+            {
+              't': '2',
+              'm': title,
+              'a': 'Made-up Band',
+              'i': '',
+              'd': artist,
+              'u': slug,
+            },
+        ],
+      },
+    })})',
+    200,
+  );
+
+  /// [query] as the site writes an address part.
+  String slugOf(String query) => query
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+      .replaceAll(RegExp(r'^-|-$'), '');
+
+  group('Cifra Club search', () {
+    test('asks the site\'s index from the device, once per search; the '
+        'songs only, three at most', () async {
+      final asked = <Uri>[];
+      final search = CifraClubSearch(
+        client: MockClient((request) async {
+          asked.add(request.url);
+          return cifra([
+            for (var i = 1; i <= 5; i++) ('made-up-band', 'riff-$i', 'Riff $i'),
+          ]);
+        }),
+      );
+      expect(search.cached('made-up riff'), isNull);
+      final songs = await search.search(' made-up riff ');
+      expect(asked.single.host, 'solr.sscdn.co');
+      expect(asked.single.path, '/cc/h2/');
+      expect(asked.single.queryParameters['q'], 'made-up riff');
+      expect(asked.single.queryParameters['wt'], 'json');
+      expect(asked.single.queryParameters['rows'], '10');
+      expect(songs.map((s) => s.title), ['Riff 1', 'Riff 2', 'Riff 3']);
+      expect(songs.first.artist, 'Made-up Band');
+      expect(
+        '${songs.first.url}',
+        'https://www.cifraclub.com.br/made-up-band/riff-1/',
+      );
+      await search.search('Made-Up  Riff');
+      expect(asked, hasLength(1));
+      expect(search.cached('MADE-UP RIFF'), songs);
+    });
+
+    test('reads the index\'s docs: the songs, with their picture; not the '
+        'artists, nor an odd address', () {
+      final songs = CifraClubSearch.parse(
+        jsonDecode(
+          CifraClubSearch.unwrap(
+            '({"response":{"numFound":4,"docs":['
+            '{"t":"1","m":"Made-up Band","a":"Made-up Band","i":"",'
+            '"d":"made-up-band"},'
+            '{"t":"2","m":"Made-up riff","a":"Made-up Band",'
+            '"i":"a/b/c/d/abcd-tb.jpg","d":"made-up-band","u":"made-up-riff"},'
+            '{"t":"2","m":"Odd","a":"Odd","i":"../x.jpg","d":"../etc",'
+            '"u":"riff"},'
+            '{"t":2,"m":"Numbered type","a":"Band","d":"band","u":"numbered"}'
+            ']}})',
+          ),
+        ),
+      );
+      expect(songs.map((s) => s.id), [
+        'made-up-band/made-up-riff',
+        'band/numbered',
+      ]);
+      expect(
+        '${songs.first.image}',
+        'https://akamai.sscdn.co/letras/100x100/fotos/a/b/c/d/abcd-tb.jpg',
+      );
+      expect(songs.last.image, isNull);
+    });
+
+    test('fails on an error or a bad answer', () async {
+      for (final response in [
+        http.Response('{}', 403),
+        http.Response('not json', 200),
+        http.Response('({"response":{}})', 200),
+      ]) {
+        final search = CifraClubSearch(
+          client: MockClient((_) async => response),
+        );
+        await expectLater(
+          search.search('made-up riff'),
+          throwsA(isA<CifraClubSearchFailed>()),
+        );
+      }
+    });
+  });
+
   group('YouTube search', () {
     test('asks the API from the device, once per search', () async {
       final asked = <Uri>[];
@@ -216,6 +328,7 @@ void main() {
       expect(asked.single.path, '/youtube/v3/search');
       expect(asked.single.queryParameters['q'], 'made-up riff');
       expect(asked.single.queryParameters['type'], 'video');
+      expect(asked.single.queryParameters['maxResults'], '3');
       expect(asked.single.queryParameters['key'], 'test-key');
       expect(videos.map((v) => v.title), [
         'Made-up riff & solo',
@@ -284,16 +397,32 @@ void main() {
   group('the sidebar', () {
     late FakeLauncher launcher;
 
+    // Cifra Club's search, answered from here: a tab of the song searched.
+    late List<String> askedSongs;
+    late http.Response Function(String q) respondSongs;
+    late CifraClubSearch cifraClub;
+
     setUp(() {
       launcher = FakeLauncher();
       UrlLauncherPlatform.instance = launcher;
       DictionaryState.instance.clear();
       SidebarWidths.instance.clear();
+      cifraClub = CifraClubSearch.instance;
+      askedSongs = [];
+      respondSongs = (q) => cifra([('made-up-band', slugOf(q), '$q (tab)')]);
+      CifraClubSearch.instance = CifraClubSearch(
+        client: MockClient((request) async {
+          final q = request.url.queryParameters['q']!;
+          askedSongs.add(q);
+          return respondSongs(q);
+        }),
+      );
     });
+    tearDown(() => CifraClubSearch.instance = cifraClub);
 
     /// A screen 1200 × 800 with the button and the sidebar beside some
-    /// content.
-    Future<void> show(WidgetTester tester) async {
+    /// content, on a capture titled [title] (none: Home).
+    Future<void> show(WidgetTester tester, {String? title}) async {
       tester.view.physicalSize = const Size(1200, 800);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -303,16 +432,17 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             appBar: AppBar(actions: const [DictionaryButton()]),
-            body: const DictionaryBeside(
-              child: SizedBox.expand(key: Key('content')),
+            body: DictionaryBeside(
+              title: title,
+              child: const SizedBox.expand(key: Key('content')),
             ),
           ),
         ),
       );
     }
 
-    Future<void> open(WidgetTester tester) async {
-      await show(tester);
+    Future<void> open(WidgetTester tester, {String? title}) async {
+      await show(tester, title: title);
       await tester.tap(find.byKey(const Key('dictionary')));
       await tester.pumpAndSettle();
     }
@@ -368,6 +498,54 @@ void main() {
       expect(find.byKey(const Key('chord-diagram')), findsWidgets);
     });
 
+    testWidgets('offers the capture\'s title as the first pill; tapped, it '
+        'is searched', (tester) async {
+      await open(tester, title: '  Made-up riff  ');
+      final chips = find.byType(ActionChip);
+      expect(
+        tester.widget<ActionChip>(chips.first).key,
+        const Key('dictionary-title'),
+      );
+      expect(
+        find.descendant(of: chips.first, matching: find.text('Made-up riff')),
+        findsOneWidget,
+      );
+      // The examples follow.
+      expect(find.widgetWithText(ActionChip, 'C'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('dictionary-title')));
+      await tester.pump();
+      expect(find.widgetWithText(TextField, 'Made-up riff'), findsOneWidget);
+      expect(find.byKey(const Key('dictionary-youtube')), findsOneWidget);
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump();
+      expect(askedSongs, ['Made-up riff']);
+      expect(find.text('Made-up riff (tab)'), findsOneWidget);
+    });
+
+    testWidgets('without YouTube\'s key, Cifra Club is still searched; Enter '
+        'searches it at once, and opens YouTube\'s search', (tester) async {
+      await open(tester);
+      expect(find.byKey(const Key('dictionary-title')), findsNothing);
+      await tester.enterText(query, 'made-up riff');
+      await tester.pump();
+      expect(
+        find.byKey(const Key('dictionary-cifraclub-searching')),
+        findsOneWidget,
+      );
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pump();
+      await tester.pump();
+      expect(askedSongs, ['made-up riff']);
+      expect(
+        launcher.launched.single.$1,
+        'https://www.youtube.com/results?search_query=made-up+riff',
+      );
+      expect(find.text('made-up riff (tab)'), findsOneWidget);
+      expect(find.text('Made-up Band'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 3));
+      expect(askedSongs, hasLength(1));
+    });
+
     testWidgets('shows a chord as it is typed', (tester) async {
       await open(tester);
       await tester.enterText(query, 'F#m7b5');
@@ -376,10 +554,12 @@ void main() {
       expect(find.text('Chord · F#  A  C  E'), findsOneWidget);
       expect(find.text('1  b3  b5  b7'), findsOneWidget);
       expect(find.byKey(const Key('chord-diagram')), findsWidgets);
-      // Enter does nothing more for a chord.
+      // Enter does nothing more for a chord, and nothing is searched.
       await tester.testTextInput.receiveAction(TextInputAction.search);
       await tester.pump();
       expect(launcher.launched, isEmpty);
+      await tester.pump(const Duration(seconds: 3));
+      expect(askedSongs, isEmpty);
     });
 
     testWidgets('shows a scale on the neck: standing in the sidebar, across '
@@ -472,8 +652,42 @@ void main() {
         await tester.enterText(query, 'made-up riff lesson');
         await tester.pump();
         expect(find.text('made-up riff lesson, part 2'), findsOneWidget);
+        // Cifra Club's too, at once.
+        expect(find.text('made-up riff lesson (tab)'), findsOneWidget);
+        expect(
+          find.byKey(const Key('dictionary-cifraclub-searching')),
+          findsNothing,
+        );
         await tester.pump(const Duration(seconds: 3));
         expect(asked, hasLength(1));
+        expect(askedSongs, hasLength(1));
+      });
+
+      testWidgets('shows Cifra Club\'s tabs under YouTube\'s videos; each '
+          'opens on Cifra Club', (tester) async {
+        await open(tester);
+        await tester.enterText(query, 'made-up riff');
+        await tester.pump(const Duration(seconds: 2));
+        await tester.pump();
+        expect(asked, ['made-up riff']);
+        expect(askedSongs, ['made-up riff']);
+        final youTube = find.byKey(const Key('dictionary-youtube'));
+        final cifraClub = find.byKey(const Key('dictionary-cifraclub'));
+        expect(
+          tester.getTopLeft(cifraClub).dy,
+          greaterThanOrEqualTo(tester.getBottomLeft(youTube).dy),
+        );
+        expect(find.text('Tabs on Cifra Club'), findsOneWidget);
+        expect(find.text('made-up riff (tab)'), findsOneWidget);
+        expect(find.text('Made-up Band'), findsOneWidget);
+        await tester.tap(
+          find.byKey(const Key('dictionary-song-made-up-band/made-up-riff')),
+        );
+        await tester.pump();
+        expect(
+          launcher.launched.single.$1,
+          'https://www.cifraclub.com.br/made-up-band/made-up-riff/',
+        );
       });
 
       testWidgets('Enter searches without the wait', (tester) async {
@@ -483,6 +697,7 @@ void main() {
         await tester.pump();
         await tester.pump();
         expect(asked, ['made-up riff']);
+        expect(askedSongs, ['made-up riff']);
         expect(launcher.launched, isEmpty);
         expect(find.text('made-up riff, part 1'), findsOneWidget);
         await tester.pump(const Duration(seconds: 3));
@@ -498,20 +713,28 @@ void main() {
           await tester.pump(const Duration(seconds: 3));
         }
         expect(asked, isEmpty);
+        expect(askedSongs, isEmpty);
       });
 
       testWidgets('says so when it fails or finds nothing', (tester) async {
         await open(tester);
         respond = (_) => http.Response('{}', 403);
+        respondSongs = (_) => http.Response('', 500);
         await tester.enterText(query, 'made-up riff');
         await tester.pump(const Duration(seconds: 2));
         await tester.pump();
         expect(find.text("Couldn't load YouTube's results."), findsOneWidget);
+        expect(
+          find.text("Couldn't load Cifra Club's results."),
+          findsOneWidget,
+        );
         respond = (_) => found([]);
+        respondSongs = (_) => cifra([]);
         await tester.enterText(query, 'another made-up riff');
         await tester.pump(const Duration(seconds: 2));
         await tester.pump();
         expect(find.text('YouTube found no videos.'), findsOneWidget);
+        expect(find.text('Cifra Club found no tabs.'), findsOneWidget);
       });
     });
 
