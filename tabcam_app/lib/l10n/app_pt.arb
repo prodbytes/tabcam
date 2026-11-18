@@ -682,5 +682,19 @@
   "deletedItem": "\"{name}\" excluído: restaure pelo Perfil até apagar de vez",
   "deleteUndo": "Desfazer",
   "camNotReadable": "A câmera não liga: outro app pode estar usando (Teams, Zoom, o app Câmera). Feche-o e tente de novo, ou troque de câmera.",
-  "camTryAgain": "Tentar de novo"
+  "camTryAgain": "Tentar de novo",
+  "videoEditLaneChannels": "Canais",
+  "videoEditChannelsStereo": "Estéreo",
+  "videoEditChannelsStereoTip": "Como foi gravado",
+  "videoEditChannelsLeft": "Esquerdo",
+  "videoEditChannelsLeftTip": "O canal esquerdo nos dois lados",
+  "videoEditChannelsRight": "Direito",
+  "videoEditChannelsRightTip": "O canal direito nos dois lados",
+  "videoEditChannelsMono": "Mono",
+  "videoEditChannelsMonoTip": "Os dois canais misturados, nos dois lados",
+  "videoEditLaneBalance": "Balanço",
+  "videoEditBalanceCentre": "Centro",
+  "videoEditStereoPreviewNote": "O download tem os canais e o balanço; a pré-visualização toca o som como foi gravado.",
+  "videoEditBalanceLeft": "E {percent}",
+  "videoEditBalanceRight": "D {percent}"
 }

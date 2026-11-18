@@ -128,17 +128,22 @@ class VideoEditScreen extends StatefulWidget {
 }
 
 /// A lane's level: its [volume] (0 to 1; the master's, 0 to 2), whether
-/// it's [muted] (the level kept), and the level Unmute puts back after a
-/// slide down to 0% ([unmuted]).
+/// it's [muted] (the level kept), the level Unmute puts back after a
+/// slide down to 0% ([unmuted]), and a lane's [stereo] (its channels and
+/// balance).
 class _Level {
-  _Level([this.volume = 1, this.muted = false])
-    : unmuted = volume > 0 ? volume : 1,
-      master = false;
+  _Level([
+    this.volume = 1,
+    this.muted = false,
+    this.stereo = LaneStereo.standard,
+  ]) : unmuted = volume > 0 ? volume : 1,
+       master = false;
 
   /// The master's level, up to [PageEdit.maxMaster].
   _Level.master([this.volume = 1, this.muted = false])
     : unmuted = volume > 0 ? volume : 1,
-      master = true;
+      master = true,
+      stereo = LaneStereo.standard;
 
   /// Whether it's the master's (up to 200%).
   final bool master;
@@ -146,6 +151,7 @@ class _Level {
   double volume;
   bool muted;
   double unmuted;
+  LaneStereo stereo;
 
   /// Whether it's heard.
   bool get silent => muted || volume <= 0;
@@ -456,9 +462,13 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         if (edit != null) {
           _start = _clamp(edit.start, Duration.zero, length);
           _end = _clamp(edit.end, _start, length);
-          _own = _Level(edit.ownVolume, edit.ownMuted);
+          _own = _Level(edit.ownVolume, edit.ownMuted, edit.ownStereo);
           _song = edit.song;
-          _songLevel = _Level(edit.trackVolume, edit.songMuted);
+          _songLevel = _Level(
+            edit.trackVolume,
+            edit.songMuted,
+            edit.songStereo,
+          );
           _master = _Level.master(edit.masterVolume, edit.masterMuted);
           _tab = edit.tab;
           _tabStyle = edit.tabStyle;
@@ -554,6 +564,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     end: _end,
     ownVolume: _own.volume,
     ownMuted: _own.muted,
+    ownStereo: _own.stereo,
     song: _song,
     songMuted: _songLevel.muted,
     trackId: _trackId,
@@ -561,6 +572,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     trackEnd: _trackEnd >= _trackLength ? null : _trackEnd,
     offset: _offset,
     trackVolume: _songLevel.volume,
+    songStereo: _songLevel.stereo,
     masterVolume: _master.volume,
     masterMuted: _master.muted,
     tab: _tab,
@@ -1328,6 +1340,13 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   void _slide(_Level level, double volume) {
     if (!level.slide(volume)) return;
     setState(() {});
+    _changed();
+  }
+
+  /// [level]'s channels and balance changed to [stereo].
+  void _setStereo(_Level level, LaneStereo stereo) {
+    if (stereo == level.stereo) return;
+    setState(() => level.stereo = stereo);
     _changed();
   }
 
@@ -2797,6 +2816,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                   name: ownName,
                   volume: _own.volume,
                   muted: _own.muted,
+                  stereo: _own.stereo,
+                  onStereo: (v) => _setStereo(_own, v),
                   onChanged: (v) => _slide(_own, v),
                   onChangeStart: _own.keep,
                   onMute: () => _mute(_own),
@@ -2834,6 +2855,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                     name: songName,
                     volume: _songLevel.volume,
                     muted: _songLevel.muted,
+                    stereo: _songLevel.stereo,
+                    onStereo: (v) => _setStereo(_songLevel, v),
                     onChanged: (v) => _slide(_songLevel, v),
                     onChangeStart: _songLevel.keep,
                     onMute: () => _mute(_songLevel),
@@ -3189,7 +3212,11 @@ class _TabSwatch extends StatelessWidget {
 /// speaker crossed out when it isn't heard). Tapped, it opens a slider,
 /// 0% to 100% in steps of 5% (sliding unmutes it), with Mute beside it
 /// (muted, the level stays; Unmute puts it back, or, after a slide down
-/// to 0%, the level before it). Its keys name its [lane]
+/// to 0%, the level before it), and under them its [stereo]: **Channels**
+/// (Stereo, Left, Right, Mono: which of its sound's channels play on both
+/// sides) and **Balance** (left 100% to right 100%, in steps of 5%), with a
+/// note, once either is changed, that only Download has them (the players
+/// can't pan). Its keys name its [lane]
 /// (`video-edit-take-…`, `video-edit-song-…`), so there can be two. It
 /// fits its bar's height at any text size: the level stays on one line,
 /// and the two shrink together when the text is too large.
@@ -3199,6 +3226,8 @@ class _LaneVolume extends StatelessWidget {
     required this.name,
     required this.volume,
     required this.muted,
+    required this.stereo,
+    required this.onStereo,
     required this.onChanged,
     required this.onChangeStart,
     required this.onMute,
@@ -3213,6 +3242,8 @@ class _LaneVolume extends StatelessWidget {
   final String name;
   final double volume;
   final bool muted;
+  final LaneStereo stereo;
+  final void Function(LaneStereo stereo) onStereo;
   final void Function(double volume) onChanged;
 
   /// A slide starts, before [onChanged].
@@ -3233,7 +3264,32 @@ class _LaneVolume extends StatelessWidget {
           ? Icons.volume_down_outlined
           : Icons.volume_up_outlined,
     );
-    final changed = volume != 1 || muted;
+    final changed = volume != 1 || muted || !stereo.isStandard;
+    final balance = (stereo.balance * 100).round();
+    String balanceOf(int balance) => balance == 0
+        ? l10n.videoEditBalanceCentre
+        : balance < 0
+        ? l10n.videoEditBalanceLeft(-balance)
+        : l10n.videoEditBalanceRight(balance);
+    final balanceText = balanceOf(balance);
+    final channelNames = {
+      LaneChannels.stereo: (
+        l10n.videoEditChannelsStereo,
+        l10n.videoEditChannelsStereoTip,
+      ),
+      LaneChannels.left: (
+        l10n.videoEditChannelsLeft,
+        l10n.videoEditChannelsLeftTip,
+      ),
+      LaneChannels.right: (
+        l10n.videoEditChannelsRight,
+        l10n.videoEditChannelsRightTip,
+      ),
+      LaneChannels.mono: (
+        l10n.videoEditChannelsMono,
+        l10n.videoEditChannelsMonoTip,
+      ),
+    };
     return MenuAnchor(
       alignmentOffset: const Offset(0, 4),
       menuChildren: [
@@ -3278,6 +3334,96 @@ class _LaneVolume extends StatelessWidget {
             ],
           ),
         ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+          child: Text(
+            l10n.videoEditLaneChannels,
+            style: theme.textTheme.labelMedium,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+          child: SizedBox(
+            width: 296,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: SegmentedButton<LaneChannels>(
+                key: Key('video-edit-$lane-channels'),
+                showSelectedIcon: false,
+                segments: [
+                  for (final MapEntry(key: c, value: (name, tip))
+                      in channelNames.entries)
+                    ButtonSegment(
+                      value: c,
+                      label: Text(name, key: Key('video-edit-$lane-${c.name}')),
+                      tooltip: tip,
+                    ),
+                ],
+                selected: {stereo.channels},
+                onSelectionChanged: (s) =>
+                    onStereo(stereo.copyWith(channels: s.first)),
+              ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 4, 0),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 64,
+                child: Text(
+                  l10n.videoEditLaneBalance,
+                  style: theme.textTheme.labelMedium,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              SizedBox(
+                width: 180,
+                child: Slider(
+                  key: Key('video-edit-$lane-balance'),
+                  min: -100,
+                  max: 100,
+                  divisions: 40,
+                  value: balance.clamp(-100, 100).toDouble(),
+                  label: balanceText,
+                  semanticFormatterCallback: (v) => balanceOf(v.round()),
+                  onChanged: (v) => onStereo(stereo.copyWith(balance: v / 100)),
+                ),
+              ),
+              SizedBox(
+                width: 52,
+                child: Text(
+                  balanceText,
+                  key: Key('video-edit-$lane-balance-level'),
+                  textAlign: TextAlign.end,
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.fade,
+                  style: const TextStyle(
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+          ),
+        ),
+        if (!stereo.isStandard)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            child: SizedBox(
+              width: 296,
+              child: Text(
+                l10n.videoEditStereoPreviewNote,
+                key: Key('video-edit-$lane-stereo-note'),
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
+          )
+        else
+          const SizedBox(height: 8),
       ],
       builder: (context, menu, _) => Semantics(
         button: true,

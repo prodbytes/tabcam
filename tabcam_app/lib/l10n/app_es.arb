@@ -682,5 +682,19 @@
   "deletedItem": "\"{name}\" eliminado: restáuralo desde Perfil hasta que lo borres para siempre",
   "deleteUndo": "Deshacer",
   "camNotReadable": "La cámara no arranca: otra app puede estar usándola (Teams, Zoom, la app Cámara). Ciérrala y vuelve a intentarlo, o cambia de cámara.",
-  "camTryAgain": "Reintentar"
+  "camTryAgain": "Reintentar",
+  "videoEditLaneChannels": "Canales",
+  "videoEditChannelsStereo": "Estéreo",
+  "videoEditChannelsStereoTip": "Como se grabó",
+  "videoEditChannelsLeft": "Izquierdo",
+  "videoEditChannelsLeftTip": "El canal izquierdo en ambos lados",
+  "videoEditChannelsRight": "Derecho",
+  "videoEditChannelsRightTip": "El canal derecho en ambos lados",
+  "videoEditChannelsMono": "Mono",
+  "videoEditChannelsMonoTip": "Ambos canales mezclados, en ambos lados",
+  "videoEditLaneBalance": "Balance",
+  "videoEditBalanceCentre": "Centro",
+  "videoEditStereoPreviewNote": "La descarga tiene los canales y el balance; la vista previa reproduce el sonido como se grabó.",
+  "videoEditBalanceLeft": "I {percent}",
+  "videoEditBalanceRight": "D {percent}"
 }
