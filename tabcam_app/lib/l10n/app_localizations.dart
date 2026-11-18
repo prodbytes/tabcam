@@ -1039,13 +1039,13 @@ abstract class AppLocalizations {
   /// Cam: the Rec button's tooltip; the 1 key does it too
   ///
   /// In en, this message translates to:
-  /// **'Rec (1)'**
+  /// **'Rec (.)'**
   String get camRecKey;
 
   /// Cam: the Stop button's tooltip while recording; the 1 key does it too, the / key saves the take and starts a new one, and the . key throws the take away and starts it again
   ///
   /// In en, this message translates to:
-  /// **'Stop (1) · new take (/) · redo (.)'**
+  /// **'Stop · new take (/) · redo (.)'**
   String get camStopKey;
 
   /// Cam: the tooltip of the arrow beside Rec, which opens a menu to choose the microphone takes record from
@@ -3436,16 +3436,52 @@ abstract class AppLocalizations {
   /// **'Along the video: drag it to move it, its ends to trim it'**
   String get videoEditTrackBar;
 
+  /// Video edit, under the lanes: where the kept part starts (time like 0:01.25), between the buttons that move it 0.05 s earlier or later
+  ///
+  /// In en, this message translates to:
+  /// **'Start {time}'**
+  String videoEditCutStartAt(String time);
+
+  /// Video edit, under the lanes: where the kept part ends (time like 0:12.3), between the buttons that move it 0.05 s earlier or later
+  ///
+  /// In en, this message translates to:
+  /// **'End {time}'**
+  String videoEditCutEndAt(String time);
+
+  /// Video edit: moves the kept part's start a twentieth of a second earlier
+  ///
+  /// In en, this message translates to:
+  /// **'Start 0.05 s earlier'**
+  String get videoEditStartEarlier;
+
+  /// Video edit: moves the kept part's start a twentieth of a second later
+  ///
+  /// In en, this message translates to:
+  /// **'Start 0.05 s later'**
+  String get videoEditStartLater;
+
+  /// Video edit: moves the kept part's end a twentieth of a second earlier
+  ///
+  /// In en, this message translates to:
+  /// **'End 0.05 s earlier'**
+  String get videoEditEndEarlier;
+
+  /// Video edit: moves the kept part's end a twentieth of a second later
+  ///
+  /// In en, this message translates to:
+  /// **'End 0.05 s later'**
+  String get videoEditEndLater;
+
   /// Video edit: nudges the track earlier
   ///
   /// In en, this message translates to:
-  /// **'A tenth of a second earlier'**
+  /// **'0.05 s earlier'**
   String get videoEditTrackEarlier;
 
   /// Video edit: nudges the track later
   ///
   /// In en, this message translates to:
-  /// **'A tenth of a second later'**
+  /// **'0.05 s later'**
   String get videoEditTrackLater;
 
   /// Video edit: the track's volume, as a percentage (0 to 100), under the volume control and beside its slider
