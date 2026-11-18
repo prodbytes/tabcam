@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:cross_file/cross_file.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
@@ -606,6 +607,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       _saveTimer!.cancel();
       unawaited(_keep());
     }
+    _timelineScroll.dispose();
     _seekWait?.cancel();
     _video?.removeListener(_onPlayer);
     _playback?.dispose();
@@ -1074,10 +1076,66 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   }
 
   /// How near one of the song's marks a grip dragged snaps to it: a
-  /// hundredth of the video (a few points of the lane), and no less than
-  /// a twentieth of a second.
-  Duration get _snapWithin =>
-      Duration(milliseconds: max(50, _duration.inMilliseconds ~/ 100));
+  /// hundredth of the video in view (a few points of the lane, whatever
+  /// the [_zoom]), and no less than a twentieth of a second at the whole
+  /// video, a millisecond zoomed in all the way.
+  Duration get _snapWithin => Duration(
+    milliseconds: max(
+      max(1, 50 ~/ _zoom),
+      _duration.inMilliseconds ~/ (100 * _zoom),
+    ),
+  );
+
+  /// How far the timeline is zoomed in: 1, the whole video in the lanes'
+  /// width; 2, half of it, and so on ([zooms]), scrolled sideways.
+  double _zoom = 1;
+
+  /// The timeline's zooms ([_zoom]).
+  static const zooms = [1.0, 2.0, 4.0, 8.0, 16.0, 32.0];
+
+  /// The zoomed timeline's sideways scroll.
+  final _timelineScroll = ScrollController();
+
+  /// Zooms the timeline one step in ([by] 1) or out (−1), keeping the
+  /// playhead where it is on screen (in view: zoomed, it's put in it).
+  void _zoomBy(int by) {
+    final i = zooms.indexOf(_zoom);
+    final next = zooms[(i + by).clamp(0, zooms.length - 1)];
+    if (next == _zoom) return;
+    _setZoom(next);
+  }
+
+  /// The timeline at [zoom], the playhead kept where it was on screen.
+  void _setZoom(double zoom) {
+    zoom = zoom.clamp(zooms.first, zooms.last);
+    final c = _timelineScroll;
+    final length = _duration.inMilliseconds;
+    final head = length <= 0 ? 0.0 : _at.inMilliseconds / length;
+    double? keep;
+    if (c.hasClients) {
+      final view = c.position.viewportDimension;
+      final onScreen = (head * view * _zoom - c.offset).clamp(0.0, view);
+      keep = head * view * zoom - onScreen;
+    }
+    setState(() => _zoom = zoom);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!c.hasClients || keep == null) return;
+      c.jumpTo(keep.clamp(0.0, c.position.maxScrollExtent));
+    });
+  }
+
+  /// While it plays zoomed in, the timeline scrolls to keep the playhead
+  /// in view ([fraction] of the video), a quarter in from the left.
+  void _keepHeadInView(double fraction) {
+    final c = _timelineScroll;
+    if (_zoom <= 1 || !c.hasClients || !(_video?.value.isPlaying ?? false)) {
+      return;
+    }
+    final view = c.position.viewportDimension;
+    final x = fraction * view * _zoom;
+    if (x >= c.offset && x <= c.offset + view - 8) return;
+    c.jumpTo((x - view / 4).clamp(0.0, c.position.maxScrollExtent));
+  }
 
   /// [at], or the song's mark it's near ([_snapWithin]): the nearest.
   Duration _snapped(Duration at) {
@@ -3216,120 +3274,206 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       );
     }
     final lead = _lead;
-    return Stack(
-      children: [
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                SizedBox(width: lead),
-                Expanded(
-                  child: _Ruler(
+    final takeHeader = _LaneHeader(
+      width: _nameWidth,
+      wide: _wide,
+      name: ownName,
+      volume: _LaneVolume(
+        lane: 'take',
+        name: ownName,
+        volume: _own.volume,
+        muted: _own.muted,
+        stereo: _own.stereo,
+        onStereo: (v) => _setStereo(_own, v),
+        onChanged: (v) => _slide(_own, v),
+        onChangeStart: _own.keep,
+        onMute: () => _mute(_own),
+      ),
+    );
+    final songHeader = _LaneHeader(
+      width: _nameWidth,
+      wide: _wide,
+      name: hasSong ? null : songName,
+      menu: hasSong ? _songMenu(l10n, songName) : null,
+      volume: hasSong
+          ? _LaneVolume(
+              lane: 'song',
+              name: songName,
+              volume: _songLevel.volume,
+              muted: _songLevel.muted,
+              stereo: _songLevel.stereo,
+              onStereo: (v) => _setStereo(_songLevel, v),
+              onChanged: (v) => _slide(_songLevel, v),
+              onChangeStart: _songLevel.keep,
+              onMute: () => _mute(_songLevel),
+            )
+          : null,
+    );
+    // The ruler, the lanes' bars and the playhead, on one time axis, as
+    // wide as the zoom makes them; the headers stay put at their left.
+    Widget bars(double width) => SizedBox(
+      width: width,
+      child: Stack(
+        children: [
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _Ruler(
+                length: length,
+                marks: marks,
+                label: l10n.videoEditRuler,
+                timeOf: _rulerTime,
+                onSeek: (at, {required exact}) => _seek(at, exact: exact),
+              ),
+              SizedBox(
+                height: _SongBar.height,
+                child: _SeekOnTap(
+                  length: length,
+                  onSeek: _seek,
+                  child: _TakeBar(
                     length: length,
+                    start: _start,
+                    end: _end,
                     marks: marks,
-                    label: l10n.videoEditRuler,
-                    timeOf: _rulerTime,
-                    onSeek: (at, {required exact}) => _seek(at, exact: exact),
+                    fades: _fades,
+                    label: l10n.videoEditTakeBar,
+                    startLabel: l10n.videoEditKeptStart,
+                    endLabel: l10n.videoEditKeptEnd,
+                    onTrimStart: _trimStartBy,
+                    onTrimEnd: _trimEndBy,
+                    onTrimmed: _trimmed,
                   ),
                 ),
-              ],
-            ),
-            Row(
-              children: [
-                _LaneHeader(
-                  width: _nameWidth,
-                  wide: _wide,
-                  name: ownName,
-                  volume: _LaneVolume(
-                    lane: 'take',
-                    name: ownName,
-                    volume: _own.volume,
-                    muted: _own.muted,
-                    stereo: _own.stereo,
-                    onStereo: (v) => _setStereo(_own, v),
-                    onChanged: (v) => _slide(_own, v),
-                    onChangeStart: _own.keep,
-                    onMute: () => _mute(_own),
-                  ),
-                ),
-                Expanded(
-                  child: _SeekOnTap(
-                    length: length,
-                    onSeek: _seek,
-                    child: _TakeBar(
-                      length: length,
-                      start: _start,
-                      end: _end,
-                      marks: marks,
-                      fades: _fades,
-                      label: l10n.videoEditTakeBar,
-                      startLabel: l10n.videoEditKeptStart,
-                      endLabel: l10n.videoEditKeptEnd,
-                      onTrimStart: _trimStartBy,
-                      onTrimEnd: _trimEndBy,
-                      onTrimmed: _trimmed,
+              ),
+              const SizedBox(height: _laneGap),
+              // Empty, it's Add a song; a song's, a tap places the
+              // preview as the Take lane's does.
+              SizedBox(
+                height: _SongBar.height,
+                child: hasSong
+                    ? _SeekOnTap(length: length, onSeek: _seek, child: songBar)
+                    : songBar,
+              ),
+            ],
+          ),
+          // Where the preview is, across the ruler and the lanes.
+          Positioned.fill(
+            child: IgnorePointer(
+              child: ListenableBuilder(
+                listenable: Listenable.merge([video, _headAt]),
+                builder: (context, _) {
+                  final at = length <= Duration.zero
+                      ? 0.0
+                      : _at.inMilliseconds / length.inMilliseconds;
+                  WidgetsBinding.instance.addPostFrameCallback(
+                    (_) => _keepHeadInView(at),
+                  );
+                  return CustomPaint(
+                    key: const Key('video-edit-playhead'),
+                    painter: _Playhead(
+                      at: at,
+                      lead: 0,
+                      color: theme.colorScheme.primary,
                     ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: _laneGap),
-            Row(
-              children: [
-                _LaneHeader(
-                  width: _nameWidth,
-                  wide: _wide,
-                  name: hasSong ? null : songName,
-                  menu: hasSong ? _songMenu(l10n, songName) : null,
-                  volume: hasSong
-                      ? _LaneVolume(
-                          lane: 'song',
-                          name: songName,
-                          volume: _songLevel.volume,
-                          muted: _songLevel.muted,
-                          stereo: _songLevel.stereo,
-                          onStereo: (v) => _setStereo(_songLevel, v),
-                          onChanged: (v) => _slide(_songLevel, v),
-                          onChangeStart: _songLevel.keep,
-                          onMute: () => _mute(_songLevel),
-                        )
-                      : null,
-                ),
-                // Empty, it's Add a song; a song's, a tap places the
-                // preview as the Take lane's does.
-                Expanded(
-                  child: hasSong
-                      ? _SeekOnTap(
-                          length: length,
-                          onSeek: _seek,
-                          child: songBar,
-                        )
-                      : songBar,
-                ),
-              ],
-            ),
-          ],
-        ),
-        // Where the preview is, across the ruler and the lanes.
-        Positioned.fill(
-          child: IgnorePointer(
-            child: ListenableBuilder(
-              listenable: Listenable.merge([video, _headAt]),
-              builder: (context, _) => CustomPaint(
-                key: const Key('video-edit-playhead'),
-                painter: _Playhead(
-                  at: length <= Duration.zero
-                      ? 0
-                      : _at.inMilliseconds / length.inMilliseconds,
-                  lead: lead,
-                  color: theme.colorScheme.primary,
-                ),
+                  );
+                },
               ),
             ),
           ),
+        ],
+      ),
+    );
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: lead,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(height: _Ruler.height, child: _zoomControls(l10n)),
+              SizedBox(height: _SongBar.height, child: takeHeader),
+              const SizedBox(height: _laneGap),
+              SizedBox(height: _SongBar.height, child: songHeader),
+            ],
+          ),
+        ),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, box) {
+              final view = box.maxWidth;
+              if (_zoom <= 1) return bars(view);
+              // Ctrl / ⌘ + the wheel, or a trackpad's pinch, zoom it too.
+              return Listener(
+                onPointerSignal: (event) {
+                  final keyboard = HardwareKeyboard.instance;
+                  if (event is PointerScrollEvent &&
+                      (keyboard.isControlPressed || keyboard.isMetaPressed)) {
+                    _zoomBy(event.scrollDelta.dy < 0 ? 1 : -1);
+                  } else if (event is PointerScaleEvent) {
+                    _setZoom(_zoom * event.scale);
+                  }
+                },
+                child: Scrollbar(
+                  controller: _timelineScroll,
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    key: const Key('video-edit-timeline-scroll'),
+                    controller: _timelineScroll,
+                    scrollDirection: Axis.horizontal,
+                    child: bars(view * _zoom),
+                  ),
+                ),
+              );
+            },
+          ),
         ),
       ],
+    );
+  }
+
+  /// Zoom out and Zoom in, in the corner left of the ruler, with the zoom
+  /// between them once it isn't the whole video ("4×").
+  Widget _zoomControls(AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    Widget button(String key, String tip, IconData icon, VoidCallback? on) =>
+        IconButton(
+          key: Key(key),
+          tooltip: tip,
+          iconSize: 18,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+          onPressed: on,
+          icon: Icon(icon),
+        );
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          button(
+            'video-edit-zoom-out',
+            l10n.pdfZoomOut,
+            Icons.zoom_out,
+            _zoom > zooms.first ? () => _zoomBy(-1) : null,
+          ),
+          if (_zoom > 1)
+            Text(
+              '${_zoom.round()}×',
+              key: const Key('video-edit-zoom'),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          button(
+            'video-edit-zoom-in',
+            l10n.pdfZoomIn,
+            Icons.zoom_in,
+            _zoom < zooms.last ? () => _zoomBy(1) : null,
+          ),
+        ],
+      ),
     );
   }
 
@@ -4208,8 +4352,20 @@ class _RulerPainter extends CustomPainter {
   final Color tick;
   final Color mark;
 
-  /// The steps between ticks, in seconds: the first with room for a time.
-  static const _steps = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 1200, 1800];
+  /// The steps between ticks, in milliseconds: the first with room for a
+  /// time (under a second once zoomed in far enough).
+  static const _steps = [
+    100, 200, 500, 1000, 2000, 5000, 10000, 15000, 30000, 60000, //
+    120000, 300000, 600000, 1200000, 1800000,
+  ];
+
+  /// [ms] as the ruler says it: m:ss, with tenths when it isn't on a
+  /// second ("0:01.5").
+  String _say(int ms) {
+    final whole = timeOf(Duration(milliseconds: ms));
+    final tenths = (ms % 1000) ~/ 100;
+    return ms % 1000 == 0 ? whole : '$whole.$tenths';
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -4221,22 +4377,23 @@ class _RulerPainter extends CustomPainter {
       textDirection: TextDirection.ltr,
       textScaler: scaler,
     )..layout();
-    final widest = label(timeOf(length)).width + 12;
+    final widest = label('${timeOf(length)}.0').width + 12;
     final step = _steps.firstWhere(
-      (s) => s * perSecond >= widest,
+      (s) => s / 1000 * perSecond >= widest,
       orElse: () => _steps.last,
     );
     final paint = Paint()
       ..color = tick
       ..strokeWidth = 1;
-    for (var s = 0; s <= seconds; s += step) {
-      final x = s * perSecond;
+    final total = length.inMilliseconds;
+    for (var ms = 0; ms <= total; ms += step) {
+      final x = ms / 1000 * perSecond;
       canvas.drawLine(
         Offset(x, size.height - 6),
         Offset(x, size.height),
         paint,
       );
-      final text = label(timeOf(Duration(seconds: s)));
+      final text = label(_say(ms));
       if (x + text.width <= size.width) text.paint(canvas, Offset(x + 2, 0));
     }
     // The song's marks: a small flag pointing down at each, over the
