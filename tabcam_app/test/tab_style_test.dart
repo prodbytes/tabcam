@@ -86,13 +86,13 @@ void main() {
       const style = EditTabStyle(
         size: 1.5,
         opacity: 0.35,
-        colors: TabColors.light,
+        colors: TabColors.gold,
       );
       final styled = edit.copyWith(tabStyle: style);
       expect(styled.toJson()['tabStyle'], {
         'size': 1.5,
         'opacity': 0.35,
-        'colors': 'light',
+        'colors': 'gold',
       });
       expect(
         edit
@@ -121,6 +121,25 @@ void main() {
       );
     });
 
+    test('the text to the left by default; centred or to the right kept, '
+        'an unknown alignment read as the default', () {
+      expect(EditTabStyle.standard.align, TabAlign.left);
+      final right = edit.copyWith(
+        tabStyle: EditTabStyle.standard.copyWith(align: TabAlign.right),
+      );
+      expect(right.toJson()['tabStyle'], {'align': 'right'});
+      expect(PageEdit.fromJson(_encoded(right.toJson()))!, right);
+      expect(
+        EditTabStyle.fromJson({'align': 'center', 'size': 1.5}),
+        const EditTabStyle(size: 1.5, align: TabAlign.center),
+      );
+      expect(EditTabStyle.fromJson({'align': 'justify'}), EditTabStyle.standard);
+      expect(
+        const EditTabStyle(align: TabAlign.center).isStandard,
+        isFalse,
+      );
+    });
+
     test('read within its bounds: sizes from 50% to 200%, opacities 0 to 1, '
         'to the hundredth; an unknown colour, or no number, the default', () {
       PageEdit read(Object? style) =>
@@ -142,7 +161,10 @@ void main() {
         EditTabStyle.standard,
       );
       expect(read('large').tabStyle, EditTabStyle.standard);
-      expect(read({'colors': 'brand'}).tabStyle.colors, TabColors.brand);
+      // The colours taken away (black on white, black on gold) read as the
+      // default, as any unknown.
+      expect(read({'colors': 'brand'}).tabStyle.colors, TabColors.dark);
+      expect(read({'colors': 'light'}).tabStyle.colors, TabColors.dark);
       // copyWith keeps them within too.
       expect(
         EditTabStyle.standard.copyWith(size: 5, opacity: 0.333),
@@ -264,6 +286,48 @@ void main() {
   });
 
   group('a band drawn', () {
+    testWidgets('its text to the left by default, centred, or to the right, '
+        'past the padding', (tester) async {
+      // The columns the white text reaches into (the background is 70%
+      // black: never brighter than 200).
+      Future<(int, int)> reach(TabAlign align) async {
+        final image = await _drawn(
+          tester,
+          BandLook(_riffA, style: EditTabStyle(align: align)),
+        );
+        var (first, last) = (image.width, -1);
+        for (var x = 0; x < image.width; x++) {
+          for (var y = 0; y < image.height; y++) {
+            if (_at(image, x, y).$1 > 200) {
+              first = min(first, x);
+              last = max(last, x);
+              break;
+            }
+          }
+        }
+        return (first, last);
+      }
+
+      final pad = bandWidth / 64;
+      final (leftFirst, leftLast) = await reach(TabAlign.left);
+      final (centreFirst, centreLast) = await reach(TabAlign.center);
+      final (rightFirst, rightLast) = await reach(TabAlign.right);
+      // The same text, moved across.
+      expect(centreLast - centreFirst, closeTo(leftLast - leftFirst, 2));
+      expect(rightLast - rightFirst, closeTo(leftLast - leftFirst, 2));
+      expect(leftFirst, inInclusiveRange(pad - 2, pad + 30));
+      expect(bandWidth - 1 - rightLast, inInclusiveRange(pad - 2, pad + 30));
+      expect(
+        (centreFirst + centreLast) / 2,
+        closeTo((bandWidth - 1) / 2, 30),
+      );
+      // The default is to the left.
+      expect(
+        await reach(EditTabStyle.standard.align),
+        (leftFirst, leftLast),
+      );
+    });
+
     testWidgets('as high as its size says; a staff too long to grow stays '
         'as big as fits; a grown band within its bound', (tester) async {
       Future<int> high(BandLook band) async =>
@@ -364,15 +428,12 @@ void main() {
         _at(
           await _drawn(
             tester,
-            const BandLook(
-              _riffA,
-              style: EditTabStyle(opacity: 0.4, colors: TabColors.light),
-            ),
+            const BandLook(_riffA, style: EditTabStyle(opacity: 0.4)),
           ),
           0,
           0,
         ),
-        (255, 255, 255, 102),
+        (0, 0, 0, 102),
       );
       final gold = await _drawn(
         tester,
@@ -383,18 +444,14 @@ void main() {
         isNotEmpty,
         reason: 'gold text',
       );
-      final brand = await _drawn(
+      final opaque = await _drawn(
         tester,
         const BandLook(
           _riffA,
-          style: EditTabStyle(opacity: 1, colors: TabColors.brand),
+          style: EditTabStyle(opacity: 1, colors: TabColors.gold),
         ),
       );
-      expect(_at(brand, 0, 0), (0xE0, 0xA0, 0x30, 255));
-      expect(
-        _pixels(brand).where((p) => p == (0x11, 0x11, 0x11, 255)),
-        isNotEmpty,
-      );
+      expect(_at(opaque, 0, 0), (0, 0, 0, 255));
 
       // No background: nothing but the text, white, outlined in black.
       final clear = await _drawn(
@@ -460,7 +517,7 @@ void main() {
       final normal = await images(plan(EditTabStyle.standard));
       final styled = await images(
         plan(
-          const EditTabStyle(size: 1.5, opacity: 0, colors: TabColors.light),
+          const EditTabStyle(size: 1.5, opacity: 0, colors: TabColors.gold),
         ),
       );
       expect(normal.first.width, 1920);
@@ -619,10 +676,22 @@ void main() {
       expect(shown(tester, 'opacity'), '25%');
       await tapVisible(tester, 'video-edit-tab-colors-gold');
       await settle(tester);
+      // Alignment: to the left until another is picked.
+      expect(
+        tester
+            .widget<SegmentedButton<TabAlign>>(
+              find.byKey(const Key('video-edit-tab-align')),
+            )
+            .selected,
+        {TabAlign.left},
+      );
+      await tapVisible(tester, 'video-edit-tab-align-right');
+      await settle(tester);
       const style = EditTabStyle(
         size: 1.5,
         opacity: 0.25,
         colors: TabColors.gold,
+        align: TabAlign.right,
       );
       expect(previewStyle(tester), style);
       expect(kept(library, id)!.tabStyle, style);
@@ -630,6 +699,7 @@ void main() {
         'size': 1.5,
         'opacity': 0.25,
         'colors': 'gold',
+        'align': 'right',
       });
       // The swatch picked says so, to a screen reader too.
       expect(
@@ -965,13 +1035,13 @@ void main() {
         ),
         findsOneWidget,
       );
-      await tapVisible(tester, 'video-edit-tab-colors-light');
+      await tapVisible(tester, 'video-edit-tab-colors-gold');
       await settle(tester);
       slider(tester, 'opacity').onChanged!(1);
       await settle(tester);
       expect(
         previewStyle(tester),
-        const EditTabStyle(opacity: 1, colors: TabColors.light),
+        const EditTabStyle(opacity: 1, colors: TabColors.gold),
       );
       await tester.tap(find.byKey(const Key('video-edit-reset')));
       await settle(tester);
@@ -1018,7 +1088,7 @@ void main() {
         );
         await settle(tester);
         expect(
-          find.byKey(const Key('video-edit-tab-colors-brand')),
+          find.byKey(const Key('video-edit-tab-colors-gold')),
           findsOneWidget,
         );
         expect(tester.takeException(), isNull);
@@ -1030,7 +1100,7 @@ void main() {
     ) async {
       sized(tester, const Size(900, 1600));
       final (library, id) = await capture(tester);
-      const style = EditTabStyle(size: 1.2, colors: TabColors.brand);
+      const style = EditTabStyle(size: 1.2, colors: TabColors.gold);
       await tester.runAsync(
         () => library.setPageEdit(
           id,

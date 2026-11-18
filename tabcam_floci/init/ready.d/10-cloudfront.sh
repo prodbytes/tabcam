@@ -4,7 +4,7 @@
 # servers:
 #   /app/*, /app -> Flutter dev server  (http://$TABCAM_ORIGIN_HOST:$FLUTTER_WEB_PORT)
 #   *       -> tabcam_index       (http://$TABCAM_ORIGIN_HOST:$INDEX_PORT),
-#              whose / redirects to /app/
+#              the index page
 # Paths are forwarded as is (CloudFront can't strip a prefix), so the app is
 # served under /app/ (--base-href /app/).
 #

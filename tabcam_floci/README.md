@@ -7,7 +7,7 @@ routes. The index and the app keep running on their own dev servers:
 
 | Path | Origin |
 |------|--------|
-| default (`/`, anything else) | `tabcam_index`, Python `http.server` (`INDEX_PORT`, 2013): `/` redirects to `/app/` |
+| default (`/`, anything else) | `tabcam_index`, Python `http.server` (`INDEX_PORT`, 2013): `/` is the index page |
 | `/app/*`, `/app` | Flutter dev server, `flutter run -d web-server --base-href /app/` (`FLUTTER_WEB_PORT`, 2012) |
 
 Open **https://local.tabcam.nu01.com:2443/app/**, or over HTTP

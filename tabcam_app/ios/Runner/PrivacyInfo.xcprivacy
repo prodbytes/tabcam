@@ -10,8 +10,8 @@
      IDs (Cognito identity, Google's, Apple's), and the captures (photos,
      videos, Cam's takes with their sound and audio recordings, files,
      links, text). The dictionary's searches that aren't a chord or a
-     scale go to YouTube's search API for its results: search history,
-     not linked. No tracking. The app's own code uses no required-reason
+     scale go to YouTube's search API and Cifra Club's search index for
+     their results: search history, not linked. No tracking. The app's own code uses no required-reason
      APIs. -->
 <plist version="1.0">
 <dict>

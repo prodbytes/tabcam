@@ -2477,7 +2477,7 @@
   "@dictionaryHint": {
     "description": "Dictionary: the search field's hint"
   },
-  "dictionaryIntro": "Type a chord (C, Am7, F#m7b5, G/B) or a scale (A minor pentatonic, D dorian, C major scale) to see it on the guitar. Anything else is searched on YouTube.",
+  "dictionaryIntro": "Type a chord (C, Am7, F#m7b5, G/B) or a scale (A minor pentatonic, D dorian, C major scale) to see it on the guitar. Anything else is searched on YouTube and Cifra Club.",
   "@dictionaryIntro": {
     "description": "Dictionary: what it does, under the empty field"
   },
@@ -2521,6 +2521,26 @@
   "dictionaryYouTubeOpen": "Open on YouTube",
   "@dictionaryYouTubeOpen": {
     "description": "Dictionary: tooltip of a YouTube result, which opens it in a new tab"
+  },
+  "dictionaryCifraClub": "Tabs on Cifra Club",
+  "@dictionaryCifraClub": {
+    "description": "Dictionary: heading of Cifra Club's results (tabs of the song searched), under YouTube's videos"
+  },
+  "dictionaryCifraClubSearching": "Searching Cifra Club…",
+  "@dictionaryCifraClubSearching": {
+    "description": "Dictionary: Cifra Club's results are on their way"
+  },
+  "dictionaryCifraClubNone": "Cifra Club found no tabs.",
+  "@dictionaryCifraClubNone": {
+    "description": "Dictionary: the Cifra Club search found nothing"
+  },
+  "dictionaryCifraClubFailed": "Couldn't load Cifra Club's results.",
+  "@dictionaryCifraClubFailed": {
+    "description": "Dictionary: the Cifra Club search failed (offline, the site's index down)"
+  },
+  "dictionaryCifraClubOpen": "Open on Cifra Club",
+  "@dictionaryCifraClubOpen": {
+    "description": "Dictionary: tooltip of a Cifra Club result, which opens its page in a new tab"
   },
   "dictionaryFret": "{fret}fr",
   "@dictionaryFret": {
@@ -2763,6 +2783,18 @@
   "videoEditSongLined": "Lined up as it played while you recorded",
   "@videoEditSongLined": {
     "description": "Video edit, a take: the song is placed by itself where it played while the take recorded"
+  },
+  "videoEditSongLinedSound": "Lined up by its sound in the take",
+  "@videoEditSongLinedSound": {
+    "description": "Video edit, a take: the song is placed by itself exactly where the take's own sound has it (the microphone heard it from the speaker), measured to the millisecond"
+  },
+  "videoEditCutToSong": "Cut to the song",
+  "@videoEditCutToSong": {
+    "description": "Video edit, a take: a button under the song's details that keeps the take from where its song starts to where it stops"
+  },
+  "videoEditCutToSongTip": "Keep the take from where the song starts to where it stops",
+  "@videoEditCutToSongTip": {
+    "description": "Video edit, a take: the tooltip of the Cut to the song button"
   },
   "videoEditSongLinedLater": "Lined up as recorded, moved {time} later",
   "@videoEditSongLinedLater": {
@@ -3072,17 +3104,25 @@
   "@videoEditTabColorsDark": {
     "description": "Video edit: the tab's colours: white text on a black background"
   },
-  "videoEditTabColorsLight": "Black on white",
-  "@videoEditTabColorsLight": {
-    "description": "Video edit: the tab's colours: black text on a white background"
-  },
   "videoEditTabColorsGold": "Gold on black",
   "@videoEditTabColorsGold": {
     "description": "Video edit: the tab's colours: tabs.cam's gold text on a black background"
   },
-  "videoEditTabColorsBrand": "Black on gold",
-  "@videoEditTabColorsBrand": {
-    "description": "Video edit: the tab's colours: black text on tabs.cam's gold background"
+  "videoEditTabAlign": "Alignment",
+  "@videoEditTabAlign": {
+    "description": "Video edit: the tab's style: where the tab's text sits across its band (left, centre or right)"
+  },
+  "videoEditTabAlignLeft": "Left",
+  "@videoEditTabAlignLeft": {
+    "description": "Video edit: the tab's text against the band's left edge (the default)"
+  },
+  "videoEditTabAlignCenter": "Centre",
+  "@videoEditTabAlignCenter": {
+    "description": "Video edit: the tab's text in the middle of its band"
+  },
+  "videoEditTabAlignRight": "Right",
+  "@videoEditTabAlignRight": {
+    "description": "Video edit: the tab's text against the band's right edge"
   },
   "videoEditTabStyleReset": "Default style",
   "@videoEditTabStyleReset": {

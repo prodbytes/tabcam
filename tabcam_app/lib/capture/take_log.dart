@@ -6,8 +6,9 @@ import '../library/json_extra.dart';
 
 /// What Cam noted while a take recorded, kept with the take's page
 /// (`takeLog` in its details, `EventPage.takeLog`): written once, when the
-/// take is saved, and never changed after (a clone only renames the pages
-/// it names). A log read from JSON is written back as it came ([toJson]),
+/// take is saved, and never changed after, but for its [sync], added once,
+/// when the song is found in the take's sound ([withSync]; a clone only
+/// renames the pages it names). A log read from JSON is written back as it came ([toJson]),
 /// whatever in it this version doesn't know or can't read included (a
 /// newer app's `lagFrom`, a field in a segment, a turn out of order), so
 /// saving its page again (renamed, edited, published, cloned) loses
@@ -29,6 +30,7 @@ class TakeLog {
     this.tab,
     this.song = const [],
     this.songLink = false,
+    this.sync,
     this.extra = const {},
   }) : _json = null;
 
@@ -42,6 +44,7 @@ class TakeLog {
     required this.tab,
     required this.song,
     required this.songLink,
+    required this.sync,
     required this.extra,
   });
 
@@ -78,6 +81,10 @@ class TakeLog {
   /// Whether a song played along was a link in a frame (no position).
   final bool songLink;
 
+  /// Where the song really is in the take, measured from the take's own
+  /// sound after it was saved ([TakeSync]); null: not measured (yet).
+  final TakeSync? sync;
+
   /// Keys a newer app wrote, kept as they came.
   final Map<String, Object?> extra;
 
@@ -94,6 +101,7 @@ class TakeLog {
     'tab',
     'song',
     'songLink',
+    'sync',
   };
 
   /// The neckline showing at [position] in the file (as it plays back);
@@ -106,8 +114,9 @@ class TakeLog {
   /// read too, and nothing else changes.
   TakeLog withPages(Map<String, String> ids) {
     final json = _json;
+    final renamed = sync?.withPage(ids[sync!.page] ?? sync!.page);
     if (json == null) {
-      if (song.isEmpty) return this;
+      if (song.isEmpty && sync == null) return this;
       return TakeLog(
         version: version,
         burned: burned,
@@ -117,27 +126,27 @@ class TakeLog {
         tab: tab,
         song: [for (final s in song) s.withPage(ids[s.page] ?? s.page)],
         songLink: songLink,
+        sync: renamed,
         extra: extra,
       );
     }
+    bool named(Object? s) => s is Map && ids.containsKey(s['page']);
     final segments = json['song'];
-    if (segments is! List ||
-        !segments.any((s) => s is Map && ids.containsKey(s['page']))) {
-      return this;
-    }
+    final measured = json['sync'];
+    final inSong = segments is List && segments.any(named);
+    if (!inSong && !named(measured)) return this;
+    Map<String, Object?> renamedMap(Map m) => Map<String, Object?>.unmodifiable(
+      {...m.cast<String, Object?>(), 'page': ids[m['page']]},
+    );
     return TakeLog._read(
       Map.unmodifiable({
         ...json,
-        'song': List<Object?>.unmodifiable([
-          for (final s in segments)
-            if (s case final Map m when ids.containsKey(m['page']))
-              Map<String, Object?>.unmodifiable({
-                ...m.cast<String, Object?>(),
-                'page': ids[m['page']],
-              })
-            else
-              s,
-        ]),
+        if (inSong)
+          'song': List<Object?>.unmodifiable([
+            for (final s in segments)
+              if (named(s)) renamedMap(s as Map) else s,
+          ]),
+        if (named(measured)) 'sync': renamedMap(measured as Map),
       }),
       version: version,
       burned: burned,
@@ -149,9 +158,71 @@ class TakeLog {
         for (final s in song) s.withPage(ids[s.page] ?? s.page),
       ]),
       songLink: songLink,
+      sync: renamed,
       extra: extra,
     );
   }
+
+  /// This log with where the song really is in the take ([sync]), measured
+  /// after it was saved: the one thing added to a log later. Everything
+  /// else stays as it is (read from JSON: as it came).
+  TakeLog withSync(TakeSync sync) {
+    final json = _json;
+    if (json == null) {
+      return TakeLog(
+        version: version,
+        burned: burned,
+        lagMs: lagMs,
+        lagFrom: lagFrom,
+        lagRaw: lagRaw,
+        tab: tab,
+        song: song,
+        songLink: songLink,
+        sync: sync,
+        extra: extra,
+      );
+    }
+    return TakeLog._read(
+      Map.unmodifiable({...json, 'sync': sync.toJson()}),
+      version: version,
+      burned: burned,
+      lagMs: lagMs,
+      lagFrom: lagFrom,
+      lagRaw: lagRaw,
+      tab: tab,
+      song: song,
+      songLink: songLink,
+      sync: sync,
+      extra: extra,
+    );
+  }
+
+  /// The song the log lines up by itself: the segments of the one that
+  /// played along longest, at its own speed (one played at another speed
+  /// is noted, but no renderer plays a song at another speed yet), as
+  /// noted; empty when none played.
+  List<SongSegment> get linedSong {
+    final byPage = <String, List<SongSegment>>{};
+    for (final s in song) {
+      if (s.speed == 1 && s.to > s.at) (byPage[s.page] ??= []).add(s);
+    }
+    List<SongSegment> best = const [];
+    var most = 0;
+    for (final segments in byPage.values) {
+      final played = segments.fold(0, (sum, s) => sum + s.to - s.at);
+      if (played > most) (best, most) = (segments, played);
+    }
+    return best;
+  }
+
+  /// Where [segment] of the song starts in the file: its time on the
+  /// take's clock, the lag after it, moved by what its sound in the take
+  /// told ([sync], when it measured that song; [synced] false: as the log
+  /// alone has it). May be before the file's start.
+  int songFileMs(SongSegment segment, {bool synced = true}) =>
+      segment.at +
+      lagMs +
+      (synced && sync?.page == segment.page ? sync!.shiftAt(segment.at) : 0);
 
   /// The log as JSON: as it came, when it was read from JSON ([fromJson]).
   Map<String, Object?> toJson() => _json ?? _made();
@@ -165,6 +236,7 @@ class TakeLog {
     if (tab != null) 'tab': tab!.toJson(),
     'song': [for (final s in song) s.toJson()],
     if (songLink) 'songLink': true,
+    if (sync != null) 'sync': sync!.toJson(),
     for (final MapEntry(:key, :value) in extraEntries(extra, knownKeys))
       key: value,
   };
@@ -197,6 +269,7 @@ class TakeLog {
         _ => const [],
       },
       songLink: json['songLink'] == true,
+      sync: TakeSync.fromJson(json['sync']),
       extra: unknownKeys(json, knownKeys),
     );
   }
@@ -499,6 +572,146 @@ class SongSegment {
 
   @override
   int get hashCode => Object.hash(at, to, page, from, speed);
+}
+
+/// Where the song played along really is in a take ([TakeLog.sync]),
+/// measured after the take was saved by finding the song's sound in the
+/// take's own (the microphone hears the speaker): what the log's line-up
+/// (the player's word, and the lag) is off by. A segment of the song then
+/// starts [shiftAt] later in the file than the log alone says.
+///
+/// ```json
+/// "sync": {"v": 1, "page": "p3", "from": "sound", "ms": 38,
+///          "clips": [{"at": 2000, "ms": 38, "score": 21.4}]}
+/// ```
+@immutable
+class TakeSync {
+  const TakeSync({
+    required this.page,
+    required this.from,
+    this.ms = 0,
+    this.clips = const [],
+  });
+
+  /// The song measured (its page).
+  final String page;
+
+  /// How it was told.
+  final SyncFrom from;
+
+  /// How much later than the log says the song is in the file (ms;
+  /// earlier when negative): the middle one of [clips]' shifts. 0 when it
+  /// wasn't found.
+  final int ms;
+
+  /// The segments measured: each by its start on the take's clock
+  /// ([SongSegment.at]), its own shift and how clearly it was found.
+  final List<SyncClip> clips;
+
+  /// Whether the song was found in the take's sound, so the line-up is
+  /// measured rather than noted.
+  bool get found => from == SyncFrom.sound;
+
+  /// The shift of the segment that starts at [at] on the take's clock:
+  /// its own, when it was measured, else the song's ([ms]).
+  int shiftAt(int at) {
+    for (final c in clips) {
+      if (c.at == at) return c.ms;
+    }
+    return ms;
+  }
+
+  TakeSync withPage(String page) =>
+      TakeSync(page: page, from: from, ms: ms, clips: clips);
+
+  Map<String, Object?> toJson() => {
+    'v': 1,
+    'page': page,
+    'from': from.name,
+    'ms': ms,
+    if (clips.isNotEmpty) 'clips': [for (final c in clips) c.toJson()],
+  };
+
+  /// Read leniently; null when it's none, or by a way this version
+  /// doesn't know (a newer app's: the log's line-up is used, and the log
+  /// writes it back as it came).
+  static TakeSync? fromJson(Object? json) {
+    if (json is! Map) return null;
+    final page = json['page'];
+    final from = SyncFrom.values.asNameMap()[json['from']];
+    if (page is! String || from == null) return null;
+    return TakeSync(
+      page: page,
+      from: from,
+      ms: from == SyncFrom.sound ? _int(json['ms']) ?? 0 : 0,
+      clips: from == SyncFrom.sound && json['clips'] is List
+          ? List.unmodifiable([
+              for (final c in json['clips'] as List) ?SyncClip.fromJson(c),
+            ])
+          : const [],
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is TakeSync &&
+      other.page == page &&
+      other.from == from &&
+      other.ms == ms &&
+      listEquals(other.clips, clips);
+
+  @override
+  int get hashCode => Object.hash(page, from, ms, Object.hashAll(clips));
+
+  @override
+  String toString() => 'TakeSync(${toJson()})';
+}
+
+/// How a take's [TakeSync] was told.
+enum SyncFrom {
+  /// The song was found in the take's own sound.
+  sound,
+
+  /// Looked for and not found (headphones, or the song too quiet in the
+  /// take): the log's line-up stands, and it isn't looked for again.
+  none,
+}
+
+/// One segment of the song as measured ([TakeSync.clips]): the one that
+/// starts at [at] on the take's clock is [ms] later in the file than the
+/// log says; [score] says how clearly it was found (how far its match
+/// stands above the rest, in their spread).
+@immutable
+class SyncClip {
+  const SyncClip({required this.at, required this.ms, this.score = 0});
+
+  final int at;
+  final int ms;
+  final double score;
+
+  Map<String, Object?> toJson() => {'at': at, 'ms': ms, 'score': score};
+
+  static SyncClip? fromJson(Object? json) {
+    if (json is! Map) return null;
+    final (at, ms) = (_int(json['at']), _int(json['ms']));
+    final score = json['score'];
+    if (at == null || ms == null) return null;
+    return SyncClip(
+      at: at,
+      ms: ms,
+      score: score is num && score.isFinite ? score.toDouble() : 0,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is SyncClip &&
+      other.at == at &&
+      other.ms == ms &&
+      other.score == score;
+
+  @override
+  int get hashCode => Object.hash(at, ms, score);
 }
 
 /// Notes the song playing along while a take records, as the segments

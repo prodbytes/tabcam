@@ -13,6 +13,11 @@ import 'edit_formats.dart';
 import 'edit_layers.dart';
 import 'm4a.dart';
 import 'video_edit.dart';
+import 'webm_times.dart';
+
+/// A file's sound decoded, and where it starts in the file ([lead]: a
+/// WebM's may start after the file does).
+typedef _Sound = ({web.AudioBuffer buffer, Duration lead});
 
 /// In the browser, videos are edited by playing them through again.
 VideoEditing? webVideoEditor() => WebVideoEditor();
@@ -163,7 +168,7 @@ class WebVideoEditor implements VideoEditing {
       final own = plan.own;
       final ownHeard = graph != null && own != null && own.volume > 0;
       final whole = Duration(milliseconds: (total * 1000).round());
-      web.AudioBuffer? ownSound;
+      _Sound? ownSound;
       var streamed = ownHeard && whole > streamedOver;
       if (ownHeard && !streamed) {
         try {
@@ -358,22 +363,27 @@ class WebVideoEditor implements VideoEditing {
   static const _streamedOver = Duration(minutes: 16);
 
   /// [file]'s sound, decoded whole (as decodeAudioData does), at a rate
-  /// that keeps a file [length] long in memory ([_longest]). Throws when
+  /// that keeps a file [length] long in memory ([_longest]), with where
+  /// it starts in the file (a WebM's sound often starts some tens of ms
+  /// after the file does, [webmSoundStart]: the decoder gives it from its
+  /// first sample, a player plays it from where it starts). Throws when
   /// it won't decode (a file without sound, or the browser can't).
-  static Future<web.AudioBuffer> _decode(XFile file, Duration length) async {
+  static Future<_Sound> _decode(XFile file, Duration length) async {
     final rate = length > _longest ? _longRate : _rate;
     final decoder = web.OfflineAudioContext(1.toJS, 1, rate);
     final bytes = await file.readAsBytes();
+    final lead = webmSoundStart(bytes) ?? Duration.zero;
     // A copy: decodeAudioData takes the buffer it's given away.
-    return decoder
+    final buffer = await decoder
         .decodeAudioData(Uint8List.fromList(bytes).buffer.toJS)
         .toDart;
+    return (buffer: buffer, lead: lead);
   }
 
   /// The plan's song, decoded (its file once), when it's heard: at the
   /// lower rate for a kept part over [_longest] (its length unknown here,
   /// a song that long is taken to be at least as long).
-  static Future<web.AudioBuffer?> _songSound(RenderPlan plan) async {
+  static Future<_Sound?> _songSound(RenderPlan plan) async {
     final song = plan.song;
     if (song == null || song.volume <= 0 || song.clips.isEmpty) return null;
     return _decode(
@@ -382,25 +392,28 @@ class WebVideoEditor implements VideoEditing {
     );
   }
 
-  /// The plan's two lanes, decoded ([ownBuffer], the whole video's sound;
-  /// [songBuffer], the song's), mixed offline at [rate], as long as the
+  /// The plan's two lanes, decoded ([ownSound], the whole video's sound;
+  /// [songSound], the song's), mixed offline at [rate], as long as the
   /// kept part: the own lane from the kept part's start, each of the
   /// song's clips where it starts, each through a gain node at its lane's
-  /// volume; with fades, all through one more gain that rises from 0 over
+  /// volume, each sound at its times in its file (a sound that starts
+  /// after its file does, [_Sound.lead], is that much earlier in its
+  /// buffer, so both lanes are where their players play them, to the
+  /// sample); with fades, all through one more gain that rises from 0 over
   /// the fade in and falls back to 0 over the fade out (straight lines,
   /// as the picture's). Null when there's nothing to mix.
   static Future<web.AudioBuffer?> _mixdown(
     RenderPlan plan,
-    web.AudioBuffer? ownBuffer,
-    web.AudioBuffer? songBuffer,
+    _Sound? ownSound,
+    _Sound? songSound,
     int rate,
   ) async {
     final own = plan.own;
     final song = plan.song;
-    if (ownBuffer == null && songBuffer == null) return null;
+    if (ownSound == null && songSound == null) return null;
     final channels = [
-      ?ownBuffer?.numberOfChannels,
-      ?songBuffer?.numberOfChannels,
+      ?ownSound?.buffer.numberOfChannels,
+      ?songSound?.buffer.numberOfChannels,
     ].fold<int>(1, max).clamp(1, 2);
     final clip = plan.length.inMilliseconds / 1000;
     final context = web.OfflineAudioContext(
@@ -410,13 +423,22 @@ class WebVideoEditor implements VideoEditing {
     );
     final web.AudioNode out = _faded(context, plan.fades, clip);
     void play(
-      web.AudioBuffer buffer,
+      _Sound sound,
       double volume,
       Duration at,
       Duration from,
       Duration length,
     ) {
-      final player = context.createBufferSource()..buffer = buffer;
+      // In the buffer, the file's [from] is its lead earlier; what the
+      // file has before its sound starts is silence.
+      from -= sound.lead;
+      if (from < Duration.zero) {
+        at -= from;
+        length += from;
+        from = Duration.zero;
+      }
+      if (length <= Duration.zero) return;
+      final player = context.createBufferSource()..buffer = sound.buffer;
       if (volume != 1) {
         final gain = context.createGain()..gain.value = volume;
         player.connect(gain);
@@ -431,12 +453,12 @@ class WebVideoEditor implements VideoEditing {
       );
     }
 
-    if (own != null && ownBuffer != null) {
-      play(ownBuffer, own.volume, Duration.zero, plan.start, plan.length);
+    if (own != null && ownSound != null) {
+      play(ownSound, own.volume, Duration.zero, plan.start, plan.length);
     }
-    if (song != null && songBuffer != null) {
+    if (song != null && songSound != null) {
       for (final c in song.clips) {
-        play(songBuffer, song.volume, c.at, c.from, c.to - c.from);
+        play(songSound, song.volume, c.at, c.from, c.to - c.from);
       }
     }
     return context.startRendering().toDart;

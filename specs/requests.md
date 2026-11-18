@@ -3765,6 +3765,7 @@ spec.
    take page's ID (its creation time), so older takes are grouped too.
    Old number names still count as takes (`isTake`). See
    [Cam](cam.md#playing-along-with-a-file).
+
 9. **"The editor does not seem to be working, make sure that space bar
    toggles play and there are buttons to do the same and clicking the
    timeline moves the playhead and that the editor works, testing with
@@ -3839,3 +3840,110 @@ spec.
    does the same. In Cam, 1 is still Rec / Stop (which starts the song
    too), as asked on 2026-11-11; there the space bar pauses and plays.
    See [Cam](cam.md#keys-in-every-screen).
+6. **"Also make sure that recording and backing track aligns as well as
+   possible and marked on timings file so that when opened in editor it
+   can help to cut precisely."** A take's song is now **found in the
+   take's own sound** and lined up there, to the millisecond: the log
+   (the take's timings) had where Cam noted the song playing, a tenth
+   of a second or so off at worst; the microphone heard the song from
+   the speaker, so the take's sound is compared with the song's, on the
+   device (cross-correlation, phase weighted; `SongSync`), each of the
+   song's longer segments on its own, and what's found is **kept with
+   the take's log** as `sync` (the song, each segment's shift in ms and
+   how clearly it was found; "not found" too, as with headphones, where
+   the line-up stays as noted). Cam has each take measured once it's
+   saved (never while a take records); the editor measures one that
+   wasn't as it opens. New readers of a file's sound as samples: Web
+   Audio in the browser, `MediaCodec` on Android, `AVAssetReader` on
+   iOS (channel `tabcam/video_edit`, method `samples`). **In the
+   editor**, the Song lane then lies exactly over the song heard in the
+   take ("Lined up by its sound in the take"), and **the song's marks**
+   (where it starts and stops, clip by clip) are drawn on the ruler and
+   the Take lane: **a Take grip dragged near a mark snaps to it**, and
+   **Cut to the song** keeps the take from the song's first start to
+   its last stop. An edit kept before the song was found follows it,
+   unless the song was moved by hand. Two things found on the way, on
+   the web, fixed: the take's **lag is now counted from when the
+   recorder is told to start**, not from its `start` event (Chrome
+   sends it a tenth of a second late, so the tab and a song not found
+   by sound were that much early); and **a WebM's sound is placed where
+   the file has it start** (often some tens of ms in), in the
+   measurement and in Download's mix, which had the take's own sound
+   that much early against its picture. New strings
+   `videoEditSongLinedSound`, `videoEditCutToSong` and
+   `videoEditCutToSongTip` in English, Spanish and Portuguese. Checked
+   with made-up riffs, in Chrome with a video recorded as a take is,
+   and iOS's reader on a Mac; not yet on a phone (Android's reader is
+   compiled, not run). See
+   [Cam](cam.md#the-song-found-in-the-takes-sound) and
+   [video edit](video-edit.md#the-songs-marks).
+
+7. **"Let's improve the index page, make it show a header and I will
+   send you the images right away, one for each key feature: Scan your
+   tabs: OCR, find and use them quickly; Record your practice: video
+   recording and editing; Sharing and playing along: use with your
+   students and friends."** Then, with the first picture: **"make a text
+   box shadow over"**, and **"make it look nice like html5up.com"**. The
+   site's root no longer redirects to the app: it's a page of its own,
+   dark, in the brand's colours, with a top bar (the logo, Open the
+   app), a header ("A camera for your guitar tabs", Open tabs.cam) and
+   the three key features, each a wide picture with its text in a
+   shadowed box over it (over a corner on wide screens, under the
+   picture's edge on narrow ones), then the way in again and the footer
+   with the privacy policy. The first two features have their pictures
+   (WebP, two widths); the third's box stands alone until its picture
+   comes. Only a capture's link naming the root (`/?c=…`) still goes on
+   to `/app/`. The deploy uploads the page's `img/` folder and checks
+   the new page and its logo. See [index page](index-page.md).
+
+8. **"In the download button in editor make the download have
+   _$current_timestamp so that multiple renders can be taken and
+   downloaded without overlapping."** The editor's Download (the
+   video, the video without sound and the sound alone, made or as it
+   is) now names the file as the video is in the list followed by the
+   time it's downloaded, `_YYYYMMDD-HHMMSS` in the device's time (e.g.
+   `Made-up riff_20261117-180509.mp4`); a long name is cut so the time
+   always fits. The file list's Download and Download all keep their
+   names. See [video edit](video-edit.md).
+
+9. **"Also in the editor, in the tab text settings, let the user align
+   tabs to the left, center or right (default left)."** The tab's style
+   has **Alignment** under Colours: Left (the default), Centre and
+   Right, three icon buttons, each with its name as its tooltip. The
+   band's text sits against its left or right padding, or in the
+   middle; the preview and Download draw it the same (it's in the
+   band's picture). Kept as `align` in the edit's `tabStyle`, only when
+   it isn't left; an unknown one reads as left. Bands used to be
+   centred, so edits made before draw their tab to the left now.
+   Default style puts it back to the left. See
+   [video edit](video-edit.md).
+
+10. **"The 'black on white' color scheme is awful remove that"** and
+    **"the black on gold too remove"**. The tab's style offers two
+    colours now, White on black (the default) and Gold on black. An
+    edit kept with black on white or black on gold draws white on
+    black, as any colour the app doesn't know. See
+    [video edit](video-edit.md).
+
+11. **"On the dictionary view, on the pills, always offer the capture
+    title as first pill. if not found, search also cifraclub besides
+    youtube and show it below. show top 3 of each is fine."** Nothing
+    typed, the dictionary's first pill is the capture's title (on the
+    capture, a file and Cam; Home has no capture), before the examples.
+    Anything that's not a chord or a scale is now searched on Cifra
+    Club too, from the device (the site's own search index, which
+    answers the browser as well; no key, no server), and its three
+    songs show under YouTube's three videos ("Tabs on Cifra Club"),
+    each opening its page outside the app; searching, failing and
+    finding nothing are told for each on its own. New strings
+    `dictionaryCifraClub*` in English, Spanish and Portuguese; the
+    intro says YouTube and Cifra Club. See
+    [dictionary](dictionary.md).
+
+## 2026-11-18
+
+1. **"Make the tabs watermark fixed width font."** The watermark
+   ("tabs.cam", bottom right) is drawn in Roboto Mono, the fixed-width
+   font the tabs are shown in, instead of Roboto; its size, colour,
+   shadow and place are unchanged, in the preview and the downloaded
+   file alike. See [video edit](video-edit.md).

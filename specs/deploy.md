@@ -11,8 +11,9 @@ delegated from `nu01.com`), also holds `local.tabcam.nu01.com`, A `127.0.0.1` an
 `::1` (TTL 300), so a name under the real domain reaches the
 [local dev servers](dev-environment.md). It was made by hand with the AWS
 CLI; no stack owns it.
-`/` is the [index page](../tabcam_index), which redirects to `/app/`
-(its footer links the privacy policy); `/privacy` is the
+`/` is the [index page](index-page.md), which presents tabs.cam and
+links to the app at `/app/` (its footer links the privacy policy), with
+its pictures under `/img/`; `/privacy` is the
 [privacy policy](privacy.md).
 
 ## The old domains
@@ -59,7 +60,8 @@ which runs `scripts/deploy.sh` for that tag:
    DNS records; with `TABCAM_SHARE_API_URL` set, its domain is the stack's
    `ShareApiDomain`, which turns on [link previews](sharing.md#link-previews)
    (the share API as a second origin, for `/preview/*`);
-3. uploads `index.html`, the [privacy policy](privacy.md) (as the
+3. uploads `index.html` and the [index page](index-page.md)'s pictures
+   (`img/`, synced), the [privacy policy](privacy.md) (as the
    object `privacy`, so it's served at `/privacy`), the web build (`Cache-Control: no-cache`,
    Flutter's files aren't content-hashed) and
    `/.well-known/assetlinks.json` ([App Links](sharing.md#android-app-links)),
@@ -67,7 +69,8 @@ which runs `scripts/deploy.sh` for that tag:
    `/status.json` ([maintenance mode](maintenance-mode.md)) is left as
    it is;
 4. checks, for up to 10 minutes, that `/app/version.json` reports the
-   version, `/` is the index page and `/privacy` the privacy policy.
+   version, `/` is the index page (and its logo is served) and
+   `/privacy` the privacy policy.
 
 One production deploy runs at a time; a newer tag waits.
 

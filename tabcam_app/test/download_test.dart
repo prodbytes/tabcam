@@ -29,6 +29,20 @@ void main() {
     expect(safeFileName('a' * 200, 'mp4').length, 124);
   });
 
+  test('a timestamped name has the time it was saved after it', () {
+    Downloads.now = () => DateTime(2026, 1, 2, 3, 4, 5);
+    addTearDown(() => Downloads.now = DateTime.now);
+    expect(timestamped('Made-up riff'), 'Made-up riff_20260102-030405');
+    expect(
+      safeFileName(timestamped('Made-up riff'), 'mp4'),
+      'Made-up riff_20260102-030405.mp4',
+    );
+    // A long name is cut, never the time.
+    final long = safeFileName(timestamped('a' * 200), 'mp4');
+    expect(long, endsWith('_20260102-030405.mp4'));
+    expect(long.length, 124);
+  });
+
   late Library library;
   late String id;
   final saved = <(String, Uint8List, String)>[];

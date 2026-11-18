@@ -1820,7 +1820,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dictionaryIntro =>
-      'Type a chord (C, Am7, F#m7b5, G/B) or a scale (A minor pentatonic, D dorian, C major scale) to see it on the guitar. Anything else is searched on YouTube.';
+      'Type a chord (C, Am7, F#m7b5, G/B) or a scale (A minor pentatonic, D dorian, C major scale) to see it on the guitar. Anything else is searched on YouTube and Cifra Club.';
 
   @override
   String get dictionaryChord => 'Chord';
@@ -1850,6 +1850,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dictionaryYouTubeOpen => 'Open on YouTube';
+
+  @override
+  String get dictionaryCifraClub => 'Tabs on Cifra Club';
+
+  @override
+  String get dictionaryCifraClubSearching => 'Searching Cifra Club…';
+
+  @override
+  String get dictionaryCifraClubNone => 'Cifra Club found no tabs.';
+
+  @override
+  String get dictionaryCifraClubFailed =>
+      'Couldn\'t load Cifra Club\'s results.';
+
+  @override
+  String get dictionaryCifraClubOpen => 'Open on Cifra Club';
 
   @override
   String dictionaryFret(int fret) {
@@ -2014,6 +2030,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoEditSongLined => 'Lined up as it played while you recorded';
+
+  @override
+  String get videoEditSongLinedSound => 'Lined up by its sound in the take';
+
+  @override
+  String get videoEditCutToSong => 'Cut to the song';
+
+  @override
+  String get videoEditCutToSongTip =>
+      'Keep the take from where the song starts to where it stops';
 
   @override
   String videoEditSongLinedLater(String time) {
@@ -2232,13 +2258,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditTabColorsDark => 'White on black';
 
   @override
-  String get videoEditTabColorsLight => 'Black on white';
-
-  @override
   String get videoEditTabColorsGold => 'Gold on black';
 
   @override
-  String get videoEditTabColorsBrand => 'Black on gold';
+  String get videoEditTabAlign => 'Alignment';
+
+  @override
+  String get videoEditTabAlignLeft => 'Left';
+
+  @override
+  String get videoEditTabAlignCenter => 'Centre';
+
+  @override
+  String get videoEditTabAlignRight => 'Right';
 
   @override
   String get videoEditTabStyleReset => 'Default style';

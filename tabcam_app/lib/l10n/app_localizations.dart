@@ -3067,7 +3067,7 @@ abstract class AppLocalizations {
   /// Dictionary: what it does, under the empty field
   ///
   /// In en, this message translates to:
-  /// **'Type a chord (C, Am7, F#m7b5, G/B) or a scale (A minor pentatonic, D dorian, C major scale) to see it on the guitar. Anything else is searched on YouTube.'**
+  /// **'Type a chord (C, Am7, F#m7b5, G/B) or a scale (A minor pentatonic, D dorian, C major scale) to see it on the guitar. Anything else is searched on YouTube and Cifra Club.'**
   String get dictionaryIntro;
 
   /// Dictionary: a chord result's kind
@@ -3123,6 +3123,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open on YouTube'**
   String get dictionaryYouTubeOpen;
+
+  /// Dictionary: heading of Cifra Club's results (tabs of the song searched), under YouTube's videos
+  ///
+  /// In en, this message translates to:
+  /// **'Tabs on Cifra Club'**
+  String get dictionaryCifraClub;
+
+  /// Dictionary: Cifra Club's results are on their way
+  ///
+  /// In en, this message translates to:
+  /// **'Searching Cifra Club…'**
+  String get dictionaryCifraClubSearching;
+
+  /// Dictionary: the Cifra Club search found nothing
+  ///
+  /// In en, this message translates to:
+  /// **'Cifra Club found no tabs.'**
+  String get dictionaryCifraClubNone;
+
+  /// Dictionary: the Cifra Club search failed (offline, the site's index down)
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load Cifra Club\'s results.'**
+  String get dictionaryCifraClubFailed;
+
+  /// Dictionary: tooltip of a Cifra Club result, which opens its page in a new tab
+  ///
+  /// In en, this message translates to:
+  /// **'Open on Cifra Club'**
+  String get dictionaryCifraClubOpen;
 
   /// Dictionary: the fret a chord diagram starts at
   ///
@@ -3417,6 +3447,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Lined up as it played while you recorded'**
   String get videoEditSongLined;
+
+  /// Video edit, a take: the song is placed by itself exactly where the take's own sound has it (the microphone heard it from the speaker), measured to the millisecond
+  ///
+  /// In en, this message translates to:
+  /// **'Lined up by its sound in the take'**
+  String get videoEditSongLinedSound;
+
+  /// Video edit, a take: a button under the song's details that keeps the take from where its song starts to where it stops
+  ///
+  /// In en, this message translates to:
+  /// **'Cut to the song'**
+  String get videoEditCutToSong;
+
+  /// Video edit, a take: the tooltip of the Cut to the song button
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the take from where the song starts to where it stops'**
+  String get videoEditCutToSongTip;
 
   /// Video edit, a take: the song lined up as it played while recording, then moved later by hand (time like 0:00.2)
   ///
@@ -3790,23 +3838,35 @@ abstract class AppLocalizations {
   /// **'White on black'**
   String get videoEditTabColorsDark;
 
-  /// Video edit: the tab's colours: black text on a white background
-  ///
-  /// In en, this message translates to:
-  /// **'Black on white'**
-  String get videoEditTabColorsLight;
-
   /// Video edit: the tab's colours: tabs.cam's gold text on a black background
   ///
   /// In en, this message translates to:
   /// **'Gold on black'**
   String get videoEditTabColorsGold;
 
-  /// Video edit: the tab's colours: black text on tabs.cam's gold background
+  /// Video edit: the tab's style: where the tab's text sits across its band (left, centre or right)
   ///
   /// In en, this message translates to:
-  /// **'Black on gold'**
-  String get videoEditTabColorsBrand;
+  /// **'Alignment'**
+  String get videoEditTabAlign;
+
+  /// Video edit: the tab's text against the band's left edge (the default)
+  ///
+  /// In en, this message translates to:
+  /// **'Left'**
+  String get videoEditTabAlignLeft;
+
+  /// Video edit: the tab's text in the middle of its band
+  ///
+  /// In en, this message translates to:
+  /// **'Centre'**
+  String get videoEditTabAlignCenter;
+
+  /// Video edit: the tab's text against the band's right edge
+  ///
+  /// In en, this message translates to:
+  /// **'Right'**
+  String get videoEditTabAlignRight;
 
   /// Video edit: puts the tab's style back to its default (white on a 70% black strip, at its usual size)
   ///

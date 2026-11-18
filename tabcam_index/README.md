@@ -1,15 +1,26 @@
 # tabcam_index
 
-The site root. Its only page, [site/index.html](site/index.html), sends
-visitors to the app at `/app/`: a script redirect (`location.replace`,
-keeping any query string), a `meta refresh` for browsers without
-JavaScript, and a plain link as a last resort.
+The site root: the index page, [site/index.html](site/index.html), which
+presents tabs.cam (a header, and its three key features, each a picture
+with its text in a box over it) and links to the app at `/app/`. One
+static file with its pictures and the logo in [site/img/](site/img); no
+build. What's on it and how it's laid out:
+[specs/index-page.md](../specs/index-page.md).
+
+To add or change a feature's picture, write it as WebP in two widths and
+name both in the section's `<img>`:
+
+```
+cwebp -q 82 picture.jpeg -o site/img/NAME.webp
+cwebp -q 80 -resize 800 0 picture.jpeg -o site/img/NAME-800.webp
+```
 
 Locally it also serves [site/status.json](site/status.json), the
 [maintenance mode](../specs/maintenance-mode.md) switch (off), so the
-local web app's status checks don't 404. Deploys upload only
-`index.html`: the live sites' status files are set with
-`scripts/maintenance.sh`.
+local web app's status checks don't 404, and the
+[privacy policy](../specs/privacy.md). Deploys upload `index.html`,
+`img/`, the privacy policy and `.well-known/`, never `status.json`: the
+live sites' status files are set with `scripts/maintenance.sh`.
 
 Only [site/](site) is served, so this README isn't.
 

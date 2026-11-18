@@ -1859,7 +1859,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dictionaryIntro =>
-      'Digite um acorde (C, Am7, F#m7b5, G/B) ou uma escala (A minor pentatonic, D dorian, C major scale) para vê-lo no violão. Qualquer outra coisa é pesquisada no YouTube.';
+      'Digite um acorde (C, Am7, F#m7b5, G/B) ou uma escala (A minor pentatonic, D dorian, C major scale) para vê-lo no violão. Qualquer outra coisa é pesquisada no YouTube e no Cifra Club.';
 
   @override
   String get dictionaryChord => 'Acorde';
@@ -1890,6 +1890,23 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dictionaryYouTubeOpen => 'Abrir no YouTube';
+
+  @override
+  String get dictionaryCifraClub => 'Tablaturas no Cifra Club';
+
+  @override
+  String get dictionaryCifraClubSearching => 'Pesquisando no Cifra Club…';
+
+  @override
+  String get dictionaryCifraClubNone =>
+      'O Cifra Club não encontrou tablaturas.';
+
+  @override
+  String get dictionaryCifraClubFailed =>
+      'Não foi possível carregar os resultados do Cifra Club.';
+
+  @override
+  String get dictionaryCifraClubOpen => 'Abrir no Cifra Club';
 
   @override
   String dictionaryFret(int fret) {
@@ -2054,6 +2071,16 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoEditSongLined => 'Alinhada como tocou enquanto você gravava';
+
+  @override
+  String get videoEditSongLinedSound => 'Alinhada pelo som dela no take';
+
+  @override
+  String get videoEditCutToSong => 'Cortar na música';
+
+  @override
+  String get videoEditCutToSongTip =>
+      'Mantém o take de onde a música começa até onde ela para';
 
   @override
   String videoEditSongLinedLater(String time) {
@@ -2273,13 +2300,19 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditTabColorsDark => 'Branco sobre preto';
 
   @override
-  String get videoEditTabColorsLight => 'Preto sobre branco';
-
-  @override
   String get videoEditTabColorsGold => 'Dourado sobre preto';
 
   @override
-  String get videoEditTabColorsBrand => 'Preto sobre dourado';
+  String get videoEditTabAlign => 'Alinhamento';
+
+  @override
+  String get videoEditTabAlignLeft => 'Esquerda';
+
+  @override
+  String get videoEditTabAlignCenter => 'Centro';
+
+  @override
+  String get videoEditTabAlignRight => 'Direita';
 
   @override
   String get videoEditTabStyleReset => 'Estilo padrão';

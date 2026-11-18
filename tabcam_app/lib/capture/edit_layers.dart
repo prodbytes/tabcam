@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:video_player/video_player.dart';
 
-import '../library/page_edit.dart' show EditTabStyle;
+import '../library/page_edit.dart' show EditTabStyle, TabAlign;
 import '../screens/mono_font.dart';
 import 'render_plan.dart';
 
@@ -36,9 +36,9 @@ class LayerPicture {
   void dispose() => picture.dispose();
 }
 
-/// The font of the title and the watermark: Roboto, shipped with the app
-/// (assets/fonts), so they're drawn the same in the preview and in the
-/// file on every platform.
+/// The font of the title: Roboto, shipped with the app (assets/fonts), so
+/// it's drawn the same in the preview and in the file on every platform.
+/// The watermark is in [monoFont], shipped the same way.
 const String layerFont = 'TabCamRoboto';
 
 /// The short side of the frame the title and the watermark are drawn for,
@@ -115,8 +115,8 @@ LayerPicture titlePicture(List<String> lines, {double short = layerShort}) {
 }
 
 /// [text] drawn as the watermark, for a frame whose short side is [short]
-/// pixels: one small line of Roboto, white at 60% with a soft shadow
-/// ([WatermarkLayout]).
+/// pixels: one small line of Roboto Mono (fixed width, as the tabs are),
+/// white at 60% with a soft shadow ([WatermarkLayout]).
 LayerPicture watermarkPicture(String text, {double short = layerShort}) {
   final size = WatermarkLayout.text * short;
   final height = WatermarkLayout.heightU * short;
@@ -125,7 +125,7 @@ LayerPicture watermarkPicture(String text, {double short = layerShort}) {
     text: TextSpan(
       text: text,
       style: TextStyle(
-        fontFamily: layerFont,
+        fontFamily: monoFont,
         fontSize: size,
         height: 1,
         color: const Color(0x99FFFFFF),
@@ -254,8 +254,10 @@ double tabSizeMost(Iterable<String> lines, Size? frame) {
 
 /// [band] drawn along the bottom of a take: monospaced text on a
 /// see-through background, as wide as the band, its text as big as its
-/// style says, or as fits (a long staff gets smaller); white on a 70%
-/// black strip by default ([EditTabStyle.standard]).
+/// style says, or as fits (a long staff gets smaller), placed across it
+/// as its style says ([EditTabStyle.align]: past the padding on the
+/// left or right, or in the middle); white on a 70% black strip, to the
+/// left, by default ([EditTabStyle.standard]).
 LayerPicture bandPicture(BandLook band) {
   final width = band.width;
   final (texts, height, pad) = _bandText(band);
@@ -270,7 +272,13 @@ LayerPicture bandPicture(BandLook band) {
     );
   }
   for (final text in texts) {
-    text.paint(canvas, Offset((width - text.width) / 2, pad));
+    final x = switch (band.style.align) {
+      TabAlign.left => pad,
+      TabAlign.center => (width - text.width) / 2,
+      TabAlign.right => width - pad - text.width,
+    };
+    // A line as wide as fits starts at the padding, wherever it's aligned.
+    text.paint(canvas, Offset(max(pad, x), pad));
     text.dispose();
   }
   return LayerPicture(

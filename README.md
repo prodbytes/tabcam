@@ -20,7 +20,7 @@ What the app does is specified in [specs/](specs/README.md).
 | Path | Holds |
 |---|---|
 | [tabcam_app/](tabcam_app) | The Flutter app (Android, iOS, web) |
-| [tabcam_index/](tabcam_index) | The site root page, which redirects to `/app/` |
+| [tabcam_index/](tabcam_index) | The site root: the index page, which presents tabs.cam and links to `/app/` |
 | [tabcam_infra/](tabcam_infra) | CloudFormation: the site (S3 + CloudFront) and the GitHub deploy roles |
 | [scripts/](scripts) | Build, run, release and deploy scripts |
 | [specs/](specs) | The specification, one file per feature, and the request log |
@@ -67,7 +67,7 @@ Private settings (deploy targets) live in the private
 
 ```
 🎸 TabCam: http://localhost:2012/app/
-🏠 index:   http://localhost:2013/ (redirects to the app)
+🏠 index:   http://localhost:2013/ (the index page)
 🔒 HTTPS:   https://local.tabcam.nu01.com:2443/app/ (through Floci's CloudFront)
 2026-10-10 14:02:10  🏠 index ✅  🎸 web ✅  🚚 cdn ✅  🔒 https ✅
 ```

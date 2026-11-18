@@ -7,7 +7,10 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tabcam_app/capture/song_sync.dart';
+import 'package:tabcam_app/capture/sound_reader.dart';
 import 'package:tabcam_app/capture/take_log.dart';
+import 'package:tabcam_app/capture/take_syncer.dart';
 import 'package:tabcam_app/capture/video_edit.dart';
 import 'package:tabcam_app/export/download.dart';
 import 'package:tabcam_app/l10n/app_localizations.dart';
@@ -21,6 +24,7 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 
 import 'mini_player_test.dart' show FakeVideoPlatform;
+import 'song_sync_test.dart' show FakeReader, heardFrom, mixed, rate, riff;
 
 /// An editor that records what it's asked and hands back a small file in
 /// [formatsHere] (MP4 and M4A, as the phones and most browsers make).
@@ -439,6 +443,7 @@ void main() {
     VideoPlayerPlatform.instance = platform = VolumePlatform();
     VideoEditor.instance = editor = FakeEditor();
     saved.clear();
+    Downloads.now = () => DateTime(2026, 11, 17, 18, 5, 9);
     Downloads.save = (name, bytes, type) async {
       saved.add((name, bytes, type));
       return true;
@@ -513,6 +518,16 @@ void main() {
       pickFile: pick ?? () async => null,
     ),
   );
+
+  /// Waits for the take's song to be found in its sound (the editor has
+  /// it measured as it opens, off the test clock), and shown.
+  Future<void> measured(WidgetTester tester, Library library, String id) async {
+    for (var i = 0; i < 50; i++) {
+      await _settle(tester);
+      if (library.byId(id)!.pages.first.takeLog?.sync != null) break;
+    }
+    await _settle(tester);
+  }
 
   bool enabled(WidgetTester tester, String key) =>
       tester.widget<ButtonStyleButton>(find.byKey(Key(key))).enabled;
@@ -643,7 +658,7 @@ void main() {
     expect(plan.format, EditFormat.mp4);
     expect(plan.passthrough, isFalse);
     final (name, bytes, type) = saved.single;
-    expect(name, 'Made-up riff.mp4');
+    expect(name, 'Made-up riff_20261117-180509.mp4');
     expect(bytes, [9, 9, 9]);
     expect(type, 'video/mp4');
     // The video's own file is as it was.
@@ -681,7 +696,7 @@ void main() {
     await _settle(tester);
     expect(editor.rendered, hasLength(1));
     final (name, bytes, _) = saved.single;
-    expect(name, 'Made-up riff.mp4');
+    expect(name, 'Made-up riff_20261117-180509.mp4');
     expect(bytes, [1, 2, 3]);
   });
 
@@ -839,9 +854,9 @@ void main() {
     expect(
       [for (final (name, _, type) in saved) (name, type)],
       [
-        ('Made-up riff.mp4', 'video/mp4'),
-        ('Made-up riff.mp4', 'video/mp4'),
-        ('Made-up riff.m4a', 'audio/mp4'),
+        ('Made-up riff_20261117-180509.mp4', 'video/mp4'),
+        ('Made-up riff_20261117-180509.mp4', 'video/mp4'),
+        ('Made-up riff_20261117-180509.m4a', 'audio/mp4'),
       ],
     );
   });
@@ -873,7 +888,7 @@ void main() {
     await tester.tap(find.byKey(const Key('video-edit-download-sound')));
     await _settle(tester);
     final (name, _, type) = saved.single;
-    expect(name, 'Made-up riff.wav');
+    expect(name, 'Made-up riff_20261117-180509.wav');
     expect(type, 'audio/wav');
   });
 
@@ -894,7 +909,7 @@ void main() {
     expect(plan.keepsFormat, isFalse);
     expect(plan.passthrough, isFalse);
     final (name, bytes, type) = saved.single;
-    expect(name, 'Made-up riff.mp4');
+    expect(name, 'Made-up riff_20261117-180509.mp4');
     expect(bytes, [9, 9, 9]);
     expect(type, 'video/mp4');
 
@@ -910,7 +925,7 @@ void main() {
     await tester.tap(find.byKey(const Key('video-edit-download')));
     await _settle(tester);
     expect(editor.rendered, isEmpty);
-    expect(saved.single.$1, 'Made-up riff.webm');
+    expect(saved.single.$1, 'Made-up riff_20261117-180509.webm');
     expect(saved.single.$2, [1, 2, 3]);
   });
 
@@ -929,7 +944,7 @@ void main() {
     await tester.tap(find.byKey(const Key('video-edit-download')));
     await _settle(tester);
     expect(editor.rendered, isEmpty);
-    expect(saved.single.$1, 'Made-up riff.mp4');
+    expect(saved.single.$1, 'Made-up riff_20261117-180509.mp4');
     expect(saved.single.$2, [1, 2, 3]);
 
     // An M4V (MPEG-4 too), where MP4 is made: as it is, not made again.
@@ -943,7 +958,7 @@ void main() {
     await tester.tap(find.byKey(const Key('video-edit-download')));
     await _settle(tester);
     expect(editor.rendered, isEmpty);
-    expect(saved.single.$1, 'Made-up riff.m4v');
+    expect(saved.single.$1, 'Made-up riff_20261117-180509.m4v');
     expect(saved.single.$2, [1, 2, 3]);
   });
 
@@ -1058,6 +1073,187 @@ void main() {
     edit = library.byId(id)!.pages.first.edit!;
     expect(edit.song, SongMode.off);
     expect(find.byKey(const Key('video-edit-song-add')), findsOneWidget);
+  });
+
+  testWidgets('a take whose song was found in its sound: lined up there, '
+      'its starts and stops marked; Cut to the song keeps from its start '
+      'to its stop; a grip dragged near a mark is on it', (tester) async {
+    tall(tester);
+    final (library, id) = await capture(
+      tester,
+      editTake: true,
+      log: const TakeLog(
+        burned: false,
+        lagMs: 200,
+        song: [
+          SongSegment(at: 1000, to: 5000, page: 'k1', from: 0),
+          SongSegment(at: 8000, to: 12000, page: 'k1', from: 4000),
+        ],
+        sync: TakeSync(
+          page: 'k1',
+          from: SyncFrom.sound,
+          ms: 60,
+          clips: [SyncClip(at: 1000, ms: 60), SyncClip(at: 8000, ms: 80)],
+        ),
+      ),
+    );
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    expect(find.text('Lined up by its sound in the take'), findsOneWidget);
+    // Where the song starts and stops, clip by clip, on the Take lane.
+    for (var i = 0; i < 4; i++) {
+      expect(find.byKey(Key('video-edit-take-mark-$i')), findsOneWidget);
+    }
+    expect(find.byKey(const Key('video-edit-take-mark-4')), findsNothing);
+    final bar = tester.getRect(find.byKey(const Key('video-edit-take-bar')));
+    double x(String key) => tester.getRect(find.byKey(Key(key))).center.dx;
+    expect(
+      x('video-edit-take-mark-0'),
+      closeTo(bar.left + bar.width * 1.26 / 180, 0.01),
+    );
+    expect(
+      x('video-edit-take-mark-3'),
+      closeTo(bar.left + bar.width * 12.28 / 180, 0.01),
+    );
+    expect(library.byId(id)!.pages.first.edit, isNull);
+
+    // Cut to the song: from its first start to its last stop, to the ms.
+    expect(enabled(tester, 'video-edit-cut-to-song'), isTrue);
+    await tester.tap(find.byKey(const Key('video-edit-cut-to-song')));
+    await _settle(tester);
+    var edit = library.byId(id)!.pages.first.edit!;
+    expect((edit.start, edit.end), (s(1.26), s(12.28)));
+    // The song where it was along the video: it starts with the kept part.
+    expect(edit.offset, Duration.zero);
+    expect(find.text('Lined up by its sound in the take'), findsOneWidget);
+    expect(enabled(tester, 'video-edit-cut-to-song'), isFalse);
+
+    // Reset, then the grips: dragged near a mark, on it.
+    await tester.tap(find.byKey(const Key('video-edit-reset')));
+    await _settle(tester);
+    expect(library.byId(id)!.pages.first.edit, isNull);
+    // A grip dragged: first away from every mark, where it's dragged;
+    // then to a second from a mark (within a hundredth of the 3 minutes):
+    // on the mark.
+    final perMs = bar.width / 180000;
+    final start = await tester.startGesture(
+      tester.getCenter(find.byKey(const Key('video-edit-take-start'))),
+    );
+    await start.moveBy(const Offset(40, 0));
+    await start.moveBy(const Offset(80, 0));
+    await _settle(tester);
+    edit = library.byId(id)!.pages.first.edit!;
+    expect(edit.start, greaterThan(s(15)));
+    await start.moveBy(Offset((2260 - edit.start.inMilliseconds) * perMs, 0));
+    await _settle(tester);
+    expect(library.byId(id)!.pages.first.edit!.start, s(1.26));
+    // On past it, and back to within reach from the other side.
+    await start.moveBy(Offset(3000 * perMs, 0));
+    await _settle(tester);
+    expect(
+      library.byId(id)!.pages.first.edit!.start.inMilliseconds,
+      closeTo(5260, 300),
+    );
+    await start.up();
+    await _settle(tester);
+    // That one is the second mark's (5.26 s), a little further than the
+    // third's reach.
+    expect(library.byId(id)!.pages.first.edit!.start, s(5.26));
+
+    // The end, dragged back to near the last mark.
+    final end = await tester.startGesture(
+      tester.getCenter(find.byKey(const Key('video-edit-take-end'))),
+    );
+    await end.moveBy(const Offset(-40, 0));
+    await end.moveBy(const Offset(-80, 0));
+    await _settle(tester);
+    edit = library.byId(id)!.pages.first.edit!;
+    expect(edit.end, lessThan(s(165)));
+    await end.moveBy(Offset((13300 - edit.end.inMilliseconds) * perMs, 0));
+    await end.up();
+    await _settle(tester);
+    edit = library.byId(id)!.pages.first.edit!;
+    expect(edit.end, s(12.28));
+
+    await tester.tap(find.byKey(const Key('video-edit-download')));
+    await _settle(tester);
+    // The kept part: from the first clip's stop to the second's.
+    expect(editor.rendered.single.song!.clips, [
+      SongClip(at: s(3.02), from: s(4), to: s(8)),
+    ]);
+  });
+
+  testWidgets('a take not measured yet is as the editor opens: its song '
+      'found in its sound, the Song lane follows; one moved by hand stays '
+      'where it was put', (tester) async {
+    tall(tester);
+    SongSync.inline = true;
+    // Other tests' takes, left unmeasured when their clocks stopped.
+    TakeSyncer.reset();
+    addTearDown(() {
+      SongSync.inline = false;
+      SoundReader.opener = null;
+    });
+    // The song played from 5 s on the take's clock (the lag 0.2 s); the
+    // take's sound has it 83 ms after that.
+    const log = TakeLog(
+      burned: false,
+      lagMs: 200,
+      song: [SongSegment(at: 5000, to: 35000, page: 'k1', from: 0)],
+    );
+    final song = riff(30, 11);
+    final reader = FakeReader({
+      // The test's library keeps files in memory: told apart by type.
+      'video/mp4': mixed([
+        heardFrom(song, length: 40 * rate, delay: 5283 * rate / 1000),
+        riff(40, 12, bpm: 103),
+      ]),
+      'audio/mp4': song,
+    });
+    SoundReader.opener = () => reader;
+
+    final (library, id) = await capture(tester, editTake: true, log: log);
+    await tester.pumpWidget(editScreen(library, id));
+    await measured(tester, library, id);
+    expect(find.text('Lined up by its sound in the take'), findsOneWidget);
+    final sync = library.byId(id)!.pages.first.takeLog!.sync!;
+    expect((sync.found, sync.ms), (true, 83));
+    // Still the defaults: nothing kept, nothing to reset.
+    expect(library.byId(id)!.pages.first.edit, isNull);
+    expect(enabled(tester, 'video-edit-reset'), isFalse);
+    await tester.tap(find.byKey(const Key('video-edit-download')));
+    await _settle(tester);
+    expect(editor.rendered.single.song!.clips, [
+      SongClip(at: s(5.283), from: Duration.zero, to: s(30)),
+    ]);
+    await tester.pumpWidget(const SizedBox());
+    await _settle(tester);
+
+    // Another, moved by hand before it's measured (the reader has no
+    // files yet): where it was put, it stays.
+    final sounds = {...reader.files};
+    reader.files.clear();
+    final (library2, id2) = await capture(tester, editTake: true, log: log);
+    await tester.pumpWidget(editScreen(library2, id2));
+    await _settle(tester);
+    expect(
+      find.text('Lined up as it played while you recorded'),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const Key('video-edit-song-later')));
+    await _settle(tester);
+    expect(library2.byId(id2)!.pages.first.edit!.offset, s(5.3));
+    await tester.pumpWidget(const SizedBox());
+    await _settle(tester);
+    reader.files.addAll(sounds);
+    await tester.pumpWidget(editScreen(library2, id2));
+    await measured(tester, library2, id2);
+    expect(library2.byId(id2)!.pages.first.takeLog!.sync!.ms, 83);
+    expect(
+      find.text('Lined up as recorded, moved 0:00.0 later'),
+      findsOneWidget,
+    );
+    expect(library2.byId(id2)!.pages.first.edit!.offset, s(5.3));
   });
 
   testWidgets('a kept edit opens as it was, its track too', (tester) async {

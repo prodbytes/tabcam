@@ -92,8 +92,10 @@
   the GitHub repository variables and secrets. `AWS_REGION` keeps its
   standard name, as the AWS CLI reads it.
 - **Checks**: `flutter analyze` and `flutter test` in `tabcam_app/`;
-  the browser tests (`@TestOn('browser')`: the web take recorder and the
-  web [video editor](video-edit.md)) with `bash scripts/test-browser.sh`,
+  the browser tests (`@TestOn('browser')`: the web take recorder, the
+  web [video editor](video-edit.md), the ding and the web
+  [sound reader](cam.md#the-song-found-in-the-takes-sound)) with
+  `bash scripts/test-browser.sh`,
   which runs them in Chrome with sound allowed without a tap
   (`--autoplay-policy=no-user-gesture-required`, through a wrapper named
   by `CHROME_EXECUTABLE`, since `flutter test` has no flag for it);

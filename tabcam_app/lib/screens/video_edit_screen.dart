@@ -13,6 +13,7 @@ import '../capture/edit_layers.dart';
 import '../capture/media.dart';
 import '../capture/play_along_sidebar.dart' show isTake;
 import '../capture/take_log.dart';
+import '../capture/take_syncer.dart';
 import '../capture/video_edit.dart';
 import '../cloud/cloud_ocr.dart';
 import '../export/download.dart';
@@ -307,8 +308,16 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   bool get _take => isTake(widget.page);
 
   /// What Cam noted while the take recorded (none: not a take, or one
-  /// saved before takes kept one).
-  TakeLog? get _takeLog => widget.page.takeLog;
+  /// saved before takes kept one): the page's, as it is in the library
+  /// now ([_log]: with where its song was found in its sound, once
+  /// that's measured).
+  TakeLog? get _takeLog => _log ?? widget.page.takeLog;
+  TakeLog? _log;
+
+  /// Where the Take lane's grips are without their snap to the song's
+  /// marks, while one is dragged ([_snapped]).
+  Duration? _dragStart;
+  Duration? _dragEnd;
 
   /// Whether the Song lane has a song in it (as [PageEdit.hasSong]: a
   /// song picked, its lane not `off`; none said, a newer app's default).
@@ -435,19 +444,24 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         return;
       }
       await controller.setLooping(false);
-      final saved = event.pages
-          .where((p) => p.id == widget.page.id)
-          .firstOrNull
-          ?.edit;
+      final page = event.pages.where((p) => p.id == widget.page.id).firstOrNull;
+      final saved = page?.edit;
+      final log = page?.takeLog ?? widget.page.takeLog;
       // A take's song, lined up by itself as it played while recording,
       // unless the edit placed one or took it out.
-      final logged = LoggedSong.of(_takeLog);
+      final logged = LoggedSong.of(log);
       final lined =
           logged != null && event.pages.any((p) => p.id == logged.page)
           ? logged
           : null;
-      final edit = withLoggedSong(saved, lined, duration: length);
+      var edit = withLoggedSong(saved, lined, duration: length);
+      // Kept where the log alone had it, before the song was found in
+      // the take's sound: it follows what was found.
+      if (edit != null && lined != null && _follows(edit, lined)) {
+        edit = lined.placed(edit);
+      }
       setState(() {
+        _log = log;
         _video = controller;
         _playback = EditedPlayback(controller, whole: true);
         _duration = length;
@@ -487,6 +501,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         );
       }
       await _played();
+      // Not measured yet (a take from before, or from a device that
+      // couldn't): the song is looked for in the take's sound now.
+      if (lined != null && log?.sync == null) unawaited(_measureSong());
     } on Object catch (e) {
       // A player opened but not the screen's yet has no one else to let
       // go of it.
@@ -534,6 +551,42 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     await video?.dispose();
     await song?.dispose();
     if (mounted) await _open();
+  }
+
+  /// Whether [edit] has [logged]'s song lined up by itself and not moved
+  /// from it ([LoggedSong.shiftOf] none).
+  static bool _follows(PageEdit edit, LoggedSong logged) =>
+      edit.songMode == SongMode.auto &&
+      edit.trackId == logged.page &&
+      logged.shiftOf(edit) == Duration.zero;
+
+  /// Has the take's song found in its sound ([TakeSyncer]), and, found,
+  /// lines it up there: the Song lane follows, unless it was moved by
+  /// hand, or holds another song (it stays where it was put).
+  Future<void> _measureSong() async {
+    final log = await TakeSyncer.sync(_library, widget.eventId, widget.page.id);
+    if (!mounted || log == null || log.sync == null || log == _log) return;
+    final logged = LoggedSong.of(log);
+    final was = _logged;
+    final follows =
+        logged != null &&
+        was != null &&
+        logged.page == was.page &&
+        _lined &&
+        _follows(_current, was);
+    setState(() {
+      _log = log;
+      if (logged == null || was == null || logged.page != was.page) return;
+      _logged = logged;
+      if (!follows) return;
+      final placed = logged.placed(_current);
+      _offset = placed.offset;
+      _trackStart = _clamp(placed.trackStart, Duration.zero, _trackLength);
+      _trackEnd = placed.trackEnd == null
+          ? _trackLength
+          : _clamp(placed.trackEnd!, _trackStart, _trackLength);
+    });
+    _changed();
   }
 
   @override
@@ -943,21 +996,72 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     _keepPart(start, end, endMoved: end != _end && start == _start);
   }
 
-  /// The Take lane's start grip, dragged by [delta].
-  void _trimStartBy(Duration delta) => _keepPart(
-    _clamp(_start + delta, Duration.zero, _end - PageEdit.minLength),
-    _end,
-    endMoved: false,
-    exact: false,
-  );
+  /// The Take lane's start grip, dragged by [delta]: near one of the
+  /// song's marks, it's on it ([_snapped]).
+  void _trimStartBy(Duration delta) {
+    final at = _dragStart = (_dragStart ?? _start) + delta;
+    _keepPart(
+      _clamp(_snapped(at), Duration.zero, _end - PageEdit.minLength),
+      _end,
+      endMoved: false,
+      exact: false,
+    );
+  }
 
-  /// The Take lane's end grip, dragged by [delta].
-  void _trimEndBy(Duration delta) => _keepPart(
-    _start,
-    _clamp(_end + delta, _start + PageEdit.minLength, _duration),
-    endMoved: true,
-    exact: false,
-  );
+  /// The Take lane's end grip, dragged by [delta], as the start's.
+  void _trimEndBy(Duration delta) {
+    final at = _dragEnd = (_dragEnd ?? _end) + delta;
+    _keepPart(
+      _start,
+      _clamp(_snapped(at), _start + PageEdit.minLength, _duration),
+      endMoved: true,
+      exact: false,
+    );
+  }
+
+  /// Where a lined-up song starts and stops in the video, clip by clip
+  /// ([LoggedSong.marksIn]): drawn on the ruler and the Take lane, and
+  /// where a grip dragged near snaps to; none without one.
+  List<Duration> get _songMarks {
+    final logged = _logged;
+    if (logged == null || !_lined || _duration <= Duration.zero) {
+      return const [];
+    }
+    return logged.marksIn(_current, _duration, songLength: _trackLength);
+  }
+
+  /// How near one of the song's marks a grip dragged snaps to it: a
+  /// hundredth of the video (a few points of the lane), and no less than
+  /// a twentieth of a second.
+  Duration get _snapWithin =>
+      Duration(milliseconds: max(50, _duration.inMilliseconds ~/ 100));
+
+  /// [at], or the song's mark it's near ([_snapWithin]): the nearest.
+  Duration _snapped(Duration at) {
+    Duration? best;
+    for (final mark in _songMarks) {
+      final off = (mark - at).abs();
+      if (off <= _snapWithin && (best == null || off < (best - at).abs())) {
+        best = mark;
+      }
+    }
+    return best ?? at;
+  }
+
+  /// Keeps the take from where its song starts to where it stops (its
+  /// first clip's start to its last's end, within the video): cut to the
+  /// song, to the millisecond.
+  void _cutToSong() {
+    final marks = _songMarks;
+    if (marks.length < 2) return;
+    _trim(marks.first, marks.last);
+  }
+
+  /// Whether the kept part is the song's already ([_cutToSong]).
+  bool get _cutIsSong {
+    final marks = _songMarks;
+    return marks.length < 2 || (_start == marks.first && _end == marks.last);
+  }
 
   /// Keeps from [start] to [end]. The song stays where it is along the
   /// video (what falls outside is cut off, in both lanes). The preview,
@@ -1025,6 +1129,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// A Take grip let go: the preview, while paused, goes exactly to the
   /// end it moved.
   void _trimmed({required bool end}) {
+    _dragStart = _dragEnd = null;
     final video = _video;
     if (video != null && !video.value.isPlaying) {
       _seek(end ? _end : _start);
@@ -1403,7 +1508,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     try {
       final page = widget.page;
       final input = await _fileOf(event, page);
-      final label = fileLabel(l10n, event, page);
+      // Each download is named for when it's made, so renders don't clash.
+      final label = timestamped(fileLabel(l10n, event, page));
       final plan = _plan(what, input: input);
       if (plan.passthrough) {
         await Downloads.saveFile(_library, event, page, label);
@@ -2291,7 +2397,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// the take's bands still grow over this frame, [_tabSizes]), **Background**
   /// (its opacity, 0% to 100% by 5%: the text stays opaque, outlined as
   /// the background fades out), each its name and value over its slider,
-  /// and **Colours** (four swatches, each a bit of band in its colours);
+  /// **Colours** (two swatches, each a bit of band in its colours) and
+  /// **Alignment** (the text to the left, the default, centre or right);
   /// **Default style**; on a phone, in place of the chips, with **Done**
   /// to close it. The preview draws each change at once.
   Widget _tabStyleFields(AppLocalizations l10n) {
@@ -2356,6 +2463,43 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
               ),
           ],
         ),
+        const SizedBox(height: 12),
+        Text(l10n.videoEditTabAlign),
+        const SizedBox(height: 8),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: SegmentedButton<TabAlign>(
+            key: const Key('video-edit-tab-align'),
+            showSelectedIcon: false,
+            segments: [
+              for (final (align, icon, name) in [
+                (
+                  TabAlign.left,
+                  Icons.format_align_left,
+                  l10n.videoEditTabAlignLeft,
+                ),
+                (
+                  TabAlign.center,
+                  Icons.format_align_center,
+                  l10n.videoEditTabAlignCenter,
+                ),
+                (
+                  TabAlign.right,
+                  Icons.format_align_right,
+                  l10n.videoEditTabAlignRight,
+                ),
+              ])
+                ButtonSegment(
+                  value: align,
+                  icon: Icon(icon, key: Key('video-edit-tab-align-${align.name}')),
+                  tooltip: name,
+                ),
+            ],
+            selected: {style.align},
+            onSelectionChanged: (picked) =>
+                _setTabStyle(style.copyWith(align: picked.single)),
+          ),
+        ),
         const SizedBox(height: 4),
         Wrap(
           alignment: WrapAlignment.end,
@@ -2384,9 +2528,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   static String _colorsName(AppLocalizations l10n, TabColors colors) =>
       switch (colors) {
         TabColors.dark => l10n.videoEditTabColorsDark,
-        TabColors.light => l10n.videoEditTabColorsLight,
         TabColors.gold => l10n.videoEditTabColorsGold,
-        TabColors.brand => l10n.videoEditTabColorsBrand,
       };
 
   /// The title's text: two fields (typing shows it in the preview at
@@ -2576,6 +2718,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     final songName = _take ? l10n.videoEditLaneSong : l10n.videoEditLaneTrack;
     final length = _duration;
     final hasSong = _hasSong;
+    final marks = _songMarks;
     final Widget songBar;
     if (!hasSong) {
       songBar = _AddSong(
@@ -2625,6 +2768,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                 Expanded(
                   child: _Ruler(
                     length: length,
+                    marks: marks,
                     label: l10n.videoEditRuler,
                     timeOf: _rulerTime,
                     onSeek: (at, {required exact}) => _seek(at, exact: exact),
@@ -2654,6 +2798,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                       length: length,
                       start: _start,
                       end: _end,
+                      marks: marks,
                       fades: _fades,
                       name: ownName,
                       label: l10n.videoEditTakeBar,
@@ -2826,11 +2971,29 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
               final d when d < Duration.zero => l10n.videoEditSongLinedEarlier(
                 time(-d),
               ),
-              _ => l10n.videoEditSongLined,
+              // Found in the take's own sound, or as Cam noted it.
+              _ =>
+                _logged!.measured
+                    ? l10n.videoEditSongLinedSound
+                    : l10n.videoEditSongLined,
             },
             key: const Key('video-edit-song-lined'),
             textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall,
+          ),
+        // The take cut to its song: from where it starts to where it
+        // stops, as the marks on the ruler show.
+        if (_lined && _songMarks.length >= 2)
+          Align(
+            child: Tooltip(
+              message: l10n.videoEditCutToSongTip,
+              child: TextButton.icon(
+                key: const Key('video-edit-cut-to-song'),
+                icon: const Icon(Icons.content_cut, size: 18),
+                label: Text(l10n.videoEditCutToSong),
+                onPressed: _cutIsSong ? null : _cutToSong,
+              ),
+            ),
           ),
         if (trimmed && _trackLength > Duration.zero && _linedClips == null)
           Text(
@@ -3158,12 +3321,17 @@ class _LaneVolume extends StatelessWidget {
 class _Ruler extends StatefulWidget {
   const _Ruler({
     required this.length,
+    this.marks = const [],
     required this.label,
     required this.timeOf,
     required this.onSeek,
   });
 
   final Duration length;
+
+  /// Where the take's song starts and stops (the Take lane's grips snap
+  /// to them): a small flag each, in the primary colour.
+  final List<Duration> marks;
   final String label;
   final String Function(Duration at) timeOf;
   final void Function(Duration at, {required bool exact}) onSeek;
@@ -3215,10 +3383,12 @@ class _RulerState extends State<_Ruler> {
               size: Size(width, height),
               painter: _RulerPainter(
                 length: widget.length,
+                marks: widget.marks,
                 timeOf: widget.timeOf,
                 style: style,
                 scaler: scaler,
                 tick: theme.colorScheme.outline,
+                mark: theme.colorScheme.primary,
               ),
             ),
           ),
@@ -3231,17 +3401,21 @@ class _RulerState extends State<_Ruler> {
 class _RulerPainter extends CustomPainter {
   _RulerPainter({
     required this.length,
+    this.marks = const [],
     required this.timeOf,
     required this.style,
     required this.scaler,
     required this.tick,
+    required this.mark,
   });
 
   final Duration length;
+  final List<Duration> marks;
   final String Function(Duration at) timeOf;
   final TextStyle style;
   final TextScaler scaler;
   final Color tick;
+  final Color mark;
 
   /// The steps between ticks, in seconds: the first with room for a time.
   static const _steps = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 1200, 1800];
@@ -3274,11 +3448,27 @@ class _RulerPainter extends CustomPainter {
       final text = label(timeOf(Duration(seconds: s)));
       if (x + text.width <= size.width) text.paint(canvas, Offset(x + 2, 0));
     }
+    // The song's marks: a small flag pointing down at each, over the
+    // ticks.
+    final flag = Paint()..color = mark;
+    for (final at in marks) {
+      final x = at.inMilliseconds / 1000 * perSecond;
+      canvas.drawPath(
+        Path()
+          ..moveTo(x - 4, size.height - 7)
+          ..lineTo(x + 4, size.height - 7)
+          ..lineTo(x, size.height)
+          ..close(),
+        flag,
+      );
+    }
   }
 
   @override
   bool shouldRepaint(_RulerPainter old) =>
       old.length != length ||
+      !listEquals(old.marks, marks) ||
+      old.mark != mark ||
       old.style != style ||
       old.scaler != scaler ||
       old.tick != tick;
@@ -3353,6 +3543,7 @@ class _TakeBar extends StatelessWidget {
     required this.length,
     required this.start,
     required this.end,
+    this.marks = const [],
     this.fades = Fades.none,
     required this.name,
     required this.label,
@@ -3366,6 +3557,10 @@ class _TakeBar extends StatelessWidget {
   final Duration length;
   final Duration start;
   final Duration end;
+
+  /// Where the take's song starts and stops: a thin line down the bar at
+  /// each, where a grip dragged near snaps to.
+  final List<Duration> marks;
   final Fades fades;
   final String name;
 
@@ -3455,6 +3650,21 @@ class _TakeBar extends StatelessWidget {
                                         fades.length.inMicroseconds,
                               color: theme.colorScheme.onPrimaryContainer
                                   .withValues(alpha: 0.25),
+                            ),
+                          ),
+                        ),
+                      ),
+                    for (final (i, at) in marks.indexed)
+                      Positioned(
+                        key: Key('video-edit-take-mark-$i'),
+                        left: at.inMilliseconds * perMs - 1,
+                        top: 0,
+                        bottom: 0,
+                        width: 2,
+                        child: IgnorePointer(
+                          child: ColoredBox(
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.7,
                             ),
                           ),
                         ),
@@ -3843,6 +4053,7 @@ class _Grip extends StatelessWidget {
           behavior: HitTestBehavior.opaque,
           onHorizontalDragUpdate: (d) => onDrag(d.delta.dx),
           onHorizontalDragEnd: onDone == null ? null : (_) => onDone!(),
+          onHorizontalDragCancel: onDone,
           child: Center(
             child: Container(
               width: 4,

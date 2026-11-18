@@ -52,8 +52,8 @@ class YouTubeSearch {
   /// How long the dictionary waits, once typing stops, before it searches.
   static const wait = Duration(seconds: 2);
 
-  /// How many videos a search shows.
-  static const count = 8;
+  /// How many videos a search shows (Cifra Club's tabs come under them).
+  static const count = 3;
 
   /// The most searches kept.
   static const _kept = 50;

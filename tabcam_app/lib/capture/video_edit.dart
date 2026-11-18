@@ -16,6 +16,7 @@ export '../library/page_edit.dart'
         EditTitle,
         PageEdit,
         SongMode,
+        TabAlign,
         TabColors,
         trackSpan;
 export 'edit_formats.dart' show EditFormat, EditFormats;

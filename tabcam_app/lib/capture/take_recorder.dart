@@ -30,9 +30,9 @@ abstract class TakeRecorder {
   /// once the recording has started (or, should it not say, soon after).
   Future<void> start();
 
-  /// How long ago the recording started, in ms, as of now (the web: the
-  /// MediaRecorder's `start` event, on the page's clock); null when it
-  /// isn't known. Cam reads it as the take's clock starts: the take's lag
+  /// How long ago the recording started, in ms, as of now (the web:
+  /// since the MediaRecorder was told to start, once its `start` event
+  /// says it records, on the page's clock); null when it isn't known. Cam reads it as the take's clock starts: the take's lag
   /// (`TakeLog.lagMs`).
   double? msSinceStart();
 
