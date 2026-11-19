@@ -4461,10 +4461,10 @@ spec.
    `TakePriority.recording`); both still at 60%, so a section's band over
    it still shows. See [Cam](cam.md#playing-along-with-a-file).
 
-9. Follow-up to 8: its deploys (0.2.202611191545, RC and GA) put the
-   page live, client ID and all, but their check failed: it searched
-   the live page with `curl | grep -q`, and with the page now longer,
-   grep stopped reading before curl had written it all, curl failed
-   (23) and, under `pipefail`, so did the check. The deploy now fetches
-   the index page and the privacy policy whole, then searches them. See
-   [deploy](deploy.md).
+12. Follow-up to 8: its deploys (0.2.202611191545, RC and GA) put the
+    page live, client ID and all, but their check failed: it searched
+    the live page with `curl | grep -q`, and with the page now longer,
+    grep stopped reading before curl had written it all, curl failed
+    (23) and, under `pipefail`, so did the check. The deploy now fetches
+    the index page and the privacy policy whole, then searches them. See
+    [deploy](deploy.md).
