@@ -23,7 +23,8 @@
     which a busy machine takes minutes to load through Floci. No hot
     reload: restarting the service rebuilds it.
   - `5-index`: [tabcam_index/site](../tabcam_index) on
-    http://localhost:2013/: the index page and the local
+    http://localhost:2013/ (`scripts/index_page.py serve`, which fills in
+    the index page's Google client, the local app's): the index page and the local
     [maintenance](maintenance-mode.md) switch, `/status.json`
     (`{"maintenance": false}`).
   - `4-floci`: [Floci](https://floci.io/), a local AWS emulator, as the
