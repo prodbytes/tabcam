@@ -4383,3 +4383,14 @@ spec.
    read to say which case it is. See
    [Cam](cam.md#what-the-song-played-through) and
    [video edit](video-edit.md#the-songs-delay).
+
+6. **"In the section loop selector, in the overlay on top of currently
+   played, make sure both lines are transparent so the overlap if any is
+   visible as well as visible separately."** The section's band over the
+   play-along player's progress bar (shown while its range is dragged,
+   2026-11-17's 3) was solid yellow and hid the part played under it. It
+   is now see-through (the primary colour at half), and the part played
+   is red at 60% (it was the player's default 70%), so where the section
+   and the part played overlap the two mix, and each shows on its own
+   where they don't. The band is now exactly as high as the bar's line,
+   not its padding too. See [Cam](cam.md#playing-along-with-a-file).

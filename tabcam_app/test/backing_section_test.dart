@@ -556,8 +556,20 @@ void main() {
         bar.left + bar.width * d.inMilliseconds / length.inMilliseconds;
     expect(band.left, closeTo(at(section.start), 0.5));
     expect(band.right, closeTo(at(section.end), 0.5));
-    expect(band.top, bar.top);
-    expect(band.bottom, bar.bottom);
+    // As high as the bar's line (inside its padding of 4 above and below).
+    expect(band.top, bar.top + 4);
+    expect(band.bottom, bar.bottom - 4);
+
+    // Both see-through: where the section and the part played overlap,
+    // each shows through the other.
+    final bandColor = tester.widget<ColoredBox>(mark).color;
+    expect(bandColor.a, closeTo(0.5, 0.01));
+    final played = tester
+        .widget<VideoProgressIndicator>(find.byType(VideoProgressIndicator))
+        .colors
+        .playedColor;
+    expect(played.a, lessThan(1));
+    expect(played.a, greaterThan(0));
 
     // It follows the drag.
     await gesture.moveBy(const Offset(-20, 0));

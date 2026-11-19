@@ -950,16 +950,24 @@ class _BackingFrameState extends State<_BackingFrame> {
                           VideoProgressIndicator(
                             media,
                             allowScrubbing: true,
-                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            colors: const VideoProgressColors(
+                              playedColor: _SectionMark.played,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: _SectionMark.inset,
+                            ),
                           ),
                           if (section != null)
                             Positioned.fill(
+                              top: _SectionMark.inset,
+                              bottom: _SectionMark.inset,
                               child: IgnorePointer(
                                 child: _SectionMark(
                                   start: section.start,
                                   end: section.end,
                                   length: media.value.duration,
-                                  color: Theme.of(context).colorScheme.primary,
+                                  color: Theme.of(context).colorScheme.primary
+                                      .withValues(alpha: _SectionMark.alpha),
                                 ),
                               ),
                             ),
@@ -1675,8 +1683,10 @@ class _PhraseMarks extends CustomPainter {
 
 /// The section that repeats, over the progress bar while its range is
 /// dragged ([_SectionBar]): a band from its start to its end, in the
-/// range's colour, over the part played, so the two can be told apart
-/// where the range is set.
+/// range's colour, over the bar's line (the part played and the rest), so
+/// the two can be told apart where the range is set. Both are see-through
+/// ([alpha], [played]): where the section and the part played overlap, the
+/// two colours mix, and each still shows on its own past the other.
 class _SectionMark extends StatelessWidget {
   const _SectionMark({
     required this.start,
@@ -1684,6 +1694,16 @@ class _SectionMark extends StatelessWidget {
     required this.length,
     required this.color,
   });
+
+  /// How opaque the band is.
+  static const alpha = 0.5;
+
+  /// The part played's colour on the progress bar: red, see-through.
+  static const played = Color.fromRGBO(255, 0, 0, 0.6);
+
+  /// The progress bar's padding above and below its line: the band is as
+  /// high as the line.
+  static const inset = 4.0;
 
   final Duration start;
   final Duration end;
