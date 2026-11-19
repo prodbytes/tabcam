@@ -4408,3 +4408,24 @@ spec.
    the order chosen are kept on the device (`libraryorder`), not
    synced. New strings `homeSort` and `homeSort*` in English, Spanish
    and Portuguese. See [library](library.md).
+
+8. **"On the index page already offer google one click auth, adjust the
+   layout around that."** The index page (tabs.cam/) now signs people
+   in with Google itself: not signed in, it loads Google Identity
+   Services and shows One Tap (FedCM, no auto-select) at once, and
+   Google's own **Continue with Google** button ("Continue as …" with a
+   Google account in the browser) in the header and the closing
+   section. **Open tabs.cam** sits beside it, an outline of the same
+   height, for the other ways in; on phones the two stack, full width.
+   Without One Tap's FedCM, Google draws the prompt under the top bar at
+   the right instead of over it. A sign-in is left where the app's
+   Google sign-in keeps its own (`localStorage` `tabcam.session`) and
+   the app opens, starting its tabs.cam session from it with no prompt.
+   Someone signed in already gets **Open your tabs** and "Signed in as
+   …", and Google's script isn't loaded; without a client ID, or with
+   the script blocked, the page is as before. The client ID is filled
+   in by the new `scripts/index_page.py`, by the deploy (which checks
+   it's live) and by the local index server (`5-index`, the local
+   app's client). The privacy policy says the front page loads Google's
+   sign-in. See [index page](index-page.md#the-way-in),
+   [sessions](sessions.md) and [privacy](privacy.md).

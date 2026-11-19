@@ -60,7 +60,9 @@ which runs `scripts/deploy.sh` for that tag:
    DNS records; with `TABCAM_SHARE_API_URL` set, its domain is the stack's
    `ShareApiDomain`, which turns on [link previews](sharing.md#link-previews)
    (the share API as a second origin, for `/preview/*`);
-3. uploads `index.html` and the [index page](index-page.md)'s pictures
+3. uploads `index.html`, its Google client ID filled in
+   (`scripts/index_page.py`, [index page](index-page.md#signing-in-here)),
+   and the index page's pictures
    (`img/`, synced), the [privacy policy](privacy.md) (as the
    object `privacy`, so it's served at `/privacy`), the web build (`Cache-Control: no-cache`,
    Flutter's files aren't content-hashed) and
@@ -69,7 +71,8 @@ which runs `scripts/deploy.sh` for that tag:
    `/status.json` ([maintenance mode](maintenance-mode.md)) is left as
    it is;
 4. checks, for up to 10 minutes, that `/app/version.json` reports the
-   version, `/` is the index page (and its logo is served) and
+   version, `/` is the index page (with the Google client ID, when the
+   build has one; its logo served) and
    `/privacy` the privacy policy.
 
 One production deploy runs at a time; a newer tag waits.

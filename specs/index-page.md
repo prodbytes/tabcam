@@ -4,8 +4,9 @@ The site's front page, at https://tabs.cam/ (and https://rc.tabs.cam/):
 what tabs.cam does, and the way into the app at `/app/`. One static
 file, [tabcam_index/site/index.html](../tabcam_index/site/index.html),
 with its pictures in [img/](../tabcam_index/site/img); no build, no
-framework, no third-party requests (the fonts are the device's, Roboto
-where it's installed). In English. It no longer redirects to the app:
+framework, and no third-party requests but Google's sign-in script, for
+visitors not signed in ([signing in](#signing-in-here)); the fonts are
+the device's, Roboto where it's installed. In English. It no longer redirects to the app:
 only a capture's link that names the root (`/?c=…`) is sent on to
 `/app/`, its query kept.
 
@@ -18,9 +19,9 @@ Dark, in the brand's colours ([app icon](app-icon.md): `#1E1A15`, cream
   [logo](app-icon.md), links to the three features (Scan, Record, Share;
   hidden on phones) and **Open the app** (`/app/`).
 - **Header**: "For guitar and bass players", the title **A camera for
-  your guitar tabs**, a sentence on what it does, **Open tabs.cam**
-  (`/app/`), "Runs in your browser, on your phone or your computer", and
-  a faint six-line staff under them.
+  your guitar tabs**, a sentence on what it does, **the way in** (below),
+  "Runs in your browser, on your phone or your computer", and a faint
+  six-line staff under them.
 - **The three key features**, each a picture as wide as the page (1376
   px at most) with its text in a **box over it**: a dark, slightly
   see-through box with a gold top edge and a deep shadow, holding the
@@ -40,8 +41,8 @@ Dark, in the brand's colours ([app icon](app-icon.md): `#1E1A15`, cream
      come: until then its box stands alone, centred.
 - **The way in, again**: "Start with the tab on your music stand", that
   tabs.cam comes with no songs (everything is what the user scans or
-  adds, in their own account), no ads, no tracking, and **Open
-  tabs.cam**.
+  adds, in their own account), no ads, no tracking, and the way in
+  again.
 - **Footer**: Open the app and the [Privacy Policy](privacy.md)
   (`/privacy`).
 
@@ -52,6 +53,60 @@ left), 430 px wide at most, hanging 72 px below the picture when at the
 bottom. From 700 px it's under the picture, 48 px over its bottom edge,
 at the left. On phones it's under the picture, the page's width less 16
 px a side, 12 px over its edge.
+
+## The way in
+
+What the header and the closing section offer depends on who's there:
+
+- **Signed in already** on this browser (the app's tabs.cam session in
+  `localStorage` `tabcam.signed-in`, or a Google sign-in whose token is
+  good for another minute, `tabcam.session`): **Open your tabs**
+  (`/app/`), the one gold button, and "Signed in as *name*" (else the
+  email) before the header's note. Google's script isn't loaded.
+- **Not signed in, with a Google client** (the deploy's or the local
+  server's, below): Google's own **Continue with Google** button (white,
+  English, 40 px high; "Continue as *name*" when the browser has a Google
+  account), then **Open tabs.cam** beside it, an outline of the same
+  height, for the other ways in (email; the app's welcome has them all).
+  On phones they stack, each as wide as the page less 16 px a side, 360
+  px at most. Until Google's script has drawn its button, its place is
+  kept (a faint box), so nothing moves.
+- **No client, or Google's script fails to load** (blocked, offline): as
+  before, **Open tabs.cam** alone, gold.
+
+## Signing in here
+
+Not signed in, the page loads Google Identity Services
+(`accounts.google.com/gsi/client`) and offers the sign-in two ways, both
+one click:
+
+- **One Tap**: Google's prompt, asked for at once (`prompt()`; FedCM,
+  `auto_select` off, so no one is signed in without choosing to, and
+  closed by a tap outside it). With FedCM (Chrome) the browser places it,
+  top right on computers and a sheet at the bottom on phones; in
+  browsers without FedCM Google draws it in `#one-tap`, fixed under the
+  top bar at the right, so it never covers the bar's **Open the app**.
+- **The buttons** above, in the header and the closing section.
+
+A sign-in hands over to the app without a server of its own: the page
+reads the ID token's claims and keeps the sign-in where the app's Google
+sign-in keeps its own (`localStorage` `tabcam.session`: the subject as
+`id`, email, name, photo, `provider: google`, the token), then opens
+`/app/`. The site and the app share the origin, so the app finds it at
+launch as a Google sign-in from before the reload, and starts its
+[tabs.cam session](sessions.md) from the token, with no prompt. Storage
+off (some private modes), it opens the app anyway, which asks again.
+
+**The client ID** is the app's Google web client (a public identifier):
+the page has `<meta name="google-signin-client_id" content="">`, which
+[`scripts/index_page.py`](../scripts/index_page.py) fills in. The deploy
+fills it with `TABCAM_GOOGLE_WEB_CLIENT_ID` before uploading (refusing
+anything that isn't a client ID) and checks the live page has it; the
+local server (`index_page.py serve`) with the local web client
+(`TABCAM_GOOGLE_LOCAL_WEB_CLIENT_ID`, else `TABCAM_GOOGLE_WEB_CLIENT_ID`;
+environment, else `.env`), the one the local app signs in with. The
+client's JavaScript origins are the app's already (`/` and `/app/` are
+one origin). Empty, there's no Google sign-in on the page.
 
 ## Pictures
 
@@ -66,8 +121,9 @@ writes there too. The favicon is the app's (`/app/favicon.png`).
 
 ## Serving
 
-[Deploy](deploy.md) uploads `index.html` and syncs `img/` to the site's
-bucket, and checks that `/` is this page and `/img/logo.svg` is served.
-Locally `5-index` serves the folder as it is
-([development environment](dev-environment.md)), through Floci at
-https://local.tabcam.nu01.com:2443/.
+[Deploy](deploy.md) uploads `index.html` (its client ID filled in) and
+syncs `img/` to the site's bucket, and checks that `/` is this page (with
+the client ID, when there is one) and `/img/logo.svg` is served.
+Locally `5-index` serves the folder with `scripts/index_page.py serve`,
+the client ID filled in ([development environment](dev-environment.md)),
+through Floci at https://local.tabcam.nu01.com:2443/.
