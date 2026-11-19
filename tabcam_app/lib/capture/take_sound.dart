@@ -74,6 +74,19 @@ abstract final class TakeSound {
     }
   }
 
+  /// The output media plays through now, as the platform tells it:
+  /// `{route, name, latencyMs, from}` (`TakeOutput.fromReading`; no
+  /// latency: Android reports none). Null when it can't tell.
+  static Future<Map<Object?, Object?>?> output() async {
+    if (!supported) return null;
+    try {
+      return await channel.invokeMapMethod<Object?, Object?>('output');
+    } on Object catch (e) {
+      debugPrint('TabCam: cam: the audio output isn\'t known: $e');
+      return null;
+    }
+  }
+
   /// The take's sound is recorded from [device] from now on (null: the
   /// system's choice), the microphone opened again from it. Whether it
   /// opened from it (false: it couldn't, and the system's choice is open
@@ -106,16 +119,18 @@ abstract final class TakeSound {
   /// [video] (the camera's, without sound) with the take's sound in it, in
   /// step: a new MP4 ([take]). Should that fail, [take] is [video] and
   /// [error] says why; [warning] says what went wrong with a sound that's
-  /// there (it stopped early, it's all silence).
-  static Future<({XFile take, String? error, String? warning})> stop(
-    XFile video,
-  ) async {
+  /// there (it stopped early, it's all silence); [leadMs], how long before
+  /// the video's first frame the sound began (what was dropped of it).
+  static Future<({XFile take, String? error, String? warning, int? leadMs})>
+  stop(XFile video) async {
     try {
       final reply = await channel.invokeMapMethod<String, Object?>('stop', {
         'video': video.path,
       });
       final path = reply?['path'] as String?;
-      if (path == null) return (take: video, error: '?', warning: null);
+      if (path == null) {
+        return (take: video, error: '?', warning: null, leadMs: null);
+      }
       debugPrint(
         'TabCam: cam: the take\'s sound put in, '
         '${reply!['leadMs']} ms before the video dropped',
@@ -124,13 +139,22 @@ abstract final class TakeSound {
         take: XFile(path, mimeType: 'video/mp4'),
         error: null,
         warning: reply['warning'] as String?,
+        leadMs: switch (reply['leadMs']) {
+          final num lead when lead.isFinite => lead.round(),
+          _ => null,
+        },
       );
     } on PlatformException catch (e) {
       debugPrint('TabCam: cam: the take has no sound: $e');
-      return (take: video, error: e.message ?? e.code, warning: null);
+      return (
+        take: video,
+        error: e.message ?? e.code,
+        warning: null,
+        leadMs: null,
+      );
     } on Object catch (e) {
       debugPrint('TabCam: cam: the take has no sound: $e');
-      return (take: video, error: '$e', warning: null);
+      return (take: video, error: '$e', warning: null, leadMs: null);
     }
   }
 

@@ -2721,4 +2721,51 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get videoEditDelaySet => 'Aplicar';
+
+  @override
+  String videoEditSongOut(String route) {
+    String _temp0 = intl.Intl.selectLogic(route, {
+      'speaker': 'el altavoz',
+      'wired': 'auriculares con cable',
+      'bluetooth': 'Bluetooth',
+      'usb': 'un dispositivo USB',
+      'airplay': 'AirPlay',
+      'other': 'otra salida',
+    });
+    return 'Sonó por $_temp0';
+  }
+
+  @override
+  String videoEditSongOutLatency(int ms) {
+    return '; el dispositivo indicó $ms ms';
+  }
+
+  @override
+  String get videoEditSongOutChanged => '; la salida cambió durante la toma';
+
+  @override
+  String videoEditOutName(String route) {
+    String _temp0 = intl.Intl.selectLogic(route, {
+      'wired': 'estos auriculares',
+      'bluetooth': 'este dispositivo Bluetooth',
+      'usb': 'este dispositivo USB',
+      'other': 'esta salida',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String videoEditSongDelayRemember(String delay, String output) {
+    return 'Recordar $delay para $output';
+  }
+
+  @override
+  String videoEditSongDelayForget(String output) {
+    return 'Olvidar el retraso de $output';
+  }
+
+  @override
+  String videoEditSongDelayKept(String output) {
+    return 'Guardado para $output: sus tomas se abren con este retraso';
+  }
 }

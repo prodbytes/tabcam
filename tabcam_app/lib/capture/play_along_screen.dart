@@ -208,6 +208,13 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
   /// started (ms; null: not known, or not its take).
   double? _recorderLag;
 
+  /// What the song plays through, read as the take's clock starts
+  /// ([_readOutput]; the take's log keeps it, [TakeLog.out]); and, on
+  /// Android with the app's own sound, how long before the video's first
+  /// frame that sound began (the stop's reply; kept in [TakeLog.lagRaw]).
+  Future<TakeOutput?>? _outRead;
+  int? _soundLeadMs;
+
   /// The [_marks] (by index) made with auto-pass off: the tab turned in
   /// the take there, but it's no phrase pass of the take's.
   Set<int> _unpassed = {};
@@ -1084,6 +1091,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     _clockZero = _span.elapsed;
     _takeStarted = PlayAlongScreen.now();
     _recorderLag = _byRecorder ? _recorder?.msSinceStart() : null;
+    // Not waited for: the clock starts now.
+    _outRead = _readOutput();
+    _soundLeadMs = null;
     _clock
       ..reset()
       ..start();
@@ -1160,24 +1170,58 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     }
   }
 
-  /// Tells the segment [page] started from where [media] says it is now.
+  /// Tells the segment [page] started from where [media] says it is now:
+  /// its player read the position somewhere in the round trip, so the
+  /// reading is taken as of its middle.
   Future<void> _anchorSong(
     SongNotes notes,
     VideoPlayerController media,
     String page,
   ) async {
     try {
+      final before = _clock.elapsed.inMilliseconds;
       final at = await media.position;
+      final after = _clock.elapsed.inMilliseconds;
       if (at == null || !identical(notes, _songNotes)) return;
       if (_track.media != media) return;
       notes.anchor(
-        _clock.elapsed.inMilliseconds,
+        (before + after) ~/ 2,
         page: page,
         position: at.inMilliseconds,
       );
     } on Object catch (e) {
       debugPrint('TabCam: cam: where the song is isn\'t known: $e');
     }
+  }
+
+  /// The output the song plays through now (the web's recorder's word,
+  /// iOS's audio session's, Android's); null when none can say. Never
+  /// throws: a take is saved whatever this comes to.
+  Future<TakeOutput?> _readOutput() async {
+    try {
+      if (_recorder case final recorder?) return await recorder.output();
+      if (TakeAudio.supported) {
+        return TakeOutput.fromReading(await TakeAudio.output());
+      }
+      if (TakeSound.supported) {
+        return TakeOutput.fromReading(await TakeSound.output());
+      }
+    } on Object catch (e) {
+      debugPrint('TabCam: cam: the audio output isn\'t known: $e');
+    }
+    return null;
+  }
+
+  /// The output read as the take started ([_outRead]), marked [changed]
+  /// when it's another as it stopped (read again now).
+  Future<TakeOutput?> _outputNoted() async {
+    final read = _outRead;
+    _outRead = null;
+    var out = await (read ?? Future<TakeOutput?>.value());
+    if (out == null) return null;
+    final again = await _readOutput();
+    if (again != null && !again.sameAs(out)) out = out.copyWith(changed: true);
+    return out;
   }
 
   /// The take's lag ([TakeLog.lagMs]), from the readings noted while it
@@ -1275,6 +1319,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       final tab = _lines.isEmpty ? null : TakeTab.of(_lines, marks);
       final fileMs = _byRecorder || kIsWeb ? null : await mp4VideoMs(file);
       final lag = _lag(fileMs);
+      final out = await _outputNoted();
       // iOS: an HEVC take made H.264, so every browser plays it.
       if (await TakeH264.needed(file)) file = await _toH264(file);
       // The tab isn't in the take's picture: the log keeps it, and the
@@ -1283,7 +1328,8 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
         burned: false,
         lagMs: lag.lagMs,
         lagFrom: lag.from,
-        lagRaw: lag.raw,
+        lagRaw: {...lag.raw, 'soundLeadMs': ?_soundLeadMs},
+        out: out,
         tab: tab,
         song: song,
         songLink: notes?.link ?? false,
@@ -1346,7 +1392,8 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       unawaited(TakeSound.cancel());
       rethrow;
     }
-    final (:take, :error, :warning) = await TakeSound.stop(video);
+    final (:take, :error, :warning, :leadMs) = await TakeSound.stop(video);
+    _soundLeadMs = leadMs;
     if (mounted && error != null) _snack(l10n.camTakeNoSound(error));
     if (mounted && warning != null) _snack(l10n.camTakeSoundWarning(warning));
     return take;

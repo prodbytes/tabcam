@@ -4533,6 +4533,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Set'**
   String get videoEditDelaySet;
+
+  /// Video edit, a take: under the song's delay, what the song played through while the take recorded (as Cam noted it), by its route
+  ///
+  /// In en, this message translates to:
+  /// **'Played through {route, select, speaker{the speaker} wired{wired headphones} bluetooth{Bluetooth} usb{a USB device} airplay{AirPlay} other{another output}}'**
+  String videoEditSongOut(String route);
+
+  /// Video edit, a take: added after videoEditSongOut: the latency the device reported for that output, a hint for the delay, never applied by itself
+  ///
+  /// In en, this message translates to:
+  /// **'; the device reported {ms} ms'**
+  String videoEditSongOutLatency(int ms);
+
+  /// Video edit, a take: added after videoEditSongOut: the song played through another output as the take stopped
+  ///
+  /// In en, this message translates to:
+  /// **'; the output changed during the take'**
+  String get videoEditSongOutChanged;
+
+  /// Video edit, a take: the output a song delay is kept for on this device (in videoEditSongDelayRemember, Forget and Kept), by its route
+  ///
+  /// In en, this message translates to:
+  /// **'{route, select, wired{these headphones} bluetooth{this Bluetooth device} usb{this USB device} other{this output}}'**
+  String videoEditOutName(String route);
+
+  /// Video edit, a take: keeps the song's delay on this device for the takes whose song plays through that output and isn't found in their sound (delay like "+170 ms", output from videoEditOutName)
+  ///
+  /// In en, this message translates to:
+  /// **'Remember {delay} for {output}'**
+  String videoEditSongDelayRemember(String delay, String output);
+
+  /// Video edit, a take: drops the song delay kept on this device for that output (output from videoEditOutName)
+  ///
+  /// In en, this message translates to:
+  /// **'Forget the delay for {output}'**
+  String videoEditSongDelayForget(String output);
+
+  /// Video edit, a take: the delay shown is the one kept on this device for that output; its takes whose song isn't found in their sound open with it (output from videoEditOutName)
+  ///
+  /// In en, this message translates to:
+  /// **'Kept for {output}: its takes open with it'**
+  String videoEditSongDelayKept(String output);
 }
 
 class _AppLocalizationsDelegate

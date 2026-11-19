@@ -34,6 +34,10 @@ abstract final class MetaNames {
   /// What cloud OCR has filled, per event.
   static const String cloudOcr = 'cloudocr';
 
+  /// The song's delay kept per audio output, for the editor's takes
+  /// through it (`OutDelays`).
+  static const String outDelays = 'outdelays';
+
   /// The device's settings: small, and kept across reloads on the web too
   /// (in the browser's localStorage), where the captures are in memory.
   /// Cloud sync's and cloud OCR's states are not among them: they describe
@@ -47,6 +51,7 @@ abstract final class MetaNames {
     language,
     metronome,
     premium,
+    outDelays,
   };
 
   /// Every meta name the app uses.

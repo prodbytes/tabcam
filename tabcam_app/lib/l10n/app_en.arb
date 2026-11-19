@@ -3660,5 +3660,66 @@
   "videoEditDelaySet": "Set",
   "@videoEditDelaySet": {
     "description": "Video edit: the delay dialog's confirm button"
+  },
+  "videoEditSongOut": "Played through {route, select, speaker{the speaker} wired{wired headphones} bluetooth{Bluetooth} usb{a USB device} airplay{AirPlay} other{another output}}",
+  "@videoEditSongOut": {
+    "description": "Video edit, a take: under the song's delay, what the song played through while the take recorded (as Cam noted it), by its route",
+    "placeholders": {
+      "route": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditSongOutLatency": "; the device reported {ms} ms",
+  "@videoEditSongOutLatency": {
+    "description": "Video edit, a take: added after videoEditSongOut: the latency the device reported for that output, a hint for the delay, never applied by itself",
+    "placeholders": {
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditSongOutChanged": "; the output changed during the take",
+  "@videoEditSongOutChanged": {
+    "description": "Video edit, a take: added after videoEditSongOut: the song played through another output as the take stopped"
+  },
+  "videoEditOutName": "{route, select, wired{these headphones} bluetooth{this Bluetooth device} usb{this USB device} other{this output}}",
+  "@videoEditOutName": {
+    "description": "Video edit, a take: the output a song delay is kept for on this device (in videoEditSongDelayRemember, Forget and Kept), by its route",
+    "placeholders": {
+      "route": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditSongDelayRemember": "Remember {delay} for {output}",
+  "@videoEditSongDelayRemember": {
+    "description": "Video edit, a take: keeps the song's delay on this device for the takes whose song plays through that output and isn't found in their sound (delay like \"+170 ms\", output from videoEditOutName)",
+    "placeholders": {
+      "delay": {
+        "type": "String"
+      },
+      "output": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditSongDelayForget": "Forget the delay for {output}",
+  "@videoEditSongDelayForget": {
+    "description": "Video edit, a take: drops the song delay kept on this device for that output (output from videoEditOutName)",
+    "placeholders": {
+      "output": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditSongDelayKept": "Kept for {output}: its takes open with it",
+  "@videoEditSongDelayKept": {
+    "description": "Video edit, a take: the delay shown is the one kept on this device for that output; its takes whose song isn't found in their sound open with it (output from videoEditOutName)",
+    "placeholders": {
+      "output": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -2670,4 +2670,51 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoEditDelaySet => 'Set';
+
+  @override
+  String videoEditSongOut(String route) {
+    String _temp0 = intl.Intl.selectLogic(route, {
+      'speaker': 'the speaker',
+      'wired': 'wired headphones',
+      'bluetooth': 'Bluetooth',
+      'usb': 'a USB device',
+      'airplay': 'AirPlay',
+      'other': 'another output',
+    });
+    return 'Played through $_temp0';
+  }
+
+  @override
+  String videoEditSongOutLatency(int ms) {
+    return '; the device reported $ms ms';
+  }
+
+  @override
+  String get videoEditSongOutChanged => '; the output changed during the take';
+
+  @override
+  String videoEditOutName(String route) {
+    String _temp0 = intl.Intl.selectLogic(route, {
+      'wired': 'these headphones',
+      'bluetooth': 'this Bluetooth device',
+      'usb': 'this USB device',
+      'other': 'this output',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String videoEditSongDelayRemember(String delay, String output) {
+    return 'Remember $delay for $output';
+  }
+
+  @override
+  String videoEditSongDelayForget(String output) {
+    return 'Forget the delay for $output';
+  }
+
+  @override
+  String videoEditSongDelayKept(String output) {
+    return 'Kept for $output: its takes open with it';
+  }
 }

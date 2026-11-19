@@ -737,5 +737,12 @@
   "videoEditDelayType": "Escribe el retraso",
   "videoEditDelayTitle": "Retraso de la canción",
   "videoEditDelayHelp": "Milisegundos: + después, − antes",
-  "videoEditDelaySet": "Aplicar"
+  "videoEditDelaySet": "Aplicar",
+  "videoEditSongOut": "Sonó por {route, select, speaker{el altavoz} wired{auriculares con cable} bluetooth{Bluetooth} usb{un dispositivo USB} airplay{AirPlay} other{otra salida}}",
+  "videoEditSongOutLatency": "; el dispositivo indicó {ms} ms",
+  "videoEditSongOutChanged": "; la salida cambió durante la toma",
+  "videoEditOutName": "{route, select, wired{estos auriculares} bluetooth{este dispositivo Bluetooth} usb{este dispositivo USB} other{esta salida}}",
+  "videoEditSongDelayRemember": "Recordar {delay} para {output}",
+  "videoEditSongDelayForget": "Olvidar el retraso de {output}",
+  "videoEditSongDelayKept": "Guardado para {output}: sus tomas se abren con este retraso"
 }

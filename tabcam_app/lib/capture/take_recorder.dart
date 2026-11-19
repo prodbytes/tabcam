@@ -1,5 +1,6 @@
 import 'package:camera/camera.dart';
 
+import 'take_log.dart' show OutRoute, TakeOutput;
 import 'take_priority.dart';
 import 'web_take_recorder_stub.dart'
     if (dart.library.js_interop) 'web_take_recorder.dart';
@@ -45,6 +46,11 @@ abstract class TakeRecorder {
   /// is when it opens). Whether it opened from [id] (false: it couldn't,
   /// and the default is open instead). Not while recording.
   Future<bool> useMicrophone(String? id);
+
+  /// The audio output the browser plays through now, as far as it can
+  /// tell (its default output's name, and Web Audio's output latency);
+  /// null when it can't.
+  Future<TakeOutput?> output();
 
   /// The loudest the microphone has been lately, 0 to 1 (full scale),
   /// for Cam's level meter; null when it isn't open.
@@ -101,4 +107,23 @@ class TakeMic {
 
   @override
   String toString() => 'TakeMic($id, $name${builtIn ? ', built in' : ''})';
+}
+
+/// The browser's name for an audio output ([TakeRecorder.output]) as a
+/// route, guessed from its words ("Default - AirPods Pro" is Bluetooth,
+/// "MacBook Pro Speakers" the speaker); unknown when they don't say.
+OutRoute outRouteOfLabel(String label) {
+  final low = label.toLowerCase();
+  bool says(List<String> words) => words.any(low.contains);
+  if (low.trim().isEmpty) return OutRoute.unknown;
+  if (says(const ['bluetooth', 'airpods', 'buds', 'beats', 'hands-free'])) {
+    return OutRoute.bluetooth;
+  }
+  if (says(const ['airplay'])) return OutRoute.airplay;
+  if (says(const ['usb'])) return OutRoute.usb;
+  if (says(const ['headphone', 'headset', 'line out', 'external'])) {
+    return OutRoute.wired;
+  }
+  if (says(const ['speaker', 'built-in', 'internal'])) return OutRoute.speaker;
+  return OutRoute.unknown;
 }

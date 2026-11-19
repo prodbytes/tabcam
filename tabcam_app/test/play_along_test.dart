@@ -140,8 +140,29 @@ class FakeTakeRecorder implements TakeRecorder {
   @override
   double? msSinceStart() => started > 0 ? sinceStart : null;
 
+  /// What it says the song plays through: [told] as the take starts,
+  /// [toldAtStop] (when set) once it has stopped; and how often it was
+  /// asked, or what it throws.
+  TakeOutput? told;
+  TakeOutput? toldAtStop;
+  Object? outputError;
+  int outputs = 0;
+  bool stopped = false;
+
   @override
-  Future<XFile> stop() async => XFile.fromData(
+  Future<TakeOutput?> output() async {
+    outputs++;
+    if (outputError case final error?) throw error;
+    return stopped && toldAtStop != null ? toldAtStop : told;
+  }
+
+  @override
+  Future<XFile> stop() async {
+    stopped = true;
+    return _stopped();
+  }
+
+  Future<XFile> _stopped() async => XFile.fromData(
     Uint8List.fromList([7, started]),
     name: 'take.webm',
     mimeType: 'video/webm',

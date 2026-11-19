@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:web/web.dart' as web;
 
+import 'take_log.dart';
 import 'take_recorder.dart';
 import 'take_priority.dart';
 import 'web_head_tracker.dart' show cameraVideo;
@@ -158,6 +160,48 @@ class WebTakeRecorder implements TakeRecorder {
       debugPrint('TabCam: cam: no list of microphones: $e');
       return const [];
     }
+  }
+
+  /// The default audio output's name, as the browser gives it (the
+  /// default's own entry, "Default - …", else the first output), its
+  /// route guessed from it ([outRouteOfLabel]); and Web Audio's output
+  /// latency, where the browser has it (not Safari before 18.4) and the
+  /// microphone's graph runs. Names need the microphone allowed, which a
+  /// take has.
+  @override
+  Future<TakeOutput?> output() async {
+    var label = '';
+    try {
+      final outs = [
+        for (final d in await enumerateDevices())
+          if (d.kind == 'audiooutput') d,
+      ];
+      final picked =
+          outs.where((d) => _defaults.contains(d.deviceId)).firstOrNull ??
+          outs.firstOrNull;
+      label = picked?.label ?? '';
+    } on Object catch (e) {
+      debugPrint('TabCam: cam: no list of outputs: $e');
+    }
+    final name = label.replaceFirst(RegExp(r'^Default\s*-\s*'), '').trim();
+    int? latency;
+    try {
+      final audio = _audio;
+      if (audio != null &&
+          audio.state == 'running' &&
+          (audio as JSObject).has('outputLatency')) {
+        final s = audio.outputLatency;
+        if (s.isFinite && s > 0) latency = (s * 1000).round();
+      }
+    } on Object catch (e) {
+      debugPrint('TabCam: cam: no output latency: $e');
+    }
+    return TakeOutput.fromReading({
+      'route': outRouteOfLabel(name).name,
+      'name': name.isEmpty ? null : name,
+      'latencyMs': latency,
+      'from': OutFrom.browser.name,
+    });
   }
 
   @override
