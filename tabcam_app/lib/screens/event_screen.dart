@@ -120,7 +120,7 @@ class EventScreen extends StatefulWidget {
   State<EventScreen> createState() => _EventScreenState();
 }
 
-class _EventScreenState extends State<EventScreen> {
+class _EventScreenState extends State<EventScreen> implements LinkAdder {
   final _list = ScrollController();
   bool _busy = false;
 
@@ -134,6 +134,11 @@ class _EventScreenState extends State<EventScreen> {
     // loads the sidebar's player).
     final event = _library.byId(widget.eventId);
     _text = widget.initialText ?? false;
+    // The dictionary's results add their links here, on a capture the
+    // user can change.
+    if (event != null && !event.readOnly && !widget.byLink) {
+      DictionaryState.instance.attachLinker(this);
+    }
     // A reload: the file the user had open, over the list again.
     final file = event?.allPages.where((p) => p.id == widget.initialFile);
     if (file?.firstOrNull case final page?) {
@@ -250,6 +255,7 @@ class _EventScreenState extends State<EventScreen> {
 
   @override
   void dispose() {
+    DictionaryState.instance.detachLinker(this);
     _stopReopenCam?.call();
     _stopFollowing();
     _list.dispose();
@@ -501,16 +507,7 @@ class _EventScreenState extends State<EventScreen> {
       // it's shared with them.
       CaptureEvent target;
       if (link != null) {
-        final url = link.$1;
-        final site = importableTabSite(url);
-        if (site != null) _snack(l10n.linkTabImporting(site.name));
-        target = await _library.addLink(event, url, title: link.$2);
-        // A tab site's page, printed as a PDF beside the link, to read.
-        final imported = await TabPageImporter.create(widget.ocr)
-            .addTo(_library, target, url);
-        if (imported != null && mounted) {
-          replaceMessage(context, tabImportMessage(l10n, imported));
-        }
+        target = (await _addLinkTo(event, link.$1, link.$2)).target;
       } else if (source == _AddSource.scan) {
         widget.ocr?.warm();
         final pages = await PageSource.scan(context);
@@ -529,6 +526,49 @@ class _EventScreenState extends State<EventScreen> {
         target = await _library.addMedia(event, pick.media);
       }
       _showAdded(event, target, before, images: link == null);
+    });
+  }
+
+  /// Adds [url] to [event] (or to the user's copy of it, [Library.addLink])
+  /// as a link named [title]; a tab site's page is imported beside it, as
+  /// a PDF to read, and the import says how it went. Returns where it went
+  /// and whether the import said so.
+  Future<({CaptureEvent target, bool told})> _addLinkTo(
+    CaptureEvent event,
+    Uri url,
+    String? title,
+  ) async {
+    final l10n = context.l10n;
+    final site = importableTabSite(url);
+    if (site != null) _snack(l10n.linkTabImporting(site.name));
+    final target = await _library.addLink(event, url, title: title);
+    // A tab site's page, printed as a PDF beside the link, to read.
+    final imported = await TabPageImporter.create(widget.ocr)
+        .addTo(_library, target, url);
+    if (imported != null && mounted) {
+      replaceMessage(context, tabImportMessage(l10n, imported));
+    }
+    return (target: target, told: imported != null);
+  }
+
+  /// The dictionary's + on a YouTube or Cifra Club result: [url] added to
+  /// this capture as a link named [title], as Add's Link adds one, the
+  /// view kept (the Text view stays); unless it already has that link.
+  @override
+  Future<void> addLink(Uri url, {String? title}) async {
+    final event = _library.byId(widget.eventId);
+    if (event == null || !mounted) return;
+    final l10n = context.l10n;
+    // In place of the message showing: a + after another says at once.
+    if (event.pages.any((p) => p.isLink && p.url == url)) {
+      replaceMessage(context, l10n.dictionaryLinkThere);
+      return;
+    }
+    await _run(l10n.eventCouldntAdd, () async {
+      final added = await _addLinkTo(event, url, title);
+      if (mounted && !added.told) {
+        replaceMessage(context, l10n.dictionaryLinkAdded);
+      }
     });
   }
 

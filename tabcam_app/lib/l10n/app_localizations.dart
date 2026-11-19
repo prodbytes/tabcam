@@ -3262,6 +3262,24 @@ abstract class AppLocalizations {
   /// **'Open on YouTube'**
   String get dictionaryYouTubeOpen;
 
+  /// Dictionary: tooltip of the + beside a YouTube or Cifra Club result, adding it to the open capture as a link
+  ///
+  /// In en, this message translates to:
+  /// **'Add to the capture'**
+  String get dictionaryAddLink;
+
+  /// Dictionary: shown after its + added a result to the capture as a link
+  ///
+  /// In en, this message translates to:
+  /// **'Link added to the capture'**
+  String get dictionaryLinkAdded;
+
+  /// Dictionary: shown when its + is pressed on a result the capture already has as a link
+  ///
+  /// In en, this message translates to:
+  /// **'That link is already in the capture'**
+  String get dictionaryLinkThere;
+
   /// Dictionary: heading of Cifra Club's results (tabs of the song searched), under YouTube's videos
   ///
   /// In en, this message translates to:

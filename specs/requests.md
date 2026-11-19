@@ -4507,7 +4507,20 @@ spec.
    `write` takes the name. See
    [dictionary](dictionary.md#writing-in-the-text).
 
-17. **"Remove the 'type a chord' paragraph, just a 'type anything'
+17. **"On the search results on the dictionary besides the open button
+   add a '+' button to add the link to the capture."** Each YouTube
+   video and Cifra Club song in the dictionary's results now has a
+   **+** ("Add to the capture") just before its open-in-new mark, on a
+   capture's screen (and the file screen or Cam over it). It adds the
+   result to the capture as a link, as Add's Link does (a Cifra Club
+   page imported beside it as a PDF), named by its title; "Link added
+   to the capture", or "That link is already in the capture" for one it
+   has. No + on Home, on a capture shared to read or opened by its
+   link. New strings `dictionaryAddLink`, `dictionaryLinkAdded` and
+   `dictionaryLinkThere` in English, Spanish and Portuguese. See
+   [dictionary](dictionary.md#adding-a-result).
+
+18. **"Remove the 'type a chord' paragraph, just a 'type anything'
    placeholder and the pills is fine. Not even need so many pills, just
    the first (same name), a couple simple chords, the accidented ones, a
    few scales."** The dictionary, nothing typed, no longer explains
@@ -4520,14 +4533,14 @@ spec.
    added). The Chord symbols key under them stays. See
    [dictionary](dictionary.md).
 
-18. **"The chords dictionary below is fine, reduce font size a bit."**
+19. **"The chords dictionary below is fine, reduce font size a bit."**
    The dictionary's text (in the panel below the screen and in the
    sidebar alike) is now the app's text theme at 90%: the field, the
    results' headings, notes and degrees, the pills and the rest about
    1.5 px smaller (16 → 14.4, 14 → 12.6), a result's name 24 → 21.6.
    The diagrams keep their sizes. See [dictionary](dictionary.md).
 
-19. **"The search button can be just a magnifying glass beside the text
+20. **"The search button can be just a magnifying glass beside the text
    field, no need for a line below."** The dictionary's **Search
    YouTube** was a button on a line of its own under "Not a chord or a
    scale…". It is now a magnifying glass at the field's end, before its

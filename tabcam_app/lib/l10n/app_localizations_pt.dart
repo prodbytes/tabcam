@@ -1972,6 +1972,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dictionaryYouTubeOpen => 'Abrir no YouTube';
 
   @override
+  String get dictionaryAddLink => 'Adicionar à captura';
+
+  @override
+  String get dictionaryLinkAdded => 'Link adicionado à captura';
+
+  @override
+  String get dictionaryLinkThere => 'Esse link já está na captura';
+
+  @override
   String get dictionaryCifraClub => 'Tablaturas no Cifra Club';
 
   @override

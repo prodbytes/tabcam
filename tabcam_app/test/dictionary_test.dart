@@ -1042,6 +1042,97 @@ void main() {
         );
       });
 
+      testWidgets('a result\'s + adds it to the capture as a link; with no '
+          'capture to add to there is none', (tester) async {
+        await open(tester);
+        await tester.enterText(query, 'made-up riff');
+        await tester.testTextInput.receiveAction(TextInputAction.search);
+        await tester.pump();
+        await tester.pump();
+        final videoAdd = find.byKey(const Key('dictionary-video-add-vid1'));
+        final songAdd = find.byKey(
+          const Key('dictionary-song-add-made-up-band/made-up-riff'),
+        );
+        expect(find.text('made-up riff, part 1'), findsOneWidget);
+        // Home: no capture, no +.
+        expect(find.byTooltip('Add to the capture'), findsNothing);
+
+        final added = <(Uri, String?)>[];
+        final linker = _FakeLinker(added);
+        DictionaryState.instance.attachLinker(linker);
+        // Told after the frame.
+        await tester.pump();
+        await tester.pump();
+        expect(videoAdd, findsOneWidget);
+        expect(songAdd, findsOneWidget);
+        await tester.tap(videoAdd);
+        await tester.tap(songAdd);
+        await tester.pump();
+        expect(added, [
+          (
+            Uri.parse('https://www.youtube.com/watch?v=vid1'),
+            'made-up riff, part 2',
+          ),
+          (
+            Uri.parse(
+              'https://www.cifraclub.com.br/made-up-band/made-up-riff/',
+            ),
+            'made-up riff (tab) – Made-up Band',
+          ),
+        ]);
+        // The + doesn't open the result too.
+        expect(launcher.launched, isEmpty);
+
+        DictionaryState.instance.detachLinker(linker);
+        await tester.pump();
+        await tester.pump();
+        expect(find.byTooltip('Add to the capture'), findsNothing);
+      });
+
+      testWidgets('on a capture\'s screen the link goes in the capture, once', (
+        tester,
+      ) async {
+        final library = Library(PlatformEventStore());
+        late String id;
+        await tester.runAsync(() async {
+          await library.load();
+          id = (await library.create(const [])).id;
+        });
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: EventScreen(library: library, eventId: id),
+          ),
+        );
+        await tester.pump();
+        final linker = DictionaryState.instance.linker;
+        expect(linker, isNotNull);
+        final url = Uri.parse('https://www.youtube.com/watch?v=vid1');
+        await tester.runAsync(
+          () => linker!.addLink(url, title: 'made-up riff, part 1'),
+        );
+        await tester.pump();
+        final links = library.byId(id)!.pages.where((p) => p.isLink).toList();
+        expect(links.single.url, url);
+        expect(links.single.title, 'made-up riff, part 1');
+        expect(find.text('Link added to the capture'), findsOneWidget);
+
+        // Again: already there, not added twice.
+        await tester.runAsync(() => linker!.addLink(url, title: 'again'));
+        await tester.pump();
+        expect(library.byId(id)!.pages.where((p) => p.isLink), hasLength(1));
+        expect(
+          find.text('That link is already in the capture'),
+          findsOneWidget,
+        );
+
+        // The screen gone, nothing takes the +.
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+        expect(DictionaryState.instance.linker, isNull);
+      });
+
       testWidgets('Enter searches without the wait', (tester) async {
         await open(tester);
         await tester.enterText(query, 'made-up riff');
@@ -1421,4 +1512,15 @@ void main() {
       DictionaryState.instance.clear();
     });
   });
+}
+
+/// Takes the results' + in place of a capture's screen: notes each link.
+class _FakeLinker implements LinkAdder {
+  _FakeLinker(this.added);
+
+  final List<(Uri, String?)> added;
+
+  @override
+  Future<void> addLink(Uri url, {String? title}) async =>
+      added.add((url, title));
 }
