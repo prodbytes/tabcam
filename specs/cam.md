@@ -943,6 +943,13 @@ Play uses it too (above). A few KB for a ten-minute take:
     on iOS) leave it unmeasured, for another device to try; a way of
     telling this version doesn't know (a newer app's `from`) is kept as
     it came and not used. A clone's names the copy's song.
+  - **The editor's Auto-align** ([video edit](video-edit.md#auto-align-how))
+    looks the same way, but around where the Song lane has the song now
+    (not where the log does), further either side (2 s), with a higher
+    bar (16), and, where the song isn't in the take's sound
+    (headphones), by the onsets alone (the guitar played in time with
+    the song shares its onsets, not its sound; it could be a beat off).
+    It moves the lane and writes no `sync`.
 - A take without a log (saved before takes had one) has its tab in its
   picture, or never had one. A log dropped by an older app that
   re-saved the page (one from before pages kept the keys they don't

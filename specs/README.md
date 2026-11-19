@@ -109,7 +109,10 @@ review notes ([app stores](app-stores.md)).
   (the video, trimmed by its grips, its own sound's volume and Mute)
   and the Song lane (one of the capture's recordings, videos or takes,
   or a sound file, added to them, placed along the video, with its own
-  volume and Mute); on the video, a take's tab drawn over it (the Tab
+  volume and Mute; both sounds drawn in their lanes, a zoom to match
+  them by eye, the song's delay to the millisecond, and Auto-align,
+  which lines the song up with the take by their sounds, or by the
+  rhythm with headphones); on the video, a take's tab drawn over it (the Tab
   chip), a title (the capture's name, or typed) fading in at the top
   left, a small watermark that only Premium removes, and fades in from
   and out to black, both sounds with them (3 s each by default, adjustable). The edit is kept with the video (older apps still

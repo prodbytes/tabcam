@@ -4276,3 +4276,37 @@ spec.
    editor for a reload. The editor opened from Cam gets cloud sync, so
    its Share copies the keyed link. See [sharing](sharing.md) and
    [shared captures](shared-captures.md#shared-with-me).
+
+3. **"then, in the editor, could we show the sound waveforms in the
+   bars so that they could be matched? also add the controls to shift
+   left right to make that happen. also, make a magic button that does
+   its best to auto-align the recording and the backing track."**
+   (asked on 2026-11-17; the waveforms and the shift controls shipped
+   with 2026-11-18's 12–14: the delay to the millisecond, the zoom and
+   the lanes' waveforms). Now the magic button: **Auto-align**, a wand
+   in the song's details beside Cut to the song, for any song in the
+   Song lane (lined up, placed by hand, or a track on another video),
+   not offered where no sound can be read (the desktop). A take not
+   measured yet is measured first (and, found, lined up there).
+   Otherwise it looks for the song in the take's sound around where the
+   Song lane has it now, as the measure does (four 8 s windows a clip,
+   the drift fitted, the correlations added up) but 2 s either way and
+   with a higher bar (16); the parts more than 30 ms apart, it says
+   "roughly". Where the song isn't in the take's sound (headphones), by
+   the rhythm: the take's onsets against the song's, near the lane's
+   place (a Gaussian 0.7 s wide; with 0.4 s, a lane 420 ms off was put
+   a beat off), counted when they correlate at 0.13 a window or more
+   ("it could be a beat off"). Thresholds set on made-up riffs: a guitar
+   in the song's time matched 0.15–0.28, one in another tempo 0.11 at
+   most; a guitar without the song scored under 13 by the sound. It
+   moves the song as the delay control does (still lined up, kept with
+   the edit) and never writes the log's `sync`; a spinner and
+   "Listening… 1 of 4" while it runs, then what it did (moved so many
+   ms later or earlier, already there, roughly, by the rhythm, not
+   found: zoom in and drag it or nudge it by ear, or the sounds
+   couldn't be read here). New strings `videoEditAutoAlign*` and
+   `videoEditAlign*` in English, Spanish and Portuguese. Checked on
+   made-up riffs and in the editor's tests; not yet on a phone (its
+   time, and the thresholds on real speaker and headphones takes). See
+   [video edit](video-edit.md#auto-align) and
+   [Cam](cam.md#the-song-found-in-the-takes-sound).
