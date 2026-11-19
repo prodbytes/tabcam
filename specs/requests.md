@@ -4233,3 +4233,40 @@ spec.
    second is found to the millisecond, as before. The log's format is
    unchanged (the drift is logged, not kept). See
    [Cam](cam.md#the-song-found-in-the-takes-sound).
+
+## 2026-11-19
+
+1. **"Let's ensure that recording aligns as well as possible with the
+   backing track: when recording, looping or starting a new take always
+   include the 2 s offset for a breath and sync margin; check the
+   compensation needed for a Bluetooth output (if that matters); review
+   the code to remove any delays or reasons for mismatch."**
+   - **Every take counts in**: while a take records, the song always
+     waits the 2-second count-in before it plays, the count-in switched
+     off or not (`BackingTrack.countsIn`), so each take opens with the
+     user's breath and with the song's start safely inside it. Rec
+     pressed during a count-in starts it again from the take's start
+     (`BackingTrack.playWithTake`).
+   - **Looping counts in**: with Repeat on, each start over (the file's
+     end, or a section's) pauses, counts in and plays again, whenever
+     the count-in is on or a take records; the player's own looping is
+     off meanwhile. Off and not recording, it loops at once, as before.
+   - **A new take (/) pauses the song** at the cut instead of playing
+     on while the take is saved (seconds on iOS, the H.264 conversion),
+     and plays it on from there after the next take's count-in, so the
+     next take misses none of it. **.** counts in always too.
+   - **A mismatch removed**: a song segment's start was pinned to when
+     the player said it played, its position held at the start until
+     its sound came out, so the log put the song that much (tens to
+     hundreds of ms) early; Cam now reads the player at once, 0.3 s and
+     1 s into each segment (each reading timed halfway through its
+     call), moves the segment's start later when a reading says the
+     sound started later, and keeps each reading to its own segment.
+   - **Bluetooth**: checked, and no fixed offset added. ExoPlayer,
+     AVPlayer and the browsers already count the output's reported
+     latency in their position (they keep video in step with the sound
+     heard); an offset of Cam's would count it twice. What the system
+     misreports is measured from the take's sound when the microphone
+     hears a speaker; with headphones, the editor's Delay corrects it.
+   See [Cam](cam.md#count-in) and
+   [What a take keeps](cam.md#what-a-take-keeps).

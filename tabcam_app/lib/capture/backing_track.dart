@@ -9,6 +9,7 @@ import '../library/library.dart';
 import '../library/meta_names.dart';
 import '../screens/video_page.dart';
 import 'link_frame.dart';
+import 'take_priority.dart';
 
 /// Cam's backing track: one of the capture's recordings, videos or links,
 /// played in a frame above the camera while the user plays along (and
@@ -18,13 +19,30 @@ import 'link_frame.dart';
 /// just a [section] of itself, over and over; what plays in the app can
 /// play slower (or faster), at a [speed]. What plays in the app keeps
 /// the [phrases] passed while Cam recorded along with it. Play waits a
-/// [countIn] first, in silence, for the user to get to the instrument.
+/// [countIn] first, in silence, for the user to get to the instrument;
+/// while a take records it always does ([countsIn]), and each time it
+/// starts over too, so the take has room before the song.
 class BackingTrack extends ChangeNotifier {
-  BackingTrack(this.library, {this.open = _open}) {
+  BackingTrack(
+    this.library, {
+    this.open = _open,
+    ValueListenable<bool>? recording,
+  }) : _recording = recording ?? TakePriority.recording {
+    _recording.addListener(_recordingChanged);
     unawaited(_loadSettings());
   }
 
   final Library library;
+
+  /// Whether a take records now ([TakePriority.recording]; tests pass
+  /// their own).
+  final ValueListenable<bool> _recording;
+
+  void _recordingChanged() {
+    if (_disposed) return;
+    if (_media case final media?) unawaited(_loopChanged(media));
+    notifyListeners();
+  }
 
   /// Opens a recording's or video's player; tests pass their own.
   final Future<VideoPlayerController> Function(
@@ -76,11 +94,18 @@ class BackingTrack extends ChangeNotifier {
   static const countInLength = Duration(seconds: 2);
 
   /// Whether play waits [countInLength] first, in silence (the user moves
-  /// from the keyboard or the screen to the instrument); on by default,
-  /// kept on the device. Only what plays in the app waits: a link in a
-  /// frame plays at once.
+  /// from the keyboard or the screen to the instrument), and waits again
+  /// each time it starts over ([repeat]); on by default, kept on the
+  /// device. Only what plays in the app waits: a link in a frame plays at
+  /// once. While a take records it waits whatever this says
+  /// ([countsIn]).
   bool get countIn => _countIn;
   bool _countIn = true;
+
+  /// Whether play waits [countInLength] now, and each start over too: with
+  /// [countIn] on, and always while a take records (the take has the
+  /// user's breath before the song, and room to line the song up in).
+  bool get countsIn => _countIn || _recording.value;
 
   /// Whether the user set [countIn] before the device's setting loaded.
   bool _countInSet = false;
@@ -92,7 +117,8 @@ class BackingTrack extends ChangeNotifier {
     if (on == _countIn) return;
     _countIn = on;
     final media = _media;
-    if (!on && _cancelCountIn() && media != null) await media.play();
+    if (!countsIn && _cancelCountIn() && media != null) await media.play();
+    if (media != null) await _loopChanged(media);
     notifyListeners();
     try {
       await library.writeMeta(metaName, jsonEncode({'countIn': on}));
@@ -110,10 +136,10 @@ class BackingTrack extends ChangeNotifier {
   int get countInRun => _countInRun;
   int _countInRun = 0;
 
-  /// Plays [media], after the count-in if it's on.
+  /// Plays [media], after the count-in if there's one ([countsIn]).
   Future<void> _play(VideoPlayerController media) async {
     _cancelCountIn();
-    if (!_countIn) return media.play();
+    if (!countsIn) return media.play();
     _countInRun++;
     _countInTimer = Timer(countInLength, () {
       _countInTimer = null;
@@ -144,7 +170,7 @@ class BackingTrack extends ChangeNotifier {
     _repeat = on;
     _link?.repeat = on;
     notifyListeners();
-    await _media?.setLooping(on && section == null);
+    if (_media case final media?) await _loopChanged(media);
   }
 
   /// How fast a recording or video plays, 1 being as recorded: slower
@@ -207,7 +233,7 @@ class BackingTrack extends ChangeNotifier {
       _sections[id] = (start: start, end: end);
     }
     notifyListeners();
-    await _sectionChanged(media);
+    await _loopChanged(media);
   }
 
   /// Starts (or, with [end], ends) the section where it plays now.
@@ -224,38 +250,47 @@ class BackingTrack extends ChangeNotifier {
     final media = _media;
     if (_sections.remove(_page?.id) == null) return;
     notifyListeners();
-    if (media != null) await _sectionChanged(media);
+    if (media != null) await _loopChanged(media);
   }
 
   Timer? _sectionTimer;
 
-  /// The section's end is watched every [_sectionTick] while one is set
-  /// (the player's own position updates are coarser); the player's own
-  /// looping, back to the file's start, is off meanwhile.
+  /// The end is watched every [_sectionTick] while a section is set, or
+  /// while it starts over counting in ([repeat] with [countsIn]): the
+  /// player's own position updates are coarser, and its own looping (back
+  /// to the file's start at once) is off meanwhile.
   static const _sectionTick = Duration(milliseconds: 100);
 
-  Future<void> _sectionChanged(VideoPlayerController media) async {
+  /// Whether its end is watched, rather than left to the player.
+  bool get _watched => section != null || (_repeat && countsIn);
+
+  /// The section (or [repeat], or [countsIn]) changed: who starts it over
+  /// at its end, the player or [_keepInSection]; and into a new section,
+  /// if it's out of it.
+  Future<void> _loopChanged(VideoPlayerController media) async {
     final range = section;
+    final watched = _watched;
     _sectionTimer?.cancel();
     _sectionTimer = null;
-    await media.setLooping(_repeat && range == null);
-    if (range == null) return;
+    await media.setLooping(_repeat && !watched);
+    if (!watched || _media != media) return;
     _sectionTimer = Timer.periodic(_sectionTick, (_) => _keepInSection());
+    if (range == null) return;
     final at = media.value.position;
     if (at < range.start || at >= range.end) await media.seekTo(range.start);
   }
 
   bool _checking = false;
 
-  /// At the section's end: back to its start, playing on with [repeat],
-  /// paused without. The file's own end counts as the section's: a
-  /// section that ends at the file's end (or close enough for the player
-  /// to get there first) completes the player, which pauses itself at
-  /// the end, so that's watched too, not only the position while it
-  /// plays.
+  /// At its end (the section's, or the file's): back to its start, playing
+  /// on with [repeat] (after a count-in, with [countsIn]), paused without.
+  /// The file's own end counts as the section's: a section that ends at
+  /// the file's end (or close enough for the player to get there first)
+  /// completes the player, which pauses itself at the end, so that's
+  /// watched too, not only the position while it plays.
   Future<void> _keepInSection() async {
     final (media, range) = (_media, section);
-    if (_checking || media == null || range == null) return;
+    if (_checking || media == null || !_watched) return;
     final v = media.value;
     // Completed: the player has paused and seeked to the end (its own
     // doing, video_player's `completed`; the seek landing is waited for,
@@ -269,13 +304,29 @@ class BackingTrack extends ChangeNotifier {
           ? v.position
           : (await media.position ?? media.value.position);
       if (_media != media || section != range) return;
-      if (ended ||
-          at >= range.end ||
-          at < range.start - const Duration(seconds: 1)) {
-        if (!_repeat && at >= range.end) await media.pause();
-        await media.seekTo(range.start);
-        if (ended && _repeat) await media.play();
+      final start = range?.start ?? Duration.zero;
+      final atEnd = ended || (range != null && at >= range.end);
+      if (!atEnd) {
+        // Skipped back before the section: into it again.
+        if (range != null && at < start - const Duration(seconds: 1)) {
+          await media.seekTo(start);
+        }
+        return;
       }
+      if (!_repeat) {
+        if (!ended) await media.pause();
+        await media.seekTo(start);
+        return;
+      }
+      if (countsIn) {
+        // A breath before it starts over, as before it first played.
+        if (!ended) await media.pause();
+        await media.seekTo(start);
+        if (_media == media && !_disposed) await _play(media);
+        return;
+      }
+      await media.seekTo(start);
+      if (ended) await media.play();
     } finally {
       _checking = false;
     }
@@ -388,11 +439,7 @@ class BackingTrack extends ChangeNotifier {
       }
       _media = media..addListener(notifyListeners);
       if (_speed != 1) await media.setPlaybackSpeed(_speed);
-      if (section != null) {
-        await _sectionChanged(media);
-      } else {
-        await media.setLooping(_repeat);
-      }
+      await _loopChanged(media);
       if (play) await _play(media);
     } on Object catch (e) {
       debugPrint('TabCam: cam: ${page.fileName} can\'t play here: $e');
@@ -439,11 +486,11 @@ class BackingTrack extends ChangeNotifier {
 
   /// Back to its start (its section's): the **0** key. Paused, it stays
   /// paused there; playing, or counting in, it starts over as Play starts
-  /// it, so with [countIn] on it counts in again before it plays.
+  /// it, so with [countsIn] it counts in again before it plays.
   Future<void> restart() async {
     if (_media case final media?) {
       final going = _cancelCountIn() || media.value.isPlaying;
-      final counts = going && _countIn;
+      final counts = going && countsIn;
       if (counts) await media.pause();
       await media.seekTo(section?.start ?? Duration.zero);
       if (counts && _media == media) await _play(media);
@@ -455,6 +502,19 @@ class BackingTrack extends ChangeNotifier {
     final wasPlaying = link.playing;
     await link.stop();
     if (wasPlaying) await link.toggle();
+  }
+
+  /// A take starts: it plays along from where it is (from its start, at
+  /// its end), after a count-in of its own ([countsIn]: the take's
+  /// first [countInLength] are the song's breath), one under way
+  /// counting from now again; playing already, it plays on.
+  Future<void> playWithTake() async {
+    if (_media case final media?) {
+      if (media.value.isPlaying) return;
+      _cancelCountIn();
+      return toggle();
+    }
+    if (!(_link?.playing ?? true)) await _link?.toggle();
   }
 
   /// Pauses it (a take plays back), or stops its count-in.
@@ -495,6 +555,7 @@ class BackingTrack extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _recording.removeListener(_recordingChanged);
     _countInTimer?.cancel();
     _sectionTimer?.cancel();
     _media?.removeListener(notifyListeners);

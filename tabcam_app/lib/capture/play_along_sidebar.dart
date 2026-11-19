@@ -1556,7 +1556,8 @@ IconData _icon(EventPage page) => switch (page) {
 };
 
 /// The count-in, at the start of the progress bar's line: a button to turn
-/// it on or off ([BackingTrack.countIn]), then, while it's on, its seconds
+/// it on or off ([BackingTrack.countIn]), then, while it's on (or counts
+/// in all the same, a take recording), its seconds
 /// in [color] (not the progress bar's): "2s" and a short bar, which count
 /// down and fill while it counts in.
 class _CountIn extends StatelessWidget {
@@ -1629,7 +1630,8 @@ class _CountIn extends StatelessWidget {
           icon: Icon(on ? Icons.timer_outlined : Icons.timer_off_outlined),
           onPressed: onToggle,
         ),
-        if (on)
+        // Off, it still counts in while a take records.
+        if (on || track.countingIn)
           track.countingIn
               ? TweenAnimationBuilder<double>(
                   // Each count-in fills from empty.
