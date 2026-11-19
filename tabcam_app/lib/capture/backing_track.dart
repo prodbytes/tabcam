@@ -38,6 +38,10 @@ class BackingTrack extends ChangeNotifier {
   /// their own).
   final ValueListenable<bool> _recording;
 
+  /// Whether a take records now: the progress bar's part played is red
+  /// then, else the primary colour.
+  bool get recording => _recording.value;
+
   void _recordingChanged() {
     if (_disposed) return;
     if (_media case final media?) unawaited(_loopChanged(media));
