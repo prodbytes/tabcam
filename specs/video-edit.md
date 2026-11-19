@@ -544,7 +544,30 @@ them, the cut's steps go first, then the lanes, then the transport.
   that, **Cut to the song** (scissors; "Keep the take from where the
   song starts to where it stops"), which keeps the take from the
   song's first start to its last stop ([the song's
-  marks](#the-songs-marks)), greyed once that's the part kept. They
+  marks](#the-songs-marks)), greyed once that's the part kept.
+  <a id="auto-align"></a>Beside it, for any song in the Song lane (lined
+  up by itself, placed by hand, or a track on another video),
+  **Auto-align** (a wand; "Find where the song lines up with the take,
+  by their sounds, or by the rhythm with headphones"; on another video
+  "Find where the track lines up with the video, by their sounds, or by
+  the rhythm") moves the song to where the take's sound has it
+  ([how](#a-takes-song-lined-up)). While it listens it's greyed, a
+  spinner in place of its wand, and under it "Listening… 1 of 4" (the
+  parts read, of how many); then it says what it did: "Lined up by the
+  sound: moved 300 ms later" (or "earlier"), "Lined up by the sound:
+  it was there already", "Lined up by the sound, roughly: moved 120 ms
+  later; its parts disagree by 60 ms" (the song's parts found more
+  than 30 ms apart), "Lined up by the rhythm: moved 180 ms later (it
+  could be a beat off)" (headphones), "Found by its sound in the take,
+  and lined up there" (a take not measured yet, measured first), "The
+  song wasn't found in the take's sound, nor by the rhythm: zoom in and
+  drag it under the take, or nudge it by ear" (on another video "The
+  track wasn't found in the video's sound…"), or "The sounds couldn't
+  be read here" (a file this device can't decode). It isn't offered
+  where no sound can be read (the desktop builds). The move is the
+  delay control's: kept with the edit, a song lined up by itself
+  staying lined up, Reset undoing it; what it said goes when the song
+  is changed or Reset. They
   name it as its lane does: "song" on
   a take, "track" ("The track starts…", "… of the track") on any other
   video. A song shorter than the kept part leaves
@@ -746,6 +769,39 @@ the song up by itself (`LoggedSong`, [`render_plan.dart`](../tabcam_app/lib/capt
   between them), or another song picked, it's placed by hand
   (`manual`, its one clip as its track keys say). **Remove** keeps it
   out (`song: off`); **Reset** puts it back.
+- <a id="auto-align-how"></a>**Auto-align** ([the button](#auto-align),
+  `SongSync.align`, [`song_sync.dart`](../tabcam_app/lib/capture/song_sync.dart)):
+  for a song nudged off, one placed by eye, or a take whose song
+  wasn't found. A take not measured yet is measured first, as when the
+  editor opens it (it writes the log's `sync`); found, the Song lane
+  goes where it was found (any nudge undone), and that's all. Otherwise
+  it listens **around where the Song lane has the song now** (each clip
+  of a song lined up by itself as the edit moved it, else its one
+  placed part, cut to the video), the way the song is
+  [found in a take's sound](cam.md#the-song-found-in-the-takes-sound)
+  (each clip of 3 s or more, the six longest, up to four 8 s windows
+  along each, the correlations added up, the drift taken out) but
+  **2 s either way** (the measure looks 0.6 s), a match counting at 16
+  times the others' spread (14 for the measure, which looks at fewer
+  places) and 1.3 times the next best: the middle clip's shift is the
+  move. Its parts (the clips, and the windows clear on their own within
+  0.25 s of it) more than 30 ms apart, it says so ("roughly"); where
+  the windows are clear on their own but their sum isn't (they disagree
+  a little), their middle one is taken. **Not in the take's sound**
+  (headphones): **by the rhythm**, the guitar's onsets against the
+  song's (`SongSync.onsets`: each hundredth of a second, how much
+  louder it gets, less its mean over the second around, scaled to unit
+  length; `onsetAlign`: their correlation added up over the windows,
+  lags of up to 2 s, its peak taken weighted by a Gaussian 0.7 s wide
+  around the lane's place, so a match a beat apart about as good goes
+  to the nearer). It counts when the onsets correlate at 0.13 or more
+  a window on average and stand 4 spreads above the rest; it could be
+  a beat off, and says so. The move goes through the delay control's
+  path (a song lined up by itself stays lined up; kept with the edit);
+  **Auto-align never writes the log's `sync`** (a take measured keeps
+  what was measured). On the device, from the files: nothing is
+  uploaded; the sounds are read with one reader for the run (the web
+  decodes each file once for it).
 - Checked (`test/take_log_test.dart`, `test/render_plan_test.dart`,
   `test/video_edit_test.dart`, `test/play_along_test.dart`): the notes'
   segments for a play and pause, jumps, another song, speed or a link,
@@ -765,7 +821,20 @@ the song up by itself (`LoggedSong`, [`render_plan.dart`](../tabcam_app/lib/capt
   and one away from them where it's dragged, Download's clips after;
   and a take not measured yet measured as the editor opens, the Song
   lane following with nothing kept, one moved by hand staying where it
-  was put. How the song is found is checked with
+  was put; Auto-align (`test/video_edit_test.dart`, group
+  `Auto-align`; `test/song_sync_test.dart`, group `align`): a measured
+  take's song moved 300 ms off put back where its sound is (still lined
+  up, the edit none again, Download's clip there, the log's `sync`
+  unchanged) and "already there" the second time, a headphones take
+  lined up by the rhythm within 25 ms of 180 ms, a take not measured
+  yet measured first, a track placed by hand on another video moved
+  283 ms, hiss not found and files unread said so (the song unmoved),
+  greyed with its progress while it listens, and not offered without
+  a reader; and on made-up riffs, a song found 83 ms, 1.5 s and −1.3 s
+  off and not by the sound 2.5 s off, a long clip's four windows and
+  two clips' each, halves 60 ms apart said rough, the rhythm 180 and
+  ±420 ms off found (not a beat off), guitars in other tempos and hiss
+  not, the onsets and their alignment. How the song is found is checked with
   [Cam's log](cam.md#the-song-found-in-the-takes-sound). **Not yet on a
   phone**: how close the line-up is there once measured (in Chrome, a
   song played into a video recorded as a take is was found about a
@@ -784,6 +853,10 @@ the song up by itself (`LoggedSong`, [`render_plan.dart`](../tabcam_app/lib/capt
   noted; and a headphones take not measured yet opening with it, then
   following its song found in its sound to the millisecond, the delay
   dropped.
+  Not yet on a phone either: how long Auto-align takes on a phone (8 reads of 12 s and 8 s
+  of sound for a long take), its thresholds on real speaker takes 2 s
+  off, and the rhythm's on real headphones takes (a full song's onsets
+  against a guitar's, and how often it's a beat off).
 
 ### The render plan
 

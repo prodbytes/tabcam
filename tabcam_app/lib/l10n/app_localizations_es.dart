@@ -2723,6 +2723,74 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoEditDelaySet => 'Aplicar';
 
   @override
+  String get videoEditAutoAlign => 'Auto-alinear';
+
+  @override
+  String get videoEditAutoAlignTip =>
+      'Busca dónde se alinea la canción con la toma, por sus sonidos, o por el ritmo con auriculares';
+
+  @override
+  String get videoEditAutoAlignTrackTip =>
+      'Busca dónde se alinea la pista con el video, por sus sonidos, o por el ritmo';
+
+  @override
+  String videoEditAlignListening(int done, int total) {
+    return 'Escuchando… $done de $total';
+  }
+
+  @override
+  String get videoEditAlignedSync =>
+      'Encontrada por su sonido en la toma, y alineada ahí';
+
+  @override
+  String videoEditAlignedLater(int ms) {
+    return 'Alineada por el sonido: movida $ms ms más tarde';
+  }
+
+  @override
+  String videoEditAlignedEarlier(int ms) {
+    return 'Alineada por el sonido: movida $ms ms antes';
+  }
+
+  @override
+  String get videoEditAlignedSame => 'Alineada por el sonido: ya estaba ahí';
+
+  @override
+  String videoEditAlignedRoughLater(int ms, int spread) {
+    return 'Alineada por el sonido, más o menos: movida $ms ms más tarde; sus partes difieren $spread ms';
+  }
+
+  @override
+  String videoEditAlignedRoughEarlier(int ms, int spread) {
+    return 'Alineada por el sonido, más o menos: movida $ms ms antes; sus partes difieren $spread ms';
+  }
+
+  @override
+  String videoEditAlignedRhythmLater(int ms) {
+    return 'Alineada por el ritmo: movida $ms ms más tarde (podría estar un tiempo corrida)';
+  }
+
+  @override
+  String videoEditAlignedRhythmEarlier(int ms) {
+    return 'Alineada por el ritmo: movida $ms ms antes (podría estar un tiempo corrida)';
+  }
+
+  @override
+  String get videoEditAlignedRhythmSame =>
+      'Alineada por el ritmo: ya estaba ahí (podría estar un tiempo corrida)';
+
+  @override
+  String get videoEditAlignNotFound =>
+      'No se encontró la canción en el sonido de la toma, ni por el ritmo: acerca el zoom y arrástrala bajo la toma, o muévela de oído';
+
+  @override
+  String get videoEditAlignNotFoundTrack =>
+      'No se encontró la pista en el sonido del video, ni por el ritmo: acerca el zoom y arrástrala, o muévela de oído';
+
+  @override
+  String get videoEditAlignUnread => 'Los sonidos no se pudieron leer aquí';
+
+  @override
   String videoEditSongOut(String route) {
     String _temp0 = intl.Intl.selectLogic(route, {
       'speaker': 'el altavoz',

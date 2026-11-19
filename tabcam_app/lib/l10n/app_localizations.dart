@@ -4534,6 +4534,102 @@ abstract class AppLocalizations {
   /// **'Set'**
   String get videoEditDelaySet;
 
+  /// Video edit: the button under the song's details that lines the song up with the take (the track with the video) by their sounds, or by the rhythm
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-align'**
+  String get videoEditAutoAlign;
+
+  /// Video edit, a take: the Auto-align button's tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Find where the song lines up with the take, by their sounds, or by the rhythm with headphones'**
+  String get videoEditAutoAlignTip;
+
+  /// Video edit, another video: the Auto-align button's tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Find where the track lines up with the video, by their sounds, or by the rhythm'**
+  String get videoEditAutoAlignTrackTip;
+
+  /// Video edit: Auto-align's progress while it reads the sounds (parts done, of how many)
+  ///
+  /// In en, this message translates to:
+  /// **'Listening… {done} of {total}'**
+  String videoEditAlignListening(int done, int total);
+
+  /// Video edit, a take not measured yet: Auto-align measured it first and found the song in the take's sound
+  ///
+  /// In en, this message translates to:
+  /// **'Found by its sound in the take, and lined up there'**
+  String get videoEditAlignedSync;
+
+  /// Video edit: Auto-align found the song in the take's sound and moved it that many milliseconds later
+  ///
+  /// In en, this message translates to:
+  /// **'Lined up by the sound: moved {ms} ms later'**
+  String videoEditAlignedLater(int ms);
+
+  /// Video edit: Auto-align found the song in the take's sound and moved it that many milliseconds earlier
+  ///
+  /// In en, this message translates to:
+  /// **'Lined up by the sound: moved {ms} ms earlier'**
+  String videoEditAlignedEarlier(int ms);
+
+  /// Video edit: Auto-align found the song in the take's sound where it already was
+  ///
+  /// In en, this message translates to:
+  /// **'Lined up by the sound: it was there already'**
+  String get videoEditAlignedSame;
+
+  /// Video edit: Auto-align found the song by the sound, but its parts disagree by that many milliseconds (the song may drift along the take)
+  ///
+  /// In en, this message translates to:
+  /// **'Lined up by the sound, roughly: moved {ms} ms later; its parts disagree by {spread} ms'**
+  String videoEditAlignedRoughLater(int ms, int spread);
+
+  /// Video edit: as videoEditAlignedRoughLater, moved earlier
+  ///
+  /// In en, this message translates to:
+  /// **'Lined up by the sound, roughly: moved {ms} ms earlier; its parts disagree by {spread} ms'**
+  String videoEditAlignedRoughEarlier(int ms, int spread);
+
+  /// Video edit: the song isn't in the take's sound (headphones); the playing's rhythm matched the song's, and it was moved that many milliseconds later
+  ///
+  /// In en, this message translates to:
+  /// **'Lined up by the rhythm: moved {ms} ms later (it could be a beat off)'**
+  String videoEditAlignedRhythmLater(int ms);
+
+  /// Video edit: as videoEditAlignedRhythmLater, moved earlier
+  ///
+  /// In en, this message translates to:
+  /// **'Lined up by the rhythm: moved {ms} ms earlier (it could be a beat off)'**
+  String videoEditAlignedRhythmEarlier(int ms);
+
+  /// Video edit: the playing's rhythm matched the song's where it already was
+  ///
+  /// In en, this message translates to:
+  /// **'Lined up by the rhythm: it was there already (it could be a beat off)'**
+  String get videoEditAlignedRhythmSame;
+
+  /// Video edit, a take: Auto-align found nothing
+  ///
+  /// In en, this message translates to:
+  /// **'The song wasn\'t found in the take\'s sound, nor by the rhythm: zoom in and drag it under the take, or nudge it by ear'**
+  String get videoEditAlignNotFound;
+
+  /// Video edit, another video: Auto-align found nothing
+  ///
+  /// In en, this message translates to:
+  /// **'The track wasn\'t found in the video\'s sound, nor by the rhythm: zoom in and drag it, or nudge it by ear'**
+  String get videoEditAlignNotFoundTrack;
+
+  /// Video edit: Auto-align couldn't read the take's or the song's sound on this device (a format it doesn't decode)
+  ///
+  /// In en, this message translates to:
+  /// **'The sounds couldn\'t be read here'**
+  String get videoEditAlignUnread;
+
   /// Video edit, a take: under the song's delay, what the song played through while the take recorded (as Cam noted it), by its route
   ///
   /// In en, this message translates to:
