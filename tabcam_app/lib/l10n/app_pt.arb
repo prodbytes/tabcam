@@ -129,6 +129,7 @@
   "linkTryAgain": "Tentar de novo",
   "linkUnavailable": "Não foi possível abrir esta captura. O link pode estar errado, o dono pode tê-la apagado ou você pode estar sem conexão.",
   "eventAddedToCopy": "Adicionado à sua cópia, \"{title}\"",
+  "eventEditOnCopy": "O editor abre na sua cópia, \"{title}\"",
   "eventCamOnCopy": "O Cam grava na sua cópia, \"{title}\"",
   "eventClonedAs": "Clonado como \"{title}\"",
   "eventCouldntClone": "Não foi possível clonar: {error}",

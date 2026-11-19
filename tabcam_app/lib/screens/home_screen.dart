@@ -184,6 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
             place.fileId,
             place.text,
             place.cam,
+            place.edit,
           ),
         );
         return;
@@ -271,12 +272,22 @@ class _HomeScreenState extends State<HomeScreen> {
     if (id == null || !mounted || !library.loaded) return;
     if (library.byId(id) case final event?) {
       _stopLink();
-      // A file's link opens it over the capture's list.
-      final file = switch (_link) {
-        final link? => CaptureLink.fileIn(link),
-        null => null,
-      };
-      openEvent(context, library, event, widget.sync, widget.ocr, file);
+      // A file's link opens it over the capture's list; its edit view's,
+      // the editor over the file.
+      final link = _link;
+      final file = link == null ? null : CaptureLink.fileIn(link);
+      final edit = link != null && CaptureLink.editIn(link);
+      openEvent(
+        context,
+        library,
+        event,
+        widget.sync,
+        widget.ocr,
+        file,
+        null,
+        false,
+        edit,
+      );
       return;
     }
     final sync = widget.sync;

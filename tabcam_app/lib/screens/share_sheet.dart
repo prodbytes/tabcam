@@ -11,7 +11,8 @@ import '../library/capture_event.dart';
 import 'sign_in_gate.dart';
 import 'messages.dart';
 
-/// **Share**: copies the capture's link (`…/app/?c=<id>&k=<key>`) to the
+/// **Share**: copies the capture's link (`…/app/?c=<id>&k=<key>`; a
+/// [file]'s with `f=<file id>`, its [edit] view's with `e=1` too) to the
 /// clipboard, nothing else, and says so. Signed in (or in a build without
 /// sign-in) it copies at once, on the tap itself: nothing comes before the
 /// copy (a browser lets a page write the clipboard only right after a
@@ -22,13 +23,15 @@ Future<void> shareCapture(
   BuildContext context,
   CaptureEvent event, {
   CloudSync? sync,
+  EventPage? file,
+  bool edit = false,
 }) async {
   final auth = sync?.auth;
   if (auth == null || !auth.available || auth.user != null) {
-    return copyCaptureLink(context, event, sync: sync);
+    return copyCaptureLink(context, event, sync: sync, file: file, edit: edit);
   }
   if (await requireSignIn(context, auth, Gated.share) && context.mounted) {
-    await copyCaptureLink(context, event, sync: sync);
+    await copyCaptureLink(context, event, sync: sync, file: file, edit: edit);
   }
 }
 
@@ -43,6 +46,8 @@ Future<void> copyCaptureLink(
   BuildContext context,
   CaptureEvent event, {
   CloudSync? sync,
+  EventPage? file,
+  bool edit = false,
 }) async {
   final key = event.linkKey;
   final keyed =
@@ -52,7 +57,7 @@ Future<void> copyCaptureLink(
       ? event.copyWith(linkKey: newLinkKey())
       : event;
   final copying = Clipboard.setData(
-    ClipboardData(text: CaptureLink.of(keyed).toString()),
+    ClipboardData(text: CaptureLink.of(keyed, file: file, edit: edit).toString()),
   );
   final messenger = Messenger.maybeOf(context);
   final copied = context.l10n.eventLinkCopied;

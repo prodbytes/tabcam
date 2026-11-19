@@ -56,6 +56,10 @@ your copy"** under the app bar.
   file deleted, the share removed or left; [copy on
   write](library.md#events)). Its phrase passes start from the user's
   own ones on the shared capture.
+- **A link to a file's edit view** (`e=1`, [sharing](sharing.md)) opens
+  the video editor on the user's copy too (made then, as Adding does),
+  over the copy's page of that file, in the shared capture's place; a
+  copy that already owns its files opens on its list.
 - The user's own [contribution](contributions.md), from before adding
   went to their copy, still shows under **Your files**, with Delete; Cam's
   phrase passes on the shared capture are kept there.

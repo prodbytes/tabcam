@@ -281,8 +281,9 @@ class _None extends StatelessWidget {
 }
 
 /// Opens [event]'s [EventScreen] (its Text view, or its files with
-/// [fileId] open over them, and Cam over it with [cam]: a reload where the
-/// user was), and remembers it's open until it's closed ([PlaceMemory]).
+/// [fileId] open over them, the video editor over the file with [edit],
+/// and Cam over it with [cam]: a reload where the user was, or a link),
+/// and remembers it's open until it's closed ([PlaceMemory]).
 Future<void> openEvent(
   BuildContext context,
   Library library,
@@ -292,6 +293,7 @@ Future<void> openEvent(
   String? fileId,
   bool? text,
   bool cam = false,
+  bool edit = false,
 ]) async {
   final memory = PlaceMemory.of(library);
   memory.update(
@@ -300,6 +302,7 @@ Future<void> openEvent(
       text: text ?? false,
       fileId: () => fileId,
       cam: cam,
+      edit: edit,
     ),
   );
   await Navigator.of(context).push(
@@ -312,6 +315,7 @@ Future<void> openEvent(
         initialFile: fileId,
         initialText: text,
         initialCam: cam,
+        initialEdit: edit,
       ),
     ),
   );

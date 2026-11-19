@@ -22,6 +22,10 @@ file, nor while a tool works); and, for Cam's takes, with the **Edit**
 on the take's row in the play-along sidebar (in Cam, beside the Text
 view and beside a recording), which opens it the same way
 ([editing a take from the sidebar](cam.md#editing-a-take-from-the-sidebar)).
+It also opens from a link to the file's edit view, and again after a
+reload where it was open ([sharing](sharing.md),
+[navigation](navigation.md#coming-back-where-the-user-was)); **Share**
+in its app bar (a link icon, before About) copies that link.
 
 **The edit is kept, not applied.** It's saved with the video's page as
 it's made (the page's `edit`, see [stored](#how-the-edit-is-stored);

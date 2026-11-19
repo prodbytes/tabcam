@@ -46,6 +46,25 @@ void main() {
         CaptureLink.fileIn(Uri.parse('https://x/app/?c=abc123&f=../x')),
         isNull,
       );
+      // Its edit view's adds e=1, only with a file.
+      final edit = CaptureLink.of(
+        event,
+        file: event.pages.first,
+        edit: true,
+        app: Uri.parse('https://tabs.cam/app/'),
+      );
+      expect(edit.queryParameters['e'], '1');
+      expect(CaptureLink.editIn(edit), isTrue);
+      expect(CaptureLink.editIn(link), isFalse);
+      expect(
+        CaptureLink.of(
+          event,
+          edit: true,
+          app: Uri.parse('https://tabs.cam/app/'),
+        ).queryParameters,
+        {'c': 'abc123'},
+      );
+      expect(CaptureLink.editIn(Uri.parse('https://x/app/?c=abc123&e=1')), isFalse);
     });
 
     test('with its key, the short link: the key alone', () {
@@ -58,6 +77,15 @@ void main() {
       expect(
         CaptureLink.of(keyed, file: event.pages.first, app: site).toString(),
         'https://tabs.cam/s/Ab3dEf9hJk2L?f=p1',
+      );
+      expect(
+        CaptureLink.of(
+          keyed,
+          file: event.pages.first,
+          edit: true,
+          app: site,
+        ).toString(),
+        'https://tabs.cam/s/Ab3dEf9hJk2L?f=p1&e=1',
       );
       // The full link it stands for.
       expect(
