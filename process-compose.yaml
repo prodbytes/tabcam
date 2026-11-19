@@ -78,7 +78,8 @@ processes:
     # The site root (tabcam_index/site): the index page. Floci's
     # distribution uses it as the default origin.
     # TABCAM_BIND_HOST: see scripts/flutter-web.sh.
-    command: python3 -m http.server ${INDEX_PORT:-2013} --bind ${TABCAM_BIND_HOST:-127.0.0.1} --directory tabcam_index/site
+    # scripts/index_page.py fills in the Google client the local app uses.
+    command: python3 scripts/index_page.py serve --port ${INDEX_PORT:-2013} --bind ${TABCAM_BIND_HOST:-127.0.0.1}
     readiness_probe:
       http_get:
         host: localhost

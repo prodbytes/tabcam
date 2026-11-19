@@ -4409,7 +4409,50 @@ spec.
    synced. New strings `homeSort` and `homeSort*` in English, Spanish
    and Portuguese. See [library](library.md).
 
-8. **"When playing a song make the play bar in the mini player the same
+8. **"On the index page already offer google one click auth, adjust the
+   layout around that."** The index page (tabs.cam/) now signs people
+   in with Google itself: not signed in, it loads Google Identity
+   Services and shows One Tap (FedCM, no auto-select) at once, and
+   Google's own **Continue with Google** button ("Continue as …" with a
+   Google account in the browser) in the header and the closing
+   section. **Open tabs.cam** sits beside it, an outline of the same
+   height, for the other ways in; on phones the two stack, full width.
+   Without One Tap's FedCM, Google draws the prompt under the top bar at
+   the right instead of over it. A sign-in is left where the app's
+   Google sign-in keeps its own (`localStorage` `tabcam.session`) and
+   the app opens, starting its tabs.cam session from it with no prompt.
+   Someone signed in already gets **Open your tabs** and "Signed in as
+   …", and Google's script isn't loaded; without a client ID, or with
+   the script blocked, the page is as before. The client ID is filled
+   in by the new `scripts/index_page.py`, by the deploy (which checks
+   it's live) and by the local index server (`5-index`, the local
+   app's client). The privacy policy says the front page loads Google's
+   sign-in. See [index page](index-page.md#the-way-in),
+   [sessions](sessions.md) and [privacy](privacy.md).
+
+9. **"In the tab text view, add a button on top to split the view in
+   two columns and break the tabs in half. Button in the top of view
+   along 'copy' and 'rescan'."** The Text view has **Two columns** after
+   Copy (in the app bar on the event screen; an icon on a phone): a
+   toggle showing the tab split in half, side by side, the break at the
+   blank line nearest the middle so no phrase is cut
+   (`splitInHalf`). It's for reading: while it's on the editing tools
+   hide and the text can't be edited; off again, the editor is back.
+   Below 900 px wide (a tablet held upright) the Text view's buttons in
+   the app bar are now icons, as on a phone, so the title keeps room.
+   New strings `textViewColumns`, `textViewColumnsTip` and
+   `textViewColumnsOn` in English, Spanish and Portuguese. See
+   [tab recognition](tab-recognition.md#text-view).
+
+10. **"While repeat is on keep the repeat shadow on the timeline just
+   like when selecting."** The section's band over the play-along
+   player's progress bar showed only while its range was dragged. Now,
+   while Repeat is on (the default), it stays there for as long as the
+   section is set, so the part that repeats shows on the bar as it
+   plays; with Repeat off it still shows only while the range is
+   dragged. See [Cam](cam.md#playing-along-with-a-file).
+
+11. **"When playing a song make the play bar in the mini player the same
    as css primary color in theme, when it is recording then use the red
    color in the bar."** The play-along player's progress bar showed the
    part played in red at all times (6 above). It is now the

@@ -821,8 +821,9 @@ class _FollowPane extends StatelessWidget {
 /// wide: the video or link playing (a recording shows its progress only),
 /// its name, « (10 seconds back), play / pause, stop, » (10 forward) and
 /// repeat (on by default); for a recording or video of the capture's own,
-/// the section that repeats ([_SectionBar]; while its range is dragged,
-/// the section shows over the progress bar too, [_SectionMark]), and for
+/// the section that repeats ([_SectionBar]; while repeat is on, and while
+/// its range is dragged, the section shows over the progress bar too,
+/// [_SectionMark]), and for
 /// anything playing in the app, its speed ([_SpeedBar]). Nothing while
 /// there's none.
 class _BackingFrame extends StatefulWidget {
@@ -889,7 +890,11 @@ class _BackingFrameState extends State<_BackingFrame> {
         if (page == null) return const SizedBox.shrink();
         // A drag the range never ended (its file went meanwhile) is over.
         if (!track.canSection || page.id != _sectionDrag) _sectionDrag = null;
-        final section = _sectionDrag == null ? null : track.section;
+        // Over the progress bar while it repeats, and while its range is
+        // dragged (with repeat off, it only plays to its end).
+        final section = _sectionDrag != null || track.repeat
+            ? track.section
+            : null;
         final l10n = context.l10n;
         final event = track.library.byId(eventId);
         final media = track.media;
@@ -1685,8 +1690,8 @@ class _PhraseMarks extends CustomPainter {
       old.times != times || old.length != length || old.color != color;
 }
 
-/// The section that repeats, over the progress bar while its range is
-/// dragged ([_SectionBar]): a band from its start to its end, in the
+/// The section that repeats, over the progress bar while repeat is on and
+/// while its range is dragged ([_SectionBar]): a band from its start to its end, in the
 /// range's colour, over the bar's line (the part played and the rest), so
 /// the two can be told apart where the range is set. Both are see-through
 /// ([alpha], [played]): where the section and the part played overlap, the

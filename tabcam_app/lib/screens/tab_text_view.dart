@@ -26,7 +26,9 @@ import 'messages.dart';
 /// read that ends while it shows fills it in, unless the user has started
 /// editing. Read only for an event shared read only.
 ///
-/// Above it, in one row, on the right: **Copy**; **Fix** (off for now,
+/// Above it, in one row, on the right: **Copy**; **Two columns**, a
+/// toggle showing the tab split in half, side by side, to read (not
+/// edit: the editing tools hide while it's on); **Fix** (off for now,
 /// see [showFix]): lines the tab up, then with Premium auto-correct: the
 /// song's tab found online proposes corrections, shown per note for the
 /// user to accept or reject; **Rescan**, reading the tab from the pages
@@ -133,6 +135,10 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
   String? _known;
   Timer? _saveSoon;
   bool _overtype = true;
+
+  /// Two columns is on: the text shows split in half, side by side, to
+  /// read; turned off to edit.
+  bool _columns = false;
 
   /// Fix is asking the service.
   bool _checking = false;
@@ -377,7 +383,7 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
   @override
   void write(List<List<int?>> columns) {
     if (!mounted) return;
-    if (_busy || _review != null) {
+    if (_busy || _review != null || _columns) {
       _say(context.l10n.dictionaryWriteBusy);
       return;
     }
@@ -498,7 +504,7 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: widget.actions != null
-                ? (editable && review == null
+                ? (editable && review == null && !_columns
                       ? _tools(wrap: true)
                       : const SizedBox.shrink())
                 : Row(
@@ -508,7 +514,7 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
-                          child: editable && review == null
+                          child: editable && review == null && !_columns
                               ? _tools()
                               : const SizedBox.shrink(),
                         ),
@@ -548,13 +554,15 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
           ),
         ],
         Expanded(
-          child: review == null
-              ? _editor(context, editable && !_busy)
-              : _ReviewView(
+          child: review != null
+              ? _ReviewView(
                   review: review,
                   onChanged: () => setState(() {}),
                   onDone: _finishReview,
-                ),
+                )
+              : _columns
+              ? _twoColumns(context)
+              : _editor(context, editable && !_busy),
         ),
       ],
     );
@@ -567,7 +575,7 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
     widget.onRescan!();
   }
 
-  /// Copy, Fix (when shown), Rescan (when there's something to read) and
+  /// Copy, Two columns, Fix (when shown), Rescan (when there's something to read) and
   /// Verified: labelled buttons, or icons with their tooltips when
   /// [compact]. In the text field's tap region, so a press keeps the
   /// cursor in the text.
@@ -591,6 +599,7 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
           icon: const Icon(Icons.copy),
           label: Text(l10n.textViewCopy),
         ),
+      _columnsToggle(enabled: review == null, compact: compact),
       // Fix lines the strings up for everyone; with Premium, it also
       // checks the tab against the song online.
       if (editable && widget.showFix)
@@ -654,6 +663,130 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
         ),
       ),
     ];
+  }
+
+  /// Two columns, a toggle: a round icon button, tonal while off and
+  /// filled while on, its name in the tooltip; [compact], a plain icon,
+  /// filled and in the primary colour while on, as Verified.
+  Widget _columnsToggle({required bool enabled, required bool compact}) {
+    final l10n = context.l10n;
+    final onPressed = enabled
+        ? () {
+            // Pending edits saved first: the columns show what's saved.
+            _saveSoon?.cancel();
+            _save();
+            FocusScope.of(context).unfocus();
+            setState(() => _columns = !_columns);
+          }
+        : null;
+    final tip = _columns ? l10n.textViewColumnsOn : l10n.textViewColumnsTip;
+    if (compact) {
+      return Semantics(
+        toggled: _columns,
+        child: IconButton(
+          key: const Key('text-columns'),
+          tooltip: tip,
+          isSelected: _columns,
+          color: _columns ? Theme.of(context).colorScheme.primary : null,
+          onPressed: onPressed,
+          icon: const Icon(Icons.view_column_outlined),
+          selectedIcon: const Icon(Icons.view_column),
+        ),
+      );
+    }
+    // Round, an icon alone, so the app bar keeps room for the title.
+    final button = _columns
+        ? IconButton.filled(
+            key: const Key('text-columns'),
+            tooltip: tip,
+            onPressed: onPressed,
+            icon: const Icon(Icons.view_column),
+          )
+        : IconButton.filledTonal(
+            key: const Key('text-columns'),
+            tooltip: tip,
+            onPressed: onPressed,
+            icon: const Icon(Icons.view_column_outlined),
+          );
+    return Semantics(toggled: _columns, child: button);
+  }
+
+  /// Two columns: the text split in half ([splitInHalf]), the first half
+  /// on the left and the second on the right, scrolling down together;
+  /// each column's long lines scroll sideways on their own. The red notes
+  /// stay red. To read, not edit (the text can still be selected).
+  Widget _twoColumns(BuildContext context) {
+    final text = _text.text;
+    final split = splitInHalf(text);
+    final scheme = Theme.of(context).colorScheme;
+    final ranges = doubtRanges(text, _text.doubts);
+    final doubtful = TextStyle(
+      color: scheme.error,
+      backgroundColor: scheme.errorContainer,
+      fontWeight: FontWeight.bold,
+    );
+    // [text] from [from] to [to], its red notes in red.
+    Widget column(int from, int to, Key key) {
+      final spans = <TextSpan>[];
+      var at = from;
+      for (final (start, end) in ranges) {
+        final s = start < from ? from : start;
+        final e = end > to ? to : end;
+        if (s >= e) continue;
+        if (s > at) spans.add(TextSpan(text: text.substring(at, s)));
+        spans.add(TextSpan(text: text.substring(s, e), style: doubtful));
+        at = e;
+      }
+      if (at < to) spans.add(TextSpan(text: text.substring(at, to)));
+      return SingleChildScrollView(
+        key: key,
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.all(16),
+        child: Text.rich(
+          TextSpan(style: _mono, children: spans),
+          softWrap: false,
+        ),
+      );
+    }
+
+    return SelectionArea(
+      child: SingleChildScrollView(
+        child: split == null
+            ? Align(
+                alignment: Alignment.topLeft,
+                child: column(0, text.length, const Key('text-column-left')),
+              )
+            : Stack(
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: column(
+                          0,
+                          split.leftEnd,
+                          const Key('text-column-left'),
+                        ),
+                      ),
+                      Expanded(
+                        child: column(
+                          split.rightStart,
+                          text.length,
+                          const Key('text-column-right'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  // A line down the middle, as tall as the longer column.
+                  Positioned.fill(
+                    child: Center(
+                      child: Container(width: 1, color: scheme.outlineVariant),
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
   }
 
   /// Verified, a toggle shaped like Copy: tonal while off, filled while on.

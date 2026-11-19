@@ -1936,6 +1936,24 @@ abstract class AppLocalizations {
   /// **'Copy'**
   String get textViewCopy;
 
+  /// Toggle button splitting the Text view in two columns, the tab's first half on the left and the second on the right
+  ///
+  /// In en, this message translates to:
+  /// **'Two columns'**
+  String get textViewColumns;
+
+  /// Tooltip of the Two columns button while off
+  ///
+  /// In en, this message translates to:
+  /// **'Show the tab in two columns, split in half'**
+  String get textViewColumnsTip;
+
+  /// Tooltip of the Two columns button while on
+  ///
+  /// In en, this message translates to:
+  /// **'Back to one column, to edit'**
+  String get textViewColumnsOn;
+
   /// Button that corrects the tab from the song's tab online
   ///
   /// In en, this message translates to:

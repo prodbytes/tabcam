@@ -43,9 +43,10 @@ plays along.
   **Metronome** (a stopwatch icon) right after it the
   [metronome](metronome.md)'s.
   In the Text view, with its tab shown, the Text view's **Copy**,
-  **Rescan** and **Verified** (and Fix, in a build that shows it) come
+  **Two columns**, **Rescan** and **Verified** (and Fix, in a build that shows it) come
   first, right of the title ([tab recognition](tab-recognition.md#text-view)).
-  On a screen narrower than 600 px they're icons, and Dictionary and
+  On a screen narrower than 900 px they're icons; narrower than 600 px
+  Dictionary and
   Metronome (showing or hiding their sidebars), Play along, Rename, Clone, Download all and
   Share go in a **More** menu (⋮) after them, so the title keeps its room.
 - **Shared with the user**: a line under the app bar, "Shared by <email>
