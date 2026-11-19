@@ -810,6 +810,21 @@ void main() {
       );
     });
 
+    testWidgets('its text is a little smaller than the app\'s', (
+      tester,
+    ) async {
+      await open(tester);
+      final app = Theme.of(tester.element(find.byType(DictionarySidebar)));
+      final inside = Theme.of(tester.element(find.byType(ActionChip).first));
+      for (final (a, b) in [
+        (app.textTheme.bodyLarge, inside.textTheme.bodyLarge),
+        (app.textTheme.labelLarge, inside.textTheme.labelLarge),
+        (app.textTheme.headlineSmall, inside.textTheme.headlineSmall),
+      ]) {
+        expect(b!.fontSize, closeTo(a!.fontSize! * 0.9, 0.01));
+      }
+    });
+
     testWidgets('offers a few examples to tap, under a placeholder alone', (
       tester,
     ) async {

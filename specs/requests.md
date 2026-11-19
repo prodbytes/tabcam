@@ -4508,3 +4508,10 @@ spec.
    `Am7`, `G/B`, `Bø`, `GΔ7`, `Cadd9` and `Am11` dropped, `Am` and `Bb`
    added). The Chord symbols key under them stays. See
    [dictionary](dictionary.md).
+
+17. **"The chords dictionary below is fine, reduce font size a bit."**
+   The dictionary's text (in the panel below the screen and in the
+   sidebar alike) is now the app's text theme at 90%: the field, the
+   results' headings, notes and degrees, the pills and the rest about
+   1.5 px smaller (16 → 14.4, 14 → 12.6), a result's name 24 → 21.6.
+   The diagrams keep their sizes. See [dictionary](dictionary.md).

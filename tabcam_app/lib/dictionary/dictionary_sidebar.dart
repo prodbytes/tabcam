@@ -437,8 +437,24 @@ class _DictionarySidebarState extends State<DictionarySidebar> {
     if (_wait?.isActive ?? false) _search(query);
   }
 
+  /// How much smaller the dictionary's text is than the app's: a little,
+  /// so more of a result fits (the panel below the screen is short).
+  static const textScale = 0.9;
+
   @override
   Widget build(BuildContext context) {
+    final app = Theme.of(context);
+    // Every text in it (the field, the results, the pills) a step
+    // smaller; the diagrams keep their own sizes.
+    return Theme(
+      data: app.copyWith(
+        textTheme: app.textTheme.apply(fontSizeFactor: textScale),
+      ),
+      child: Builder(builder: _build),
+    );
+  }
+
+  Widget _build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final query = _controller.text;

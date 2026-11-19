@@ -244,5 +244,13 @@ augmented (`Caug = C(#5)`), each row with its name and an example
 them: on a phone, hold o for ø and º; on a Mac, ⌥O types ø, ⌥J ∆ and ⌥0
 º; or write the letters (`m7b5`, `maj7` or `^7`, `dim` or `o`, `aug`)
 or the name (half diminished).
+**Its text is a little smaller** than the rest of the app's (since
+2026-11-19): the whole sidebar or panel (the field, the results'
+headings, notes and degrees, the pills, the chord symbols key, the
+videos and tabs found) uses the app's text theme at 90%
+(`textScale`): body text about 14.4 and 12.6 px instead of 16 and 14,
+a chord's or a scale's name about 21.6 px instead of 24. The diagrams
+keep their own sizes.
+
 In English, Spanish and Portuguese (the chord names and qualities are
 the same in every language).
