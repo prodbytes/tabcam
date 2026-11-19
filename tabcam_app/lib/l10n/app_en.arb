@@ -678,6 +678,15 @@
       }
     }
   },
+  "eventEditOnCopy": "The editor opens on your copy, \"{title}\"",
+  "@eventEditOnCopy": {
+    "description": "Message when a link to a file's edit view opens on a capture shared with the user: the editor opens on the user's own copy, where the edit is kept",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "eventCamOnCopy": "Cam records into your copy, \"{title}\"",
   "@eventCamOnCopy": {
     "description": "Message when Cam opens on a capture shared with the user: it opens on the user's own copy, where its takes go",

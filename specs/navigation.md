@@ -64,12 +64,14 @@ was, on the device only.
 
 A reload (the web) or a restart (the apps) opens where the user was:
 the tab, and the capture that was open over it, on its Text view or its
-list of files, and the file or [Cam](cam.md) open over that, if one was
+list of files, and the file (and the video editor over it) or
+[Cam](cam.md) open over that, if one was
 ([lib/screens/place.dart](../tabcam_app/lib/screens/place.dart)). Each
 move updates the place: switching tabs, opening or closing a capture
 (Clone's copy, opened in the original's place, too), switching Files
 and Text, opening or closing a file (and Rotate, which gives the file a
-new ID), opening or closing Cam. Signed in, the user stays signed in
+new ID), opening or closing the video editor over it, opening or
+closing Cam. Signed in, the user stays signed in
 through it ([sessions](sessions.md)).
 
 **Cam after a reload**: the capture opens on its view, then Cam over it,
@@ -90,12 +92,13 @@ preview (no Premium) isn't kept either.
   (`history.replaceState`, adding no history entry; the library there
   is only in memory, so the device can't keep it). Its parameters:
   `tab` (`capture` or `profile`; none on Home), `open` (the capture's
-  ID), `view` (`text` or `files`), `file` (the file's ID) and `cam`
-  (`1` with Cam open), as in
+  ID), `view` (`text` or `files`), `file` (the file's ID), `edit` (`1`
+  with the video editor open over the file) and `cam` (`1` with Cam
+  open), as in
   `https://tabs.cam/app/?open=<capture>&view=text&cam=1`. Only the
   query changes: the site's base (`/app/`, on prod, RC and the local
   site), its other parameters and Flutter's fragment stay. A capture's
-  link's `c`, `k` and `f` ([sharing](sharing.md#opening-a-link)) stay
+  link's `c`, `k`, `f` and `e` ([sharing](sharing.md#opening-a-link)) stay
   only while it's the link the page opened at and no capture has opened
   yet (a link still waiting, or one opened read only); then they leave
   the address for good, so its key isn't left there. A sign-in email's

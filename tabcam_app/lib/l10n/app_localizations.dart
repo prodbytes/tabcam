@@ -880,6 +880,12 @@ abstract class AppLocalizations {
   /// **'Added to your copy, \"{title}\"'**
   String eventAddedToCopy(String title);
 
+  /// Message when a link to a file's edit view opens on a capture shared with the user: the editor opens on the user's own copy, where the edit is kept
+  ///
+  /// In en, this message translates to:
+  /// **'The editor opens on your copy, \"{title}\"'**
+  String eventEditOnCopy(String title);
+
   /// Message when Cam opens on a capture shared with the user: it opens on the user's own copy, where its takes go
   ///
   /// In en, this message translates to:

@@ -11,7 +11,8 @@ import 'place_address_stub.dart'
     as platform;
 
 /// Where the user is in the app: the tab, and the event open over it (its
-/// Text view or its files, and the file or Cam open over them). Kept on this
+/// Text view or its files, and the file (with the video editor over it)
+/// or Cam open over them). Kept on this
 /// device (the library's `place` meta file) in the apps, and in the
 /// address on the web ([inAddress]), so a reload or a restart opens where
 /// the user was.
@@ -23,6 +24,7 @@ class Place {
     this.text = false,
     this.fileId,
     this.cam = false,
+    this.edit = false,
   });
 
   /// The tab's name ([HomeTab.name]).
@@ -40,20 +42,26 @@ class Place {
   /// Cam open over the event ([PlayAlongScreen]).
   final bool cam;
 
+  /// The video editor open over the file ([fileId]).
+  final bool edit;
+
   /// A copy with these changed; another event (or none) closes Cam,
-  /// unless [cam] says otherwise.
+  /// another file (or none) the editor, unless [cam] or [edit] say
+  /// otherwise.
   Place copyWith({
     String? tab,
     String? Function()? eventId,
     bool? text,
     String? Function()? fileId,
     bool? cam,
+    bool? edit,
   }) => Place(
     tab: tab ?? this.tab,
     eventId: eventId == null ? this.eventId : eventId(),
     text: text ?? this.text,
     fileId: fileId == null ? this.fileId : fileId(),
     cam: cam ?? (eventId == null && this.cam),
+    edit: edit ?? (fileId == null && this.edit),
   );
 
   Map<String, Object?> toJson() => {
@@ -61,6 +69,7 @@ class Place {
     'event': ?eventId,
     if (text) 'text': true,
     'file': ?fileId,
+    if (edit && fileId != null) 'edit': true,
     if (cam && eventId != null) 'cam': true,
   };
 
@@ -70,18 +79,26 @@ class Place {
     text: json['text'] == true,
     fileId: json['file'] as String?,
     cam: json['event'] != null && json['cam'] == true,
+    edit: json['file'] != null && json['edit'] == true,
   );
 
   /// The address's parameters a place is written in:
-  /// `?tab=<tab>&open=<event>&view=<text|files>&file=<file>&cam=1`. Home
-  /// and no event open leave them out.
-  static const Set<String> addressKeys = {'tab', 'open', 'view', 'file', 'cam'};
+  /// `?tab=<tab>&open=<event>&view=<text|files>&file=<file>&edit=1&cam=1`.
+  /// Home and no event open leave them out.
+  static const Set<String> addressKeys = {
+    'tab',
+    'open',
+    'view',
+    'file',
+    'edit',
+    'cam',
+  };
 
   /// A capture's link's parameters (`CaptureLink`): gone from the address
   /// once an event is open (the link's, or another the user moved to), so
   /// its key isn't left there, and kept only while the link the page
   /// opened at is still the address's ([PlaceMemory]).
-  static const Set<String> linkKeys = {'c', 'k', 'f'};
+  static const Set<String> linkKeys = {'c', 'k', 'f', 'e'};
 
   /// The place [address] holds (no event, Home, if it holds none). Bad
   /// IDs are left out.
@@ -98,13 +115,15 @@ class Place {
     }
 
     final eventId = id('open');
+    final fileId = eventId == null ? null : id('file');
     final tab = query['tab'];
     return Place(
       tab: tab != null && RegExp(r'^[a-z]{1,20}$').hasMatch(tab) ? tab : null,
       eventId: eventId,
       text: eventId != null && query['view'] == 'text',
-      fileId: eventId == null ? null : id('file'),
+      fileId: fileId,
       cam: eventId != null && query['cam'] == '1',
+      edit: fileId != null && query['edit'] == '1',
     );
   }
 
@@ -124,7 +143,10 @@ class Place {
     if (eventId case final id?) {
       query['open'] = id;
       query['view'] = text ? 'text' : 'files';
-      if (fileId case final file?) query['file'] = file;
+      if (fileId case final file?) {
+        query['file'] = file;
+        if (edit) query['edit'] = '1';
+      }
       if (cam) query['cam'] = '1';
     }
     return Uri(
