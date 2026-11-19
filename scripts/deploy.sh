@@ -195,9 +195,13 @@ check() {
   live="$(curl -fsS --max-time 20 "https://$DOMAIN/app/version.json?deploy=$BUILD_NUMBER" \
     | python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])')" || return 1
   [[ "$live" == "$VERSION" ]] || { echo "    /app/version.json says $live, want $VERSION"; return 1; }
-  curl -fsS --max-time 20 "https://$DOMAIN/" | grep -q '<main id="features">' || { echo "    / isn't the index page"; return 1; }
+  # Pages are fetched whole, then searched: `curl | grep -q` fails under
+  # pipefail once grep stops reading a page longer than curl's first write.
+  local page
+  page="$(curl -fsS --max-time 20 "https://$DOMAIN/")" || { echo "    / failed"; return 1; }
+  grep -q '<main id="features">' <<<"$page" || { echo "    / isn't the index page"; return 1; }
   if [[ -n "${TABCAM_GOOGLE_WEB_CLIENT_ID:-}" ]]; then
-    curl -fsS --max-time 20 "https://$DOMAIN/" | grep -qF "content=\"$TABCAM_GOOGLE_WEB_CLIENT_ID\"" || { echo "    / has no Google client ID"; return 1; }
+    grep -qF "content=\"$TABCAM_GOOGLE_WEB_CLIENT_ID\"" <<<"$page" || { echo "    / has no Google client ID"; return 1; }
   fi
   curl -fsS --max-time 20 -o /dev/null "https://$DOMAIN/img/logo.svg" || { echo "    /img/logo.svg failed"; return 1; }
   curl -fsS --max-time 20 -o /dev/null "https://$DOMAIN/app/" || { echo "    /app/ failed"; return 1; }
@@ -205,7 +209,8 @@ check() {
   local moved
   moved="$(curl -sS --max-time 20 -o /dev/null -w '%{http_code} %{redirect_url}' "https://$OLD_DOMAIN/app/?deploy=$BUILD_NUMBER")"
   [[ "$moved" == "301 https://$DOMAIN/app/?deploy=$BUILD_NUMBER" ]] || { echo "    https://$OLD_DOMAIN/app/ answers '$moved'"; return 1; }
-  curl -fsS --max-time 20 "https://$DOMAIN/privacy" | grep -q "<title>tabs.cam Privacy Policy</title>" || { echo "    /privacy isn't the privacy policy"; return 1; }
+  page="$(curl -fsS --max-time 20 "https://$DOMAIN/privacy")" || { echo "    /privacy failed"; return 1; }
+  grep -q "<title>tabs.cam Privacy Policy</title>" <<<"$page" || { echo "    /privacy isn't the privacy policy"; return 1; }
 }
 for attempt in $(seq 1 30); do
   if check; then
