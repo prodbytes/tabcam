@@ -4515,3 +4515,16 @@ spec.
    results' headings, notes and degrees, the pills and the rest about
    1.5 px smaller (16 → 14.4, 14 → 12.6), a result's name 24 → 21.6.
    The diagrams keep their sizes. See [dictionary](dictionary.md).
+
+18. **"The search button can be just a magnifying glass beside the text
+   field, no need for a line below."** The dictionary's **Search
+   YouTube** was a button on a line of its own under "Not a chord or a
+   scale…". It is now a magnifying glass at the field's end, before its
+   ✕, shown once something is typed (tooltip "Search YouTube"), and the
+   decorative magnifying glass at the field's start is gone. It sits in
+   the field, not after it, so the panel below the screen at its
+   narrowest (a phone with another sidebar open) keeps the field's
+   width. The sentence over the results now reads "Not a chord or a
+   scale: “…” on YouTube and Cifra Club." (it said "Search YouTube for
+   “…”."), in English, Spanish and Portuguese. See
+   [dictionary](dictionary.md).

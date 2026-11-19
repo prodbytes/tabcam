@@ -3229,10 +3229,10 @@ abstract class AppLocalizations {
   /// Dictionary: the query is neither
   ///
   /// In en, this message translates to:
-  /// **'Not a chord or a scale. Search YouTube for “{query}”.'**
+  /// **'Not a chord or a scale: “{query}” on YouTube and Cifra Club.'**
   String dictionaryYouTube(String query);
 
-  /// Dictionary: the button that opens YouTube's search
+  /// Dictionary: tooltip of the magnifying glass beside the field, opening YouTube's search
   ///
   /// In en, this message translates to:
   /// **'Search YouTube'**

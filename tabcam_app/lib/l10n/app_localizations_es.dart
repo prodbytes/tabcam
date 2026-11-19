@@ -1956,7 +1956,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String dictionaryYouTube(String query) {
-    return 'No es un acorde ni una escala. Buscar “$query” en YouTube.';
+    return 'No es un acorde ni una escala: “$query” en YouTube y Cifra Club.';
   }
 
   @override

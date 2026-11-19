@@ -2611,7 +2611,7 @@
   "@dictionarySymbolsTyping": {
     "description": "Dictionary: how to type the chord symbols, under the symbols key"
   },
-  "dictionaryYouTube": "Not a chord or a scale. Search YouTube for “{query}”.",
+  "dictionaryYouTube": "Not a chord or a scale: “{query}” on YouTube and Cifra Club.",
   "@dictionaryYouTube": {
     "description": "Dictionary: the query is neither",
     "placeholders": {
@@ -2622,7 +2622,7 @@
   },
   "dictionarySearchYouTube": "Search YouTube",
   "@dictionarySearchYouTube": {
-    "description": "Dictionary: the button that opens YouTube's search"
+    "description": "Dictionary: tooltip of the magnifying glass beside the field, opening YouTube's search"
   },
   "dictionaryYouTubeSearching": "Searching YouTube…",
   "@dictionaryYouTubeSearching": {

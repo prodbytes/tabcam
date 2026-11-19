@@ -144,10 +144,15 @@ search field, focused, and under it, scrolling, what was typed is:
   `A natural minor` and `A aeolian` are scales (`C major` alone is the
   chord).
 - **Anything else** is a song (or whatever it is): the sidebar says
-  it's not a chord or a scale and offers **Search YouTube**, a button
-  that opens YouTube's search for it outside the app (a new tab, or the
-  browser or YouTube app), as any link opens
-  ([event screen](event-screen.md)). Under it, once typing stops for
+  "Not a chord or a scale: “…” on YouTube and Cifra Club.". **Search
+  YouTube** is a magnifying glass at the field's end, before its ✕
+  (its tooltip "Search YouTube"; since 2026-11-19, when it stopped
+  being a button on a line of its own under that sentence, and the
+  field lost the magnifying-glass icon at its start; in the field, it
+  takes none of its width, which the panel below the screen can leave
+  short): it opens YouTube's search for what's typed outside the app
+  (a new tab, or the browser or YouTube app), as any link opens
+  ([event screen](event-screen.md)), and shows once something is typed. Under the sentence, once typing stops for
   **two seconds** ("Searching YouTube…" and a progress bar meanwhile),
   come **YouTube's results**, right there in the sidebar: three videos,
   each with its thumbnail, title (two lines at most) and channel, and
@@ -155,8 +160,8 @@ search field, focused, and under it, scrolling, what was typed is:
   in a new tab on the web ("Open on YouTube" as its tooltip). Enter (the
   keyboard's search key) searches at once, without the wait. If the
   search fails (offline, the quota spent), it says it couldn't load
-  YouTube's results; if YouTube finds nothing, it says so; the button
-  stays either way. A search typed again (on this screen or the next)
+  YouTube's results; if YouTube finds nothing, it says so; the
+  magnifying glass stays either way. A search typed again (on this screen or the next)
   shows its results at once: the device keeps the last 50 searches'
   results until the app closes, and asks YouTube once for each.
   **How**: the device asks the YouTube Data API v3 (`search.list`,

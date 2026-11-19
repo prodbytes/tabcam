@@ -285,22 +285,8 @@ void main() {
       'response': {
         'numFound': songs.length + 1,
         'docs': [
-          {
-            't': '1',
-            'm': 'Made-up Band',
-            'a': 'Made-up Band',
-            'i': '',
-            'd': 'made-up-band',
-          },
-          for (final (artist, slug, title) in songs)
-            {
-              't': '2',
-              'm': title,
-              'a': 'Made-up Band',
-              'i': '',
-              'd': artist,
-              'u': slug,
-            },
+          {'t': '1', 'm': 'Made-up Band', 'a': 'Made-up Band', 'i': '', 'd': 'made-up-band'},
+          for (final (artist, slug, title) in songs) {'t': '2', 'm': title, 'a': 'Made-up Band', 'i': '', 'd': artist, 'u': slug},
         ],
       },
     })})',
@@ -792,9 +778,7 @@ void main() {
       expect(find.byKey(const Key('chord-diagram')), findsWidgets);
     });
 
-    testWidgets('looks up the symbols\' chords: Bø and GΔ7', (
-      tester,
-    ) async {
+    testWidgets('looks up the symbols\' chords: Bø and GΔ7', (tester) async {
       await open(tester);
       await tester.enterText(query, 'Bø');
       await tester.pumpAndSettle();
@@ -810,9 +794,7 @@ void main() {
       );
     });
 
-    testWidgets('its text is a little smaller than the app\'s', (
-      tester,
-    ) async {
+    testWidgets('its text is a little smaller than the app\'s', (tester) async {
       await open(tester);
       final app = Theme.of(tester.element(find.byType(DictionarySidebar)));
       final inside = Theme.of(tester.element(find.byType(ActionChip).first));
@@ -942,9 +924,21 @@ void main() {
         launcher.launched.single.$1,
         'https://www.youtube.com/results?search_query=made-up+riff+lesson',
       );
-      await tester.tap(find.byKey(const Key('dictionary-search-youtube')));
+      // The magnifying glass at the field's end (no button below).
+      final search = find.byKey(const Key('dictionary-search-youtube'));
+      expect(find.byType(FilledButton), findsNothing);
+      expect(find.descendant(of: query, matching: search), findsOneWidget);
+      await tester.tap(search);
       await tester.pump();
       expect(launcher.launched, hasLength(2));
+      expect(
+        launcher.launched.last.$1,
+        'https://www.youtube.com/results?search_query=made-up+riff+lesson',
+      );
+      // Nothing typed, it's gone.
+      await tester.enterText(query, '');
+      await tester.pump();
+      expect(search, findsNothing);
     });
 
     group('with YouTube search', () {
@@ -988,7 +982,7 @@ void main() {
         );
         expect(find.text('made-up riff lesson, part 1'), findsOneWidget);
         expect(find.text('Channel 1'), findsOneWidget);
-        // The link to YouTube's own search stays above them.
+        // YouTube's own search stays, at the field's end.
         expect(
           find.byKey(const Key('dictionary-search-youtube')),
           findsOneWidget,

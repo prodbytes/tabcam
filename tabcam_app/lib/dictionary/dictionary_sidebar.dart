@@ -459,6 +459,26 @@ class _DictionarySidebarState extends State<DictionarySidebar> {
     final theme = Theme.of(context);
     final query = _controller.text;
     final below = widget.below;
+    // At the field's end, once something's typed: YouTube's search for it,
+    // outside the app (its results come in the sidebar on their own),
+    // then ✕. In the field, so it takes none of the field's width (the
+    // panel below can leave it little).
+    final ends = <Widget>[
+      if (query.trim().isNotEmpty)
+        IconButton(
+          key: const Key('dictionary-search-youtube'),
+          tooltip: l10n.dictionarySearchYouTube,
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.search),
+          onPressed: () => openLink(context, youTubeSearch(query)),
+        ),
+      if (query.isNotEmpty)
+        IconButton(
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.clear),
+          onPressed: () => _set(''),
+        ),
+    ];
     final field = TextField(
       key: const Key('dictionary-query'),
       controller: _controller,
@@ -470,13 +490,9 @@ class _DictionarySidebarState extends State<DictionarySidebar> {
       decoration: InputDecoration(
         isDense: true,
         hintText: l10n.dictionaryHint,
-        prefixIcon: const Icon(Icons.search),
-        suffixIcon: query.isEmpty
+        suffixIcon: ends.isEmpty
             ? null
-            : IconButton(
-                icon: const Icon(Icons.clear),
-                onPressed: () => _set(''),
-              ),
+            : Row(mainAxisSize: MainAxisSize.min, children: ends),
         border: const OutlineInputBorder(),
       ),
       onChanged: _read,
@@ -977,8 +993,9 @@ class _WriteButton extends StatelessWidget {
   }
 }
 
-/// Not a chord or a scale: the button to YouTube's search and, under it,
-/// the videos it found ([videos]), each opening in a new tab.
+/// Not a chord or a scale: the videos YouTube found ([videos]), each
+/// opening in a new tab (its own search is the magnifying glass at the
+/// field's end).
 class _YouTubeResult extends StatelessWidget {
   const _YouTubeResult({
     required this.query,
@@ -1005,13 +1022,6 @@ class _YouTubeResult extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(l10n.dictionaryYouTube(query.trim())),
-        const SizedBox(height: 12),
-        FilledButton.icon(
-          key: const Key('dictionary-search-youtube'),
-          icon: const Icon(Icons.open_in_new),
-          label: Text(l10n.dictionarySearchYouTube),
-          onPressed: () => openLink(context, youTubeSearch(query)),
-        ),
         if (searching) ...[
           const SizedBox(height: 16),
           Text(l10n.dictionaryYouTubeSearching, style: muted),

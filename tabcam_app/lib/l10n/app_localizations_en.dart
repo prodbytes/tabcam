@@ -1912,7 +1912,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String dictionaryYouTube(String query) {
-    return 'Not a chord or a scale. Search YouTube for “$query”.';
+    return 'Not a chord or a scale: “$query” on YouTube and Cifra Club.';
   }
 
   @override

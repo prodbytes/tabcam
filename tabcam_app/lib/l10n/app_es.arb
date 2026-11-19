@@ -520,7 +520,7 @@
   "dictionaryAugmented": "aumentado",
   "dictionarySymbols": "Símbolos de acordes",
   "dictionarySymbolsTyping": "Para escribirlos: en un teléfono, mantén pulsada la o para ø y º; en un Mac, ⌥O escribe ø, ⌥J ∆ y ⌥0 º. O escribe las letras (m7b5, maj7 o ^7, dim u o, aug) o el nombre (semidisminuido).",
-  "dictionaryYouTube": "No es un acorde ni una escala. Buscar “{query}” en YouTube.",
+  "dictionaryYouTube": "No es un acorde ni una escala: “{query}” en YouTube y Cifra Club.",
   "dictionarySearchYouTube": "Buscar en YouTube",
   "dictionaryYouTubeSearching": "Buscando en YouTube…",
   "dictionaryYouTubeNone": "YouTube no encontró videos.",
