@@ -229,6 +229,7 @@ The library also keeps small JSON documents of the app's own, its
 | `place` | where the user was (the apps; the web keeps it in the page's address, [navigation](navigation.md)) |
 | `language` | the language picked ([localization](localization.md)) |
 | `metronome` | the metronome's tempo and time signature ([metronome](metronome.md)) |
+| `outdelays` | the song's delay kept per audio output, by its route and the fingerprint of its name (`{"v": 1, "ms": {"bluetooth\|3f9a1c07": 170}}`, −500 to 2500 ms, `OutDelays`): a take through headphones whose song wasn't found in its sound opens with it ([video edit](video-edit.md#the-songs-delay)) |
 
 Two more metas are cloud state, not settings: `cloudsync` (what has
 synced) and `cloudocr` (what cloud OCR has filled).
@@ -256,7 +257,9 @@ synced) and `cloudocr` (what cloud OCR has filled).
   and keeps the settings.
 - Tests (`test/meta_names_test.dart`): every name passes `checkId`, the
   classes' names are the ones listed, `lib/` names its metas only
-  through `MetaNames`; the apps' store keeps each and a new store reads
+  through `MetaNames` (`outdelays` among the settings,
+  `test/out_delays_test.dart`: kept and read back, zeros left out,
+  clamped, read leniently); the apps' store keeps each and a new store reads
   it back; the web's store keeps the settings, and nothing else, in a
   fake localStorage that a new store reads back, keeps them in memory
   when the storage throws, and refuses a bad name; a memory-only store

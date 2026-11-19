@@ -507,7 +507,36 @@ them, the cut's steps go first, then the lanes, then the transport.
   placed by hand, where it starts against the kept part. It moves the
   song as ‹ and › do (the first clip's offset, the whole line-up with
   it), is kept with the edit, and Reset clears it. It shrinks to fit a
-  narrow panel. A song
+  narrow panel. Under it, for a take whose log says what its song
+  played through ([`out`](cam.md#what-the-song-played-through)), a
+  line says so: "Played through Bluetooth" (the speaker, wired
+  headphones, a USB device, AirPlay, another output), with "; the
+  device reported 160 ms" where the platform gave a latency (iOS, the
+  web: a hint, never applied by itself) and "; the output changed
+  during the take" when it did. **Remembered per output**: for a song
+  lined up by itself and not found in the take's sound, through
+  headphones (wired, Bluetooth, USB) that didn't change during the
+  take, **Remember +170 ms for this Bluetooth device** ("these
+  headphones", "this USB device") keeps the delay shown on this device
+  for that output (its route and the fingerprint of its name, the
+  device meta [`outdelays`](library.md#device-settings), −500 to 2500
+  ms); once kept, "Kept for this Bluetooth device: its takes open with
+  it"; at 0 ms with one kept, **Forget the delay for this Bluetooth
+  device**. <a id="seeded-delay"></a>A take through that output (its
+  log's `out` the same route and fingerprint, headphones, not changed)
+  whose song is lined up by itself and wasn't found in its sound (not
+  measured, or measured and not found), its Song lane still where the
+  log has it (none kept, or kept unmoved: `LoggedSong.shiftOf` none),
+  **opens with the delay kept**: the song moved by it as the delay
+  control moves it, and the edit kept so (Download, the file screen and
+  other devices play it there). A lane at that delay hasn't been moved
+  by hand: when the song is then found in the take's sound (a take not
+  measured yet, measured as the editor opens), it follows to where it
+  was found, the delay dropped, since a found line-up has the output's
+  delay in it already. Reset puts the take back as noted (no delay);
+  the kept delay applies again the next time it opens, until Forget.
+  The speaker and AirPlay are said, not remembered (a speaker's delay
+  is found in the take's sound). A song
   lined up by itself says so under them: "Lined up by its sound in the
   take" when it was [found there](#a-takes-song-lined-up), else "Lined
   up as it played while you recorded", or, once nudged or dragged,
@@ -680,7 +709,9 @@ the song up by itself (`LoggedSong`, [`render_plan.dart`](../tabcam_app/lib/capt
   couldn't read its files) measured as it opens, and the Song lane
   follows when what's found arrives, a moment later. Not found
   (headphones while recording, or the song too quiet in the take), or
-  not measured yet, it stays as noted. **An edit kept before it was
+  not measured yet, it stays as noted, moved by the delay control
+  for what the headphones added (and, through headphones it was kept
+  for, by the [delay kept for that output](#seeded-delay)). **An edit kept before it was
   found** follows too, when it had the song where the log alone had it
   (not moved: `LoggedSong.shiftOf` none); one moved by hand stays
   exactly where it was put. The file screen's player and Download line
@@ -709,7 +740,8 @@ the song up by itself (`LoggedSong`, [`render_plan.dart`](../tabcam_app/lib/capt
 - **Moved, it all moves** (‹ ›, or dragging the bar, by as much as the
   first clip's `offsetMs` moves; a trim of the video leaves it where it
   is along it), and stays lined up, for what the lag didn't catch (a
-  speaker's or headphones' delay). **Trimmed** by its grips (one clip
+  speaker's delay is in the measured line-up; headphones' is the delay
+  control's). **Trimmed** by its grips (one clip
   only: a song in clips has none, its bar spanning them all, dimmed
   between them), or another song picked, it's placed by hand
   (`manual`, its one clip as its track keys say). **Remove** keeps it
@@ -737,9 +769,21 @@ the song up by itself (`LoggedSong`, [`render_plan.dart`](../tabcam_app/lib/capt
   [Cam's log](cam.md#the-song-found-in-the-takes-sound). **Not yet on a
   phone**: how close the line-up is there once measured (in Chrome, a
   song played into a video recorded as a take is was found about a
-  tenth of a second from where it was noted, and lined up there), and with headphones, where
-  nothing can be measured (the player's start and the headphones' delay
-  aren't).
+  tenth of a second from where it was noted, and lined up there), and
+  with headphones, where nothing can be measured: whether a Bluetooth
+  take's residual on Android is tens of ms (ExoPlayer's position allows
+  for the headset's own delay report) or the whole latency (then the
+  delay kept for it carries it), and how far iOS's reported latency is
+  from the truth. Also checked (`test/video_edit_test.dart`): what the
+  song played through said under the delay (the device's figure, an
+  output that changed), Remember keeping the delay for a Bluetooth
+  output in `outdelays`, Kept, Forget, and none offered for the
+  speaker; a take through it opening with the kept delay, kept with the
+  edit and in Download's clips, and not one found in its sound, moved
+  by hand, through an output that changed, other headphones or none
+  noted; and a headphones take not measured yet opening with it, then
+  following its song found in its sound to the millisecond, the delay
+  dropped.
 
 ### The render plan
 

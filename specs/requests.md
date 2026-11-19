@@ -4276,3 +4276,42 @@ spec.
    editor for a reload. The editor opened from Cam gets cloud sync, so
    its Share copies the keyed link. See [sharing](sharing.md) and
    [shared captures](shared-captures.md#shared-with-me).
+
+3. **"in take 15:54 i can see a slight misstiming between video recorded
+   track and playbkack, they should align perfectly. on recording time
+   do not fix anything, just try to take the correct timing so overlay
+   is as good as possible, maybe add a delay control to compensate
+   bluetooth in the settings of editor."** (asked on 2026-11-17; the
+   delay control itself shipped with 2026-11-18's 12.) Cam still fixes
+   nothing as a take records; it notes more. A take's log keeps what
+   the song played through (`out`): the route (speaker, wired,
+   Bluetooth, USB, AirPlay, other), a fingerprint of the output's name
+   (8 hex digits of its SHA-256, never the name, which can carry the
+   owner's), the latency the platform reports (iOS's audio session,
+   the web's Web Audio; none on Android) as a hint, how it was told,
+   and whether it changed during the take; read as the take's clock
+   starts (not waited for) and again after the stop (Android
+   `TakeSound` `output`, iOS `TakeAudio` `output`, the web's recorder).
+   No platform's figure is applied by itself: Android's player position
+   already allows for the system's own estimate, iOS's and the web's
+   are for other paths. The song's fresh reading as a segment starts is
+   taken as of the middle of its round trip, and on Android the sound's
+   lead before the video is kept in `lagRaw` (`soundLeadMs`). In the
+   editor, under the delay control, a take says what its song played
+   through ("Played through Bluetooth; the device reported 160 ms"),
+   and for a song lined up by itself, not found in the take's sound,
+   through headphones, **Remember** keeps the delay for that output on
+   the device (the device setting `outdelays`, −500 to 2500 ms),
+   "Kept for this Bluetooth device" says it's the one kept, and
+   **Forget** drops it; a take through that output whose song wasn't
+   found, its lane not moved by hand, opens with it (kept with the
+   edit, so Download and other devices play it there), and follows its
+   song when that's then found in its sound. New strings in English,
+   Spanish and Portuguese. Checked by tests (`take_log_test`,
+   `play_along_test`, `take_priority_test`, `out_delays_test`,
+   `meta_names_test`, `video_edit_test`, with made-up riffs); the
+   Kotlin built into a debug APK and the Swift type-checked, not yet on
+   a phone; take 15:54's log (its `lagFrom` and `sync`) still to be
+   read to say which case it is. See
+   [Cam](cam.md#what-the-song-played-through) and
+   [video edit](video-edit.md#the-songs-delay).
