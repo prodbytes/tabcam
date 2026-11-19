@@ -161,6 +161,319 @@ abstract final class SongSync {
     );
   }
 
+  /// How far either way from where the Song lane has the song now
+  /// Auto-align looks for it ([align]): further than the measure
+  /// ([reach]), for a lane moved by hand, or a song placed by eye.
+  static const Duration alignReach = Duration(seconds: 2);
+
+  /// How clearly a match must stand out for Auto-align ([align]) to
+  /// count it: more than the measure's [clear], as it looks over more
+  /// than three times as many places (a guitar without the song, made-up
+  /// riffs in tests, stays under 13 there).
+  static const double alignClear = 16;
+
+  /// How far apart, in ms, the windows found by the sound can be before
+  /// Auto-align says it's rough ([SongAlign.rough]): the song may drift
+  /// along the take, or a window matched a beat off.
+  static const int roughMs = 30;
+
+  /// How far from each other windows clear on their own may be to be
+  /// taken together, when their sum isn't clear ([align]): further, one
+  /// of them matched by chance.
+  static const int agreeMs = 250;
+
+  /// The rhythm pass's prior: the song looked for mostly within this of
+  /// where the lane has it ([onsetAlign]), as a Gaussian's spread: a
+  /// match a beat apart about as good goes to the nearer, while one half
+  /// as good again a beat further is still taken (made-up riffs with the
+  /// lane 420 ms off, at 87 and 96 bpm, were found a beat off with 400).
+  static const Duration rhythmPrior = Duration(milliseconds: 700);
+
+  /// How alike the take's onsets and the song's must be to count
+  /// ([OnsetOffset.match]), and how clearly that place must stand out
+  /// ([OnsetOffset.score]): set on made-up riffs (test/song_sync_test.dart,
+  /// group `align`): a guitar in the song's time, its notes up to 30 ms
+  /// off the beat, matched 0.15 to 0.28; one in another tempo 0.11 at
+  /// most (a guitar at the song's tempo on another riff matches as well:
+  /// its beats are lined up, which beat is the guess).
+  static const double rhythmMatch = 0.13;
+  static const double rhythmClear = 4;
+
+  /// Auto-align, the editor's magic button: where the song is in [take]
+  /// against where the Song lane has it now ([clips], each a clip of it
+  /// in the take's file), read with [reader]. Looked for as [measure]
+  /// does (each clip of [shortest] or more a segment, the [most] longest,
+  /// up to [windows] windows of [window] along each, the correlations
+  /// added up, the drift taken out), [reach] either way of the lane; where
+  /// the song isn't in the take's sound (headphones), by the rhythm: the
+  /// take's onsets against the song's ([onsetAlign]), near the lane's
+  /// place. [progress] is told the windows read, of how many. Null when
+  /// nothing could be read; else what was found ([SongAlign.found]), its
+  /// shift from where the lane has it.
+  static Future<SongAlign?> align({
+    required XFile take,
+    required XFile song,
+    required SoundReader reader,
+    required List<LaneClip> clips,
+    Duration reach = alignReach,
+    void Function(int done, int of)? progress,
+  }) async {
+    final segments = [...clips]
+      ..removeWhere((c) => c.lengthMs < shortest.inMilliseconds)
+      ..sort((a, b) => b.lengthMs.compareTo(a.lengthMs));
+    final planned = [
+      for (final c in segments.take(most))
+        (
+          clip: c,
+          part: min(c.lengthMs, window.inMilliseconds),
+          count: min(windows, (c.lengthMs / window.inMilliseconds).ceil()),
+        ),
+    ];
+    final total = planned.fold(0, (n, p) => n + p.count);
+    if (total == 0) return null;
+    final reachMs = reach.inMilliseconds;
+    final reachS = reachMs * rate ~/ 1000;
+    var done = 0;
+    var read = false;
+    final shifts = <int>[];
+    final told = <int>[];
+    var (scores, lead) = (<double>[], double.infinity);
+    final rhythm = <OnsetWindow>[];
+    for (final p in planned) {
+      final c = p.clip;
+      final parts = <SoundWindow>[];
+      for (var k = 0; k < p.count; k++) {
+        progress?.call(done++, total);
+        final skip = p.count == 1
+            ? (c.lengthMs - p.part) ~/ 2
+            : (c.lengthMs - p.part) * k ~/ (p.count - 1);
+        final inFile = c.fileMs + skip;
+        final from = max(0, inFile - reachMs);
+        final heard = await reader.samples(
+          take,
+          from: Duration(milliseconds: from),
+          length: Duration(milliseconds: inFile + p.part + reachMs - from),
+          rate: rate,
+        );
+        final played = await reader.samples(
+          song,
+          from: Duration(milliseconds: c.songMs + skip),
+          length: Duration(milliseconds: p.part),
+          rate: rate,
+        );
+        if (heard == null || played == null) continue;
+        read = true;
+        parts.add((
+          heard: heard,
+          played: played,
+          expected: (inFile - from) * rate ~/ 1000,
+          middle: (skip + p.part / 2) * rate / 1000,
+        ));
+      }
+      if (parts.isEmpty) continue;
+      final of = (parts: parts, reach: reachS);
+      // Off the screen's thread (but on the web, which has one).
+      final found = inline ? _aligned(of) : await compute(_aligned, of);
+      rhythm.addAll(found.onsets);
+      final at = found.offset;
+      int ms(SoundOffset o) => (o.samples * 1000 / rate).round();
+      final clearOnes = [
+        for (final w in found.each)
+          if (w != null && w.score >= alignClear && w.lead >= ahead) ms(w),
+      ]..sort();
+      debugPrint(
+        'TabCam: align: clip at ${c.fileMs} ms: $at, windows '
+        '${[for (final w in found.each) w == null ? '-' : '${ms(w)}']}',
+      );
+      final int shift;
+      if (at != null && at.score >= alignClear && at.lead >= ahead) {
+        shift = ms(at);
+        scores.add(at.score);
+        lead = min(lead, at.lead);
+      } else if (clearOnes.length >= 2 &&
+          clearOnes.last - clearOnes.first <= agreeMs) {
+        // The windows clear on their own, but not added up: they
+        // disagree a little (the song drifting, or moved within it).
+        shift = clearOnes[(clearOnes.length - 1) ~/ 2];
+        scores.add(alignClear);
+        lead = min(lead, ahead);
+      } else {
+        continue;
+      }
+      shifts.add(shift);
+      told
+        ..add(shift)
+        ..addAll(clearOnes.where((w) => (w - shift).abs() <= agreeMs));
+    }
+    progress?.call(total, total);
+    if (!read) return null;
+    if (shifts.isNotEmpty) {
+      shifts.sort();
+      return SongAlign(
+        from: AlignFrom.sound,
+        ms: shifts[(shifts.length - 1) ~/ 2],
+        spreadMs: told.reduce(max) - told.reduce(min),
+        score: scores.reduce((a, b) => a + b) / scores.length,
+        lead: lead,
+      );
+    }
+    // Not in the take's sound: by the rhythm, the guitar's onsets
+    // against the song's, near where the lane has it.
+    final r = onsetAlign(
+      rhythm,
+      reach: reachMs ~/ 10,
+      prior: rhythmPrior.inMilliseconds / 10,
+    );
+    debugPrint('TabCam: align: by the rhythm: $r');
+    if (r == null || r.match < rhythmMatch || r.score < rhythmClear) {
+      return const SongAlign(from: null, ms: 0);
+    }
+    return SongAlign(
+      from: AlignFrom.rhythm,
+      ms: r.ms,
+      score: r.score,
+      lead: r.lead,
+    );
+  }
+
+  /// One clip's windows compared ([align]): their correlations added up
+  /// ([combine], with each one's own), and their onsets, for the rhythm.
+  static ({SoundOffset? offset, List<SoundOffset?> each, List<OnsetWindow> onsets})
+  _aligned(({List<SoundWindow> parts, int reach}) of) {
+    final c = _combine(of.parts, reach: of.reach);
+    const per = rate ~/ onsetRate;
+    return (
+      offset: c?.offset,
+      each: c?.each ?? const [],
+      onsets: [
+        for (final w in of.parts)
+          (
+            heard: onsets(w.heard),
+            played: onsets(w.played),
+            expected: (w.expected / per).round(),
+          ),
+      ],
+    );
+  }
+
+  /// Onset frames a second ([onsets]): a hundredth of a second each.
+  static const int onsetRate = 100;
+
+  /// [samples]' onsets, [onsetRate] a second: for each hundredth of a
+  /// second, how much louder it is than the one before (the rise of the
+  /// log of its loudness; a fall is 0), less its mean over the half
+  /// second either side, the whole scaled to unit length (all zero where
+  /// nothing rises). A guitar played in time with a song shares its
+  /// onsets, not its sound.
+  static Float32List onsets(Float32List samples, {int rate = SongSync.rate}) {
+    final per = rate ~/ onsetRate;
+    final n = samples.length ~/ per;
+    final out = Float32List(n);
+    if (n < 2) return out;
+    var was = 0.0;
+    for (var i = 0; i < n; i++) {
+      var sq = 0.0;
+      for (var j = i * per; j < (i + 1) * per; j++) {
+        sq += samples[j] * samples[j];
+      }
+      final level = log(sqrt(sq / per) + 1e-4);
+      out[i] = i == 0 ? 0 : max(0, level - was);
+      was = level;
+    }
+    // Less the mean around it (by running sums): a steady rise (a
+    // tremolo, a crowd) isn't an onset.
+    const around = onsetRate ~/ 2;
+    final sums = Float64List(n + 1);
+    for (var i = 0; i < n; i++) {
+      sums[i + 1] = sums[i] + out[i];
+    }
+    var length = 0.0;
+    for (var i = 0; i < n; i++) {
+      final a = max(0, i - around);
+      final b = min(n, i + around + 1);
+      out[i] -= (sums[b] - sums[a]) / (b - a);
+      length += out[i] * out[i];
+    }
+    if (length <= 1e-12) return out..fillRange(0, n, 0);
+    final scale = 1 / sqrt(length);
+    for (var i = 0; i < n; i++) {
+      out[i] *= scale;
+    }
+    return out;
+  }
+
+  /// Where the song's onsets are in the take's ([onsets]), over every
+  /// window at once: their cross-correlation for lags −[reach] to
+  /// [reach] frames from where each window expects them, added up over
+  /// the windows (a match a beat off may line up in one window, not in
+  /// all; the right one in all), its peak taken from it weighted by a
+  /// Gaussian [prior] frames wide around 0 (where the lane has it: rhythm
+  /// matches about as well a beat apart, and the lane is good to a few
+  /// tenths of a second), between frames by a parabola. How clearly
+  /// ([OnsetOffset.score]) and how many times higher than the next best
+  /// place 15 frames or more away ([OnsetOffset.lead]) are told on the
+  /// unweighted sum, so a match a beat away about as good shows as a low
+  /// lead. Null when nothing could be compared.
+  static OnsetOffset? onsetAlign(
+    List<OnsetWindow> windows, {
+    required int reach,
+    required double prior,
+  }) {
+    final sum = Float64List(2 * reach + 1);
+    var any = false;
+    for (final w in windows) {
+      final (heard, played) = (w.heard, w.played);
+      for (var d = -reach; d <= reach; d++) {
+        final shift = w.expected + d;
+        final i0 = max(0, -shift);
+        final i1 = min(played.length, heard.length - shift);
+        if (i1 <= i0) continue;
+        var dot = 0.0;
+        for (var i = i0; i < i1; i++) {
+          dot += played[i] * heard[i + shift];
+        }
+        sum[d + reach] += dot;
+        any = true;
+      }
+    }
+    if (!any || sum.length < 3) return null;
+    double weighted(int i) {
+      final d = (i - reach) / prior;
+      return sum[i] * exp(-0.5 * d * d);
+    }
+
+    var best = 1;
+    for (var i = 2; i < sum.length - 1; i++) {
+      if (weighted(i) > weighted(best)) best = i;
+    }
+    if (weighted(best) <= 0) return null;
+    var (total, squares, count) = (0.0, 0.0, 0);
+    var next = double.negativeInfinity;
+    for (var i = 0; i < sum.length; i++) {
+      final away = (i - best).abs();
+      if (away > 5) {
+        total += sum[i];
+        squares += sum[i] * sum[i];
+        count++;
+      }
+      if (away >= 15 && sum[i] > next) next = sum[i];
+    }
+    if (count < 4) return null;
+    final mean = total / count;
+    final spread = sqrt(max(0, squares / count - mean * mean));
+    if (spread <= 0) return null;
+    final (a, b, c) = (weighted(best - 1), weighted(best), weighted(best + 1));
+    final bend = a - 2 * b + c;
+    final fraction = bend < 0 ? (0.5 * (a - c) / bend).clamp(-0.5, 0.5) : 0.0;
+    final top = sum[best];
+    return OnsetOffset(
+      ms: ((best - reach + fraction) * 1000 / onsetRate).round(),
+      score: (top - mean) / spread,
+      lead: next <= mean ? double.infinity : (top - mean) / (next - mean),
+      match: top / windows.length,
+    );
+  }
+
   static ({SoundOffset offset, double drift})? _combined(
     ({List<SoundWindow> parts, int reach}) of,
   ) => combine(of.parts, reach: of.reach, rate: rate);
@@ -175,6 +488,20 @@ abstract final class SongSync {
   /// tell it). Null when nothing could be compared, or the match is at
   /// the edge of where it's looked for.
   static ({SoundOffset offset, double drift})? combine(
+    List<SoundWindow> parts, {
+    required int reach,
+    int rate = SongSync.rate,
+  }) {
+    final c = _combine(parts, reach: reach, rate: rate);
+    final at = c?.offset;
+    return c == null || at == null ? null : (offset: at, drift: c.drift);
+  }
+
+  /// [combine]'s work, with each window's own best match too ([each], as
+  /// [offsetOf] tells it; null where it has none), and the sum's
+  /// ([offset]; null at its edge). Null when nothing could be compared.
+  static ({SoundOffset? offset, double drift, List<SoundOffset?> each})?
+  _combine(
     List<SoundWindow> parts, {
     required int reach,
     int rate = SongSync.rate,
@@ -243,8 +570,11 @@ abstract final class SongSync {
       // average there.
       sum[r] = counts[r] == 0 ? double.nan : sum[r] / sqrt(most);
     }
-    final at = _peak(sum, reach, rate);
-    return at == null ? null : (offset: at, drift: drift);
+    return (
+      offset: _peak(sum, reach, rate),
+      drift: drift,
+      each: [for (final c in curves) c.$3],
+    );
   }
 
   /// [values] as scores: their mean taken out, divided by their spread;
@@ -487,4 +817,90 @@ class SoundOffset {
   @override
   String toString() =>
       'SoundOffset($samples samples, score $score, lead $lead)';
+}
+
+/// Where the Song lane has the song now, a clip of it ([SongSync.align]):
+/// from [fileMs] in the take's file, the song from [songMs], [lengthMs]
+/// long.
+typedef LaneClip = ({int fileMs, int songMs, int lengthMs});
+
+/// One window's onsets for the rhythm ([SongSync.onsetAlign]): the
+/// take's, the song's, and where the song's first frame would be in the
+/// take's ([expected], in frames).
+typedef OnsetWindow = ({Float32List heard, Float32List played, int expected});
+
+/// How Auto-align found the song ([SongAlign.from]).
+enum AlignFrom {
+  /// The song heard in the take's sound.
+  sound,
+
+  /// The take's onsets matching the song's: the guitar played in time
+  /// with it, heard in headphones. It could be a beat off.
+  rhythm,
+}
+
+/// What Auto-align found ([SongSync.align]).
+@immutable
+class SongAlign {
+  const SongAlign({
+    required this.from,
+    required this.ms,
+    this.spreadMs = 0,
+    this.score = 0,
+    this.lead = 0,
+  });
+
+  /// How it was found; null: it wasn't (neither by the sound nor by the
+  /// rhythm).
+  final AlignFrom? from;
+
+  /// How much later than where the lane has it the song is (earlier when
+  /// negative), in ms.
+  final int ms;
+
+  /// How far apart the clips and windows that found it by the sound
+  /// were, in ms.
+  final int spreadMs;
+
+  /// How clearly, and how many times higher than the next best place
+  /// (the sound's [SoundOffset] or the rhythm's [OnsetOffset]).
+  final double score;
+  final double lead;
+
+  bool get found => from != null;
+
+  /// Found by the sound, but its parts disagree ([SongSync.roughMs]).
+  bool get rough => from == AlignFrom.sound && spreadMs > SongSync.roughMs;
+
+  @override
+  String toString() =>
+      'SongAlign(${from?.name ?? 'not found'}, $ms ms, spread $spreadMs ms, '
+      'score ${score.toStringAsFixed(1)}, lead ${lead.toStringAsFixed(2)})';
+}
+
+/// Where the song's onsets were found in the take's
+/// ([SongSync.onsetAlign]): [ms] later than expected, how clearly
+/// ([score]: the peak over the rest, in their spread) and how many times
+/// higher than the next best place ([lead]).
+@immutable
+class OnsetOffset {
+  const OnsetOffset({
+    required this.ms,
+    required this.score,
+    required this.lead,
+    required this.match,
+  });
+
+  final int ms;
+  final double score;
+  final double lead;
+
+  /// How alike the two onsets are there, a window's on average: their
+  /// correlation, 1 the same, 0 nothing in common.
+  final double match;
+
+  @override
+  String toString() =>
+      'OnsetOffset($ms ms, score ${score.toStringAsFixed(1)}, '
+      'lead ${lead.toStringAsFixed(2)}, match ${match.toStringAsFixed(3)})';
 }
