@@ -12,6 +12,7 @@ import '../dictionary/dictionary_sidebar.dart';
 import '../l10n/language.dart';
 import '../library/capture_event.dart';
 import '../cloud/cloud_ocr.dart';
+import '../cloud/cloud_sync.dart';
 import '../library/library.dart';
 import '../library/meta_names.dart';
 import '../metronome/metronome.dart';
@@ -117,6 +118,7 @@ class PlayAlongScreen extends StatefulWidget {
     this.pdfView = pdfViewFor,
     this.gate,
     this.ocr,
+    this.sync,
   });
 
   final Library library;
@@ -137,6 +139,9 @@ class PlayAlongScreen extends StatefulWidget {
   /// take's Edit opens from the sidebar (its watermark, as from the file
   /// screen).
   final CloudOcr? ocr;
+
+  /// Cloud sync, for the editor's Share (a take's edit view's link).
+  final CloudSync? sync;
 
   /// The cameras there are; tests pass their own.
   final Future<List<CameraDescription>> Function() cameras;
@@ -1678,6 +1683,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
               eventId: widget.eventId,
               page: take,
               ocr: widget.ocr,
+              sync: widget.sync,
             )
           : null,
       child: _main(controller, playing),

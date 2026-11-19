@@ -25,7 +25,9 @@ sign in first ([signed out](cloud-sync.md#signed-out)), then copies.
   owner's file until it changes;
   [shared captures](shared-captures.md#shared-with-me)), in the shared
   capture's place, with "The editor opens on your copy, …"; a copy that
-  owns its files already (shared since) opens on its list. Opened by its
+  has no page showing that file (it owns its files since it was shared,
+  or the file came after it), or one that can't be made, opens the file
+  on the shared capture instead, read only, as its plain link does. Opened by its
   key, signed out or not shared with the user, the file opens, read only
   (there's no copy to edit); once signed in and joined, the same link
   opens the editor on their copy. An image's edit view is just the file.

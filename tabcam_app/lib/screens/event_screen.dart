@@ -140,10 +140,13 @@ class _EventScreenState extends State<EventScreen> {
       final edit = widget.initialEdit && !widget.byLink;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        if (edit && event!.isShared) {
+        // The editor opens on a video of the capture's own files; on a
+        // capture shared with the user, on their copy of it.
+        final editable = edit && page.isVideo && event!.pages.contains(page);
+        if (editable && event.isShared) {
           unawaited(_editOnCopy(event, page));
         } else {
-          unawaited(_openFile(page, edit: edit));
+          unawaited(_openFile(page, edit: editable));
         }
       });
     } else if (widget.initialCam) {
@@ -399,22 +402,30 @@ class _EventScreenState extends State<EventScreen> {
   /// only: the editor doesn't open on it): the editor opens on their copy
   /// of it ([Library.copyToAdd], as Cam and Add do), over the copy's page
   /// of that file (the one showing it: copy on write), in this screen's
-  /// place. A copy that owns its files already (shared since) opens on
-  /// its list.
+  /// place. When the user's copy has no page showing that file (it owns
+  /// its files since it was shared, or the file came after it), or the
+  /// copy can't be made, the file opens here instead, read only, as its
+  /// plain link opens it.
   Future<void> _editOnCopy(CaptureEvent shown, EventPage page) async {
     final l10n = context.l10n;
+    final origin = FileOrigin(shown.id, page.id);
+    EventPage? showing(CaptureEvent copy) =>
+        copy.pages.where((p) => p.source == origin).firstOrNull;
+    final had = _library.copyOf(shown.id);
+    if (had != null && showing(had) == null) return _openFile(page);
     final CaptureEvent copy;
     try {
-      copy = await _library.copyToAdd(shown);
+      copy = had ?? await _library.copyToAdd(shown);
     } on Object catch (e) {
-      if (mounted) _snack('${l10n.eventCouldntAdd}: $e');
-      return;
+      if (!mounted) return;
+      _snack('${l10n.eventCouldntAdd}: $e');
+      return _openFile(page);
     }
     if (!mounted) return;
-    final origin = FileOrigin(shown.id, page.id);
-    final own = copy.pages.where((p) => p.source == origin).firstOrNull;
+    final own = showing(copy);
+    if (own == null) return _openFile(page);
     _snack(l10n.eventEditOnCopy(copy.title));
-    await _openInstead(copy, file: own?.id, edit: own != null);
+    await _openInstead(copy, file: own.id, edit: true);
   }
 
   Future<void> _openInstead(
@@ -561,6 +572,7 @@ class _EventScreenState extends State<EventScreen> {
           eventId: widget.eventId,
           gate: gate,
           ocr: widget.ocr,
+          sync: widget.sync,
         ),
       ),
     );
