@@ -1094,15 +1094,16 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     // A song playing already plays on in the take from here.
     _songNotes = SongNotes();
     _noteSong();
-    // The song in the sidebar's player starts with the take (counting in
-    // first, from where it is), unless it plays already.
+    // The song in the sidebar's player starts with the take, from where
+    // it is, after a count-in from the take's start (one under way counts
+    // again from now), so every take opens with its breath before the
+    // song; playing already, it plays on.
     if (mounted &&
         _along.open &&
         _track.page != null &&
         !_track.loading &&
-        !_track.playing &&
-        !_track.countingIn) {
-      unawaited(_track.toggle());
+        !_track.playing) {
+      unawaited(_track.playWithTake());
     }
   }
 
@@ -1137,9 +1138,29 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     }
   }
 
+  /// After a segment of the song starts, when it's read again
+  /// ([_anchorSong]): at once, then once it surely sounds (a player says
+  /// it plays a little before its sound starts, and its position stays
+  /// at the start meanwhile), the last reading telling it best.
+  static const _anchorAfter = [
+    Duration.zero,
+    Duration(milliseconds: 300),
+    Duration(milliseconds: 1000),
+  ];
+
+  /// The readings [_anchorAfter] still to come.
+  final _anchorTimers = <Timer>[];
+
+  void _cancelAnchors() {
+    for (final t in _anchorTimers) {
+      t.cancel();
+    }
+    _anchorTimers.clear();
+  }
+
   /// While recording, notes where the song playing along is now (the
   /// sidebar's player changed); a segment just started is told again from
-  /// a fresh reading of its player ([SongNotes.anchor]).
+  /// fresh readings of its player ([SongNotes.anchor]).
   void _noteSong() {
     final notes = _songNotes;
     if (notes == null || !_recording) return;
@@ -1156,24 +1177,40 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       speed: v?.playbackSpeed ?? 1,
     );
     if (started && media != null && page != null) {
-      unawaited(_anchorSong(notes, media, page));
+      final segment = notes.segment;
+      _anchorTimers.removeWhere((t) => !t.isActive);
+      for (final after in _anchorAfter) {
+        if (after == Duration.zero) {
+          unawaited(_anchorSong(notes, media, page, segment));
+          continue;
+        }
+        _anchorTimers.add(
+          Timer(after, () => _anchorSong(notes, media, page, segment)),
+        );
+      }
     }
   }
 
-  /// Tells the segment [page] started from where [media] says it is now.
+  /// Tells segment [segment] (of [page]) where it started, from where
+  /// [media] says it is now: read halfway between asking and the answer.
   Future<void> _anchorSong(
     SongNotes notes,
     VideoPlayerController media,
     String page,
+    int segment,
   ) async {
     try {
+      if (!identical(notes, _songNotes) || _track.media != media) return;
+      final asked = _clock.elapsed.inMicroseconds;
       final at = await media.position;
+      final answered = _clock.elapsed.inMicroseconds;
       if (at == null || !identical(notes, _songNotes)) return;
       if (_track.media != media) return;
       notes.anchor(
-        _clock.elapsed.inMilliseconds,
+        ((asked + answered) / 2000).round(),
         page: page,
         position: at.inMilliseconds,
+        segment: segment,
       );
     } on Object catch (e) {
       debugPrint('TabCam: cam: where the song is isn\'t known: $e');
@@ -1215,13 +1252,26 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
     }
     setState(() => _nextTaking = true);
     try {
-      if (!keep) await _songBack();
+      await (keep ? _songHeld() : _songBack());
       await _stopRecording(keep: keep);
       // The take is kept (or gone) whether or not the next one starts.
       if (!mounted || _controller == null) return;
       await _rec();
     } finally {
       if (mounted) setState(() => _nextTaking = false);
+    }
+  }
+
+  /// The song in the sidebar (when it shows) paused where it is, at a cut
+  /// (the / key): the next take plays it on from there, after its own
+  /// count-in, rather than it playing on while the take is saved (and
+  /// the next one missing what played meanwhile).
+  Future<void> _songHeld() async {
+    if (!_along.open || _track.page == null) return;
+    try {
+      await _track.pause();
+    } on Object catch (e) {
+      debugPrint('TabCam: cam: the song didn\'t pause: $e');
     }
   }
 
@@ -1248,6 +1298,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       _saving = true;
     });
     _clock.stop();
+    _cancelAnchors();
     final marks = _marks;
     final unpassed = _unpassed;
     final notes = _songNotes;
@@ -1512,6 +1563,7 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       unawaited(TakeSound.release());
     }
     _autoPassTimer?.cancel();
+    _cancelAnchors();
     _track.removeListener(_trackChanged);
     widget.library.removeListener(_libraryChanged);
     unawaited(_track.savePhrases());

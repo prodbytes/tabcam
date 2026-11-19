@@ -76,7 +76,8 @@ review notes ([app stores](app-stores.md)).
   frame above the camera, the space bar pausing and playing it, 0
   going back to its start (its section's, count-in included) and ← / → skipping in it (0, space and, outside Cam, 1 work in every screen with the sidebar showing),
   play waiting a 2-second count-in (shown in amber on the progress
-  bar's line, with a button to turn it off); turns
+  bar's line, with a button to turn it off), and again each time it
+  starts over, always while a take records; turns
   of the tab while recording along with a song, with **Auto-pass** on,
   are kept as that file's
   own phrase passes (marked on its player, merged within two seconds at their
