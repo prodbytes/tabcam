@@ -42,8 +42,8 @@ plays along.
   turned by its Rotate button, a panel under the screen), and
   **Metronome** (a stopwatch icon) right after it the
   [metronome](metronome.md)'s.
-  In the Text view, with its tab shown, the Text view's **Copy**,
-  **Two columns**, **Rescan** and **Verified** (and Fix, in a build that shows it) come
+  In the Text view, with its tab shown, the Text view's **Two
+  columns**, **Copy**, **Rescan** and **Verified** (and Fix, in a build that shows it) come
   first, right of the title ([tab recognition](tab-recognition.md#text-view)).
   On a screen narrower than 900 px they're icons; narrower than 600 px
   Dictionary and
