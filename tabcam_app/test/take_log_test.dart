@@ -860,12 +860,24 @@ void main() {
       expect(idle.finish(100), isEmpty);
     });
 
-    test('a reading is taken as of the middle of its round trip', () {
+    test('a reading before its sound started (its position held at the '
+        'song\'s start) starts the segment later; a later reading tells it '
+        'better; a reading for another segment is left out', () {
       final notes = SongNotes();
-      notes.note(0, page: 'k1', playing: true, position: 9500);
-      // Asked at 100, back at 190: the player read 10100 about 145.
-      notes.anchorBetween(100, 190, page: 'k1', position: 10100);
-      expect(notes.finish(1000), [seg(0, 1000, 9955)]);
+      notes.note(0, page: 'k1', playing: true, position: 0);
+      final first = notes.segment;
+      // Read at once: still at the start, so it starts no sooner than now.
+      notes.anchor(30, page: 'k1', position: 0, segment: first);
+      // Its sound started at 150: read at 330, it's 180 in.
+      notes.anchor(330, page: 'k1', position: 180, segment: first);
+      // Read again at 1000: as told.
+      notes.anchor(1000, page: 'k1', position: 850, segment: first);
+      // Back to its start (Repeat): another segment, which the first's
+      // late reading doesn't tell.
+      notes.note(3000, page: 'k1', playing: true, position: 0);
+      notes.anchor(3010, page: 'k1', position: 2860, segment: first);
+      expect(notes.segment, first + 1);
+      expect(notes.finish(4000), [seg(150, 3000, 0), seg(3000, 4000, 0)]);
     });
 
     test('nothing played: no segments; one ended as it started: none', () {
