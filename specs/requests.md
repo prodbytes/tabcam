@@ -4506,3 +4506,16 @@ spec.
    in the way, a line of its own goes in above the phrase. `TabWriter`'s
    `write` takes the name. See
    [dictionary](dictionary.md#writing-in-the-text).
+
+17. **"On the search results on the dictionary besides the open button
+   add a '+' button to add the link to the capture."** Each YouTube
+   video and Cifra Club song in the dictionary's results now has a
+   **+** ("Add to the capture") just before its open-in-new mark, on a
+   capture's screen (and the file screen or Cam over it). It adds the
+   result to the capture as a link, as Add's Link does (a Cifra Club
+   page imported beside it as a PDF), named by its title; "Link added
+   to the capture", or "That link is already in the capture" for one it
+   has. No + on Home, on a capture shared to read or opened by its
+   link. New strings `dictionaryAddLink`, `dictionaryLinkAdded` and
+   `dictionaryLinkThere` in English, Spanish and Portuguese. See
+   [dictionary](dictionary.md#adding-a-result).
