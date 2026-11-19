@@ -668,12 +668,15 @@ view).
   plays, its times (`Section 0:12.3–0:45.0`, to the tenth of a second,
   in the primary colour once set), **|◀** and **▶|** (start or end it
   where it plays now) and, once set, **✕** (play all of it again). While
-  either end of the range is dragged, the section shows over the
-  progress bar too: a band in the primary colour from its start to its
-  end, as high as the bar's line, over the part played (red) and under
-  the phrase marks, following the drag and gone when it's let go (the
-  two bars aren't as wide, so the range alone doesn't show where the
-  section falls on the progress bar). The band and the part played are
+  **Repeat** is on, and while either end of the range is dragged, the
+  section shows over the progress bar too: a band in the primary colour
+  from its start to its end, as high as the bar's line, over the part
+  played (red) and under the phrase marks, following a drag (the two
+  bars aren't as wide, so the range alone doesn't show where the section
+  falls on the progress bar). With Repeat on it stays for as long as the
+  section is set, so the part that repeats shows on the bar as it plays;
+  with Repeat off it shows only while the range is dragged, gone when
+  it's let go. The band and the part played are
   both see-through (the band at half, the red at 60%), so where they
   overlap the two mix (orange) and each still shows on its own where
   they don't. While
