@@ -574,7 +574,6 @@ void main() {
     });
   });
 
-
   group('harder takes: the windows added up, the drift taken out', () {
     // A take 50 s long, a 40 s song from 5 s on its clock, 200 ms lag.
     final song = riff(40, 21);
@@ -625,7 +624,11 @@ void main() {
       final from = (inFile - 600) * rate ~/ 1000;
       return SongSync.offsetOf(
         Float32List.sublistView(heard, from, from + 13200 * rate ~/ 1000),
-        Float32List.sublistView(song, 14000 * rate ~/ 1000, 26000 * rate ~/ 1000),
+        Float32List.sublistView(
+          song,
+          14000 * rate ~/ 1000,
+          26000 * rate ~/ 1000,
+        ),
         expected: reach,
         reach: reach,
       );
@@ -713,15 +716,17 @@ void main() {
       progress: progress,
     );
 
-    test('by the sound: where it is against the lane, to the millisecond',
-        () async {
-      final found = (await align(take(), song))!;
-      expect(found.from, AlignFrom.sound);
-      expect(found.ms, closeTo(83, 1));
-      expect(found.spreadMs, lessThanOrEqualTo(2));
-      expect(found.rough, isFalse);
-      expect(found.score, greaterThan(SongSync.alignClear));
-    });
+    test(
+      'by the sound: where it is against the lane, to the millisecond',
+      () async {
+        final found = (await align(take(), song))!;
+        expect(found.from, AlignFrom.sound);
+        expect(found.ms, closeTo(83, 1));
+        expect(found.spreadMs, lessThanOrEqualTo(2));
+        expect(found.rough, isFalse);
+        expect(found.score, greaterThan(SongSync.alignClear));
+      },
+    );
 
     test('further either way than the measure looks: up to 2 s', () async {
       for (final late in [1500, -1300]) {
@@ -826,8 +831,7 @@ void main() {
         expect(found.ms, closeTo(180, 25));
       });
 
-      test('the lane 420 ms off: still found there, not a beat off',
-          () async {
+      test('the lane 420 ms off: still found there, not a beat off', () async {
         for (final late in [420, -420]) {
           final found = (await align(guitar(late), played))!;
           expect(found.from, AlignFrom.rhythm, reason: '$late');
@@ -854,8 +858,10 @@ void main() {
     });
 
     test('nothing that can be read, or no clip long enough: null', () async {
-      expect(await align(take(), song, reader: FakeReader({'song': song})),
-          isNull);
+      expect(
+        await align(take(), song, reader: FakeReader({'song': song})),
+        isNull,
+      );
       expect(
         await align(
           take(),
@@ -895,8 +901,7 @@ void main() {
         for (var i = 0; i < 800; i++) random.nextDouble() < 0.1 ? 1.0 : 0.0,
       ]);
       // The take's from 200 frames before (its reach), the song 17 later.
-      final heard = Float32List(1200)
-        ..setAll(200 + 17, played);
+      final heard = Float32List(1200)..setAll(200 + 17, played);
       final found = SongSync.onsetAlign(
         [(heard: heard, played: played, expected: 200)],
         reach: 200,

@@ -338,7 +338,11 @@ abstract final class SongSync {
 
   /// One clip's windows compared ([align]): their correlations added up
   /// ([combine], with each one's own), and their onsets, for the rhythm.
-  static ({SoundOffset? offset, List<SoundOffset?> each, List<OnsetWindow> onsets})
+  static ({
+    SoundOffset? offset,
+    List<SoundOffset?> each,
+    List<OnsetWindow> onsets,
+  })
   _aligned(({List<SoundWindow> parts, int reach}) of) {
     final c = _combine(of.parts, reach: of.reach);
     const per = rate ~/ onsetRate;
@@ -521,7 +525,8 @@ abstract final class SongSync {
       final z = _scored(c.values);
       if (z == null) continue;
       // Relative to where it's expected, from -reach on.
-      final rel = Float64List(2 * reach + 1)..fillRange(0, 2 * reach + 1, double.nan);
+      final rel = Float64List(2 * reach + 1)
+        ..fillRange(0, 2 * reach + 1, double.nan);
       for (var i = 0; i < z.length; i++) {
         final r = c.from + i - w.expected + reach;
         if (r >= 0 && r < rel.length) rel[r] = z[i];
@@ -537,10 +542,10 @@ abstract final class SongSync {
           (middle, at.samples),
     ];
     if (clearOnes.length >= 2) {
-      final mx = clearOnes.map((p) => p.$1).reduce((a, b) => a + b) /
-          clearOnes.length;
-      final my = clearOnes.map((p) => p.$2).reduce((a, b) => a + b) /
-          clearOnes.length;
+      final mx =
+          clearOnes.map((p) => p.$1).reduce((a, b) => a + b) / clearOnes.length;
+      final my =
+          clearOnes.map((p) => p.$2).reduce((a, b) => a + b) / clearOnes.length;
       var (sxy, sxx) = (0.0, 0.0);
       for (final (x, y) in clearOnes) {
         sxy += (x - mx) * (y - my);
@@ -659,7 +664,8 @@ abstract final class SongSync {
       rate: rate,
     );
     if (c == null) return null;
-    final rel = Float64List(2 * reach + 1)..fillRange(0, 2 * reach + 1, double.nan);
+    final rel = Float64List(2 * reach + 1)
+      ..fillRange(0, 2 * reach + 1, double.nan);
     for (var i = 0; i < c.values.length; i++) {
       final r = c.from + i - expected + reach;
       if (r >= 0 && r < rel.length) rel[r] = c.values[i];

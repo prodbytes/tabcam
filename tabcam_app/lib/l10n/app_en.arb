@@ -3660,5 +3660,113 @@
   "videoEditDelaySet": "Set",
   "@videoEditDelaySet": {
     "description": "Video edit: the delay dialog's confirm button"
+  },
+  "videoEditAutoAlign": "Auto-align",
+  "@videoEditAutoAlign": {
+    "description": "Video edit: the button under the song's details that lines the song up with the take (the track with the video) by their sounds, or by the rhythm"
+  },
+  "videoEditAutoAlignTip": "Find where the song lines up with the take, by their sounds, or by the rhythm with headphones",
+  "@videoEditAutoAlignTip": {
+    "description": "Video edit, a take: the Auto-align button's tooltip"
+  },
+  "videoEditAutoAlignTrackTip": "Find where the track lines up with the video, by their sounds, or by the rhythm",
+  "@videoEditAutoAlignTrackTip": {
+    "description": "Video edit, another video: the Auto-align button's tooltip"
+  },
+  "videoEditAlignListening": "Listening… {done} of {total}",
+  "@videoEditAlignListening": {
+    "description": "Video edit: Auto-align's progress while it reads the sounds (parts done, of how many)",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditAlignedSync": "Found by its sound in the take, and lined up there",
+  "@videoEditAlignedSync": {
+    "description": "Video edit, a take not measured yet: Auto-align measured it first and found the song in the take's sound"
+  },
+  "videoEditAlignedLater": "Lined up by the sound: moved {ms} ms later",
+  "@videoEditAlignedLater": {
+    "description": "Video edit: Auto-align found the song in the take's sound and moved it that many milliseconds later",
+    "placeholders": {
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditAlignedEarlier": "Lined up by the sound: moved {ms} ms earlier",
+  "@videoEditAlignedEarlier": {
+    "description": "Video edit: Auto-align found the song in the take's sound and moved it that many milliseconds earlier",
+    "placeholders": {
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditAlignedSame": "Lined up by the sound: it was there already",
+  "@videoEditAlignedSame": {
+    "description": "Video edit: Auto-align found the song in the take's sound where it already was"
+  },
+  "videoEditAlignedRoughLater": "Lined up by the sound, roughly: moved {ms} ms later; its parts disagree by {spread} ms",
+  "@videoEditAlignedRoughLater": {
+    "description": "Video edit: Auto-align found the song by the sound, but its parts disagree by that many milliseconds (the song may drift along the take)",
+    "placeholders": {
+      "ms": {
+        "type": "int"
+      },
+      "spread": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditAlignedRoughEarlier": "Lined up by the sound, roughly: moved {ms} ms earlier; its parts disagree by {spread} ms",
+  "@videoEditAlignedRoughEarlier": {
+    "description": "Video edit: as videoEditAlignedRoughLater, moved earlier",
+    "placeholders": {
+      "ms": {
+        "type": "int"
+      },
+      "spread": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditAlignedRhythmLater": "Lined up by the rhythm: moved {ms} ms later (it could be a beat off)",
+  "@videoEditAlignedRhythmLater": {
+    "description": "Video edit: the song isn't in the take's sound (headphones); the playing's rhythm matched the song's, and it was moved that many milliseconds later",
+    "placeholders": {
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditAlignedRhythmEarlier": "Lined up by the rhythm: moved {ms} ms earlier (it could be a beat off)",
+  "@videoEditAlignedRhythmEarlier": {
+    "description": "Video edit: as videoEditAlignedRhythmLater, moved earlier",
+    "placeholders": {
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditAlignedRhythmSame": "Lined up by the rhythm: it was there already (it could be a beat off)",
+  "@videoEditAlignedRhythmSame": {
+    "description": "Video edit: the playing's rhythm matched the song's where it already was"
+  },
+  "videoEditAlignNotFound": "The song wasn't found in the take's sound, nor by the rhythm: zoom in and drag it under the take, or nudge it by ear",
+  "@videoEditAlignNotFound": {
+    "description": "Video edit, a take: Auto-align found nothing"
+  },
+  "videoEditAlignNotFoundTrack": "The track wasn't found in the video's sound, nor by the rhythm: zoom in and drag it, or nudge it by ear",
+  "@videoEditAlignNotFoundTrack": {
+    "description": "Video edit, another video: Auto-align found nothing"
+  },
+  "videoEditAlignUnread": "The sounds couldn't be read here",
+  "@videoEditAlignUnread": {
+    "description": "Video edit: Auto-align couldn't read the take's or the song's sound on this device (a format it doesn't decode)"
   }
 }

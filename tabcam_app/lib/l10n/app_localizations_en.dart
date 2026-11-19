@@ -2670,4 +2670,73 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoEditDelaySet => 'Set';
+
+  @override
+  String get videoEditAutoAlign => 'Auto-align';
+
+  @override
+  String get videoEditAutoAlignTip =>
+      'Find where the song lines up with the take, by their sounds, or by the rhythm with headphones';
+
+  @override
+  String get videoEditAutoAlignTrackTip =>
+      'Find where the track lines up with the video, by their sounds, or by the rhythm';
+
+  @override
+  String videoEditAlignListening(int done, int total) {
+    return 'Listening… $done of $total';
+  }
+
+  @override
+  String get videoEditAlignedSync =>
+      'Found by its sound in the take, and lined up there';
+
+  @override
+  String videoEditAlignedLater(int ms) {
+    return 'Lined up by the sound: moved $ms ms later';
+  }
+
+  @override
+  String videoEditAlignedEarlier(int ms) {
+    return 'Lined up by the sound: moved $ms ms earlier';
+  }
+
+  @override
+  String get videoEditAlignedSame =>
+      'Lined up by the sound: it was there already';
+
+  @override
+  String videoEditAlignedRoughLater(int ms, int spread) {
+    return 'Lined up by the sound, roughly: moved $ms ms later; its parts disagree by $spread ms';
+  }
+
+  @override
+  String videoEditAlignedRoughEarlier(int ms, int spread) {
+    return 'Lined up by the sound, roughly: moved $ms ms earlier; its parts disagree by $spread ms';
+  }
+
+  @override
+  String videoEditAlignedRhythmLater(int ms) {
+    return 'Lined up by the rhythm: moved $ms ms later (it could be a beat off)';
+  }
+
+  @override
+  String videoEditAlignedRhythmEarlier(int ms) {
+    return 'Lined up by the rhythm: moved $ms ms earlier (it could be a beat off)';
+  }
+
+  @override
+  String get videoEditAlignedRhythmSame =>
+      'Lined up by the rhythm: it was there already (it could be a beat off)';
+
+  @override
+  String get videoEditAlignNotFound =>
+      'The song wasn\'t found in the take\'s sound, nor by the rhythm: zoom in and drag it under the take, or nudge it by ear';
+
+  @override
+  String get videoEditAlignNotFoundTrack =>
+      'The track wasn\'t found in the video\'s sound, nor by the rhythm: zoom in and drag it, or nudge it by ear';
+
+  @override
+  String get videoEditAlignUnread => 'The sounds couldn\'t be read here';
 }
