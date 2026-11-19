@@ -494,8 +494,8 @@ void main() {
     track.dispose();
   });
 
-  testWidgets('the part played is the primary colour, and red while a take '
-      'records', (tester) async {
+  testWidgets('the part played is the primary colour, red while a take '
+      'records, and the section secondary', (tester) async {
     final recording = ValueNotifier(false);
     final (track, event, _) = await loaded(tester, recording: recording);
     final theme = ThemeData(colorSchemeSeed: Colors.indigo);
@@ -536,16 +536,39 @@ void main() {
         .playedColor;
     final scheme = theme.colorScheme;
     // See-through, so a section's band over it still shows.
-    expect(played(), scheme.primary.withValues(alpha: 0.6));
+    expect(played(), scheme.primary.withValues(alpha: 0.75));
 
     recording.value = true;
     await tester.pump();
     expect(track.recording, isTrue);
-    expect(played(), scheme.error.withValues(alpha: 0.6));
+    expect(played(), scheme.error.withValues(alpha: 0.75));
 
     recording.value = false;
     await tester.pump();
-    expect(played(), scheme.primary.withValues(alpha: 0.6));
+    expect(played(), scheme.primary.withValues(alpha: 0.75));
+
+    // A section (Repeat on): its band over the bar, and its range, in the
+    // secondary colour, as see-through.
+    await tester.runAsync(
+      () => track.setSection(
+        const Duration(seconds: 10),
+        const Duration(seconds: 20),
+      ),
+    );
+    await tester.pump();
+    final band = scheme.secondary.withValues(alpha: 0.75);
+    expect(
+      tester
+          .widget<ColoredBox>(find.byKey(const Key('cam-along-section-mark')))
+          .color,
+      band,
+    );
+    expect(
+      SliderTheme.of(
+        tester.element(find.byKey(const Key('cam-along-section-range'))),
+      ).activeTrackColor,
+      band,
+    );
     track.dispose();
   });
 
@@ -621,7 +644,7 @@ void main() {
     // Both see-through: where the section and the part played overlap,
     // each shows through the other.
     final bandColor = tester.widget<ColoredBox>(mark).color;
-    expect(bandColor.a, closeTo(0.5, 0.01));
+    expect(bandColor.a, closeTo(0.75, 0.01));
     final played = tester
         .widget<VideoProgressIndicator>(find.byType(VideoProgressIndicator))
         .colors

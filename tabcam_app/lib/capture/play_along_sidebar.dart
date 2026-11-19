@@ -988,8 +988,9 @@ class _BackingFrameState extends State<_BackingFrame> {
                                   start: section.start,
                                   end: section.end,
                                   length: media.value.duration,
-                                  color: Theme.of(context).colorScheme.primary
-                                      .withValues(alpha: _SectionMark.alpha),
+                                  color: _SectionMark.band(
+                                    Theme.of(context).colorScheme,
+                                  ),
                                 ),
                               ),
                             ),
@@ -1717,18 +1718,19 @@ class _SectionMark extends StatelessWidget {
     required this.color,
   });
 
-  /// How opaque the band is.
-  static const alpha = 0.5;
+  /// How opaque the bars are: the part played, the band and the range's
+  /// track, a little see-through.
+  static const alpha = 0.75;
 
-  /// How opaque the part played is on the progress bar.
-  static const playedAlpha = 0.6;
-
-  /// The part played's colour on the progress bar, see-through: the
-  /// theme's primary colour, or its red (error) while a take records.
+  /// The part played's colour on the progress bar: the theme's primary
+  /// colour, or its red (error) while a take records.
   static Color played(ColorScheme scheme, {required bool recording}) =>
-      (recording ? scheme.error : scheme.primary).withValues(
-        alpha: playedAlpha,
-      );
+      (recording ? scheme.error : scheme.primary).withValues(alpha: alpha);
+
+  /// The section's colour, the band's and the range's: the theme's
+  /// secondary colour.
+  static Color band(ColorScheme scheme) =>
+      scheme.secondary.withValues(alpha: alpha);
 
   /// The progress bar's padding above and below its line: the band is as
   /// high as the line.
@@ -1797,7 +1799,9 @@ class _SectionBar extends StatelessWidget {
     final end = range?.end ?? length;
     final ms = length.inMilliseconds.toDouble();
     const compact = VisualDensity(horizontal: -4, vertical: -4);
-    final primary = Theme.of(context).colorScheme.primary;
+    // The section's colour: the theme's secondary, as its band over the
+    // progress bar ([_SectionMark.band]); the thumbs and the times solid.
+    final secondary = Theme.of(context).colorScheme.secondary;
     return Column(
       key: const Key('cam-along-section'),
       mainAxisSize: MainAxisSize.min,
@@ -1809,9 +1813,11 @@ class _SectionBar extends StatelessWidget {
               enabledThumbRadius: 7,
             ),
             overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-            activeTrackColor: range == null ? Colors.white24 : primary,
+            activeTrackColor: range == null
+                ? Colors.white24
+                : _SectionMark.band(Theme.of(context).colorScheme),
             inactiveTrackColor: Colors.white12,
-            thumbColor: range == null ? Colors.white70 : primary,
+            thumbColor: range == null ? Colors.white70 : secondary,
           ),
           child: SizedBox(
             height: 28,
@@ -1850,7 +1856,7 @@ class _SectionBar extends StatelessWidget {
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: range == null ? Colors.white54 : primary,
+                  color: range == null ? Colors.white54 : secondary,
                   fontSize: 12,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),

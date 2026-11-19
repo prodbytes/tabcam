@@ -4485,3 +4485,13 @@ spec.
    space bar in `PlayAlongKeys` (Cam's own copy is gone); typing in a
    field (the Text view's editor) still moves the cursor. See
    [Cam](cam.md#keys-in-every-screen).
+
+15. **"Let's make the play bar the primary color, red if recording and
+   the selection bar the secondary color, all a little transparent."**
+   In the play-along player, the part played stays the theme's primary
+   colour (red, its error colour, while a take records). The section
+   (its range under the progress bar, its times, and its band over the
+   bar) is now the theme's secondary colour; it was primary. The part
+   played, the band and the range's line are all at 75% opacity (the
+   part played was 60%, the band 50%). See
+   [Cam](cam.md#playing-along-with-a-file).
