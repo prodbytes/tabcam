@@ -1265,6 +1265,10 @@ class _EventScreenState extends State<EventScreen> {
         final offered = locked && widget.ocr!.free;
         final l10n = context.l10n;
         final narrow = MediaQuery.sizeOf(context).width < 600;
+        // The Text view's buttons are icons below 900 px too (a tablet
+        // held upright): labelled, they'd leave the title no room beside
+        // the other buttons.
+        final compactText = MediaQuery.sizeOf(context).width < 900;
         // The Text view shows the tab: its buttons go in the app bar.
         final textActions = text && !locked && event.tabText != null;
         final hasText = event.tabText?.trim().isNotEmpty ?? false;
@@ -1323,8 +1327,8 @@ class _EventScreenState extends State<EventScreen> {
                   builder: (context, _) => Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      ..._textActions.build(context, compact: narrow),
-                      if (!narrow) const SizedBox(width: 8),
+                      ..._textActions.build(context, compact: compactText),
+                      if (!compactText) const SizedBox(width: 8),
                     ],
                   ),
                 ),

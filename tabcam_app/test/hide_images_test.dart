@@ -99,7 +99,7 @@ void main() {
     // A tap on it shows the Text view.
     await tester.tap(find.text('Text tab'));
     await _frames(tester);
-    expect(find.text('Copy'), findsOneWidget);
+    expect(find.byIcon(Icons.copy), findsOneWidget);
     await tester.tap(find.byKey(const Key('files')));
     await _frames(tester);
 

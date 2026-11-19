@@ -1194,6 +1194,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get textViewCopy => 'Copiar';
 
   @override
+  String get textViewColumns => 'Dos columnas';
+
+  @override
+  String get textViewColumnsTip =>
+      'Mostrar la tablatura en dos columnas, dividida por la mitad';
+
+  @override
+  String get textViewColumnsOn => 'Volver a una columna, para editar';
+
+  @override
   String get textViewFix => 'Arreglar';
 
   @override

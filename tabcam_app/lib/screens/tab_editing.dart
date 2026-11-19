@@ -540,3 +540,52 @@ TextEditingValue writeColumns(
       '${_stringNames[k]}|-${on(k).padRight(width, '-')}|',
   ], 3 + written);
 }
+
+/// Where to break [text] in two for the Text view's two columns: the
+/// first column is `text.substring(0, leftEnd)`, the second
+/// `text.substring(rightStart)` (the blank lines between them dropped).
+/// The break is the line boundary nearest the middle (by lines) that
+/// doesn't cut a phrase: after a blank line if there's one, else between
+/// two lines that aren't both string lines; only failing both, the middle
+/// line. Null when there's nothing to break: fewer than two non-blank
+/// lines.
+({int leftEnd, int rightStart})? splitInHalf(String text) {
+  final lines = text.split('\n');
+  if (lines.where((l) => l.trim().isNotEmpty).length < 2) return null;
+  // Line i starts at starts[i].
+  final starts = <int>[0];
+  for (final line in lines) {
+    starts.add(starts.last + line.length + 1);
+  }
+  bool blank(int i) => lines[i].trim().isEmpty;
+  // The boundaries b (the second column from line b) with text on both
+  // sides.
+  final firstText = lines.indexWhere((l) => l.trim().isNotEmpty);
+  final lastText = lines.lastIndexWhere((l) => l.trim().isNotEmpty);
+  final all = [for (var b = firstText + 1; b <= lastText; b++) b];
+  final middle = (firstText + lastText + 1) / 2;
+  int? nearest(bool Function(int b) ok) {
+    int? best;
+    for (final b in all.where(ok)) {
+      if (best == null || (b - middle).abs() < (best - middle).abs()) {
+        best = b;
+      }
+    }
+    return best;
+  }
+
+  var cut =
+      nearest((b) => blank(b - 1) && !blank(b)) ??
+      nearest((b) => !(isTabLine(lines[b - 1]) && isTabLine(lines[b]))) ??
+      middle.floor();
+  // The first column ends at its last line with text; the second starts
+  // at its first.
+  var end = cut;
+  while (end > 0 && blank(end - 1)) {
+    end--;
+  }
+  while (cut < lines.length && blank(cut)) {
+    cut++;
+  }
+  return (leftEnd: math.max(0, starts[end] - 1), rightStart: starts[cut]);
+}
