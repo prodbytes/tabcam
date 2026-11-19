@@ -2408,6 +2408,9 @@ void main() {
     /// Opens a take with [log] (and [edit] kept), the delay above kept on
     /// the device: the edit it's kept with then.
     Future<PageEdit?> opened(TakeLog log, {PageEdit? edit}) async {
+      // The screen before let go of: a new one opens.
+      await tester.pumpWidget(const SizedBox());
+      await _settle(tester);
       final (library, id) = await capture(tester, editTake: true, log: log);
       await tester.runAsync(() async {
         await OutDelays.write(library, kept);

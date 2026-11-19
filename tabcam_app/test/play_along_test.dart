@@ -970,7 +970,14 @@ B|--5--8--|
     final messenger = tester.binding.defaultBinaryMessenger;
     messenger.setMockMethodCallHandler(TakeAudio.channel, (call) async {
       audio.add(call.method);
-      return null;
+      return call.method == 'output'
+          ? {
+              'route': 'bluetooth',
+              'name': 'Buds',
+              'latencyMs': 160,
+              'from': 'session',
+            }
+          : null;
     });
     addTearDown(
       () => messenger.setMockMethodCallHandler(TakeAudio.channel, null),
@@ -1003,7 +1010,8 @@ B|--5--8--|
       await tester.tap(find.byTooltip('Rec (.)'));
       await frames(tester);
       expect(camera.recording, isTrue);
-      expect(audio, ['prepare', 'prepare']);
+      // What the song plays through, asked as the take's clock starts.
+      expect(audio, ['prepare', 'prepare', 'output']);
       expect(TakePriority.recording.value, isTrue);
       expect(heads.recordings, [true]);
 
@@ -1013,6 +1021,18 @@ B|--5--8--|
       expect(library.byId(id)!.pages.last.title, 'Take 10:00');
       expect(TakePriority.recording.value, isFalse);
       expect(heads.recordings, [true, false]);
+      // And again once it stopped; the log has it, the session's latency
+      // as a hint.
+      expect(audio, ['prepare', 'prepare', 'output', 'output']);
+      expect(
+        library.byId(id)!.pages.last.takeLog!.out,
+        TakeOutput(
+          route: OutRoute.bluetooth,
+          id: TakeOutput.fingerprint('Buds'),
+          latencyMs: 160,
+          from: OutFrom.session,
+        ),
+      );
 
       // Played back, the take leaves others' sound playing.
       await tester.tap(find.byTooltip('Play'));
