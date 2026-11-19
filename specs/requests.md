@@ -4475,3 +4475,13 @@ spec.
    Text view's buttons in the app bar, before Copy, instead of between
    the labelled Copy and Rescan. See
    [tab recognition](tab-recognition.md#text-view).
+
+14. **"In the mini player, make 'arrow back' be << (-10s) and arrow
+   right the flipside."** The ← and → keys now skip the play-along
+   player 10 seconds back and on (as its « and » buttons do) wherever
+   its sidebar shows: the Text view, a capture's files, a file's screen,
+   as well as Cam, where they already did. The keyboard shortcuts
+   overlay already listed them there. They're handled with 0, 1 and the
+   space bar in `PlayAlongKeys` (Cam's own copy is gone); typing in a
+   field (the Text view's editor) still moves the cursor. See
+   [Cam](cam.md#keys-in-every-screen).

@@ -944,14 +944,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       if (event is KeyDownEvent && _canRec) unawaited(_nextTake());
       return KeyEventResult.handled;
     }
-    // Space, 1 and 0, while the sidebar shows, are the backing track's
-    // (play / pause, back to its start): [PlayAlongKeys] gets them first.
-    // ← and →: the backing track [skipBy] back and on, as « and » (held,
-    // again and again); with no track showing, they turn the tab.
-    if (_skips[key] case final by? when _along.open && _track.page != null) {
-      unawaited(_track.skip(by));
-      return KeyEventResult.handled;
-    }
+    // Space, 1, 0, ← and →, while the sidebar shows, are the backing
+    // track's (play / pause, back to its start, « and »): [PlayAlongKeys]
+    // gets them first. With no track showing, ← turns the tab back.
     unawaited(_pass(_back.contains(key) ? -1 : 1));
     return KeyEventResult.handled;
   }
@@ -999,12 +994,6 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       !_nextTaking &&
       _player == null &&
       _opening == null;
-
-  /// How far ← and → move the backing track.
-  static final _skips = {
-    LogicalKeyboardKey.arrowLeft: -skipBy,
-    LogicalKeyboardKey.arrowRight: skipBy,
-  };
 
   Future<void> _rec() async {
     if (_recording) return _stopRecording();
