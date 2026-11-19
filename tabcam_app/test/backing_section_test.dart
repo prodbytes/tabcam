@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cross_file/cross_file.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,6 +26,7 @@ void main() {
   Future<(BackingTrack, CaptureEvent, EventPage)> loaded(
     WidgetTester tester, {
     bool link = false,
+    ValueListenable<bool>? recording,
   }) async {
     final library = Library(PlatformEventStore(), null, (_) async => null);
     late CaptureEvent event;
@@ -47,6 +49,7 @@ void main() {
     });
     final track = BackingTrack(
       library,
+      recording: recording,
       open: (_, _, _) async {
         final media = VideoPlayerController.networkUrl(
           Uri.parse('https://example.com/riff.m4a'),
@@ -488,6 +491,61 @@ void main() {
     await tester.drag(range, const Offset(30, 0), warnIfMissed: false);
     await tester.pump();
     expect(calls, contains('range'));
+    track.dispose();
+  });
+
+  testWidgets('the part played is the primary colour, and red while a take '
+      'records', (tester) async {
+    final recording = ValueNotifier(false);
+    final (track, event, _) = await loaded(tester, recording: recording);
+    final theme = ThemeData(colorSchemeSeed: Colors.indigo);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Row(
+            children: [
+              const Expanded(child: SizedBox()),
+              PlayAlongSidebar(
+                library: track.library,
+                eventId: event.id,
+                track: track,
+                linkFrame: (_) => const SizedBox(),
+                onChoose: (_) {},
+                onToggle: () {},
+                onStop: () {},
+                onSkip: (_) {},
+                onRepeat: () {},
+                onSection: track.setSection,
+                onSectionHere: ({required bool end}) {},
+                onSectionClear: track.clearSection,
+                onSpeed: (_) {},
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    Color played() => tester
+        .widget<VideoProgressIndicator>(
+          find.byKey(const Key('cam-along-progress')),
+        )
+        .colors
+        .playedColor;
+    final scheme = theme.colorScheme;
+    // See-through, so a section's band over it still shows.
+    expect(played(), scheme.primary.withValues(alpha: 0.6));
+
+    recording.value = true;
+    await tester.pump();
+    expect(track.recording, isTrue);
+    expect(played(), scheme.error.withValues(alpha: 0.6));
+
+    recording.value = false;
+    await tester.pump();
+    expect(played(), scheme.primary.withValues(alpha: 0.6));
     track.dispose();
   });
 

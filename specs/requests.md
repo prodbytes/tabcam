@@ -4408,3 +4408,12 @@ spec.
    the order chosen are kept on the device (`libraryorder`), not
    synced. New strings `homeSort` and `homeSort*` in English, Spanish
    and Portuguese. See [library](library.md).
+
+8. **"When playing a song make the play bar in the mini player the same
+   as css primary color in theme, when it is recording then use the red
+   color in the bar."** The play-along player's progress bar showed the
+   part played in red at all times (6 above). It is now the
+   theme's primary colour, and the theme's red (its error colour) only
+   while a take records (`BackingTrack.recording`, from
+   `TakePriority.recording`); both still at 60%, so a section's band over
+   it still shows. See [Cam](cam.md#playing-along-with-a-file).

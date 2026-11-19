@@ -652,7 +652,8 @@ view).
 - **The frame**, as wide as the sidebar and at most a third of the
   screen's height (on a short screen the video shrinks first, so the
   list under it keeps at least two rows): a video (or a link's page, 16:9) above a progress bar
-  to scrub (marked where its [phrase passes](#phrase-passes) are, with
+  to scrub (the part played in the theme's **primary colour**, and in
+  its **red** while a take records; marked where its [phrase passes](#phrase-passes) are, with
   the button that clears them at the line's right end), the
   [count-in](#count-in) at the start of the progress bar's line; a recording only that line; under them its icon and
   name in small type, then **«** (10 seconds back, not before the
@@ -670,13 +671,13 @@ view).
   where it plays now) and, once set, **✕** (play all of it again). While
   either end of the range is dragged, the section shows over the
   progress bar too: a band in the primary colour from its start to its
-  end, as high as the bar's line, over the part played (red) and under
+  end, as high as the bar's line, over the part played and under
   the phrase marks, following the drag and gone when it's let go (the
   two bars aren't as wide, so the range alone doesn't show where the
   section falls on the progress bar). The band and the part played are
-  both see-through (the band at half, the red at 60%), so where they
-  overlap the two mix (orange) and each still shows on its own where
-  they don't. While
+  both see-through (the band at half, the part played at 60%), so where
+  they overlap the two mix (a deeper primary; orange while a take
+  records) and each still shows on its own where they don't. While
   one is set the player's own looping is off and its position is checked
   every 100 ms: at the section's end it goes back to the section's
   start, playing on with Repeat, paused without. A section that ends at

@@ -949,9 +949,13 @@ class _BackingFrameState extends State<_BackingFrame> {
                         children: [
                           VideoProgressIndicator(
                             media,
+                            key: const Key('cam-along-progress'),
                             allowScrubbing: true,
-                            colors: const VideoProgressColors(
-                              playedColor: _SectionMark.played,
+                            colors: VideoProgressColors(
+                              playedColor: _SectionMark.played(
+                                Theme.of(context).colorScheme,
+                                recording: track.recording,
+                              ),
                             ),
                             padding: const EdgeInsets.symmetric(
                               vertical: _SectionMark.inset,
@@ -1698,8 +1702,15 @@ class _SectionMark extends StatelessWidget {
   /// How opaque the band is.
   static const alpha = 0.5;
 
-  /// The part played's colour on the progress bar: red, see-through.
-  static const played = Color.fromRGBO(255, 0, 0, 0.6);
+  /// How opaque the part played is on the progress bar.
+  static const playedAlpha = 0.6;
+
+  /// The part played's colour on the progress bar, see-through: the
+  /// theme's primary colour, or its red (error) while a take records.
+  static Color played(ColorScheme scheme, {required bool recording}) =>
+      (recording ? scheme.error : scheme.primary).withValues(
+        alpha: playedAlpha,
+      );
 
   /// The progress bar's padding above and below its line: the band is as
   /// high as the line.
