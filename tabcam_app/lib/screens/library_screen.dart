@@ -6,6 +6,7 @@ import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
+import '../library/library_order.dart';
 import '../library/search.dart';
 import '../l10n/language.dart';
 import 'card_preview.dart';
@@ -17,11 +18,13 @@ import 'place.dart';
 import 'share_sheet.dart';
 import 'messages.dart';
 
-/// The Home tab: every event as a card, newest first; once something is
-/// shared with the user, in two sections, My captures and Shared with me. A new event
-/// ([fresh]) is scrolled to and outlined for a moment. Tapping a card opens
-/// its [EventScreen]. A search field above the cards keeps only the events
-/// that match ([matchesSearch]).
+/// The Home tab: every event as a card, in the order chosen with **Sort
+/// by** beside the search ([LibraryOrder]; the least recently opened first
+/// until another is chosen); once something is shared with the user, in
+/// two sections, My captures and Shared with me. A new event ([fresh]) is
+/// outlined for a moment, and scrolled up to when it's first. Tapping a
+/// card opens its [EventScreen]. A search field above the cards keeps only
+/// the events that match ([matchesSearch]).
 class LibraryView extends StatefulWidget {
   const LibraryView({
     super.key,
@@ -54,6 +57,14 @@ class _LibraryViewState extends State<LibraryView> {
 
   Library get library => widget.library;
 
+  LibraryOrder get _order => LibraryOrder.of(library);
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_order.load());
+  }
+
   @override
   void didUpdateWidget(LibraryView old) {
     super.didUpdateWidget(old);
@@ -61,9 +72,11 @@ class _LibraryViewState extends State<LibraryView> {
       // A new event shows, whatever was searched.
       _search.clear();
       _study = null;
-      // New events are first: after this frame, the list scrolls up.
+      // When the order puts it first (newest, or never opened), after this
+      // frame the list scrolls up to it.
+      final fresh = widget.fresh;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_grid.hasClients) {
+        if (_grid.hasClients && _firstShown == fresh) {
           _grid.animateTo(
             0,
             duration: const Duration(milliseconds: 300),
@@ -83,7 +96,7 @@ class _LibraryViewState extends State<LibraryView> {
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: Listenable.merge([library, _search, ?widget.sync]),
+    listenable: Listenable.merge([library, _search, _order, ?widget.sync]),
     builder: (context, _) {
       if (!library.loaded) {
         return const Center(child: CircularProgressIndicator());
@@ -106,7 +119,7 @@ class _LibraryViewState extends State<LibraryView> {
       final study = studies.contains(_study) ? _study : null;
       final searching = query.isNotEmpty || study != null;
       final found = [
-        for (final e in library.events)
+        for (final e in sortEvents(library.events, _order.sort, _order.opened))
           if (matchesSearch(e, query) &&
               (study == null || (!e.isShared && e.study == study)))
             e,
@@ -116,6 +129,7 @@ class _LibraryViewState extends State<LibraryView> {
       // Headed sections only once something is shared with the user;
       // searching, only those with a match.
       final plain = library.events.every((e) => !e.isShared);
+      _firstShown = (mine.isNotEmpty ? mine : shared).firstOrNull?.id;
       return CustomScrollView(
         controller: _grid,
         slivers: [
@@ -150,25 +164,75 @@ class _LibraryViewState extends State<LibraryView> {
     },
   );
 
+  /// The first event shown, as last built.
+  String? _firstShown;
+
+  /// The search field, and **Sort by** at its right.
   Widget _searchField(AppLocalizations l10n) => Padding(
-    padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-    child: TextField(
-      key: const Key('home-search'),
-      controller: _search,
-      textInputAction: TextInputAction.search,
-      decoration: InputDecoration(
-        hintText: l10n.homeSearch,
-        prefixIcon: const Icon(Icons.search),
-        suffixIcon: _search.text.isEmpty
-            ? null
-            : IconButton(
-                tooltip: l10n.homeSearchClear,
-                icon: const Icon(Icons.close),
-                onPressed: _search.clear,
-              ),
-        border: const OutlineInputBorder(),
-        isDense: true,
-      ),
+    padding: const EdgeInsets.fromLTRB(12, 12, 4, 0),
+    child: Row(
+      children: [
+        Expanded(child: _searchBox(l10n)),
+        _sortButton(l10n),
+      ],
+    ),
+  );
+
+  /// **Sort by**: a menu of the orders, the one chosen ticked.
+  Widget _sortButton(AppLocalizations l10n) {
+    final current = _order.sort;
+    return PopupMenuButton<LibrarySort>(
+      key: const Key('home-sort'),
+      tooltip: '${l10n.homeSort}: ${_sortName(l10n, current)}',
+      icon: const Icon(Icons.sort),
+      initialValue: current,
+      onSelected: (s) => unawaited(_order.setSort(s)),
+      itemBuilder: (context) => [
+        PopupMenuItem<LibrarySort>(
+          enabled: false,
+          height: 32,
+          child: Text(
+            l10n.homeSort,
+            style: Theme.of(context).textTheme.labelMedium,
+          ),
+        ),
+        for (final s in LibrarySort.values)
+          CheckedPopupMenuItem(
+            key: Key('home-sort-${s.key}'),
+            value: s,
+            checked: s == current,
+            child: Text(_sortName(l10n, s)),
+          ),
+      ],
+    );
+  }
+
+  static String _sortName(AppLocalizations l10n, LibrarySort sort) =>
+      switch (sort) {
+        LibrarySort.leastOpened => l10n.homeSortLeastOpened,
+        LibrarySort.recentlyOpened => l10n.homeSortRecentlyOpened,
+        LibrarySort.newest => l10n.homeSortNewest,
+        LibrarySort.oldest => l10n.homeSortOldest,
+        LibrarySort.title => l10n.homeSortTitle,
+        LibrarySort.artist => l10n.homeSortArtist,
+      };
+
+  Widget _searchBox(AppLocalizations l10n) => TextField(
+    key: const Key('home-search'),
+    controller: _search,
+    textInputAction: TextInputAction.search,
+    decoration: InputDecoration(
+      hintText: l10n.homeSearch,
+      prefixIcon: const Icon(Icons.search),
+      suffixIcon: _search.text.isEmpty
+          ? null
+          : IconButton(
+              tooltip: l10n.homeSearchClear,
+              icon: const Icon(Icons.close),
+              onPressed: _search.clear,
+            ),
+      border: const OutlineInputBorder(),
+      isDense: true,
     ),
   );
 
@@ -283,7 +347,8 @@ class _None extends StatelessWidget {
 /// Opens [event]'s [EventScreen] (its Text view, or its files with
 /// [fileId] open over them, the video editor over the file with [edit],
 /// and Cam over it with [cam]: a reload where the user was, or a link),
-/// and remembers it's open until it's closed ([PlaceMemory]).
+/// and remembers it's open until it's closed ([PlaceMemory]). Notes it was
+/// opened now, for Home's order ([LibraryOrder]).
 Future<void> openEvent(
   BuildContext context,
   Library library,
@@ -295,6 +360,7 @@ Future<void> openEvent(
   bool cam = false,
   bool edit = false,
 ]) async {
+  unawaited(LibraryOrder.of(library).markOpened(event.id));
   final memory = PlaceMemory.of(library);
   memory.update(
     (p) => p.copyWith(

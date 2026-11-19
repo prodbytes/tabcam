@@ -38,6 +38,9 @@ abstract final class MetaNames {
   /// through it (`OutDelays`).
   static const String outDelays = 'outdelays';
 
+  /// Home's order (Sort by) and when each capture was last opened here.
+  static const String libraryOrder = 'libraryorder';
+
   /// The device's settings: small, and kept across reloads on the web too
   /// (in the browser's localStorage), where the captures are in memory.
   /// Cloud sync's and cloud OCR's states are not among them: they describe
@@ -52,6 +55,7 @@ abstract final class MetaNames {
     metronome,
     premium,
     outDelays,
+    libraryOrder,
   };
 
   /// Every meta name the app uses.

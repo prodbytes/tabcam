@@ -9,6 +9,7 @@ import 'package:tabcam_app/l10n/language.dart';
 import 'package:tabcam_app/library/capture_event.dart';
 import 'package:tabcam_app/library/event_store_io.dart' as io;
 import 'package:tabcam_app/library/event_store_memory.dart' as web;
+import 'package:tabcam_app/library/library_order.dart';
 import 'package:tabcam_app/library/meta_names.dart';
 import 'package:tabcam_app/library/meta_storage.dart';
 import 'package:tabcam_app/metronome/metronome.dart';
@@ -56,7 +57,9 @@ void main() {
         CloudOcr.stateName,
         CloudOcr.premiumName,
         OutDelays.metaName,
+        LibraryOrder.metaName,
       }, MetaNames.all);
+      expect(MetaNames.deviceSettings, contains(LibraryOrder.metaName));
       expect(MetaNames.deviceSettings, contains(OutDelays.metaName));
       expect(BackingTrack.metaName, 'playalong');
     });

@@ -1016,6 +1016,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeSearchClear => 'Clear search';
 
   @override
+  String get homeSort => 'Sort by';
+
+  @override
+  String get homeSortLeastOpened => 'Least recently opened';
+
+  @override
+  String get homeSortRecentlyOpened => 'Recently opened';
+
+  @override
+  String get homeSortNewest => 'Newest first';
+
+  @override
+  String get homeSortOldest => 'Oldest first';
+
+  @override
+  String get homeSortTitle => 'Title';
+
+  @override
+  String get homeSortArtist => 'Artist';
+
+  @override
   String homeSearchNone(String query) {
     return 'No captures match “$query”';
   }
