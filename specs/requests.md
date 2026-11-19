@@ -4256,6 +4256,7 @@ spec.
     [event screen](event-screen.md#file-screen) and
     [video edit](video-edit.md).
 
+<<<<<<< HEAD
 18. Follow-up to 17, from its review: an edit link on a capture shared
     with the user makes a copy only for a video of the capture's own
     files; when their copy has no page of that file (or can't be made),
@@ -4265,3 +4266,15 @@ spec.
     editor for a reload. The editor opened from Cam gets cloud sync, so
     its Share copies the keyed link. See [sharing](sharing.md) and
     [shared captures](shared-captures.md#shared-with-me).
+=======
+## 2026-11-19
+
+
+1. **"Continue"** (checking tonight's editor changes live in Chrome, on
+   tabs.cam). The zoom works there (4×, the ruler to fifths of a second,
+   the scrollbar), but zoomed in, an empty Song lane's **Add a track**
+   zoomed with the lanes, its label off screen: it now stays as wide as
+   the view. The waveform reads there too: the capture's test video's
+   sound is one steady tone, so it draws as a flat band. See
+   [video edit](video-edit.md#zoom).
+>>>>>>> origin/main

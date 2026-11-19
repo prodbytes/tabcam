@@ -223,7 +223,9 @@ them, the cut's steps go first, then the lanes, then the transport.
   less time per point, and **a grip snaps to the song's marks within a
   hundredth of the part in view** (no less than a twentieth of a second
   at 1×, down to a millisecond at 32×) rather than of the whole video.
-  The zoom isn't kept: the editor opens on the whole video.
+  An empty Song lane's **Add a song** stays as wide as the view, in
+  view, rather than zooming with the lanes (its label would be off
+  screen). The zoom isn't kept: the editor opens on the whole video.
 - **The timeline**, docked at the bottom: a **ruler** 32 points high
   (the video's times, m:ss, a tick as
   often as there's room for its time, down to a tenth of a second
