@@ -583,9 +583,9 @@ class _DictionarySidebarState extends State<DictionarySidebar> {
   }
 }
 
-/// What the dictionary does, and pills to tap: the capture's [title]
-/// first, where there is one (a song's tabs and videos a tap away), then
-/// examples.
+/// Pills to tap, nothing typed: the capture's [title] first, where there
+/// is one (a song's tabs and videos a tap away), then a few examples (two
+/// plain chords, two with a sharp or a flat, three scales).
 class _Intro extends StatelessWidget {
   const _Intro({this.title, required this.onExample});
 
@@ -594,13 +594,9 @@ class _Intro extends StatelessWidget {
 
   static const examples = [
     'C',
-    'Am7',
+    'Am',
     'F#m7b5',
-    'G/B',
-    'Bø',
-    'GΔ7',
-    'Cadd9',
-    'Am11',
+    'Bb',
     'A minor pentatonic',
     'E blues',
     'D dorian',
@@ -608,13 +604,10 @@ class _Intro extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
     final title = this.title?.trim() ?? '';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(l10n.dictionaryIntro),
-        const SizedBox(height: 16),
         LayoutBuilder(
           builder: (context, box) => Wrap(
             spacing: 8,

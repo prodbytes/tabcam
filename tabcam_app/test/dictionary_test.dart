@@ -763,11 +763,11 @@ void main() {
       expect(am11.quality.degrees.map((d) => d.label), contains('11'));
     });
 
-    testWidgets('offers an added ninth and a ninth and eleventh as pills', (
+    testWidgets('looks up an added ninth and a ninth and eleventh', (
       tester,
     ) async {
       await open(tester);
-      await tester.tap(find.widgetWithText(ActionChip, 'Cadd9'));
+      await tester.enterText(query, 'Cadd9');
       await tester.pumpAndSettle();
       expect(
         find.descendant(
@@ -779,8 +779,7 @@ void main() {
       expect(find.text('1  3  5  9'), findsOneWidget);
       await tester.enterText(query, '');
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.widgetWithText(ActionChip, 'Am11'));
-      await tester.tap(find.widgetWithText(ActionChip, 'Am11'));
+      await tester.enterText(query, 'Am11');
       await tester.pumpAndSettle();
       expect(
         find.descendant(
@@ -793,16 +792,16 @@ void main() {
       expect(find.byKey(const Key('chord-diagram')), findsWidgets);
     });
 
-    testWidgets('offers the symbols\' chords as pills: Bø and GΔ7', (
+    testWidgets('looks up the symbols\' chords: Bø and GΔ7', (
       tester,
     ) async {
       await open(tester);
-      await tester.tap(find.widgetWithText(ActionChip, 'Bø'));
+      await tester.enterText(query, 'Bø');
       await tester.pumpAndSettle();
       expect(find.text('Bm7b5'), findsOneWidget);
       await tester.enterText(query, '');
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ActionChip, 'GΔ7'));
+      await tester.enterText(query, 'GΔ7');
       await tester.pumpAndSettle();
       expect(find.text('Gmaj7'), findsOneWidget);
       expect(
@@ -811,9 +810,27 @@ void main() {
       );
     });
 
-    testWidgets('offers examples to tap', (tester) async {
+    testWidgets('offers a few examples to tap, under a placeholder alone', (
+      tester,
+    ) async {
       await open(tester);
-      await tester.tap(find.widgetWithText(ActionChip, 'Am7'));
+      expect(find.text('Type anything'), findsOneWidget);
+      expect(
+        tester
+            .widgetList<ActionChip>(find.byType(ActionChip))
+            .map((c) => (c.label as Text).data)
+            .toList(),
+        [
+          'C',
+          'Am',
+          'F#m7b5',
+          'Bb',
+          'A minor pentatonic',
+          'E blues',
+          'D dorian',
+        ],
+      );
+      await tester.tap(find.widgetWithText(ActionChip, 'Am'));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('dictionary-chord')), findsOneWidget);
       expect(find.byKey(const Key('chord-diagram')), findsWidgets);

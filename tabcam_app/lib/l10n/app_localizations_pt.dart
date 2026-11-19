@@ -1896,11 +1896,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dictionary => 'Dicionário';
 
   @override
-  String get dictionaryHint => 'Um acorde, uma escala ou uma música';
-
-  @override
-  String get dictionaryIntro =>
-      'Digite um acorde (C, Am7, F#m7b5, G/B) ou uma escala (A minor pentatonic, D dorian, C major scale) para vê-lo no violão. Qualquer outra coisa é pesquisada no YouTube e no Cifra Club.';
+  String get dictionaryHint => 'Digite o que quiser';
 
   @override
   String get dictionaryChord => 'Acorde';

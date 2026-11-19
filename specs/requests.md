@@ -4495,3 +4495,16 @@ spec.
    played, the band and the range's line are all at 75% opacity (the
    part played was 60%, the band 50%). See
    [Cam](cam.md#playing-along-with-a-file).
+
+16. **"Remove the 'type a chord' paragraph, just a 'type anything'
+   placeholder and the pills is fine. Not even need so many pills, just
+   the first (same name), a couple simple chords, the accidented ones, a
+   few scales."** The dictionary, nothing typed, no longer explains
+   itself in a paragraph (`dictionaryIntro` removed): the field's
+   placeholder says "Type anything" ("Escribe lo que quieras", "Digite o
+   que quiser"; it was "A chord, a scale or a song"). The pills are the
+   capture's title first, as before, then `C`, `Am`, `F#m7b5`, `Bb`, `A
+   minor pentatonic`, `E blues` and `D dorian` (eleven examples before;
+   `Am7`, `G/B`, `Bø`, `GΔ7`, `Cadd9` and `Am11` dropped, `Am` and `Bb`
+   added). The Chord symbols key under them stays. See
+   [dictionary](dictionary.md).
