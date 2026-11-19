@@ -673,7 +673,10 @@ view).
   end, as high as the bar's line, over the part played (red) and under
   the phrase marks, following the drag and gone when it's let go (the
   two bars aren't as wide, so the range alone doesn't show where the
-  section falls on the progress bar). While
+  section falls on the progress bar). The band and the part played are
+  both see-through (the band at half, the red at 60%), so where they
+  overlap the two mix (orange) and each still shows on its own where
+  they don't. While
   one is set the player's own looping is off and its position is checked
   every 100 ms: at the section's end it goes back to the section's
   start, playing on with Repeat, paused without. A section that ends at
