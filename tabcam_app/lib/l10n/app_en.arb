@@ -432,9 +432,18 @@
   "@eventRead": {
     "description": "Event Text view: button to read the tab"
   },
-  "eventKeepOnePage": "An event keeps at least one page; delete the event instead.",
+  "eventKeepOnePage": "A shared capture keeps at least one file: only its owner deletes the capture.",
   "@eventKeepOnePage": {
-    "description": "Event: snackbar on deleting the last page"
+    "description": "Event: snackbar on deleting the last file of a capture shared with the user"
+  },
+  "eventDeleteLastFile": "\"{name}\" is its only file, so the capture goes with it, to Deleted on the Profile tab: you can restore it there until you purge.",
+  "@eventDeleteLastFile": {
+    "description": "Delete confirmation body: the file deleted is the capture's last, so the capture is deleted with it",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "eventRename": "Rename",
   "@eventRename": {
@@ -826,11 +835,11 @@
   "@camStop": {
     "description": "Cam: stop recording or playing"
   },
-  "camRecKey": "Rec (1)",
+  "camRecKey": "Rec (.)",
   "@camRecKey": {
     "description": "Cam: the Rec button's tooltip; the 1 key does it too"
   },
-  "camStopKey": "Stop (1) · new take (/) · redo (.)",
+  "camStopKey": "Stop · new take (/) · redo (.)",
   "@camStopKey": {
     "description": "Cam: the Stop button's tooltip while recording; the 1 key does it too, the / key saves the take and starts a new one, and the . key throws the take away and starts it again"
   },
@@ -2486,7 +2495,7 @@
   "@dictionaryHint": {
     "description": "Dictionary: the search field's hint"
   },
-  "dictionaryIntro": "Type a chord (C, Am7, F#m7b5, G/B) or a scale (A minor pentatonic, D dorian, C major scale) to see it on the guitar. Anything else is searched on YouTube.",
+  "dictionaryIntro": "Type a chord (C, Am7, F#m7b5, G/B) or a scale (A minor pentatonic, D dorian, C major scale) to see it on the guitar. Anything else is searched on YouTube and Cifra Club.",
   "@dictionaryIntro": {
     "description": "Dictionary: what it does, under the empty field"
   },
@@ -2498,9 +2507,65 @@
   "@dictionaryScale": {
     "description": "Dictionary: a scale result's kind"
   },
+  "dictionaryWriteChord": "Write {frets} in the text",
+  "@dictionaryWriteChord": {
+    "description": "Dictionary: tooltip of the + under a chord's voicing, which writes it into the Text view's tab; frets is the voicing as x32010",
+    "placeholders": {"frets": {"type": "String"}}
+  },
+  "dictionaryWriteScale": "Write {scale} in the text",
+  "@dictionaryWriteScale": {
+    "description": "Dictionary: tooltip of the + beside a scale's name, which writes it into the Text view's tab; scale is its name, as A Minor pentatonic",
+    "placeholders": {"scale": {"type": "String"}}
+  },
+  "dictionaryWriteBusy": "The text can't be changed right now",
+  "@dictionaryWriteBusy": {
+    "description": "Dictionary: message when + is pressed while the Text view is rescanning or reviewing Fix"
+  },
   "dictionaryNoVoicings": "No way to play it within four frets.",
   "@dictionaryNoVoicings": {
     "description": "Dictionary: a chord with no voicing found"
+  },
+  "dictionaryAlsoWritten": "Also written {forms}",
+  "@dictionaryAlsoWritten": {
+    "description": "Dictionary: a chord's other symbols, under its degrees (Bø, Bø7)",
+    "placeholders": {
+      "forms": {
+        "type": "String",
+        "example": "Bø, Bø7"
+      }
+    }
+  },
+  "dictionaryHalfDiminished": "half-diminished",
+  "@dictionaryHalfDiminished": {
+    "description": "Dictionary: the m7b5 chord in words, written ø (the cut circle)"
+  },
+  "dictionaryMajorSeventh": "major seventh",
+  "@dictionaryMajorSeventh": {
+    "description": "Dictionary: the maj7 chord in words, written Δ (the triangle)"
+  },
+  "dictionaryMinorMajorSeventh": "minor major seventh",
+  "@dictionaryMinorMajorSeventh": {
+    "description": "Dictionary: the m(maj7) chord in words"
+  },
+  "dictionaryDiminished": "diminished",
+  "@dictionaryDiminished": {
+    "description": "Dictionary: the dim chord in words, written °"
+  },
+  "dictionaryDiminishedSeventh": "diminished seventh",
+  "@dictionaryDiminishedSeventh": {
+    "description": "Dictionary: the dim7 chord in words, written °7"
+  },
+  "dictionaryAugmented": "augmented",
+  "@dictionaryAugmented": {
+    "description": "Dictionary: the aug chord in words, written +"
+  },
+  "dictionarySymbols": "Chord symbols",
+  "@dictionarySymbols": {
+    "description": "Dictionary: the heading of the symbols key under the examples"
+  },
+  "dictionarySymbolsTyping": "To type them: on a phone, hold o for ø and º; on a Mac, ⌥O types ø, ⌥J ∆ and ⌥0 º. Or write the letters (m7b5, maj7 or ^7, dim or o, aug) or the name (half diminished).",
+  "@dictionarySymbolsTyping": {
+    "description": "Dictionary: how to type the chord symbols, under the symbols key"
   },
   "dictionaryYouTube": "Not a chord or a scale. Search YouTube for “{query}”.",
   "@dictionaryYouTube": {
@@ -2530,6 +2595,26 @@
   "dictionaryYouTubeOpen": "Open on YouTube",
   "@dictionaryYouTubeOpen": {
     "description": "Dictionary: tooltip of a YouTube result, which opens it in a new tab"
+  },
+  "dictionaryCifraClub": "Tabs on Cifra Club",
+  "@dictionaryCifraClub": {
+    "description": "Dictionary: heading of Cifra Club's results (tabs of the song searched), under YouTube's videos"
+  },
+  "dictionaryCifraClubSearching": "Searching Cifra Club…",
+  "@dictionaryCifraClubSearching": {
+    "description": "Dictionary: Cifra Club's results are on their way"
+  },
+  "dictionaryCifraClubNone": "Cifra Club found no tabs.",
+  "@dictionaryCifraClubNone": {
+    "description": "Dictionary: the Cifra Club search found nothing"
+  },
+  "dictionaryCifraClubFailed": "Couldn't load Cifra Club's results.",
+  "@dictionaryCifraClubFailed": {
+    "description": "Dictionary: the Cifra Club search failed (offline, the site's index down)"
+  },
+  "dictionaryCifraClubOpen": "Open on Cifra Club",
+  "@dictionaryCifraClubOpen": {
+    "description": "Dictionary: tooltip of a Cifra Club result, which opens its page in a new tab"
   },
   "dictionaryFret": "{fret}fr",
   "@dictionaryFret": {
@@ -2656,6 +2741,14 @@
   "@videoEditSpaceKey": {
     "description": "Video edit: the space bar's name, in Play / Pause's tooltip (it plays or pauses the preview)"
   },
+  "videoEditToStart": "To the start",
+  "@videoEditToStart": {
+    "description": "Video edit: the button (and the Home key) that takes the preview to the kept part's start, or from there to the video's start"
+  },
+  "videoEditToEnd": "To the end",
+  "@videoEditToEnd": {
+    "description": "Video edit: the button (and the End key) that takes the preview to the kept part's end, or from there to the video's end"
+  },
   "videoEditPickTrack": "Pick a track",
   "@videoEditPickTrack": {
     "description": "Video edit: the sheet's title, and the button to pick the new track"
@@ -2706,11 +2799,45 @@
   "@videoEditTrackBar": {
     "description": "Video edit: the song lane's bar, for screen readers and the mouse"
   },
-  "videoEditTrackEarlier": "A tenth of a second earlier",
+  "videoEditCutStartAt": "Start {time}",
+  "@videoEditCutStartAt": {
+    "description": "Video edit, under the lanes: where the kept part starts (time like 0:01.25), between the buttons that move it 0.05 s earlier or later",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditCutEndAt": "End {time}",
+  "@videoEditCutEndAt": {
+    "description": "Video edit, under the lanes: where the kept part ends (time like 0:12.3), between the buttons that move it 0.05 s earlier or later",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditStartEarlier": "Start 0.05 s earlier",
+  "@videoEditStartEarlier": {
+    "description": "Video edit: moves the kept part's start a twentieth of a second earlier"
+  },
+  "videoEditStartLater": "Start 0.05 s later",
+  "@videoEditStartLater": {
+    "description": "Video edit: moves the kept part's start a twentieth of a second later"
+  },
+  "videoEditEndEarlier": "End 0.05 s earlier",
+  "@videoEditEndEarlier": {
+    "description": "Video edit: moves the kept part's end a twentieth of a second earlier"
+  },
+  "videoEditEndLater": "End 0.05 s later",
+  "@videoEditEndLater": {
+    "description": "Video edit: moves the kept part's end a twentieth of a second later"
+  },
+  "videoEditTrackEarlier": "0.05 s earlier",
   "@videoEditTrackEarlier": {
     "description": "Video edit: nudges the track earlier"
   },
-  "videoEditTrackLater": "A tenth of a second later",
+  "videoEditTrackLater": "0.05 s later",
   "@videoEditTrackLater": {
     "description": "Video edit: nudges the track later"
   },
@@ -2892,7 +3019,7 @@
   },
   "videoEditKept": "Your edit is kept as you make it and plays with the video; Download makes a file of it.",
   "@videoEditKept": {
-    "description": "Video edit: the note beside Reset and Download"
+    "description": "Video edit: what the app bar's ⓘ says"
   },
   "videoEditReset": "Reset",
   "@videoEditReset": {
@@ -2972,7 +3099,7 @@
   "@videoEditTitleEdit": {
     "description": "Video edit: the pencil on the Title chip, and its tooltip: opens the title's text fields"
   },
-  "videoEditTitleAbout": "Top left · fades in over 3 s",
+  "videoEditTitleAbout": "Top left · the first and last 15 s",
   "@videoEditTitleAbout": {
     "description": "Video edit: where the title goes and how it shows, beside the Title heading of its fields"
   },
@@ -3309,5 +3436,229 @@
   "camTryAgain": "Try again",
   "@camTryAgain": {
     "description": "Cam and the web's Scan: opens the camera again after it failed"
+  },
+  "videoEditLaneChannels": "Channels",
+  "@videoEditLaneChannels": {
+    "description": "Video edit: a lane's channels (which of its sound's channels play on both sides)"
+  },
+  "videoEditChannelsStereo": "Stereo",
+  "@videoEditChannelsStereo": {
+    "description": "Video edit: a lane's channels: as recorded"
+  },
+  "videoEditChannelsStereoTip": "As recorded",
+  "@videoEditChannelsStereoTip": {
+    "description": "Video edit: tooltip of the Stereo channels choice"
+  },
+  "videoEditChannelsLeft": "Left",
+  "@videoEditChannelsLeft": {
+    "description": "Video edit: a lane's channels: its left channel on both sides"
+  },
+  "videoEditChannelsLeftTip": "The left channel on both sides",
+  "@videoEditChannelsLeftTip": {
+    "description": "Video edit: tooltip of the Left channels choice"
+  },
+  "videoEditChannelsRight": "Right",
+  "@videoEditChannelsRight": {
+    "description": "Video edit: a lane's channels: its right channel on both sides"
+  },
+  "videoEditChannelsRightTip": "The right channel on both sides",
+  "@videoEditChannelsRightTip": {
+    "description": "Video edit: tooltip of the Right channels choice"
+  },
+  "videoEditChannelsMono": "Mono",
+  "@videoEditChannelsMono": {
+    "description": "Video edit: a lane's channels: both mixed, on both sides"
+  },
+  "videoEditChannelsMonoTip": "Both channels mixed, on both sides",
+  "@videoEditChannelsMonoTip": {
+    "description": "Video edit: tooltip of the Mono channels choice"
+  },
+  "videoEditLaneBalance": "Balance",
+  "@videoEditLaneBalance": {
+    "description": "Video edit: a lane's balance between left and right"
+  },
+  "videoEditBalanceCentre": "Centre",
+  "@videoEditBalanceCentre": {
+    "description": "Video edit: a lane's balance, in the middle"
+  },
+  "videoEditStereoPreviewNote": "Download has the channels and balance; the preview plays the sound as recorded.",
+  "@videoEditStereoPreviewNote": {
+    "description": "Video edit: under a lane's channels and balance, when they are changed: the preview can't play them"
+  },
+  "videoEditBalanceLeft": "L {percent}",
+  "@videoEditBalanceLeft": {
+    "description": "Video edit: a lane's balance towards the left, percent 5 to 100",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditBalanceRight": "R {percent}",
+  "@videoEditBalanceRight": {
+    "description": "Video edit: a lane's balance towards the right, percent 5 to 100",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "keysHelp": "Keyboard shortcuts",
+  "@keysHelp": {
+    "description": "Keyboard shortcuts overlay: its title"
+  },
+  "keysHelpTooltip": "Keyboard shortcuts (H)",
+  "@keysHelpTooltip": {
+    "description": "App bar: the keyboard shortcuts button; H opens them too"
+  },
+  "keysTab": "Turning the tab",
+  "@keysTab": {
+    "description": "Keyboard shortcuts, Cam: the section on moving along the tab"
+  },
+  "keysNextPhrase": "Next phrase (a page-turner pedal too)",
+  "@keysNextPhrase": {
+    "description": "Keyboard shortcuts, Cam: any key or ↓ goes to the next phrase (neckline)"
+  },
+  "keysPreviousPhrase": "Previous phrase (← too, with nothing playing along)",
+  "@keysPreviousPhrase": {
+    "description": "Keyboard shortcuts, Cam: ↑, Backspace and Page Up go to the phrase before"
+  },
+  "keysTakes": "Takes",
+  "@keysTakes": {
+    "description": "Keyboard shortcuts, Cam: the section on recording takes"
+  },
+  "keysRetake": "Start a take with the song from its start; recording, throw the take away and record it again",
+  "@keysRetake": {
+    "description": "Keyboard shortcuts, Cam: what the . key does"
+  },
+  "keysCut": "Start a take with the song where it is; recording, save the take and start the next",
+  "@keysCut": {
+    "description": "Keyboard shortcuts, Cam: what the / key does"
+  },
+  "keysPlayAlongCam": "Playing along (while the sidebar shows; ↑ and ↓ then turn the tab)",
+  "@keysPlayAlongCam": {
+    "description": "Keyboard shortcuts, Cam: the section on the play-along player's keys"
+  },
+  "keysPlayAlongPlayer": "Playing along (while the sidebar shows)",
+  "@keysPlayAlongPlayer": {
+    "description": "Keyboard shortcuts, a capture's or file's screen: the play-along player's keys"
+  },
+  "keysPlayPause": "Play or pause the song",
+  "@keysPlayPause": {
+    "description": "Keyboard shortcuts: what space and 1 do"
+  },
+  "keysRestart": "Back to the start, with the count-in",
+  "@keysRestart": {
+    "description": "Keyboard shortcuts: what 0 does"
+  },
+  "keysSkip": "10 seconds back or on",
+  "@keysSkip": {
+    "description": "Keyboard shortcuts: what ← and → do in the player"
+  },
+  "keysPreview": "Preview",
+  "@keysPreview": {
+    "description": "Keyboard shortcuts, video editor: the section on the preview"
+  },
+  "keysPlayPausePreview": "Play or pause the preview",
+  "@keysPlayPausePreview": {
+    "description": "Keyboard shortcuts, video editor: what space does"
+  },
+  "keysToStart": "To the start of the kept part (again: of the video)",
+  "@keysToStart": {
+    "description": "Keyboard shortcuts, video editor: what Home does"
+  },
+  "keysToEnd": "To the end of the kept part (again: of the video)",
+  "@keysToEnd": {
+    "description": "Keyboard shortcuts, video editor: what End does"
+  },
+  "keysStepTenth": "A tenth of a second back or on",
+  "@keysStepTenth": {
+    "description": "Keyboard shortcuts, video editor: what ← and → do"
+  },
+  "keysStepSecond": "A second back or on",
+  "@keysStepSecond": {
+    "description": "Keyboard shortcuts, video editor: what Shift + ← and → do"
+  },
+  "keysGeneral": "Everywhere",
+  "@keysGeneral": {
+    "description": "Keyboard shortcuts: the section on keys every screen has"
+  },
+  "keysShowHelp": "Show or hide these shortcuts",
+  "@keysShowHelp": {
+    "description": "Keyboard shortcuts: what H does"
+  },
+  "keysInFields": "Typing in a field, the keys type as usual.",
+  "@keysInFields": {
+    "description": "Keyboard shortcuts: the note under the list"
+  },
+  "keySpace": "Space",
+  "@keySpace": {
+    "description": "A key's name: the space bar"
+  },
+  "keyAnyKey": "Any key",
+  "@keyAnyKey": {
+    "description": "A key's name: any key at all"
+  },
+  "keyBackspace": "Backspace",
+  "@keyBackspace": {
+    "description": "A key's name, as on the keyboard"
+  },
+  "keyPageUp": "Page Up",
+  "@keyPageUp": {
+    "description": "A key's name, as on the keyboard"
+  },
+  "keyHome": "Home",
+  "@keyHome": {
+    "description": "A key's name, as on the keyboard"
+  },
+  "keyEnd": "End",
+  "@keyEnd": {
+    "description": "A key's name, as on the keyboard"
+  },
+  "keyShift": "Shift",
+  "@keyShift": {
+    "description": "A key's name, as on the keyboard"
+  },
+  "videoEditDelay": "Delay",
+  "@videoEditDelay": {
+    "description": "Video edit: the song delay control's label, beside its millisecond steps"
+  },
+  "videoEditDelayHint": "To correct a Bluetooth speaker's or headphones' delay, a millisecond at a time.",
+  "@videoEditDelayHint": {
+    "description": "Video edit: under the delay control, what it is for"
+  },
+  "videoEditDelayEarlier": "{ms} ms earlier",
+  "@videoEditDelayEarlier": {
+    "description": "Video edit: tooltip of a delay step moving the song earlier",
+    "placeholders": {
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditDelayLater": "{ms} ms later",
+  "@videoEditDelayLater": {
+    "description": "Video edit: tooltip of a delay step moving the song later",
+    "placeholders": {
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditDelayType": "Type the delay",
+  "@videoEditDelayType": {
+    "description": "Video edit: tooltip of the delay value, which opens a field to type it"
+  },
+  "videoEditDelayTitle": "Song delay",
+  "@videoEditDelayTitle": {
+    "description": "Video edit: title of the dialog to type the song delay"
+  },
+  "videoEditDelayHelp": "Milliseconds: + later, − earlier",
+  "@videoEditDelayHelp": {
+    "description": "Video edit: helper under the delay field"
+  },
+  "videoEditDelaySet": "Set",
+  "@videoEditDelaySet": {
+    "description": "Video edit: the delay dialog's confirm button"
   }
 }

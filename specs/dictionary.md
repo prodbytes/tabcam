@@ -8,8 +8,8 @@ in all its views (Files, Text, and the locked previews), the
 link, and Home's captures ([navigation](navigation.md); not the Capture
 and Profile tabs, where the sidebar doesn't show but stays open). It's free for everyone, and takes nothing from tabs.cam's servers:
 the chords and scales are worked out on the device
-([`lib/dictionary/`](../tabcam_app/lib/dictionary/)); only a YouTube
-search leaves it, from the device straight to YouTube.
+([`lib/dictionary/`](../tabcam_app/lib/dictionary/)); only a song's
+searches leave it, from the device straight to YouTube and Cifra Club.
 
 It shows and hides the **Dictionary sidebar**: on the right of the
 screen, as the play-along player's sidebar opens
@@ -100,14 +100,27 @@ search field, focused, and under it, scrolling, what was typed is:
   **How a chord is written**: a root (`A`–`G`, or `Do Re Mi Fa Sol La
   Si`; `#`, `b`, `♯`, `♭`) and a quality: major (`C`, `Cmaj`, `C
   major`, `Do mayor`, `Dó maior`), minor (`m`, `min`, `minor`, `menor`,
-  `-`), `5`, `dim` (`°`, `o`), `aug` (`+`), `sus2`, `sus4` (`sus`), `6`,
-  `m6`, `7`, `maj7` (`M7`, `Δ7`), `m7` (`-7`), `m(maj7)`, `dim7` (`°7`),
-  `m7b5` (`ø`, `ø7`), `7sus4`, `7sus2`, `aug7` (`7#5`), `7b5`, `add9`
-  (`add2`), `madd9`, `add11`, `6/9`, `9`, `maj9`, `m9`, `7b9`, `7#9`,
-  `11`, `m11`, `13`, `maj13`, `m13`; `/` and a bass note after it;
-  spaces and case don't matter (`CM7` is major seventh, `Cm7` minor
-  seventh), nor a trailing "chord"/"acorde". `C major` and `A minor` are
-  chords.
+  `-`), `5`, `dim` (`°`, `o`, `˚`), `aug` (`+`, `(#5)`, `augmented`,
+  `aumentado`), `sus2`, `sus4` (`sus`), `6`, `m6`, `7`, `maj7` (`M7`,
+  `7M`, `major 7`, `major seventh`, `séptima mayor`, `sétima maior`, and
+  **the triangle**: `Δ`, `Δ7`, typed as `Δ`, `∆`, `△` or `^`), `m7`
+  (`-7`), `m(maj7)` (`mΔ7`, `-Δ7`, `m7M`), `dim7` (`°7`, `diminished
+  7`, `diminished seventh`), `m7b5` (**the cut circle**, half-diminished:
+  `ø`, `ø7`, typed as `ø`, `Ø` or `∅`; `m7(b5)`, `-7b5`, `half
+  diminished`, `half-diminished`, `half dim`, `semidisminuido`,
+  `semidiminuto`, `meio-diminuto`), `7sus4`, `7sus2`, `aug7` (`+7`,
+  `7#5`), `7b5`, `add9` (`add2`), `madd9`, `add11`, `6/9`, `9`, `maj9`
+  (`Δ9`), `m9`, `7b9`, `7#9`, `11`, `m11`, `13`, `maj13`, `m13`; `/` and
+  a bass note after it; spaces and case don't matter (`CM7` is major
+  seventh, `Cm7` minor seventh), nor a trailing "chord"/"acorde". `C
+  major` and `A minor` are chords; `C diminished` alone is the scale.
+  **Other symbols**: under the degrees, a chord written with a symbol
+  says its quality in words (half-diminished, major seventh, minor major
+  seventh, diminished, diminished seventh, augmented) and **"Also
+  written"** its other symbols, each of which reads back as the same
+  chord: `Bm7b5` is "half-diminished · Also written Bø, Bø7, Bm7(b5),
+  B-7b5", `Cmaj7` "major seventh · Also written CΔ7, CΔ, CM7, C7M"
+  (with the bass after each, `CΔ7/E`).
 - **A scale** (`A minor pentatonic`, `D dorian`, `C major scale`, `E
   blues`, `F# harmonic minor`, `Sol mixolidio`): its name (the type in
   the app's language), its notes and degrees as for a chord, and the
@@ -136,7 +149,7 @@ search field, focused, and under it, scrolling, what was typed is:
   browser or YouTube app), as any link opens
   ([event screen](event-screen.md)). Under it, once typing stops for
   **two seconds** ("Searching YouTube…" and a progress bar meanwhile),
-  come **YouTube's results**, right there in the sidebar: eight videos,
+  come **YouTube's results**, right there in the sidebar: three videos,
   each with its thumbnail, title (two lines at most) and channel, and
   an open-in-new mark; a tap opens the video on YouTube outside the app,
   in a new tab on the web ("Open on YouTube" as its tooltip). Enter (the
@@ -158,8 +171,77 @@ search field, focused, and under it, scrolling, what was typed is:
   grants more (the YouTube API Services audit and quota form). No
   tabs.cam server is involved. A build without the key shows the button
   only, and Enter opens YouTube's search as the button does.
+  **Under YouTube's, Cifra Club's results** ("Tabs on Cifra Club"):
+  three songs it has a tab or chords of, each with the artist's picture
+  (where it has one), the song's title (two lines at most) and artist,
+  and an open-in-new mark; a tap opens the song's page on Cifra Club
+  outside the app ("Open on Cifra Club"). They're searched with
+  YouTube's (the same two seconds, and Enter at once) and told on their
+  own: "Searching Cifra Club…" with a progress bar, "Couldn't load Cifra
+  Club's results." when the search fails, "Cifra Club found no tabs."
+  when it finds nothing; the device keeps the last 50 searches' results
+  as it does YouTube's. **How**: the device asks Cifra Club's own search
+  index (`solr.sscdn.co/cc/h2/`, the site's Solr, which answers any
+  origin, so the browser asks it too), for ten results, of which the
+  songs (not the artists among them) are kept, the first three shown;
+  no key, no quota, no tabs.cam server
+  ([`cifraclub_search.dart`](../tabcam_app/lib/dictionary/cifraclub_search.dart)).
+  A build without the YouTube key still searches Cifra Club.
 
-Nothing typed, the sidebar explains itself and offers examples to tap (`C`,
-`Am7`, `F#m7b5`, `G/B`, `A minor pentatonic`, `E blues`, `D dorian`).
+<a id="writing-in-the-text"></a>**Writing it in the text (+)**: beside the event screen's
+[Text view](tab-recognition.md#text-view), a chord's and a scale's
+results have a **+** (a circled plus in the primary colour) that writes
+them into the text tab as tab: under each chord diagram (its tooltip
+"Write x32010 in the text") and beside a scale's name ("Write A minor
+pentatonic in the text"). Anywhere else (Home, a file, Cam, the locked
+preview, a capture shared read only) there's no text to write in, and no
++. What's written:
+
+- **A chord**: that voicing, as one column across the six strings, its
+  frets on the strings it plays and dashes on the others, the high E on
+  the phrase's first line (`x32010` is `0 1 0 2 3 -`, top to bottom),
+  then a dash.
+- **A scale**: one position on the neck, its notes going up one at a
+  time, a column each, from the root on the low E string: five frets
+  from the fret under that root (the open strings and the first four
+  frets for a root on the open string), each note on the highest string
+  that reaches it there, up to the last note the high E reaches; so `A
+  minor pentatonic` is the box at the fifth fret, `5 8` on every string
+  but `5 7` on the A, D and G
+  ([`scalePosition`](../tabcam_app/lib/dictionary/voicings.dart)).
+
+Each column is as wide as its widest fret (`10`), with a dash after it.
+**Where**: with the text's cursor on a six-line phrase (it stays where
+it was while the dictionary's field is typed in), at the cursor's
+column across the phrase, pushing the rest of every line right so the
+columns stay lined up (a line too short to reach it is lengthened with
+dashes before its closing bar, and nothing goes into a line's name or
+opening bar). Anywhere else (a line of words, a phrase of other than six
+lines, no cursor yet), in a **new phrase** like the editing tools' New
+phrase, at least 80 characters wide, under the cursor's line or phrase
+(at the end without a cursor), its lines `e|-`, what's written, dashes,
+`|`. Either way the cursor ends just after what was written, so the next
++ follows it: tapping chord after chord writes a progression on one
+phrase. It's an edit as any other (saved a second later, and the text the
+user's). While Rescan reads or Fix's review shows, it says "The text
+can't be changed right now" and writes nothing
+([`writeColumns`](../tabcam_app/lib/screens/tab_editing.dart)).
+
+Nothing typed, the sidebar explains itself and offers pills to tap: **the
+capture's title first**, on a capture's screens (the capture, a file, Cam;
+Home has none), so a song's tabs and videos are a tap away, then the
+examples (`C`, `Am7`, `F#m7b5`, `G/B`, `Bø`, `GΔ7`, `Cadd9`, `Am11`, `A
+minor pentatonic`, `E blues`, `D dorian`; `Bø` and `GΔ7` show the
+half-diminished and major seventh symbols, `Cadd9` an added ninth and
+`Am11` a ninth and an eleventh). A long title is cut to the sidebar's width.
+Under them, a **Chord symbols** key, for the symbols a chart writes
+instead of letters: **ø** half-diminished (`Bø7 = Bm7b5 = Bm7(b5)`),
+**Δ** major seventh (`CΔ = Cmaj7 = CM7 = C7M = C^7`), **°** diminished
+(`Bdim = Bo`), **°7** diminished seventh (`Bdim7 = Bo7`) and **+**
+augmented (`Caug = C(#5)`), each row with its name and an example
+(`Bø`, `CΔ7`, `B°`, `B°7`, `C+`) that a tap looks up; then how to type
+them: on a phone, hold o for ø and º; on a Mac, ⌥O types ø, ⌥J ∆ and ⌥0
+º; or write the letters (`m7b5`, `maj7` or `^7`, `dim` or `o`, `aug`)
+or the name (half diminished).
 In English, Spanish and Portuguese (the chord names and qualities are
 the same in every language).

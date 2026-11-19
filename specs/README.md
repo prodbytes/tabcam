@@ -86,7 +86,7 @@ review notes ([app stores](app-stores.md)).
   viewer, Cam and Home opens a search in a sidebar on the right: a chord shows
   its notes and voicings as chord diagrams, a scale its notes on the
   fretboard (both worked out on the device); anything else is searched
-  on YouTube. Its Rotate button makes it a panel under the screen, the
+  on YouTube and Cifra Club. Its Rotate button makes it a panel under the screen, the
   necks lying down. Every sidebar (the dictionary, the metronome, the
   play-along player) is resizable by dragging its edge, the width kept on
   the device.
@@ -95,9 +95,17 @@ review notes ([app stores](app-stores.md)).
   with −, + and a slider (30–250), the common time signatures (2/4 to
   12/8), a light per beat, Start / Stop; clicks made on the device (Web
   Audio on the web, a looping WAV on the phones), accented on the bar.
+- [Keyboard shortcuts](keyboard-shortcuts.md): a keyboard button in the
+  app bar of Cam, a capture's and a file's screens and the video editor
+  (on the web, computers and tablets), or the **H** key, opens an overlay
+  listing that screen's keys.
 - [Video edit](video-edit.md): basic edits of a video from its file
-  screen, on one time axis (a click on it places the preview; Play /
-  Pause or the space bar plays it) in two sound lanes, mixed: the Take lane
+  screen, in a fixed frame like a small video editor's: the viewer on
+  top, and docked at the bottom the transport (To the start, Play /
+  Pause, To the end; the space bar, Home, End and the arrows) right
+  over the lanes, on one time axis (a click on it moves the playhead,
+  and it plays from there, anywhere in the video) in two sound lanes,
+  mixed: the Take lane
   (the video, trimmed by its grips, its own sound's volume and Mute)
   and the Song lane (one of the capture's recordings, videos or takes,
   or a sound file, added to them, placed along the video, with its own

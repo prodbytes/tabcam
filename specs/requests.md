@@ -3925,26 +3925,333 @@ spec.
     black, as any colour the app doesn't know. See
     [video edit](video-edit.md).
 
+11. **"On the dictionary view, on the pills, always offer the capture
+    title as first pill. if not found, search also cifraclub besides
+    youtube and show it below. show top 3 of each is fine."** Nothing
+    typed, the dictionary's first pill is the capture's title (on the
+    capture, a file and Cam; Home has no capture), before the examples.
+    Anything that's not a chord or a scale is now searched on Cifra
+    Club too, from the device (the site's own search index, which
+    answers the browser as well; no key, no server), and its three
+    songs show under YouTube's three videos ("Tabs on Cifra Club"),
+    each opening its page outside the app; searching, failing and
+    finding nothing are told for each on its own. New strings
+    `dictionaryCifraClub*` in English, Spanish and Portuguese; the
+    intro says YouTube and Cifra Club. See
+    [dictionary](dictionary.md).
+
+12. **"The shortcuts are wrong, here is how it should be: 0 => back to
+    the beginning (keep playing if playing, stopped if stopped); 1 =>
+    play / pause; spacebar -> play / pause; . => back to the beginning,
+    recording and playing, delete current take and start a new one; /
+    => cut and start a new take, preserve current and new one separately
+    at this time."** In Cam, **1** (top row or keypad) is now the
+    sidebar's song's play / pause, as the space bar, while the sidebar
+    shows (recording or not: the take records on), as it already was in
+    the other screens; it no longer presses Rec / Stop. **/** cuts: the
+    take so far is saved and the next starts, and the song **plays on**
+    through the cut (it stopped and restarted before). **.** starts
+    over: the song stops at once, back at its start, the take recording
+    is thrown away, and the next take starts with the song from its
+    start (after the count-in, if on); not recording, . starts a take
+    with the song back at its start, where / starts one as Rec does.
+    **0** goes back to the start as before (paused, it stays paused;
+    playing, it plays on, counting in first when that's on, as asked
+    earlier today), and the space bar pauses and plays, as before. Rec's
+    tooltip is now "Rec (.)" and Stop's "Stop · new take (/) · redo (.)"
+    (Spanish and Portuguese too); `PlayAlongKeys` lost its `oneToggles`
+    switch. See [Cam](cam.md#rec-key).
+
+13. **"In timestamped take name only hour and minute is fine, no need
+    to break more."** A take is now named by its hour and minute only
+    ("Take 14:32"): takes started in the same minute share the name,
+    where the seconds, then a number, were added before ("Take
+    14:32:07", "Take 14:32:07 (2)"; takes named so keep their names, and
+    still count as takes). `takeName` no longer looks at the capture's
+    pages. See [Cam](cam.md#rec-key).
+
 ## 2026-11-18
 
-1. **"When a link is shared open as well as possible in the same
-   context, for example, if a capture is shared, open in the capture
-   (list of files), if a file is shared open the capture in the file,
-   if it was being edited, the edit view for that file on that
-   capture. remember that source capture is always shared read only
-   and copied on write to the sharee capture (different id, copy on
-   write content)."** Share is now on the file screen too (the file's
-   link, `f`) and in the video editor (the file's edit view's link,
-   `f` and `e=1`), besides the capture's. A link opens where it was
-   shared from: the capture's list, the file over it, or the editor
-   over the file; on a capture shared with the user (read only), the
-   editor opens on their copy (made then, as Add and Cam do), over the
-   copy's page of that file (copy on write); by its key, signed out,
-   the file opens, and the editor once signed in and joined. A reload
-   or restart also comes back to the editor (`edit` in the place). The
-   short link's redirect and its CloudFront cache key keep `e`. See
-   [sharing](sharing.md), [shared
-   captures](shared-captures.md#shared-with-me),
-   [navigation](navigation.md#coming-back-where-the-user-was),
-   [event screen](event-screen.md#file-screen) and
-   [video edit](video-edit.md).
+1. **"Make the tabs watermark fixed width font."** The watermark
+   ("tabs.cam", bottom right) is drawn in Roboto Mono, the fixed-width
+   font the tabs are shown in, instead of Roboto; its size, colour,
+   shadow and place are unchanged, in the preview and the downloaded
+   file alike. See [video edit](video-edit.md).
+2. **"Adjustments can be in steps of 0:00.1"**, then **"half of that to
+   be sure."** The video editor's adjustments now step by **0.05 s** (a
+   twentieth of a second). **The cut's two ends** have steps of their
+   own, under the lanes: **Start 0:02.5** and **End 0:41.0**, each
+   between **‹** and **›**, which move that end 0.05 s earlier or later
+   (the preview, paused, shows the frame cut at; the song stays where
+   it is along the video). **The song's ‹ and ›** nudge it 0.05 s too
+   (they were a tenth). A cut's or the song's time is shown to the
+   hundredth when it isn't on a tenth (`0:02.55`), so every step shows.
+   The grips still drag freely and snap to the song's marks; Start here
+   and End here cut where the preview is. New strings
+   `videoEditCutStartAt`, `videoEditCutEndAt`, `videoEditStartEarlier`,
+   `videoEditStartLater`, `videoEditEndEarlier` and `videoEditEndLater`,
+   and `videoEditTrackEarlier` / `videoEditTrackLater` reworded, in
+   English, Spanish and Portuguese. See
+   [video edit](video-edit.md#the-cuts-steps).
+3. **"In the dictionary view, in the chord or scale view cards, add a +
+   button to write it on the text; when pressed add that phrase, scale or
+   chord to the text."** Beside the event's Text view, each chord voicing
+   in the dictionary has a **+** under its diagram, and a scale one beside
+   its name. A chord is written as one column across the six strings (high
+   E on top), a scale as one five-fret position from its root on the low E,
+   a note a column going up. They go in at the cursor's column when it's on
+   a six-line phrase, pushing the rest right, else in a new phrase under the
+   cursor's line; the cursor ends after them, so the next + follows (a
+   progression on one phrase). No + where there's no text to write in.
+   See [dictionary](dictionary.md#writing-in-the-text) and
+   [tab recognition](tab-recognition.md#text-view).
+
+4. **"Add to the dictionary 'half diminished' (the cut circle) and
+   whatever the triangle is, and how to write it."** The dictionary reads
+   the chord symbols however they're typed and says what they are:
+   - **ø** (the cut circle) is half-diminished, `m7b5`: `Bø`, `BØ`,
+     `B∅`, `Bø7`, `Bm7(b5)`, `B-7b5`, or in words `B half diminished`
+     (`half-diminished`, `half dim`), `Si semidisminuido`, `Si
+     meio-diminuto`.
+   - **Δ** (the triangle) is a major seventh, `maj7`: `CΔ`, `CΔ7`, and
+     the triangle as `∆` (a Mac's ⌥J), `△` or `^` (`C^7`), `C7M`, `C
+     major 7`, `C major seventh`, `Do séptima mayor`, `Dó sétima maior`;
+     `CΔ9` is `Cmaj9`, `CmΔ7` and `C-Δ7` are `Cm(maj7)`. (`CΔ7` was
+     already listed but didn't work: lower-casing the query turned the Δ
+     into a δ.)
+   - `˚` is read as `°`, `C diminished 7` as `Cdim7`, `C augmented` and
+     `C(#5)` as `Caug`; `C diminished` alone stays the scale.
+   - A chord's result says, under its degrees, the quality in words where
+     it has a symbol (half-diminished, major seventh, minor major seventh,
+     diminished, diminished seventh, augmented) and **"Also written"**
+     its other symbols (`Bø, Bø7, Bm7(b5), B-7b5`).
+   - The empty sidebar has a **Chord symbols** key under its examples:
+     ø, Δ, °, °7 and +, each with its name, an example to tap (`Bø`,
+     `CΔ7`, `B°`, `B°7`, `C+`) and how else it's written, then how to type
+     them (on a phone, hold o for ø and º; on a Mac ⌥O, ⌥J and ⌥0; or the
+     letters or the name).
+   See [dictionary](dictionary.md).
+5. **"make the video editor simple but working super nicely. for some
+   reason it is not playing. make the play position click on the ruler
+   work and play from there. there should be play buttons. tracks in the
+   botton without so much space. like a mini 'da vinci resolve' or track
+   based editor."** (asked 2026-11-17) Play in a cut part jumped back to
+   the kept part's start, so a click on the ruler there couldn't be
+   played from, and a double press could leave the player dead with
+   Pause showing; the editor was one scrolling list (the preview at most
+   a third of the screen, a small Play at the far left, the lanes mid-list
+   with room kept at their right, Reset and Download in a bottom bar).
+   The editor is now a **fixed frame**: the viewer on top, as large as
+   it fits; on a phone the master, On the video and the song's details
+   scroll under it (beside it on a wide screen or a phone on its side);
+   and docked at the bottom edge the **transport** (the time over the
+   part kept; **To the start**, **Play** / **Pause**, **To the end**,
+   centred; **Start here** / **End here**) right over **the lanes**: the
+   ruler directly on them, each lane with a header (its name, then its
+   volume; the Song lane's name opens Change and Remove), the playhead
+   with a handle, and the cut's steps under them. A click or drag on the
+   ruler or a lane moves the playhead and keeps playing if it was;
+   paused, Play or the space bar plays from exactly there, anywhere in
+   the video (the plain video in the cut parts; it stops and rests at
+   the kept part's end, and Play then starts at its start). **Home**,
+   **End** and **←** / **→** (Shift: a second) move it too. **Reset** and
+   **Download** are in the app bar. The transport and the lanes give way
+   to the on-screen keyboard. A player that fails says so, with **Try
+   again**. New strings `videoEditToStart` and `videoEditToEnd` in
+   English, Spanish and Portuguese. See [video edit](video-edit.md#the-edit-screen).
+
+6. **"In the track editor also add a balance to tracks. Let user clone
+   the audio of a track to both channels (my recording take is only left
+   and I want it left and right)."** Each lane of the
+   [video editor](video-edit.md#a-lanes-channels-and-balance) (Take or
+   Video sound, and Song or Track) has, in its volume's popup under the
+   slider:
+   - **Channels**: Stereo (as recorded), **Left** (its left channel on
+     both sides: the take recorded on the left only plays left and
+     right), Right, and Mono (both mixed, on both sides).
+   - **Balance**: left 100% through Centre to right 100%, in steps of 5%;
+     the other side turned down in a straight line.
+   - Kept with the edit (`ownChannels`, `ownBalance`, `songChannels`,
+     `songBalance`, only when not the default; older apps keep them and
+     play the sound as it is), and Reset clears them. Download applies
+     them on every platform from one matrix the plan works out: Web Audio
+     (splitter, gains, merger) in the browser, Media3's
+     `ChannelMixingAudioProcessor` on Android, an `MTAudioProcessingTap`
+     on iOS (where a one-channel track stays in the middle). The preview
+     can't pan (the players have no balance), so it plays the sound as
+     recorded, and the popup says Download has them.
+   - Checked: the model, the stored keys and the plan's matrix
+     (`test/lane_stereo_test.dart`), the popup kept and reopened
+     (`test/video_edit_test.dart`), and in Chrome a tone recorded on the
+     left only made both sides, panned, and a one-channel tone panned
+     (`test/web_lane_stereo_test.dart`); the Kotlin and Swift argument
+     readers and the Swift sample math have native tests (compiled, not
+     run on a phone).
+
+7. **"Add the B half diminished and Gmaj7 with symbols in the pills as
+   examples."** The dictionary's example pills, nothing typed, add `Bø`
+   and `GΔ7` after `G/B`: a tap looks up Bm7b5 and Gmaj7, written with
+   the cut circle and the triangle. See [dictionary](dictionary.md).
+   Then **"also add a chord with added 9th, maybe one with 9th and
+   11th"**: `Cadd9` (1 3 5 9) and `Am11` (1 b3 5 b7 9 11) follow them.
+8. **"yes do it"** (fix the 3 tests failing on main, in
+   `play_along_test.dart` and `backing_section_test.dart`). They had
+   failed since the Cam keys change (request 12 of 2026-11-17, PR
+   #304), which made **1** the sidebar song's play / pause in Cam, no
+   longer Rec / Stop; the app does what that request asked, the tests
+   were left behind: one still stopped a recording with 1 (it taps Stop
+   now), one expected 1 to wait while a take's Play opens as Rec does
+   (only Rec and . are checked there now: 1 plays the song), and one,
+   rewritten then, left the sidebar hidden before checking that its keys
+   work (it shows the sidebar again first, as before). No change to the
+   app.
+
+9. **"Add a help button on top bar or press 'h' to show keyboard
+   shortcuts overlay."** A keyboard button ("Keyboard shortcuts (H)") in
+   the app bar of Cam, a capture's and a file's screens and the video
+   editor, and the **H** key there, open an overlay listing the screen's
+   keys by section (Cam's tab turning and takes, the play-along player's,
+   the editor's preview), each key in a box. The button shows on the web,
+   computers and tablets (a phone's app bar has no room); H works
+   everywhere, not while typing in a field nor with Ctrl, ⌘ or Alt, and
+   in Cam no longer turns the tab. H, Esc or Close shuts the overlay. See
+   [keyboard shortcuts](keyboard-shortcuts.md).
+
+10. **"When title is on, fade it out after start and in before end,
+    double the time of fades."** The video's title (on by default) no
+    longer stays on to the end: it shows as **two cards**, at the kept
+    part's start (fading in over 6 s, held 3 s, fading out over 6 s) and
+    at its end (fading in over 6 s, 15 s before it, and held to it). Its
+    fades are 6 s, twice the 3 s it faded in over before; the hold of
+    3 s is ours, so it's read at full strength, and the video's own fades
+    (3 s by default) are unchanged. A kept part shorter than 40 s, with
+    no room for both cards apart, keeps one title throughout, fading in
+    over 6 s (at most half of it). Plan layers gain a `fadeOut`
+    (`fadeOutMs` on the channel), read by the web's render, Android's
+    `PlanLayer.alphaAt` and iOS's opacity animations. While the title's
+    text is edited the preview shows it throughout, unfaded; paused,
+    it's outlined only while a card is on. The title's fields say "Top
+    left · the first and last 15 s" (es, pt too). Tests: the cards'
+    times and levels, the short kept part, a layer's fade out in Dart,
+    Kotlin (JVM) and an XCTest render. See
+    [video edit](video-edit.md#layers).
+
+11. **"Delete take button does not seem to be working properly."** On
+   tabs.cam the user's only capture was one video, and a capture's last
+   file couldn't be deleted: Delete (in Cam's sidebar, the capture's list
+   or the file's screen) only said "An event keeps at least one page;
+   delete the event instead", so a take there never went (Profile's
+   Deleted was empty). Deleting a capture's last file now deletes the
+   capture with it, once the user confirms ("Delete "<capture>"?",
+   saying the file is its only one, so the capture goes with it, to
+   Deleted), to the trash as Home's Delete does, with Undo, and the app
+   goes back to Home (Cam, the capture and the file's screen having
+   nothing left to show). On a capture shared with the user to edit,
+   which only its owner deletes, the last file still stays, the message
+   now "A shared capture keeps at least one file: only its owner deletes
+   the capture." New string `eventDeleteLastFile` in English, Spanish
+   and Portuguese. Deleting takes otherwise worked (checked in Cam with
+   three takes deleted one by one). See
+   [Cam](cam.md#deleting-from-the-sidebar) and the
+   [event screen](event-screen.md).
+
+12. **"Besides that, show the control to offset the difference,
+   precisely, in steps of the minimal audible difference, to correct
+   Bluetooth delays and things like that"** and **"in the editor add a
+   reset button to roll everything back to as it was untouched
+   (alignments, volumes, all)."** The editor's song details have a
+   **delay control** under ‹ and ›: the song's delay in milliseconds,
+   signed (`+120 ms` later, `−35 ms` earlier), with −10, −1, +1 and +10
+   ms steps (a millisecond being about the smallest difference heard),
+   tapped to type a value (at most 10 s either way), and a note that
+   it's for a Bluetooth speaker's or headphones' delay. For a song lined
+   up by itself it's how far it's moved from that line-up. It moves the
+   song as ‹ and › do, is kept with the edit, and Reset clears it. New
+   strings `videoEditDelay*` in English, Spanish and Portuguese. **Reset**
+   was already there (in the app bar since today's layout: named on a
+   wide screen, an icon on a narrow one, greyed while nothing's changed)
+   and already puts back everything the edit keeps: the cut, both lanes'
+   volumes, mutes and balance, the master, the song and its line-up
+   (this delay included), the tab and its style (alignment, colour), the
+   title, the watermark and the fades; so it's unchanged. See
+   [video edit](video-edit.md#the-songs-delay).
+
+13. **"Zoom in the timeline a little more so edits are more precise."**
+   The editor's timeline zooms: Zoom out and Zoom in in the corner
+   left of the ruler (1× to 32×, the zoom shown between them), and Ctrl
+   / ⌘ + the wheel or a trackpad's pinch. Zoomed in, the ruler, both
+   lanes and the playhead are that many times wider and scroll sideways
+   together under fixed lane headers; the playhead stays where it was
+   on screen as the zoom changes, and the timeline follows it while the
+   preview plays. Taps, drags, grips and the song's moves work at the
+   zoom's precision, the ruler ticks down to tenths of a second, and a
+   grip's snap to the song's marks is a hundredth of the part in view
+   (a millisecond at 32×), not of the whole video. The zoom's buttons
+   use the PDF view's "Zoom in" / "Zoom out" strings. See
+   [video edit](video-edit.md#zoom).
+
+14. **"Make tracks show waveform if possible."** Each of the editor's
+   lanes draws its sound as a waveform over its bar: the Take lane the
+   video's own, the Song lane the song's, where it plays along the
+   video (each clip of one lined up in clips), brighter in the part kept
+   and dim outside it, each scaled to its loudest. The sound is read on
+   the device once (as the editor opens, or a song is picked) with the
+   readers the song's line-up uses (Web Audio, MediaCodec,
+   AVAssetReader), kept as its loudest every 5 ms, so it stays fine at
+   the timeline's highest zoom; until then, or where it can't be read,
+   the lanes show as before. See [video edit](video-edit.md#waveforms).
+
+15. **"The audio recording fails to play back in sync when edit."** The
+   preview (the editor's, and the file screen's player of an edit)
+   started the song's player only at the check after the video started,
+   sought it where the video had been and never allowed for its start-up,
+   then compared the two only every 2 seconds and corrected only past
+   150 ms: so the song could play up to 150 ms off the take, heard as an
+   echo or late. Now the song is kept in step at every check (each tenth
+   of a second): both players asked where they are at once, within 8 ms
+   left as is, up to 250 ms caught up by nudging its speed (5% at most)
+   over about a second, further sought again; and its start is sought
+   ahead by its player's start-up, learnt each time it starts. The
+   downloaded file was already exact and is unchanged. See
+   [video edit](video-edit.md#preview-in-step).
+
+16. **"Let's try to have a very smart signal processing algorithm to sync
+   the backing track and the take as well as possible."** Finding the
+   song in a take's sound now measures each segment in up to four 8 s
+   windows spread along it (it was one 12 s window from its middle),
+   fits the drift between the take's clock and the song player's
+   through the windows' own matches, and adds up the windows'
+   phase-weighted correlations (GCC-PHAT, as before), each moved by
+   that drift to the segment's middle, before finding the peak to a
+   fraction of a sample. So a song quieter in the take is found (in
+   tests with a made-up riff under a louder guitar, at 0.06 of full
+   level where one window needed 0.1, about 4 dB better; the old way's
+   peak at 0.03–0.04 was 400 ms off, the new one's right though not yet
+   clear enough to count), a drifting clock no longer blurs the match
+   (150 ppm over 40 s: the old window's match wasn't clear, the new one
+   is, at the middle's 114 ms), and a Bluetooth speaker's quarter
+   second is found to the millisecond, as before. The log's format is
+   unchanged (the drift is logged, not kept). See
+   [Cam](cam.md#the-song-found-in-the-takes-sound).
+
+17. **"When a link is shared open as well as possible in the same
+    context, for example, if a capture is shared, open in the capture
+    (list of files), if a file is shared open the capture in the file,
+    if it was being edited, the edit view for that file on that
+    capture. remember that source capture is always shared read only
+    and copied on write to the sharee capture (different id, copy on
+    write content)."** Share is now on the file screen too (the file's
+    link, `f`) and in the video editor (the file's edit view's link,
+    `f` and `e=1`), besides the capture's. A link opens where it was
+    shared from: the capture's list, the file over it, or the editor
+    over the file; on a capture shared with the user (read only), the
+    editor opens on their copy (made then, as Add and Cam do), over the
+    copy's page of that file (copy on write); by its key, signed out,
+    the file opens, and the editor once signed in and joined. A reload
+    or restart also comes back to the editor (`edit` in the place). The
+    short link's redirect and its CloudFront cache key keep `e`. See
+    [sharing](sharing.md), [shared
+    captures](shared-captures.md#shared-with-me),
+    [navigation](navigation.md#coming-back-where-the-user-was),
+    [event screen](event-screen.md#file-screen) and
+    [video edit](video-edit.md).

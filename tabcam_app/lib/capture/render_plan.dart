@@ -68,39 +68,45 @@ class SongClip {
 
 /// The video's own sound, at [volume] (0 to 2: its lane's level through
 /// the master's, `PageEdit.ownLevel`; 0 only in a preview's plan, for a
-/// lane that isn't heard).
+/// lane that isn't heard), its channels and balance as [stereo] says
+/// (`PageEdit.ownStereo`).
 @immutable
 class OwnLane {
-  const OwnLane({this.volume = 1});
+  const OwnLane({this.volume = 1, this.stereo = LaneStereo.standard});
 
   final double volume;
+  final LaneStereo stereo;
 
   @override
-  bool operator ==(Object other) => other is OwnLane && other.volume == volume;
+  bool operator ==(Object other) =>
+      other is OwnLane && other.volume == volume && other.stereo == stereo;
 
   @override
-  int get hashCode => volume.hashCode;
+  int get hashCode => Object.hash(volume, stereo);
 
   @override
-  String toString() => 'OwnLane($volume)';
+  String toString() => 'OwnLane($volume, $stereo)';
 }
 
 /// The song lane: the capture's page [page], its [file] (left out of a
 /// preview's plan), at [volume] (0 to 2: its lane's level through the
-/// master's, `PageEdit.songLevel`), heard in [clips], in output
-/// order, silent between them.
+/// master's, `PageEdit.songLevel`), its channels and balance as [stereo]
+/// says (`PageEdit.songStereo`), heard in [clips], in output order,
+/// silent between them.
 @immutable
 class SongLane {
   const SongLane({
     this.file,
     this.page,
     this.volume = 1,
+    this.stereo = LaneStereo.standard,
     this.clips = const [],
   });
 
   final XFile? file;
   final String? page;
   final double volume;
+  final LaneStereo stereo;
   final List<SongClip> clips;
 
   @override
@@ -109,13 +115,15 @@ class SongLane {
       other.file == file &&
       other.page == page &&
       other.volume == volume &&
+      other.stereo == stereo &&
       listEquals(other.clips, clips);
 
   @override
-  int get hashCode => Object.hash(file, page, volume, Object.hashAll(clips));
+  int get hashCode =>
+      Object.hash(file, page, volume, stereo, Object.hashAll(clips));
 
   @override
-  String toString() => 'SongLane($page, $volume, $clips)';
+  String toString() => 'SongLane($page, $volume, $stereo, $clips)';
 }
 
 /// Where a layer sits on the frame: by a corner, a margin in from it
@@ -299,9 +307,13 @@ final class WatermarkLook extends LayerLook {
 /// The title's sizes, as fractions of the frame's short side: its first
 /// line's text [line1] high, its second's [line2] (80% of it), each line
 /// [lineHeight] times its text; the box [padV] above and below them and
-/// [padH] either side, [margin] in from the top left. It fades in over
-/// [fadeIn] from the kept part's start, then stays. Lines are at most
-/// [maxChars] long, and there are at most [maxLines].
+/// [padH] either side, [margin] in from the top left. And its times
+/// ([titleLayers]): a [card] at the kept part's start, fading in over
+/// [fade], held for [hold] and fading out over [fade]; and one at its
+/// end, fading in over [fade] and held to the end. On a kept part shorter
+/// than [apart] (no room for both cards apart) it stays on throughout,
+/// fading in over [fade]. Lines are at most [maxChars] long, and there
+/// are at most [maxLines].
 abstract final class TitleLayout {
   static const line1 = 0.05;
   static const line2 = 0.04;
@@ -309,7 +321,10 @@ abstract final class TitleLayout {
   static const padV = 0.0125;
   static const padH = 0.02;
   static const margin = 0.035;
-  static const fadeIn = Duration(seconds: 3);
+  static const fade = Duration(seconds: 6);
+  static const hold = Duration(seconds: 3);
+  static const card = Duration(seconds: 15);
+  static const apart = Duration(seconds: 40);
   static const maxLines = EditTitle.maxLines;
   static const maxChars = EditTitle.maxChars;
 
@@ -336,8 +351,9 @@ abstract final class WatermarkLayout {
 /// renderer needs the frame's size; and [liftW] higher still, as a
 /// fraction of the frame's width (none of today's layers is lifted: the
 /// watermark sits in the corner, over the tab's bands). It fades
-/// in over [fadeIn] from [from], to [opacity]. Layers of one [id] (`tab`,
-/// `title`, `mark`) never overlap in time.
+/// in over [fadeIn] from [from], to [opacity], and out over [fadeOut] to
+/// [to] (none without an end). Layers of one [id] (`tab`, `title`,
+/// `mark`) never overlap in time.
 @immutable
 class PlanLayer {
   const PlanLayer({
@@ -351,6 +367,7 @@ class PlanLayer {
     this.from = Duration.zero,
     this.to,
     this.fadeIn = Duration.zero,
+    this.fadeOut = Duration.zero,
     this.opacity = 1,
   });
 
@@ -364,15 +381,25 @@ class PlanLayer {
   final Duration from;
   final Duration? to;
   final Duration fadeIn;
+  final Duration fadeOut;
   final double opacity;
 
+  /// Whether [at] in the output is in its time, [from] to [to].
+  bool within(Duration at) => at >= from && (to == null || at < to!);
+
   /// How opaque it is at [at] in the output, 0 to [opacity]: 0 outside
-  /// it, rising from 0 over [fadeIn] from its start.
+  /// it, rising from 0 over [fadeIn] from its start, falling to 0 over
+  /// [fadeOut] to its end.
   double alphaAt(Duration at) {
-    if (at < from || (to != null && at >= to!)) return 0;
-    if (fadeIn <= Duration.zero) return opacity;
-    final faded = (at - from).inMicroseconds / fadeIn.inMicroseconds;
-    return opacity * min(1.0, faded);
+    if (!within(at)) return 0;
+    var level = 1.0;
+    if (fadeIn > Duration.zero) {
+      level = min(level, (at - from).inMicroseconds / fadeIn.inMicroseconds);
+    }
+    if (fadeOut > Duration.zero && to != null) {
+      level = min(level, (to! - at).inMicroseconds / fadeOut.inMicroseconds);
+    }
+    return opacity * level;
   }
 
   /// Where it's drawn on a [frame] (upright, as it shows), an [image] that
@@ -411,6 +438,7 @@ class PlanLayer {
     'fromMs': from.inMilliseconds,
     'toMs': to?.inMilliseconds,
     'fadeInMs': fadeIn.inMilliseconds,
+    'fadeOutMs': fadeOut.inMilliseconds,
     'opacity': opacity,
   };
 
@@ -427,6 +455,7 @@ class PlanLayer {
       other.from == from &&
       other.to == to &&
       other.fadeIn == fadeIn &&
+      other.fadeOut == fadeOut &&
       other.opacity == opacity;
 
   @override
@@ -441,6 +470,7 @@ class PlanLayer {
     from,
     to,
     fadeIn,
+    fadeOut,
     opacity,
   );
 
@@ -505,20 +535,43 @@ List<PlanLayer> tabLayers(
   return layers;
 }
 
-/// The title over the video, showing [lines] (as [titleText] cleans
-/// them): at the top left, fading in over the kept part's first 3 s, then
-/// staying to its end ([TitleLayout]). Null when there's nothing to show.
-PlanLayer? titleLayer(List<String> lines) {
+/// The title over a kept part [length] long (zero: not known), showing
+/// [lines] (as [titleText] cleans them) at the top left ([TitleLayout]):
+/// a card at the start, fading in over [TitleLayout.fade], held and
+/// fading out over as long again; and one at the end, fading in over
+/// [TitleLayout.fade] and held to the end (under the video's fade to
+/// black, where there's one). On a kept part shorter than
+/// [TitleLayout.apart] one layer throughout, fading in over
+/// [TitleLayout.fade] (at most half the kept part). Empty when there's
+/// nothing to show.
+List<PlanLayer> titleLayers(List<String> lines, Duration length) {
   final text = titleText(lines);
-  if (text.isEmpty) return null;
-  return PlanLayer(
+  if (text.isEmpty) return const [];
+  PlanLayer card({
+    Duration from = Duration.zero,
+    Duration? to,
+    Duration fadeIn = Duration.zero,
+    Duration fadeOut = Duration.zero,
+  }) => PlanLayer(
     id: 'title',
     look: TitleLook(text),
     anchor: LayerAnchor.topLeft,
     heightU: TitleLayout.heightU(text.length),
     marginU: TitleLayout.margin,
-    fadeIn: TitleLayout.fadeIn,
+    from: from,
+    to: to,
+    fadeIn: fadeIn,
+    fadeOut: fadeOut,
   );
+  const fade = TitleLayout.fade;
+  if (length <= Duration.zero) return [card(fadeIn: fade)];
+  if (length < TitleLayout.apart) {
+    return [card(fadeIn: PageEdit.fadeWithin(fade, length))];
+  }
+  return [
+    card(to: TitleLayout.card, fadeIn: fade, fadeOut: fade),
+    card(from: length - TitleLayout.card, fadeIn: fade),
+  ];
 }
 
 /// [lines] as a title shows them: each trimmed and at most
@@ -700,7 +753,8 @@ class RenderPlan {
   /// video's [frame] (its size as shown, in pixels; null: not known). The
   /// [title] is the capture's ([captureTitleLines]): the title's text
   /// unless the edit has its own ([PageEdit.title]), drawn unless it's
-  /// turned off. The [watermark] (its text; null: none, as in
+  /// turned off, at the kept part's start and its end ([titleLayers]).
+  /// The [watermark] (its text; null: none, as in
   /// the file screen's player) is drawn unless the edit turns it off
   /// ([PageEdit.watermark]) and the one downloading has Premium now
   /// ([premium], or a build without the service): an edit a Premium user
@@ -733,9 +787,12 @@ class RenderPlan {
     final audible = kind != RenderKind.silent;
     OwnLane? own;
     if (audible && (edit == null || edit.ownAudible)) {
-      own = OwnLane(volume: edit?.ownLevel ?? 1);
+      own = OwnLane(
+        volume: edit?.ownLevel ?? 1,
+        stereo: edit?.ownStereo ?? LaneStereo.standard,
+      );
     } else if (audible && preview) {
-      own = const OwnLane(volume: 0);
+      own = OwnLane(volume: 0, stereo: edit?.ownStereo ?? LaneStereo.standard);
     }
     SongLane? song;
     if (audible &&
@@ -768,6 +825,7 @@ class RenderPlan {
         file: songFile,
         page: edit.trackId,
         volume: edit.songAudible ? edit.songLevel : 0,
+        stereo: edit.songStereo,
         clips: clampClips(clips, length),
       );
     }
@@ -790,10 +848,9 @@ class RenderPlan {
         layers.add(watermarkLayer(watermark));
       }
       final shown = edit?.title;
-      if (titleLayer(shown == null ? title : shown.linesOr(title))
-          case final layer?) {
-        layers.add(layer);
-      }
+      layers.addAll(
+        titleLayers(shown == null ? title : shown.linesOr(title), length),
+      );
     }
     return RenderPlan(
       start: start,
@@ -869,7 +926,7 @@ class RenderPlan {
       (song != null && song!.volume > 0 && song!.clips.isNotEmpty);
 
   /// Whether Download can save [input] as it is: the whole video, its own
-  /// sound as it is and nothing else (nothing drawn over it, no fades),
+  /// sound as it is (its level, channels and balance) and nothing else (nothing drawn over it, no fades),
   /// already in the format made. Only then is no file made.
   bool get passthrough =>
       video &&
@@ -879,6 +936,7 @@ class RenderPlan {
       start <= Duration.zero &&
       end >= duration &&
       own?.volume == 1 &&
+      own!.stereo.isStandard &&
       song == null;
 
   /// What moves sound in it ([PlanTimeline]).
@@ -908,11 +966,16 @@ class RenderPlan {
       'video': video,
       'startMs': start.inMilliseconds,
       'endMs': end.inMilliseconds,
-      if (own case final own?) 'own': {'volume': own.volume},
+      if (own case final own?)
+        'own': {
+          'volume': own.volume,
+          if (!own.stereo.isStandard) 'mix': own.stereo.matrix,
+        },
       if (song case final song?)
         'song': {
           'path': song.file?.path,
           'volume': song.volume,
+          if (!song.stereo.isStandard) 'mix': song.stereo.matrix,
           'clips': [for (final c in song.clips) c.toJson()],
         },
       if (layers.isNotEmpty) ...{

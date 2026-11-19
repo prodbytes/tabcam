@@ -36,9 +36,9 @@ class LayerPicture {
   void dispose() => picture.dispose();
 }
 
-/// The font of the title and the watermark: Roboto, shipped with the app
-/// (assets/fonts), so they're drawn the same in the preview and in the
-/// file on every platform.
+/// The font of the title: Roboto, shipped with the app (assets/fonts), so
+/// it's drawn the same in the preview and in the file on every platform.
+/// The watermark is in [monoFont], shipped the same way.
 const String layerFont = 'TabCamRoboto';
 
 /// The short side of the frame the title and the watermark are drawn for,
@@ -115,8 +115,8 @@ LayerPicture titlePicture(List<String> lines, {double short = layerShort}) {
 }
 
 /// [text] drawn as the watermark, for a frame whose short side is [short]
-/// pixels: one small line of Roboto, white at 60% with a soft shadow
-/// ([WatermarkLayout]).
+/// pixels: one small line of Roboto Mono (fixed width, as the tabs are),
+/// white at 60% with a soft shadow ([WatermarkLayout]).
 LayerPicture watermarkPicture(String text, {double short = layerShort}) {
   final size = WatermarkLayout.text * short;
   final height = WatermarkLayout.heightU * short;
@@ -125,7 +125,7 @@ LayerPicture watermarkPicture(String text, {double short = layerShort}) {
     text: TextSpan(
       text: text,
       style: TextStyle(
-        fontFamily: layerFont,
+        fontFamily: monoFont,
         fontSize: size,
         height: 1,
         color: const Color(0x99FFFFFF),
@@ -353,13 +353,17 @@ class LayerPictures {
 /// where its anchor puts it ([PlanLayer.rectIn]), as opaque as it is
 /// then ([PlanLayer.alphaAt]); then, while [playing], the [fades]' black
 /// over it all ([paintFade]). Paused, the frame shows as it is, not
-/// black: a trim's grip shows the frame it cuts at.
+/// black: a trim's grip shows the frame it cuts at. With [kept] (the
+/// kept part's length, where the video plays outside it too: the
+/// editor's preview), nothing is painted while it plays outside the kept
+/// part: a part cut off plays as the video is.
 class EditLayersPainter extends CustomPainter {
   EditLayersPainter(
     this.layers,
     this.at,
     this.pictures, {
     this.fades = Fades.none,
+    this.kept,
     ValueListenable<bool>? playing,
   }) : playing = playing ?? _paused,
        super(repaint: Listenable.merge([at, ?playing]));
@@ -368,14 +372,20 @@ class EditLayersPainter extends CustomPainter {
   final ValueListenable<Duration> at;
   final LayerPictures pictures;
   final Fades fades;
+  final Duration? kept;
   final ValueListenable<bool> playing;
 
   static final _paused = ValueNotifier(false);
 
   @override
   void paint(Canvas canvas, Size size) {
-    paintLayers(canvas, size, layers, at.value, pictures);
-    if (playing.value) paintFade(canvas, size, fades, at.value);
+    final at = this.at.value;
+    final kept = this.kept;
+    if (playing.value && kept != null && (at < Duration.zero || at >= kept)) {
+      return;
+    }
+    paintLayers(canvas, size, layers, at, pictures);
+    if (playing.value) paintFade(canvas, size, fades, at);
   }
 
   @override
@@ -383,6 +393,7 @@ class EditLayersPainter extends CustomPainter {
       !listEquals(old.layers, layers) ||
       old.at != at ||
       old.fades != fades ||
+      old.kept != kept ||
       old.playing != playing;
 }
 
@@ -435,7 +446,10 @@ void paintLayers(
 /// output): between the player's reports (every tenth of a second or
 /// so), its place is carried on by the frame clock while it plays, so
 /// fades and bands change smoothly; on a seek or a pause it's where the
-/// player says. Nothing runs while it's paused.
+/// player says. Nothing runs while it's paused. Where the video plays
+/// outside the kept part too (the editor's preview), [kept] is the kept
+/// part's length: while it plays outside it, neither the layers nor the
+/// black are drawn.
 class EditLayers extends StatefulWidget {
   const EditLayers({
     super.key,
@@ -443,12 +457,14 @@ class EditLayers extends StatefulWidget {
     required this.layers,
     this.start = Duration.zero,
     this.fades = Fades.none,
+    this.kept,
   });
 
   final VideoPlayerController video;
   final List<PlanLayer> layers;
   final Duration start;
   final Fades fades;
+  final Duration? kept;
 
   @override
   State<EditLayers> createState() => _EditLayersState();
@@ -544,6 +560,7 @@ class _EditLayersState extends State<EditLayers>
         _at,
         _pictures,
         fades: widget.fades,
+        kept: widget.kept,
         playing: _playing,
       ),
     ),

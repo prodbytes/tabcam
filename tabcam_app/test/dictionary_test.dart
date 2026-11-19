@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:image/image.dart' as img;
+import 'package:tabcam_app/dictionary/cifraclub_search.dart';
 import 'package:tabcam_app/dictionary/dictionary_sidebar.dart';
 import 'package:tabcam_app/dictionary/music_theory.dart';
 import 'package:tabcam_app/dictionary/voicings.dart';
@@ -15,6 +16,7 @@ import 'package:tabcam_app/library/library.dart';
 import 'package:tabcam_app/screens/event_screen.dart';
 import 'package:tabcam_app/screens/file_screen.dart';
 import 'package:tabcam_app/screens/sidebar_widths.dart';
+import 'package:tabcam_app/screens/tab_text_view.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import 'fakes.dart';
@@ -64,6 +66,85 @@ void main() {
       expect(chord('Sol7').name, 'G7');
       expect(chord('Sib').name, 'Bb');
       expect(chord('Fá maior').name, 'F');
+    });
+
+    test('the cut circle is half-diminished, in symbols and words', () {
+      for (final q in [
+        'Bø',
+        'BØ',
+        'Bø7',
+        'B∅',
+        'Bm7(b5)',
+        'B-7b5',
+        'B half diminished',
+        'B half-diminished',
+        'b half dim',
+        'B half diminished chord',
+        'Si semidisminuido',
+        'Si meio-diminuto',
+        'Si meio diminuto',
+      ]) {
+        expect(chord(q).name, 'Bm7b5', reason: q);
+      }
+      expect(chord('Bbø').name, 'Bbm7b5');
+      expect(chord('Bb half diminished').name, 'Bbm7b5');
+    });
+
+    test('the triangle is a major seventh, however it\'s typed', () {
+      for (final q in [
+        'CΔ',
+        'CΔ7',
+        'C∆',
+        'C∆7',
+        'C△7',
+        'C^7',
+        'C^',
+        'C7M',
+        'C major 7',
+        'C major seventh',
+        'Do séptima mayor',
+        'Dó sétima maior',
+      ]) {
+        expect(chord(q).name, 'Cmaj7', reason: q);
+      }
+      expect(chord('CΔ9').name, 'Cmaj9');
+      expect(chord('CmΔ7').name, 'Cm(maj7)');
+      expect(chord('C-Δ7').name, 'Cm(maj7)');
+      expect(chord('Cm7M').name, 'Cm(maj7)');
+      expect(chord('BbΔ7').name, 'Bbmaj7');
+      expect(chord('Bb^7').name, 'Bbmaj7');
+    });
+
+    test('the circle is diminished; "diminished" alone is the scale', () {
+      expect(chord('C˚').name, 'Cdim');
+      expect(chord('C˚7').name, 'Cdim7');
+      expect(chord('C diminished 7').name, 'Cdim7');
+      expect(chord('C diminished seventh').name, 'Cdim7');
+      expect(chord('C augmented').name, 'Caug');
+      expect(Lookup.of('C diminished'), isA<ScaleLookup>());
+    });
+
+    test('tell their other symbols', () {
+      expect(chord('Bm7b5').otherNames, ['Bø', 'Bø7', 'Bm7(b5)', 'B-7b5']);
+      expect(chord('Cmaj7').otherNames, ['CΔ7', 'CΔ', 'CM7', 'C7M']);
+      expect(chord('Cmaj7/E').otherNames.first, 'CΔ7/E');
+      expect(chord('C').otherNames, isEmpty);
+      // Every symbol shown reads back as the same chord.
+      for (final q in [
+        'Bm7b5',
+        'Cmaj7',
+        'Cm(maj7)',
+        'Bdim',
+        'Bdim7',
+        'Caug',
+        'Caug7',
+        'Cm7',
+        'Cmaj9',
+      ]) {
+        for (final other in chord(q).otherNames) {
+          expect(chord(other).name, q, reason: other);
+        }
+      }
     });
 
     test('with another bass note', () {
@@ -196,6 +277,201 @@ void main() {
     200,
   );
 
+  /// Cifra Club's index's answer, in the parentheses it wraps it in: an
+  /// artist first (not shown), then a song per (artist slug, song slug,
+  /// title), by a made-up band.
+  http.Response cifra(List<(String, String, String)> songs) => http.Response(
+    '(${jsonEncode({
+      'response': {
+        'numFound': songs.length + 1,
+        'docs': [
+          {
+            't': '1',
+            'm': 'Made-up Band',
+            'a': 'Made-up Band',
+            'i': '',
+            'd': 'made-up-band',
+          },
+          for (final (artist, slug, title) in songs)
+            {
+              't': '2',
+              'm': title,
+              'a': 'Made-up Band',
+              'i': '',
+              'd': artist,
+              'u': slug,
+            },
+        ],
+      },
+    })})',
+    200,
+  );
+
+  /// [query] as the site writes an address part.
+  String slugOf(String query) => query
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+      .replaceAll(RegExp(r'^-|-$'), '');
+
+  group('a scale written in a tab', () {
+    List<List<int?>> position(String query) =>
+        scalePosition((Lookup.of(query) as ScaleLookup).scale);
+
+    /// Each column's string and fret, low E as 0.
+    List<(int, int)> notes(List<List<int?>> columns) => [
+      for (final c in columns)
+        for (final (s, f) in c.indexed)
+          if (f != null) (s, f),
+    ];
+
+    test('A minor pentatonic: the box at the fifth fret, two notes a '
+        'string, root to root and on', () {
+      final columns = position('A minor pentatonic');
+      for (final c in columns) {
+        expect(c, hasLength(6));
+        expect(c.whereType<int>(), hasLength(1));
+      }
+      expect(notes(columns), [
+        (0, 5),
+        (0, 8),
+        (1, 5),
+        (1, 7),
+        (2, 5),
+        (2, 7),
+        (3, 5),
+        (3, 7),
+        (4, 5),
+        (4, 8),
+        (5, 5),
+        (5, 8),
+      ]);
+    });
+
+    test('a root on the open string: the open position', () {
+      expect(notes(position('E minor pentatonic')), [
+        (0, 0),
+        (0, 3),
+        (1, 0),
+        (1, 2),
+        (2, 0),
+        (2, 2),
+        (3, 0),
+        (3, 2),
+        (4, 0),
+        (4, 3),
+        (5, 0),
+        (5, 3),
+      ]);
+    });
+
+    test('every note in the scale and going up, within five frets', () {
+      for (final query in [
+        'C major scale',
+        'F# harmonic minor',
+        'D dorian',
+        'Bb blues',
+        'G chromatic',
+      ]) {
+        final scale = (Lookup.of(query) as ScaleLookup).scale;
+        final played = [
+          for (final (s, f) in notes(scalePosition(scale)))
+            standardTuning[s] + f,
+        ];
+        expect(played.first % 12, scale.root.pitchClass, reason: query);
+        for (var i = 1; i < played.length; i++) {
+          expect(played[i], greaterThan(played[i - 1]), reason: query);
+        }
+        expect(
+          played.every((p) => scale.pitchClasses.contains(p % 12)),
+          isTrue,
+          reason: query,
+        );
+        final frets = notes(scalePosition(scale)).map((n) => n.$2);
+        expect(
+          frets.reduce((a, b) => a > b ? a : b) -
+              frets.reduce((a, b) => a < b ? a : b),
+          lessThanOrEqualTo(4),
+          reason: query,
+        );
+      }
+    });
+  });
+
+  group('Cifra Club search', () {
+    test('asks the site\'s index from the device, once per search; the '
+        'songs only, three at most', () async {
+      final asked = <Uri>[];
+      final search = CifraClubSearch(
+        client: MockClient((request) async {
+          asked.add(request.url);
+          return cifra([
+            for (var i = 1; i <= 5; i++) ('made-up-band', 'riff-$i', 'Riff $i'),
+          ]);
+        }),
+      );
+      expect(search.cached('made-up riff'), isNull);
+      final songs = await search.search(' made-up riff ');
+      expect(asked.single.host, 'solr.sscdn.co');
+      expect(asked.single.path, '/cc/h2/');
+      expect(asked.single.queryParameters['q'], 'made-up riff');
+      expect(asked.single.queryParameters['wt'], 'json');
+      expect(asked.single.queryParameters['rows'], '10');
+      expect(songs.map((s) => s.title), ['Riff 1', 'Riff 2', 'Riff 3']);
+      expect(songs.first.artist, 'Made-up Band');
+      expect(
+        '${songs.first.url}',
+        'https://www.cifraclub.com.br/made-up-band/riff-1/',
+      );
+      await search.search('Made-Up  Riff');
+      expect(asked, hasLength(1));
+      expect(search.cached('MADE-UP RIFF'), songs);
+    });
+
+    test('reads the index\'s docs: the songs, with their picture; not the '
+        'artists, nor an odd address', () {
+      final songs = CifraClubSearch.parse(
+        jsonDecode(
+          CifraClubSearch.unwrap(
+            '({"response":{"numFound":4,"docs":['
+            '{"t":"1","m":"Made-up Band","a":"Made-up Band","i":"",'
+            '"d":"made-up-band"},'
+            '{"t":"2","m":"Made-up riff","a":"Made-up Band",'
+            '"i":"a/b/c/d/abcd-tb.jpg","d":"made-up-band","u":"made-up-riff"},'
+            '{"t":"2","m":"Odd","a":"Odd","i":"../x.jpg","d":"../etc",'
+            '"u":"riff"},'
+            '{"t":2,"m":"Numbered type","a":"Band","d":"band","u":"numbered"}'
+            ']}})',
+          ),
+        ),
+      );
+      expect(songs.map((s) => s.id), [
+        'made-up-band/made-up-riff',
+        'band/numbered',
+      ]);
+      expect(
+        '${songs.first.image}',
+        'https://akamai.sscdn.co/letras/100x100/fotos/a/b/c/d/abcd-tb.jpg',
+      );
+      expect(songs.last.image, isNull);
+    });
+
+    test('fails on an error or a bad answer', () async {
+      for (final response in [
+        http.Response('{}', 403),
+        http.Response('not json', 200),
+        http.Response('({"response":{}})', 200),
+      ]) {
+        final search = CifraClubSearch(
+          client: MockClient((_) async => response),
+        );
+        await expectLater(
+          search.search('made-up riff'),
+          throwsA(isA<CifraClubSearchFailed>()),
+        );
+      }
+    });
+  });
+
   group('YouTube search', () {
     test('asks the API from the device, once per search', () async {
       final asked = <Uri>[];
@@ -216,6 +492,7 @@ void main() {
       expect(asked.single.path, '/youtube/v3/search');
       expect(asked.single.queryParameters['q'], 'made-up riff');
       expect(asked.single.queryParameters['type'], 'video');
+      expect(asked.single.queryParameters['maxResults'], '3');
       expect(asked.single.queryParameters['key'], 'test-key');
       expect(videos.map((v) => v.title), [
         'Made-up riff & solo',
@@ -284,16 +561,32 @@ void main() {
   group('the sidebar', () {
     late FakeLauncher launcher;
 
+    // Cifra Club's search, answered from here: a tab of the song searched.
+    late List<String> askedSongs;
+    late http.Response Function(String q) respondSongs;
+    late CifraClubSearch cifraClub;
+
     setUp(() {
       launcher = FakeLauncher();
       UrlLauncherPlatform.instance = launcher;
       DictionaryState.instance.clear();
       SidebarWidths.instance.clear();
+      cifraClub = CifraClubSearch.instance;
+      askedSongs = [];
+      respondSongs = (q) => cifra([('made-up-band', slugOf(q), '$q (tab)')]);
+      CifraClubSearch.instance = CifraClubSearch(
+        client: MockClient((request) async {
+          final q = request.url.queryParameters['q']!;
+          askedSongs.add(q);
+          return respondSongs(q);
+        }),
+      );
     });
+    tearDown(() => CifraClubSearch.instance = cifraClub);
 
     /// A screen 1200 × 800 with the button and the sidebar beside some
-    /// content.
-    Future<void> show(WidgetTester tester) async {
+    /// content, on a capture titled [title] (none: Home).
+    Future<void> show(WidgetTester tester, {String? title}) async {
       tester.view.physicalSize = const Size(1200, 800);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -303,16 +596,17 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             appBar: AppBar(actions: const [DictionaryButton()]),
-            body: const DictionaryBeside(
-              child: SizedBox.expand(key: Key('content')),
+            body: DictionaryBeside(
+              title: title,
+              child: const SizedBox.expand(key: Key('content')),
             ),
           ),
         ),
       );
     }
 
-    Future<void> open(WidgetTester tester) async {
-      await show(tester);
+    Future<void> open(WidgetTester tester, {String? title}) async {
+      await show(tester, title: title);
       await tester.tap(find.byKey(const Key('dictionary')));
       await tester.pumpAndSettle();
     }
@@ -321,6 +615,70 @@ void main() {
     final query = find.byKey(const Key('dictionary-query'));
     final split = find.byKey(const Key('dictionary-split'));
     double width(WidgetTester tester) => tester.getSize(sidebar).width;
+
+    testWidgets('beside the Text view, + writes a chord or a scale in the '
+        'text; elsewhere there is no +', (tester) async {
+      await open(tester);
+      await tester.enterText(query, 'C');
+      await tester.pump();
+      expect(find.byTooltip('Write x32010 in the text'), findsNothing);
+
+      final library = Library(PlatformEventStore());
+      late String id;
+      await tester.runAsync(() async {
+        await library.load();
+        id = (await library.create(const [])).id;
+      });
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: DictionaryBeside(
+              child: TabTextView(library: library, eventId: id),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      final chord = find.byKey(const Key('dictionary-write-x32010'));
+      expect(chord, findsOneWidget);
+      expect(find.byTooltip('Write x32010 in the text'), findsOneWidget);
+      await tester.tap(chord);
+      await tester.pump();
+      final text = find.byType(TextField).first;
+      String typed() => tester.widget<TextField>(text).controller!.text;
+      expect(typed().split('\n').first, startsWith('e|-0-'));
+      expect(typed().split('\n')[4], startsWith('A|-3-'));
+
+      // A scale follows the chord on its phrase, a note a column.
+      await tester.enterText(query, 'A minor pentatonic');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('dictionary-write-scale')));
+      await tester.pump();
+      expect(typed().split('\n').last, startsWith('E|---5-8-----'));
+      expect(typed().split('\n').first, startsWith('e|-0-${'-' * 20}5-8-'));
+      // Saved as an edit.
+      await tester.pump(const Duration(seconds: 2));
+      expect(library.byId(id)!.tabText, typed());
+
+      // Gone with the Text view.
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(
+            body: DictionaryBeside(child: SizedBox.expand()),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(DictionaryState.instance.writer, isNull);
+      expect(
+        find.byTooltip('Write A minor pentatonic in the text'),
+        findsNothing,
+      );
+    });
 
     testWidgets('the button opens it on the right, beside the screen, and '
         'hides it', (tester) async {
@@ -360,12 +718,153 @@ void main() {
       expect(find.text('Am7'), findsWidgets);
     });
 
+    testWidgets('keys the chord symbols and how to type them; a row\'s '
+        'tap looks it up', (tester) async {
+      await open(tester);
+      expect(find.byKey(const Key('dictionary-symbols')), findsOneWidget);
+      expect(find.text('half-diminished · Bø'), findsOneWidget);
+      expect(find.text('major seventh · CΔ7'), findsOneWidget);
+      expect(find.textContaining('hold o for ø'), findsOneWidget);
+      await tester.ensureVisible(find.byKey(const Key('dictionary-symbol-Bø')));
+      await tester.tap(find.byKey(const Key('dictionary-symbol-Bø')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('dictionary-chord')), findsOneWidget);
+      expect(find.text('Bm7b5'), findsOneWidget);
+      expect(
+        find.text('half-diminished · Also written Bø, Bø7, Bm7(b5), B-7b5'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a chord with no other symbol has no such line', (
+      tester,
+    ) async {
+      await open(tester);
+      await tester.enterText(query, 'C major 7');
+      await tester.pumpAndSettle();
+      expect(find.text('Cmaj7'), findsOneWidget);
+      expect(
+        find.text('major seventh · Also written CΔ7, CΔ, CM7, C7M'),
+        findsOneWidget,
+      );
+      await tester.enterText(query, 'G7');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('dictionary-chord')), findsOneWidget);
+      expect(find.byKey(const Key('dictionary-also')), findsNothing);
+    });
+
+    test('the extended pills have voicings', () {
+      for (final q in ['Bø', 'GΔ7', 'Cadd9', 'Am11']) {
+        final c = (Lookup.of(q) as ChordLookup).chord;
+        expect(voicingsOf(c), isNotEmpty, reason: q);
+      }
+      final am11 = (Lookup.of('Am11') as ChordLookup).chord;
+      expect(am11.quality.degrees.map((d) => d.label), contains('9'));
+      expect(am11.quality.degrees.map((d) => d.label), contains('11'));
+    });
+
+    testWidgets('offers an added ninth and a ninth and eleventh as pills', (
+      tester,
+    ) async {
+      await open(tester);
+      await tester.tap(find.widgetWithText(ActionChip, 'Cadd9'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('dictionary-chord')),
+          matching: find.text('Cadd9'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('1  3  5  9'), findsOneWidget);
+      await tester.enterText(query, '');
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.widgetWithText(ActionChip, 'Am11'));
+      await tester.tap(find.widgetWithText(ActionChip, 'Am11'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('dictionary-chord')),
+          matching: find.text('Am11'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('1  b3  5  b7  9  11'), findsOneWidget);
+      expect(find.byKey(const Key('chord-diagram')), findsWidgets);
+    });
+
+    testWidgets('offers the symbols\' chords as pills: Bø and GΔ7', (
+      tester,
+    ) async {
+      await open(tester);
+      await tester.tap(find.widgetWithText(ActionChip, 'Bø'));
+      await tester.pumpAndSettle();
+      expect(find.text('Bm7b5'), findsOneWidget);
+      await tester.enterText(query, '');
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ActionChip, 'GΔ7'));
+      await tester.pumpAndSettle();
+      expect(find.text('Gmaj7'), findsOneWidget);
+      expect(
+        find.text('major seventh · Also written GΔ7, GΔ, GM7, G7M'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('offers examples to tap', (tester) async {
       await open(tester);
       await tester.tap(find.widgetWithText(ActionChip, 'Am7'));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('dictionary-chord')), findsOneWidget);
       expect(find.byKey(const Key('chord-diagram')), findsWidgets);
+    });
+
+    testWidgets('offers the capture\'s title as the first pill; tapped, it '
+        'is searched', (tester) async {
+      await open(tester, title: '  Made-up riff  ');
+      final chips = find.byType(ActionChip);
+      expect(
+        tester.widget<ActionChip>(chips.first).key,
+        const Key('dictionary-title'),
+      );
+      expect(
+        find.descendant(of: chips.first, matching: find.text('Made-up riff')),
+        findsOneWidget,
+      );
+      // The examples follow.
+      expect(find.widgetWithText(ActionChip, 'C'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('dictionary-title')));
+      await tester.pump();
+      expect(find.widgetWithText(TextField, 'Made-up riff'), findsOneWidget);
+      expect(find.byKey(const Key('dictionary-youtube')), findsOneWidget);
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump();
+      expect(askedSongs, ['Made-up riff']);
+      expect(find.text('Made-up riff (tab)'), findsOneWidget);
+    });
+
+    testWidgets('without YouTube\'s key, Cifra Club is still searched; Enter '
+        'searches it at once, and opens YouTube\'s search', (tester) async {
+      await open(tester);
+      expect(find.byKey(const Key('dictionary-title')), findsNothing);
+      await tester.enterText(query, 'made-up riff');
+      await tester.pump();
+      expect(
+        find.byKey(const Key('dictionary-cifraclub-searching')),
+        findsOneWidget,
+      );
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pump();
+      await tester.pump();
+      expect(askedSongs, ['made-up riff']);
+      expect(
+        launcher.launched.single.$1,
+        'https://www.youtube.com/results?search_query=made-up+riff',
+      );
+      expect(find.text('made-up riff (tab)'), findsOneWidget);
+      expect(find.text('Made-up Band'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 3));
+      expect(askedSongs, hasLength(1));
     });
 
     testWidgets('shows a chord as it is typed', (tester) async {
@@ -376,10 +875,12 @@ void main() {
       expect(find.text('Chord · F#  A  C  E'), findsOneWidget);
       expect(find.text('1  b3  b5  b7'), findsOneWidget);
       expect(find.byKey(const Key('chord-diagram')), findsWidgets);
-      // Enter does nothing more for a chord.
+      // Enter does nothing more for a chord, and nothing is searched.
       await tester.testTextInput.receiveAction(TextInputAction.search);
       await tester.pump();
       expect(launcher.launched, isEmpty);
+      await tester.pump(const Duration(seconds: 3));
+      expect(askedSongs, isEmpty);
     });
 
     testWidgets('shows a scale on the neck: standing in the sidebar, across '
@@ -472,8 +973,42 @@ void main() {
         await tester.enterText(query, 'made-up riff lesson');
         await tester.pump();
         expect(find.text('made-up riff lesson, part 2'), findsOneWidget);
+        // Cifra Club's too, at once.
+        expect(find.text('made-up riff lesson (tab)'), findsOneWidget);
+        expect(
+          find.byKey(const Key('dictionary-cifraclub-searching')),
+          findsNothing,
+        );
         await tester.pump(const Duration(seconds: 3));
         expect(asked, hasLength(1));
+        expect(askedSongs, hasLength(1));
+      });
+
+      testWidgets('shows Cifra Club\'s tabs under YouTube\'s videos; each '
+          'opens on Cifra Club', (tester) async {
+        await open(tester);
+        await tester.enterText(query, 'made-up riff');
+        await tester.pump(const Duration(seconds: 2));
+        await tester.pump();
+        expect(asked, ['made-up riff']);
+        expect(askedSongs, ['made-up riff']);
+        final youTube = find.byKey(const Key('dictionary-youtube'));
+        final cifraClub = find.byKey(const Key('dictionary-cifraclub'));
+        expect(
+          tester.getTopLeft(cifraClub).dy,
+          greaterThanOrEqualTo(tester.getBottomLeft(youTube).dy),
+        );
+        expect(find.text('Tabs on Cifra Club'), findsOneWidget);
+        expect(find.text('made-up riff (tab)'), findsOneWidget);
+        expect(find.text('Made-up Band'), findsOneWidget);
+        await tester.tap(
+          find.byKey(const Key('dictionary-song-made-up-band/made-up-riff')),
+        );
+        await tester.pump();
+        expect(
+          launcher.launched.single.$1,
+          'https://www.cifraclub.com.br/made-up-band/made-up-riff/',
+        );
       });
 
       testWidgets('Enter searches without the wait', (tester) async {
@@ -483,6 +1018,7 @@ void main() {
         await tester.pump();
         await tester.pump();
         expect(asked, ['made-up riff']);
+        expect(askedSongs, ['made-up riff']);
         expect(launcher.launched, isEmpty);
         expect(find.text('made-up riff, part 1'), findsOneWidget);
         await tester.pump(const Duration(seconds: 3));
@@ -498,20 +1034,28 @@ void main() {
           await tester.pump(const Duration(seconds: 3));
         }
         expect(asked, isEmpty);
+        expect(askedSongs, isEmpty);
       });
 
       testWidgets('says so when it fails or finds nothing', (tester) async {
         await open(tester);
         respond = (_) => http.Response('{}', 403);
+        respondSongs = (_) => http.Response('', 500);
         await tester.enterText(query, 'made-up riff');
         await tester.pump(const Duration(seconds: 2));
         await tester.pump();
         expect(find.text("Couldn't load YouTube's results."), findsOneWidget);
+        expect(
+          find.text("Couldn't load Cifra Club's results."),
+          findsOneWidget,
+        );
         respond = (_) => found([]);
+        respondSongs = (_) => cifra([]);
         await tester.enterText(query, 'another made-up riff');
         await tester.pump(const Duration(seconds: 2));
         await tester.pump();
         expect(find.text('YouTube found no videos.'), findsOneWidget);
+        expect(find.text('Cifra Club found no tabs.'), findsOneWidget);
       });
     });
 

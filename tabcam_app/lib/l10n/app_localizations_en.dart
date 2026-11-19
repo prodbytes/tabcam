@@ -323,7 +323,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventKeepOnePage =>
-      'An event keeps at least one page; delete the event instead.';
+      'A shared capture keeps at least one file: only its owner deletes the capture.';
+
+  @override
+  String eventDeleteLastFile(String name) {
+    return '\"$name\" is its only file, so the capture goes with it, to Deleted on the Profile tab: you can restore it there until you purge.';
+  }
 
   @override
   String get eventRename => 'Rename';
@@ -595,10 +600,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camStop => 'Stop';
 
   @override
-  String get camRecKey => 'Rec (1)';
+  String get camRecKey => 'Rec (.)';
 
   @override
-  String get camStopKey => 'Stop (1) · new take (/) · redo (.)';
+  String get camStopKey => 'Stop · new take (/) · redo (.)';
 
   @override
   String get camMicChoose => 'Microphone';
@@ -1825,7 +1830,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dictionaryIntro =>
-      'Type a chord (C, Am7, F#m7b5, G/B) or a scale (A minor pentatonic, D dorian, C major scale) to see it on the guitar. Anything else is searched on YouTube.';
+      'Type a chord (C, Am7, F#m7b5, G/B) or a scale (A minor pentatonic, D dorian, C major scale) to see it on the guitar. Anything else is searched on YouTube and Cifra Club.';
 
   @override
   String get dictionaryChord => 'Chord';
@@ -1834,7 +1839,50 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dictionaryScale => 'Scale';
 
   @override
+  String dictionaryWriteChord(String frets) {
+    return 'Write $frets in the text';
+  }
+
+  @override
+  String dictionaryWriteScale(String scale) {
+    return 'Write $scale in the text';
+  }
+
+  @override
+  String get dictionaryWriteBusy => 'The text can\'t be changed right now';
+
+  @override
   String get dictionaryNoVoicings => 'No way to play it within four frets.';
+
+  @override
+  String dictionaryAlsoWritten(String forms) {
+    return 'Also written $forms';
+  }
+
+  @override
+  String get dictionaryHalfDiminished => 'half-diminished';
+
+  @override
+  String get dictionaryMajorSeventh => 'major seventh';
+
+  @override
+  String get dictionaryMinorMajorSeventh => 'minor major seventh';
+
+  @override
+  String get dictionaryDiminished => 'diminished';
+
+  @override
+  String get dictionaryDiminishedSeventh => 'diminished seventh';
+
+  @override
+  String get dictionaryAugmented => 'augmented';
+
+  @override
+  String get dictionarySymbols => 'Chord symbols';
+
+  @override
+  String get dictionarySymbolsTyping =>
+      'To type them: on a phone, hold o for ø and º; on a Mac, ⌥O types ø, ⌥J ∆ and ⌥0 º. Or write the letters (m7b5, maj7 or ^7, dim or o, aug) or the name (half diminished).';
 
   @override
   String dictionaryYouTube(String query) {
@@ -1855,6 +1903,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dictionaryYouTubeOpen => 'Open on YouTube';
+
+  @override
+  String get dictionaryCifraClub => 'Tabs on Cifra Club';
+
+  @override
+  String get dictionaryCifraClubSearching => 'Searching Cifra Club…';
+
+  @override
+  String get dictionaryCifraClubNone => 'Cifra Club found no tabs.';
+
+  @override
+  String get dictionaryCifraClubFailed =>
+      'Couldn\'t load Cifra Club\'s results.';
+
+  @override
+  String get dictionaryCifraClubOpen => 'Open on Cifra Club';
 
   @override
   String dictionaryFret(int fret) {
@@ -1945,6 +2009,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditSpaceKey => 'space';
 
   @override
+  String get videoEditToStart => 'To the start';
+
+  @override
+  String get videoEditToEnd => 'To the end';
+
+  @override
   String get videoEditPickTrack => 'Pick a track';
 
   @override
@@ -1980,10 +2050,32 @@ class AppLocalizationsEn extends AppLocalizations {
       'Along the video: drag it to move it, its ends to trim it';
 
   @override
-  String get videoEditTrackEarlier => 'A tenth of a second earlier';
+  String videoEditCutStartAt(String time) {
+    return 'Start $time';
+  }
 
   @override
-  String get videoEditTrackLater => 'A tenth of a second later';
+  String videoEditCutEndAt(String time) {
+    return 'End $time';
+  }
+
+  @override
+  String get videoEditStartEarlier => 'Start 0.05 s earlier';
+
+  @override
+  String get videoEditStartLater => 'Start 0.05 s later';
+
+  @override
+  String get videoEditEndEarlier => 'End 0.05 s earlier';
+
+  @override
+  String get videoEditEndLater => 'End 0.05 s later';
+
+  @override
+  String get videoEditTrackEarlier => '0.05 s earlier';
+
+  @override
+  String get videoEditTrackLater => '0.05 s later';
 
   @override
   String videoEditTrackVolumeLevel(int percent) {
@@ -2156,7 +2248,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditTitleEdit => 'Edit the title';
 
   @override
-  String get videoEditTitleAbout => 'Top left · fades in over 3 s';
+  String get videoEditTitleAbout => 'Top left · the first and last 15 s';
 
   @override
   String get videoEditTitleLine1 => 'First line';
@@ -2410,4 +2502,172 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get camTryAgain => 'Try again';
+
+  @override
+  String get videoEditLaneChannels => 'Channels';
+
+  @override
+  String get videoEditChannelsStereo => 'Stereo';
+
+  @override
+  String get videoEditChannelsStereoTip => 'As recorded';
+
+  @override
+  String get videoEditChannelsLeft => 'Left';
+
+  @override
+  String get videoEditChannelsLeftTip => 'The left channel on both sides';
+
+  @override
+  String get videoEditChannelsRight => 'Right';
+
+  @override
+  String get videoEditChannelsRightTip => 'The right channel on both sides';
+
+  @override
+  String get videoEditChannelsMono => 'Mono';
+
+  @override
+  String get videoEditChannelsMonoTip => 'Both channels mixed, on both sides';
+
+  @override
+  String get videoEditLaneBalance => 'Balance';
+
+  @override
+  String get videoEditBalanceCentre => 'Centre';
+
+  @override
+  String get videoEditStereoPreviewNote =>
+      'Download has the channels and balance; the preview plays the sound as recorded.';
+
+  @override
+  String videoEditBalanceLeft(int percent) {
+    return 'L $percent';
+  }
+
+  @override
+  String videoEditBalanceRight(int percent) {
+    return 'R $percent';
+  }
+
+  @override
+  String get keysHelp => 'Keyboard shortcuts';
+
+  @override
+  String get keysHelpTooltip => 'Keyboard shortcuts (H)';
+
+  @override
+  String get keysTab => 'Turning the tab';
+
+  @override
+  String get keysNextPhrase => 'Next phrase (a page-turner pedal too)';
+
+  @override
+  String get keysPreviousPhrase =>
+      'Previous phrase (← too, with nothing playing along)';
+
+  @override
+  String get keysTakes => 'Takes';
+
+  @override
+  String get keysRetake =>
+      'Start a take with the song from its start; recording, throw the take away and record it again';
+
+  @override
+  String get keysCut =>
+      'Start a take with the song where it is; recording, save the take and start the next';
+
+  @override
+  String get keysPlayAlongCam =>
+      'Playing along (while the sidebar shows; ↑ and ↓ then turn the tab)';
+
+  @override
+  String get keysPlayAlongPlayer => 'Playing along (while the sidebar shows)';
+
+  @override
+  String get keysPlayPause => 'Play or pause the song';
+
+  @override
+  String get keysRestart => 'Back to the start, with the count-in';
+
+  @override
+  String get keysSkip => '10 seconds back or on';
+
+  @override
+  String get keysPreview => 'Preview';
+
+  @override
+  String get keysPlayPausePreview => 'Play or pause the preview';
+
+  @override
+  String get keysToStart =>
+      'To the start of the kept part (again: of the video)';
+
+  @override
+  String get keysToEnd => 'To the end of the kept part (again: of the video)';
+
+  @override
+  String get keysStepTenth => 'A tenth of a second back or on';
+
+  @override
+  String get keysStepSecond => 'A second back or on';
+
+  @override
+  String get keysGeneral => 'Everywhere';
+
+  @override
+  String get keysShowHelp => 'Show or hide these shortcuts';
+
+  @override
+  String get keysInFields => 'Typing in a field, the keys type as usual.';
+
+  @override
+  String get keySpace => 'Space';
+
+  @override
+  String get keyAnyKey => 'Any key';
+
+  @override
+  String get keyBackspace => 'Backspace';
+
+  @override
+  String get keyPageUp => 'Page Up';
+
+  @override
+  String get keyHome => 'Home';
+
+  @override
+  String get keyEnd => 'End';
+
+  @override
+  String get keyShift => 'Shift';
+
+  @override
+  String get videoEditDelay => 'Delay';
+
+  @override
+  String get videoEditDelayHint =>
+      'To correct a Bluetooth speaker\'s or headphones\' delay, a millisecond at a time.';
+
+  @override
+  String videoEditDelayEarlier(int ms) {
+    return '$ms ms earlier';
+  }
+
+  @override
+  String videoEditDelayLater(int ms) {
+    return '$ms ms later';
+  }
+
+  @override
+  String get videoEditDelayType => 'Type the delay';
+
+  @override
+  String get videoEditDelayTitle => 'Song delay';
+
+  @override
+  String get videoEditDelayHelp => 'Milliseconds: + later, − earlier';
+
+  @override
+  String get videoEditDelaySet => 'Set';
 }

@@ -26,11 +26,12 @@ others change too.
   service); Premium pages are transcribed in AWS Lambda.
 - **Processors**: AWS (S3, DynamoDB, Cognito, Lambda; us-east-1),
   encrypted at rest; HTTPS only. Google, and Apple on iOS, for sign-in.
-- **The dictionary's YouTube results**: what the user types in the
-  dictionary, when it's not a chord or a scale, goes from the device to
-  Google's YouTube Data API (search) after two seconds without typing,
-  with the build's API key only: no account, no ID. tabs.cam's servers
-  never see it, and nothing keeps it.
+- **The dictionary's YouTube and Cifra Club results**: what the user
+  types in the dictionary, when it's not a chord or a scale, goes from
+  the device to Google's YouTube Data API (search), with the build's API
+  key only, and to Cifra Club's search index (sscdn.co), with nothing
+  else, after two seconds without typing: no account, no ID. tabs.cam's
+  servers never see it, and nothing keeps it.
 - **Cam's head gestures**: ML Kit face detection on the device; only the
   head's angles are used, nothing about the face is kept or sent.
 - **No** ads, crash reporting or tracking SDKs, and no analytics of
@@ -74,7 +75,7 @@ processed ephemerally).
 | Audio → Voice or sound recordings, Music files, Other audio files | Yes | App functionality | Recordings added to captures, and Cam's takes' sound (in their videos) |
 | Files and docs | Yes | App functionality | PDFs and files added to captures |
 | App activity → Other user-generated content | Yes | App functionality | Text tabs, titles, artists, links |
-| App activity → In-app search history | Yes (conservative), processed ephemerally | App functionality | The dictionary's searches that aren't a chord or a scale, sent from the device to YouTube's search API (Google) for its results; not linked to the account, not kept by tabs.cam |
+| App activity → In-app search history | Yes (conservative), processed ephemerally | App functionality | The dictionary's searches that aren't a chord or a scale, sent from the device to YouTube's search API (Google) and Cifra Club's search index (sscdn.co) for their results; not linked to the account, not kept by tabs.cam |
 | App info and performance → Diagnostics | Yes, if ML Kit's disclosure says so | Analytics (by Google ML Kit) | Anonymous ML Kit metrics; collected also signed out; confirm against Google's ML Kit page |
 | Device or other IDs | Yes, if ML Kit's disclosure says so | Analytics (by Google ML Kit) | The installation identifier ML Kit's metrics carry; not linked to the account |
 
@@ -110,7 +111,7 @@ All six are in `PrivacyInfo.xcprivacy`, the same way.
 
 | Apple category → type | Notes |
 |---|---|
-| Search History | The dictionary's searches that aren't a chord or a scale, sent from the device to YouTube's search API (Google) for its results; no account or ID goes with them |
+| Search History | The dictionary's searches that aren't a chord or a scale, sent from the device to YouTube's search API (Google) and Cifra Club's search index (sscdn.co) for their results; no account or ID goes with them |
 
 **Data not linked to the user**, for **Analytics** only (by Google's
 ML Kit, a third-party SDK; not used for tracking):

@@ -604,11 +604,17 @@ abstract class AppLocalizations {
   /// **'Read'**
   String get eventRead;
 
-  /// Event: snackbar on deleting the last page
+  /// Event: snackbar on deleting the last file of a capture shared with the user
   ///
   /// In en, this message translates to:
-  /// **'An event keeps at least one page; delete the event instead.'**
+  /// **'A shared capture keeps at least one file: only its owner deletes the capture.'**
   String get eventKeepOnePage;
+
+  /// Delete confirmation body: the file deleted is the capture's last, so the capture is deleted with it
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" is its only file, so the capture goes with it, to Deleted on the Profile tab: you can restore it there until you purge.'**
+  String eventDeleteLastFile(String name);
 
   /// Event app bar tooltip, rename dialog title, and the file screen tool (beside Delete) that renames the file
   ///
@@ -1045,13 +1051,13 @@ abstract class AppLocalizations {
   /// Cam: the Rec button's tooltip; the 1 key does it too
   ///
   /// In en, this message translates to:
-  /// **'Rec (1)'**
+  /// **'Rec (.)'**
   String get camRecKey;
 
   /// Cam: the Stop button's tooltip while recording; the 1 key does it too, the / key saves the take and starts a new one, and the . key throws the take away and starts it again
   ///
   /// In en, this message translates to:
-  /// **'Stop (1) · new take (/) · redo (.)'**
+  /// **'Stop · new take (/) · redo (.)'**
   String get camStopKey;
 
   /// Cam: the tooltip of the arrow beside Rec, which opens a menu to choose the microphone takes record from
@@ -3073,7 +3079,7 @@ abstract class AppLocalizations {
   /// Dictionary: what it does, under the empty field
   ///
   /// In en, this message translates to:
-  /// **'Type a chord (C, Am7, F#m7b5, G/B) or a scale (A minor pentatonic, D dorian, C major scale) to see it on the guitar. Anything else is searched on YouTube.'**
+  /// **'Type a chord (C, Am7, F#m7b5, G/B) or a scale (A minor pentatonic, D dorian, C major scale) to see it on the guitar. Anything else is searched on YouTube and Cifra Club.'**
   String get dictionaryIntro;
 
   /// Dictionary: a chord result's kind
@@ -3088,11 +3094,83 @@ abstract class AppLocalizations {
   /// **'Scale'**
   String get dictionaryScale;
 
+  /// Dictionary: tooltip of the + under a chord's voicing, which writes it into the Text view's tab; frets is the voicing as x32010
+  ///
+  /// In en, this message translates to:
+  /// **'Write {frets} in the text'**
+  String dictionaryWriteChord(String frets);
+
+  /// Dictionary: tooltip of the + beside a scale's name, which writes it into the Text view's tab; scale is its name, as A Minor pentatonic
+  ///
+  /// In en, this message translates to:
+  /// **'Write {scale} in the text'**
+  String dictionaryWriteScale(String scale);
+
+  /// Dictionary: message when + is pressed while the Text view is rescanning or reviewing Fix
+  ///
+  /// In en, this message translates to:
+  /// **'The text can\'t be changed right now'**
+  String get dictionaryWriteBusy;
+
   /// Dictionary: a chord with no voicing found
   ///
   /// In en, this message translates to:
   /// **'No way to play it within four frets.'**
   String get dictionaryNoVoicings;
+
+  /// Dictionary: a chord's other symbols, under its degrees (Bø, Bø7)
+  ///
+  /// In en, this message translates to:
+  /// **'Also written {forms}'**
+  String dictionaryAlsoWritten(String forms);
+
+  /// Dictionary: the m7b5 chord in words, written ø (the cut circle)
+  ///
+  /// In en, this message translates to:
+  /// **'half-diminished'**
+  String get dictionaryHalfDiminished;
+
+  /// Dictionary: the maj7 chord in words, written Δ (the triangle)
+  ///
+  /// In en, this message translates to:
+  /// **'major seventh'**
+  String get dictionaryMajorSeventh;
+
+  /// Dictionary: the m(maj7) chord in words
+  ///
+  /// In en, this message translates to:
+  /// **'minor major seventh'**
+  String get dictionaryMinorMajorSeventh;
+
+  /// Dictionary: the dim chord in words, written °
+  ///
+  /// In en, this message translates to:
+  /// **'diminished'**
+  String get dictionaryDiminished;
+
+  /// Dictionary: the dim7 chord in words, written °7
+  ///
+  /// In en, this message translates to:
+  /// **'diminished seventh'**
+  String get dictionaryDiminishedSeventh;
+
+  /// Dictionary: the aug chord in words, written +
+  ///
+  /// In en, this message translates to:
+  /// **'augmented'**
+  String get dictionaryAugmented;
+
+  /// Dictionary: the heading of the symbols key under the examples
+  ///
+  /// In en, this message translates to:
+  /// **'Chord symbols'**
+  String get dictionarySymbols;
+
+  /// Dictionary: how to type the chord symbols, under the symbols key
+  ///
+  /// In en, this message translates to:
+  /// **'To type them: on a phone, hold o for ø and º; on a Mac, ⌥O types ø, ⌥J ∆ and ⌥0 º. Or write the letters (m7b5, maj7 or ^7, dim or o, aug) or the name (half diminished).'**
+  String get dictionarySymbolsTyping;
 
   /// Dictionary: the query is neither
   ///
@@ -3129,6 +3207,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open on YouTube'**
   String get dictionaryYouTubeOpen;
+
+  /// Dictionary: heading of Cifra Club's results (tabs of the song searched), under YouTube's videos
+  ///
+  /// In en, this message translates to:
+  /// **'Tabs on Cifra Club'**
+  String get dictionaryCifraClub;
+
+  /// Dictionary: Cifra Club's results are on their way
+  ///
+  /// In en, this message translates to:
+  /// **'Searching Cifra Club…'**
+  String get dictionaryCifraClubSearching;
+
+  /// Dictionary: the Cifra Club search found nothing
+  ///
+  /// In en, this message translates to:
+  /// **'Cifra Club found no tabs.'**
+  String get dictionaryCifraClubNone;
+
+  /// Dictionary: the Cifra Club search failed (offline, the site's index down)
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load Cifra Club\'s results.'**
+  String get dictionaryCifraClubFailed;
+
+  /// Dictionary: tooltip of a Cifra Club result, which opens its page in a new tab
+  ///
+  /// In en, this message translates to:
+  /// **'Open on Cifra Club'**
+  String get dictionaryCifraClubOpen;
 
   /// Dictionary: the fret a chord diagram starts at
   ///
@@ -3298,6 +3406,18 @@ abstract class AppLocalizations {
   /// **'space'**
   String get videoEditSpaceKey;
 
+  /// Video edit: the button (and the Home key) that takes the preview to the kept part's start, or from there to the video's start
+  ///
+  /// In en, this message translates to:
+  /// **'To the start'**
+  String get videoEditToStart;
+
+  /// Video edit: the button (and the End key) that takes the preview to the kept part's end, or from there to the video's end
+  ///
+  /// In en, this message translates to:
+  /// **'To the end'**
+  String get videoEditToEnd;
+
   /// Video edit: the sheet's title, and the button to pick the new track
   ///
   /// In en, this message translates to:
@@ -3358,16 +3478,52 @@ abstract class AppLocalizations {
   /// **'Along the video: drag it to move it, its ends to trim it'**
   String get videoEditTrackBar;
 
+  /// Video edit, under the lanes: where the kept part starts (time like 0:01.25), between the buttons that move it 0.05 s earlier or later
+  ///
+  /// In en, this message translates to:
+  /// **'Start {time}'**
+  String videoEditCutStartAt(String time);
+
+  /// Video edit, under the lanes: where the kept part ends (time like 0:12.3), between the buttons that move it 0.05 s earlier or later
+  ///
+  /// In en, this message translates to:
+  /// **'End {time}'**
+  String videoEditCutEndAt(String time);
+
+  /// Video edit: moves the kept part's start a twentieth of a second earlier
+  ///
+  /// In en, this message translates to:
+  /// **'Start 0.05 s earlier'**
+  String get videoEditStartEarlier;
+
+  /// Video edit: moves the kept part's start a twentieth of a second later
+  ///
+  /// In en, this message translates to:
+  /// **'Start 0.05 s later'**
+  String get videoEditStartLater;
+
+  /// Video edit: moves the kept part's end a twentieth of a second earlier
+  ///
+  /// In en, this message translates to:
+  /// **'End 0.05 s earlier'**
+  String get videoEditEndEarlier;
+
+  /// Video edit: moves the kept part's end a twentieth of a second later
+  ///
+  /// In en, this message translates to:
+  /// **'End 0.05 s later'**
+  String get videoEditEndLater;
+
   /// Video edit: nudges the track earlier
   ///
   /// In en, this message translates to:
-  /// **'A tenth of a second earlier'**
+  /// **'0.05 s earlier'**
   String get videoEditTrackEarlier;
 
   /// Video edit: nudges the track later
   ///
   /// In en, this message translates to:
-  /// **'A tenth of a second later'**
+  /// **'0.05 s later'**
   String get videoEditTrackLater;
 
   /// Video edit: the track's volume, as a percentage (0 to 100), under the volume control and beside its slider
@@ -3550,7 +3706,7 @@ abstract class AppLocalizations {
   /// **'Open to play along'**
   String get eventPlayFile;
 
-  /// Video edit: the note beside Reset and Download
+  /// Video edit: what the app bar's ⓘ says
   ///
   /// In en, this message translates to:
   /// **'Your edit is kept as you make it and plays with the video; Download makes a file of it.'**
@@ -3649,7 +3805,7 @@ abstract class AppLocalizations {
   /// Video edit: where the title goes and how it shows, beside the Title heading of its fields
   ///
   /// In en, this message translates to:
-  /// **'Top left · fades in over 3 s'**
+  /// **'Top left · the first and last 15 s'**
   String get videoEditTitleAbout;
 
   /// Video edit: the title's first text field (a song's name, say)
@@ -4071,6 +4227,312 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Try again'**
   String get camTryAgain;
+
+  /// Video edit: a lane's channels (which of its sound's channels play on both sides)
+  ///
+  /// In en, this message translates to:
+  /// **'Channels'**
+  String get videoEditLaneChannels;
+
+  /// Video edit: a lane's channels: as recorded
+  ///
+  /// In en, this message translates to:
+  /// **'Stereo'**
+  String get videoEditChannelsStereo;
+
+  /// Video edit: tooltip of the Stereo channels choice
+  ///
+  /// In en, this message translates to:
+  /// **'As recorded'**
+  String get videoEditChannelsStereoTip;
+
+  /// Video edit: a lane's channels: its left channel on both sides
+  ///
+  /// In en, this message translates to:
+  /// **'Left'**
+  String get videoEditChannelsLeft;
+
+  /// Video edit: tooltip of the Left channels choice
+  ///
+  /// In en, this message translates to:
+  /// **'The left channel on both sides'**
+  String get videoEditChannelsLeftTip;
+
+  /// Video edit: a lane's channels: its right channel on both sides
+  ///
+  /// In en, this message translates to:
+  /// **'Right'**
+  String get videoEditChannelsRight;
+
+  /// Video edit: tooltip of the Right channels choice
+  ///
+  /// In en, this message translates to:
+  /// **'The right channel on both sides'**
+  String get videoEditChannelsRightTip;
+
+  /// Video edit: a lane's channels: both mixed, on both sides
+  ///
+  /// In en, this message translates to:
+  /// **'Mono'**
+  String get videoEditChannelsMono;
+
+  /// Video edit: tooltip of the Mono channels choice
+  ///
+  /// In en, this message translates to:
+  /// **'Both channels mixed, on both sides'**
+  String get videoEditChannelsMonoTip;
+
+  /// Video edit: a lane's balance between left and right
+  ///
+  /// In en, this message translates to:
+  /// **'Balance'**
+  String get videoEditLaneBalance;
+
+  /// Video edit: a lane's balance, in the middle
+  ///
+  /// In en, this message translates to:
+  /// **'Centre'**
+  String get videoEditBalanceCentre;
+
+  /// Video edit: under a lane's channels and balance, when they are changed: the preview can't play them
+  ///
+  /// In en, this message translates to:
+  /// **'Download has the channels and balance; the preview plays the sound as recorded.'**
+  String get videoEditStereoPreviewNote;
+
+  /// Video edit: a lane's balance towards the left, percent 5 to 100
+  ///
+  /// In en, this message translates to:
+  /// **'L {percent}'**
+  String videoEditBalanceLeft(int percent);
+
+  /// Video edit: a lane's balance towards the right, percent 5 to 100
+  ///
+  /// In en, this message translates to:
+  /// **'R {percent}'**
+  String videoEditBalanceRight(int percent);
+
+  /// Keyboard shortcuts overlay: its title
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard shortcuts'**
+  String get keysHelp;
+
+  /// App bar: the keyboard shortcuts button; H opens them too
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard shortcuts (H)'**
+  String get keysHelpTooltip;
+
+  /// Keyboard shortcuts, Cam: the section on moving along the tab
+  ///
+  /// In en, this message translates to:
+  /// **'Turning the tab'**
+  String get keysTab;
+
+  /// Keyboard shortcuts, Cam: any key or ↓ goes to the next phrase (neckline)
+  ///
+  /// In en, this message translates to:
+  /// **'Next phrase (a page-turner pedal too)'**
+  String get keysNextPhrase;
+
+  /// Keyboard shortcuts, Cam: ↑, Backspace and Page Up go to the phrase before
+  ///
+  /// In en, this message translates to:
+  /// **'Previous phrase (← too, with nothing playing along)'**
+  String get keysPreviousPhrase;
+
+  /// Keyboard shortcuts, Cam: the section on recording takes
+  ///
+  /// In en, this message translates to:
+  /// **'Takes'**
+  String get keysTakes;
+
+  /// Keyboard shortcuts, Cam: what the . key does
+  ///
+  /// In en, this message translates to:
+  /// **'Start a take with the song from its start; recording, throw the take away and record it again'**
+  String get keysRetake;
+
+  /// Keyboard shortcuts, Cam: what the / key does
+  ///
+  /// In en, this message translates to:
+  /// **'Start a take with the song where it is; recording, save the take and start the next'**
+  String get keysCut;
+
+  /// Keyboard shortcuts, Cam: the section on the play-along player's keys
+  ///
+  /// In en, this message translates to:
+  /// **'Playing along (while the sidebar shows; ↑ and ↓ then turn the tab)'**
+  String get keysPlayAlongCam;
+
+  /// Keyboard shortcuts, a capture's or file's screen: the play-along player's keys
+  ///
+  /// In en, this message translates to:
+  /// **'Playing along (while the sidebar shows)'**
+  String get keysPlayAlongPlayer;
+
+  /// Keyboard shortcuts: what space and 1 do
+  ///
+  /// In en, this message translates to:
+  /// **'Play or pause the song'**
+  String get keysPlayPause;
+
+  /// Keyboard shortcuts: what 0 does
+  ///
+  /// In en, this message translates to:
+  /// **'Back to the start, with the count-in'**
+  String get keysRestart;
+
+  /// Keyboard shortcuts: what ← and → do in the player
+  ///
+  /// In en, this message translates to:
+  /// **'10 seconds back or on'**
+  String get keysSkip;
+
+  /// Keyboard shortcuts, video editor: the section on the preview
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get keysPreview;
+
+  /// Keyboard shortcuts, video editor: what space does
+  ///
+  /// In en, this message translates to:
+  /// **'Play or pause the preview'**
+  String get keysPlayPausePreview;
+
+  /// Keyboard shortcuts, video editor: what Home does
+  ///
+  /// In en, this message translates to:
+  /// **'To the start of the kept part (again: of the video)'**
+  String get keysToStart;
+
+  /// Keyboard shortcuts, video editor: what End does
+  ///
+  /// In en, this message translates to:
+  /// **'To the end of the kept part (again: of the video)'**
+  String get keysToEnd;
+
+  /// Keyboard shortcuts, video editor: what ← and → do
+  ///
+  /// In en, this message translates to:
+  /// **'A tenth of a second back or on'**
+  String get keysStepTenth;
+
+  /// Keyboard shortcuts, video editor: what Shift + ← and → do
+  ///
+  /// In en, this message translates to:
+  /// **'A second back or on'**
+  String get keysStepSecond;
+
+  /// Keyboard shortcuts: the section on keys every screen has
+  ///
+  /// In en, this message translates to:
+  /// **'Everywhere'**
+  String get keysGeneral;
+
+  /// Keyboard shortcuts: what H does
+  ///
+  /// In en, this message translates to:
+  /// **'Show or hide these shortcuts'**
+  String get keysShowHelp;
+
+  /// Keyboard shortcuts: the note under the list
+  ///
+  /// In en, this message translates to:
+  /// **'Typing in a field, the keys type as usual.'**
+  String get keysInFields;
+
+  /// A key's name: the space bar
+  ///
+  /// In en, this message translates to:
+  /// **'Space'**
+  String get keySpace;
+
+  /// A key's name: any key at all
+  ///
+  /// In en, this message translates to:
+  /// **'Any key'**
+  String get keyAnyKey;
+
+  /// A key's name, as on the keyboard
+  ///
+  /// In en, this message translates to:
+  /// **'Backspace'**
+  String get keyBackspace;
+
+  /// A key's name, as on the keyboard
+  ///
+  /// In en, this message translates to:
+  /// **'Page Up'**
+  String get keyPageUp;
+
+  /// A key's name, as on the keyboard
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get keyHome;
+
+  /// A key's name, as on the keyboard
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get keyEnd;
+
+  /// A key's name, as on the keyboard
+  ///
+  /// In en, this message translates to:
+  /// **'Shift'**
+  String get keyShift;
+
+  /// Video edit: the song delay control's label, beside its millisecond steps
+  ///
+  /// In en, this message translates to:
+  /// **'Delay'**
+  String get videoEditDelay;
+
+  /// Video edit: under the delay control, what it is for
+  ///
+  /// In en, this message translates to:
+  /// **'To correct a Bluetooth speaker\'s or headphones\' delay, a millisecond at a time.'**
+  String get videoEditDelayHint;
+
+  /// Video edit: tooltip of a delay step moving the song earlier
+  ///
+  /// In en, this message translates to:
+  /// **'{ms} ms earlier'**
+  String videoEditDelayEarlier(int ms);
+
+  /// Video edit: tooltip of a delay step moving the song later
+  ///
+  /// In en, this message translates to:
+  /// **'{ms} ms later'**
+  String videoEditDelayLater(int ms);
+
+  /// Video edit: tooltip of the delay value, which opens a field to type it
+  ///
+  /// In en, this message translates to:
+  /// **'Type the delay'**
+  String get videoEditDelayType;
+
+  /// Video edit: title of the dialog to type the song delay
+  ///
+  /// In en, this message translates to:
+  /// **'Song delay'**
+  String get videoEditDelayTitle;
+
+  /// Video edit: helper under the delay field
+  ///
+  /// In en, this message translates to:
+  /// **'Milliseconds: + later, − earlier'**
+  String get videoEditDelayHelp;
+
+  /// Video edit: the delay dialog's confirm button
+  ///
+  /// In en, this message translates to:
+  /// **'Set'**
+  String get videoEditDelaySet;
 }
 
 class _AppLocalizationsDelegate

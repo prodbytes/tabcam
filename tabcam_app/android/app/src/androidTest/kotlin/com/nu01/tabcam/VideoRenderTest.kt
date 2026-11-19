@@ -270,5 +270,33 @@ class VideoRenderTest {
         )
         assertNull(silent.ownVolume)
         assertNull(silent.song)
+        assertNull(plan.ownMix)
+        assertNull(plan.song!!.mix)
+    }
+
+    @Test
+    fun readsTheLanesStereo() {
+        val plan = RenderPlan.fromArgs(
+            mapOf(
+                "input" to "/tmp/in.mp4", "output" to "/tmp/out.mp4",
+                "startMs" to 0, "endMs" to 1000,
+                "own" to mapOf("volume" to 1, "mix" to listOf(1.0, 0.0, 1.0, 0.0)),
+                "song" to mapOf(
+                    "path" to "/tmp/song.m4a", "volume" to 1, "mix" to listOf(0.5, 0.5, 0.25, 0.25),
+                    "clips" to listOf(mapOf("atMs" to 0, "fromMs" to 0, "toMs" to 800)),
+                ),
+            ),
+        )
+        val own = plan.ownMix!!
+        assertEquals(StereoMix(1f, 0f, 1f, 0f), own)
+        // The left on both sides: from the left channel to each output.
+        val (stereo, mono) = own.matrices()
+        assertEquals(1f, stereo.getMixingCoefficient(0, 0), 0f)
+        assertEquals(1f, stereo.getMixingCoefficient(0, 1), 0f)
+        assertEquals(0f, stereo.getMixingCoefficient(1, 0), 0f)
+        assertEquals(0f, stereo.getMixingCoefficient(1, 1), 0f)
+        assertEquals(1f, mono.getMixingCoefficient(0, 0), 0f)
+        assertEquals(1f, mono.getMixingCoefficient(0, 1), 0f)
+        assertEquals(StereoMix(0.5f, 0.5f, 0.25f, 0.25f), plan.song!!.mix)
     }
 }

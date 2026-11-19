@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tabcam_app/capture/backing_track.dart';
 import 'package:tabcam_app/l10n/app_localizations.dart';
@@ -57,6 +58,12 @@ class FakeVideoPlatform extends VideoPlatformBase {
     position = const Duration(minutes: 3);
     _events[playerId]!.add(VideoEvent(eventType: VideoEventType.completed));
   }
+
+  /// The player failed (a play the browser refused: video_player then
+  /// says so, and plays no more).
+  void fail(int playerId) => _events[playerId]!.addError(
+    PlatformException(code: 'NotAllowedError', message: 'a made-up failure'),
+  );
 
   @override
   Future<void> play(int playerId) async => playing.add(playerId);

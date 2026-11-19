@@ -3,24 +3,36 @@
 /// player opens (or, turned by its Rotate button, the panel under the
 /// screen), where the user types a chord, a scale or anything else.
 /// A chord shows its notes and voicings, a scale its notes on the neck;
-/// anything else is searched on YouTube (the one thing that leaves the
-/// device): once typing stops for a couple of seconds, its results show
-/// under the field ([YouTubeSearch]).
+/// anything else is searched on YouTube and Cifra Club (the one thing
+/// that leaves the device): once typing stops for a couple of seconds,
+/// their results show under the field ([YouTubeSearch], then
+/// [CifraClubSearch]).
 library;
 
 import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import '../l10n/language.dart';
 import '../screens/link_page.dart';
 import '../screens/sidebar_widths.dart';
 import '../screens/split_handle.dart';
+import 'cifraclub_search.dart';
 import 'diagrams.dart';
 import 'music_theory.dart';
 import 'voicings.dart';
 import 'youtube_search.dart';
+
+/// Where the dictionary's + writes a chord or a scale: the event screen's
+/// Text view ([DictionaryState.writer]).
+abstract interface class TabWriter {
+  /// Writes [columns] into the tab: each a fret per string, low E to high
+  /// E, null for a string not played (a chord's voicing is one column, a
+  /// scale one per note).
+  void write(List<List<int?>> columns);
+}
 
 /// Whether the dictionary's sidebar shows, and what's typed in it,
 /// app-wide: open on one screen, it's open on the next (Home, the capture,
@@ -37,6 +49,33 @@ class DictionaryState extends ChangeNotifier {
   /// What's typed in its field.
   String get query => _query;
   String _query = '';
+
+  /// Where a chord's voicing or a scale is written, its + pressed: the
+  /// event's Text view while it shows and can be edited. Null elsewhere,
+  /// and the results have no +.
+  TabWriter? get writer => _writer;
+  TabWriter? _writer;
+
+  /// [writer] takes the dictionary's +, until it [detach]es.
+  void attach(TabWriter writer) {
+    if (identical(_writer, writer)) return;
+    _writer = writer;
+    _notifyLater();
+  }
+
+  void detach(TabWriter writer) {
+    if (!identical(_writer, writer)) return;
+    _writer = null;
+    _notifyLater();
+  }
+
+  /// After the frame: a view attaches and detaches as it's built and
+  /// disposed, when the sidebar can't be rebuilt.
+  void _notifyLater() {
+    SchedulerBinding.instance
+      ..addPostFrameCallback((_) => notifyListeners())
+      ..ensureVisualUpdate();
+  }
 
   void toggle() {
     _open = !_open;
@@ -60,6 +99,7 @@ class DictionaryState extends ChangeNotifier {
   void clear() {
     _open = false;
     _query = '';
+    _writer = null;
     notifyListeners();
   }
 }
@@ -110,11 +150,16 @@ class DictionaryBeside extends StatelessWidget {
   const DictionaryBeside({
     super.key,
     required this.child,
+    this.title,
     this.onClosed,
     this.enabled = true,
   });
 
   final Widget child;
+
+  /// The capture's title, where there's a capture (its screen, a file,
+  /// Cam): the sidebar's first pill with nothing typed. Null elsewhere.
+  final String? title;
 
   /// After the sidebar's own close button hides it.
   final VoidCallback? onClosed;
@@ -218,6 +263,7 @@ class DictionaryBeside extends StatelessWidget {
                       minHeight: below ? laidOut : tall,
                       maxHeight: below ? laidOut : tall,
                       child: DictionarySidebar(
+                        title: title,
                         below: below,
                         onRotate: () =>
                             widths.setBelow(SidebarWidths.dictionary, !below),
@@ -248,10 +294,15 @@ class DictionaryBeside extends StatelessWidget {
 class DictionarySidebar extends StatefulWidget {
   const DictionarySidebar({
     super.key,
+    this.title,
     required this.onClose,
     this.onRotate,
     this.below = false,
   });
+
+  /// The capture's title, its first pill with nothing typed; null with
+  /// no capture.
+  final String? title;
 
   final VoidCallback onClose;
 
@@ -281,6 +332,11 @@ class _DictionarySidebarState extends State<DictionarySidebar> {
   bool _searching = false;
   bool _failed = false;
 
+  /// Cifra Club's, likewise.
+  List<CifraClubSong>? _songs;
+  bool _searchingSongs = false;
+  bool _failedSongs = false;
+
   /// Until typing has stopped for [YouTubeSearch.wait].
   Timer? _wait;
 
@@ -303,9 +359,11 @@ class _DictionarySidebarState extends State<DictionarySidebar> {
     final lookup = Lookup.of(query);
     _wait?.cancel();
     final youTube = YouTubeSearch.instance;
-    final searches =
-        lookup is Other && query.trim().isNotEmpty && youTube.available;
+    final cifraClub = CifraClubSearch.instance;
+    final song = lookup is Other && query.trim().isNotEmpty;
+    final searches = song && youTube.available;
     final cached = searches ? youTube.cached(query) : null;
+    final cachedSongs = song ? cifraClub.cached(query) : null;
     setState(() {
       _lookup = lookup;
       _voicings = switch (lookup) {
@@ -315,14 +373,38 @@ class _DictionarySidebarState extends State<DictionarySidebar> {
       _videos = cached;
       _searching = searches && cached == null;
       _failed = false;
+      _songs = cachedSongs;
+      _searchingSongs = song && cachedSongs == null;
+      _failedSongs = false;
     });
-    if (_searching) {
-      _wait = Timer(YouTubeSearch.wait, () => _searchYouTube(query));
+    if (_searching || _searchingSongs) {
+      _wait = Timer(YouTubeSearch.wait, () => _search(query));
     }
   }
 
-  Future<void> _searchYouTube(String query) async {
+  /// Searches now, on YouTube and Cifra Club, whichever hasn't answered.
+  void _search(String query) {
     _wait?.cancel();
+    if (_searching) unawaited(_searchYouTube(query));
+    if (_searchingSongs) unawaited(_searchCifraClub(query));
+  }
+
+  Future<void> _searchCifraClub(String query) async {
+    List<CifraClubSong>? songs;
+    try {
+      songs = await CifraClubSearch.instance.search(query);
+    } on CifraClubSearchFailed {
+      songs = null;
+    }
+    if (!mounted || _controller.text != query) return;
+    setState(() {
+      _songs = songs;
+      _searchingSongs = false;
+      _failedSongs = songs == null;
+    });
+  }
+
+  Future<void> _searchYouTube(String query) async {
     List<YouTubeVideo>? videos;
     try {
       videos = await YouTubeSearch.instance.search(query);
@@ -345,15 +427,14 @@ class _DictionarySidebarState extends State<DictionarySidebar> {
   }
 
   /// Enter: a song (anything that's not a chord or a scale) is searched
-  /// on YouTube now, without the wait; in a build that can't search, it
-  /// opens YouTube's search.
+  /// on YouTube and Cifra Club now, without the wait; in a build without
+  /// YouTube's key, it opens YouTube's search (and searches Cifra Club).
   void _submit(String query) {
     if (_lookup is! Other || query.trim().isEmpty) return;
     if (!YouTubeSearch.instance.available) {
       openLink(context, youTubeSearch(query));
-    } else if (_searching && _wait!.isActive) {
-      _searchYouTube(query);
     }
+    if (_wait?.isActive ?? false) _search(query);
   }
 
   @override
@@ -470,13 +551,26 @@ class _DictionarySidebarState extends State<DictionarySidebar> {
                       room: room,
                     ),
                     Other() when query.trim().isEmpty => _Intro(
+                      title: widget.title,
                       onExample: _set,
                     ),
-                    Other() => _YouTubeResult(
-                      query: query,
-                      videos: _videos,
-                      searching: _searching,
-                      failed: _failed,
+                    // YouTube's videos, and Cifra Club's tabs under them.
+                    Other() => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _YouTubeResult(
+                          query: query,
+                          videos: _videos,
+                          searching: _searching,
+                          failed: _failed,
+                        ),
+                        const SizedBox(height: 20),
+                        _CifraClubResult(
+                          songs: _songs,
+                          searching: _searchingSongs,
+                          failed: _failedSongs,
+                        ),
+                      ],
                     ),
                   },
                 );
@@ -489,43 +583,173 @@ class _DictionarySidebarState extends State<DictionarySidebar> {
   }
 }
 
-/// What the dictionary does, and examples to tap.
+/// What the dictionary does, and pills to tap: the capture's [title]
+/// first, where there is one (a song's tabs and videos a tap away), then
+/// examples.
 class _Intro extends StatelessWidget {
-  const _Intro({required this.onExample});
+  const _Intro({this.title, required this.onExample});
 
+  final String? title;
   final ValueChanged<String> onExample;
+
+  static const examples = [
+    'C',
+    'Am7',
+    'F#m7b5',
+    'G/B',
+    'Bø',
+    'GΔ7',
+    'Cadd9',
+    'Am11',
+    'A minor pentatonic',
+    'E blues',
+    'D dorian',
+  ];
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final title = this.title?.trim() ?? '';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(l10n.dictionaryIntro),
         const SizedBox(height: 16),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final example in const [
-              'C',
-              'Am7',
-              'F#m7b5',
-              'G/B',
-              'A minor pentatonic',
-              'E blues',
-              'D dorian',
-            ])
-              ActionChip(
-                label: Text(example),
-                onPressed: () => onExample(example),
+        LayoutBuilder(
+          builder: (context, box) => Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (title.isNotEmpty)
+                ActionChip(
+                  key: const Key('dictionary-title'),
+                  // Cut to the sidebar, however long the title.
+                  label: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: math.max(40, box.maxWidth - 40),
+                    ),
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  onPressed: () => onExample(title),
+                ),
+              for (final example in examples)
+                if (example != title)
+                  ActionChip(
+                    label: Text(example),
+                    onPressed: () => onExample(example),
+                  ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        _Symbols(onExample: onExample),
+      ],
+    );
+  }
+}
+
+/// The chord symbols a chart writes instead of letters (the cut circle,
+/// the triangle…): what each one is, how else it's written, and how to
+/// type it; a row's tap looks its example up.
+class _Symbols extends StatelessWidget {
+  const _Symbols({required this.onExample});
+
+  final ValueChanged<String> onExample;
+
+  /// The symbol, the example a tap looks up, and how else it's written.
+  static const rows = [
+    ('ø', 'Bø', 'Bø7 = Bm7b5 = Bm7(b5)'),
+    ('Δ', 'CΔ7', 'CΔ = Cmaj7 = CM7 = C7M = C^7'),
+    ('°', 'B°', 'Bdim = Bo'),
+    ('°7', 'B°7', 'Bdim7 = Bo7'),
+    ('+', 'C+', 'Caug = C(#5)'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final names = {
+      'ø': l10n.dictionaryHalfDiminished,
+      'Δ': l10n.dictionaryMajorSeventh,
+      '°': l10n.dictionaryDiminished,
+      '°7': l10n.dictionaryDiminishedSeventh,
+      '+': l10n.dictionaryAugmented,
+    };
+    return Column(
+      key: const Key('dictionary-symbols'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.dictionarySymbols, style: theme.textTheme.titleSmall),
+        const SizedBox(height: 4),
+        for (final (symbol, example, written) in rows)
+          InkWell(
+            key: Key('dictionary-symbol-$example'),
+            onTap: () => onExample(example),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 40,
+                    child: Text(
+                      symbol,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${names[symbol]} · $example',
+                          style: theme.textTheme.bodyLarge,
+                        ),
+                        Text(
+                          written,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-          ],
+            ),
+          ),
+        const SizedBox(height: 8),
+        Text(
+          l10n.dictionarySymbolsTyping,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );
   }
 }
+
+/// The name in words of the qualities written with a symbol (`ø` is
+/// half-diminished), or null.
+String? chordQualityName(AppLocalizations l10n, ChordQuality quality) =>
+    switch (quality.symbol) {
+      'm7b5' => l10n.dictionaryHalfDiminished,
+      'maj7' => l10n.dictionaryMajorSeventh,
+      'm(maj7)' => l10n.dictionaryMinorMajorSeventh,
+      'dim' => l10n.dictionaryDiminished,
+      'dim7' => l10n.dictionaryDiminishedSeventh,
+      'aug' => l10n.dictionaryAugmented,
+      _ => null,
+    };
 
 class _Heading extends StatelessWidget {
   const _Heading({
@@ -533,6 +757,8 @@ class _Heading extends StatelessWidget {
     required this.kind,
     required this.notes,
     required this.degrees,
+    this.also,
+    this.write,
   });
 
   final String title;
@@ -540,13 +766,25 @@ class _Heading extends StatelessWidget {
   final List<Note> notes;
   final List<Degree> degrees;
 
+  /// A chord's name in words and its other symbols, under the degrees.
+  final String? also;
+
+  /// Its + beside the title (a scale's), shown while there's a text to
+  /// write in.
+  final _WriteButton? write;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: theme.textTheme.headlineSmall),
+        Row(
+          children: [
+            Flexible(child: Text(title, style: theme.textTheme.headlineSmall)),
+            ?write,
+          ],
+        ),
         const SizedBox(height: 4),
         Text(
           '$kind · ${notes.map((n) => n.name).join('  ')}',
@@ -558,6 +796,14 @@ class _Heading extends StatelessWidget {
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
+        if (also case final also?)
+          Text(
+            also,
+            key: const Key('dictionary-also'),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
       ],
     );
   }
@@ -622,6 +868,12 @@ class _ChordResult extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final named = chordQualityName(l10n, chord.quality);
+    final others = chord.otherNames;
+    final also = [
+      ?named,
+      if (others.isNotEmpty) l10n.dictionaryAlsoWritten(others.join(', ')),
+    ].join(' · ');
     return _Result(
       key: const Key('dictionary-chord'),
       below: below,
@@ -630,6 +882,7 @@ class _ChordResult extends StatelessWidget {
         kind: l10n.dictionaryChord,
         notes: chord.notes,
         degrees: chord.quality.degrees,
+        also: also.isEmpty ? null : also,
       ),
       picture: voicings.isEmpty
           ? Text(l10n.dictionaryNoVoicings)
@@ -638,7 +891,17 @@ class _ChordResult extends StatelessWidget {
               runSpacing: 12,
               children: [
                 for (final v in voicings)
-                  ChordDiagram(chord: chord, voicing: v, lying: below),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ChordDiagram(chord: chord, voicing: v, lying: below),
+                      _WriteButton(
+                        key: Key('dictionary-write-${v.label}'),
+                        tooltip: l10n.dictionaryWriteChord(v.label),
+                        columns: () => [v.frets],
+                      ),
+                    ],
+                  ),
               ],
             ),
     );
@@ -657,16 +920,50 @@ class _ScaleResult extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final title = '${scale.root.name} ${scaleTypeName(l10n, scale.type)}';
     return _Result(
       key: const Key('dictionary-scale'),
       below: below,
       heading: _Heading(
-        title: '${scale.root.name} ${scaleTypeName(l10n, scale.type)}',
+        title: title,
         kind: l10n.dictionaryScale,
         notes: scale.notes,
         degrees: scale.type.degrees,
+        write: _WriteButton(
+          key: const Key('dictionary-write-scale'),
+          tooltip: l10n.dictionaryWriteScale(title),
+          columns: () => scalePosition(scale),
+        ),
       ),
       picture: ScaleFretboard(scale: scale, lying: below, maxHeight: room),
+    );
+  }
+}
+
+/// A +: writes [columns] into the event's text ([DictionaryState.writer]);
+/// nothing shows while there's no text to write in.
+class _WriteButton extends StatelessWidget {
+  const _WriteButton({super.key, required this.tooltip, required this.columns});
+
+  final String tooltip;
+  final List<List<int?>> Function() columns;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = DictionaryState.instance;
+    return ListenableBuilder(
+      listenable: state,
+      builder: (context, _) {
+        final writer = state.writer;
+        if (writer == null) return const SizedBox.shrink();
+        return IconButton(
+          tooltip: tooltip,
+          visualDensity: VisualDensity.compact,
+          color: Theme.of(context).colorScheme.primary,
+          icon: const Icon(Icons.add_circle_outline),
+          onPressed: () => writer.write(columns()),
+        );
+      },
     );
   }
 }
@@ -807,6 +1104,135 @@ class _VideoTile extends StatelessWidget {
                 ],
               );
             },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Under YouTube's results, Cifra Club's: the songs it has tabs of
+/// ([songs]), each opening its page outside the app.
+class _CifraClubResult extends StatelessWidget {
+  const _CifraClubResult({
+    required this.songs,
+    required this.searching,
+    required this.failed,
+  });
+
+  final List<CifraClubSong>? songs;
+  final bool searching;
+  final bool failed;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final muted = theme.textTheme.bodyMedium?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    final songs = this.songs;
+    return Column(
+      key: const Key('dictionary-cifraclub'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.dictionaryCifraClub, style: theme.textTheme.titleSmall),
+        if (searching) ...[
+          const SizedBox(height: 12),
+          Text(l10n.dictionaryCifraClubSearching, style: muted),
+          const SizedBox(height: 8),
+          const LinearProgressIndicator(
+            key: Key('dictionary-cifraclub-searching'),
+          ),
+        ] else if (failed) ...[
+          const SizedBox(height: 12),
+          Text(l10n.dictionaryCifraClubFailed, style: muted),
+        ] else if (songs != null && songs.isEmpty) ...[
+          const SizedBox(height: 12),
+          Text(l10n.dictionaryCifraClubNone, style: muted),
+        ] else if (songs != null) ...[
+          const SizedBox(height: 8),
+          for (final song in songs) _SongTile(song: song),
+        ],
+      ],
+    );
+  }
+}
+
+/// One of Cifra Club's results: the artist's picture, the song's title
+/// and artist; a tap opens its page outside the app (a new tab on the
+/// web).
+class _SongTile extends StatelessWidget {
+  const _SongTile({required this.song});
+
+  final CifraClubSong song;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final image = song.image;
+    const fallback = Icon(Icons.queue_music_outlined);
+    return Tooltip(
+      message: context.l10n.dictionaryCifraClubOpen,
+      waitDuration: const Duration(milliseconds: 600),
+      child: InkWell(
+        key: Key('dictionary-song-${song.id}'),
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => openLink(context, song.url),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: ColoredBox(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    child: image == null
+                        ? fallback
+                        : Image.network(
+                            '$image',
+                            fit: BoxFit.cover,
+                            webHtmlElementStrategy:
+                                WebHtmlElementStrategy.fallback,
+                            errorBuilder: (_, _, _) => fallback,
+                          ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      song.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      song.artist,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                Icons.open_in_new,
+                size: 16,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ],
           ),
         ),
       ),

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:cross_file/cross_file.dart';
@@ -685,9 +686,7 @@ void main() {
     await _settle(tester);
     final plan = editor.rendered.single;
     expect(plan.passthrough, isFalse);
-    expect(plan.layers.map((l) => l.look), const [
-      WatermarkLook('tabs.cam'),
-    ]);
+    expect(plan.layers.map((l) => l.look), const [WatermarkLook('tabs.cam')]);
     expect((plan.fadeIn, plan.fadeOut), (s(3), s(3)));
 
     await asItIs(tester);
@@ -1034,7 +1033,20 @@ void main() {
     expect(enabled(tester, 'video-edit-reset'), isFalse);
     expect(library.byId(id)!.pages.first.edit, isNull);
 
-    // A tenth of a second earlier: all of it, still lined up.
+    // A twentieth of a second earlier (‹'s step): all of it, still lined
+    // up; again, a tenth.
+    await tester.tap(find.byKey(const Key('video-edit-song-earlier')));
+    await _settle(tester);
+    expect(
+      find.text('Lined up as recorded, moved 0:00.05 earlier'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('The song starts 0:01.15 after the video'),
+      findsOneWidget,
+    );
+    expect(find.byTooltip('0.05 s earlier'), findsOneWidget);
+    expect(find.byTooltip('0.05 s later'), findsOneWidget);
     await tester.tap(find.byKey(const Key('video-edit-song-earlier')));
     await _settle(tester);
     expect(
@@ -1242,18 +1254,89 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('video-edit-song-later')));
     await _settle(tester);
-    expect(library2.byId(id2)!.pages.first.edit!.offset, s(5.3));
+    expect(library2.byId(id2)!.pages.first.edit!.offset, s(5.25));
     await tester.pumpWidget(const SizedBox());
     await _settle(tester);
     reader.files.addAll(sounds);
     await tester.pumpWidget(editScreen(library2, id2));
     await measured(tester, library2, id2);
     expect(library2.byId(id2)!.pages.first.takeLog!.sync!.ms, 83);
+    // 5.25 s, 33 ms before where it was found (5.283 s): to the
+    // hundredth.
     expect(
-      find.text('Lined up as recorded, moved 0:00.0 later'),
+      find.text('Lined up as recorded, moved 0:00.03 earlier'),
       findsOneWidget,
     );
-    expect(library2.byId(id2)!.pages.first.edit!.offset, s(5.3));
+    expect(library2.byId(id2)!.pages.first.edit!.offset, s(5.25));
+  });
+
+  testWidgets('the cut\'s ends step a twentieth of a second: ‹ and › under '
+      'the lanes move the start and the end, shown to the hundredth, the '
+      'song staying where it is along the video', (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester);
+    await tester.runAsync(
+      () => library.setPageEdit(
+        id,
+        'k0',
+        PageEdit.fromSound(
+          start: s(2),
+          end: s(12),
+          sound: EditSound.track,
+          trackId: 'k1',
+          offset: s(1.5),
+        ),
+      ),
+    );
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    String at(String end) =>
+        tester.widget<Text>(find.byKey(Key('video-edit-$end-at'))).data!;
+    PageEdit edit() => library.byId(id)!.pages.first.edit!;
+    expect((at('start'), at('end')), ('Start 0:02.0', 'End 0:12.0'));
+    expect(find.byTooltip('Start 0.05 s earlier'), findsOneWidget);
+    expect(find.byTooltip('End 0.05 s later'), findsOneWidget);
+
+    // The start a step later, then two earlier.
+    await tester.tap(find.byKey(const Key('video-edit-start-later')));
+    await _settle(tester);
+    expect(at('start'), 'Start 0:02.05');
+    expect(find.text('Keep 0:02.05–0:12.0'), findsOneWidget);
+    expect(edit().start, s(2.05));
+    // The song where it was along the video (3.5 s in).
+    expect(edit().offset, s(1.45));
+    expect(platform.seeks, contains(s(2.05)));
+    await tester.tap(find.byKey(const Key('video-edit-start-earlier')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('video-edit-start-earlier')));
+    await _settle(tester);
+    expect(at('start'), 'Start 0:01.95');
+    expect((edit().start, edit().offset), (s(1.95), s(1.55)));
+
+    // The end a step earlier, then two later: the preview at the frame
+    // it cuts at.
+    await tester.tap(find.byKey(const Key('video-edit-end-earlier')));
+    await _settle(tester);
+    expect(at('end'), 'End 0:11.95');
+    expect(edit().end, s(11.95));
+    expect(platform.seeks, contains(s(11.95)));
+    await tester.tap(find.byKey(const Key('video-edit-end-later')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('video-edit-end-later')));
+    await _settle(tester);
+    expect((at('end'), edit().end), ('End 0:12.05', s(12.05)));
+    expect(edit().offset, s(1.55));
+
+    // At the video's ends there's no further to step.
+    await tester.tap(find.byKey(const Key('video-edit-reset')));
+    await _settle(tester);
+    IconButton button(String key) =>
+        tester.widget<IconButton>(find.byKey(Key(key)));
+    expect((at('start'), at('end')), ('Start 0:00.0', 'End 3:00.0'));
+    expect(button('video-edit-start-earlier').onPressed, isNull);
+    expect(button('video-edit-end-later').onPressed, isNull);
+    expect(button('video-edit-start-later').onPressed, isNotNull);
+    expect(button('video-edit-end-earlier').onPressed, isNotNull);
   });
 
   testWidgets('a kept edit opens as it was, its track too', (tester) async {
@@ -1447,6 +1530,64 @@ void main() {
     expect(edit.trackId, isNot('k1'));
   });
 
+  testWidgets('a lane\'s Channels and Balance are kept with the edit, '
+      'and say only Download has them', (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester, editTake: true);
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    PageEdit? edit() => library.byId(id)!.pages.first.edit;
+
+    await tester.tap(find.byKey(const Key('video-edit-take-volume')));
+    await _frames(tester);
+    expect(find.text('Centre'), findsOneWidget);
+    expect(find.byKey(const Key('video-edit-take-stereo-note')), findsNothing);
+
+    // The left channel on both sides.
+    await tester.tap(find.byKey(const Key('video-edit-take-left')));
+    await _settle(tester);
+    expect(edit()!.ownStereo.channels, LaneChannels.left);
+    expect(edit()!.toJson()['ownChannels'], 'left');
+    expect(
+      find.byKey(const Key('video-edit-take-stereo-note')),
+      findsOneWidget,
+    );
+
+    // Leaning right: the left turned down.
+    tester
+        .widget<Slider>(find.byKey(const Key('video-edit-take-balance')))
+        .onChanged!(30);
+    await _settle(tester);
+    expect(edit()!.ownStereo.balance, 0.3);
+    expect(find.text('R 30'), findsOneWidget);
+
+    // Opened again: as it was left.
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-take-volume')));
+    await _frames(tester);
+    expect(
+      tester
+          .widget<SegmentedButton<LaneChannels>>(
+            find.byKey(const Key('video-edit-take-channels')),
+          )
+          .selected,
+      {LaneChannels.left},
+    );
+    expect(find.text('R 30'), findsOneWidget);
+
+    // Back to Stereo, in the middle: as recorded, nothing kept for it.
+    await tester.tap(find.byKey(const Key('video-edit-take-stereo')));
+    await _settle(tester);
+    tester
+        .widget<Slider>(find.byKey(const Key('video-edit-take-balance')))
+        .onChanged!(0);
+    await _settle(tester);
+    expect(edit()?.ownStereo ?? LaneStereo.standard, LaneStereo.standard);
+    expect(edit()?.toJson().containsKey('ownChannels') ?? false, isFalse);
+  });
+
   testWidgets('the current time shows beside the preview\'s progress', (
     tester,
   ) async {
@@ -1546,6 +1687,12 @@ void main() {
     expect(find.text('Song · '), findsOneWidget);
     expect(find.text('The song starts with the video'), findsOneWidget);
     expect(find.textContaining('The track'), findsNothing);
+    await tester.tap(find.byKey(const Key('video-edit-song-later')));
+    await _settle(tester);
+    expect(
+      find.text('The song starts 0:00.05 after the video'),
+      findsOneWidget,
+    );
     await tester.tap(find.byKey(const Key('video-edit-song-later')));
     await _settle(tester);
     expect(find.text('The song starts 0:00.1 after the video'), findsOneWidget);
@@ -2075,4 +2222,224 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('the song\'s delay: steps of 1 and 10 ms either way, a value '
+      'typed, kept with the edit; Reset clears it', (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester, withTake: true);
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-song-add')));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-track-k1')));
+    await _settle(tester);
+
+    String shown() => tester
+        .widget<Text>(
+          find.descendant(
+            of: find.byKey(const Key('video-edit-delay-value')),
+            matching: find.byType(Text),
+          ),
+        )
+        .data!;
+    Duration kept() => library.byId(id)!.pages.first.edit!.offset;
+    expect(find.byKey(const Key('video-edit-delay')), findsOneWidget);
+    expect(shown(), '0 ms');
+    expect(
+      find.textContaining("Bluetooth speaker's or headphones' delay"),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const Key('video-edit-delay-plus10')));
+    await tester.tap(find.byKey(const Key('video-edit-delay-plus1')));
+    await _settle(tester);
+    expect(shown(), '+11 ms');
+    expect(kept(), const Duration(milliseconds: 11));
+    await tester.tap(find.byKey(const Key('video-edit-delay-minus1')));
+    await _settle(tester);
+    expect(shown(), '+10 ms');
+    expect(
+      tester
+          .widget<IconButton>(
+            find.byKey(const Key('video-edit-delay-minus10')),
+          )
+          .tooltip,
+      '10 ms earlier',
+    );
+
+    // Typed: −35 ms, the song that much earlier.
+    await tester.tap(find.byKey(const Key('video-edit-delay-value')));
+    await _settle(tester);
+    expect(find.text('Song delay'), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const Key('video-edit-delay-field')),
+      '-35',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Set'));
+    await _settle(tester);
+    expect(shown(), '−35 ms');
+    expect(kept(), const Duration(milliseconds: -35));
+
+    // Reset: no song, so no delay, and no edit.
+    await tester.tap(find.byKey(const Key('video-edit-reset')));
+    await _settle(tester);
+    expect(find.byKey(const Key('video-edit-delay')), findsNothing);
+    expect(library.byId(id)!.pages.first.edit, isNull);
+  });
+
+  testWidgets('the timeline zooms in and out: the ruler and both lanes '
+      'together, scrolled sideways, a tap and a drag as precise as the zoom',
+      (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester);
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    Rect rect(String key) => tester.getRect(find.byKey(Key(key)));
+    final whole = rect('video-edit-take-bar');
+    expect(find.byKey(const Key('video-edit-zoom')), findsNothing);
+    expect(
+      tester.widget<IconButton>(find.byKey(const Key('video-edit-zoom-out'))).onPressed,
+      isNull,
+    );
+
+    // Zoomed in twice: 4×, the lanes and the ruler four times as wide,
+    // on one axis, starting where they did.
+    await tester.tap(find.byKey(const Key('video-edit-zoom-in')));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-zoom-in')));
+    await _settle(tester);
+    expect(find.text('4×'), findsOneWidget);
+    final take = rect('video-edit-take-bar');
+    expect(take.width, closeTo(whole.width * 4, 1));
+    expect(rect('video-edit-ruler').width, closeTo(take.width, 0.5));
+    expect(take.left, closeTo(whole.left, 0.5));
+
+    // A tap a quarter across the view is a sixteenth of the video in:
+    // 0:11.25 of 3 minutes.
+    await tester.tapAt(
+      Offset(whole.left + whole.width / 4, take.center.dy),
+    );
+    await _settle(tester);
+    expect(platform.seeks.last.inMilliseconds, closeTo(11250, 200));
+
+    // The start grip dragged a tenth of the view: a fortieth of the video.
+    final grip = await tester.startGesture(
+      tester.getCenter(find.byKey(const Key('video-edit-take-start'))),
+    );
+    // (Past the touch slop first, then measured.)
+    await grip.moveBy(const Offset(30, 0));
+    await _settle(tester);
+    // Where the cut starts, as the Keep label says it (m:ss.hh).
+    int keptFrom() {
+      final label = tester
+          .widgetList<Text>(find.textContaining('Keep '))
+          .first
+          .data!;
+      final m = RegExp(r'(\d+):(\d+)(?:\.(\d+))?').firstMatch(label)!;
+      final frac = (m.group(3) ?? '0').padRight(3, '0');
+      return int.parse(m.group(1)!) * 60000 +
+          int.parse(m.group(2)!) * 1000 +
+          int.parse(frac.substring(0, 3));
+    }
+
+    final from = keptFrom();
+    await grip.moveBy(Offset(whole.width / 10, 0));
+    await _settle(tester);
+    expect(keptFrom() - from, closeTo(4500, 100));
+    await grip.up();
+    await _settle(tester);
+
+    // Scrolled sideways, the bars move under the headers, which stay.
+    final header = rect('video-edit-take-volume');
+    tester
+        .state<ScrollableState>(
+          find.descendant(
+            of: find.byKey(const Key('video-edit-timeline-scroll')),
+            matching: find.byType(Scrollable),
+          ),
+        )
+        .position
+        .jumpTo(whole.width);
+    await _settle(tester);
+    expect(rect('video-edit-take-bar').left, closeTo(whole.left - whole.width, 1));
+    expect(rect('video-edit-take-volume'), header);
+
+    // Zoomed out all the way: the whole video again, no scroll.
+    await tester.tap(find.byKey(const Key('video-edit-zoom-out')));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-zoom-out')));
+    await _settle(tester);
+    expect(find.byKey(const Key('video-edit-zoom')), findsNothing);
+    expect(rect('video-edit-take-bar'), whole);
+    expect(find.byKey(const Key('video-edit-timeline-scroll')), findsNothing);
+  });
+
+  testWidgets('each lane draws its sound: the video\'s own and the song\'s, '
+      'once read; none where it can\'t be read', (tester) async {
+    tall(tester);
+    final read = <String>[];
+    SoundReader.opener = () => _WaveReader(read);
+    addTearDown(() => SoundReader.opener = null);
+    final (library, id) = await capture(tester, withTake: true);
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await _settle(tester);
+    expect(find.byKey(const Key('video-edit-take-wave')), findsOneWidget);
+    expect(find.byKey(const Key('video-edit-song-wave')), findsNothing);
+    // Drawn over the Take lane, as wide as it.
+    expect(
+      tester.getRect(find.byKey(const Key('video-edit-take-wave'))).width,
+      closeTo(
+        tester.getRect(find.byKey(const Key('video-edit-take-bar'))).width,
+        1,
+      ),
+    );
+
+    // A song picked: its sound read, and drawn on the Song lane.
+    await tester.tap(find.byKey(const Key('video-edit-song-add')));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('video-edit-track-k1')));
+    await _settle(tester);
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await _settle(tester);
+    expect(find.byKey(const Key('video-edit-song-wave')), findsOneWidget);
+    expect(read, hasLength(2));
+    expect(tester.takeException(), isNull);
+
+    // No reader (a desktop build): no waveforms, the lanes as before.
+    SoundReader.opener = () => null;
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    expect(find.byKey(const Key('video-edit-take-wave')), findsNothing);
+    expect(find.byKey(const Key('video-edit-take-bar')), findsOneWidget);
+  });
+}
+
+/// Reads every file as a second of a made-up note, noting each file read.
+class _WaveReader implements SoundReader {
+  _WaveReader(this.read);
+
+  final List<String> read;
+
+  @override
+  Future<Float32List?> samples(
+    XFile file, {
+    required Duration from,
+    required Duration length,
+    required int rate,
+  }) async {
+    read.add(file.name);
+    return Float32List.fromList([
+      for (var i = 0; i < rate; i++) sin(2 * pi * 220 * i / rate) / 2,
+    ]);
+  }
+
+  @override
+  void close() {}
 }

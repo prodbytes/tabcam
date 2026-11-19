@@ -346,4 +346,92 @@ void main() {
       expect(lines.sublist(9), ['', 'la la']);
     });
   });
+
+  group('Writing from the dictionary (+)', () {
+    // C as x32010, low E to high E.
+    const c = <int?>[null, 3, 2, 0, 1, 0];
+    const g = <int?>[3, 2, 0, 0, 0, 3];
+
+    test('no phrase: a new one, 80 wide, the cursor after the chord', () {
+      final written = writeColumns(_at('', 0), const [c]);
+      final lines = written.text.split('\n');
+      expect(lines, [
+        'e|-0-${'-' * 74}|',
+        'B|-1-${'-' * 74}|',
+        'G|-0-${'-' * 74}|',
+        'D|-2-${'-' * 74}|',
+        'A|-3-${'-' * 74}|',
+        'E|---${'-' * 74}|',
+      ]);
+      for (final line in lines) {
+        expect(line, hasLength(newStaffWidth));
+      }
+      expect(written.selection.baseOffset, 'e|-0-'.length);
+    });
+
+    test('the next one follows it on the same phrase', () {
+      final first = writeColumns(_at('', 0), const [c]);
+      final lines = writeColumns(first, const [g]).text.split('\n');
+      expect(lines.first, startsWith('e|-0-3-'));
+      expect(lines[5], startsWith('E|---3-'));
+      // Pushed right, every line by as much.
+      expect(lines.map((l) => l.length).toSet(), {newStaffWidth + 2});
+    });
+
+    test('on a six-line phrase, at the cursor\'s column across it', () {
+      const text = 'e|--0--|\nB|--1--|\nG|--0--|\nD|--2--|\nA|--3--|\nE|-----|';
+      // After the 0 on the first string.
+      final written = writeColumns(_at(text, 'e|--0'.length), const [g]);
+      expect(written.text.split('\n'), [
+        'e|--03---|',
+        'B|--10---|',
+        'G|--00---|',
+        'D|--20---|',
+        'A|--32---|',
+        'E|---3---|',
+      ]);
+      expect(written.selection.baseOffset, 'e|--03-'.length);
+    });
+
+    test('a short line is lengthened with dashes before its closing bar; '
+        'none goes into a name', () {
+      const text = 'e|-----|\nB|--|\nG|-----|\nD|-----|\nA|-----|\nE|-----|';
+      final written = writeColumns(_at(text, 0), const [c]);
+      final lines = written.text.split('\n');
+      expect(lines.first, 'e|0------|');
+      expect(lines[1], 'B|1---|');
+      expect(written.selection.baseOffset, 'e|0-'.length);
+      final far = writeColumns(_at(text, 'e|----'.length), const [c]);
+      expect(far.text.split('\n')[1], 'B|----1-|');
+    });
+
+    test('two-digit frets: the column as wide as its widest', () {
+      final lines = writeColumns(_at('', 0), const [
+        [null, 10, 12, 12, 10, null],
+      ]).text.split('\n');
+      expect(lines.map((l) => l.substring(0, 6)).toList(), [
+        'e|----',
+        'B|-10-',
+        'G|-12-',
+        'D|-12-',
+        'A|-10-',
+        'E|----',
+      ]);
+    });
+
+    test('off a six-line phrase: a new one under the cursor\'s line or '
+        'phrase', () {
+      const text = 'Intro\ne|--3--|\nB|-5---|\n\nla la';
+      final under = writeColumns(_at(text, 1), const [c]).text.split('\n');
+      expect(under.sublist(0, 3), ['Intro', '', 'e|-0-${'-' * 74}|']);
+      // A two-line phrase isn't a guitar's: the chord goes under it.
+      final lines = writeColumns(_at(text, 'Intro\ne|-'.length), const [
+        c,
+      ]).text.split('\n');
+      expect(lines.sublist(1, 3), ['e|--3--|', 'B|-5---|']);
+      expect(lines[3], '');
+      expect(lines[4], startsWith('e|-0-'));
+      expect(lines.last, 'la la');
+    });
+  });
 }

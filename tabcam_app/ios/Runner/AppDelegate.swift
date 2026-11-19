@@ -2,6 +2,7 @@ import AVFoundation
 import AudioToolbox
 import Flutter
 import ImageIO
+import MediaToolbox
 import QuartzCore
 import UIKit
 
@@ -166,12 +167,15 @@ enum Sound {
 /// `tabcam/video_edit`, method `render`, the plan's `toChannel`): `input`
 /// and `output` paths, `video` (false for the sound alone, an `.m4a`), the
 /// part kept (`startMs`–`endMs`), the video's own sound (`own`: `volume`, 0
-/// to 2, its lane's level through the master's; left out: removed) and the
-/// song lane (`song`: `path`, `volume` (as `own`'s) and
+/// to 2, its lane's level through the master's, and `mix`, its channels
+/// and balance, `[ll, lr, rl, rr]`, left out when as recorded; left out:
+/// removed) and the song lane (`song`: `path`, `volume` and `mix` (as
+/// `own`'s) and
 /// `clips`, each `atMs` in the output, the song from `fromMs` to `toMs`, at
 /// `speed`, 1 for now), and what's drawn over the picture: `images` (PNGs)
 /// and `layers` (each its `image`'s index, `anchor`, `heightU`, `marginU`,
-/// `liftU`, `liftW`, `fromMs`, `toMs`, `fadeInMs` and `opacity`), and the
+/// `liftU`, `liftW`, `fromMs`, `toMs`, `fadeInMs`, `fadeOutMs` and
+/// `opacity`), and the
 /// fades (`fadeInMs`, `fadeOutMs`; left out: none): the picture, with its
 /// layers, from and to black, and the sound with it. With a `job`,
 /// `progress` calls back with `job` and `done` (0 to 1) every quarter of a
@@ -437,7 +441,7 @@ enum VideoEditor {
   /// `liftW` higher still, as a fraction of its width, above the tab's
   /// tallest band; a bottom band as wide as the frame), from `fromMs` to
   /// `toMs` (nil: the end) in the output, fading in over `fadeInMs` to
-  /// `opacity`.
+  /// `opacity` and out over `fadeOutMs` to its end.
   struct Layer: Equatable {
     var id = ""
     let image: Int
@@ -449,6 +453,7 @@ enum VideoEditor {
     var fromMs: Int64 = 0
     var toMs: Int64?
     var fadeInMs: Int64 = 0
+    var fadeOutMs: Int64 = 0
     var opacity: Float = 1
 
     /// Where it's drawn on a `frame` (upright, its origin at the top left),
@@ -478,6 +483,8 @@ enum VideoEditor {
     let url: URL
     var volume: Float = 1
     let clips: [Clip]
+    /// Its channels and balance; nil: as recorded.
+    var mix: [Float]? = nil
   }
 
   /// What `render` is asked.
@@ -489,6 +496,8 @@ enum VideoEditor {
     let endMs: Int64
     /// The video's own sound's volume; nil: removed.
     var ownVolume: Float? = 1
+    /// Its channels and balance (`[ll, lr, rl, rr]`); nil: as recorded.
+    var ownMix: [Float]? = nil
     var song: Song?
     /// What's drawn over the picture, each naming one of `images` (PNGs).
     var layers: [Layer] = []
@@ -506,6 +515,13 @@ enum VideoEditor {
       func volume(_ map: [String: Any]) -> Float {
         let v = (map["volume"] as? NSNumber)?.floatValue ?? 1
         return v.isNaN ? 1 : min(max(v, 0), VideoEditor.maxVolume)
+      }
+      // A lane's `mix`: nil when left out, or not four numbers.
+      func mix(_ map: [String: Any]) -> [Float]? {
+        guard let list = map["mix"] as? [Any], list.count == 4 else { return nil }
+        let values = list.compactMap { ($0 as? NSNumber)?.floatValue }
+        guard values.count == 4, !values.contains(where: \.isNaN) else { return nil }
+        return values.map { min(max($0, 0), 1) }
       }
       guard let input = args["input"] as? String,
         let output = args["output"] as? String,
@@ -525,7 +541,8 @@ enum VideoEditor {
               atMs: atMs, fromMs: fromMs, toMs: toMs,
               speed: (clip["speed"] as? NSNumber)?.doubleValue ?? 1))
         }
-        song = Song(url: URL(fileURLWithPath: path), volume: volume(lane), clips: clips)
+        song = Song(
+          url: URL(fileURLWithPath: path), volume: volume(lane), clips: clips, mix: mix(lane))
       }
       var images: [Data] = []
       for image in (args["images"] as? [Any]) ?? [] {
@@ -546,13 +563,16 @@ enum VideoEditor {
             heightU: number("heightU"), marginU: number("marginU"), liftU: number("liftU"),
             liftW: number("liftW"),
             fromMs: int64(layer, "fromMs") ?? 0, toMs: int64(layer, "toMs"),
-            fadeInMs: int64(layer, "fadeInMs") ?? 0,
+            fadeInMs: int64(layer, "fadeInMs") ?? 0, fadeOutMs: int64(layer, "fadeOutMs") ?? 0,
             opacity: min(max((layer["opacity"] as? NSNumber)?.floatValue ?? 1, 0), 1)))
       }
+      let own = args["own"] as? [String: Any]
+      let ownVolume: Float? = own.map { volume($0) }
+      let ownMix: [Float]? = own.flatMap { mix($0) }
       self.init(
         input: URL(fileURLWithPath: input), output: URL(fileURLWithPath: output),
         video: args["video"] as? Bool ?? true, startMs: startMs, endMs: endMs,
-        ownVolume: (args["own"] as? [String: Any]).map { volume($0) }, song: song,
+        ownVolume: ownVolume, ownMix: ownMix, song: song,
         layers: layers, images: images,
         fadeInMs: max(0, int64(args, "fadeInMs") ?? 0),
         fadeOutMs: max(0, int64(args, "fadeOutMs") ?? 0))
@@ -560,7 +580,8 @@ enum VideoEditor {
 
     init(
       input: URL, output: URL, video: Bool = true, startMs: Int64, endMs: Int64,
-      ownVolume: Float? = 1, song: Song? = nil, layers: [Layer] = [], images: [Data] = [],
+      ownVolume: Float? = 1, ownMix: [Float]? = nil, song: Song? = nil, layers: [Layer] = [],
+      images: [Data] = [],
       fadeInMs: Int64 = 0, fadeOutMs: Int64 = 0
     ) {
       self.input = input
@@ -569,6 +590,7 @@ enum VideoEditor {
       self.startMs = startMs
       self.endMs = endMs
       self.ownVolume = ownVolume
+      self.ownMix = ownMix
       self.song = song
       self.layers = layers
       self.images = images
@@ -621,12 +643,13 @@ enum VideoEditor {
     // The volumes that aren't 1 throughout, one per audio track: its lane's,
     // and the fades.
     var volumes: [AVMutableAudioMixInputParameters] = []
-    func mix(_ track: AVMutableCompositionTrack, at volume: Float) {
-      guard volume != 1 || plan.fades else { return }
+    func mix(_ track: AVMutableCompositionTrack, at volume: Float, stereo: [Float]?) {
+      guard volume != 1 || plan.fades || stereo != nil else { return }
       let parameters = AVMutableAudioMixInputParameters(track: track)
       fade(
         parameters, volume: volume, fadeInMs: plan.fadeInMs, fadeOutMs: plan.fadeOutMs,
         length: range.duration)
+      if let stereo { parameters.audioTapProcessor = stereoTap(stereo) }
       volumes.append(parameters)
     }
     var videoComposition: AVMutableVideoComposition?
@@ -661,7 +684,7 @@ enum VideoEditor {
           else { continue }
           try compAudio.insertTimeRange(
             audioRange, of: audio, at: audioRange.start - range.start)
-          mix(compAudio, at: each)
+          mix(compAudio, at: each, stereo: plan.ownMix)
         }
       }
     }
@@ -701,7 +724,7 @@ enum VideoEditor {
             CMTimeRange(start: audioRange.start + from, end: audioRange.start + to), of: audio,
             at: ms(clip.atMs))
         }
-        mix(compAudio, at: each)
+        mix(compAudio, at: each, stereo: song.mix)
       }
     }
 
@@ -803,26 +826,39 @@ enum VideoEditor {
       shape.contentsGravity = .resize
       shape.opacity = 0
       // Outside each animation's time it has no effect: opacity stays 0.
-      let fade = min(Double(layer.fadeInMs) / 1000, end - start)
-      if fade > 0 {
-        let fadeIn = CABasicAnimation(keyPath: "opacity")
-        fadeIn.fromValue = 0
-        fadeIn.toValue = layer.opacity
-        fadeIn.beginTime = AVCoreAnimationBeginTimeAtZero + start
-        fadeIn.duration = fade
-        fadeIn.isRemovedOnCompletion = false
-        fadeIn.fillMode = .removed
-        shape.add(fadeIn, forKey: "fade")
+      // Its fade in, its time at its opacity, then its fade out (the fades
+      // cut to fit its time, the fade in first).
+      let fadeIn = min(Double(layer.fadeInMs) / 1000, end - start)
+      let fadeOut = min(Double(layer.fadeOutMs) / 1000, end - start - fadeIn)
+      if fadeIn > 0 {
+        let rise = CABasicAnimation(keyPath: "opacity")
+        rise.fromValue = 0
+        rise.toValue = layer.opacity
+        rise.beginTime = AVCoreAnimationBeginTimeAtZero + start
+        rise.duration = fadeIn
+        rise.isRemovedOnCompletion = false
+        rise.fillMode = .removed
+        shape.add(rise, forKey: "fade")
       }
-      if end - start > fade {
+      if end - start > fadeIn + fadeOut {
         let show = CABasicAnimation(keyPath: "opacity")
         show.fromValue = layer.opacity
         show.toValue = layer.opacity
-        show.beginTime = AVCoreAnimationBeginTimeAtZero + start + fade
-        show.duration = end - start - fade
+        show.beginTime = AVCoreAnimationBeginTimeAtZero + start + fadeIn
+        show.duration = end - start - fadeIn - fadeOut
         show.isRemovedOnCompletion = false
         show.fillMode = .removed
         shape.add(show, forKey: "show")
+      }
+      if fadeOut > 0 {
+        let fall = CABasicAnimation(keyPath: "opacity")
+        fall.fromValue = layer.opacity
+        fall.toValue = 0
+        fall.beginTime = AVCoreAnimationBeginTimeAtZero + end - fadeOut
+        fall.duration = fadeOut
+        fall.isRemovedOnCompletion = false
+        fall.fillMode = .removed
+        shape.add(fall, forKey: "fadeOut")
       }
       parent.addSublayer(shape)
     }
@@ -882,6 +918,85 @@ enum VideoEditor {
 
   /// The loudest a lane can be: 200% (its level through the master's).
   static let maxVolume: Float = 2
+
+  /// What a stereo tap keeps: its matrix, and the format it's given.
+  final class StereoTapState {
+    let matrix: [Float]
+    var channels = 0
+    var interleaved = false
+    var float32 = false
+    init(_ matrix: [Float]) { self.matrix = matrix }
+  }
+
+  /// `matrix` (`[ll, lr, rl, rr]`) applied in place to `frames` frames of
+  /// two-channel float samples, `left` and `right` `stride` apart.
+  static func applyStereo(
+    _ matrix: [Float], left: UnsafeMutablePointer<Float>, right: UnsafeMutablePointer<Float>,
+    stride: Int, frames: Int
+  ) {
+    let (ll, lr, rl, rr) = (matrix[0], matrix[1], matrix[2], matrix[3])
+    for i in 0..<frames {
+      let l = left[i * stride]
+      let r = right[i * stride]
+      left[i * stride] = ll * l + lr * r
+      right[i * stride] = rl * l + rr * r
+    }
+  }
+
+  /// A processing tap giving each side of a track's sound what `matrix`
+  /// (`[ll, lr, rl, rr]`) says of its two channels, after the mix's
+  /// volume. A one-channel track is left as it is (it plays on both sides,
+  /// in the middle: its balance isn't applied here). Nil when the tap
+  /// can't be made (the lane then plays as recorded).
+  static func stereoTap(_ matrix: [Float]) -> MTAudioProcessingTap? {
+    let state = Unmanaged.passRetained(StereoTapState(matrix))
+    var callbacks = MTAudioProcessingTapCallbacks(
+      version: kMTAudioProcessingTapCallbacksVersion_0,
+      clientInfo: state.toOpaque(),
+      init: { _, clientInfo, storage in storage.pointee = clientInfo },
+      finalize: { tap in
+        Unmanaged<StereoTapState>.fromOpaque(MTAudioProcessingTapGetStorage(tap)).release()
+      },
+      prepare: { tap, _, format in
+        let state = Unmanaged<StereoTapState>.fromOpaque(MTAudioProcessingTapGetStorage(tap))
+          .takeUnretainedValue()
+        let f = format.pointee
+        state.channels = Int(f.mChannelsPerFrame)
+        state.interleaved = f.mFormatFlags & kAudioFormatFlagIsNonInterleaved == 0
+        state.float32 = f.mFormatFlags & kAudioFormatFlagIsFloat != 0 && f.mBitsPerChannel == 32
+      },
+      unprepare: nil,
+      process: { tap, frames, _, buffers, framesOut, flagsOut in
+        guard
+          MTAudioProcessingTapGetSourceAudio(tap, frames, buffers, flagsOut, nil, framesOut)
+            == noErr
+        else { return }
+        let state = Unmanaged<StereoTapState>.fromOpaque(MTAudioProcessingTapGetStorage(tap))
+          .takeUnretainedValue()
+        guard state.channels == 2, state.float32 else { return }
+        let list = UnsafeMutableAudioBufferListPointer(buffers)
+        let n = Int(framesOut.pointee)
+        if state.interleaved {
+          guard list.count >= 1, let data = list[0].mData?.assumingMemoryBound(to: Float.self)
+          else { return }
+          VideoEditor.applyStereo(state.matrix, left: data, right: data + 1, stride: 2, frames: n)
+        } else {
+          guard list.count >= 2,
+            let left = list[0].mData?.assumingMemoryBound(to: Float.self),
+            let right = list[1].mData?.assumingMemoryBound(to: Float.self)
+          else { return }
+          VideoEditor.applyStereo(state.matrix, left: left, right: right, stride: 1, frames: n)
+        }
+      })
+    var tap: MTAudioProcessingTap?
+    let status = MTAudioProcessingTapCreate(
+      kCFAllocatorDefault, &callbacks, kMTAudioProcessingTapCreationFlag_PostEffects, &tap)
+    guard status == noErr, let tap else {
+      state.release()
+      return nil
+    }
+    return tap
+  }
 
   /// How many times a lane at `volume` is inserted, and at what volume
   /// each: once, at it, up to 1 (an audio mix plays nothing louder); twice,

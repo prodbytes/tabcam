@@ -69,6 +69,12 @@ class EditLayersTest {
         assertEquals(0.4f, title.alphaAt(1_500_000), 1e-5f)
         assertEquals(0.8f, title.alphaAt(3_000_000), 0f)
         assertEquals(0.8f, title.alphaAt(600_000_000), 0f)
+        // A card: in over 6 s, out over 6 s to its end at 15 s.
+        val card = PlanLayer("title", 0, LayerAnchor.TOP_LEFT, toMs = 15_000, fadeInMs = 6000, fadeOutMs = 6000)
+        assertEquals(0.5f, card.alphaAt(3_000_000), 1e-5f)
+        assertEquals(1f, card.alphaAt(7_500_000), 0f)
+        assertEquals(0.5f, card.alphaAt(12_000_000), 1e-5f)
+        assertEquals(0f, card.alphaAt(15_000_000), 0f)
     }
 
     @Test
@@ -105,6 +111,10 @@ class EditLayersTest {
                         "marginU" to 0.03, "liftU" to 0, "liftW" to 0.25, "fromMs" to 0, "toMs" to null,
                         "fadeInMs" to 0, "opacity" to 1.0,
                     ),
+                    mapOf(
+                        "id" to "title", "image" to 0, "anchor" to "topLeft", "fromMs" to 0, "toMs" to 15_000,
+                        "fadeInMs" to 6000, "fadeOutMs" to 6000, "opacity" to 1.0,
+                    ),
                 ),
             ),
         )
@@ -112,6 +122,7 @@ class EditLayersTest {
             listOf(
                 PlanLayer("tab", 0, LayerAnchor.BOTTOM_FULL, toMs = 500),
                 PlanLayer("mark", 0, LayerAnchor.BOTTOM_RIGHT, heightU = 0.03f, marginU = 0.03f, liftW = 0.25f),
+                PlanLayer("title", 0, LayerAnchor.TOP_LEFT, toMs = 15_000, fadeInMs = 6000, fadeOutMs = 6000),
             ),
             plan.layers,
         )

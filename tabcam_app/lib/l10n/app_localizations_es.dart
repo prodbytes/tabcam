@@ -343,7 +343,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get eventKeepOnePage =>
-      'Una captura conserva al menos una página; elimina la captura en su lugar.';
+      'Una captura compartida conserva al menos un archivo: solo su dueño elimina la captura.';
+
+  @override
+  String eventDeleteLastFile(String name) {
+    return '\"$name\" es su único archivo, así que la captura se va con él, a Eliminados en la pestaña Perfil: puedes restaurarla allí hasta que la borres para siempre.';
+  }
 
   @override
   String get eventRename => 'Cambiar nombre';
@@ -617,10 +622,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get camStop => 'Detener';
 
   @override
-  String get camRecKey => 'Grabar (1)';
+  String get camRecKey => 'Grabar (.)';
 
   @override
-  String get camStopKey => 'Detener (1) · nueva toma (/) · repetir (.)';
+  String get camStopKey => 'Detener · nueva toma (/) · repetir (.)';
 
   @override
   String get camMicChoose => 'Micrófono';
@@ -1867,7 +1872,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dictionaryIntro =>
-      'Escribe un acorde (C, Am7, F#m7b5, G/B) o una escala (A minor pentatonic, D dorian, C major scale) para verlo en la guitarra. Cualquier otra cosa se busca en YouTube.';
+      'Escribe un acorde (C, Am7, F#m7b5, G/B) o una escala (A minor pentatonic, D dorian, C major scale) para verlo en la guitarra. Cualquier otra cosa se busca en YouTube y Cifra Club.';
 
   @override
   String get dictionaryChord => 'Acorde';
@@ -1876,8 +1881,51 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dictionaryScale => 'Escala';
 
   @override
+  String dictionaryWriteChord(String frets) {
+    return 'Escribir $frets en el texto';
+  }
+
+  @override
+  String dictionaryWriteScale(String scale) {
+    return 'Escribir $scale en el texto';
+  }
+
+  @override
+  String get dictionaryWriteBusy => 'El texto no se puede cambiar ahora';
+
+  @override
   String get dictionaryNoVoicings =>
       'No hay forma de tocarlo en cuatro trastes.';
+
+  @override
+  String dictionaryAlsoWritten(String forms) {
+    return 'También se escribe $forms';
+  }
+
+  @override
+  String get dictionaryHalfDiminished => 'semidisminuido';
+
+  @override
+  String get dictionaryMajorSeventh => 'séptima mayor';
+
+  @override
+  String get dictionaryMinorMajorSeventh => 'menor con séptima mayor';
+
+  @override
+  String get dictionaryDiminished => 'disminuido';
+
+  @override
+  String get dictionaryDiminishedSeventh => 'séptima disminuida';
+
+  @override
+  String get dictionaryAugmented => 'aumentado';
+
+  @override
+  String get dictionarySymbols => 'Símbolos de acordes';
+
+  @override
+  String get dictionarySymbolsTyping =>
+      'Para escribirlos: en un teléfono, mantén pulsada la o para ø y º; en un Mac, ⌥O escribe ø, ⌥J ∆ y ⌥0 º. O escribe las letras (m7b5, maj7 o ^7, dim u o, aug) o el nombre (semidisminuido).';
 
   @override
   String dictionaryYouTube(String query) {
@@ -1899,6 +1947,22 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dictionaryYouTubeOpen => 'Abrir en YouTube';
+
+  @override
+  String get dictionaryCifraClub => 'Tablaturas en Cifra Club';
+
+  @override
+  String get dictionaryCifraClubSearching => 'Buscando en Cifra Club…';
+
+  @override
+  String get dictionaryCifraClubNone => 'Cifra Club no encontró tablaturas.';
+
+  @override
+  String get dictionaryCifraClubFailed =>
+      'No se pudieron cargar los resultados de Cifra Club.';
+
+  @override
+  String get dictionaryCifraClubOpen => 'Abrir en Cifra Club';
 
   @override
   String dictionaryFret(int fret) {
@@ -1989,6 +2053,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoEditSpaceKey => 'espacio';
 
   @override
+  String get videoEditToStart => 'Al inicio';
+
+  @override
+  String get videoEditToEnd => 'Al final';
+
+  @override
   String get videoEditPickTrack => 'Elegir una pista';
 
   @override
@@ -2024,10 +2094,32 @@ class AppLocalizationsEs extends AppLocalizations {
       'A lo largo del video: arrástrala para moverla, sus extremos para recortarla';
 
   @override
-  String get videoEditTrackEarlier => 'Una décima de segundo antes';
+  String videoEditCutStartAt(String time) {
+    return 'Inicio $time';
+  }
 
   @override
-  String get videoEditTrackLater => 'Una décima de segundo después';
+  String videoEditCutEndAt(String time) {
+    return 'Fin $time';
+  }
+
+  @override
+  String get videoEditStartEarlier => 'Empezar 0,05 s antes';
+
+  @override
+  String get videoEditStartLater => 'Empezar 0,05 s después';
+
+  @override
+  String get videoEditEndEarlier => 'Terminar 0,05 s antes';
+
+  @override
+  String get videoEditEndLater => 'Terminar 0,05 s después';
+
+  @override
+  String get videoEditTrackEarlier => '0,05 s antes';
+
+  @override
+  String get videoEditTrackLater => '0,05 s después';
 
   @override
   String videoEditTrackVolumeLevel(int percent) {
@@ -2202,7 +2294,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get videoEditTitleAbout =>
-      'Arriba a la izquierda · aparece poco a poco en 3 s';
+      'Arriba a la izquierda · los primeros y los últimos 15 s';
 
   @override
   String get videoEditTitleLine1 => 'Primera línea';
@@ -2457,4 +2549,176 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get camTryAgain => 'Reintentar';
+
+  @override
+  String get videoEditLaneChannels => 'Canales';
+
+  @override
+  String get videoEditChannelsStereo => 'Estéreo';
+
+  @override
+  String get videoEditChannelsStereoTip => 'Como se grabó';
+
+  @override
+  String get videoEditChannelsLeft => 'Izquierdo';
+
+  @override
+  String get videoEditChannelsLeftTip => 'El canal izquierdo en ambos lados';
+
+  @override
+  String get videoEditChannelsRight => 'Derecho';
+
+  @override
+  String get videoEditChannelsRightTip => 'El canal derecho en ambos lados';
+
+  @override
+  String get videoEditChannelsMono => 'Mono';
+
+  @override
+  String get videoEditChannelsMonoTip =>
+      'Ambos canales mezclados, en ambos lados';
+
+  @override
+  String get videoEditLaneBalance => 'Balance';
+
+  @override
+  String get videoEditBalanceCentre => 'Centro';
+
+  @override
+  String get videoEditStereoPreviewNote =>
+      'La descarga tiene los canales y el balance; la vista previa reproduce el sonido como se grabó.';
+
+  @override
+  String videoEditBalanceLeft(int percent) {
+    return 'I $percent';
+  }
+
+  @override
+  String videoEditBalanceRight(int percent) {
+    return 'D $percent';
+  }
+
+  @override
+  String get keysHelp => 'Atajos de teclado';
+
+  @override
+  String get keysHelpTooltip => 'Atajos de teclado (H)';
+
+  @override
+  String get keysTab => 'Pasar la tablatura';
+
+  @override
+  String get keysNextPhrase =>
+      'Frase siguiente (también con un pedal pasapáginas)';
+
+  @override
+  String get keysPreviousPhrase =>
+      'Frase anterior (también ←, si no suena nada)';
+
+  @override
+  String get keysTakes => 'Tomas';
+
+  @override
+  String get keysRetake =>
+      'Empezar una toma con la canción desde el principio; grabando, descartar la toma y grabarla de nuevo';
+
+  @override
+  String get keysCut =>
+      'Empezar una toma con la canción donde está; grabando, guardar la toma y empezar la siguiente';
+
+  @override
+  String get keysPlayAlongCam =>
+      'Tocar junto (con la barra lateral abierta; ↑ y ↓ pasan la tablatura)';
+
+  @override
+  String get keysPlayAlongPlayer =>
+      'Tocar junto (con la barra lateral abierta)';
+
+  @override
+  String get keysPlayPause => 'Reproducir o pausar la canción';
+
+  @override
+  String get keysRestart => 'Volver al principio, con la cuenta';
+
+  @override
+  String get keysSkip => '10 segundos atrás o adelante';
+
+  @override
+  String get keysPreview => 'Vista previa';
+
+  @override
+  String get keysPlayPausePreview => 'Reproducir o pausar la vista previa';
+
+  @override
+  String get keysToStart =>
+      'Al principio de la parte guardada (otra vez: del video)';
+
+  @override
+  String get keysToEnd => 'Al final de la parte guardada (otra vez: del video)';
+
+  @override
+  String get keysStepTenth => 'Una décima de segundo atrás o adelante';
+
+  @override
+  String get keysStepSecond => 'Un segundo atrás o adelante';
+
+  @override
+  String get keysGeneral => 'En todas partes';
+
+  @override
+  String get keysShowHelp => 'Mostrar u ocultar estos atajos';
+
+  @override
+  String get keysInFields =>
+      'Al escribir en un campo, las teclas escriben como siempre.';
+
+  @override
+  String get keySpace => 'Espacio';
+
+  @override
+  String get keyAnyKey => 'Cualquier tecla';
+
+  @override
+  String get keyBackspace => 'Retroceso';
+
+  @override
+  String get keyPageUp => 'Re Pág';
+
+  @override
+  String get keyHome => 'Inicio';
+
+  @override
+  String get keyEnd => 'Fin';
+
+  @override
+  String get keyShift => 'Mayús';
+
+  @override
+  String get videoEditDelay => 'Retraso';
+
+  @override
+  String get videoEditDelayHint =>
+      'Para corregir el retraso de un altavoz o auriculares Bluetooth, milisegundo a milisegundo.';
+
+  @override
+  String videoEditDelayEarlier(int ms) {
+    return '$ms ms antes';
+  }
+
+  @override
+  String videoEditDelayLater(int ms) {
+    return '$ms ms después';
+  }
+
+  @override
+  String get videoEditDelayType => 'Escribe el retraso';
+
+  @override
+  String get videoEditDelayTitle => 'Retraso de la canción';
+
+  @override
+  String get videoEditDelayHelp => 'Milisegundos: + después, − antes';
+
+  @override
+  String get videoEditDelaySet => 'Aplicar';
 }

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
@@ -168,6 +169,7 @@ void main() {
           'fromMs': 0,
           'toMs': 1210,
           'fadeInMs': 0,
+          'fadeOutMs': 0,
           'opacity': 1.0,
         },
         containsPair('image', 1),
@@ -234,6 +236,21 @@ void main() {
       expect(band.alphaAt(ms(1000)), 1);
       expect(band.alphaAt(ms(1999)), 1);
       expect(band.alphaAt(ms(2000)), 0);
+      // Fading out to its end.
+      const card = PlanLayer(
+        id: 'title',
+        look: BandLook('x'),
+        anchor: LayerAnchor.topLeft,
+        to: Duration(seconds: 12),
+        fadeIn: Duration(seconds: 6),
+        fadeOut: Duration(seconds: 4),
+      );
+      expect(card.alphaAt(ms(3000)), closeTo(0.5, 1e-9));
+      expect(card.alphaAt(ms(7000)), 1);
+      expect(card.alphaAt(ms(10000)), closeTo(0.5, 1e-9));
+      expect(card.alphaAt(ms(12000)), 0);
+      expect(card.within(ms(11999)), isTrue);
+      expect(card.within(ms(12000)), isFalse);
     });
 
     test('is placed by its anchor, in fractions of the short side', () {
@@ -268,6 +285,83 @@ void main() {
         const Rect.fromLTWH(256, 256, 1024, 512),
       );
     });
+  });
+
+  testWidgets('playing outside the kept part, the editor\'s preview draws '
+      'neither layers nor black; paused, as before', (tester) async {
+    // A band along the bottom all along, and fades of 2 s, over 10 s kept.
+    const band = PlanLayer(
+      id: 'tab',
+      look: BandLook('e|--3--|'),
+      anchor: LayerAnchor.bottomFull,
+    );
+    final fades = Fades(fadeIn: ms(2000), fadeOut: ms(2000), length: ms(10000));
+    final pictures = LayerPictures();
+    addTearDown(pictures.dispose);
+
+    /// How dark a white frame is painted, at its top (the fades' black
+    /// only) and at its bottom left (the band's strip too): 0 to 255.
+    Future<(int, int)> painted(
+      Duration at, {
+      required bool playing,
+      Duration? kept,
+    }) async {
+      const size = Size(128, 128);
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      canvas.drawRect(Offset.zero & size, Paint()..color = Colors.white);
+      final time = ValueNotifier(at);
+      final plays = ValueNotifier(playing);
+      EditLayersPainter(
+        const [band],
+        time,
+        pictures,
+        fades: fades,
+        kept: kept,
+        playing: plays,
+      ).paint(canvas, size);
+      time.dispose();
+      plays.dispose();
+      final picture = recorder.endRecording();
+      final bytes = (await tester.runAsync(() async {
+        final image = await picture.toImage(128, 128);
+        final data = await image.toByteData();
+        image.dispose();
+        return data!;
+      }))!;
+      picture.dispose();
+      int dark(int x, int y) => 255 - bytes.getUint8((y * 128 + x) * 4);
+      return (dark(64, 1), dark(1, 126));
+    }
+
+    final kept = ms(10000);
+    // Playing in a part cut off, before and after: the frame as it is.
+    for (final at in [ms(-1000), ms(-1), kept, ms(12000)]) {
+      final drawn = await painted(at, playing: true, kept: kept);
+      expect(drawn, (0, 0), reason: '$at');
+    }
+    // Playing in the kept part: black at its start, the band at its
+    // level in the middle, black again at its very end.
+    expect(await painted(Duration.zero, playing: true, kept: kept), (255, 255));
+    final (top, bottom) = await painted(ms(5000), playing: true, kept: kept);
+    expect(top, 0);
+    expect(bottom, greaterThan(100));
+    final (lastTop, _) = await painted(ms(9999), playing: true, kept: kept);
+    expect(lastTop, greaterThan(250));
+
+    // Paused, there and outside it: the layers as they are then, no
+    // black.
+    for (final at in [ms(-1000), Duration.zero, ms(5000), kept, ms(12000)]) {
+      final (top, bottom) = await painted(at, playing: false, kept: kept);
+      expect(top, 0, reason: '$at');
+      // Before its start the band isn't there yet.
+      expect(bottom, at < Duration.zero ? 0 : greaterThan(100), reason: '$at');
+    }
+
+    // No kept part said (the file screen's player, which plays the kept
+    // part only): drawn wherever it is, as before.
+    expect(await painted(ms(-1000), playing: true), (255, 255));
+    expect(await painted(ms(12000), playing: true), (255, 255));
   });
 
   group('the layers over a playing video', () {

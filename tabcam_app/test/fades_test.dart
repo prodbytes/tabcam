@@ -473,12 +473,17 @@ void main() {
         Fades(fadeIn: s(1.5), fadeOut: s(8), length: s(180)),
       );
 
-      // No fades: both none; the chip with them.
+      // No fades: both none; the chip with them. (The side panel scrolls,
+      // over the lanes.)
+      await tester.ensureVisible(find.byKey(const Key('video-edit-fades-off')));
+      await settle(tester);
       await tester.tap(find.byKey(const Key('video-edit-fades-off')));
       await settle(tester);
       expect(chip(tester).selected, isFalse);
       expect(slider(tester, 'in').value, 0);
       // Back on: as they were.
+      await tester.ensureVisible(find.byKey(const Key('video-edit-fades')));
+      await settle(tester);
       await tester.tap(find.byKey(const Key('video-edit-fades')));
       await settle(tester);
       expect(

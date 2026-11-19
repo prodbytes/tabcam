@@ -4,7 +4,10 @@ Basic edits of a video (a take from [Cam](cam.md), or a video added) on
 one time axis, in **two sound lanes, mixed**: trim its start and end,
 set its own sound's level, and add a song (one of the capture's
 recordings, videos or takes, or a sound file) placed along it at a
-level of its own, both through a **master** volume (up to 200%); and,
+level of its own, each lane with its **channels** (a take recorded on
+the left only can play on both sides) and **balance**
+([stereo](#a-lanes-channels-and-balance)), both through a **master**
+volume (up to 200%); and,
 **on the video**, a take's tab drawn over it as
 it showed while recording (its **size**, **background** and **colours**
 the user's to change, [the tab's style](#layers)), a **title** (the capture's name, or text
@@ -31,15 +34,25 @@ it is: no Save, and no waiting for the video to be made again. Players
 play the video as its edit says, from the same
 [render plan](#the-render-plan) Download renders
 ([`edited_playback.dart`](../tabcam_app/lib/screens/edited_playback.dart)):
-the kept part only, the two lanes mixed: the video's own sound at its
+the kept part only (the editor's own preview plays from wherever its
+playhead is, [below](#the-edit-screen)), the two lanes mixed: the video's own sound at its
 level (through the video's player), and the song's player along it, in
 its clip (from where the plan says it is, paused outside it; checked
 every tenth of a second, as the
-[section](cam.md#playing-along-with-a-file) is). Every 2 seconds, while
-both play, the song's place is compared with where the plan has it, and
-it's sought again when it's more than 150 ms off, so a long video's song
-doesn't drift on (the downloaded file is exact whatever the preview
-does). A change that moves nothing (a level, Mute: a muted lane plays
+[section](cam.md#playing-along-with-a-file) is). <a id="preview-in-step"></a>**The song is
+kept in step with the video** at every check while both play: both
+players are asked where they are at once, and the song's error against
+where the plan has it is corrected. Within 8 ms (below what's heard as
+two sounds) it plays at its speed; up to 250 ms off, its speed is nudged
+by up to 5% either way (heard as the same song) to catch up over about
+a second, then put back; further off (a seek, a stall), it's sought
+again. Its start is sought a little ahead of the video, by as much as it
+was found late the last times it started (its player's start-up, learnt
+as it plays, 400 ms at most), so it starts in step instead of catching
+up. Until 2026-11-18 it was only checked every 2 seconds and sought when
+more than 150 ms off, which left a start-up lag of up to that, heard as
+the song behind the take (the downloaded file is exact whatever the
+preview does). A change that moves nothing (a level, Mute: a muted lane plays
 on at 0, or a fade) doesn't stop or re-seek the song. The plan's
 [layers](#layers) are drawn over the picture as it plays, and its
 [fades](#fades) with them. The
@@ -66,12 +79,28 @@ plays and downloads as the video itself ([library](library.md#events)).
 ([`video_edit.dart`](../tabcam_app/lib/capture/video_edit.dart)): nothing
 is uploaded to make it, and no server is involved.
 
-**The edit screen** ([`video_edit_screen.dart`](../tabcam_app/lib/screens/video_edit_screen.dart)),
-with the file's name in its app bar and **ⓘ** at its right (it says
-"Your edit is kept as you make it and plays with the video; Download
-makes a file of it."), opening with the video's edit as it was left:
+<a id="the-edit-screen"></a>**The edit screen** ([`video_edit_screen.dart`](../tabcam_app/lib/screens/video_edit_screen.dart)),
+with the file's name in its app bar, then **Reset** and **Download**
+([below](#reset-and-download)), then **ⓘ** (it says "Your edit is kept
+as you make it and plays with the video; Download makes a file of
+it."), opening with the video's edit as it was left. It's **a frame
+that doesn't scroll**, as a small video editor's: **the viewer** on
+top; on a phone, under it, the rest (the **Master**, **On the video**
+or the fields one of its chips opened, the song's details) in a list
+that scrolls; and docked at the bottom edge, the whole width, **the
+transport** right over **the lanes** (the ruler, the Take lane, the
+Song lane and the cut's steps). From 840 points wide, or 560 in a
+window under 480 high (a phone on its side), the rest is a panel
+beside the viewer instead (320 points, at most 40% of the width),
+scrolling on its own. On a phone the viewer is as high as the picture
+needs, leaving the list at least 160 points (a tall video takes the
+rest of the room). While the on-screen keyboard is open (the title
+typed in), the transport and the lanes give their room to the viewer
+and the field, and come back as it closes; in a window too short for
+them, the cut's steps go first, then the lanes, then the transport.
 
-- **The preview**, at the top, at most a third of the screen: the video
+- **The viewer**, at the top: the video as large as its box allows, on
+  black (a tap on the black plays or pauses it): the video
   (its taps are the [on-picture controls'](#on-the-picture): a tap on
   what's drawn picks it, elsewhere it plays or pauses; on a phone, a
   long press on the tab's band opens its style),
@@ -79,18 +108,30 @@ makes a file of it."), opening with the video's edit as it was left:
   tab, the title, the watermark as this user's download would have
   it), drawn by the same code, so the preview is what the file will be
   (while the title's text is being edited, the title shows as it ends
-  up rather than fading in, so it's seen at the start too). While it
+  up, the whole kept part through, rather than as its cards fade in and
+  out, so it's seen wherever the preview is). While it
   plays, the [fades](#fades) darken it from and to black and ramp both
   lanes with it; paused, the frame shows as it is (a trim's grip shows
-  the frame it cuts at, not black). It plays the
-  **kept part** only, from its start when outside it, paused back at its
-  start at its end, with both lanes as set, as the edit is played
-  everywhere.
+  the frame it cuts at, not black). **It plays from where the playhead
+  is**, anywhere in the video: in the kept part as the edit plays it
+  (both lanes as set, the fades, what's drawn over it); in a cut part
+  (dimmed on the lanes) the video as it is, its own sound at its lane's
+  level, no song, nothing drawn over it and no black. Playing into the
+  kept part from before it, the edit takes over there; reaching **the
+  kept part's end** it stops and rests there, on its last frame, and
+  Play then starts again from the kept part's start; started after the
+  kept end, it plays on to the video's end. A click on the ruler or a
+  lane while it plays keeps it playing from there. (The file screen's
+  player plays the kept part only, as above.) A player that fails (a
+  play the browser refused, a file it can't read on) says "This video
+  can't be played here" with **Try again**, which opens it again with
+  the edit as it was kept.
 - <a id="on-the-picture"></a>**On the picture** (a video editor's
   on-screen controls, [`on_picture.dart`](../tabcam_app/lib/screens/on_picture.dart)):
   **while the preview is paused**, each layer drawn at that frame has a
-  thin white outline: the take's band showing then, the title (from
-  the start, though it fades in) and the watermark. Nothing of it shows
+  thin white outline: the take's band showing then, the title while one
+  of its cards is on (all through it, though it fades in and out) and
+  the watermark. Nothing of it shows
   while it plays. **A tap picks** what's drawn (the title also opens its
   text, as ✎ does, playing or not); paused, a tap on the one picked, or
   on the picture outside every layer, plays (outside, nothing is picked
@@ -118,28 +159,92 @@ makes a file of it."), opening with the video's edit as it was left:
   While a fade covers the frame shown, a **badge** at the picture's top
   right says so ("Fade in · 3.0 s", "Fade out · 3.0 s"); a tap on it
   opens the fades' sliders (on a phone, in place of the chips).
-- **Under it, on one row**: **Play** / **Pause** (its tooltip naming
-  the space bar: **the space bar** plays and pauses the preview too, as
-  a tap on it does, wherever the editor is clicked, but not while the
-  title is typed in, nor with Ctrl, Alt or ⌘ held), **the current time**
-  (`0:12.3`, to the tenth of a second: the trims are set by it), the
-  part kept (`Keep 0:02.5–0:41.0`, in the primary colour once trimmed;
-  it shrinks to fit at large text sizes), and **Start here** (|◀) and
-  **End here** (▶|), which set either end where the preview is. The
-  kept part is at least half a second long.
-- **The timeline**: a **ruler** (the video's times, m:ss, a tick as
-  often as there's room for its time; its times stay small at large
+- **The transport**, one row 48 points high right over the lanes: at
+  its left **the current time** (`0:12.3`, to the tenth of a second)
+  over the part kept (`Keep 0:02.5–0:41.0`, in the primary colour once
+  trimmed; both shrink to fit at large text sizes); in the middle **To
+  the start** (⏮), **Play** / **Pause** (filled, larger) and **To the
+  end** (⏭); at its right **Start here** (|◀) and **End here** (▶|),
+  which set either end where the preview is (icons with tooltips,
+  named from 720 points wide). **To the start** goes to the kept
+  part's start, or, there already, the video's, playing on if it
+  played; **To the end** pauses and goes to the kept part's end, or,
+  there already, the video's. Play / Pause's tooltip names the space
+  bar: **the space bar** plays and pauses the preview too, as a tap on
+  it does, wherever the editor is clicked. **Home** and **End** are To
+  the start and To the end, and **←** / **→** move the preview a tenth
+  of a second (with Shift, a second; held, a seek at most every
+  150 ms). **H** lists these keys ([keyboard
+  shortcuts](keyboard-shortcuts.md), also the app bar's keyboard
+  button). No key does while the title is typed in, nor with Ctrl, Alt
+  or ⌘ held; Home, End and the arrows only while nothing in the editor
+  has the keyboard (a slider's arrows are its own; a click on an empty
+  spot gives it back). During a download the row says "Making the
+  file…" instead. The kept part is at least half a second long. **A cut's or the song's
+  time** (the part kept, the cut's ends under the lanes, where the song
+  starts, how far it was moved, the part of it used) is shown to the
+  tenth of a second when it's on one, else **to the hundredth**
+  (`0:02.55`, `0:01.26`), so every step of ‹ and › shows, and a cut on
+  one of the song's marks reads as it is.
+- <a id="waveforms"></a>**Each lane draws its sound**: a waveform over
+  its bar, the Take lane's from the video's own sound, the Song lane's
+  from the song's file where the song plays along the video (each clip
+  of one lined up in clips, the part used of one placed by hand), each
+  point's loudest mirrored about the bar's middle, in the text's colour,
+  brighter in the part kept and dim outside it, scaled so the loudest of
+  each is the bar's height (a quiet take shows as well as a loud song).
+  The sound is read once, as the editor opens or a song is picked, on
+  the device with the same readers as [the song's line-up](#a-takes-song-lined-up)
+  ([`SoundReader`](../tabcam_app/lib/capture/sound_reader.dart): Web
+  Audio in the browser, `MediaCodec` on Android, `AVAssetReader` on
+  iOS), at 4000 samples a second and kept as its loudest every 5 ms
+  ([`waveform.dart`](../tabcam_app/lib/capture/waveform.dart); at most
+  30 minutes), so it stays fine zoomed in all the way ([zoom](#zoom)).
+  Until it's read, and where it can't be (no reader on a desktop build,
+  no sound in the file, a format not decoded), the bar shows without
+  it, as before; it never holds anything back, and nothing is sent
+  anywhere.
+- <a id="zoom"></a>**The timeline zooms**: **Zoom out** and **Zoom in**
+  (magnifiers) sit in the corner left of the ruler, over the lanes'
+  headers, with the zoom between them once it isn't the whole video
+  (`4×`, in the primary colour). Zoom goes 1×, 2×, 4×, 8×, 16× and 32×
+  (at 32×, a 3-minute take's lanes show under 6 s at once), each a step;
+  Ctrl / ⌘ + the mouse wheel, and a trackpad's pinch, zoom too while
+  zoomed in. Zoomed in, the ruler, both lanes' bars and the playhead
+  are as many times wider, on their one time axis, and scroll sideways
+  together (a scrollbar under them; the wheel or a trackpad's sideways
+  swipe), the lanes' headers staying put at their left. Zooming keeps
+  the playhead where it was on screen. While the preview plays, the
+  timeline scrolls to keep the playhead in view (a quarter in from the
+  left once it would leave it). Everything on the lanes works as at 1×,
+  at the zoom's precision: a tap or a drag on the ruler or a lane is
+  where it is in time, a grip or the song dragged moves as many times
+  less time per point, and **a grip snaps to the song's marks within a
+  hundredth of the part in view** (no less than a twentieth of a second
+  at 1×, down to a millisecond at 32×) rather than of the whole video.
+  The zoom isn't kept: the editor opens on the whole video.
+- **The timeline**, docked at the bottom: a **ruler** 32 points high
+  (the video's times, m:ss, a tick as
+  often as there's room for its time, down to a tenth of a second
+  zoomed in, "0:01.5"; its times stay small at large
   text sizes; on a take with its song lined up, a small flag in the
   primary colour at each of [the song's marks](#the-songs-marks), where
-  it starts and stops), over two lanes, **one time axis**: each lane's bar spans
-  the whole video, lined up under the ruler, with its **volume** at its
-  left; **where the preview is** is a line across the ruler and both
-  lanes. Tapped or dragged, the ruler takes the preview anywhere in the
-  video (while dragged, a seek at most every 150 ms; exactly where it's
-  let go); **a click or tap on either lane's bar does too** (the Take
-  lane's, or the Song lane's once it has a song; the empty lane's Add
-  a song opens its sheet), exactly where it's clicked, while a drag on
-  them still trims or moves as below; playback stays in the kept part.
+  it starts and stops), right over two lanes, 2 points apart, **one
+  time axis**: each lane's bar spans the whole video, lined up under
+  the ruler, after the lane's **header** at its left: its name (small,
+  two lines at most on a phone, 56 points; one line, 120 points, on a
+  wide screen), then its **volume**. **The playhead**, where the
+  preview is, is a line across the ruler and both lanes with a small
+  handle on the ruler; it and the time move at once on a click, before
+  the player gets there. Tapped or dragged, the ruler takes the preview
+  anywhere in the video (while dragged, a seek at most every 150 ms;
+  exactly where it's let go); **a click or tap on either lane's bar
+  does too** (the Take lane's, or the Song lane's once it has a song;
+  the empty lane's Add a song opens its sheet), exactly where it's
+  clicked, while a drag on them still trims or moves as below. Playing,
+  it plays on from there; paused, it stays paused, and Play starts from
+  exactly there. Neither moves anything while the video's length isn't
+  known.
   This holds for a take the browser recorded too, whose player can't say
   how long it is (MediaRecorder writes no length: the browser calls it
   endless): the player is told the length the editor finds as it opens
@@ -148,8 +253,8 @@ makes a file of it."), opening with the video's edit as it was left:
   the time read a huge negative number. The lanes are labelled
   **Take** and **Song** for one of Cam's takes, **Video sound** and
   **Track** for any other video.
-  - **The Take lane**: the whole video, the kept part bright (the lane's
-    name on it) and the rest dimmed. **Its two grips trim it**, and both
+  - **The Take lane**: the whole video, the kept part bright and the
+    rest dimmed (its name is in its header). **Its two grips trim it**, and both
     sounds with it: what's outside the kept part is dimmed in both
     lanes, and **the song stays where it is along the video** (a
     trimmed start cuts the song's start with it). While paused, the
@@ -157,7 +262,24 @@ makes a file of it."), opening with the video's edit as it was left:
     exactly the end it moved when let go). On a take with its song
     lined up, [the song's marks](#the-songs-marks) are thin lines down
     the bar, and **a grip dragged near one is on it** (it snaps: the
-    cut is then exactly where the song starts or stops). This replaces
+    cut is then exactly where the song starts or stops).
+    <a id="the-cuts-steps"></a>**Under the lanes, the cut's two ends,
+    each stepped by ‹ and ›**: at the left **Start 0:02.5**, at the
+    right **End 0:41.0**, each between **‹** and **›**, which move that
+    end **0.05 s** (a twentieth of a second) earlier or later ("Start
+    0.05 s earlier", "End 0.05 s later"…), from wherever it is (a cut on
+    a mark at 0:01.26 steps to 0:01.31), within the video and no nearer
+    the other end than half a second (greyed where there's no further
+    to go). The song stays where it is along the video, and the
+    preview, while paused, shows the frame cut at, as with a grip. Keys
+    `video-edit-start-earlier`, `-later`, `-at`, `video-edit-end-…`.
+    They're a row 40 points high under the lanes, as wide as the bars;
+    a window too short for them (a phone on its side) leaves them out
+    and keeps the lanes. On a phone they fit at the largest text size
+    (the times shrink).
+    Checked (`test/video_edit_test.dart`): each end stepped earlier and
+    later, the times shown, the edit kept, the song where it was, the
+    preview sought to the end moved, and no step past the video's ends. This replaces
     the Trim section's range and the preview's scrub bar. The [fades](#fades)
     are drawn on the kept part as ramps at its ends (shaded above a
     line from its corner across the fade's length), as long as they
@@ -183,8 +305,8 @@ makes a file of it."), opening with the video's edit as it was left:
     off). **Dragged, the song moves** along the video; **dragged by
     either end, it's trimmed** (a grip at each end; the start moves
     with what's cut, so the rest stays put; at least half a second
-    stays). **⋮** at its right: **Change** (the sheet again) and
-    **Remove** (the lane empty again, the edit keeping `song: off`, so
+    stays). **Its name in the lane's header**, with a ⋮, opens
+    **Change** (the sheet again) and **Remove** (the lane empty again, the edit keeping `song: off`, so
     a song a later version would add by default isn't put back; Reset
     stays on, and clears it).
     A song whose length can't be told shows its name alone, unplaced,
@@ -203,12 +325,41 @@ makes a file of it."), opening with the video's edit as it was left:
     their own (`video-edit-take-…`, `video-edit-song-…`). It fits its
     bar's height at any text size: the level stays on one line, and
     speaker and level shrink together when the text is too large; the
-    bars are 44 points high. The preview plays each lane at it at once.
+    bars are 44 points high, a touch target's. The preview plays each lane at it at once.
     A lane goes **up to 100%**; louder is the master's (below). Both
     lanes default to 100%. With echo cancellation off while recording
     ([Cam](cam.md)), a take's own sound has the song from the speaker in
     it too: the levels and Mute are the remedy (headphones while
-    recording give a clean mix).
+    recording give a clean mix). Under the slider, the lane's
+    [channels and balance](#a-lanes-channels-and-balance); the level and
+    speaker are in the primary colour too once either is changed.
+  - <a id="a-lanes-channels-and-balance"></a>**A lane's channels and
+    balance** (in its volume's popup, under the slider; `LaneStereo` in
+    [`page_edit.dart`](../tabcam_app/lib/library/page_edit.dart)):
+    - **Channels**, four segments, each with its tooltip: **Stereo** ("As
+      recorded", the default), **Left** ("The left channel on both
+      sides"), **Right** ("The right channel on both sides") and **Mono**
+      ("Both channels mixed, on both sides", each at half). Asked for a
+      take recorded on the left only (a guitar into one input of an
+      interface): Left puts it on both sides. A one-channel sound plays
+      on both sides whatever is picked.
+    - **Balance**: a slider from left 100% through **Centre** to right
+      100%, in steps of 5%, its value beside it ("L 30", "Centre", "R
+      30"): the side it leans away from is turned down in a straight line
+      (R 30: the left at 70%), the other stays as it is; after the
+      channels (Left, then R 50: the left at 50%, the right at 100%).
+    - Once either isn't the default, a note under them: "Download has the
+      channels and balance; the preview plays the sound as recorded." The
+      players (video_player, the browser's media element) can't pan, so
+      the preview and the file screen's player play the sound as it is;
+      Download's file has them. Kept as every change (a moment later),
+      reopened as left, and Reset puts both lanes back as recorded. A
+      song taken out of the lane, or another one picked, starts as
+      recorded.
+    - Keys `video-edit-<lane>-channels` (the segments
+      `video-edit-<lane>-stereo`, `-left`, `-right`, `-mono`),
+      `-balance`, `-balance-level` and `-stereo-note`. The segments
+      shrink to fit the popup at large text sizes.
 - **Master**: both lanes go through it, after their own levels
   ("Master · Both sounds together, up to 200%"): **Mute** (a speaker,
   "Mute (Master)"; muted, nothing is heard and the level is kept, as a
@@ -216,9 +367,9 @@ makes a file of it."), opening with the video's edit as it was left:
   unmutes it), its level beside it (in the primary colour when it's not
   100% or it's muted, struck through while muted). It's **right above
   the fades' sliders**: on a wide screen in the **On the video** panel,
-  between the title's fields and the fades; on a phone above **On the
-  video** (whose Fades chip opens the sliders in its place, so it's
-  above them too). Keys `video-edit-master`, `-mute`, `-slider`,
+  between the title's fields and the fades; on a phone at the top of
+  the list under the viewer, above **On the video** (whose Fades chip
+  opens the sliders in its place, so it's above them too). Keys `video-edit-master`, `-mute`, `-slider`,
   `-level`. 100% by default; Reset puts it back. **Past 100% only the
   download is louder**: the players can't play a file louder than it
   is (video_player's volume and the browser's media element stop at
@@ -291,8 +442,8 @@ makes a file of it."), opening with the video's edit as it was left:
     app gave the capture, "Tab 2026-11-11 10:00"), the chip says
     **+ Title** and a tap opens its text. Tapped, it's on or off (its
     text kept). **✎**, or a tap on the title in the preview, opens its
-    text: on a phone in place of the chips ("Title · Top left · fades
-    in over 3 s"), with **First line** and **Second line** (80
+    text: on a phone in place of the chips ("Title · Top left · the
+    first and last 15 s"), with **First line** and **Second line** (80
     characters each), **Use the capture's name** (the text typed goes:
     the capture's name again, and it follows a rename), **No title**
     (off, the text typed kept) and **Done**; on a wide screen the same
@@ -331,13 +482,29 @@ makes a file of it."), opening with the video's edit as it was left:
     change. The title's fields and the sliders take each other's place
     on a phone.
 - **Under them, the song's details** (when there's one): its lane
-  and name ("Song · Recording 1"), **‹** and **›**, which nudge it a
-  tenth of a second earlier or later, with where it starts in words
+  and name ("Song · Recording 1"), **‹** and **›**, which nudge it
+  **0.05 s** (a twentieth of a second, the cut's step too; "0.05 s
+  earlier", "0.05 s later") earlier or later, with where it starts in words
   between them ("The song starts 0:01.5 after the video": silence
   first; "… 0:01.5 before the video": that much more of its start is
   cut; counted from the kept part's start; for a song lined up in
   clips, its first), and, once trimmed, "Using
-  0:01.0–0:42.5 of the song" (not for one lined up in clips). A song
+  0:01.0–0:42.5 of the song" (not for one lined up in clips).
+  <a id="the-songs-delay"></a>Under ‹ and ›, **the song's delay, to the
+  millisecond** ("Delay · To correct a Bluetooth speaker's or
+  headphones' delay, a millisecond at a time."): its value, signed
+  (`+120 ms`: the song that much later; `−35 ms`: earlier; `0 ms`), in
+  the primary colour when it isn't 0, between **−10** and **−1** on its
+  left and **+1** and **+10** on its right ("10 ms earlier", "1 ms
+  later"…), a millisecond being about the smallest difference heard
+  between two sounds. Tapped, the value opens **Song delay**, a field
+  to type it in milliseconds ("Milliseconds: + later, − earlier"; Set,
+  Cancel), at most 10 s either way. For a song lined up by itself it's
+  how far it's been moved from that line-up (0 as lined up); for one
+  placed by hand, where it starts against the kept part. It moves the
+  song as ‹ and › do (the first clip's offset, the whole line-up with
+  it), is kept with the edit, and Reset clears it. It shrinks to fit a
+  narrow panel. A song
   lined up by itself says so under them: "Lined up by its sound in the
   take" when it was [found there](#a-takes-song-lined-up), else "Lined
   up as it played while you recorded", or, once nudged or dragged,
@@ -349,12 +516,9 @@ makes a file of it."), opening with the video's edit as it was left:
   name it as its lane does: "song" on
   a take, "track" ("The track starts…", "… of the track") on any other
   video. A song shorter than the kept part leaves
-  silence after. On a wide screen they stay under the lanes, beside
-  On the video. (On a phone the title's fields and the fades' sliders
-  already take the chips' place while they're open; a later step may make the song's details
-  part of that one context area too, shown when the Song lane is
-  selected.)
-- **At the bottom**: **Reset** (on once the edit is anything but the
+  silence after. They're at the end of the list under the viewer on a
+  phone, and of the panel beside it on a wide screen.
+- <a id="reset-and-download"></a>**In the app bar**: **Reset** (on once the edit is anything but the
   defaults: the whole video, its own sound at 100%, no song said (so a
   song Removed, `song: off`, keeps it on), a take's tab on, the title
   on with the capture's name, the watermark on, and fades of 3 s in and
@@ -363,8 +527,9 @@ makes a file of it."), opening with the video's edit as it was left:
   one put back, lined up), and the edit is
   none: none means the defaults, a take's tab, the title, the watermark,
   the fades and its song lined up included, not the file as it is) and
-  **Download**, a split button (both shrink to fit at the largest text
-  sizes). Pressed, it downloads **the video** as edited, both lanes
+  **Download**, a split button: named from 840 points wide, icons with
+  their names as tooltips under it (⟲ and ⤓), both shrinking to fit
+  rather than crowd out the file's name, at the largest text sizes too. Pressed, it downloads **the video** as edited, both lanes
   mixed; its arrow opens a menu of **The video (MP4)**, **The video
   without sound (MP4)** and **The sound only (M4A)** (both lanes mixed;
   off when neither lane is heard): **the whole video as an MP4** (H.264
@@ -394,9 +559,10 @@ makes a file of it."), opening with the video's edit as it was left:
   `.webm` where the browser records WebM), and is made again otherwise
   (a WebM take in Chrome, a MOV), so the video is an MP4 wherever MP4
   is made (the plan is a [passthrough](#the-render-plan)). A progress
-  bar shows meanwhile, saying how far along it is (the browser's as the
-  video plays; the phones' as Media3 or AVFoundation report it, every
-  quarter of a second), with "Making the file…"; a
+  bar shows meanwhile under the app bar, saying how far along it is (the
+  browser's as the video plays; the phones' as Media3 or AVFoundation
+  report it, every quarter of a second), with "Making the file…" in the
+  transport's place; a
   failure says "Couldn't make the file" and why. With the watermark and
   the fades on by default, almost every Download now makes the file (on the web,
   as long as the kept part takes to play); the file list's Download and
@@ -416,7 +582,11 @@ version 2 (`v: 2`):
 - New keys, each written only when it isn't the default: `ownVolume`
   (the own sound's level, 1 by default), `ownMuted`, `songMuted`,
   `masterVolume` (the master's level, 0 to 2, to the hundredth; 1 by
-  default), `masterMuted`, and
+  default), `masterMuted`, `ownChannels` and `songChannels` (a lane's
+  [channels](#a-lanes-channels-and-balance): `left`, `right` or `mono`;
+  absent, or one this version doesn't know, `stereo`), `ownBalance` and
+  `songBalance` (-1, the left only, to 1, the right only, to the
+  hundredth; absent or not a number, 0), and
   `song`: `manual` (placed by hand), `off` (none; Remove) or, absent
   with a `trackId`, `auto`: a take's song [lined up by
   itself](#a-takes-song-lined-up) from its log, its track keys placing
@@ -518,8 +688,9 @@ the song up by itself (`LoggedSong`, [`render_plan.dart`](../tabcam_app/lib/capt
   with the song, none past the video's end or the song's), are drawn on
   the timeline: a flag on the ruler and a thin line down the Take lane,
   in the primary colour. **A Take grip dragged to within a hundredth of
-  the video's length of a mark** (a few points of the lane; at least a
-  twentieth of a second) **is on the mark** (the nearest), so the take
+  the part in view of a mark** (the whole video at 1×; a few points of
+  the lane; at least a twentieth of a second at 1×, a millisecond at
+  32×, [zoomed](#zoom)) **is on the mark** (the nearest), so the take
   is cut exactly where the song starts or stops, to the millisecond;
   further away it's where it's dragged. **Cut to the song**, under the
   song's details, does both ends at once: the first mark to the last.
@@ -581,9 +752,11 @@ never stored. It says:
   sound only);
 - the **own** lane: the video's own sound at its level through the
   master's (`PageEdit.ownLevel`: the lane's times the master's, 0 to
-  2), or none (it or the master muted, or at 0%);
+  2), and its channels and balance (`stereo`), or none (it or the master
+  muted, or at 0%);
 - the **song** lane: the song's page and file, its level through the
-  master's (`songLevel`, as the own lane's), and its
+  master's (`songLevel`, as the own lane's), its channels and balance,
+  and its
   **clips**, each from a time in the output (`at`) the song from
   `from` to `to` (at a `speed`, 1 for now), silent between them; none
   when there's no song, or it or the master is muted or at 0%. The two lanes are
@@ -601,7 +774,7 @@ never stored. It says:
   each by default), each at most half the kept part; the same in all
   three of Download's plans;
 - whether it's a **passthrough**: the whole video, its own sound at
-  100%, no song, nothing drawn over it, no fades, and the input already in the
+  100% and as recorded (its channels and balance), no song, nothing drawn over it, no fades, and the input already in the
   format made (an MP4 or M4V anywhere; a WebM where WebM is made). Only
   then does Download save the file as it is; everything else is
   rendered.
@@ -623,7 +796,8 @@ What's drawn over the picture is a list of **layers** in the plan
 ([`render_plan.dart`](../tabcam_app/lib/capture/render_plan.dart),
 `PlanLayer`), each: what it shows (its *look*, drawn by the app), when
 (`from`–`to` in the output, `to` none: to the end), how (an `opacity`,
-reached over a `fadeIn` from its start; 0 outside its time) and where:
+reached over a `fadeIn` from its start and left over a `fadeOut` to its
+end, straight lines; 0 outside its time) and where:
 by an **anchor**, `topLeft` or `bottomRight` (a corner, `heightU` high,
 `marginU` in from it, the bottom right's `liftU` higher, and `liftW`
 higher still, a fraction of the frame's width; no layer is lifted
@@ -637,7 +811,10 @@ Kotlin and Swift). Layers of one kind (`id`: `tab`, `mark`, `title`)
 never overlap in time; they're drawn in that order (the list's), the
 title last, over the watermark should they meet. Fades and anchors
 are supported everywhere: the tab along the bottom, the title at the
-top left fading in, the watermark at the bottom right.
+top left fading in and out, the watermark at the bottom right. (Android's
+`PlanLayer.alphaAt` and iOS's opacity animations, a rise, a hold and a
+fall, take the `fadeOutMs` the channel gives each layer; an older app's
+renderer has none.)
 
 **The tab** ([`edit_layers.dart`](../tabcam_app/lib/capture/edit_layers.dart)):
 on a take whose [log](cam.md#what-a-take-keeps) has its tab and says
@@ -693,10 +870,17 @@ capture's title, a copy's " (copy)" left off, and its artist, two
 lines; with no artist, a title like "Blue Riff by Made-up Band" (or
 with " – " or " - ") split into the two; a title the app gave the
 capture ("Tab 2026-11-11 10:00") is no title. Each line is trimmed and
-at most 80 characters, empty ones left out, at most two. One layer,
-`title`, at the **top left**, 3.5% of the short side in, **fading in
-from nothing to full over the kept part's first 3 seconds**, then
-staying to its end. It looks: white, with a soft shadow, on a 35% black
+at most 80 characters, empty ones left out, at most two. At the **top
+left**, 3.5% of the short side in, as **two cards** (`titleLayers`,
+two layers `title`, `TitleLayout`): **at the start**, fading in from
+nothing to full over the kept part's first 6 seconds, held 3 s, then
+fading out over 6 s (gone 15 s in); and **at the end**, fading in over
+6 s from 15 s before the end and held to it (under the video's fade to
+black). Between them, none. On a kept part shorter than 40 s (no room
+for both cards apart) it's one layer instead, fading in over its first
+6 s (at most half of it) and staying to its end. The fades are twice
+the 3 s the title faded in over before, and the video's own fades are
+unchanged. It looks: white, with a soft shadow, on a 35% black
 rounded box; the first line in Roboto Medium at 5% of the short side,
 the second in Roboto Regular at 80% of that (each line 1.25 times its
 text high); a line too long for the frame ends in "…". The box's height
@@ -706,7 +890,8 @@ plan knows it without drawing.
 **The watermark**: "tabs.cam", the same on a take and on any other
 video, in every language (`watermarkText`; no "Recorded by", no
 address); one layer, `mark`, at the **bottom right**, 3% of the short
-side in, the whole video through, one line of Roboto at 2.2% of the short side,
+side in, the whole video through, one line of Roboto Mono (fixed width,
+as the tabs are) at 2.2% of the short side,
 white at 60% with a soft shadow. It stays in that corner with the tab
 drawn too, whatever the tab's size: over the bands (drawn after them),
 never lifted above them. It's left out only when the edit turns it off
@@ -738,9 +923,9 @@ the renderers in Kotlin and Swift do the same (iOS's keyframes hold
 their ends, `fillMode = .both`). **The picture**, with what's
 drawn over it (the tab, the title, the watermark), is covered by black
 at 1 − that (so the fades are over everything, not the video alone);
-**the sound**, both lanes mixed, is multiplied by it. The title still
-fades in over the kept part's first 3 s on its own ([layers](#layers)),
-under the black. The sound only (M4A) and the video without sound get
+**the sound**, both lanes mixed, is multiplied by it. The title's cards
+still fade in and out on their own ([layers](#layers)), under the
+black. The sound only (M4A) and the video without sound get
 the same fades, each what it has of them.
 
 **Edits kept before the fades get them too.** An edit without the keys
@@ -766,9 +951,10 @@ leaves the fades out (`fades: false`), as it does the watermark.
 
 **The fonts**: Roboto Regular and Medium ship with the app
 (`assets/fonts`, Apache 2.0, as the family `TabCamRoboto`, apart from
-the app's own text), so the title and the watermark are drawn the same
-in the preview and the file on every platform, and the web never
-fetches them from a CDN. They're drawn for a frame whose short side is
+the app's own text) for the title, and Roboto Mono (`monoFont`, the
+tabs' font) for the watermark, so both are drawn the same in the
+preview and the file on every platform, and the web never fetches them
+from a CDN. They're drawn for a frame whose short side is
 1,200 pixels (`layerShort`) and scaled by each renderer.
 
 **One drawing for the preview and the file.** Each look is drawn once
@@ -787,16 +973,25 @@ watermark).
 
 **How it's rendered**, on the device
 ([platforms](platforms.md)): each platform gets the plan and only
-carries it out; the times are all worked out in Dart.
+carries it out; the times are all worked out in Dart. **A lane's
+channels and balance** reach every renderer as one 2×2 matrix, `mix`
+in the lane's channel arguments (`LaneStereo.matrix`: `[ll, lr, rl,
+rr]`, each side of the output from the sound's left and right; left out
+when it's as recorded), worked out in Dart, so the three apply the
+same thing.
 
 - **Android**: Media3 Transformer
   ([`VideoEdit.kt`](../tabcam_app/android/app/src/main/kotlin/com/nu01/tabcam/VideoEdit.kt),
   method channel `tabcam/video_edit`, method `render`, the plan's
   `toChannel`: `input`, `output`, `video`, `startMs`, `endMs`, `own`
-  `{volume}` and `song` `{path, volume, clips: [{atMs, fromMs, toMs,
-  speed}]}`, and a `job`). With the picture: a composition whose
-  primary sequence is the video clipped to the kept part, its audio
-  removed unless the own lane keeps it (through a gain at its volume,
+  `{volume, mix}` and `song` `{path, volume, mix, clips: [{atMs, fromMs,
+  toMs, speed}]}`, and a `job`). A lane's `mix` is a Media3
+  `ChannelMixingAudioProcessor` first in its effects, with a matrix for
+  a stereo sound and one for a one-channel sound (its channel as both),
+  each into two channels (`StereoMix.matrices`). With the picture: a
+  composition whose primary sequence is the video clipped to the kept
+  part, its audio removed unless the own lane keeps it (through a gain
+  at its volume,
   when not 1: a `GainProcessor` below 1, and above it a `ClippingGain`
   of ours, as Media3's `GainProcessor` wraps 16-bit samples lifted past
   full scale into loud crackles instead of clipping them; the channel's
@@ -849,7 +1044,11 @@ carries it out; the times are all worked out in Dart.
   duration is the longest track's, and a composition longer than its
   video composition's instruction fails the export, -11841), so both
   lanes are mixed; one `AVMutableAudioMix` sets the
-  levels that aren't 1, one input per audio track. With layers, an
+  levels that aren't 1, one input per audio track. A lane's `mix` is an
+  `MTAudioProcessingTap` on its tracks' inputs (`stereoTap`), giving each
+  side of a two-channel track's float samples what the matrix says of
+  them (`applyStereo`); a one-channel track is left as it is, on both
+  sides in the middle (its balance isn't applied on iOS). With layers, an
   `AVMutableVideoComposition` turns the video upright (the render size
   and transform as the tab's burn had them) and
   `AVVideoCompositionCoreAnimationTool` draws one `CALayer` per layer
@@ -879,7 +1078,11 @@ carries it out; the times are all worked out in Dart.
   and mixed in an `OfflineAudioContext` as long as the kept part (the
   own lane from the kept part's start, each of the song's clips where
   it starts, each through a gain node at its lane's level, which may be
-  over 1: the mix is float, and the WAV writer clips it), at 44.1 kHz
+  over 1: the mix is float, and the WAV writer clips it; a lane's `mix`
+  before it, `_stereo`: a gain node made two channels (`explicit`,
+  `speakers`, so a one-channel sound is on both), a channel splitter,
+  a gain per matrix entry and a channel merger; the mix is then in
+  stereo, and an own sound streamed as it plays goes through it too), at 44.1 kHz
   (22.05 kHz for a kept part over 8 minutes). **Each sound at its times
   in its file**: a WebM's sound may start after the file does (a take
   the browser recorded often has its first sound some tens of ms in);

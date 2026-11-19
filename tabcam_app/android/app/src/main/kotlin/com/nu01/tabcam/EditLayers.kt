@@ -68,7 +68,7 @@ enum class LayerAnchor {
  * [liftU] higher, as fractions of the frame's short side, and [liftW] higher
  * still, as a fraction of its width: above the tab's tallest band, which is
  * as wide as the frame; a bottom band as wide as the frame), shown from [fromMs] to [toMs] (null: the end) in the
- * output, fading in over [fadeInMs] to [opacity].
+ * output, fading in over [fadeInMs] to [opacity] and out over [fadeOutMs] to its end.
  */
 data class PlanLayer(
     val id: String,
@@ -81,13 +81,19 @@ data class PlanLayer(
     val fromMs: Long = 0,
     val toMs: Long? = null,
     val fadeInMs: Long = 0,
+    val fadeOutMs: Long = 0,
     val opacity: Float = 1f,
 ) {
-    /** How opaque it is [us] into the output: 0 outside it. */
+    /**
+     * How opaque it is [us] into the output: 0 outside it, rising over its
+     * fade in from its start, falling over its fade out to its end.
+     */
     fun alphaAt(us: Long): Float {
         if (us < fromMs * 1000 || (toMs != null && us >= toMs * 1000)) return 0f
-        if (fadeInMs <= 0) return opacity
-        return opacity * min(1f, (us - fromMs * 1000).toFloat() / (fadeInMs * 1000))
+        var level = 1f
+        if (fadeInMs > 0) level = min(level, (us - fromMs * 1000).toFloat() / (fadeInMs * 1000))
+        if (fadeOutMs > 0 && toMs != null) level = min(level, (toMs * 1000 - us).toFloat() / (fadeOutMs * 1000))
+        return opacity * level.coerceIn(0f, 1f)
     }
 
     companion object {
@@ -108,6 +114,7 @@ data class PlanLayer(
                 fromMs = fromMs,
                 toMs = (map["toMs"] as? Number)?.toLong(),
                 fadeInMs = (map["fadeInMs"] as? Number)?.toLong() ?: 0L,
+                fadeOutMs = (map["fadeOutMs"] as? Number)?.toLong() ?: 0L,
                 opacity = float("opacity", 1f).coerceIn(0f, 1f),
             )
         }

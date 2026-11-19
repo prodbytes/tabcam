@@ -114,6 +114,23 @@ class RunnerTests: XCTestCase {
     let asset = AVURLAsset(url: output)
     XCTAssertFalse(try isRed(asset, at: 0, x: 40, y: 40))
     XCTAssertTrue(try isRed(asset, at: 0.5, x: 40, y: 40))
+    // A layer fading out to its end: the square gone by the end of its
+    // time, there in the middle of it.
+    let card = dir.appendingPathComponent("card.mp4")
+    let cardError = await render(
+      VideoEditor.Plan(
+        input: video, output: card, startMs: 0, endMs: 1500, ownVolume: nil,
+        layers: [
+          VideoEditor.Layer(
+            id: "title", image: 0, anchor: .topLeft, heightU: 0.9, marginU: 0.05, toMs: 1200,
+            fadeInMs: 200, fadeOutMs: 600)
+        ],
+        images: [try red(32, 32)]),
+      progress: nil)
+    XCTAssertNil(cardError)
+    let carded = AVURLAsset(url: card)
+    XCTAssertTrue(try isRed(carded, at: 0.4, x: 40, y: 40))
+    XCTAssertFalse(try isRed(carded, at: 1.3, x: 40, y: 40))
     // With no layers, the fades alone still need the video composition.
     let plain = dir.appendingPathComponent("plain.mp4")
     let plainError = await render(
@@ -171,6 +188,32 @@ class RunnerTests: XCTestCase {
     XCTAssertEqual(none?.fades, false)
   }
 
+  func testReadsAndAppliesTheLanesStereo() {
+    let plan = VideoEditor.Plan(args: [
+      "input": "/tmp/in.mp4", "output": "/tmp/out.mp4", "startMs": 0, "endMs": 1000,
+      "own": ["volume": 1, "mix": [1, 0, 1, 0]],
+      "song": [
+        "path": "/tmp/song.m4a", "volume": 1, "mix": [0.5, 0.5, 0.25, 0.25],
+        "clips": [["atMs": 0, "fromMs": 0, "toMs": 800]],
+      ],
+    ])
+    XCTAssertEqual(plan?.ownMix, [1, 0, 1, 0])
+    XCTAssertEqual(plan?.song?.mix, [0.5, 0.5, 0.25, 0.25])
+    let plain = VideoEditor.Plan(args: [
+      "input": "/tmp/in.mp4", "output": "/tmp/out.mp4", "startMs": 0, "endMs": 1000,
+      "own": ["volume": 1],
+    ])
+    XCTAssertNil(plain?.ownMix)
+    // The left on both sides, interleaved.
+    var samples: [Float] = [0.5, 0, -0.25, 0]
+    samples.withUnsafeMutableBufferPointer { p in
+      VideoEditor.applyStereo(
+        [1, 0, 1, 0], left: p.baseAddress!, right: p.baseAddress! + 1, stride: 2, frames: 2)
+    }
+    XCTAssertEqual(samples, [0.5, 0.5, -0.25, -0.25])
+    XCTAssertNotNil(VideoEditor.stereoTap([1, 0, 1, 0]))
+  }
+
   func testPlacesLayersAsTheAppDoes() {
     let frame = CGSize(width: 1920, height: 1080)
     let band = VideoEditor.Layer(image: 0, anchor: .bottomFull)
@@ -197,11 +240,20 @@ class RunnerTests: XCTestCase {
         [
           "id": "tab", "image": 0, "anchor": "bottomFull", "fromMs": 0, "toMs": 500,
           "fadeInMs": 0, "opacity": 1,
-        ]
+        ],
+        [
+          "id": "title", "image": 0, "anchor": "topLeft", "fromMs": 0, "toMs": 900,
+          "fadeInMs": 300, "fadeOutMs": 300, "opacity": 1,
+        ],
       ],
     ])
     XCTAssertEqual(
-      plan?.layers, [VideoEditor.Layer(id: "tab", image: 0, anchor: .bottomFull, toMs: 500)])
+      plan?.layers,
+      [
+        VideoEditor.Layer(id: "tab", image: 0, anchor: .bottomFull, toMs: 500),
+        VideoEditor.Layer(
+          id: "title", image: 0, anchor: .topLeft, toMs: 900, fadeInMs: 300, fadeOutMs: 300),
+      ])
     XCTAssertNil(
       VideoEditor.Plan(args: [
         "input": "/tmp/in.mp4", "output": "/tmp/out.mp4", "startMs": 0, "endMs": 1000,

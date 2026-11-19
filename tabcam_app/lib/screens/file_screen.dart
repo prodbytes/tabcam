@@ -25,6 +25,8 @@ import 'share_sheet.dart';
 import 'video_edit_screen.dart';
 import 'video_page.dart';
 import 'youtube_link.dart';
+import 'file_delete.dart';
+import 'keys_help.dart';
 import 'messages.dart';
 
 export '../library/file_label.dart';
@@ -294,9 +296,10 @@ class _FileScreenState extends State<FileScreen> {
   bool _editing = false;
 
   Future<void> _delete(CaptureEvent event, EventPage page) async {
+    // The capture's last file: it goes with the capture, once the user
+    // confirms, as from the capture's list ([deleteFile]).
     if (event.pages.length == 1) {
-      _snack(context.l10n.eventKeepOnePage);
-      return;
+      return deleteFile(context, _library, event, page, run: _run);
     }
     final navigator = Navigator.of(context);
     final l10n = context.l10n;
@@ -401,6 +404,7 @@ class _FileScreenState extends State<FileScreen> {
                           file: page,
                         ),
                 ),
+              const KeysHelpButton(screen: KeysScreen.player),
             ],
             // Tapping the name renames the file (when the user can edit).
             title: InkWell(
@@ -422,6 +426,7 @@ class _FileScreenState extends State<FileScreen> {
           // plays in it.
           body: MetronomeBeside(
             child: DictionaryBeside(
+              title: event.title,
               child: _beside(
                 event,
                 page,

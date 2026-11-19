@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -196,20 +197,70 @@ void main() {
       kind: kind,
     );
 
-    test('fades in over the kept part\'s first 3 s, then stays to its end, '
-        'a start trim included', () {
+    test('on a short kept part, fades in over its first 6 s, then stays to '
+        'its end, a start trim included', () {
       for (final edit in [null, PageEdit(start: ms(5000), end: ms(20000))]) {
         final title = _ofId(plan(edit), 'title').single;
         expect(title.alphaAt(Duration.zero), 0, reason: '$edit');
-        expect(title.alphaAt(ms(1500)), closeTo(0.5, 1e-9), reason: '$edit');
-        expect(title.alphaAt(ms(3000)), 1, reason: '$edit');
+        expect(title.alphaAt(ms(3000)), closeTo(0.5, 1e-9), reason: '$edit');
+        expect(title.alphaAt(ms(6000)), 1, reason: '$edit');
         expect(title.alphaAt(ms(14999)), 1, reason: '$edit');
         expect(title.to, isNull);
+        expect(title.fadeOut, Duration.zero);
         expect(title.anchor, LayerAnchor.topLeft);
         expect(title.marginU, TitleLayout.margin);
         expect(title.heightU, TitleLayout.heightU(2));
         expect(title.look, const TitleLook(['Blue Riff', 'Made-up Band']));
       }
+    });
+
+    test('on a long kept part, a card at the start (in over 6 s, held 3 s, '
+        'out over 6 s) and one at the end (in over 6 s, held to the end), '
+        'none between; a kept part too short for both apart, one', () {
+      final long = RenderPlan.of(
+        PageEdit(start: ms(10000), end: ms(70000)),
+        duration: const Duration(minutes: 2),
+        inputExtension: 'mp4',
+        title: const ['Blue Riff'],
+      );
+      final cards = _ofId(long, 'title');
+      expect(cards, hasLength(2));
+      final (first, last) = (cards.first, cards.last);
+      expect((first.from, first.to), (Duration.zero, ms(15000)));
+      expect((first.fadeIn, first.fadeOut), (ms(6000), ms(6000)));
+      expect((last.from, last.to), (ms(45000), null));
+      expect((last.fadeIn, last.fadeOut), (ms(6000), Duration.zero));
+      double at(int t) => cards.map((c) => c.alphaAt(ms(t))).reduce(max);
+      expect(at(0), 0);
+      expect(at(3000), closeTo(0.5, 1e-9));
+      expect(at(6000), 1);
+      expect(at(9000), 1);
+      expect(at(12000), closeTo(0.5, 1e-9));
+      expect(at(15000), 0);
+      expect(at(30000), 0);
+      expect(at(48000), closeTo(0.5, 1e-9));
+      expect(at(51000), 1);
+      expect(at(59999), 1);
+      // The file's channel says when each card fades out.
+      expect(first.toChannel(0)['fadeOutMs'], 6000);
+      expect(last.toChannel(0)['fadeOutMs'], 0);
+
+      // Just under 40 s: one, throughout.
+      final short = RenderPlan.of(
+        PageEdit(start: Duration.zero, end: ms(39999)),
+        duration: const Duration(minutes: 2),
+        inputExtension: 'mp4',
+        title: const ['Blue Riff'],
+      );
+      expect(_ofId(short, 'title').single.to, isNull);
+      // A kept part shorter than 12 s fades the title in over half of it.
+      final tiny = RenderPlan.of(
+        PageEdit(start: Duration.zero, end: ms(4000)),
+        duration: const Duration(minutes: 2),
+        inputExtension: 'mp4',
+        title: const ['Blue Riff'],
+      );
+      expect(_ofId(tiny, 'title').single.fadeIn, ms(2000));
     });
 
     test('its text: the capture\'s, or what was typed; one line is less '
@@ -279,18 +330,15 @@ void main() {
       ),
     );
 
-    RenderPlan plan(
-      PageEdit? edit, {
-      bool premium = false,
-      TakeLog? takeLog,
-    }) => RenderPlan.of(
-      edit,
-      duration: const Duration(seconds: 20),
-      inputExtension: 'mp4',
-      watermark: watermarkText,
-      premium: premium,
-      takeLog: takeLog,
-    );
+    RenderPlan plan(PageEdit? edit, {bool premium = false, TakeLog? takeLog}) =>
+        RenderPlan.of(
+          edit,
+          duration: const Duration(seconds: 20),
+          inputExtension: 'mp4',
+          watermark: watermarkText,
+          premium: premium,
+          takeLog: takeLog,
+        );
 
     test('turned off, it\'s left out only for a Premium downloader: it '
         'stays when their Premium isn\'t known, or for a collaborator '
@@ -579,11 +627,14 @@ void main() {
       expect(titleChip(tester).selected, isTrue);
       expect(markChip(tester).selected, isTrue);
       expect(markChip(tester).avatar, isNull, reason: 'no service: unlocked');
+      // The fake video is long enough for both of the title's cards.
       expect(preview(tester).map((l) => l.look), const [
         WatermarkLook('tabs.cam'),
         TitleLook(['Blue Riff', 'Made-up Band']),
+        TitleLook(['Blue Riff', 'Made-up Band']),
       ]);
-      expect(previewTitle(tester)!.fadeIn, TitleLayout.fadeIn);
+      expect(previewTitle(tester)!.fadeIn, TitleLayout.fade);
+      expect(previewTitle(tester)!.fadeOut, TitleLayout.fade);
       expect(kept(library, id), isNull);
       expect(enabled(tester, 'video-edit-reset'), isFalse);
 
@@ -591,8 +642,9 @@ void main() {
       await settle(tester);
       final plan = editor.rendered.single;
       expect(plan.passthrough, isFalse);
-      expect(plan.layers.map((l) => l.id), ['mark', 'title']);
-      expect(plan.layers.last.fadeIn, TitleLayout.fadeIn);
+      expect(plan.layers.map((l) => l.id), ['mark', 'title', 'title']);
+      expect(plan.layers.last.fadeIn, TitleLayout.fade);
+      expect(plan.layers.last.fadeOut, Duration.zero);
       expect(saved.single.$2, [9, 9, 9]);
     });
 
@@ -693,7 +745,7 @@ void main() {
       await settle(tester);
       expect(find.byKey(const Key('video-edit-title-fields')), findsNothing);
       expect(find.byKey(const Key('video-edit-on-video')), findsOneWidget);
-      expect(previewTitle(tester)!.fadeIn, TitleLayout.fadeIn);
+      expect(previewTitle(tester)!.fadeIn, TitleLayout.fade);
 
       // Back at the top, where the preview is (the master pushes the
       // fields' Done down the list).
@@ -835,7 +887,10 @@ void main() {
       expect(kept(library, id)!.watermark, isFalse);
       await tester.tap(find.byKey(const Key('video-edit-download')));
       await settle(tester);
-      expect(editor.rendered.single.layers.map((l) => l.id), ['title']);
+      expect(editor.rendered.single.layers.map((l) => l.id), [
+        'title',
+        'title',
+      ]);
     });
 
     testWidgets('the file screen plays a video with its title over it, '
@@ -861,7 +916,7 @@ void main() {
       expect((await played()).map((l) => l.look), const [
         TitleLook(['Blue Riff', 'Made-up Band']),
       ]);
-      expect((await played()).single.fadeIn, TitleLayout.fadeIn);
+      expect((await played()).single.fadeIn, TitleLayout.fade);
 
       await tester.runAsync(
         () => library.setPageEdit(
@@ -938,6 +993,8 @@ void main() {
           await tester.ensureVisible(
             find.byKey(const Key('video-edit-title-edit')),
           );
+          // Scrolled to (it's under the cut's steps, further down now).
+          await tester.pump();
           await tester.tap(find.byKey(const Key('video-edit-title-edit')));
           await settle(tester);
         }
