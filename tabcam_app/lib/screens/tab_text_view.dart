@@ -26,9 +26,10 @@ import 'messages.dart';
 /// read that ends while it shows fills it in, unless the user has started
 /// editing. Read only for an event shared read only.
 ///
-/// Above it, in one row, on the right: **Copy**; **Two columns**, a
-/// toggle showing the tab split in half, side by side, to read (not
-/// edit: the editing tools hide while it's on); **Fix** (off for now,
+/// Above it, in one row, on the right: first **Two columns**, a toggle
+/// showing the tab split in half, side by side, to read (not edit: the
+/// editing tools hide while it's on), an icon alone set before the
+/// labelled ones; **Copy**; **Fix** (off for now,
 /// see [showFix]): lines the tab up, then with Premium auto-correct: the
 /// song's tab found online proposes corrections, shown per note for the
 /// user to accept or reject; **Rescan**, reading the tab from the pages
@@ -575,8 +576,9 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
     widget.onRescan!();
   }
 
-  /// Copy, Two columns, Fix (when shown), Rescan (when there's something to read) and
-  /// Verified: labelled buttons, or icons with their tooltips when
+  /// Two columns (an icon, first, before the labelled ones), Copy, Fix
+  /// (when shown), Rescan (when there's something to read) and Verified:
+  /// labelled buttons, or icons with their tooltips when
   /// [compact]. In the text field's tap region, so a press keeps the
   /// cursor in the text.
   List<Widget> _actions(BuildContext context, {required bool compact}) {
@@ -587,6 +589,7 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
     final review = _review;
     final idle = !_busy && review == null;
     final buttons = <Widget>[
+      _columnsToggle(enabled: review == null, compact: compact),
       if (compact)
         IconButton(
           tooltip: l10n.textViewCopy,
@@ -599,7 +602,6 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
           icon: const Icon(Icons.copy),
           label: Text(l10n.textViewCopy),
         ),
-      _columnsToggle(enabled: review == null, compact: compact),
       // Fix lines the strings up for everyone; with Premium, it also
       // checks the tab against the song online.
       if (editable && widget.showFix)

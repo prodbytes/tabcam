@@ -63,6 +63,11 @@ void main() {
 
     final toggle = find.byKey(const Key('text-columns'));
     expect(toggle, findsOneWidget);
+    // First, an icon alone before the labelled buttons.
+    expect(
+      tester.getTopLeft(toggle).dx,
+      lessThan(tester.getTopLeft(find.byIcon(Icons.copy)).dx),
+    );
     expect(find.byKey(const Key('text-new-phrase')), findsOneWidget);
 
     await tester.tap(toggle);

@@ -326,13 +326,13 @@ say nothing of how sure they are: their text has none
 Above the text, **the editing tools**, on a line of their own
 ([editing tools](#editing-tools)). **In the app bar**, right of the
 title, four buttons (one more in a build that shows Fix): labelled
-compact buttons (Two columns an icon alone), or on a screen narrower than
+compact buttons (Two columns an icon alone, so it comes first, not
+between labelled ones), or on a screen narrower than
 900 px (a tablet held upright, a phone) icons with their tooltips (Two
 columns a column icon and Verified a check, filled and in the primary
 colour while on); narrower than 600 px the event screen's other buttons
 go in a menu too ([event screen](event-screen.md)). In this order:
 
-- **Copy**: the text, to the clipboard.
 - **Two columns**: a toggle, a column icon alone even on a wide screen
   (a round button, tonal while off and filled while on, so the app bar
   keeps the title's room; tooltips "Show the tab in two columns, split
@@ -350,6 +350,7 @@ go in a menu too ([event screen](event-screen.md)). In this order:
   **+** says the text can't be changed now; the edits pending are saved
   when it's turned on. Off during Fix's review. Not remembered: the
   view opens in one column. Also on an event shared read only.
+- **Copy**: the text, to the clipboard.
 - **Fix**, hidden for now (shown only in a build with `TABCAM_FIX=true`,
   see [auto-correct](autocorrect.md#hidden-for-now)): lines the tab up (each staff's strings named, bars lined up,
   every string ending together), for everyone; then, with Premium,

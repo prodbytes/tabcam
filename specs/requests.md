@@ -4468,3 +4468,10 @@ spec.
     (23) and, under `pipefail`, so did the check. The deploy now fetches
     the index page and the privacy policy whole, then searches them. See
     [deploy](deploy.md).
+
+13. **"Make it the first button so it is not weirdly the only one
+   without label among labeled ones."** Follow-up to 9 (Two columns):
+   the Two columns toggle, an icon alone, now comes first among the
+   Text view's buttons in the app bar, before Copy, instead of between
+   the labelled Copy and Rescan. See
+   [tab recognition](tab-recognition.md#text-view).
