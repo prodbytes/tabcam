@@ -753,5 +753,12 @@
   "videoEditAlignedRhythmSame": "Alineada por el ritmo: ya estaba ahí (podría estar un tiempo corrida)",
   "videoEditAlignNotFound": "No se encontró la canción en el sonido de la toma, ni por el ritmo: acerca el zoom y arrástrala bajo la toma, o muévela de oído",
   "videoEditAlignNotFoundTrack": "No se encontró la pista en el sonido del video, ni por el ritmo: acerca el zoom y arrástrala, o muévela de oído",
-  "videoEditAlignUnread": "Los sonidos no se pudieron leer aquí"
+  "videoEditAlignUnread": "Los sonidos no se pudieron leer aquí",
+  "videoEditSongOut": "Sonó por {route, select, speaker{el altavoz} wired{auriculares con cable} bluetooth{Bluetooth} usb{un dispositivo USB} airplay{AirPlay} other{otra salida}}",
+  "videoEditSongOutLatency": "; el dispositivo indicó {ms} ms",
+  "videoEditSongOutChanged": "; la salida cambió durante la toma",
+  "videoEditOutName": "{route, select, wired{estos auriculares} bluetooth{este dispositivo Bluetooth} usb{este dispositivo USB} other{esta salida}}",
+  "videoEditSongDelayRemember": "Recordar {delay} para {output}",
+  "videoEditSongDelayForget": "Olvidar el retraso de {output}",
+  "videoEditSongDelayKept": "Guardado para {output}: sus tomas se abren con este retraso"
 }

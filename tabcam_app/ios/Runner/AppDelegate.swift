@@ -58,7 +58,10 @@ import UIKit
 /// `{id, name}` (its port's UID and name); `choose` (`input`: a UID, or
 /// none for the system's choice): the session's preferred input, which
 /// the camera's sound follows (its capture session uses the app's audio
-/// session); replies whether it's set.
+/// session); replies whether it's set. `output`: what the session plays
+/// through now, `{route, name, latencyMs, from}` (its first output port's
+/// type as a route, its name, the session's `outputLatency`), noted in the
+/// take's log (the name only as a fingerprint), never acted on.
 enum TakeAudio {
   static let options: AVAudioSession.CategoryOptions = [
     .mixWithOthers, .defaultToSpeaker, .allowBluetoothA2DP, .allowAirPlay,
@@ -71,6 +74,9 @@ enum TakeAudio {
       case "release": try release()
       case "inputs":
         result(inputs())
+        return
+      case "output":
+        result(output())
         return
       case "choose":
         let uid = (call.arguments as? [String: Any])?["input"] as? String
@@ -105,6 +111,28 @@ enum TakeAudio {
     (AVAudioSession.sharedInstance().availableInputs ?? []).map {
       ["id": $0.uid, "name": $0.portName]
     }
+  }
+
+  static func output() -> [String: Any] {
+    let session = AVAudioSession.sharedInstance()
+    let port = session.currentRoute.outputs.first
+    let route: String
+    switch port?.portType {
+    case .none: route = "unknown"
+    case .builtInSpeaker?, .builtInReceiver?: route = "speaker"
+    case .headphones?, .lineOut?: route = "wired"
+    case .bluetoothA2DP?, .bluetoothLE?, .bluetoothHFP?: route = "bluetooth"
+    case .usbAudio?: route = "usb"
+    case .airPlay?: route = "airplay"
+    default: route = "other"
+    }
+    var reply: [String: Any] = ["route": route, "from": "session"]
+    if let name = port?.portName { reply["name"] = name }
+    let latency = session.outputLatency
+    if latency.isFinite && latency > 0 {
+      reply["latencyMs"] = Int((latency * 1000).rounded())
+    }
+    return reply
   }
 
   static func choose(_ uid: String?) throws -> Bool {

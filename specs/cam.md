@@ -802,7 +802,9 @@ each take Cam saves keeps a **log** of what Cam noted while it recorded,
 on its page (`takeLog` in the capture's details, `EventPage.takeLog`,
 [`take_log.dart`](../tabcam_app/lib/capture/take_log.dart)), written
 once, as the take is saved, and never changed after, but for where its
-song was found in its sound (`sync`, below), added once: a log read from
+song was found in its sound (`sync`, below), added once. It notes; it
+fixes nothing: what the song played through (`out`) is noted for the
+editor, and nothing is moved or corrected as the take records. A log read from
 the capture's details is written back exactly as it came, whatever in
 it this version doesn't know or can't read included (a newer app's
 `lagFrom`, a field in a turn, a segment or the tab, a turn out of
@@ -823,6 +825,8 @@ Play uses it too (above). A few KB for a ten-minute take:
   "lagMs": 180, "lagFrom": "bounds",
   "lagRaw": {"startCallMs": -240, "startReturnMs": -10,
              "stopCallMs": 61000, "stopReturnMs": 61310, "fileMs": 61420},
+  "out": {"route": "bluetooth", "id": "3f9a1c07", "latencyMs": 160,
+          "from": "session"},
   "tab": {"lines": ["e|--3--5--7--|", "e|--5--7--8--|"],
           "marks": [[0, 0], [4210, 1], [8380, 0]]},
   "song": [{"at": 2000, "to": 61000, "page": "p3", "from": 0, "speed": 1}],
@@ -871,11 +875,50 @@ Play uses it too (above). A few KB for a ten-minute take:
     only the boxes' headers read), the lag is between the length less
     each. The lag is the middle of where both ranges agree; where they
     don't, or the length can't be read (a WebM), the middle of the
-    first. Typically within ±100 ms; a later step lets the user nudge
-    what's left.
+    first. Typically within ±100 ms; the editor's nudges and its delay
+    control move what's left.
   - `none`: not told, 0.
   The readings it was told from (`lagRaw`, ms on the take's clock) are
-  kept, so it can be told again better later.
+  kept, so it can be told again better later; on Android with the app's
+  own sound, also `soundLeadMs`, how long before the video's first
+  frame the sound began (what was dropped of it as it was put in, the
+  stop's reply).
+- <a id="what-the-song-played-through"></a>**What the song played
+  through** (`out`): the audio output as the take's clock started, read
+  without holding the clock back, and read again once the recording
+  stopped: `route` (`speaker`, `wired`, `bluetooth`, `usb`, `airplay`,
+  `other`, or `unknown`), `id`, a **fingerprint** of the output's name
+  (the first 8 hex digits of its SHA-256, `TakeOutput.fingerprint`),
+  so one headset is told from another while the name itself, which can
+  carry the owner's ("…'s AirPods"), never leaves the device; the
+  latency the platform reports for it (`latencyMs`, a hint only), how
+  it was told (`from`), and `changed` when the output was another as
+  the take stopped (headphones connected or taken off during it). Per
+  platform:
+  - iOS (`session`): the audio session's current route, its first
+    output (`tabcam/audio`, method `output`), and the session's
+    `outputLatency` (about 160 ms for AirPods, seconds for AirPlay).
+    AVPlayer's position probably allows for most of it already.
+  - Android: from 13 on (`media`), the devices media plays through
+    (`getAudioDevicesForAttributes`, as video_player's ExoPlayer
+    plays); before (`devices`), the outputs connected ranked as the
+    system routes media (Bluetooth, wired, USB, the speaker)
+    (`tabcam/take_sound`, method `output`; no permission, never the
+    device's address). No latency: none is public, and ExoPlayer's
+    position already allows for the system's own estimate (the
+    headset's delay report on Bluetooth).
+  - The web (`browser`): the default output's name as the browser
+    gives it (`enumerateDevices`; names come with the microphone
+    allowed, which a take has), its route guessed from its words, and
+    Web Audio's `outputLatency` where the browser has it (not Safari
+    before 18.4), a figure for Web Audio's path, not the video
+    element's.
+  None of them is applied by Cam or by the editor by itself: the
+  [editor](video-edit.md#the-songs-delay) says what the song played
+  through under its delay control, and a take through headphones whose
+  song wasn't found in its sound opens with the delay kept for that
+  output on the device, if one is. Read failing, the take is saved
+  without it. None on takes saved before Cam noted it.
 - **The song** (`song`): the song played along in the sidebar's
   player, as segments of the take (`at`, `to` on the take's clock; the
   song's page, where in it (`from`, ms) and at what `speed`), noted as
@@ -885,7 +928,8 @@ Play uses it too (above). A few KB for a ten-minute take:
   where it would be, playing on: a seek, a skip, Repeat or its section
   starting over) ends a segment, and playing again starts the next. As
   one starts, fresh readings of the player tell again where it started
-  (the player's own position is only updated about every half second):
+  (video_player polls its player's position every tenth of a second,
+  so the one it has may be that late):
   at once, 0.3 s and 1 s after, each read halfway between asking the
   player and its answer, the last telling it best. A player says it
   plays a little before its sound starts, its position held at the
@@ -911,7 +955,9 @@ Play uses it too (above). A few KB for a ten-minute take:
   while it plays) is [measured from the take's sound](#the-song-found-in-the-takes-sound)
   when the microphone hears the speaker (600 ms each way is looked in),
   and with headphones (the microphone hears no song) the editor's
-  [Delay](video-edit.md#the-songs-delay) corrects it by hand.
+  [Delay](video-edit.md#the-songs-delay) corrects it by hand, and can
+  keep it for that output ([`out`](#what-the-song-played-through)), so
+  the takes through it open with it.
 - <a id="the-song-found-in-the-takes-sound"></a>**Where the song really
   is** (`sync`): the segments say where the player was and the lag where
   the file was, each good to a tenth of a second or so; but the take's
@@ -974,7 +1020,9 @@ Play uses it too (above). A few KB for a ten-minute take:
   - **Kept** as `sync`: the song (`page`), how it was told (`from`:
     `sound`, found; `none`, looked for and not found in any segment,
     as with headphones, or a song too quiet in the take: the log's
-    line-up stands, and it isn't looked for again), the song's shift
+    line-up stands, moved by the editor's delay for what the
+    headphones added (kept per output, [`out`](#what-the-song-played-through)),
+    and it isn't looked for again), the song's shift
     (`ms`: the middle one of its segments'), and each segment measured
     (`clips`: its start on the take's clock, `at`, its own shift, `ms`,
     and how clearly it was found, `score`). A segment is then
@@ -1007,7 +1055,11 @@ Play uses it too (above). A few KB for a ten-minute take:
   Play of an older take after Cam reopens turning its necklines, lag
   and all, and Play of a take on a tab with a neckline twice turning to
   the copy that showed (the one just recorded exactly, an older one by
-  the nearest copy), Rec, 1 and . waiting while the take to play opens
+  the nearest copy), what the song played through noted (Android's,
+  iOS's and the web's readings, read as the clock starts and after the
+  stop, `changed` when they differ, the name only as its fingerprint, a
+  failing read leaving the take saved without it), the sound's lead on
+  Android, Rec, 1 and . waiting while the take to play opens
   and Play letting it go, and on iOS Play passing over a WebM
   (`test/take_log_test.dart`, `test/play_along_test.dart`,
   in Chrome `test/web_take_recorder_test.dart`); and the song found in
@@ -1026,10 +1078,14 @@ Play uses it too (above). A few KB for a ten-minute take:
   Android's way down to 8 kHz by JVM tests, `SampleBinsTest` (written,
   not run: the Gradle test task doesn't start here);
   iOS's reader run on a Mac against a WAV and an AAC file, a tone's
-  start read where it is). **Not yet on a phone**: how big the log
-  grows, that saving it costs no dropped frames, and the song found in
-  a real take's sound there (Android's and iOS's readers on a phone's
-  own files; how often a real room and guitar leave it unfound).
+  start read where it is). The Kotlin `output` is built into a debug
+  APK and the Swift one type-checked. **Not yet on a phone**: how big
+  the log grows, that saving it costs no dropped frames, the song found
+  in a real take's sound there (Android's and iOS's readers on a
+  phone's own files; how often a real room and guitar leave it
+  unfound), and the output read there (Android 13's media route and an
+  older phone's ranking, an iPhone's route; how far iOS's reported
+  latency is from what's measured).
 
 <a id="recording-comes-first"></a>**Recording comes first**: in a take
 the sound matters most, so Cam records it as a musician wants it, sets it

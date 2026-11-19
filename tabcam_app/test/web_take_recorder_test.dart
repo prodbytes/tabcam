@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:js_interop';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tabcam_app/capture/take_log.dart';
 import 'package:tabcam_app/capture/web_take_recorder.dart';
 import 'package:web/web.dart' as web;
 
@@ -253,5 +254,42 @@ void main() {
       recorder.dispose();
       await context.close().toDart;
     });
+  });
+
+  test('what the browser plays through: its default output\'s name as a '
+      'route, the name kept only as its fingerprint', () async {
+    WebTakeRecorder with_(List<(String, String, String)> devices) =>
+        WebTakeRecorder(
+          enumerateDevices: () async => [
+            for (final (kind, id, label) in devices)
+              {
+                    'kind': kind,
+                    'deviceId': id,
+                    'label': label,
+                    'groupId': '',
+                  }.jsify()
+                  as web.MediaDeviceInfo,
+          ],
+        );
+
+    final buds = await with_([
+      ('audioinput', 'default', 'Default - Built-in'),
+      ('audiooutput', 'default', 'Default - Riff AirPods Pro'),
+      ('audiooutput', 'speakers', 'MacBook Pro Speakers'),
+    ]).output();
+    expect(buds!.route, OutRoute.bluetooth);
+    expect(buds.from, OutFrom.browser);
+    expect(buds.id, TakeOutput.fingerprint('Riff AirPods Pro'));
+    // No microphone graph running: no latency to read.
+    expect(buds.latencyMs, isNull);
+
+    final speakers = await with_([
+      ('audiooutput', 'speakers', 'MacBook Pro Speakers'),
+    ]).output();
+    expect(speakers!.route, OutRoute.speaker);
+
+    final none = await with_([('audioinput', 'default', 'Default - Built-in')])
+        .output();
+    expect(none, const TakeOutput(from: OutFrom.browser));
   });
 }

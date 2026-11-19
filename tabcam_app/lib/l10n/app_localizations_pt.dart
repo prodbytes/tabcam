@@ -2783,4 +2783,51 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoEditAlignUnread => 'Os sons não puderam ser lidos aqui';
+
+  @override
+  String videoEditSongOut(String route) {
+    String _temp0 = intl.Intl.selectLogic(route, {
+      'speaker': 'o alto-falante',
+      'wired': 'fones com fio',
+      'bluetooth': 'Bluetooth',
+      'usb': 'um dispositivo USB',
+      'airplay': 'AirPlay',
+      'other': 'outra saída',
+    });
+    return 'Tocou por $_temp0';
+  }
+
+  @override
+  String videoEditSongOutLatency(int ms) {
+    return '; o dispositivo informou $ms ms';
+  }
+
+  @override
+  String get videoEditSongOutChanged => '; a saída mudou durante o take';
+
+  @override
+  String videoEditOutName(String route) {
+    String _temp0 = intl.Intl.selectLogic(route, {
+      'wired': 'estes fones',
+      'bluetooth': 'este dispositivo Bluetooth',
+      'usb': 'este dispositivo USB',
+      'other': 'esta saída',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String videoEditSongDelayRemember(String delay, String output) {
+    return 'Lembrar $delay para $output';
+  }
+
+  @override
+  String videoEditSongDelayForget(String output) {
+    return 'Esquecer o atraso de $output';
+  }
+
+  @override
+  String videoEditSongDelayKept(String output) {
+    return 'Guardado para $output: os takes por ele abrem com este atraso';
+  }
 }

@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
+import android.media.AudioAttributes
 import android.media.AudioDeviceInfo
 import android.media.AudioFormat
 import android.media.AudioManager
@@ -65,6 +66,9 @@ import kotlin.math.min
  * - `inputs`: the microphones the sound can come from ([inputs]), each
  *   `{id, name, builtIn}`; `prepare`'s and `choose`'s `device` is an id
  *   (none, or one not connected: the system's choice).
+ * - `output`: what media plays through now ([output]), `{route, name,
+ *   latencyMs, from}`; noted in the take's log (the name only as a
+ *   fingerprint), never acted on.
  * - `choose` (`device`): the microphone opened again from that device,
  *   for the takes from now on (not while one records); replies as
  *   `prepare`, with `routed` (the device it reads from) and `fellBack`
@@ -155,6 +159,14 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
                 result,
             )
             "inputs" -> result.success(inputs(context))
+            "output" -> result.success(
+                try {
+                    output(context)
+                } catch (e: Exception) {
+                    Log.w(TAG, "the audio output isn't known", e)
+                    null
+                },
+            )
             "choose" -> {
                 val chosen = call.argument<String>("device")
                 onControl(result) { choose(chosen) }
@@ -1203,6 +1215,78 @@ class TakeSound(private val activity: Activity, messenger: BinaryMessenger) :
                     "builtIn" to builtIn,
                 )
             }
+        private val wiredOut = setOf(
+            AudioDeviceInfo.TYPE_WIRED_HEADSET,
+            AudioDeviceInfo.TYPE_WIRED_HEADPHONES,
+            AudioDeviceInfo.TYPE_LINE_ANALOG,
+            AudioDeviceInfo.TYPE_LINE_DIGITAL,
+        )
+        private val usbOut = setOf(
+            AudioDeviceInfo.TYPE_USB_DEVICE,
+            AudioDeviceInfo.TYPE_USB_ACCESSORY,
+            AudioDeviceInfo.TYPE_USB_HEADSET,
+        )
+        private val bluetoothOut = setOf(
+            AudioDeviceInfo.TYPE_BLUETOOTH_A2DP,
+            AudioDeviceInfo.TYPE_BLUETOOTH_SCO,
+            AudioDeviceInfo.TYPE_HEARING_AID,
+            AudioDeviceInfo.TYPE_BLE_HEADSET,
+            AudioDeviceInfo.TYPE_BLE_SPEAKER,
+            AudioDeviceInfo.TYPE_BLE_BROADCAST,
+        )
+
+        /**
+         * The output media plays through now: `{route, name, latencyMs,
+         * from}`. Android 13 and later say it (the devices for media's
+         * attributes, as video_player's ExoPlayer plays); before, the
+         * outputs connected are ranked as the system routes media
+         * (Bluetooth, wired, USB, the speaker). No latency: none is
+         * public (the player's position allows for the system's own
+         * estimate). No permission; never the device's address.
+         */
+        fun output(context: Context): Map<String, Any?> {
+            val audio = context.getSystemService(AudioManager::class.java)
+                ?: return mapOf("route" to "unknown", "from" to "devices")
+            val device: AudioDeviceInfo?
+            val from: String
+            if (Build.VERSION.SDK_INT >= 33) {
+                val attributes = AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
+                    .build()
+                device = audio.getAudioDevicesForAttributes(attributes).firstOrNull()
+                from = "media"
+            } else {
+                val sinks = audio.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+                    .filter { it.isSink }
+                @Suppress("DEPRECATION")
+                device = sinks.firstOrNull { it.type in bluetoothOut }
+                    ?.takeIf { audio.isBluetoothA2dpOn }
+                    ?: sinks.firstOrNull { it.type in wiredOut }
+                        ?.takeIf { audio.isWiredHeadsetOn }
+                    ?: sinks.firstOrNull { it.type in usbOut }
+                    ?: sinks.firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
+                from = "devices"
+            }
+            return mapOf(
+                "route" to routeOf(device?.type),
+                "name" to device?.productName?.toString(),
+                "latencyMs" to null,
+                "from" to from,
+            )
+        }
+
+        private fun routeOf(type: Int?): String = when (type) {
+            null -> "unknown"
+            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
+            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE,
+            AudioDeviceInfo.TYPE_BUILTIN_EARPIECE -> "speaker"
+            in wiredOut -> "wired"
+            in bluetoothOut -> "bluetooth"
+            in usbOut -> "usb"
+            else -> "other"
+        }
+
         const val REQUEST_CODE = 2013
         private const val TAG = "TabCam"
 

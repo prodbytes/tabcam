@@ -13,6 +13,7 @@ import 'package:video_player/video_player.dart';
 import '../capture/waveform.dart';
 import '../capture/edit_layers.dart';
 import '../capture/media.dart';
+import '../capture/out_delays.dart';
 import '../capture/play_along_sidebar.dart' show isTake;
 import '../capture/song_sync.dart';
 import '../capture/sound_reader.dart';
@@ -232,6 +233,13 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// take recorded), when it has one still in the capture: the default
   /// Song lane.
   LoggedSong? _logged;
+
+  /// The song's delays kept on this device per audio output
+  /// ([OutDelays]), and the one this take opened with, kept for the output
+  /// its song played through (null: none): a lane at it hasn't been moved
+  /// by hand, so it follows where the song is found in the take's sound.
+  Map<String, int> _outDelays = const {};
+  int? _seededMs;
 
   /// The shortest part of a song that can be used.
   static const minTrack = Duration(milliseconds: 500);
@@ -491,6 +499,29 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       if (edit != null && lined != null && _follows(edit, lined)) {
         edit = lined.placed(edit);
       }
+      // Through headphones, the song not found in the take's sound, and
+      // a delay kept for that output: a lane still where the log has it
+      // opens moved by it (once the song is in it, below).
+      final outDelays = await OutDelays.read(_library);
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      final kept = log != null && _seedsDelay(log)
+          ? outDelays[log.out!.key]
+          : null;
+      int? seed;
+      int? seeded;
+      if (kept != null &&
+          edit != null &&
+          lined != null &&
+          !lined.measured &&
+          edit.songMode == SongMode.auto &&
+          edit.trackId == lined.page) {
+        final shift = lined.shiftOf(edit).inMilliseconds;
+        if (shift == 0) seed = kept;
+        if (shift == 0 || shift == kept) seeded = kept;
+      }
       setState(() {
         _log = log;
         _video = controller;
@@ -498,6 +529,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         _duration = length;
         _end = length;
         _logged = lined;
+        _outDelays = outDelays;
+        _seededMs = seeded;
         _saved = saved;
         _extra = saved?.extra ?? const {};
         if (edit != null) {
@@ -534,6 +567,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           fileLabel(context.l10n, event, track),
           from: edit,
         );
+        // Moved as the delay control moves it, and kept so.
+        if (seed != null && mounted && _lined && _trackLength > Duration.zero) {
+          _moveTrack(Duration(milliseconds: seed));
+        }
       }
       await _played();
       // Not measured yet (a take from before, or from a device that
@@ -595,6 +632,15 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       edit.trackId == logged.page &&
       logged.shiftOf(edit) == Duration.zero;
 
+  /// Whether a take's log says its song played through headphones
+  /// (wired, Bluetooth, USB) for the whole take and wasn't found in its
+  /// sound: it then opens with the delay kept for that output
+  /// ([OutDelays]).
+  static bool _seedsDelay(TakeLog log) => switch (log.out) {
+    final out? => out.headphones && !out.changed && !(log.sync?.found ?? false),
+    null => false,
+  };
+
   /// Has the take's song found in its sound ([TakeSyncer]), and, found,
   /// lines it up there: the Song lane follows, unless it was moved by
   /// hand, or holds another song (it stays where it was put).
@@ -608,9 +654,13 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         was != null &&
         logged.page == was.page &&
         _lined &&
-        _follows(_current, was);
+        (_follows(_current, was) ||
+            (_seededMs != null &&
+                was.shiftOf(_current).inMilliseconds == _seededMs));
     setState(() {
       _log = log;
+      // Found, the song's sound has the output's delay in it already.
+      if (logged?.measured ?? false) _seededMs = null;
       if (logged == null || was == null || logged.page != was.page) return;
       _logged = logged;
       if (!follows) return;
@@ -1566,6 +1616,16 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       ),
     );
     _moveTrack(to - _delay);
+  }
+
+  /// Keeps [ms] as the song's delay for the output [key] on this device
+  /// ([OutDelays]; 0: forgets it): takes through it whose song wasn't
+  /// found in their sound open with it.
+  Future<void> _keepDelay(String key, int ms) async {
+    final delays = {..._outDelays}..remove(key);
+    if (ms != 0) delays[key] = ms;
+    setState(() => _outDelays = Map.unmodifiable(delays));
+    await OutDelays.write(_library, delays);
   }
 
   /// Where the Song lane has the song now, clip by clip, in the video's
@@ -3839,7 +3899,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
               ),
             ],
           ),
-        if (_trackLength > Duration.zero) _delayControl(l10n),
+        if (_trackLength > Duration.zero) ...[
+          _delayControl(l10n),
+          ..._outputLines(l10n),
+        ],
         if (_lined)
           Text(
             switch (_logged!.shiftOf(_current)) {
@@ -3985,11 +4048,7 @@ extension on _VideoEditScreenState {
   Widget _delayControl(AppLocalizations l10n) {
     final theme = Theme.of(context);
     final ms = _delay.inMilliseconds;
-    final shown = ms > 0
-        ? '+$ms ms'
-        : ms < 0
-        ? '−${-ms} ms'
-        : '0 ms';
+    final shown = _msText(ms);
     Widget stepButton(int by) => IconButton(
       key: Key('video-edit-delay-${by < 0 ? 'minus' : 'plus'}${by.abs()}'),
       tooltip: by < 0
@@ -4049,6 +4108,76 @@ extension on _VideoEditScreenState {
         ),
       ],
     );
+  }
+
+  /// A delay as the control shows it: `+120 ms`, `−35 ms`, `0 ms`.
+  static String _msText(int ms) =>
+      ms > 0 ? '+$ms ms' : (ms < 0 ? '−${-ms} ms' : '0 ms');
+
+  /// Under the delay control, for a take whose log says what its song
+  /// played through ([TakeLog.out]): what it was, the latency its device
+  /// reported, and whether it changed during the take; and, for a song
+  /// lined up by itself, not found in the take's sound, through
+  /// headphones: **Remember** the delay for that output (its takes open
+  /// with it, [OutDelays]), that it's the one kept, or **Forget** it.
+  List<Widget> _outputLines(AppLocalizations l10n) {
+    final out = _take ? _takeLog?.out : null;
+    if (out == null || out.route == OutRoute.unknown) return const [];
+    final theme = Theme.of(context);
+    final route = out.route.name;
+    final lines = <Widget>[
+      Text(
+        [
+          l10n.videoEditSongOut(route),
+          if (out.latencyMs case final ms?) l10n.videoEditSongOutLatency(ms),
+          if (out.changed) l10n.videoEditSongOutChanged,
+        ].join(),
+        key: const Key('video-edit-song-out'),
+        textAlign: TextAlign.center,
+        style: theme.textTheme.bodySmall,
+      ),
+    ];
+    final logged = _logged;
+    if (!_lined || logged == null || logged.measured) return lines;
+    if (!out.headphones || out.changed) return lines;
+    final ms = _delay.inMilliseconds;
+    final kept = _outDelays[out.key];
+    final output = l10n.videoEditOutName(route);
+    if (kept != null && kept == ms) {
+      lines.add(
+        Text(
+          l10n.videoEditSongDelayKept(output),
+          key: const Key('video-edit-song-delay-kept'),
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.primary,
+          ),
+        ),
+      );
+    } else if (ms == 0 && kept != null) {
+      lines.add(
+        Align(
+          child: TextButton.icon(
+            key: const Key('video-edit-song-delay-forget'),
+            icon: const Icon(Icons.bookmark_remove_outlined, size: 18),
+            label: Text(l10n.videoEditSongDelayForget(output)),
+            onPressed: () => _keepDelay(out.key, 0),
+          ),
+        ),
+      );
+    } else if (ms != 0 && ms >= OutDelays.least && ms <= OutDelays.most) {
+      lines.add(
+        Align(
+          child: TextButton.icon(
+            key: const Key('video-edit-song-delay-remember'),
+            icon: const Icon(Icons.bookmark_add_outlined, size: 18),
+            label: Text(l10n.videoEditSongDelayRemember(_msText(ms), output)),
+            onPressed: () => _keepDelay(out.key, ms),
+          ),
+        ),
+      );
+    }
+    return lines;
   }
 }
 

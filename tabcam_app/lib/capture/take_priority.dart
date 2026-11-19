@@ -106,6 +106,19 @@ abstract final class TakeAudio {
     }
   }
 
+  /// The output the session plays through now: `{route, name,
+  /// latencyMs, from}` (`TakeOutput.fromReading`; the latency the
+  /// session's `outputLatency`). Null when it can't tell.
+  static Future<Map<Object?, Object?>?> output() async {
+    if (!supported) return null;
+    try {
+      return await channel.invokeMapMethod<Object?, Object?>('output');
+    } on Object catch (e) {
+      debugPrint('TabCam: cam: the audio output isn\'t known: $e');
+      return null;
+    }
+  }
+
   static Future<void> _call(String method) async {
     if (!supported) return;
     try {

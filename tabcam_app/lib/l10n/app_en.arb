@@ -2510,12 +2510,20 @@
   "dictionaryWriteChord": "Write {frets} in the text",
   "@dictionaryWriteChord": {
     "description": "Dictionary: tooltip of the + under a chord's voicing, which writes it into the Text view's tab; frets is the voicing as x32010",
-    "placeholders": {"frets": {"type": "String"}}
+    "placeholders": {
+      "frets": {
+        "type": "String"
+      }
+    }
   },
   "dictionaryWriteScale": "Write {scale} in the text",
   "@dictionaryWriteScale": {
     "description": "Dictionary: tooltip of the + beside a scale's name, which writes it into the Text view's tab; scale is its name, as A Minor pentatonic",
-    "placeholders": {"scale": {"type": "String"}}
+    "placeholders": {
+      "scale": {
+        "type": "String"
+      }
+    }
   },
   "dictionaryWriteBusy": "The text can't be changed right now",
   "@dictionaryWriteBusy": {
@@ -3131,7 +3139,9 @@
   "@videoEditWatermarkAbout": {
     "description": "Video edit: the Watermark chip's tooltip, for a Premium user (who can turn it off)",
     "placeholders": {
-      "text": {"type": "String"}
+      "text": {
+        "type": "String"
+      }
     }
   },
   "videoEditWatermarkLocked": "Premium removes the watermark",
@@ -3170,7 +3180,9 @@
   "@videoEditFadeSeconds": {
     "description": "Video edit: a fade's length, in seconds (one decimal)",
     "placeholders": {
-      "seconds": {"type": "String"}
+      "seconds": {
+        "type": "String"
+      }
     }
   },
   "videoEditFadesOff": "No fades",
@@ -3205,7 +3217,9 @@
   "@videoEditTabPercent": {
     "description": "Video edit: a tab style slider's value, in percent",
     "placeholders": {
-      "percent": {"type": "int"}
+      "percent": {
+        "type": "int"
+      }
     }
   },
   "videoEditTabColorsDark": "White on black",
@@ -3768,5 +3782,66 @@
   "videoEditAlignUnread": "The sounds couldn't be read here",
   "@videoEditAlignUnread": {
     "description": "Video edit: Auto-align couldn't read the take's or the song's sound on this device (a format it doesn't decode)"
+  },
+  "videoEditSongOut": "Played through {route, select, speaker{the speaker} wired{wired headphones} bluetooth{Bluetooth} usb{a USB device} airplay{AirPlay} other{another output}}",
+  "@videoEditSongOut": {
+    "description": "Video edit, a take: under the song's delay, what the song played through while the take recorded (as Cam noted it), by its route",
+    "placeholders": {
+      "route": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditSongOutLatency": "; the device reported {ms} ms",
+  "@videoEditSongOutLatency": {
+    "description": "Video edit, a take: added after videoEditSongOut: the latency the device reported for that output, a hint for the delay, never applied by itself",
+    "placeholders": {
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditSongOutChanged": "; the output changed during the take",
+  "@videoEditSongOutChanged": {
+    "description": "Video edit, a take: added after videoEditSongOut: the song played through another output as the take stopped"
+  },
+  "videoEditOutName": "{route, select, wired{these headphones} bluetooth{this Bluetooth device} usb{this USB device} other{this output}}",
+  "@videoEditOutName": {
+    "description": "Video edit, a take: the output a song delay is kept for on this device (in videoEditSongDelayRemember, Forget and Kept), by its route",
+    "placeholders": {
+      "route": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditSongDelayRemember": "Remember {delay} for {output}",
+  "@videoEditSongDelayRemember": {
+    "description": "Video edit, a take: keeps the song's delay on this device for the takes whose song plays through that output and isn't found in their sound (delay like \"+170 ms\", output from videoEditOutName)",
+    "placeholders": {
+      "delay": {
+        "type": "String"
+      },
+      "output": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditSongDelayForget": "Forget the delay for {output}",
+  "@videoEditSongDelayForget": {
+    "description": "Video edit, a take: drops the song delay kept on this device for that output (output from videoEditOutName)",
+    "placeholders": {
+      "output": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditSongDelayKept": "Kept for {output}: its takes open with it",
+  "@videoEditSongDelayKept": {
+    "description": "Video edit, a take: the delay shown is the one kept on this device for that output; its takes whose song isn't found in their sound open with it (output from videoEditOutName)",
+    "placeholders": {
+      "output": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:math';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 
 import '../library/json_extra.dart';
@@ -27,6 +29,7 @@ class TakeLog {
     this.lagMs = 0,
     this.lagFrom = LagFrom.none,
     this.lagRaw = const {},
+    this.out,
     this.tab,
     this.song = const [],
     this.songLink = false,
@@ -41,6 +44,7 @@ class TakeLog {
     required this.lagMs,
     required this.lagFrom,
     required this.lagRaw,
+    required this.out,
     required this.tab,
     required this.song,
     required this.songLink,
@@ -71,6 +75,11 @@ class TakeLog {
   /// 0 being its start), kept so it can be told again better later.
   final Map<String, int> lagRaw;
 
+  /// What the song played through as the take started ([TakeOutput]),
+  /// noted, never acted on by Cam; null when it couldn't be told (and on
+  /// takes saved before Cam noted it).
+  final TakeOutput? out;
+
   /// The tab: the necklines shown, and when. Null with no tab.
   final TakeTab? tab;
 
@@ -98,6 +107,7 @@ class TakeLog {
     'lagMs',
     'lagFrom',
     'lagRaw',
+    'out',
     'tab',
     'song',
     'songLink',
@@ -123,6 +133,7 @@ class TakeLog {
         lagMs: lagMs,
         lagFrom: lagFrom,
         lagRaw: lagRaw,
+        out: out,
         tab: tab,
         song: [for (final s in song) s.withPage(ids[s.page] ?? s.page)],
         songLink: songLink,
@@ -153,6 +164,7 @@ class TakeLog {
       lagMs: lagMs,
       lagFrom: lagFrom,
       lagRaw: lagRaw,
+      out: out,
       tab: tab,
       song: List.unmodifiable([
         for (final s in song) s.withPage(ids[s.page] ?? s.page),
@@ -175,6 +187,7 @@ class TakeLog {
         lagMs: lagMs,
         lagFrom: lagFrom,
         lagRaw: lagRaw,
+        out: out,
         tab: tab,
         song: song,
         songLink: songLink,
@@ -189,6 +202,7 @@ class TakeLog {
       lagMs: lagMs,
       lagFrom: lagFrom,
       lagRaw: lagRaw,
+      out: out,
       tab: tab,
       song: song,
       songLink: songLink,
@@ -233,6 +247,7 @@ class TakeLog {
     'lagMs': lagMs,
     'lagFrom': lagFrom.name,
     if (lagRaw.isNotEmpty) 'lagRaw': lagRaw,
+    if (out != null) 'out': out!.toJson(),
     if (tab != null) 'tab': tab!.toJson(),
     'song': [for (final s in song) s.toJson()],
     if (songLink) 'songLink': true,
@@ -261,6 +276,7 @@ class TakeLog {
                 if (key is String && _int(value) != null) key: _int(value)!,
             })
           : const {},
+      out: TakeOutput.fromJson(json['out']),
       tab: TakeTab.fromJson(json['tab']),
       song: switch (json['song']) {
         final List list => List.unmodifiable([
@@ -714,6 +730,171 @@ class SyncClip {
   int get hashCode => Object.hash(at, ms, score);
 }
 
+/// What the song played through as a take started ([TakeLog.out]): its
+/// route, a fingerprint of the output's name, the latency the platform
+/// reported for it, and how that was told. Cam fixes nothing by it: the
+/// editor says it, and lines a take through headphones up with the delay
+/// kept for that output (`OutDelays`).
+///
+/// ```json
+/// "out": {"route": "bluetooth", "id": "3f9a1c07", "latencyMs": 160,
+///         "from": "session"}
+/// ```
+@immutable
+class TakeOutput {
+  const TakeOutput({
+    this.route = OutRoute.unknown,
+    this.id,
+    this.latencyMs,
+    this.from = OutFrom.unknown,
+    this.changed = false,
+  });
+
+  /// What kind of output it was.
+  final OutRoute route;
+
+  /// A fingerprint of the output's name (the first 8 hex digits of its
+  /// SHA-256, [fingerprint]): it tells one headset from another, while the
+  /// name itself (which can carry the owner's) is never kept. Null when
+  /// the platform gave no name.
+  final String? id;
+
+  /// The latency the platform reported for the output, ms, as a hint only:
+  /// the player's position may allow for it already. Null where none is
+  /// reported (Android).
+  final int? latencyMs;
+
+  /// How it was told.
+  final OutFrom from;
+
+  /// The output was another as the take stopped (headphones connected or
+  /// taken off while it recorded).
+  final bool changed;
+
+  /// Whether it was headphones: wired, Bluetooth or USB.
+  bool get headphones =>
+      route == OutRoute.wired ||
+      route == OutRoute.bluetooth ||
+      route == OutRoute.usb;
+
+  /// The key a delay is kept under for this output (`OutDelays`): its
+  /// route and fingerprint.
+  String get key => '${route.name}|${id ?? ''}';
+
+  /// Whether [other] is the same output (route and fingerprint).
+  bool sameAs(TakeOutput other) => other.route == route && other.id == id;
+
+  /// The fingerprint of an output named [name] ([id]).
+  static String fingerprint(String name) =>
+      sha256.convert(utf8.encode(name)).toString().substring(0, 8);
+
+  Map<String, Object?> toJson() => {
+    'route': route.name,
+    'id': ?id,
+    'latencyMs': ?latencyMs,
+    'from': from.name,
+    if (changed) 'changed': true,
+  };
+
+  /// Read leniently: null when it's no map; a route or way this version
+  /// doesn't know is unknown, a latency that's no number none, `changed`
+  /// only when true. (The log writes it back as it came.)
+  static TakeOutput? fromJson(Object? json) {
+    if (json is! Map) return null;
+    final id = json['id'];
+    return TakeOutput(
+      route: OutRoute.values.asNameMap()[json['route']] ?? OutRoute.unknown,
+      id: id is String && id.isNotEmpty ? id : null,
+      latencyMs: _int(json['latencyMs']),
+      from: OutFrom.values.asNameMap()[json['from']] ?? OutFrom.unknown,
+      changed: json['changed'] == true,
+    );
+  }
+
+  /// From a platform's reading, `{route, name, latencyMs, from}`: the name
+  /// made a fingerprint ([fingerprint]) and dropped. Null for none.
+  static TakeOutput? fromReading(Map<Object?, Object?>? reading) {
+    if (reading == null) return null;
+    final name = reading['name'];
+    final latency = _int(reading['latencyMs']);
+    return TakeOutput(
+      route: OutRoute.values.asNameMap()[reading['route']] ?? OutRoute.unknown,
+      id: name is String && name.trim().isNotEmpty
+          ? fingerprint(name.trim())
+          : null,
+      latencyMs: latency != null && latency >= 0 ? latency : null,
+      from: OutFrom.values.asNameMap()[reading['from']] ?? OutFrom.unknown,
+    );
+  }
+
+  TakeOutput copyWith({bool? changed}) => TakeOutput(
+    route: route,
+    id: id,
+    latencyMs: latencyMs,
+    from: from,
+    changed: changed ?? this.changed,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      other is TakeOutput &&
+      other.route == route &&
+      other.id == id &&
+      other.latencyMs == latencyMs &&
+      other.from == from &&
+      other.changed == changed;
+
+  @override
+  int get hashCode => Object.hash(route, id, latencyMs, from, changed);
+
+  @override
+  String toString() => 'TakeOutput(${toJson()})';
+}
+
+/// What a take's song played through ([TakeOutput.route]).
+enum OutRoute {
+  /// The device's own speaker (or an iPhone's receiver).
+  speaker,
+
+  /// Wired headphones, or a line out.
+  wired,
+
+  /// Bluetooth headphones or a Bluetooth speaker.
+  bluetooth,
+
+  /// A USB audio device.
+  usb,
+
+  /// AirPlay.
+  airplay,
+
+  /// Another kind of output (HDMI, a car's…).
+  other,
+
+  /// Not told.
+  unknown,
+}
+
+/// How a take's [TakeOutput] was told.
+enum OutFrom {
+  /// iOS: the audio session's current route and its output latency.
+  session,
+
+  /// Android 13 and later: the devices media plays through.
+  media,
+
+  /// Android before 13: the outputs connected, ranked as the system
+  /// routes media.
+  devices,
+
+  /// The web: the browser's default output's name, and Web Audio's output
+  /// latency.
+  browser,
+
+  /// Not told.
+  unknown,
+}
+
 /// Notes the song playing along while a take records, as the segments
 /// its log keeps ([TakeLog.song]): each stretch of one song playing on,
 /// from where it was, at one speed, on the take's clock. Told what the
@@ -725,8 +906,9 @@ class SyncClip {
 /// updated every so often, so the one it has as it starts may be late.
 class SongNotes {
   /// How far from where it would be, playing on, the song can be before
-  /// it's taken as a jump: the player's position is updated about every
-  /// half second, and read late by as much.
+  /// it's taken as a jump: video_player polls its player's position every
+  /// tenth of a second, and a reading can be late by as much again; the
+  /// rest is margin for a player whose own position steps coarser.
   static const jumpMs = 300;
 
   /// The most segments kept (the first): a section of 5 s played over
