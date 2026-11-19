@@ -4233,3 +4233,14 @@ spec.
    second is found to the millisecond, as before. The log's format is
    unchanged (the drift is logged, not kept). See
    [Cam](cam.md#the-song-found-in-the-takes-sound).
+
+## 2026-11-19
+
+
+1. **"Continue"** (checking tonight's editor changes live in Chrome, on
+   tabs.cam). The zoom works there (4×, the ruler to fifths of a second,
+   the scrollbar), but zoomed in, an empty Song lane's **Add a track**
+   zoomed with the lanes, its label off screen: it now stays as wide as
+   the view. The waveform reads there too: the capture's test video's
+   sound is one steady tone, so it draws as a flat band. See
+   [video edit](video-edit.md#zoom).

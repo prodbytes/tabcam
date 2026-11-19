@@ -3419,6 +3419,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
               SizedBox(
                 width: width,
                 height: _SongBar.height,
+                // Empty and zoomed in, its Add a song stays in view, over
+                // the scrolled lanes (below).
                 child: hasSong
                     ? Stack(
                         children: [
@@ -3438,6 +3440,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                             ),
                         ],
                       )
+                    : _zoom > 1
+                    ? const SizedBox.shrink()
                     : songBar,
               ),
             ],
@@ -3500,15 +3504,29 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                     _setZoom(_zoom * event.scale);
                   }
                 },
-                child: Scrollbar(
-                  controller: _timelineScroll,
-                  thumbVisibility: true,
-                  child: SingleChildScrollView(
-                    key: const Key('video-edit-timeline-scroll'),
-                    controller: _timelineScroll,
-                    scrollDirection: Axis.horizontal,
-                    child: bars(view * _zoom),
-                  ),
+                child: Stack(
+                  children: [
+                    Scrollbar(
+                      controller: _timelineScroll,
+                      thumbVisibility: true,
+                      child: SingleChildScrollView(
+                        key: const Key('video-edit-timeline-scroll'),
+                        controller: _timelineScroll,
+                        scrollDirection: Axis.horizontal,
+                        child: bars(view * _zoom),
+                      ),
+                    ),
+                    // No song: Add a song as wide as the view, not the
+                    // zoomed lane (its middle would be off screen).
+                    if (!hasSong)
+                      Positioned(
+                        left: 0,
+                        width: view,
+                        top: _Ruler.height + _SongBar.height + _laneGap,
+                        height: _SongBar.height,
+                        child: songBar,
+                      ),
+                  ],
                 ),
               );
             },
