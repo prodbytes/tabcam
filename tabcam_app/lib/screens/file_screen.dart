@@ -269,12 +269,14 @@ class _FileScreenState extends State<FileScreen> {
   /// Edits a video (trim, sound): the edit screen over this one, the
   /// video's own player let go meanwhile ([_editing]) so only the preview
   /// plays; back, the video plays as edited (the edit is kept with it).
-  /// Remembered while it's open, for a reload ([Place.edit]).
+  /// Remembered while it's open, for a reload ([Place.edit]), when it's
+  /// this screen's own video (not a take edited from the sidebar).
   Future<void> _edit(CaptureEvent event, EventPage page) async {
     setState(() => _editing = true);
     final memory = PlaceMemory.of(_library);
+    final own = page.id == _pageId;
     void remember(bool edit) => memory.update(
-      (p) => p.eventId == widget.eventId ? p.copyWith(edit: edit) : p,
+      (p) => own && p.eventId == widget.eventId ? p.copyWith(edit: edit) : p,
     );
     remember(true);
     try {

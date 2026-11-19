@@ -23,7 +23,8 @@ on the take's row in the play-along sidebar (in Cam, beside the Text
 view and beside a recording), which opens it the same way
 ([editing a take from the sidebar](cam.md#editing-a-take-from-the-sidebar)).
 It also opens from a link to the file's edit view, and again after a
-reload where it was open ([sharing](sharing.md),
+reload where it was open over its own file screen (not a take edited
+from a sidebar) ([sharing](sharing.md),
 [navigation](navigation.md#coming-back-where-the-user-was)); **Share**
 in its app bar (a link icon, before About) copies that link.
 

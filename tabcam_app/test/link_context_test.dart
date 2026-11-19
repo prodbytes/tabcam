@@ -144,6 +144,36 @@ void main() {
     expect(PlaceMemory.of(library).place.edit, isTrue);
   });
 
+  testWidgets('on a shared capture whose copy has no page of the file, the '
+      'file opens on it, read only, and no copy is made', (tester) async {
+    await capture(tester, shared: true);
+    late CaptureEvent had;
+    await tester.runAsync(() async {
+      had = await library.clone(library.byId(id)!);
+      // It owns its files now (shared since, say).
+      await library.update(had.withOwnFiles());
+    });
+    await show(tester, file: 'k0', edit: true);
+    expect(find.byType(VideoEditScreen), findsNothing);
+    expect(find.byType(FileScreen), findsOneWidget);
+    expect(
+      tester.widget<FileScreen>(find.byType(FileScreen)).eventId,
+      id,
+    );
+    expect(library.copyOf(id)!.id, had.id);
+    expect(PlaceMemory.of(library).place.edit, isFalse);
+  });
+
+  testWidgets('a shared capture\'s edit link to an image makes no copy', (
+    tester,
+  ) async {
+    await capture(tester, shared: true);
+    await show(tester, file: 'k1', edit: true);
+    expect(find.byType(FileScreen), findsOneWidget);
+    expect(find.byType(VideoEditScreen), findsNothing);
+    expect(library.copyOf(id), isNull);
+  });
+
   testWidgets("Share on the file screen copies the file's link; in the "
       "editor, the file's edit view's", (tester) async {
     await capture(tester);

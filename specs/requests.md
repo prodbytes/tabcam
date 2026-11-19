@@ -4256,6 +4256,17 @@ spec.
     [event screen](event-screen.md#file-screen) and
     [video edit](video-edit.md).
 
+<<<<<<< HEAD
+18. Follow-up to 17, from its review: an edit link on a capture shared
+    with the user makes a copy only for a video of the capture's own
+    files; when their copy has no page of that file (or can't be made),
+    the file opens on the shared capture, read only, as its plain link
+    does, and "The editor opens on your copy" shows only when it does. A
+    take edited from a sidebar isn't remembered as the file screen's
+    editor for a reload. The editor opened from Cam gets cloud sync, so
+    its Share copies the keyed link. See [sharing](sharing.md) and
+    [shared captures](shared-captures.md#shared-with-me).
+=======
 ## 2026-11-19
 
 
@@ -4266,3 +4277,4 @@ spec.
    the view. The waveform reads there too: the capture's test video's
    sound is one steady tone, so it draws as a flat band. See
    [video edit](video-edit.md#zoom).
+>>>>>>> origin/main
