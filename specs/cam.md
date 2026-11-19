@@ -762,7 +762,12 @@ view).
   ([`PlayAlongKeys`](../tabcam_app/lib/capture/play_along_sidebar.dart)
   gets the keys before the screen does): 0 goes back to the start, 1
   (on the top row or the keypad) and the space bar pause and play, in
-  Cam too (where 1 was [Rec / Stop](#rec-key) until 2026-11-17).
+  Cam too (where 1 was [Rec / Stop](#rec-key) until 2026-11-17), and
+  **←** and **→** go 10 seconds back and on, as « and » do (held, again
+  and again; Alt + ← is left to the browser's Back). Until 2026-11-19
+  ← and → did that only in Cam, though the shortcuts listed them on a
+  capture's and a file's screens too; with the sidebar hidden, in Cam
+  ← still turns the tab back.
   Ctrl / ⌘ + 1 is left to the browser (its first tab). The exceptions:
   typing in a field (the Text view's
   editor, the dictionary's search) still types them, until a tap in the

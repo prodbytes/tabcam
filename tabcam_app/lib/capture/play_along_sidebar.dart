@@ -654,6 +654,12 @@ class PlayAlongKeys extends StatefulWidget {
   /// or the keypad.
   static final toggle = {LogicalKeyboardKey.digit1, LogicalKeyboardKey.numpad1};
 
+  /// ← and →: « and », [skipBy] back and on.
+  static final skips = {
+    LogicalKeyboardKey.arrowLeft: -skipBy,
+    LogicalKeyboardKey.arrowRight: skipBy,
+  };
+
   /// Whether [event] is one of [keys] pressed alone (Ctrl / ⌘ + 0 is the
   /// browser's zoom, Ctrl / ⌘ + 1 its first tab, left to it).
   static bool _alone(KeyEvent event, Set<LogicalKeyboardKey> keys) {
@@ -708,6 +714,13 @@ class _PlayAlongKeysState extends State<PlayAlongKeys> {
     if (field != null && !field.readOnly) return KeyEventResult.ignored;
     if (PlayAlongKeys._alone(event, PlayAlongKeys.restart)) {
       if (event is KeyDownEvent) unawaited(track.restart());
+      return KeyEventResult.handled;
+    }
+    // ← and →, as « and » (held, again and again: a repeat skips too).
+    if (PlayAlongKeys._alone(event, PlayAlongKeys.skips.keys.toSet())) {
+      if (track.canToggle) {
+        unawaited(track.skip(PlayAlongKeys.skips[event.logicalKey]!));
+      }
       return KeyEventResult.handled;
     }
     final toggles =

@@ -270,6 +270,47 @@ void main() {
     track.dispose();
   });
 
+  testWidgets('← and → skip 10 seconds back and on, as « and »; held, '
+      'again and again', (tester) async {
+    final (track, _) = await loaded(tester);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PlayAlongKeys(
+          track: track,
+          child: const SizedBox(
+            key: Key('sidebar'),
+            width: 200,
+            height: 200,
+            child: ColoredBox(color: Colors.black),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(const Key('sidebar')));
+    video.seeks.clear();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    expect(video.seeks, [const Duration(seconds: 10)]);
+    // Held: the repeats skip too.
+    video.seeks.clear();
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowRight);
+    await tester.sendKeyRepeatEvent(LogicalKeyboardKey.arrowRight);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.arrowRight);
+    expect(video.seeks, const [
+      Duration(seconds: 20),
+      Duration(seconds: 30),
+    ]);
+    video.seeks.clear();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    expect(video.seeks, const [Duration(seconds: 20)]);
+    // Alt + ← is the browser's Back, left to it.
+    video.seeks.clear();
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
+    expect(video.seeks, isEmpty);
+    track.dispose();
+  });
+
   testWidgets('while a take records it always counts in, the count-in off '
       'or not; the take over, off plays at once again', (tester) async {
     final recording = ValueNotifier(false);
