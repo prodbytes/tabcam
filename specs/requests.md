@@ -4255,3 +4255,14 @@ spec.
     [navigation](navigation.md#coming-back-where-the-user-was),
     [event screen](event-screen.md#file-screen) and
     [video edit](video-edit.md).
+
+## 2026-11-19
+
+
+1. **"Continue"** (checking tonight's editor changes live in Chrome, on
+   tabs.cam). The zoom works there (4×, the ruler to fifths of a second,
+   the scrollbar), but zoomed in, an empty Song lane's **Add a track**
+   zoomed with the lanes, its label off screen: it now stays as wide as
+   the view. The waveform reads there too: the capture's test video's
+   sound is one steady tone, so it draws as a flat band. See
+   [video edit](video-edit.md#zoom).

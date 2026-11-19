@@ -2313,6 +2313,10 @@ void main() {
     expect(take.width, closeTo(whole.width * 4, 1));
     expect(rect('video-edit-ruler').width, closeTo(take.width, 0.5));
     expect(take.left, closeTo(whole.left, 0.5));
+    // With no song, Add a track stays as wide as the view, in it.
+    final add = tester.getRect(find.byKey(const Key('video-edit-song-add')));
+    expect(add.left, closeTo(whole.left, 1));
+    expect(add.right, lessThanOrEqualTo(whole.right + 1));
 
     // A tap a quarter across the view is a sixteenth of the video in:
     // 0:11.25 of 3 minutes.
