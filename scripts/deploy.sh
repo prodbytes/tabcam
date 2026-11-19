@@ -165,7 +165,13 @@ echo "    bucket: $bucket, distribution: $distribution"
 # 3. The content. Flutter's web files aren't content-hashed, so browsers
 # revalidate everything (no-cache); CloudFront is invalidated below.
 echo "==> uploading"
-aws s3 cp tabcam_index/site/index.html "s3://$bucket/index.html" \
+# The index page, with the Google web client the app signs in with (its
+# Google sign-in; none without one).
+index_html="$(mktemp)"
+trap 'rm -f "$index_html"' EXIT
+python3 scripts/index_page.py fill "${TABCAM_GOOGLE_WEB_CLIENT_ID:-}" \
+  < tabcam_index/site/index.html > "$index_html"
+aws s3 cp "$index_html" "s3://$bucket/index.html" \
   --cache-control no-cache --content-type "text/html; charset=utf-8" --only-show-errors
 # The index page's pictures and logo, at /img/.
 aws s3 sync tabcam_index/site/img/ "s3://$bucket/img/" --delete --cache-control no-cache --only-show-errors
@@ -190,6 +196,9 @@ check() {
     | python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])')" || return 1
   [[ "$live" == "$VERSION" ]] || { echo "    /app/version.json says $live, want $VERSION"; return 1; }
   curl -fsS --max-time 20 "https://$DOMAIN/" | grep -q '<main id="features">' || { echo "    / isn't the index page"; return 1; }
+  if [[ -n "${TABCAM_GOOGLE_WEB_CLIENT_ID:-}" ]]; then
+    curl -fsS --max-time 20 "https://$DOMAIN/" | grep -qF "content=\"$TABCAM_GOOGLE_WEB_CLIENT_ID\"" || { echo "    / has no Google client ID"; return 1; }
+  fi
   curl -fsS --max-time 20 -o /dev/null "https://$DOMAIN/img/logo.svg" || { echo "    /img/logo.svg failed"; return 1; }
   curl -fsS --max-time 20 -o /dev/null "https://$DOMAIN/app/" || { echo "    /app/ failed"; return 1; }
   # The old name sends its pages here, path and query kept.

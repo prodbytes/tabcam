@@ -325,13 +325,31 @@ say nothing of how sure they are: their text has none
 
 Above the text, **the editing tools**, on a line of their own
 ([editing tools](#editing-tools)). **In the app bar**, right of the
-title, three buttons of one kind (one more in a build that shows Fix):
-labelled compact buttons, or on a screen narrower than 600 px icons
-with their tooltips (Verified a check, filled and in the primary colour
-while on), and there the event screen's other buttons go in a menu
-([event screen](event-screen.md)). In this order:
+title, four buttons (one more in a build that shows Fix): labelled
+compact buttons (Two columns an icon alone), or on a screen narrower than
+900 px (a tablet held upright, a phone) icons with their tooltips (Two
+columns a column icon and Verified a check, filled and in the primary
+colour while on); narrower than 600 px the event screen's other buttons
+go in a menu too ([event screen](event-screen.md)). In this order:
 
 - **Copy**: the text, to the clipboard.
+- **Two columns**: a toggle, a column icon alone even on a wide screen
+  (a round button, tonal while off and filled while on, so the app bar
+  keeps the title's room; tooltips "Show the tab in two columns, split
+  in half" and "Back to one column, to edit") showing the tab split in half, the first half on the left
+  and the second on the right, side by side with a thin line between
+  them, to read a long tab without scrolling down as far
+  ([`splitInHalf`](../tabcam_app/lib/screens/tab_editing.dart)). The
+  break is at the line nearest the middle that doesn't cut a phrase:
+  after a blank line where there is one, else between two lines that
+  aren't both string lines, and only failing both at the middle line;
+  the blank lines at the break are dropped. The columns scroll down
+  together; each one's long lines scroll sideways on its own. The red
+  notes stay red. It's for reading: while it's on the editing tools
+  hide, the text can be selected but not edited, and the dictionary's
+  **+** says the text can't be changed now; the edits pending are saved
+  when it's turned on. Off during Fix's review. Not remembered: the
+  view opens in one column. Also on an event shared read only.
 - **Fix**, hidden for now (shown only in a build with `TABCAM_FIX=true`,
   see [auto-correct](autocorrect.md#hidden-for-now)): lines the tab up (each staff's strings named, bars lined up,
   every string ending together), for everyone; then, with Premium,

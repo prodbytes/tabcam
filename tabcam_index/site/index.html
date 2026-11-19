@@ -10,14 +10,45 @@
   <meta property="og:title" content="tabs.cam: a camera for your guitar tabs">
   <meta property="og:description" content="Scan your tabs, record your practice, share and play along.">
   <link rel="icon" type="image/png" href="/app/favicon.png">
+  <!-- The Google web client, filled in by scripts/index_page.py (the deploy
+       and the local server); empty, no Google sign-in. -->
+  <meta name="google-signin-client_id" content="">
   <!-- The site root: what tabs.cam does, and the way into the app, which
        lives under /app/. Spec: specs/index-page.md. Everything is in this
-       file and /img/ (scripts/deploy.sh uploads both); no third-party
-       requests. -->
+       file and /img/ (scripts/deploy.sh uploads both); the one third-party
+       request is Google's sign-in script, for visitors not signed in. -->
   <script>
     // A capture's link that names the root goes to the app, query kept.
     if (/[?&]c=/.test(location.search)) location.replace('/app/' + location.search);
-    document.documentElement.classList.add('js');
+    (function () {
+      var root = document.documentElement;
+      root.classList.add('js');
+      // Who the app has signed in on this browser (the same origin's
+      // localStorage): a tabs.cam session, or a Google sign-in whose token
+      // is still good. Null if no one, or storage is off.
+      function claims(jwt) {
+        try {
+          var b64 = jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+          var bytes = Uint8Array.from(atob(b64), function (c) { return c.charCodeAt(0); });
+          return JSON.parse(new TextDecoder().decode(bytes));
+        } catch (e) { return null; }
+      }
+      function signedIn() {
+        try {
+          var s = JSON.parse(localStorage.getItem('tabcam.signed-in') || 'null');
+          if (s && s.refreshToken && s.email) return s;
+          var g = JSON.parse(localStorage.getItem('tabcam.session') || 'null');
+          var c = g && g.idToken && claims(g.idToken);
+          if (c && c.exp * 1000 > Date.now() + 60000 && g.email) return g;
+        } catch (e) {}
+        return null;
+      }
+      var who = signedIn();
+      var client = document.querySelector('meta[name="google-signin-client_id"]').content;
+      window.tabcam = { who: who, client: client, claims: claims };
+      if (who) root.classList.add('signed-in');
+      else if (client) root.classList.add('google');
+    })();
   </script>
   <style>
     :root {
@@ -101,6 +132,33 @@
     .banner h1 em { font-style: normal; color: var(--gold); }
     .lead { margin: 1.2em auto 2em; max-width: 34em; color: var(--muted); font-size: clamp(1.05rem, 2vw, 1.25rem); }
     .banner .note { margin-top: 1.4em; color: var(--muted); font-size: 0.85rem; }
+
+    /* The way in: Open tabs.cam; offered Google sign-in, Google's own
+       button first (one click, "Continue as …" when the browser has a
+       Google account) and Open tabs.cam beside it, quieter, for the other
+       ways in. Their row wraps on phones, the Google button on top. */
+    .way-in { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 14px 18px; }
+    .gsi { display: none; }
+    .google .gsi { display: flex; justify-content: center; width: 300px; min-height: 40px; color-scheme: light; }
+    .google .gsi:empty { border-radius: 4px; background: rgba(251, 247, 239, 0.08); }
+    .google .way-in .button.primary {
+      display: inline-flex; align-items: center; justify-content: center; height: 40px; padding: 0 1.8em;
+      background: transparent; color: var(--gold);
+    }
+    .google .way-in .button.primary:hover, .google .way-in .button.primary:focus-visible {
+      background: var(--gold); border-color: var(--gold); color: var(--bg); transform: none;
+    }
+    .way-in-note .signed-as { display: none; }
+    .signed-in .way-in-note .signed-as { display: inline; }
+    .signed-as strong { color: var(--fg); font-weight: 600; }
+    /* Where Google's One Tap shows when it's on the page (browsers without
+       FedCM): under the top bar on the right, not over it. With FedCM the
+       browser places it. */
+    #one-tap { position: fixed; top: 72px; right: clamp(8px, 3vw, 40px); z-index: 20; }
+    @media (max-width: 520px) {
+      .google .gsi, .google .way-in .button.primary { width: 100%; max-width: 360px; }
+      #one-tap { top: 64px; right: 8px; }
+    }
 
     /* A key feature: its picture, edge to edge, and its text in a box
        over one of the picture's corners. */
@@ -188,9 +246,14 @@
     <h1>A camera for your <em>guitar tabs</em></h1>
     <p class="lead">Scan the tabs you write, learn from and own. Record
     yourself playing them. Share them with the people you play with.</p>
-    <a class="button primary" href="/app/">Open tabs.cam</a>
-    <p class="note">Runs in your browser, on your phone or your computer.</p>
+    <div class="way-in">
+      <div class="gsi"></div>
+      <a class="button primary" href="/app/" data-signed-in="Open your tabs">Open tabs.cam</a>
+    </div>
+    <p class="note way-in-note"><span class="signed-as">Signed in as <strong></strong>. </span>Runs
+    in your browser, on your phone or your computer.</p>
   </section>
+  <div id="one-tap"></div>
 
   <main id="features">
     <section class="spotlight" id="scan">
@@ -246,7 +309,10 @@
     <h2>Start with the tab on your music stand</h2>
     <p>tabs.cam comes with no songs: everything in it is what you scan or
     add yourself, kept in your own account. No ads, no tracking.</p>
-    <a class="button primary" href="/app/">Open tabs.cam</a>
+    <div class="way-in">
+      <div class="gsi"></div>
+      <a class="button primary" href="/app/" data-signed-in="Open your tabs">Open tabs.cam</a>
+    </div>
   </section>
 
   <footer>
@@ -268,6 +334,64 @@
         });
       }, { threshold: 0.15 });
       boxes.forEach(function (box) { seen.observe(box); });
+    })();
+
+    // The way in. Signed in already: "Open your tabs", and who. Otherwise,
+    // with a Google client: Google's button and One Tap; a sign-in is left
+    // where the app's Google sign-in keeps its own (localStorage
+    // tabcam.session), and the app, opened, starts its session from it.
+    (function () {
+      var tabcam = window.tabcam, root = document.documentElement;
+      if (tabcam.who) {
+        document.querySelectorAll('[data-signed-in]').forEach(function (a) {
+          a.textContent = a.getAttribute('data-signed-in');
+        });
+        document.querySelector('.signed-as strong').textContent = tabcam.who.name || tabcam.who.email;
+        return;
+      }
+      if (!tabcam.client) return;
+      function off() { root.classList.remove('google'); }
+      function signedIn(response) {
+        var c = response && response.credential && tabcam.claims(response.credential);
+        if (!c || !c.sub || !c.email) return;
+        try {
+          localStorage.setItem('tabcam.session', JSON.stringify({
+            id: c.sub, email: c.email, name: c.name || null, photoUrl: c.picture || null,
+            provider: 'google', idToken: response.credential
+          }));
+        } catch (e) {} // storage off: the app asks again
+        location.href = '/app/';
+      }
+      var script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.onerror = off;
+      script.onload = function () {
+        try {
+          var id = google.accounts.id;
+          id.initialize({
+            client_id: tabcam.client,
+            callback: signedIn,
+            auto_select: false,
+            cancel_on_tap_outside: true,
+            context: 'signin',
+            itp_support: true,
+            use_fedcm_for_prompt: true,
+            prompt_parent_id: 'one-tap'
+          });
+          // As wide as its slot (Google's limits: 200 to 400 px), in the
+          // page's language.
+          document.querySelectorAll('.gsi').forEach(function (slot) {
+            id.renderButton(slot, {
+              type: 'standard', theme: 'outline', size: 'large', shape: 'rectangular',
+              text: 'continue_with', logo_alignment: 'left', locale: 'en',
+              width: Math.max(200, Math.min(400, Math.round(slot.clientWidth)))
+            });
+          });
+          id.prompt();
+        } catch (e) { off(); }
+      };
+      document.head.appendChild(script);
     })();
   </script>
 </body>

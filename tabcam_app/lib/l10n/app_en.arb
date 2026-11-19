@@ -1578,6 +1578,18 @@
   "@textViewCopy": {
     "description": "Button copying the text tab"
   },
+  "textViewColumns": "Two columns",
+  "@textViewColumns": {
+    "description": "Toggle button splitting the Text view in two columns, the tab's first half on the left and the second on the right"
+  },
+  "textViewColumnsTip": "Show the tab in two columns, split in half",
+  "@textViewColumnsTip": {
+    "description": "Tooltip of the Two columns button while off"
+  },
+  "textViewColumnsOn": "Back to one column, to edit",
+  "@textViewColumnsOn": {
+    "description": "Tooltip of the Two columns button while on"
+  },
   "textViewFix": "Fix",
   "@textViewFix": {
     "description": "Button that corrects the tab from the song's tab online"
