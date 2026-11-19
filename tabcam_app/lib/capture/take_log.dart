@@ -736,6 +736,12 @@ class SongNotes {
   final _segments = <SongSegment>[];
   ({int at, String page, int from, double speed})? _open;
   bool _link = false;
+  int _segment = 0;
+
+  /// Which segment is the one playing (or the last one started): each one
+  /// [note] starts counts one more, so a reading for one ([anchor]) isn't
+  /// taken for the next.
+  int get segment => _segment;
 
   /// Whether a link in a frame played (it has no position to note).
   bool get link => _link;
@@ -766,6 +772,7 @@ class SongNotes {
       return false;
     }
     _open = (at: t, page: page, from: max(0, position), speed: speed);
+    _segment++;
     return true;
   }
 
@@ -773,13 +780,24 @@ class SongNotes {
   void noteLink() => _link = true;
 
   /// A fresh reading at [t]: [page] was at [position]. The segment
-  /// playing it, if it's still open, is told from it: where it was at its
-  /// start.
-  void anchor(int t, {required String page, required int position}) {
+  /// playing it ([segment], when given: that one only), if it's still
+  /// open, is told from it: where it was at its start. One that would
+  /// have started before its song's start (its player said it played
+  /// before its sound started, its position held meanwhile) starts later
+  /// instead, when the song's start sounded. A later reading tells it
+  /// again, better.
+  void anchor(
+    int t, {
+    required String page,
+    required int position,
+    int? segment,
+  }) {
     final open = _open;
     if (open == null || open.page != page || t < open.at) return;
+    if (segment != null && segment != _segment) return;
     final from = position - ((t - open.at) * open.speed).round();
-    _open = (at: open.at, page: page, from: max(0, from), speed: open.speed);
+    final at = from >= 0 ? open.at : t - (position / open.speed).round();
+    _open = (at: at, page: page, from: max(0, from), speed: open.speed);
   }
 
   /// The segments noted, the one playing ended at [t].

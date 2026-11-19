@@ -1,4 +1,5 @@
 import 'package:cross_file/cross_file.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,6 +23,7 @@ void main() {
   Future<(BackingTrack, CaptureEvent)> loaded(
     WidgetTester tester, {
     Library? library,
+    ValueListenable<bool>? recording,
   }) async {
     final lib =
         library ?? Library(PlatformEventStore(), null, (_) async => null);
@@ -38,6 +40,7 @@ void main() {
     });
     final track = BackingTrack(
       lib,
+      recording: recording ?? ValueNotifier(false),
       open: (_, _, _) async {
         final media = VideoPlayerController.networkUrl(
           Uri.parse('https://example.com/riff.m4a'),
@@ -263,6 +266,117 @@ void main() {
     expect(track.countingIn, isTrue);
     await tester.pump(BackingTrack.countInLength);
     expect(track.playing, isTrue);
+    await track.pause();
+    track.dispose();
+  });
+
+  testWidgets('while a take records it always counts in, the count-in off '
+      'or not; the take over, off plays at once again', (tester) async {
+    final recording = ValueNotifier(false);
+    final (track, _) = await loaded(tester, recording: recording);
+    await tester.runAsync(() => track.setCountIn(false));
+    expect(track.countsIn, isFalse);
+
+    recording.value = true;
+    expect(track.countsIn, isTrue);
+    await track.toggle();
+    expect(track.countingIn, isTrue);
+    expect(video.playing, isEmpty);
+    // Switching it off doesn't cut a take's count-in short.
+    await tester.runAsync(() => track.setCountIn(false));
+    expect(track.countingIn, isTrue);
+    await tester.pump(BackingTrack.countInLength);
+    expect(track.playing, isTrue);
+    await track.pause();
+
+    recording.value = false;
+    await track.toggle();
+    expect(track.countingIn, isFalse);
+    expect(track.playing, isTrue);
+    await track.pause();
+    track.dispose();
+  });
+
+  testWidgets('a take starting counts in afresh: one under way counts from '
+      'now again; playing already, it plays on', (tester) async {
+    final recording = ValueNotifier(false);
+    final (track, _) = await loaded(tester, recording: recording);
+    await track.toggle();
+    await tester.pump(const Duration(milliseconds: 1500));
+    recording.value = true;
+    await track.playWithTake();
+    expect(track.countingIn, isTrue);
+    await tester.pump(const Duration(milliseconds: 1900));
+    expect(video.playing, isEmpty);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(track.playing, isTrue);
+
+    final run = track.countInRun;
+    await track.playWithTake();
+    expect(track.countInRun, run);
+    expect(track.playing, isTrue);
+    await track.pause();
+    track.dispose();
+  });
+
+  testWidgets('Repeat starts it over after a count-in too: the player\'s '
+      'own looping off meanwhile, at the file\'s end and a section\'s; with '
+      'the count-in off it starts over at once, the player looping', (
+    tester,
+  ) async {
+    final recording = ValueNotifier(false);
+    final (track, _) = await loaded(tester, recording: recording);
+    final player = video.lastPlayer;
+    expect(track.repeat, isTrue);
+    expect(video.looping[player], isFalse);
+    // Its end watched on the test's clock (it was opened on the real one).
+    await track.setRepeat(true);
+
+    await track.toggle();
+    await tester.pump(BackingTrack.countInLength);
+    expect(track.playing, isTrue);
+    // The file's end: a breath, then from its start.
+    video.seeks.clear();
+    // (Its events come on the real clock, as it was opened there.)
+    await tester.runAsync(() async {
+      video.complete(player);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    });
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(video.seeks.last, Duration.zero);
+    expect(track.countingIn, isTrue);
+    expect(video.playing, isEmpty);
+    await tester.pump(BackingTrack.countInLength);
+    expect(track.playing, isTrue);
+
+    // A section's end, the same.
+    await track.setSection(
+      const Duration(seconds: 10),
+      const Duration(seconds: 20),
+    );
+    video.position = const Duration(seconds: 15);
+    await tester.pump(const Duration(milliseconds: 200));
+    video.seeks.clear();
+    video.position = const Duration(seconds: 20);
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(video.seeks, [const Duration(seconds: 10)]);
+    video.position = const Duration(seconds: 10); // the seek landed
+    expect(track.countingIn, isTrue);
+    expect(video.playing, isEmpty);
+    await tester.pump(BackingTrack.countInLength);
+    expect(track.playing, isTrue);
+    await track.clearSection();
+
+    // Off: the player loops by itself, at once; a take recording, it
+    // counts in again.
+    await tester.runAsync(() => track.setCountIn(false));
+    expect(video.looping[player], isTrue);
+    recording.value = true;
+    await tester.pump();
+    expect(video.looping[player], isFalse);
+    recording.value = false;
+    await tester.pump();
+    expect(video.looping[player], isTrue);
     await track.pause();
     track.dispose();
   });

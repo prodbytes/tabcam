@@ -126,10 +126,14 @@ its **Not now** leaving. With Premium it opens the camera view
     kept, the message shown), and once it's saved, the next take starts
     as Rec starts one. Both takes are in the capture, one ending and the
     other starting where / was pressed. The song in the sidebar (when it
-    shows) **plays on** through the cut, so the next take's log notes it
-    from where it is and [the editor](video-edit.md#a-takes-song-lined-up)
-    lines it up there; paused, it stays paused until the next take
-    starts it, as Rec does.
+    shows) **pauses where it is** at the cut, rather than playing on
+    while the take is saved (which can take seconds: on iOS the take is
+    made H.264), so the next take misses none of it: once the next take
+    records, it plays on from there after the take's
+    [count-in](#count-in), and the next take's log notes it from there
+    ([the editor](video-edit.md#a-takes-song-lined-up) lines it up
+    there). Paused before, it stays paused until the next take starts
+    it, as Rec does.
   - **.** (on the main keyboard or the keypad's decimal key, also where
     that key types "," as on Brazilian, German and most European layouts,
     matched by where it is on the keyboard; the comma key itself turns
@@ -140,8 +144,8 @@ its **Not now** leaving. With Premium it opens the camera view
     its file deleted from the device; on Android the app's sound for it
     is dropped, not put into the video), a message says "Take thrown
     away: recording it again", and the next take starts as Rec starts
-    one, the song with it from its start, after the count-in if that's
-    on. Pressed again and again, only the last take is kept, once it's
+    one, the song with it from its start, after the take's count-in.
+    Pressed again and again, only the last take is kept, once it's
     stopped (Stop or /). A take saved before is never touched: . only
     throws away the one recording.
 
@@ -533,10 +537,13 @@ plays it. The user plays along, and records as usual: Rec doesn't stop
 it, so the microphone records it too (iOS mixes its sound with the
 recording's: `mixWithOthers`). **Rec starts it**: with the sidebar
 showing and the one in the frame not playing, Rec plays it as Play
-would (after the [count-in](#count-in), from where it is, or from its
-start, its section's, at its end), once the take is recording; one
-that plays already plays on, and with the sidebar hidden nothing
-starts. Stop (the take's) leaves it playing. While the take records,
+would, from where it is (or from its start, its section's, at its
+end), once the take is recording, after the take's
+[count-in](#count-in), which a take always has, the count-in switched
+off or not; a count-in under way as Rec is pressed counts again from
+the take's start, so every take opens with its 2 seconds before the
+song (`BackingTrack.playWithTake`). One that plays already plays on,
+and with the sidebar hidden nothing starts. Stop (the take's) leaves it playing. While the take records,
 its [log](#what-a-take-keeps) notes where the song played (paused,
 skipped or started over too), so the [editor](video-edit.md#a-takes-song-lined-up)
 opens the take with the song already lined up: nothing to sync by hand.
@@ -703,8 +710,20 @@ view).
   (or space) again, Pause, Stop, hiding the sidebar or another file
   stop it without playing; turned off meanwhile, it plays at once; **0**
   goes back to the start and counts in again, from the top (below).
-  Repeat and a section's loop start over without one; the count-in is real time, whatever the
-  speed. The setting is kept on the device (the meta file
+  **Starting over counts in too**: at its end with Repeat on (the
+  file's, or a section's), it pauses at the start, counts in, and plays
+  again, a breath between times through; the player's own looping is
+  off meanwhile, and Cam watches the end itself every tenth of a second
+  (`BackingTrack._keepInSection`). With the count-in off, it starts
+  over at once (the whole file by the player's own looping).
+  **While a take records it always counts in** (`BackingTrack.countsIn`),
+  at play and at each start over, whatever the setting: the user's
+  breath before the song, and a margin that keeps the song's start
+  inside the take, after the recording has surely started, so the
+  [song can be found in it](#the-song-found-in-the-takes-sound).
+  Switched off while a take counts in, it counts on; with the count-in
+  off, the seconds show while it counts in for a take. The count-in is
+  real time, whatever the speed. The setting is kept on the device (the meta file
   `playalong`, `{"countIn": false}`; until 2026-11-11 it was named
   `play-along`, which the apps' store refuses, so it was never kept there), for Cam, the Text view and the
   file screen alike.
@@ -865,13 +884,34 @@ Play uses it too (above). A few KB for a ten-minute take:
   song, another speed or a jump (where it is more than 300 ms from
   where it would be, playing on: a seek, a skip, Repeat or its section
   starting over) ends a segment, and playing again starts the next. As
-  one starts, a fresh reading of the player tells again where it
-  started (the player's own position is only updated about every half
-  second). A song playing already as Rec is pressed is noted from the
+  one starts, fresh readings of the player tell again where it started
+  (the player's own position is only updated about every half second):
+  at once, 0.3 s and 1 s after, each read halfway between asking the
+  player and its answer, the last telling it best. A player says it
+  plays a little before its sound starts, its position held at the
+  start meanwhile; a reading that would put the segment's start before
+  the song's start moves the segment's start later instead, to when
+  the song's start sounded (it used to stay where the player said it
+  played, the song then lined up that much early). Each segment's
+  readings tell only that one, not the next (Repeat starting it over
+  within the second). A song playing already as Rec is pressed is noted from the
   take's start. At most 2000 segments. `songLink` when a link in a
   frame played (it has no position: no segment). Empty when none
   played, and on takes saved before Cam noted it. The editor lines the
   song up from them ([lined up](video-edit.md#a-takes-song-lined-up)).
+  **Bluetooth**: the user plays along with the song as they hear it,
+  a Bluetooth speaker's or headphones' delay (a sixth to a third of a
+  second) after the player plays it. The players' positions count that
+  delay already, as far as the system reports it: Android's ExoPlayer
+  from `AudioTrack.getTimestamp` (and the output's latency), iOS's
+  AVPlayer and the browsers from the output's reported latency, since
+  they keep a video's picture in step with the sound heard. So Cam adds
+  no offset of its own for Bluetooth (one would count the delay twice);
+  what the system reports wrong (it can be off by tens of ms, and change
+  while it plays) is [measured from the take's sound](#the-song-found-in-the-takes-sound)
+  when the microphone hears the speaker (600 ms each way is looked in),
+  and with headphones (the microphone hears no song) the editor's
+  [Delay](video-edit.md#the-songs-delay) corrects it by hand.
 - <a id="the-song-found-in-the-takes-sound"></a>**Where the song really
   is** (`sync`): the segments say where the player was and the lag where
   the file was, each good to a tenth of a second or so; but the take's

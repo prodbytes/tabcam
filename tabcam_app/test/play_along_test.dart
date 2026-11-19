@@ -256,6 +256,12 @@ void main() {
     }
   }
 
+  /// The count-in a take always has before its song plays, passed.
+  Future<void> countedIn(WidgetTester tester) async {
+    await tester.pump(BackingTrack.countInLength);
+    await frames(tester);
+  }
+
   Future<(Library, String)> capture(WidgetTester tester, {String? tab}) async {
     final library = Library(PlatformEventStore(), null, (_) async => null);
     late String id;
@@ -1206,8 +1212,11 @@ B|--5--8--|
     await frames(tester);
     expect(video.playing, isEmpty);
     expect(camera.recording, isTrue);
+    // Recording, it counts in first, count-in off or not.
     await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
     await frames(tester);
+    expect(video.playing, isEmpty);
+    await countedIn(tester);
     expect(video.playing, hasLength(1));
     expect(camera.recording, isTrue);
     expect(find.text('1 / 3'), findsOneWidget);
@@ -3045,10 +3054,13 @@ B|--5--8--|
       return null;
     };
     addTearDown(() => SoundReader.opener = null);
-    // Loaded in the frame, not playing: Rec plays it.
+    // Loaded in the frame, not playing: Rec plays it, after the take's
+    // count-in (the count-in switched off or not).
     expect(video.playing, isEmpty);
     await tester.tap(find.byTooltip('Rec (.)'));
     await frames(tester);
+    expect(video.playing, isEmpty);
+    await countedIn(tester);
     expect(video.playing, hasLength(1));
     expect(readers, 0);
     // The take's Stop leaves it playing; Rec again doesn't pause it.
@@ -3067,6 +3079,8 @@ B|--5--8--|
     expect(first.single.page, riff.id);
     expect(first.single.from, 0);
     expect(first.single.to, greaterThan(first.single.at));
+    // Somewhere along it as the next take starts.
+    video.position = const Duration(seconds: 5);
     await tester.tap(find.byTooltip('Rec (.)'));
     await frames(tester);
     expect(video.playing, hasLength(1));
@@ -3105,9 +3119,10 @@ B|--5--8--|
     expect(video.playing, isEmpty);
   });
 
-  testWidgets('/ with a song in the sidebar cuts: the song plays on while '
-      'the take is saved and through the next; . stops it at once, back at '
-      'its start, and plays it from there with the new take, recording or '
+  testWidgets('/ with a song in the sidebar cuts: the song pauses where it '
+      'is while the take is saved, and plays on from there with the next, '
+      'after its count-in; . stops it at once, back at its start, and plays '
+      'it from there with the new take, after its count-in, recording or '
       'not', (tester) async {
     final (library, id) = await capture(tester, tab: _tab);
     await tester.runAsync(() async {
@@ -3131,25 +3146,28 @@ B|--5--8--|
       ),
     );
     await frames(tester);
-    // Not recording, . starts a take and the song from its start.
+    // Not recording, . starts a take and the song from its start, after
+    // the take's count-in.
     expect(video.playing, isEmpty);
     video.position = const Duration(seconds: 20);
     await tester.sendKeyEvent(LogicalKeyboardKey.period);
     await frames(tester);
     expect(camera.recording, isTrue);
-    expect(video.playing, hasLength(1));
+    expect(video.playing, isEmpty);
     expect(video.seeks, [Duration.zero]);
+    await countedIn(tester);
+    expect(video.playing, hasLength(1));
 
-    // /: the song plays on while the take is saved…
+    // /: the song pauses where it is while the take is saved…
     video.position = const Duration(seconds: 40);
     final hold = camera.stopHold = Completer<void>();
     await tester.sendKeyEvent(LogicalKeyboardKey.slash);
     await frames(tester);
-    expect(video.playing, hasLength(1));
+    expect(video.playing, isEmpty);
     expect(video.seeks, [Duration.zero]);
     expect(camera.recording, isFalse);
 
-    // …and through the next take, from where it is.
+    // …and plays on from there with the next take, after its count-in.
     hold.complete();
     await until(
       tester,
@@ -3157,6 +3175,8 @@ B|--5--8--|
     );
     await frames(tester);
     expect(library.byId(id)!.pages.last.title, 'Take 10:00');
+    expect(video.playing, isEmpty);
+    await countedIn(tester);
     expect(video.playing, hasLength(1));
     expect(video.seeks, [Duration.zero]);
     expect(video.position, const Duration(seconds: 40));
@@ -3169,6 +3189,8 @@ B|--5--8--|
     await until(tester, () => camera.recordings == 2 && camera.recording);
     await frames(tester);
     expect(video.seeks, [Duration.zero, Duration.zero]);
+    expect(video.playing, isEmpty);
+    await countedIn(tester);
     expect(video.playing, hasLength(1));
     expect(library.byId(id)!.pages, hasLength(3));
 
@@ -3183,6 +3205,8 @@ B|--5--8--|
     await frames(tester);
     expect(camera.recording, isTrue);
     expect(video.seeks, [Duration.zero, Duration.zero, Duration.zero]);
+    expect(video.playing, isEmpty);
+    await countedIn(tester);
     expect(video.playing, hasLength(1));
     await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
@@ -3476,6 +3500,7 @@ B|--5--8--|
     // Rec starts the song too.
     await tester.tap(find.byTooltip('Rec (.)'));
     await frames(tester);
+    await countedIn(tester);
     expect(marks, findsNothing);
     await at(10);
     await pass();
@@ -3560,6 +3585,8 @@ B|--5--8--|
     expect(find.text('2 / 3'), findsOneWidget);
     await tester.tap(find.byKey(ValueKey('cam-along-$second')));
     await frames(tester);
+    // Recording, it counts in before it plays.
+    await countedIn(tester);
     await at(5);
     await pass();
     expect(find.text('3 / 3'), findsOneWidget);
@@ -4328,7 +4355,9 @@ B|--5--8--|
     await until(tester, () => recReady(tester));
     expect(tester.widget<IconButton>(delete).onPressed, isNotNull);
 
-    // Playing (Rec played it), with its mark left of Delete.
+    // Playing (Rec played it, once the take's count-in passed, the take
+    // stopped meanwhile), with its mark left of Delete.
+    await countedIn(tester);
     expect(video.playing, hasLength(1));
     final row = find.byKey(ValueKey('cam-along-${song.id}'));
     final mark = find.descendant(
@@ -4542,7 +4571,6 @@ B|--5--8--|
     expect(find.byType(AlertDialog), findsNothing);
     expect(ids(), isNot(contains(songs[2])));
   });
-
 
   testWidgets('a take that is its capture\'s only file deletes the capture '
       'from the sidebar, once confirmed, and Cam goes back to Home', (
