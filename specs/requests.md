@@ -4495,3 +4495,14 @@ spec.
    played, the band and the range's line are all at 75% opacity (the
    part played was 60%, the band 50%). See
    [Cam](cam.md#playing-along-with-a-file).
+
+16. **"When a chord or scale is added with + button, add the chord /
+   scale name on top of the phrase bar."** The dictionary's + now writes
+   the chord's or the scale's name on the line above the phrase, over
+   the first column written; a progression's names share that line,
+   each over its chord (what's written is at least as wide as its name
+   and a space). A line of names already there takes it (the names
+   after it pushed right with their notes); otherwise, or with a heading
+   in the way, a line of its own goes in above the phrase. `TabWriter`'s
+   `write` takes the name. See
+   [dictionary](dictionary.md#writing-in-the-text).

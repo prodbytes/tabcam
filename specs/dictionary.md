@@ -229,6 +229,21 @@ preview, a capture shared read only) there's no text to write in, and no
   ([`scalePosition`](../tabcam_app/lib/dictionary/voicings.dart)).
 
 Each column is as wide as its widest fret (`10`), with a dash after it.
+
+**Its name above the phrase**: the chord's name (`Am7`) or the scale's
+(`A minor pentatonic`, in the app's language) is written on the line
+above the phrase, starting over the first column written. What's
+written is then at least as wide as the name and a space (dashes after
+the frets), so the names of a progression written chord after chord
+stay apart, each over its chord: `   C G Am`. The line above takes it when
+it's a line of names (text, not a string line) with a space, or its
+start, just before that column: the names after it are pushed right as
+far as their notes are. Otherwise (no line above, a blank one, or text
+in the way, such as a heading like `Intro` at the line's start) a line
+of its own goes in right above the phrase (under the heading); a new
+phrase starts with its line of names, `   C` over `e|-0-`
+([`nameAbove`](../tabcam_app/lib/screens/tab_editing.dart)).
+
 **Where**: with the text's cursor on a six-line phrase (it stays where
 it was while the dictionary's field is typed in), at the cursor's
 column across the phrase, pushing the rest of every line right so the

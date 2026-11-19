@@ -352,6 +352,71 @@ void main() {
     const c = <int?>[null, 3, 2, 0, 1, 0];
     const g = <int?>[3, 2, 0, 0, 0, 3];
 
+    group('with its name above the phrase', () {
+      const six = 'e|--0--|\nB|--1--|\nG|--0--|\nD|--2--|\nA|--3--|\nE|-----|';
+
+      test('a new phrase: the name over the chord, the cursor after it', () {
+        final written = writeColumns(_at('', 0), const [c], name: 'Cadd9');
+        final lines = written.text.split('\n');
+        expect(lines.first, '   Cadd9');
+        // As wide as the name and a space, dashes after the fret.
+        expect(lines[1], startsWith('e|-0-----'));
+        expect(lines[6], startsWith('E|-------'));
+        expect(lines.sublist(1).map((l) => l.length).toSet(), {newStaffWidth});
+        expect(
+          written.selection.baseOffset,
+          '   Cadd9\n'.length + 'e|-0-----'.length,
+        );
+      });
+
+      test('chords one after another: their names on one line, each over '
+          'its chord', () {
+        var value = writeColumns(_at('', 0), const [c], name: 'C');
+        value = writeColumns(value, const [g], name: 'G');
+        value = writeColumns(value, const [c], name: 'Cmaj7');
+        final lines = value.text.split('\n');
+        expect(lines.first, '   C G Cmaj7');
+        expect(lines[1], startsWith('e|-0-3-0-----'));
+        expect(lines, hasLength(7));
+      });
+
+      test(
+        'an existing phrase with no line of names: one goes in above it',
+        () {
+          final written = writeColumns(_at(six, 'e|--0'.length), const [
+            g,
+          ], name: 'G');
+          final lines = written.text.split('\n');
+          expect(lines.first, '     G');
+          expect(lines[1], 'e|--03---|');
+          // The cursor still after the chord, now a line down.
+          expect(
+            written.selection.baseOffset,
+            '     G\n'.length + 'e|--03-'.length,
+          );
+        },
+      );
+
+      test('a line of names above: the name goes in it, the names after '
+          'it pushed right with their notes', () {
+        const text = '   Am\n$six';
+        final written = writeColumns(_at(text, '   Am\ne|-'.length), const [
+          g,
+        ], name: 'G');
+        final lines = written.text.split('\n');
+        expect(lines.first, '   G Am');
+        expect(lines[1], 'e|-3--0--|');
+      });
+
+      test('a heading in the way: a line of its own under it', () {
+        const text = 'Intro\n$six';
+        final lines = writeColumns(_at(text, 'Intro\ne|'.length), const [
+          g,
+        ], name: 'G').text.split('\n');
+        expect(lines.sublist(0, 3), ['Intro', '  G', 'e|3---0--|']);
+      });
+    });
+
     test('no phrase: a new one, 80 wide, the cursor after the chord', () {
       final written = writeColumns(_at('', 0), const [c]);
       final lines = written.text.split('\n');
