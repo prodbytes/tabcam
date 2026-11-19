@@ -634,8 +634,10 @@ void main() {
       await tester.pump();
       final text = find.byType(TextField).first;
       String typed() => tester.widget<TextField>(text).controller!.text;
-      expect(typed().split('\n').first, startsWith('e|-0-'));
-      expect(typed().split('\n')[4], startsWith('A|-3-'));
+      // Its name above the phrase, over it.
+      expect(typed().split('\n').first, '   C');
+      expect(typed().split('\n')[1], startsWith('e|-0-'));
+      expect(typed().split('\n')[5], startsWith('A|-3-'));
 
       // A scale follows the chord on its phrase, a note a column.
       await tester.enterText(query, 'A minor pentatonic');
@@ -643,7 +645,10 @@ void main() {
       await tester.tap(find.byKey(const Key('dictionary-write-scale')));
       await tester.pump();
       expect(typed().split('\n').last, startsWith('E|---5-8-----'));
-      expect(typed().split('\n').first, startsWith('e|-0-${'-' * 20}5-8-'));
+      expect(typed().split('\n')[1], startsWith('e|-0-${'-' * 20}5-8-'));
+      // Its name after the chord's, over its first note.
+      expect(typed().split('\n').first, startsWith('   C A '));
+      expect(typed().split('\n'), hasLength(7));
       // Saved as an edit.
       await tester.pump(const Duration(seconds: 2));
       expect(library.byId(id)!.tabText, typed());

@@ -30,8 +30,9 @@ import 'youtube_search.dart';
 abstract interface class TabWriter {
   /// Writes [columns] into the tab: each a fret per string, low E to high
   /// E, null for a string not played (a chord's voicing is one column, a
-  /// scale one per note).
-  void write(List<List<int?>> columns);
+  /// scale one per note), with [name] (the chord's or the scale's) above
+  /// the phrase.
+  void write(List<List<int?>> columns, {String? name});
 }
 
 /// Whether the dictionary's sidebar shows, and what's typed in it,
@@ -924,6 +925,7 @@ class _ChordResult extends StatelessWidget {
                         key: Key('dictionary-write-${v.label}'),
                         tooltip: l10n.dictionaryWriteChord(v.label),
                         columns: () => [v.frets],
+                        name: chord.name,
                       ),
                     ],
                   ),
@@ -958,6 +960,7 @@ class _ScaleResult extends StatelessWidget {
           key: const Key('dictionary-write-scale'),
           tooltip: l10n.dictionaryWriteScale(title),
           columns: () => scalePosition(scale),
+          name: title,
         ),
       ),
       picture: ScaleFretboard(scale: scale, lying: below, maxHeight: room),
@@ -965,13 +968,21 @@ class _ScaleResult extends StatelessWidget {
   }
 }
 
-/// A +: writes [columns] into the event's text ([DictionaryState.writer]);
+/// A +: writes [columns], and [name] above them, into the event's text ([DictionaryState.writer]);
 /// nothing shows while there's no text to write in.
 class _WriteButton extends StatelessWidget {
-  const _WriteButton({super.key, required this.tooltip, required this.columns});
+  const _WriteButton({
+    super.key,
+    required this.tooltip,
+    required this.columns,
+    this.name,
+  });
 
   final String tooltip;
   final List<List<int?>> Function() columns;
+
+  /// The chord's or the scale's name, written above the phrase.
+  final String? name;
 
   @override
   Widget build(BuildContext context) {
@@ -986,7 +997,7 @@ class _WriteButton extends StatelessWidget {
           visualDensity: VisualDensity.compact,
           color: Theme.of(context).colorScheme.primary,
           icon: const Icon(Icons.add_circle_outline),
-          onPressed: () => writer.write(columns()),
+          onPressed: () => writer.write(columns(), name: name),
         );
       },
     );

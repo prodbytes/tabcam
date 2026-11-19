@@ -378,17 +378,18 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
   }
 
   /// The dictionary's +: a chord's voicing or a scale written at the
-  /// cursor's phrase, or in a new phrase ([writeColumns]); the cursor
+  /// cursor's phrase, or in a new phrase, its name above the phrase
+  /// ([writeColumns]); the cursor
   /// after it, so the next one follows. Not while Rescan reads or Fix's
   /// review shows.
   @override
-  void write(List<List<int?>> columns) {
+  void write(List<List<int?>> columns, {String? name}) {
     if (!mounted) return;
     if (_busy || _review != null || _columns) {
       _say(context.l10n.dictionaryWriteBusy);
       return;
     }
-    final value = writeColumns(_text.value, columns);
+    final value = writeColumns(_text.value, columns, name: name);
     _text.value = value;
     _changed(value.text);
   }

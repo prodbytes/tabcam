@@ -444,17 +444,18 @@ TextEditingValue newStaff(TextEditingValue value) => _addStaff(value, [
 
 /// [value] with [staff] under the cursor's line, or under its whole
 /// phrase when the cursor is on one (at the end without a cursor), a
-/// blank line between it and the text around it; the cursor on its first
-/// line, at [column].
+/// blank line between it and the text around it; the cursor on its line
+/// [row] (its first), at [column].
 TextEditingValue _addStaff(
   TextEditingValue value,
   List<String> staff,
-  int column,
-) {
+  int column, {
+  int row = 0,
+}) {
   if (value.text.trim().isEmpty) {
     return TextEditingValue(
       text: staff.join('\n'),
-      selection: TextSelection.collapsed(offset: column),
+      selection: TextSelection.collapsed(offset: _offsetOf(staff, row, column)),
     );
   }
   final lines = value.text.split('\n');
@@ -471,7 +472,7 @@ TextEditingValue _addStaff(
   return TextEditingValue(
     text: lines.join('\n'),
     selection: TextSelection.collapsed(
-      offset: _offsetOf(lines, after + 1 + before.length, column),
+      offset: _offsetOf(lines, after + 1 + before.length + row, column),
     ),
   );
 }
@@ -496,13 +497,22 @@ String _columnsOn(List<List<int?>> columns, int string) => [
 /// [newStaffWidth] wide) under the cursor's line or phrase. Either way
 /// the cursor ends just after them on its line, so the next one written
 /// follows them.
+///
+/// With a [name] (the chord's or the scale's), it goes above the phrase,
+/// starting at the columns' first column ([nameAbove]); the columns are
+/// then at least as wide as the name and a space, dashes after them, so
+/// the names of chords written one after another don't run together.
 TextEditingValue writeColumns(
   TextEditingValue value,
-  List<List<int?>> columns,
-) {
+  List<List<int?>> columns, {
+  String? name,
+}) {
   final strings = _stringNames.length;
+  final label = name?.trim() ?? '';
+  final wide = columns.isEmpty ? 0 : _columnsOn(columns, 0).length;
+  final width = label.isEmpty ? wide : math.max(wide, label.length + 1);
   // Line k of a phrase is string strings - 1 - k (high E on top).
-  String on(int k) => _columnsOn(columns, strings - 1 - k);
+  String on(int k) => _columnsOn(columns, strings - 1 - k).padRight(width, '-');
   final lines = value.text.split('\n');
   if (value.selection.isValid && value.text.isNotEmpty) {
     final (row, column) = _rowColumn(lines, value.selection.start);
@@ -524,21 +534,64 @@ TextEditingValue writeColumns(
               '${body.substring(0, at)}${on(k - first)}'
               '${body.substring(at)}$closing';
         }
+        final added = label.isEmpty
+            ? 0
+            : nameAbove(lines, first, at, width, label);
         return TextEditingValue(
           text: lines.join('\n'),
           selection: TextSelection.collapsed(
-            offset: _offsetOf(lines, row, at + on(row - first).length),
+            offset: _offsetOf(lines, row + added, at + width),
           ),
         );
       }
     }
   }
-  final written = on(0).length;
-  final width = math.max(newStaffWidth - 4, written);
-  return _addStaff(value, [
-    for (var k = 0; k < strings; k++)
-      '${_stringNames[k]}|-${on(k).padRight(width, '-')}|',
-  ], 3 + written);
+  final room = math.max(newStaffWidth - 4, width);
+  return _addStaff(
+    value,
+    [
+      // The name over the columns, which start after `e|-`.
+      if (label.isNotEmpty) '${' ' * 3}$label',
+      for (var k = 0; k < strings; k++)
+        '${_stringNames[k]}|-${on(k).padRight(room, '-')}|',
+    ],
+    3 + width,
+    row: label.isEmpty ? 0 : 1,
+  );
+}
+
+/// Writes [name] above the phrase whose first line is [first], at
+/// [column], where [width] characters were just put into each of its
+/// lines. The line above takes it when it's a line of names: text, not a
+/// string line, with room there ([width] spaces go into it at [column],
+/// so the names after stay over their notes, and the name goes in them,
+/// clear of the text before it). Otherwise (no line above, a blank one,
+/// or text in the way, such as a heading like "Intro") a line of its own
+/// goes in above the phrase. Returns how many lines were added (0 or 1).
+int nameAbove(
+  List<String> lines,
+  int first,
+  int column,
+  int width,
+  String name,
+) {
+  final above = first - 1;
+  if (above >= 0) {
+    final line = lines[above];
+    if (line.trim().isNotEmpty && !_isStringLine(line)) {
+      final padded = line.padRight(column);
+      // Clear of what's before it: a space, or the line's start.
+      if (column == 0 || padded[column - 1] == ' ') {
+        lines[above] =
+            '${padded.substring(0, column)}${name.padRight(width)}'
+                    '${padded.substring(column)}'
+                .trimRight();
+        return 0;
+      }
+    }
+  }
+  lines.insert(first, '${' ' * column}$name');
+  return 1;
 }
 
 /// Where to break [text] in two for the Text view's two columns: the

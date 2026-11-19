@@ -4496,7 +4496,18 @@ spec.
    part played was 60%, the band 50%). See
    [Cam](cam.md#playing-along-with-a-file).
 
-16. **"Remove the 'type a chord' paragraph, just a 'type anything'
+16. **"When a chord or scale is added with + button, add the chord /
+   scale name on top of the phrase bar."** The dictionary's + now writes
+   the chord's or the scale's name on the line above the phrase, over
+   the first column written; a progression's names share that line,
+   each over its chord (what's written is at least as wide as its name
+   and a space). A line of names already there takes it (the names
+   after it pushed right with their notes); otherwise, or with a heading
+   in the way, a line of its own goes in above the phrase. `TabWriter`'s
+   `write` takes the name. See
+   [dictionary](dictionary.md#writing-in-the-text).
+
+17. **"Remove the 'type a chord' paragraph, just a 'type anything'
    placeholder and the pills is fine. Not even need so many pills, just
    the first (same name), a couple simple chords, the accidented ones, a
    few scales."** The dictionary, nothing typed, no longer explains
@@ -4509,14 +4520,14 @@ spec.
    added). The Chord symbols key under them stays. See
    [dictionary](dictionary.md).
 
-17. **"The chords dictionary below is fine, reduce font size a bit."**
+18. **"The chords dictionary below is fine, reduce font size a bit."**
    The dictionary's text (in the panel below the screen and in the
    sidebar alike) is now the app's text theme at 90%: the field, the
    results' headings, notes and degrees, the pills and the rest about
    1.5 px smaller (16 → 14.4, 14 → 12.6), a result's name 24 → 21.6.
    The diagrams keep their sizes. See [dictionary](dictionary.md).
 
-18. **"The search button can be just a magnifying glass beside the text
+19. **"The search button can be just a magnifying glass beside the text
    field, no need for a line below."** The dictionary's **Search
    YouTube** was a button on a line of its own under "Not a chord or a
    scale…". It is now a magnifying glass at the field's end, before its
