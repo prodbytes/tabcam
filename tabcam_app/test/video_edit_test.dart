@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -25,7 +26,8 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 
 import 'mini_player_test.dart' show FakeVideoPlatform;
-import 'song_sync_test.dart' show FakeReader, heardFrom, mixed, rate, riff;
+import 'song_sync_test.dart'
+    show FakeReader, heardFrom, hiss, mixed, placed, rate, riff, riffOn;
 
 /// An editor that records what it's asked and hands back a small file in
 /// [formatsHere] (MP4 and M4A, as the phones and most browsers make).
@@ -1270,6 +1272,291 @@ void main() {
     expect(library2.byId(id2)!.pages.first.edit!.offset, s(5.25));
   });
 
+  group('Auto-align', () {
+    // The song played from 5 s on the take's clock (the lag 0.2 s); the
+    // take's sound has it 83 ms after that.
+    final song = riff(30, 11);
+    final heard = mixed([
+      heardFrom(song, length: 40 * rate, delay: 5283 * rate / 1000),
+      riff(40, 12, bpm: 103),
+    ]);
+    const segments = [SongSegment(at: 5000, to: 35000, page: 'k1', from: 0)];
+
+    setUp(() {
+      SongSync.inline = true;
+      // Other tests' takes, left unmeasured when their clocks stopped.
+      TakeSyncer.reset();
+    });
+    tearDown(() {
+      SongSync.inline = false;
+      SoundReader.opener = null;
+    });
+
+    /// The test's library keeps files in memory: told apart by type.
+    FakeReader reads(Float32List take, Float32List song) {
+      final reader = FakeReader({'video/mp4': take, 'audio/mp4': song});
+      SoundReader.opener = () => reader;
+      return reader;
+    }
+
+    /// Taps Auto-align and waits for it to have said what it found.
+    Future<String> align(WidgetTester tester) async {
+      await tester.tap(find.byKey(const Key('video-edit-song-align')));
+      for (var i = 0; i < 50; i++) {
+        await _settle(tester);
+        if (enabled(tester, 'video-edit-song-align')) break;
+      }
+      return tester
+          .widget<Text>(find.byKey(const Key('video-edit-song-align-said')))
+          .data!;
+    }
+
+    testWidgets('a measured take\'s song moved off: back where its sound '
+        'is, still lined up, the log as it was', (tester) async {
+      tall(tester);
+      reads(heard, song);
+      const sync = TakeSync(
+        page: 'k1',
+        from: SyncFrom.sound,
+        ms: 83,
+        clips: [SyncClip(at: 5000, ms: 83)],
+      );
+      final (library, id) = await capture(
+        tester,
+        editTake: true,
+        log: const TakeLog(
+          burned: false,
+          lagMs: 200,
+          song: segments,
+          sync: sync,
+        ),
+      );
+      await tester.pumpWidget(editScreen(library, id));
+      await _settle(tester);
+      expect(
+        find.byTooltip(
+          'Find where the song lines up with the take, by their sounds, or '
+          'by the rhythm with headphones',
+        ),
+        findsOneWidget,
+      );
+      for (var i = 0; i < 6; i++) {
+        await tester.tap(find.byKey(const Key('video-edit-song-later')));
+        await _settle(tester);
+      }
+      expect(library.byId(id)!.pages.first.edit!.offset, s(5.583));
+
+      expect(
+        await align(tester),
+        'Lined up by the sound: moved 300 ms earlier',
+      );
+      // Still lined up by itself, where its sound is: the edit is none
+      // again (nothing else changed).
+      expect(find.text('Lined up by its sound in the take'), findsOneWidget);
+      expect(library.byId(id)!.pages.first.edit, isNull);
+      await tester.tap(find.byKey(const Key('video-edit-download')));
+      await _settle(tester);
+      expect(editor.rendered.single.song!.clips, [
+        SongClip(at: s(5.283), from: Duration.zero, to: s(30)),
+      ]);
+      expect(library.byId(id)!.pages.first.takeLog!.sync, sync);
+
+      // Again: it's there already.
+      expect(
+        await align(tester),
+        'Lined up by the sound: it was there already',
+      );
+    });
+
+    testWidgets('headphones (the song not in the take\'s sound): by the '
+        'rhythm, a beat off maybe', (tester) async {
+      tall(tester);
+      // The guitar played along on the song's rhythm, 180 ms after the
+      // lane has the song.
+      reads(
+        mixed([
+          placed(riffOn(30, 21, grid: 11, jitterMs: 20), 5200 + 180),
+          hiss(40 * rate, 13, 0.01),
+        ]),
+        riffOn(30, 22, grid: 11),
+      );
+      final (library, id) = await capture(
+        tester,
+        editTake: true,
+        log: const TakeLog(
+          burned: false,
+          lagMs: 200,
+          song: segments,
+          sync: TakeSync(page: 'k1', from: SyncFrom.none),
+        ),
+      );
+      await tester.pumpWidget(editScreen(library, id));
+      await _settle(tester);
+      final said = await align(tester);
+      expect(said, startsWith('Lined up by the rhythm: moved '));
+      expect(said, endsWith(' ms later (it could be a beat off)'));
+      final edit = library.byId(id)!.pages.first.edit!;
+      expect(edit.offset.inMilliseconds, closeTo(5380, 25));
+      final delay = tester
+          .widget<Text>(
+            find.descendant(
+              of: find.byKey(const Key('video-edit-delay-value')),
+              matching: find.byType(Text),
+            ),
+          )
+          .data!;
+      expect(
+        int.parse(delay.replaceAll(RegExp(r'[^0-9]'), '')),
+        closeTo(180, 25),
+      );
+      expect(library.byId(id)!.pages.first.takeLog!.sync!.found, isFalse);
+    });
+
+    testWidgets('a take not measured yet: measured first, and lined up '
+        'where it was found', (tester) async {
+      tall(tester);
+      // Not readable as it opens: it isn't measured then.
+      final reader = reads(heard, song);
+      final sounds = {...reader.files};
+      reader.files.clear();
+      final (library, id) = await capture(
+        tester,
+        editTake: true,
+        log: const TakeLog(burned: false, lagMs: 200, song: segments),
+      );
+      await tester.pumpWidget(editScreen(library, id));
+      await measured(tester, library, id);
+      expect(library.byId(id)!.pages.first.takeLog!.sync, isNull);
+      await tester.tap(find.byKey(const Key('video-edit-song-later')));
+      await _settle(tester);
+
+      reader.files.addAll(sounds);
+      expect(
+        await align(tester),
+        'Found by its sound in the take, and lined up there',
+      );
+      final sync = library.byId(id)!.pages.first.takeLog!.sync!;
+      expect((sync.found, sync.ms), (true, 83));
+      // Where it was found, lined up by itself: the nudge undone, the
+      // edit none again.
+      expect(find.text('Lined up by its sound in the take'), findsOneWidget);
+      expect(library.byId(id)!.pages.first.edit, isNull);
+    });
+
+    testWidgets('a track placed by hand on another video: moved where the '
+        'video\'s sound has it', (tester) async {
+      tall(tester);
+      reads(heard, song);
+      final (library, id) = await capture(tester);
+      await tester.runAsync(
+        () => library.setPageEdit(
+          id,
+          'k0',
+          PageEdit(
+            start: Duration.zero,
+            end: s(180),
+            song: SongMode.manual,
+            trackId: 'k1',
+            trackEnd: s(30),
+            offset: s(5),
+          ),
+        ),
+      );
+      await tester.pumpWidget(editScreen(library, id));
+      await _settle(tester);
+      expect(
+        find.byTooltip(
+          'Find where the track lines up with the video, by their sounds, or '
+          'by the rhythm',
+        ),
+        findsOneWidget,
+      );
+      expect(await align(tester), 'Lined up by the sound: moved 283 ms later');
+      final edit = library.byId(id)!.pages.first.edit!;
+      expect(edit.offset.inMilliseconds, closeTo(5283, 1));
+      expect(edit.song, SongMode.manual);
+      expect(library.byId(id)!.pages.first.takeLog, isNull);
+    });
+
+    testWidgets('nothing but hiss: not found, the song where it was; '
+        'files that can\'t be read: said so', (tester) async {
+      tall(tester);
+      final reader = reads(hiss(40 * rate, 14, 0.02), song);
+      final (library, id) = await capture(
+        tester,
+        editTake: true,
+        log: const TakeLog(
+          burned: false,
+          lagMs: 200,
+          song: segments,
+          sync: TakeSync(page: 'k1', from: SyncFrom.none),
+        ),
+      );
+      await tester.pumpWidget(editScreen(library, id));
+      await _settle(tester);
+      expect(
+        await align(tester),
+        'The song wasn\'t found in the take\'s sound, nor by the rhythm: '
+        'zoom in and drag it under the take, or nudge it by ear',
+      );
+      expect(library.byId(id)!.pages.first.edit, isNull);
+
+      reader.files.clear();
+      expect(await align(tester), 'The sounds couldn\'t be read here');
+      expect(library.byId(id)!.pages.first.edit, isNull);
+    });
+
+    testWidgets('greyed while it listens, with how far along; not offered '
+        'where the sounds can\'t be read', (tester) async {
+      tall(tester);
+      final reader = _HeldReader({'video/mp4': heard, 'audio/mp4': song});
+      SoundReader.opener = () => reader;
+      final (library, id) = await capture(
+        tester,
+        editTake: true,
+        log: const TakeLog(
+          burned: false,
+          lagMs: 200,
+          song: segments,
+          sync: TakeSync(
+            page: 'k1',
+            from: SyncFrom.sound,
+            ms: 83,
+            clips: [SyncClip(at: 5000, ms: 83)],
+          ),
+        ),
+      );
+      await tester.pumpWidget(editScreen(library, id));
+      await _settle(tester);
+      // The waveforms read as it opens: let them.
+      reader.release();
+      await _settle(tester);
+      reader.hold();
+      await tester.tap(find.byKey(const Key('video-edit-song-align')));
+      await _settle(tester);
+      expect(enabled(tester, 'video-edit-song-align'), isFalse);
+      expect(find.text('Listening… 0 of 4'), findsOneWidget);
+      reader.release();
+      for (var i = 0; i < 20; i++) {
+        await _settle(tester);
+        if (enabled(tester, 'video-edit-song-align')) break;
+      }
+      expect(enabled(tester, 'video-edit-song-align'), isTrue);
+      expect(
+        find.text('Lined up by the sound: it was there already'),
+        findsOneWidget,
+      );
+      await tester.pumpWidget(const SizedBox());
+      await _settle(tester);
+
+      SoundReader.opener = () => null;
+      await tester.pumpWidget(editScreen(library, id));
+      await _settle(tester);
+      expect(find.byKey(const Key('video-edit-song-details')), findsOneWidget);
+      expect(find.byKey(const Key('video-edit-song-align')), findsNothing);
+    });
+  });
+
   testWidgets('the cut\'s ends step a twentieth of a second: ‹ and › under '
       'the lanes move the start and the end, shown to the hundredth, the '
       'song staying where it is along the video', (tester) async {
@@ -2260,9 +2547,7 @@ void main() {
     expect(shown(), '+10 ms');
     expect(
       tester
-          .widget<IconButton>(
-            find.byKey(const Key('video-edit-delay-minus10')),
-          )
+          .widget<IconButton>(find.byKey(const Key('video-edit-delay-minus10')))
           .tooltip,
       '10 ms earlier',
     );
@@ -2288,8 +2573,9 @@ void main() {
   });
 
   testWidgets('the timeline zooms in and out: the ruler and both lanes '
-      'together, scrolled sideways, a tap and a drag as precise as the zoom',
-      (tester) async {
+      'together, scrolled sideways, a tap and a drag as precise as the zoom', (
+    tester,
+  ) async {
     tall(tester);
     final (library, id) = await capture(tester);
     await tester.pumpWidget(editScreen(library, id));
@@ -2298,7 +2584,9 @@ void main() {
     final whole = rect('video-edit-take-bar');
     expect(find.byKey(const Key('video-edit-zoom')), findsNothing);
     expect(
-      tester.widget<IconButton>(find.byKey(const Key('video-edit-zoom-out'))).onPressed,
+      tester
+          .widget<IconButton>(find.byKey(const Key('video-edit-zoom-out')))
+          .onPressed,
       isNull,
     );
 
@@ -2320,9 +2608,7 @@ void main() {
 
     // A tap a quarter across the view is a sixteenth of the video in:
     // 0:11.25 of 3 minutes.
-    await tester.tapAt(
-      Offset(whole.left + whole.width / 4, take.center.dy),
-    );
+    await tester.tapAt(Offset(whole.left + whole.width / 4, take.center.dy));
     await _settle(tester);
     expect(platform.seeks.last.inMilliseconds, closeTo(11250, 200));
 
@@ -2365,7 +2651,10 @@ void main() {
         .position
         .jumpTo(whole.width);
     await _settle(tester);
-    expect(rect('video-edit-take-bar').left, closeTo(whole.left - whole.width, 1));
+    expect(
+      rect('video-edit-take-bar').left,
+      closeTo(whole.left - whole.width, 1),
+    );
     expect(rect('video-edit-take-volume'), header);
 
     // Zoomed out all the way: the whole video again, no scroll.
@@ -2446,4 +2735,29 @@ class _WaveReader implements SoundReader {
 
   @override
   void close() {}
+}
+
+/// A [FakeReader] whose reads wait while it's held ([hold], [release]).
+class _HeldReader extends FakeReader {
+  _HeldReader(super.files);
+
+  Completer<void>? _held;
+
+  void hold() => _held ??= Completer<void>();
+
+  void release() {
+    _held?.complete();
+    _held = null;
+  }
+
+  @override
+  Future<Float32List?> samples(
+    XFile file, {
+    required Duration from,
+    required Duration length,
+    required int rate,
+  }) async {
+    if (_held case final held?) await held.future;
+    return super.samples(file, from: from, length: length, rate: rate);
+  }
 }

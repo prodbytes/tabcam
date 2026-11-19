@@ -14,6 +14,8 @@ import '../capture/waveform.dart';
 import '../capture/edit_layers.dart';
 import '../capture/media.dart';
 import '../capture/play_along_sidebar.dart' show isTake;
+import '../capture/song_sync.dart';
+import '../capture/sound_reader.dart';
 import '../capture/take_log.dart';
 import '../capture/take_syncer.dart';
 import '../capture/video_edit.dart';
@@ -233,6 +235,19 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 
   /// The shortest part of a song that can be used.
   static const minTrack = Duration(milliseconds: 500);
+
+  /// Auto-align ([_align]): whether the sounds can be read here (a
+  /// [SoundReader]; none on the desktop, where it isn't offered), whether
+  /// it's listening, and what it said last (null: nothing).
+  late final bool _listens = _canListen();
+  bool _aligning = false;
+  String? _alignSaid;
+
+  static bool _canListen() {
+    final reader = SoundReader.open();
+    reader?.close();
+    return reader != null;
+  }
 
   /// Whether the take's tab is drawn over it (where it can be,
   /// [tabOffered]), how it looks, and whether its style's controls are
@@ -1130,9 +1145,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       return [for (final c in clips) (at: c.at, end: c.end, from: c.from)];
     }
     final at = _start + _offset;
-    return [
-      (at: at, end: at + (_trackEnd - _trackStart), from: _trackStart),
-    ];
+    return [(at: at, end: at + (_trackEnd - _trackStart), from: _trackStart)];
   }
 
   /// [wave] over a lane's bar ([key]'s), where [spans] put it.
@@ -1424,6 +1437,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       return;
     }
     setState(() {
+      _alignSaid = null;
       _trackId = id;
       _track = file;
       _trackName = name;
@@ -1471,6 +1485,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 
   /// The Song lane without a song (setState's).
   void _clearSong() {
+    _alignSaid = null;
     _songLevel = _Level();
     _trackId = null;
     _track = null;
@@ -1551,6 +1566,124 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       ),
     );
     _moveTrack(to - _delay);
+  }
+
+  /// Where the Song lane has the song now, clip by clip, in the video's
+  /// file (a song lined up by itself, each of its clips as the edit
+  /// moved them; else its one placed part), cut to the file.
+  List<LaneClip> get _laneClips {
+    final clips = _lined
+        ? [
+            for (final c in _logged!.clipsIn(_current, _trackLength))
+              SongClip(at: c.at + _start, from: c.from, to: c.to),
+          ]
+        : [SongClip(at: _start + _offset, from: _trackStart, to: _trackEnd)];
+    return [
+      for (final c in clampClips(clips, _duration))
+        (
+          fileMs: c.at.inMilliseconds,
+          songMs: c.from.inMilliseconds,
+          lengthMs: (c.to - c.from).inMilliseconds,
+        ),
+    ];
+  }
+
+  /// Auto-align, the magic button: lines the song up with the take by
+  /// their sounds, around where the Song lane has it now, or, where the
+  /// song isn't in the take's sound (headphones), by the rhythm
+  /// ([SongSync.align]); a take not measured yet is measured first, as
+  /// it is when the editor opens it ([_measureSong]). What's found moves
+  /// the song as the delay control does ([_moveTrack]: a song lined up by
+  /// itself stays lined up, and the move is kept with the edit); the
+  /// take's log ([TakeLog.sync]) is never written. What happened is said
+  /// under it ([_alignSaid]).
+  Future<void> _align() async {
+    final song = _track;
+    if (song == null || _aligning || !_listens) return;
+    final l10n = context.l10n;
+    setState(() {
+      _aligning = true;
+      _alignSaid = null;
+    });
+    try {
+      // Not measured yet: the standard measure first; found, the Song
+      // lane is where it was found.
+      if (_lined && _takeLog?.sync == null) {
+        await _measureSong();
+        if (!mounted || _track != song) return;
+        if (_lined && _logged!.measured) {
+          final moved = _logged!.shiftOf(_current);
+          if (moved != Duration.zero) _moveTrack(-moved);
+          setState(() => _alignSaid = l10n.videoEditAlignedSync);
+          return;
+        }
+      }
+      final event = _library.byId(widget.eventId);
+      final reader = SoundReader.open();
+      if (event == null || reader == null) {
+        setState(() => _alignSaid = l10n.videoEditAlignUnread);
+        return;
+      }
+      // Moved from where it was as the listening began (the song may be
+      // nudged meanwhile).
+      final from = _offset;
+      final SongAlign? found;
+      try {
+        found = await SongSync.align(
+          take: await _fileOf(event, widget.page),
+          song: song,
+          reader: reader,
+          clips: _laneClips,
+          progress: (done, of) {
+            if (mounted) {
+              setState(
+                () => _alignSaid = l10n.videoEditAlignListening(done, of),
+              );
+            }
+          },
+        );
+      } finally {
+        reader.close();
+      }
+      debugPrint('TabCam: video edit: Auto-align: $found');
+      if (!mounted || _track != song) return;
+      final String said;
+      if (found == null) {
+        said = l10n.videoEditAlignUnread;
+      } else if (!found.found) {
+        said = _take
+            ? l10n.videoEditAlignNotFound
+            : l10n.videoEditAlignNotFoundTrack;
+      } else {
+        final ms = found.ms;
+        _moveTrack(from + Duration(milliseconds: ms) - _offset);
+        final by = ms.abs();
+        final later = ms > 0;
+        said = switch (found) {
+          SongAlign(from: AlignFrom.rhythm) when ms == 0 =>
+            l10n.videoEditAlignedRhythmSame,
+          SongAlign(from: AlignFrom.rhythm) =>
+            later
+                ? l10n.videoEditAlignedRhythmLater(by)
+                : l10n.videoEditAlignedRhythmEarlier(by),
+          _ when ms == 0 => l10n.videoEditAlignedSame,
+          SongAlign(rough: true, :final spreadMs) =>
+            later
+                ? l10n.videoEditAlignedRoughLater(by, spreadMs)
+                : l10n.videoEditAlignedRoughEarlier(by, spreadMs),
+          _ =>
+            later
+                ? l10n.videoEditAlignedLater(by)
+                : l10n.videoEditAlignedEarlier(by),
+        };
+      }
+      setState(() => _alignSaid = said);
+    } on Object catch (e) {
+      debugPrint('TabCam: video edit: Auto-align failed: $e');
+      if (mounted) setState(() => _alignSaid = l10n.videoEditAlignUnread);
+    } finally {
+      if (mounted) setState(() => _aligning = false);
+    }
   }
 
   /// Trims the song's start by [delta]: what's left stays where it is
@@ -3416,14 +3549,14 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                         length: length,
                         onSeek: _seek,
                         child: _TakeBar(
-                    length: length,
-                    start: _start,
-                    end: _end,
-                    marks: marks,
-                    fades: _fades,
-                    label: l10n.videoEditTakeBar,
-                    startLabel: l10n.videoEditKeptStart,
-                    endLabel: l10n.videoEditKeptEnd,
+                          length: length,
+                          start: _start,
+                          end: _end,
+                          marks: marks,
+                          fades: _fades,
+                          label: l10n.videoEditTakeBar,
+                          startLabel: l10n.videoEditKeptStart,
+                          endLabel: l10n.videoEditKeptEnd,
                           onTrimStart: _trimStartBy,
                           onTrimEnd: _trimEndBy,
                           onTrimmed: _trimmed,
@@ -3645,6 +3778,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     const tabular = [FontFeature.tabularFigures()];
     final trimmed = _trackStart > Duration.zero || _trackEnd < _trackLength;
     final take = _take;
+    // Auto-align, where the sounds can be read.
+    final aligns = _listens && _track != null && _trackLength > Duration.zero;
     final shift = _offset == Duration.zero
         ? (take ? l10n.videoEditSongWith : l10n.videoEditTrackWith)
         : _offset > Duration.zero
@@ -3725,18 +3860,48 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
             style: theme.textTheme.bodySmall,
           ),
         // The take cut to its song: from where it starts to where it
-        // stops, as the marks on the ruler show.
-        if (_lined && _songMarks.length >= 2)
-          Align(
-            child: Tooltip(
-              message: l10n.videoEditCutToSongTip,
-              child: TextButton.icon(
-                key: const Key('video-edit-cut-to-song'),
-                icon: const Icon(Icons.content_cut, size: 18),
-                label: Text(l10n.videoEditCutToSong),
-                onPressed: _cutIsSong ? null : _cutToSong,
-              ),
-            ),
+        // stops, as the marks on the ruler show; and Auto-align.
+        if ((_lined && _songMarks.length >= 2) || aligns)
+          Wrap(
+            alignment: WrapAlignment.center,
+            children: [
+              if (_lined && _songMarks.length >= 2)
+                Tooltip(
+                  message: l10n.videoEditCutToSongTip,
+                  child: TextButton.icon(
+                    key: const Key('video-edit-cut-to-song'),
+                    icon: const Icon(Icons.content_cut, size: 18),
+                    label: Text(l10n.videoEditCutToSong),
+                    onPressed: _cutIsSong ? null : _cutToSong,
+                  ),
+                ),
+              if (aligns)
+                Tooltip(
+                  message: take
+                      ? l10n.videoEditAutoAlignTip
+                      : l10n.videoEditAutoAlignTrackTip,
+                  child: TextButton.icon(
+                    key: const Key('video-edit-song-align'),
+                    icon: _aligning
+                        ? const SizedBox.square(
+                            dimension: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.auto_fix_high, size: 18),
+                    label: Text(l10n.videoEditAutoAlign),
+                    onPressed: _aligning || _duration <= Duration.zero
+                        ? null
+                        : _align,
+                  ),
+                ),
+            ],
+          ),
+        if (_alignSaid case final said?)
+          Text(
+            said,
+            key: const Key('video-edit-song-align-said'),
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall,
           ),
         if (trimmed && _trackLength > Duration.zero && _linedClips == null)
           Text(
@@ -3820,7 +3985,11 @@ extension on _VideoEditScreenState {
   Widget _delayControl(AppLocalizations l10n) {
     final theme = Theme.of(context);
     final ms = _delay.inMilliseconds;
-    final shown = ms > 0 ? '+$ms ms' : ms < 0 ? '−${-ms} ms' : '0 ms';
+    final shown = ms > 0
+        ? '+$ms ms'
+        : ms < 0
+        ? '−${-ms} ms'
+        : '0 ms';
     Widget stepButton(int by) => IconButton(
       key: Key('video-edit-delay-${by < 0 ? 'minus' : 'plus'}${by.abs()}'),
       tooltip: by < 0
@@ -3874,8 +4043,7 @@ extension on _VideoEditScreenState {
                   ),
                 ),
               ),
-              for (final by in _VideoEditScreenState.delaySteps)
-                stepButton(by),
+              for (final by in _VideoEditScreenState.delaySteps) stepButton(by),
             ],
           ),
         ),

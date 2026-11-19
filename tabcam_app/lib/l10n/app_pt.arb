@@ -737,5 +737,21 @@
   "videoEditDelayType": "Digite o atraso",
   "videoEditDelayTitle": "Atraso da música",
   "videoEditDelayHelp": "Milissegundos: + depois, − antes",
-  "videoEditDelaySet": "Aplicar"
+  "videoEditDelaySet": "Aplicar",
+  "videoEditAutoAlign": "Auto-alinhar",
+  "videoEditAutoAlignTip": "Procura onde a música se alinha com o take, pelos sons, ou pelo ritmo com fones",
+  "videoEditAutoAlignTrackTip": "Procura onde a faixa se alinha com o vídeo, pelos sons, ou pelo ritmo",
+  "videoEditAlignListening": "Ouvindo… {done} de {total}",
+  "videoEditAlignedSync": "Encontrada pelo som dela no take, e alinhada ali",
+  "videoEditAlignedLater": "Alinhada pelo som: movida {ms} ms depois",
+  "videoEditAlignedEarlier": "Alinhada pelo som: movida {ms} ms antes",
+  "videoEditAlignedSame": "Alinhada pelo som: já estava ali",
+  "videoEditAlignedRoughLater": "Alinhada pelo som, mais ou menos: movida {ms} ms depois; as partes dela diferem {spread} ms",
+  "videoEditAlignedRoughEarlier": "Alinhada pelo som, mais ou menos: movida {ms} ms antes; as partes dela diferem {spread} ms",
+  "videoEditAlignedRhythmLater": "Alinhada pelo ritmo: movida {ms} ms depois (pode estar um tempo fora)",
+  "videoEditAlignedRhythmEarlier": "Alinhada pelo ritmo: movida {ms} ms antes (pode estar um tempo fora)",
+  "videoEditAlignedRhythmSame": "Alinhada pelo ritmo: já estava ali (pode estar um tempo fora)",
+  "videoEditAlignNotFound": "A música não foi encontrada no som do take, nem pelo ritmo: aproxime o zoom e arraste-a sob o take, ou ajuste-a de ouvido",
+  "videoEditAlignNotFoundTrack": "A faixa não foi encontrada no som do vídeo, nem pelo ritmo: aproxime o zoom e arraste-a, ou ajuste-a de ouvido",
+  "videoEditAlignUnread": "Os sons não puderam ser lidos aqui"
 }
