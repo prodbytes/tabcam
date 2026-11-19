@@ -4429,3 +4429,17 @@ spec.
    app's client). The privacy policy says the front page loads Google's
    sign-in. See [index page](index-page.md#the-way-in),
    [sessions](sessions.md) and [privacy](privacy.md).
+
+9. **"In the tab text view, add a button on top to split the view in
+   two columns and break the tabs in half. Button in the top of view
+   along 'copy' and 'rescan'."** The Text view has **Two columns** after
+   Copy (in the app bar on the event screen; an icon on a phone): a
+   toggle showing the tab split in half, side by side, the break at the
+   blank line nearest the middle so no phrase is cut
+   (`splitInHalf`). It's for reading: while it's on the editing tools
+   hide and the text can't be edited; off again, the editor is back.
+   Below 900 px wide (a tablet held upright) the Text view's buttons in
+   the app bar are now icons, as on a phone, so the title keeps room.
+   New strings `textViewColumns`, `textViewColumnsTip` and
+   `textViewColumnsOn` in English, Spanish and Portuguese. See
+   [tab recognition](tab-recognition.md#text-view).

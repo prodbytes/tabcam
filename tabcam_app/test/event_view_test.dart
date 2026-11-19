@@ -97,12 +97,12 @@ void main() {
     await open(tester, text: 'e|--0--3--|');
     await tester.tap(textTool);
     await frames(tester);
-    expect(find.text('Copy'), findsOneWidget);
+    expect(find.byIcon(Icons.copy), findsOneWidget);
     expect(find.text('Page 1'), findsNothing);
 
     await tester.tap(filesTool);
     await frames(tester);
-    expect(find.text('Copy'), findsNothing);
+    expect(find.byIcon(Icons.copy), findsNothing);
     expect(find.text('Page 1'), findsOneWidget);
   });
 
@@ -170,8 +170,9 @@ void main() {
     expect(find.text('Page 2'), findsNothing);
   });
 
-  testWidgets('the last file deletes the capture with it, once confirmed',
-      (tester) async {
+  testWidgets('the last file deletes the capture with it, once confirmed', (
+    tester,
+  ) async {
     await open(tester);
     final title = event().title;
     await tester.tap(find.text('Page 1'));
@@ -179,10 +180,7 @@ void main() {
     await tester.tap(find.byTooltip('Delete'));
     await frames(tester);
     expect(find.text('Delete "$title"?'), findsOneWidget);
-    expect(
-      find.textContaining('"Page 1" is its only file'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('"Page 1" is its only file'), findsOneWidget);
     await tester.tap(find.text('Cancel'));
     await frames(tester);
     expect(event().pages, hasLength(1));

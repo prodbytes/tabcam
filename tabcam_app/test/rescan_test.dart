@@ -16,6 +16,13 @@ import 'package:tabcam_app/sound/ding_io.dart';
 /// one the user edited; none found keeps it. Either way it dings, and a
 /// message says how long it took. While the text is marked verified,
 /// Rescan is off.
+/// A computer's window: the Text view's buttons labelled in the app bar.
+void _wide(WidgetTester tester) {
+  tester.view.physicalSize = const Size(1200, 900);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+}
+
 void main() {
   /// The dings played (the phones' channel, answered here).
   final dings = <MethodCall>[];
@@ -70,6 +77,7 @@ void main() {
 
   testWidgets('Rescan is off while the text is verified; unmarked, it '
       'replaces an edited text', (tester) async {
+    _wide(tester);
     var reading = Completer<String?>();
     var reads = 0;
     late Library library;
@@ -204,6 +212,7 @@ void main() {
   testWidgets('Rescan finding no tab keeps the text, with a message', (
     tester,
   ) async {
+    _wide(tester);
     final (library, reader, id, setReading) = await setUpEvent(tester, () {});
     var reading = Completer<String?>();
     setReading(reading);
