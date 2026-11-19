@@ -4408,3 +4408,11 @@ spec.
    the order chosen are kept on the device (`libraryorder`), not
    synced. New strings `homeSort` and `homeSort*` in English, Spanish
    and Portuguese. See [library](library.md).
+
+8. **"While repeat is on keep the repeat shadow on the timeline just
+   like when selecting."** The section's band over the play-along
+   player's progress bar showed only while its range was dragged. Now,
+   while Repeat is on (the default), it stays there for as long as the
+   section is set, so the part that repeats shows on the bar as it
+   plays; with Repeat off it still shows only while the range is
+   dragged. See [Cam](cam.md#playing-along-with-a-file).

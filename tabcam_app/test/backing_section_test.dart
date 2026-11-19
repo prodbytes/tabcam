@@ -491,11 +491,11 @@ void main() {
     track.dispose();
   });
 
-  testWidgets('while the range is dragged, the section shows over the '
-      'progress bar, from its start to its end; let go, it is gone', (
-    tester,
-  ) async {
+  testWidgets('with repeat off, while the range is dragged, the section '
+      'shows over the progress bar, from its start to its end; let go, it '
+      'is gone', (tester) async {
     final (track, event, _) = await loaded(tester);
+    await tester.runAsync(() => track.setRepeat(false));
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -581,6 +581,73 @@ void main() {
     await tester.pump();
     expect(mark, findsNothing);
     expect(track.section, isNotNull);
+    track.dispose();
+  });
+
+  testWidgets('while repeat is on, the section stays over the progress '
+      'bar; repeat off, it goes', (tester) async {
+    final (track, event, _) = await loaded(tester);
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Row(
+            children: [
+              const Expanded(child: SizedBox()),
+              PlayAlongSidebar(
+                library: track.library,
+                eventId: event.id,
+                track: track,
+                linkFrame: (_) => const SizedBox(),
+                onChoose: (_) {},
+                onToggle: () {},
+                onStop: () {},
+                onSkip: (_) {},
+                onRepeat: () {},
+                onSection: track.setSection,
+                onSectionHere: ({required bool end}) {},
+                onSectionClear: track.clearSection,
+                onSpeed: (_) {},
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    final mark = find.byKey(const Key('cam-along-section-mark'));
+    expect(track.repeat, isTrue);
+    // No section, nothing to show.
+    expect(mark, findsNothing);
+
+    await tester.runAsync(
+      () => track.setSection(
+        const Duration(seconds: 45),
+        const Duration(seconds: 90),
+      ),
+    );
+    await tester.pump();
+    // Set and repeating: shown without a drag, where it falls on the bar.
+    expect(mark, findsOneWidget);
+    final bar = tester.getRect(find.byType(VideoProgressIndicator));
+    final band = tester.getRect(mark);
+    const length = Duration(minutes: 3);
+    double at(Duration d) =>
+        bar.left + bar.width * d.inMilliseconds / length.inMilliseconds;
+    expect(band.left, closeTo(at(const Duration(seconds: 45)), 0.5));
+    expect(band.right, closeTo(at(const Duration(seconds: 90)), 0.5));
+
+    await tester.runAsync(() => track.setRepeat(false));
+    await tester.pump();
+    expect(mark, findsNothing);
+
+    await tester.runAsync(() => track.setRepeat(true));
+    await tester.pump();
+    expect(mark, findsOneWidget);
+
+    await tester.runAsync(track.clearSection);
+    await tester.pump();
+    expect(mark, findsNothing);
     track.dispose();
   });
 }
