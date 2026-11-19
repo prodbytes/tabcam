@@ -132,6 +132,7 @@ class FakeTakeRecorder implements TakeRecorder {
   Future<void> start() async {
     if (startError case final error?) throw error;
     started++;
+    stopped = false;
   }
 
   /// How long it had recorded when the take's clock started, in ms.
@@ -1786,6 +1787,39 @@ B|--5--8--|
       expect([for (final (_, line) in log.tab!.marks) line], [0, 1]);
     });
 
+    testWidgets('a take notes what the browser plays through: as it '
+        'started, marked changed when it\'s another at the stop; none when '
+        'it can\'t tell', (tester) async {
+      final recorder = FakeTakeRecorder()
+        ..told = const TakeOutput(
+          route: OutRoute.wired,
+          latencyMs: 12,
+          from: OutFrom.browser,
+        );
+      final (library, id) = await open(tester, recorder);
+      Future<TakeLog> take() async {
+        await tester.tap(find.byTooltip('Rec (.)'));
+        await frames(tester);
+        await tester.tap(_camStop);
+        await until(tester, () => recReady(tester));
+        return library.byId(id)!.pages.last.takeLog!;
+      }
+
+      expect((await take()).out, recorder.told);
+      expect(recorder.outputs, 2);
+
+      recorder.toldAtStop = const TakeOutput(
+        route: OutRoute.speaker,
+        from: OutFrom.browser,
+      );
+      expect((await take()).out, recorder.told!.copyWith(changed: true));
+
+      recorder.outputError = StateError('no outputs');
+      final log = await take();
+      expect(log.out, isNull);
+      expect(library.byId(id)!.pages, hasLength(4));
+    });
+
     testWidgets('the recorder failing and the microphone not lent, no take', (
       tester,
     ) async {
@@ -2084,7 +2118,22 @@ B|--5--8--|
     late List<Map<String, Object?>> inputs;
     late List<Object?> chooseArgs;
 
+    /// What `output` gives (then [outputAtStop], if set, once the camera
+    /// stopped), and what the camera was doing at each `output` (kept
+    /// apart from [calls]: it's read beside the take's calls).
+    late Map<String, Object?>? output;
+    late Map<String, Object?>? outputAtStop;
+    late List<(int, bool)> outputCalls;
+
     setUp(() {
+      output = {
+        'route': 'bluetooth',
+        'name': 'Buds',
+        'latencyMs': null,
+        'from': 'devices',
+      };
+      outputAtStop = null;
+      outputCalls = [];
       inputs = [];
       chooseArgs = [];
       calls = [];
@@ -2114,6 +2163,13 @@ B|--5--8--|
       addTearDown(() => dir.deleteSync(recursive: true));
       final messenger = tester.binding.defaultBinaryMessenger;
       messenger.setMockMethodCallHandler(TakeSound.channel, (call) async {
+        if (call.method == 'output') {
+          outputCalls.add((camera.starts, camera.recording));
+          if (fail['output'] case final error?) throw error;
+          return camera.recording || outputAtStop == null
+              ? output
+              : outputAtStop;
+        }
         calls.add((call.method, camera.starts, camera.recording));
         if (fail[call.method] case final error?) throw error;
         return switch (call.method) {
@@ -2341,6 +2397,83 @@ B|--5--8--|
         await tester.pumpWidget(const SizedBox());
         await tester.pump();
         expect(methods().last, 'release');
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
+    testWidgets('the take\'s log notes what the song played through (read '
+        'as the clock starts and again after the stop, the name only as a '
+        'fingerprint) and the sound\'s lead', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      try {
+        await open(tester);
+        final (library, id) = await capture(tester, tab: _tab);
+        await tester.pumpWidget(app(cam(library, id)));
+        await frames(tester);
+        expect(outputCalls, isEmpty);
+        await tester.tap(find.byTooltip('Rec (.)'));
+        await frames(tester);
+        // Once the camera records, as the take's clock starts.
+        expect(outputCalls, [(1, true)]);
+        await tester.tap(_camStop);
+        await until(tester, () => recReady(tester));
+        // Again once it stopped.
+        expect(outputCalls, [(1, true), (1, false)]);
+        final log = library.byId(id)!.pages.last.takeLog!;
+        expect(
+          log.out,
+          TakeOutput(
+            route: OutRoute.bluetooth,
+            id: TakeOutput.fingerprint('Buds'),
+            from: OutFrom.devices,
+          ),
+        );
+        expect(log.toJson().toString(), isNot(contains('Buds')));
+        expect(log.lagRaw['soundLeadMs'], 120);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
+    testWidgets('headphones taken off during the take: the output noted is '
+        'the start\'s, marked changed', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      outputAtStop = {'route': 'speaker', 'from': 'devices'};
+      try {
+        await open(tester);
+        final (library, id) = await capture(tester, tab: _tab);
+        await tester.pumpWidget(app(cam(library, id)));
+        await frames(tester);
+        await tester.tap(find.byTooltip('Rec (.)'));
+        await frames(tester);
+        await tester.tap(_camStop);
+        await until(tester, () => recReady(tester));
+        final out = library.byId(id)!.pages.last.takeLog!.out!;
+        expect(out.route, OutRoute.bluetooth);
+        expect(out.changed, isTrue);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
+    testWidgets('the output can\'t be read: the take is saved all the same, '
+        'without it', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      fail['output'] = PlatformException(code: 'failed');
+      try {
+        await open(tester);
+        final (library, id) = await capture(tester, tab: _tab);
+        await tester.pumpWidget(app(cam(library, id)));
+        await frames(tester);
+        await tester.tap(find.byTooltip('Rec (.)'));
+        await frames(tester);
+        await tester.tap(_camStop);
+        await until(tester, () => recReady(tester));
+        final pages = library.byId(id)!.pages;
+        expect(pages.last.title, 'Take 10:00');
+        expect(pages.last.takeLog!.out, isNull);
+        expect(pages.last.takeLog!.toJson().containsKey('out'), isFalse);
       } finally {
         debugDefaultTargetPlatformOverride = null;
       }
@@ -4563,7 +4696,6 @@ B|--5--8--|
     expect(find.byType(AlertDialog), findsNothing);
     expect(ids(), isNot(contains(songs[2])));
   });
-
 
   testWidgets('a take that is its capture\'s only file deletes the capture '
       'from the sidebar, once confirmed, and Cam goes back to Home', (

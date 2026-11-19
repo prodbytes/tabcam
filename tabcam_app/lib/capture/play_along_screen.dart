@@ -1184,8 +1184,9 @@ class _PlayAlongScreenState extends State<PlayAlongScreen> {
       final after = _clock.elapsed.inMilliseconds;
       if (at == null || !identical(notes, _songNotes)) return;
       if (_track.media != media) return;
-      notes.anchor(
-        (before + after) ~/ 2,
+      notes.anchorBetween(
+        before,
+        after,
         page: page,
         position: at.inMilliseconds,
       );

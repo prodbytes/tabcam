@@ -8,6 +8,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tabcam_app/capture/out_delays.dart';
 import 'package:tabcam_app/capture/song_sync.dart';
 import 'package:tabcam_app/capture/sound_reader.dart';
 import 'package:tabcam_app/capture/take_log.dart';
@@ -2260,9 +2261,7 @@ void main() {
     expect(shown(), '+10 ms');
     expect(
       tester
-          .widget<IconButton>(
-            find.byKey(const Key('video-edit-delay-minus10')),
-          )
+          .widget<IconButton>(find.byKey(const Key('video-edit-delay-minus10')))
           .tooltip,
       '10 ms earlier',
     );
@@ -2287,9 +2286,276 @@ void main() {
     expect(library.byId(id)!.pages.first.edit, isNull);
   });
 
+  /// A take through Bluetooth headphones (a made-up pair's fingerprint)
+  /// whose song played from 1 s on its clock (the lag 0.2 s), [sync] as
+  /// it was measured, [out] as Cam noted it.
+  TakeLog outLog({
+    TakeSync? sync = const TakeSync(page: 'k1', from: SyncFrom.none),
+    TakeOutput? out = const TakeOutput(
+      route: OutRoute.bluetooth,
+      id: 'ab12cd34',
+      latencyMs: 160,
+      from: OutFrom.session,
+    ),
+  }) => TakeLog(
+    burned: false,
+    lagMs: 200,
+    song: const [SongSegment(at: 1000, to: 31000, page: 'k1', from: 0)],
+    sync: sync,
+    out: out,
+  );
+
+  String delayShown(WidgetTester tester) => tester
+      .widget<Text>(
+        find.descendant(
+          of: find.byKey(const Key('video-edit-delay-value')),
+          matching: find.byType(Text),
+        ),
+      )
+      .data!;
+
+  testWidgets('a take through Bluetooth whose song wasn\'t found: what it '
+      'played through under the delay; Remember keeps the delay for that '
+      'output on the device, Forget drops it', (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester, editTake: true, log: outLog());
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    expect(
+      find.text('Played through Bluetooth; the device reported 160 ms'),
+      findsOneWidget,
+    );
+    expect(delayShown(tester), '0 ms');
+    expect(
+      find.byKey(const Key('video-edit-song-delay-remember')),
+      findsNothing,
+    );
+    expect(find.byKey(const Key('video-edit-song-delay-kept')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('video-edit-delay-value')));
+    await _settle(tester);
+    await tester.enterText(
+      find.byKey(const Key('video-edit-delay-field')),
+      '170',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Set'));
+    await _settle(tester);
+    expect(delayShown(tester), '+170 ms');
+    // The song 170 ms later than the log has it (1.2 s).
+    expect(library.byId(id)!.pages.first.edit!.offset, s(1.37));
+    expect(
+      find.text('Remember +170 ms for this Bluetooth device'),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const Key('video-edit-song-delay-remember')));
+    await _settle(tester);
+    late String? meta;
+    await tester.runAsync(
+      () async => meta = await library.readMeta('outdelays'),
+    );
+    expect(jsonDecode(meta!), {
+      'v': 1,
+      'ms': {'bluetooth|ab12cd34': 170},
+    });
+    expect(
+      find.text('Kept for this Bluetooth device: its takes open with it'),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('video-edit-song-delay-remember')),
+      findsNothing,
+    );
+
+    // Another delay: Remember offered again; back at 0, Forget.
+    await tester.tap(find.byKey(const Key('video-edit-delay-plus10')));
+    await _settle(tester);
+    expect(
+      find.text('Remember +180 ms for this Bluetooth device'),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const Key('video-edit-delay-value')));
+    await _settle(tester);
+    await tester.enterText(
+      find.byKey(const Key('video-edit-delay-field')),
+      '0',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Set'));
+    await _settle(tester);
+    expect(
+      find.text('Forget the delay for this Bluetooth device'),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const Key('video-edit-song-delay-forget')));
+    await _settle(tester);
+    await tester.runAsync(
+      () async => meta = await library.readMeta('outdelays'),
+    );
+    expect(jsonDecode(meta!), {'v': 1, 'ms': <String, Object?>{}});
+    expect(find.byKey(const Key('video-edit-song-delay-forget')), findsNothing);
+    expect(
+      find.byKey(const Key('video-edit-song-delay-remember')),
+      findsNothing,
+    );
+  });
+
+  testWidgets('a take through headphones whose song wasn\'t found opens '
+      'with the delay kept for that output, kept with the edit; not one '
+      'whose song was found, moved by hand, through an output that '
+      'changed, another output, or none noted', (tester) async {
+    tall(tester);
+    const kept = {'bluetooth|ab12cd34': 170};
+
+    /// Opens a take with [log] (and [edit] kept), the delay above kept on
+    /// the device: the edit it's kept with then.
+    Future<PageEdit?> opened(TakeLog log, {PageEdit? edit}) async {
+      final (library, id) = await capture(tester, editTake: true, log: log);
+      await tester.runAsync(() async {
+        await OutDelays.write(library, kept);
+        if (edit != null) await library.setPageEdit(id, 'k0', edit);
+      });
+      await tester.pumpWidget(editScreen(library, id));
+      await _settle(tester);
+      return library.byId(id)!.pages.first.edit;
+    }
+
+    final seeded = await opened(outLog());
+    expect((seeded!.trackId, seeded.offset), ('k1', s(1.37)));
+    expect(seeded.song, isNull);
+    expect(delayShown(tester), '+170 ms');
+    expect(
+      find.text('Kept for this Bluetooth device: its takes open with it'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Lined up as recorded, moved 0:00.17 later'),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const Key('video-edit-download')));
+    await _settle(tester);
+    expect(editor.rendered.last.song!.clips.first.at, s(1.37));
+
+    // Found in its sound: that has the output's delay in it already.
+    expect(
+      await opened(
+        outLog(
+          sync: const TakeSync(page: 'k1', from: SyncFrom.sound, ms: 60),
+        ),
+      ),
+      isNull,
+    );
+    expect(find.text('Lined up by its sound in the take'), findsOneWidget);
+    expect(
+      find.byKey(const Key('video-edit-song-delay-remember')),
+      findsNothing,
+    );
+
+    // Moved by hand: where it was put.
+    final moved = await opened(
+      outLog(),
+      edit: PageEdit(
+        start: Duration.zero,
+        end: const Duration(minutes: 3),
+        trackId: 'k1',
+        trackEnd: s(30),
+        offset: s(1.25),
+      ),
+    );
+    expect(moved!.offset, s(1.25));
+    expect(delayShown(tester), '+50 ms');
+
+    // The output changed during the take: said, not applied.
+    final changed = outLog(
+      out: const TakeOutput(
+        route: OutRoute.bluetooth,
+        id: 'ab12cd34',
+        from: OutFrom.media,
+        changed: true,
+      ),
+    );
+    expect(await opened(changed), isNull);
+    expect(
+      find.text('Played through Bluetooth; the output changed during the take'),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('video-edit-song-delay-remember')),
+      findsNothing,
+    );
+
+    // Other headphones: none kept for them.
+    final wired = outLog(
+      out: const TakeOutput(route: OutRoute.wired, from: OutFrom.media),
+    );
+    expect(await opened(wired), isNull);
+    expect(find.text('Played through wired headphones'), findsOneWidget);
+
+    // The speaker: nothing to remember (its delay is found in the sound).
+    final speaker = outLog(
+      out: const TakeOutput(route: OutRoute.speaker, from: OutFrom.media),
+    );
+    expect(await opened(speaker), isNull);
+    expect(find.text('Played through the speaker'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('video-edit-delay-plus10')));
+    await _settle(tester);
+    expect(
+      find.byKey(const Key('video-edit-song-delay-remember')),
+      findsNothing,
+    );
+
+    // None noted (a take from before): no word on it.
+    expect(await opened(outLog(out: null)), isNull);
+    expect(find.byKey(const Key('video-edit-song-out')), findsNothing);
+    expect(delayShown(tester), '0 ms');
+  });
+
+  testWidgets('a headphones take not measured yet opens with the delay '
+      'kept; its song then found in its sound, the Song lane follows it '
+      'there, the delay dropped', (tester) async {
+    tall(tester);
+    SongSync.inline = true;
+    TakeSyncer.reset();
+    addTearDown(() {
+      SongSync.inline = false;
+      SoundReader.opener = null;
+    });
+    // As the take not measured yet above: the song 83 ms after where the
+    // log has it.
+    const log = TakeLog(
+      burned: false,
+      lagMs: 200,
+      song: [SongSegment(at: 5000, to: 35000, page: 'k1', from: 0)],
+      out: TakeOutput(route: OutRoute.bluetooth, id: 'ab12cd34'),
+    );
+    final song = riff(30, 11);
+    final reader = FakeReader({
+      'video/mp4': mixed([
+        heardFrom(song, length: 40 * rate, delay: 5283 * rate / 1000),
+        riff(40, 12, bpm: 103),
+      ]),
+      'audio/mp4': song,
+    });
+    SoundReader.opener = () => reader;
+    final (library, id) = await capture(tester, editTake: true, log: log);
+    await tester.runAsync(
+      () => OutDelays.write(library, {'bluetooth|ab12cd34': 170}),
+    );
+    await tester.pumpWidget(editScreen(library, id));
+    await measured(tester, library, id);
+    expect(library.byId(id)!.pages.first.takeLog!.sync!.ms, 83);
+    expect(find.text('Lined up by its sound in the take'), findsOneWidget);
+    expect(delayShown(tester), '0 ms');
+    expect(find.byKey(const Key('video-edit-song-delay-kept')), findsNothing);
+    await tester.tap(find.byKey(const Key('video-edit-download')));
+    await _settle(tester);
+    expect(editor.rendered.last.song!.clips, [
+      SongClip(at: s(5.283), from: Duration.zero, to: s(30)),
+    ]);
+  });
+
   testWidgets('the timeline zooms in and out: the ruler and both lanes '
-      'together, scrolled sideways, a tap and a drag as precise as the zoom',
-      (tester) async {
+      'together, scrolled sideways, a tap and a drag as precise as the zoom', (
+    tester,
+  ) async {
     tall(tester);
     final (library, id) = await capture(tester);
     await tester.pumpWidget(editScreen(library, id));
@@ -2298,7 +2564,9 @@ void main() {
     final whole = rect('video-edit-take-bar');
     expect(find.byKey(const Key('video-edit-zoom')), findsNothing);
     expect(
-      tester.widget<IconButton>(find.byKey(const Key('video-edit-zoom-out'))).onPressed,
+      tester
+          .widget<IconButton>(find.byKey(const Key('video-edit-zoom-out')))
+          .onPressed,
       isNull,
     );
 
@@ -2320,9 +2588,7 @@ void main() {
 
     // A tap a quarter across the view is a sixteenth of the video in:
     // 0:11.25 of 3 minutes.
-    await tester.tapAt(
-      Offset(whole.left + whole.width / 4, take.center.dy),
-    );
+    await tester.tapAt(Offset(whole.left + whole.width / 4, take.center.dy));
     await _settle(tester);
     expect(platform.seeks.last.inMilliseconds, closeTo(11250, 200));
 
@@ -2365,7 +2631,10 @@ void main() {
         .position
         .jumpTo(whole.width);
     await _settle(tester);
-    expect(rect('video-edit-take-bar').left, closeTo(whole.left - whole.width, 1));
+    expect(
+      rect('video-edit-take-bar').left,
+      closeTo(whole.left - whole.width, 1),
+    );
     expect(rect('video-edit-take-volume'), header);
 
     // Zoomed out all the way: the whole video again, no scroll.

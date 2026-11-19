@@ -2,7 +2,9 @@ import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tabcam_app/capture/take_log.dart';
 import 'package:tabcam_app/capture/take_priority.dart';
+import 'package:tabcam_app/capture/take_recorder.dart';
 import 'package:tabcam_app/capture/take_sound.dart';
 
 void main() {
@@ -70,6 +72,47 @@ void main() {
       await TakeAudio.prepare();
       await TakeAudio.release();
       expect(calls, isEmpty);
+    });
+
+    test('says what it plays through (iOS only); failing, nothing', () async {
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(TakeAudio.channel, (call) async {
+        calls.add(call.method);
+        return call.method == 'output'
+            ? {
+                'route': 'bluetooth',
+                'name': 'Buds',
+                'latencyMs': 160,
+                'from': 'session',
+              }
+            : null;
+      });
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      expect(await TakeAudio.output(), isNull);
+      expect(calls, isEmpty);
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      final reading = await TakeAudio.output();
+      expect(reading, {
+        'route': 'bluetooth',
+        'name': 'Buds',
+        'latencyMs': 160,
+        'from': 'session',
+      });
+      expect(
+        TakeOutput.fromReading(reading),
+        TakeOutput(
+          route: OutRoute.bluetooth,
+          id: TakeOutput.fingerprint('Buds'),
+          latencyMs: 160,
+          from: OutFrom.session,
+        ),
+      );
+      messenger.setMockMethodCallHandler(
+        TakeAudio.channel,
+        (call) async => throw PlatformException(code: 'failed'),
+      );
+      expect(await TakeAudio.output(), isNull);
     });
 
     test('failing, it only logs', () async {
@@ -170,6 +213,32 @@ void main() {
       },
     );
 
+    test('says what media plays through (Android only); failing, '
+        'nothing', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      expect(await TakeSound.output(), isNull);
+      expect(calls, isEmpty);
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      reply = (_) => {'route': 'wired', 'name': null, 'from': 'media'};
+      final reading = await TakeSound.output();
+      expect(calls.single.method, 'output');
+      expect(
+        TakeOutput.fromReading(reading),
+        const TakeOutput(route: OutRoute.wired, from: OutFrom.media),
+      );
+      reply = (_) => throw PlatformException(code: 'failed');
+      expect(await TakeSound.output(), isNull);
+    });
+
+    test('stopped: the sound\'s lead before the video, in whole ms', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      final video = XFile('/cache/REC_1.mp4');
+      reply = (_) => {'path': '/cache/take-1.mp4', 'leadMs': 300.4};
+      expect((await TakeSound.stop(video)).leadMs, 300);
+      reply = (_) => {'path': '/cache/take-1.mp4'};
+      expect((await TakeSound.stop(video)).leadMs, isNull);
+    });
+
     test('start fails loudly; the rest only log', () async {
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
       reply = (_) => throw PlatformException(code: 'failed');
@@ -183,5 +252,19 @@ void main() {
         ['start', 'videoStarted', 'videoStopping', 'cancel', 'release'],
       );
     });
+  });
+
+  test('the browser\'s output names, as routes', () {
+    expect(outRouteOfLabel('AirPods Pro'), OutRoute.bluetooth);
+    expect(outRouteOfLabel('Riff Buds (Bluetooth)'), OutRoute.bluetooth);
+    expect(
+      outRouteOfLabel('MacBook Pro Speakers (Built-in)'),
+      OutRoute.speaker,
+    );
+    expect(outRouteOfLabel('External Headphones'), OutRoute.wired);
+    expect(outRouteOfLabel('USB Audio Interface'), OutRoute.usb);
+    expect(outRouteOfLabel('Living room (AirPlay)'), OutRoute.airplay);
+    expect(outRouteOfLabel('Monitor 27'), OutRoute.unknown);
+    expect(outRouteOfLabel(''), OutRoute.unknown);
   });
 }

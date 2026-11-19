@@ -964,6 +964,16 @@ class SongNotes {
     _open = (at: open.at, page: page, from: max(0, from), speed: open.speed);
   }
 
+  /// [anchor], from a reading asked for at [before] that came back at
+  /// [after]: the player read it somewhere in that round trip, so it's
+  /// taken as of its middle.
+  void anchorBetween(
+    int before,
+    int after, {
+    required String page,
+    required int position,
+  }) => anchor((before + after) ~/ 2, page: page, position: position);
+
   /// The segments noted, the one playing ended at [t].
   List<SongSegment> finish(int t) {
     _close(t);

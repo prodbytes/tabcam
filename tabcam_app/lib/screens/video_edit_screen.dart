@@ -1180,9 +1180,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       return [for (final c in clips) (at: c.at, end: c.end, from: c.from)];
     }
     final at = _start + _offset;
-    return [
-      (at: at, end: at + (_trackEnd - _trackStart), from: _trackStart),
-    ];
+    return [(at: at, end: at + (_trackEnd - _trackStart), from: _trackStart)];
   }
 
   /// [wave] over a lane's bar ([key]'s), where [spans] put it.
@@ -3476,14 +3474,14 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                         length: length,
                         onSeek: _seek,
                         child: _TakeBar(
-                    length: length,
-                    start: _start,
-                    end: _end,
-                    marks: marks,
-                    fades: _fades,
-                    label: l10n.videoEditTakeBar,
-                    startLabel: l10n.videoEditKeptStart,
-                    endLabel: l10n.videoEditKeptEnd,
+                          length: length,
+                          start: _start,
+                          end: _end,
+                          marks: marks,
+                          fades: _fades,
+                          label: l10n.videoEditTakeBar,
+                          startLabel: l10n.videoEditKeptStart,
+                          endLabel: l10n.videoEditKeptEnd,
                           onTrimStart: _trimStartBy,
                           onTrimEnd: _trimEndBy,
                           onTrimmed: _trimmed,
@@ -3937,8 +3935,7 @@ extension on _VideoEditScreenState {
                   ),
                 ),
               ),
-              for (final by in _VideoEditScreenState.delaySteps)
-                stepButton(by),
+              for (final by in _VideoEditScreenState.delaySteps) stepButton(by),
             ],
           ),
         ),
@@ -4007,9 +4004,7 @@ extension on _VideoEditScreenState {
           child: TextButton.icon(
             key: const Key('video-edit-song-delay-remember'),
             icon: const Icon(Icons.bookmark_add_outlined, size: 18),
-            label: Text(
-              l10n.videoEditSongDelayRemember(_msText(ms), output),
-            ),
+            label: Text(l10n.videoEditSongDelayRemember(_msText(ms), output)),
             onPressed: () => _keepDelay(out.key, ms),
           ),
         ),

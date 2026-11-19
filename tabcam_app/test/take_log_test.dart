@@ -38,7 +38,14 @@ final _log = TakeLog(
     'stopCallMs': 61000,
     'stopReturnMs': 61310,
     'fileMs': 61420,
+    'soundLeadMs': 120,
   },
+  out: const TakeOutput(
+    route: OutRoute.bluetooth,
+    id: '3f9a1c07',
+    latencyMs: 160,
+    from: OutFrom.session,
+  ),
   tab: TakeTab.of(_riff, [(_ms(0), 0), (_ms(4210), 1), (_ms(8380), 0)]),
   song: const [
     SongSegment(at: 2050, to: 31200, page: 'p7', from: 0),
@@ -258,6 +265,13 @@ void main() {
           'stopCallMs': 61000,
           'stopReturnMs': 61310,
           'fileMs': 61420,
+          'soundLeadMs': 120,
+        },
+        'out': {
+          'route': 'bluetooth',
+          'id': '3f9a1c07',
+          'latencyMs': 160,
+          'from': 'session',
         },
         'tab': {
           'lines': [_riff[0], _riff[1]],
@@ -372,6 +386,74 @@ void main() {
           clips: [SyncClip(at: 1, ms: 2)],
         ),
       );
+    });
+
+    test('what the song played through (out): its route, a fingerprint '
+        'of its name (never the name), the latency reported, how told', () {
+      final buds = TakeOutput.fromReading({
+        'route': 'bluetooth',
+        'name': 'Buds of a made-up owner',
+        'latencyMs': 160.4,
+        'from': 'session',
+      })!;
+      expect(buds.route, OutRoute.bluetooth);
+      expect(buds.id, matches(RegExp(r'^[0-9a-f]{8}$')));
+      expect(buds.id, TakeOutput.fingerprint('Buds of a made-up owner'));
+      expect(buds.latencyMs, 160);
+      expect(buds.from, OutFrom.session);
+      expect(buds.changed, isFalse);
+      expect(jsonEncode(buds.toJson()), isNot(contains('Buds')));
+      // The same name, the same fingerprint; another, another.
+      expect(TakeOutput.fingerprint('Buds'), TakeOutput.fingerprint('Buds'));
+      expect(
+        TakeOutput.fingerprint('Buds'),
+        isNot(TakeOutput.fingerprint('Other buds')),
+      );
+      // No name, no fingerprint; what isn't known, unknown.
+      final quiet = TakeOutput.fromReading({
+        'route': 'hdmi',
+        'name': ' ',
+        'latencyMs': -3,
+      })!;
+      expect(quiet, const TakeOutput());
+      expect(TakeOutput.fromReading(null), isNull);
+      // Headphones, and the key a delay is kept under.
+      expect(buds.headphones, isTrue);
+      expect(buds.key, 'bluetooth|${buds.id}');
+      expect(const TakeOutput(route: OutRoute.wired).headphones, isTrue);
+      expect(const TakeOutput(route: OutRoute.usb).key, 'usb|');
+      expect(const TakeOutput(route: OutRoute.speaker).headphones, isFalse);
+      expect(const TakeOutput(route: OutRoute.airplay).headphones, isFalse);
+      expect(buds.sameAs(buds.copyWith(changed: true)), isTrue);
+      // Changed: said only when it did.
+      expect(_encoded(buds.copyWith(changed: true).toJson()), {
+        'route': 'bluetooth',
+        'id': buds.id,
+        'latencyMs': 160,
+        'from': 'session',
+        'changed': true,
+      });
+      expect(TakeOutput.fromJson(buds.toJson()), buds);
+      // Read leniently, written back as it came.
+      expect(TakeOutput.fromJson('speaker'), isNull);
+      final odd = {
+        ..._log.toJson(),
+        'out': {'route': 'x', 'latencyMs': 'y', 'from': 3, 'changed': 1},
+      };
+      final read = TakeLog.fromJson(_encoded(odd))!;
+      expect(read.out, const TakeOutput());
+      expect(_encoded(read.toJson()), _encoded(odd));
+      expect(
+        TakeLog.fromJson(_encoded({..._log.toJson(), 'out': 'speaker'}))!.out,
+        isNull,
+      );
+      // Kept by a clone's copy, and once the song's found.
+      expect(_log.withPages({'p7': 'q1'}).out, _log.out);
+      const sync = TakeSync(page: 'p7', from: SyncFrom.none);
+      expect(_log.withSync(sync).out, _log.out);
+      final back = TakeLog.fromJson(_encoded(_log.toJson()))!;
+      expect(back.withSync(sync).out, _log.out);
+      expect(back.lagRaw['soundLeadMs'], 120);
     });
 
     test('the song it lines up: the one played longest, at its own '
@@ -776,6 +858,14 @@ void main() {
       // Nothing playing: nothing to tell.
       final idle = SongNotes()..anchor(10, page: 'k1', position: 5);
       expect(idle.finish(100), isEmpty);
+    });
+
+    test('a reading is taken as of the middle of its round trip', () {
+      final notes = SongNotes();
+      notes.note(0, page: 'k1', playing: true, position: 9500);
+      // Asked at 100, back at 190: the player read 10100 about 145.
+      notes.anchorBetween(100, 190, page: 'k1', position: 10100);
+      expect(notes.finish(1000), [seg(0, 1000, 9955)]);
     });
 
     test('nothing played: no segments; one ended as it started: none', () {

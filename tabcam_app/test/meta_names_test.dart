@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tabcam_app/capture/backing_track.dart';
+import 'package:tabcam_app/capture/out_delays.dart';
 import 'package:tabcam_app/cloud/cloud_ocr.dart';
 import 'package:tabcam_app/cloud/cloud_sync.dart';
 import 'package:tabcam_app/l10n/language.dart';
@@ -54,7 +55,9 @@ void main() {
         CloudSync.stateName,
         CloudOcr.stateName,
         CloudOcr.premiumName,
+        OutDelays.metaName,
       }, MetaNames.all);
+      expect(MetaNames.deviceSettings, contains(OutDelays.metaName));
       expect(BackingTrack.metaName, 'playalong');
     });
 
