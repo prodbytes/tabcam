@@ -1,7 +1,8 @@
 # Sharing
 
 **Share** (the event screen's app bar, a link icon, or a library card's
-menu) copies the capture's link to the clipboard, nothing else: no
+menu; the file screen's app bar and the video editor's too, for the
+file's link) copies the capture's link to the clipboard, nothing else: no
 choice of format, no text around it, the URL alone. Signed in (or in a
 build without sign-in) it copies on the tap itself, before anything else
 (browsers let a page write the clipboard only right after a tap; the sync
@@ -12,10 +13,30 @@ sign in first ([signed out](cloud-sync.md#signed-out)), then copies.
   the [file names](event-screen.md) in the list): it opens the capture
   with that file open on the file screen over its list (Back goes to the
   list), signed in, signed out by its key, or after joining; an unknown
-  or bad file ID opens just the capture.
+  or bad file ID opens just the capture. **Share on the file screen** (a
+  link icon in its app bar, for the capture's own files) copies it.
+  **Share in the video editor** (a link icon before About) copies the
+  file's **edit view's link**, `e=1` too (`CaptureLink.of(event, file:,
+  edit: true)`; only with a file, `CaptureLink.editIn`): it opens the
+  editor over the file, the context it was shared from. On a capture
+  shared with the user (read only: the editor doesn't open on it), the
+  editor opens on their **copy** of it, made then if they have none, on
+  the copy's page of that file (copy on write: the page shows the
+  owner's file until it changes;
+  [shared captures](shared-captures.md#shared-with-me)), in the shared
+  capture's place, with "The editor opens on your copy, …"; a copy that
+  has no page showing that file (it owns its files since it was shared,
+  or the file came after it), or one that can't be made, opens the file
+  on the shared capture instead, read only, as its plain link does. Opened by its
+  key, signed out or not shared with the user, the file opens, read only
+  (there's no copy to edit); once signed in and joined, the same link
+  opens the editor on their copy. An image's edit view is just the file.
+  A reload or restart comes back to the editor too
+  ([navigation](navigation.md#coming-back-where-the-user-was)).
 - The link is a **short link**, `https://tabs.cam/s/<key>`
   ([`CaptureLink`](../tabcam_app/lib/export/capture_link.dart)), a file's
-  `https://tabs.cam/s/<key>?f=<file id>`: the capture's **link key**
+  `https://tabs.cam/s/<key>?f=<file id>` (its edit view's `&e=1` too):
+  the capture's **link key**
   alone, which lets anyone holding the link see the capture, read only
   ([opening a link](#opening-a-link)). The site answers it with a
   redirect to the **full link**, `https://tabs.cam/app/?c=<capture
@@ -52,10 +73,11 @@ the share API's domain, as [previews](#link-previews) are), to the share
 API (`GET /s/{key}`, and `HEAD`; no sign-in;
 [index.py](../tabcam_api/shares/index.py)). The links table is keyed by
 the key's hash, so the key alone finds the capture: the answer is a 302
-to `/app/?c=<capture id>&k=<key>` (`&f=<file id>` kept, when well
-formed) on the same site, which the app opens as below; an unknown or
-malformed key goes to `/app/`. CloudFront keeps the answer, by path and
-`f`: a day for a link (it never changes; a deleted capture says so in
+to `/app/?c=<capture id>&k=<key>` (`&f=<file id>`, and `&e=1` with it,
+kept when well formed) on the same site, which the app opens as below;
+an unknown or
+malformed key goes to `/app/`. CloudFront keeps the answer, by path,
+`f` and `e`: a day for a link (it never changes; a deleted capture says so in
 the app), a minute for an unknown one. Guessing keys gets 10 tries a
 second for everyone, and 2⁷¹ keys.
 

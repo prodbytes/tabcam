@@ -4234,9 +4234,50 @@ spec.
    unchanged (the drift is logged, not kept). See
    [Cam](cam.md#the-song-found-in-the-takes-sound).
 
+17. **"When a link is shared open as well as possible in the same
+    context, for example, if a capture is shared, open in the capture
+    (list of files), if a file is shared open the capture in the file,
+    if it was being edited, the edit view for that file on that
+    capture. remember that source capture is always shared read only
+    and copied on write to the sharee capture (different id, copy on
+    write content)."** Share is now on the file screen too (the file's
+    link, `f`) and in the video editor (the file's edit view's link,
+    `f` and `e=1`), besides the capture's. A link opens where it was
+    shared from: the capture's list, the file over it, or the editor
+    over the file; on a capture shared with the user (read only), the
+    editor opens on their copy (made then, as Add and Cam do), over the
+    copy's page of that file (copy on write); by its key, signed out,
+    the file opens, and the editor once signed in and joined. A reload
+    or restart also comes back to the editor (`edit` in the place). The
+    short link's redirect and its CloudFront cache key keep `e`. See
+    [sharing](sharing.md), [shared
+    captures](shared-captures.md#shared-with-me),
+    [navigation](navigation.md#coming-back-where-the-user-was),
+    [event screen](event-screen.md#file-screen) and
+    [video edit](video-edit.md).
+
 ## 2026-11-19
 
-1. **"Let's ensure that recording aligns as well as possible with the
+1. **"Continue"** (checking tonight's editor changes live in Chrome, on
+   tabs.cam). The zoom works there (4×, the ruler to fifths of a second,
+   the scrollbar), but zoomed in, an empty Song lane's **Add a track**
+   zoomed with the lanes, its label off screen: it now stays as wide as
+   the view. The waveform reads there too: the capture's test video's
+   sound is one steady tone, so it draws as a flat band. See
+   [video edit](video-edit.md#zoom).
+
+2. Follow-up to 2026-11-18's 17 (a link opens in the context it was
+   shared from), from its review: an edit link on a capture shared
+   with the user makes a copy only for a video of the capture's own
+   files; when their copy has no page of that file (or can't be made),
+   the file opens on the shared capture, read only, as its plain link
+   does, and "The editor opens on your copy" shows only when it does. A
+   take edited from a sidebar isn't remembered as the file screen's
+   editor for a reload. The editor opened from Cam gets cloud sync, so
+   its Share copies the keyed link. See [sharing](sharing.md) and
+   [shared captures](shared-captures.md#shared-with-me).
+
+3. **"Let's ensure that recording aligns as well as possible with the
    backing track: when recording, looping or starting a new take always
    include the 2 s offset for a breath and sync margin; check the
    compensation needed for a Bluetooth output (if that matters); review

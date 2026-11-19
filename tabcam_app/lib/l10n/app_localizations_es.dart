@@ -505,6 +505,11 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String eventEditOnCopy(String title) {
+    return 'El editor se abre en tu copia, \"$title\"';
+  }
+
+  @override
   String eventCamOnCopy(String title) {
     return 'Cam graba en tu copia, \"$title\"';
   }

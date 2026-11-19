@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../capture/play_along_sidebar.dart';
 import '../cloud/cloud_ocr.dart';
+import '../cloud/cloud_sync.dart';
 import '../dictionary/dictionary_sidebar.dart';
 import '../l10n/language.dart';
 import 'rename_dialog.dart';
@@ -20,6 +21,7 @@ import 'mini_player.dart';
 import 'page_image.dart';
 import 'pdf_page.dart';
 import 'place.dart';
+import 'share_sheet.dart';
 import 'video_edit_screen.dart';
 import 'video_page.dart';
 import 'youtube_link.dart';
@@ -155,16 +157,25 @@ class FileScreen extends StatefulWidget {
     required this.library,
     required this.eventId,
     required this.pageId,
+    this.sync,
     this.ocr,
+    this.initialEdit = false,
   });
 
   final Library library;
   final String eventId;
   final String pageId;
 
+  /// Cloud sync, for Share (the file's link); null without.
+  final CloudSync? sync;
+
   /// TabCam Premium, where the build has it: whether the video editor's
   /// watermark can be turned off ([VideoEditScreen.ocr]).
   final CloudOcr? ocr;
+
+  /// Whether the video editor opens over it at once (a link to the file's
+  /// edit view, a reload with the editor open): a video the user can edit.
+  final bool initialEdit;
 
   @override
   State<FileScreen> createState() => _FileScreenState();
@@ -188,6 +199,20 @@ class _FileScreenState extends State<FileScreen> {
   PageFilter? _shown;
 
   Library get _library => widget.library;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.initialEdit) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final event = _library.byId(widget.eventId);
+      final page = event?.pages.where((p) => p.id == _pageId).firstOrNull;
+      if (event != null && page != null && page.isVideo && !_fixed(event, page)) {
+        unawaited(_edit(event, page));
+      }
+    });
+  }
 
   /// Whether [page] can't be changed here: the capture is shared to read,
   /// or it's a contribution's file (shown as it is; its list has its own
@@ -244,8 +269,16 @@ class _FileScreenState extends State<FileScreen> {
   /// Edits a video (trim, sound): the edit screen over this one, the
   /// video's own player let go meanwhile ([_editing]) so only the preview
   /// plays; back, the video plays as edited (the edit is kept with it).
+  /// Remembered while it's open, for a reload ([Place.edit]), when it's
+  /// this screen's own video (not a take edited from the sidebar).
   Future<void> _edit(CaptureEvent event, EventPage page) async {
     setState(() => _editing = true);
+    final memory = PlaceMemory.of(_library);
+    final own = page.id == _pageId;
+    void remember(bool edit) => memory.update(
+      (p) => own && p.eventId == widget.eventId ? p.copyWith(edit: edit) : p,
+    );
+    remember(true);
     try {
       await VideoEditScreen.open(
         context,
@@ -253,8 +286,10 @@ class _FileScreenState extends State<FileScreen> {
         eventId: widget.eventId,
         page: page,
         ocr: widget.ocr,
+        sync: widget.sync,
       );
     } finally {
+      remember(false);
       if (mounted) setState(() => _editing = false);
     }
   }
@@ -355,6 +390,22 @@ class _FileScreenState extends State<FileScreen> {
               const DictionaryButton(),
               const MetronomeButton(),
               if (sidebar) PlayAlongButton(along: _alongFor(event, page)),
+              // Share: the file's link (the capture's own files; a
+              // contribution's can't be linked to).
+              if (event.pages.contains(page))
+                IconButton(
+                  key: const Key('share-file'),
+                  tooltip: l10n.eventShare,
+                  icon: const Icon(Icons.link),
+                  onPressed: _busy
+                      ? null
+                      : () => shareCapture(
+                          context,
+                          event,
+                          sync: widget.sync,
+                          file: page,
+                        ),
+                ),
               const KeysHelpButton(screen: KeysScreen.player),
             ],
             // Tapping the name renames the file (when the user can edit).

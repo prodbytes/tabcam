@@ -106,6 +106,48 @@ void main() {
     expect(PlaceMemory.of(library).place.eventId, id);
   });
 
+  test('the video editor over the file is part of the place, with a file '
+      'only; another file closes it', () {
+    const place = Place(tab: 'home', eventId: 'e1', fileId: 'f1', edit: true);
+    expect(place.toJson(), {
+      'tab': 'home',
+      'event': 'e1',
+      'file': 'f1',
+      'edit': true,
+    });
+    expect(Place.fromJson(place.toJson()).toJson(), place.toJson());
+    expect(const Place(eventId: 'e1', edit: true).toJson(), {'event': 'e1'});
+    expect(Place.fromJson({'event': 'e1', 'edit': true}).edit, isFalse);
+    expect(place.copyWith(fileId: () => 'f2').edit, isFalse);
+    expect(place.copyWith(fileId: () => null).edit, isFalse);
+    expect(place.copyWith(text: true).edit, isTrue);
+    expect(place.copyWith(edit: false).fileId, 'f1');
+    // In the address, and back.
+    final app = Uri.parse('https://tabs.cam/app/');
+    final address = place.inAddress(app);
+    expect(address.queryParameters, {
+      'open': 'e1',
+      'view': 'files',
+      'file': 'f1',
+      'edit': '1',
+    });
+    expect(Place.fromAddress(address).edit, isTrue);
+    expect(
+      Place.fromAddress(Uri.parse('https://tabs.cam/app/?open=e1&edit=1')).edit,
+      isFalse,
+    );
+    // A link's e leaves the address with its c, k and f once an event
+    // opens.
+    expect(
+      const Place(eventId: 'e2')
+          .inAddress(
+            Uri.parse('https://tabs.cam/app/?c=e1&k=Ab3dEf9hJk2L&f=f1&e=1'),
+          )
+          .queryParameters,
+      {'open': 'e2', 'view': 'files'},
+    );
+  });
+
   test('a place reads back as it was written', () {
     const place = Place(tab: 'home', eventId: 'abc', text: true, fileId: 'f');
     final back = Place.fromJson(jsonDecode(jsonEncode(place.toJson())));

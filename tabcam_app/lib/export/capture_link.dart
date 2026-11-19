@@ -11,7 +11,8 @@ import '../library/capture_event.dart';
 /// Without a key yet it's the full one without it, `…/app/?c=<capture id>`,
 /// which opens the capture for its owner and the people it's shared with,
 /// found by its ID. A file's link adds `f=<file id>`: it opens the capture
-/// with that file open.
+/// with that file open; its edit view's adds `e=1` too: the video editor
+/// over the file, as the sharer had it.
 abstract final class CaptureLink {
   /// The sites that answer short links (the share API's redirect behind
   /// their CloudFront): production's and the RC's.
@@ -37,23 +38,44 @@ abstract final class CaptureLink {
 
   /// The link to copy: the short one when the capture has its key and the
   /// site answers short links (not a local build's), else the full one.
-  static Uri of(CaptureEvent event, {EventPage? file, Uri? app}) {
+  static Uri of(
+    CaptureEvent event, {
+    EventPage? file,
+    bool edit = false,
+    Uri? app,
+  }) {
     final site = app ?? CaptureLink.app;
     final key = event.linkKey;
     if (key == null || !shortLinkHosts.contains(site.host)) {
-      return full(event, file: file, app: site);
+      return full(event, file: file, edit: edit, app: site);
     }
     return site.replace(
       path: '/s/$key',
-      queryParameters: file == null ? null : {'f': file.id},
+      queryParameters: file == null
+          ? null
+          : {'f': file.id, if (edit) 'e': '1'},
     );
   }
 
-  /// The full link, what a short one redirects to.
-  static Uri full(CaptureEvent event, {EventPage? file, Uri? app}) =>
-      (app ?? CaptureLink.app).replace(
-        queryParameters: {'c': event.id, 'k': ?event.linkKey, 'f': ?file?.id},
-      );
+  /// The full link, what a short one redirects to; [edit] (the file's
+  /// edit view) only with a [file].
+  static Uri full(
+    CaptureEvent event, {
+    EventPage? file,
+    bool edit = false,
+    Uri? app,
+  }) => (app ?? CaptureLink.app).replace(
+    queryParameters: {
+      'c': event.id,
+      'k': ?event.linkKey,
+      'f': ?file?.id,
+      if (file != null && edit) 'e': '1',
+    },
+  );
+
+  /// Whether [link] opens its file's edit view (`e=1`, with a file).
+  static bool editIn(Uri link) =>
+      fileIn(link) != null && link.queryParameters['e'] == '1';
 
   static final RegExp _short = RegExp(r'^/s/([A-Za-z0-9_-]{12,64})$');
 

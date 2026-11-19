@@ -503,7 +503,8 @@ def _content_key(clients, owner, capture_id, creds):
 
 
 def short_link(event, clients):
-    """A short link, /s/<key> (a file's adds ?f=<file id>): a redirect to
+    """A short link, /s/<key> (a file's adds ?f=<file id>, its edit view's
+    &e=1 too): a redirect to
     the full one, /app/?c=<capture id>&k=<key>, on the same site (the
     Location is relative), which the app opens as ever. The key alone finds
     the capture (links are kept by its hash). An unknown key goes to the
@@ -520,6 +521,9 @@ def short_link(event, clients):
         params = {"c": item["captureId"], "k": key}
         if ID.match(query.get("f") or ""):
             params["f"] = query["f"]
+            # The file's edit view (only with a file).
+            if query.get("e") == "1":
+                params["e"] = "1"
         location, max_age = "/app/?" + urllib.parse.urlencode(params), 86400
     return {
         "statusCode": 302,

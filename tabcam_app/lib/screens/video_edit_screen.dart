@@ -18,6 +18,7 @@ import '../capture/take_log.dart';
 import '../capture/take_syncer.dart';
 import '../capture/video_edit.dart';
 import '../cloud/cloud_ocr.dart';
+import '../cloud/cloud_sync.dart';
 import '../export/download.dart';
 import '../l10n/language.dart';
 import '../library/capture_event.dart';
@@ -27,6 +28,7 @@ import 'edited_playback.dart';
 import 'file_screen.dart';
 import 'media_url.dart';
 import 'premium_card.dart';
+import 'share_sheet.dart';
 import 'video_page.dart' show mediaLength, openPlayer, pageFile;
 import 'keys_help.dart';
 import 'messages.dart';
@@ -73,11 +75,15 @@ class VideoEditScreen extends StatefulWidget {
     this.editor,
     this.pickFile = _pickFile,
     this.ocr,
+    this.sync,
   });
 
   final Library library;
   final String eventId;
   final EventPage page;
+
+  /// Cloud sync, for Share (the file's edit view's link); null without.
+  final CloudSync? sync;
 
   /// TabCam Premium, where the build has it: the watermark can be turned
   /// off, and is left out of a download, only for a user who has it now
@@ -118,6 +124,7 @@ class VideoEditScreen extends StatefulWidget {
     required String eventId,
     required EventPage page,
     CloudOcr? ocr,
+    CloudSync? sync,
   }) => Navigator.of(context).push<void>(
     MaterialPageRoute(
       builder: (_) => VideoEditScreen(
@@ -125,6 +132,7 @@ class VideoEditScreen extends StatefulWidget {
         eventId: eventId,
         page: page,
         ocr: ocr,
+        sync: sync,
       ),
     ),
   );
@@ -1902,6 +1910,21 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         ),
         actions: [
           if (video != null && _error == null) _appBarActions(l10n),
+          // Share: the link to this file's edit view.
+          IconButton(
+            key: const Key('video-edit-share'),
+            tooltip: l10n.eventShare,
+            icon: const Icon(Icons.link),
+            onPressed: event == null || _busy
+                ? null
+                : () => shareCapture(
+                    context,
+                    event,
+                    sync: widget.sync,
+                    file: widget.page,
+                    edit: true,
+                  ),
+          ),
           const KeysHelpButton(screen: KeysScreen.videoEdit),
           IconButton(
             key: const Key('video-edit-about'),
@@ -3419,6 +3442,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
               SizedBox(
                 width: width,
                 height: _SongBar.height,
+                // Empty and zoomed in, its Add a song stays in view, over
+                // the scrolled lanes (below).
                 child: hasSong
                     ? Stack(
                         children: [
@@ -3438,6 +3463,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                             ),
                         ],
                       )
+                    : _zoom > 1
+                    ? const SizedBox.shrink()
                     : songBar,
               ),
             ],
@@ -3500,15 +3527,29 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                     _setZoom(_zoom * event.scale);
                   }
                 },
-                child: Scrollbar(
-                  controller: _timelineScroll,
-                  thumbVisibility: true,
-                  child: SingleChildScrollView(
-                    key: const Key('video-edit-timeline-scroll'),
-                    controller: _timelineScroll,
-                    scrollDirection: Axis.horizontal,
-                    child: bars(view * _zoom),
-                  ),
+                child: Stack(
+                  children: [
+                    Scrollbar(
+                      controller: _timelineScroll,
+                      thumbVisibility: true,
+                      child: SingleChildScrollView(
+                        key: const Key('video-edit-timeline-scroll'),
+                        controller: _timelineScroll,
+                        scrollDirection: Axis.horizontal,
+                        child: bars(view * _zoom),
+                      ),
+                    ),
+                    // No song: Add a song as wide as the view, not the
+                    // zoomed lane (its middle would be off screen).
+                    if (!hasSong)
+                      Positioned(
+                        left: 0,
+                        width: view,
+                        top: _Ruler.height + _SongBar.height + _laneGap,
+                        height: _SongBar.height,
+                        child: songBar,
+                      ),
+                  ],
                 ),
               );
             },
