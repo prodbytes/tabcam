@@ -144,10 +144,15 @@ search field, focused, and under it, scrolling, what was typed is:
   `A natural minor` and `A aeolian` are scales (`C major` alone is the
   chord).
 - **Anything else** is a song (or whatever it is): the sidebar says
-  it's not a chord or a scale and offers **Search YouTube**, a button
-  that opens YouTube's search for it outside the app (a new tab, or the
-  browser or YouTube app), as any link opens
-  ([event screen](event-screen.md)). Under it, once typing stops for
+  "Not a chord or a scale: “…” on YouTube and Cifra Club.". **Search
+  YouTube** is a magnifying glass at the field's end, before its ✕
+  (its tooltip "Search YouTube"; since 2026-11-19, when it stopped
+  being a button on a line of its own under that sentence, and the
+  field lost the magnifying-glass icon at its start; in the field, it
+  takes none of its width, which the panel below the screen can leave
+  short): it opens YouTube's search for what's typed outside the app
+  (a new tab, or the browser or YouTube app), as any link opens
+  ([event screen](event-screen.md)), and shows once something is typed. Under the sentence, once typing stops for
   **two seconds** ("Searching YouTube…" and a progress bar meanwhile),
   come **YouTube's results**, right there in the sidebar: three videos,
   each with its thumbnail, title (two lines at most) and channel, and
@@ -155,8 +160,8 @@ search field, focused, and under it, scrolling, what was typed is:
   in a new tab on the web ("Open on YouTube" as its tooltip). Enter (the
   keyboard's search key) searches at once, without the wait. If the
   search fails (offline, the quota spent), it says it couldn't load
-  YouTube's results; if YouTube finds nothing, it says so; the button
-  stays either way. A search typed again (on this screen or the next)
+  YouTube's results; if YouTube finds nothing, it says so; the
+  magnifying glass stays either way. A search typed again (on this screen or the next)
   shows its results at once: the device keeps the last 50 searches'
   results until the app closes, and asks YouTube once for each.
   **How**: the device asks the YouTube Data API v3 (`search.list`,
@@ -260,13 +265,14 @@ user's). While Rescan reads or Fix's review shows, it says "The text
 can't be changed right now" and writes nothing
 ([`writeColumns`](../tabcam_app/lib/screens/tab_editing.dart)).
 
-Nothing typed, the sidebar explains itself and offers pills to tap: **the
-capture's title first**, on a capture's screens (the capture, a file, Cam;
-Home has none), so a song's tabs and videos are a tap away, then the
-examples (`C`, `Am7`, `F#m7b5`, `G/B`, `Bø`, `GΔ7`, `Cadd9`, `Am11`, `A
-minor pentatonic`, `E blues`, `D dorian`; `Bø` and `GΔ7` show the
-half-diminished and major seventh symbols, `Cadd9` an added ninth and
-`Am11` a ninth and an eleventh). A long title is cut to the sidebar's width.
+Nothing typed, the field's placeholder says **"Type anything"** ("Escribe
+lo que quieras", "Digite o que quiser"), with no paragraph explaining it
+(dropped 2026-11-19), and pills to tap: **the capture's title first**, on
+a capture's screens (the capture, a file, Cam; Home has none), so a
+song's tabs and videos are a tap away, then a few examples: two plain
+chords (`C`, `Am`), two with a sharp or a flat (`F#m7b5`, `Bb`) and three
+scales (`A minor pentatonic`, `E blues`, `D dorian`). A long title is cut
+to the sidebar's width.
 Under them, a **Chord symbols** key, for the symbols a chart writes
 instead of letters: **ø** half-diminished (`Bø7 = Bm7b5 = Bm7(b5)`),
 **Δ** major seventh (`CΔ = Cmaj7 = CM7 = C7M = C^7`), **°** diminished
@@ -276,5 +282,13 @@ augmented (`Caug = C(#5)`), each row with its name and an example
 them: on a phone, hold o for ø and º; on a Mac, ⌥O types ø, ⌥J ∆ and ⌥0
 º; or write the letters (`m7b5`, `maj7` or `^7`, `dim` or `o`, `aug`)
 or the name (half diminished).
+**Its text is a little smaller** than the rest of the app's (since
+2026-11-19): the whole sidebar or panel (the field, the results'
+headings, notes and degrees, the pills, the chord symbols key, the
+videos and tabs found) uses the app's text theme at 90%
+(`textScale`): body text about 14.4 and 12.6 px instead of 16 and 14,
+a chord's or a scale's name about 21.6 px instead of 24. The diagrams
+keep their own sizes.
+
 In English, Spanish and Portuguese (the chord names and qualities are
 the same in every language).

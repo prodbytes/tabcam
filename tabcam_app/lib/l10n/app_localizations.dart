@@ -3130,17 +3130,11 @@ abstract class AppLocalizations {
   /// **'Dictionary'**
   String get dictionary;
 
-  /// Dictionary: the search field's hint
+  /// Dictionary: the search field's hint (a chord, a scale or anything else, searched on YouTube and Cifra Club)
   ///
   /// In en, this message translates to:
-  /// **'A chord, a scale or a song'**
+  /// **'Type anything'**
   String get dictionaryHint;
-
-  /// Dictionary: what it does, under the empty field
-  ///
-  /// In en, this message translates to:
-  /// **'Type a chord (C, Am7, F#m7b5, G/B) or a scale (A minor pentatonic, D dorian, C major scale) to see it on the guitar. Anything else is searched on YouTube and Cifra Club.'**
-  String get dictionaryIntro;
 
   /// Dictionary: a chord result's kind
   ///
@@ -3235,10 +3229,10 @@ abstract class AppLocalizations {
   /// Dictionary: the query is neither
   ///
   /// In en, this message translates to:
-  /// **'Not a chord or a scale. Search YouTube for “{query}”.'**
+  /// **'Not a chord or a scale: “{query}” on YouTube and Cifra Club.'**
   String dictionaryYouTube(String query);
 
-  /// Dictionary: the button that opens YouTube's search
+  /// Dictionary: tooltip of the magnifying glass beside the field, opening YouTube's search
   ///
   /// In en, this message translates to:
   /// **'Search YouTube'**

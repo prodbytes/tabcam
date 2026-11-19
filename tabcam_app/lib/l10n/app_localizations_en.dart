@@ -1856,11 +1856,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dictionary => 'Dictionary';
 
   @override
-  String get dictionaryHint => 'A chord, a scale or a song';
-
-  @override
-  String get dictionaryIntro =>
-      'Type a chord (C, Am7, F#m7b5, G/B) or a scale (A minor pentatonic, D dorian, C major scale) to see it on the guitar. Anything else is searched on YouTube and Cifra Club.';
+  String get dictionaryHint => 'Type anything';
 
   @override
   String get dictionaryChord => 'Chord';
@@ -1916,7 +1912,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String dictionaryYouTube(String query) {
-    return 'Not a chord or a scale. Search YouTube for “$query”.';
+    return 'Not a chord or a scale: “$query” on YouTube and Cifra Club.';
   }
 
   @override

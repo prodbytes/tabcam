@@ -4519,3 +4519,36 @@ spec.
    link. New strings `dictionaryAddLink`, `dictionaryLinkAdded` and
    `dictionaryLinkThere` in English, Spanish and Portuguese. See
    [dictionary](dictionary.md#adding-a-result).
+
+18. **"Remove the 'type a chord' paragraph, just a 'type anything'
+   placeholder and the pills is fine. Not even need so many pills, just
+   the first (same name), a couple simple chords, the accidented ones, a
+   few scales."** The dictionary, nothing typed, no longer explains
+   itself in a paragraph (`dictionaryIntro` removed): the field's
+   placeholder says "Type anything" ("Escribe lo que quieras", "Digite o
+   que quiser"; it was "A chord, a scale or a song"). The pills are the
+   capture's title first, as before, then `C`, `Am`, `F#m7b5`, `Bb`, `A
+   minor pentatonic`, `E blues` and `D dorian` (eleven examples before;
+   `Am7`, `G/B`, `Bø`, `GΔ7`, `Cadd9` and `Am11` dropped, `Am` and `Bb`
+   added). The Chord symbols key under them stays. See
+   [dictionary](dictionary.md).
+
+19. **"The chords dictionary below is fine, reduce font size a bit."**
+   The dictionary's text (in the panel below the screen and in the
+   sidebar alike) is now the app's text theme at 90%: the field, the
+   results' headings, notes and degrees, the pills and the rest about
+   1.5 px smaller (16 → 14.4, 14 → 12.6), a result's name 24 → 21.6.
+   The diagrams keep their sizes. See [dictionary](dictionary.md).
+
+20. **"The search button can be just a magnifying glass beside the text
+   field, no need for a line below."** The dictionary's **Search
+   YouTube** was a button on a line of its own under "Not a chord or a
+   scale…". It is now a magnifying glass at the field's end, before its
+   ✕, shown once something is typed (tooltip "Search YouTube"), and the
+   decorative magnifying glass at the field's start is gone. It sits in
+   the field, not after it, so the panel below the screen at its
+   narrowest (a phone with another sidebar open) keeps the field's
+   width. The sentence over the results now reads "Not a chord or a
+   scale: “…” on YouTube and Cifra Club." (it said "Search YouTube for
+   “…”."), in English, Spanish and Portuguese. See
+   [dictionary](dictionary.md).

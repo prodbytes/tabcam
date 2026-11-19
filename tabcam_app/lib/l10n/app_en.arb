@@ -2531,13 +2531,9 @@
   "@dictionary": {
     "description": "App bar: the chord and scale dictionary button"
   },
-  "dictionaryHint": "A chord, a scale or a song",
+  "dictionaryHint": "Type anything",
   "@dictionaryHint": {
-    "description": "Dictionary: the search field's hint"
-  },
-  "dictionaryIntro": "Type a chord (C, Am7, F#m7b5, G/B) or a scale (A minor pentatonic, D dorian, C major scale) to see it on the guitar. Anything else is searched on YouTube and Cifra Club.",
-  "@dictionaryIntro": {
-    "description": "Dictionary: what it does, under the empty field"
+    "description": "Dictionary: the search field's hint (a chord, a scale or anything else, searched on YouTube and Cifra Club)"
   },
   "dictionaryChord": "Chord",
   "@dictionaryChord": {
@@ -2615,7 +2611,7 @@
   "@dictionarySymbolsTyping": {
     "description": "Dictionary: how to type the chord symbols, under the symbols key"
   },
-  "dictionaryYouTube": "Not a chord or a scale. Search YouTube for “{query}”.",
+  "dictionaryYouTube": "Not a chord or a scale: “{query}” on YouTube and Cifra Club.",
   "@dictionaryYouTube": {
     "description": "Dictionary: the query is neither",
     "placeholders": {
@@ -2626,7 +2622,7 @@
   },
   "dictionarySearchYouTube": "Search YouTube",
   "@dictionarySearchYouTube": {
-    "description": "Dictionary: the button that opens YouTube's search"
+    "description": "Dictionary: tooltip of the magnifying glass beside the field, opening YouTube's search"
   },
   "dictionaryYouTubeSearching": "Searching YouTube…",
   "@dictionaryYouTubeSearching": {
