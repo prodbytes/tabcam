@@ -38,7 +38,7 @@ review notes ([app stores](app-stores.md)).
   "Saved … (Open)") show at the top, under the status bar, 42%
   transparent, over the page without moving it or covering the bottom
   navigation bar; one at a time, each gone after a few seconds.
-- [Library](library.md): the Home tab, a grid of events (newest first),
+- [Library](library.md): the Home tab, a grid of events (least recently opened first, or as Sort by says),
   in My captures and Shared with me sections once something is shared, with Rename, Share, Clone (copy on write: the original's files until they change) and Delete; how events are stored.
 - [Deleted and Purge](trash.md): nothing is deleted at once: deleted
   captures and files (and the files Rotate or an edit replaced) are

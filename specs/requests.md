@@ -4394,3 +4394,17 @@ spec.
    and the part played overlap the two mix, and each shows on its own
    where they don't. The band is now exactly as high as the bar's line,
    not its padding too. See [Cam](cam.md#playing-along-with-a-file).
+
+7. **"In the index page, besides search, add a 'sort by' button."** and
+   **"Make default sort be 'least recently opened'."** Home (the
+   captures' grid) has **Sort by** at the search field's right: a menu
+   of Least recently opened (the default), Recently opened, Newest
+   first, Oldest first, Title and Artist, the one in use ticked. Home
+   was newest first; now, until another order is chosen, the captures
+   not opened for longest come first (never opened ones before any,
+   newest first among them) and one just opened goes last. To know
+   that, the app now notes when each capture is opened on the device
+   (from its card, a link, or a reload where the user was); that and
+   the order chosen are kept on the device (`libraryorder`), not
+   synced. New strings `homeSort` and `homeSort*` in English, Spanish
+   and Portuguese. See [library](library.md).
