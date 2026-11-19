@@ -99,6 +99,11 @@ with the share API:
   next token or when the app comes back to the front. Builds without the
   share API (local web builds) have no sessions.
 
+A Google sign-in on the [index page](index-page.md#signing-in-here)
+arrives the same way: the page leaves Google's token in
+`tabcam.session`, the app restores it as the Google sign-in and starts a
+session from it.
+
 ## Upgrading
 
 Someone signed in before sessions existed stays signed in: at the next
