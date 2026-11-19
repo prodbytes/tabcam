@@ -164,7 +164,11 @@ void main() {
         tester.widget<Icon>(find.byIcon(Icons.music_note)).size,
         tester
             .widget<PopupMenuButton<Object?>>(
-              find.byWidgetPredicate((w) => w is PopupMenuButton),
+              // The card's ⋮ (Home's Sort by is one too).
+              find.descendant(
+                of: find.byType(Card),
+                matching: find.byWidgetPredicate((w) => w is PopupMenuButton),
+              ),
             )
             .iconSize,
         title.style?.fontSize,
