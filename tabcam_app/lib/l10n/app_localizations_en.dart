@@ -1935,6 +1935,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dictionaryYouTubeOpen => 'Open on YouTube';
 
   @override
+  String get dictionaryAddLink => 'Add to the capture';
+
+  @override
+  String get dictionaryLinkAdded => 'Link added to the capture';
+
+  @override
+  String get dictionaryLinkThere => 'That link is already in the capture';
+
+  @override
   String get dictionaryCifraClub => 'Tabs on Cifra Club';
 
   @override

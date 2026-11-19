@@ -2644,6 +2644,18 @@
   "@dictionaryYouTubeOpen": {
     "description": "Dictionary: tooltip of a YouTube result, which opens it in a new tab"
   },
+  "dictionaryAddLink": "Add to the capture",
+  "@dictionaryAddLink": {
+    "description": "Dictionary: tooltip of the + beside a YouTube or Cifra Club result, adding it to the open capture as a link"
+  },
+  "dictionaryLinkAdded": "Link added to the capture",
+  "@dictionaryLinkAdded": {
+    "description": "Dictionary: shown after its + added a result to the capture as a link"
+  },
+  "dictionaryLinkThere": "That link is already in the capture",
+  "@dictionaryLinkThere": {
+    "description": "Dictionary: shown when its + is pressed on a result the capture already has as a link"
+  },
   "dictionaryCifraClub": "Tabs on Cifra Club",
   "@dictionaryCifraClub": {
     "description": "Dictionary: heading of Cifra Club's results (tabs of the song searched), under YouTube's videos"

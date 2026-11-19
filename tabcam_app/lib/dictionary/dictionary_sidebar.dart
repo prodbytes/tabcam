@@ -35,6 +35,15 @@ abstract interface class TabWriter {
   void write(List<List<int?>> columns, {String? name});
 }
 
+/// Where the dictionary's + beside a YouTube or Cifra Club result adds it
+/// as a link: the capture open on the event screen, while the user can
+/// change it ([DictionaryState.linker]).
+abstract interface class LinkAdder {
+  /// Adds [url] to the capture as a link named [title], and says so (or
+  /// that the capture already has it).
+  Future<void> addLink(Uri url, {String? title});
+}
+
 /// Whether the dictionary's sidebar shows, and what's typed in it,
 /// app-wide: open on one screen, it's open on the next (Home, the capture,
 /// a file, Cam), with the same search.
@@ -70,6 +79,25 @@ class DictionaryState extends ChangeNotifier {
     _notifyLater();
   }
 
+  /// Where a result's + adds its link: the capture on the newest event
+  /// screen that can take one (one opened over another's: the top one's).
+  /// Null elsewhere (Home, a capture read only), and the results have no +.
+  LinkAdder? get linker => _linkers.lastOrNull;
+  final List<LinkAdder> _linkers = [];
+
+  /// [linker] takes the results' +, until it [detachLinker]s.
+  void attachLinker(LinkAdder linker) {
+    if (_linkers.any((l) => identical(l, linker))) return;
+    _linkers.add(linker);
+    _notifyLater();
+  }
+
+  void detachLinker(LinkAdder linker) {
+    final before = _linkers.length;
+    _linkers.removeWhere((l) => identical(l, linker));
+    if (_linkers.length != before) _notifyLater();
+  }
+
   /// After the frame: a view attaches and detaches as it's built and
   /// disposed, when the sidebar can't be rebuilt.
   void _notifyLater() {
@@ -101,6 +129,7 @@ class DictionaryState extends ChangeNotifier {
     _open = false;
     _query = '';
     _writer = null;
+    _linkers.clear();
     notifyListeners();
   }
 }
@@ -1106,6 +1135,11 @@ class _VideoTile extends StatelessWidget {
                       ],
                     ),
                   ),
+                  _AddLinkButton(
+                    key: Key('dictionary-video-add-${video.id}'),
+                    url: video.url,
+                    title: video.title,
+                  ),
                   const SizedBox(width: 4),
                   Icon(
                     Icons.open_in_new,
@@ -1237,6 +1271,13 @@ class _SongTile extends StatelessWidget {
                   ],
                 ),
               ),
+              _AddLinkButton(
+                key: Key('dictionary-song-add-${song.id}'),
+                url: song.url,
+                title: song.artist.isEmpty
+                    ? song.title
+                    : '${song.title} – ${song.artist}',
+              ),
               const SizedBox(width: 4),
               Icon(
                 Icons.open_in_new,
@@ -1247,6 +1288,35 @@ class _SongTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// A result's +, just before its open mark: adds [url] to the capture open
+/// ([DictionaryState.linker]) as a link named [title]. Nothing shows
+/// where there's no capture to add it to.
+class _AddLinkButton extends StatelessWidget {
+  const _AddLinkButton({super.key, required this.url, required this.title});
+
+  final Uri url;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = DictionaryState.instance;
+    return ListenableBuilder(
+      listenable: state,
+      builder: (context, _) {
+        final linker = state.linker;
+        if (linker == null) return const SizedBox.shrink();
+        return IconButton(
+          tooltip: context.l10n.dictionaryAddLink,
+          visualDensity: VisualDensity.compact,
+          color: Theme.of(context).colorScheme.primary,
+          icon: const Icon(Icons.add_circle_outline),
+          onPressed: () => linker.addLink(url, title: title),
+        );
+      },
     );
   }
 }

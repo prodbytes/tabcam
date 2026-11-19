@@ -187,6 +187,24 @@ search field, focused, and under it, scrolling, what was typed is:
   no key, no quota, no tabs.cam server
   ([`cifraclub_search.dart`](../tabcam_app/lib/dictionary/cifraclub_search.dart)).
   A build without the YouTube key still searches Cifra Club.
+  <a id="adding-a-result"></a>**Adding a result to the capture (+)**:
+  on a capture's screen (and the file screen or Cam opened from it),
+  each YouTube video and Cifra Club song has a **+** (a circled plus in
+  the primary colour, "Add to the capture") just before its open-in-new
+  mark. It adds the result to the capture as a **link**, as Add's Link
+  does ([`Library.addLink`](../tabcam_app/lib/library/library.dart)),
+  named by the video's title or the song's "title – artist"; a Cifra
+  Club page is imported beside it as a PDF to read, as Add's Link
+  imports a tab site's page, and that import's message says how it
+  went. Otherwise "Link added to the capture" says it's there; the view
+  stays where it is (the Text view stays the Text view). A link the
+  capture already has isn't added again: "That link is already in the
+  capture". The + is there only where a capture can take it: not on
+  Home, not on a capture shared with the user (read only) or opened by
+  its link. The capture's screen hands itself to the dictionary
+  ([`LinkAdder`](../tabcam_app/lib/dictionary/dictionary_sidebar.dart),
+  `DictionaryState.linker`, the newest screen's when one opens over
+  another) while it's open.
 
 <a id="writing-in-the-text"></a>**Writing it in the text (+)**: beside the event screen's
 [Text view](tab-recognition.md#text-view), a chord's and a scale's
