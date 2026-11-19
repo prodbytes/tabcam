@@ -1043,6 +1043,27 @@ class AppLocalizationsEs extends AppLocalizations {
   String get homeSearchClear => 'Borrar búsqueda';
 
   @override
+  String get homeSort => 'Ordenar por';
+
+  @override
+  String get homeSortLeastOpened => 'Abiertas hace más tiempo';
+
+  @override
+  String get homeSortRecentlyOpened => 'Abiertas recientemente';
+
+  @override
+  String get homeSortNewest => 'Más nuevas primero';
+
+  @override
+  String get homeSortOldest => 'Más antiguas primero';
+
+  @override
+  String get homeSortTitle => 'Título';
+
+  @override
+  String get homeSortArtist => 'Artista';
+
+  @override
   String homeSearchNone(String query) {
     return 'Ninguna captura coincide con “$query”';
   }

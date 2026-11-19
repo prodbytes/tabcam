@@ -1379,6 +1379,34 @@
   "@homeSearchClear": {
     "description": "Home: the button that empties the search"
   },
+  "homeSort": "Sort by",
+  "@homeSort": {
+    "description": "Home: the button (and its menu's heading) that picks the captures' order"
+  },
+  "homeSortLeastOpened": "Least recently opened",
+  "@homeSortLeastOpened": {
+    "description": "Home's order: the captures not opened for longest first (the default)"
+  },
+  "homeSortRecentlyOpened": "Recently opened",
+  "@homeSortRecentlyOpened": {
+    "description": "Home's order: the last opened first"
+  },
+  "homeSortNewest": "Newest first",
+  "@homeSortNewest": {
+    "description": "Home's order: the newest captures first"
+  },
+  "homeSortOldest": "Oldest first",
+  "@homeSortOldest": {
+    "description": "Home's order: the oldest captures first"
+  },
+  "homeSortTitle": "Title",
+  "@homeSortTitle": {
+    "description": "Home's order: by title, A to Z"
+  },
+  "homeSortArtist": "Artist",
+  "@homeSortArtist": {
+    "description": "Home's order: by artist, A to Z"
+  },
   "homeSearchNone": "No captures match “{query}”",
   "@homeSearchNone": {
     "description": "Home: no event matches the search",

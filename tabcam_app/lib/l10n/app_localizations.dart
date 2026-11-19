@@ -1690,6 +1690,48 @@ abstract class AppLocalizations {
   /// **'Clear search'**
   String get homeSearchClear;
 
+  /// Home: the button (and its menu's heading) that picks the captures' order
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by'**
+  String get homeSort;
+
+  /// Home's order: the captures not opened for longest first (the default)
+  ///
+  /// In en, this message translates to:
+  /// **'Least recently opened'**
+  String get homeSortLeastOpened;
+
+  /// Home's order: the last opened first
+  ///
+  /// In en, this message translates to:
+  /// **'Recently opened'**
+  String get homeSortRecentlyOpened;
+
+  /// Home's order: the newest captures first
+  ///
+  /// In en, this message translates to:
+  /// **'Newest first'**
+  String get homeSortNewest;
+
+  /// Home's order: the oldest captures first
+  ///
+  /// In en, this message translates to:
+  /// **'Oldest first'**
+  String get homeSortOldest;
+
+  /// Home's order: by title, A to Z
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get homeSortTitle;
+
+  /// Home's order: by artist, A to Z
+  ///
+  /// In en, this message translates to:
+  /// **'Artist'**
+  String get homeSortArtist;
+
   /// Home: no event matches the search
   ///
   /// In en, this message translates to:

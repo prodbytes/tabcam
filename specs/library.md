@@ -5,7 +5,8 @@ The **Home** tab ([navigation](navigation.md)), titled **tabs.cam**.
 Home, like the whole app, is for signed-in users: signed out, the app is
 the [welcome](navigation.md#signed-out-the-welcome) alone.
 
-- **Events** show as a grid of cards, newest first. Each card has a
+- **Events** show as a grid of cards, in the order **Sort by** says
+  (below; the least recently opened first until another is chosen). Each card has a
   **preview** (below), the title, and a line with the artist
   (if set), the page count ("images hidden" when they are), the video,
   recording, PDF and link counts (if any), "text"
@@ -47,6 +48,29 @@ the [welcome](navigation.md#signed-out-the-welcome) alone.
   matching: a search icon, "No captures match "<search>"", and **Clear
   search**. A new capture clears the search, so it shows. Not shown on an
   empty library.
+- **Sort by**: a button (the sort icon) at the search field's right, its
+  tooltip "Sort by: <order>", opens a menu headed "Sort by" with the
+  orders, the one in use ticked
+  ([lib/library/library_order.dart](../tabcam_app/lib/library/library_order.dart)):
+  - **Least recently opened** (the default): the captures never opened
+    on this device first, newest first among them, then the opened ones
+    from the one opened longest ago, so what hasn't been played for a
+    while comes up; one just opened goes last.
+  - **Recently opened**: the last opened first; one never opened counts
+    as opened when it was made.
+  - **Newest first** and **Oldest first**: when each was made.
+  - **Title**: A to Z, case and accents aside.
+  - **Artist**: A to Z, the same artist's by title, those without an
+    artist last.
+
+  Ties keep the newest first. The order applies in each section (My
+  captures, Shared with me) and with a search or study chosen. A
+  capture counts as opened whenever it's opened on this device: from
+  its card, a link, or a reload or restart that opens it where the user
+  was. The order chosen and the times opened are kept on the device (the
+  `libraryorder` meta file in the apps, the browser's storage on the
+  web), not synced: each device has its own. Opened times of captures
+  gone for good are dropped when it's next saved.
 - **Studies**: once any of the user's captures is in a
   [study](studies.md), a row of study chips under the search; choosing
   one shows only its captures, choosing it again all of them. None
@@ -55,7 +79,7 @@ the [welcome](navigation.md#signed-out-the-welcome) alone.
   headed sections, **My captures** (the user's own, or "Nothing of your
   own yet: go to Capture to add some." when there are none) and below it
   **Shared with me** (captures [shared](shared-captures.md) with the
-  user), each newest first. With nothing shared, the grid has no
+  user), each in the order chosen. With nothing shared, the grid has no
   headings.
 - **Loading**: signed in, with nothing on the device yet, until the
   first [sync](cloud-sync.md) pass since signing in ends: a spinner and
@@ -70,8 +94,10 @@ the [welcome](navigation.md#signed-out-the-welcome) alone.
 - **Whose tabs**: Home has no note on whose tabs go in tabs.cam; it's on
   [Capture](navigation.md#capture), where tabs are added.
 - New events come from the [Capture](navigation.md#capture) tab: each
-  lands at the top of the list, which scrolls up to it, outlined in the
-  theme's primary color for 3 seconds, and a message confirms it
+  lands where the order puts it (at the top for Least recently opened,
+  Recently opened and Newest first: it's new and never opened, and the
+  list scrolls up to it), outlined in the theme's primary color for 3
+  seconds, and a message confirms it
   ("Saved "Tab 2026-10-10 14:05" (2 pages)") with **Open**, for 6
   seconds. Events
   synced from other devices appear in the list as they come down.

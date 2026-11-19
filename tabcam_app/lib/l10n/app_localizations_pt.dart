@@ -1041,6 +1041,27 @@ class AppLocalizationsPt extends AppLocalizations {
   String get homeSearchClear => 'Limpar busca';
 
   @override
+  String get homeSort => 'Ordenar por';
+
+  @override
+  String get homeSortLeastOpened => 'Abertas há mais tempo';
+
+  @override
+  String get homeSortRecentlyOpened => 'Abertas recentemente';
+
+  @override
+  String get homeSortNewest => 'Mais novas primeiro';
+
+  @override
+  String get homeSortOldest => 'Mais antigas primeiro';
+
+  @override
+  String get homeSortTitle => 'Título';
+
+  @override
+  String get homeSortArtist => 'Artista';
+
+  @override
   String homeSearchNone(String query) {
     return 'Nenhuma captura corresponde a “$query”';
   }
