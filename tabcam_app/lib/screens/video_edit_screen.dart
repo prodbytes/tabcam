@@ -2657,8 +2657,8 @@ class _StudioViewState extends State<StudioView> {
   /// The app bar with a page in the main row: the file's name; Reset,
   /// Download and the Download settings once it's open; Dictionary,
   /// Metronome, Play along (in Cam's view), Share, the keys' help and
-  /// About the edit (on a phone, those but Play along and the keys' help
-  /// in a menu, [_moreMenu]).
+  /// About the edit (on a phone, all but the keys' help in a menu,
+  /// [_moreMenu]); Back to the camera, in Cam's view ([_backButton]).
   PreferredSizeWidget _editAppBar(AppLocalizations l10n, CaptureEvent? event) {
     final page = _page;
     final ready = _video != null && _error == null;

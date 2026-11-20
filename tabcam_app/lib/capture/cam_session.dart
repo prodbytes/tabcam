@@ -762,6 +762,8 @@ class CamSession extends ChangeNotifier {
       } on Object catch (e) {
         debugPrint('TabCam: head gestures: $e');
       }
+      // Back meanwhile: streamed again.
+      if (!_away && !_disposed) await _stream();
     }
   }
 
