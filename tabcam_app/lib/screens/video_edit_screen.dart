@@ -512,7 +512,8 @@ class _StudioViewState extends State<StudioView> {
   };
   Duration get _axisAt => switch (_alongTrack) {
     final track? when _timed(track) => track.media!.value.position,
-    _? when _cam?.recording ?? false => _cam!.elapsed.value,
+    // The take's clock: where the take recording is.
+    _? when _cam != null && _takeShowing(_cam!) => _cam!.elapsed.value,
     _? => Duration.zero,
     null => _at,
   };

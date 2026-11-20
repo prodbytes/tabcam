@@ -4717,3 +4717,37 @@ spec.
    [keyboard shortcuts](keyboard-shortcuts.md),
    [navigation](navigation.md), [dictionary](dictionary.md) and
    [metronome](metronome.md).
+
+   **Step 5 of 6: the take records on its own row.** In Cam, a take now
+   has a row of its own in the dock, right under the main row (the
+   opened one first): the take's row
+   ([`video_edit_cam.dart`](../tabcam_app/lib/screens/video_edit_cam.dart)).
+   While a take records it's red, its header says how long it has
+   recorded ("● 0:12", told four times a second by `CamSession.elapsed`,
+   a ticker that runs only while recording and is stopped on Stop and
+   as Cam closes, rebuilding only the dock, never the camera's preview),
+   and its bar shows, along the main row's song, the parts of the song
+   that have played in the take so far, as its log notes them
+   (`SongNotes.soFar` and `songSpansOn` in
+   [`take_log.dart`](../tabcam_app/lib/capture/take_log.dart)): the
+   block grows as the song plays, stops while it's paused, and a song
+   moved on meanwhile plays on in a block of its own after a gap. With
+   no song with a time in the main row, the ruler is the take's clock,
+   rounded up to the next 30 seconds. After Stop the row is the take,
+   named as it is ("Take 10:01"), placed where it played along the song
+   from its log, or unplaced (a dashed bar) when the main row has
+   another song or none; its name opens **Play the take** (Cam's Play)
+   and **Edit the take** (the take in the camera's place, as the
+   sidebar's Edit, Back putting the camera back). The next take, by Rec,
+   / or ., replaces it, and Cam opened again shows the capture's last
+   take the same way. Where the window is too short for both rows, the
+   take's gives way first. The take itself is saved, logged and lined
+   up as before. In English, Spanish and Portuguese. Tests:
+   `take_log_test.dart` (`soFar`, `songSpansOn`) and `studio_test.dart`
+   (the row on Rec, growing with the song, a gap where it moved, the
+   camera's preview not built again by the ticks; the take after Stop,
+   placed from its log; Play, / twice, Edit to Take then Song and Back;
+   the take's clock without a song, from 0:30 to 1:00; no timer left
+   once Cam closes while recording; Cam opened again, placed, then
+   unplaced with the take itself in the main row). See
+   [Cam](cam.md#the-takes-row) and [video edit](video-edit.md#in-cam).

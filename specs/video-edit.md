@@ -122,9 +122,11 @@ one frame whatever is in its **main row**: a page opened to edit, or, in
 Cam, the camera. `VideoEditScreen` (the editor over the file screen) and
 `PlayAlongScreen` (Cam) build it, the first with the page, the second
 with the camera ([Cam's view](cam.md#cams-view)). A take's **Edit** in
-Cam's play-along sidebar puts the take in the main row in place of the
-camera, with no screen pushed over Cam: the viewer shows the take with
-its layers, the dock has the transport, the take's rows (Take, then its
+Cam's play-along sidebar, or **Edit the take** in the
+[take's row](cam.md#the-takes-row) under Cam's main row, puts the take
+in the main row in place of the camera, with no screen pushed over
+Cam: the viewer shows the take with its layers, the dock has the
+transport, the take's rows (Take, then its
 Song lined up) and the cut's steps, the Download settings are beside or
 under the viewer as above, and the app bar is the editor's, with
 **Back** at its start and **Play along** (♫) after Metronome (on a
