@@ -2872,4 +2872,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String videoEditSongDelayKept(String output) {
     return 'Guardado para $output: os takes por ele abrem com este atraso';
   }
+
+  @override
+  String get downloadSettings => 'Configurações do download';
+
+  @override
+  String get downloadSettingsHide => 'Ocultar as configurações do download';
+
+  @override
+  String get videoEditMore => 'Mais';
 }

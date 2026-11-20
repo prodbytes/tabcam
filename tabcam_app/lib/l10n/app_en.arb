@@ -3899,5 +3899,17 @@
         "type": "String"
       }
     }
+  },
+  "downloadSettings": "Download settings",
+  "@downloadSettings": {
+    "description": "Video edit: the app bar's button (tune icon) that shows the sidebar of what Download puts in the file (on the video, fades, master, the song), and that sidebar's title"
+  },
+  "downloadSettingsHide": "Hide the download settings",
+  "@downloadSettingsHide": {
+    "description": "Video edit: the app bar's tune button while the Download settings show, and the sidebar's close button"
+  },
+  "videoEditMore": "More",
+  "@videoEditMore": {
+    "description": "Video edit, on a phone: the app bar's menu (⋮) with Dictionary, Metronome, Share and About the edit"
   }
 }

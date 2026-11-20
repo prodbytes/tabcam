@@ -774,5 +774,8 @@
   "videoEditOutName": "{route, select, wired{estes fones} bluetooth{este dispositivo Bluetooth} usb{este dispositivo USB} other{esta saída}}",
   "videoEditSongDelayRemember": "Lembrar {delay} para {output}",
   "videoEditSongDelayForget": "Esquecer o atraso de {output}",
-  "videoEditSongDelayKept": "Guardado para {output}: os takes por ele abrem com este atraso"
+  "videoEditSongDelayKept": "Guardado para {output}: os takes por ele abrem com este atraso",
+  "downloadSettings": "Configurações do download",
+  "downloadSettingsHide": "Ocultar as configurações do download",
+  "videoEditMore": "Mais"
 }

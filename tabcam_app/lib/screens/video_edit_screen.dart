@@ -22,11 +22,14 @@ import '../capture/take_syncer.dart';
 import '../capture/video_edit.dart';
 import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
+import '../dictionary/dictionary_sidebar.dart';
 import '../export/download.dart';
 import '../l10n/language.dart';
 import '../library/capture_event.dart';
 import '../library/library.dart';
+import '../metronome/metronome.dart';
 import '../recognition/necklines.dart';
+import 'download_settings.dart';
 import 'edited_playback.dart';
 import 'file_screen.dart';
 import 'media_url.dart';
@@ -334,6 +337,18 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// The editor's keys: the space bar plays or pauses ([_key]).
   final _keys = FocusNode(debugLabel: 'video edit keys');
 
+  /// The room the editor's content had when last laid out (the body,
+  /// beside the dictionary's and the metronome's sidebars): whether it's
+  /// [_wide] is measured on it.
+  Size? _box;
+
+  /// The title's fields, the fades' sliders and the tab's style in the
+  /// Download settings, brought into view as a tap on the picture shows
+  /// them hidden ([_showSettings]).
+  final _titleAt = GlobalKey(debugLabel: 'title fields');
+  final _fadesAt = GlobalKey(debugLabel: 'fade fields');
+  final _tabStyleAt = GlobalKey(debugLabel: 'tab style');
+
   Library get _library => widget.library;
 
   /// How long the video and the song are: the players' word, unless they
@@ -441,6 +456,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     widget.ocr?.addListener(_onPremium);
     _titleFocus.addListener(_onTitleFocus);
     _title2Focus.addListener(_onTitleFocus);
+    DownloadSettingsState.instance.addListener(_onSettings);
     unawaited(_open());
     unawaited(_loadFormats());
   }
@@ -449,6 +465,33 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// locks) where it is.
   void _onPremium() {
     if (mounted) setState(() {});
+  }
+
+  /// The Download settings shown or hidden: hidden, the fields one of
+  /// their chips opened in their place (on a phone) close, as Done closes
+  /// them, so the preview stops showing the title as it's edited.
+  void _onSettings() {
+    if (!mounted || DownloadSettingsState.instance.open) return;
+    if (!_editingTitle && !_editingFades && !_editingTabStyle) return;
+    setState(() {
+      _editingTitle = false;
+      _editingFades = false;
+      _editingTabStyle = false;
+    });
+  }
+
+  /// Shows the Download settings where they're hidden, then brings [at]
+  /// (the part a tap on the picture opened) into view in them.
+  void _showSettings(GlobalKey at) {
+    final settings = DownloadSettingsState.instance;
+    if (settings.open) return;
+    settings.show();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final shown = at.currentContext;
+      if (mounted && shown != null && shown.mounted) {
+        unawaited(Scrollable.ensureVisible(shown));
+      }
+    });
   }
 
   void _onTitleFocus() {
@@ -688,6 +731,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     _trackPlayer?.dispose();
     _headAt.dispose();
     widget.ocr?.removeListener(_onPremium);
+    DownloadSettingsState.instance.removeListener(_onSettings);
     _title1.dispose();
     _title2.dispose();
     _titleFocus.dispose();
@@ -856,8 +900,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   bool get _tabStyleOffered => _take && tabOffered(_takeLog);
 
   /// Opens the tab's style in place of the chips (on a phone: on a wide
-  /// screen, it's under them always).
+  /// screen, it's under them always), the Download settings shown.
   void _editTabStyle() {
+    _showSettings(_tabStyleAt);
     if (_wide) return;
     setState(() {
       _editingTabStyle = true;
@@ -916,8 +961,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   }
 
   /// Opens the title's fields: in place of the chips on a phone; on a
-  /// wide screen, they're beside them already, the first one focused.
+  /// wide screen, they're beside them already, the first one focused. The
+  /// Download settings show, where they were hidden.
   void _editTitle() {
+    _showSettings(_titleAt);
     setState(() {
       _editingTitle = !_wide;
       _editingFades = false;
@@ -1054,11 +1101,13 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     );
   }
 
-  /// Whether the screen is wide: **On the video** beside the viewer. So
-  /// is a short landscape window (a phone on its side), where there's no
-  /// room for it under the viewer.
+  /// Whether the editor is wide: the Download settings beside the viewer.
+  /// So is a short landscape room (a phone on its side), where there's no
+  /// room for them under the viewer. Measured on the editor's own room
+  /// ([_box]: narrower than the screen with the dictionary's or the
+  /// metronome's sidebar beside it), else the screen.
   bool get _wide {
-    final size = MediaQuery.sizeOf(context);
+    final size = _box ?? MediaQuery.sizeOf(context);
     return size.width >= _wideFrom ||
         (size.width >= _wideShortFrom && size.height < _shortBelow);
   }
@@ -1990,8 +2039,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   static const _transportHeight = 48.0;
 
   /// The least the viewer keeps before the lanes, then the transport, give
-  /// way (a tiny window), and the least the phone's list under the viewer
-  /// keeps (a tall video takes the rest).
+  /// way (a tiny window), and the least the Download settings keep under
+  /// the viewer on a phone, their title included (a tall video takes the
+  /// rest).
   static const _viewerLeast = 96.0;
   static const _inspectorLeast = 160.0;
 
@@ -2095,6 +2145,21 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     final l10n = context.l10n;
     final event = _library.byId(widget.eventId);
     final video = _video;
+    final ready = video != null && _error == null;
+    // On a phone, Dictionary, Metronome, Share and About go in a menu, so
+    // the file's name keeps some room.
+    final menu = MediaQuery.sizeOf(context).width < _menuBelow;
+    // Share: the link to this file's edit view.
+    final share = event == null || _busy
+        ? null
+        : () => shareCapture(
+            context,
+            event,
+            sync: widget.sync,
+            file: widget.page,
+            edit: true,
+          );
+    void about() => Messenger.maybeOf(context)?.show(l10n.videoEditKept);
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -2102,30 +2167,30 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
-          if (video != null && _error == null) _appBarActions(l10n),
-          // Share: the link to this file's edit view.
-          IconButton(
-            key: const Key('video-edit-share'),
-            tooltip: l10n.eventShare,
-            icon: const Icon(Icons.link),
-            onPressed: event == null || _busy
-                ? null
-                : () => shareCapture(
-                    context,
-                    event,
-                    sync: widget.sync,
-                    file: widget.page,
-                    edit: true,
-                  ),
-          ),
+          if (ready) ...[
+            _appBarActions(l10n),
+            DownloadSettingsButton(onClosed: _keys.requestFocus),
+          ],
+          if (!menu) ...[
+            DictionaryButton(onClosed: _keys.requestFocus),
+            MetronomeButton(onClosed: _keys.requestFocus),
+            IconButton(
+              key: const Key('video-edit-share'),
+              tooltip: l10n.eventShare,
+              icon: const Icon(Icons.link),
+              onPressed: share,
+            ),
+          ],
           const KeysHelpButton(screen: KeysScreen.videoEdit),
-          IconButton(
-            key: const Key('video-edit-about'),
-            tooltip: l10n.videoEditAbout,
-            icon: const Icon(Icons.info_outline),
-            onPressed: () =>
-                Messenger.maybeOf(context)?.show(l10n.videoEditKept),
-          ),
+          if (menu)
+            _moreMenu(l10n, share: share, about: about)
+          else
+            IconButton(
+              key: const Key('video-edit-about'),
+              tooltip: l10n.videoEditAbout,
+              icon: const Icon(Icons.info_outline),
+              onPressed: about,
+            ),
         ],
         bottom: _busy
             ? PreferredSize(
@@ -2137,11 +2202,81 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
               )
             : null,
       ),
-      body: _error != null
-          ? _cantPlay(l10n)
-          : video == null
-          ? const Center(child: CircularProgressIndicator())
-          : AbsorbPointer(absorbing: _busy, child: _body(video, l10n)),
+      // The dictionary and the metronome at the right, usable during a
+      // download too.
+      body: MetronomeBeside(
+        onClosed: _keys.requestFocus,
+        child: DictionaryBeside(
+          title: event?.title,
+          onClosed: _keys.requestFocus,
+          child: _error != null
+              ? _cantPlay(l10n)
+              : video == null
+              ? const Center(child: CircularProgressIndicator())
+              : AbsorbPointer(absorbing: _busy, child: _body(video, l10n)),
+        ),
+      ),
+    );
+  }
+
+  /// How wide the screen is before Dictionary, Metronome, Share and
+  /// About leave the app bar's menu ([_moreMenu]) for buttons of their
+  /// own.
+  static const _menuBelow = 600.0;
+
+  /// On a phone, at the app bar's end (⋮): Dictionary and Metronome
+  /// (their sidebars shown or hidden), Share ([share]; off without the
+  /// capture, or during a download) and About the edit ([about]).
+  Widget _moreMenu(
+    AppLocalizations l10n, {
+    required VoidCallback? share,
+    required VoidCallback about,
+  }) {
+    final dictionary = DictionaryState.instance;
+    final metronome = MetronomeState.instance;
+    PopupMenuItem<VoidCallback> item(
+      String key,
+      IconData icon,
+      String label,
+      VoidCallback? action,
+    ) => PopupMenuItem(
+      key: Key(key),
+      value: action,
+      enabled: action != null,
+      child: ListTile(leading: Icon(icon), title: Text(label)),
+    );
+    return PopupMenuButton<VoidCallback>(
+      key: const Key('video-edit-more'),
+      tooltip: l10n.videoEditMore,
+      icon: const Icon(Icons.more_vert),
+      onSelected: (action) => action(),
+      itemBuilder: (context) => [
+        item(
+          'dictionary',
+          Icons.menu_book_outlined,
+          dictionary.open ? l10n.dictionaryHide : l10n.dictionary,
+          () {
+            dictionary.toggle();
+            if (!dictionary.open) _keys.requestFocus();
+          },
+        ),
+        item(
+          'metronome',
+          Icons.av_timer,
+          metronome.open ? l10n.metronomeHide : l10n.metronome,
+          () {
+            metronome.toggle();
+            if (!metronome.open) _keys.requestFocus();
+          },
+        ),
+        item('video-edit-share', Icons.link, l10n.eventShare, share),
+        item(
+          'video-edit-about',
+          Icons.info_outline,
+          l10n.videoEditAbout,
+          about,
+        ),
+      ],
     );
   }
 
@@ -2201,19 +2336,21 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     ),
   );
 
-  /// The screen's body, a frame that doesn't scroll: the viewer on top;
-  /// under it, on a phone, the rest (the master, **On the video** or the
-  /// fields one of its chips opened, the song's details) scrolling; and at
-  /// the bottom edge the transport and the lanes. On a wide screen the
-  /// rest is beside the viewer. While the on-screen keyboard is open (the
-  /// title typed in), the transport and the lanes give their room to the
-  /// viewer and the field; in a tiny window the lanes go first, then the
-  /// transport.
+  /// The screen's body, a frame that doesn't scroll: the viewer on top,
+  /// with the Download settings ([DownloadSettingsBeside]) beside it where
+  /// the editor's room is [_wide], else under it (the master, **On the
+  /// video** or the fields one of its chips opened, the song's details),
+  /// scrolling; and at the bottom edge the transport and the lanes.
+  /// Hidden, the settings leave the viewer all the room. While the
+  /// on-screen keyboard is open (the title typed in), the transport and
+  /// the lanes give their room to the viewer and the field; in a tiny
+  /// window the lanes go first, then the transport.
   Widget _body(VideoPlayerController video, AppLocalizations l10n) {
-    final wide = _wide;
     final keyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
     return LayoutBuilder(
       builder: (context, box) {
+        _box = box.biggest;
+        final wide = _wide;
         final height = box.maxHeight;
         final width = box.maxWidth;
         final inset = MediaQuery.paddingOf(context).bottom;
@@ -2229,37 +2366,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         final panel = showTransport
             ? _panel(video, l10n, dock: showDock, steps: showSteps)
             : null;
-        if (wide) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(child: _preview(video, l10n)),
-                    const VerticalDivider(width: 1),
-                    SizedBox(
-                      width: min(_sideWidth, width * 0.4),
-                      child: ListView(
-                        key: const Key('video-edit-side'),
-                        padding: const EdgeInsets.all(16),
-                        children: [
-                          _onTheVideo(l10n, wide: true),
-                          if (_hasSong) ...[
-                            const SizedBox(height: 16),
-                            _songDetails(l10n),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              ?panel,
-            ],
-          );
-        }
+        // Under the viewer, it's as high as the picture needs, leaving the
+        // settings their least (a tall video takes the rest).
         final free =
             height - (showTransport ? _transportHeight + 1 : 0) - dockHeight;
         final aspect = video.value.aspectRatio > 0
@@ -2272,26 +2380,52 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(height: viewer, child: _preview(video, l10n)),
             Expanded(
-              child: ListView(
-                key: const Key('video-edit-inspector'),
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                children: [
-                  _masterFields(l10n),
-                  const SizedBox(height: 8),
-                  _editingTitle
-                      ? _titleFields(l10n)
-                      : _editingFades
-                      ? _fadeFields(l10n)
-                      : _editingTabStyle && _tabStyleOffered
-                      ? _tabStyleFields(l10n)
-                      : _onTheVideo(l10n),
-                  if (_hasSong) ...[
-                    const SizedBox(height: 8),
-                    _songDetails(l10n),
-                  ],
-                ],
+              child: DownloadSettingsBeside(
+                beside: wide,
+                viewerHeight: viewer,
+                viewer: _preview(video, l10n),
+                onClosed: _keys.requestFocus,
+                panel: (context) => wide
+                    ? ListView(
+                        key: const Key('video-edit-side'),
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                        children: [
+                          _onTheVideo(l10n, wide: true),
+                          if (_hasSong) ...[
+                            const SizedBox(height: 16),
+                            _songDetails(l10n),
+                          ],
+                        ],
+                      )
+                    : ListView(
+                        key: const Key('video-edit-inspector'),
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        children: [
+                          _masterFields(l10n),
+                          const SizedBox(height: 8),
+                          _editingTitle
+                              ? KeyedSubtree(
+                                  key: _titleAt,
+                                  child: _titleFields(l10n),
+                                )
+                              : _editingFades
+                              ? KeyedSubtree(
+                                  key: _fadesAt,
+                                  child: _fadeFields(l10n),
+                                )
+                              : _editingTabStyle && _tabStyleOffered
+                              ? KeyedSubtree(
+                                  key: _tabStyleAt,
+                                  child: _tabStyleFields(l10n),
+                                )
+                              : _onTheVideo(l10n),
+                          if (_hasSong) ...[
+                            const SizedBox(height: 8),
+                            _songDetails(l10n),
+                          ],
+                        ],
+                      ),
               ),
             ),
             ?panel,
@@ -2359,10 +2493,6 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       ),
     );
   }
-
-  /// How wide **On the video** is beside the viewer, on a wide screen (at
-  /// most 40% of it).
-  static const _sideWidth = 320.0;
 
   /// Download, split: the button downloads the video as edited; its menu
   /// also has it without sound, and its sound alone, each saying its
@@ -2547,6 +2677,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       ).where((d) => d.$2.contains(at)).map((d) => d.$1).lastOrNull;
       if (hit != null && hit != _picked) {
         setState(() => _picked = hit);
+        // On a wide screen the band's style is in the Download settings,
+        // always: they show.
+        if (hit == PictureLayer.tab && _wide) _showSettings(_tabStyleAt);
         return;
       }
       if (hit == null && _picked != null) setState(() => _picked = null);
@@ -2724,8 +2857,12 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   }
 
   /// The fade badge tapped: the fades' sliders (in place of the chips on
-  /// a phone; beside them, always, on a wide screen).
-  void _editFadesHere() => _editFades();
+  /// a phone; beside them, always, on a wide screen), the Download
+  /// settings shown.
+  void _editFadesHere() {
+    _showSettings(_fadesAt);
+    _editFades();
+  }
 
   /// **On the video**: what's drawn over it, as chips (and, on a [wide]
   /// screen, the title's fields under them). A take's **Tab** ([_tabChip]).
@@ -2798,14 +2935,14 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         ),
         if (wide) ...[
           const SizedBox(height: 12),
-          _titleFields(l10n),
+          KeyedSubtree(key: _titleAt, child: _titleFields(l10n)),
           const SizedBox(height: 16),
           _masterFields(l10n),
           const SizedBox(height: 8),
-          _fadeFields(l10n),
+          KeyedSubtree(key: _fadesAt, child: _fadeFields(l10n)),
           if (_tabStyleOffered) ...[
             const SizedBox(height: 16),
-            _tabStyleFields(l10n),
+            KeyedSubtree(key: _tabStyleAt, child: _tabStyleFields(l10n)),
           ],
         ],
       ],
