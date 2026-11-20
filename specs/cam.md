@@ -8,7 +8,14 @@ as a **preview** (`PlayAlongScreen` with `gate` set): no camera is opened
 anything, Rec and Play are dead, the tab along the bottom is the
 capture's or a made-up sample, and the Premium card lies over it all,
 its **Not now** leaving. With Premium it opens the camera view
-([`PlayAlongScreen`](../tabcam_app/lib/capture/play_along_screen.dart)):
+([`PlayAlongScreen`](../tabcam_app/lib/capture/play_along_screen.dart),
+a screen over a [`CamSession`](../tabcam_app/lib/capture/cam_session.dart),
+which does what Cam does: the camera, the head gestures, the tab and
+auto-pass, the microphone and its volume, the takes and their Play; the
+screen shows it with the widgets in
+[`cam_controls.dart`](../tabcam_app/lib/capture/cam_controls.dart): the
+camera's view, the phrase, and Rec, Play, Tab and Auto-pass with Rec's
+menus):
 
 - **The camera** fills the screen, the **front** one first (it faces the
   player); **Flip camera** in the app bar moves to the next one (not
@@ -1306,9 +1313,10 @@ whose app isn't running).
   to open (`CameraPlugin.camerasMetadata`, which the plugin fills only
   from its own list). Only when none starts does the error stand.
   Cameras whose name says infrared (`IR`, "infrared") come last.
-- **Opening**: Cam opens the front camera, else the first; one that
-  fails gives way to the next, until one opens (not after "isn't
-  allowed": none would be). None opening, the first one's error shows.
+- **Opening** ([`CamSession`](../tabcam_app/lib/capture/cam_session.dart)):
+  Cam opens the front camera, else the first; one that fails gives way
+  to the next, until one opens (not after "isn't allowed": none would
+  be). None opening, the first one's error shows.
 - **The error** for a camera that won't start says so: "The camera won't
   start: another app may be using it (Teams, Zoom, the Camera app). Close
   it and try again, or flip to another camera." It has **Try again**,

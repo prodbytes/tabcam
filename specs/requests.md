@@ -4577,31 +4577,60 @@ spec.
    those (bottom om the screen, let the opened one be first). also let
    the current video "download" settings (watermark, faders, delays,
    etc) be a side bar view, toggled on top, just like metronome,
-   dictionary and others."** Built in steps, one pull request each. The
-   first moves the video editor's settings into a sidebar: what was
-   beside the viewer on a wide screen, and under it on a phone (the
-   Master; On the video, its chips for the tab, the title, the
-   watermark and the fades, with their fields and the tab's style; the
-   song's details with its nudges, delay, Remember, Auto-align and Cut
-   to the song) is now the **Download settings** sidebar, with its
-   title and ✕, shown and hidden by a new **Download settings** button
-   (a tune icon) in the editor's app bar, as the metronome's and the
-   dictionary's buttons do theirs. It's beside the viewer where the
-   editor's room is wide (840 points, or 560 in a window under 480 high,
-   the on-screen keyboard aside), 320 points by default and resizable by
-   its edge down to 224 (the width kept with the other sidebars'), and
-   under the viewer on a phone. It's open the
-   first time in each session, and hidden it stays hidden in the next
-   editor of the session. A tap on the title, a fade's badge, a long
-   press on the band (a phone) or a tap picking the band (a wide screen)
-   shows it where hidden, scrolled to that field. The editor's app bar
-   also gets **Dictionary** and **Metronome**, their sidebars beside the
-   editor (usable during a download, the metronome playing on from the
-   file's screen); whether the editor is wide now goes by the width of
-   its own room, beside those sidebars, not the screen's, and its body is
-   laid out at least 360 points wide, cut rather than squeezed beside
-   them on a phone. On a phone, Dictionary, Metronome, Share and About
-   go into a **More** menu (⋮). In English, Spanish and Portuguese. See
+   dictionary and others."** Built in steps, one pull request each.
+
+   **Step 1 of 6: the Download settings in a sidebar.** This step
+   moves the video editor's settings into a sidebar: what was beside
+   the viewer on a wide screen, and under it on a phone (the Master; On
+   the video, its chips for the tab, the title, the watermark and the
+   fades, with their fields and the tab's style; the song's details
+   with its nudges, delay, Remember, Auto-align and Cut to the song) is
+   now the **Download settings** sidebar, with its title and ✕, shown
+   and hidden by a new **Download settings** button (a tune icon) in
+   the editor's app bar, as the metronome's and the dictionary's
+   buttons do theirs. It's beside the viewer where the editor's room is
+   wide (840 points, or 560 in a window under 480 high, the on-screen
+   keyboard aside), 320 points by default and resizable by its edge
+   down to 224 (the width kept with the other sidebars'), and under the
+   viewer on a phone. It's open the first time in each session, and
+   hidden it stays hidden in the next editor of the session. A tap on
+   the title, a fade's badge, a long press on the band (a phone) or a
+   tap picking the band (a wide screen) shows it where hidden, scrolled
+   to that field. The editor's app bar also gets **Dictionary** and
+   **Metronome**, their sidebars beside the editor (usable during a
+   download, the metronome playing on from the file's screen); whether
+   the editor is wide now goes by the width of its own room, beside
+   those sidebars, not the screen's, and its body is laid out at least
+   360 points wide, cut rather than squeezed beside them on a phone. On
+   a phone, Dictionary, Metronome, Share and About go into a **More**
+   menu (⋮). In English, Spanish and Portuguese. See
    [video edit](video-edit.md#download-settings),
    [dictionary](dictionary.md), [metronome](metronome.md) and
    [keyboard shortcuts](keyboard-shortcuts.md).
+
+   **Step 3 of 6: Cam's work in a session of its own.** This step
+   changes nothing the user sees, so that a later step can show Cam in
+   the editor's view. What Cam does moved out of its screen into
+   `CamSession`
+   ([`cam_session.dart`](../tabcam_app/lib/capture/cam_session.dart), a
+   `ChangeNotifier`): the camera and Try again, the head gestures, the
+   tab and auto-pass, the microphone, its input volume and Cam's
+   settings, the takes (Rec, the / and . keys, a take saved with its log
+   and its song measured, `TakeSyncer`), Play and Cam's keys. It makes
+   its play-along list as first used, opening on the file it's handed
+   (none here: the first to play) and by itself unless told not to. What
+   it has to tell the user comes out as a `CamNote`, which the screen
+   says in the app's language. Its widgets moved to
+   [`cam_controls.dart`](../tabcam_app/lib/capture/cam_controls.dart):
+   `CamView` (the camera, its error, or the take playing back),
+   `CamPhrase` (the phrase, still keyed `neckline`) and `CamStrip` (Rec
+   with the microphone's menu and the level meter, Play, Tab and
+   Auto-pass, with the same keys and tooltips). `PlayAlongScreen` keeps
+   its constructor and its statics (`now`, and `takeName` and
+   `takePlaysHere` beside it) and only lays these out, rebuilt as the
+   session changes; the session lets go of the camera, the players and
+   the timers in the order the screen did. The Cam suites pass
+   unchanged (`play_along_test`, `count_in_test`,
+   `backing_section_test`, `backing_speed_test`, `place_cam_test`,
+   `keys_help_test`, `take_log_test`, `cloud_ocr_test`). See
+   [Cam](cam.md).
