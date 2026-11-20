@@ -58,8 +58,9 @@ import 'on_picture.dart';
 part 'video_edit_cam.dart';
 
 /// The video editor on [page], over the screen ([open]): from the file
-/// screen's Edit, a link to a file's edit view, the Text view's scissors
-/// and a take's Edit in Cam. A [StudioView] with [page] in its main row.
+/// screen's Edit, a link to a file's edit view and the Text view's
+/// scissors. A [StudioView] with [page] in its main row. (A take's Edit
+/// in Cam opens it in Cam's own view, in the camera's place.)
 class VideoEditScreen extends StatelessWidget {
   const VideoEditScreen({
     super.key,
@@ -92,7 +93,7 @@ class VideoEditScreen extends StatelessWidget {
 
   /// Opens the editor on [page] over the screen, and completes when the
   /// user comes back: from the file screen's Edit, and from a take's Edit
-  /// in the play-along sidebar, the same way.
+  /// in the Text view's play-along sidebar, the same way.
   static Future<void> open(
     BuildContext context, {
     required Library library,
@@ -192,6 +193,19 @@ Future<XFile?> _pickSoundFile() async {
 /// ([_StudioViewState._switchMain]): the edit open is kept with its page,
 /// everything known of it forgotten ([_StudioViewState._forgetPage]), and
 /// the next opened as the first was.
+///
+/// With [cam], it's Cam's view (`PlayAlongScreen`), in the same frame:
+/// the camera in the viewer's place, the tab's phrase under it, and in
+/// the dock Cam's controls (Rec, Play, Tab, Auto-pass) over the ruler and
+/// the main row, the song playing along ([BackingTrack]: chosen in the
+/// play-along sidebar, played from the row's header, a tap or drag on it
+/// goes there; with none, **Play along with a song…**); the app bar and
+/// the keys are Cam's. A take's Edit in the sidebar opens it in the main
+/// row, in the camera's place: the editor as above, its keys and its app
+/// bar (Play along too); the camera stays open behind it, its head
+/// gestures paused ([CamSession.setAway]). Back, or a file picked in the
+/// sidebar (the edit kept), puts the camera back, the song as it was
+/// ([_StudioViewState._back]).
 class StudioView extends StatefulWidget {
   const StudioView({
     super.key,

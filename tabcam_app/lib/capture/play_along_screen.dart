@@ -17,8 +17,10 @@ import 'take_recorder.dart';
 export 'cam_session.dart' show takePlaysHere;
 
 /// Cam: the guitarist records themselves playing along with the capture's
-/// tab. The camera (the front one first: it faces the player) fills the
-/// screen, with the tab under it one neckline at a time ([necklines]).
+/// tab, in the same view the video editor is ([StudioView]). The camera
+/// (the front one first: it faces the player) fills the viewer, with the
+/// tab under it one phrase at a time ([necklines]), and under them, at
+/// the bottom, Cam's controls over the main row: the song playing along.
 /// Any key moves to the next neckline (a page-turner pedal, a keyboard);
 /// Backspace, ← , ↑ and Page Up to the one before; a tap on the neckline
 /// or its arrows too; on Android, iOS and the web, a strong nod up or turn
@@ -49,9 +51,11 @@ export 'cam_session.dart' show takePlaysHere;
 /// links or PDFs) shows and hides a sidebar of them, open from the first
 /// time there's one (when Cam opens, or when one arrives later): the
 /// one tapped plays in a compact frame at the sidebar's top, above the
-/// list ([BackingTrack]), while the user plays and records; the space bar
-/// pauses and plays it. A PDF tapped there shows on the screen's other
-/// side, to follow the tab on it ([PlayAlong.followed]).
+/// list ([BackingTrack]), and is the main row at the bottom, while the
+/// user plays and records; the space bar pauses and plays it. A PDF
+/// tapped there shows on the screen's other side, to follow the tab on it
+/// ([PlayAlong.followed]). A take's Edit there opens it in the camera's
+/// place, the editor's in the same view; Back puts the camera back.
 ///
 /// **Recording comes first** ([TakePriority]): the take's sound is
 /// recorded as a musician wants it (on Android, by the app itself, from
@@ -61,6 +65,7 @@ export 'cam_session.dart' show takePlaysHere;
 /// processing, at a high bitrate), set up when Cam opens rather than as
 /// the take starts; while it records, head gestures
 /// look less often, and cloud sync starts no pass.
+///
 /// A take's name: "Take" and the time it started, [started], as hours and
 /// minutes ("Take 14:32", 24-hour). The day isn't in the name: the
 /// sidebar lists the takes under their day. Takes started in the same

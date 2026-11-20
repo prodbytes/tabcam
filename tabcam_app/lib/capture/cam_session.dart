@@ -72,8 +72,8 @@ enum CamNote {
   cantPlay,
 }
 
-/// What Cam does, apart from how it shows (`PlayAlongScreen` shows it,
-/// with the widgets in `cam_controls.dart`): the camera, the head
+/// What Cam does, apart from how it shows (Cam's view, `StudioView`,
+/// shows it, with the widgets in `cam_controls.dart`): the camera, the head
 /// gestures, the tab (one phrase at a time) and auto-pass, the
 /// microphone and its input volume (Cam's settings, [metaName]), the
 /// takes (Rec, the / and . keys, saving a take with its log) and playing
