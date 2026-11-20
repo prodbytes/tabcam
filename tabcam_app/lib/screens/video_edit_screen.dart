@@ -49,19 +49,23 @@ import 'on_picture.dart';
 /// capture's recordings, videos or takes, or a sound file (added to
 /// them), placed along the video by hand (dragged, trimmed by its ends,
 /// nudged by a twentieth of a second); ⋮ changes or removes it. Each lane has
-/// its volume and Mute at its left; both go through the **Master**, its
-/// volume (up to 200%) and Mute right above the fades' sliders (on a
-/// phone, above **On the video**). Under them (beside everything, on a
-/// wide screen), **On the video**: what's drawn over it, as chips: a
-/// take's tab (its style, the size, background and colours, opened by
-/// its palette button or, on a phone, a long press on the band in the
-/// preview), the title
-/// (its text typed under them on a phone, beside them on a wide screen),
+/// its volume and Mute at its left. What Download puts in the file is in
+/// the **Download settings** ([DownloadSettingsBeside]), a sidebar the
+/// app bar's tune button shows and hides (open the first time in a
+/// session), beside the viewer on a wide screen and under it on a phone:
+/// the **Master**, both lanes' volume (up to 200%) and Mute, right above
+/// the fades' sliders (on a phone, above **On the video**); **On the
+/// video**: what's drawn over it, as chips: a take's tab (its style, the
+/// size, background and colours, opened by its palette button or, on a
+/// phone, a long press on the band in the preview), the title (its text
+/// typed in place of the chips on a phone, under them on a wide screen),
 /// the watermark, which only Premium removes, and the **Fades**: the
 /// video fades in from black at the kept part's start and out to black
 /// at its end, both sounds with it, 3 s each by default (their sliders
-/// under the chips, or beside them; drawn on the Take lane as ramps at
-/// its ends).
+/// in place of the chips, or under them; drawn on the Take lane as ramps
+/// at its ends); and the song's details. A tap on the picture that opens
+/// one of them shows the settings where they're hidden. The dictionary
+/// and the metronome open beside it all, as on the file's screen.
 /// The edit is kept with the page as it's made ([PageEdit]), and played
 /// as it says ([EditedPlayback]: the kept part, both lanes at their
 /// volumes, the layers over it, [EditLayers]; from where the preview is,

@@ -84,13 +84,14 @@ review notes ([app stores](app-stores.md)).
   average time), and **Auto-pass** turns the tab there the next time
   through.
 - [Dictionary](dictionary.md): a book icon at the top of every file
-  viewer, Cam and Home opens a search in a sidebar on the right: a chord shows
+  viewer, the video editor, Cam and Home opens a search in a sidebar on
+  the right: a chord shows
   its notes and voicings as chord diagrams, a scale its notes on the
   fretboard (both worked out on the device); anything else is searched
   on YouTube and Cifra Club. Its Rotate button makes it a panel under the screen, the
   necks lying down. Every sidebar (the dictionary, the metronome, the
-  play-along player) is resizable by dragging its edge, the width kept on
-  the device.
+  play-along player, the video editor's Download settings) is resizable
+  by dragging its edge, the width kept on the device.
 - [Metronome](metronome.md): a stopwatch icon beside the dictionary's
   opens a metronome in a sidebar: 80 BPM in 4/4 by default, the tempo set
   with −, + and a slider (30–250), the common time signatures (2/4 to
@@ -102,7 +103,10 @@ review notes ([app stores](app-stores.md)).
   listing that screen's keys.
 - [Video edit](video-edit.md): basic edits of a video from its file
   screen, in a fixed frame like a small video editor's: the viewer on
-  top, and docked at the bottom the transport (To the start, Play /
+  top, with the Download settings (the master, what's drawn on the
+  video, the fades, the song's details) in a sidebar beside it or under
+  it, shown and hidden by a tune button in the app bar; and docked at
+  the bottom the transport (To the start, Play /
   Pause, To the end; the space bar, Home, End and the arrows) right
   over the lanes, on one time axis (a click on it moves the playhead,
   and it plays from there, anywhere in the video) in two sound lanes,

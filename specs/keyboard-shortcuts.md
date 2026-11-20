@@ -10,7 +10,8 @@ key, opens an overlay listing that screen's keys
   the Text view, the locked previews) and a **file's screen**, after the
   play-along button (on a phone's capture, whose buttons go in a menu,
   there's no button, but H works);
-- the **video editor** ([video edit](video-edit.md)), before About.
+- the **video editor** ([video edit](video-edit.md)), before About (on
+  a phone, before its More menu).
 
 Home has no keys, so no button.
 

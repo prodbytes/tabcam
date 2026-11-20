@@ -3,9 +3,10 @@
 A **Dictionary** button (a book icon, first in the app bar) at the top of
 every file viewer, of Cam and of Home: the [event screen](event-screen.md)
 in all its views (Files, Text, and the locked previews), the
-[file screen](event-screen.md#file-screen) for any file, Cam
-([cam.md](cam.md)) with or without Premium, a capture opened by its
-link, and Home's captures ([navigation](navigation.md); not the Capture
+[file screen](event-screen.md#file-screen) for any file, the
+[video editor](video-edit.md#the-edit-screen) (on a phone, in its More
+menu), Cam ([cam.md](cam.md)) with or without Premium, a capture opened
+by its link, and Home's captures ([navigation](navigation.md); not the Capture
 and Profile tabs, where the sidebar doesn't show but stays open). It's free for everyone, and takes nothing from tabs.cam's servers:
 the chords and scales are worked out on the device
 ([`lib/dictionary/`](../tabcam_app/lib/dictionary/)); only a song's
@@ -20,9 +21,11 @@ camera, the tab, what plays along). At the side, where the play-along
 sidebar shows too, the dictionary is the one at the right edge.
 The button is in the primary colour while the sidebar shows. The
 sidebar is **app-wide**: open on one screen, it's open on the next (Home,
-the capture, a file, Cam) with the same search, until the button or the
+the capture, a file, the video editor, Cam) with the same search, until the button or the
 sidebar's own **✕** hides it. In Cam, typing in it doesn't turn the tab,
-and once it's hidden the keys turn the tab again.
+and once it's hidden the keys turn the tab again; in the video editor,
+typing a space in it doesn't play the preview, and once it's hidden the
+space bar plays it again.
 
 **Its width**: 40% of the screen's, from 280 to 420 px, until the user
 drags its left edge, a **separator** (`SplitHandle`, a line with a grip,
