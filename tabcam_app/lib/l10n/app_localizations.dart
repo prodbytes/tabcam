@@ -4797,6 +4797,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The song playing along: tap or drag it to go there'**
   String get videoEditMainBar;
+
+  /// Cam: screen-reader label of the take's row's bar while a take records (under the main row): blocks where the song playing along plays in the take
+  ///
+  /// In en, this message translates to:
+  /// **'The take recording: where the song plays in it'**
+  String get videoEditRecBar;
+
+  /// Cam: screen-reader label of the take's row's bar after a take, its blocks where the song played in it
+  ///
+  /// In en, this message translates to:
+  /// **'The take: where it played along the song'**
+  String get videoEditRecTake;
+
+  /// Cam: screen-reader label of the take's row's dashed bar, a take that didn't play along the song in the main row (or no song there)
+  ///
+  /// In en, this message translates to:
+  /// **'The take: not along this song'**
+  String get videoEditRecUnplaced;
+
+  /// Cam: item in the menu the take's row's name opens: plays the take back in the viewer, as Cam's Play does
+  ///
+  /// In en, this message translates to:
+  /// **'Play the take'**
+  String get videoEditRecPlay;
+
+  /// Cam: the same item while the take plays back: stops it
+  ///
+  /// In en, this message translates to:
+  /// **'Stop the take'**
+  String get videoEditRecStop;
+
+  /// Cam: item in the menu the take's row's name opens: opens the take in the editor, in the camera's place
+  ///
+  /// In en, this message translates to:
+  /// **'Edit the take'**
+  String get videoEditRecEdit;
 }
 
 class _AppLocalizationsDelegate

@@ -182,9 +182,43 @@ class CamSession extends ChangeNotifier {
   bool _tabShown = true;
   bool get tabShown => _tabShown;
 
-  /// While recording: when it started, and when each neckline showed.
-  final _clock = Stopwatch();
+  /// While recording: when it started (the take's clock), and when each
+  /// neckline showed.
+  late final Stopwatch _clock = takeClock();
   List<(Duration, int)> _marks = [];
+
+  /// Makes the take's clock; tests pass one on their own clock.
+  @visibleForTesting
+  static Stopwatch Function() takeClock = Stopwatch.new;
+
+  /// How long the take recording has recorded, on its clock: told every
+  /// [elapsedTick] while it records, and only then (its last reading
+  /// stays once it stops). Only what shows it listens: it tells Cam's
+  /// listeners nothing, so the camera isn't built again for it.
+  ValueListenable<Duration> get elapsed => _elapsed;
+  final _elapsed = ValueNotifier(Duration.zero);
+  Timer? _elapsedTimer;
+
+  /// How often [elapsed] is told.
+  static const elapsedTick = Duration(milliseconds: 250);
+
+  /// [elapsed] told from the take's clock every [elapsedTick], from now
+  /// (from 0: a take starts).
+  void _startTicking() {
+    _elapsedTimer?.cancel();
+    _elapsed.value = Duration.zero;
+    _elapsedTimer = Timer.periodic(elapsedTick, (_) {
+      if (!_disposed) _elapsed.value = _clock.elapsed;
+    });
+  }
+
+  /// [elapsed] no longer told: the take stopped (its length its last
+  /// reading).
+  void _stopTicking() {
+    _elapsedTimer?.cancel();
+    _elapsedTimer = null;
+    if (!_disposed) _elapsed.value = _clock.elapsed;
+  }
 
   /// The take's lag readings ([TakeLog.lagRaw]), on [_span] (started as
   /// the recording is told to start): when it was told to start and when
@@ -218,6 +252,15 @@ class CamSession extends ChangeNotifier {
   /// While recording: the song played along, as it played (the take's
   /// log keeps it, so the editor lines the song up with the take).
   SongNotes? _songNotes;
+
+  /// The take just stopped's song, as noted to its end, while it's saved.
+  List<SongSegment> _stoppedSong = const [];
+
+  /// The song played along in the take recording, as noted so far (the
+  /// segment playing as if it ended now, [SongNotes.soFar]); once it
+  /// stops, as noted to its end (while it's saved, and after).
+  List<SongSegment> get songSoFar =>
+      _songNotes?.soFar(_clock.elapsed.inMilliseconds) ?? _stoppedSong;
   bool _recording = false;
   bool _saving = false;
 
@@ -242,6 +285,30 @@ class CamSession extends ChangeNotifier {
 
   /// The take Play plays, if there's one.
   EventPage? get take => _take;
+
+  /// The capture [take] is in (the copy it went to, for a take added to a
+  /// copy, `Library.copyToAdd`), and how long it recorded, on its clock,
+  /// when it was recorded here (null: one that was there as Cam opened).
+  String? _takeEvent;
+  Duration? _takeLength;
+
+  /// The take recorded last ([take]: the one just saved after Rec; as Cam
+  /// opens, the capture's last), its capture, and how long it recorded on
+  /// its clock (null: not recorded since Cam opened). None: no take.
+  ({EventPage page, String eventId, Duration? length})? get lastTake {
+    final take = _take;
+    if (take == null) return null;
+    final event = _takeEvent ?? eventId;
+    return (page: take, eventId: event, length: _takeLength);
+  }
+
+  /// [take] is [page] of capture [event] from now on, [length] long when
+  /// it was recorded here.
+  void _setTake(EventPage? page, {String? event, Duration? length}) {
+    _take = page;
+    _takeEvent = event;
+    _takeLength = length;
+  }
 
   /// The take playing back, if one is.
   VideoPlayerController? get player => _player;
@@ -366,7 +433,7 @@ class CamSession extends ChangeNotifier {
   /// plays, the camera, following the song and the capture, and Cam's
   /// settings.
   void start() {
-    _take = _lastTake();
+    _setTake(_lastTake());
     _start();
     _track.addListener(_trackChanged);
     library.addListener(_libraryChanged);
@@ -396,7 +463,7 @@ class CamSession extends ChangeNotifier {
     if (kept) return;
     final last = _lastTake();
     if (last?.id != take?.id) {
-      _take = last;
+      _setTake(last);
       _changed();
     }
   }
@@ -1081,6 +1148,7 @@ class CamSession extends ChangeNotifier {
     _takeRecording(true);
     if (!_disposed) {
       _recording = true;
+      _startTicking();
       _changed();
     }
     // A song playing already plays on in the take from here.
@@ -1320,14 +1388,17 @@ class CamSession extends ChangeNotifier {
     if (!_recording || controller == null) return;
     _recording = false;
     _saving = true;
-    _changed();
     _clock.stop();
+    _stopTicking();
+    final length = _clock.elapsed;
     _cancelAnchors();
     final marks = _marks;
     final unpassed = _unpassed;
     final notes = _songNotes;
     _songNotes = null;
-    final song = notes?.finish(_clock.elapsed.inMilliseconds) ?? const [];
+    final song = notes?.finish(length.inMilliseconds) ?? const [];
+    _stoppedSong = song;
+    _changed();
     try {
       XFile file;
       try {
@@ -1390,7 +1461,17 @@ class CamSession extends ChangeNotifier {
         page.id,
         takePhrases(marks, skip: unpassed),
       );
-      _take = page;
+      // Its row shows it, named, from the capture it went to.
+      _setTake(
+        library
+                .byId(updated.id)
+                ?.pages
+                .where((p) => p.id == page.id)
+                .firstOrNull ??
+            page,
+        event: updated.id,
+        length: length,
+      );
       if (tab != null) {
         _recordedPlaces = (page.id, TakeTab.placesOf(_lines, marks));
       }
@@ -1596,6 +1677,8 @@ class CamSession extends ChangeNotifier {
       unawaited(TakeSound.release());
     }
     _autoPassTimer?.cancel();
+    _elapsedTimer?.cancel();
+    _elapsed.dispose();
     _cancelAnchors();
     _track.removeListener(_trackChanged);
     library.removeListener(_libraryChanged);

@@ -3927,5 +3927,29 @@
   "videoEditMainBar": "The song playing along: tap or drag it to go there",
   "@videoEditMainBar": {
     "description": "Cam: screen-reader label of the main row's bar, the song playing along on the time axis; a tap or drag takes it there"
+  },
+  "videoEditRecBar": "The take recording: where the song plays in it",
+  "@videoEditRecBar": {
+    "description": "Cam: screen-reader label of the take's row's bar while a take records (under the main row): blocks where the song playing along plays in the take"
+  },
+  "videoEditRecTake": "The take: where it played along the song",
+  "@videoEditRecTake": {
+    "description": "Cam: screen-reader label of the take's row's bar after a take, its blocks where the song played in it"
+  },
+  "videoEditRecUnplaced": "The take: not along this song",
+  "@videoEditRecUnplaced": {
+    "description": "Cam: screen-reader label of the take's row's dashed bar, a take that didn't play along the song in the main row (or no song there)"
+  },
+  "videoEditRecPlay": "Play the take",
+  "@videoEditRecPlay": {
+    "description": "Cam: item in the menu the take's row's name opens: plays the take back in the viewer, as Cam's Play does"
+  },
+  "videoEditRecStop": "Stop the take",
+  "@videoEditRecStop": {
+    "description": "Cam: the same item while the take plays back: stops it"
+  },
+  "videoEditRecEdit": "Edit the take",
+  "@videoEditRecEdit": {
+    "description": "Cam: item in the menu the take's row's name opens: opens the take in the editor, in the camera's place"
   }
 }

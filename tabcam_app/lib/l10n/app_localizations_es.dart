@@ -2900,4 +2900,23 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get videoEditMainBar =>
       'La canción con la que tocas: tócala o arrástrala para ir ahí';
+
+  @override
+  String get videoEditRecBar =>
+      'La toma que se graba: dónde suena la canción en ella';
+
+  @override
+  String get videoEditRecTake => 'La toma: dónde acompañó a la canción';
+
+  @override
+  String get videoEditRecUnplaced => 'La toma: no fue con esta canción';
+
+  @override
+  String get videoEditRecPlay => 'Reproducir la toma';
+
+  @override
+  String get videoEditRecStop => 'Detener la toma';
+
+  @override
+  String get videoEditRecEdit => 'Editar la toma';
 }
