@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:cross_file/cross_file.dart';
+import 'package:camera/camera.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -10,14 +10,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
+import '../capture/camera_list.dart';
 import '../capture/waveform.dart';
 import '../capture/edit_layers.dart';
+import '../capture/head_gestures.dart';
+import '../capture/link_frame.dart';
 import '../capture/media.dart';
 import '../capture/out_delays.dart';
-import '../capture/play_along_sidebar.dart' show isTake;
+import '../capture/play_along_sidebar.dart' show isTake, pdfViewFor;
 import '../capture/song_sync.dart';
 import '../capture/sound_reader.dart';
 import '../capture/take_log.dart';
+import '../capture/take_recorder.dart';
 import '../capture/take_syncer.dart';
 import '../capture/video_edit.dart';
 import '../cloud/cloud_ocr.dart';
@@ -41,9 +45,101 @@ import 'messages.dart';
 import 'mono_font.dart';
 import 'on_picture.dart';
 
+part 'video_edit_cam.dart';
+
+/// The video editor on [page], over the screen ([open]): from the file
+/// screen's Edit, a link to a file's edit view, the Text view's scissors
+/// and a take's Edit in Cam. A [StudioView] with [page] in its main row.
+class VideoEditScreen extends StatelessWidget {
+  const VideoEditScreen({
+    super.key,
+    required this.library,
+    required this.eventId,
+    required this.page,
+    this.editor,
+    this.pickFile = _pickSoundFile,
+    this.ocr,
+    this.sync,
+  });
+
+  final Library library;
+  final String eventId;
+
+  /// The video opened: the main row's when the editor opens.
+  final EventPage page;
+
+  /// Cloud sync, for Share (the file's edit view's link); null without.
+  final CloudSync? sync;
+
+  /// tabs.cam Premium, where the build has it ([StudioView.ocr]).
+  final CloudOcr? ocr;
+
+  /// What applies the edit; the platform's by default ([VideoEditor]).
+  final VideoEditing? editor;
+
+  /// Picks a sound file from the device; tests pass their own.
+  final Future<XFile?> Function() pickFile;
+
+  /// Opens the editor on [page] over the screen, and completes when the
+  /// user comes back: from the file screen's Edit, and from a take's Edit
+  /// in the play-along sidebar, the same way.
+  static Future<void> open(
+    BuildContext context, {
+    required Library library,
+    required String eventId,
+    required EventPage page,
+    CloudOcr? ocr,
+    CloudSync? sync,
+  }) => Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      builder: (_) => VideoEditScreen(
+        library: library,
+        eventId: eventId,
+        page: page,
+        ocr: ocr,
+        sync: sync,
+      ),
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) => StudioView(
+    library: library,
+    eventId: eventId,
+    page: page,
+    editor: editor,
+    pickFile: pickFile,
+    ocr: ocr,
+    sync: sync,
+  );
+}
+
+/// Picks a sound file from the device, for the Song row.
+Future<XFile?> _pickSoundFile() async {
+  final files = await FilePicker.pickFiles(
+    type: FileType.custom,
+    allowedExtensions: const [
+      'mp3',
+      'm4a',
+      'aac',
+      'wav',
+      'ogg',
+      'oga',
+      'opus',
+      'flac',
+      'mp4',
+      'webm',
+    ],
+  );
+  return files.firstOrNull?.xFile;
+}
+
+/// The view a video is edited in ([VideoEditScreen]), and, with [cam],
+/// Cam's ([CamSetup]): one frame, whatever is in its main row ([page]).
+///
 /// Basic edits of a video, opened from its file screen, on one time axis:
 /// a ruler (tapped or dragged, the preview goes there) over the video's
-/// rows, mixed ([_VideoEditScreenState._rows]). The video opens as the
+/// rows, mixed ([_StudioViewState._rows]). The video opens as the
 /// only row: the **Take** row (for a video Cam didn't record, "Video
 /// sound") is the whole video, the part kept bright: its grips trim it,
 /// and both sounds with it; its name opens **Add a song** ("Add a
@@ -81,21 +177,31 @@ import 'on_picture.dart';
 /// video, the video without sound, or the sound alone. The space bar
 /// plays or pauses it, as Play / Pause and a tap on the preview do (not
 /// while the title is typed).
-class VideoEditScreen extends StatefulWidget {
-  const VideoEditScreen({
+///
+/// What's in the main row changes in place
+/// ([_StudioViewState._switchMain]): the edit open is kept with its page,
+/// everything known of it forgotten ([_StudioViewState._forgetPage]), and
+/// the next opened as the first was.
+class StudioView extends StatefulWidget {
+  const StudioView({
     super.key,
     required this.library,
     required this.eventId,
-    required this.page,
+    this.page,
     this.editor,
-    this.pickFile = _pickFile,
+    this.pickFile = _pickSoundFile,
     this.ocr,
     this.sync,
+    this.cam,
   });
 
   final Library library;
+
+  /// The capture it opens in.
   final String eventId;
-  final EventPage page;
+
+  /// The video in the main row as it opens; null, none (the camera's).
+  final EventPage? page;
 
   /// Cloud sync, for Share (the file's edit view's link); null without.
   final CloudSync? sync;
@@ -111,49 +217,23 @@ class VideoEditScreen extends StatefulWidget {
   /// Picks a sound file from the device; tests pass their own.
   final Future<XFile?> Function() pickFile;
 
-  static Future<XFile?> _pickFile() async {
-    final files = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: const [
-        'mp3',
-        'm4a',
-        'aac',
-        'wav',
-        'ogg',
-        'oga',
-        'opus',
-        'flac',
-        'mp4',
-        'webm',
-      ],
-    );
-    return files.firstOrNull?.xFile;
-  }
+  /// Cam's camera, takes and play-along, for a view opened as Cam; null,
+  /// the video editor's alone.
+  final CamSetup? cam;
 
-  /// Opens the editor on [page] over the screen, and completes when the
-  /// user comes back: from the file screen's Edit, and from a take's Edit
-  /// in the play-along sidebar, the same way.
-  static Future<void> open(
-    BuildContext context, {
-    required Library library,
-    required String eventId,
-    required EventPage page,
-    CloudOcr? ocr,
-    CloudSync? sync,
-  }) => Navigator.of(context).push<void>(
-    MaterialPageRoute(
-      builder: (_) => VideoEditScreen(
-        library: library,
-        eventId: eventId,
-        page: page,
-        ocr: ocr,
-        sync: sync,
-      ),
-    ),
-  );
+  /// Puts [page] of capture [eventId] (the same, when not said) in the
+  /// main row of the view [state] is, in place of what's there, as a
+  /// take's Edit in Cam does ([_StudioViewState._switchMain]); whether it
+  /// did. For tests.
+  @visibleForTesting
+  static Future<bool> switchMain(
+    State<StudioView> state,
+    EventPage? page, {
+    String? eventId,
+  }) => (state as _StudioViewState)._switchMain(page, eventId: eventId);
 
   @override
-  State<VideoEditScreen> createState() => _VideoEditScreenState();
+  State<StudioView> createState() => _StudioViewState();
 }
 
 /// A lane's level: its [volume] (0 to 1; the master's, 0 to 2), whether
@@ -211,47 +291,65 @@ class _Level {
   }
 }
 
-class _VideoEditScreenState extends State<VideoEditScreen> {
-  VideoPlayerController? _video;
-  EditedPlayback? _playback;
-  Object? _error;
+class _StudioViewState extends State<StudioView> {
+  /// The capture, and the video in the main row (null: none, the
+  /// camera's): the widget's as the view opens, another's after
+  /// [_switchMain]. What's done here reads them, never the widget's.
+  late String _eventId = widget.eventId;
+  late EventPage? _page = widget.page;
 
-  Duration _start = Duration.zero;
-  Duration _end = Duration.zero;
+  /// Whether a page is in the main row, to edit.
+  bool get _inEdit => _page != null;
+
+  /// How many pages were forgotten ([_forgetPage]): what was on its way
+  /// for one (its player opening, its song found in its sound, its
+  /// waveform read) is dropped once it's gone ([_still]).
+  int _forgotten = 0;
+
+  /// Whether the view is still there with the page it had when
+  /// [_forgotten] was [forgotten]: what was asked for it can land.
+  bool _still(int forgotten) => mounted && forgotten == _forgotten;
+
+  VideoPlayerController? _video; // reset in _forgetPage
+  EditedPlayback? _playback; // reset in _forgetPage
+  Object? _error; // reset in _forgetPage
+
+  Duration _start = Duration.zero; // reset in _forgetPage
+  Duration _end = Duration.zero; // reset in _forgetPage
 
   /// The Take lane's level: the video's own sound.
-  var _own = _Level();
+  var _own = _Level(); // reset in _forgetPage
 
   /// The master's level: both lanes through it, up to 200%.
-  var _master = _Level.master();
+  var _master = _Level.master(); // reset in _forgetPage
 
   /// The Song lane: how it's placed (null: the default, none), its level,
   /// its page in the capture, its file, its name, and its player (for its
   /// length, and to play it along the preview).
-  SongMode? _song;
-  var _songLevel = _Level();
-  String? _trackId;
-  XFile? _track;
-  String? _trackName;
-  VideoPlayerController? _trackPlayer;
-  Duration _offset = Duration.zero;
+  SongMode? _song; // reset in _forgetPage
+  var _songLevel = _Level(); // reset in _forgetPage
+  String? _trackId; // reset in _forgetPage
+  XFile? _track; // reset in _forgetPage
+  String? _trackName; // reset in _forgetPage
+  VideoPlayerController? _trackPlayer; // reset in _forgetPage
+  Duration _offset = Duration.zero; // reset in _forgetPage
 
   /// The part of the song used, from [_trackStart] to [_trackEnd]
   /// (trimmed by the song bar's ends).
-  Duration _trackStart = Duration.zero;
-  Duration _trackEnd = Duration.zero;
+  Duration _trackStart = Duration.zero; // reset in _forgetPage
+  Duration _trackEnd = Duration.zero; // reset in _forgetPage
 
   /// The song the take's log lines up by itself (as it played while the
   /// take recorded), when it has one still in the capture: the default
   /// Song lane.
-  LoggedSong? _logged;
+  LoggedSong? _logged; // reset in _forgetPage
 
   /// The song's delays kept on this device per audio output
   /// ([OutDelays]), and the one this take opened with, kept for the output
   /// its song played through (null: none): a lane at it hasn't been moved
   /// by hand, so it follows where the song is found in the take's sound.
-  Map<String, int> _outDelays = const {};
-  int? _seededMs;
+  Map<String, int> _outDelays = const {}; // reset in _forgetPage
+  int? _seededMs; // reset in _forgetPage
 
   /// The shortest part of a song that can be used.
   static const minTrack = Duration(milliseconds: 500);
@@ -260,8 +358,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// [SoundReader]; none on the desktop, where it isn't offered), whether
   /// it's listening, and what it said last (null: nothing).
   late final bool _listens = _canListen();
-  bool _aligning = false;
-  String? _alignSaid;
+  bool _aligning = false; // reset in _forgetPage
+  String? _alignSaid; // reset in _forgetPage
 
   static bool _canListen() {
     final reader = SoundReader.open();
@@ -272,53 +370,53 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// Whether the take's tab is drawn over it (where it can be,
   /// [tabOffered]), how it looks, and whether its style's controls are
   /// open in place of the chips (on a phone).
-  bool _tab = true;
-  EditTabStyle _tabStyle = EditTabStyle.standard;
-  bool _editingTabStyle = false;
+  bool _tab = true; // reset in _forgetPage
+  EditTabStyle _tabStyle = EditTabStyle.standard; // reset in _forgetPage
+  bool _editingTabStyle = false; // reset in _forgetPage
 
   /// The title: whether it's on, and the text typed for it (null: the
   /// capture's name, [_captureTitle]); its fields, and whether they're
   /// open in place of the chips (on a phone).
-  bool _titleOn = true;
-  List<String>? _titleLines;
-  final _title1 = TextEditingController();
-  final _title2 = TextEditingController();
+  bool _titleOn = true; // reset in _forgetPage
+  List<String>? _titleLines; // reset in _forgetPage
+  final _title1 = TextEditingController(); // text reset in _forgetPage
+  final _title2 = TextEditingController(); // text reset in _forgetPage
   final _titleFocus = FocusNode();
   final _title2Focus = FocusNode();
-  bool _editingTitle = false;
+  bool _editingTitle = false; // reset in _forgetPage
 
   /// Whether the watermark is drawn (only Premium turns it off).
-  bool _watermark = true;
+  bool _watermark = true; // reset in _forgetPage
 
   /// The layer picked on the preview ([OnPicture]): outlined in the
   /// primary colour, with its toolbar; and the tab's size when its
   /// handle's drag began.
-  PictureLayer? _picked;
-  double _resizeFrom = EditTabStyle.standard.size;
+  PictureLayer? _picked; // reset in _forgetPage
+  double _resizeFrom = EditTabStyle.standard.size; // reset in _forgetPage
 
   /// How long the video fades in from black, and out to black (both
   /// sounds with it); the fades the Fades chip puts back when turned on
   /// again; and whether their sliders are open in place of the chips (on
   /// a phone).
-  Duration _fadeIn = PageEdit.defaultFade;
-  Duration _fadeOut = PageEdit.defaultFade;
-  (Duration, Duration)? _fadesBack;
-  bool _editingFades = false;
+  Duration _fadeIn = PageEdit.defaultFade; // reset in _forgetPage
+  Duration _fadeOut = PageEdit.defaultFade; // reset in _forgetPage
+  (Duration, Duration)? _fadesBack; // reset in _forgetPage
+  bool _editingFades = false; // reset in _forgetPage
 
   /// The layers the preview draws, and what they were worked out from;
   /// the title's picture, for a tap on it.
-  List<PlanLayer> _layers = const [];
-  Object? _layersOf;
+  List<PlanLayer> _layers = const []; // reset in _forgetPage
+  Object? _layersOf; // reset in _forgetPage
   final _measured = LayerPictures();
 
   /// The edit as last kept with the page, and the wait before the next
   /// change is kept (a drag makes many).
-  PageEdit? _saved;
-  Timer? _saveTimer;
+  PageEdit? _saved; // reset in _forgetPage
+  Timer? _saveTimer; // reset in _forgetPage
 
   /// The keys of the saved edit a newer app wrote ([PageEdit.extra]):
   /// kept with every change made here.
-  Map<String, Object?> _extra = const {};
+  Map<String, Object?> _extra = const {}; // reset in _forgetPage
 
   /// A download being made, and how far along it is (where that's known).
   bool _busy = false;
@@ -331,14 +429,14 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// A seek of the preview held back while a grip or the ruler is dragged
   /// (one at most every [_seekEvery]), and where the last one asked for
   /// goes when the wait is over.
-  Timer? _seekWait;
-  Duration? _seekNext;
+  Timer? _seekWait; // reset in _forgetPage
+  Duration? _seekNext; // reset in _forgetPage
   static const _seekEvery = Duration(milliseconds: 150);
 
   /// Where the preview was last asked to go, until its player got there
   /// (null: where the player says): the playhead and the time show it at
   /// once, and follow a drag held back.
-  final _headAt = ValueNotifier<Duration?>(null);
+  final _headAt = ValueNotifier<Duration?>(null); // reset in _forgetPage
 
   /// Where the preview is: where it's going, or where its player says.
   Duration get _at => _headAt.value ?? _video?.value.position ?? Duration.zero;
@@ -373,26 +471,26 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 
   /// How long the video and the song are: the players' word, unless they
   /// have none (the browser, for a take it recorded), then the editor's.
-  Duration _duration = Duration.zero;
-  Duration _trackLength = Duration.zero;
+  Duration _duration = Duration.zero; // reset in _forgetPage
+  Duration _trackLength = Duration.zero; // reset in _forgetPage
 
   VideoEditing? get _editor => widget.editor ?? VideoEditor.instance;
 
   /// Whether the video is one of Cam's takes: its lanes are then "Take"
   /// and "Song" ("Video sound" and "Track" otherwise).
-  bool get _take => isTake(widget.page);
+  bool get _take => _page != null && isTake(_page!);
 
   /// What Cam noted while the take recorded (none: not a take, or one
   /// saved before takes kept one): the page's, as it is in the library
   /// now ([_log]: with where its song was found in its sound, once
   /// that's measured).
-  TakeLog? get _takeLog => _log ?? widget.page.takeLog;
-  TakeLog? _log;
+  TakeLog? get _takeLog => _log ?? _page?.takeLog;
+  TakeLog? _log; // reset in _forgetPage
 
   /// Where the Take lane's grips are without their snap to the song's
   /// marks, while one is dragged ([_snapped]).
-  Duration? _dragStart;
-  Duration? _dragEnd;
+  Duration? _dragStart; // reset in _forgetPage
+  Duration? _dragEnd; // reset in _forgetPage
 
   /// Whether the Song row has a song in it (as [PageEdit.hasSong]: a
   /// song picked, its lane not `off`; none said, a newer app's default).
@@ -401,7 +499,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// Whether a song is on its way into the Song row: the edit's, or a
   /// take's lined up by Reset, while its file and player open. The row is
   /// there already, empty, so the viewer doesn't shrink as it comes.
-  bool _songComing = false;
+  bool _songComing = false; // reset in _forgetPage
 
   /// Whether the song in the Song lane is lined up by itself, as it
   /// played while the take recorded ([_logged]; `song` not said).
@@ -440,7 +538,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 
   /// The capture's name, as the title's default text.
   List<String> get _captureTitle {
-    final event = _library.byId(widget.eventId);
+    final event = _library.byId(_eventId);
     return event == null
         ? const []
         : captureTitleLines(event.title, event.artist);
@@ -532,28 +630,27 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     }
   }
 
-  /// Opens the video, and the edit it has (its song too).
+  /// Opens the video in the main row ([_page]), and the edit it has (its
+  /// song too); none there, nothing opens (and nothing spins).
   Future<void> _open() async {
-    final event = _library.byId(widget.eventId);
-    if (event == null) return;
+    final main = _page;
+    final event = _library.byId(_eventId);
+    if (main == null || event == null) return;
+    final forgotten = _forgotten;
     VideoPlayerController? opened;
     try {
-      final controller = opened = await openPlayer(
-        _library,
-        event,
-        widget.page,
-      );
-      final videoFile = await _fileOf(event, widget.page);
+      final controller = opened = await openPlayer(_library, event, main);
+      final videoFile = await _fileOf(event, main);
       final length = await _lengthOf(controller, videoFile);
-      if (!mounted) {
+      if (!_still(forgotten)) {
         await controller.dispose();
         return;
       }
       unawaited(_readTakeWave(videoFile, length));
       await controller.setLooping(false);
-      final page = event.pages.where((p) => p.id == widget.page.id).firstOrNull;
+      final page = event.pages.where((p) => p.id == main.id).firstOrNull;
       final saved = page?.edit;
-      final log = page?.takeLog ?? widget.page.takeLog;
+      final log = page?.takeLog ?? main.takeLog;
       // A take's song, lined up by itself as it played while recording,
       // unless the edit placed one or took it out.
       final logged = LoggedSong.of(log);
@@ -571,7 +668,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       // a delay kept for that output: a lane still where the log has it
       // opens moved by it (once the song is in it, below).
       final outDelays = await OutDelays.read(_library);
-      if (!mounted) {
+      if (!_still(forgotten)) {
         await controller.dispose();
         return;
       }
@@ -629,7 +726,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       controller.addListener(_onPlayer);
       if (edit != null && track != null) {
         final file = await _fileOf(event, track);
-        if (!mounted) return;
+        if (!mounted || forgotten != _forgotten) return;
         await _loadTrack(
           track.id,
           file,
@@ -637,21 +734,27 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           from: edit,
         );
         // Moved as the delay control moves it, and kept so.
-        if (seed != null && mounted && _lined && _trackLength > Duration.zero) {
+        if (seed != null &&
+            _still(forgotten) &&
+            _lined &&
+            _trackLength > Duration.zero) {
           _moveTrack(Duration(milliseconds: seed));
         }
       }
+      if (!_still(forgotten)) return;
       await _played();
       // Not measured yet (a take from before, or from a device that
       // couldn't): the song is looked for in the take's sound now.
-      if (lined != null && log?.sync == null) unawaited(_measureSong());
+      if (lined != null && log?.sync == null && _still(forgotten)) {
+        unawaited(_measureSong());
+      }
     } on Object catch (e) {
       // A player opened but not the screen's yet has no one else to let
       // go of it.
       if (opened != null && !identical(opened, _video)) {
         unawaited(opened.dispose());
       }
-      if (mounted) setState(() => _error = e);
+      if (_still(forgotten)) setState(() => _error = e);
     }
   }
 
@@ -668,30 +771,109 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 
   /// Try again, where the video couldn't be opened or its player failed:
   /// the edit as it is kept with the page, the players let go of, and the
-  /// video opened again, with that edit.
+  /// video opened again, with that edit ([_switchMain] to the same page).
   Future<void> _retry() async {
     if (_error == null) return;
+    await _switchMain(_page);
+  }
+
+  /// Puts [page] of capture [eventId] (the same capture, when not said)
+  /// in the main row, in place of what's there; null, nothing (the
+  /// camera's). The edit open is kept with its page first (a change still
+  /// waiting to be, at once), its players let go of, everything known of
+  /// it forgotten ([_forgetPage]), and [page] opened as the view opens
+  /// one ([_open]): the edit it has, its song lined up. Not during a
+  /// download: whether it did.
+  Future<bool> _switchMain(EventPage? page, {String? eventId}) async {
+    if (_busy || !mounted) return false;
     final video = _video;
     final song = _trackPlayer;
-    final unkept = _saveTimer?.isActive ?? false;
-    _saveTimer?.cancel();
+    final playback = _playback;
+    // Kept now, while what it's of is still known: [_keep] reads the edit
+    // and names its page before it waits.
+    final keeping = (_saveTimer?.isActive ?? false) ? _keep() : null;
+    video?.removeListener(_onPlayer);
+    playback?.dispose();
+    setState(() {
+      _forgetPage();
+      _page = page;
+      _eventId = eventId ?? _eventId;
+    });
+    final forgotten = _forgotten;
+    await keeping;
+    await video?.dispose();
+    await song?.dispose();
+    // Switched again meanwhile: that switch opens its own.
+    if (page != null && _still(forgotten)) await _open();
+    return true;
+  }
+
+  /// Forgets everything known of the page in the main row (each field
+  /// marked "reset in _forgetPage"), as it was before one opened: its
+  /// players (let go of by [_switchMain]), its edit, its song and its
+  /// log, what's on the video, the fields and sliders open, the waves,
+  /// the zoom, the caches. A change not kept yet is dropped
+  /// ([_switchMain] keeps it first); what was on its way for the page
+  /// lands nowhere ([_forgotten]). setState's.
+  void _forgetPage() {
+    _forgotten++;
+    // The players, and where the preview was going.
+    _video = null;
+    _playback = null;
+    _error = null;
     _seekWait?.cancel();
     _seekWait = null;
     _seekNext = null;
     _headAt.value = null;
-    video?.removeListener(_onPlayer);
-    _playback?.dispose();
-    setState(() {
-      _error = null;
-      _video = null;
-      _playback = null;
-      _trackPlayer = null;
-      _picked = null;
-    });
-    if (unkept) await _keep();
-    await video?.dispose();
-    await song?.dispose();
-    if (mounted) await _open();
+    _saveTimer?.cancel();
+    _saveTimer = null;
+    // The clock and the kept part.
+    _duration = Duration.zero;
+    _start = Duration.zero;
+    _end = Duration.zero;
+    _dragStart = null;
+    _dragEnd = null;
+    // The levels.
+    _own = _Level();
+    _master = _Level.master();
+    // The song and its row.
+    _song = null;
+    _songComing = false;
+    // Its level, page, file, name, player, length, placing and what
+    // Auto-align said.
+    _clearSong();
+    _logged = null;
+    _outDelays = const {};
+    _seededMs = null;
+    _aligning = false;
+    // The edit as kept, and the log.
+    _saved = null;
+    _extra = const {};
+    _log = null;
+    // What's on the video, and the fields open in the settings.
+    _tab = true;
+    _tabStyle = EditTabStyle.standard;
+    _editingTabStyle = false;
+    _titleOn = true;
+    _titleLines = null;
+    _title1.clear();
+    _title2.clear();
+    _editingTitle = false;
+    _watermark = true;
+    _fadeIn = PageEdit.defaultFade;
+    _fadeOut = PageEdit.defaultFade;
+    _fadesBack = null;
+    _editingFades = false;
+    _picked = null;
+    _resizeFrom = EditTabStyle.standard.size;
+    // The waves, the zoom and what's worked out from the page.
+    _takeWave = null;
+    _songWave = null;
+    _songWaveId = null;
+    _zoom = 1;
+    _layers = const [];
+    _layersOf = null;
+    _tabSizesOf = null;
   }
 
   /// Whether [edit] has [logged]'s song lined up by itself and not moved
@@ -714,8 +896,13 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// lines it up there: the Song lane follows, unless it was moved by
   /// hand, or holds another song (it stays where it was put).
   Future<void> _measureSong() async {
-    final log = await TakeSyncer.sync(_library, widget.eventId, widget.page.id);
-    if (!mounted || log == null || log.sync == null || log == _log) return;
+    final page = _page;
+    if (page == null) return;
+    final forgotten = _forgotten;
+    final log = await TakeSyncer.sync(_library, _eventId, page.id);
+    if (!_still(forgotten) || log == null || log.sync == null || log == _log) {
+      return;
+    }
     final logged = LoggedSong.of(log);
     final was = _logged;
     final follows =
@@ -951,7 +1138,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     return (least, most);
   }
 
-  (Size?, double, double)? _tabSizesOf;
+  (Size?, double, double)? _tabSizesOf; // reset in _forgetPage
 
   /// The tab's style changed to [style]: the preview draws it at once
   /// (nothing is sought again), the tab on, as typing a title turns it on.
@@ -1148,13 +1335,16 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 
   /// Keeps the edit with the page, when it changed.
   Future<void> _keep() async {
+    final page = _page;
     final edit = _pageEdit;
     // Unchanged, or with a newer app's keys but no length known yet: the
     // edit saved stays.
-    if (edit == _saved || (edit == null && _extra.isNotEmpty)) return;
+    if (page == null || edit == _saved || (edit == null && _extra.isNotEmpty)) {
+      return;
+    }
     _saved = edit;
     try {
-      await _library.setPageEdit(widget.eventId, widget.page.id, edit);
+      await _library.setPageEdit(_eventId, page.id, edit);
     } on Object catch (e) {
       debugPrint('TabCam: video edit: not kept: $e');
     }
@@ -1240,19 +1430,20 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 
   /// How far the timeline is zoomed in: 1, the whole video in the rows'
   /// width; 2, half of it, and so on ([zooms]), scrolled sideways.
-  double _zoom = 1;
+  double _zoom = 1; // reset in _forgetPage
 
   /// The lanes' sound, drawn over their bars once read ([Waveform.read]):
   /// the video's own, and the song's (with its page ID); none where it
   /// can't be read.
-  Waveform? _takeWave;
-  Waveform? _songWave;
-  String? _songWaveId;
+  Waveform? _takeWave; // reset in _forgetPage
+  Waveform? _songWave; // reset in _forgetPage
+  String? _songWaveId; // reset in _forgetPage
 
   /// Reads the video's own sound for the Take lane's waveform.
   Future<void> _readTakeWave(XFile file, Duration length) async {
+    final forgotten = _forgotten;
     final wave = await Waveform.read(file, length);
-    if (mounted && wave != null) setState(() => _takeWave = wave);
+    if (_still(forgotten) && wave != null) setState(() => _takeWave = wave);
   }
 
   /// Reads song [id]'s sound for the Song lane's waveform, unless it's
@@ -1261,8 +1452,12 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     if (_songWaveId == id && _songWave != null) return;
     _songWaveId = id;
     _songWave = null;
+    final forgotten = _forgotten;
     final wave = await Waveform.read(file, length);
-    if (mounted && wave != null && _songWaveId == id && _trackId == id) {
+    if (_still(forgotten) &&
+        wave != null &&
+        _songWaveId == id &&
+        _trackId == id) {
       setState(() => _songWave = wave);
     }
   }
@@ -1450,8 +1645,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// Keeps from, or until, where the preview is: where it's going, or
   /// where its player is (asked of it: a paused one isn't polled).
   Future<void> _trimHere({required bool end}) async {
+    final forgotten = _forgotten;
     final at = _headAt.value ?? await _video?.position ?? Duration.zero;
-    if (!mounted) return;
+    if (!_still(forgotten)) return;
     end ? _trim(_start, at) : _trim(at, _end);
   }
 
@@ -1460,11 +1656,12 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// capture's recordings, videos and takes (not the video edited), and a
   /// sound file to pick (added to the capture's files).
   Future<void> _pickTrack() async {
-    final event = _library.byId(widget.eventId);
+    final event = _library.byId(_eventId);
     final l10n = context.l10n;
+    final forgotten = _forgotten;
     final candidates = [
       for (final p in event?.pages ?? const <EventPage>[])
-        if ((p.isAudio || p.isVideo) && p.id != widget.page.id) p,
+        if ((p.isAudio || p.isVideo) && p.id != _page?.id) p,
     ];
     final picked = await showModalBottomSheet<Object>(
       context: context,
@@ -1503,7 +1700,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         ),
       ),
     );
-    if (!mounted || picked == null || event == null) return;
+    if (!_still(forgotten) || picked == null || event == null) return;
     final EventPage page;
     final XFile file;
     var now = event;
@@ -1512,7 +1709,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       file = await _fileOf(event, page);
     } else {
       final chosen = await widget.pickFile();
-      if (chosen == null || !mounted) return;
+      if (chosen == null || !_still(forgotten)) return;
       file = chosen;
       // A recording of the capture's from now on: the edit names it, and
       // it syncs with the rest.
@@ -1534,7 +1731,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       if (added.isEmpty) return;
       page = added.first;
     }
-    if (!mounted) return;
+    if (!_still(forgotten)) return;
     await _loadTrack(page.id, file, fileLabel(l10n, now, page));
   }
 
@@ -1549,9 +1746,11 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     String name, {
     PageEdit? from,
   }) async {
+    final forgotten = _forgotten;
     await _playback?.set(
       EditedPlayback.planOf(_planEdit, duration: _duration, takeLog: _takeLog),
     );
+    if (!_still(forgotten)) return;
     await _trackPlayer?.dispose();
     _trackPlayer = null;
     VideoPlayerController? player;
@@ -1562,7 +1761,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     } on Object catch (e) {
       debugPrint('TabCam: video edit: the track can\'t be played: $e');
     }
-    if (!mounted) {
+    if (!_still(forgotten)) {
       await player?.dispose();
       return;
     }
@@ -1685,11 +1884,12 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// Asks for the song's delay in milliseconds ([_delay]) and moves it
   /// there, as ‹ and › do.
   Future<void> _typeDelay() async {
+    final forgotten = _forgotten;
     final typed = await showDialog<int>(
       context: context,
       builder: (_) => _DelayDialog(ms: _delay.inMilliseconds),
     );
-    if (typed == null || !mounted) return;
+    if (typed == null || !_still(forgotten)) return;
     final to = Duration(
       milliseconds: typed.clamp(
         -maxDelay.inMilliseconds,
@@ -1740,8 +1940,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// under it ([_alignSaid]).
   Future<void> _align() async {
     final song = _track;
-    if (song == null || _aligning || !_listens) return;
+    final page = _page;
+    if (song == null || page == null || _aligning || !_listens) return;
     final l10n = context.l10n;
+    final forgotten = _forgotten;
     setState(() {
       _aligning = true;
       _alignSaid = null;
@@ -1751,7 +1953,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       // lane is where it was found.
       if (_lined && _takeLog?.sync == null) {
         await _measureSong();
-        if (!mounted || _track != song) return;
+        if (!_still(forgotten) || _track != song) return;
         if (_lined && _logged!.measured) {
           final moved = _logged!.shiftOf(_current);
           if (moved != Duration.zero) _moveTrack(-moved);
@@ -1759,7 +1961,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           return;
         }
       }
-      final event = _library.byId(widget.eventId);
+      final event = _library.byId(_eventId);
       final reader = SoundReader.open();
       if (event == null || reader == null) {
         setState(() => _alignSaid = l10n.videoEditAlignUnread);
@@ -1771,12 +1973,12 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       final SongAlign? found;
       try {
         found = await SongSync.align(
-          take: await _fileOf(event, widget.page),
+          take: await _fileOf(event, page),
           song: song,
           reader: reader,
           clips: _laneClips,
           progress: (done, of) {
-            if (mounted) {
+            if (_still(forgotten)) {
               setState(
                 () => _alignSaid = l10n.videoEditAlignListening(done, of),
               );
@@ -1787,7 +1989,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         reader.close();
       }
       debugPrint('TabCam: video edit: Auto-align: $found');
-      if (!mounted || _track != song) return;
+      if (!_still(forgotten) || _track != song) return;
       final String said;
       if (found == null) {
         said = l10n.videoEditAlignUnread;
@@ -1821,9 +2023,11 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       setState(() => _alignSaid = said);
     } on Object catch (e) {
       debugPrint('TabCam: video edit: Auto-align failed: $e');
-      if (mounted) setState(() => _alignSaid = l10n.videoEditAlignUnread);
+      if (_still(forgotten)) {
+        setState(() => _alignSaid = l10n.videoEditAlignUnread);
+      }
     } finally {
-      if (mounted) setState(() => _aligning = false);
+      if (_still(forgotten)) setState(() => _aligning = false);
     }
   }
 
@@ -1883,6 +2087,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   Future<void> _reset() async {
     final player = _trackPlayer;
     final song = _loggedPage;
+    final forgotten = _forgotten;
     setState(() {
       _start = Duration.zero;
       _end = _duration;
@@ -1907,14 +2112,16 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     _changed();
     await _played();
     await player?.dispose();
-    if (song != null) await _lineUpSong(song.$1, song.$2);
+    if (song != null && _still(forgotten)) {
+      await _lineUpSong(song.$1, song.$2);
+    }
   }
 
   /// The take's song lined up by itself ([_logged]), and the capture it's
   /// in, while it's still there; null otherwise.
   (CaptureEvent, EventPage)? get _loggedPage {
     final logged = _logged;
-    final event = _library.byId(widget.eventId);
+    final event = _library.byId(_eventId);
     final page = event?.pages.where((p) => p.id == logged?.page).firstOrNull;
     return event == null || page == null ? null : (event, page);
   }
@@ -1923,10 +2130,11 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// by itself as it played while recording ([_logged]).
   Future<void> _lineUpSong(CaptureEvent event, EventPage page) async {
     final logged = _logged;
+    final forgotten = _forgotten;
     try {
       if (logged == null) return;
       final file = await _fileOf(event, page);
-      if (!mounted) return;
+      if (!mounted || forgotten != _forgotten) return;
       await _loadTrack(
         page.id,
         file,
@@ -1935,7 +2143,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       );
     } finally {
       // Not come (its file unread): no row waits for it.
-      if (mounted && _songComing) setState(() => _songComing = false);
+      if (_still(forgotten) && _songComing) {
+        setState(() => _songComing = false);
+      }
     }
   }
 
@@ -1984,22 +2194,24 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// is made (a WebM, or a MOV, as an MP4).
   Future<void> _download(RenderKind what) async {
     final editor = _editor;
-    final event = _library.byId(widget.eventId);
+    final event = _library.byId(_eventId);
+    final page = _page;
     final l10n = context.l10n;
     final messenger = Messenger.maybeOf(context);
     if (editor == null) {
       messenger?.show(l10n.videoEditNotHere);
       return;
     }
-    if (event == null) return;
+    if (event == null || page == null) return;
+    final forgotten = _forgotten;
     await _video?.pause();
+    if (!_still(forgotten)) return;
     setState(() {
       _busy = true;
       _progress = null;
     });
     XFile? made;
     try {
-      final page = widget.page;
       final input = await _fileOf(event, page);
       // Each download is named for when it's made, so renders don't clash.
       final label = timestamped(fileLabel(l10n, event, page));
@@ -2169,8 +2381,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// video's.
   Future<void> _toEnd() async {
     final at = _at;
+    final forgotten = _forgotten;
     if (_video?.value.isPlaying ?? false) await _playback?.playPause();
-    if (!mounted) return;
+    if (!_still(forgotten)) return;
     _seek(at < _end - _near ? _end : _duration);
   }
 
@@ -2199,27 +2412,32 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 
   Widget _scaffold(BuildContext context) {
     final l10n = context.l10n;
-    final event = _library.byId(widget.eventId);
+    final event = _library.byId(_eventId);
+    final page = _page;
     final video = _video;
     final ready = video != null && _error == null;
     // On a phone, Dictionary, Metronome, Share and About go in a menu, so
     // the file's name keeps some room.
     final menu = MediaQuery.sizeOf(context).width < _menuBelow;
     // Share: the link to this file's edit view.
-    final share = event == null || _busy
+    final share = event == null || page == null || _busy
         ? null
         : () => shareCapture(
             context,
             event,
             sync: widget.sync,
-            file: widget.page,
+            file: page,
             edit: true,
           );
     void about() => Messenger.maybeOf(context)?.show(l10n.videoEditKept);
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          event == null ? '' : fileLabel(l10n, event, widget.page),
+          event == null
+              ? ''
+              : page == null
+              ? event.title
+              : fileLabel(l10n, event, page),
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
@@ -2265,7 +2483,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         child: DictionaryBeside(
           title: event?.title,
           onClosed: _keys.requestFocus,
-          child: _error != null
+          // Nothing in the main row: nothing opens, nothing to wait for.
+          child: !_inEdit
+              ? const SizedBox.expand()
+              : _error != null
               ? _cantPlay(l10n)
               : video == null
               ? const Center(child: CircularProgressIndicator())
@@ -3473,7 +3694,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     if (log != null && log.tab == null) return null;
     // One from before the log, in a capture with no tab: it never had one.
     if (log == null &&
-        necklines(_library.byId(widget.eventId)?.tabText ?? '').isEmpty) {
+        necklines(_library.byId(_eventId)?.tabText ?? '').isEmpty) {
       return null;
     }
     final styled = offered && !wide;
@@ -4311,7 +4532,7 @@ class _DelayDialogState extends State<_DelayDialog> {
 /// earlier), between steps of 10 and 1 ms either way; tapped, a value is
 /// typed. For a Bluetooth speaker's or headphones' delay, which the
 /// line-up can't see.
-extension on _VideoEditScreenState {
+extension on _StudioViewState {
   Widget _delayControl(AppLocalizations l10n) {
     final theme = Theme.of(context);
     final ms = _delay.inMilliseconds;
@@ -4353,7 +4574,7 @@ extension on _VideoEditScreenState {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              for (final by in _VideoEditScreenState.delaySteps.reversed)
+              for (final by in _StudioViewState.delaySteps.reversed)
                 stepButton(-by),
               Tooltip(
                 message: l10n.videoEditDelayType,
@@ -4369,7 +4590,7 @@ extension on _VideoEditScreenState {
                   ),
                 ),
               ),
-              for (final by in _VideoEditScreenState.delaySteps) stepButton(by),
+              for (final by in _StudioViewState.delaySteps) stepButton(by),
             ],
           ),
         ),
@@ -4608,7 +4829,7 @@ class _TabSwatch extends StatelessWidget {
   }
 }
 
-/// A row of the editor's timeline ([_VideoEditScreenState._rows]): its
+/// A row of the editor's timeline ([_StudioViewState._rows]): its
 /// [lane] (`take`, the opened video's own; `song`), which names its keys
 /// (`video-edit-<lane>-…`), its [header] at the left (its name, then its
 /// volume, [_LaneHeader]), and its [bar] on the time axis, as wide as the
@@ -4629,12 +4850,12 @@ class _LaneHeader extends StatelessWidget {
 
   final double width;
 
-  /// How wide a name's ⋮ is ([_VideoEditScreenState._nameMenu]): the
+  /// How wide a name's ⋮ is ([_StudioViewState._nameMenu]): the
   /// headers are that much wider, so a name beside one has the room of one
   /// without.
   static const menuWidth = 16.0;
 
-  /// Whether the editor is wide ([_VideoEditScreenState._wide]).
+  /// Whether the editor is wide ([_StudioViewState._wide]).
   final bool wide;
   final String? name;
   final Widget? menu;
