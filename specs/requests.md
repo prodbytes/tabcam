@@ -4738,7 +4738,8 @@ spec.
    from its log, or unplaced (a dashed bar) when the main row has
    another song or none; its name opens **Play the take** (Cam's Play)
    and **Edit the take** (the take in the camera's place, as the
-   sidebar's Edit, Back putting the camera back). The next take, by Rec,
+   sidebar's Edit, the song that played along paused first, Back
+   putting the camera back). The next take, by Rec,
    / or ., replaces it, and Cam opened again shows the capture's last
    take the same way. Where the window is too short for both rows, the
    take's gives way first. The take itself is saved, logged and lined
@@ -4746,7 +4747,8 @@ spec.
    `take_log_test.dart` (`soFar`, `songSpansOn`) and `studio_test.dart`
    (the row on Rec, growing with the song, a gap where it moved, the
    camera's preview not built again by the ticks; the take after Stop,
-   placed from its log; Play, / twice, Edit to Take then Song and Back;
+   placed from its log; Play, / twice, Edit to Take then Song, the song
+   paused, and Back;
    the take's clock without a song, from 0:30 to 1:00; no timer left
    once Cam closes while recording; Cam opened again, placed, then
    unplaced with the take itself in the main row). See

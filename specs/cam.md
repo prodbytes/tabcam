@@ -701,7 +701,10 @@ sidebar**: each of Cam's takes in it (under **Takes**; not the songs,
 videos that aren't takes, links, PDFs or pages) has **Edit** (scissors,
 as the file screen's; its tooltip "Edit <name>") right before its
 Delete; the [take's row](#the-takes-row)'s **Edit the take** is the
-same for the last take. What played along pauses first. **In Cam** it opens the
+same for the last take. Either pauses what played along first (right
+after Stop the song plays on), so only the editor's preview sounds
+([`_editTake`](../tabcam_app/lib/screens/video_edit_screen.dart)).
+**In Cam** it opens the
 [video editor](video-edit.md#in-cam) on that take **in Cam's own view**,
 in the camera's place, with no screen pushed over Cam
 ([Cam's view](#cams-view)): the take in the viewer with its tab, title

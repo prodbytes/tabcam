@@ -773,17 +773,22 @@ class _StudioViewState extends State<StudioView> {
   /// nothing), it's hidden meanwhile, and shown again with the camera
   /// ([_alongHidden]). The take is in Cam's capture, unless [eventId] says
   /// another (the copy a take recorded went to, [CamSession.lastTake]).
+  /// What plays along pauses first, so only the editor's preview sounds
+  /// (the sidebar's Edit pauses it too; the take row's Edit comes here
+  /// straight, right after Stop, with the song playing on).
   Future<void> _editTake(EventPage take, {String? eventId}) async {
     final cam = _cam;
     final event = cam == null ? null : _library.byId(eventId ?? cam.eventId);
     if (event == null || !PlayAlongSidebar.mayEdit(event, take) || _busy) {
       return;
     }
+    final along = cam!.along;
+    await along.track.pause();
+    if (!mounted || _busy) return;
     if (_inEdit) {
       await _switchMain(take, eventId: event.id);
       return;
     }
-    final along = cam!.along;
     final screen = MediaQuery.sizeOf(context);
     final room = _boxWidth ?? screen.width;
     if (along.open &&

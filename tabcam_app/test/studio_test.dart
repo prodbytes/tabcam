@@ -1207,14 +1207,19 @@ void main() {
         expect(named('Take 10:02'), findsOneWidget);
         expect(named('Take 10:01'), findsNothing);
         final takeId = library.byId(id)!.pages.last.id;
+        // Stop leaves the song playing on.
+        expect(video.playing, {0});
 
-        // Edit: the take in the camera's place, its Song under it.
+        // Edit: the take in the camera's place, its Song under it; the
+        // song that played along paused, so only the editor's preview
+        // sounds.
         await tester.tap(menu);
         await camFrames(tester);
         await tester.tap(find.byKey(const Key('video-edit-rec-edit')));
         await camFrames(tester);
         await camFrames(tester);
         await camFrames(tester);
+        expect(video.playing, isEmpty);
         expect(find.byKey(const Key('cam-rec')), findsNothing);
         expect(recRow, findsNothing);
         final takeRow = find.byKey(const Key('video-edit-take-row'));
