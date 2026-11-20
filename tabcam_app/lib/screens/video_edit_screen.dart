@@ -4422,30 +4422,29 @@ class _StudioViewState extends State<StudioView> {
   }
 
   /// The transport's **Rec over this** ([_recOver]): a camera, named on a
-  /// wide row; without Premium, its tooltip says it's Premium's.
+  /// wide row (else its name in its tooltip); without Premium, a tooltip
+  /// says it's Premium's.
   Widget _recOverButton(AppLocalizations l10n, {required bool named}) {
     final label = l10n.videoEditRecOver;
-    final tip = widget.cam == null && !_unlocked
-        ? l10n.eventPremiumTool(label)
-        : label;
+    final locked = widget.cam == null && !_unlocked;
+    final tip = locked ? l10n.eventPremiumTool(label) : label;
     void onPressed() => unawaited(_recOver());
     const icon = Icon(Icons.videocam_outlined);
-    return named
-        ? Tooltip(
-            message: tip,
-            child: TextButton.icon(
-              key: const Key('video-edit-cam'),
-              onPressed: onPressed,
-              icon: icon,
-              label: Text(label),
-            ),
-          )
-        : IconButton(
-            key: const Key('video-edit-cam'),
-            tooltip: tip,
-            icon: icon,
-            onPressed: onPressed,
-          );
+    if (named) {
+      final button = TextButton.icon(
+        key: const Key('video-edit-cam'),
+        onPressed: onPressed,
+        icon: icon,
+        label: Text(label),
+      );
+      return locked ? Tooltip(message: tip, child: button) : button;
+    }
+    return IconButton(
+      key: const Key('video-edit-cam'),
+      tooltip: tip,
+      icon: icon,
+      onPressed: onPressed,
+    );
   }
 
   /// Over the lanes, on one row: at the left where the preview is (to the
