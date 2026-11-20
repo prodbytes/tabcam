@@ -42,40 +42,45 @@ import 'mono_font.dart';
 import 'on_picture.dart';
 
 /// Basic edits of a video, opened from its file screen, on one time axis:
-/// a ruler (tapped or dragged, the preview goes there) over two lanes,
-/// mixed. The **Take** lane (for a video Cam didn't record, "Video
+/// a ruler (tapped or dragged, the preview goes there) over the video's
+/// rows, mixed ([_VideoEditScreenState._rows]). The video opens as the
+/// only row: the **Take** row (for a video Cam didn't record, "Video
 /// sound") is the whole video, the part kept bright: its grips trim it,
-/// and both sounds with it. The **Song** lane ("Track") holds one of the
+/// and both sounds with it; its name opens **Add a song** ("Add a
+/// track"), as the Download settings' song section does. The **Song**
+/// row ("Track") comes under it once there's a song: one of the
 /// capture's recordings, videos or takes, or a sound file (added to
 /// them), placed along the video by hand (dragged, trimmed by its ends,
-/// nudged by a twentieth of a second); ⋮ changes or removes it. Each lane has
-/// its volume and Mute at its left. What Download puts in the file is in
-/// the **Download settings** ([DownloadSettingsBeside]), a sidebar the
-/// app bar's tune button shows and hides (open the first time in a
-/// session), beside the viewer on a wide screen and under it on a phone:
-/// the **Master**, both lanes' volume (up to 200%) and Mute, right above
-/// the fades' sliders (on a phone, above **On the video**); **On the
-/// video**: what's drawn over it, as chips: a take's tab (its style, the
-/// size, background and colours, opened by its palette button or, on a
-/// phone, a long press on the band in the preview), the title (its text
-/// typed in place of the chips on a phone, under them on a wide screen),
-/// the watermark, which only Premium removes, and the **Fades**: the
-/// video fades in from black at the kept part's start and out to black
-/// at its end, both sounds with it, 3 s each by default (their sliders
-/// in place of the chips, or under them; drawn on the Take lane as ramps
-/// at its ends); and the song's details. A tap on the picture that opens
-/// one of them shows the settings where they're hidden. The dictionary
-/// and the metronome open beside it all, as on the file's screen.
-/// The edit is kept with the page as it's made ([PageEdit]), and played
-/// as it says ([EditedPlayback]: the kept part, both lanes at their
-/// volumes, the layers over it, [EditLayers]; from where the preview is,
-/// so a part cut off plays too, as the video is, and it stops at the
-/// kept part's end); the video's file stays as it is. A player that
-/// fails says so, with Try again. Download renders the same plan
-/// ([RenderPlan]) to a file on the device ([VideoEditor]): the video,
-/// the video without sound, or the sound alone. The space bar plays or
-/// pauses it, as Play / Pause and a tap on the preview do (not while the
-/// title is typed).
+/// nudged by a twentieth of a second), or a take's own song, lined up as
+/// it played while recording; its name opens Change and Remove (removed,
+/// the row goes). Each row has its volume and Mute at its left. What
+/// Download puts in the file is in the **Download settings**
+/// ([DownloadSettingsBeside]), a sidebar the app bar's tune button shows
+/// and hides (open the first time in a session), beside the viewer on a
+/// wide screen and under it on a phone: the **Master**, the rows'
+/// volume (up to 200%) and Mute, right above the fades' sliders (on a
+/// phone, above **On the video**); **On the video**: what's drawn over
+/// it, as chips: a take's tab (its style, the size, background and
+/// colours, opened by its palette button or, on a phone, a long press on
+/// the band in the preview), the title (its text typed in place of the
+/// chips on a phone, under them on a wide screen), the watermark, which
+/// only Premium removes, and the **Fades**: the video fades in from
+/// black at the kept part's start and out to black at its end, both
+/// sounds with it, 3 s each by default (their sliders in place of the
+/// chips, or under them; drawn on the Take row as ramps at its ends);
+/// and the song's details, or, with no song, Add a song. A tap on the
+/// picture that opens one of them shows the settings where they're
+/// hidden. The dictionary and the metronome open beside it all, as on
+/// the file's screen. The edit is kept with the page as it's made
+/// ([PageEdit]), and played as it says ([EditedPlayback]: the kept part,
+/// its rows at their volumes, the layers over it, [EditLayers]; from
+/// where the preview is, so a part cut off plays too, as the video is,
+/// and it stops at the kept part's end); the video's file stays as it
+/// is. A player that fails says so, with Try again. Download renders the
+/// same plan ([RenderPlan]) to a file on the device ([VideoEditor]): the
+/// video, the video without sound, or the sound alone. The space bar
+/// plays or pauses it, as Play / Pause and a tap on the preview do (not
+/// while the title is typed).
 class VideoEditScreen extends StatefulWidget {
   const VideoEditScreen({
     super.key,
@@ -338,6 +343,17 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// Where the preview is: where it's going, or where its player says.
   Duration get _at => _headAt.value ?? _video?.value.position ?? Duration.zero;
 
+  /// The timeline's time axis, which the ruler, the playhead, a tap on a
+  /// row and the zoom go by: how long it is ([_axisLength]), where the
+  /// playhead is on it ([_axisAt]), what moves the playhead
+  /// ([_axisMoves]), whether it plays ([_axisPlaying]), and a seek along
+  /// it ([_seekAxis]). Here, the opened video's.
+  Duration get _axisLength => _duration;
+  Duration get _axisAt => _at;
+  Listenable get _axisMoves => Listenable.merge([_video, _headAt]);
+  bool get _axisPlaying => _video?.value.isPlaying ?? false;
+  void _seekAxis(Duration at, {bool exact = true}) => _seek(at, exact: exact);
+
   /// The editor's keys: the space bar plays or pauses ([_key]).
   final _keys = FocusNode(debugLabel: 'video edit keys');
 
@@ -378,9 +394,14 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   Duration? _dragStart;
   Duration? _dragEnd;
 
-  /// Whether the Song lane has a song in it (as [PageEdit.hasSong]: a
+  /// Whether the Song row has a song in it (as [PageEdit.hasSong]: a
   /// song picked, its lane not `off`; none said, a newer app's default).
   bool get _hasSong => _song != SongMode.off && _trackId != null;
+
+  /// Whether a song is on its way into the Song row: the edit's, or a
+  /// take's lined up by Reset, while its file and player open. The row is
+  /// there already, empty, so the viewer doesn't shrink as it comes.
+  bool _songComing = false;
 
   /// Whether the song in the Song lane is lined up by itself, as it
   /// played while the take recorded ([_logged]; `song` not said).
@@ -569,6 +590,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         if (shift == 0) seed = kept;
         if (shift == 0 || shift == kept) seeded = kept;
       }
+      final track = edit?.trackId == null
+          ? null
+          : event.pages.where((p) => p.id == edit!.trackId).firstOrNull;
       setState(() {
         _log = log;
         _video = controller;
@@ -576,6 +600,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         _duration = length;
         _end = length;
         _logged = lined;
+        _songComing = track != null && edit?.song != SongMode.off;
         _outDelays = outDelays;
         _seededMs = seeded;
         _saved = saved;
@@ -602,9 +627,6 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         _fillTitle();
       });
       controller.addListener(_onPlayer);
-      final track = edit?.trackId == null
-          ? null
-          : event.pages.where((p) => p.id == edit!.trackId).firstOrNull;
       if (edit != null && track != null) {
         final file = await _fileOf(event, track);
         if (!mounted) return;
@@ -1216,7 +1238,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     ),
   );
 
-  /// How far the timeline is zoomed in: 1, the whole video in the lanes'
+  /// How far the timeline is zoomed in: 1, the whole video in the rows'
   /// width; 2, half of it, and so on ([zooms]), scrolled sideways.
   double _zoom = 1;
 
@@ -1294,8 +1316,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   void _setZoom(double zoom) {
     zoom = zoom.clamp(zooms.first, zooms.last);
     final c = _timelineScroll;
-    final length = _duration.inMilliseconds;
-    final head = length <= 0 ? 0.0 : _at.inMilliseconds / length;
+    final length = _axisLength.inMilliseconds;
+    final head = length <= 0 ? 0.0 : _axisAt.inMilliseconds / length;
     double? keep;
     if (c.hasClients) {
       final view = c.position.viewportDimension;
@@ -1313,7 +1335,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// in view ([fraction] of the video), a quarter in from the left.
   void _keepHeadInView(double fraction) {
     final c = _timelineScroll;
-    if (_zoom <= 1 || !c.hasClients || !(_video?.value.isPlaying ?? false)) {
+    if (_zoom <= 1 || !c.hasClients || !_axisPlaying) {
       return;
     }
     final view = c.position.viewportDimension;
@@ -1433,9 +1455,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     end ? _trim(_start, at) : _trim(at, _end);
   }
 
-  /// A sheet of what can go in the Song lane: the capture's recordings,
-  /// videos and takes (not the video edited), and a sound file to pick
-  /// (added to the capture's files).
+  /// A sheet of what can go in the Song row (Add a song, from the Take
+  /// row's name or the Download settings; the Song row's Change): the
+  /// capture's recordings, videos and takes (not the video edited), and a
+  /// sound file to pick (added to the capture's files).
   Future<void> _pickTrack() async {
     final event = _library.byId(widget.eventId);
     final l10n = context.l10n;
@@ -1544,6 +1567,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       return;
     }
     setState(() {
+      _songComing = false;
       _alignSaid = null;
       _trackId = id;
       _track = file;
@@ -1577,8 +1601,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         : room;
   }
 
-  /// Takes the song out of its lane (`song: off`): the lane is empty
-  /// again, as loud as it is.
+  /// Takes the song out (`song: off`): its row goes, and the video is
+  /// its only row again; the Song lane is as loud as it is.
   Future<void> _removeSong() async {
     final player = _trackPlayer;
     setState(() {
@@ -1853,10 +1877,12 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
 
   /// Back to the defaults: the whole video, with its own sound as it is
   /// (the master at 100%), no song (a take's lined up as it played while
-  /// recording), and the tab, the capture's name and the watermark over
-  /// it, fading in and out over 3 s (the edit is none).
+  /// recording: its row stays while it comes back), and the tab, the
+  /// capture's name and the watermark over it, fading in and out over
+  /// 3 s (the edit is none).
   Future<void> _reset() async {
     final player = _trackPlayer;
+    final song = _loggedPage;
     setState(() {
       _start = Duration.zero;
       _end = _duration;
@@ -1876,28 +1902,41 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       _editingFades = false;
       _fillTitle();
       _clearSong();
+      _songComing = song != null;
     });
     _changed();
     await _played();
     await player?.dispose();
-    await _lineUpSong();
+    if (song != null) await _lineUpSong(song.$1, song.$2);
   }
 
-  /// Puts the take's song in the Song lane, lined up by itself as it
-  /// played while recording ([_logged]), when it has one.
-  Future<void> _lineUpSong() async {
+  /// The take's song lined up by itself ([_logged]), and the capture it's
+  /// in, while it's still there; null otherwise.
+  (CaptureEvent, EventPage)? get _loggedPage {
     final logged = _logged;
     final event = _library.byId(widget.eventId);
     final page = event?.pages.where((p) => p.id == logged?.page).firstOrNull;
-    if (logged == null || event == null || page == null) return;
-    final file = await _fileOf(event, page);
-    if (!mounted) return;
-    await _loadTrack(
-      page.id,
-      file,
-      fileLabel(context.l10n, event, page),
-      from: logged.placed(_current.copyWith(song: null, trackId: null)),
-    );
+    return event == null || page == null ? null : (event, page);
+  }
+
+  /// Puts the take's song, [page] of [event], in the Song row, lined up
+  /// by itself as it played while recording ([_logged]).
+  Future<void> _lineUpSong(CaptureEvent event, EventPage page) async {
+    final logged = _logged;
+    try {
+      if (logged == null) return;
+      final file = await _fileOf(event, page);
+      if (!mounted) return;
+      await _loadTrack(
+        page.id,
+        file,
+        fileLabel(context.l10n, event, page),
+        from: logged.placed(_current.copyWith(song: null, trackId: null)),
+      );
+    } finally {
+      // Not come (its file unread): no row waits for it.
+      if (mounted && _songComing) setState(() => _songComing = false);
+    }
   }
 
   /// The plan of the edit as it is now, for [kind]: of [input], the
@@ -2025,28 +2064,35 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     return '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
   }
 
-  /// How wide a lane's name is in its header: room for "Take" or a short
+  /// How wide a row's name is in its header: room for "Take" or a short
   /// name on a phone (two lines at most), more beside a wide screen's.
   double get _nameWidth => _wide ? 120 : 56;
 
-  /// The lanes' headers at the left (the name, then the volume): the ruler
+  /// The rows' headers at the left (the name, then the volume): the ruler
   /// and the bars line up after them, as wide as the rest.
   double get _lead => _nameWidth + _LaneVolume.width + 4;
 
-  /// The gap between the two lanes.
+  /// The gap between two rows.
   static const _laneGap = 2.0;
 
-  /// The lanes' panel: the ruler and the two lanes, and its padding; the
-  /// cut's steps under them where there's room ([_cutStepsHeight]).
+  /// The rows' panel (the dock): the ruler and the rows, and its padding;
+  /// the cut's steps under them where there's room ([_cutStepsHeight]).
   static const _dockPad = EdgeInsets.fromLTRB(8, 0, 8, 6);
   static const _cutStepsHeight = 40.0;
-  static const _dockHeight =
-      _Ruler.height + _SongBar.height + _laneGap + _SongBar.height + 6;
 
-  /// The transport's row, over the lanes.
+  /// How high the dock is with [rows] rows: the ruler, the rows with a
+  /// gap between each two, and its padding under them (82 for one row,
+  /// 128 for two).
+  static double _dockHeightFor(int rows) =>
+      _Ruler.height +
+      rows * _SongBar.height +
+      max(0, rows - 1) * _laneGap +
+      _dockPad.bottom;
+
+  /// The transport's row, over the rows.
   static const _transportHeight = 48.0;
 
-  /// The least the viewer keeps before the lanes, then the transport, give
+  /// The least the viewer keeps before the rows, then the transport, give
   /// way (a tiny window), and the least the Download settings keep under
   /// the viewer on a phone, their title included (a tall video takes the
   /// rest).
@@ -2347,15 +2393,16 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// The screen's body, a frame that doesn't scroll: the viewer on top,
   /// with the Download settings ([DownloadSettingsBeside]) beside it where
   /// the editor's room is [_wide], else under it (the master, **On the
-  /// video** or the fields one of its chips opened, the song's details),
-  /// scrolling; and at the bottom edge the transport and the lanes.
-  /// Hidden, the settings leave the viewer all the room. While the
-  /// on-screen keyboard is open (the title typed in), the transport and
-  /// the lanes give their room to the viewer and the field; in a tiny
-  /// window the lanes go first, then the transport. Squeezed narrower
-  /// than a small phone by the dictionary's or the metronome's sidebar,
-  /// it's laid out that wide and cut at the sidebar's edge, not squeezed
-  /// ([_leastWidth]).
+  /// video** or the fields one of its chips opened, the song's details or
+  /// Add a song), scrolling; and at the bottom edge the transport and the
+  /// rows ([_rows]: the dock as high as they need, so a video alone leaves
+  /// the viewer more room). Hidden, the settings leave the viewer all the
+  /// room. While the on-screen keyboard is open (the title typed in), the
+  /// transport and the rows give their room to the viewer and the field;
+  /// in a tiny window the rows go first, then the transport. Squeezed
+  /// narrower than a small phone by the dictionary's or the metronome's
+  /// sidebar, it's laid out that wide and cut at the sidebar's edge, not
+  /// squeezed ([_leastWidth]).
   Widget _body(VideoPlayerController video, AppLocalizations l10n) {
     final keyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
     final screen = MediaQuery.sizeOf(context).width;
@@ -2365,18 +2412,24 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         final width = max(box.maxWidth, min(_leastWidth, screen));
         _boxWidth = width;
         final wide = _wide;
+        final rows = _rows(l10n);
+        final dock = _dockHeightFor(rows.length);
         final inset = MediaQuery.paddingOf(context).bottom;
         bool fits(double dock) =>
             height >= dock + inset + _transportHeight + 1 + _viewerLeast;
         final showTransport =
             !keyboard && height >= _transportHeight + _viewerLeast;
-        final showDock = showTransport && fits(_dockHeight);
-        final showSteps = showDock && fits(_dockHeight + _cutStepsHeight);
+        final showDock = showTransport && fits(dock);
+        final showSteps = showDock && fits(dock + _cutStepsHeight);
         final dockHeight =
-            (showDock ? _dockHeight + inset : 0) +
-            (showSteps ? _cutStepsHeight : 0);
+            (showDock ? dock + inset : 0) + (showSteps ? _cutStepsHeight : 0);
         final panel = showTransport
-            ? _panel(video, l10n, dock: showDock, steps: showSteps)
+            ? _panel(
+                video,
+                l10n,
+                rows: showDock ? rows : null,
+                steps: showSteps,
+              )
             : null;
         // Under the viewer, it's as high as the picture needs, leaving the
         // settings their least (a tall video takes the rest).
@@ -2404,9 +2457,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                         children: [
                           _onTheVideo(l10n, wide: true),
-                          if (_hasSong) ...[
+                          if (_songSection(l10n) case final song?) ...[
                             const SizedBox(height: 16),
-                            _songDetails(l10n),
+                            song,
                           ],
                         ],
                       )
@@ -2432,9 +2485,9 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                                   child: _tabStyleFields(l10n),
                                 )
                               : _onTheVideo(l10n),
-                          if (_hasSong) ...[
+                          if (_songSection(l10n) case final song?) ...[
                             const SizedBox(height: 8),
-                            _songDetails(l10n),
+                            song,
                           ],
                         ],
                       ),
@@ -2461,12 +2514,13 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   static const _leastWidth = 360.0;
 
   /// The bottom panel, the whole width: the transport, and under it, when
-  /// [dock], the lanes, flush with the bottom edge (over the safe area),
-  /// with the cut's steps under them when [steps].
+  /// there are [rows] (none where there's no room), the ruler and the
+  /// rows, flush with the bottom edge (over the safe area), with the cut's
+  /// steps under them when [steps].
   Widget _panel(
     VideoPlayerController video,
     AppLocalizations l10n, {
-    required bool dock,
+    required List<_Row>? rows,
     required bool steps,
   }) {
     final theme = Theme.of(context);
@@ -2494,14 +2548,14 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                     )
                   : _transport(video, l10n),
             ),
-            if (dock)
+            if (rows != null)
               Padding(
                 padding: _dockPad,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _timeline(video, l10n),
+                    _timeline(l10n, rows),
                     if (steps)
                       SizedBox(
                         height: _cutStepsHeight,
@@ -3661,30 +3715,112 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     );
   }
 
-  /// The time axis: the ruler right over the Take lane and the Song
-  /// lane, each lane's header at its left (its name, then its volume; the
-  /// Song lane's name opens its menu), and where the preview is drawn
-  /// across them, with a handle on the ruler.
-  Widget _timeline(VideoPlayerController video, AppLocalizations l10n) {
+  /// The timeline's rows, top to bottom ([_Row]): the opened video's own
+  /// ([_mainRow]), its only row, and under it, once there's a song (one
+  /// picked, a take's lined up as it played while recording, or one on its
+  /// way, [_songComing]), the Song row ([_songRow]).
+  List<_Row> _rows(AppLocalizations l10n) => [
+    _mainRow(l10n),
+    if (_hasSong || _songComing) _songRow(l10n),
+  ];
+
+  /// The opened video's row: "Take" (one of Cam's takes) or "Video
+  /// sound", its volume, and its bar, the whole video, the part kept
+  /// bright between its grips, with its sound drawn over it. Alone, its
+  /// name opens Add a song (a take's) or Add a track ([_pickTrack]).
+  _Row _mainRow(AppLocalizations l10n) {
+    final name = _take ? l10n.videoEditLaneTake : l10n.videoEditLaneVideo;
+    final length = _axisLength;
+    final alone = !_hasSong && !_songComing;
+    return (
+      lane: 'take',
+      header: _LaneHeader(
+        width: _nameWidth,
+        wide: _wide,
+        name: name,
+        menu: alone
+            ? _nameMenu('take', name, [
+                MenuItemButton(
+                  key: const Key('video-edit-take-add-track'),
+                  leadingIcon: const Icon(Icons.add),
+                  onPressed: _pickTrack,
+                  child: Text(
+                    _take ? l10n.videoEditAddSong : l10n.videoEditAddTrack,
+                  ),
+                ),
+              ])
+            : null,
+        volume: _LaneVolume(
+          lane: 'take',
+          name: name,
+          volume: _own.volume,
+          muted: _own.muted,
+          stereo: _own.stereo,
+          onStereo: (v) => _setStereo(_own, v),
+          onChanged: (v) => _slide(_own, v),
+          onChangeStart: _own.keep,
+          onMute: () => _mute(_own),
+        ),
+      ),
+      bar: Stack(
+        children: [
+          Positioned.fill(
+            child: _SeekOnTap(
+              length: length,
+              onSeek: _seekAxis,
+              child: _TakeBar(
+                length: length,
+                start: _start,
+                end: _end,
+                marks: _songMarks,
+                fades: _fades,
+                label: l10n.videoEditTakeBar,
+                startLabel: l10n.videoEditKeptStart,
+                endLabel: l10n.videoEditKeptEnd,
+                onTrimStart: _trimStartBy,
+                onTrimEnd: _trimEndBy,
+                onTrimmed: _trimmed,
+              ),
+            ),
+          ),
+          _waveOver('video-edit-take-wave', _takeWave, [
+            (at: Duration.zero, end: _duration, from: Duration.zero),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  /// The Song row ("Track" for a video Cam didn't record): its name,
+  /// which opens Change and Remove, its volume, and its bar, the song
+  /// placed along the video (dragged, trimmed by its ends; lined up in
+  /// several clips, moved as one), with its sound drawn over it; a tap
+  /// places the preview there, as the Take row's does. On its way
+  /// ([_songComing]), the row is there, empty.
+  _Row _songRow(AppLocalizations l10n) {
     final theme = Theme.of(context);
-    final ownName = _take ? l10n.videoEditLaneTake : l10n.videoEditLaneVideo;
-    final songName = _take ? l10n.videoEditLaneSong : l10n.videoEditLaneTrack;
-    final length = _duration;
-    final hasSong = _hasSong;
-    final marks = _songMarks;
-    final Widget songBar;
-    if (!hasSong) {
-      songBar = _AddSong(
-        label: _take ? l10n.videoEditAddSong : l10n.videoEditAddTrack,
-        onTap: _pickTrack,
+    final name = _take ? l10n.videoEditLaneSong : l10n.videoEditLaneTrack;
+    final length = _axisLength;
+    if (!_hasSong) {
+      return (
+        lane: 'song',
+        header: _LaneHeader(width: _nameWidth, wide: _wide, name: name),
+        bar: DecoratedBox(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
       );
-    } else if (_trackLength <= Duration.zero || length <= Duration.zero) {
+    }
+    final Widget bar;
+    if (_trackLength <= Duration.zero || length <= Duration.zero) {
       // Its length unknown: it can't be placed.
-      songBar = _SongBar.unplaced(name: _trackName ?? songName);
+      bar = _SongBar.unplaced(name: _trackName ?? name);
     } else if (_linedClips case final clips?) {
       // Lined up in several clips: moved as one, silent between them; not
       // trimmed (one clip can't say it).
-      songBar = _SongBar(
+      bar = _SongBar(
         length: length,
         start: _start,
         end: _end,
@@ -3693,62 +3829,77 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         gaps: [
           for (final (i, c) in clips.indexed.skip(1)) (clips[i - 1].end, c.at),
         ],
-        name: _trackName ?? songName,
+        name: _trackName ?? name,
         label: l10n.videoEditTrackBar,
         onMove: _moveTrack,
       );
     } else {
-      songBar = _SongBar(
+      bar = _SongBar(
         length: length,
         start: _start,
         end: _end,
         at: _start + _offset,
         used: _trackEnd - _trackStart,
-        name: _trackName ?? songName,
+        name: _trackName ?? name,
         label: l10n.videoEditTrackBar,
         onMove: _moveTrack,
         onTrimStart: _trimTrackStart,
         onTrimEnd: _trimTrackEnd,
       );
     }
-    final lead = _lead;
-    final takeHeader = _LaneHeader(
-      width: _nameWidth,
-      wide: _wide,
-      name: ownName,
-      volume: _LaneVolume(
-        lane: 'take',
-        name: ownName,
-        volume: _own.volume,
-        muted: _own.muted,
-        stereo: _own.stereo,
-        onStereo: (v) => _setStereo(_own, v),
-        onChanged: (v) => _slide(_own, v),
-        onChangeStart: _own.keep,
-        onMute: () => _mute(_own),
+    return (
+      lane: 'song',
+      header: _LaneHeader(
+        width: _nameWidth,
+        wide: _wide,
+        menu: _nameMenu('song', name, [
+          MenuItemButton(
+            key: const Key('video-edit-song-change'),
+            leadingIcon: const Icon(Icons.swap_horiz),
+            onPressed: _pickTrack,
+            child: Text(l10n.videoEditChangeTrack),
+          ),
+          MenuItemButton(
+            key: const Key('video-edit-song-remove'),
+            leadingIcon: const Icon(Icons.delete_outline),
+            onPressed: _removeSong,
+            child: Text(l10n.videoEditRemoveSong),
+          ),
+        ]),
+        volume: _LaneVolume(
+          lane: 'song',
+          name: name,
+          volume: _songLevel.volume,
+          muted: _songLevel.muted,
+          stereo: _songLevel.stereo,
+          onStereo: (v) => _setStereo(_songLevel, v),
+          onChanged: (v) => _slide(_songLevel, v),
+          onChangeStart: _songLevel.keep,
+          onMute: () => _mute(_songLevel),
+        ),
+      ),
+      bar: Stack(
+        children: [
+          Positioned.fill(
+            child: _SeekOnTap(length: length, onSeek: _seekAxis, child: bar),
+          ),
+          if (_trackLength > Duration.zero && _songWaveId == _trackId)
+            _waveOver('video-edit-song-wave', _songWave, _songSpans),
+        ],
       ),
     );
-    final songHeader = _LaneHeader(
-      width: _nameWidth,
-      wide: _wide,
-      name: hasSong ? null : songName,
-      menu: hasSong ? _songMenu(l10n, songName) : null,
-      volume: hasSong
-          ? _LaneVolume(
-              lane: 'song',
-              name: songName,
-              volume: _songLevel.volume,
-              muted: _songLevel.muted,
-              stereo: _songLevel.stereo,
-              onStereo: (v) => _setStereo(_songLevel, v),
-              onChanged: (v) => _slide(_songLevel, v),
-              onChangeStart: _songLevel.keep,
-              onMute: () => _mute(_songLevel),
-            )
-          : null,
-    );
-    // The ruler, the lanes' bars and the playhead, on one time axis, as
-    // wide as the zoom makes them; the headers stay put at their left.
+  }
+
+  /// The time axis ([_axisLength]): the ruler right over the [rows]
+  /// ([_rows]), each row's header at its left (its name, then its
+  /// volume), and where the preview is drawn across them, with a handle
+  /// on the ruler. Zoomed in, the ruler and the bars scroll sideways
+  /// together; the headers stay put.
+  Widget _timeline(AppLocalizations l10n, List<_Row> rows) {
+    final theme = Theme.of(context);
+    final length = _axisLength;
+    // The ruler, the rows' bars and the playhead, on one time axis, as
+    // wide as the zoom makes them.
     Widget bars(double width) => SizedBox(
       width: width,
       child: Stack(
@@ -3758,83 +3909,31 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
             children: [
               _Ruler(
                 length: length,
-                marks: marks,
+                marks: _songMarks,
                 label: l10n.videoEditRuler,
                 timeOf: _rulerTime,
-                onSeek: (at, {required exact}) => _seek(at, exact: exact),
+                onSeek: (at, {required exact}) => _seekAxis(at, exact: exact),
               ),
-              SizedBox(
-                width: width,
-                height: _SongBar.height,
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: _SeekOnTap(
-                        length: length,
-                        onSeek: _seek,
-                        child: _TakeBar(
-                          length: length,
-                          start: _start,
-                          end: _end,
-                          marks: marks,
-                          fades: _fades,
-                          label: l10n.videoEditTakeBar,
-                          startLabel: l10n.videoEditKeptStart,
-                          endLabel: l10n.videoEditKeptEnd,
-                          onTrimStart: _trimStartBy,
-                          onTrimEnd: _trimEndBy,
-                          onTrimmed: _trimmed,
-                        ),
-                      ),
-                    ),
-                    _waveOver('video-edit-take-wave', _takeWave, [
-                      (at: Duration.zero, end: length, from: Duration.zero),
-                    ]),
-                  ],
+              for (final (i, row) in rows.indexed) ...[
+                if (i > 0) const SizedBox(height: _laneGap),
+                SizedBox(
+                  key: Key('video-edit-${row.lane}-row'),
+                  width: width,
+                  height: _SongBar.height,
+                  child: row.bar,
                 ),
-              ),
-              const SizedBox(height: _laneGap),
-              // Empty, it's Add a song; a song's, a tap places the
-              // preview as the Take lane's does.
-              SizedBox(
-                width: width,
-                height: _SongBar.height,
-                // Empty and zoomed in, its Add a song stays in view, over
-                // the scrolled lanes (below).
-                child: hasSong
-                    ? Stack(
-                        children: [
-                          Positioned.fill(
-                            child: _SeekOnTap(
-                              length: length,
-                              onSeek: _seek,
-                              child: songBar,
-                            ),
-                          ),
-                          if (_trackLength > Duration.zero &&
-                              _songWaveId == _trackId)
-                            _waveOver(
-                              'video-edit-song-wave',
-                              _songWave,
-                              _songSpans,
-                            ),
-                        ],
-                      )
-                    : _zoom > 1
-                    ? const SizedBox.shrink()
-                    : songBar,
-              ),
+              ],
             ],
           ),
-          // Where the preview is, across the ruler and the lanes.
+          // Where the preview is, across the ruler and the rows.
           Positioned.fill(
             child: IgnorePointer(
               child: ListenableBuilder(
-                listenable: Listenable.merge([video, _headAt]),
+                listenable: _axisMoves,
                 builder: (context, _) {
                   final at = length <= Duration.zero
                       ? 0.0
-                      : _at.inMilliseconds / length.inMilliseconds;
+                      : _axisAt.inMilliseconds / length.inMilliseconds;
                   WidgetsBinding.instance.addPostFrameCallback(
                     (_) => _keepHeadInView(at),
                   );
@@ -3857,14 +3956,15 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: lead,
+          width: _lead,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(height: _Ruler.height, child: _zoomControls(l10n)),
-              SizedBox(height: _SongBar.height, child: takeHeader),
-              const SizedBox(height: _laneGap),
-              SizedBox(height: _SongBar.height, child: songHeader),
+              for (final (i, row) in rows.indexed) ...[
+                if (i > 0) const SizedBox(height: _laneGap),
+                SizedBox(height: _SongBar.height, child: row.header),
+              ],
             ],
           ),
         ),
@@ -3884,29 +3984,15 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
                     _setZoom(_zoom * event.scale);
                   }
                 },
-                child: Stack(
-                  children: [
-                    Scrollbar(
-                      controller: _timelineScroll,
-                      thumbVisibility: true,
-                      child: SingleChildScrollView(
-                        key: const Key('video-edit-timeline-scroll'),
-                        controller: _timelineScroll,
-                        scrollDirection: Axis.horizontal,
-                        child: bars(view * _zoom),
-                      ),
-                    ),
-                    // No song: Add a song as wide as the view, not the
-                    // zoomed lane (its middle would be off screen).
-                    if (!hasSong)
-                      Positioned(
-                        left: 0,
-                        width: view,
-                        top: _Ruler.height + _SongBar.height + _laneGap,
-                        height: _SongBar.height,
-                        child: songBar,
-                      ),
-                  ],
+                child: Scrollbar(
+                  controller: _timelineScroll,
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    key: const Key('video-edit-timeline-scroll'),
+                    controller: _timelineScroll,
+                    scrollDirection: Axis.horizontal,
+                    child: bars(view * _zoom),
+                  ),
                 ),
               );
             },
@@ -3961,27 +4047,14 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     );
   }
 
-  /// The Song lane's name, in its header, with a ⋮: it opens Change… and
-  /// Remove.
-  Widget _songMenu(AppLocalizations l10n, String name) => MenuAnchor(
-    menuChildren: [
-      MenuItemButton(
-        key: const Key('video-edit-song-change'),
-        leadingIcon: const Icon(Icons.swap_horiz),
-        onPressed: _pickTrack,
-        child: Text(l10n.videoEditChangeTrack),
-      ),
-      MenuItemButton(
-        key: const Key('video-edit-song-remove'),
-        leadingIcon: const Icon(Icons.delete_outline),
-        onPressed: _removeSong,
-        child: Text(l10n.videoEditRemoveSong),
-      ),
-    ],
+  /// A row's [name], in its header, with a ⋮: it opens [items] (keyed
+  /// `video-edit-<lane>-menu`, [lane] as in [_Row]).
+  Widget _nameMenu(String lane, String name, List<Widget> items) => MenuAnchor(
+    menuChildren: items,
     builder: (context, menu, _) => Tooltip(
       message: MaterialLocalizations.of(context).showMenuTooltip,
       child: InkWell(
-        key: const Key('video-edit-song-menu'),
+        key: Key('video-edit-$lane-menu'),
         borderRadius: BorderRadius.circular(8),
         onTap: () => menu.isOpen ? menu.close() : menu.open(),
         child: Row(
@@ -3994,9 +4067,27 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     ),
   );
 
-  /// Under the lanes, the song's details: its lane and name, nudges of a
-  /// twentieth of a second either way with where it starts in words between
-  /// them, and the part of it used, once trimmed.
+  /// The Download settings' song section: the song's details
+  /// ([_songDetails]), or, with no song, Add a song (a take's) or Add a
+  /// track, as the Take row's name opens it ([_pickTrack]); none while
+  /// one is on its way ([_songComing]).
+  Widget? _songSection(AppLocalizations l10n) {
+    if (_hasSong) return _songDetails(l10n);
+    if (_songComing) return null;
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: OutlinedButton.icon(
+        key: const Key('video-edit-song-add'),
+        icon: const Icon(Icons.add),
+        label: Text(_take ? l10n.videoEditAddSong : l10n.videoEditAddTrack),
+        onPressed: _pickTrack,
+      ),
+    );
+  }
+
+  /// In the Download settings, the song's details: its lane and name,
+  /// nudges of a twentieth of a second either way with where it starts in
+  /// words between them, and the part of it used, once trimmed.
   Widget _songDetails(AppLocalizations l10n) {
     final theme = Theme.of(context);
     const tabular = [FontFeature.tabularFigures()];
@@ -4515,9 +4606,16 @@ class _TabSwatch extends StatelessWidget {
   }
 }
 
-/// A lane's header, at its left: its [name] (or, for the Song lane with
-/// a song, the [menu] its name opens), [width] wide, then its [volume]
-/// (room for one when there's none), as high as a lane.
+/// A row of the editor's timeline ([_VideoEditScreenState._rows]): its
+/// [lane] (`take`, the opened video's own; `song`), which names its keys
+/// (`video-edit-<lane>-…`), its [header] at the left (its name, then its
+/// volume, [_LaneHeader]), and its [bar] on the time axis, as wide as the
+/// ruler.
+typedef _Row = ({String lane, Widget header, Widget bar});
+
+/// A row's header, at its left: its [name] (or the [menu] its name
+/// opens), [width] wide, then its [volume] (room for one when there's
+/// none), as high as a row.
 class _LaneHeader extends StatelessWidget {
   const _LaneHeader({
     required this.width,
@@ -5500,80 +5598,6 @@ class _SongBar extends StatelessWidget {
       },
     );
   }
-}
-
-/// The empty Song lane: a dashed row to add a song.
-class _AddSong extends StatelessWidget {
-  const _AddSong({required this.label, required this.onTap});
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return CustomPaint(
-      painter: _Dashed(theme.colorScheme.outline),
-      child: InkWell(
-        key: const Key('video-edit-song-add'),
-        borderRadius: BorderRadius.circular(8),
-        onTap: onTap,
-        child: SizedBox(
-          height: _SongBar.height,
-          child: Center(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.add, size: 18, color: theme.colorScheme.primary),
-                    const SizedBox(width: 4),
-                    Text(
-                      label,
-                      maxLines: 1,
-                      style: TextStyle(color: theme.colorScheme.primary),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// A dashed rounded outline.
-class _Dashed extends CustomPainter {
-  _Dashed(this.color);
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-    final outline = Path()
-      ..addRRect(
-        RRect.fromRectAndRadius(
-          (Offset.zero & size).deflate(0.5),
-          const Radius.circular(8),
-        ),
-      );
-    for (final metric in outline.computeMetrics()) {
-      for (var d = 0.0; d < metric.length; d += 9) {
-        canvas.drawPath(metric.extractPath(d, d + 5), paint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_Dashed old) => old.color != color;
 }
 
 /// One end of a bar: a grip to drag ([onDrag], by how far; [onDone] as

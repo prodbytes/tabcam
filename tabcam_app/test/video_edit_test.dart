@@ -2482,7 +2482,10 @@ void main() {
       final (library, id) = await capture(tester);
       await tester.pumpWidget(editScreen(library, id));
       await _settle(tester);
-      await tester.tap(find.byKey(const Key('video-edit-song-add')));
+      // Added from the video's row's name.
+      await tester.tap(find.byKey(const Key('video-edit-take-menu')));
+      await _frames(tester);
+      await tester.tap(find.byKey(const Key('video-edit-take-add-track')));
       await _settle(tester);
       await tester.tap(find.byKey(const Key('video-edit-track-k1')));
       await _settle(tester);
@@ -2842,7 +2845,7 @@ void main() {
     ]);
   });
 
-  testWidgets('the timeline zooms in and out: the ruler and both lanes '
+  testWidgets('the timeline zooms in and out: the ruler and the rows '
       'together, scrolled sideways, a tap and a drag as precise as the zoom', (
     tester,
   ) async {
@@ -2871,10 +2874,6 @@ void main() {
     expect(take.width, closeTo(whole.width * 4, 1));
     expect(rect('video-edit-ruler').width, closeTo(take.width, 0.5));
     expect(take.left, closeTo(whole.left, 0.5));
-    // With no song, Add a track stays as wide as the view, in it.
-    final add = tester.getRect(find.byKey(const Key('video-edit-song-add')));
-    expect(add.left, closeTo(whole.left, 1));
-    expect(add.right, lessThanOrEqualTo(whole.right + 1));
 
     // A tap a quarter across the view is a sixteenth of the video in:
     // 0:11.25 of 3 minutes.
@@ -2981,6 +2980,155 @@ void main() {
     await _settle(tester);
     expect(find.byKey(const Key('video-edit-take-wave')), findsNothing);
     expect(find.byKey(const Key('video-edit-take-bar')), findsOneWidget);
+  });
+
+  group('the rows', () {
+    Rect rect(WidgetTester tester, String key) =>
+        tester.getRect(find.byKey(Key(key)));
+
+    /// A phone: the Download settings under the viewer.
+    void phone(WidgetTester tester) {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+    }
+
+    /// A take whose song (k1) played from a second in, as Cam logged it.
+    const log = TakeLog(
+      burned: false,
+      lagMs: 200,
+      song: [SongSegment(at: 1000, to: 5000, page: 'k1', from: 0)],
+    );
+
+    testWidgets('a video opens as its only row, the dock 82 high; Add a '
+        'track from its name puts a Song row under it', (tester) async {
+      phone(tester);
+      final (library, id) = await capture(tester);
+      await tester.pumpWidget(editScreen(library, id));
+      await _settle(tester);
+      expect(find.byKey(const Key('video-edit-take-row')), findsOneWidget);
+      expect(find.byKey(const Key('video-edit-song-row')), findsNothing);
+      expect(find.byKey(const Key('video-edit-song-bar')), findsNothing);
+      // The ruler (32) and the row (44), 6 under it, then the cut's steps
+      // (40) at the bottom edge.
+      final ruler = rect(tester, 'video-edit-ruler');
+      final take = rect(tester, 'video-edit-take-row');
+      expect(take.top, ruler.bottom);
+      expect(take.bottom - ruler.top + 6, 82);
+      expect(844 - take.bottom, 46);
+
+      // Add a track, from the row's name: the sheet; picked, the Song row
+      // under the video's, and the dock grows by a row.
+      await tester.tap(find.byKey(const Key('video-edit-take-menu')));
+      await _frames(tester);
+      expect(find.text('Add a track'), findsWidgets);
+      await tester.tap(find.byKey(const Key('video-edit-take-add-track')));
+      await _settle(tester);
+      expect(find.byKey(const Key('video-edit-tracks')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('video-edit-track-k1')));
+      await _settle(tester);
+      final song = rect(tester, 'video-edit-song-row');
+      expect(song.top, rect(tester, 'video-edit-take-row').bottom + 2);
+      expect(844 - song.bottom, 46);
+      expect(rect(tester, 'video-edit-ruler').top, ruler.top - 46);
+      expect(find.byKey(const Key('video-edit-song-bar')), findsOneWidget);
+      expect(library.byId(id)!.pages.first.edit!.trackId, 'k1');
+      // The video's name is its name again; the song's opens its menu.
+      expect(find.byKey(const Key('video-edit-take-menu')), findsNothing);
+      expect(find.byKey(const Key('video-edit-song-menu')), findsOneWidget);
+    });
+
+    testWidgets('Add a track in the Download settings, with no song: the '
+        'same sheet; with a song, its details there instead', (tester) async {
+      tall(tester);
+      final (library, id) = await capture(tester);
+      await tester.pumpWidget(editScreen(library, id));
+      await _settle(tester);
+      final add = find.byKey(const Key('video-edit-song-add'));
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('video-edit-side')),
+          matching: add,
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: add, matching: find.text('Add a track')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('video-edit-song-details')), findsNothing);
+      await tester.tap(add);
+      await _settle(tester);
+      await tester.tap(find.byKey(const Key('video-edit-track-k1')));
+      await _settle(tester);
+      expect(find.byKey(const Key('video-edit-song-row')), findsOneWidget);
+      expect(add, findsNothing);
+      expect(find.byKey(const Key('video-edit-song-details')), findsOneWidget);
+    });
+
+    testWidgets('a take with its song opens Take, then Song, from the first '
+        'frame; Remove takes the row away, and Reset lines it up again', (
+      tester,
+    ) async {
+      phone(tester);
+      final (library, id) = await capture(tester, editTake: true, log: log);
+      await tester.pumpWidget(editScreen(library, id));
+      // As soon as the video's row is there, so is the song's (empty while
+      // its player opens): the viewer doesn't shrink as it comes.
+      for (var i = 0; i < 200; i++) {
+        if (find
+            .byKey(const Key('video-edit-take-row'))
+            .evaluate()
+            .isNotEmpty) {
+          break;
+        }
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 1)),
+        );
+        await tester.pump();
+      }
+      expect(find.byKey(const Key('video-edit-take-row')), findsOneWidget);
+      expect(find.byKey(const Key('video-edit-song-row')), findsOneWidget);
+      await _settle(tester);
+
+      final take = rect(tester, 'video-edit-take-row');
+      final song = rect(tester, 'video-edit-song-row');
+      expect(song.top, take.bottom + 2);
+      expect(find.text('Take'), findsOneWidget);
+      expect(find.text('Song'), findsOneWidget);
+      expect(find.byKey(const Key('video-edit-song-bar')), findsOneWidget);
+      expect(find.byKey(const Key('video-edit-take-menu')), findsNothing);
+      expect(find.byKey(const Key('video-edit-song-add')), findsNothing);
+
+      // Removed: the take is its only row, its name opens Add a song.
+      await tester.tap(find.byKey(const Key('video-edit-song-menu')));
+      await _frames(tester);
+      await tester.tap(find.byKey(const Key('video-edit-song-remove')));
+      await _settle(tester);
+      expect(find.byKey(const Key('video-edit-song-row')), findsNothing);
+      expect(library.byId(id)!.pages.first.edit!.song, SongMode.off);
+      expect(rect(tester, 'video-edit-take-row'), take.translate(0, 46));
+      await tester.tap(find.byKey(const Key('video-edit-take-menu')));
+      await _frames(tester);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('video-edit-take-add-track')),
+          matching: find.text('Add a song'),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const Key('video-edit-take-menu')));
+      await _frames(tester);
+      expect(find.byKey(const Key('video-edit-take-add-track')), findsNothing);
+
+      // Reset: lined up as it played again, under the take.
+      await tester.tap(find.byKey(const Key('video-edit-reset')));
+      await _settle(tester);
+      expect(rect(tester, 'video-edit-take-row'), take);
+      expect(rect(tester, 'video-edit-song-row'), song);
+      expect(find.byKey(const Key('video-edit-song-bar')), findsOneWidget);
+      expect(library.byId(id)!.pages.first.edit, isNull);
+    });
   });
 }
 

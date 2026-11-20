@@ -380,7 +380,6 @@ void main() {
             'video-edit-to-end',
             'video-edit-ruler',
             'video-edit-take-bar',
-            'video-edit-song-add',
           ]) {
             final r = rect(key);
             expect(r.isEmpty, isFalse, reason: key);
@@ -401,23 +400,16 @@ void main() {
             rect('video-edit-ruler').top - rect('video-edit-play').bottom,
             lessThan(8),
           );
-          // Under the lanes, the cut's steps, 40 high, then 6 to the edge;
-          // a phone on its side, too short for them, has the lanes there.
-          final steps = size.height >= 400;
-          expect(
-            size.height - rect('video-edit-song-add').bottom,
-            steps ? 46 : 6,
-          );
-          expect(
-            find.byKey(const Key('video-edit-cut-steps')),
-            steps ? findsOneWidget : findsNothing,
-          );
-          if (steps) {
-            for (final key in ['video-edit-start-at', 'video-edit-end-at']) {
-              final r = rect(key);
-              expect(r.top, greaterThanOrEqualTo(size.height - 46));
-              expect(r.bottom, lessThanOrEqualTo(size.height - 6));
-            }
+          // The video its only row; under it, the cut's steps, 40 high,
+          // then 6 to the edge (a phone on its side too: one row leaves
+          // them room).
+          expect(find.byKey(const Key('video-edit-song-row')), findsNothing);
+          expect(size.height - rect('video-edit-take-bar').bottom, 46);
+          expect(find.byKey(const Key('video-edit-cut-steps')), findsOneWidget);
+          for (final key in ['video-edit-start-at', 'video-edit-end-at']) {
+            final r = rect(key);
+            expect(r.top, greaterThanOrEqualTo(size.height - 46));
+            expect(r.bottom, lessThanOrEqualTo(size.height - 6));
           }
           // The bars as wide as the ruler, the playhead over them.
           expect(
@@ -456,6 +448,36 @@ void main() {
     }
   });
 
+  testWidgets('a phone on its side with a song: both rows, with no room '
+      'for the cut\'s steps under them; the rows at the edge', (tester) async {
+    VideoPlayerPlatform.instance = VolumePlatform();
+    sized(tester, const Size(740, 360));
+    final (library, id) = await capture(tester);
+    await tester.runAsync(
+      () => library.setPageEdit(
+        id,
+        'k0',
+        PageEdit(
+          start: Duration.zero,
+          end: s(180),
+          song: SongMode.manual,
+          trackId: 'k1',
+        ),
+      ),
+    );
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    expect(tester.takeException(), isNull);
+    Rect rect(String key) => tester.getRect(find.byKey(Key(key)));
+    expect(
+      rect('video-edit-song-row').top,
+      rect('video-edit-take-row').bottom + 2,
+    );
+    expect(360 - rect('video-edit-song-row').bottom, 6);
+    expect(find.byKey(const Key('video-edit-cut-steps')), findsNothing);
+    expect(rect('video-edit-preview').height, greaterThan(90));
+  });
+
   testWidgets('with the keyboard open, the transport and the lanes give '
       'their room to the viewer; they come back as it closes', (tester) async {
     VideoPlayerPlatform.instance = VolumePlatform();
@@ -482,16 +504,24 @@ void main() {
     expect(find.byKey(const Key('video-edit-play')), findsOneWidget);
   });
 
-  testWidgets('the Song lane\'s name opens Change and Remove; empty, the '
-      'lane is Add a song', (tester) async {
+  testWidgets('the Song row\'s name opens Change and Remove; with no song '
+      'there\'s no Song row, and Add a track is in the video\'s row\'s '
+      'name', (tester) async {
     VideoPlayerPlatform.instance = VolumePlatform();
     sized(tester, const Size(390, 844));
     final (library, id) = await capture(tester);
     await tester.pumpWidget(editScreen(library, id));
     await _settle(tester);
-    expect(find.byKey(const Key('video-edit-song-add')), findsOneWidget);
+    expect(find.byKey(const Key('video-edit-song-row')), findsNothing);
     expect(find.byKey(const Key('video-edit-song-menu')), findsNothing);
     expect(find.byKey(const Key('video-edit-song-volume')), findsNothing);
+    await tester.tap(find.byKey(const Key('video-edit-take-menu')));
+    await _frames(tester);
+    expect(find.byKey(const Key('video-edit-take-add-track')), findsOneWidget);
+    expect(find.text('Add a track'), findsWidgets);
+    await tester.tap(find.byKey(const Key('video-edit-take-menu')));
+    await _frames(tester);
+    expect(find.byKey(const Key('video-edit-take-add-track')), findsNothing);
 
     await tester.runAsync(
       () => library.setPageEdit(
@@ -508,8 +538,11 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pumpWidget(editScreen(library, id));
     await _settle(tester);
+    expect(find.byKey(const Key('video-edit-song-row')), findsOneWidget);
     expect(find.byKey(const Key('video-edit-song-add')), findsNothing);
     expect(find.byKey(const Key('video-edit-song-volume')), findsOneWidget);
+    // With a song, the video's row's name is just its name.
+    expect(find.byKey(const Key('video-edit-take-menu')), findsNothing);
     final menu = tester.getRect(find.byKey(const Key('video-edit-song-menu')));
     final bar = tester.getRect(find.byKey(const Key('video-edit-song-bar')));
     expect(menu.right, lessThan(bar.left));
@@ -520,7 +553,8 @@ void main() {
     expect(find.byKey(const Key('video-edit-song-change')), findsOneWidget);
     await tester.tap(find.byKey(const Key('video-edit-song-remove')));
     await _settle(tester);
-    expect(find.byKey(const Key('video-edit-song-add')), findsOneWidget);
+    expect(find.byKey(const Key('video-edit-song-row')), findsNothing);
     expect(find.byKey(const Key('video-edit-song-menu')), findsNothing);
+    expect(find.byKey(const Key('video-edit-take-menu')), findsOneWidget);
   });
 }
