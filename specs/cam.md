@@ -14,7 +14,7 @@ which does what Cam does: the camera, the head gestures, the tab and
 auto-pass, the microphone and its volume, the takes and their Play; the
 screen shows it with the widgets in
 [`cam_controls.dart`](../tabcam_app/lib/capture/cam_controls.dart): the
-camera's view, the neckline, and Rec, Play, Tab and Auto-pass with Rec's
+camera's view, the phrase, and Rec, Play, Tab and Auto-pass with Rec's
 menus):
 
 - **The camera** fills the screen, the **front** one first (it faces the

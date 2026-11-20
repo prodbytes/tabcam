@@ -4570,29 +4570,32 @@ spec.
    toolbar on the picture show the four swatches. See
    [video edit](video-edit.md).
 
-2. **(One view for editing and Cam, step 3 of 6) Cam's work in a
-   session of its own.** The user asked: "now lets make the edit view
-   and the cam view the same. when a video is open, open it in the
-   editor with it being the only track. when a backing track is
-   selected, open that in the "main" track instead. when a recording
-   starts, record on a separate row on top of those (bottom om the
-   screen, let the opened one be first). also let the current video
-   "download" settings (watermark, faders, delays, etc) be a side bar
-   view, toggled on top, just like metronome, dictionary and others."
-   It ships in six steps; this one changes nothing the user sees, so
-   that a later step can show Cam in the editor's view. What Cam does
-   moved out of its screen into `CamSession`
+2. **"now lets make the edit view and the cam view the same. when a
+   video is open, open it in the editor with it being the only track.
+   when a backing track is selected, open that in the "main" track
+   instead. when a recording starts, record on a separate row on top of
+   those (bottom om the screen, let the opened one be first). also let
+   the current video "download" settings (watermark, faders, delays,
+   etc) be a side bar view, toggled on top, just like metronome,
+   dictionary and others."** Built in steps, one pull request each.
+
+   **Step 3 of 6: Cam's work in a session of its own.** This step
+   changes nothing the user sees, so that a later step can show Cam in
+   the editor's view. What Cam does moved out of its screen into
+   `CamSession`
    ([`cam_session.dart`](../tabcam_app/lib/capture/cam_session.dart), a
    `ChangeNotifier`): the camera and Try again, the head gestures, the
    tab and auto-pass, the microphone, its input volume and Cam's
    settings, the takes (Rec, the / and . keys, a take saved with its log
-   and its song measured, `TakeSyncer`), Play and Cam's keys. What it
-   has to tell the user comes out as a `CamNote`, which the screen says
-   in the app's language. Its widgets moved to
+   and its song measured, `TakeSyncer`), Play and Cam's keys. It makes
+   its play-along list as first used, opening on the file it's handed
+   (none here: the first to play) and by itself unless told not to. What
+   it has to tell the user comes out as a `CamNote`, which the screen
+   says in the app's language. Its widgets moved to
    [`cam_controls.dart`](../tabcam_app/lib/capture/cam_controls.dart):
    `CamView` (the camera, its error, or the take playing back),
-   `CamPhrase` (the neckline, still keyed `neckline`) and `CamStrip`
-   (Rec with the microphone's menu and the level meter, Play, Tab and
+   `CamPhrase` (the phrase, still keyed `neckline`) and `CamStrip` (Rec
+   with the microphone's menu and the level meter, Play, Tab and
    Auto-pass, with the same keys and tooltips). `PlayAlongScreen` keeps
    its constructor and its statics (`now`, and `takeName` and
    `takePlaysHere` beside it) and only lays these out, rebuilt as the

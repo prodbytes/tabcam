@@ -74,7 +74,7 @@ enum CamNote {
 
 /// What Cam does, apart from how it shows (`PlayAlongScreen` shows it,
 /// with the widgets in `cam_controls.dart`): the camera, the head
-/// gestures, the tab (one neckline at a time) and auto-pass, the
+/// gestures, the tab (one phrase at a time) and auto-pass, the
 /// microphone and its input volume (Cam's settings, [metaName]), the
 /// takes (Rec, the / and . keys, saving a take with its log) and playing
 /// the last one back. It tells its listeners whenever what shows
@@ -93,10 +93,20 @@ class CamSession extends ChangeNotifier {
     required this._takeName,
     required this.onNote,
     this.gated = false,
+    this.startId,
+    this.opensByItself = true,
   }) : _findCameras = cameras;
 
   final Library library;
   final String eventId;
+
+  /// The file [along] loads first when its sidebar opens by itself
+  /// ([PlayAlong.startId]); null, the first to play.
+  final String? startId;
+
+  /// Whether [along]'s sidebar opens by itself once the capture has
+  /// something to list ([PlayAlong.opensByItself]).
+  final bool opensByItself;
 
   /// A preview, for a user without Premium (`PlayAlongScreen.gate`): no
   /// camera opens ([start] isn't called), no key does anything, and the
@@ -161,10 +171,10 @@ class CamSession extends ChangeNotifier {
   });
   int _line = 0;
 
-  /// The tab's necklines ([necklines]).
+  /// The tab's phrases ([necklines]).
   List<String> get lines => _lines;
 
-  /// The neckline showing, of [lines].
+  /// The phrase showing, of [lines].
   int get line => _line;
 
   /// Whether the tab shows along the bottom; hidden, it still turns (and
@@ -253,7 +263,7 @@ class CamSession extends ChangeNotifier {
   List<int> _playedPlaces = const [];
   String? _playedLine;
 
-  /// While a take plays back, the neckline it shows when that isn't one
+  /// While a take plays back, the phrase it shows when that isn't one
   /// of the capture's (its tab changed since).
   String? get playedLine => _playedLine;
 
@@ -319,12 +329,16 @@ class CamSession extends ChangeNotifier {
   /// microphone opens from the one chosen).
   Future<void>? _settingsRead;
 
-  /// What plays along, and whether the sidebar to choose it shows.
+  /// What plays along, and whether the sidebar to choose it shows; made
+  /// as first used, opening on [startId] or by itself as
+  /// [opensByItself] says.
   late final PlayAlong along = PlayAlong(
     library,
     eventId,
     withPdfs: true,
     withText: true,
+    startId: startId,
+    opensByItself: opensByItself,
   );
   BackingTrack get _track => along.track;
 
