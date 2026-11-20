@@ -388,10 +388,21 @@ included):
   answered (offline, say) or when it couldn't check, that last answer
   for the same account, if it's at most a week old. The editor listens,
   so an answer arriving while it's open unlocks the chip in place.
+- **The video editor's Rec over this** ([video
+  edit](video-edit.md#rec-over-this)): Cam's camera over the video
+  edited, Premium's as Cam is. In the editor opened from a file, it goes
+  by `premiumNow`, as the watermark does: without Premium a press opens
+  the Premium card in a sheet, starting with "Cam is part of tabs.cam
+  Premium" (`premiumCamFeature`), and no camera, microphone or face
+  detection opens. Once the service said the user has none, it carries a
+  small lock on its camera (tooltip "Rec over this: tabs.cam Premium");
+  until then it shows no lock. In Cam's own view (a take edited in the
+  camera's place) it's never locked: Cam opened with Premium.
 
 <a id="offered-only-when-known"></a>**Offered only when known**: Premium is offered (Home's banner, the
 card's offer and its Upgrade and voucher buttons, the locked tools'
-lock, Fix's Upgrade, the web import's "needs Premium") only to a user
+lock, the video editor's Rec over this lock, Fix's Upgrade, the web
+import's "needs Premium") only to a user
 known to have none (`CloudOcr.free`): signed out, or signed in and the
 service checked (rbacr answered `checked`) that they have no Premium.
 Before that answer, while it's asked, offline, when the check failed or
@@ -401,7 +412,8 @@ unless it has a checked answer, and says "Checking…", then either the
 offer, Premium's, or "Couldn't check Premium…" with **Check again**; a
 web import asks before deciding. The locks themselves still go by the
 service's answer (`premium`): a check that hasn't answered unlocks
-nothing (the watermark keeps its week-old last answer, `premiumNow`).
+nothing (the watermark and the editor's Rec over this keep its
+week-old last answer, `premiumNow`).
 
 **Upgrade offer** (everywhere, the store apps included):
 
