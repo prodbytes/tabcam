@@ -4755,6 +4755,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Kept for {output}: its takes open with it'**
   String videoEditSongDelayKept(String output);
+
+  /// Video edit: the app bar's button (tune icon) that shows the sidebar of what Download puts in the file (on the video, fades, master, the song), and that sidebar's title
+  ///
+  /// In en, this message translates to:
+  /// **'Download settings'**
+  String get downloadSettings;
+
+  /// Video edit: the app bar's tune button while the Download settings show, and the sidebar's close button
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the download settings'**
+  String get downloadSettingsHide;
+
+  /// Video edit, on a phone: the app bar's menu (⋮) with Dictionary, Metronome, Share and About the edit
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get videoEditMore;
 }
 
 class _AppLocalizationsDelegate

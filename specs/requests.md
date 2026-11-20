@@ -4579,6 +4579,35 @@ spec.
    etc) be a side bar view, toggled on top, just like metronome,
    dictionary and others."** Built in steps, one pull request each.
 
+   **Step 1 of 6: the Download settings in a sidebar.** This step
+   moves the video editor's settings into a sidebar: what was beside
+   the viewer on a wide screen, and under it on a phone (the Master; On
+   the video, its chips for the tab, the title, the watermark and the
+   fades, with their fields and the tab's style; the song's details
+   with its nudges, delay, Remember, Auto-align and Cut to the song) is
+   now the **Download settings** sidebar, with its title and ✕, shown
+   and hidden by a new **Download settings** button (a tune icon) in
+   the editor's app bar, as the metronome's and the dictionary's
+   buttons do theirs. It's beside the viewer where the editor's room is
+   wide (840 points, or 560 in a window under 480 high, the on-screen
+   keyboard aside), 320 points by default and resizable by its edge
+   down to 224 (the width kept with the other sidebars'), and under the
+   viewer on a phone. It's open the first time in each session, and
+   hidden it stays hidden in the next editor of the session. A tap on
+   the title, a fade's badge, a long press on the band (a phone) or a
+   tap picking the band (a wide screen) shows it where hidden, scrolled
+   to that field. The editor's app bar also gets **Dictionary** and
+   **Metronome**, their sidebars beside the editor (usable during a
+   download, the metronome playing on from the file's screen); whether
+   the editor is wide now goes by the width of its own room, beside
+   those sidebars, not the screen's, and its body is laid out at least
+   360 points wide, cut rather than squeezed beside them on a phone. On
+   a phone, Dictionary, Metronome, Share and About go into a **More**
+   menu (⋮). In English, Spanish and Portuguese. See
+   [video edit](video-edit.md#download-settings),
+   [dictionary](dictionary.md), [metronome](metronome.md) and
+   [keyboard shortcuts](keyboard-shortcuts.md).
+
    **Step 3 of 6: Cam's work in a session of its own.** This step
    changes nothing the user sees, so that a later step can show Cam in
    the editor's view. What Cam does moved out of its screen into

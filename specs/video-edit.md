@@ -26,7 +26,8 @@ It also opens from a link to the file's edit view, and again after a
 reload where it was open over its own file screen (not a take edited
 from a sidebar) ([sharing](sharing.md),
 [navigation](navigation.md#coming-back-where-the-user-was)); **Share**
-in its app bar (a link icon, before About) copies that link.
+in its app bar (a link icon, before About; on a phone in its More menu)
+copies that link.
 
 **The edit is kept, not applied.** It's saved with the video's page as
 it's made (the page's `edit`, see [stored](#how-the-edit-is-stored);
@@ -82,23 +83,71 @@ is uploaded to make it, and no server is involved.
 
 <a id="the-edit-screen"></a>**The edit screen** ([`video_edit_screen.dart`](../tabcam_app/lib/screens/video_edit_screen.dart)),
 with the file's name in its app bar, then **Reset** and **Download**
-([below](#reset-and-download)), then **ⓘ** (it says "Your edit is kept
-as you make it and plays with the video; Download makes a file of
-it."), opening with the video's edit as it was left. It's **a frame
-that doesn't scroll**, as a small video editor's: **the viewer** on
-top; on a phone, under it, the rest (the **Master**, **On the video**
-or the fields one of its chips opened, the song's details) in a list
-that scrolls; and docked at the bottom edge, the whole width, **the
-transport** right over **the lanes** (the ruler, the Take lane, the
-Song lane and the cut's steps). From 840 points wide, or 560 in a
-window under 480 high (a phone on its side), the rest is a panel
-beside the viewer instead (320 points, at most 40% of the width),
-scrolling on its own. On a phone the viewer is as high as the picture
-needs, leaving the list at least 160 points (a tall video takes the
-rest of the room). While the on-screen keyboard is open (the title
-typed in), the transport and the lanes give their room to the viewer
-and the field, and come back as it closes; in a window too short for
-them, the cut's steps go first, then the lanes, then the transport.
+([below](#reset-and-download)), **Download settings** (a tune icon,
+[below](#download-settings)), **Dictionary** and **Metronome** (their
+sidebars, as on the file's screen: [dictionary](dictionary.md),
+[metronome](metronome.md)), **Share**, the keyboard button
+([keyboard shortcuts](keyboard-shortcuts.md)) and **ⓘ** (it says "Your
+edit is kept as you make it and plays with the video; Download makes a
+file of it."); on a screen under 600 points wide (a phone), Dictionary,
+Metronome, Share and ⓘ are in a **More** menu (⋮) at the bar's end, so
+the file's name keeps some room. It opens with the video's edit as it
+was left. It's **a frame that doesn't scroll**, as a small video
+editor's: **the viewer** on top, with the **Download settings** beside
+it or under it; and docked at the bottom edge, the whole width, **the
+transport** right over **the lanes** (the ruler, the Take lane, the Song
+lane and the cut's steps). The dictionary's and the metronome's
+sidebars open at the right of it all, the body's whole height, and
+stay usable during a download. The editor's body is laid out at least
+360 points wide (or the screen's width, where that's narrower): on a
+phone with the dictionary's or the metronome's sidebar open beside it,
+it's cut at the sidebar's edge rather than squeezed. While the
+on-screen keyboard is open (the title typed in), the transport and the
+lanes give their room to the viewer and the field, and come back as it
+closes; in a window too short for them, the cut's steps go first, then
+the lanes, then the transport.
+
+<a id="download-settings"></a>**The Download settings**
+([`download_settings.dart`](../tabcam_app/lib/screens/download_settings.dart)):
+what Download puts in the file and how it sounds, in a sidebar with its
+title ("Download settings") and ✕ at the top, then, scrolling, the
+[**Master**](#master), [**On the video**](#on-the-video) (its chips,
+the fields they open and the tab's style) and [the song's
+details](#the-songs-details). The app bar's **Download settings** button
+(a tune icon, in the primary colour while they show, then "Hide the
+download settings") shows and hides it, as the dictionary's and the
+metronome's buttons do theirs; its ✕ hides it too.
+
+- **Where**: beside the viewer, on its right, where the editor's room is
+  **wide**: 840 points and more, or 560 in a window under 480 high (a
+  phone on its side). The width is the editor's own room's, not the
+  screen's: with the dictionary's or the metronome's sidebar beside the
+  editor, a 900-point window has the settings under the viewer. The
+  height is the window's, which the on-screen keyboard doesn't change:
+  typing the title on a tablet in split view or a foldable's inner
+  screen, the settings stay where they were. Beside it, its default
+  width is 320 points (at most 40% of the room); its left edge is a
+  separator to drag (`SplitHandle`, as the other sidebars') wider or
+  narrower, from 224 points (40% of the narrowest wide room, where the
+  Master's slider keeps some room at the largest text size; the other
+  sidebars go down to 160) up to leaving the viewer 96, a double tap
+  putting the default back, and the width is kept on the device with
+  the other sidebars' ([`SidebarWidths`](../tabcam_app/lib/screens/sidebar_widths.dart),
+  `downloadSettings`). Elsewhere (a phone) it's under the viewer, across
+  it: the viewer as high as the picture needs, leaving the settings at
+  least 160 points, their title included (a tall video takes the rest).
+  Hidden, the viewer takes all the room, and the picture grows into it
+  where it can.
+- **Open the first time** in each session of the app; hidden, it stays
+  hidden for the session, in this editor and the next, until it's shown
+  again (app-wide, `DownloadSettingsState`, not kept on the device).
+- **A tap on the picture that opens one of its fields shows it** where
+  it's hidden, scrolled to that field: a tap on the title, a fade's
+  badge, a long press on the tab's band on a phone, and, on a wide
+  screen, a tap that picks the band (its style is in the settings).
+  Hidden, the fields a chip opened in the chips' place (on a phone)
+  close, as Done does.
+- During a download it takes no taps, as the rest of the editor.
 
 - **The viewer**, at the top: the video as large as its box allows, on
   black (a tap on the black plays or pauses it): the video
@@ -159,7 +208,8 @@ them, the cut's steps go first, then the lanes, then the transport.
     which shows Premium's card, as the chip does.
   While a fade covers the frame shown, a **badge** at the picture's top
   right says so ("Fade in · 3.0 s", "Fade out · 3.0 s"); a tap on it
-  opens the fades' sliders (on a phone, in place of the chips).
+  opens the fades' sliders (on a phone, in place of the chips), showing
+  the [Download settings](#download-settings) where they're hidden.
 - **The transport**, one row 48 points high right over the lanes: at
   its left **the current time** (`0:12.3`, to the tenth of a second)
   over the part kept (`Keep 0:02.5–0:41.0`, in the primary colour once
@@ -363,16 +413,17 @@ them, the cut's steps go first, then the lanes, then the transport.
       `video-edit-<lane>-stereo`, `-left`, `-right`, `-mono`),
       `-balance`, `-balance-level` and `-stereo-note`. The segments
       shrink to fit the popup at large text sizes.
-- **Master**: both lanes go through it, after their own levels
+- <a id="master"></a>**Master**: both lanes go through it, after their own levels
   ("Master · Both sounds together, up to 200%"): **Mute** (a speaker,
   "Mute (Master)"; muted, nothing is heard and the level is kept, as a
   lane's) and a slider from **0% to 200%** in steps of 5% (sliding
   unmutes it), its level beside it (in the primary colour when it's not
-  100% or it's muted, struck through while muted). It's **right above
-  the fades' sliders**: on a wide screen in the **On the video** panel,
-  between the title's fields and the fades; on a phone at the top of
-  the list under the viewer, above **On the video** (whose Fades chip
-  opens the sliders in its place, so it's above them too). Keys `video-edit-master`, `-mute`, `-slider`,
+  100% or it's muted, struck through while muted). It's in the
+  [Download settings](#download-settings), **right above the fades'
+  sliders**: beside the viewer, under **On the video**'s chips, between
+  the title's fields and the fades; under the viewer (a phone), at the
+  top, above **On the video** (whose Fades chip opens the sliders in its
+  place, so it's above them too). Keys `video-edit-master`, `-mute`, `-slider`,
   `-level`. 100% by default; Reset puts it back. **Past 100% only the
   download is louder**: the players can't play a file louder than it
   is (video_player's volume and the browser's media element stop at
@@ -380,10 +431,11 @@ them, the cut's steps go first, then the lanes, then the transport.
   most 100%; Download's file has the full level, each renderer clipping
   what goes past full scale rather than wrapping it
   (**How it's rendered**, under [fades](#fades)).
-- **Under the lanes, On the video**: what's drawn over the video, as
-  chips (on a wide screen, 840 points and more, **On the video** is a
-  panel of its own beside the rest, 320 points wide, the title's fields,
-  the master, the fades' sliders and the tab's style under its chips):
+- <a id="on-the-video"></a>**On the video**, in the [Download
+  settings](#download-settings): what's drawn over the video, as chips
+  (beside the viewer, where the editor is wide, the title's fields, the
+  master, the fades' sliders and the tab's style are under its chips;
+  under it, on a phone, each opens in the chips' place):
   - **Tab** (on a take only; none on a take without a tab: its log has
     none, or, with no log, its capture's tab text has no necklines): on
     by default, for a take whose tab is kept apart from its picture (its
@@ -486,8 +538,10 @@ them, the cut's steps go first, then the lanes, then the transport.
     sound: nothing is sought), and it's kept a moment later, as every
     change. The title's fields and the sliders take each other's place
     on a phone.
-- **Under them, the song's details** (when there's one): its lane
-  and name ("Song · Recording 1"), **‹** and **›**, which nudge it
+- <a id="the-songs-details"></a>**Under them, the song's details** (when there's one): its lane
+  and name ("Song · Recording 1", on one line: in a narrow sidebar at a
+  large text size, the lane's word takes at most half of it, and each is
+  cut short with "…"), **‹** and **›**, which nudge it
   **0.05 s** (a twentieth of a second, the cut's step too; "0.05 s
   earlier", "0.05 s later") earlier or later, with where it starts in words
   between them ("The song starts 0:01.5 after the video": silence
@@ -573,8 +627,8 @@ them, the cut's steps go first, then the lanes, then the transport.
   name it as its lane does: "song" on
   a take, "track" ("The track starts…", "… of the track") on any other
   video. A song shorter than the kept part leaves
-  silence after. They're at the end of the list under the viewer on a
-  phone, and of the panel beside it on a wide screen.
+  silence after. They're at the end of the [Download
+  settings](#download-settings).
 - <a id="reset-and-download"></a>**In the app bar**: **Reset** (on once the edit is anything but the
   defaults: the whole video, its own sound at 100%, no song said (so a
   song Removed, `song: off`, keeps it on), a take's tab on, the title

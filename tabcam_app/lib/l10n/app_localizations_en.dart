@@ -2827,4 +2827,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String videoEditSongDelayKept(String output) {
     return 'Kept for $output: its takes open with it';
   }
+
+  @override
+  String get downloadSettings => 'Download settings';
+
+  @override
+  String get downloadSettingsHide => 'Hide the download settings';
+
+  @override
+  String get videoEditMore => 'More';
 }

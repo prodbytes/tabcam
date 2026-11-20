@@ -2878,4 +2878,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String videoEditSongDelayKept(String output) {
     return 'Guardado para $output: sus tomas se abren con este retraso';
   }
+
+  @override
+  String get downloadSettings => 'Ajustes de descarga';
+
+  @override
+  String get downloadSettingsHide => 'Ocultar los ajustes de descarga';
+
+  @override
+  String get videoEditMore => 'Más';
 }

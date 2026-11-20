@@ -7,8 +7,8 @@ import '../library/library.dart';
 import '../library/meta_names.dart';
 
 /// How wide the user has dragged each sidebar (the play-along player,
-/// the dictionary, the metronome), app-wide: set on one screen, every screen's sidebar
-/// is that wide. Kept on the device (the library's `sidebars` meta
+/// the dictionary, the metronome, the video editor's Download settings),
+/// app-wide: set on one screen, every screen's sidebar is that wide. Kept on the device (the library's `sidebars` meta
 /// file) once [load]ed, so it lasts between sessions; a sidebar not
 /// dragged yet (or put back by a double tap on its edge) has its
 /// default width. It also keeps which sidebars the user turned into a
@@ -28,6 +28,9 @@ class SidebarWidths extends ChangeNotifier {
 
   /// The metronome's.
   static const metronome = 'metronome';
+
+  /// The video editor's Download settings.
+  static const downloadSettings = 'downloadSettings';
 
   /// How tall the dictionary is as a panel under the screen.
   static const dictionaryHeight = 'dictionaryHeight';

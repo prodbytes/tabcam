@@ -8,9 +8,10 @@ nothing leaves it, and no server is involved.
 
 - **Metronome** (a stopwatch icon, `Icons.av_timer`) in the app bar of
   every capture ([event screen](event-screen.md), all its views), every
-  file screen, [Cam](cam.md) and Home's captures
-  ([navigation](navigation.md)), right after **Dictionary**; in the
-  primary colour while its sidebar shows. On a phone's Text view it's in
+  file screen, the [video editor](video-edit.md#the-edit-screen),
+  [Cam](cam.md) and Home's captures ([navigation](navigation.md)), right
+  after **Dictionary**; in the primary colour while its sidebar shows.
+  On a phone's Text view, and in the video editor on a phone, it's in
   the **More** menu (⋮), with Dictionary. The button shows and hides the
   sidebar.
 - The sidebar opens on the right of the screen, beside the content; with
@@ -24,7 +25,8 @@ nothing leaves it, and no server is involved.
   `metronome`).
 - Open on one screen, it's open on the next (app-wide,
   `MetronomeState`), and keeps playing there: from Home into a capture
-  and back. It **stops** when its sidebar is closed (its close button, or
+  and back, or from a video's file screen into its editor and back. It
+  **stops** when its sidebar is closed (its close button, or
   the app bar's button), and when the user leaves for a place that has no
   metronome: Home's Capture and Profile tabs, where its sidebar doesn't
   show (still open, it shows again, stopped, back on Home), or a screen
@@ -33,7 +35,8 @@ nothing leaves it, and no server is involved.
   as left once the other has slid in, so going from one that has it to
   another that has it plays on; a dialog or a menu over it doesn't count.
 - In Cam, closing it gives the keys back to the tab, as the dictionary
-  does.
+  does; in the video editor, back to the preview (the space bar).
+  During a download in the editor it stays usable.
 
 ## The sidebar
 
