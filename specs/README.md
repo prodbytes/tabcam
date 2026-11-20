@@ -108,13 +108,15 @@ review notes ([app stores](app-stores.md)).
   it, shown and hidden by a tune button in the app bar; and docked at
   the bottom the transport (To the start, Play /
   Pause, To the end; the space bar, Home, End and the arrows) right
-  over the lanes, on one time axis (a click on it moves the playhead,
-  and it plays from there, anywhere in the video) in two sound lanes,
-  mixed: the Take lane
-  (the video, trimmed by its grips, its own sound's volume and Mute)
-  and the Song lane (one of the capture's recordings, videos or takes,
-  or a sound file, added to them, placed along the video, with its own
-  volume and Mute; both sounds drawn in their lanes, a zoom to match
+  over the rows, on one time axis (a click on it moves the playhead,
+  and it plays from there, anywhere in the video), two sound lanes
+  mixed: the video opens as its only row, the Take row (the video,
+  trimmed by its grips, its own sound's volume and Mute; its name, or
+  the Download settings, add a song), and a Song row comes under it
+  once there's a song (one of the capture's recordings, videos or takes,
+  or a sound file, added to them, placed along the video, or a take's
+  own lined up, with its own
+  volume and Mute; both sounds drawn in their rows, a zoom to match
   them by eye, the song's delay to the millisecond, and Auto-align,
   which lines the song up with the take by their sounds, or by the
   rhythm with headphones); on the video, a take's tab drawn over it (the Tab

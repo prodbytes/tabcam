@@ -3008,11 +3008,11 @@
   },
   "videoEditAddSong": "Add a song",
   "@videoEditAddSong": {
-    "description": "Video edit: the empty song lane of a take, to pick a song"
+    "description": "Video edit, a take with no song: in the menu its row's name opens, and in the Download settings; picks a song, which then gets a row of its own"
   },
   "videoEditAddTrack": "Add a track",
   "@videoEditAddTrack": {
-    "description": "Video edit: the empty track lane of a video, to pick a sound"
+    "description": "Video edit, a video with no track: in the menu its row's name opens, and in the Download settings; picks a sound, which then gets a row of its own"
   },
   "videoEditRemoveSong": "Remove",
   "@videoEditRemoveSong": {

@@ -3700,13 +3700,13 @@ abstract class AppLocalizations {
   /// **'Track'**
   String get videoEditLaneTrack;
 
-  /// Video edit: the empty song lane of a take, to pick a song
+  /// Video edit, a take with no song: in the menu its row's name opens, and in the Download settings; picks a song, which then gets a row of its own
   ///
   /// In en, this message translates to:
   /// **'Add a song'**
   String get videoEditAddSong;
 
-  /// Video edit: the empty track lane of a video, to pick a sound
+  /// Video edit, a video with no track: in the menu its row's name opens, and in the Download settings; picks a sound, which then gets a row of its own
   ///
   /// In en, this message translates to:
   /// **'Add a track'**
