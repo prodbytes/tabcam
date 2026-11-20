@@ -781,5 +781,11 @@
   "videoEditMainAdd": "Tocar junto con una canción…",
   "videoEditMainPlay": "Reproducir la canción",
   "videoEditMainPause": "Pausar la canción",
-  "videoEditMainBar": "La canción con la que tocas: tócala o arrástrala para ir ahí"
+  "videoEditMainBar": "La canción con la que tocas: tócala o arrástrala para ir ahí",
+  "videoEditRecBar": "La toma que se graba: dónde suena la canción en ella",
+  "videoEditRecTake": "La toma: dónde acompañó a la canción",
+  "videoEditRecUnplaced": "La toma: no fue con esta canción",
+  "videoEditRecPlay": "Reproducir la toma",
+  "videoEditRecStop": "Detener la toma",
+  "videoEditRecEdit": "Editar la toma"
 }

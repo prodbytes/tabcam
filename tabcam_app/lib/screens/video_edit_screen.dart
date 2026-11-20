@@ -502,28 +502,70 @@ class _StudioViewState extends State<StudioView> {
   /// playhead is on it ([_axisAt]), what moves the playhead
   /// ([_axisMoves]), whether it plays ([_axisPlaying]), and a seek along
   /// it ([_seekAxis]). The opened video's; with the camera in its place,
-  /// the song playing along's ([_alongTrack]; none for a link in a
-  /// frame).
+  /// the song playing along's ([_alongTrack]), or where that has no time
+  /// (none loaded, a link in a frame, a file still loading), the take's
+  /// clock ([_takeClock]; none while there's no take to show).
   Duration get _axisLength => switch (_alongTrack) {
-    final track? => track.media?.value.duration ?? Duration.zero,
+    final track? when _timed(track) => track.media!.value.duration,
+    _? => _takeClock ?? Duration.zero,
     null => _duration,
   };
   Duration get _axisAt => switch (_alongTrack) {
-    final track? => track.media?.value.position ?? Duration.zero,
+    final track? when _timed(track) => track.media!.value.position,
+    // The take's clock: where the take recording is.
+    _? when _cam != null && _takeShowing(_cam!) => _cam!.elapsed.value,
+    _? => Duration.zero,
     null => _at,
   };
-  Listenable get _axisMoves =>
-      _alongTrack ?? Listenable.merge([_video, _headAt]);
-  bool get _axisPlaying =>
-      _alongTrack?.playing ?? _video?.value.isPlaying ?? false;
-  void _seekAxis(Duration at, {bool exact = true}) => switch (_alongTrack) {
-    final track? => _seekAlong(track, at, exact: exact),
-    null => _seek(at, exact: exact),
+  Listenable get _axisMoves => switch (_alongTrack) {
+    final track? => Listenable.merge([track, ?_cam?.elapsed]),
+    null => Listenable.merge([_video, _headAt]),
   };
+  bool get _axisPlaying => switch (_alongTrack) {
+    final track? when _timed(track) => track.playing,
+    _? => _cam?.recording ?? false,
+    null => _video?.value.isPlaying ?? false,
+  };
+  void _seekAxis(Duration at, {bool exact = true}) {
+    final track = _alongTrack;
+    if (track == null) return _seek(at, exact: exact);
+    // On the take's clock, there's nothing to go to.
+    if (_timed(track)) _seekAlong(track, at, exact: exact);
+  }
 
   /// What plays along, with the camera in the main row's place: the main
   /// row's ([_CamRows._alongRow]).
   BackingTrack? get _alongTrack => _camera ? _along?.track : null;
+
+  /// Whether what plays along has a time to go by: a file, loaded.
+  static bool _timed(BackingTrack track) =>
+      (track.media?.value.duration ?? Duration.zero) > Duration.zero;
+
+  /// The time axis with the camera in the main row's place and nothing in
+  /// it with a time ([_timed]): the take's clock, while a take records
+  /// (and is saved), and after it as long as the take recorded here
+  /// ([CamSession.lastTake]), rounded up to the next [_takeClockStep], so
+  /// the ruler moves on by itself in steps; null: no take to show (one
+  /// from before Cam opened has no length known).
+  Duration? get _takeClock {
+    final cam = _cam;
+    if (cam == null) return null;
+    final clock = _takeShowing(cam) ? cam.elapsed.value : cam.lastTake?.length;
+    if (clock == null) return null;
+    final step = _takeClockStep.inMilliseconds;
+    return Duration(
+      milliseconds: max(1, (clock.inMilliseconds / step).ceil()) * step,
+    );
+  }
+
+  /// The take's clock is rounded up to this ([_takeClock]).
+  static const _takeClockStep = Duration(seconds: 30);
+
+  /// Whether Cam's row shows the take recording ([_CamRows._recRow]): while
+  /// it records, while it's saved, and while the next starts after it (the
+  /// / and . keys), so the row doesn't flicker to the take before.
+  static bool _takeShowing(CamSession cam) =>
+      cam.recording || cam.saving || cam.nextTaking;
 
   /// The song playing along goes to [at] ([BackingTrack.seek]): at once
   /// ([exact]), or, while its row or the ruler is dragged, at most every
@@ -729,18 +771,24 @@ class _StudioViewState extends State<StudioView> {
   /// window, a phone on its side, too narrow for the Download settings
   /// beside the viewer, where under it they'd leave the viewer next to
   /// nothing), it's hidden meanwhile, and shown again with the camera
-  /// ([_alongHidden]).
-  Future<void> _editTake(EventPage take) async {
+  /// ([_alongHidden]). The take is in Cam's capture, unless [eventId] says
+  /// another (the copy a take recorded went to, [CamSession.lastTake]).
+  /// What plays along pauses first, so only the editor's preview sounds
+  /// (the sidebar's Edit pauses it too; the take row's Edit comes here
+  /// straight, right after Stop, with the song playing on).
+  Future<void> _editTake(EventPage take, {String? eventId}) async {
     final cam = _cam;
-    final event = cam == null ? null : _library.byId(cam.eventId);
+    final event = cam == null ? null : _library.byId(eventId ?? cam.eventId);
     if (event == null || !PlayAlongSidebar.mayEdit(event, take) || _busy) {
       return;
     }
+    final along = cam!.along;
+    await along.track.pause();
+    if (!mounted || _busy) return;
     if (_inEdit) {
       await _switchMain(take, eventId: event.id);
       return;
     }
-    final along = cam!.along;
     final screen = MediaQuery.sizeOf(context);
     final room = _boxWidth ?? screen.width;
     if (along.open &&
@@ -3069,9 +3117,15 @@ class _StudioViewState extends State<StudioView> {
           phrase = cam.tabShown && room >= phraseHeight;
           final along = cam.along;
           // The main row follows what plays along, and the capture's files
-          // (one arriving can play).
+          // (one arriving can play); the take's row, the take recording
+          // (only the dock is built again for it, never the camera).
           dock = ListenableBuilder(
-            listenable: Listenable.merge([along, along.track, _library]),
+            listenable: Listenable.merge([
+              along,
+              along.track,
+              _library,
+              cam.elapsed,
+            ]),
             builder: (context, _) => _camDock(
               l10n,
               cam,
@@ -3191,13 +3245,14 @@ class _StudioViewState extends State<StudioView> {
   }
 
   /// Cam's dock, under the camera: Cam's controls ([CamStrip]: Rec, Play,
-  /// Tab, Auto-pass), and under them the ruler and the main row
-  /// ([_rows]: what plays along), unless the camera would keep less than
-  /// [_cameraLeast] of the [room] left by the controls and the phrase
-  /// (the phrase is placed first), the bars would be narrower than
-  /// [_alongBarLeast] in the view's [width] (a phone beside the
-  /// play-along sidebar, whose player shows the same song), or the
-  /// on-screen keyboard is open: the rows give way first.
+  /// Tab, Auto-pass), and under them the ruler and the rows ([_rows]: what
+  /// plays along, then the take's), as many of them, the first first, as
+  /// leave the camera at least [_cameraLeast] of the [room] left by the
+  /// controls and the phrase (the phrase is placed first); none where the
+  /// bars would be narrower than [_alongBarLeast] in the view's [width] (a
+  /// phone beside the play-along sidebar, whose player shows the same
+  /// song), or while the on-screen keyboard is open: the rows give way
+  /// first.
   Widget _camDock(
     AppLocalizations l10n,
     CamSession cam, {
@@ -3206,12 +3261,15 @@ class _StudioViewState extends State<StudioView> {
     required bool keyboard,
   }) {
     final theme = Theme.of(context);
-    final rows = _rows(l10n);
-    final showRows =
-        rows.isNotEmpty &&
-        !keyboard &&
-        width - _dockPad.horizontal - _lead >= _alongBarLeast &&
-        room - _dockHeightFor(rows.length) >= _cameraLeast;
+    var rows = _rows(l10n);
+    if (keyboard || width - _dockPad.horizontal - _lead < _alongBarLeast) {
+      rows = const [];
+    }
+    while (rows.isNotEmpty &&
+        room - _dockHeightFor(rows.length) < _cameraLeast) {
+      rows = rows.sublist(0, rows.length - 1);
+    }
+    final showRows = rows.isNotEmpty;
     return Material(
       color: theme.colorScheme.surfaceContainerLow,
       child: SafeArea(
@@ -4446,9 +4504,11 @@ class _StudioViewState extends State<StudioView> {
   /// picked, a take's lined up as it played while recording, or one on its
   /// way, [_songComing]), the Song row ([_songRow]). With the camera in
   /// the main row's place, the main row is what plays along
-  /// ([_CamRows._alongRow]; none where nothing in the capture plays).
-  List<_Row> _rows(AppLocalizations l10n) => switch (_camera ? _along : null) {
-    final along? => [?_alongRow(l10n, along)],
+  /// ([_CamRows._alongRow]; none where nothing in the capture plays), and
+  /// under it the take's ([_CamRows._recRow]: the take recording, or the
+  /// last one; none before the first).
+  List<_Row> _rows(AppLocalizations l10n) => switch (_camera ? _cam : null) {
+    final cam? => [?_alongRow(l10n, cam.along), ?_recRow(l10n, cam)],
     null => [_mainRow(l10n), if (_hasSong || _songComing) _songRow(l10n)],
   };
 

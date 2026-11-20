@@ -590,6 +590,22 @@ class SongSegment {
   int get hashCode => Object.hash(at, to, page, from, speed);
 }
 
+/// Where song [page] played in a take, in the song's own time (ms), from
+/// the take's [segments] ([TakeLog.song], [SongNotes.soFar]): for each
+/// segment of it, in order, from where it started to where it got to
+/// (`from` to `from + (to - at) * speed`). A pause leaves a gap only where
+/// the song moved meanwhile; played again from a part played before (its
+/// section, Repeat), the part has a span again. Another song's segments
+/// are left out.
+List<({int from, int to})> songSpansOn(
+  Iterable<SongSegment> segments,
+  String page,
+) => [
+  for (final s in segments)
+    if (s.page == page && s.to > s.at)
+      (from: s.from, to: s.from + ((s.to - s.at) * s.speed).round()),
+];
+
 /// Where the song played along really is in a take ([TakeLog.sync]),
 /// measured after the take was saved by finding the song's sound in the
 /// take's own (the microphone hears the speaker): what the log's line-up
@@ -986,6 +1002,24 @@ class SongNotes {
   List<SongSegment> finish(int t) {
     _close(t);
     return List.unmodifiable(_segments);
+  }
+
+  /// The segments noted so far, the one playing as if it ended at [t] (ms
+  /// on the take's clock): what the take recording shows of its song. The
+  /// notes go on as they were (a copy; the one playing stays open).
+  List<SongSegment> soFar(int t) {
+    final open = _open;
+    return List.unmodifiable([
+      ..._segments,
+      if (open != null && t > open.at)
+        SongSegment(
+          at: open.at,
+          to: t,
+          page: open.page,
+          from: open.from,
+          speed: open.speed,
+        ),
+    ]);
   }
 
   void _close(int t) {

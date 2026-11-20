@@ -781,5 +781,11 @@
   "videoEditMainAdd": "Tocar junto com uma música…",
   "videoEditMainPlay": "Tocar a música",
   "videoEditMainPause": "Pausar a música",
-  "videoEditMainBar": "A música com que você toca: toque ou arraste para ir até lá"
+  "videoEditMainBar": "A música com que você toca: toque ou arraste para ir até lá",
+  "videoEditRecBar": "O take que está sendo gravado: onde a música toca nele",
+  "videoEditRecTake": "O take: onde ele acompanhou a música",
+  "videoEditRecUnplaced": "O take: não foi com esta música",
+  "videoEditRecPlay": "Tocar o take",
+  "videoEditRecStop": "Parar o take",
+  "videoEditRecEdit": "Editar o take"
 }

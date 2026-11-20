@@ -30,10 +30,12 @@ the view shows it with the widgets in
   body's whole height; and docked at the bottom, the viewer's width, on
   the theme's surface colour, **Cam's controls** (`CamStrip`: Rec with
   its microphone's menu and level meter, Play, Tab and Auto-pass) over
-  **the ruler and the main row** ([below](#the-main-row)). The controls
+  **the ruler and the rows**: the main row ([below](#the-main-row)) and
+  under it the take's ([below](#the-takes-row)). The controls
   always show, and the phrase wherever it fits, the camera taking the
-  room that's left, however little; the rows come after them, only where
-  the camera keeps at least 160 points under the phrase, and not while
+  room that's left, however little; the rows come after them, as many
+  as leave the camera at least 160 points under the phrase (the main
+  row first, then the take's), and none while
   the on-screen keyboard is open (the dictionary's search typed in). So
   in a window too short for it all the rows give way first, and the
   phrase only in one too short for the phrase itself (six strings at the
@@ -145,7 +147,9 @@ the view shows it with the widgets in
   the same minute share the name, nothing more is added (until
   2026-11-17 the seconds, then a number, were: "Take 14:32:07", "Take
   14:32:07 (2)"; takes named so keep their names). Takes saved before
-  were named "Take 1", "Take 2"… and keep their names. A message says
+  were named "Take 1", "Take 2"… and keep their names. While it
+  records, and once it's added, the [take's row](#the-takes-row) under
+  the main row shows it. A message says
   the take was added. It
   is marked as a take (`take` on its page, `EventPage.take`), which
   stays when it's renamed, edited, cloned or published, so the
@@ -387,7 +391,9 @@ the view shows it with the widgets in
   last of the user's own, on a capture shared to read: their
   contribution's), until **Stop** or its end: the one just recorded, or,
   when Cam opens, the last one recorded before (on this device or
-  another); deleted, the one before it. Only a take this device can
+  another); deleted, the one before it. It's the take the
+  [take's row](#the-takes-row) shows, whose **Play the take** is this
+  Play. Only a take this device can
   play: on iOS a WebM (a take recorded in Chrome or Firefox) is passed
   over for the last one before it that isn't, and with none Play is
   greyed (`takePlaysHere`). A take from another device may still be
@@ -608,6 +614,52 @@ song…**, which opens the sidebar with its first file loaded, paused
 (`PlayAlong.show`); with nothing in the capture that plays (only a PDF
 to follow, say) there's no row. In English, Spanish and Portuguese.
 
+<a id="the-takes-row"></a>**The take's row**, under the main row (the
+main row first, as the opened one is in the editor), is the take, in
+`StudioView`'s `_recRow`
+([`video_edit_cam.dart`](../tabcam_app/lib/screens/video_edit_cam.dart)):
+- **While a take records** (from Rec, / or ., and on while it's saved
+  and the next one starts after / and ., so the row doesn't go back to
+  the take before meanwhile), the row is red. Its header says how long
+  the take has recorded, "● 0:12" (`CamSession.elapsed`, told every
+  quarter of a second while a take records and only then; only the dock
+  is built again for it, never the camera's preview). Its bar, on the
+  ruler's axis (the main row's song), has a block for each part of the
+  song that has played in the take so far, as the take's log notes it
+  (`SongNotes.soFar`, `songSpansOn` in
+  [`take_log.dart`](../tabcam_app/lib/capture/take_log.dart)): it grows
+  as the song plays; paused, it stops growing while the take goes on;
+  moved on meanwhile (a tap on the main row, »), the song plays on in a
+  block of its own after a gap; started over (its section, Repeat, 0),
+  a block over the part played before, each block with a line where it
+  starts. With nothing with a time in the main row (no file
+  loaded, or nothing in the capture to play, a link in a frame, a file
+  still loading), the ruler is the take's clock, rounded up to the next
+  30 seconds (0:30, then 1:00, and so on), the take one block from its
+  start and the playhead at its end.
+- **After it** the row is the take saved: its name in its header ("Take
+  10:01", or as it's renamed since), which opens **Play the take**
+  (Cam's Play: the take in the camera's place, its phrases turning as
+  they did; **Stop the take** while it plays) and **Edit the take** (the
+  take in the camera's place, as the sidebar's
+  [Edit](#editing-a-take-from-the-sidebar) opens it; Back puts the
+  camera back and the row with it). Its bar, in the theme's secondary
+  colour, has its blocks where it played along the main row's song, from
+  its log (`TakeLog.song`). Recorded with nothing with a time in the
+  main row, it stays on the take's clock, as long as it recorded. One
+  that didn't play along the song in the main row (another song chosen
+  since, the take itself chosen there, none) is its name on a dashed
+  bar, unplaced.
+- **Opened again**, Cam's row is the capture's last take (the one Play
+  plays back), placed the same way from its log, or unplaced; one from
+  before Cam opened has no length known, so with nothing with a time in
+  the main row it's unplaced too.
+- The next take replaces it. There's none before the first take, nor
+  in the Premium preview. In English, Spanish and Portuguese.
+
+The row is only what's shown: a take is the same page as before, saved,
+logged and lined up the same way ([What a take keeps](#what-a-take-keeps)).
+
 <a id="deleting-from-the-sidebar"></a>**Deleting from the sidebar**: each
 file in it (the recordings, videos and links, Cam's takes among them,
 and the PDFs and pages to [follow](#following-a-pdf); not the text tab)
@@ -648,7 +700,11 @@ own Delete deletes it and goes back to the list.
 sidebar**: each of Cam's takes in it (under **Takes**; not the songs,
 videos that aren't takes, links, PDFs or pages) has **Edit** (scissors,
 as the file screen's; its tooltip "Edit <name>") right before its
-Delete. What played along pauses first. **In Cam** it opens the
+Delete; the [take's row](#the-takes-row)'s **Edit the take** is the
+same for the last take. Either pauses what played along first (right
+after Stop the song plays on), so only the editor's preview sounds
+([`_editTake`](../tabcam_app/lib/screens/video_edit_screen.dart)).
+**In Cam** it opens the
 [video editor](video-edit.md#in-cam) on that take **in Cam's own view**,
 in the camera's place, with no screen pushed over Cam
 ([Cam's view](#cams-view)): the take in the viewer with its tab, title

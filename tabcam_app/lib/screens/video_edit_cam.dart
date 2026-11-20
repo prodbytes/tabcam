@@ -139,6 +139,280 @@ extension _CamRows on _StudioViewState {
       ),
     );
   }
+
+  /// Cam's take row, under the main row ("let the opened one be first"):
+  /// - While a take records (and while it's saved, or the next starts
+  ///   after it, [_StudioViewState._takeShowing]): a red bar with, as
+  ///   blocks along it, the parts of the main row's song that have played
+  ///   in the take so far ([songSpansOn] of [CamSession.songSoFar]: a
+  ///   pause in which the song moved leaves a gap, the song played again
+  ///   from a part played before adds a block over it), and in its header
+  ///   how long it has recorded ("● 0:12", [CamSession.elapsed]). With
+  ///   nothing with a time in the main row, the take itself, on the
+  ///   take's clock ([_StudioViewState._takeClock]).
+  /// - After it, the take ([CamSession.lastTake]; as Cam opens, the
+  ///   capture's last): its name, which opens **Play the take** (Cam's
+  ///   Play) and **Edit the take** (in the camera's place,
+  ///   [_StudioViewState._editTake]), and its bar placed where it played
+  ///   along the main row's song, as its log says ([TakeLog.song]); one
+  ///   recorded here with nothing with a time in the main row, on the
+  ///   take's clock; else (another song, none, or one from before Cam
+  ///   opened with no song in the main row) a dashed bar, unplaced.
+  ///
+  /// The next take replaces it. None before the first take.
+  _Row? _recRow(AppLocalizations l10n, CamSession cam) {
+    final track = cam.along.track;
+    final main = _StudioViewState._timed(track) ? track.page?.id : null;
+    final length = _axisLength;
+    if (_StudioViewState._takeShowing(cam)) {
+      final elapsed = cam.elapsed.value;
+      return (
+        lane: 'rec',
+        header: _LaneHeader(
+          width: _nameWidth,
+          wide: _wide,
+          menu: _RecTime(elapsed: elapsed, wide: _wide),
+        ),
+        bar: _RecBar(
+          key: const Key('video-edit-rec-bar'),
+          length: length,
+          spans: main == null
+              ? [(from: 0, to: elapsed.inMilliseconds)]
+              : songSpansOn(cam.songSoFar, main),
+          recording: true,
+          label: l10n.videoEditRecBar,
+        ),
+      );
+    }
+    final last = cam.lastTake;
+    if (last == null) return null;
+    // As it is in the capture now (renamed since, say).
+    final event = _library.byId(last.eventId);
+    final take =
+        event?.pages.where((p) => p.id == last.page.id).firstOrNull ??
+        last.page;
+    final name = take.title ?? l10n.videoEditLaneTake;
+    final spans = switch ((main, last.length)) {
+      (final main?, _) => songSpansOn(take.takeLog?.song ?? const [], main),
+      (null, final recorded?) => [(from: 0, to: recorded.inMilliseconds)],
+      (null, null) => const <({int from, int to})>[],
+    };
+    final playing = cam.player != null || cam.opening;
+    final canPlay =
+        cam.take != null && !cam.recording && !cam.saving && !cam.nextTaking;
+    final canEdit =
+        cam.canDelete &&
+        event != null &&
+        PlayAlongSidebar.mayEdit(event, take) &&
+        !_busy;
+    return (
+      lane: 'rec',
+      header: _LaneHeader(
+        width: _nameWidth,
+        wide: _wide,
+        menu: _nameMenu('rec', name, [
+          MenuItemButton(
+            key: const Key('video-edit-rec-play'),
+            leadingIcon: Icon(playing ? Icons.stop : Icons.play_arrow),
+            onPressed: canPlay
+                ? () {
+                    _keys.requestFocus();
+                    unawaited(cam.play());
+                  }
+                : null,
+            child: Text(
+              playing ? l10n.videoEditRecStop : l10n.videoEditRecPlay,
+            ),
+          ),
+          MenuItemButton(
+            key: const Key('video-edit-rec-edit'),
+            leadingIcon: const Icon(Icons.content_cut),
+            onPressed: canEdit
+                ? () => unawaited(_editTake(take, eventId: last.eventId))
+                : null,
+            child: Text(l10n.videoEditRecEdit),
+          ),
+        ]),
+      ),
+      bar: spans.isEmpty || length <= Duration.zero
+          ? _RecUnplaced(name: name, label: l10n.videoEditRecUnplaced)
+          : _RecBar(
+              key: const Key('video-edit-rec-take'),
+              length: length,
+              spans: spans,
+              recording: false,
+              label: l10n.videoEditRecTake,
+            ),
+    );
+  }
+}
+
+/// How long the take recording has recorded, in its row's header, in red
+/// after Rec's dot: "● 0:12" (the dot an icon, as Rec's, so no font has to
+/// have it).
+class _RecTime extends StatelessWidget {
+  const _RecTime({required this.elapsed, required this.wide});
+
+  final Duration elapsed;
+
+  /// Whether the editor is wide ([_StudioViewState._wide]).
+  final bool wide;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final style =
+        (wide ? theme.textTheme.labelMedium : theme.textTheme.labelSmall)
+            ?.copyWith(
+              color: Colors.red,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            );
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 4),
+        child: MediaQuery.withClampedTextScaling(
+          maxScaleFactor: 1.3,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.fiber_manual_record,
+                key: Key('video-edit-rec-dot'),
+                size: 10,
+                color: Colors.red,
+              ),
+              const SizedBox(width: 3),
+              Flexible(
+                child: Text(
+                  _StudioViewState._rulerTime(elapsed),
+                  key: const Key('video-edit-rec-time'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: style,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The take's row's bar ([_CamRows._recRow]) on the time axis ([length]
+/// across its width): the take's [spans] (ms along the axis: where the
+/// song played in it, or the take itself on its clock) as blocks, keyed
+/// `video-edit-rec-block-<i>`, each with a line where it starts (one
+/// played again over a part shows where it started over). Red while the
+/// take records ([recording]), in the secondary colour once it's a take.
+class _RecBar extends StatelessWidget {
+  const _RecBar({
+    super.key,
+    required this.length,
+    required this.spans,
+    required this.recording,
+    required this.label,
+  });
+
+  final Duration length;
+  final List<({int from, int to})> spans;
+  final bool recording;
+
+  /// What it shows, for screen readers.
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final (back, fill, edge) = recording
+        ? (
+            Colors.red.withValues(alpha: 0.12),
+            Colors.red.withValues(alpha: 0.45),
+            Colors.red,
+          )
+        : (
+            scheme.surfaceContainerHighest,
+            scheme.secondary.withValues(alpha: 0.45),
+            scheme.secondary,
+          );
+    return Semantics(
+      label: label,
+      child: SizedBox(
+        height: _SongBar.height,
+        child: LayoutBuilder(
+          builder: (context, box) {
+            final width = box.maxWidth;
+            final ms = length.inMilliseconds;
+            double x(int at) => ms <= 0 ? 0 : (at / ms * width).clamp(0, width);
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Stack(
+                children: [
+                  Positioned.fill(child: ColoredBox(color: back)),
+                  if (ms > 0)
+                    for (final (i, span) in spans.indexed)
+                      Positioned(
+                        key: Key('video-edit-rec-block-$i'),
+                        left: x(span.from),
+                        width: max(2.0, x(span.to) - x(span.from)),
+                        top: 0,
+                        bottom: 0,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: fill,
+                            border: Border(
+                              left: BorderSide(color: edge, width: 2),
+                            ),
+                          ),
+                        ),
+                      ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// The take's row's bar for a take that can't be placed on the time axis
+/// (it didn't play along the main row's song, or there's none): its
+/// [name] on a dashed bar, as a link's in the main row.
+class _RecUnplaced extends StatelessWidget {
+  const _RecUnplaced({required this.name, required this.label});
+
+  final String name;
+
+  /// What it says, for screen readers.
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      label: label,
+      child: CustomPaint(
+        key: const Key('video-edit-rec-unplaced'),
+        painter: _Dashed(scheme.outline),
+        child: SizedBox(
+          height: _SongBar.height,
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// The file playing along in Cam's main row ([BackingTrack]): its name
