@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
@@ -40,6 +41,9 @@ class _HeldEditor extends FakeEditor {
 }
 
 void main() {
+  // A tap that would land on something else (under the dock, off the
+  // list) fails the test rather than warning.
+  WidgetController.hitTestWarningShouldBeFatal = true;
   late VolumePlatform platform;
   setUp(() {
     VideoPlayerPlatform.instance = platform = VolumePlatform();
@@ -69,8 +73,12 @@ void main() {
   }
 
   /// A capture named "Blue Riff" with one of Cam's takes (k0), its tab
-  /// kept apart from its picture, and a recording (k1).
-  Future<(Library, String)> capture(WidgetTester tester) async {
+  /// kept apart from its picture, and a recording (k1): with [song], the
+  /// take played along with it, lined up from the take's log.
+  Future<(Library, String)> capture(
+    WidgetTester tester, {
+    bool song = false,
+  }) async {
     final library = Library(PlatformEventStore(), null, (_) async => null);
     late String id;
     await tester.runAsync(() async {
@@ -85,6 +93,10 @@ void main() {
           take: true,
           takeLog: TakeLog(
             burned: false,
+            song: [
+              if (song)
+                const SongSegment(at: 1000, to: 31000, page: 'k1', from: 0),
+            ],
             tab: TakeTab(
               lines: const [_riffA, _riffB],
               marks: const [(0, 0), (4210, 1), (8380, 0)],
@@ -282,7 +294,7 @@ void main() {
     // overflows at either end.
     await tester.drag(split, const Offset(600, 0));
     await frames(tester);
-    expect(width(), SidebarWidths.min);
+    expect(width(), DownloadSettingsBeside.minWidth);
     expect(tester.takeException(), isNull);
     await tester.drag(split, const Offset(-2000, 0));
     await frames(tester);
@@ -309,6 +321,48 @@ void main() {
     expect(width(), 320);
     expect(SidebarWidths.instance.of(SidebarWidths.downloadSettings), isNull);
   });
+
+  for (final locale in const [Locale('en'), Locale('es'), Locale('pt')]) {
+    testWidgets('dragged to their least at the largest text, all of them '
+        'fit: the Master, On the video, the fades, the tab\'s style and the '
+        'song\'s details: ${locale.languageCode}', (tester) async {
+      sized(tester, const Size(1280, 800), text: 2);
+      final (library, id) = await capture(tester, song: true);
+      await tester.pumpWidget(editScreen(library, id, locale: locale));
+      await settle(tester);
+      expect(tester.takeException(), isNull);
+      await tester.drag(split, const Offset(600, 0));
+      await frames(tester);
+      expect(tester.getSize(settings).width, DownloadSettingsBeside.minWidth);
+      expect(tester.takeException(), isNull);
+      // Down the whole list, each part laid out in turn.
+      final list = tester
+          .state<ScrollableState>(
+            find
+                .descendant(of: settings, matching: find.byType(Scrollable))
+                .first,
+          )
+          .position;
+      var seen = <String>{};
+      for (var at = 0.0; ; at += 100) {
+        list.jumpTo(min(at, list.maxScrollExtent));
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(tester.takeException(), isNull, reason: 'at $at');
+        seen = {
+          ...seen,
+          for (final key in [
+            'video-edit-master',
+            'video-edit-fade-fields',
+            'video-edit-tab-style',
+            'video-edit-song-details',
+          ])
+            if (find.byKey(Key(key)).evaluate().isNotEmpty) key,
+        };
+        if (at >= list.maxScrollExtent) break;
+      }
+      expect(seen, hasLength(4));
+    });
+  }
 
   testWidgets('hidden, they stay hidden in the next editor of the session, '
       'until shown again', (tester) async {
@@ -361,8 +415,15 @@ void main() {
       expect(settings, findsOneWidget);
       expect(find.byKey(const Key('video-edit-title-fields')), findsOneWidget);
       expect(inView(tester, 'video-edit-title-fields'), isTrue);
-      await tester.tap(find.byKey(const Key('video-edit-title-done')));
+      // Done is under the fields, below the list's edge on a phone.
+      final done = find.byKey(const Key('video-edit-title-done'));
+      await tester.ensureVisible(done);
+      await frames(tester);
+      await tester.tap(done);
       await settle(tester);
+      expect(find.byKey(const Key('video-edit-title-fields')), findsNothing);
+      expect(find.byKey(const Key('video-edit-on-video')), findsOneWidget);
+      expect(settings, findsOneWidget);
 
       await hide(tester);
       await tester.longPressAt(onBand(tester));
@@ -512,6 +573,45 @@ void main() {
     await tester.tap(find.byKey(const Key('metronome')));
     await frames(tester);
     expect(find.byKey(const Key('metronome-sidebar')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a window 560 to 839 wide is wide only when it\'s short, '
+      'the on-screen keyboard aside: typing the title, it stays as it '
+      'was', (tester) async {
+    await open(tester, const Size(700, 800));
+    final inspector = find.byKey(const Key('video-edit-inspector'));
+    final side = find.byKey(const Key('video-edit-side'));
+    expect(inspector, findsOneWidget);
+    // The title tapped on the picture: its fields in place of the chips.
+    final box = tester.getRect(preview);
+    await tester.tapAt(
+      box.topLeft + Offset(box.shortestSide * 0.05, box.shortestSide * 0.05),
+    );
+    await settle(tester);
+    final fields = find.byKey(const Key('video-edit-title-fields'));
+    expect(fields, findsOneWidget);
+    // The keyboard up: the body is 344 high, the window still 800.
+    tester.view.viewInsets = const FakeViewPadding(bottom: 400);
+    await frames(tester);
+    expect(inspector, findsOneWidget);
+    expect(side, findsNothing);
+    expect(fields, findsOneWidget);
+    expect(tester.takeException(), isNull);
+    tester.view.viewInsets = FakeViewPadding.zero;
+    await frames(tester);
+    expect(inspector, findsOneWidget);
+    expect(fields, findsOneWidget);
+
+    // A window 520 high (its body 464) isn't short; one 440 high is.
+    tester.view.physicalSize = const Size(700, 520);
+    await frames(tester);
+    expect(inspector, findsOneWidget);
+    expect(side, findsNothing);
+    tester.view.physicalSize = const Size(700, 440);
+    await frames(tester);
+    expect(side, findsOneWidget);
+    expect(inspector, findsNothing);
     expect(tester.takeException(), isNull);
   });
 

@@ -90,9 +90,10 @@ class DownloadSettingsButton extends StatelessWidget {
 /// [viewer], with the Download settings ([panel], under their title and
 /// ✕, [DownloadSettingsPanel]) while they show ([DownloadSettingsState]):
 /// [beside] it, on its right, their left edge a separator to drag
-/// ([SplitHandle]) to make them wider or narrower, kept with the other
-/// sidebars' widths ([SidebarWidths.downloadSettings]), a double tap
-/// putting the default back; or under it, the viewer [viewerHeight] high
+/// ([SplitHandle]) to make them wider or narrower (never narrower than
+/// [minWidth]), kept with the other sidebars' widths
+/// ([SidebarWidths.downloadSettings]), a double tap putting the default
+/// back; or under it, the viewer [viewerHeight] high
 /// and the settings taking the rest. Hidden, or not [enabled], the viewer
 /// takes all the room. One Flex either way, the viewer first, so showing,
 /// hiding or turning them keeps the viewer (the video's picture) as it is.
@@ -127,6 +128,12 @@ class DownloadSettingsBeside extends StatelessWidget {
   /// The narrowest the viewer gets when they're dragged wider.
   static const minViewer = 96.0;
 
+  /// The narrowest they're dragged: their default in the narrowest wide
+  /// room (40% of 560), where the Master's slider keeps some room beside
+  /// its Mute and its level, at the largest text size too (at the other
+  /// sidebars' least, [SidebarWidths.min], it would have none).
+  static const minWidth = 224.0;
+
   /// Their default width beside a room [room] wide: 40% of it, at most
   /// 320 px.
   static double widthFor(double room) => math.min(320.0, room * 0.4);
@@ -145,6 +152,7 @@ class DownloadSettingsBeside extends StatelessWidget {
             SidebarWidths.downloadSettings,
             fallback: widthFor(box.maxWidth),
             max: max,
+            least: minWidth,
           );
           Widget sidebar() => DownloadSettingsPanel(
             onClose: () {
@@ -166,8 +174,8 @@ class DownloadSettingsBeside extends StatelessWidget {
                   onDrag: (dx) => widths.set(
                     SidebarWidths.downloadSettings,
                     (width - dx).clamp(
-                      SidebarWidths.min,
-                      max < SidebarWidths.min ? SidebarWidths.min : max,
+                      minWidth,
+                      max < minWidth ? minWidth : max,
                     ),
                   ),
                   onDragEnd: widths.save,

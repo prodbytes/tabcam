@@ -119,13 +119,18 @@ download settings") shows and hides it, as the dictionary's and the
 metronome's buttons do theirs; its ✕ hides it too.
 
 - **Where**: beside the viewer, on its right, where the editor's room is
-  **wide**: 840 points and more, or 560 in a room under 480 high (a
-  phone on its side). The room is the editor's own, not the screen's:
-  with the dictionary's or the metronome's sidebar beside the editor, a
-  900-point window has the settings under the viewer. Beside it, its
-  default width is 320 points (at most 40% of the room); its left edge is
-  a separator to drag (`SplitHandle`, as the other sidebars') wider or
-  narrower, from 160 points up to leaving the viewer 96, a double tap
+  **wide**: 840 points and more, or 560 in a window under 480 high (a
+  phone on its side). The width is the editor's own room's, not the
+  screen's: with the dictionary's or the metronome's sidebar beside the
+  editor, a 900-point window has the settings under the viewer. The
+  height is the window's, which the on-screen keyboard doesn't change:
+  typing the title on a tablet in split view or a foldable's inner
+  screen, the settings stay where they were. Beside it, its default
+  width is 320 points (at most 40% of the room); its left edge is a
+  separator to drag (`SplitHandle`, as the other sidebars') wider or
+  narrower, from 224 points (40% of the narrowest wide room, where the
+  Master's slider keeps some room at the largest text size; the other
+  sidebars go down to 160) up to leaving the viewer 96, a double tap
   putting the default back, and the width is kept on the device with
   the other sidebars' ([`SidebarWidths`](../tabcam_app/lib/screens/sidebar_widths.dart),
   `downloadSettings`). Elsewhere (a phone) it's under the viewer, across
@@ -534,7 +539,9 @@ metronome's buttons do theirs; its ✕ hides it too.
     change. The title's fields and the sliders take each other's place
     on a phone.
 - <a id="the-songs-details"></a>**Under them, the song's details** (when there's one): its lane
-  and name ("Song · Recording 1"), **‹** and **›**, which nudge it
+  and name ("Song · Recording 1", on one line: in a narrow sidebar at a
+  large text size, the lane's word takes at most half of it, and each is
+  cut short with "…"), **‹** and **›**, which nudge it
   **0.05 s** (a twentieth of a second, the cut's step too; "0.05 s
   earlier", "0.05 s later") earlier or later, with where it starts in words
   between them ("The song starts 0:01.5 after the video": silence

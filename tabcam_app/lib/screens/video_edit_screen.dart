@@ -341,10 +341,10 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// The editor's keys: the space bar plays or pauses ([_key]).
   final _keys = FocusNode(debugLabel: 'video edit keys');
 
-  /// The room the editor's content had when last laid out (the body,
+  /// How wide the editor's content was when last laid out (the body,
   /// beside the dictionary's and the metronome's sidebars): whether it's
   /// [_wide] is measured on it.
-  Size? _box;
+  double? _boxWidth;
 
   /// The title's fields, the fades' sliders and the tab's style in the
   /// Download settings, brought into view as a tap on the picture shows
@@ -1106,14 +1106,18 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   }
 
   /// Whether the editor is wide: the Download settings beside the viewer.
-  /// So is a short landscape room (a phone on its side), where there's no
-  /// room for them under the viewer. Measured on the editor's own room
-  /// ([_box]: narrower than the screen with the dictionary's or the
-  /// metronome's sidebar beside it), else the screen.
+  /// So is a short landscape window (a phone on its side), where there's
+  /// no room for them under the viewer. How wide is the editor's own room
+  /// ([_boxWidth]: narrower than the screen with the dictionary's or the
+  /// metronome's sidebar beside it), else the screen's; how short, the
+  /// window's, which the on-screen keyboard doesn't change (the body's
+  /// height would: a foldable's inner screen would turn wide, and back, as
+  /// the title is typed).
   bool get _wide {
-    final size = _box ?? MediaQuery.sizeOf(context);
-    return size.width >= _wideFrom ||
-        (size.width >= _wideShortFrom && size.height < _shortBelow);
+    final screen = MediaQuery.sizeOf(context);
+    final width = _boxWidth ?? screen.width;
+    return width >= _wideFrom ||
+        (width >= _wideShortFrom && screen.height < _shortBelow);
   }
 
   static const _wideFrom = 840.0;
@@ -2359,7 +2363,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       builder: (context, box) {
         final height = box.maxHeight;
         final width = max(box.maxWidth, min(_leastWidth, screen));
-        _box = Size(width, height);
+        _boxWidth = width;
         final wide = _wide;
         final inset = MediaQuery.paddingOf(context).bottom;
         bool fits(double dock) =>
@@ -4013,21 +4017,31 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       key: const Key('video-edit-song-details'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Text(
-              '${take ? l10n.videoEditLaneSong : l10n.videoEditLaneTrack} · ',
-              style: theme.textTheme.titleSmall,
-            ),
-            Expanded(
-              child: Text(
-                _trackName ?? '',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleSmall,
+        // The lane's word at most half the row (a narrow sidebar, large
+        // text), the name in the rest, each cut short rather than spilling.
+        LayoutBuilder(
+          builder: (context, box) => Row(
+            children: [
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: box.maxWidth / 2),
+                child: Text(
+                  '${take ? l10n.videoEditLaneSong : l10n.videoEditLaneTrack} · ',
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall,
+                ),
               ),
-            ),
-          ],
+              Expanded(
+                child: Text(
+                  _trackName ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall,
+                ),
+              ),
+            ],
+          ),
         ),
         if (_trackLength > Duration.zero)
           Row(

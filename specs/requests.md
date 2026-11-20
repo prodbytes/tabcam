@@ -4587,17 +4587,18 @@ spec.
    title and ✕, shown and hidden by a new **Download settings** button
    (a tune icon) in the editor's app bar, as the metronome's and the
    dictionary's buttons do theirs. It's beside the viewer where the
-   editor's room is wide (840 points, or 560 in a room under 480 high),
-   320 points by default and resizable by its edge (the width kept with
-   the other sidebars'), and under the viewer on a phone. It's open the
+   editor's room is wide (840 points, or 560 in a window under 480 high,
+   the on-screen keyboard aside), 320 points by default and resizable by
+   its edge down to 224 (the width kept with the other sidebars'), and
+   under the viewer on a phone. It's open the
    first time in each session, and hidden it stays hidden in the next
    editor of the session. A tap on the title, a fade's badge, a long
    press on the band (a phone) or a tap picking the band (a wide screen)
    shows it where hidden, scrolled to that field. The editor's app bar
    also gets **Dictionary** and **Metronome**, their sidebars beside the
    editor (usable during a download, the metronome playing on from the
-   file's screen); whether the editor is wide is now measured on its
-   own room, beside those sidebars, not on the screen, and its body is
+   file's screen); whether the editor is wide now goes by the width of
+   its own room, beside those sidebars, not the screen's, and its body is
    laid out at least 360 points wide, cut rather than squeezed beside
    them on a phone. On a phone, Dictionary, Metronome, Share and About
    go into a **More** menu (⋮). In English, Spanish and Portuguese. See

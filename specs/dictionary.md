@@ -1,13 +1,15 @@
 # Dictionary
 
-A **Dictionary** button (a book icon, first in the app bar) at the top of
-every file viewer, of Cam and of Home: the [event screen](event-screen.md)
-in all its views (Files, Text, and the locked previews), the
-[file screen](event-screen.md#file-screen) for any file, the
-[video editor](video-edit.md#the-edit-screen) (on a phone, in its More
-menu), Cam ([cam.md](cam.md)) with or without Premium, a capture opened
-by its link, and Home's captures ([navigation](navigation.md); not the Capture
-and Profile tabs, where the sidebar doesn't show but stays open). It's free for everyone, and takes nothing from tabs.cam's servers:
+A **Dictionary** button (a book icon) at the top of every file viewer,
+of Cam and of Home, first in the app bar: the
+[event screen](event-screen.md) in all its views (Files, Text, and the
+locked previews), the [file screen](event-screen.md#file-screen) for any
+file, Cam ([cam.md](cam.md)) with or without Premium, a capture opened
+by its link, and Home's captures ([navigation](navigation.md); not the
+Capture and Profile tabs, where the sidebar doesn't show but stays
+open). In the [video editor](video-edit.md#the-edit-screen) it comes
+after Reset, Download and Download settings (on a phone, in its More
+menu). It's free for everyone, and takes nothing from tabs.cam's servers:
 the chords and scales are worked out on the device
 ([`lib/dictionary/`](../tabcam_app/lib/dictionary/)); only a song's
 searches leave it, from the device straight to YouTube and Cifra Club.
