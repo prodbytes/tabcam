@@ -773,6 +773,15 @@ class _StudioViewState extends State<StudioView> {
     await along.choose(page);
   }
 
+  /// Before [page] is deleted from Cam's sidebar, once the user confirmed
+  /// (the sidebar's own player lets go of it too): where it's in the Song
+  /// row of the take edited in the camera's place, it leaves the row first
+  /// ([_removeSong]), so its player lets go of the file and the edit kept
+  /// no longer names it. (The take edited shows no Delete.)
+  Future<void> _letGo(EventPage page) async {
+    if (_inEdit && _trackId == page.id) await _removeSong();
+  }
+
   /// Puts [page] of capture [eventId] in the main row ([_switchMain]), what
   /// was there kept for Back ([_back]).
   Future<void> _go(EventPage? page, {String? eventId}) async {
@@ -2831,10 +2840,12 @@ class _StudioViewState extends State<StudioView> {
       keys: gate == null && _camera,
       // Not in a preview, nor while a take records, saves (or is saved
       // for the next, until it starts) or plays back, nor during a
-      // download; the take edited shows neither Delete nor Edit.
+      // download; the take edited shows neither Delete nor Edit, and its
+      // song, deleted, leaves its Song row first.
       deletes: gate == null,
       canDelete: cam.canDelete && !_busy,
       keepId: _page?.id,
+      letGo: _letGo,
       choose: _choose,
       onEdit: gate == null ? _editTake : null,
       child: content,
@@ -3046,13 +3057,16 @@ class _StudioViewState extends State<StudioView> {
             min(width / aspect, free - min(_inspectorLeast, free * 0.45)),
           );
         } else if (cam != null) {
-          // Cam's controls always show; the phrase under the camera gives
-          // way in a tiny window, after the rows ([_camDock]).
+          // Cam's controls always show, and the phrase under the camera
+          // wherever it fits, the camera taking what room is left; only
+          // then the rows, where the camera keeps its least after both
+          // ([_camDock]). So the rows give way first, and the phrase only
+          // in a window too short for it alone.
           final room = height - 1 - inset - _camStripHeight(scaler);
           final phraseHeight = cam.tabShown
               ? _camPhraseHeight(scaler, cam)
               : 0.0;
-          phrase = cam.tabShown && room - phraseHeight >= _viewerLeast;
+          phrase = cam.tabShown && room >= phraseHeight;
           final along = cam.along;
           // The main row follows what plays along, and the capture's files
           // (one arriving can play).
@@ -3137,8 +3151,8 @@ class _StudioViewState extends State<StudioView> {
   /// The viewer: the page in the main row ([_preview]; a spinner while it
   /// opens; where it can't play, why, with Try again, [_cantPlay]), or in
   /// Cam's view with the camera in its place, the camera ([CamView]) over
-  /// the tab's phrase ([CamPhrase], unless it's hidden, or there's no
-  /// [phrase] room), on black. The camera is kept, hidden, while a page
+  /// the tab's phrase ([CamPhrase], unless it's hidden, or too high for
+  /// the window: no [phrase] room), on black. The camera is kept, hidden, while a page
   /// is in its place: it stays open, and shows again as it was.
   Widget _viewer(AppLocalizations l10n, {required bool phrase}) {
     final video = _video;
@@ -3178,11 +3192,11 @@ class _StudioViewState extends State<StudioView> {
   /// Cam's dock, under the camera: Cam's controls ([CamStrip]: Rec, Play,
   /// Tab, Auto-pass), and under them the ruler and the main row
   /// ([_rows]: what plays along), unless the camera would keep less than
-  /// [_cameraLeast] of the [room] left by the controls and the phrase,
-  /// the bars would be narrower than [_alongBarLeast] in the view's
-  /// [width] (a phone beside the play-along sidebar, whose player shows
-  /// the same song), or the on-screen keyboard is open: the rows give way
-  /// first.
+  /// [_cameraLeast] of the [room] left by the controls and the phrase
+  /// (the phrase is placed first), the bars would be narrower than
+  /// [_alongBarLeast] in the view's [width] (a phone beside the
+  /// play-along sidebar, whose player shows the same song), or the
+  /// on-screen keyboard is open: the rows give way first.
   Widget _camDock(
     AppLocalizations l10n,
     CamSession cam, {

@@ -90,6 +90,17 @@ e|--5--7--|
 B|--5--8--|
 ''';
 
+/// A made-up riff on all six strings, one phrase: as high as a phrase
+/// gets on a guitar.
+const _sixStrings = '''
+e|--0--3--|
+B|--1--1--|
+G|--0--0--|
+D|--2--0--|
+A|--3--2--|
+E|-----3--|
+''';
+
 void main() {
   late VolumePlatform platform;
   setUp(() {
@@ -418,14 +429,15 @@ void main() {
       }
     }
 
-    /// A capture with [_tab] and, as asked, a recording ("Made-up riff"),
-    /// a take ("Take 9:30") and a PDF; its ID and the pages', in that
-    /// order (null for those it hasn't).
+    /// A capture with [tab] ([_tab]'s, unless given) and, as asked, a
+    /// recording ("Made-up riff"), a take ("Take 9:30") and a PDF; its ID
+    /// and the pages', in that order (null for those it hasn't).
     Future<(Library, String, String?, String?)> camCapture(
       WidgetTester tester, {
       bool song = true,
       bool take = false,
       bool pdf = false,
+      String tab = _tab,
     }) async {
       final library = Library(PlatformEventStore(), null, (_) async => null);
       late String id;
@@ -435,7 +447,7 @@ void main() {
         // Play plays at once (the count-in has tests of its own).
         await library.writeMeta(BackingTrack.metaName, '{"countIn":false}');
         var event = await library.create(const [], title: 'Made-up riffs');
-        event = await library.update(event.copyWith(tabText: _tab));
+        event = await library.update(event.copyWith(tabText: tab));
         id = event.id;
         Future<String> add(String name, PageKind kind, String ext) async {
           final added = await library.addMedia(library.byId(id)!, [
@@ -622,6 +634,60 @@ void main() {
       // Playing: the song's player, the editor's let go of.
       expect(video.playing, {0});
       expect(video.disposed, isNotEmpty);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('editing a take with its song in the Song row, the song '
+        'deleted in the sidebar leaves the row first: its player let go of, '
+        'the edit no longer names it', (tester) async {
+      tester.view
+        ..physicalSize = const Size(1200, 1000)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final (library, id, songId, takeId) = await camCapture(
+        tester,
+        take: true,
+      );
+      await tester.runAsync(
+        () => library.setPageEdit(
+          id,
+          takeId!,
+          PageEdit(
+            start: Duration.zero,
+            end: s(60),
+            song: SongMode.manual,
+            trackId: songId,
+          ),
+        ),
+      );
+      await tester.pumpWidget(cam(library, id));
+      await camFrames(tester);
+      await editTake(tester, takeId!);
+      final songBar = find.byKey(const Key('video-edit-song-bar'));
+      expect(songBar, findsOneWidget);
+      // The editor's players: the take's, then its song's.
+      final songPlayer = video.lastPlayer;
+      expect(video.disposed, isNot(contains(songPlayer)));
+
+      await tester.tap(find.byKey(ValueKey('cam-along-delete-$songId')));
+      await camFrames(tester);
+      await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+      bool deleted() => library.byId(id)!.pages.every((p) => p.id != songId);
+      for (var i = 0; i < 20 && !deleted(); i++) {
+        await camFrames(tester);
+      }
+      expect(deleted(), isTrue);
+      // Still editing the take, alone in its row.
+      expect(find.byKey(const Key('video-edit-take-bar')), findsOneWidget);
+      expect(songBar, findsNothing);
+      expect(video.disposed, contains(songPlayer));
+      expect(video.disposed, isNot(contains(songPlayer - 1)));
+      // Kept: the edit no longer names the song deleted.
+      await tester.pump(const Duration(milliseconds: 500));
+      await camFrames(tester);
+      final edit = pageOf(library, id, takeId).edit;
+      expect(edit?.trackId, isNull);
+      expect(edit?.end, s(60));
       expect(tester.takeException(), isNull);
     });
 
@@ -818,6 +884,89 @@ void main() {
       expect(find.byKey(const Key('cam-rec')), findsOneWidget);
       expect(find.byKey(const Key('neckline')), findsOneWidget);
       expect(find.byKey(const Key('preview')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    // The phrase is placed before the rows: on a phone on its side, a
+    // phrase as high as a guitar's keeps its place, the camera taking
+    // what's left, and the main row gives way.
+    for (final (size, text, tab, strings) in const [
+      (Size(740, 360), 1.0, _sixStrings, 'six'),
+      (Size(844, 390), 1.0, _sixStrings, 'six'),
+      (Size(740, 360), 2.0, _tab, 'two'),
+      (Size(844, 390), 2.0, _tab, 'two'),
+    ]) {
+      testWidgets('a phone on its side, ${size.width.round()}x'
+          '${size.height.round()} at ${text}x text: a phrase on $strings '
+          'strings shows, the main row gives way', (tester) async {
+        tester.view
+          ..physicalSize = size
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        if (text != 1) {
+          tester.platformDispatcher.textScaleFactorTestValue = text;
+          addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        }
+        final (library, id, _, _) = await camCapture(tester, tab: tab);
+        // At the largest text, the sidebar's player (open by itself at
+        // first) runs out of room in its frame, as it does in a window this
+        // short wherever it shows; not this test's. Any other error, while
+        // it shows, fails, and once it's hidden, any at all.
+        final errors = <FlutterErrorDetails>[];
+        final reported = FlutterError.onError;
+        if (text != 1) FlutterError.onError = errors.add;
+        try {
+          await tester.pumpWidget(cam(library, id));
+          await camFrames(tester);
+          // Hidden, the sidebar leaves the main row the width: only the
+          // height decides.
+          await tester.tap(find.byKey(const Key('cam-along')));
+          await camFrames(tester);
+        } finally {
+          FlutterError.onError = reported;
+        }
+        bool sidebarPlayer(FlutterErrorDetails error) =>
+            error.informationCollector?.call().join().contains(
+              'cam-along-frame',
+            ) ??
+            false;
+        expect(errors.where((error) => !sidebarPlayer(error)), isEmpty);
+        await camFrames(tester);
+        expect(find.byKey(const Key('neckline')), findsOneWidget);
+        expect(mainRow, findsNothing);
+        expect(find.byKey(const Key('cam-rec')), findsOneWidget);
+        expect(find.byKey(const Key('preview')), findsOneWidget);
+        // The phrase is drawn whole, over Cam's controls.
+        final phrase = tester.getRect(find.byKey(const Key('neckline')));
+        final rec = tester.getRect(find.byKey(const Key('cam-rec')));
+        expect(phrase.bottom, lessThanOrEqualTo(rec.top));
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('a phone on its side with the tab hidden: the main row has '
+        'the phrase\'s room', (tester) async {
+      tester.view
+        ..physicalSize = const Size(844, 390)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final (library, id, _, _) = await camCapture(tester, tab: _sixStrings);
+      await tester.pumpWidget(cam(library, id));
+      await camFrames(tester);
+      await tester.tap(find.byKey(const Key('cam-along')));
+      await camFrames(tester);
+      expect(mainRow, findsNothing);
+
+      await tester.tap(find.byKey(const Key('cam-tab')));
+      await camFrames(tester);
+      expect(find.byKey(const Key('neckline')), findsNothing);
+      expect(mainRow, findsOneWidget);
+
+      // Shown again, the phrase takes its room back from the rows.
+      await tester.tap(find.byKey(const Key('cam-tab')));
+      await camFrames(tester);
+      expect(find.byKey(const Key('neckline')), findsOneWidget);
+      expect(mainRow, findsNothing);
       expect(tester.takeException(), isNull);
     });
   });
