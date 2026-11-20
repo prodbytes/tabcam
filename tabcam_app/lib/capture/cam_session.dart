@@ -72,8 +72,8 @@ enum CamNote {
   cantPlay,
 }
 
-/// What Cam does, apart from how it shows (`PlayAlongScreen` shows it,
-/// with the widgets in `cam_controls.dart`): the camera, the head
+/// What Cam does, apart from how it shows (Cam's view, `StudioView`,
+/// shows it, with the widgets in `cam_controls.dart`): the camera, the head
 /// gestures, the tab (one phrase at a time) and auto-pass, the
 /// microphone and its input volume (Cam's settings, [metaName]), the
 /// takes (Rec, the / and . keys, saving a take with its log) and playing
@@ -611,7 +611,7 @@ class CamSession extends ChangeNotifier {
     _heads ??= _headTracking(controller, _gesture);
     _heads
       ?..camera = controller
-      ..active = _headsOn;
+      ..active = _headsOn && !_away;
     await _stream();
     return true;
   }
@@ -740,10 +740,38 @@ class CamSession extends ChangeNotifier {
     _heads?.recording = recording;
   }
 
-  /// With head gestures on, the camera's frames go to [_heads].
+  /// Whether Cam is away: its view edits a take in the camera's place
+  /// (`StudioView`). The camera stays open, but no frame goes to the head
+  /// gestures meanwhile, and none turns the tab.
+  bool get away => _away;
+  bool _away = false;
+
+  /// Cam goes away ([away]), its camera's frames no longer streamed, or
+  /// comes back, streamed again for the head gestures (where they're on).
+  Future<void> setAway(bool away) async {
+    if (away == _away || _disposed) return;
+    _away = away;
+    _heads?.active = _headsOn && !away;
+    if (!away) return _stream();
+    final controller = _controller;
+    if (controller != null &&
+        controller.value.isStreamingImages &&
+        !controller.value.isRecordingVideo) {
+      try {
+        await controller.stopImageStream();
+      } on Object catch (e) {
+        debugPrint('TabCam: head gestures: $e');
+      }
+      // Back meanwhile: streamed again.
+      if (!_away && !_disposed) await _stream();
+    }
+  }
+
+  /// With head gestures on, the camera's frames go to [_heads] (not while
+  /// Cam is [away]).
   Future<void> _stream() async {
     final controller = _controller;
-    if (_heads == null || !_headsOn || controller == null) return;
+    if (_heads == null || !_headsOn || _away || controller == null) return;
     final v = controller.value;
     if (!controller.supportsImageStreaming() ||
         v.isStreamingImages ||
@@ -758,13 +786,13 @@ class CamSession extends ChangeNotifier {
   }
 
   void _frame(CameraImage image) {
-    if (_headsOn) _heads?.onImage(image);
+    if (_headsOn && !_away) _heads?.onImage(image);
   }
 
   /// A nod or turn: the next neckline or the one before (not while a take
   /// plays: it turns them itself).
   void _gesture(HeadGesture gesture) {
-    if (_disposed || !_headsOn || _player != null) return;
+    if (_disposed || !_headsOn || _away || _player != null) return;
     unawaited(pass(gesture == HeadGesture.next ? 1 : -1));
   }
 
@@ -772,7 +800,7 @@ class CamSession extends ChangeNotifier {
   Future<void> toggleHeads() async {
     _headsOn = !_headsOn;
     _changed();
-    _heads?.active = _headsOn;
+    _heads?.active = _headsOn && !_away;
     final controller = _controller;
     if (_headsOn) return _stream();
     if (controller != null &&

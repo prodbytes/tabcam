@@ -2887,4 +2887,17 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get videoEditMore => 'Más';
+
+  @override
+  String get videoEditMainAdd => 'Tocar junto con una canción…';
+
+  @override
+  String get videoEditMainPlay => 'Reproducir la canción';
+
+  @override
+  String get videoEditMainPause => 'Pausar la canción';
+
+  @override
+  String get videoEditMainBar =>
+      'La canción con la que tocas: tócala o arrástrala para ir ahí';
 }

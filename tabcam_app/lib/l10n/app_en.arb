@@ -3911,5 +3911,21 @@
   "videoEditMore": "More",
   "@videoEditMore": {
     "description": "Video edit, on a phone: the app bar's menu (⋮) with Dictionary, Metronome, Share and About the edit"
+  },
+  "videoEditMainAdd": "Play along with a song…",
+  "@videoEditMainAdd": {
+    "description": "Cam: the main row (bottom of the screen) with nothing playing along: a dashed bar that opens the play-along sidebar's list"
+  },
+  "videoEditMainPlay": "Play the song",
+  "@videoEditMainPlay": {
+    "description": "Cam: tooltip of the play button in the header of the main row, which plays the song playing along"
+  },
+  "videoEditMainPause": "Pause the song",
+  "@videoEditMainPause": {
+    "description": "Cam: tooltip of the pause button in the header of the main row, while the song playing along plays"
+  },
+  "videoEditMainBar": "The song playing along: tap or drag it to go there",
+  "@videoEditMainBar": {
+    "description": "Cam: screen-reader label of the main row's bar, the song playing along on the time axis; a tap or drag takes it there"
   }
 }

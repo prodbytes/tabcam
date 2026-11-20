@@ -4773,6 +4773,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'More'**
   String get videoEditMore;
+
+  /// Cam: the main row (bottom of the screen) with nothing playing along: a dashed bar that opens the play-along sidebar's list
+  ///
+  /// In en, this message translates to:
+  /// **'Play along with a song…'**
+  String get videoEditMainAdd;
+
+  /// Cam: tooltip of the play button in the header of the main row, which plays the song playing along
+  ///
+  /// In en, this message translates to:
+  /// **'Play the song'**
+  String get videoEditMainPlay;
+
+  /// Cam: tooltip of the pause button in the header of the main row, while the song playing along plays
+  ///
+  /// In en, this message translates to:
+  /// **'Pause the song'**
+  String get videoEditMainPause;
+
+  /// Cam: screen-reader label of the main row's bar, the song playing along on the time axis; a tap or drag takes it there
+  ///
+  /// In en, this message translates to:
+  /// **'The song playing along: tap or drag it to go there'**
+  String get videoEditMainBar;
 }
 
 class _AppLocalizationsDelegate

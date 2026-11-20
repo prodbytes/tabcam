@@ -27,7 +27,10 @@ the capture, a file, the video editor, Cam) with the same search, until the butt
 sidebar's own **✕** hides it. In Cam, typing in it doesn't turn the tab,
 and once it's hidden the keys turn the tab again; in the video editor,
 typing a space in it doesn't play the preview, and once it's hidden the
-space bar plays it again.
+space bar plays it again. A take's Edit in Cam, and Back, change what's
+in Cam's view without leaving it ([video edit](video-edit.md#in-cam)):
+the dictionary stays open through them with its search, and its ✕ gives
+the keys back to what's there then (the tab, or the take's preview).
 
 **Its width**: 40% of the screen's, from 280 to 420 px, until the user
 drags its left edge, a **separator** (`SplitHandle`, a line with a grip,

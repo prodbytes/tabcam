@@ -21,9 +21,10 @@ with **Edit** (scissors, before Rename) on a video's
 [file screen](event-screen.md#file-screen), in the user's own captures
 (not one shared with them, which is read only, nor a contribution's
 file, nor while a tool works); and, for Cam's takes, with the **Edit**
-on the take's row in the play-along sidebar (in Cam, beside the Text
-view and beside a recording), which opens it the same way
-([editing a take from the sidebar](cam.md#editing-a-take-from-the-sidebar)).
+on the take's row in the play-along sidebar: beside the Text view and
+beside a recording it opens the same way, over the screen; in Cam it
+opens in Cam's own view, in the camera's place ([in Cam](#in-cam),
+[editing a take from the sidebar](cam.md#editing-a-take-from-the-sidebar)).
 It also opens from a link to the file's edit view, and again after a
 reload where it was open over its own file screen (not a take edited
 from a sidebar) ([sharing](sharing.md),
@@ -111,6 +112,49 @@ on-screen keyboard is open (the title typed in), the transport and the
 rows give their room to the viewer and the field, and come back as it
 closes; in a window too short for them, the cut's steps go first, then
 the rows, then the transport.
+
+<a id="in-cam"></a>**In Cam** the editor is the same view: the editor
+and [Cam](cam.md) are one widget, `StudioView`
+([`video_edit_screen.dart`](../tabcam_app/lib/screens/video_edit_screen.dart),
+Cam's parts in
+[`video_edit_cam.dart`](../tabcam_app/lib/screens/video_edit_cam.dart)),
+one frame whatever is in its **main row**: a page opened to edit, or, in
+Cam, the camera. `VideoEditScreen` (the editor over the file screen) and
+`PlayAlongScreen` (Cam) build it, the first with the page, the second
+with the camera ([Cam's view](cam.md#cams-view)). A take's **Edit** in
+Cam's play-along sidebar puts the take in the main row in place of the
+camera, with no screen pushed over Cam: the viewer shows the take with
+its layers, the dock has the transport, the take's rows (Take, then its
+Song lined up) and the cut's steps, the Download settings are beside or
+under the viewer as above, and the app bar is the editor's, with
+**Back** at its start and **Play along** (♫) after Metronome (on a
+phone, in the More menu). The play-along sidebar stays at the right,
+the body's whole height, as the dictionary's and the metronome's do;
+the take edited shows neither Edit nor Delete there, and its song,
+deleted there, leaves the Song row first, as **Remove** does (its player
+let go of, the edit no longer naming it). The keys are the
+editor's: the space bar plays the preview and ← and → move it, while
+Cam's keys and the play-along's own (/, ., 1, 0) do nothing ([keyboard
+shortcuts](keyboard-shortcuts.md)). The camera stays open behind it,
+hidden, its head gestures paused (no frame goes to them; Cam's
+`CamSession.setAway`), and the metronome plays on. Another take's Edit
+meanwhile takes this one's place, its edit kept first. **Back** (the
+app bar's, the system's, the browser's) keeps the edit and puts the
+camera back, with the song in the main row as it was; so does a file
+tapped in the sidebar, which then plays in the main row. On a phone,
+where the sidebar would leave the editor narrower than 360 points, or
+on its side, too narrow for the Download settings beside the viewer
+(560 points in a window under 480 high), the Edit hides the sidebar,
+and it shows again when the camera is back (Play along shows it
+meanwhile). During a download Back does nothing and the
+sidebar takes no taps, as the rest of the editor. What's in the main
+row changes in place (`_switchMain`): a change not yet kept is kept with
+its page at once, the players are let go of, everything known of the
+page is forgotten (`_forgetPage`), and the next opens as the editor
+opens one. The edit is the page's, as anywhere: a take edited in Cam
+opens as left on its file screen, and the other way round. A reload
+while a take is edited in Cam opens Cam on the camera
+([navigation](navigation.md#coming-back-where-the-user-was)).
 
 <a id="download-settings"></a>**The Download settings**
 ([`download_settings.dart`](../tabcam_app/lib/screens/download_settings.dart)):

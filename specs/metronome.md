@@ -25,7 +25,9 @@ nothing leaves it, and no server is involved.
   `metronome`).
 - Open on one screen, it's open on the next (app-wide,
   `MetronomeState`), and keeps playing there: from Home into a capture
-  and back, or from a video's file screen into its editor and back. It
+  and back, or from a video's file screen into its editor and back; in
+  Cam, through a take's Edit and Back, which change what's in Cam's view
+  without leaving it ([video edit](video-edit.md#in-cam)). It
   **stops** when its sidebar is closed (its close button, or
   the app bar's button), and when the user leaves for a place that has no
   metronome: Home's Capture and Profile tabs, where its sidebar doesn't
@@ -35,7 +37,8 @@ nothing leaves it, and no server is involved.
   as left once the other has slid in, so going from one that has it to
   another that has it plays on; a dialog or a menu over it doesn't count.
 - In Cam, closing it gives the keys back to the tab, as the dictionary
-  does; in the video editor, back to the preview (the space bar).
+  does; in the video editor (a take edited in Cam's view too), back to
+  the preview (the space bar).
   During a download in the editor it stays usable.
 
 ## The sidebar

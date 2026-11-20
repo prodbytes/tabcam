@@ -184,6 +184,15 @@ class PlayAlong extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Shows the sidebar, with a file loaded to play (not playing) when
+  /// none is ([_loadFirst]): Cam's **Play along with a song…**.
+  void show() {
+    _opened = true;
+    _open = true;
+    _loadFirst();
+    notifyListeners();
+  }
+
   /// Loads the file the screen opened on, if it plays, else the first
   /// that does, into the frame (not playing), when nothing is loaded yet:
   /// a song to play along with rather than one of Cam's takes ([isTake]),
@@ -352,11 +361,17 @@ class PlayAlongBeside extends StatelessWidget {
     this.letGo,
     this.run,
     this.onEdit,
+    this.choose,
     this.keys = true,
   });
 
   final PlayAlong along;
   final Widget child;
+
+  /// Plays a file tapped in the sidebar along; null, [PlayAlong.choose].
+  /// Cam's view puts the camera back first, where a take is edited in
+  /// its place.
+  final Future<void> Function(EventPage page)? choose;
 
   /// Whether the player's keys work ([PlayAlongKeys]); false in a
   /// preview, where no key does anything.
@@ -374,9 +389,10 @@ class PlayAlongBeside extends StatelessWidget {
   /// screen's own (its own tools delete and edit it).
   final String? keepId;
 
-  /// Opens the video editor on one of the sidebar's takes
+  /// Opens the video editor on one of the sidebar's takes: in Cam, in the
+  /// camera's place (`StudioView`); in the Text view, over it
   /// ([VideoEditScreen.open], as the file screen's Edit does), done when
-  /// the user is back; null (a preview, a capture opened by its link):
+  /// the user is back. Null (a preview, a capture opened by its link):
   /// no take shows Edit. With it, the user's own takes do
   /// ([PlayAlongSidebar.mayEdit]), before Delete, and work when Delete
   /// does ([canDelete]).
@@ -569,7 +585,7 @@ class PlayAlongBeside extends StatelessWidget {
                     },
                     onChoose: (page) {
                       onUse?.call();
-                      unawaited(along.choose(page));
+                      unawaited((choose ?? along.choose)(page));
                     },
                     onStop: () {
                       onUse?.call();

@@ -37,7 +37,11 @@ tabs, and a compact **app bar** on top names the open one
   as when leaving any screen that has it, and when a screen without it
   opens over Home (a capture link loading, or unavailable).
 - An event opens over the tabs as its own screen ([event screen](event-screen.md)),
-  with a back button.
+  with a back button. A file's screen, the video editor and Cam open
+  over it the same way, but a take's Edit in Cam opens no screen: the
+  take takes the camera's place in Cam's own view, whose back button
+  then puts the camera back, and only then closes Cam
+  ([Cam](cam.md#editing-a-take-from-the-sidebar)).
 - Messages show at the top, just under the app bar, covering neither the
   app bar's buttons nor the bottom navigation bar, which stay where they
   are ([messages](messages.md)).
@@ -82,8 +86,10 @@ add to, or if the user moved on meanwhile (a file opened, the capture
 closed), Cam doesn't open and the place forgets it. A build without the
 service opens it at once. The camera opens as when Cam's button is
 pressed: the browser asks for it again only if it doesn't remember it
-was allowed. What was going on in Cam (the neckline, a take, the song
-playing along) isn't kept: Cam opens as it does from the capture. Its
+was allowed. What was going on in Cam (the phrase, a take, the song
+playing along, a take edited in Cam's view) isn't kept: Cam opens on
+the camera, as it does from the capture (a take's edit is kept with
+the take as it's made, [video edit](video-edit.md#in-cam)). Its
 preview (no Premium) isn't kept either.
 
 - **The apps** keep it on the device (the library's `place` meta file,
@@ -108,7 +114,8 @@ preview (no Premium) isn't kept either.
   again, the link it opened at say): the place is written over that at
   once, so neither a link's key nor an older place comes back, and Back
   over a screen the place doesn't follow leaves it as it was (Back over
-  Cam closes it, and `cam` leaves the address). The
+  Cam closes it, and `cam` leaves the address; with a take edited in
+  Cam's view, Back first puts the camera back, Cam staying open). The
   same address in another tab of the same browser (signed in as the
   same user) opens the same place.
 

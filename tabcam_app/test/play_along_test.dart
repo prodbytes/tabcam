@@ -2791,7 +2791,22 @@ B|--5--8--|
       ),
       findsOneWidget,
     );
-    expect(find.text('Lesson'), findsNWidgets(2));
+    // In the sidebar: its row, and the frame's name.
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('cam-along-sidebar')),
+        matching: find.text('Lesson'),
+      ),
+      findsNWidgets(2),
+    );
+    // In the main row too.
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('video-edit-main-row')),
+        matching: find.text('Lesson'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Backing track'), findsOneWidget);
     expect(video.playing, isEmpty);
     expect(find.byKey(const Key('cam-along-stop')), findsOneWidget);
@@ -4310,8 +4325,8 @@ B|--5--8--|
 
   testWidgets('a take\'s row in the sidebar has Edit (scissors) before '
       'Delete, a song\'s none; greyed while a take records; it pauses what '
-      'plays along and opens the editor on that take, as its file screen '
-      'does; back, Cam is as it was', (tester) async {
+      'plays along and opens the editor on that take in the camera\'s '
+      'place, no screen over Cam; back, Cam is as it was', (tester) async {
     // Tall enough for the sidebar's whole list (the song, the takes).
     tester.view.physicalSize = const Size(1200, 1600);
     tester.view.devicePixelRatio = 1;
@@ -4369,7 +4384,13 @@ B|--5--8--|
     );
     expect(find.byKey(ValueKey('cam-along-edit-${song.id}')), findsNothing);
     expect(find.byKey(ValueKey('cam-along-delete-${song.id}')), findsOneWidget);
-    expect(find.byIcon(Icons.content_cut), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('cam-along-sidebar')),
+        matching: find.byIcon(Icons.content_cut),
+      ),
+      findsOneWidget,
+    );
 
     // Recording: greyed, as Delete.
     await tester.tap(rec);
@@ -4379,28 +4400,47 @@ B|--5--8--|
     await until(tester, () => recReady(tester));
     expect(tester.widget<IconButton>(edit).onPressed, isNotNull);
 
-    // The first take plays along; Edit pauses it and opens the editor on
-    // it, over Cam.
+    // The first take plays along, in the main row; Edit pauses it and
+    // opens the editor on it in the camera's place: no screen over Cam.
     await tester.tap(title);
     await frames(tester);
     expect(video.playing, isNotEmpty);
+    final mainRow = find.byKey(const Key('video-edit-main-row'));
+    expect(
+      find.descendant(of: mainRow, matching: find.text('Take 10:00')),
+      findsOneWidget,
+    );
     await tester.tap(edit);
     await frames(tester);
-    final editor = tester.widget<VideoEditScreen>(find.byType(VideoEditScreen));
-    expect(editor.page.id, take.id);
-    expect(editor.eventId, id);
-    expect(editor.library, same(library));
-    expect(find.text('Take 10:00'), findsWidgets);
+    expect(find.byType(VideoEditScreen), findsNothing);
+    expect(find.byType(PlayAlongScreen), findsOneWidget);
+    expect(find.byKey(const Key('video-edit-take-bar')), findsOneWidget);
+    expect(find.byKey(const Key('video-edit-preview')), findsOneWidget);
+    expect(find.byKey(const Key('cam-rec')), findsNothing);
+    expect(find.byKey(const Key('preview')), findsNothing);
+    expect(mainRow, findsNothing);
+    final bar = tester.widget<AppBar>(find.byType(AppBar));
+    expect((bar.title! as Text).data, 'Take 10:00');
     expect(video.playing, isEmpty);
 
-    // Back: Cam, the take still listed, nothing playing.
+    // Back: Cam, its camera as it was, the take still listed and still in
+    // the main row, nothing playing.
     await tester.pageBack();
     await tester.pump();
     await frames(tester);
     expect(find.byType(VideoEditScreen), findsNothing);
     expect(find.byType(PlayAlongScreen), findsOneWidget);
+    expect(find.byKey(const Key('cam-rec')), findsOneWidget);
+    expect(find.byKey(const Key('preview')), findsOneWidget);
+    expect(find.byKey(const Key('video-edit-take-bar')), findsNothing);
+    expect(
+      find.descendant(of: mainRow, matching: find.text('Take 10:00')),
+      findsOneWidget,
+    );
     expect(row, findsOneWidget);
     expect(video.playing, isEmpty);
+    // The camera stayed open: it opened once.
+    expect(camera.opened, hasLength(1));
   });
 
   testWidgets('the Text view\'s sidebar has a take\'s Edit too, and opens '
