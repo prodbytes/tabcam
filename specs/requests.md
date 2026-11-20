@@ -4783,8 +4783,10 @@ spec.
    camera, Back to the edit as kept with the song paused; without
    Premium: the tooltip, the card and no camera, no cameras asked for
    and nothing asked of the take's sound; an editor where it isn't
-   pressed asks for none of them; a take edited in Cam put in the main
-   row, Back to its edit, then the camera), and the editor's frame test
+   pressed asks for none of them; on a phone, its tooltip, Back giving
+   the edit the width with the sidebar hidden, and Rec over this again
+   on the same camera; a take edited in Cam put in the main row, Back to
+   its edit, then the camera), and the editor's frame test
    checks it on screen at every size and language. Not yet tried on a
    phone. See [video edit](video-edit.md#rec-over-this),
    [Cam](cam.md) and [navigation](navigation.md).
