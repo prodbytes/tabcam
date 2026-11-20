@@ -2344,15 +2344,19 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
   /// Hidden, the settings leave the viewer all the room. While the
   /// on-screen keyboard is open (the title typed in), the transport and
   /// the lanes give their room to the viewer and the field; in a tiny
-  /// window the lanes go first, then the transport.
+  /// window the lanes go first, then the transport. Squeezed narrower
+  /// than a small phone by the dictionary's or the metronome's sidebar,
+  /// it's laid out that wide and cut at the sidebar's edge, not squeezed
+  /// ([_leastWidth]).
   Widget _body(VideoPlayerController video, AppLocalizations l10n) {
     final keyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final screen = MediaQuery.sizeOf(context).width;
     return LayoutBuilder(
       builder: (context, box) {
-        _box = box.biggest;
-        final wide = _wide;
         final height = box.maxHeight;
-        final width = box.maxWidth;
+        final width = max(box.maxWidth, min(_leastWidth, screen));
+        _box = Size(width, height);
+        final wide = _wide;
         final inset = MediaQuery.paddingOf(context).bottom;
         bool fits(double dock) =>
             height >= dock + inset + _transportHeight + 1 + _viewerLeast;
@@ -2377,7 +2381,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
           0.0,
           min(width / aspect, free - min(_inspectorLeast, free * 0.45)),
         );
-        return Column(
+        final content = Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
@@ -2431,9 +2435,22 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
             ?panel,
           ],
         );
+        return ClipRect(
+          child: OverflowBox(
+            alignment: AlignmentDirectional.topStart,
+            minWidth: width,
+            maxWidth: width,
+            child: content,
+          ),
+        );
       },
     );
   }
+
+  /// The narrowest the editor's body is laid out: a small phone's width
+  /// (where it all fits, at the largest text size too), or the screen's
+  /// where that's narrower.
+  static const _leastWidth = 360.0;
 
   /// The bottom panel, the whole width: the transport, and under it, when
   /// [dock], the lanes, flush with the bottom edge (over the safe area),
