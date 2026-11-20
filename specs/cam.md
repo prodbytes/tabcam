@@ -9,6 +9,11 @@ anything, Rec and Play are dead, the tab under the camera is the
 capture's or a made-up sample, and the Premium card lies over it all,
 its **Not now** leaving. With Premium it opens the camera
 ([`PlayAlongScreen`](../tabcam_app/lib/capture/play_along_screen.dart)).
+The [video editor](video-edit.md#rec-over-this)'s **Rec over this**
+(Premium's too) turns the editor into Cam on the video it edits: the
+camera in its place, the video playing along in the main row as a file
+picked in the sidebar does (as it is, not as edited), so a take
+recorded there has it as its song; Back puts the edit back.
 
 <a id="cams-view"></a>**Cam's view is the video editor's**: one widget,
 `StudioView`
@@ -712,13 +717,16 @@ and watermark, the editor's transport, its rows (Take, then the song
 lined up) and the cut's steps in the dock, the Download settings, and
 the editor's app bar (Reset, Download, Download settings, Dictionary,
 Metronome, Play along, Share, the keyboard button, About; on a phone
-Dictionary, Metronome, Play along, Share and About in its More menu),
-with **Back** at its start. The take's edit is as it was left, its
+[Rec over this](video-edit.md#rec-over-this), Dictionary, Metronome,
+Play along, Share and About in its More menu), with **Back** at its
+start. The take's edit is as it was left, its
 song lined up, the same edit as on its file screen. The keys are the
 editor's ([keyboard shortcuts](keyboard-shortcuts.md)): the space bar
 plays its preview; Cam's (/, ., the tab's) and the player's (1, 0)
 do nothing. The sidebar stays at the right, the take edited without
-Edit or Delete; another take's Edit takes its place in the main row
+Edit or Delete (nor has any page Back is still to bring back, such as
+the one [Rec over this](video-edit.md#rec-over-this) left); another
+take's Edit takes its place in the main row
 (the first's edit kept). The song in the take's Song row, deleted in
 the sidebar, leaves the row first, as its Remove does: its player lets
 go of the file, the take is its only row, and the edit kept no longer

@@ -4833,6 +4833,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Edit the take'**
   String get videoEditRecEdit;
+
+  /// Video editor: the transport's camera button (Premium): Cam's camera in the viewer's place, with the video opened as the song playing along in the main row, to record a take over it
+  ///
+  /// In en, this message translates to:
+  /// **'Rec over this'**
+  String get videoEditRecOver;
 }
 
 class _AppLocalizationsDelegate

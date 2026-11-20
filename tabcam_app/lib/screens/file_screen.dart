@@ -208,7 +208,10 @@ class _FileScreenState extends State<FileScreen> {
       if (!mounted) return;
       final event = _library.byId(widget.eventId);
       final page = event?.pages.where((p) => p.id == _pageId).firstOrNull;
-      if (event != null && page != null && page.isVideo && !_fixed(event, page)) {
+      if (event != null &&
+          page != null &&
+          page.isVideo &&
+          !_fixed(event, page)) {
         unawaited(_edit(event, page));
       }
     });
@@ -339,7 +342,7 @@ class _FileScreenState extends State<FileScreen> {
           along: _alongFor(event, page),
           deletes: true,
           canDelete: !_busy,
-          keepId: page.id,
+          keepIds: {page.id},
           run: _run,
           onEdit: (take) => _edit(event, take),
           child: child,

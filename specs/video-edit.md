@@ -94,9 +94,11 @@ sidebars, as on the file's screen: [dictionary](dictionary.md),
 edit is kept as you make it and plays with the video; Download makes a
 file of it."); on a screen under 600 points wide (a phone), Dictionary,
 Metronome, Share and ⓘ are in a **More** menu (⋮) at the bar's end, so
-the file's name keeps some room. It opens with the video's edit as it
-was left. It's **a frame that doesn't scroll**, as a small video
-editor's: **the viewer** on top, with the **Download settings** beside
+the file's name keeps some room, the menu starting with [Rec over
+this](#rec-over-this) (a phone's transport has no room for it). It
+opens with the video's edit as it was left. It's **a frame that
+doesn't scroll**, as a small video editor's: **the viewer** on top,
+with the **Download settings** beside
 it or under it; and docked at the bottom edge, the whole width, **the
 transport** right over **the rows** (the ruler, the video's row, the
 Song row once there's a song, and the cut's steps). The dock is as
@@ -157,6 +159,71 @@ opens one. The edit is the page's, as anywhere: a take edited in Cam
 opens as left on its file screen, and the other way round. A reload
 while a take is edited in Cam opens Cam on the camera
 ([navigation](navigation.md#coming-back-where-the-user-was)).
+
+<a id="rec-over-this"></a>**Rec over this** (`video-edit-cam`, a camera
+with "Rec over this" in its tooltip: in the transport, right after To
+the end; on a phone, first in the app bar's ⋮ menu) records a take over
+the video edited: Cam's camera takes the video's place in the view, and
+the video plays along in Cam's [main row](cam.md#the-main-row), as a
+file picked in Cam's play-along sidebar does. It's tabs.cam Premium's,
+as Cam is ([cloud OCR](cloud-ocr.md#in-the-app)): without Premium (as
+the watermark has it, `premiumNow`) a press shows Premium's card in a
+sheet (as the watermark's lock does), led by what Cam does, and no
+camera opens. It says it's Premium's (a small lock on the camera,
+"Rec over this: tabs.cam Premium") only to a user the service said has
+none (`CloudOcr.free`), as the event screen's Cam tool does; until it
+has, no lock shows, and the card checks first. With it:
+
+- The edit is kept with its page at once, the editor's players are let
+  go of, and the page goes on the view's Back list, as a take's Edit in
+  Cam puts the camera there (`_go`). Its file then loads in the backing
+  track ([`BackingTrack`](../tabcam_app/lib/capture/backing_track.dart)),
+  paused, where the preview was in it (as its player says, as Start
+  here reads it), and nothing else loads in it on the way (the sidebar
+  a take's Edit hid on a phone shows again only once the page is in
+  it); the main row names it as it loads, and the play-along sidebar
+  opens on it, its mini player showing its picture.
+  Cam's controls, keys and app bar are the view's from then on, as in
+  Cam: **Rec** (or **/**) counts in and plays it with the take from
+  where it is (**.**, from its start), its parts played show on the
+  take's row under it, and after Stop the take's row offers **Play the
+  take** and **Edit the take** ([the take's row](cam.md#the-takes-row)).
+- **It plays raw**: the video's file as it is, from where it was, with
+  its own sound, not as edited (no trim, fades, title, tab or Song row
+  of its own), since a take's log notes where in the file its song
+  played ([`SongNotes`](../tabcam_app/lib/capture/take_log.dart)) and a
+  take's edit has one song lane. So the take lines the video up as its
+  song: **Edit the take** opens it in the editor in the camera's place,
+  its Take row, then the video lined up in its Song row
+  ([a take's song, lined up](#a-takes-song-lined-up)).
+- **Back** (the app bar's, the system's, the browser's; a take
+  recording is saved first, as in Cam) puts the edit back as it was
+  kept, the video in the main row again: what plays along pauses first,
+  and on a phone the sidebar hides where it would leave the editor too
+  little room, as for a take's Edit. Back once more closes the editor
+  (in Cam, puts the camera back). No page Back is still to bring back
+  (nor the page edited) shows Edit or Delete in the sidebar, however
+  many Rec over this and a take's Edit put on the list; a page synced
+  away meanwhile isn't brought back: Back goes to what was before it,
+  or, with nothing left, closes the view. A file tapped in the sidebar
+  while the edit is back saves the edit and puts the camera back with
+  that file playing, Back bringing the edit back again.
+- In the editor opened over the file screen (not Cam), Cam's session
+  ([`CamSession`](../tabcam_app/lib/capture/cam_session.dart)) is made
+  on the video's capture the first time it's pressed, its sidebar not
+  opening by itself (Rec over this opens it); the camera, the
+  microphone set up for the takes and the head gestures' face
+  detection (ML Kit, where it works) open then, once the editor's
+  players are let go of (a phone's decoders and sound free for them),
+  and stay open behind the edit after Back (the head gestures paused),
+  as in Cam, until the editor closes. An editor where it's never
+  pressed opens none of them.
+  The view then also has the Play along button in its app bar. A reload
+  meanwhile opens the editor on its video again
+  ([navigation](navigation.md#coming-back-where-the-user-was)).
+- In Cam, a take edited in the camera's place offers it too (Premium's
+  already), when it's in Cam's own capture: the take goes into the main
+  row, and Back gives its edit, then the camera.
 
 <a id="download-settings"></a>**The Download settings**
 ([`download_settings.dart`](../tabcam_app/lib/screens/download_settings.dart)):
@@ -266,9 +333,14 @@ metronome's buttons do theirs; its ✕ hides it too.
   over the part kept (`Keep 0:02.5–0:41.0`, in the primary colour once
   trimmed; both shrink to fit at large text sizes); in the middle **To
   the start** (⏮), **Play** / **Pause** (filled, larger) and **To the
-  end** (⏭); at its right **Start here** (|◀) and **End here** (▶|),
-  which set either end where the preview is (icons with tooltips,
-  named from 720 points wide). **To the start** goes to the kept
+  end** (⏭), then, but on a phone (its app bar's ⋮ has it), **Rec over
+  this** (a camera, [above](#rec-over-this)); at its right **Start
+  here** (|◀) and **End here** (▶|), which set either end where the
+  preview is (icons with tooltips; named from 720 points wide where both
+  fit their half of the row by their names, measured at the text size).
+  The buttons keep their 48-point size: where half the row is too little
+  for the two trims, the time at the left gives them room and shrinks.
+  **To the start** goes to the kept
   part's start, or, there already, the video's, playing on if it
   played; **To the end** pauses and goes to the kept part's end, or,
   there already, the video's. Play / Pause's tooltip names the space

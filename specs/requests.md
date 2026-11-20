@@ -4753,3 +4753,59 @@ spec.
    once Cam closes while recording; Cam opened again, placed, then
    unplaced with the take itself in the main row). See
    [Cam](cam.md#the-takes-row) and [video edit](video-edit.md#in-cam).
+
+   **Step 6 of 6: Rec over this.** The video editor gets a camera,
+   **Rec over this**: in the transport right after To the end, and on a
+   phone first in the app bar's ⋮ menu, where the transport has no room
+   for a third button beside Start here and End here (they keep their
+   48-point size: named only where both fit by their names, measured at
+   the text size, and where half the row is too little for them, the
+   time at the left gives them room). It records a take over the video
+   edited, "the opened one first". It's tabs.cam Premium's, as Cam is:
+   without Premium (`premiumNow`, as the watermark) a press shows
+   Premium's card, led by what Cam does, and no camera opens; a small
+   lock on the camera and its tooltip say it's Premium's only once the
+   service said the user has none (`CloudOcr.free`), as the event
+   screen's Cam tool does. With it, the edit is kept, the editor's
+   players are let go of, and Cam's camera takes the video's place in
+   the same view, with the video in the main row as the song playing
+   along, loaded paused where the preview was (nothing else loaded on
+   the way, even where a take's Edit had hidden the sidebar), and the
+   play-along sidebar open on it; Rec records over it, and the take's
+   row then offers Play and Edit, Edit giving the take with the video
+   lined up as its Song. **Back** puts the edit back as it was kept
+   (what plays along paused first), and Back again closes the editor.
+   No page Back is still to bring back shows Delete or Edit in the
+   sidebar, and one synced away meanwhile is skipped (nothing left, the
+   view closes). The video plays raw, its file as it is (no trim, fades
+   or Song row of its own): a take's log notes where in the file its
+   song played, and a take's edit has one song lane. In the editor
+   opened over the file screen, Cam's session is made only when it's
+   first pressed (on the video's capture, its sidebar not opening by
+   itself), its camera, microphone and face detection opened only once
+   the editor's players are let go of, so an editor where it's never
+   pressed opens none of them; once made, it stays open behind the edit
+   until the editor closes, as in Cam. In Cam, a take edited in the
+   camera's place offers it too. In English, Spanish and Portuguese.
+   Tests: `studio_test.dart` (with Premium: by To the end, no lock, the
+   edit kept, the editor's player let go of, the video in the main row
+   on a player of its own from where the preview was, paused, the list
+   open on it, a take recorded over it with the video as its song,
+   placed in its row, its Edit giving Take then the video with neither
+   the video nor the take offering Delete, Back to the camera, Back to
+   the edit as kept with the song paused; without Premium: the lock,
+   the card and no camera, no cameras asked for and nothing asked of
+   the take's sound; Premium not known yet: no lock, the card, no
+   camera; an editor where it isn't pressed asks for none of them; on a
+   phone, in the ⋮ menu with the trims 48 points, Back giving the edit
+   the width with the sidebar hidden, and Rec over this again on the
+   same camera; on a phone, a take edited in Cam with the sidebar
+   hidden, one player more, the take's; a take edited in Cam put in the
+   main row, Back to its edit, then the camera; the page on Back's list
+   synced away, Back closing the editor), the editor's frame test
+   checks it on screen with the transport's buttons at full size at
+   every size and language (on a phone, in the ⋮ menu), and the phone
+   ⋮ test has it at the largest text in every language. Not yet tried
+   on a phone. See [video edit](video-edit.md#rec-over-this),
+   [Cam](cam.md), [navigation](navigation.md) and
+   [tabs.cam Premium](cloud-ocr.md#in-the-app).

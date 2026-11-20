@@ -2919,4 +2919,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get videoEditRecEdit => 'Editar la toma';
+
+  @override
+  String get videoEditRecOver => 'Grabar sobre este';
 }
