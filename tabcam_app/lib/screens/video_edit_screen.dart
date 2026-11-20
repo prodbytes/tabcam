@@ -3015,8 +3015,10 @@ class _StudioViewState extends State<StudioView> {
               : 0.0;
           phrase = cam.tabShown && room - phraseHeight >= _viewerLeast;
           final along = cam.along;
+          // The main row follows what plays along, and the capture's files
+          // (one arriving can play).
           dock = ListenableBuilder(
-            listenable: Listenable.merge([along, along.track]),
+            listenable: Listenable.merge([along, along.track, _library]),
             builder: (context, _) => _camDock(
               l10n,
               cam,

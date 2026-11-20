@@ -184,6 +184,15 @@ class PlayAlong extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Shows the sidebar, with a file loaded to play (not playing) when
+  /// none is ([_loadFirst]): Cam's **Play along with a song…**.
+  void show() {
+    _opened = true;
+    _open = true;
+    _loadFirst();
+    notifyListeners();
+  }
+
   /// Loads the file the screen opened on, if it plays, else the first
   /// that does, into the frame (not playing), when nothing is loaded yet:
   /// a song to play along with rather than one of Cam's takes ([isTake]),

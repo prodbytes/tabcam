@@ -78,8 +78,8 @@ extension _CamRows on _StudioViewState {
   /// The camera state's main row ("Song"): the file playing along, its
   /// play / pause in its header and its bar on the time axis
   /// ([_AlongBar]); with none, where the capture has a file that plays,
-  /// a dashed **Play along with a song…** that opens the sidebar's list;
-  /// null where it has none.
+  /// a dashed **Play along with a song…** that opens the sidebar's list,
+  /// its first file loaded ([PlayAlong.show]); null where it has none.
   _Row? _alongRow(AppLocalizations l10n, PlayAlong along) {
     final track = along.track;
     final page = track.page;
@@ -95,7 +95,7 @@ extension _CamRows on _StudioViewState {
         bar: _AddAlong(
           label: l10n.videoEditMainAdd,
           onTap: () {
-            if (!along.open) along.toggle();
+            along.show();
             _keys.requestFocus();
           },
         ),
