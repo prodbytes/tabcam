@@ -5,56 +5,82 @@ record themselves playing along with the capture's tab. It's tabs.cam
 Premium's ([cloud OCR](cloud-ocr.md#in-the-app)): without Premium it opens
 as a **preview** (`PlayAlongScreen` with `gate` set): no camera is opened
 (a camera icon where the preview would be), no key, nod or tap does
-anything, Rec and Play are dead, the tab along the bottom is the
+anything, Rec and Play are dead, the tab under the camera is the
 capture's or a made-up sample, and the Premium card lies over it all,
-its **Not now** leaving. With Premium it opens the camera view
-([`PlayAlongScreen`](../tabcam_app/lib/capture/play_along_screen.dart),
-a screen over a [`CamSession`](../tabcam_app/lib/capture/cam_session.dart),
-which does what Cam does: the camera, the head gestures, the tab and
-auto-pass, the microphone and its volume, the takes and their Play; the
-screen shows it with the widgets in
-[`cam_controls.dart`](../tabcam_app/lib/capture/cam_controls.dart): the
-camera's view, the phrase, and Rec, Play, Tab and Auto-pass with Rec's
-menus):
+its **Not now** leaving. With Premium it opens the camera
+([`PlayAlongScreen`](../tabcam_app/lib/capture/play_along_screen.dart)).
 
-- **The camera** fills the screen, the **front** one first (it faces the
-  player); **Flip camera** in the app bar moves to the next one (not
-  while recording). The app bar has the capture's title, and first of
-  its buttons **Dictionary** (a book icon, in the preview too), which
-  shows the chord and scale [dictionary](dictionary.md) in a sidebar on
-  the right, the camera beside it (or, turned by its Rotate button, in
-  a panel under the camera); typing in it doesn't move the tab,
-  and once it's hidden the keys move the tab again. **Metronome** (a
-  stopwatch icon) after it opens the [metronome](metronome.md)'s sidebar
-  the same way. Without a
+<a id="cams-view"></a>**Cam's view is the video editor's**: one widget,
+`StudioView`
+([`video_edit_screen.dart`](../tabcam_app/lib/screens/video_edit_screen.dart),
+Cam's parts in
+[`video_edit_cam.dart`](../tabcam_app/lib/screens/video_edit_cam.dart)),
+one frame whatever is in its **main row**: in Cam the camera, in its
+place, where the [video editor](video-edit.md#in-cam) has the video it
+edits; `PlayAlongScreen` builds it with the camera, `VideoEditScreen`
+with a page. A [`CamSession`](../tabcam_app/lib/capture/cam_session.dart)
+does what Cam does (the camera, the head gestures, the tab and
+auto-pass, the microphone and its volume, the takes and their Play), and
+the view shows it with the widgets in
+[`cam_controls.dart`](../tabcam_app/lib/capture/cam_controls.dart).
+
+- **The frame**, as the editor's: **the viewer** at the top, the camera
+  (`CamView`) on black with the tab's phrase under it (`CamPhrase`); the
+  play-along, dictionary and metronome sidebars at the right, the
+  body's whole height; and docked at the bottom, the viewer's width, on
+  the theme's surface colour, **Cam's controls** (`CamStrip`: Rec with
+  its microphone's menu and level meter, Play, Tab and Auto-pass) over
+  **the ruler and the main row** ([below](#the-main-row)). In a window
+  too short for it all, the rows give way first, where the camera would
+  keep less than 160 points, and while the on-screen keyboard is open
+  (the dictionary's search typed in); then the phrase, where the camera
+  would keep less than 96; the controls always show. So a phone on its
+  side has the camera, the phrase and the controls, without the rows.
+  The rows also give way where their bar would be narrower than 120
+  points: on a phone beside the play-along sidebar (open by default,
+  half the screen's width), whose player has the same song; with the
+  sidebar hidden, they show. The app bar is in the theme's colours; the
+  viewer stays black.
+- **The camera**, the **front** one first (it faces the player); **Flip
+  camera** in the app bar moves to the next one (not while recording).
+  The app bar has the capture's title, and first of its buttons
+  **Dictionary** (a book icon, in the preview too), which shows the
+  chord and scale [dictionary](dictionary.md) in a sidebar on the right,
+  the view beside it (or, turned by its Rotate button, in a panel under
+  it); typing in it doesn't move the tab, and once it's hidden the keys
+  move the tab again. **Metronome** (a stopwatch icon) after it opens
+  the [metronome](metronome.md)'s sidebar the same way. Then **Play
+  along** (♫, [below](#playing-along-with-a-file); not in the preview),
+  the keyboard button ([keyboard shortcuts](keyboard-shortcuts.md)),
+  head gestures ([below](#head-gestures)) and Flip camera. Without a
   camera, or one that isn't allowed, the view says so.
   [A camera that won't start](#a-camera-that-wont-start) gives way to the
   next one.
-- **The tab**, along the bottom, one **neckline** at a time: a staff
+- **The tab**, under the camera, one **phrase** at a time: a staff
   (a run of string lines) with the lines right above it, such as chord
-  names and a section name
-  ([`necklines`](../tabcam_app/lib/recognition/necklines.dart)). Text
+  names and a section name (a neckline, in the code:
+  [`necklines`](../tabcam_app/lib/recognition/necklines.dart)). Text
   that isn't over a staff (lyrics under it, notes at the end) is left
   out; a tab with no string lines at all (chords only) shows its
   blocks between blank lines. A file's divider, in a tab read from
   several files ([several files](tab-recognition.md#several-files)), is
-  in no neckline: it ends a staff as a blank line does. The neckline is in the monospace font,
-  shrunk to fit the screen's width (a long staff reads best with the
+  in no phrase: it ends a staff as a blank line does. The phrase is in the monospace font,
+  shrunk to fit the viewer's width (a long staff reads best with the
   phone turned sideways), with its number under it ("2 / 14"). A
   capture with no text tab yet says to read it first.
 - **Moving along the tab**: any key (but **/** and **.**, which are
   [a new take](#new-take-key), **H**, which shows the
   [keyboard shortcuts](keyboard-shortcuts.md), and the space bar, **1**, 0, ← and →
   while a file [plays along](#playing-along-with-a-file)) goes to the
-  next neckline (a keyboard, or a Bluetooth page-turner pedal), **↓**
+  next phrase (a keyboard, or a Bluetooth page-turner pedal), **↓**
   among them; **Backspace**, **↑** and **Page Up** go to the one
   before, and so does **←** while nothing plays along. Shift, Control, Alt,
   Meta, Caps Lock, Fn and Escape pressed alone do nothing. A tap on the
-  neckline goes to the next; the arrows beside it (**Previous line**,
+  phrase goes to the next; the arrows beside it (**Previous line**,
   **Next line**) to either side. It stops at the first and the last.
 - <a id="head-gestures"></a>**Head gestures** (Android, iOS and the web): a nod
   **up**, or a turn of the head to the user's **right**, goes to the next
-  neckline; a nod **down** or a turn to the **left**, to the one before
+  phrase; a nod **down** or a turn to the **left**, to the one before
   ([`head_gestures.dart`](../tabcam_app/lib/capture/head_gestures.dart)).
   Only a strong, deliberate gesture counts, so playing doesn't turn the
   tab: the head must move at least 20° up or down, or 25° sideways, from
@@ -97,7 +123,7 @@ menus):
   primary colour while it sees a face; off (struck through), nothing
   watches for faces and the camera streams no frames for them. While a take plays back, gestures do nothing.
 - **Rec** records video and sound (`camera`, `ResolutionPreset.high`)
-  from the neckline showing, until **Stop**, the sound first
+  from the phrase showing, until **Stop**, the sound first
   ([Recording comes first](#recording-comes-first)).
   <a id="rec-key"></a>Rec has no key of its own: **.** starts a take
   with the sidebar's song back at its start, and **/** one with the
@@ -156,7 +182,7 @@ menus):
     stopped (Stop or /). A take saved before is never touched: . only
     throws away the one recording.
 
-  The tab stays at the neckline showing, as with Rec (auto-pass turns it
+  The tab stays at the phrase showing, as with Rec (auto-pass turns it
   along the song, as ever). Not recording, **/** starts a take as Rec
   does (the song playing on, or started from where it is), and **.**
   starts one with the song back at its start. They act on the key down
@@ -301,7 +327,7 @@ menus):
   added by the editor**: a take is saved at once as the camera recorded
   it, with no tab in its picture and no second encode (no "Adding the
   tab…" wait; on iOS, only an HEVC take is encoded again, below). Its
-  [log](#what-a-take-keeps) keeps the necklines it showed and when
+  [log](#what-a-take-keeps) keeps the phrases it showed and when
   each showed (`burned: false`), and the
   [video editor](video-edit.md#layers) draws them over the take, each
   along the bottom of the video while it showed in Cam (a band as wide
@@ -309,7 +335,7 @@ menus):
   `renderBand` in [`edit_layers.dart`](../tabcam_app/lib/capture/edit_layers.dart)):
   in its preview, in the [file screen](event-screen.md#file-screen)'s
   player, and in its Download, where its **Tab** chip turns it off.
-  Cam's [Play](#play) turns the necklines along the take from the same
+  Cam's [Play](#play) turns the phrases along the take from the same
   log. Everywhere else the take is its file as it is, without the tab:
   the file list's play buttons, the play-along sidebar, and the list's
   Download and Download all (and older versions of the app, which don't
@@ -363,22 +389,22 @@ menus):
   greyed (`takePlaysHere`). A take from another device may still be
   downloading when Play is tapped: until it opens Play shows **Stop**,
   which lets it go (it doesn't play once it arrives), and Rec, 1 and .
-  wait, so no take starts with it about to play into it. The necklines under it turn
+  wait, so no take starts with it about to play into it. The phrases under it turn
   where they turned while it was recorded, as its
   [log](#what-a-take-keeps) says (at their times in the file, the lag
-  added): a neckline the capture's tab no longer has (its text changed
+  added): a phrase the capture's tab no longer has (its text changed
   since) shows as it was, without the "2 / 5" under it. A tab with the
-  same neckline twice (a repeated riff): the take just recorded turns
+  same phrase twice (a repeated riff): the take just recorded turns
   to the copy that showed (Cam keeps its lines while it's open, as long
   as the tab doesn't change); one recorded before, whose log keeps the
-  text once, to the copy nearest the neckline before, and of two as
+  text once, to the copy nearest the phrase before, and of two as
   near, the one the way it was going (forward at first), its first
-  neckline the first copy (`TakeTab.placesIn`, a guess where the take
+  phrase the first copy (`TakeTab.placesIn`, a guess where the take
   went back and forth over the copies). Stopped, the tab stays at the
-  last neckline shown that the capture's tab has. A take
+  last phrase shown that the capture's tab has. A take
   from before takes had a log turns none (its tab is in its picture).
 - **Tab** (beside Rec and Play: **Hide tab** with the tab showing,
-  **Show tab** with it hidden) hides the tab along the bottom, leaving
+  **Show tab** with it hidden) hides the tab under the camera, leaving
   the camera more of the screen, and shows it again. Hidden, it still
   turns (keys, taps, head gestures, a take playing back) and a take's
   log still notes each turn, so the editor draws it where it showed;
@@ -386,18 +412,18 @@ menus):
   It shows again each time Cam opens.
 - <a id="phrase-passes"></a>**Phrase passes**: while recording with
   [Auto-pass](#auto-pass) on, each
-  time the user turns the tab (a key, a tap on the neckline or its
+  time the user turns the tab (a key, a tap on the phrase or its
   arrows, a head gesture) with a song playing in the sidebar's
   [player](#playing-along-with-a-file) (one that plays in the app: a
   recording or video of the capture's, or a link straight to a sound or
   video file, not a page in a frame), the song's position is noted, with
-  which way it turned (**next** or **previous**) and the neckline it
+  which way it turned (**next** or **previous**) and the phrase it
   turned to ([`PhraseTimes`](../tabcam_app/lib/library/phrase_times.dart),
   `BackingTrack.recordPass`, the position read from the player itself).
   A pass within **two seconds** of one the same way (this time through
   or an earlier one) is merged into it, at their **average** time (each
   pass merged into it counting, so it settles as the song is played
-  again), keeping the newer's neckline; one moved within two seconds of
+  again), keeping the newer's phrase; one moved within two seconds of
   another the same way merges with it too. Passes are only noted while
   recording, only while the song plays, and only while Auto-pass is on:
   with it **off**, recording notes none, for the song or for the take,
@@ -406,9 +432,9 @@ menus):
   was on are noted and kept, those made while it was off aren't. That
   leaves a **gap** in the passes (the song's and the take's), and
   [Auto-pass](#auto-pass) only knows the passes: through a stretch
-  recorded with it off the tab stays on the last pass's neckline, and
+  recorded with it off the tab stays on the last pass's phrase, and
   goes straight to the next pass's (however many lines on) when the
-  song reaches it; before the first pass it shows the neckline that
+  song reaches it; before the first pass it shows the phrase that
   pass turned from, so when the turns before it were made with
   Auto-pass off, that's not the one the take started on.
   - **Per file**: each recording, video or link keeps its own passes,
@@ -439,7 +465,7 @@ menus):
     does a file the owner [publishes](contributions.md#what-the-owner-sees-and-publishes)
     from a contribution (the owner's own for it, else its reader's).
     Passes for a song deleted elsewhere are let go of at the next save.
-  - **The take** keeps its own too, from when its necklines showed
+  - **The take** keeps its own too, from when its phrases showed
     while Auto-pass was on (merged the same way; `takePhrases`), so
     played along later it turns the tab as it turned in it. A turn made
     while Auto-pass was off is still in the take's log (drawn by the
@@ -463,9 +489,9 @@ menus):
   passes plays in the player, Cam turns the tab by itself where they
   are ([`AutoPass`](../tabcam_app/lib/capture/auto_pass.dart)), reading
   the song's position every 100 ms: as the song passes one, the tab
-  goes to its neckline. When the song jumps (it starts over at its end
+  goes to its phrase. When the song jumps (it starts over at its end
   or its section's with Repeat, «, », a scrub, Play from the start, or
-  auto-pass switched on), the tab goes to the neckline the passes show
+  auto-pass switched on), the tab goes to the phrase the passes show
   there: the last one's before it, or the first one's previous line
   before it. A pass by hand the same way within two seconds after
   auto-pass made one is taken as that pass: it doesn't turn the tab
@@ -555,6 +581,29 @@ its [log](#what-a-take-keeps) notes where the song played (paused,
 skipped or started over too), so the [editor](video-edit.md#a-takes-song-lined-up)
 opens the take with the song already lined up: nothing to sync by hand.
 
+<a id="the-main-row"></a>**The main row** ("Song", in the dock under
+the ruler) is the file playing along, as the editor's main row is the
+video it edits: the file chosen in the sidebar (or loaded in its player
+by itself) fills it, in place of the one before, and plays through the
+sidebar's player (`BackingTrack`), the same one, so its count-in,
+section, speed, Repeat, phrase passes and keys are the player's, never
+doubled; the sidebar's player stays, the same song's picture and
+controls. The row's header has **Play the song** / **Pause the song**
+(Pause while it counts in too), as the player's Play. Its bar, as long
+as the ruler (the file's length), has the file's name, the part played
+filled (the primary colour; red while a take records) and the section,
+where one is set, outlined in the tertiary colour; the ruler's playhead
+follows the player. A tap on the bar or the ruler takes the player
+there, and a drag along them follows (at most every 150 ms, the last
+where it's let go), kept within the section where one is set
+(`BackingTrack.seek`); the ruler zooms as the editor's. A link in a
+frame, which can't be taken to a time, is its name on a dashed bar; a
+file still loading, its name alone. With nothing loaded where the
+capture has a file that plays, the row is a dashed **Play along with a
+song…**, which opens the sidebar with its first file loaded, paused
+(`PlayAlong.show`); with nothing in the capture that plays (only a PDF
+to follow, say) there's no row. In English, Spanish and Portuguese.
+
 <a id="deleting-from-the-sidebar"></a>**Deleting from the sidebar**: each
 file in it (the recordings, videos and links, Cam's takes among them,
 and the PDFs and pages to [follow](#following-a-pdf); not the text tab)
@@ -595,20 +644,43 @@ own Delete deletes it and goes back to the list.
 sidebar**: each of Cam's takes in it (under **Takes**; not the songs,
 videos that aren't takes, links, PDFs or pages) has **Edit** (scissors,
 as the file screen's; its tooltip "Edit <name>") right before its
-Delete. It opens the [video editor](video-edit.md) on that take, over
-the screen, exactly as **Edit** on the take's own
-[file screen](event-screen.md#file-screen) does (the same call,
-`VideoEditScreen.open`, with the same Premium service for the
-watermark): the take's edit as it was left, its song lined up, its tab
-over it. What played along pauses first (and, beside the Text view, the
-recording the capture's list was playing stops; on the file screen, the
-file it shows is let go of meanwhile), so only the editor's preview
-sounds. Back, the screen is as it was, Cam with its keys. It shows
-where the file screen would offer Edit: on the capture's own takes, in
-a capture that isn't read only (none on one shared to read, nor on a
-reader's own contribution's takes); not in Cam's Premium preview, nor
-on a capture opened by its link. It's greyed when Delete is: while a
-take records, saves or plays back, and while the screen works.
+Delete. What played along pauses first. **In Cam** it opens the
+[video editor](video-edit.md#in-cam) on that take **in Cam's own view**,
+in the camera's place, with no screen pushed over Cam
+([Cam's view](#cams-view)): the take in the viewer with its tab, title
+and watermark, the editor's transport, its rows (Take, then the song
+lined up) and the cut's steps in the dock, the Download settings, and
+the editor's app bar (Reset, Download, Download settings, Dictionary,
+Metronome, Play along, Share, the keyboard button, About; on a phone
+Dictionary, Metronome, Play along, Share and About in its More menu),
+with **Back** at its start. The take's edit is as it was left, its
+song lined up, the same edit as on its file screen. The keys are the
+editor's ([keyboard shortcuts](keyboard-shortcuts.md)): the space bar
+plays its preview; Cam's (/, ., the tab's) and the player's (1, 0)
+do nothing. The sidebar stays at the right, the take edited without
+Edit or Delete; another take's Edit takes its place in the main row
+(the first's edit kept). The camera stays open behind it, hidden, and
+its head gestures pause (no frame goes to them), and the metronome
+plays on. **Back** keeps the edit and puts the camera back, the song in
+the main row as it was, its gestures watching again, Cam's keys back; a
+file tapped in the sidebar does the same, then plays in the main row.
+On a phone, where the sidebar would leave the editor narrower than 360
+points, or on its side, too narrow for the Download settings beside
+the viewer, the Edit hides the sidebar, and it shows again with the
+camera. During a download (the editor's), Back does nothing and the
+sidebar takes no taps. **Beside the Text view** and on a recording's
+**file screen** it opens the editor over the screen, exactly as
+**Edit** on the take's own [file screen](event-screen.md#file-screen)
+does (the same call, `VideoEditScreen.open`, with the same Premium
+service for the watermark); there the recording the capture's list was
+playing stops (beside the Text view), or the file the screen shows is
+let go of meanwhile (the file screen), so only the editor's preview
+sounds, and back, the screen is as it was. It shows where the file
+screen would offer Edit: on the capture's own takes, in a capture that
+isn't read only (none on one shared to read, nor on a reader's own
+contribution's takes); not in Cam's Premium preview, nor on a capture
+opened by its link. It's greyed when Delete is: while a take records,
+saves or plays back, and while the screen works.
 
 <a id="following-a-pdf"></a>**Following a PDF**: in Cam and in the
 [Text view](tab-recognition.md#text-view) (not beside a PDF), the
@@ -780,7 +852,10 @@ view).
   editor, the dictionary's search) still types them, until a tap in the
   sidebar takes the keyboard out of the field; under a dialog, a menu
   or another screen the keys are that one's; with the sidebar hidden
-  they're the screen's own; and a Cam preview has no keys.
+  they're the screen's own; while a take is edited in Cam's view, in the
+  camera's place, they're the editor's
+  ([editing a take](#editing-a-take-from-the-sidebar)); and a Cam
+  preview has no keys.
 - **A link** straight to a sound or video file (its path ends in `.mp3`,
   `.m4a`, `.aac`, `.wav`, `.ogg`, `.oga`, `.opus`, `.flac`, `.mp4`,
   `.m4v`, `.mov` or `.webm`) plays in the app like a recording or video.
@@ -854,12 +929,12 @@ Play uses it too (above). A few KB for a ten-minute take:
 }
 ```
 - **The tab** (`tab`; none when the capture had no text tab): the
-  necklines the take showed (`lines`), each text once, in the order
+  phrases the take showed (`lines`), each text once, in the order
   first shown, so a later change to the capture's tab changes nothing
   here; and each turn (`marks`: ms on the take's clock, and which of
   `lines`), every one as it came: those made with Auto-pass off, with
   the tab hidden, two at once or back to the same text, the first at 0
-  (the neckline it started on). The bands and the take's own
+  (the phrase it started on). The bands and the take's own
   [phrase passes](#phrase-passes) are worked out from the turns as
   before (`takePhrases`, the passes leaving out the turns made with
   Auto-pass off); the log keeps them all. At most 4000 turns (the
@@ -1062,7 +1137,7 @@ Play uses it too (above). A few KB for a ten-minute take:
   re-saved the page (one from before pages kept the keys they don't
   know) makes a take look like one of those: the editor then draws no
   tab over it, and its file has none.
-- Checked: the turns kept unfiltered, the necklines kept once and the
+- Checked: the turns kept unfiltered, the phrases kept once and the
   turns pointing at them, the JSON read back as written (and leniently:
   what isn't as expected is left out), the lag's midpoint for made-up
   timings and the start's range where the two don't agree, the length
@@ -1071,8 +1146,8 @@ Play uses it too (above). A few KB for a ten-minute take:
   web's recorder's lag, the web's camera alone), kept
   through a rename and a restart, a clone's naming its copy's song, a
   newer app's log written back as it came through a rename and a clone,
-  Play of an older take after Cam reopens turning its necklines, lag
-  and all, and Play of a take on a tab with a neckline twice turning to
+  Play of an older take after Cam reopens turning its phrases, lag
+  and all, and Play of a take on a tab with a phrase twice turning to
   the copy that showed (the one just recorded exactly, an older one by
   the nearest copy), what the song played through noted (Android's,
   iOS's and the web's readings, read as the clock starts and after the

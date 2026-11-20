@@ -308,8 +308,9 @@ Its tools, along the bottom:
   play-along sidebar beside a recording has no Delete on the recording's
   own row (it has on the other files,
   [as in Cam](cam.md#deleting-from-the-sidebar)); the takes listed in it
-  have Edit, which opens the video editor on them
-  ([as in Cam](cam.md#editing-a-take-from-the-sidebar)).
+  have Edit, which opens the video editor on them over the screen (in
+  Cam it opens in Cam's own view instead,
+  [editing a take from the sidebar](cam.md#editing-a-take-from-the-sidebar)).
 
 Edit, Rename and Delete are off while a tool works and on a capture
 shared read only. The tools share the bar equally, so all four (an

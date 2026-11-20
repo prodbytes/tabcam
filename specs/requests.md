@@ -4657,3 +4657,50 @@ spec.
    `backing_section_test`, `backing_speed_test`, `place_cam_test`,
    `keys_help_test`, `take_log_test`, `cloud_ocr_test`). See
    [Cam](cam.md).
+
+   **Step 4 of 6: one view for editing and Cam.** The video editor and
+   Cam are now one view, `StudioView`
+   ([`video_edit_screen.dart`](../tabcam_app/lib/screens/video_edit_screen.dart),
+   Cam's parts in
+   [`video_edit_cam.dart`](../tabcam_app/lib/screens/video_edit_cam.dart)):
+   one frame whatever is in its **main row**, a page opened to edit or,
+   in Cam, the camera. `VideoEditScreen` and `PlayAlongScreen` keep
+   their constructors and build it. In Cam the camera is the viewer,
+   the phrase under it, and the dock under them has Cam's controls (Rec,
+   Play, Tab, Auto-pass) over the ruler and the main row: the backing
+   track chosen in the play-along sidebar (or loaded there by itself),
+   its name, the part played and its section on a bar as long as the
+   ruler, played and paused from the row's header ("Play the song"), a
+   tap or a drag on it taking the same player there (`BackingTrack.seek`,
+   kept within the section); with none loaded, a dashed **Play along
+   with a song…** opens the sidebar with its first file loaded. A take's
+   **Edit** in the sidebar now opens the take in place, in the camera's
+   place, instead of the editor pushed over Cam: the editor's viewer,
+   transport, rows (Take, then its Song), Download settings, app bar
+   and keys, with **Back** at the app bar's start. The camera stays open
+   behind it, its head gestures paused; the metronome plays on and the
+   dictionary stays open. Back, or a file tapped in the sidebar (which
+   then plays in the main row), keeps the edit and puts the camera back
+   with the song as it was. The keys go by what's in the main row: Cam's
+   and the play-along player's with the camera, the editor's alone with
+   a take (the space bar plays its preview; /, ., 1 and 0 do nothing),
+   and the keyboard help lists that state's. The rows give way in a
+   short window (the camera keeps at least 160 points; then the phrase
+   goes, the controls never) and where their bar would be narrower than
+   120 points (a phone beside the sidebar, whose player has the same
+   song); on a phone, and on a phone on its side, a take's Edit hides
+   the sidebar so the editor has the room, and the camera's return
+   shows it again. In English, Spanish and Portuguese. Tests: a new
+   `studio_test.dart` (the main row switched in place; Cam's view: the
+   song as the main row and its seek, Play along with a song…, Edit in
+   place and a file picked during it, the keys by state, the camera and
+   the metronome through Edit, the settings as the dictionary narrows
+   the room, a phone's Edit and Back, a phone on its side),
+   `BackingTrack.seek` in `backing_section_test.dart`, and Cam's Edit
+   test in `play_along_test.dart` rewritten for Edit in place. Not yet
+   tried on a phone, nor in a browser (the camera's preview kept through
+   Edit and Back, the heads tracking again). See
+   [video edit](video-edit.md#in-cam), [Cam](cam.md#cams-view),
+   [keyboard shortcuts](keyboard-shortcuts.md),
+   [navigation](navigation.md), [dictionary](dictionary.md) and
+   [metronome](metronome.md).

@@ -5,7 +5,8 @@ keyboard icon, "Keyboard shortcuts (H)") in the app bar, or the **H**
 key, opens an overlay listing that screen's keys
 ([`keys_help.dart`](../tabcam_app/lib/screens/keys_help.dart)). It's on:
 
-- **Cam** ([cam.md](cam.md)), after the play-along button;
+- **Cam** ([cam.md](cam.md)), after the play-along button: with a
+  take edited in Cam's view, the video editor's, below;
 - a **capture's screens** ([event screen](event-screen.md): the files,
   the Text view, the locked previews) and a **file's screen**, after the
   play-along button (on a phone's capture, whose buttons go in a menu,
@@ -14,6 +15,16 @@ key, opens an overlay listing that screen's keys
   a phone, before its More menu).
 
 Home has no keys, so no button.
+
+**Cam's view and the editor's are one** ([Cam's view](cam.md#cams-view),
+[in Cam](video-edit.md#in-cam)), and its keys go by what's in its main
+row: with the camera, Cam's (the tab, the takes) and the play-along
+player's (Space, 1, 0, ←, →, while its sidebar shows); with a take
+edited in the camera's place, the editor's alone: the space bar plays
+the take's preview, ← and → move it, and /, ., 1, 0 and the tab's keys
+do nothing, the play-along sidebar showing or not. Back at the camera,
+Cam's keys are back. The keyboard button and **H** show the list of
+the keys that work then: Cam's, or the video editor's.
 
 **Where the button shows**: on the web, on a computer (macOS, Windows,
 Linux) and on a tablet (a screen 600 px or more on its short side): where
