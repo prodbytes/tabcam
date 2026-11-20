@@ -247,8 +247,9 @@ extension _CamRows on _StudioViewState {
   }
 }
 
-/// How long the take recording has recorded, in its row's header, in red:
-/// "● 0:12".
+/// How long the take recording has recorded, in its row's header, in red
+/// after Rec's dot: "● 0:12" (the dot an icon, as Rec's, so no font has to
+/// have it).
 class _RecTime extends StatelessWidget {
   const _RecTime({required this.elapsed, required this.wide});
 
@@ -260,25 +261,38 @@ class _RecTime extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final style =
+        (wide ? theme.textTheme.labelMedium : theme.textTheme.labelSmall)
+            ?.copyWith(
+              color: Colors.red,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            );
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
         padding: const EdgeInsets.only(left: 4),
         child: MediaQuery.withClampedTextScaling(
           maxScaleFactor: 1.3,
-          child: Text(
-            '● ${_StudioViewState._rulerTime(elapsed)}',
-            key: const Key('video-edit-rec-time'),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style:
-                (wide
-                        ? theme.textTheme.labelMedium
-                        : theme.textTheme.labelSmall)
-                    ?.copyWith(
-                      color: Colors.red,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.fiber_manual_record,
+                key: Key('video-edit-rec-dot'),
+                size: 10,
+                color: Colors.red,
+              ),
+              const SizedBox(width: 3),
+              Flexible(
+                child: Text(
+                  _StudioViewState._rulerTime(elapsed),
+                  key: const Key('video-edit-rec-time'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: style,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -319,7 +333,7 @@ class _RecBar extends StatelessWidget {
           )
         : (
             scheme.surfaceContainerHighest,
-            scheme.secondaryContainer,
+            scheme.secondary.withValues(alpha: 0.45),
             scheme.secondary,
           );
     return Semantics(

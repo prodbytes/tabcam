@@ -1076,7 +1076,9 @@ void main() {
         await playOn(tester, 0.3);
         expect(camera.recording, isTrue);
         expect(recording, findsOneWidget);
-        expect(tester.widget<Text>(time).data, '● 0:00');
+        // Rec's red dot, then how long it has recorded.
+        expect(find.byKey(const Key('video-edit-rec-dot')), findsOneWidget);
+        expect(tester.widget<Text>(time).data, '0:00');
         // Under the main row: the opened one first.
         expect(
           tester.getRect(recRow).top,
@@ -1085,7 +1087,7 @@ void main() {
         final previews = camera.previews;
 
         await playOn(tester, 6);
-        expect(tester.widget<Text>(time).data, '● 0:06');
+        expect(tester.widget<Text>(time).data, '0:06');
         // The song from half a second in, 6.3 s of it, on its 3 minutes.
         const song = Duration(minutes: 3);
         var (from, long) = placed(tester, block(0), recording, song);
@@ -1094,7 +1096,7 @@ void main() {
         await playOn(tester, 4);
         (from, long) = placed(tester, block(0), recording, song);
         expect(long, closeTo(10300, 300));
-        expect(tester.widget<Text>(time).data, '● 0:10');
+        expect(tester.widget<Text>(time).data, '0:10');
         // Told every quarter of a second, only the row was built again:
         // never the camera's preview.
         expect(camera.previews, previews);
@@ -1108,7 +1110,7 @@ void main() {
           closeTo(long, 100),
         );
         expect(block(1), findsNothing);
-        expect(tester.widget<Text>(time).data, '● 0:12');
+        expect(tester.widget<Text>(time).data, '0:12');
         // Moved on to half way, and played again (counting in, as in a
         // take): a block of its own, a gap between.
         final bar = tester.getRect(
@@ -1132,6 +1134,7 @@ void main() {
         // The take, named as it is, placed from its log.
         expect(recording, findsNothing);
         expect(time, findsNothing);
+        expect(find.byKey(const Key('video-edit-rec-dot')), findsNothing);
         expect(named('Take 10:00'), findsOneWidget);
         final log = library.byId(id)!.pages.last.takeLog!;
         final spans = songSpansOn(log.song, songId!);
@@ -1260,7 +1263,7 @@ void main() {
         expect(long, closeTo(6300, 300));
         // Past 30 s: on a minute.
         await playOn(tester, 25);
-        expect(tester.widget<Text>(time).data, '● 0:31');
+        expect(tester.widget<Text>(time).data, '0:31');
         (from, long) = placed(tester, block(0), recording, s(60));
         expect(long, closeTo(31300, 300));
 
@@ -1288,7 +1291,7 @@ void main() {
         await camFrames(tester);
         await pressRec(tester);
         await playOn(tester, 1.3);
-        expect(tester.widget<Text>(time).data, '● 0:01');
+        expect(tester.widget<Text>(time).data, '0:01');
 
         await tester.pumpWidget(const SizedBox());
         await tester.pump(const Duration(seconds: 1));
