@@ -351,9 +351,11 @@ included):
   [Text view](tab-recognition.md#text-view) as a **preview**, the
   capture's own text if it has one, else a made-up sample tab (captioned
   "A preview with a sample tab"), greyed out and taking no tap or key,
-  with no play-along sidebar; Cam opens its screen the same way, with no
-  camera (a camera icon in its place), the capture's tab or the sample
-  along the bottom, and Rec, Play and the arrows dead. Over the preview,
+  with no play-along sidebar; Cam opens [its view](cam.md#cams-view) the
+  same way, with no camera (a camera icon in its place), the capture's
+  tab or the sample under the camera icon, Cam's controls docked under
+  them (with the main row, where the capture has a file that plays), and
+  Rec, Play and the arrows dead. Over the preview,
   centred, the **Premium card** (`PremiumGate`): the lock, "tabs.cam
   Premium", what the feature is ("Text is part of tabs.cam Premium: your
   scans read into a text tab you can edit, copy, verify, download and

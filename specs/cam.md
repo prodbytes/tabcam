@@ -30,12 +30,16 @@ the view shows it with the widgets in
   body's whole height; and docked at the bottom, the viewer's width, on
   the theme's surface colour, **Cam's controls** (`CamStrip`: Rec with
   its microphone's menu and level meter, Play, Tab and Auto-pass) over
-  **the ruler and the main row** ([below](#the-main-row)). In a window
-  too short for it all, the rows give way first, where the camera would
-  keep less than 160 points, and while the on-screen keyboard is open
-  (the dictionary's search typed in); then the phrase, where the camera
-  would keep less than 96; the controls always show. So a phone on its
-  side has the camera, the phrase and the controls, without the rows.
+  **the ruler and the main row** ([below](#the-main-row)). The controls
+  always show, and the phrase wherever it fits, the camera taking the
+  room that's left, however little; the rows come after them, only where
+  the camera keeps at least 160 points under the phrase, and not while
+  the on-screen keyboard is open (the dictionary's search typed in). So
+  in a window too short for it all the rows give way first, and the
+  phrase only in one too short for the phrase itself (six strings at the
+  largest text on a phone on its side); a phone on its side has the
+  camera, the phrase (all six strings of a guitar's) and the controls,
+  without the rows. Hiding the tab (**Tab**) gives its room to the rows.
   The rows also give way where their bar would be narrower than 120
   points: on a phone beside the play-along sidebar (open by default,
   half the screen's width), whose player has the same song; with the
@@ -659,11 +663,18 @@ editor's ([keyboard shortcuts](keyboard-shortcuts.md)): the space bar
 plays its preview; Cam's (/, ., the tab's) and the player's (1, 0)
 do nothing. The sidebar stays at the right, the take edited without
 Edit or Delete; another take's Edit takes its place in the main row
-(the first's edit kept). The camera stays open behind it, hidden, and
-its head gestures pause (no frame goes to them), and the metronome
-plays on. **Back** keeps the edit and puts the camera back, the song in
-the main row as it was, its gestures watching again, Cam's keys back; a
-file tapped in the sidebar does the same, then plays in the main row.
+(the first's edit kept). The song in the take's Song row, deleted in
+the sidebar, leaves the row first, as its Remove does: its player lets
+go of the file, the take is its only row, and the edit kept no longer
+names it. The camera stays open behind the editor, hidden, its head
+gestures pause (no frame goes to them), and the metronome plays on. In
+a browser the preview's `<video>` stays in the page and plays on
+meanwhile, only not drawn (Flutter takes its platform view out of the
+picture, not out of the page), so after Back it shows live at once and
+the head tracker reads it again. **Back** keeps the edit and puts the
+camera back, the song in the main row as it was, its gestures watching
+again, Cam's keys back; a file tapped in the sidebar does the same,
+then plays in the main row.
 On a phone, where the sidebar would leave the editor narrower than 360
 points, or on its side, too narrow for the Download settings beside
 the viewer, the Edit hides the sidebar, and it shows again with the

@@ -130,7 +130,9 @@ under the viewer as above, and the app bar is the editor's, with
 **Back** at its start and **Play along** (♫) after Metronome (on a
 phone, in the More menu). The play-along sidebar stays at the right,
 the body's whole height, as the dictionary's and the metronome's do;
-the take edited shows neither Edit nor Delete there. The keys are the
+the take edited shows neither Edit nor Delete there, and its song,
+deleted there, leaves the Song row first, as **Remove** does (its player
+let go of, the edit no longer naming it). The keys are the
 editor's: the space bar plays the preview and ← and → move it, while
 Cam's keys and the play-along's own (/, ., 1, 0) do nothing ([keyboard
 shortcuts](keyboard-shortcuts.md)). The camera stays open behind it,
