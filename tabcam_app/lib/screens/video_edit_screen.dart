@@ -3152,8 +3152,9 @@ class _StudioViewState extends State<StudioView> {
   /// opens; where it can't play, why, with Try again, [_cantPlay]), or in
   /// Cam's view with the camera in its place, the camera ([CamView]) over
   /// the tab's phrase ([CamPhrase], unless it's hidden, or too high for
-  /// the window: no [phrase] room), on black. The camera is kept, hidden, while a page
-  /// is in its place: it stays open, and shows again as it was.
+  /// the window: no [phrase] room), on black. The camera is kept, hidden,
+  /// while a page is in its place: it stays open, and shows again as it
+  /// was.
   Widget _viewer(AppLocalizations l10n, {required bool phrase}) {
     final video = _video;
     final Widget? page = !_inEdit
