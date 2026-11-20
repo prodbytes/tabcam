@@ -140,6 +140,29 @@ void main() {
       );
     });
 
+    test('the theme\'s primary and secondary colours, as its dark scheme has '
+        'them, on black; kept and read back the same', () {
+      final scheme = ColorScheme.fromSeed(
+        seedColor: TabLayout.gold,
+        brightness: Brightness.dark,
+      );
+      expect(TabLayout.primary, scheme.primary);
+      expect(TabLayout.secondary, scheme.secondary);
+      expect(TabLayout.colorsOf(TabColors.primary), (
+        const Color(0xFF000000),
+        scheme.primary,
+      ));
+      expect(TabLayout.colorsOf(TabColors.secondary), (
+        const Color(0xFF000000),
+        scheme.secondary,
+      ));
+      for (final colors in [TabColors.primary, TabColors.secondary]) {
+        final styled = edit.copyWith(tabStyle: EditTabStyle(colors: colors));
+        expect(styled.toJson()['tabStyle'], {'colors': colors.name});
+        expect(PageEdit.fromJson(_encoded(styled.toJson()))!, styled);
+      }
+    });
+
     test('read within its bounds: sizes from 50% to 200%, opacities 0 to 1, '
         'to the hundredth; an unknown colour, or no number, the default', () {
       PageEdit read(Object? style) =>
@@ -444,6 +467,20 @@ void main() {
         isNotEmpty,
         reason: 'gold text',
       );
+      for (final (colors, rgb) in [
+        (TabColors.primary, (0xF2, 0xBE, 0x6E, 255)),
+        (TabColors.secondary, (0xDC, 0xC3, 0xA1, 255)),
+      ]) {
+        final drawn = await _drawn(
+          tester,
+          BandLook(_riffA, style: EditTabStyle(colors: colors)),
+        );
+        expect(
+          _pixels(drawn).where((p) => p == rgb),
+          isNotEmpty,
+          reason: '${colors.name} text',
+        );
+      }
       final opaque = await _drawn(
         tester,
         const BandLook(
@@ -714,6 +751,21 @@ void main() {
           hasTapAction: true,
         ),
       );
+      // The theme's primary and secondary colours, beside them.
+      for (final (key, name) in [
+        ('video-edit-tab-colors-primary', 'Amber on black'),
+        ('video-edit-tab-colors-secondary', 'Sand on black'),
+      ]) {
+        expect(
+          tester.getSemantics(find.byKey(Key(key))),
+          matchesSemantics(
+            label: name,
+            isButton: true,
+            hasSelectedState: true,
+            hasTapAction: true,
+          ),
+        );
+      }
 
       await tester.tap(find.byKey(const Key('video-edit-download')));
       await settle(tester);
@@ -978,6 +1030,14 @@ void main() {
       );
       expect(bar.left, greaterThanOrEqualTo(box.left - 0.5));
       expect(bar.right, lessThanOrEqualTo(box.right + 0.5));
+      // Every colour's swatch, within it.
+      for (final colors in TabColors.values) {
+        final swatch = tester.getRect(
+          find.byKey(Key('video-edit-picture-colors-${colors.name}')),
+        );
+        expect(swatch.left, greaterThanOrEqualTo(bar.left - 0.5));
+        expect(swatch.right, lessThanOrEqualTo(bar.right + 0.5));
+      }
       expect(tester.takeException(), isNull);
     });
 

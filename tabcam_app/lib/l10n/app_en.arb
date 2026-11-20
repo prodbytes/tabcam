@@ -3278,6 +3278,14 @@
   "@videoEditTabColorsGold": {
     "description": "Video edit: the tab's colours: tabs.cam's gold text on a black background"
   },
+  "videoEditTabColorsPrimary": "Amber on black",
+  "@videoEditTabColorsPrimary": {
+    "description": "Video edit: the tab's colours: the app theme's primary colour (a pale amber) as text on a black background"
+  },
+  "videoEditTabColorsSecondary": "Sand on black",
+  "@videoEditTabColorsSecondary": {
+    "description": "Video edit: the tab's colours: the app theme's secondary colour (sand, a pale beige) as text on a black background"
+  },
   "videoEditTabAlign": "Alignment",
   "@videoEditTabAlign": {
     "description": "Video edit: the tab's style: where the tab's text sits across its band (left, centre or right)"

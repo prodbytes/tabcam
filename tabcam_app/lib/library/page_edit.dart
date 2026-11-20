@@ -207,8 +207,14 @@ enum TabColors {
   /// takes looked.
   dark,
 
-  /// TabCam's gold text on black.
-  gold;
+  /// tabs.cam's gold text on black.
+  gold,
+
+  /// The app theme's primary colour (a pale amber) on black.
+  primary,
+
+  /// The app theme's secondary colour (sand) on black.
+  secondary;
 
   /// [name]'s colours; [dark] when it isn't one (none given, a newer
   /// app's, or one of the two that were taken away, `light` and `brand`).

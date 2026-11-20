@@ -655,6 +655,8 @@
   "videoEditTabPercent": "{percent}%",
   "videoEditTabColorsDark": "Branco sobre preto",
   "videoEditTabColorsGold": "Dourado sobre preto",
+  "videoEditTabColorsPrimary": "Âmbar sobre preto",
+  "videoEditTabColorsSecondary": "Areia sobre preto",
   "videoEditTabAlign": "Alinhamento",
   "videoEditTabAlignLeft": "Esquerda",
   "videoEditTabAlignCenter": "Centro",
