@@ -4614,7 +4614,10 @@ spec.
    song** (**Add a track**) is in the menu the video's row's name opens
    (a ⋮ beside "Take" or "Video sound", while it's the only row) and in
    the Download settings' song section, where the song's details are
-   once there's one; either opens the same sheet. A song picked gets a
+   once there's one; either opens the same sheet. The rows' names are 16
+   points wider (72 on a phone, 136 on a wide screen), the ⋮'s room, so
+   the ⋮ doesn't cut a name short ("Sonido del video" stays whole on two
+   lines on a phone). A song picked gets a
    row of its own under the video's, and a take whose song is lined up
    from its log opens with both, Take then Song, the Song row there from
    the first frame (empty while its player opens) so the viewer doesn't

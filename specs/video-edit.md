@@ -261,19 +261,19 @@ metronome's buttons do theirs; its ✕ hides it too.
   it, as before; it never holds anything back, and nothing is sent
   anywhere.
 - <a id="zoom"></a>**The timeline zooms**: **Zoom out** and **Zoom in**
-  (magnifiers) sit in the corner left of the ruler, over the lanes'
+  (magnifiers) sit in the corner left of the ruler, over the rows'
   headers, with the zoom between them once it isn't the whole video
   (`4×`, in the primary colour). Zoom goes 1×, 2×, 4×, 8×, 16× and 32×
-  (at 32×, a 3-minute take's lanes show under 6 s at once), each a step;
+  (at 32×, a 3-minute take's rows show under 6 s at once), each a step;
   Ctrl / ⌘ + the mouse wheel, and a trackpad's pinch, zoom too while
-  zoomed in. Zoomed in, the ruler, both lanes' bars and the playhead
+  zoomed in. Zoomed in, the ruler, the rows' bars and the playhead
   are as many times wider, on their one time axis, and scroll sideways
   together (a scrollbar under them; the wheel or a trackpad's sideways
-  swipe), the lanes' headers staying put at their left. Zooming keeps
+  swipe), the rows' headers staying put at their left. Zooming keeps
   the playhead where it was on screen. While the preview plays, the
   timeline scrolls to keep the playhead in view (a quarter in from the
-  left once it would leave it). Everything on the lanes works as at 1×,
-  at the zoom's precision: a tap or a drag on the ruler or a lane is
+  left once it would leave it). Everything on the rows works as at 1×,
+  at the zoom's precision: a tap or a drag on the ruler or a row is
   where it is in time, a grip or the song dragged moves as many times
   less time per point, and **a grip snaps to the song's marks within a
   hundredth of the part in view** (no less than a twentieth of a second
@@ -291,8 +291,12 @@ metronome's buttons do theirs; its ✕ hides it too.
   the [Song row](#the-song-row) once there's a song. Each row is one of
   the edit's two sound lanes; its bar spans the whole video, lined up
   under the ruler, after the row's **header** at its left: its name
-  (small, two lines at most on a phone, 56 points; one line, 120
-  points, on a wide screen), then its **volume**. **The playhead**,
+  (small, two lines at most on a phone, 72 points; one line, 136
+  points, on a wide screen; 16 of them are room for the ⋮ of a name
+  that opens a menu, so the ⋮ doesn't cut the name short: on a phone,
+  "Sonido del video" stays whole on two lines, as does "Video sound"
+  at the largest text, checked in Roboto in
+  `test/video_edit_frame_test.dart`), then its **volume**. **The playhead**,
   where the preview is, is a line across the ruler and the rows with a
   small handle on the ruler; it and the time move at once on a click, before
   the player gets there. Tapped or dragged, the ruler takes the preview

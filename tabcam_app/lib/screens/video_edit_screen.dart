@@ -2064,9 +2064,11 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
     return '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
   }
 
-  /// How wide a row's name is in its header: room for "Take" or a short
-  /// name on a phone (two lines at most), more beside a wide screen's.
-  double get _nameWidth => _wide ? 120 : 56;
+  /// How wide a row's name is in its header: room for the longest name
+  /// ("Sonido del video") on two lines on a phone, on one beside a wide
+  /// screen's, and beside it room for the ⋮ of a name that opens a menu
+  /// ([_nameMenu]), so the ⋮ doesn't cut the name short.
+  double get _nameWidth => (_wide ? 120 : 56) + _LaneHeader.menuWidth;
 
   /// The rows' headers at the left (the name, then the volume): the ruler
   /// and the bars line up after them, as wide as the rest.
@@ -4060,7 +4062,7 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
         child: Row(
           children: [
             Expanded(child: _LaneHeader.nameText(context, name, wide: _wide)),
-            const Icon(Icons.more_vert, size: 16),
+            const Icon(Icons.more_vert, size: _LaneHeader.menuWidth),
           ],
         ),
       ),
@@ -4626,6 +4628,11 @@ class _LaneHeader extends StatelessWidget {
   });
 
   final double width;
+
+  /// How wide a name's ⋮ is ([_VideoEditScreenState._nameMenu]): the
+  /// headers are that much wider, so a name beside one has the room of one
+  /// without.
+  static const menuWidth = 16.0;
 
   /// Whether the editor is wide ([_VideoEditScreenState._wide]).
   final bool wide;

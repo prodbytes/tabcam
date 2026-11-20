@@ -1,8 +1,9 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter/services.dart'
-    show LogicalKeyboardKey, PlatformException;
+    show FontLoader, LogicalKeyboardKey, PlatformException, rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tabcam_app/capture/edit_layers.dart';
 import 'package:tabcam_app/capture/video_edit.dart';
@@ -72,7 +73,10 @@ void main() {
 
   /// A capture with a video (k0), 3 minutes long as the fake players say,
   /// and a recording (k1).
-  Future<(Library, String)> capture(WidgetTester tester) async {
+  Future<(Library, String)> capture(
+    WidgetTester tester, {
+    bool take = false,
+  }) async {
     final library = Library(PlatformEventStore(), null, (_) async => null);
     late String id;
     await tester.runAsync(() async {
@@ -87,6 +91,7 @@ void main() {
           kind: kind,
           extension: ext,
           title: i == 0 ? 'Made-up riff' : null,
+          take: take && i == 0,
         );
         await library.putPageStream(
           event.id,
@@ -107,18 +112,23 @@ void main() {
     addTearDown(tester.view.reset);
   }
 
-  Widget editScreen(Library library, String id, {Locale? locale}) =>
-      MaterialApp(
-        locale: locale,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: VideoEditScreen(
-          library: library,
-          eventId: id,
-          page: library.byId(id)!.pages.first,
-          pickFile: () async => null,
-        ),
-      );
+  Widget editScreen(
+    Library library,
+    String id, {
+    Locale? locale,
+    ThemeData? theme,
+  }) => MaterialApp(
+    theme: theme,
+    locale: locale,
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: VideoEditScreen(
+      library: library,
+      eventId: id,
+      page: library.byId(id)!.pages.first,
+      pickFile: () async => null,
+    ),
+  );
 
   /// The editor on a video kept from 1:00 to 2:00, its players [platform]'s.
   Future<void> openTrimmed(WidgetTester tester, _Placed platform) async {
@@ -556,5 +566,94 @@ void main() {
     expect(find.byKey(const Key('video-edit-song-row')), findsNothing);
     expect(find.byKey(const Key('video-edit-song-menu')), findsNothing);
     expect(find.byKey(const Key('video-edit-take-menu')), findsOneWidget);
+  });
+
+  group('a row\'s name beside its ⋮, in Roboto (the tests\' own font '
+      'can\'t say what fits), is whole on a phone', () {
+    // The app's own copy of Roboto, as Android draws the app's text, under
+    // a family of its own: the other tests keep the tests' font.
+    const roboto = 'Roboto (measured)';
+    setUpAll(() async {
+      await (FontLoader(roboto)
+            ..addFont(rootBundle.load('assets/fonts/Roboto-Regular.ttf'))
+            ..addFont(rootBundle.load('assets/fonts/Roboto-Medium.ttf')))
+          .load();
+    });
+
+    /// [lane]'s name, in its menu's ⋮: on two lines at most, with no word
+    /// cut short or broken across them.
+    void whole(WidgetTester tester, String lane, String name) {
+      final text = find.descendant(
+        of: find.byKey(Key('video-edit-$lane-menu')),
+        matching: find.text(name),
+      );
+      expect(text, findsOneWidget, reason: name);
+      final paragraph = tester.renderObject<RenderParagraph>(
+        find.descendant(of: text, matching: find.byType(RichText)),
+      );
+      expect(paragraph.didExceedMaxLines, isFalse, reason: name);
+      var from = 0;
+      for (final word in name.split(' ')) {
+        final at = name.indexOf(word, from);
+        from = at + word.length;
+        final lines = paragraph
+            .getBoxesForSelection(
+              TextSelection(baseOffset: at, extentOffset: from),
+            )
+            .map((box) => box.top)
+            .toSet();
+        expect(lines, hasLength(1), reason: '"$word" of "$name"');
+      }
+    }
+
+    for (final (locale, scale) in const [
+      (Locale('es'), 1.0),
+      (Locale('pt'), 1.0),
+      (Locale('en'), 1.0),
+      // As large as the names get (1.3 times).
+      (Locale('en'), 2.0),
+    ]) {
+      testWidgets('${locale.languageCode}, text $scale times: the video\'s '
+          'sound, then a take\'s song', (tester) async {
+        VideoPlayerPlatform.instance = VolumePlatform();
+        sized(tester, const Size(390, 844));
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final l10n = lookupAppLocalizations(locale);
+        final theme = ThemeData(fontFamily: roboto);
+
+        // A video that isn't a take, alone: its row's name opens Add a
+        // track.
+        var (library, id) = await capture(tester);
+        await tester.pumpWidget(
+          editScreen(library, id, locale: locale, theme: theme),
+        );
+        await _settle(tester);
+        expect(tester.takeException(), isNull);
+        whole(tester, 'take', l10n.videoEditLaneVideo);
+
+        // A take with a song: the Song row's name opens Change and Remove.
+        (library, id) = await capture(tester, take: true);
+        await tester.runAsync(
+          () => library.setPageEdit(
+            id,
+            'k0',
+            PageEdit(
+              start: Duration.zero,
+              end: s(180),
+              song: SongMode.manual,
+              trackId: 'k1',
+            ),
+          ),
+        );
+        await tester.pumpWidget(const SizedBox());
+        await tester.pumpWidget(
+          editScreen(library, id, locale: locale, theme: theme),
+        );
+        await _settle(tester);
+        expect(tester.takeException(), isNull);
+        whole(tester, 'song', l10n.videoEditLaneSong);
+      });
+    }
   });
 }
