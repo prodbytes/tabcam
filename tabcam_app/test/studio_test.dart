@@ -6,9 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tabcam_app/capture/backing_track.dart';
+import 'package:tabcam_app/capture/cam_session.dart';
 import 'package:tabcam_app/capture/head_gestures.dart';
 import 'package:tabcam_app/capture/media.dart';
 import 'package:tabcam_app/capture/play_along_screen.dart';
+import 'package:tabcam_app/capture/take_log.dart';
 import 'package:tabcam_app/capture/take_sound.dart';
 import 'package:tabcam_app/capture/video_edit.dart';
 import 'package:tabcam_app/dictionary/dictionary_sidebar.dart';
@@ -73,6 +75,17 @@ class _Clicks implements MetronomeSound {
 
   @override
   Future<void> stop() async {}
+}
+
+/// The camera, faked, counting how many times its preview is built.
+class _Camera extends FakeCameraPlatform {
+  int previews = 0;
+
+  @override
+  Widget buildPreview(int cameraId) {
+    previews++;
+    return super.buildPreview(cameraId);
+  }
 }
 
 const _front = CameraDescription(
@@ -394,10 +407,10 @@ void main() {
   });
 
   group('Cam\'s view', () {
-    late FakeCameraPlatform camera;
+    late _Camera camera;
     late FakeVideoPlatform video;
     setUp(() {
-      CameraPlatform.instance = camera = FakeCameraPlatform();
+      CameraPlatform.instance = camera = _Camera();
       VideoPlayerPlatform.instance = video = FakeVideoPlatform();
       // Takes are named by when they start: 10:00 today, then a minute
       // later each time.
@@ -968,6 +981,367 @@ void main() {
       expect(find.byKey(const Key('neckline')), findsOneWidget);
       expect(mainRow, findsNothing);
       expect(tester.takeException(), isNull);
+    });
+
+    group('the take\'s row', () {
+      final recRow = find.byKey(const Key('video-edit-rec-row'));
+      final recording = find.byKey(const Key('video-edit-rec-bar'));
+      final taken = find.byKey(const Key('video-edit-rec-take'));
+      final time = find.byKey(const Key('video-edit-rec-time'));
+      final menu = find.byKey(const Key('video-edit-rec-menu'));
+      Finder block(int i) => find.byKey(Key('video-edit-rec-block-$i'));
+
+      /// The take's clock on the test's (each pump moves it on), so how
+      /// long a take has recorded is known.
+      void testClock(WidgetTester tester) {
+        CamSession.takeClock = () => tester.binding.clock.stopwatch();
+        addTearDown(() => CamSession.takeClock = Stopwatch.new);
+      }
+
+      /// [seconds] go by, a tenth at a time, the song's player moving on
+      /// with them while it plays, as a real one does.
+      Future<void> playOn(WidgetTester tester, double seconds) async {
+        for (var i = 0; i < (seconds * 10).round(); i++) {
+          if (video.playing.isNotEmpty) {
+            video.position += const Duration(milliseconds: 100);
+          }
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+      }
+
+      /// Presses Rec (Stop while recording).
+      Future<void> pressRec(WidgetTester tester) => tester.tap(
+        find
+            .descendant(
+              of: find.byKey(const Key('cam-rec')),
+              matching: find.byType(IconButton),
+            )
+            .first,
+      );
+
+      /// Stops the take, and lets it be saved.
+      Future<void> stop(WidgetTester tester) async {
+        await pressRec(tester);
+        bool saved() =>
+            rec(tester).tooltip == 'Rec (.)' && rec(tester).onPressed != null;
+        for (var i = 0; i < 50 && !saved(); i++) {
+          await camFrames(tester);
+        }
+        expect(saved(), isTrue, reason: 'the take saved');
+      }
+
+      /// Where [span] is along [bar], in ms on an axis [length] long: its
+      /// start and its length.
+      (double, double) placed(
+        WidgetTester tester,
+        Finder span,
+        Finder bar,
+        Duration length,
+      ) {
+        final ms = length.inMilliseconds;
+        final b = tester.getRect(bar);
+        final r = tester.getRect(span);
+        return ((r.left - b.left) / b.width * ms, r.width / b.width * ms);
+      }
+
+      /// The name the take's row shows.
+      Finder named(String name) =>
+          find.descendant(of: menu, matching: find.text(name));
+
+      void wide(WidgetTester tester) {
+        tester.view
+          ..physicalSize = const Size(1200, 1000)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+      }
+
+      testWidgets('Rec: a red row under the main row, growing with the song '
+          'as it plays in the take, how long it has recorded in its header, '
+          'the camera not built again for it; paused and moved on, a gap; '
+          'after Stop, the take, named, placed from its log', (tester) async {
+        wide(tester);
+        testClock(tester);
+        final (library, id, songId, _) = await camCapture(tester);
+        await tester.pumpWidget(cam(library, id));
+        await camFrames(tester);
+        // No take yet: no row for one.
+        expect(recRow, findsNothing);
+        // The song from its start, playing as the take starts.
+        video.position = Duration.zero;
+        await tester.tap(play);
+        await playOn(tester, 0.5);
+        expect(video.playing, {0});
+
+        await pressRec(tester);
+        await playOn(tester, 0.3);
+        expect(camera.recording, isTrue);
+        expect(recording, findsOneWidget);
+        expect(tester.widget<Text>(time).data, '● 0:00');
+        // Under the main row: the opened one first.
+        expect(
+          tester.getRect(recRow).top,
+          greaterThan(tester.getRect(mainRow).bottom),
+        );
+        final previews = camera.previews;
+
+        await playOn(tester, 6);
+        expect(tester.widget<Text>(time).data, '● 0:06');
+        // The song from half a second in, 6.3 s of it, on its 3 minutes.
+        const song = Duration(minutes: 3);
+        var (from, long) = placed(tester, block(0), recording, song);
+        expect(from, closeTo(500, 300));
+        expect(long, closeTo(6300, 300));
+        await playOn(tester, 4);
+        (from, long) = placed(tester, block(0), recording, song);
+        expect(long, closeTo(10300, 300));
+        expect(tester.widget<Text>(time).data, '● 0:10');
+        // Told every quarter of a second, only the row was built again:
+        // never the camera's preview.
+        expect(camera.previews, previews);
+
+        // Paused: the song's part stops growing, the take goes on.
+        await tester.tap(play);
+        await playOn(tester, 2);
+        expect(video.playing, isEmpty);
+        expect(
+          placed(tester, block(0), recording, song).$2,
+          closeTo(long, 100),
+        );
+        expect(block(1), findsNothing);
+        expect(tester.widget<Text>(time).data, '● 0:12');
+        // Moved on to half way, and played again (counting in, as in a
+        // take): a block of its own, a gap between.
+        final bar = tester.getRect(
+          find.byKey(const Key('video-edit-main-bar')),
+        );
+        await tester.tapAt(Offset(bar.left + bar.width / 2, bar.center.dy));
+        video.position = const Duration(seconds: 90);
+        await playOn(tester, 0.2);
+        await tester.tap(play);
+        await playOn(tester, BackingTrack.countInLength.inSeconds + 4.0);
+        expect(video.playing, {0});
+        final (from1, long1) = placed(tester, block(1), recording, song);
+        expect(from1, closeTo(90000, 400));
+        expect(long1, closeTo(4000, 400));
+        expect(
+          tester.getRect(block(1)).left,
+          greaterThan(tester.getRect(block(0)).right + 10),
+        );
+
+        await stop(tester);
+        // The take, named as it is, placed from its log.
+        expect(recording, findsNothing);
+        expect(time, findsNothing);
+        expect(named('Take 10:00'), findsOneWidget);
+        final log = library.byId(id)!.pages.last.takeLog!;
+        final spans = songSpansOn(log.song, songId!);
+        expect(spans, hasLength(2));
+        for (final (i, span) in spans.indexed) {
+          final (at, length) = placed(tester, block(i), taken, song);
+          expect(at, closeTo(span.from, 400));
+          expect(length, closeTo(span.to - span.from, 400));
+        }
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the take\'s row: Play plays it back; / records the next '
+          'over it, and again; Edit opens the take in the camera\'s place, '
+          'its row then its Song, and Back brings the row back', (
+        tester,
+      ) async {
+        wide(tester);
+        testClock(tester);
+        final (library, id, _, _) = await camCapture(tester);
+        await tester.pumpWidget(cam(library, id));
+        await camFrames(tester);
+        video.position = Duration.zero;
+        await tester.tap(play);
+        await playOn(tester, 0.5);
+        await pressRec(tester);
+        await playOn(tester, 3);
+        await stop(tester);
+        expect(named('Take 10:00'), findsOneWidget);
+
+        // Play: the take in the viewer (the song paused), Stop again.
+        await tester.tap(menu);
+        await camFrames(tester);
+        await tester.tap(find.byKey(const Key('video-edit-rec-play')));
+        await camFrames(tester);
+        final take = video.lastPlayer;
+        expect(take, isNot(0));
+        expect(video.playing, {take});
+        await tester.tap(menu);
+        await camFrames(tester);
+        expect(find.text('Stop the take'), findsOneWidget);
+        await tester.tap(find.byKey(const Key('video-edit-rec-play')));
+        // Its player let go of as it closes.
+        await camFrames(tester);
+        await camFrames(tester);
+        expect(video.playing, isEmpty);
+        expect(video.disposed, contains(take));
+
+        // /: Rec, the take recording in the row in the take's place.
+        await tester.sendKeyEvent(LogicalKeyboardKey.slash);
+        await playOn(tester, 0.3);
+        expect(camera.recording, isTrue);
+        expect(recording, findsOneWidget);
+        expect(named('Take 10:00'), findsNothing);
+        // The song starts with the take, after its count-in.
+        await playOn(tester, BackingTrack.countInLength.inSeconds + 1.0);
+        expect(video.playing, {0});
+        // / again: that take saved, the next recording in its place.
+        await tester.sendKeyEvent(LogicalKeyboardKey.slash);
+        for (var i = 0; i < 50 && camera.recordings < 2; i++) {
+          await camFrames(tester);
+        }
+        for (var i = 0; i < 50 && !camera.recording; i++) {
+          await camFrames(tester);
+        }
+        expect(camera.recording, isTrue);
+        expect(recording, findsOneWidget);
+        await playOn(tester, BackingTrack.countInLength.inSeconds + 3.0);
+        await stop(tester);
+        expect(named('Take 10:02'), findsOneWidget);
+        expect(named('Take 10:01'), findsNothing);
+        final takeId = library.byId(id)!.pages.last.id;
+
+        // Edit: the take in the camera's place, its Song under it.
+        await tester.tap(menu);
+        await camFrames(tester);
+        await tester.tap(find.byKey(const Key('video-edit-rec-edit')));
+        await camFrames(tester);
+        await camFrames(tester);
+        await camFrames(tester);
+        expect(find.byKey(const Key('cam-rec')), findsNothing);
+        expect(recRow, findsNothing);
+        final takeRow = find.byKey(const Key('video-edit-take-row'));
+        final songRow = find.byKey(const Key('video-edit-song-row'));
+        expect(takeRow, findsOneWidget);
+        expect(songRow, findsOneWidget);
+        expect(
+          tester.getRect(songRow).top,
+          greaterThan(tester.getRect(takeRow).bottom),
+        );
+        expect(find.text('Take 10:02'), findsWidgets);
+        expect(pageOf(library, id, takeId).take, isTrue);
+
+        await tester.pageBack();
+        await camFrames(tester);
+        expect(find.byKey(const Key('cam-rec')), findsOneWidget);
+        expect(named('Take 10:02'), findsOneWidget);
+        expect(taken, findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('no song to play along: the take on the take\'s clock, '
+          'rounded up to the next 30 s; after Stop, as it recorded', (
+        tester,
+      ) async {
+        wide(tester);
+        testClock(tester);
+        final (library, id, _, _) = await camCapture(
+          tester,
+          song: false,
+          pdf: true,
+        );
+        await tester.pumpWidget(cam(library, id));
+        await camFrames(tester);
+        expect(mainRow, findsNothing);
+        expect(recRow, findsNothing);
+
+        await pressRec(tester);
+        await playOn(tester, 0.3);
+        // The take alone, from the clock's start, on 30 s.
+        expect(recRow, findsOneWidget);
+        expect(mainRow, findsNothing);
+        await playOn(tester, 6);
+        var (from, long) = placed(tester, block(0), recording, s(30));
+        expect(from, closeTo(0, 1));
+        expect(long, closeTo(6300, 300));
+        // Past 30 s: on a minute.
+        await playOn(tester, 25);
+        expect(tester.widget<Text>(time).data, '● 0:31');
+        (from, long) = placed(tester, block(0), recording, s(60));
+        expect(long, closeTo(31300, 300));
+
+        await stop(tester);
+        expect(named('Take 10:00'), findsOneWidget);
+        (from, long) = placed(tester, block(0), taken, s(60));
+        expect(from, closeTo(0, 1));
+        expect(long, closeTo(31300, 300));
+        // The take plays: the main row offers a song, over the take's.
+        final add = find.byKey(const Key('video-edit-main-add'));
+        expect(add, findsOneWidget);
+        expect(
+          tester.getRect(recRow).top,
+          greaterThan(tester.getRect(add).bottom),
+        );
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('Cam closed while a take records: its clock\'s ticker '
+          'stops (no timer left)', (tester) async {
+        wide(tester);
+        testClock(tester);
+        final (library, id, _, _) = await camCapture(tester);
+        await tester.pumpWidget(cam(library, id));
+        await camFrames(tester);
+        await pressRec(tester);
+        await playOn(tester, 1.3);
+        expect(tester.widget<Text>(time).data, '● 0:01');
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(seconds: 1));
+        // A timer still pending would fail the test as it ends.
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('Cam opened again places its last take from its log; with '
+          'another file in the main row, it\'s unplaced', (tester) async {
+        wide(tester);
+        testClock(tester);
+        final (library, id, songId, _) = await camCapture(tester);
+        await tester.pumpWidget(cam(library, id));
+        await camFrames(tester);
+        video.position = s(30);
+        await tester.tap(play);
+        await playOn(tester, 0.5);
+        await pressRec(tester);
+        await playOn(tester, 5);
+        await stop(tester);
+        final takeId = library.byId(id)!.pages.last.id;
+        final spans = songSpansOn(
+          pageOf(library, id, takeId).takeLog!.song,
+          songId!,
+        );
+        expect(spans, hasLength(1));
+        await tester.pumpWidget(const SizedBox());
+        await camFrames(tester);
+
+        await tester.pumpWidget(cam(library, id));
+        await camFrames(tester);
+        expect(named('Take 10:00'), findsOneWidget);
+        expect(recording, findsNothing);
+        final (at, length) = placed(
+          tester,
+          block(0),
+          taken,
+          const Duration(minutes: 3),
+        );
+        expect(at, closeTo(spans.single.from, 400));
+        expect(length, closeTo(spans.single.to - spans.single.from, 400));
+
+        // The take itself in the main row: its own row can't be placed.
+        await tester.tap(find.byKey(ValueKey('cam-along-$takeId')));
+        await camFrames(tester);
+        expect(taken, findsNothing);
+        expect(
+          find.byKey(const Key('video-edit-rec-unplaced')),
+          findsOneWidget,
+        );
+        expect(named('Take 10:00'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
     });
   });
 }

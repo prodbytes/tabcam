@@ -897,5 +897,50 @@ void main() {
       final back = TakeLog.fromJson(jsonDecode(jsonEncode(log.toJson())))!;
       expect(back.song, [seg(0, 2000, 0)]);
     });
+
+    test('so far: the segment playing as if it ended now, the notes going '
+        'on as they were', () {
+      final notes = SongNotes()
+        ..note(0, page: 'k1', playing: true, position: 0)
+        ..note(2000, page: 'k1', playing: false, position: 2000);
+      expect(notes.soFar(2500), [seg(0, 2000, 0)]);
+      notes.note(3000, page: 'k1', playing: true, position: 5000);
+      expect(notes.soFar(3000), [seg(0, 2000, 0)]);
+      expect(notes.soFar(4000), [seg(0, 2000, 0), seg(3000, 4000, 5000)]);
+      // Told where it started, it's so far from there.
+      notes.anchor(3500, page: 'k1', position: 5600);
+      expect(notes.soFar(4000), [seg(0, 2000, 0), seg(3000, 4000, 5100)]);
+      // Still open: it goes on.
+      notes.note(4500, page: 'k1', playing: true, position: 6600);
+      expect(notes.finish(6000), [seg(0, 2000, 0), seg(3000, 6000, 5100)]);
+      expect(SongNotes().soFar(1000), isEmpty);
+    });
+  });
+
+  group('songSpansOn', () {
+    test('where one song played in a take, in its own time: a pause where '
+        'it moved leaves a gap; played again from before, the part again; '
+        'another song left out', () {
+      const segments = [
+        SongSegment(at: 0, to: 4000, page: 'k1', from: 0),
+        // Paused, moved on, played again.
+        SongSegment(at: 6000, to: 8000, page: 'k1', from: 20000),
+        // Its section over again.
+        SongSegment(at: 8000, to: 9000, page: 'k1', from: 19000),
+        SongSegment(at: 9000, to: 12000, page: 'k2', from: 0),
+        // Slower.
+        SongSegment(at: 12000, to: 16000, page: 'k1', from: 30000, speed: 0.5),
+        // Ended as it started.
+        SongSegment(at: 16000, to: 16000, page: 'k1', from: 32000),
+      ];
+      expect(songSpansOn(segments, 'k1'), [
+        (from: 0, to: 4000),
+        (from: 20000, to: 22000),
+        (from: 19000, to: 20000),
+        (from: 30000, to: 32000),
+      ]);
+      expect(songSpansOn(segments, 'k2'), [(from: 0, to: 3000)]);
+      expect(songSpansOn(segments, 'k3'), isEmpty);
+    });
   });
 }
