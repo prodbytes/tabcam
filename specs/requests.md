@@ -4608,6 +4608,26 @@ spec.
    [dictionary](dictionary.md), [metronome](metronome.md) and
    [keyboard shortcuts](keyboard-shortcuts.md).
 
+   **Step 2 of 6: the opened video as its only row.** In the video
+   editor, a video now opens as the only row of its timeline: the empty
+   dashed "Add a song" ("Add a track") lane under it is gone. **Add a
+   song** (**Add a track**) is in the menu the video's row's name opens
+   (a ⋮ beside "Take" or "Video sound", while it's the only row) and in
+   the Download settings' song section, where the song's details are
+   once there's one; either opens the same sheet. A song picked gets a
+   row of its own under the video's, and a take whose song is lined up
+   from its log opens with both, Take then Song, the Song row there from
+   the first frame (empty while its player opens) so the viewer doesn't
+   jump; Remove takes the row away, and Reset puts a take's back. The
+   dock is as high as its rows (82 points for the video alone, 128 with
+   a song, where it was always 128), so the viewer grows, and a phone on
+   its side now has room for the cut's steps under a video alone. Inside,
+   the timeline is built from rows (`_rows`), and the ruler, the
+   playhead, a tap on a row and the zoom go by the time axis's getters
+   (the opened video's for now), so a later step can put a backing
+   track in the main row. In English, Spanish and Portuguese (the
+   existing labels). See [video edit](video-edit.md#the-song-row).
+
    **Step 3 of 6: Cam's work in a session of its own.** This step
    changes nothing the user sees, so that a later step can show Cam in
    the editor's view. What Cam does moved out of its screen into

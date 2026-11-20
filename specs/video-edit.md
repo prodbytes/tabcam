@@ -1,10 +1,12 @@
 # Video edit
 
 Basic edits of a video (a take from [Cam](cam.md), or a video added) on
-one time axis, in **two sound lanes, mixed**: trim its start and end,
-set its own sound's level, and add a song (one of the capture's
-recordings, videos or takes, or a sound file) placed along it at a
-level of its own, each lane with its **channels** (a take recorded on
+one time axis. **The video opens as its only row**; a song added to it
+(one of the capture's recordings, videos or takes, or a sound file), or
+a take's own song lined up as it played, gets **a row of its own under
+it**, and the two sound lanes are mixed: trim the video's start and
+end, set its own sound's level, and place the song along it at a level
+of its own, each lane with its **channels** (a take recorded on
 the left only can play on both sides) and **balance**
 ([stereo](#a-lanes-channels-and-balance)), both through a **master**
 volume (up to 200%); and,
@@ -95,17 +97,20 @@ the file's name keeps some room. It opens with the video's edit as it
 was left. It's **a frame that doesn't scroll**, as a small video
 editor's: **the viewer** on top, with the **Download settings** beside
 it or under it; and docked at the bottom edge, the whole width, **the
-transport** right over **the lanes** (the ruler, the Take lane, the Song
-lane and the cut's steps). The dictionary's and the metronome's
-sidebars open at the right of it all, the body's whole height, and
-stay usable during a download. The editor's body is laid out at least
+transport** right over **the rows** (the ruler, the video's row, the
+Song row once there's a song, and the cut's steps). The dock is as
+high as its rows: 82 points for the video alone (the ruler, 32; the
+row, 44; 6 under it), 128 with a Song row (another 44, 2 apart), so a
+video alone leaves the viewer more room. The dictionary's and the
+metronome's sidebars open at the right of it all, the body's whole
+height, and stay usable during a download. The editor's body is laid out at least
 360 points wide (or the screen's width, where that's narrower): on a
 phone with the dictionary's or the metronome's sidebar open beside it,
 it's cut at the sidebar's edge rather than squeezed. While the
 on-screen keyboard is open (the title typed in), the transport and the
-lanes give their room to the viewer and the field, and come back as it
+rows give their room to the viewer and the field, and come back as it
 closes; in a window too short for them, the cut's steps go first, then
-the lanes, then the transport.
+the rows, then the transport.
 
 <a id="download-settings"></a>**The Download settings**
 ([`download_settings.dart`](../tabcam_app/lib/screens/download_settings.dart)):
@@ -113,8 +118,8 @@ what Download puts in the file and how it sounds, in a sidebar with its
 title ("Download settings") and ✕ at the top, then, scrolling, the
 [**Master**](#master), [**On the video**](#on-the-video) (its chips,
 the fields they open and the tab's style) and [the song's
-details](#the-songs-details). The app bar's **Download settings** button
-(a tune icon, in the primary colour while they show, then "Hide the
+details](#the-songs-details), or, with no song, **Add a song**. The app
+bar's **Download settings** button (a tune icon, in the primary colour while they show, then "Hide the
 download settings") shows and hides it, as the dictionary's and the
 metronome's buttons do theirs; its ✕ hides it too.
 
@@ -273,27 +278,27 @@ metronome's buttons do theirs; its ✕ hides it too.
   less time per point, and **a grip snaps to the song's marks within a
   hundredth of the part in view** (no less than a twentieth of a second
   at 1×, down to a millisecond at 32×) rather than of the whole video.
-  An empty Song lane's **Add a song** stays as wide as the view, in
-  view, rather than zooming with the lanes (its label would be off
-  screen). The zoom isn't kept: the editor opens on the whole video.
+  The zoom isn't kept: the editor opens on the whole video.
 - **The timeline**, docked at the bottom: a **ruler** 32 points high
   (the video's times, m:ss, a tick as
   often as there's room for its time, down to a tenth of a second
   zoomed in, "0:01.5"; its times stay small at large
   text sizes; on a take with its song lined up, a small flag in the
   primary colour at each of [the song's marks](#the-songs-marks), where
-  it starts and stops), right over two lanes, 2 points apart, **one
-  time axis**: each lane's bar spans the whole video, lined up under
-  the ruler, after the lane's **header** at its left: its name (small,
-  two lines at most on a phone, 56 points; one line, 120 points, on a
-  wide screen), then its **volume**. **The playhead**, where the
-  preview is, is a line across the ruler and both lanes with a small
-  handle on the ruler; it and the time move at once on a click, before
+  it starts and stops), right over **the rows**, 2 points apart, on
+  **one time axis** (`_rows` in the editor, keys `video-edit-take-row`
+  and `video-edit-song-row`): first the video's own, its only row, then
+  the [Song row](#the-song-row) once there's a song. Each row is one of
+  the edit's two sound lanes; its bar spans the whole video, lined up
+  under the ruler, after the row's **header** at its left: its name
+  (small, two lines at most on a phone, 56 points; one line, 120
+  points, on a wide screen), then its **volume**. **The playhead**,
+  where the preview is, is a line across the ruler and the rows with a
+  small handle on the ruler; it and the time move at once on a click, before
   the player gets there. Tapped or dragged, the ruler takes the preview
   anywhere in the video (while dragged, a seek at most every 150 ms;
-  exactly where it's let go); **a click or tap on either lane's bar
-  does too** (the Take lane's, or the Song lane's once it has a song;
-  the empty lane's Add a song opens its sheet), exactly where it's
+  exactly where it's let go); **a click or tap on a row's bar does
+  too** (the Take row's or the Song row's), exactly where it's
   clicked, while a drag on them still trims or moves as below. Playing,
   it plays on from there; paused, it stays paused, and Play starts from
   exactly there. Neither moves anything while the video's length isn't
@@ -303,20 +308,25 @@ metronome's buttons do theirs; its ✕ hides it too.
   endless): the player is told the length the editor finds as it opens
   (on the web, every player of a capture's file is, as it opens), since
   until it knows it, every seek went to the start, Play stuck there and
-  the time read a huge negative number. The lanes are labelled
+  the time read a huge negative number. The rows are labelled
   **Take** and **Song** for one of Cam's takes, **Video sound** and
   **Track** for any other video.
-  - **The Take lane**: the whole video, the kept part bright and the
-    rest dimmed (its name is in its header). **Its two grips trim it**, and both
+  - **The Take row** (the video's own sound's lane): the whole video,
+    the kept part bright and the rest dimmed. Its name is in its
+    header; while it's the only row, the name has a ⋮ and opens **Add a
+    song** (**Add a track**) (keys `video-edit-take-menu` and
+    `video-edit-take-add-track`), as the [Download
+    settings](#download-settings) do; with a Song row it's just its
+    name. **Its two grips trim it**, and both
     sounds with it: what's outside the kept part is dimmed in both
-    lanes, and **the song stays where it is along the video** (a
+    rows, and **the song stays where it is along the video** (a
     trimmed start cuts the song's start with it). While paused, the
     preview follows the grip dragged (a seek at most every 150 ms,
     exactly the end it moved when let go). On a take with its song
     lined up, [the song's marks](#the-songs-marks) are thin lines down
     the bar, and **a grip dragged near one is on it** (it snaps: the
     cut is then exactly where the song starts or stops).
-    <a id="the-cuts-steps"></a>**Under the lanes, the cut's two ends,
+    <a id="the-cuts-steps"></a>**Under the rows, the cut's two ends,
     each stepped by ‹ and ›**: at the left **Start 0:02.5**, at the
     right **End 0:41.0**, each between **‹** and **›**, which move that
     end **0.05 s** (a twentieth of a second) earlier or later ("Start
@@ -326,10 +336,11 @@ metronome's buttons do theirs; its ✕ hides it too.
     to go). The song stays where it is along the video, and the
     preview, while paused, shows the frame cut at, as with a grip. Keys
     `video-edit-start-earlier`, `-later`, `-at`, `video-edit-end-…`.
-    They're a row 40 points high under the lanes, as wide as the bars;
-    a window too short for them (a phone on its side) leaves them out
-    and keeps the lanes. On a phone they fit at the largest text size
-    (the times shrink).
+    They're a row 40 points high under the rows, as wide as the bars;
+    a window too short for them (a phone on its side, with a Song row)
+    leaves them out and keeps the rows; under the video alone, a phone
+    on its side has room for them. On a phone they fit at the largest
+    text size (the times shrink).
     Checked (`test/video_edit_test.dart`): each end stepped earlier and
     later, the times shown, the edit kept, the song where it was, the
     preview sought to the end moved, and no step past the video's ends. This replaces
@@ -337,13 +348,20 @@ metronome's buttons do theirs; its ✕ hides it too.
     are drawn on the kept part as ramps at its ends (shaded above a
     line from its corner across the fade's length), as long as they
     play.
-  - **The Song lane**, on a take recorded while a song played along
-    (one Cam noted in its [log](cam.md#what-a-take-keeps), still in the
-    capture), opens with that song in it, **lined up by itself** as it
-    played while recording ([lined up](#a-takes-song-lined-up)), with
-    no edit kept for it: nothing to sync by hand. Otherwise it's
-    empty, a dashed **Add a song** (**Add a track**)
-    row, which opens a sheet, **Pick a song** (**Pick a track**), of the
+  - <a id="the-song-row"></a>**The Song row** (the song's lane) is
+    there only once there's a song. A take recorded while a song played
+    along (one Cam noted in its [log](cam.md#what-a-take-keeps), still in
+    the capture) opens with that song in it, **lined up by itself** as
+    it played while recording ([lined up](#a-takes-song-lined-up)), with
+    no edit kept for it: nothing to sync by hand. A song the edit has
+    (a take's lined up, or one placed) has its row from the moment the
+    editor shows, empty until the song's player opens, so the viewer
+    doesn't shrink as it comes; Reset keeps a take's the same way while
+    it's put back. Otherwise **the video is its only row**, with no
+    empty lane beside it: **Add a song** (**Add a track**), in the menu
+    the Take row's name opens and in the Download settings' song
+    section (an outlined button, key `video-edit-song-add`), opens a
+    sheet, **Pick a song** (**Pick a track**), of the
     capture's **recordings**, **videos**
     and **takes** (not the video edited) and **a sound file** from the
     device (**a sound file picked is added to the capture's files** as
@@ -353,20 +371,28 @@ metronome's buttons do theirs; its ✕ hides it too.
     kept part ends where it ends (silence before it), one as long or
     longer starts with the kept part (none of its start cut), as does
     one whose length can't be told; heard at the lane's
-    level; its bar shows its used part (its name on it) where it plays
+    level; its row comes under the video's, the dock growing by it, and
+    its bar shows its used part (its name on it) where it plays
     along the video, what falls outside the kept part dimmed (it's cut
     off). **Dragged, the song moves** along the video; **dragged by
     either end, it's trimmed** (a grip at each end; the start moves
     with what's cut, so the rest stays put; at least half a second
-    stays). **Its name in the lane's header**, with a ⋮, opens
-    **Change** (the sheet again) and **Remove** (the lane empty again, the edit keeping `song: off`, so
-    a song a later version would add by default isn't put back; Reset
-    stays on, and clears it).
+    stays). **Its name in the row's header**, with a ⋮, opens
+    **Change** (the sheet again) and **Remove** (its row goes and the
+    video is its only row again, the edit keeping `song: off`, so a
+    song a later version would add by default isn't put back; Reset
+    stays on, and clears it). Checked (`test/video_edit_test.dart`, the
+    rows; `test/video_edit_frame_test.dart`): a video opens as its only
+    row, the dock 82 high; Add a track from its name and from the
+    Download settings, the Song row then under it; a take with its song
+    opens Take, then Song, from the first frame; Remove takes the row
+    away and Reset puts it back; a phone on its side keeps the cut's
+    steps under a video alone and leaves them out with a song.
     A song whose length can't be told shows its name alone, unplaced,
     and holds back Download while it's heard; muted, it's left out of
     the download, which goes ahead (as an older app's edit with a track
     picked but the video's own sound chosen).
-  - **Each lane's volume**: a speaker over its level (`80%`, in the
+  - **Each row's volume**: a speaker over its level (`80%`, in the
     primary colour when it's not 100% or it's muted; the speaker low
     under 50%, crossed out when the lane isn't heard, the level struck
     through while muted); tapped, it opens a slider from **0% to 100%**
@@ -538,7 +564,9 @@ metronome's buttons do theirs; its ✕ hides it too.
     sound: nothing is sought), and it's kept a moment later, as every
     change. The title's fields and the sliders take each other's place
     on a phone.
-- <a id="the-songs-details"></a>**Under them, the song's details** (when there's one): its lane
+- <a id="the-songs-details"></a>**Under them, the song's details**
+  (when there's one; with none, **Add a song** (**Add a track**), which
+  opens the sheet the Take row's menu does): its lane
   and name ("Song · Recording 1", on one line: in a narrow sidebar at a
   large text size, the lane's word takes at most half of it, and each is
   cut short with "…"), **‹** and **›**, which nudge it
@@ -634,8 +662,9 @@ metronome's buttons do theirs; its ✕ hides it too.
   song Removed, `song: off`, keeps it on), a take's tab on, the title
   on with the capture's name, the watermark on, and fades of 3 s in and
   out, and a take's song lined up as it played while recording, where
-  it has one; Reset goes back to them, any other song taken out (that
-  one put back, lined up), and the edit is
+  it has one; Reset goes back to them, any other song taken out, its
+  row going (a take's own put back, lined up, its row staying), and the
+  edit is
   none: none means the defaults, a take's tab, the title, the watermark,
   the fades and its song lined up included, not the file as it is) and
   **Download**, a split button: named from 840 points wide, icons with
