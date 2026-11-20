@@ -9,6 +9,11 @@ anything, Rec and Play are dead, the tab under the camera is the
 capture's or a made-up sample, and the Premium card lies over it all,
 its **Not now** leaving. With Premium it opens the camera
 ([`PlayAlongScreen`](../tabcam_app/lib/capture/play_along_screen.dart)).
+The [video editor](video-edit.md#rec-over-this)'s **Rec over this**
+(Premium's too) turns the editor into Cam on the video it edits: the
+camera in its place, the video playing along in the main row as a file
+picked in the sidebar does (as it is, not as edited), so a take
+recorded there has it as its song; Back puts the edit back.
 
 <a id="cams-view"></a>**Cam's view is the video editor's**: one widget,
 `StudioView`

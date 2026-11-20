@@ -41,7 +41,11 @@ tabs, and a compact **app bar** on top names the open one
   over it the same way, but a take's Edit in Cam opens no screen: the
   take takes the camera's place in Cam's own view, whose back button
   then puts the camera back, and only then closes Cam
-  ([Cam](cam.md#editing-a-take-from-the-sidebar)).
+  ([Cam](cam.md#editing-a-take-from-the-sidebar)). Nor does the video
+  editor's **Rec over this**: the camera takes the video's place in the
+  editor's own view, the video playing along, and its back button puts
+  the edit back, and only then closes the editor
+  ([video edit](video-edit.md#rec-over-this)).
 - Messages show at the top, just under the app bar, covering neither the
   app bar's buttons nor the bottom navigation bar, which stay where they
   are ([messages](messages.md)).
@@ -115,7 +119,9 @@ preview (no Premium) isn't kept either.
   once, so neither a link's key nor an older place comes back, and Back
   over a screen the place doesn't follow leaves it as it was (Back over
   Cam closes it, and `cam` leaves the address; with a take edited in
-  Cam's view, Back first puts the camera back, Cam staying open). The
+  Cam's view, Back first puts the camera back, Cam staying open; with
+  the camera on from the video editor's Rec over this, Back first puts
+  the edit back, the place unchanged). The
   same address in another tab of the same browser (signed in as the
   same user) opens the same place.
 

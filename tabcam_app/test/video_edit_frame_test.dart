@@ -388,6 +388,8 @@ void main() {
             'video-edit-play',
             'video-edit-to-start',
             'video-edit-to-end',
+            'video-edit-end-here',
+            'video-edit-cam',
             'video-edit-ruler',
             'video-edit-take-bar',
           ]) {

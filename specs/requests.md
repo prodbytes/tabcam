@@ -4753,3 +4753,38 @@ spec.
    once Cam closes while recording; Cam opened again, placed, then
    unplaced with the take itself in the main row). See
    [Cam](cam.md#the-takes-row) and [video edit](video-edit.md#in-cam).
+
+   **Step 6 of 6: Rec over this.** The video editor's transport gets a
+   camera at its right, **Rec over this** (named on a wide row): it
+   records a take over the video edited, "the opened one first". It's
+   tabs.cam Premium's, as Cam is: without Premium its tooltip says so
+   and a press shows Premium's card, led by what Cam does, and no
+   camera opens. With it, the edit is kept, the editor's players are
+   let go of, and Cam's camera takes the video's place in the same
+   view, with the video in the main row as the song playing along,
+   loaded paused where the preview was, and the play-along sidebar open
+   on it; Rec records over it, and the take's row then offers Play and
+   Edit, Edit giving the take with the video lined up as its Song.
+   **Back** puts the edit back as it was kept (what plays along paused
+   first), and Back again closes the editor. The video plays raw, its
+   file as it is (no trim, fades or Song row of its own): a take's log
+   notes where in the file its song played, and a take's edit has one
+   song lane. In the editor opened over the file screen, Cam's session
+   is made only when it's first pressed (on the video's capture, its
+   sidebar not opening by itself), so an editor where it's never
+   pressed opens no camera, microphone or face detection; once made, it
+   stays open behind the edit until the editor closes, as in Cam. In
+   Cam, a take edited in the camera's place offers it too. In English,
+   Spanish and Portuguese. Tests: `studio_test.dart` (with Premium: the
+   edit kept, the editor's player let go of, the video in the main row
+   on a player of its own from where the preview was, paused, the list
+   open on it, a take recorded over it with the video as its song,
+   placed in its row, its Edit giving Take then the video, Back to the
+   camera, Back to the edit as kept with the song paused; without
+   Premium: the tooltip, the card and no camera, no cameras asked for
+   and nothing asked of the take's sound; an editor where it isn't
+   pressed asks for none of them; a take edited in Cam put in the main
+   row, Back to its edit, then the camera), and the editor's frame test
+   checks it on screen at every size and language. Not yet tried on a
+   phone. See [video edit](video-edit.md#rec-over-this),
+   [Cam](cam.md) and [navigation](navigation.md).
