@@ -3164,6 +3164,8 @@ class _VideoEditScreenState extends State<VideoEditScreen> {
       switch (colors) {
         TabColors.dark => l10n.videoEditTabColorsDark,
         TabColors.gold => l10n.videoEditTabColorsGold,
+        TabColors.primary => l10n.videoEditTabColorsPrimary,
+        TabColors.secondary => l10n.videoEditTabColorsSecondary,
       };
 
   /// The title's text: two fields (typing shows it in the preview at

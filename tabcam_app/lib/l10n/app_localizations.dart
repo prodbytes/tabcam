@@ -4036,6 +4036,18 @@ abstract class AppLocalizations {
   /// **'Gold on black'**
   String get videoEditTabColorsGold;
 
+  /// Video edit: the tab's colours: the app theme's primary colour (a pale amber) as text on a black background
+  ///
+  /// In en, this message translates to:
+  /// **'Amber on black'**
+  String get videoEditTabColorsPrimary;
+
+  /// Video edit: the tab's colours: the app theme's secondary colour (sand, a pale beige) as text on a black background
+  ///
+  /// In en, this message translates to:
+  /// **'Sand on black'**
+  String get videoEditTabColorsSecondary;
+
   /// Video edit: the tab's style: where the tab's text sits across its band (left, centre or right)
   ///
   /// In en, this message translates to:

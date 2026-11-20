@@ -4552,3 +4552,20 @@ spec.
    scale: “…” on YouTube and Cifra Club." (it said "Search YouTube for
    “…”."), in English, Spanish and Portuguese. See
    [dictionary](dictionary.md).
+
+## 2026-11-20
+
+1. **"Lets add a couple more font colors to the editor download
+   settings, using the theme primary and secondary colors besides black
+   and white."** The tab's style in the video editor (the colours its
+   bands are drawn in, on the picture and in the downloaded video)
+   offers four colours now: White on black and Gold on black, as before,
+   and two new ones, **Amber on black** and **Sand on black**: the app
+   theme's primary (`#F2BE6E`) and secondary (`#DCC3A1`) as text on
+   black ("Ámbar/Arena sobre negro", "Âmbar/Areia sobre preto"). They are
+   the colours of the theme's dark scheme, made for dark backgrounds,
+   fixed so a video looks the same on any device, whatever its theme (a
+   test keeps them equal to the theme's). Kept in the edit as `colors`
+   `primary` and `secondary`. Both the style panel and the band's
+   toolbar on the picture show the four swatches. See
+   [video edit](video-edit.md).

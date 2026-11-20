@@ -2371,6 +2371,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditTabColorsGold => 'Gold on black';
 
   @override
+  String get videoEditTabColorsPrimary => 'Amber on black';
+
+  @override
+  String get videoEditTabColorsSecondary => 'Sand on black';
+
+  @override
   String get videoEditTabAlign => 'Alignment';
 
   @override

@@ -417,10 +417,12 @@ them, the cut's steps go first, then the lanes, then the transport.
     100% in steps of 5%, 70% by default), each its name and its value
     ("100%") on a
     line over a slider as wide as the panel (so neither is cut at any
-    text size), **Colours** (two swatches under it,
+    text size), **Colours** (four swatches under it,
     each a bit of band, "3-5" in its text's colour on its background's:
-    **White on black** (the default) and **Gold on black**, tabs.cam's
-    gold; black on white and black on gold were offered once and taken
+    **White on black** (the default), **Gold on black**, tabs.cam's
+    gold, and the app theme's primary and secondary colours on black,
+    **Amber on black** and **Sand on black**; black on white and black
+    on gold were offered once and taken
     away: an edit kept with either draws white on black now; the one
     picked ringed in the
     primary colour with a check; each a button with its name as its
@@ -677,7 +679,9 @@ version 2 (`v: 2`):
   default, with only what isn't: `size` (1 by default; 0.5 to 2, to the
   hundredth), `opacity` (the background's, 0.7 by default; 0 to 1, to
   the hundredth) and `colors` (`dark` by default, white on black;
-  `light`, `gold`, `brand`), e.g. `{"size": 1.5, "colors": "gold"}`.
+  `gold`, `primary`, `secondary`; `light` and `brand`, black on white
+  and black on gold, were taken away and read as the default), e.g.
+  `{"size": 1.5, "colors": "gold"}`.
   Values out of range are brought within it, ones that aren't numbers
   (or a colour this version doesn't know) read as the default; absent,
   the default: an edit kept before it looks as it did.
@@ -970,7 +974,12 @@ which always carried the text alone; `TabLayout.outlineOf`: a stroke
 18% of the text's size, fully opaque from 50% down, so a faint
 background never leaves the text washed out, and in proportion between
 50% and 70%), so it reads on any picture with no background at all; the
-**colours**: white on black, or tabs.cam's gold (`#E0A030`) on black. The
+**colours**: white on black, tabs.cam's gold (`#E0A030`) on black, or
+the app theme's primary (`#F2BE6E`, a pale amber) or secondary
+(`#DCC3A1`, sand) on black: the colours of its dark scheme
+(`ColorScheme.fromSeed` of the gold), the one made for dark backgrounds,
+fixed in `TabLayout` so a video looks the same whatever the device's
+theme (a test keeps them equal to the theme's). The
 text is drawn at its size, never
 a bitmap scaled up: the band is drawn **as wide as the video's frame**
 (`frame` in `RenderPlan.of`, the player's size; 1280 to 4096 pixels,

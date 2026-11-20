@@ -201,13 +201,22 @@ abstract final class TabLayout {
   static const landscape = 16 / 9;
   static const outlineFull = 0.5;
 
-  /// TabCam's gold (the app's seed colour).
+  /// tabs.cam's gold (the app's seed colour).
   static const gold = Color(0xFFE0A030);
+
+  /// The app theme's primary and secondary colours, as its dark scheme
+  /// has them (`ColorScheme.fromSeed` of [gold], the scheme made for
+  /// dark backgrounds): fixed here, so a video looks the same whatever
+  /// the device's theme.
+  static const primary = Color(0xFFF2BE6E);
+  static const secondary = Color(0xFFDCC3A1);
 
   /// [colors]' background and text.
   static (Color, Color) colorsOf(TabColors colors) => switch (colors) {
     TabColors.dark => (const Color(0xFF000000), const Color(0xFFFFFFFF)),
     TabColors.gold => (const Color(0xFF000000), gold),
+    TabColors.primary => (const Color(0xFF000000), primary),
+    TabColors.secondary => (const Color(0xFF000000), secondary),
   };
 
   /// How strong the outline around a band's text is (0: none, 1: opaque)
