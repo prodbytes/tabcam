@@ -216,13 +216,24 @@ class CamPhrase extends StatelessWidget {
 
 /// Cam's controls, along the bottom: Rec (with the microphone's level
 /// beside it, tapped for the input volume, and an arrow for the
-/// microphone), Play, Tab and Auto-pass. [onUse] runs after a tap that
-/// leaves the keys elsewhere (the screen takes them back).
+/// microphone), Play, Tab and Auto-pass, in [foreground] (white, on
+/// black, by default; the theme's on its surface in the view's dock).
+/// [onUse] runs after a tap that leaves the keys elsewhere (the screen
+/// takes them back).
 class CamStrip extends StatelessWidget {
-  const CamStrip({super.key, required this.cam, required this.onUse});
+  const CamStrip({
+    super.key,
+    required this.cam,
+    required this.onUse,
+    this.foreground = Colors.white,
+  });
 
   final CamSession cam;
   final VoidCallback onUse;
+
+  /// The colour of its icons and names (Rec stays red, Auto-pass on the
+  /// primary colour).
+  final Color foreground;
 
   @override
   Widget build(BuildContext context) {
@@ -239,6 +250,7 @@ class CamStrip extends StatelessWidget {
               key: const Key('cam-rec'),
               icon: cam.recording ? Icons.stop : Icons.fiber_manual_record,
               color: Colors.red,
+              foreground: foreground,
               label: cam.recording ? l10n.camStop : l10n.camRec,
               tooltip: cam.recording ? l10n.camStopKey : l10n.camRecKey,
               onPressed: cam.canRec ? cam.rec : null,
@@ -281,7 +293,8 @@ class CamStrip extends StatelessWidget {
               key: const Key('cam-play'),
               // Opening: Stop lets it go.
               icon: playing || cam.opening ? Icons.stop : Icons.play_arrow,
-              color: Colors.white,
+              color: foreground,
+              foreground: foreground,
               label: playing || cam.opening ? l10n.camStop : l10n.camPlay,
               onPressed:
                   cam.take == null ||
@@ -294,7 +307,8 @@ class CamStrip extends StatelessWidget {
             _Control(
               key: const Key('cam-tab'),
               icon: cam.tabShown ? Icons.subtitles : Icons.subtitles_off,
-              color: Colors.white,
+              color: foreground,
+              foreground: foreground,
               label: cam.tabShown ? l10n.camHideTab : l10n.camShowTab,
               onPressed: () {
                 cam.toggleTab();
@@ -306,7 +320,8 @@ class CamStrip extends StatelessWidget {
               icon: cam.autoPassOn ? Icons.auto_mode : Icons.motion_photos_off,
               color: cam.autoPassOn
                   ? Theme.of(context).colorScheme.primary
-                  : Colors.white,
+                  : foreground,
+              foreground: foreground,
               label: l10n.camAutoPass,
               tooltip: cam.autoPassOn
                   ? l10n.camAutoPassOn
@@ -512,14 +527,16 @@ class _GainEntryState extends State<_GainEntry> {
   );
 }
 
-/// Rec, Play, Tab or Auto-pass: an icon over its label, on black; Rec
-/// with an arrow beside it for its [menu] (the microphone), and the
-/// microphone's level ([meter]) on its other side.
+/// Rec, Play, Tab or Auto-pass: an icon over its label, in [foreground]
+/// (dimmed while it can't be pressed); Rec with an arrow beside it for
+/// its [menu] (the microphone), and the microphone's level ([meter]) on
+/// its other side.
 class _Control extends StatelessWidget {
   const _Control({
     super.key,
     required this.icon,
     required this.color,
+    required this.foreground,
     required this.label,
     this.tooltip,
     this.onPressed,
@@ -529,6 +546,7 @@ class _Control extends StatelessWidget {
 
   final IconData icon;
   final Color color;
+  final Color foreground;
   final String label;
 
   /// What its tooltip says; null: its [label].
@@ -555,7 +573,7 @@ class _Control extends StatelessWidget {
       tooltip: tooltip ?? label,
       iconSize: 36,
       color: color,
-      disabledColor: Colors.white24,
+      disabledColor: foreground.withValues(alpha: 0.24),
       icon: Icon(icon),
       onPressed: onPressed,
     );
@@ -584,8 +602,8 @@ class _Control extends StatelessWidget {
                       ),
                       padding: EdgeInsets.zero,
                       iconSize: 24,
-                      color: Colors.white,
-                      disabledColor: Colors.white24,
+                      color: foreground,
+                      disabledColor: foreground.withValues(alpha: 0.24),
                       icon: const Icon(Icons.expand_less),
                       onPressed: switch (menu.onPressed) {
                         final open? => () => open(anchor),
@@ -602,7 +620,9 @@ class _Control extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: on ? Colors.white : Colors.white38),
+            style: TextStyle(
+              color: on ? foreground : foreground.withValues(alpha: 0.38),
+            ),
           ),
         ],
       ),

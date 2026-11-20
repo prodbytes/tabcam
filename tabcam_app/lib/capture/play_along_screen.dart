@@ -1,24 +1,18 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
-import '../dictionary/dictionary_sidebar.dart';
 import '../l10n/language.dart';
 import '../library/capture_event.dart';
 import '../cloud/cloud_ocr.dart';
 import '../cloud/cloud_sync.dart';
 import '../library/library.dart';
-import '../metronome/metronome.dart';
 import '../screens/premium_card.dart';
 import '../screens/video_edit_screen.dart';
-import 'cam_controls.dart';
-import 'cam_session.dart';
 import 'camera_list.dart';
 import 'head_gestures.dart';
 import 'link_frame.dart';
 import 'play_along_sidebar.dart';
 import 'take_recorder.dart';
-import '../screens/keys_help.dart';
-import '../screens/messages.dart';
 
 export 'cam_session.dart' show takePlaysHere;
 
@@ -77,7 +71,9 @@ String takeName(AppLocalizations l10n, DateTime started) {
   return l10n.camTake('${two(started.hour)}:${two(started.minute)}');
 }
 
-class PlayAlongScreen extends StatefulWidget {
+/// Cam's screen: a [StudioView] with the camera in its main row's place
+/// ([CamSetup]), as the capture's Cam opens it.
+class PlayAlongScreen extends StatelessWidget {
   const PlayAlongScreen({
     super.key,
     required this.library,
@@ -106,9 +102,8 @@ class PlayAlongScreen extends StatefulWidget {
   /// a sample where it has none.
   final ({CloudOcr ocr, String? email})? gate;
 
-  /// TabCam Premium, where the build has it, for the video editor a
-  /// take's Edit opens from the sidebar (its watermark, as from the file
-  /// screen).
+  /// tabs.cam Premium, where the build has it, for a take edited in Cam
+  /// (its watermark, as from the file screen).
   final CloudOcr? ocr;
 
   /// Cloud sync, for the editor's Share (a take's edit view's link).
@@ -136,190 +131,21 @@ class PlayAlongScreen extends StatefulWidget {
   pdfView;
 
   @override
-  State<PlayAlongScreen> createState() => _PlayAlongScreenState();
-}
-
-/// Shows Cam ([CamSession]) and rebuilds as it changes: the app bar, the
-/// sidebars beside it and, in the middle, the camera ([CamView]), the tab
-/// ([CamPhrase]) and Rec, Play, Tab and Auto-pass ([CamStrip]).
-class _PlayAlongScreenState extends State<PlayAlongScreen> {
-  /// What Cam does: the camera, the tab, the takes.
-  late final CamSession _cam = CamSession(
-    library: widget.library,
-    eventId: widget.eventId,
-    cameras: widget.cameras,
-    headTracking: widget.headTracking,
-    takeRecorder: widget.takeRecorder,
-    gated: widget.gate != null,
-    now: () => PlayAlongScreen.now(),
-    takeName: (started) => takeName(_l10n, started),
-    onNote: _note,
+  Widget build(BuildContext context) => StudioView(
+    library: library,
+    eventId: eventId,
+    ocr: ocr,
+    sync: sync,
+    cam: CamSetup(
+      cameras: cameras,
+      headTracking: headTracking,
+      takeRecorder: takeRecorder,
+      linkFrame: linkFrame,
+      pdfView: pdfView,
+      // Read as each take is named: tests set their own as they go.
+      now: () => now(),
+      takeName: takeName,
+      gate: gate,
+    ),
   );
-
-  /// The texts in the app's language, kept for a take named once the
-  /// screen may be gone.
-  late AppLocalizations _l10n;
-
-  /// The keys' focus, taken back after a tap in the sidebar or the frame.
-  final _focus = FocusNode();
-
-  @override
-  void initState() {
-    super.initState();
-    // A preview opens no camera.
-    if (widget.gate == null) _cam.start();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _l10n = context.l10n;
-  }
-
-  /// Says what Cam has to tell ([CamNote]).
-  void _note(CamNote note, [String? detail]) {
-    if (mounted) showMessage(context, camNoteText(context.l10n, note, detail));
-  }
-
-  /// Back while recording: the take is saved, then the screen closes.
-  Future<void> _leave() async {
-    await _cam.stopRecording();
-    if (mounted) Navigator.pop(context);
-  }
-
-  @override
-  void dispose() {
-    _cam.dispose();
-    _focus.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) =>
-      ListenableBuilder(listenable: _cam, builder: (context, _) => _build());
-
-  Widget _build() {
-    final l10n = context.l10n;
-    final cam = _cam;
-    final controller = cam.controller;
-    final event = widget.library.byId(widget.eventId);
-    final gate = widget.gate;
-    final body = PlayAlongBeside(
-      along: cam.along,
-      linkFrame: widget.linkFrame,
-      pdfView: widget.pdfView,
-      onUse: _focus.requestFocus,
-      // A preview has no keys.
-      keys: gate == null,
-      // Not in a preview, nor while a take records, saves (or is saved
-      // for the next, until it starts) or plays back.
-      deletes: gate == null,
-      canDelete: cam.canDelete,
-      // A take's Edit: the editor over Cam, as the file screen opens it.
-      onEdit: gate == null
-          ? (take) => VideoEditScreen.open(
-              context,
-              library: widget.library,
-              eventId: widget.eventId,
-              page: take,
-              ocr: widget.ocr,
-              sync: widget.sync,
-            )
-          : null,
-      // The camera, the neckline and Rec, Play and Tab.
-      child: Column(
-        children: [
-          Expanded(child: CamView(cam: cam)),
-          if (cam.tabShown) CamPhrase(cam: cam),
-          CamStrip(cam: cam, onUse: _focus.requestFocus),
-        ],
-      ),
-    );
-    return PopScope(
-      // Leaving while recording keeps the take.
-      // (Not while one is saved for the next: it would start after.)
-      canPop: !cam.recording && !cam.saving && !cam.nextTaking,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && !cam.saving && !cam.nextTaking) _leave();
-      },
-      child: Focus(
-        focusNode: _focus,
-        autofocus: true,
-        onKeyEvent: cam.key,
-        child: Scaffold(
-          backgroundColor: Colors.black,
-          appBar: AppBar(
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
-            title: Text(
-              event?.title ?? l10n.eventCam,
-              overflow: TextOverflow.ellipsis,
-            ),
-            actions: [
-              DictionaryButton(onClosed: _focus.requestFocus),
-              MetronomeButton(onClosed: _focus.requestFocus),
-              if (gate == null)
-                PlayAlongButton(
-                  along: cam.along,
-                  onPressed: _focus.requestFocus,
-                ),
-              KeysHelpButton(
-                screen: KeysScreen.cam,
-                onClosed: _focus.requestFocus,
-              ),
-              if (cam.heads case final heads?)
-                ValueListenableBuilder(
-                  valueListenable: heads.face,
-                  builder: (context, face, _) => IconButton(
-                    key: const Key('cam-heads'),
-                    tooltip: cam.headsOn ? l10n.camHeadsOn : l10n.camHeadsOff,
-                    // On, the theme's primary colour while it sees the
-                    // user's face.
-                    color: cam.headsOn && face
-                        ? Theme.of(context).colorScheme.primary
-                        : null,
-                    icon: Icon(
-                      cam.headsOn ? Icons.face : Icons.face_retouching_off,
-                    ),
-                    onPressed: cam.toggleHeads,
-                  ),
-                ),
-              // Also when the camera failed: another may open.
-              if (cam.cameras.length > 1 &&
-                  (controller != null || cam.error != null))
-                IconButton(
-                  tooltip: l10n.eventFlipCamera,
-                  icon: const Icon(Icons.cameraswitch),
-                  onPressed: cam.recording || cam.saving || cam.nextTaking
-                      ? null
-                      : cam.flip,
-                ),
-            ],
-            bottom: cam.saving
-                ? const PreferredSize(
-                    preferredSize: Size.fromHeight(4),
-                    child: LinearProgressIndicator(),
-                  )
-                : null,
-          ),
-          body: MetronomeBeside(
-            onClosed: _focus.requestFocus,
-            child: DictionaryBeside(
-              title: event?.title,
-              onClosed: _focus.requestFocus,
-              child: gate == null
-                  ? body
-                  : PremiumGate(
-                      ocr: gate.ocr,
-                      email: gate.email,
-                      lead: l10n.premiumCamFeature,
-                      onClose: () => Navigator.of(context).pop(),
-                      child: body,
-                    ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }

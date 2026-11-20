@@ -10,6 +10,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
+import '../capture/backing_track.dart';
+import '../capture/cam_controls.dart';
+import '../capture/cam_session.dart';
 import '../capture/camera_list.dart';
 import '../capture/waveform.dart';
 import '../capture/edit_layers.dart';
@@ -17,7 +20,14 @@ import '../capture/head_gestures.dart';
 import '../capture/link_frame.dart';
 import '../capture/media.dart';
 import '../capture/out_delays.dart';
-import '../capture/play_along_sidebar.dart' show isTake, pdfViewFor;
+import '../capture/play_along_sidebar.dart'
+    show
+        PlayAlong,
+        PlayAlongBeside,
+        PlayAlongButton,
+        PlayAlongSidebar,
+        isTake,
+        pdfViewFor;
 import '../capture/song_sync.dart';
 import '../capture/sound_reader.dart';
 import '../capture/take_log.dart';
@@ -310,6 +320,38 @@ class _StudioViewState extends State<StudioView> {
   /// [_forgotten] was [forgotten]: what was asked for it can land.
   bool _still(int forgotten) => mounted && forgotten == _forgotten;
 
+  /// Cam, in a view opened as Cam ([StudioView.cam]): its camera, its
+  /// tab, its takes and what plays along ([CamSession.along]); null in
+  /// the video editor's alone. The camera stays open while a take is
+  /// edited in its place ([CamSession.away]).
+  CamSession? _cam;
+
+  /// What plays along, and the sidebar it's chosen in, in Cam's view.
+  PlayAlong? get _along => _cam?.along;
+
+  /// Whether the camera is in the main row's place: Cam's view with no
+  /// page opened in it.
+  bool get _camera => _cam != null && !_inEdit;
+
+  /// The texts in the app's language, kept for a take named once the
+  /// view may be gone.
+  late AppLocalizations _l10n;
+
+  /// What the main row had before the user put something else in it, and
+  /// its capture, latest last: Back puts it back ([_goBack]) before it
+  /// closes the view. A take's Edit in Cam adds the camera's.
+  final _back = <({EventPage? page, String eventId})>[];
+
+  /// Whether the formats Download makes have been asked for: as the first
+  /// page opens ([_loadFormats]).
+  bool _formatsAsked = false;
+
+  /// A seek of the song playing along held back while its row or the
+  /// ruler is dragged (one at most every [_seekEvery]), and where the
+  /// last one asked for goes when the wait is over ([_seekAlong]).
+  Timer? _alongSeekWait;
+  Duration? _alongSeekNext;
+
   VideoPlayerController? _video; // reset in _forgetPage
   EditedPlayback? _playback; // reset in _forgetPage
   Object? _error; // reset in _forgetPage
@@ -445,12 +487,53 @@ class _StudioViewState extends State<StudioView> {
   /// row and the zoom go by: how long it is ([_axisLength]), where the
   /// playhead is on it ([_axisAt]), what moves the playhead
   /// ([_axisMoves]), whether it plays ([_axisPlaying]), and a seek along
-  /// it ([_seekAxis]). Here, the opened video's.
-  Duration get _axisLength => _duration;
-  Duration get _axisAt => _at;
-  Listenable get _axisMoves => Listenable.merge([_video, _headAt]);
-  bool get _axisPlaying => _video?.value.isPlaying ?? false;
-  void _seekAxis(Duration at, {bool exact = true}) => _seek(at, exact: exact);
+  /// it ([_seekAxis]). The opened video's; with the camera in its place,
+  /// the song playing along's ([_alongTrack]; none for a link in a
+  /// frame).
+  Duration get _axisLength => switch (_alongTrack) {
+    final track? => track.media?.value.duration ?? Duration.zero,
+    null => _duration,
+  };
+  Duration get _axisAt => switch (_alongTrack) {
+    final track? => track.media?.value.position ?? Duration.zero,
+    null => _at,
+  };
+  Listenable get _axisMoves =>
+      _alongTrack ?? Listenable.merge([_video, _headAt]);
+  bool get _axisPlaying =>
+      _alongTrack?.playing ?? _video?.value.isPlaying ?? false;
+  void _seekAxis(Duration at, {bool exact = true}) => switch (_alongTrack) {
+    final track? => _seekAlong(track, at, exact: exact),
+    null => _seek(at, exact: exact),
+  };
+
+  /// What plays along, with the camera in the main row's place: the main
+  /// row's ([_CamRows._alongRow]).
+  BackingTrack? get _alongTrack => _camera ? _along?.track : null;
+
+  /// The song playing along goes to [at] ([BackingTrack.seek]): at once
+  /// ([exact]), or, while its row or the ruler is dragged, at most every
+  /// [_seekEvery], the last asked for when the wait is over.
+  void _seekAlong(BackingTrack track, Duration at, {required bool exact}) {
+    if (exact) {
+      _alongSeekWait?.cancel();
+      _alongSeekWait = null;
+      _alongSeekNext = null;
+      unawaited(track.seek(at));
+      return;
+    }
+    if (_alongSeekWait != null) {
+      _alongSeekNext = at;
+      return;
+    }
+    unawaited(track.seek(at));
+    _alongSeekWait = Timer(_seekEvery, () {
+      _alongSeekWait = null;
+      final next = _alongSeekNext;
+      _alongSeekNext = null;
+      if (next != null && mounted) _seekAlong(track, next, exact: false);
+    });
+  }
 
   /// The editor's keys: the space bar plays or pauses ([_key]).
   final _keys = FocusNode(debugLabel: 'video edit keys');
@@ -580,8 +663,97 @@ class _StudioViewState extends State<StudioView> {
     _titleFocus.addListener(_onTitleFocus);
     _title2Focus.addListener(_onTitleFocus);
     DownloadSettingsState.instance.addListener(_onSettings);
+    if (widget.cam case final setup?) {
+      final cam = _cam = CamSession(
+        library: widget.library,
+        eventId: widget.eventId,
+        cameras: setup.cameras,
+        headTracking: setup.headTracking,
+        takeRecorder: setup.takeRecorder,
+        gated: setup.gate != null,
+        now: setup.now,
+        takeName: (started) => setup.takeName(_l10n, started),
+        onNote: _note,
+      )..addListener(_onCam);
+      // A preview opens no camera.
+      if (setup.gate == null) cam.start();
+    }
     unawaited(_open());
-    unawaited(_loadFormats());
+    if (_inEdit) unawaited(_loadFormats());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _l10n = context.l10n;
+  }
+
+  /// Cam changed what shows (its camera, the tab, a take recording).
+  void _onCam() {
+    if (mounted) setState(() {});
+  }
+
+  /// Says what Cam has to tell ([CamNote]).
+  void _note(CamNote note, [String? detail]) {
+    if (mounted) showMessage(context, camNoteText(context.l10n, note, detail));
+  }
+
+  /// Back while a take records: the take is saved, then the view goes
+  /// back ([_goBack]), or closes.
+  Future<void> _leave() async {
+    await _cam?.stopRecording();
+    if (!mounted) return;
+    if (_back.isNotEmpty) return _goBack();
+    Navigator.pop(context);
+  }
+
+  /// A take's Edit in the play-along sidebar: the editor on it, in the
+  /// camera's place (or the take edited, in place), as the user may edit
+  /// it ([PlayAlongSidebar.mayEdit]); Back puts the camera back.
+  Future<void> _editTake(EventPage take) async {
+    final cam = _cam;
+    final event = cam == null ? null : _library.byId(cam.eventId);
+    if (event == null || !PlayAlongSidebar.mayEdit(event, take) || _busy) {
+      return;
+    }
+    if (_inEdit) {
+      await _switchMain(take, eventId: event.id);
+    } else {
+      await _go(take, eventId: event.id);
+    }
+  }
+
+  /// A file tapped in the play-along sidebar: it plays along in the main
+  /// row; a take edited there is kept, and the camera comes back first.
+  Future<void> _choose(EventPage page) async {
+    final along = _along;
+    if (along == null) return;
+    if (_inEdit) {
+      if (_busy) return;
+      if (_back.lastOrNull?.page == null && _back.isNotEmpty) {
+        await _goBack();
+      } else {
+        await _go(null, eventId: along.eventId);
+      }
+      if (!mounted || _inEdit) return;
+    }
+    await along.choose(page);
+  }
+
+  /// Puts [page] of capture [eventId] in the main row ([_switchMain]), what
+  /// was there kept for Back ([_back]).
+  Future<void> _go(EventPage? page, {String? eventId}) async {
+    if (_busy || !mounted) return;
+    _back.add((page: _page, eventId: _eventId));
+    await _switchMain(page, eventId: eventId);
+  }
+
+  /// Back: what the main row had before ([_back]) in it again; not during
+  /// a download.
+  Future<void> _goBack() async {
+    if (_back.isEmpty || _busy || !mounted) return;
+    final to = _back.removeLast();
+    await _switchMain(to.page, eventId: to.eventId);
   }
 
   /// Premium's status arrived, or changed: the Watermark chip unlocks (or
@@ -622,6 +794,7 @@ class _StudioViewState extends State<StudioView> {
   }
 
   Future<void> _loadFormats() async {
+    _formatsAsked = true;
     try {
       final formats = await _editor?.formats();
       if (formats != null && mounted) setState(() => _formats = formats);
@@ -782,8 +955,9 @@ class _StudioViewState extends State<StudioView> {
   /// camera's). The edit open is kept with its page first (a change still
   /// waiting to be, at once), its players let go of, everything known of
   /// it forgotten ([_forgetPage]), and [page] opened as the view opens
-  /// one ([_open]): the edit it has, its song lined up. Not during a
-  /// download: whether it did.
+  /// one ([_open]): the edit it has, its song lined up. In Cam's view,
+  /// the camera stays open behind a page ([CamSession.setAway]). Not
+  /// during a download: whether it did.
   Future<bool> _switchMain(EventPage? page, {String? eventId}) async {
     if (_busy || !mounted) return false;
     final video = _video;
@@ -800,6 +974,8 @@ class _StudioViewState extends State<StudioView> {
       _eventId = eventId ?? _eventId;
     });
     final forgotten = _forgotten;
+    unawaited(_cam?.setAway(page != null));
+    if (page != null && !_formatsAsked) unawaited(_loadFormats());
     await keeping;
     await video?.dispose();
     await song?.dispose();
@@ -938,6 +1114,10 @@ class _StudioViewState extends State<StudioView> {
     }
     _timelineScroll.dispose();
     _seekWait?.cancel();
+    _alongSeekWait?.cancel();
+    _cam
+      ?..removeListener(_onCam)
+      ..dispose();
     _video?.removeListener(_onPlayer);
     _playback?.dispose();
     _video?.dispose();
@@ -2394,28 +2574,81 @@ class _StudioViewState extends State<StudioView> {
 
   @override
   Widget build(BuildContext context) {
-    // A click anywhere gives the editor the keyboard back (a field's tap
-    // outside lets it go), unless something in it already has it.
-    return Listener(
-      behavior: HitTestBehavior.translucent,
-      onPointerUp: (_) {
-        if (!_keys.hasFocus) _keys.requestFocus();
+    final cam = _cam;
+    // Cam: leaving while a take records keeps it; not while one is saved
+    // (or saved for the next: it would start after).
+    final holding =
+        cam != null && (cam.recording || cam.saving || cam.nextTaking);
+    return PopScope(
+      canPop: _back.isEmpty && !holding,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop || (cam != null && (cam.saving || cam.nextTaking))) {
+          return;
+        }
+        unawaited((cam?.recording ?? false) ? _leave() : _goBack());
       },
-      child: Focus(
-        focusNode: _keys,
-        autofocus: true,
-        onKeyEvent: _key,
-        child: _scaffold(context),
+      // A click anywhere gives the view the keyboard back (a field's tap
+      // outside lets it go), unless something in it already has it.
+      child: Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerUp: (_) {
+          if (!_keys.hasFocus) _keys.requestFocus();
+        },
+        child: Focus(
+          focusNode: _keys,
+          autofocus: true,
+          // The editor's keys; Cam's with the camera in the main row.
+          onKeyEvent: (node, event) => switch (_camera ? cam : null) {
+            final cam? => cam.key(node, event),
+            null => _key(node, event),
+          },
+          child: _scaffold(context),
+        ),
       ),
     );
   }
 
+  /// Back, at the app bar's start, where the view goes back to what the
+  /// main row had before ([_back]): as the system's Back, through the
+  /// view's [PopScope].
+  Widget? _backButton() => _back.isEmpty
+      ? null
+      : BackButton(onPressed: () => unawaited(Navigator.maybePop(context)));
+
   Widget _scaffold(BuildContext context) {
     final l10n = context.l10n;
     final event = _library.byId(_eventId);
+    final cam = _cam;
+    return Scaffold(
+      appBar: cam != null && _camera
+          ? _camAppBar(l10n, cam, event)
+          : _editAppBar(l10n, event),
+      // The dictionary and the metronome at the right, usable during a
+      // download too, and in Cam the play-along sidebar beside the view
+      // (both in its state, [_beside]).
+      body: MetronomeBeside(
+        onClosed: _keys.requestFocus,
+        child: DictionaryBeside(
+          title: event?.title,
+          onClosed: _keys.requestFocus,
+          child: AbsorbPointer(
+            absorbing: _busy,
+            child: _beside(l10n, _body(l10n)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// The app bar with a page in the main row: the file's name; Reset,
+  /// Download and the Download settings once it's open; Dictionary,
+  /// Metronome, Play along (in Cam's view), Share, the keys' help and
+  /// About the edit (on a phone, those but Play along and the keys' help
+  /// in a menu, [_moreMenu]).
+  PreferredSizeWidget _editAppBar(AppLocalizations l10n, CaptureEvent? event) {
     final page = _page;
-    final video = _video;
-    final ready = video != null && _error == null;
+    final ready = _video != null && _error == null;
+    final along = widget.cam?.gate == null ? _along : null;
     // On a phone, Dictionary, Metronome, Share and About go in a menu, so
     // the file's name keeps some room.
     final menu = MediaQuery.sizeOf(context).width < _menuBelow;
@@ -2430,69 +2663,150 @@ class _StudioViewState extends State<StudioView> {
             edit: true,
           );
     void about() => Messenger.maybeOf(context)?.show(l10n.videoEditKept);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          event == null
-              ? ''
-              : page == null
-              ? event.title
-              : fileLabel(l10n, event, page),
-          overflow: TextOverflow.ellipsis,
-        ),
-        actions: [
-          if (ready) ...[
-            _appBarActions(l10n),
-            DownloadSettingsButton(onClosed: _keys.requestFocus),
-          ],
-          if (!menu) ...[
-            DictionaryButton(onClosed: _keys.requestFocus),
-            MetronomeButton(onClosed: _keys.requestFocus),
-            IconButton(
-              key: const Key('video-edit-share'),
-              tooltip: l10n.eventShare,
-              icon: const Icon(Icons.link),
-              onPressed: share,
-            ),
-          ],
-          const KeysHelpButton(screen: KeysScreen.videoEdit),
-          if (menu)
-            _moreMenu(l10n, share: share, about: about)
-          else
-            IconButton(
-              key: const Key('video-edit-about'),
-              tooltip: l10n.videoEditAbout,
-              icon: const Icon(Icons.info_outline),
-              onPressed: about,
-            ),
+    return AppBar(
+      leading: _backButton(),
+      title: Text(
+        event == null
+            ? ''
+            : page == null
+            ? event.title
+            : fileLabel(l10n, event, page),
+        overflow: TextOverflow.ellipsis,
+      ),
+      actions: [
+        if (ready) ...[
+          _appBarActions(l10n),
+          DownloadSettingsButton(onClosed: _keys.requestFocus),
         ],
-        bottom: _busy
-            ? PreferredSize(
-                preferredSize: const Size.fromHeight(4),
-                child: LinearProgressIndicator(
-                  key: const Key('video-edit-progress'),
-                  value: _progress,
-                ),
-              )
-            : null,
-      ),
-      // The dictionary and the metronome at the right, usable during a
-      // download too.
-      body: MetronomeBeside(
-        onClosed: _keys.requestFocus,
-        child: DictionaryBeside(
-          title: event?.title,
+        if (!menu) ...[
+          DictionaryButton(onClosed: _keys.requestFocus),
+          MetronomeButton(onClosed: _keys.requestFocus),
+          if (along != null)
+            PlayAlongButton(along: along, onPressed: _keys.requestFocus),
+          IconButton(
+            key: const Key('video-edit-share'),
+            tooltip: l10n.eventShare,
+            icon: const Icon(Icons.link),
+            onPressed: share,
+          ),
+        ],
+        KeysHelpButton(
+          screen: KeysScreen.videoEdit,
           onClosed: _keys.requestFocus,
-          // Nothing in the main row: nothing opens, nothing to wait for.
-          child: !_inEdit
-              ? const SizedBox.expand()
-              : _error != null
-              ? _cantPlay(l10n)
-              : video == null
-              ? const Center(child: CircularProgressIndicator())
-              : AbsorbPointer(absorbing: _busy, child: _body(video, l10n)),
         ),
+        if (menu)
+          _moreMenu(l10n, share: share, about: about, along: along)
+        else
+          IconButton(
+            key: const Key('video-edit-about'),
+            tooltip: l10n.videoEditAbout,
+            icon: const Icon(Icons.info_outline),
+            onPressed: about,
+          ),
+      ],
+      bottom: _busy
+          ? PreferredSize(
+              preferredSize: const Size.fromHeight(4),
+              child: LinearProgressIndicator(
+                key: const Key('video-edit-progress'),
+                value: _progress,
+              ),
+            )
+          : null,
+    );
+  }
+
+  /// The app bar with the camera in the main row's place: the capture's
+  /// name; Dictionary, Metronome, Play along (not in a preview), the keys'
+  /// help, head gestures (where they work) and Flip camera (with more
+  /// than one); a progress bar under it while a take is saved.
+  PreferredSizeWidget _camAppBar(
+    AppLocalizations l10n,
+    CamSession cam,
+    CaptureEvent? event,
+  ) {
+    final controller = cam.controller;
+    return AppBar(
+      leading: _backButton(),
+      title: Text(
+        event?.title ?? l10n.eventCam,
+        overflow: TextOverflow.ellipsis,
       ),
+      actions: [
+        DictionaryButton(onClosed: _keys.requestFocus),
+        MetronomeButton(onClosed: _keys.requestFocus),
+        if (widget.cam?.gate == null)
+          PlayAlongButton(along: cam.along, onPressed: _keys.requestFocus),
+        KeysHelpButton(screen: KeysScreen.cam, onClosed: _keys.requestFocus),
+        if (cam.heads case final heads?)
+          ValueListenableBuilder(
+            valueListenable: heads.face,
+            builder: (context, face, _) => IconButton(
+              key: const Key('cam-heads'),
+              tooltip: cam.headsOn ? l10n.camHeadsOn : l10n.camHeadsOff,
+              // On, the theme's primary colour while it sees the user's
+              // face.
+              color: cam.headsOn && face
+                  ? Theme.of(context).colorScheme.primary
+                  : null,
+              icon: Icon(cam.headsOn ? Icons.face : Icons.face_retouching_off),
+              onPressed: cam.toggleHeads,
+            ),
+          ),
+        // Also when the camera failed: another may open.
+        if (cam.cameras.length > 1 && (controller != null || cam.error != null))
+          IconButton(
+            tooltip: l10n.eventFlipCamera,
+            icon: const Icon(Icons.cameraswitch),
+            onPressed: cam.recording || cam.saving || cam.nextTaking
+                ? null
+                : cam.flip,
+          ),
+      ],
+      bottom: cam.saving
+          ? const PreferredSize(
+              preferredSize: Size.fromHeight(4),
+              child: LinearProgressIndicator(),
+            )
+          : null,
+    );
+  }
+
+  /// [content], in Cam's view beside the play-along sidebar
+  /// ([PlayAlongBeside]: a file tapped there plays in the main row,
+  /// [_choose]; a take's Edit opens it in the camera's place, [_editTake]),
+  /// and in its preview under the Premium card ([PremiumGate]); the
+  /// editor's alone, as it is.
+  Widget _beside(AppLocalizations l10n, Widget content) {
+    final cam = _cam;
+    final setup = widget.cam;
+    if (cam == null || setup == null) return content;
+    final gate = setup.gate;
+    final beside = PlayAlongBeside(
+      along: cam.along,
+      linkFrame: setup.linkFrame,
+      pdfView: setup.pdfView,
+      onUse: _keys.requestFocus,
+      // A preview has no keys; with a take edited, the keys are the
+      // editor's.
+      keys: gate == null && _camera,
+      // Not in a preview, nor while a take records, saves (or is saved
+      // for the next, until it starts) or plays back, nor during a
+      // download; the take edited shows neither Delete nor Edit.
+      deletes: gate == null,
+      canDelete: cam.canDelete && !_busy,
+      keepId: _page?.id,
+      choose: _choose,
+      onEdit: gate == null ? _editTake : null,
+      child: content,
+    );
+    if (gate == null) return beside;
+    return PremiumGate(
+      ocr: gate.ocr,
+      email: gate.email,
+      lead: l10n.premiumCamFeature,
+      onClose: () => Navigator.of(context).pop(),
+      child: beside,
     );
   }
 
@@ -2502,12 +2816,15 @@ class _StudioViewState extends State<StudioView> {
   static const _menuBelow = 600.0;
 
   /// On a phone, at the app bar's end (⋮): Dictionary and Metronome
-  /// (their sidebars shown or hidden), Share ([share]; off without the
-  /// capture, or during a download) and About the edit ([about]).
+  /// (their sidebars shown or hidden), in Cam's view Play along ([along]'s
+  /// sidebar, where the capture has something to list), Share ([share];
+  /// off without the capture, or during a download) and About the edit
+  /// ([about]).
   Widget _moreMenu(
     AppLocalizations l10n, {
     required VoidCallback? share,
     required VoidCallback about,
+    PlayAlong? along,
   }) {
     final dictionary = DictionaryState.instance;
     final metronome = MetronomeState.instance;
@@ -2546,6 +2863,16 @@ class _StudioViewState extends State<StudioView> {
             if (!metronome.open) _keys.requestFocus();
           },
         ),
+        if (along != null && along.available)
+          item(
+            'cam-along',
+            Icons.queue_music,
+            along.open ? l10n.camAlongHide : l10n.camAlong,
+            () {
+              along.toggle();
+              _keys.requestFocus();
+            },
+          ),
         item('video-edit-share', Icons.link, l10n.eventShare, share),
         item(
           'video-edit-about',
@@ -2613,66 +2940,100 @@ class _StudioViewState extends State<StudioView> {
     ),
   );
 
-  /// The screen's body, a frame that doesn't scroll: the viewer on top,
-  /// with the Download settings ([DownloadSettingsBeside]) beside it where
-  /// the editor's room is [_wide], else under it (the master, **On the
-  /// video** or the fields one of its chips opened, the song's details or
-  /// Add a song), scrolling; and at the bottom edge the transport and the
-  /// rows ([_rows]: the dock as high as they need, so a video alone leaves
-  /// the viewer more room). Hidden, the settings leave the viewer all the
-  /// room. While the on-screen keyboard is open (the title typed in), the
-  /// transport and the rows give their room to the viewer and the field;
-  /// in a tiny window the rows go first, then the transport. Squeezed
-  /// narrower than a small phone by the dictionary's or the metronome's
-  /// sidebar, it's laid out that wide and cut at the sidebar's edge, not
-  /// squeezed ([_leastWidth]).
-  Widget _body(VideoPlayerController video, AppLocalizations l10n) {
+  /// The view's body, a frame that doesn't scroll: the viewer on top
+  /// ([_viewer]), and at the bottom edge the dock: with a page in the main
+  /// row, the transport and the rows ([_rows]: the dock as high as they
+  /// need, so a video alone leaves the viewer more room); with the camera
+  /// in its place, Cam's controls and the main row ([_camDock]). With a
+  /// page, the Download settings ([DownloadSettingsBeside]) are beside
+  /// the viewer where the view's room is [_wide], else under it (the
+  /// master, **On the video** or the fields one of its chips opened, the
+  /// song's details or Add a song), scrolling; hidden, they leave the
+  /// viewer all the room. While the on-screen keyboard is open (the title
+  /// typed in), the transport and the rows give their room to the viewer
+  /// and the field; in a tiny window the rows go first, then the
+  /// transport. Squeezed narrower than a small phone by the dictionary's
+  /// or the metronome's sidebar, the editor is laid out that wide and cut
+  /// at the sidebar's edge, not squeezed ([_leastWidth]); Cam's view
+  /// keeps to its room (its controls' names shorten).
+  Widget _body(AppLocalizations l10n) {
     final keyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
     final screen = MediaQuery.sizeOf(context).width;
+    final inset = MediaQuery.paddingOf(context).bottom;
+    final scaler = MediaQuery.textScalerOf(context);
     return LayoutBuilder(
       builder: (context, box) {
         final height = box.maxHeight;
-        final width = max(box.maxWidth, min(_leastWidth, screen));
+        final cam = _camera ? _cam : null;
+        final width = cam != null
+            ? box.maxWidth
+            : max(box.maxWidth, min(_leastWidth, screen));
         _boxWidth = width;
         final wide = _wide;
-        final rows = _rows(l10n);
-        final dock = _dockHeightFor(rows.length);
-        final inset = MediaQuery.paddingOf(context).bottom;
-        bool fits(double dock) =>
-            height >= dock + inset + _transportHeight + 1 + _viewerLeast;
-        final showTransport =
-            !keyboard && height >= _transportHeight + _viewerLeast;
-        final showDock = showTransport && fits(dock);
-        final showSteps = showDock && fits(dock + _cutStepsHeight);
-        final dockHeight =
-            (showDock ? dock + inset : 0) + (showSteps ? _cutStepsHeight : 0);
-        final panel = showTransport
-            ? _panel(
-                video,
-                l10n,
-                rows: showDock ? rows : null,
-                steps: showSteps,
-              )
-            : null;
-        // Under the viewer, it's as high as the picture needs, leaving the
-        // settings their least (a tall video takes the rest).
-        final free =
-            height - (showTransport ? _transportHeight + 1 : 0) - dockHeight;
-        final aspect = video.value.aspectRatio > 0
-            ? video.value.aspectRatio
-            : 16 / 9;
-        final viewer = max(
-          0.0,
-          min(width / aspect, free - min(_inspectorLeast, free * 0.45)),
-        );
+        final video = _video;
+        final ready = _inEdit && video != null && _error == null;
+        Widget? dock;
+        var viewer = 0.0;
+        var phrase = false;
+        if (ready) {
+          final rows = _rows(l10n);
+          final dockHeight = _dockHeightFor(rows.length);
+          bool fits(double dock) =>
+              height >= dock + inset + _transportHeight + 1 + _viewerLeast;
+          final showTransport =
+              !keyboard && height >= _transportHeight + _viewerLeast;
+          final showDock = showTransport && fits(dockHeight);
+          final showSteps = showDock && fits(dockHeight + _cutStepsHeight);
+          final docked =
+              (showDock ? dockHeight + inset : 0) +
+              (showSteps ? _cutStepsHeight : 0);
+          dock = showTransport
+              ? _panel(
+                  video,
+                  l10n,
+                  rows: showDock ? rows : null,
+                  steps: showSteps,
+                )
+              : null;
+          // Under the viewer, it's as high as the picture needs, leaving
+          // the settings their least (a tall video takes the rest).
+          final free =
+              height - (showTransport ? _transportHeight + 1 : 0) - docked;
+          final aspect = video.value.aspectRatio > 0
+              ? video.value.aspectRatio
+              : 16 / 9;
+          viewer = max(
+            0.0,
+            min(width / aspect, free - min(_inspectorLeast, free * 0.45)),
+          );
+        } else if (cam != null) {
+          // Cam's controls always show; the phrase under the camera gives
+          // way in a tiny window, after the rows ([_camDock]).
+          final room = height - 1 - inset - _camStripHeight(scaler);
+          final phraseHeight = cam.tabShown
+              ? _camPhraseHeight(scaler, cam)
+              : 0.0;
+          phrase = cam.tabShown && room - phraseHeight >= _viewerLeast;
+          final along = cam.along;
+          dock = ListenableBuilder(
+            listenable: Listenable.merge([along, along.track]),
+            builder: (context, _) => _camDock(
+              l10n,
+              cam,
+              room: room - (phrase ? phraseHeight : 0),
+              keyboard: keyboard,
+            ),
+          );
+        }
         final content = Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
               child: DownloadSettingsBeside(
                 beside: wide,
+                enabled: ready,
                 viewerHeight: viewer,
-                viewer: _preview(video, l10n),
+                viewer: _viewer(l10n, phrase: phrase),
                 onClosed: _keys.requestFocus,
                 panel: (context) => wide
                     ? ListView(
@@ -2716,7 +3077,7 @@ class _StudioViewState extends State<StudioView> {
                       ),
               ),
             ),
-            ?panel,
+            ?dock,
           ],
         );
         return ClipRect(
@@ -2728,6 +3089,86 @@ class _StudioViewState extends State<StudioView> {
           ),
         );
       },
+    );
+  }
+
+  /// The viewer: the page in the main row ([_preview]; a spinner while it
+  /// opens; where it can't play, why, with Try again, [_cantPlay]), or in
+  /// Cam's view with the camera in its place, the camera ([CamView]) over
+  /// the tab's phrase ([CamPhrase], unless it's hidden, or there's no
+  /// [phrase] room), on black. The camera is kept, hidden, while a page
+  /// is in its place: it stays open, and shows again as it was.
+  Widget _viewer(AppLocalizations l10n, {required bool phrase}) {
+    final video = _video;
+    final Widget? page = !_inEdit
+        ? null
+        : _error != null
+        ? _cantPlay(l10n)
+        : video == null
+        ? const Center(child: CircularProgressIndicator())
+        : _preview(video, l10n);
+    final cam = _cam;
+    if (cam == null) return page ?? const SizedBox.expand();
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Visibility(
+          key: const ValueKey('cam-viewer'),
+          visible: page == null,
+          maintainState: true,
+          child: ColoredBox(
+            color: Colors.black,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: CamView(cam: cam)),
+                if (phrase) CamPhrase(cam: cam),
+              ],
+            ),
+          ),
+        ),
+        if (page != null)
+          KeyedSubtree(key: const ValueKey('page'), child: page),
+      ],
+    );
+  }
+
+  /// Cam's dock, under the camera: Cam's controls ([CamStrip]: Rec, Play,
+  /// Tab, Auto-pass), and under them the ruler and the main row
+  /// ([_rows]: what plays along), unless the camera would keep less than
+  /// [_cameraLeast] of the [room] left by the controls and the phrase, or
+  /// the on-screen keyboard is open: the rows give way first.
+  Widget _camDock(
+    AppLocalizations l10n,
+    CamSession cam, {
+    required double room,
+    required bool keyboard,
+  }) {
+    final theme = Theme.of(context);
+    final rows = _rows(l10n);
+    final showRows =
+        rows.isNotEmpty &&
+        !keyboard &&
+        room - _dockHeightFor(rows.length) >= _cameraLeast;
+    return Material(
+      color: theme.colorScheme.surfaceContainerLow,
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Divider(height: 1),
+            CamStrip(
+              cam: cam,
+              onUse: _keys.requestFocus,
+              foreground: theme.colorScheme.onSurface,
+            ),
+            if (showRows)
+              Padding(padding: _dockPad, child: _timeline(l10n, rows)),
+          ],
+        ),
+      ),
     );
   }
 
@@ -3941,11 +4382,13 @@ class _StudioViewState extends State<StudioView> {
   /// The timeline's rows, top to bottom ([_Row]): the opened video's own
   /// ([_mainRow]), its only row, and under it, once there's a song (one
   /// picked, a take's lined up as it played while recording, or one on its
-  /// way, [_songComing]), the Song row ([_songRow]).
-  List<_Row> _rows(AppLocalizations l10n) => [
-    _mainRow(l10n),
-    if (_hasSong || _songComing) _songRow(l10n),
-  ];
+  /// way, [_songComing]), the Song row ([_songRow]). With the camera in
+  /// the main row's place, the main row is what plays along
+  /// ([_CamRows._alongRow]; none where nothing in the capture plays).
+  List<_Row> _rows(AppLocalizations l10n) => switch (_camera ? _along : null) {
+    final along? => [?_alongRow(l10n, along)],
+    null => [_mainRow(l10n), if (_hasSong || _songComing) _songRow(l10n)],
+  };
 
   /// The opened video's row: "Take" (one of Cam's takes) or "Video
   /// sound", its volume, and its bar, the whole video, the part kept

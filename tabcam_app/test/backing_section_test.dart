@@ -210,6 +210,63 @@ void main() {
     link.dispose();
   });
 
+  testWidgets('a seek (the main row tapped) stays within the file, and '
+      'within the section once there is one; a link stays', (tester) async {
+    final (track, _, _) = await loaded(tester);
+    video.seeks.clear();
+    await tester.runAsync(() => track.seek(const Duration(seconds: 50)));
+    await tester.runAsync(() => track.seek(-const Duration(seconds: 5)));
+    await tester.runAsync(() => track.seek(const Duration(minutes: 9)));
+    expect(video.seeks, const [
+      Duration(seconds: 50),
+      Duration.zero,
+      Duration(minutes: 3),
+    ]);
+
+    await tester.runAsync(
+      () => track.setSection(
+        const Duration(seconds: 10),
+        const Duration(seconds: 20),
+      ),
+    );
+    video.seeks.clear();
+    await tester.runAsync(() => track.seek(const Duration(seconds: 15)));
+    await tester.runAsync(() => track.seek(const Duration(seconds: 2)));
+    await tester.runAsync(() => track.seek(const Duration(seconds: 50)));
+    expect(video.seeks, const [
+      Duration(seconds: 15),
+      Duration(seconds: 10),
+      Duration(seconds: 20),
+    ]);
+    track.dispose();
+
+    // A link straight to a sound file plays in the app: it seeks.
+    final (file, _, _) = await loaded(tester, link: true);
+    video.seeks.clear();
+    await tester.runAsync(() => file.seek(const Duration(seconds: 15)));
+    expect(video.seeks, const [Duration(seconds: 15)]);
+    file.dispose();
+
+    // A page in a frame can't be taken to a time.
+    final library = Library(PlatformEventStore(), null, (_) async => null);
+    late CaptureEvent event;
+    await tester.runAsync(() async {
+      await library.load();
+      event = await library.addLink(
+        await library.create(const []),
+        Uri.parse('https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+        title: 'Riff',
+      );
+    });
+    final link = BackingTrack(library);
+    await tester.runAsync(() => link.choose(event, event.pages.last));
+    final commands = <LinkCommand>[];
+    link.link!.command = (command) async => commands.add(command);
+    await tester.runAsync(() => link.seek(const Duration(seconds: 15)));
+    expect(commands, isEmpty);
+    link.dispose();
+  });
+
   testWidgets('restart goes back to the section\'s start (the file\'s '
       'without one), playing on or staying paused', (tester) async {
     final (track, _, _) = await loaded(tester);

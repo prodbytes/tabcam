@@ -777,5 +777,9 @@
   "videoEditSongDelayKept": "Guardado para {output}: os takes por ele abrem com este atraso",
   "downloadSettings": "Configurações do download",
   "downloadSettingsHide": "Ocultar as configurações do download",
-  "videoEditMore": "Mais"
+  "videoEditMore": "Mais",
+  "videoEditMainAdd": "Tocar junto com uma música…",
+  "videoEditMainPlay": "Tocar a música",
+  "videoEditMainPause": "Pausar a música",
+  "videoEditMainBar": "A música com que você toca: toque ou arraste para ir até lá"
 }

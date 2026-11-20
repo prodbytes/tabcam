@@ -488,6 +488,20 @@ class BackingTrack extends ChangeNotifier {
     await _link?.skip(by);
   }
 
+  /// Goes to [at] (the main row of Cam's view tapped or dragged there),
+  /// kept within its start and end, or its section's when one is set (out
+  /// of it, the section would only pull it back). A link in a frame can't
+  /// be taken to a time: it stays where it is.
+  Future<void> seek(Duration at) async {
+    final media = _media;
+    if (media == null) return;
+    final length = media.value.duration;
+    final range = section ?? (start: Duration.zero, end: length);
+    if (at < range.start) at = range.start;
+    if (length > Duration.zero && at > range.end) at = range.end;
+    await media.seekTo(at);
+  }
+
   /// Back to its start (its section's): the **0** key. Paused, it stays
   /// paused there; playing, or counting in, it starts over as Play starts
   /// it, so with [countsIn] it counts in again before it plays.

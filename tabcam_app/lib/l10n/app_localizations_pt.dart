@@ -2881,4 +2881,17 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoEditMore => 'Mais';
+
+  @override
+  String get videoEditMainAdd => 'Tocar junto com uma música…';
+
+  @override
+  String get videoEditMainPlay => 'Tocar a música';
+
+  @override
+  String get videoEditMainPause => 'Pausar a música';
+
+  @override
+  String get videoEditMainBar =>
+      'A música com que você toca: toque ou arraste para ir até lá';
 }
