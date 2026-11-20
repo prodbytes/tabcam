@@ -652,6 +652,10 @@ void main() {
       await camFrames(tester);
       expect(camera.recordings, 0);
       expect(find.byKey(const Key('video-edit-take-bar')), findsOneWidget);
+      // The play-along's own keys are quiet: 1 doesn't play the song.
+      await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
+      await camFrames(tester);
+      expect(video.playing, isEmpty);
 
       await tester.pageBack();
       await camFrames(tester);
@@ -706,6 +710,96 @@ void main() {
       expect(MetronomeState.instance.playing, isTrue);
       MetronomeState.instance.close();
       await camFrames(tester);
+    });
+
+    testWidgets('editing a take beside the play-along sidebar, the '
+        'settings are beside the viewer where the room left is wide; the '
+        'dictionary narrowing it, they go under the viewer, and back', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1280, 800)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final (library, id, _, takeId) = await camCapture(tester, take: true);
+      await tester.pumpWidget(cam(library, id));
+      await camFrames(tester);
+      await editTake(tester, takeId!);
+      final along = find.byKey(const Key('cam-along-sidebar'));
+      final settings = find.byKey(const Key('video-edit-settings-panel'));
+      expect(along, findsOneWidget);
+      expect(find.byKey(const Key('video-edit-side')), findsOneWidget);
+      expect(
+        tester.getRect(settings).right,
+        lessThanOrEqualTo(tester.getRect(along).left),
+      );
+
+      await tester.tap(find.byKey(const Key('dictionary')));
+      await camFrames(tester);
+      final dictionary = find.byKey(const Key('dictionary-sidebar'));
+      expect(dictionary, findsOneWidget);
+      expect(tester.getRect(dictionary).right, 1280);
+      // The view's room, between the editor's left edge and the
+      // play-along sidebar, is narrower than a wide one now.
+      expect(find.byKey(const Key('video-edit-side')), findsNothing);
+      expect(find.byKey(const Key('video-edit-inspector')), findsOneWidget);
+      expect(along, findsOneWidget);
+      expect(
+        tester.getRect(settings).right,
+        lessThanOrEqualTo(tester.getRect(along).left),
+      );
+      expect(find.byKey(const Key('video-edit-take-bar')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.byKey(const Key('dictionary-close')));
+      await camFrames(tester);
+      expect(dictionary, findsNothing);
+      expect(find.byKey(const Key('video-edit-side')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a phone: beside the play-along sidebar the main row gives '
+        'way (the sidebar\'s player has the song); a take\'s Edit hides the '
+        'sidebar, so the editor has the width, and Back shows it again', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(390, 844)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final (library, id, _, takeId) = await camCapture(tester, take: true);
+      await tester.pumpWidget(cam(library, id));
+      await camFrames(tester);
+      final along = find.byKey(const Key('cam-along-sidebar'));
+      expect(along, findsOneWidget);
+      // Too narrow beside it for a bar to read: no rows.
+      expect(mainRow, findsNothing);
+      expect(find.byKey(const Key('cam-rec')), findsOneWidget);
+
+      await editTake(tester, takeId!);
+      expect(along, findsNothing);
+      final take = find.byKey(const Key('video-edit-take-bar'));
+      expect(take, findsOneWidget);
+      // Not cut at the sidebar's edge: the take's bar ends near the
+      // screen's.
+      expect(tester.getRect(take).right, inInclusiveRange(350, 390));
+      expect(tester.takeException(), isNull);
+
+      await tester.pageBack();
+      await camFrames(tester);
+      expect(find.byKey(const Key('cam-rec')), findsOneWidget);
+      expect(along, findsOneWidget);
+      expect(mainRow, findsNothing);
+
+      // Hidden, the sidebar leaves the main row the width.
+      await tester.tap(find.byKey(const Key('cam-along')));
+      await camFrames(tester);
+      expect(along, findsNothing);
+      expect(
+        find.descendant(of: mainRow, matching: find.text('Made-up riff')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('a phone on its side: the main row gives way to the camera, '

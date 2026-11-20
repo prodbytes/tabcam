@@ -723,7 +723,13 @@ class _StudioViewState extends State<StudioView> {
 
   /// A take's Edit in the play-along sidebar: the editor on it, in the
   /// camera's place (or the take edited, in place), as the user may edit
-  /// it ([PlayAlongSidebar.mayEdit]); Back puts the camera back.
+  /// it ([PlayAlongSidebar.mayEdit]); Back puts the camera back. Where
+  /// the sidebar leaves the editor too little room (narrower than a small
+  /// phone, where it would be cut at the sidebar's edge; in a short
+  /// window, a phone on its side, too narrow for the Download settings
+  /// beside the viewer, where under it they'd leave the viewer next to
+  /// nothing), it's hidden meanwhile, and shown again with the camera
+  /// ([_alongHidden]).
   Future<void> _editTake(EventPage take) async {
     final cam = _cam;
     final event = cam == null ? null : _library.byId(cam.eventId);
@@ -732,10 +738,23 @@ class _StudioViewState extends State<StudioView> {
     }
     if (_inEdit) {
       await _switchMain(take, eventId: event.id);
-    } else {
-      await _go(take, eventId: event.id);
+      return;
     }
+    final along = cam!.along;
+    final screen = MediaQuery.sizeOf(context);
+    final room = _boxWidth ?? screen.width;
+    if (along.open &&
+        (room < _leastWidth ||
+            (screen.height < _shortBelow && room < _wideShortFrom))) {
+      _alongHidden = true;
+      along.toggle();
+    }
+    await _go(take, eventId: event.id);
   }
+
+  /// Whether a take's Edit hid the play-along sidebar ([_editTake]): it
+  /// shows again once the camera is back in the main row ([_switchMain]).
+  bool _alongHidden = false;
 
   /// A file tapped in the play-along sidebar: it plays along in the main
   /// row; a take edited there is kept, and the camera comes back first.
@@ -989,6 +1008,12 @@ class _StudioViewState extends State<StudioView> {
     });
     final forgotten = _forgotten;
     unawaited(_cam?.setAway(page != null));
+    // The camera back: the sidebar a take's Edit hid shows again.
+    if (page == null && _alongHidden) {
+      _alongHidden = false;
+      final along = _along;
+      if (along != null && !along.open) along.show();
+    }
     if (page != null && !_formatsAsked) unawaited(_loadFormats());
     await keeping;
     await video?.dispose();
@@ -3037,6 +3062,7 @@ class _StudioViewState extends State<StudioView> {
               l10n,
               cam,
               room: room - (phrase ? phraseHeight : 0),
+              width: width,
               keyboard: keyboard,
             ),
           );
@@ -3152,12 +3178,16 @@ class _StudioViewState extends State<StudioView> {
   /// Cam's dock, under the camera: Cam's controls ([CamStrip]: Rec, Play,
   /// Tab, Auto-pass), and under them the ruler and the main row
   /// ([_rows]: what plays along), unless the camera would keep less than
-  /// [_cameraLeast] of the [room] left by the controls and the phrase, or
-  /// the on-screen keyboard is open: the rows give way first.
+  /// [_cameraLeast] of the [room] left by the controls and the phrase,
+  /// the bars would be narrower than [_alongBarLeast] in the view's
+  /// [width] (a phone beside the play-along sidebar, whose player shows
+  /// the same song), or the on-screen keyboard is open: the rows give way
+  /// first.
   Widget _camDock(
     AppLocalizations l10n,
     CamSession cam, {
     required double room,
+    required double width,
     required bool keyboard,
   }) {
     final theme = Theme.of(context);
@@ -3165,6 +3195,7 @@ class _StudioViewState extends State<StudioView> {
     final showRows =
         rows.isNotEmpty &&
         !keyboard &&
+        width - _dockPad.horizontal - _lead >= _alongBarLeast &&
         room - _dockHeightFor(rows.length) >= _cameraLeast;
     return Material(
       color: theme.colorScheme.surfaceContainerLow,

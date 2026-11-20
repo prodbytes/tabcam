@@ -53,6 +53,10 @@ class CamSetup {
 /// controls give way.
 const _cameraLeast = 160.0;
 
+/// The narrowest the main row's bar is in Cam's view before the rows give
+/// way: narrower, it can't be read or aimed at.
+const _alongBarLeast = 120.0;
+
 /// About how high Cam's controls are ([CamStrip]) at [scaler]'s text
 /// size: their padding, Rec's button and its name under it.
 double _camStripHeight(TextScaler scaler) => 16 + 52 + scaler.scale(14) * 1.43;
