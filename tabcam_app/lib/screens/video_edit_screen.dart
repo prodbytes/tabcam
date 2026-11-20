@@ -723,6 +723,8 @@ class _StudioViewState extends State<StudioView> {
         }
         _fillTitle();
       });
+      // The view's now: it lets go of it ([_switchMain], [dispose]).
+      opened = null;
       controller.addListener(_onPlayer);
       if (edit != null && track != null) {
         final file = await _fileOf(event, track);
@@ -749,11 +751,9 @@ class _StudioViewState extends State<StudioView> {
         unawaited(_measureSong());
       }
     } on Object catch (e) {
-      // A player opened but not the screen's yet has no one else to let
-      // go of it.
-      if (opened != null && !identical(opened, _video)) {
-        unawaited(opened.dispose());
-      }
+      // A player opened but not the view's yet has no one else to let go
+      // of it.
+      if (opened != null) unawaited(opened.dispose());
       if (_still(forgotten)) setState(() => _error = e);
     }
   }
