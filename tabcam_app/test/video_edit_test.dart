@@ -2351,7 +2351,8 @@ void main() {
     await _settle(tester);
     expect(platform.volumes[track], 0.5);
     expect(library.byId(id)!.pages.first.edit!.songMuted, isFalse);
-    await tester.tapAt(const Offset(450, 1500));
+    // A tap clear of its panel, which opens up from the Song row's volume.
+    await tester.tapAt(const Offset(700, 1500));
     await _frames(tester);
     expect(slider, findsNothing);
     await tester.tap(find.byKey(const Key('video-edit-play')));
