@@ -787,5 +787,6 @@
   "videoEditRecUnplaced": "La toma: no fue con esta canción",
   "videoEditRecPlay": "Reproducir la toma",
   "videoEditRecStop": "Detener la toma",
-  "videoEditRecEdit": "Editar la toma"
+  "videoEditRecEdit": "Editar la toma",
+  "videoEditRecOver": "Grabar sobre este"
 }

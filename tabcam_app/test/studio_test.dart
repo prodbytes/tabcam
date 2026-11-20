@@ -13,6 +13,8 @@ import 'package:tabcam_app/capture/play_along_screen.dart';
 import 'package:tabcam_app/capture/take_log.dart';
 import 'package:tabcam_app/capture/take_sound.dart';
 import 'package:tabcam_app/capture/video_edit.dart';
+import 'package:tabcam_app/cloud/cloud_ocr.dart';
+import 'package:tabcam_app/cloud/cloud_sync.dart';
 import 'package:tabcam_app/dictionary/dictionary_sidebar.dart';
 import 'package:tabcam_app/export/download.dart';
 import 'package:tabcam_app/l10n/app_localizations.dart';
@@ -27,7 +29,9 @@ import 'package:tabcam_app/screens/sidebar_widths.dart';
 import 'package:tabcam_app/screens/video_edit_screen.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 
+import 'cloud_ocr_test.dart' show FakeOcrApi;
 import 'fake_camera.dart';
+import 'fakes.dart';
 import 'mini_player_test.dart' show FakeVideoPlatform;
 import 'video_edit_test.dart' show FakeEditor, VolumePlatform;
 
@@ -77,14 +81,22 @@ class _Clicks implements MetronomeSound {
   Future<void> stop() async {}
 }
 
-/// The camera, faked, counting how many times its preview is built.
+/// The camera, faked, counting how many times its preview is built and
+/// the cameras are asked for.
 class _Camera extends FakeCameraPlatform {
   int previews = 0;
+  int asked = 0;
 
   @override
   Widget buildPreview(int cameraId) {
     previews++;
     return super.buildPreview(cameraId);
+  }
+
+  @override
+  Future<List<CameraDescription>> availableCameras() {
+    asked++;
+    return super.availableCameras();
   }
 }
 
@@ -983,78 +995,78 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    final recRow = find.byKey(const Key('video-edit-rec-row'));
+    final recording = find.byKey(const Key('video-edit-rec-bar'));
+    final taken = find.byKey(const Key('video-edit-rec-take'));
+    final time = find.byKey(const Key('video-edit-rec-time'));
+    final menu = find.byKey(const Key('video-edit-rec-menu'));
+    Finder block(int i) => find.byKey(Key('video-edit-rec-block-$i'));
+
+    /// The take's clock on the test's (each pump moves it on), so how
+    /// long a take has recorded is known.
+    void testClock(WidgetTester tester) {
+      CamSession.takeClock = () => tester.binding.clock.stopwatch();
+      addTearDown(() => CamSession.takeClock = Stopwatch.new);
+    }
+
+    /// [seconds] go by, a tenth at a time, the song's player moving on
+    /// with them while it plays, as a real one does.
+    Future<void> playOn(WidgetTester tester, double seconds) async {
+      for (var i = 0; i < (seconds * 10).round(); i++) {
+        if (video.playing.isNotEmpty) {
+          video.position += const Duration(milliseconds: 100);
+        }
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+
+    /// Presses Rec (Stop while recording).
+    Future<void> pressRec(WidgetTester tester) => tester.tap(
+      find
+          .descendant(
+            of: find.byKey(const Key('cam-rec')),
+            matching: find.byType(IconButton),
+          )
+          .first,
+    );
+
+    /// Stops the take, and lets it be saved.
+    Future<void> stop(WidgetTester tester) async {
+      await pressRec(tester);
+      bool saved() =>
+          rec(tester).tooltip == 'Rec (.)' && rec(tester).onPressed != null;
+      for (var i = 0; i < 50 && !saved(); i++) {
+        await camFrames(tester);
+      }
+      expect(saved(), isTrue, reason: 'the take saved');
+    }
+
+    /// Where [span] is along [bar], in ms on an axis [length] long: its
+    /// start and its length.
+    (double, double) placed(
+      WidgetTester tester,
+      Finder span,
+      Finder bar,
+      Duration length,
+    ) {
+      final ms = length.inMilliseconds;
+      final b = tester.getRect(bar);
+      final r = tester.getRect(span);
+      return ((r.left - b.left) / b.width * ms, r.width / b.width * ms);
+    }
+
+    /// The name the take's row shows.
+    Finder named(String name) =>
+        find.descendant(of: menu, matching: find.text(name));
+
+    void wide(WidgetTester tester) {
+      tester.view
+        ..physicalSize = const Size(1200, 1000)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+    }
+
     group('the take\'s row', () {
-      final recRow = find.byKey(const Key('video-edit-rec-row'));
-      final recording = find.byKey(const Key('video-edit-rec-bar'));
-      final taken = find.byKey(const Key('video-edit-rec-take'));
-      final time = find.byKey(const Key('video-edit-rec-time'));
-      final menu = find.byKey(const Key('video-edit-rec-menu'));
-      Finder block(int i) => find.byKey(Key('video-edit-rec-block-$i'));
-
-      /// The take's clock on the test's (each pump moves it on), so how
-      /// long a take has recorded is known.
-      void testClock(WidgetTester tester) {
-        CamSession.takeClock = () => tester.binding.clock.stopwatch();
-        addTearDown(() => CamSession.takeClock = Stopwatch.new);
-      }
-
-      /// [seconds] go by, a tenth at a time, the song's player moving on
-      /// with them while it plays, as a real one does.
-      Future<void> playOn(WidgetTester tester, double seconds) async {
-        for (var i = 0; i < (seconds * 10).round(); i++) {
-          if (video.playing.isNotEmpty) {
-            video.position += const Duration(milliseconds: 100);
-          }
-          await tester.pump(const Duration(milliseconds: 100));
-        }
-      }
-
-      /// Presses Rec (Stop while recording).
-      Future<void> pressRec(WidgetTester tester) => tester.tap(
-        find
-            .descendant(
-              of: find.byKey(const Key('cam-rec')),
-              matching: find.byType(IconButton),
-            )
-            .first,
-      );
-
-      /// Stops the take, and lets it be saved.
-      Future<void> stop(WidgetTester tester) async {
-        await pressRec(tester);
-        bool saved() =>
-            rec(tester).tooltip == 'Rec (.)' && rec(tester).onPressed != null;
-        for (var i = 0; i < 50 && !saved(); i++) {
-          await camFrames(tester);
-        }
-        expect(saved(), isTrue, reason: 'the take saved');
-      }
-
-      /// Where [span] is along [bar], in ms on an axis [length] long: its
-      /// start and its length.
-      (double, double) placed(
-        WidgetTester tester,
-        Finder span,
-        Finder bar,
-        Duration length,
-      ) {
-        final ms = length.inMilliseconds;
-        final b = tester.getRect(bar);
-        final r = tester.getRect(span);
-        return ((r.left - b.left) / b.width * ms, r.width / b.width * ms);
-      }
-
-      /// The name the take's row shows.
-      Finder named(String name) =>
-          find.descendant(of: menu, matching: find.text(name));
-
-      void wide(WidgetTester tester) {
-        tester.view
-          ..physicalSize = const Size(1200, 1000)
-          ..devicePixelRatio = 1;
-        addTearDown(tester.view.reset);
-      }
-
       testWidgets('Rec: a red row under the main row, growing with the song '
           'as it plays in the take, how long it has recorded in its header, '
           'the camera not built again for it; paused and moved on, a gap; '
@@ -1348,6 +1360,333 @@ void main() {
           findsOneWidget,
         );
         expect(named('Take 10:00'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    });
+
+    group('Rec over this', () {
+      final camButton = find.byKey(const Key('video-edit-cam'));
+      final takeBar = find.byKey(const Key('video-edit-take-bar'));
+
+      /// What the take's sound channel was asked (none while no camera
+      /// opens).
+      late List<String> soundCalls;
+      setUp(() {
+        soundCalls = [];
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(TakeSound.channel, (call) async {
+              soundCalls.add(call.method);
+              return call.method == 'prepare'
+                  ? {'ok': false, 'reason': 'not in tests'}
+                  : null;
+            });
+      });
+
+      /// [camCapture]'s, with a video added after its recording (not a
+      /// take: "Made-up riff video"); its ID too.
+      Future<(Library, String, String, String)> recCapture(
+        WidgetTester tester,
+      ) async {
+        final (library, id, songId, _) = await camCapture(tester);
+        late String videoId;
+        await tester.runAsync(() async {
+          final added = await library.addMedia(library.byId(id)!, [
+            Media(
+              XFile.fromData(Uint8List.fromList([4, 5, 6]), name: 'riff.mp4'),
+              PageKind.video,
+              'mp4',
+            ),
+          ]);
+          videoId = added.pages.last.id;
+          await library.renamePage(id, videoId, 'Made-up riff video');
+        });
+        return (library, id, songId!, videoId);
+      }
+
+      /// The video editor on [pageId], as the file screen opens it, Cam's
+      /// camera for Rec over this faked as Cam's tests fake it, or, with
+      /// [platform], the platform's own (the fakes behind it).
+      Widget editor(
+        Library library,
+        String id,
+        String pageId, {
+        CloudOcr? ocr,
+        bool platform = false,
+      }) => MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: VideoEditScreen(
+          library: library,
+          eventId: id,
+          page: pageOf(library, id, pageId),
+          pickFile: () async => null,
+          ocr: ocr,
+          recSetup: platform
+              ? null
+              : CamSetup(
+                  cameras: () async => [_front],
+                  headTracking: (_, _) => null,
+                  takeRecorder: () => null,
+                  pdfView: (_, _, _) => const SizedBox(key: Key('fake-pdf')),
+                  now: () => PlayAlongScreen.now(),
+                  takeName: takeName,
+                ),
+        ),
+      );
+
+      /// Lets the editor open its video.
+      Future<void> opened(WidgetTester tester) async {
+        await camFrames(tester);
+        await camFrames(tester);
+        expect(takeBar, findsOneWidget);
+      }
+
+      testWidgets('with Premium: the video edited plays along in the main '
+          'row, from the playhead, paused, the list open on it, the camera '
+          'in the viewer\'s place; a take recorded over it has it as its '
+          'song, its Edit gives Take then that video; Back, then Back, '
+          'the edit as it was', (tester) async {
+        wide(tester);
+        testClock(tester);
+        final (library, id, _, videoId) = await recCapture(tester);
+        await tester.pumpWidget(editor(library, id, videoId));
+        await opened(tester);
+        expect(camButton, findsOneWidget);
+        expect(find.byTooltip('Rec over this'), findsOneWidget);
+        // No camera until it's pressed.
+        expect(camera.asked + camera.opened.length, 0);
+        expect(find.byKey(const ValueKey('cam-viewer')), findsNothing);
+        expect(find.byKey(const Key('cam-along-sidebar')), findsNothing);
+        // The preview 5 s in; trimmed there, not kept yet: Rec over this
+        // keeps it.
+        video.position = s(5);
+        await tester.tap(find.byKey(const Key('video-edit-end-here')));
+        await tester.pump();
+        expect(pageOf(library, id, videoId).edit, isNull);
+        final edited = video.lastPlayer;
+        video.seeks.clear();
+
+        await tester.tap(camButton);
+        await camFrames(tester);
+        await camFrames(tester);
+        expect(pageOf(library, id, videoId).edit?.end, s(5));
+        // The camera, Cam's controls; the editor's player let go of, the
+        // video in the main row on a player of its own, loaded paused
+        // where the playhead was.
+        expect(camera.opened, ['front']);
+        expect(find.byKey(const Key('cam-rec')), findsOneWidget);
+        expect(takeBar, findsNothing);
+        expect(video.disposed, contains(edited));
+        expect(video.lastPlayer, edited + 1);
+        expect(video.playing, isEmpty);
+        expect(video.seeks.last, s(5));
+        expect(
+          find.descendant(
+            of: mainRow,
+            matching: find.text('Made-up riff video'),
+          ),
+          findsOneWidget,
+        );
+        // The list open on it, which shows it no Delete (Back brings it
+        // back to edit).
+        expect(find.byKey(const Key('cam-along-sidebar')), findsOneWidget);
+        expect(find.byKey(ValueKey('cam-along-delete-$videoId')), findsNothing);
+        expect(find.byTooltip('Back'), findsOneWidget);
+        expect(titleShown(tester), 'Made-up riffs');
+
+        // A take over it: it plays along, from 5 s, after the take's
+        // count-in.
+        await pressRec(tester);
+        await playOn(tester, 0.3);
+        expect(camera.recording, isTrue);
+        await playOn(tester, BackingTrack.countInLength.inSeconds + 1.0);
+        expect(video.playing, {edited + 1});
+        await playOn(tester, 3);
+        await stop(tester);
+        expect(named('Take 10:00'), findsOneWidget);
+        final take = library.byId(id)!.pages.last;
+        expect(take.take, isTrue);
+        final spans = songSpansOn(take.takeLog!.song, videoId);
+        expect(spans, hasLength(1));
+        expect(spans.single.from, closeTo(5000, 400));
+        // Placed along the video in the take's row.
+        expect(find.byKey(const Key('video-edit-rec-take')), findsOneWidget);
+
+        // Its Edit: the take, then the video lined up as its song.
+        await tester.tap(menu);
+        await camFrames(tester);
+        await tester.tap(find.byKey(const Key('video-edit-rec-edit')));
+        await camFrames(tester);
+        await camFrames(tester);
+        await camFrames(tester);
+        final takeRow = find.byKey(const Key('video-edit-take-row'));
+        final songRow = find.byKey(const Key('video-edit-song-row'));
+        expect(takeRow, findsOneWidget);
+        expect(songRow, findsOneWidget);
+        expect(
+          tester.getRect(songRow).top,
+          greaterThan(tester.getRect(takeRow).bottom),
+        );
+        expect(
+          find.descendant(
+            of: songRow,
+            matching: find.textContaining('Made-up riff video'),
+          ),
+          findsWidgets,
+        );
+        expect(titleShown(tester), 'Take 10:00');
+
+        // Back: the camera, the video still in the main row.
+        await tester.pageBack();
+        await camFrames(tester);
+        expect(find.byKey(const Key('cam-rec')), findsOneWidget);
+        expect(
+          find.descendant(
+            of: mainRow,
+            matching: find.text('Made-up riff video'),
+          ),
+          findsOneWidget,
+        );
+        // Back again: the video's edit, as it was kept; what played along
+        // paused; Back now closes the editor.
+        await tester.tap(play);
+        await camFrames(tester);
+        expect(video.playing, isNotEmpty);
+        await tester.pageBack();
+        await camFrames(tester);
+        await camFrames(tester);
+        expect(takeBar, findsOneWidget);
+        expect(find.byKey(const Key('cam-rec')), findsNothing);
+        expect(titleShown(tester), 'Made-up riff video');
+        expect(find.text('Keep 0:00.0–0:05.0'), findsOneWidget);
+        expect(find.byTooltip('Back'), findsNothing);
+        expect(video.playing, isEmpty);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('without Premium: it says so, and pressed, the Premium '
+          'card, no camera: no Cam, the cameras never asked for, the take\'s '
+          'sound never set up', (tester) async {
+        wide(tester);
+        final (library, id, _, videoId) = await recCapture(tester);
+        // Signed out: no Premium.
+        final auth = FakeAuth();
+        final sync = CloudSync(
+          library: library,
+          auth: auth,
+          bucket: FakeBucket(),
+          credentials: FakeCredentials(),
+          period: const Duration(days: 1),
+        );
+        final ocr = CloudOcr(
+          library: library,
+          auth: auth,
+          sync: sync,
+          bucket: FakeBucket(),
+          credentials: FakeCredentials(),
+          api: FakeOcrApi(),
+        );
+        addTearDown(() {
+          ocr.dispose();
+          sync.dispose();
+        });
+        // The platform's camera, behind the fakes: asked for, they'd say.
+        await tester.pumpWidget(
+          editor(library, id, videoId, ocr: ocr, platform: true),
+        );
+        await opened(tester);
+        expect(
+          find.byTooltip('Rec over this: tabs.cam Premium'),
+          findsOneWidget,
+        );
+
+        await tester.tap(camButton);
+        await camFrames(tester);
+        expect(find.byKey(const Key('video-edit-premium')), findsOneWidget);
+        expect(
+          find.textContaining('Cam is part of tabs.cam Premium'),
+          findsOneWidget,
+        );
+        await tester.tap(find.byKey(const Key('premium-not-now')));
+        await camFrames(tester);
+        expect(find.byKey(const Key('video-edit-premium')), findsNothing);
+        // Still the edit; nothing of Cam's.
+        expect(takeBar, findsOneWidget);
+        expect(find.byKey(const Key('cam-rec')), findsNothing);
+        expect(find.byKey(const ValueKey('cam-viewer')), findsNothing);
+        expect(find.byKey(const Key('cam-along')), findsNothing);
+        expect(find.byTooltip('Back'), findsNothing);
+        expect(camera.asked, 0);
+        expect(camera.opened, isEmpty);
+        expect(soundCalls, isEmpty);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('an editor where it isn\'t pressed: played, paused and '
+          'closed, no camera is asked for, nor the take\'s sound', (
+        tester,
+      ) async {
+        wide(tester);
+        final (library, id, _, videoId) = await recCapture(tester);
+        await tester.pumpWidget(editor(library, id, videoId, platform: true));
+        await opened(tester);
+        await tester.tap(find.byKey(const Key('video-edit-play')));
+        await camFrames(tester);
+        await tester.tap(find.byKey(const Key('video-edit-play')));
+        await camFrames(tester);
+        await tester.pumpWidget(const SizedBox());
+        await camFrames(tester);
+        expect(camera.asked, 0);
+        expect(camera.opened, isEmpty);
+        expect(soundCalls, isEmpty);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('a take edited in Cam: Rec over this puts it in the main '
+          'row; Back gives the take\'s edit, then the camera', (tester) async {
+        wide(tester);
+        final (library, id, songId, takeId) = await camCapture(
+          tester,
+          take: true,
+        );
+        await tester.pumpWidget(cam(library, id));
+        await camFrames(tester);
+        expect(
+          find.descendant(of: mainRow, matching: find.text('Made-up riff')),
+          findsOneWidget,
+        );
+        await editTake(tester, takeId!);
+        expect(takeBar, findsOneWidget);
+        // Cam's own: Premium's already, so no lock said.
+        expect(find.byTooltip('Rec over this'), findsOneWidget);
+
+        await tester.tap(camButton);
+        await camFrames(tester);
+        await camFrames(tester);
+        expect(find.byKey(const Key('cam-rec')), findsOneWidget);
+        expect(
+          find.descendant(of: mainRow, matching: find.text('Take 9:30')),
+          findsOneWidget,
+        );
+        expect(video.playing, isEmpty);
+        // One camera all along.
+        expect(camera.opened, ['front']);
+
+        await tester.pageBack();
+        await camFrames(tester);
+        await camFrames(tester);
+        expect(takeBar, findsOneWidget);
+        expect(titleShown(tester), 'Take 9:30');
+        await tester.pageBack();
+        await camFrames(tester);
+        expect(find.byKey(const Key('cam-rec')), findsOneWidget);
+        expect(find.byTooltip('Back'), findsNothing);
+        // The take still plays along: Rec over this put it there.
+        expect(
+          find.descendant(of: mainRow, matching: find.text('Take 9:30')),
+          findsOneWidget,
+        );
+        expect(songId, isNotNull);
         expect(tester.takeException(), isNull);
       });
     });

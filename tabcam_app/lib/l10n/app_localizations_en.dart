@@ -2868,4 +2868,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoEditRecEdit => 'Edit the take';
+
+  @override
+  String get videoEditRecOver => 'Rec over this';
 }

@@ -787,5 +787,6 @@
   "videoEditRecUnplaced": "O take: não foi com esta música",
   "videoEditRecPlay": "Tocar o take",
   "videoEditRecStop": "Parar o take",
-  "videoEditRecEdit": "Editar o take"
+  "videoEditRecEdit": "Editar o take",
+  "videoEditRecOver": "Gravar sobre este"
 }
