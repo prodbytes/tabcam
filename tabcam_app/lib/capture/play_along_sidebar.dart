@@ -357,7 +357,7 @@ class PlayAlongBeside extends StatelessWidget {
     this.footer,
     this.deletes = false,
     this.canDelete = true,
-    this.keepId,
+    this.keepIds = const {},
     this.letGo,
     this.run,
     this.onEdit,
@@ -385,9 +385,10 @@ class PlayAlongBeside extends StatelessWidget {
   /// recording or saving a take, the screen busy), they're greyed.
   final bool canDelete;
 
-  /// A file that shows no Delete, nor Edit, in the sidebar: the file
-  /// screen's own (its own tools delete and edit it).
-  final String? keepId;
+  /// The files that show no Delete, nor Edit, in the sidebar: the file
+  /// screen's own (its own tools delete and edit it); in Cam's view, the
+  /// page edited and those Back puts back.
+  final Set<String> keepIds;
 
   /// Opens the video editor on one of the sidebar's takes: in Cam, in the
   /// camera's place (`StudioView`); in the Text view, over it
@@ -571,7 +572,7 @@ class PlayAlongBeside extends StatelessWidget {
                     hasText: along.text != null,
                     followsText: along.followsText,
                     footer: footer,
-                    keepId: keepId,
+                    keepIds: keepIds,
                     canDelete: canDelete,
                     onDelete: deletes ? (page) => _delete(context, page) : null,
                     onEdit: onEdit == null ? null : _edit,
@@ -1181,7 +1182,7 @@ class PlayAlongSidebar extends StatelessWidget {
     this.onDelete,
     this.onEdit,
     this.canDelete = true,
-    this.keepId,
+    this.keepIds = const {},
     required this.onToggle,
     required this.onStop,
     required this.onSkip,
@@ -1213,19 +1214,19 @@ class PlayAlongSidebar extends StatelessWidget {
 
   /// Deletes one of the files listed; null: none shows Delete. With it,
   /// those the user may delete ([mayDeleteFile]) do, at the right of
-  /// their row, all but [keepId]'s.
+  /// their row, all but those in [keepIds].
   final void Function(EventPage page)? onDelete;
 
   /// Opens the video editor on one of the takes listed; null: none shows
   /// Edit. With it, the takes the user may edit ([mayEdit]) do, before
-  /// Delete, all but [keepId]'s.
+  /// Delete, all but those in [keepIds].
   final void Function(EventPage page)? onEdit;
 
   /// Whether Delete and Edit work now; false, they're greyed.
   final bool canDelete;
 
-  /// The file that shows no Delete, nor Edit (the file screen's own).
-  final String? keepId;
+  /// The files that show no Delete, nor Edit (the file screen's own).
+  final Set<String> keepIds;
 
   /// Whether [page] is a take the user may edit, as the file screen's
   /// Edit says: a video of Cam's ([isTake]), one of the capture's own
@@ -1366,8 +1367,11 @@ class PlayAlongSidebar extends StatelessWidget {
     final onDelete = this.onDelete;
     final onEdit = this.onEdit;
     final deletes =
-        onDelete != null && page.id != keepId && mayDeleteFile(event, page);
-    final edits = onEdit != null && page.id != keepId && mayEdit(event, page);
+        onDelete != null &&
+        !keepIds.contains(page.id) &&
+        mayDeleteFile(event, page);
+    final edits =
+        onEdit != null && !keepIds.contains(page.id) && mayEdit(event, page);
     if (!deletes && !edits) return mark == null ? null : Icon(mark, size: 18);
     Widget button(
       String name,

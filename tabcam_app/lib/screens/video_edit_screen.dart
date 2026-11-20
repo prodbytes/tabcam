@@ -757,10 +757,16 @@ class _StudioViewState extends State<StudioView> {
   }
 
   /// Makes Cam's session ([_cam]) on the view's capture, with [setup], and
-  /// opens its camera (a preview opens none). Its play-along sidebar
+  /// opens its camera (a preview opens none), unless [open] is false (the
+  /// caller then starts it, [CamSession.start]). Its play-along sidebar
   /// opens by itself, unless [opensByItself] is false, loading [startId]
   /// first when it's shown ([PlayAlong.startId]).
-  void _startCam(CamSetup setup, {String? startId, bool opensByItself = true}) {
+  void _startCam(
+    CamSetup setup, {
+    String? startId,
+    bool opensByItself = true,
+    bool open = true,
+  }) {
     _setup = setup;
     final cam = _cam = CamSession(
       library: widget.library,
@@ -776,7 +782,7 @@ class _StudioViewState extends State<StudioView> {
       opensByItself: opensByItself,
     )..addListener(_onCam);
     // A preview opens no camera.
-    if (setup.gate == null) cam.start();
+    if (open && setup.gate == null) cam.start();
   }
 
   @override
@@ -871,10 +877,12 @@ class _StudioViewState extends State<StudioView> {
   /// over this opens it. The edit is kept, the editor's players let go
   /// of, and the page goes on [_back] (Back puts it back) as the camera
   /// takes its place ([_go]); the backing track ([BackingTrack]) then
-  /// loads the page, paused, where the playhead was. It plays the page's
-  /// file as it is (not its edit: no trim, fades or Song row, as a take's
-  /// log notes where in the file it played, [SongNotes]), so the take
-  /// lines it up as its song.
+  /// loads the page, paused, where the playhead was. A camera made here
+  /// opens only once the editor's players are let go of (a phone's
+  /// decoders and sound are then free for it). It plays the page's file
+  /// as it is (not its edit: no trim, fades or Song row, as a take's log
+  /// notes where in the file it played, [SongNotes]), so the take lines
+  /// it up as its song.
   Future<void> _recOver() async {
     final page = _page;
     final event = _library.byId(_eventId);
@@ -889,12 +897,19 @@ class _StudioViewState extends State<StudioView> {
     final forgotten = _forgotten;
     final at = _headAt.value ?? await _video?.position ?? Duration.zero;
     if (!_still(forgotten) || _busy) return;
-    if (_cam == null) {
+    final made = _cam == null;
+    if (made) {
       setState(
-        () => _startCam(_recSetup, startId: page.id, opensByItself: false),
+        () => _startCam(
+          _recSetup,
+          startId: page.id,
+          opensByItself: false,
+          open: false,
+        ),
       );
     }
-    final along = _cam!.along;
+    final cam = _cam!;
+    final along = cam.along;
     final track = along.track;
     if (track.page?.id != page.id) {
       // Named in the main row as it loads, not offered as a song to pick;
@@ -902,6 +917,10 @@ class _StudioViewState extends State<StudioView> {
       _alongComing = page;
       if (track.page != null) unawaited(track.close());
     }
+    // The sidebar a take's Edit hid shows again below, once the page is
+    // in the backing track: not as the camera comes back ([_switchMain]),
+    // which would load another file in it first ([PlayAlong.show]).
+    _alongHidden = false;
     try {
       await _go(null, eventId: event.id);
       // Back meanwhile, or another page in its place.
@@ -917,6 +936,9 @@ class _StudioViewState extends State<StudioView> {
       if (mounted && _alongComing != null) {
         setState(() => _alongComing = null);
       }
+      // The camera made here opens now, the editor's players let go of
+      // (behind the edit, if Back came meanwhile, as after Back).
+      if (made && mounted) cam.start();
     }
     if (!mounted || _inEdit || track.page?.id != page.id) return;
     await track.seek(at);
@@ -969,13 +991,33 @@ class _StudioViewState extends State<StudioView> {
   /// Edit ([_roomToEdit]).
   Future<void> _goBack() async {
     if (_back.isEmpty || _busy || !mounted) return;
-    final to = _back.removeLast();
+    var to = _back.removeLast();
+    // A page deleted meanwhile (synced away: the sidebar shows those on
+    // the list no Delete, [_beside]) isn't put back, nor then the camera
+    // already in its place: what was before them is; nothing left, the
+    // view closes.
+    while (!_backTo(to)) {
+      if (_back.isEmpty) {
+        Navigator.pop(context);
+        return;
+      }
+      to = _back.removeLast();
+    }
     final along = _along;
     if (to.page != null && _camera && along != null) {
       _roomToEdit(along);
       unawaited(along.track.pause());
     }
     await _switchMain(to.page, eventId: to.eventId);
+  }
+
+  /// Whether Back may put [to] in the main row ([_goBack]): a page still
+  /// in its capture; the camera, from a page.
+  bool _backTo(({EventPage? page, String eventId}) to) {
+    final page = to.page;
+    if (page == null) return _inEdit;
+    final event = _library.byId(to.eventId);
+    return event != null && event.pages.any((p) => p.id == page.id);
   }
 
   /// Premium's status arrived, or changed: the Watermark chip unlocks (or
@@ -2715,6 +2757,17 @@ class _StudioViewState extends State<StudioView> {
   /// The transport's row, over the rows.
   static const _transportHeight = 48.0;
 
+  /// How wide an icon button is in the transport (its tap target).
+  static const _iconWidth = 48.0;
+
+  /// How wide the transport's middle is: To the start, Play / Pause (56)
+  /// and To the end ([_transport]).
+  static const _transportMiddle = 2 * _iconWidth + 56;
+
+  /// The least the transport leaves the time at its left, where the trims
+  /// need more than half the room ([_transport]).
+  static const _transportTimeLeast = 48.0;
+
   /// The least the viewer keeps before the rows, then the transport, give
   /// way (a tiny window), and the least the Download settings keep under
   /// the viewer on a phone, their title included (a tall video takes the
@@ -2873,14 +2926,15 @@ class _StudioViewState extends State<StudioView> {
   /// Download and the Download settings once it's open; Dictionary,
   /// Metronome, Play along (in Cam's view), Share, the keys' help and
   /// About the edit (on a phone, all but the keys' help in a menu,
-  /// [_moreMenu]); Back to the camera, in Cam's view ([_backButton]).
+  /// [_moreMenu], with Rec over this first, [_recOver]); Back to the
+  /// camera, in Cam's view ([_backButton]).
   PreferredSizeWidget _editAppBar(AppLocalizations l10n, CaptureEvent? event) {
     final page = _page;
     final ready = _video != null && _error == null;
     final along = _setup?.gate == null ? _along : null;
     // On a phone, Dictionary, Metronome, Share and About go in a menu, so
     // the file's name keeps some room.
-    final menu = MediaQuery.sizeOf(context).width < _menuBelow;
+    final menu = _phone;
     // Share: the link to this file's edit view.
     final share = event == null || page == null || _busy
         ? null
@@ -2924,7 +2978,13 @@ class _StudioViewState extends State<StudioView> {
           onClosed: _keys.requestFocus,
         ),
         if (menu)
-          _moreMenu(l10n, share: share, about: about, along: along)
+          _moreMenu(
+            l10n,
+            share: share,
+            about: about,
+            along: along,
+            rec: ready && _recOffered,
+          )
         else
           IconButton(
             key: const Key('video-edit-about'),
@@ -3021,12 +3081,12 @@ class _StudioViewState extends State<StudioView> {
       keys: gate == null && _camera,
       // Not in a preview, nor while a take records, saves (or is saved
       // for the next, until it starts) or plays back, nor during a
-      // download; the take edited shows neither Delete nor Edit (nor,
-      // with the camera in its place, the page Rec over this left, which
-      // Back puts back), and its song, deleted, leaves its Song row first.
+      // download; the page edited shows neither Delete nor Edit, nor do
+      // those Back puts back (the pages Rec over this left), and its
+      // song, deleted, leaves its Song row first.
       deletes: gate == null,
       canDelete: cam.canDelete && !_busy,
-      keepId: _page?.id ?? _back.lastOrNull?.page?.id,
+      keepIds: {?_page?.id, for (final back in _back) ?back.page?.id},
       letGo: _letGo,
       choose: _choose,
       onEdit: gate == null ? _editTake : null,
@@ -3044,19 +3104,24 @@ class _StudioViewState extends State<StudioView> {
 
   /// How wide the screen is before Dictionary, Metronome, Share and
   /// About leave the app bar's menu ([_moreMenu]) for buttons of their
-  /// own.
+  /// own, and Rec over this goes in the transport ([_transport]).
   static const _menuBelow = 600.0;
 
-  /// On a phone, at the app bar's end (⋮): Dictionary and Metronome
-  /// (their sidebars shown or hidden), in Cam's view Play along ([along]'s
-  /// sidebar, where the capture has something to list), Share ([share];
-  /// off without the capture, or during a download) and About the edit
-  /// ([about]).
+  /// Whether the screen is a phone's ([_menuBelow]): the app bar's menu.
+  bool get _phone => MediaQuery.sizeOf(context).width < _menuBelow;
+
+  /// On a phone, at the app bar's end (⋮): with [rec], **Rec over this**
+  /// ([_recOver]: on a phone the transport has no room for it beside the
+  /// trims), then Dictionary and Metronome (their sidebars shown or
+  /// hidden), in Cam's view Play along ([along]'s sidebar, where the
+  /// capture has something to list), Share ([share]; off without the
+  /// capture, or during a download) and About the edit ([about]).
   Widget _moreMenu(
     AppLocalizations l10n, {
     required VoidCallback? share,
     required VoidCallback about,
     PlayAlong? along,
+    bool rec = false,
   }) {
     final dictionary = DictionaryState.instance;
     final metronome = MetronomeState.instance;
@@ -3064,12 +3129,13 @@ class _StudioViewState extends State<StudioView> {
       String key,
       IconData icon,
       String label,
-      VoidCallback? action,
-    ) => PopupMenuItem(
+      VoidCallback? action, {
+      Widget? leading,
+    }) => PopupMenuItem(
       key: Key(key),
       value: action,
       enabled: action != null,
-      child: ListTile(leading: Icon(icon), title: Text(label)),
+      child: ListTile(leading: leading ?? Icon(icon), title: Text(label)),
     );
     return PopupMenuButton<VoidCallback>(
       key: const Key('video-edit-more'),
@@ -3077,6 +3143,14 @@ class _StudioViewState extends State<StudioView> {
       icon: const Icon(Icons.more_vert),
       onSelected: (action) => action(),
       itemBuilder: (context) => [
+        if (rec)
+          item(
+            'video-edit-cam',
+            Icons.videocam_outlined,
+            _recOverTip(l10n),
+            () => unawaited(_recOver()),
+            leading: _recOverIcon(),
+          ),
         item(
           'dictionary',
           Icons.menu_book_outlined,
@@ -4421,48 +4495,93 @@ class _StudioViewState extends State<StudioView> {
     );
   }
 
-  /// The transport's **Rec over this** ([_recOver]): a camera, named on a
-  /// wide row (else its name in its tooltip); without Premium, a tooltip
-  /// says it's Premium's.
-  Widget _recOverButton(AppLocalizations l10n, {required bool named}) {
+  /// Whether Rec over this says it's tabs.cam Premium's: in the editor
+  /// alone, to a user the service said has none ([CloudOcr.free]), as the
+  /// event screen's Cam tool says it; until it has, no lock shows (a
+  /// press still checks, [_recOver]).
+  bool get _recLockShown =>
+      widget.cam == null && !_unlocked && (widget.ocr?.free ?? false);
+
+  /// Rec over this's name: with its lock shown ([_recLockShown]), that
+  /// it's Premium's.
+  String _recOverTip(AppLocalizations l10n) {
     final label = l10n.videoEditRecOver;
-    final locked = widget.cam == null && !_unlocked;
-    final tip = locked ? l10n.eventPremiumTool(label) : label;
-    void onPressed() => unawaited(_recOver());
+    return _recLockShown ? l10n.eventPremiumTool(label) : label;
+  }
+
+  /// Rec over this's camera, with a small lock on it where it says it's
+  /// Premium's ([_recLockShown]), as the event screen's tools have.
+  Widget _recOverIcon() {
     const icon = Icon(Icons.videocam_outlined);
-    if (named) {
-      final button = TextButton.icon(
-        key: const Key('video-edit-cam'),
-        onPressed: onPressed,
-        icon: icon,
-        label: Text(label),
-      );
-      return locked ? Tooltip(message: tip, child: button) : button;
-    }
-    return IconButton(
-      key: const Key('video-edit-cam'),
-      tooltip: tip,
-      icon: icon,
-      onPressed: onPressed,
+    if (!_recLockShown) return icon;
+    final scheme = Theme.of(context).colorScheme;
+    return Badge(
+      key: const Key('video-edit-cam-locked'),
+      backgroundColor: scheme.primary,
+      textColor: scheme.onPrimary,
+      label: const Icon(Icons.lock, size: 10),
+      child: icon,
     );
   }
 
+  /// The transport's **Rec over this** ([_recOver]): a camera, its name
+  /// in its tooltip (that it's Premium's, [_recLockShown]).
+  Widget _recOverButton(AppLocalizations l10n) => IconButton(
+    key: const Key('video-edit-cam'),
+    tooltip: _recOverTip(l10n),
+    icon: _recOverIcon(),
+    onPressed: () => unawaited(_recOver()),
+  );
+
   /// Over the lanes, on one row: at the left where the preview is (to the
   /// tenth of a second: the trims are set by it) over the part kept; in
-  /// the middle To the start, Play / Pause and To the end; at the right
-  /// Start here and End here, which trim to where it is, and Rec over this
-  /// ([_recOverButton], where it's offered: [_recOffered]), named on a
-  /// wide row.
+  /// the middle To the start, Play / Pause and To the end, then Rec over
+  /// this ([_recOverButton], where it's offered, [_recOffered], but on a
+  /// phone, whose app bar's menu has it, [_moreMenu]); at the right Start
+  /// here and End here, which trim to where it is, named on a wide row
+  /// where both fit their half by their names. The trims keep their
+  /// size: where an even split would leave them too little, the time at
+  /// the left gives them room.
   Widget _transport(VideoPlayerController video, AppLocalizations l10n) {
     final theme = Theme.of(context);
     final trimmed = _start > Duration.zero || _end < _duration;
     final known = _duration > Duration.zero;
     const tabular = [FontFeature.tabularFigures()];
+    final rec = _recOffered && !_phone;
+    final scaler = MediaQuery.textScalerOf(context);
+    final direction = Directionality.of(context);
+    // How wide a trim is by its name: the name, and at most the icon, the
+    // gap and the padding (less at larger text sizes).
+    double namedWidth(String label) {
+      final painter = TextPainter(
+        text: TextSpan(text: label, style: theme.textTheme.labelLarge),
+        textDirection: direction,
+        textScaler: scaler,
+        maxLines: 1,
+      )..layout();
+      final width = painter.width;
+      painter.dispose();
+      return max(64, width + 54);
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: LayoutBuilder(
         builder: (context, box) {
-          final named = box.maxWidth >= 720;
+          // To the start, Play / Pause, To the end, and Rec over this.
+          final middle = _transportMiddle + (rec ? _iconWidth : 0);
+          final free = max(0.0, box.maxWidth - middle);
+          final namedTrims =
+              namedWidth(l10n.videoEditTrimStart) +
+              namedWidth(l10n.videoEditTrimEnd);
+          final named = box.maxWidth >= 720 && free / 2 >= namedTrims;
+          // The trims' half: half the room left, or, where that's too
+          // little for the two, what they need, the time keeping its
+          // least.
+          final trims = max(
+            free / 2,
+            min(2 * _iconWidth, free - _transportTimeLeast),
+          );
           Widget trim(String key, String label, IconData icon, bool end) {
             void onPressed() => _trimHere(end: end);
             return named
@@ -4552,7 +4671,9 @@ class _StudioViewState extends State<StudioView> {
                 icon: const Icon(Icons.skip_next),
                 onPressed: known ? () => unawaited(_toEnd()) : null,
               ),
-              Expanded(
+              if (rec) _recOverButton(l10n),
+              SizedBox(
+                width: trims,
                 child: Align(
                   alignment: Alignment.centerRight,
                   child: FittedBox(
@@ -4573,10 +4694,6 @@ class _StudioViewState extends State<StudioView> {
                           Icons.last_page,
                           true,
                         ),
-                        if (_recOffered) ...[
-                          if (named) const SizedBox(width: 8),
-                          _recOverButton(l10n, named: named),
-                        ],
                       ],
                     ),
                   ),

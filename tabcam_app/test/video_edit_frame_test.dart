@@ -383,13 +383,17 @@ void main() {
 
           final screen = Offset.zero & size;
           Rect rect(String key) => tester.getRect(find.byKey(Key(key)));
+          // On a phone, Rec over this is in the app bar's menu: the
+          // transport has no room for it beside the trims.
+          final phone = size.width < 600;
           for (final key in [
             'video-edit-preview',
             'video-edit-play',
             'video-edit-to-start',
             'video-edit-to-end',
+            'video-edit-start-here',
             'video-edit-end-here',
-            'video-edit-cam',
+            if (!phone) 'video-edit-cam',
             'video-edit-ruler',
             'video-edit-take-bar',
           ]) {
@@ -401,6 +405,18 @@ void main() {
               isTrue,
               reason: '$key at $r',
             );
+          }
+          // The transport's buttons at their full size (a tap target's),
+          // none shrunk to fit.
+          for (final key in [
+            'video-edit-to-start',
+            'video-edit-to-end',
+            'video-edit-start-here',
+            'video-edit-end-here',
+            if (!phone) 'video-edit-cam',
+          ]) {
+            expect(rect(key).height, greaterThanOrEqualTo(48), reason: key);
+            expect(rect(key).width, greaterThanOrEqualTo(48), reason: key);
           }
           // The transport right over the ruler; the lanes flush with the
           // bottom edge.
@@ -454,6 +470,19 @@ void main() {
               findsOneWidget,
               reason: key,
             );
+          }
+          // On a phone, Rec over this first in the app bar's menu.
+          final cam = find.byKey(const Key('video-edit-cam'));
+          if (phone) {
+            expect(cam, findsNothing);
+            await tester.tap(find.byKey(const Key('video-edit-more')));
+            await _settle(tester);
+            expect(cam, findsOneWidget);
+            expect(
+              tester.getRect(cam).top,
+              lessThan(tester.getRect(find.byKey(const Key('dictionary'))).top),
+            );
+            expect(tester.takeException(), isNull);
           }
         });
       }

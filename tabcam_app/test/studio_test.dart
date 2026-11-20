@@ -1441,6 +1441,18 @@ void main() {
         expect(takeBar, findsOneWidget);
       }
 
+      /// Presses Rec over this: in the transport, or on a phone, in the
+      /// app bar's menu.
+      Future<void> recOver(WidgetTester tester) async {
+        if (camButton.evaluate().isEmpty) {
+          await tester.tap(find.byKey(const Key('video-edit-more')));
+          await camFrames(tester);
+        }
+        await tester.tap(camButton);
+        await camFrames(tester);
+        await camFrames(tester);
+      }
+
       testWidgets('with Premium: the video edited plays along in the main '
           'row, from the playhead, paused, the list open on it, the camera '
           'in the viewer\'s place; a take recorded over it has it as its '
@@ -1448,13 +1460,15 @@ void main() {
           'the edit as it was', (tester) async {
         wide(tester);
         testClock(tester);
-        final (library, id, _, videoId) = await recCapture(tester);
+        final (library, id, songId, videoId) = await recCapture(tester);
         await tester.pumpWidget(editor(library, id, videoId));
         await opened(tester);
-        // Named, on a wide row.
+        // A camera by To the end, its name in its tooltip; no lock.
+        expect(find.byTooltip('Rec over this'), findsOneWidget);
+        expect(find.byKey(const Key('video-edit-cam-locked')), findsNothing);
         expect(
-          find.descendant(of: camButton, matching: find.text('Rec over this')),
-          findsOneWidget,
+          tester.getRect(camButton).left,
+          tester.getRect(find.byKey(const Key('video-edit-to-end'))).right,
         );
         // No camera until it's pressed.
         expect(camera.asked + camera.opened.length, 0);
@@ -1538,6 +1552,19 @@ void main() {
           findsWidgets,
         );
         expect(titleShown(tester), 'Take 10:00');
+        // The video, Back's to put back after the camera, shows no Delete
+        // in the sidebar (nor the take edited); the song not on Back's
+        // list does.
+        expect(find.byKey(const Key('cam-along-sidebar')), findsOneWidget);
+        expect(find.byKey(ValueKey('cam-along-delete-$videoId')), findsNothing);
+        expect(
+          find.byKey(ValueKey('cam-along-delete-${take.id}')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(ValueKey('cam-along-delete-$songId')),
+          findsOneWidget,
+        );
 
         // Back: the camera, the video still in the main row.
         await tester.pageBack();
@@ -1567,9 +1594,11 @@ void main() {
         expect(tester.takeException(), isNull);
       });
 
-      testWidgets('a phone: the camera named by its tooltip; Back gives the '
-          'edit the width, the sidebar hidden, and Rec over this again puts '
-          'the same camera back, the sidebar with it', (tester) async {
+      testWidgets('a phone: in the app bar\'s menu, the trims at their full '
+          'size; Back gives the edit the width, the sidebar hidden, and Rec '
+          'over this again puts the same camera back, the sidebar with it', (
+        tester,
+      ) async {
         tester.view
           ..physicalSize = const Size(390, 844)
           ..devicePixelRatio = 1;
@@ -1577,16 +1606,18 @@ void main() {
         final (library, id, _, videoId) = await recCapture(tester);
         await tester.pumpWidget(editor(library, id, videoId));
         await opened(tester);
-        expect(find.byTooltip('Rec over this'), findsOneWidget);
-        expect(
-          find.descendant(of: camButton, matching: find.text('Rec over this')),
-          findsNothing,
-        );
+        // Not in the transport, whose trims keep their size.
+        expect(camButton, findsNothing);
+        for (final key in ['video-edit-start-here', 'video-edit-end-here']) {
+          expect(
+            tester.getSize(find.byKey(Key(key))),
+            const Size(48, 48),
+            reason: key,
+          );
+        }
         final along = find.byKey(const Key('cam-along-sidebar'));
 
-        await tester.tap(camButton);
-        await camFrames(tester);
-        await camFrames(tester);
+        await recOver(tester);
         expect(find.byKey(const Key('cam-rec')), findsOneWidget);
         expect(along, findsOneWidget);
         expect(tester.takeException(), isNull);
@@ -1600,14 +1631,95 @@ void main() {
         expect(tester.getRect(takeBar).right, inInclusiveRange(350, 390));
         expect(tester.takeException(), isNull);
 
-        await tester.tap(camButton);
-        await camFrames(tester);
-        await camFrames(tester);
+        await recOver(tester);
         expect(find.byKey(const Key('cam-rec')), findsOneWidget);
         expect(along, findsOneWidget);
         // The video still in the backing track, paused; one camera.
         expect(video.playing, isEmpty);
         expect(camera.opened, ['front']);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('a phone, a take edited in Cam with the sidebar hidden: Rec '
+          'over this loads the take alone, no other file first, and the '
+          'sidebar shows again', (tester) async {
+        tester.view
+          ..physicalSize = const Size(390, 844)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final (library, id, songId, takeId) = await camCapture(
+          tester,
+          take: true,
+        );
+        await tester.pumpWidget(cam(library, id));
+        await camFrames(tester);
+        final along = find.byKey(const Key('cam-along-sidebar'));
+        expect(along, findsOneWidget);
+        await editTake(tester, takeId!);
+        expect(takeBar, findsOneWidget);
+        // Hidden, to leave the edit its room.
+        expect(along, findsNothing);
+        final players = video.lastPlayer;
+
+        await recOver(tester);
+        expect(find.byKey(const Key('cam-rec')), findsOneWidget);
+        // The sidebar again, the take the one playing along.
+        expect(along, findsOneWidget);
+        bool chosen(String pageId) => tester
+            .widget<ListTile>(find.byKey(ValueKey('cam-along-$pageId')))
+            .selected;
+        expect(chosen(takeId), isTrue);
+        expect(chosen(songId!), isFalse);
+        // One player more: the take's, in the backing track; the song
+        // that played along before isn't loaded again on the way.
+        expect(video.lastPlayer, players + 1);
+        expect(video.disposed, isNot(contains(players + 1)));
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('a page on Back\'s list deleted meanwhile (synced away): '
+          'Back doesn\'t put it back, and with nothing before it, the editor '
+          'closes', (tester) async {
+        wide(tester);
+        final (library, id, _, videoId) = await recCapture(tester);
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Builder(
+              builder: (context) => TextButton(
+                key: const Key('launch'),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) =>
+                        (editor(library, id, videoId) as MaterialApp).home!,
+                  ),
+                ),
+                child: const Text('Edit'),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.byKey(const Key('launch')));
+        await opened(tester);
+        await recOver(tester);
+        expect(find.byKey(const Key('cam-rec')), findsOneWidget);
+
+        await tester.runAsync(() async {
+          final event = library.byId(id)!;
+          await library.deletePage(
+            event,
+            event.pages.firstWhere((p) => p.id == videoId),
+          );
+        });
+        await camFrames(tester);
+        await tester.pageBack();
+        await camFrames(tester);
+        await camFrames(tester);
+        expect(find.byType(VideoEditScreen), findsNothing);
+        expect(find.byKey(const Key('launch')), findsOneWidget);
+        expect(find.textContaining("can't be played"), findsNothing);
         expect(tester.takeException(), isNull);
       });
 
@@ -1646,6 +1758,7 @@ void main() {
           find.byTooltip('Rec over this: tabs.cam Premium'),
           findsOneWidget,
         );
+        expect(find.byKey(const Key('video-edit-cam-locked')), findsOneWidget);
 
         await tester.tap(camButton);
         await camFrames(tester);
@@ -1665,6 +1778,52 @@ void main() {
         expect(find.byTooltip('Back'), findsNothing);
         expect(camera.asked, 0);
         expect(camera.opened, isEmpty);
+        expect(soundCalls, isEmpty);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('Premium not known yet (signed in, the service couldn\'t '
+          'check): no lock said; pressed, Premium\'s card checks, and no '
+          'camera opens', (tester) async {
+        wide(tester);
+        final (library, id, _, videoId) = await recCapture(tester);
+        final auth = FakeAuth()..signInAs('u1');
+        final sync = CloudSync(
+          library: library,
+          auth: auth,
+          bucket: FakeBucket(),
+          credentials: FakeCredentials(),
+          period: const Duration(days: 1),
+        );
+        final ocr = CloudOcr(
+          library: library,
+          auth: auth,
+          sync: sync,
+          bucket: FakeBucket(),
+          credentials: FakeCredentials(),
+          api: FakeOcrApi()..rbacr = false,
+        );
+        addTearDown(() {
+          ocr.dispose();
+          sync.dispose();
+        });
+        await tester.pumpWidget(
+          editor(library, id, videoId, ocr: ocr, platform: true),
+        );
+        await opened(tester);
+        expect(ocr.free, isFalse);
+        expect(find.byTooltip('Rec over this'), findsOneWidget);
+        expect(find.byTooltip('Rec over this: tabs.cam Premium'), findsNothing);
+        expect(find.byKey(const Key('video-edit-cam-locked')), findsNothing);
+
+        await tester.tap(camButton);
+        await camFrames(tester);
+        expect(find.byKey(const Key('video-edit-premium')), findsOneWidget);
+        await tester.tap(find.byKey(const Key('premium-not-now')));
+        await camFrames(tester);
+        expect(takeBar, findsOneWidget);
+        expect(find.byKey(const Key('cam-rec')), findsNothing);
+        expect(camera.asked, 0);
         expect(soundCalls, isEmpty);
         expect(tester.takeException(), isNull);
       });

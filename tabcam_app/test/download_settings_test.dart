@@ -616,8 +616,9 @@ void main() {
   });
 
   for (final locale in const [Locale('en'), Locale('es'), Locale('pt')]) {
-    testWidgets('on a small phone at the largest text, ⋮ holds Dictionary, '
-        'Metronome, Share and About; the rest fits the app bar: '
+    testWidgets('on a small phone at the largest text, ⋮ holds Rec over '
+        'this, Dictionary, Metronome, Share and About; the rest fits the app '
+        'bar: '
         '${locale.languageCode}', (tester) async {
       sized(tester, const Size(360, 740), text: 2);
       final (library, id) = await capture(tester);
@@ -643,6 +644,7 @@ void main() {
         );
       }
       for (final key in [
+        'video-edit-cam',
         'dictionary',
         'metronome',
         'video-edit-share',
@@ -655,6 +657,7 @@ void main() {
       await frames(tester);
       expect(tester.takeException(), isNull);
       for (final key in [
+        'video-edit-cam',
         'dictionary',
         'metronome',
         'video-edit-share',
