@@ -64,7 +64,10 @@ void main() {
         ).queryParameters,
         {'c': 'abc123'},
       );
-      expect(CaptureLink.editIn(Uri.parse('https://x/app/?c=abc123&e=1')), isFalse);
+      expect(
+        CaptureLink.editIn(Uri.parse('https://x/app/?c=abc123&e=1')),
+        isFalse,
+      );
     });
 
     test('with its key, the short link: the key alone', () {

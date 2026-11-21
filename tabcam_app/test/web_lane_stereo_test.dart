@@ -92,10 +92,7 @@ void main() {
       expect(loudest(leaning, 0), closeTo(0.25, 0.02));
       expect(loudest(leaning, 1), closeTo(0.5, 0.02));
 
-      final mono = await render(
-        wav([tone()]),
-        const LaneStereo(balance: 1),
-      );
+      final mono = await render(wav([tone()]), const LaneStereo(balance: 1));
       expect(mono.numberOfChannels, 2);
       expect(loudest(mono, 0), lessThan(0.001));
       expect(loudest(mono, 1), closeTo(0.5, 0.02));

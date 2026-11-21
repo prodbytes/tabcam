@@ -1626,19 +1626,19 @@
   "@textViewMarkCorrect": {
     "description": "Tooltip of the Correct toggle while off"
   },
-  "textViewFretDown": "Fret down (the number under the cursor)",
+  "textViewFretDown": "Fret down (the selected notes, or the number under the cursor)",
   "@textViewFretDown": {
     "description": "Tooltip of the − button"
   },
-  "textViewFretUp": "Fret up (the number under the cursor)",
+  "textViewFretUp": "Fret up (the selected notes, or the number under the cursor)",
   "@textViewFretUp": {
     "description": "Tooltip of the + button"
   },
-  "textViewNoteUp": "Note up a string (cycles round)",
+  "textViewNoteUp": "Note up a string (the selected notes, or the one under the cursor; cycles round)",
   "@textViewNoteUp": {
     "description": "Tooltip of ++: the note under the cursor to the string above"
   },
-  "textViewNoteDown": "Note down a string (cycles round)",
+  "textViewNoteDown": "Note down a string (the selected notes, or the one under the cursor; cycles round)",
   "@textViewNoteDown": {
     "description": "Tooltip of −−: the note under the cursor to the string below"
   },
@@ -1650,19 +1650,19 @@
   "@textViewNoStringFree": {
     "description": "Snackbar when ++ or −− finds no string with room for the note"
   },
-  "textViewBar": "Bar line: a | across every string, at the cursor",
+  "textViewBar": "Bar line: a | across every string at the cursor, or on the selected lines",
   "@textViewBar": {
     "description": "Tooltip of |: a bar line across the staff at the cursor"
   },
-  "textViewSpacer": "Spacer: a - on every line of the phrase, at the cursor",
+  "textViewSpacer": "Spacer: a - on every line of the phrase at the cursor, or on the selected lines",
   "@textViewSpacer": {
     "description": "Tooltip of =: a dash down the cursor's phrase (staff), at its column"
   },
-  "textViewEndsLast": "End together at the last end: each phrase's lines padded to the longest",
+  "textViewEndsLast": "End together at the last end: each phrase's lines (or the selected ones) padded to the longest",
   "@textViewEndsLast": {
     "description": "Tooltip of |>: pads every line (string) of each phrase (staff) to the longest"
   },
-  "textViewEndsFirst": "End together at the first end: each phrase's lines cut to the shortest, notes kept",
+  "textViewEndsFirst": "End together at the first end: each phrase's lines (or the selected ones) cut to the shortest, notes kept",
   "@textViewEndsFirst": {
     "description": "Tooltip of <|: cuts every line (string) of each phrase (staff) to the shortest, never cutting a note"
   },
@@ -1689,6 +1689,60 @@
   "textViewOvertypeOff": "Insert: typing pushes the line right",
   "@textViewOvertypeOff": {
     "description": "Tooltip of Overtype while off"
+  },
+  "textViewVerticalOn": "Vertical selection: a drag selects the same columns on every line",
+  "@textViewVerticalOn": {
+    "description": "Tooltip of the vertical selection toggle while on"
+  },
+  "textViewVerticalOff": "Line selection: a drag selects the text line by line",
+  "@textViewVerticalOff": {
+    "description": "Tooltip of the vertical selection toggle while off"
+  },
+  "textViewSelectAll": "Select all ({shortcut})",
+  "@textViewSelectAll": {
+    "description": "Tooltip of Select all; shortcut is the key, ⌘A or Ctrl+A",
+    "placeholders": {
+      "shortcut": {
+        "type": "String"
+      }
+    }
+  },
+  "textViewSelectPhrase": "Select the phrase; again, the next one too ({shortcut})",
+  "@textViewSelectPhrase": {
+    "description": "Tooltip of Select phrase (a phrase is a staff); shortcut is the key, ⌘L or Ctrl+L",
+    "placeholders": {
+      "shortcut": {
+        "type": "String"
+      }
+    }
+  },
+  "textViewSelectionCopied": "Selection copied",
+  "@textViewSelectionCopied": {
+    "description": "Message after Copy with text selected"
+  },
+  "textViewNoNotesSelected": "There are no notes in the selection",
+  "@textViewNoNotesSelected": {
+    "description": "Message when + − ++ or −− find no fret number on the selected string lines"
+  },
+  "textViewFretLimit": "A selected note can't go further: frets go from 0 to 99",
+  "@textViewFretLimit": {
+    "description": "Message when + or − would take a selected note below 0 or past 99 (nothing changes)"
+  },
+  "textViewNoRoomSelected": "No string has room there for every selected note",
+  "@textViewNoRoomSelected": {
+    "description": "Message when ++ or −− can't move every selected note (nothing moves)"
+  },
+  "textViewSelectStrings": "The selection has no string lines",
+  "@textViewSelectStrings": {
+    "description": "Message when | or = find no line of a phrase in the selection"
+  },
+  "textViewNoPhrase": "There's no phrase to select",
+  "@textViewNoPhrase": {
+    "description": "Message when Select phrase finds no phrase (staff) in the text"
+  },
+  "textViewNoMorePhrases": "No more phrases below",
+  "@textViewNoMorePhrases": {
+    "description": "Message when Select phrase, pressed again, finds no next phrase"
   },
   "textViewNotation": "Tab notation",
   "@textViewNotation": {
@@ -3688,6 +3742,22 @@
   "keyShift": "Shift",
   "@keyShift": {
     "description": "A key's name, as on the keyboard"
+  },
+  "keysTextView": "In the Text view",
+  "@keysTextView": {
+    "description": "Keyboard shortcuts: the section on the Text view's keys"
+  },
+  "keysSelectAll": "Select all the text",
+  "@keysSelectAll": {
+    "description": "Keyboard shortcuts: what ⌘A / Ctrl+A does in the Text view"
+  },
+  "keysSelectPhrase": "Select the phrase at the cursor; again, the next one too",
+  "@keysSelectPhrase": {
+    "description": "Keyboard shortcuts: what ⌘L / Ctrl+L does in the Text view"
+  },
+  "keyCtrl": "Ctrl",
+  "@keyCtrl": {
+    "description": "A key's name, as on the keyboard: Control"
   },
   "videoEditDelay": "Delay",
   "@videoEditDelay": {

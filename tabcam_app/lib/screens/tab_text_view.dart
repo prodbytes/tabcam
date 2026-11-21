@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -37,11 +38,15 @@ import 'messages.dart';
 /// then opens on its Text view, and no read replaces it). On the row's
 /// left, the editing tools, round and outlined: first the **Overtype**
 /// toggle (on by default), making typing replace characters instead of
-/// pushing the line right; **−** and **+** change the fret under the
+/// pushing the line right; the **Vertical selection** toggle, a drag then
+/// selecting a block (the same columns on every line); **Select all**
+/// (⌘A) and **Select phrase** (⌘L, again the next one too); **−** and
+/// **+** change the fret under the
 /// cursor, **++** and **−−** move its note to the line above or below,
 /// **|** and **=** put a bar or a dash down the phrase, **|>** and **<|**
 /// end every phrase's lines together at the last or the first end, and
-/// **New phrase** adds an empty one. To check the
+/// **New phrase** adds an empty one. With notes selected, the tools (and
+/// Copy) work on them alone ([_selected]). To check the
 /// reading against the page, the play-along sidebar beside the view
 /// lists the capture's PDFs to follow, as Cam's does.
 class TabTextView extends StatefulWidget {
@@ -137,6 +142,21 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
   Timer? _saveSoon;
   bool _overtype = true;
 
+  /// Vertical selection is on: a drag (or Shift and the arrows) selects a
+  /// block, the same columns on each line ([TextBlock]), drawn by the
+  /// controller ([DoubtController.block]) in place of the field's own.
+  bool _vertical = false;
+
+  /// The vertical selection, while [_vertical]; null with just a cursor.
+  TextBlock? _block;
+
+  /// The field's selection standing for [_block] (its corners): while the
+  /// field's is still this one, the block stands; a new one (a drag, a
+  /// tap) makes the block anew.
+  TextSelection? _blockSelection;
+
+  final _focus = FocusNode(debugLabel: 'Text view');
+
   /// Two columns is on: the text shows split in half, side by side, to
   /// read; turned off to edit.
   bool _columns = false;
@@ -169,6 +189,7 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
     _known = _stored;
     _text.doubts = _doubts;
     _text.text = _known ?? '';
+    _text.addListener(_onText);
     widget.library.addListener(_onLibrary);
     widget.ocr?.addListener(_onPremium);
     // The dictionary's + writes here, in a text that can be changed (not
@@ -226,7 +247,280 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
     _save();
     _review?.dispose();
     _text.dispose();
+    _focus.dispose();
     super.dispose();
+  }
+
+  /// The text or its selection changed: with vertical selection on, a new
+  /// selection (a drag, Shift and an arrow, a tap) makes the block anew,
+  /// its corners where the selection starts and ends; a cursor ends it.
+  void _onText() {
+    if (!_vertical) return;
+    final selection = _text.selection;
+    if (selection != _blockSelection) {
+      _blockSelection = selection;
+      _block = selection.isValid && !selection.isCollapsed
+          ? TextBlock.corners(_text.text, selection)
+          : null;
+    }
+    _paintBlock();
+  }
+
+  /// The block drawn where it is in the text now.
+  void _paintBlock() {
+    final block = _vertical ? _block : null;
+    _text.block = block == null
+        ? const []
+        : block.ranges(_text.text.split('\n'));
+  }
+
+  /// Selects [block] (with vertical selection on), in [text] when given:
+  /// an edit's, which takes the place of the text.
+  void _selectBlock(TextBlock block, [String? text]) {
+    final now = text ?? _text.text;
+    final selection = block.selectionIn(now.split('\n'));
+    _block = block;
+    _blockSelection = selection;
+    _text.value = TextEditingValue(text: now, selection: selection);
+    _paintBlock();
+  }
+
+  void _toggleVertical() {
+    setState(() => _vertical = !_vertical);
+    // On, what's selected becomes a block, the selection's ends its
+    // corners; off, the field's selection shows again.
+    final selection = _text.selection;
+    _blockSelection = selection;
+    _block = _vertical && selection.isValid && !selection.isCollapsed
+        ? TextBlock.corners(_text.text, selection)
+        : null;
+    _paintBlock();
+  }
+
+  /// What the tools act on: the selected notes' lines and columns, the
+  /// vertical selection's or the text selected (that one while the text
+  /// has the focus: unfocused, it doesn't show). Null with nothing
+  /// selected: they act at the cursor.
+  List<LineSpan>? get _selected {
+    final block = _vertical ? _block : null;
+    if (block != null) return block.spans(_text.text.split('\n'));
+    final selection = _text.selection;
+    if (!_focus.hasFocus || selection.isCollapsed) return null;
+    final spans = selectionSpans(_text.text, selection);
+    return spans.isEmpty ? null : spans;
+  }
+
+  /// The vertical selection, if that's what [_selected] is.
+  TextBlock? get _selectedBlock => _vertical ? _block : null;
+
+  /// [text] in the text's place, after an edit that kept its lines where
+  /// they were: the selection kept on the same lines and columns, moved
+  /// right by one on the [shifted] lines from column [from] on (where |
+  /// and = put a column in).
+  void _keepSelection(
+    String text, {
+    Set<int> shifted = const {},
+    int from = 0,
+  }) {
+    final block = _selectedBlock;
+    if (block != null) {
+      _selectBlock(
+        shifted.isEmpty
+            ? block
+            : block.copyWith(left: block.left + 1, right: block.right + 1),
+        text,
+      );
+    } else {
+      final old = _text.text;
+      final selection = _text.selection;
+      int kept(int offset) {
+        final (line, column) = lineColumn(old, offset);
+        final moved = shifted.contains(line) && column >= from;
+        return offsetAt(text, line, moved ? column + 1 : column);
+      }
+
+      _text.value = TextEditingValue(
+        text: text,
+        selection: TextSelection(
+          baseOffset: kept(selection.baseOffset),
+          extentOffset: kept(selection.extentOffset),
+        ),
+      );
+    }
+    _changed(text);
+  }
+
+  /// Whether the keys' shortcuts use ⌘ (macOS, iOS) rather than Ctrl.
+  static bool get _apple =>
+      defaultTargetPlatform == TargetPlatform.macOS ||
+      defaultTargetPlatform == TargetPlatform.iOS;
+
+  /// A shortcut's name for the tooltips: ⌘A, or Ctrl+A.
+  static String _shortcut(String key) => _apple ? '⌘$key' : 'Ctrl+$key';
+
+  /// Select all (⌘A): the whole text, as a block with vertical selection
+  /// on.
+  void _selectAll() {
+    final text = _text.text;
+    if (text.isEmpty) return;
+    _focus.requestFocus();
+    if (_vertical) {
+      final lines = text.split('\n');
+      _selectBlock(TextBlock.whole(lines, 0, lines.length - 1));
+    } else {
+      _text.selection = TextSelection(baseOffset: 0, extentOffset: text.length);
+    }
+  }
+
+  /// Select phrase (⌘L): with nothing selected, the cursor's phrase (or
+  /// else the next one below it, or the last above); with a selection, the
+  /// phrases it reaches, whole, and when it's just them already, the next
+  /// phrase too.
+  void _selectPhrase() {
+    final text = _text.text;
+    final lines = text.split('\n');
+    final spans = _selected;
+    ({int top, int bottom})? phrases;
+    if (spans == null) {
+      final at = _text.selection.isValid
+          ? lineColumn(text, _text.selection.extentOffset).$1
+          : 0;
+      phrases =
+          phrasesAround(lines, at, at) ??
+          phraseBelow(lines, at) ??
+          phraseAbove(lines, at);
+    } else {
+      final (top, bottom) = (spans.first.line, spans.last.line);
+      phrases = phrasesAround(lines, top, bottom);
+      if (phrases == null) {
+        phrases = phraseBelow(lines, bottom) ?? phraseAbove(lines, top);
+      } else if (_selectsWhole(lines, phrases)) {
+        final next = phraseBelow(lines, phrases.bottom);
+        if (next == null) {
+          _say(context.l10n.textViewNoMorePhrases);
+          return;
+        }
+        phrases = (top: phrases.top, bottom: next.bottom);
+      }
+    }
+    if (phrases == null) {
+      _say(context.l10n.textViewNoPhrase);
+      return;
+    }
+    _focus.requestFocus();
+    if (_vertical) {
+      _selectBlock(TextBlock.whole(lines, phrases.top, phrases.bottom));
+    } else {
+      _text.selection = TextSelection(
+        baseOffset: offsetAt(text, phrases.top, 0),
+        extentOffset: offsetAt(
+          text,
+          phrases.bottom,
+          lines[phrases.bottom].length,
+        ),
+      );
+    }
+  }
+
+  /// Whether the selection is lines [lines]'s [phrases], whole, already.
+  bool _selectsWhole(List<String> lines, ({int top, int bottom}) phrases) {
+    final block = _selectedBlock;
+    if (block != null) {
+      return block == TextBlock.whole(lines, phrases.top, phrases.bottom);
+    }
+    final text = _text.text;
+    final selection = _text.selection;
+    return selection.start == offsetAt(text, phrases.top, 0) &&
+        selection.end ==
+            offsetAt(text, phrases.bottom, lines[phrases.bottom].length);
+  }
+
+  /// The Text view's keys, in the text: ⌘A (Ctrl+A off Apple's systems)
+  /// selects all, ⌘L the phrase (again, the next one too); with a vertical
+  /// selection ⌘C and ⌘X copy and cut it (the field's own, or the
+  /// browser's, would take the text from its first corner to its last).
+  KeyEventResult _key(KeyEvent event, {required bool editable}) {
+    if (event is KeyUpEvent) return KeyEventResult.ignored;
+    final keys = HardwareKeyboard.instance;
+    final command = _apple ? keys.isMetaPressed : keys.isControlPressed;
+    final other = _apple ? keys.isControlPressed : keys.isMetaPressed;
+    if (!command || other || keys.isAltPressed || keys.isShiftPressed) {
+      return KeyEventResult.ignored;
+    }
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.keyA) {
+      _selectAll();
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.keyL) {
+      _selectPhrase();
+      return KeyEventResult.handled;
+    }
+    if (_selectedBlock == null) return KeyEventResult.ignored;
+    if (key == LogicalKeyboardKey.keyC) {
+      _copy(quiet: true);
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.keyX && editable) {
+      _cutBlock();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  /// Cut, with a vertical selection: its text copied, then its columns
+  /// cleared on each of its lines ([replaceBlock], as Backspace does).
+  void _cutBlock() {
+    final block = _selectedBlock;
+    if (block == null) return;
+    final lines = _text.text.split('\n');
+    Clipboard.setData(
+      ClipboardData(text: spansText(lines, block.spans(lines))),
+    );
+    final (:text, :cursor) = replaceBlock(
+      _text.text,
+      block,
+      typed: '',
+      overtype: _overtype,
+    );
+    _text.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: cursor),
+    );
+    _changed(text);
+  }
+
+  /// The field's menu (a long press, on a phone): with a vertical
+  /// selection, its Copy and Cut take the block, and Select all makes one.
+  Widget _menu(BuildContext context, EditableTextState field) {
+    final block = _selectedBlock;
+    return AdaptiveTextSelectionToolbar.buttonItems(
+      anchors: field.contextMenuAnchors,
+      buttonItems: [
+        for (final item in field.contextMenuButtonItems)
+          switch (item.type) {
+            ContextMenuButtonType.selectAll when _vertical => item.copyWith(
+              onPressed: () {
+                _selectAll();
+                field.hideToolbar();
+              },
+            ),
+            ContextMenuButtonType.copy when block != null => item.copyWith(
+              onPressed: () {
+                _copy(quiet: true);
+                field.hideToolbar();
+              },
+            ),
+            ContextMenuButtonType.cut when block != null => item.copyWith(
+              onPressed: () {
+                _cutBlock();
+                field.hideToolbar();
+              },
+            ),
+            _ => item,
+          },
+      ],
+    );
   }
 
   void _changed(String _) {
@@ -300,13 +594,40 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
     replaceMessage(context, message, action: action, persist: action != null);
   }
 
-  Future<void> _copy() async {
-    await Clipboard.setData(ClipboardData(text: _text.text));
-    if (!mounted) return;
-    _say(context.l10n.textViewTabCopied);
+  /// Copy: what's selected (a vertical selection a line of it per line),
+  /// or else the whole text. [quiet] (⌘C) says nothing, as copying in any
+  /// field.
+  Future<void> _copy({bool quiet = false}) async {
+    final spans = _selected;
+    final block = _selectedBlock;
+    final text = spans == null
+        ? _text.text
+        : block != null
+        ? spansText(_text.text.split('\n'), spans)
+        : _text.selection.textInside(_text.text);
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!mounted || quiet) return;
+    _say(
+      spans == null
+          ? context.l10n.textViewTabCopied
+          : context.l10n.textViewSelectionCopied,
+    );
   }
 
   void _bump(int delta) {
+    if (_selected case final spans?) {
+      final (:text, :failure) = bumpSelected(_text.text, spans, delta);
+      if (text == null) {
+        _say(
+          failure == SelectionFailure.outOfRange
+              ? context.l10n.textViewFretLimit
+              : context.l10n.textViewNoNotesSelected,
+        );
+      } else {
+        _keepSelection(text);
+      }
+      return;
+    }
     final value = bumpNumber(_text.value, delta);
     if (value == null) {
       _say(context.l10n.textViewPutCursorOnFret);
@@ -316,8 +637,34 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
     _changed(value.text);
   }
 
-  /// ++ and −−: the note under the cursor up or down a string.
+  /// ++ and −−: the note under the cursor up or down a string; with notes
+  /// selected, all of them. A vertical selection follows them: its
+  /// columns on the lines they went to.
   void _move(int delta) {
+    if (_selected case final spans?) {
+      final (:text, :rows, :failure) = moveSelected(_text.text, spans, delta);
+      if (text == null || rows == null) {
+        _say(
+          failure == SelectionFailure.noRoom
+              ? context.l10n.textViewNoRoomSelected
+              : context.l10n.textViewNoNotesSelected,
+        );
+        return;
+      }
+      if (_selectedBlock case final block?) {
+        _selectBlock(
+          block.copyWith(
+            top: rows.reduce(math.min),
+            bottom: rows.reduce(math.max),
+          ),
+          text,
+        );
+        _changed(text);
+      } else {
+        _keepSelection(text);
+      }
+      return;
+    }
     final (:moved, :failure) = moveNote(_text.value, delta);
     if (moved == null) {
       _say(
@@ -331,8 +678,26 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
     _changed(moved.text);
   }
 
-  /// |: a bar line across the cursor's staff, at its column.
+  /// | and = on a selection: [put] into its string lines alone, at its
+  /// first column; the selection moves right with what it had.
+  void _putOnSelected(
+    List<LineSpan> spans,
+    String? Function(String text, Iterable<int> rows, int column) put,
+  ) {
+    final rows = [for (final s in spans) s.line];
+    final column = _selectedBlock?.left ?? spans.first.start;
+    final text = put(_text.text, rows, column);
+    if (text == null) {
+      _say(context.l10n.textViewSelectStrings);
+      return;
+    }
+    _keepSelection(text, shifted: rows.toSet(), from: column);
+  }
+
+  /// |: a bar line across the cursor's staff, at its column; with a
+  /// selection, on its lines alone.
   void _bar() {
+    if (_selected case final spans?) return _putOnSelected(spans, barOnLines);
     final value = insertBar(_text.value);
     if (value == null) {
       _say(context.l10n.textViewPutCursorOnString);
@@ -342,8 +707,12 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
     _changed(value.text);
   }
 
-  /// =: a dash down the cursor's phrase, at its column.
+  /// =: a dash down the cursor's phrase, at its column; with a selection,
+  /// on its lines alone.
   void _spacer() {
+    if (_selected case final spans?) {
+      return _putOnSelected(spans, spacerOnLines);
+    }
     final value = insertSpacer(_text.value);
     if (value == null) {
       _say(context.l10n.textViewPutCursorOnString);
@@ -354,9 +723,22 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
   }
 
   /// |> and <|: every phrase's lines end together, at the last end
-  /// ([alignEnds]) or the first ([trimEnds]).
-  void _endTogether(TextEditingValue? Function(TextEditingValue) end) {
-    final value = end(_text.value);
+  /// ([alignEnds]) or the first ([trimEnds]); with a selection, only its
+  /// lines.
+  void _endTogether(
+    TextEditingValue? Function(
+      TextEditingValue value, {
+      ({int top, int bottom})? lines,
+    })
+    end,
+  ) {
+    final spans = _selected;
+    final value = end(
+      _text.value,
+      lines: spans == null
+          ? null
+          : (top: spans.first.line, bottom: spans.last.line),
+    );
     if (value == null) {
       _say(context.l10n.textViewNoStaff);
       return;
@@ -365,14 +747,23 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
       _say(context.l10n.textViewEndsAligned);
       return;
     }
+    if (spans != null) return _keepSelection(value.text);
     _text.value = value;
     _changed(value.text);
   }
 
   /// New phrase: an empty six-line phrase under the cursor's line or
-  /// phrase.
+  /// phrase; with a selection, under its last line's.
   void _newStaff() {
-    final value = newStaff(_text.value);
+    var value = _text.value;
+    if (_selected case final spans?) {
+      value = value.copyWith(
+        selection: TextSelection.collapsed(
+          offset: offsetAt(value.text, spans.last.line, 0),
+        ),
+      );
+    }
+    value = newStaff(value);
     _text.value = value;
     _changed(value.text);
   }
@@ -891,6 +1282,39 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
               ),
             ),
           ),
+          // Then how selecting works, and the two quick selections.
+          Tooltip(
+            message: _vertical
+                ? context.l10n.textViewVerticalOn
+                : context.l10n.textViewVerticalOff,
+            child: Semantics(
+              toggled: _vertical,
+              child: IconButton.outlined(
+                key: const Key('text-vertical'),
+                onPressed: enabled ? _toggleVertical : null,
+                isSelected: _vertical,
+                style: _vertical
+                    ? IconButton.styleFrom(
+                        backgroundColor: scheme.secondaryContainer,
+                        foregroundColor: scheme.onSecondaryContainer,
+                      )
+                    : null,
+                icon: const Icon(Icons.highlight_alt),
+              ),
+            ),
+          ),
+          IconButton.outlined(
+            key: const Key('text-select-all'),
+            tooltip: context.l10n.textViewSelectAll(_shortcut('A')),
+            onPressed: enabled ? _selectAll : null,
+            icon: const Icon(Icons.select_all),
+          ),
+          IconButton.outlined(
+            key: const Key('text-select-phrase'),
+            tooltip: context.l10n.textViewSelectPhrase(_shortcut('L')),
+            onPressed: enabled ? _selectPhrase : null,
+            icon: const Icon(Icons.view_headline),
+          ),
           IconButton.outlined(
             tooltip: context.l10n.textViewFretDown,
             onPressed: enabled ? () => _bump(-1) : null,
@@ -948,23 +1372,42 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
   /// The tab text, unwrapped: long lines scroll sideways.
   Widget _editor(BuildContext context, bool editable) {
     return _Unwrapped(
-      child: TextField(
-        controller: _text,
-        readOnly: !editable,
-        onChanged: _changed,
-        onTap: editable ? _tapped : null,
-        maxLines: null,
-        keyboardType: TextInputType.multiline,
-        // Tabs aren't prose: no suggestions, and dashes stay dashes.
-        autocorrect: false,
-        enableSuggestions: false,
-        smartDashesType: SmartDashesType.disabled,
-        smartQuotesType: SmartQuotesType.disabled,
-        inputFormatters: [OvertypeFormatter(() => _overtype)],
-        style: _mono,
-        decoration: const InputDecoration(
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.all(16),
+      // Its keys first, before the app's: ⌘A, ⌘L, and ⌘C and ⌘X on a
+      // vertical selection ([_key]).
+      child: Focus(
+        canRequestFocus: false,
+        skipTraversal: true,
+        onKeyEvent: (_, event) => _key(event, editable: editable),
+        // With vertical selection on, the field's selection (from the
+        // block's first corner to its last) is invisible: the controller
+        // draws the block. Always here, so the field isn't rebuilt anew
+        // (and unfocused) when it's turned on or off.
+        child: DefaultSelectionStyle.merge(
+          selectionColor: _vertical ? Colors.transparent : null,
+          child: TextField(
+            controller: _text,
+            focusNode: _focus,
+            readOnly: !editable,
+            onChanged: _changed,
+            onTap: editable ? _tapped : null,
+            maxLines: null,
+            keyboardType: TextInputType.multiline,
+            // Tabs aren't prose: no suggestions, and dashes stay dashes.
+            autocorrect: false,
+            enableSuggestions: false,
+            smartDashesType: SmartDashesType.disabled,
+            smartQuotesType: SmartQuotesType.disabled,
+            inputFormatters: [
+              BlockFormatter(() => _selectedBlock, overtype: () => _overtype),
+              OvertypeFormatter(() => _overtype),
+            ],
+            contextMenuBuilder: _menu,
+            style: _mono,
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.all(16),
+            ),
+          ),
         ),
       ),
     );
@@ -1015,7 +1458,8 @@ class _ElapsedState extends State<_Elapsed> {
 }
 
 /// The Text view's text, its doubtful notes ([doubts], where they still
-/// stand: doubtRanges) drawn in red.
+/// stand: doubtRanges) drawn in red, and a vertical selection ([block])
+/// in the selection's colour.
 class DoubtController extends TextEditingController {
   List<TabDoubt> _doubts = const [];
   List<TabDoubt> get doubts => _doubts;
@@ -1025,35 +1469,76 @@ class DoubtController extends TextEditingController {
     notifyListeners();
   }
 
+  /// A vertical selection's characters, as ranges of offsets (a line's
+  /// part each, top to bottom: [TextBlock.ranges]); none without one.
+  List<(int, int)> _block = const [];
+  List<(int, int)> get block => _block;
+  set block(List<(int, int)> ranges) {
+    if (listEquals(ranges, _block)) return;
+    _block = ranges;
+    notifyListeners();
+  }
+
   @override
   TextSpan buildTextSpan({
     required BuildContext context,
     TextStyle? style,
     required bool withComposing,
   }) {
-    final ranges = doubtRanges(text, doubts);
+    final doubtful = doubtRanges(text, doubts);
+    final selected = [
+      for (final (s, e) in _block)
+        if (s < e && e <= text.length) (s, e),
+    ];
     // While a word is being composed, the platform's underline matters more.
-    if (ranges.isEmpty || (withComposing && value.isComposingRangeValid)) {
+    if ((doubtful.isEmpty && selected.isEmpty) ||
+        (withComposing && value.isComposingRangeValid)) {
       return super.buildTextSpan(
         context: context,
         style: style,
         withComposing: withComposing,
       );
     }
-    final scheme = Theme.of(context).colorScheme;
-    final doubtful = TextStyle(
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final doubt = TextStyle(
       color: scheme.error,
       backgroundColor: scheme.errorContainer,
       fontWeight: FontWeight.bold,
     );
+    final highlight =
+        theme.textSelectionTheme.selectionColor ??
+        scheme.primary.withValues(alpha: 0.4);
+    // Cut where either kind starts or ends; each piece styled by what
+    // it's in (a selected red note keeps its red, on the selection).
+    final cuts = <int>{
+      0,
+      text.length,
+      for (final (s, e) in [...doubtful, ...selected]) ...[s, e],
+    }.toList()..sort();
     final spans = <TextSpan>[];
-    var at = 0;
-    for (final (start, end) in ranges) {
-      if (start > at) spans.add(TextSpan(text: text.substring(at, start)));
-      spans.add(TextSpan(text: text.substring(start, end), style: doubtful));
-      at = end;
+    var d = 0, b = 0;
+    for (var i = 0; i + 1 < cuts.length; i++) {
+      final (from, to) = (cuts[i], cuts[i + 1]);
+      while (d < doubtful.length && doubtful[d].$2 <= from) {
+        d++;
+      }
+      while (b < selected.length && selected[b].$2 <= from) {
+        b++;
+      }
+      final inDoubt = d < doubtful.length && doubtful[d].$1 <= from;
+      final inBlock = b < selected.length && selected[b].$1 <= from;
+      spans.add(
+        TextSpan(
+          text: text.substring(from, to),
+          style: inDoubt
+              ? (inBlock ? doubt.copyWith(backgroundColor: highlight) : doubt)
+              : inBlock
+              ? TextStyle(backgroundColor: highlight)
+              : null,
+        ),
+      );
     }
-    if (at < text.length) spans.add(TextSpan(text: text.substring(at)));
     return TextSpan(style: style, children: spans);
   }
 }

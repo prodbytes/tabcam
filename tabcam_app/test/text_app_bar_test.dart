@@ -100,7 +100,9 @@ void main() {
 
     // The editing tools, unscaled: 40 wide, all of them on screen.
     final plus = tester.getRect(
-      find.byTooltip('Fret up (the number under the cursor)'),
+      find.byTooltip(
+        'Fret up (the selected notes, or the number under the cursor)',
+      ),
     );
     expect(plus.width, closeTo(40, 0.5));
     // Overtype first, a circle as wide as the rest; the ten of them, each
