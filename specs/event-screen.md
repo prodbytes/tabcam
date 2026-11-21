@@ -101,6 +101,17 @@ plays along.
   [file screen](#file-screen), with the play-along sidebar beside it
   when the capture has something to play along with.
 
+  <a id="file-dates"></a>**The date each file was made** follows its name, smaller and
+  dimmer (the theme's small text, in a dimmed `onSurfaceVariant`): the month and day in the app's
+  language ("Nov 21" in English), with the year when it isn't this one
+  ("Mar 4, 2025"; `fileDate`). It's read from the file's ID, the time it
+  was added in microseconds (`timeOfId`), so files added before this
+  show it too; a copy (a clone's file, a take copied into another
+  capture) has a new ID, so the date it was copied. Where the row has
+  room it sits right after the name; where it hasn't (a phone, whose
+  rows keep their buttons), on the line under it, so the name keeps its
+  width and the date shows whole. Contributions' files show it too.
+
   Numbers count the files of that kind. A file the user named shows its
   name instead, whatever it is; files, PDFs, recordings and videos added
   are named after their file name (without the extension; photos aren't,
