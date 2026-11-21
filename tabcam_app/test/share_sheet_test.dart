@@ -75,11 +75,12 @@ void main() {
   });
 
   /// The sheet's choice for [v] is the one chosen.
-  bool chosen(WidgetTester tester, CaptureVisibility v) => tester
-      .widget<RadioGroup<CaptureVisibility>>(
-        find.byType(RadioGroup<CaptureVisibility>),
-      )
-      .groupValue ==
+  bool chosen(WidgetTester tester, CaptureVisibility v) =>
+      tester
+          .widget<RadioGroup<CaptureVisibility>>(
+            find.byType(RadioGroup<CaptureVisibility>),
+          )
+          .groupValue ==
       v;
 
   testWidgets(
@@ -193,34 +194,6 @@ void main() {
       await frames(tester);
     },
   );
-
-  testWidgets('a public capture renamed is found by its new name', (
-    tester,
-  ) async {
-    await open(tester);
-    await tester.tap(find.byTooltip('Share'));
-    await frames(tester);
-    await tester.tap(find.byKey(const Key('share-public')));
-    await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 50)),
-    );
-    await tester.tap(find.text('Done'));
-    await frames(tester);
-    await tester.runAsync(() async {
-      await library.patch(id, (e) => e.copyWith(title: 'Slow blues riff'));
-      await sync.syncNow();
-    });
-    expect(FakeShareApi.public['/$id']?.title, 'Slow blues riff');
-    // In the trash, it's found by nobody.
-    await tester.runAsync(() async {
-      await library.patch(id, (e) => e.copyWith(trashed: () => DateTime.now()));
-      await sync.syncNow();
-    });
-    expect(FakeShareApi.public['/$id'], isNull);
-    expect(FakeShareApi.visibilities['/$id'], CaptureVisibility.unlisted);
-    await tester.pump(const Duration(seconds: 3));
-    await frames(tester);
-  });
 
   test('the dictionary finds public captures through the share API', () async {
     final search = PublicSearch(

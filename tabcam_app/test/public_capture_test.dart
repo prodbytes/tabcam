@@ -296,6 +296,31 @@ void main() {
     expect(find.byKey(const Key('welcome')), findsOneWidget);
   });
 
+  testWidgets('a private capture\'s link says so, signed out and signed in', (
+    tester,
+  ) async {
+    await tester.runAsync(ownerShares);
+    FakeShareApi.visibilities['$owner/$id'] = CaptureVisibility.private;
+    addTearDown(() => FakeShareApi.visibilities.remove('$owner/$id'));
+    final mine = Library(PlatformEventStore());
+    await tester.runAsync(mine.load);
+    await IncomingLinks.instance.didPushRouteInformation(
+      RouteInformation(uri: link),
+    );
+    await tester.pumpWidget(
+      TabCamApp(library: mine, auth: FakeAuth(), captures: captures()),
+    );
+    await frames(tester);
+    expect(find.byType(PublicCaptureScreen), findsOneWidget);
+    expect(
+      find.text('This capture is private: only its owner can open it.'),
+      findsOneWidget,
+    );
+    // Its owner's choice: trying again won't open it.
+    expect(find.text('Try again'), findsNothing);
+    expect(find.text('Sign in'), findsOneWidget);
+  });
+
   /// Ana's device, signed in, opening the capture's link with [shares].
   Future<(Library, CloudSync)> anaOpens(
     WidgetTester tester,
@@ -333,6 +358,26 @@ void main() {
     }
     return (mine, sync);
   }
+
+  testWidgets('signed in, a private capture\'s link joins nothing and says '
+      'so', (tester) async {
+    FakeShareApi.visibilities.clear();
+    final shares = FakeShareApi({}, email: 'ana@example.com');
+    // Made private before Ana opens it (the owner's ID is known once
+    // ownerShares has run, inside anaOpens: so by the key's capture).
+    final keyed = <String>{};
+    shares.beforeJoin = (capture) {
+      FakeShareApi.visibilities[capture] = CaptureVisibility.private;
+      keyed.add(capture);
+    };
+    final (mine, _) = await anaOpens(tester, shares);
+    addTearDown(() => keyed.forEach(FakeShareApi.visibilities.remove));
+    expect(mine.byId(id), isNull);
+    expect(
+      find.text('This capture is private: only its owner can open it.'),
+      findsOneWidget,
+    );
+  });
 
   testWidgets('signed in, not shared with them: the link joins it', (
     tester,

@@ -499,6 +499,9 @@ class FakeShareApi extends ShareApi {
     );
   }
 
+  /// Called with `<owner>/<capture>` as someone joins it, first.
+  void Function(String capture)? beforeJoin;
+
   @override
   Future<JoinedCapture> joinLink(
     String token,
@@ -513,6 +516,7 @@ class FakeShareApi extends ShareApi {
     if (owner == identity) {
       return JoinedCapture(owner: owner, captureId: captureId, own: true);
     }
+    beforeJoin?.call(found);
     if (visibilities[found] == CaptureVisibility.private) {
       throw ShareApiException(403, 'That capture is private');
     }

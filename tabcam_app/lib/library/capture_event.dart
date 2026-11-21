@@ -553,7 +553,9 @@ class CaptureEvent {
   /// before there was a choice), else private.
   CaptureVisibility get shownVisibility =>
       visibility ??
-      (linkKey != null ? CaptureVisibility.unlisted : CaptureVisibility.private);
+      (linkKey != null
+          ? CaptureVisibility.unlisted
+          : CaptureVisibility.private);
 
   /// A file name for exports: the title, safe for any file system.
   String get fileName {

@@ -87,7 +87,9 @@ Future<void> copyCaptureLink(
   final key = event.linkKey;
   keyed ??= withLinkKey(event, sync);
   final copying = Clipboard.setData(
-    ClipboardData(text: CaptureLink.of(keyed, file: file, edit: edit).toString()),
+    ClipboardData(
+      text: CaptureLink.of(keyed, file: file, edit: edit).toString(),
+    ),
   );
   final messenger = Messenger.maybeOf(context);
   final copied = context.l10n.eventLinkCopied;
@@ -123,6 +125,9 @@ Future<void> showVisibilitySheet(
 ) => showModalBottomSheet<void>(
   context: context,
   showDragHandle: true,
+  // As tall as it needs (it scrolls on a short screen), not 9/16 of it:
+  // the three choices and Done all show.
+  isScrollControlled: true,
   builder: (_) => _VisibilitySheet(keyed: keyed, sync: sync),
 );
 

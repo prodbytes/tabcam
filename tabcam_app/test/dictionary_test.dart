@@ -5,11 +5,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:image/image.dart' as img;
+import 'package:tabcam_app/cloud/share_api.dart';
 import 'package:tabcam_app/dictionary/cifraclub_search.dart';
 import 'package:tabcam_app/dictionary/dictionary_sidebar.dart';
 import 'package:tabcam_app/dictionary/music_theory.dart';
+import 'package:tabcam_app/dictionary/public_search.dart';
 import 'package:tabcam_app/dictionary/voicings.dart';
 import 'package:tabcam_app/dictionary/youtube_search.dart';
+import 'package:tabcam_app/export/incoming_links.dart';
 import 'package:tabcam_app/l10n/app_localizations.dart';
 import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
@@ -944,6 +947,68 @@ void main() {
       await tester.enterText(query, '');
       await tester.pump();
       expect(search, findsNothing);
+    });
+
+    testWidgets('public tabs.cam captures found show first, each opening as '
+        'its link does; none found, no heading', (tester) async {
+      final app = PublicSearch.instance;
+      addTearDown(() => PublicSearch.instance = app);
+      final asked = <Uri>[];
+      PublicSearch.instance = PublicSearch(
+        api: ShareApi(
+          baseUrl: Uri.parse('https://share.example'),
+          client: MockClient((request) async {
+            asked.add(request.url);
+            final q = request.url.queryParameters['q']!;
+            return http.Response(
+              jsonEncode({
+                'captures': [
+                  if (q.contains('riff'))
+                    {
+                      'captureId': 'riff1',
+                      'key': 'Ab3dEf9hJk2L',
+                      'title': 'Made-up riff',
+                      'artist': 'The Made-Ups',
+                    },
+                  // Not well formed: left out.
+                  {'captureId': '../x', 'key': 'Ab3dEf9hJk2L', 'title': 'x'},
+                ],
+              }),
+              200,
+            );
+          }),
+        ),
+      );
+      await open(tester);
+      await tester.enterText(query, 'made-up riff');
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump();
+      expect(asked.single.path, '/public');
+      expect(asked.single.queryParameters['q'], 'made-up riff');
+      final public = find.byKey(const Key('dictionary-public'));
+      expect(find.text('Public on tabs.cam'), findsOneWidget);
+      expect(find.text('The Made-Ups'), findsOneWidget);
+      expect(find.text('x'), findsNothing);
+      expect(
+        tester.getTopLeft(find.byKey(const Key('dictionary-youtube'))).dy,
+        greaterThanOrEqualTo(tester.getBottomLeft(public).dy),
+      );
+      await tester.tap(find.byKey(const Key('dictionary-public-riff1')));
+      await tester.pump();
+      final link = IncomingLinks.instance.take()!;
+      expect(link.queryParameters, {'c': 'riff1', 'k': 'Ab3dEf9hJk2L'});
+
+      // Nothing found: no heading at all.
+      await tester.enterText(query, 'made-up waltz');
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump();
+      expect(asked, hasLength(2));
+      expect(public, findsNothing);
+      // A letter alone isn't asked.
+      await tester.enterText(query, 'q');
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump();
+      expect(asked, hasLength(2));
     });
 
     group('with YouTube search', () {
