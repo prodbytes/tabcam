@@ -350,7 +350,9 @@ go in a menu too ([event screen](event-screen.md)). In this order:
   **+** says the text can't be changed now; the edits pending are saved
   when it's turned on. Off during Fix's review. Not remembered: the
   view opens in one column. Also on an event shared read only.
-- **Copy**: the text, to the clipboard.
+- **Copy**: the text, to the clipboard ("Tab copied"); with notes
+  selected ([selecting](#selecting)), just them ("Selection copied"), a
+  vertical selection a line of it per line.
 - **Fix**, hidden for now (shown only in a build with `TABCAM_FIX=true`,
   see [auto-correct](autocorrect.md#hidden-for-now)): lines the tab up (each staff's strings named, bars lined up,
   every string ending together), for everyone; then, with Premium,
@@ -412,7 +414,7 @@ line rather than shrink. On a screen narrower than 600 px they sit
 closer (4 px apart) and each one's tap area is its 40 px button (a tool
 written as text, `++` or `|>`, fits its text in an icon's 24 px box), so
 on a 390 px phone the first eight fit on the first line and the last
-two go on a second. The locked preview keeps
+five go on a second. The locked preview keeps
 Copy and Verified on this line, on its right, scaled down and greyed
 under the Premium card
 ([lib/screens/tab_editing.dart](../tabcam_app/lib/screens/tab_editing.dart)):
@@ -423,12 +425,35 @@ under the Premium card
   replaces the characters after the cursor on its line instead of
   pushing them right, and backspace on a line of a phrase leaves a
   dash, so the columns stay lined up. Enter still breaks the line.
+- **Vertical selection** (a selection-rectangle icon), beside it, set
+  apart from the edits too: a toggle (off by default, not remembered;
+  filled while on), its tooltip saying which: "Vertical selection: a
+  drag selects the same columns on every line" or "Line selection: a
+  drag selects the text line by line". See [selecting](#selecting).
+- **Select all** (a select-all icon; tooltip "Select all (⌘A)", Ctrl+A
+  off Apple's systems): the whole text; with vertical selection on, as
+  a block of every line and column.
+- **Select phrase** (a lines icon; tooltip "Select the phrase; again,
+  the next one too (⌘L)", Ctrl+L off Apple's systems): with nothing
+  selected, the phrase the cursor is on (or else the next one below
+  it, or failing that the last one above); with a selection, the
+  phrases it reaches, whole; when it's just them already, the next
+  phrase below too, each press adding one ("No more phrases below" at
+  the last; "There's no phrase to select" in a text with none). Whole
+  lines, first to last; with vertical selection on, as a block.
+  Both selections put the focus in the text, so the selection shows and
+  the keys go there.
 - **−** and **+**: the fret number under the cursor (or just before it),
   one or two digits, goes down or up by one (15 + → 16, 5 + → 6), from 0
   to 99. Going from 9 to 10 takes the dash after it, from 10 to 9 leaves
   one, so the notes after it keep their columns. The cursor stays on the
   number, for the next press. With no number there, it says to put the
-  cursor on one.
+  cursor on one. With notes selected, every fret number the selection
+  takes on its string lines (whole or in part; not "Verse 2" or a
+  "Capo 3" line) goes up or down together, the selection kept for the
+  next press; when one would go below 0 or past 99, none does ("A
+  selected note can't go further: frets go from 0 to 99"), so a riff
+  keeps its shape; with none, "There are no notes in the selection".
 - **++** and **−−**: the note under the cursor (or just before it) moves
   to the string above (++) or below (−−), in the same column, cycling
   within its staff (the string lines next to each other): up from the
@@ -436,14 +461,24 @@ under the Premium card
   spot holds another note is skipped. Dashes fill the room it leaves, a
   string line too short to reach the column is lengthened with dashes,
   and the cursor follows the note. With no note there it says to put the
-  cursor on one; with no other string free there, it says so.
+  cursor on one; with no other string free there, it says so. With
+  notes selected, every note the selection takes on its lines of dashes
+  moves a string together: all lifted first, so they don't block each
+  other (two notes in one column swap strings), then each put down, a
+  string holding a note that isn't moving skipped. When one has no
+  string with room, none moves ("No string has room there for every
+  selected note"). A vertical selection follows them: its columns, on
+  the lines they went to, for the next press; a line selection stays.
 - **|**: a bar line across the staff at the cursor's column. A `|` goes
   into every string of the staff the cursor is on, at that column,
   pushing the rest of each string right by one, so the columns stay
   lined up. A string too short to reach the column is lengthened with
   dashes and the new bar becomes its closing bar. The cursor ends just
   after the new bar. With the cursor off the strings, it says to put it
-  on a string line.
+  on a string line. With a selection, on its string lines alone (not
+  the phrase's others), at its first column (a vertical selection's
+  left edge, or where the selected text starts): to put back a bar some
+  lines lost. The selection moves right with what it had.
 - **=**: a spacer, a dash down the phrase at the cursor's column. A `-`
   goes into every line of the phrase the cursor is on, at that column,
   pushing the rest of each line right by one, so the columns stay lined
@@ -451,7 +486,11 @@ under the Premium card
   the cursor in its closing bar) gets its dash at its end, before its
   closing bar, and none goes into a line's name or opening bar (`e|`).
   The cursor ends just after the new dash, still before the note it was
-  before. With the cursor off the lines, it says to put it on one.
+  before. With the cursor off the lines, it says to put it on one. With
+  a selection, on its lines alone, at its first column, as | does: to
+  push a few lines that were read a column short back in line. With no
+  line of a phrase in the selection, "The selection has no string
+  lines".
 - **|>**: every phrase's lines end together, at the last end. In each
   phrase of the text, every line is padded with dashes to the longest
   one, before its closing bar, and every line gets the phrase's closing
@@ -466,15 +505,62 @@ under the Premium card
   together one dash after the last note (right after it when its line
   had no dash there). The cursor stays where it was on its line, or goes
   to the new end when what it was on was cut. The same messages as |>.
+- With a selection, **|>** and **<|** end only its lines together: each
+  phrase's lines among them, the rest of the text as it was (Select
+  phrase, then |>, lines up that phrase alone). The selection stays.
 - **New phrase** (a list-add icon, last): an empty six-line phrase in
   standard tuning, `e B G D A E`, each line its string's name, a bar,
   dashes and a closing bar, 80 characters in all. It goes under the
   cursor's line, or under its whole phrase when the cursor is on one,
   with a blank line between it and the text around it, and the cursor
-  ends on the new first line, after its bar.
+  ends on the new first line, after its bar. With a selection, under the
+  phrase of its last line.
 - Here a phrase is the lines of a staff next to each other: a line with
   three dashes or more, or a string's name and a bar (`B|-5|`, too short
   for three dashes).
+
+<a id="selecting"></a>**Selecting**
+([`TextBlock`](../tabcam_app/lib/screens/tab_editing.dart),
+`selectionSpans`): with notes selected, the editing tools above, and
+Copy, work on them alone; with just the cursor, as above, at the
+cursor. A selection made as in any text (a drag, Shift and the arrows,
+a double click; a long press and the handles on a phone) is a **line
+selection**: from where it starts to where it ends, the lines between
+whole. It counts while the text has the focus, where it shows (a
+selection left behind in a text that lost the focus doesn't).
+
+With **Vertical selection** on, the same gestures select a **block**:
+the selection's start and end are opposite corners, and on every line
+from the first to the last the block takes the same columns, between
+the two (at least one column: a drag straight down takes the column
+right of where it started). The block is drawn in the selection's
+colour, the red notes in it keeping their red, and the field's own
+selection is hidden. It stays drawn when the text loses the focus, and
+the tools still work on it then. A tap (just the cursor) ends it.
+Turning the toggle on makes what's selected a block; off, the field's
+selection (from the block's first corner to its last) shows again.
+
+- **Typing over a block** (a key, a paste, Backspace or Delete) goes on
+  each of its lines, in place of its columns: with Overtype on, the
+  columns stay put (what's typed is padded with dashes on a line of a
+  phrase, spaces elsewhere, or takes the dashes after it; Backspace
+  leaves dashes); off, the rest of each line closes up or moves right.
+  A paste of several lines puts one on each line of the block, in
+  order; one line goes on all of them. The cursor ends after what went
+  on the first line.
+- **⌘C** and **⌘X** (Ctrl off Apple's systems), and the field's menu's
+  Copy and Cut on a phone, copy the block a line of it per line (Cut
+  then clears it, as Backspace); the menu's Select all selects a block
+  of everything.
+
+**Keys** in the text (on any keyboard, the web too): **⌘A** (Ctrl+A off
+Apple's systems) is Select all and **⌘L** (Ctrl+L) Select phrase, the
+buttons' work; with Shift, Alt or the other modifier held, they're the
+field's or the browser's. The view takes them before the field does (on
+the web the field leaves ⌘A, ⌘C and ⌘X to the browser, which would
+select or copy the text from the block's first corner to its last).
+The [keyboard shortcuts](keyboard-shortcuts.md) overlay lists ⌘A and
+⌘L.
 - The keyboard offers no suggestions or autocorrection, and dashes and
   quotes aren't made "smart".
 - The arrow keys move the cursor as in any editor, and pressing a tool
