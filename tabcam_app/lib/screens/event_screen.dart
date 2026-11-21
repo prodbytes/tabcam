@@ -31,6 +31,7 @@ import 'file_drop_area.dart';
 import 'file_screen.dart';
 import 'link_page.dart';
 import 'premium_card.dart';
+import 'quick_sign_in.dart';
 import 'rename_dialog.dart';
 import 'share_sheet.dart';
 import 'place.dart';
@@ -1434,6 +1435,8 @@ class _EventScreenState extends State<EventScreen> implements LinkAdder {
                   onPressed: _busy ? null : () => _share(event),
                 ),
               ],
+              // Opened by its link, signed out: sign in, last.
+              const QuickSignIn(),
             ],
             bottom: _busy
                 ? const PreferredSize(

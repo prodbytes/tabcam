@@ -47,7 +47,7 @@ void main() {
       expect(find.byKey(const Key('welcome')), findsOneWidget);
       expect(find.byType(NavigationBar), findsNothing);
       expect(find.text('Capture'), findsNothing);
-      await tester.tap(find.text('Sign in with Google'));
+      await tester.tap(find.byKey(const Key('sign-in-google')));
       expect(auth.signIns, [AuthProvider.google]);
 
       await tester.runAsync(() async {

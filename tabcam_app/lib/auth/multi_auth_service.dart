@@ -21,6 +21,9 @@ class MultiAuthService extends AuthService {
   /// The service whose session this is.
   AuthService? _active;
 
+  /// A [signOut] under way: [offerQuickSignIn] waits for it.
+  Future<void>? _signingOut;
+
   @override
   AuthUser? get user => _active?.user;
 
@@ -93,8 +96,25 @@ class MultiAuthService extends AuthService {
 
   @override
   Future<void> signOut() async {
-    final services = [for (final s in _services) s.signOut()];
-    await Future.wait(services);
+    final signingOut = _signingOut = Future.wait([
+      for (final s in _services) s.signOut(),
+    ]);
+    try {
+      await signingOut;
+    } finally {
+      if (_signingOut == signingOut) _signingOut = null;
+    }
+  }
+
+  /// Each provider's, once every one has signed out (signing out of one
+  /// signs the others out too).
+  @override
+  Future<void> offerQuickSignIn() async {
+    try {
+      await _signingOut;
+    } catch (_) {} // signOut reports its own failure
+    if (user != null) return;
+    await Future.wait([for (final s in _services) s.offerQuickSignIn()]);
   }
 
   @override
@@ -113,6 +133,11 @@ class MultiAuthService extends AuthService {
   @override
   Widget? buildSignInButton([AuthProvider provider = AuthProvider.google]) =>
       _for(provider).buildSignInButton(provider);
+
+  @override
+  Widget? buildIconSignInButton([
+    AuthProvider provider = AuthProvider.google,
+  ]) => _for(provider).buildIconSignInButton(provider);
 
   @override
   void dispose() {

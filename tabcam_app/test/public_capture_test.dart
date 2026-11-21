@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
+import 'package:tabcam_app/auth/auth_service.dart';
 import 'package:tabcam_app/cloud/cloud_sync.dart';
 import 'package:tabcam_app/cloud/public_capture.dart';
 import 'package:tabcam_app/cloud/share_api.dart';
@@ -108,6 +110,44 @@ void main() {
     );
   });
 
+  test('a video\'s kept render comes with it; one not up yet is left out, '
+      'and the capture opens all the same', () async {
+    await ownerShares();
+    final key = '$owner/events/$id/event.json';
+    final event = CaptureEvent.fromJson(
+      (jsonDecode(utf8.decode(bucket.objects[key]!)) as Map)
+          .cast<String, Object?>(),
+    );
+    const video = EventPage(
+      id: 'v1',
+      kind: PageKind.video,
+      extension: 'mp4',
+      render: PageRender(id: 'r1', extension: 'mp4'),
+    );
+    const later = EventPage(
+      id: 'v2',
+      kind: PageKind.video,
+      extension: 'mp4',
+      render: PageRender(id: 'r2', extension: 'mp4'),
+    );
+    bucket.objects[key] = utf8.encode(
+      jsonEncode(
+        event
+            .copyWith(pages: [...event.pages, video, later])
+            .toJson(local: false),
+      ),
+    );
+    bucket.objects['$owner/events/$id/v1.mp4'] = Uint8List.fromList([1, 2]);
+    bucket.objects['$owner/events/$id/r1.mp4'] = Uint8List.fromList([9, 9]);
+    bucket.objects['$owner/events/$id/v2.mp4'] = Uint8List.fromList([4]);
+    final library = Library(PlatformEventStore());
+    await library.load();
+    final opened = await captures().open(link, library);
+    expect(await library.original(opened, video.render!.file), [9, 9]);
+    expect(await library.original(opened, opened.pages.last), [4]);
+    expect(await library.hasPage(id, later.render!.file), isFalse);
+  });
+
   test(
     'refreshing brings the owner\'s rename, and nothing when unchanged',
     () async {
@@ -186,8 +226,9 @@ void main() {
     await IncomingLinks.instance.didPushRouteInformation(
       RouteInformation(uri: link),
     );
+    final auth = FakeAuth();
     await tester.pumpWidget(
-      TabCamApp(library: mine, auth: FakeAuth(), captures: captures()),
+      TabCamApp(library: mine, auth: auth, captures: captures()),
     );
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 100)),
@@ -196,6 +237,18 @@ void main() {
     expect(find.byKey(const Key('welcome')), findsNothing);
     expect(find.byKey(const Key('link-banner')), findsOneWidget);
     expect(find.text('Opened by its link · Read only'), findsOneWidget);
+    // The one-click sign-in, last in the app bar: signs in right here.
+    final quick = find.byKey(const Key('quick-sign-in-google'));
+    expect(
+      find.descendant(of: find.byType(AppBar), matching: quick),
+      findsOneWidget,
+    );
+    expect(
+      tester.getTopLeft(quick).dx,
+      greaterThan(tester.getTopLeft(find.byTooltip('Share')).dx),
+    );
+    await tester.tap(quick);
+    expect(auth.signIns, [AuthProvider.google]);
     // Read only, and not theirs to clone.
     expect(find.byTooltip('Rename'), findsNothing);
     expect(find.byTooltip('Clone'), findsNothing);
@@ -269,6 +322,14 @@ void main() {
     );
     await frames(tester);
     expect(find.byType(FileScreen), findsOneWidget);
+    // The file's screen too has the one-click sign-in.
+    expect(
+      find.descendant(
+        of: find.byType(FileScreen),
+        matching: find.byKey(const Key('quick-sign-in')),
+      ),
+      findsOneWidget,
+    );
     // Back: the capture's list, opened by its link.
     await tester.pageBack();
     await frames(tester);
@@ -291,6 +352,7 @@ void main() {
     await frames(tester);
     expect(find.byType(PublicCaptureScreen), findsOneWidget);
     expect(find.textContaining("can't be opened"), findsOneWidget);
+    expect(find.byKey(const Key('quick-sign-in')), findsOneWidget);
     await tester.tap(find.text('Sign in'));
     await frames(tester);
     expect(find.byKey(const Key('welcome')), findsOneWidget);
@@ -357,6 +419,7 @@ void main() {
     expect(find.byKey(const Key('link-banner')), findsOneWidget);
     // Signed in: no Sign in, and Back goes Home.
     expect(find.text('Sign in'), findsNothing);
+    expect(find.byKey(const Key('quick-sign-in')), findsNothing);
     expect(mine.all, isEmpty);
     await tester.pageBack();
     await frames(tester);

@@ -1,3 +1,3 @@
 import 'package:flutter/widgets.dart';
 
-Widget? googleSignInButton() => null;
+Widget? googleSignInButton({bool icon = false}) => null;
