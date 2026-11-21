@@ -41,6 +41,9 @@ class GoogleAuthService extends AuthService {
   StreamSubscription<GoogleSignInAuthenticationEvent>? _events;
   Timer? _refresh;
 
+  /// A [signOut] under way: [offerQuickSignIn] waits for it.
+  Future<void>? _signingOut;
+
   @override
   AuthUser? get user => _user;
 
@@ -174,14 +177,35 @@ class GoogleAuthService extends AuthService {
 
   @override
   Future<void> signOut() async {
+    final done = Completer<void>();
+    final signingOut = _signingOut = done.future;
     // Forgotten here too: a restored session may not be one the library
     // knows about, so it might not send a sign-out event.
     _forget();
     notifyListeners();
     try {
+      // On web this also turns off One Tap's auto-select, so the next
+      // prompt asks before signing anyone in.
       await GoogleSignIn.instance.signOut();
     } catch (e) {
       debugPrint('TabCam: Google sign-out failed: $e');
+    } finally {
+      done.complete();
+      if (_signingOut == signingOut) _signingOut = null;
+    }
+  }
+
+  /// On the web, One Tap again: [init] asks for it at launch only.
+  @override
+  Future<void> offerQuickSignIn() async {
+    await _signingOut;
+    if (!kIsWeb || _events == null || _user != null) return;
+    try {
+      // Starts the prompt and returns at once: a sign-in arrives as an
+      // event, and closing it ("canceled") is no error.
+      await GoogleSignIn.instance.attemptLightweightAuthentication();
+    } catch (e) {
+      debugPrint('TabCam: Google One Tap failed: ${_details(e)}');
     }
   }
 
@@ -220,6 +244,13 @@ class GoogleAuthService extends AuthService {
       GoogleSignIn.instance.supportsAuthenticate()
       ? null
       : googleSignInButton();
+
+  @override
+  Widget? buildIconSignInButton([
+    AuthProvider provider = AuthProvider.google,
+  ]) => GoogleSignIn.instance.supportsAuthenticate()
+      ? null
+      : googleSignInButton(icon: true);
 
   /// Shows [e] as the sign-in error; the log gets all of it.
   void _fail(Object e) {

@@ -32,6 +32,7 @@ class EventPage {
     this.take = false,
     this.takeLog,
     this.source,
+    this.render,
     this.extra = const {},
   });
 
@@ -51,7 +52,8 @@ class EventPage {
        edit = null,
        take = false,
        takeLog = null,
-       source = null;
+       source = null,
+       render = null;
 
   final String id;
 
@@ -100,6 +102,12 @@ class EventPage {
   /// page's file is its own (or it's a link).
   final FileOrigin? source;
 
+  /// For a video: the copy kept of the last video the editor's Download
+  /// made of it ([PageRender]), a file of the event's own beside the
+  /// page's, which plays in its place while the edit is still the one it
+  /// was made from. Null: none.
+  final PageRender? render;
+
   /// The keys of its JSON this version doesn't know (a newer app's, see
   /// `unknownKeys`), kept wherever the page is rebuilt (renamed, edited,
   /// copied, published, replaced) and written back as they came, after
@@ -120,6 +128,7 @@ class EventPage {
     'take',
     'takeLog',
     'source',
+    'render',
   };
 
   bool get isVideo => kind == PageKind.video;
@@ -161,12 +170,20 @@ class EventPage {
   /// The page's file name in its event's folder.
   String get fileName => '$id.$extension';
 
+  /// The files kept for it, each named as a page's ([fileName]): its own,
+  /// then its [render]'s.
+  Iterable<EventPage> get files sync* {
+    yield this;
+    if (render case final render?) yield render.file;
+  }
+
   EventPage copyWith({
     PageFilter? filter,
     String? Function()? title,
     PageEdit? Function()? edit,
     TakeLog? takeLog,
     FileOrigin? Function()? source,
+    PageRender? Function()? render,
     Map<String, Object?>? extra,
   }) => EventPage(
     id: id,
@@ -180,6 +197,7 @@ class EventPage {
     take: take,
     takeLog: takeLog ?? this.takeLog,
     source: source == null ? this.source : source(),
+    render: render == null ? this.render : render(),
     extra: extra ?? this.extra,
   );
 
@@ -195,6 +213,7 @@ class EventPage {
     if (take) 'take': true,
     if (takeLog != null) 'takeLog': takeLog!.toJson(),
     if (source != null) 'source': source!.toJson(),
+    if (render != null) 'render': render!.toJson(),
     for (final MapEntry(:key, :value) in extraEntries(extra, knownKeys))
       key: value,
   };
@@ -235,9 +254,81 @@ class EventPage {
       take: json['take'] == true,
       takeLog: TakeLog.fromJson(json['takeLog']),
       source: FileOrigin.fromJson(json['source']),
+      render: json['kind'] == 'video'
+          ? PageRender.fromJson(json['render'])
+          : null,
       extra: extra,
     );
   }
+}
+
+/// The copy kept of the last video the editor's Download made of a video
+/// page (the video as edited, its sound in it): file `<id>.<extension>`
+/// in the page's event's folder, kept and synced as page files are. It
+/// was made from the page's [edit] as it was then, its title showing
+/// [title] (the lines drawn, joined by a line break; empty: none), so it
+/// plays in the page's place only while those are still the same
+/// (`currentRender`).
+class PageRender {
+  const PageRender({
+    required this.id,
+    required this.extension,
+    this.edit,
+    this.title = '',
+  });
+
+  final String id;
+
+  /// `mp4` or `webm`, as Download made it.
+  final String extension;
+
+  /// The page's edit it was made from (null: none, the video as it is).
+  final PageEdit? edit;
+
+  /// The title it shows, its lines joined by `\n` ('': none).
+  final String title;
+
+  /// Its file, named as a page's is (the store keeps files by page).
+  EventPage get file =>
+      EventPage(id: id, kind: PageKind.video, extension: extension);
+
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'extension': extension,
+    if (edit != null) 'edit': edit!.toJson(),
+    if (title.isNotEmpty) 'title': title,
+  };
+
+  /// Null for anything but a well-formed render (its ID and extension
+  /// name a file).
+  static PageRender? fromJson(Object? json) {
+    if (json is! Map) return null;
+    final id = json['id'];
+    final extension = json['extension'];
+    final title = json['title'];
+    if (id is! String || extension is! String) return null;
+    try {
+      return PageRender(
+        id: checkId(id),
+        extension: checkExtension(extension),
+        edit: PageEdit.fromJson(json['edit']),
+        title: title is String ? title : '',
+      );
+    } on FormatException {
+      return null;
+    }
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is PageRender &&
+      other.id == id &&
+      other.extension == extension &&
+      other.edit == edit &&
+      other.title == title;
+
+  @override
+  int get hashCode => Object.hash(id, extension, edit, title);
 }
 
 /// Where a clone's page finds its file while it's still the original's
@@ -536,6 +627,10 @@ class CaptureEvent {
     yield* allPages;
     yield* deletedPages;
   }
+
+  /// Every file kept with the event, each named as a page's: those of
+  /// [storedPages] and their kept renders ([EventPage.files]).
+  Iterable<EventPage> get storedFiles => storedPages.expand((p) => p.files);
 
   /// The key in the capture's link (`https://tabs.cam/s/<key>`), made the
   /// first time its owner copies the link: with it, anyone holding the link may

@@ -159,4 +159,18 @@ abstract class AuthService extends ChangeNotifier {
   /// [provider]'s own sign-in button, where the platform requires one
   /// (Google on web); null to use the app's button, which calls [signIn].
   Widget? buildSignInButton([AuthProvider provider = AuthProvider.google]);
+
+  /// [buildSignInButton] as an icon alone (the app bar's on a phone): the
+  /// provider's own where the platform requires one, else null.
+  Widget? buildIconSignInButton([
+    AuthProvider provider = AuthProvider.google,
+  ]) => null;
+
+  /// Offers the one-click sign-in where there is one: on the web, Google's
+  /// One Tap (FedCM; the browser shows it at the top right on computers).
+  /// Called each time the user is signed out ([SignedInOnly]); at launch
+  /// [init] offers it. Waits for a sign-out under way to finish first, so
+  /// Google no longer signs the user back in by itself. Does nothing
+  /// signed in, or where there's none.
+  Future<void> offerQuickSignIn() async {}
 }

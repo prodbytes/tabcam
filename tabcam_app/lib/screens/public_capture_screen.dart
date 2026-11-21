@@ -10,6 +10,7 @@ import '../library/capture_event.dart';
 import '../library/event_store_memory.dart' as memory;
 import '../library/library.dart';
 import 'event_screen.dart';
+import 'quick_sign_in.dart';
 
 /// A capture opened by its link ([PublicCaptures]), read only: for
 /// someone signed out (it's then the whole app, with **Sign in**), or
@@ -135,7 +136,10 @@ class _PublicCaptureScreenState extends State<PublicCaptureScreen>
         };
         return Scaffold(
           key: const Key('link-capture'),
-          appBar: AppBar(title: const Text('tabs.cam')),
+          appBar: AppBar(
+            title: const Text('tabs.cam'),
+            actions: const [QuickSignIn()],
+          ),
           body: Center(
             child: Padding(
               padding: const EdgeInsets.all(32),

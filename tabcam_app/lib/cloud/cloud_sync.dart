@@ -550,7 +550,8 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
   ) async {
     final there = files[event.id] ?? const <String>{};
     var added = false;
-    for (final page in event.pages) {
+    // The pages' files, and their kept renders' ([EventPage.files]).
+    for (final page in event.pages.expand((p) => p.files)) {
       // A clone's page still showing the original's file has none here.
       if (!page.hasOwnFile || !there.contains(page.fileName)) continue;
       final key = '${event.id}/${page.fileName}';
@@ -1151,8 +1152,13 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
   ) async {
     final there = files[event.id] ?? const <String>{};
     // Its deleted pages' files too, kept until the trash is purged (one
-    // deleted before it ever went up, if it's still here).
-    for (final page in [...event.pages, ...event.deletedPages]) {
+    // deleted before it ever went up, if it's still here), and the kept
+    // renders' ([EventPage.files]), when they're here: one made on another
+    // device whose file hasn't come yet is in the folder already.
+    for (final page in [
+      ...event.pages,
+      ...event.deletedPages,
+    ].expand((p) => p.files)) {
       // A clone's page still showing the original's file sends none: the
       // original's folder has it.
       if (!page.hasOwnFile || there.contains(page.fileName)) continue;
@@ -1180,8 +1186,9 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
       credentials: creds,
     );
     // Files are deleted from the folder only once purged: those of its
-    // deleted pages stay.
-    final kept = {for (final p in event.storedPages) p.fileName};
+    // deleted pages stay (a kept render goes once it's replaced or its
+    // edit changes).
+    final kept = {for (final p in event.storedFiles) p.fileName};
     for (final name in there) {
       if (kept.contains(name)) continue;
       await bucket.delete(_key(identity, event.id, name), credentials: creds);

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../auth/auth_service.dart';
@@ -6,11 +8,13 @@ import '../export/incoming_links.dart';
 import '../l10n/language.dart';
 import 'home_screen.dart';
 import 'public_capture_screen.dart';
+import 'quick_sign_in.dart';
 import 'sign_in_buttons.dart';
 
-/// Signed out, the whole app is this: a welcome and the sign-in buttons.
-/// TabCam's features (Home, Capture, Profile) are for signed-in users; a
-/// build without sign-in skips it ([SignedInOnly]).
+/// Signed out, the whole app is this: a welcome and the sign-in buttons,
+/// and the one-click sign-in at the top right ([QuickSignIn]), as on every
+/// signed-out screen. tabs.cam's features (Home, Capture, Profile) are for
+/// signed-in users; a build without sign-in skips it ([SignedInOnly]).
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key, required this.auth});
 
@@ -23,55 +27,67 @@ class WelcomeScreen extends StatelessWidget {
     return Scaffold(
       key: const Key('welcome'),
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(32),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: ListenableBuilder(
-                listenable: auth,
-                builder: (context, _) => Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.queue_music_outlined,
-                      size: 72,
-                      color: theme.colorScheme.primary,
+        child: Stack(
+          children: [
+            Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(32),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: ListenableBuilder(
+                    listenable: auth,
+                    builder: (context, _) => Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.queue_music_outlined,
+                          size: 72,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(height: 16),
+                        Text('tabs.cam', style: theme.textTheme.headlineMedium),
+                        const SizedBox(height: 8),
+                        Text(
+                          l10n.welcomeBody,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyLarge,
+                        ),
+                        const SizedBox(height: 32),
+                        // At launch, while a saved session is restored.
+                        if (auth.checking)
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: 16),
+                            child: LinearProgressIndicator(),
+                          ),
+                        SignInButtons(auth: auth),
+                        if (auth.error case final error?) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            error,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: theme.colorScheme.error),
+                          ),
+                        ],
+                        const SizedBox(height: 24),
+                        TextButton(
+                          onPressed: () => openPrivacyPolicy(context),
+                          child: Text(l10n.homePrivacyPolicy),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    Text('tabs.cam', style: theme.textTheme.headlineMedium),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.welcomeBody,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyLarge,
-                    ),
-                    const SizedBox(height: 32),
-                    // At launch, while a saved session is restored.
-                    if (auth.checking)
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 16),
-                        child: LinearProgressIndicator(),
-                      ),
-                    SignInButtons(auth: auth),
-                    if (auth.error case final error?) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        error,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: theme.colorScheme.error),
-                      ),
-                    ],
-                    const SizedBox(height: 24),
-                    TextButton(
-                      onPressed: () => openPrivacyPolicy(context),
-                      child: Text(l10n.homePrivacyPolicy),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
+            // Where an app bar's last button would be.
+            Align(
+              alignment: AlignmentDirectional.topEnd,
+              child: SizedBox(
+                height: kToolbarHeight,
+                child: QuickSignIn(auth: auth),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -82,6 +98,9 @@ class WelcomeScreen extends StatelessWidget {
 /// except that a capture's link with its key ([PublicCaptures]) opens the
 /// capture, read only, until they choose **Sign in**. Without sign-in in
 /// this build ([auth] null, or unavailable), [signedIn].
+/// Each time the user is signed out (signing out, a session ending), it
+/// offers the one-click sign-in again ([AuthService.offerQuickSignIn]: on
+/// the web, Google's One Tap); at launch the sign-in's `init` does.
 class SignedInOnly extends StatefulWidget {
   const SignedInOnly({
     super.key,
@@ -106,17 +125,52 @@ class _SignedInOnlyState extends State<SignedInOnly> {
   /// too, so once signed in, Home opens it.
   Uri? _link;
 
+  /// Whether the user was signed in, last [_authChanged].
+  bool _signedIn = false;
+
   @override
   void initState() {
     super.initState();
     _link = _openable(IncomingLinks.instance.pending);
     IncomingLinks.instance.addListener(_incoming);
+    _signedIn = widget.auth?.user != null;
+    widget.auth?.addListener(_authChanged);
+  }
+
+  @override
+  void didUpdateWidget(SignedInOnly oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.auth != widget.auth) {
+      oldWidget.auth?.removeListener(_authChanged);
+      _signedIn = widget.auth?.user != null;
+      widget.auth?.addListener(_authChanged);
+    }
   }
 
   @override
   void dispose() {
     IncomingLinks.instance.removeListener(_incoming);
+    widget.auth?.removeListener(_authChanged);
     super.dispose();
+  }
+
+  void _authChanged() {
+    final auth = widget.auth;
+    if (auth == null) return;
+    final signedIn = auth.user != null;
+    if (_signedIn && !signedIn && auth.available) {
+      unawaited(_offer(auth));
+    }
+    _signedIn = signedIn;
+  }
+
+  /// Signed out: the one-click sign-in again.
+  static Future<void> _offer(AuthService auth) async {
+    try {
+      await auth.offerQuickSignIn();
+    } catch (e) {
+      debugPrint('TabCam: offering the sign-in failed: $e');
+    }
   }
 
   Uri? _openable(Uri? link) =>

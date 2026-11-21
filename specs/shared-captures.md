@@ -45,6 +45,10 @@ own (**My captures**), with "shared by <their email>" on its card. Its
 event screen says **"Shared by <email> · Read only · What you add goes to
 your copy"** under the app bar.
 
+- **Its videos play as the owner downloaded them**: a video whose
+  editor's last Download its owner [kept](video-edit.md#the-kept-download)
+  comes down with that file, and the file list and file screen play it
+  while it's still the edit's.
 - **Read only**, whatever the grant says: Rename, Rotate, Delete (a page)
   and editing the text tab are off (the view changes only what shows),
   nothing reads it here, and nothing of it goes up; Share (its link) and

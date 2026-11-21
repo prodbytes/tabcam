@@ -12,8 +12,9 @@ apps (Adobe Scan, CamScanner), made for tablature. Point the phone at a tab
 and it finds the page, straightens it and cleans it up. tabs.cam can then
 read the tab into editable plain text and share it as a read-only link
 (and download a zip of its files). Signed out, the app is a welcome and the
-sign-in buttons only; everything else is for signed-in users (with
-Google, or with Apple on iOS). Signing in
+sign-in buttons only, with a one-click sign-in at the top right of every
+screen (and Google's One Tap on the web); everything else is for
+signed-in users (with Google, or with Apple on iOS). Signing in
 also syncs the user's events with the cloud, so they're on every device
 the user signs in on. With tabs.cam Premium, scans are also transcribed in
 the cloud as they sync.

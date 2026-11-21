@@ -21,6 +21,7 @@ import 'mini_player.dart';
 import 'page_image.dart';
 import 'pdf_page.dart';
 import 'place.dart';
+import 'quick_sign_in.dart';
 import 'share_sheet.dart';
 import 'video_edit_screen.dart';
 import 'video_page.dart';
@@ -410,6 +411,8 @@ class _FileScreenState extends State<FileScreen> {
                         ),
                 ),
               const KeysHelpButton(screen: KeysScreen.player),
+              // Opened by its link, signed out: sign in, last.
+              const QuickSignIn(),
             ],
             // Tapping the name renames the file (when the user can edit).
             title: InkWell(

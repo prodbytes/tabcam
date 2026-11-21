@@ -243,6 +243,12 @@ class FakeAuth extends AuthService {
   @override
   Widget? buildSignInButton([AuthProvider provider = AuthProvider.google]) =>
       null;
+
+  /// How many times the one-click sign-in was offered.
+  int offers = 0;
+
+  @override
+  Future<void> offerQuickSignIn() async => offers++;
 }
 
 /// The share API, in memory: grants by `<owner>/<capture>`, then email.

@@ -135,7 +135,11 @@ lag, written once), kept the same way (a clone's naming the copy's
 files), but not when the page's file is replaced by another (it tells
 of the file recorded). A clone's page whose file is still the
 original's has `source` (`{event, page}`: the capture and page whose
-file it shows; see Clone, below). A link has no file
+file it shows; see Clone, below). A video can have a `render`: the
+file the editor's last Download made of it, kept beside its own and
+played in its place while it's still the edit's ([the kept
+download](video-edit.md#the-kept-download)); a clone's pages have none.
+A link has no file
 (its extension is `url`): it has its address (`url`, `http` or `https`
 only, checked again whenever an event is loaded, since events also come
 from the cloud) and an optional `title`. A new event is titled `Tab YYYY-MM-DD HH:MM` (its local time).
