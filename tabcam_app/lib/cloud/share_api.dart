@@ -4,7 +4,9 @@ import 'package:http/http.dart' as http;
 
 import '../auth/auth_service.dart';
 import '../auth/session_auth_service.dart';
+import '../export/capture_link.dart';
 import '../l10n/language.dart';
+import '../library/capture_event.dart';
 import 'cdn.dart';
 import 'sigv4.dart';
 
@@ -89,6 +91,49 @@ class LinkedCapture {
   /// The owner's Cognito identity: the folder the capture is in.
   final String owner;
   final AwsCredentials credentials;
+}
+
+/// A public capture tabs.cam's search found ([ShareApi.searchPublic]):
+/// enough to show it and open it by its link.
+class PublicCapture {
+  const PublicCapture({
+    required this.captureId,
+    required this.key,
+    required this.title,
+    this.artist = '',
+  });
+
+  final String captureId;
+
+  /// Its link key: public, anyone may open it.
+  final String key;
+  final String title;
+  final String artist;
+
+  /// Its full link, `…/app/?c=<id>&k=<key>`, on [app] (the site's by
+  /// default).
+  Uri link([Uri? app]) => (app ?? CaptureLink.app).replace(
+    queryParameters: {'c': captureId, 'k': key},
+  );
+
+  /// The answer's captures, those well formed.
+  static List<PublicCapture> listOf(Object? json) => [
+    for (final c in switch (json) {
+      {'captures': final List list} => list,
+      _ => const [],
+    })
+      if (c is Map &&
+          c['captureId'] is String &&
+          RegExp(r'^[a-z0-9]{1,32}$').hasMatch(c['captureId'] as String) &&
+          c['key'] is String &&
+          isLinkKey(c['key'] as String))
+        PublicCapture(
+          captureId: c['captureId'] as String,
+          key: c['key'] as String,
+          title: '${c['title'] ?? ''}'.trim(),
+          artist: '${c['artist'] ?? ''}'.trim(),
+        ),
+  ];
 }
 
 /// One sign-in linked to the user's profile.
@@ -195,6 +240,10 @@ class ShareApiException implements Exception {
 
   /// Too many tries (link codes).
   bool get throttled => statusCode == 429;
+
+  /// The capture is private: only its owner opens it (its link, joining
+  /// it).
+  bool get private => statusCode == 403;
 
   @override
   String toString() => message;
@@ -382,10 +431,38 @@ class ShareApi implements SessionApi {
     );
   }
 
-  /// Lets anyone with the capture's link (its [key]) see it, read only.
-  /// The same key again does nothing new.
-  Future<void> publishLink(String token, String captureId, String key) =>
-      _call(token, 'PUT', ['links', captureId], body: {'key': key});
+  /// Records the capture's link [key] and who may open it by it
+  /// ([visibility]): anyone holding it (unlisted), anyone, also found by
+  /// tabs.cam's search under its [title] and [artist] (public, the only
+  /// time they're sent), or only the owner (private). The same again does
+  /// nothing new.
+  Future<void> publishLink(
+    String token,
+    String captureId,
+    String key, {
+    CaptureVisibility visibility = CaptureVisibility.unlisted,
+    String? title,
+    String? artist,
+  }) => _call(
+    token,
+    'PUT',
+    ['links', captureId],
+    body: {
+      'key': key,
+      'visibility': visibility.name,
+      if (visibility == CaptureVisibility.public) ...{
+        'title': ?title,
+        'artist': ?artist,
+      },
+    },
+  );
+
+  /// The public captures whose title or artist has every word of [query]
+  /// (newest first, 20 at most), without signing in.
+  Future<List<PublicCapture>> searchPublic(String query) async =>
+      PublicCapture.listOf(
+        await _call(null, 'GET', ['public'], query: {'q': query.trim()}),
+      );
 
   /// Read-only credentials for the capture a link names, without signing
   /// in: its [captureId] and [key].

@@ -3955,5 +3955,49 @@
   "videoEditRecOver": "Rec over this",
   "@videoEditRecOver": {
     "description": "Video editor: the transport's camera button (Premium): Cam's camera in the viewer's place, with the video opened as the song playing along in the main row, to record a take over it"
+  },
+  "shareWhoCanOpen": "Who can open it",
+  "@shareWhoCanOpen": {
+    "description": "Share's sheet, for the capture's owner: its heading, over the choice of who may open the capture by its link (as on YouTube)"
+  },
+  "sharePublic": "Public",
+  "@sharePublic": {
+    "description": "Share's sheet: anyone may find and open the capture (YouTube's Public)"
+  },
+  "sharePublicDetail": "Anyone can find it, in tabs.cam's dictionary and on search engines, and open it. Make public only what you have the right to share.",
+  "@sharePublicDetail": {
+    "description": "Share's sheet: what Public means"
+  },
+  "shareUnlisted": "Unlisted",
+  "@shareUnlisted": {
+    "description": "Share's sheet: anyone holding the link may open the capture (YouTube's Unlisted)"
+  },
+  "shareUnlistedDetail": "Anyone with the link can open it.",
+  "@shareUnlistedDetail": {
+    "description": "Share's sheet: what Unlisted means"
+  },
+  "sharePrivate": "Private",
+  "@sharePrivate": {
+    "description": "Share's sheet: only the owner may open the capture (YouTube's Private)"
+  },
+  "sharePrivateDetail": "Only you can open it, even with the link.",
+  "@sharePrivateDetail": {
+    "description": "Share's sheet: what Private means"
+  },
+  "shareDone": "Done",
+  "@shareDone": {
+    "description": "Share's sheet: closes it (a choice applies at once)"
+  },
+  "linkPrivate": "This capture is private: only its owner can open it.",
+  "@linkPrivate": {
+    "description": "A capture's link, opened by someone else while its owner made it private"
+  },
+  "dictionaryPublic": "Public on tabs.cam",
+  "@dictionaryPublic": {
+    "description": "Dictionary: the heading of the public tabs.cam captures found for what was typed, over YouTube's results"
+  },
+  "dictionaryPublicOpen": "Open in tabs.cam",
+  "@dictionaryPublicOpen": {
+    "description": "Dictionary: tooltip of a public capture found, which opens it"
   }
 }
