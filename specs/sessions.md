@@ -85,7 +85,11 @@ with the share API:
   errors don't show while the session lasts.
 - With a session restored, the providers don't look for a sign-in of
   their own at launch (`skipQuietSignIn`: on the web, Google's FedCM
-  prompt would show for nothing).
+  prompt would show for nothing). Once the user is signed out (signing
+  out, a refused renewal), the app offers Google's One Tap again
+  (`offerQuickSignIn`), but only after the providers have signed out:
+  the session ends first, and One Tap offered before Google's sign-out
+  turned off its auto-select would sign the user straight back in.
 - Another account signing in replaces the session (the old one is
   ended).
 - Kept on the device (`SessionKeeper`): `session.json` in the app's

@@ -40,10 +40,7 @@ void main() {
       ),
       greaterThan(0.5),
     );
-    expect(
-      wave.peak(const Duration(seconds: 5), const Duration(seconds: 6)),
-      0,
-    );
+    expect(wave.peak(const Duration(seconds: 5), const Duration(seconds: 6)), 0);
   });
 
   test('a silent file stays flat', () {
@@ -84,11 +81,7 @@ void main() {
         wave: wave,
         length: const Duration(seconds: 4),
         spans: [
-          (
-            at: Duration.zero,
-            end: const Duration(seconds: 1),
-            from: Duration.zero,
-          ),
+          (at: Duration.zero, end: const Duration(seconds: 1), from: Duration.zero),
         ],
         start: Duration.zero,
         end: const Duration(seconds: 4),

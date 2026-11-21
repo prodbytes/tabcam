@@ -153,7 +153,5 @@ class CifraClubSearch {
   static final _slug = RegExp(r'^[a-z0-9][a-z0-9-]*$');
 
   /// A picture's path as the index writes it (`b/b/e/5/bbe5….jpg`).
-  static final _picture = RegExp(
-    r'^[a-z0-9]+(/[a-z0-9]+)*(-[a-z0-9]+)?\.jpe?g$',
-  );
+  static final _picture = RegExp(r'^[a-z0-9]+(/[a-z0-9]+)*(-[a-z0-9]+)?\.jpe?g$');
 }

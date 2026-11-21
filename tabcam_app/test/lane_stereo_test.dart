@@ -16,25 +16,20 @@ void main() {
       expect(LaneStereo.standard.matrix, [1, 0, 0, 1]);
     });
 
-    test('Left and Right put one channel on both sides; Mono both at half', () {
-      expect(const LaneStereo(channels: LaneChannels.left).matrix, [
-        1,
-        0,
-        1,
-        0,
-      ]);
-      expect(const LaneStereo(channels: LaneChannels.right).matrix, [
-        0,
-        1,
-        0,
-        1,
-      ]);
-      expect(const LaneStereo(channels: LaneChannels.mono).matrix, [
-        0.5,
-        0.5,
-        0.5,
-        0.5,
-      ]);
+    test('Left and Right put one channel on both sides; Mono both at half',
+        () {
+      expect(
+        const LaneStereo(channels: LaneChannels.left).matrix,
+        [1, 0, 1, 0],
+      );
+      expect(
+        const LaneStereo(channels: LaneChannels.right).matrix,
+        [0, 1, 0, 1],
+      );
+      expect(
+        const LaneStereo(channels: LaneChannels.mono).matrix,
+        [0.5, 0.5, 0.5, 0.5],
+      );
     });
 
     test('balance turns the other side down, in a straight line', () {
@@ -138,8 +133,9 @@ void main() {
       );
       expect(plan(whole).passthrough, isTrue);
       expect(
-        plan(whole.copyWith(ownStereo: const LaneStereo(balance: 0.5)))
-            .passthrough,
+        plan(
+          whole.copyWith(ownStereo: const LaneStereo(balance: 0.5)),
+        ).passthrough,
         isFalse,
       );
     });

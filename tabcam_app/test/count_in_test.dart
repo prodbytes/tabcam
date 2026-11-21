@@ -295,7 +295,10 @@ void main() {
     await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowRight);
     await tester.sendKeyRepeatEvent(LogicalKeyboardKey.arrowRight);
     await tester.sendKeyUpEvent(LogicalKeyboardKey.arrowRight);
-    expect(video.seeks, const [Duration(seconds: 20), Duration(seconds: 30)]);
+    expect(video.seeks, const [
+      Duration(seconds: 20),
+      Duration(seconds: 30),
+    ]);
     video.seeks.clear();
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
     expect(video.seeks, const [Duration(seconds: 20)]);

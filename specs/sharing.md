@@ -135,10 +135,13 @@ for good (a wrong key, the capture deleted) stops looking. It shows
 "Opening the capture…" meanwhile, then the event screen, read only, with
 a banner "Opened by its link · Read only": no Rename, Add, Reorder,
 editing or Clone (it isn't in the user's library);
-Share copies the same link. Signed out, the banner (and the screen when
-it fails) has **Sign in**, which goes to the welcome; the link stays
-waiting, so once signed in Home opens it (the user's, shared with them,
-or by its link again). A wrong key, a deleted capture, one not in the
+Share copies the same link. Signed out, the app bar ends with the
+[one-click sign-in](navigation.md#the-one-click-sign-in-top-right) (on
+the capture, on a file opened over it, and while it opens or fails),
+which signs in right there; and the banner (and the screen when it
+fails) has **Sign in**, which goes to the welcome, with every way in.
+Either way the link stays waiting, so once signed in Home opens it (the
+user's, shared with them, or by its link again). A wrong key, a deleted capture, one not in the
 cloud yet, or no connection: "This capture can't be opened…", with **Try
 again**.
 

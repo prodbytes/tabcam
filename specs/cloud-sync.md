@@ -55,8 +55,11 @@ Google sign-in (`google_sign_in`,
 [lib/auth/](../tabcam_app/lib/auth)) per platform:
 
 - **Web**: Google Identity Services with FedCM: a quiet auto-select prompt
-  at launch (not when a [session](sessions.md) is restored), and Google's
-  rendered button. GIS keeps no session, so the app keeps the user and ID
+  (One Tap) at launch (not when a [session](sessions.md) is restored) and
+  again each time the user is signed out, once the sign-out is done
+  (`offerQuickSignIn`, [the one-click sign-in](navigation.md#the-one-click-sign-in-top-right)),
+  and Google's rendered button (also as its logo alone, the app bar's on
+  a phone). GIS keeps no session, so the app keeps the user and ID
   token in `localStorage` (`tabcam.session`) and restores it at launch
   while the token has more than a minute left. Sign out forgets it.
 

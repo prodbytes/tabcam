@@ -57,9 +57,7 @@ Future<void> copyCaptureLink(
       ? event.copyWith(linkKey: newLinkKey())
       : event;
   final copying = Clipboard.setData(
-    ClipboardData(
-      text: CaptureLink.of(keyed, file: file, edit: edit).toString(),
-    ),
+    ClipboardData(text: CaptureLink.of(keyed, file: file, edit: edit).toString()),
   );
   final messenger = Messenger.maybeOf(context);
   final copied = context.l10n.eventLinkCopied;

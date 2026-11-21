@@ -133,11 +133,11 @@ void main() {
         EditTabStyle.fromJson({'align': 'center', 'size': 1.5}),
         const EditTabStyle(size: 1.5, align: TabAlign.center),
       );
+      expect(EditTabStyle.fromJson({'align': 'justify'}), EditTabStyle.standard);
       expect(
-        EditTabStyle.fromJson({'align': 'justify'}),
-        EditTabStyle.standard,
+        const EditTabStyle(align: TabAlign.center).isStandard,
+        isFalse,
       );
-      expect(const EditTabStyle(align: TabAlign.center).isStandard, isFalse);
     });
 
     test('the theme\'s primary and secondary colours, as its dark scheme has '
@@ -340,9 +340,15 @@ void main() {
       expect(rightLast - rightFirst, closeTo(leftLast - leftFirst, 2));
       expect(leftFirst, inInclusiveRange(pad - 2, pad + 30));
       expect(bandWidth - 1 - rightLast, inInclusiveRange(pad - 2, pad + 30));
-      expect((centreFirst + centreLast) / 2, closeTo((bandWidth - 1) / 2, 30));
+      expect(
+        (centreFirst + centreLast) / 2,
+        closeTo((bandWidth - 1) / 2, 30),
+      );
       // The default is to the left.
-      expect(await reach(EditTabStyle.standard.align), (leftFirst, leftLast));
+      expect(
+        await reach(EditTabStyle.standard.align),
+        (leftFirst, leftLast),
+      );
     });
 
     testWidgets('as high as its size says; a staff too long to grow stays '
@@ -547,7 +553,9 @@ void main() {
 
       final normal = await images(plan(EditTabStyle.standard));
       final styled = await images(
-        plan(const EditTabStyle(size: 1.5, opacity: 0, colors: TabColors.gold)),
+        plan(
+          const EditTabStyle(size: 1.5, opacity: 0, colors: TabColors.gold),
+        ),
       );
       expect(normal.first.width, 1920);
       expect(styled.first.width, 1920);

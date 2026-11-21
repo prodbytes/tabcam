@@ -81,7 +81,8 @@ class LaneStereo {
 
   /// [balance] as kept: within -1 and 1, to the hundredth; 0 when it
   /// isn't a number.
-  static double balanceOf(Object? balance) => balance is num && balance.isFinite
+  static double balanceOf(Object? balance) =>
+      balance is num && balance.isFinite
       ? (balance.clamp(-1, 1) * 100).round() / 100
       : 0;
 
