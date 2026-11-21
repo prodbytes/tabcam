@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 
 import '../library/page_edit.dart';
 import 'edit_formats.dart';
+import 'stem_split.dart';
 import 'take_log.dart';
 
 /// What Download makes of an edit.
@@ -69,30 +70,44 @@ class SongClip {
 /// The video's own sound, at [volume] (0 to 2: its lane's level through
 /// the master's, `PageEdit.ownLevel`; 0 only in a preview's plan, for a
 /// lane that isn't heard), its channels and balance as [stereo] says
-/// (`PageEdit.ownStereo`).
+/// (`PageEdit.ownStereo`), then its instruments at their levels as
+/// [stems] says (`PageEdit.ownStems`, [StemSplit]).
 @immutable
 class OwnLane {
-  const OwnLane({this.volume = 1, this.stereo = LaneStereo.standard});
+  const OwnLane({
+    this.volume = 1,
+    this.stereo = LaneStereo.standard,
+    this.stems = LaneStems.none,
+  });
 
   final double volume;
   final LaneStereo stereo;
+  final LaneStems stems;
+
+  /// Whether its sound is as recorded: its channels, balance and
+  /// instruments (its volume aside).
+  bool get asRecorded => stereo.isStandard && !stems.changes;
 
   @override
   bool operator ==(Object other) =>
-      other is OwnLane && other.volume == volume && other.stereo == stereo;
+      other is OwnLane &&
+      other.volume == volume &&
+      other.stereo == stereo &&
+      other.stems == stems;
 
   @override
-  int get hashCode => Object.hash(volume, stereo);
+  int get hashCode => Object.hash(volume, stereo, stems);
 
   @override
-  String toString() => 'OwnLane($volume, $stereo)';
+  String toString() => 'OwnLane($volume, $stereo, $stems)';
 }
 
 /// The song lane: the capture's page [page], its [file] (left out of a
 /// preview's plan), at [volume] (0 to 2: its lane's level through the
 /// master's, `PageEdit.songLevel`), its channels and balance as [stereo]
-/// says (`PageEdit.songStereo`), heard in [clips], in output order,
-/// silent between them.
+/// says (`PageEdit.songStereo`), then its instruments as [stems] says
+/// (`PageEdit.songStems`), heard in [clips], in output order, silent
+/// between them.
 @immutable
 class SongLane {
   const SongLane({
@@ -100,6 +115,7 @@ class SongLane {
     this.page,
     this.volume = 1,
     this.stereo = LaneStereo.standard,
+    this.stems = LaneStems.none,
     this.clips = const [],
   });
 
@@ -107,7 +123,12 @@ class SongLane {
   final String? page;
   final double volume;
   final LaneStereo stereo;
+  final LaneStems stems;
   final List<SongClip> clips;
+
+  /// Whether its sound is as recorded: its channels, balance and
+  /// instruments (its volume aside).
+  bool get asRecorded => stereo.isStandard && !stems.changes;
 
   @override
   bool operator ==(Object other) =>
@@ -116,14 +137,15 @@ class SongLane {
       other.page == page &&
       other.volume == volume &&
       other.stereo == stereo &&
+      other.stems == stems &&
       listEquals(other.clips, clips);
 
   @override
   int get hashCode =>
-      Object.hash(file, page, volume, stereo, Object.hashAll(clips));
+      Object.hash(file, page, volume, stereo, stems, Object.hashAll(clips));
 
   @override
-  String toString() => 'SongLane($page, $volume, $stereo, $clips)';
+  String toString() => 'SongLane($page, $volume, $stereo, $stems, $clips)';
 }
 
 /// Where a layer sits on the frame: by a corner, a margin in from it
@@ -808,9 +830,14 @@ class RenderPlan {
       own = OwnLane(
         volume: edit?.ownLevel ?? 1,
         stereo: edit?.ownStereo ?? LaneStereo.standard,
+        stems: edit?.ownStems ?? LaneStems.none,
       );
     } else if (audible && preview) {
-      own = OwnLane(volume: 0, stereo: edit?.ownStereo ?? LaneStereo.standard);
+      own = OwnLane(
+        volume: 0,
+        stereo: edit?.ownStereo ?? LaneStereo.standard,
+        stems: edit?.ownStems ?? LaneStems.none,
+      );
     }
     SongLane? song;
     if (audible &&
@@ -844,6 +871,7 @@ class RenderPlan {
         page: edit.trackId,
         volume: edit.songAudible ? edit.songLevel : 0,
         stereo: edit.songStereo,
+        stems: edit.songStems,
         clips: clampClips(clips, length),
       );
     }
@@ -941,7 +969,7 @@ class RenderPlan {
       (song != null && song!.volume > 0 && song!.clips.isNotEmpty);
 
   /// Whether Download can save [input] as it is: the whole video, its own
-  /// sound as it is (its level, channels and balance) and nothing else (nothing drawn over it, no fades),
+  /// sound as it is (its level, channels, balance and instruments) and nothing else (nothing drawn over it, no fades),
   /// already in the format made. Only then is no file made.
   bool get passthrough =>
       video &&
@@ -951,7 +979,7 @@ class RenderPlan {
       start <= Duration.zero &&
       end >= duration &&
       own?.volume == 1 &&
-      own!.stereo.isStandard &&
+      own!.asRecorded &&
       song == null;
 
   /// What moves sound in it ([PlanTimeline]).
@@ -985,12 +1013,16 @@ class RenderPlan {
         'own': {
           'volume': own.volume,
           if (!own.stereo.isStandard) 'mix': own.stereo.matrix,
+          if (own.stems.gains case final gains?)
+            'stems': StemSplit.toChannel(gains),
         },
       if (song case final song?)
         'song': {
           'path': song.file?.path,
           'volume': song.volume,
           if (!song.stereo.isStandard) 'mix': song.stereo.matrix,
+          if (song.stems.gains case final gains?)
+            'stems': StemSplit.toChannel(gains),
           'clips': [for (final c in song.clips) c.toJson()],
         },
       if (layers.isNotEmpty) ...{

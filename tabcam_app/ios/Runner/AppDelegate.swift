@@ -195,10 +195,12 @@ enum Sound {
 /// `tabcam/video_edit`, method `render`, the plan's `toChannel`): `input`
 /// and `output` paths, `video` (false for the sound alone, an `.m4a`), the
 /// part kept (`startMs`–`endMs`), the video's own sound (`own`: `volume`, 0
-/// to 2, its lane's level through the master's, and `mix`, its channels
-/// and balance, `[ll, lr, rl, rr]`, left out when as recorded; left out:
-/// removed) and the song lane (`song`: `path`, `volume` and `mix` (as
-/// `own`'s) and
+/// to 2, its lane's level through the master's, `mix`, its channels
+/// and balance, `[ll, lr, rl, rr]`, left out when as recorded, and `stems`,
+/// its instruments' gains, `{vocals, drums, bass, other, bassHz, drumsHz}`,
+/// left out when it isn't split or they're as they are; left out:
+/// removed) and the song lane (`song`: `path`, `volume`, `mix` and `stems`
+/// (as `own`'s) and
 /// `clips`, each `atMs` in the output, the song from `fromMs` to `toMs`, at
 /// `speed`, 1 for now), and what's drawn over the picture: `images` (PNGs)
 /// and `layers` (each its `image`'s index, `anchor`, `heightU`, `marginU`,
@@ -513,6 +515,8 @@ enum VideoEditor {
     let clips: [Clip]
     /// Its channels and balance; nil: as recorded.
     var mix: [Float]? = nil
+    /// Its instruments' gains; nil: as they are.
+    var stems: StemGains? = nil
   }
 
   /// What `render` is asked.
@@ -526,6 +530,8 @@ enum VideoEditor {
     var ownVolume: Float? = 1
     /// Its channels and balance (`[ll, lr, rl, rr]`); nil: as recorded.
     var ownMix: [Float]? = nil
+    /// Its instruments' gains; nil: as they are.
+    var ownStems: StemGains? = nil
     var song: Song?
     /// What's drawn over the picture, each naming one of `images` (PNGs).
     var layers: [Layer] = []
@@ -570,7 +576,8 @@ enum VideoEditor {
               speed: (clip["speed"] as? NSNumber)?.doubleValue ?? 1))
         }
         song = Song(
-          url: URL(fileURLWithPath: path), volume: volume(lane), clips: clips, mix: mix(lane))
+          url: URL(fileURLWithPath: path), volume: volume(lane), clips: clips, mix: mix(lane),
+          stems: StemGains(lane["stems"]))
       }
       var images: [Data] = []
       for image in (args["images"] as? [Any]) ?? [] {
@@ -597,10 +604,11 @@ enum VideoEditor {
       let own = args["own"] as? [String: Any]
       let ownVolume: Float? = own.map { volume($0) }
       let ownMix: [Float]? = own.flatMap { mix($0) }
+      let ownStems: StemGains? = own.flatMap { StemGains($0["stems"]) }
       self.init(
         input: URL(fileURLWithPath: input), output: URL(fileURLWithPath: output),
         video: args["video"] as? Bool ?? true, startMs: startMs, endMs: endMs,
-        ownVolume: ownVolume, ownMix: ownMix, song: song,
+        ownVolume: ownVolume, ownMix: ownMix, ownStems: ownStems, song: song,
         layers: layers, images: images,
         fadeInMs: max(0, int64(args, "fadeInMs") ?? 0),
         fadeOutMs: max(0, int64(args, "fadeOutMs") ?? 0))
@@ -608,7 +616,8 @@ enum VideoEditor {
 
     init(
       input: URL, output: URL, video: Bool = true, startMs: Int64, endMs: Int64,
-      ownVolume: Float? = 1, ownMix: [Float]? = nil, song: Song? = nil, layers: [Layer] = [],
+      ownVolume: Float? = 1, ownMix: [Float]? = nil, ownStems: StemGains? = nil,
+      song: Song? = nil, layers: [Layer] = [],
       images: [Data] = [],
       fadeInMs: Int64 = 0, fadeOutMs: Int64 = 0
     ) {
@@ -619,6 +628,7 @@ enum VideoEditor {
       self.endMs = endMs
       self.ownVolume = ownVolume
       self.ownMix = ownMix
+      self.ownStems = ownStems
       self.song = song
       self.layers = layers
       self.images = images
@@ -671,13 +681,17 @@ enum VideoEditor {
     // The volumes that aren't 1 throughout, one per audio track: its lane's,
     // and the fades.
     var volumes: [AVMutableAudioMixInputParameters] = []
-    func mix(_ track: AVMutableCompositionTrack, at volume: Float, stereo: [Float]?) {
-      guard volume != 1 || plan.fades || stereo != nil else { return }
+    func mix(
+      _ track: AVMutableCompositionTrack, at volume: Float, stereo: [Float]?, stems: StemGains?
+    ) {
+      guard volume != 1 || plan.fades || stereo != nil || stems != nil else { return }
       let parameters = AVMutableAudioMixInputParameters(track: track)
       fade(
         parameters, volume: volume, fadeInMs: plan.fadeInMs, fadeOutMs: plan.fadeOutMs,
         length: range.duration)
-      if let stereo { parameters.audioTapProcessor = stereoTap(stereo) }
+      if stereo != nil || stems != nil {
+        parameters.audioTapProcessor = laneTap(stereo, stems: stems)
+      }
       volumes.append(parameters)
     }
     var videoComposition: AVMutableVideoComposition?
@@ -712,7 +726,7 @@ enum VideoEditor {
           else { continue }
           try compAudio.insertTimeRange(
             audioRange, of: audio, at: audioRange.start - range.start)
-          mix(compAudio, at: each, stereo: plan.ownMix)
+          mix(compAudio, at: each, stereo: plan.ownMix, stems: plan.ownStems)
         }
       }
     }
@@ -752,7 +766,7 @@ enum VideoEditor {
             CMTimeRange(start: audioRange.start + from, end: audioRange.start + to), of: audio,
             at: ms(clip.atMs))
         }
-        mix(compAudio, at: each, stereo: song.mix)
+        mix(compAudio, at: each, stereo: song.mix, stems: song.stems)
       }
     }
 
@@ -947,13 +961,127 @@ enum VideoEditor {
   /// The loudest a lane can be: 200% (its level through the master's).
   static let maxVolume: Float = 2
 
-  /// What a stereo tap keeps: its matrix, and the format it's given.
-  final class StereoTapState {
-    let matrix: [Float]
+  /// A lane split into its instruments (the channel's `stems`): each one's
+  /// gain (0 to 1, 0 when muted) and the crossover's frequencies. The app's
+  /// `StemSplit` (lib/capture/stem_split.dart) says how it's split; this is
+  /// a copy of its `apply`.
+  struct StemGains {
+    let vocals: Double
+    let drums: Double
+    let bass: Double
+    let other: Double
+    let bassHz: Double
+    let drumsHz: Double
+
+    /// The channel's `stems`; nil when left out.
+    init?(_ value: Any?) {
+      guard let map = value as? [String: Any] else { return nil }
+      func gain(_ key: String) -> Double {
+        let v = (map[key] as? NSNumber)?.doubleValue ?? 1
+        return v.isNaN ? 1 : min(max(v, 0), 1)
+      }
+      func hz(_ key: String, _ fallback: Double) -> Double {
+        guard let v = (map[key] as? NSNumber)?.doubleValue, v.isFinite, v > 0 else {
+          return fallback
+        }
+        return v
+      }
+      vocals = gain("vocals")
+      drums = gain("drums")
+      bass = gain("bass")
+      other = gain("other")
+      bassHz = hz("bassHz", 200)
+      drumsHz = hz("drumsHz", 4000)
+    }
+  }
+
+  /// A biquad (transposed direct form II, in doubles), as
+  /// `StemSplit.coefficients` makes it.
+  struct Biquad {
+    let b0, b1, b2, a1, a2: Double
+    var z1 = 0.0
+    var z2 = 0.0
+
+    enum Kind { case lowPass, highPass, allPass }
+
+    init(_ kind: Kind, _ hz: Double, rate: Double) {
+      let w = 2 * Double.pi * min(hz, rate * 0.45) / rate
+      let cosW = cos(w)
+      let alpha = sin(w) / (2 * 0.7071067811865476)
+      let a0 = 1 + alpha
+      let b: (Double, Double, Double)
+      switch kind {
+      case .lowPass: b = ((1 - cosW) / 2, 1 - cosW, (1 - cosW) / 2)
+      case .highPass: b = ((1 + cosW) / 2, -(1 + cosW), (1 + cosW) / 2)
+      case .allPass: b = (1 - alpha, -2 * cosW, 1 + alpha)
+      }
+      b0 = b.0 / a0
+      b1 = b.1 / a0
+      b2 = b.2 / a0
+      a1 = -2 * cosW / a0
+      a2 = (1 - alpha) / a0
+    }
+
+    mutating func next(_ x: Double) -> Double {
+      let y = b0 * x + z1
+      z1 = b1 * x - a1 * y + z2
+      z2 = b2 * x - a2 * y
+      return y
+    }
+  }
+
+  /// One channel's three bands (`StemSplit.bands`): the bass (two
+  /// low-passes at the bass's frequency, an all-pass at the drums'), the
+  /// rest above it (two high-passes), and from that the middle band (two
+  /// low-passes at the drums') and the drums (two high-passes).
+  struct StemBands {
+    var bassFilters: [Biquad]
+    var aboveFilters: [Biquad]
+    var middleFilters: [Biquad]
+    var drumsFilters: [Biquad]
+
+    init(_ gains: StemGains, rate: Double) {
+      bassFilters = [
+        Biquad(.lowPass, gains.bassHz, rate: rate), Biquad(.lowPass, gains.bassHz, rate: rate),
+        Biquad(.allPass, gains.drumsHz, rate: rate),
+      ]
+      aboveFilters = [
+        Biquad(.highPass, gains.bassHz, rate: rate), Biquad(.highPass, gains.bassHz, rate: rate),
+      ]
+      middleFilters = [
+        Biquad(.lowPass, gains.drumsHz, rate: rate), Biquad(.lowPass, gains.drumsHz, rate: rate),
+      ]
+      drumsFilters = [
+        Biquad(.highPass, gains.drumsHz, rate: rate), Biquad(.highPass, gains.drumsHz, rate: rate),
+      ]
+    }
+
+    mutating func next(_ x: Double) -> (bass: Double, middle: Double, drums: Double) {
+      var bass = x
+      for i in bassFilters.indices { bass = bassFilters[i].next(bass) }
+      var above = x
+      for i in aboveFilters.indices { above = aboveFilters[i].next(above) }
+      var middle = above
+      for i in middleFilters.indices { middle = middleFilters[i].next(middle) }
+      var drums = above
+      for i in drumsFilters.indices { drums = drumsFilters[i].next(drums) }
+      return (bass, middle, drums)
+    }
+  }
+
+  /// What a lane's tap keeps: its matrix, its instruments, the format it's
+  /// given, and each channel's bands.
+  final class LaneTapState {
+    let matrix: [Float]?
+    let stems: StemGains?
     var channels = 0
     var interleaved = false
     var float32 = false
-    init(_ matrix: [Float]) { self.matrix = matrix }
+    var bands: [StemBands] = []
+    init(_ matrix: [Float]?, stems: StemGains?) {
+      self.matrix = matrix
+      self.stems = stems
+    }
   }
 
   /// `matrix` (`[ll, lr, rl, rr]`) applied in place to `frames` frames of
@@ -971,27 +1099,64 @@ enum VideoEditor {
     }
   }
 
-  /// A processing tap giving each side of a track's sound what `matrix`
-  /// (`[ll, lr, rl, rr]`) says of its two channels, after the mix's
-  /// volume. A one-channel track is left as it is (it plays on both sides,
-  /// in the middle: its balance isn't applied here). Nil when the tap
+  /// A lane's instruments at their `gains`, applied in place to `frames`
+  /// frames of float samples, each channel's `stride` apart: each channel
+  /// through its `bands`, the bass and the drums at theirs, and of a
+  /// two-channel sound's middle band, its middle (what both have alike) at
+  /// the vocals' and its sides at the rest's; a sound with one channel (or
+  /// more than two) has no sides, each channel's middle band at the
+  /// vocals'. Held within -1 and 1.
+  static func applyStems(
+    _ gains: StemGains, bands: inout [StemBands], channels: [UnsafeMutablePointer<Float>],
+    stride: Int, frames: Int
+  ) {
+    guard bands.count == channels.count else { return }
+    func clip(_ v: Double) -> Float { Float(min(max(v, -1), 1)) }
+    let same = (gains.vocals + gains.other) / 2
+    let cross = (gains.vocals - gains.other) / 2
+    for i in 0..<frames {
+      let at = i * stride
+      if channels.count == 2 {
+        let l = bands[0].next(Double(channels[0][at]))
+        let r = bands[1].next(Double(channels[1][at]))
+        channels[0][at] = clip(
+          gains.bass * l.bass + gains.drums * l.drums + same * l.middle + cross * r.middle)
+        channels[1][at] = clip(
+          gains.bass * r.bass + gains.drums * r.drums + cross * l.middle + same * r.middle)
+      } else {
+        for c in channels.indices {
+          let b = bands[c].next(Double(channels[c][at]))
+          channels[c][at] = clip(gains.bass * b.bass + gains.drums * b.drums + gains.vocals * b.middle)
+        }
+      }
+    }
+  }
+
+  /// A processing tap on a lane's track, after the mix's volume: each side
+  /// of its sound what `matrix` (`[ll, lr, rl, rr]`) says of its two
+  /// channels (a one-channel track is left as it is: it plays on both
+  /// sides, in the middle; its balance isn't applied here), then its
+  /// instruments at their `stems`' gains ([applyStems]). Nil when the tap
   /// can't be made (the lane then plays as recorded).
-  static func stereoTap(_ matrix: [Float]) -> MTAudioProcessingTap? {
-    let state = Unmanaged.passRetained(StereoTapState(matrix))
+  static func laneTap(_ matrix: [Float]?, stems: StemGains?) -> MTAudioProcessingTap? {
+    let state = Unmanaged.passRetained(LaneTapState(matrix, stems: stems))
     var callbacks = MTAudioProcessingTapCallbacks(
       version: kMTAudioProcessingTapCallbacksVersion_0,
       clientInfo: state.toOpaque(),
       init: { _, clientInfo, storage in storage.pointee = clientInfo },
       finalize: { tap in
-        Unmanaged<StereoTapState>.fromOpaque(MTAudioProcessingTapGetStorage(tap)).release()
+        Unmanaged<LaneTapState>.fromOpaque(MTAudioProcessingTapGetStorage(tap)).release()
       },
       prepare: { tap, _, format in
-        let state = Unmanaged<StereoTapState>.fromOpaque(MTAudioProcessingTapGetStorage(tap))
+        let state = Unmanaged<LaneTapState>.fromOpaque(MTAudioProcessingTapGetStorage(tap))
           .takeUnretainedValue()
         let f = format.pointee
         state.channels = Int(f.mChannelsPerFrame)
         state.interleaved = f.mFormatFlags & kAudioFormatFlagIsNonInterleaved == 0
         state.float32 = f.mFormatFlags & kAudioFormatFlagIsFloat != 0 && f.mBitsPerChannel == 32
+        if let stems = state.stems, state.channels > 0, f.mSampleRate > 0 {
+          state.bands = (0..<state.channels).map { _ in StemBands(stems, rate: f.mSampleRate) }
+        }
       },
       unprepare: nil,
       process: { tap, frames, _, buffers, framesOut, flagsOut in
@@ -999,21 +1164,34 @@ enum VideoEditor {
           MTAudioProcessingTapGetSourceAudio(tap, frames, buffers, flagsOut, nil, framesOut)
             == noErr
         else { return }
-        let state = Unmanaged<StereoTapState>.fromOpaque(MTAudioProcessingTapGetStorage(tap))
+        let state = Unmanaged<LaneTapState>.fromOpaque(MTAudioProcessingTapGetStorage(tap))
           .takeUnretainedValue()
-        guard state.channels == 2, state.float32 else { return }
+        guard state.channels > 0, state.float32 else { return }
         let list = UnsafeMutableAudioBufferListPointer(buffers)
         let n = Int(framesOut.pointee)
+        // Each channel's first sample, and how far apart its samples are.
+        var channels: [UnsafeMutablePointer<Float>] = []
+        let stride: Int
         if state.interleaved {
           guard list.count >= 1, let data = list[0].mData?.assumingMemoryBound(to: Float.self)
           else { return }
-          VideoEditor.applyStereo(state.matrix, left: data, right: data + 1, stride: 2, frames: n)
+          channels = (0..<state.channels).map { data + $0 }
+          stride = state.channels
         } else {
-          guard list.count >= 2,
-            let left = list[0].mData?.assumingMemoryBound(to: Float.self),
-            let right = list[1].mData?.assumingMemoryBound(to: Float.self)
-          else { return }
-          VideoEditor.applyStereo(state.matrix, left: left, right: right, stride: 1, frames: n)
+          guard list.count >= state.channels else { return }
+          for c in 0..<state.channels {
+            guard let data = list[c].mData?.assumingMemoryBound(to: Float.self) else { return }
+            channels.append(data)
+          }
+          stride = 1
+        }
+        if let matrix = state.matrix, channels.count == 2 {
+          VideoEditor.applyStereo(
+            matrix, left: channels[0], right: channels[1], stride: stride, frames: n)
+        }
+        if let stems = state.stems {
+          VideoEditor.applyStems(
+            stems, bands: &state.bands, channels: channels, stride: stride, frames: n)
         }
       })
     var tap: MTAudioProcessingTap?

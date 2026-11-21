@@ -15,9 +15,12 @@ export '../library/page_edit.dart'
         EditTabStyle,
         EditTitle,
         LaneChannels,
+        LaneStems,
         LaneStereo,
         PageEdit,
         SongMode,
+        Stem,
+        StemLevel,
         TabAlign,
         TabColors,
         trackSpan;
@@ -74,9 +77,11 @@ abstract final class VideoEditor {
 /// `tabcam/video_edit`, method `render`, its arguments the plan's
 /// ([RenderPlan.toChannel]): the input and output paths, whether the
 /// picture goes in (`video`), the part kept in ms, the video's own sound
-/// (`own`: its `volume`, 0 to 1, and its `mix`, when it isn't as
-/// recorded: `LaneStereo.matrix`; left out: none) and the song lane
-/// (`song`: its `path`, `volume`, `mix` and `clips`, each `atMs` in the output,
+/// (`own`: its `volume`, 0 to 1, its `mix`, when it isn't as
+/// recorded: `LaneStereo.matrix`, and its `stems`, when it's split with
+/// an instrument not as it is: `StemSplit.toChannel`; left out: none) and
+/// the song lane (`song`: its `path`, `volume`, `mix`, `stems` and
+/// `clips`, each `atMs` in the output,
 /// the song from `fromMs` to `toMs`, at `speed`), the layers drawn over
 /// the picture (`images`, PNGs, and `layers`, each naming its `image`,
 /// with its `anchor`, `heightU`, `marginU`, `liftU`, `fromMs`, `toMs`,
