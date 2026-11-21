@@ -13,14 +13,16 @@ import 'edited_playback.dart';
 import 'media_url.dart';
 
 /// A video page: a play button until tapped, then the video, with a play /
-/// pause button and tap to pause and resume. It plays from the page's file
-/// (from memory on the web), as its edit says ([EditedPlayback], with the
-/// plan Download renders: the kept part, its own sound and its song mixed,
-/// the song's length found as the editor finds it, [mediaLength]; a take's
-/// tab and the title drawn over it, [EditLayers], also with no edit, as
-/// they're on by default; not the watermark, nor the fades in and out,
-/// which only Download adds: it loops the video),
-/// and is let go when the page scrolls away.
+/// pause button and tap to pause and resume, looping. It plays the copy
+/// kept of the editor's last Download, while it's still the edit's
+/// ([currentRender]): the file as downloaded, nothing mixed or drawn over
+/// it. Otherwise it plays from the page's file (from memory on the web),
+/// as its edit says ([EditedPlayback], with the plan Download renders: the
+/// kept part, its own sound and its song mixed, the song's length found as
+/// the editor finds it, [mediaLength]; a take's tab and the title drawn
+/// over it, [EditLayers], also with no edit, as they're on by default; not
+/// the watermark, nor the fades in and out, which only Download adds: it
+/// loops the video). It's let go when the page scrolls away.
 class VideoPage extends StatefulWidget {
   const VideoPage({
     super.key,
@@ -144,13 +146,14 @@ class _VideoPageState extends State<VideoPage> {
   Future<void> _start() async {
     setState(() => _loading = true);
     try {
-      final controller = await openPlayer(
+      final (controller, rendered) = await openPagePlayer(
         widget.library,
         widget.event,
         widget.page,
       );
       await controller.setLooping(true);
-      await _edit(controller);
+      // The kept render is the video as edited already.
+      if (!rendered) await _edit(controller);
       await controller.play();
       if (!mounted) {
         _edited?.dispose();
@@ -261,6 +264,47 @@ Future<VideoPlayerController> openPlayer(
     rethrow;
   }
   return controller;
+}
+
+/// The file to play in [page]'s place, when there's one: the copy kept
+/// of the editor's last Download of it ([EventPage.render]), while it's
+/// still what the page plays (made from the edit the page has now, its
+/// title showing what it would now: not once the capture's renamed) and
+/// its file is here (not still on its way). Null: the page plays its own
+/// file, as its edit says.
+Future<EventPage?> currentRender(
+  Library library,
+  CaptureEvent event,
+  EventPage page,
+) async {
+  final render = page.render;
+  if (render == null || render.edit != page.edit) return null;
+  final title = shownTitle(
+    page.edit,
+    captureTitleLines(event.title, event.artist),
+  );
+  if (render.title != title.join('\n')) return null;
+  final file = render.file;
+  return await library.hasPage(event.id, file) ? file : null;
+}
+
+/// A player for [page] as the app plays it, initialized, not playing
+/// yet: its kept render's ([currentRender]) when there's one (and it
+/// opens), else its own file's; and whether it's the render's, the video
+/// as edited, with nothing to mix or draw over it.
+Future<(VideoPlayerController, bool)> openPagePlayer(
+  Library library,
+  CaptureEvent event,
+  EventPage page,
+) async {
+  if (await currentRender(library, event, page) case final render?) {
+    try {
+      return (await openPlayer(library, event, render), true);
+    } on Object catch (e) {
+      debugPrint('TabCam: ${render.fileName} can\'t play here: $e');
+    }
+  }
+  return (await openPlayer(library, event, page), false);
 }
 
 /// [page]'s file: its path, or its bytes on the web.

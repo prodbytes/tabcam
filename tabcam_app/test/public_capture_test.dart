@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -106,6 +107,44 @@ void main() {
       CaptureLink.of(library.byId(id)!).toString(),
       'https://tabs.cam/s/${CaptureLink.keyIn(link)}',
     );
+  });
+
+  test('a video\'s kept render comes with it; one not up yet is left out, '
+      'and the capture opens all the same', () async {
+    await ownerShares();
+    final key = '$owner/events/$id/event.json';
+    final event = CaptureEvent.fromJson(
+      (jsonDecode(utf8.decode(bucket.objects[key]!)) as Map)
+          .cast<String, Object?>(),
+    );
+    const video = EventPage(
+      id: 'v1',
+      kind: PageKind.video,
+      extension: 'mp4',
+      render: PageRender(id: 'r1', extension: 'mp4'),
+    );
+    const later = EventPage(
+      id: 'v2',
+      kind: PageKind.video,
+      extension: 'mp4',
+      render: PageRender(id: 'r2', extension: 'mp4'),
+    );
+    bucket.objects[key] = utf8.encode(
+      jsonEncode(
+        event
+            .copyWith(pages: [...event.pages, video, later])
+            .toJson(local: false),
+      ),
+    );
+    bucket.objects['$owner/events/$id/v1.mp4'] = Uint8List.fromList([1, 2]);
+    bucket.objects['$owner/events/$id/r1.mp4'] = Uint8List.fromList([9, 9]);
+    bucket.objects['$owner/events/$id/v2.mp4'] = Uint8List.fromList([4]);
+    final library = Library(PlatformEventStore());
+    await library.load();
+    final opened = await captures().open(link, library);
+    expect(await library.original(opened, video.render!.file), [9, 9]);
+    expect(await library.original(opened, opened.pages.last), [4]);
+    expect(await library.hasPage(id, later.render!.file), isFalse);
   });
 
   test(

@@ -1784,6 +1784,14 @@ class _StudioViewState extends State<StudioView> {
   static const _wideShortFrom = 560.0;
   static const _shortBelow = 480.0;
 
+  /// Keeps the edit with the page now, when a change waits to be kept
+  /// ([_changed]).
+  Future<void> _keepNow() async {
+    if (!(_saveTimer?.isActive ?? false)) return;
+    _saveTimer!.cancel();
+    await _keep();
+  }
+
   /// Keeps the edit with the page, when it changed.
   Future<void> _keep() async {
     final page = _page;
@@ -2642,7 +2650,10 @@ class _StudioViewState extends State<StudioView> {
   /// alone, in [_formats]. A plan that's a passthrough (the video as it
   /// is, already an MP4 or M4V, or in the format made here: a WebM where
   /// the browser records WebM) downloads the file as it is; anything else
-  /// is made (a WebM, or a MOV, as an MP4).
+  /// is made (a WebM, or a MOV, as an MP4). The video as edited, once
+  /// saved, is kept with the page too ([Library.keepRender]): it plays in
+  /// the page's place (the file list, the file screen, other devices and
+  /// those it's shared with) until the edit changes.
   Future<void> _download(RenderKind what) async {
     final editor = _editor;
     final event = _library.byId(_eventId);
@@ -2663,6 +2674,8 @@ class _StudioViewState extends State<StudioView> {
     });
     XFile? made;
     try {
+      // The edit as it is, kept now: the copy kept says what it's made of.
+      await _keepNow();
       final input = await _fileOf(event, page);
       // Each download is named for when it's made, so renders don't clash.
       final label = timestamped(fileLabel(l10n, event, page));
@@ -2671,6 +2684,8 @@ class _StudioViewState extends State<StudioView> {
         await Downloads.saveFile(_library, event, page, label);
         return;
       }
+      final edit = _pageEdit;
+      final title = shownTitle(_planEdit, _captureTitle).join('\n');
       final out = made = await editor.render(
         plan,
         onProgress: (done) {
@@ -2678,11 +2693,27 @@ class _StudioViewState extends State<StudioView> {
         },
       );
       final format = plan.format;
-      await Downloads.saveBytes(
-        safeFileName(label, Media.of(out)?.extension ?? format.extension),
+      final extension = Media.of(out)?.extension ?? format.extension;
+      final saved = await Downloads.saveBytes(
+        safeFileName(label, extension),
         await out.readAsBytes(),
         out.mimeType ?? format.mimeType,
       );
+      if (saved && what == RenderKind.video) {
+        try {
+          await _library.keepRender(
+            event.id,
+            page.id,
+            out,
+            extension: extension,
+            edit: edit,
+            title: title,
+          );
+        } on Object catch (e) {
+          // Downloaded all the same: the page plays its edit, as before.
+          debugPrint('TabCam: video edit: the download not kept: $e');
+        }
+      }
     } on Object catch (e, stack) {
       debugPrint(
         'TabCam: video edit: ${l10n.videoEditCouldntDownload}: $e\n$stack',

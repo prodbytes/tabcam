@@ -120,8 +120,10 @@ reload opens it again.
 [PublicCaptures](../tabcam_app/lib/cloud/public_capture.dart)): the app
 asks the share API, without signing in, for read-only credentials to the
 capture's folder (`POST /public/{captureId}/credentials` with the key),
-then downloads its `event.json` and files into a library of its own, in
-memory, apart from the user's, and gone with the screen; its settings
+then downloads its `event.json` and files (a video's [kept
+download](video-edit.md#the-kept-download) too, which plays in its
+place; one not in the folder yet is left out, and the capture opens all
+the same) into a library of its own, in memory, apart from the user's, and gone with the screen; its settings
 too (the count-in, the sidebars' widths…), so on the web they neither
 read nor change the device's, which the user's library keeps in
 localStorage ([library](library.md#device-settings)). While it

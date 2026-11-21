@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart';
 
 import '../capture/media.dart';
@@ -558,20 +559,90 @@ class Library extends ChangeNotifier {
   }
 
   /// Keeps [edit] with video [pageId] of event [eventId] (null: none, the
-  /// video plays as it is).
+  /// video plays as it is). A kept render made from another edit
+  /// ([EventPage.render]) no longer plays in its place: it goes, with its
+  /// file.
   Future<CaptureEvent?> setPageEdit(
     String eventId,
     String pageId,
     PageEdit? edit,
-  ) => patch(
-    eventId,
-    (now) => now.copyWith(
-      pages: [
-        for (final p in now.pages)
-          p.id == pageId ? p.copyWith(edit: () => edit) : p,
-      ],
-    ),
-  );
+  ) async {
+    // Read as patch will see it: nothing runs in between.
+    final stale = switch (_pageOf(eventId, pageId)?.render) {
+      final render? when render.edit != edit => render,
+      _ => null,
+    };
+    final updated = await patch(
+      eventId,
+      (now) => now.copyWith(
+        pages: [
+          for (final p in now.pages)
+            p.id == pageId
+                ? p.copyWith(
+                    edit: () => edit,
+                    render: stale == null ? null : () => null,
+                  )
+                : p,
+        ],
+      ),
+    );
+    if (updated != null && stale != null) {
+      await _dropFiles(updated, [stale.file]);
+    }
+    return updated;
+  }
+
+  /// Page [pageId] of event [eventId], as it is now; null when either is
+  /// gone.
+  EventPage? _pageOf(String eventId, String pageId) =>
+      _byIdAll(eventId)?.pages.where((p) => p.id == pageId).firstOrNull;
+
+  /// Keeps [file], the video the editor's Download just made of video
+  /// [pageId] of event [eventId] from its [edit] (its title showing
+  /// [title]), as the page's render ([EventPage.render]): it plays in the
+  /// page's place while the edit is still that one (`currentRender`), on
+  /// this device and, synced, the others, and for those the capture is
+  /// shared with. The render it replaces goes, with its file. Null when
+  /// the page is gone (then nothing is kept).
+  Future<CaptureEvent?> keepRender(
+    String eventId,
+    String pageId,
+    XFile file, {
+    required String extension,
+    PageEdit? edit,
+    String title = '',
+  }) async {
+    bool takes(CaptureEvent? event) =>
+        event != null &&
+        !event.isShared &&
+        event.pages.any((p) => p.id == pageId && p.isVideo);
+    if (!takes(_byIdAll(eventId))) return null;
+    final render = PageRender(
+      id: newId(),
+      extension: checkExtension(extension),
+      edit: edit,
+      title: title,
+    );
+    await _store.putPageFile(eventId, render.file, file);
+    // Gone while it was stored: so is its copy.
+    if (!takes(_byIdAll(eventId))) {
+      await _store.deletePage(eventId, render.file);
+      return null;
+    }
+    // Read as patch will see it: nothing runs in between.
+    final old = _pageOf(eventId, pageId)?.render;
+    final updated = await patch(
+      eventId,
+      (now) => now.copyWith(
+        pages: [
+          for (final p in now.pages)
+            p.id == pageId ? p.copyWith(render: () => render) : p,
+        ],
+      ),
+    );
+    if (updated != null && old != null) await _dropFiles(updated, [old.file]);
+    return updated;
+  }
 
   /// Applies [change] to the event [id] as it is now, so changes made
   /// meanwhile (pages added while a read ran) aren't overwritten by an
@@ -712,12 +783,13 @@ class Library extends ChangeNotifier {
         );
       });
 
-  /// Deletes the files of [gone] (pages [event] had) that it no longer
-  /// keeps: a published page and its contribution share one file.
+  /// Deletes the files of [gone] (pages [event] had, and their kept
+  /// renders, [EventPage.files]) that it no longer keeps: a published page
+  /// and its contribution share one file.
   Future<void> _dropFiles(CaptureEvent event, Iterable<EventPage> gone) async {
-    final kept = {for (final p in event.storedPages) p.fileName};
-    for (final p in gone) {
-      if (kept.contains(p.fileName)) continue;
+    final kept = {for (final p in event.storedFiles) p.fileName};
+    for (final p in gone.expand((p) => p.files)) {
+      if (!kept.add(p.fileName)) continue;
       await _deleteFile(event.id, p);
     }
   }
@@ -867,7 +939,7 @@ class Library extends ChangeNotifier {
   }
 
   Future<void> _removePages(CaptureEvent event) async {
-    for (final p in {for (final p in event.storedPages) p.fileName: p}.values) {
+    for (final p in {for (final p in event.storedFiles) p.fileName: p}.values) {
       await _deleteFile(event.id, p);
     }
   }

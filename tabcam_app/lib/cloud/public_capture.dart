@@ -83,16 +83,25 @@ class PublicCaptures {
       }
       // Someone else's: it names no file of the user's ([EventPage.source]).
       event = event.withOwnFiles();
+      Future<void> bring(EventPage page) async => library.putPageStream(
+        id,
+        page,
+        await bucket.getStream('$folder/${page.fileName}', credentials: creds),
+      );
       for (final page in event.pages) {
-        if (!page.hasFile || await library.hasPage(id, page)) continue;
-        await library.putPageStream(
-          id,
-          page,
-          await bucket.getStream(
-            '$folder/${page.fileName}',
-            credentials: creds,
-          ),
-        );
+        if (page.hasFile && !await library.hasPage(id, page)) {
+          await bring(page);
+        }
+        // Its kept render, which plays in its place ([EventPage.render]):
+        // one that doesn't come (not up yet) is left out, and the page
+        // plays as it would without it.
+        final render = page.render?.file;
+        if (render == null || await library.hasPage(id, render)) continue;
+        try {
+          await bring(render);
+        } on Object catch (e) {
+          debugPrint('TabCam: link: ${render.fileName} not brought: $e');
+        }
       }
       final shown = event.copyWith(owner: access.owner, readOnly: true);
       await library.applyRemote(shown);

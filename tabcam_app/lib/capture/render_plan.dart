@@ -592,6 +592,15 @@ List<String> titleText(List<String> lines) => [
       clipChars(t, TitleLayout.maxChars),
 ].take(TitleLayout.maxLines).toList();
 
+/// The title's lines a video edited by [edit] shows, of a capture whose
+/// own are [title] ([captureTitleLines]): the edit's own text, else the
+/// capture's; none when it's off.
+List<String> shownTitle(PageEdit? edit, List<String> title) =>
+    titleText(switch (edit?.title) {
+      final shown? => shown.linesOr(title),
+      null => title,
+    });
+
 /// The watermark's text, on every video and in every language: the
 /// app's name, nothing else.
 const watermarkText = 'tabs.cam';
@@ -856,10 +865,7 @@ class RenderPlan {
       if (watermark != null && !(edit?.watermark == false && premium)) {
         layers.add(watermarkLayer(watermark));
       }
-      final shown = edit?.title;
-      layers.addAll(
-        titleLayers(shown == null ? title : shown.linesOr(title), length),
-      );
+      layers.addAll(titleLayers(shownTitle(edit, title), length));
     }
     return RenderPlan(
       start: start,
