@@ -4852,6 +4852,11 @@ spec.
    tested in `tab_selection_test.dart` and
    `tab_text_selection_test.dart` (a mouse drag making a block, the
    keys on Android and macOS, Copy, ⌘C, typing and Backspace over a
-   block). Not yet tried in a browser or on a phone. See
+   block), and in Chromium, WebKit and Firefox on a web build of the
+   Text view driven by Playwright (⌘L, ⌘A, a mouse drag making a block,
+   ⌘C copying it, + on it, a key and Backspace typed through the
+   browser's text input going on each of its lines, Select phrase, and
+   typing at a cursor as before once it's off). Not yet tried on a
+   phone. See
    [tab recognition](tab-recognition.md#selecting) and
    [keyboard shortcuts](keyboard-shortcuts.md).
