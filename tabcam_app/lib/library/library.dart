@@ -619,7 +619,7 @@ class Library extends ChangeNotifier {
     if (!takes(_byIdAll(eventId))) return null;
     final render = PageRender(
       id: newId(),
-      extension: extension,
+      extension: checkExtension(extension),
       edit: edit,
       title: title,
     );
