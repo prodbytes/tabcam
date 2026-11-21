@@ -50,7 +50,8 @@ class ListPlayer extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      final controller = await openPlayer(library, event, page);
+      // A video's kept render, as Download made it, when there's one.
+      final (controller, _) = await openPagePlayer(library, event, page);
       if (_disposed || _pageId != page.id) {
         await controller.dispose();
         return;
