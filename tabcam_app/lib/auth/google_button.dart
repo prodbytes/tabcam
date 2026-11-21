@@ -1,5 +1,6 @@
 /// Google's own sign-in button on web (Google Identity Services renders it);
-/// elsewhere there's none, and the app's button calls `signIn`.
+/// elsewhere there's none, and the app's button calls `signIn`. With `icon`,
+/// Google's logo alone, for the app bar on a phone.
 library;
 
 export 'google_button_stub.dart'
