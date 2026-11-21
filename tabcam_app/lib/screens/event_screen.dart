@@ -89,7 +89,9 @@ class EventScreen extends StatefulWidget {
   /// library), and a banner saying so.
   final bool byLink;
 
-  /// With [byLink], signed out: the banner's **Sign in**.
+  /// With [byLink], signed out: the banner's **Sign in**. Signed out, the
+  /// screen (and a file's opened from it) has none of the tools
+  /// (Dictionary, Metronome, the keys' help), which are signed-in users'.
   final VoidCallback? onSignIn;
 
   /// The file it opens over its list (a reload: where the user was).
@@ -217,6 +219,9 @@ class _EventScreenState extends State<EventScreen> implements LinkAdder {
   /// Who to subscribe as (null signed out, or in a build without sign-in).
   String? get _email => widget.sync?.auth.user?.email;
 
+  /// Opened by its link, signed out ([EventScreen.onSignIn]): no tools.
+  bool get _signedOut => widget.onSignIn != null;
+
   /// Remembers the view, for a reload ([PlaceMemory]).
   void _remember() => PlaceMemory.of(_library)
       .update((p) => p.eventId == widget.eventId ? p.copyWith(text: _text) : p);
@@ -242,6 +247,7 @@ class _EventScreenState extends State<EventScreen> implements LinkAdder {
           sync: widget.sync,
           ocr: widget.ocr,
           initialEdit: edit,
+          signedOut: _signedOut,
         ),
       ),
     );
@@ -299,8 +305,8 @@ class _EventScreenState extends State<EventScreen> implements LinkAdder {
   }
 
   /// On a phone, in the Text view: Dictionary and Metronome (their
-  /// sidebars shown or hidden), Play along, Rename, Clone, Download all and Share, in a menu
-  /// at the app bar's end.
+  /// sidebars shown or hidden; signed in only), Play along, Rename, Clone,
+  /// Download all and Share, in a menu at the app bar's end.
   Widget _moreMenu(CaptureEvent event, {required bool editable}) {
     final l10n = context.l10n;
     final along = _along;
@@ -322,18 +328,22 @@ class _EventScreenState extends State<EventScreen> implements LinkAdder {
       icon: const Icon(Icons.more_vert),
       onSelected: (action) => action(),
       itemBuilder: (context) => [
-        item(
-          'more-dictionary',
-          Icons.menu_book_outlined,
-          DictionaryState.instance.open ? l10n.dictionaryHide : l10n.dictionary,
-          DictionaryState.instance.toggle,
-        ),
-        item(
-          'more-metronome',
-          Icons.av_timer,
-          MetronomeState.instance.open ? l10n.metronomeHide : l10n.metronome,
-          MetronomeState.instance.toggle,
-        ),
+        if (!_signedOut) ...[
+          item(
+            'more-dictionary',
+            Icons.menu_book_outlined,
+            DictionaryState.instance.open
+                ? l10n.dictionaryHide
+                : l10n.dictionary,
+            DictionaryState.instance.toggle,
+          ),
+          item(
+            'more-metronome',
+            Icons.av_timer,
+            MetronomeState.instance.open ? l10n.metronomeHide : l10n.metronome,
+            MetronomeState.instance.toggle,
+          ),
+        ],
         if (along.available)
           item(
             'more-along',
@@ -1326,6 +1336,8 @@ class _EventScreenState extends State<EventScreen> implements LinkAdder {
         // off, but Add and Cam add to the user's own copy of it.
         final editable = !event.readOnly;
         final canAdd = !widget.byLink && (editable || event.isShared);
+        // The dictionary, the metronome and the keys' help: signed in only.
+        final tools = !_signedOut;
         final text = _text;
         final locked = _locked;
         // The tools say they're Premium's only to a user the service said
@@ -1403,13 +1415,16 @@ class _EventScreenState extends State<EventScreen> implements LinkAdder {
               // On a phone they leave room for the title only with the
               // other buttons in a menu.
               if (textActions && narrow) ...[
-                const KeysHelpButton(screen: KeysScreen.player, hidden: true),
+                if (tools)
+                  const KeysHelpButton(screen: KeysScreen.player, hidden: true),
                 _moreMenu(event, editable: editable),
               ] else ...[
-                const DictionaryButton(),
-                const MetronomeButton(),
+                if (tools) ...[
+                  const DictionaryButton(),
+                  const MetronomeButton(),
+                ],
                 if (text && !locked) PlayAlongButton(along: _along),
-                const KeysHelpButton(screen: KeysScreen.player),
+                if (tools) const KeysHelpButton(screen: KeysScreen.player),
                 if (editable)
                   IconButton(
                     tooltip: l10n.eventRename,
@@ -1444,7 +1459,9 @@ class _EventScreenState extends State<EventScreen> implements LinkAdder {
           ),
           // Files dragged onto the screen are added to the capture.
           body: MetronomeBeside(
+            enabled: tools,
             child: DictionaryBeside(
+              enabled: tools,
               title: event.title,
               child: FileDropArea(
                 enabled: !_busy && canAdd,
