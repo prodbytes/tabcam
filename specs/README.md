@@ -89,7 +89,7 @@ review notes ([app stores](app-stores.md)).
   the right: a chord shows
   its notes and voicings as chord diagrams, a scale its notes on the
   fretboard (both worked out on the device); anything else is searched
-  on YouTube and Cifra Club. Its Rotate button makes it a panel under the screen, the
+  among tabs.cam's public captures, on YouTube and on Cifra Club. Its Rotate button makes it a panel under the screen, the
   necks lying down. Every sidebar (the dictionary, the metronome, the
   play-along player, the video editor's Download settings) is resizable
   by dragging its edge, the width kept on the device.
@@ -144,8 +144,10 @@ review notes ([app stores](app-stores.md)).
   build with `TABCAM_FIX=true`): lines the tab up, and for Premium Claude
   finds the song's tab online (tab sites first) and proposes corrections,
   which the user accepts or rejects note by note.
-- [Sharing](sharing.md): Share copies the capture's link, nothing
-  else; opening a capture's link.
+- [Sharing](sharing.md): Share copies the capture's link, and for its
+  owner shows who can open it, as on YouTube: Public (also found by the
+  dictionary's search and search engines), Unlisted (anyone with the
+  link) or Private (only the owner); opening a capture's link.
 - [Sign-in and cloud sync](cloud-sync.md): optional Google sign-in (and
   Sign in with Apple on iOS) from the Profile tab; signed-in users' events sync both ways with
   their own folder in S3 (Cognito identity pool credentials, no server),

@@ -9,7 +9,7 @@ import unittest
 import unittest.mock
 
 import profiles
-from test_index import (APPLE, GOOGLE, OWNER, S3, Cognito, FakeRbacr, Sts,
+from test_index import (APPLE, GOOGLE, OWNER, S3, Captures, Cognito, FakeRbacr, Sts,
                         KeyTable, Table, index, seed, store)
 
 
@@ -35,7 +35,8 @@ class IdsTest(unittest.TestCase):
 
 class Api(unittest.TestCase):
     def setUp(self):
-        self.clients = {"table": Table(), "links": KeyTable("keyHash", {"byOwner": "owner"}), "cognito": Cognito(), "sts": Sts(),
+        self.clients = {"table": Table(), "links": KeyTable("keyHash", {"byOwner": "owner"}),
+                        "captures": Captures(), "cognito": Cognito(), "sts": Sts(),
                         "accounts": None, "store": store(),
                         "rbacr": FakeRbacr({"julio@example.com": ["free", "premium"],
                                             "admin@example.com": ["admin", "free"]}),

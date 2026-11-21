@@ -788,5 +788,16 @@
   "videoEditRecPlay": "Reproducir la toma",
   "videoEditRecStop": "Detener la toma",
   "videoEditRecEdit": "Editar la toma",
-  "videoEditRecOver": "Grabar sobre este"
+  "videoEditRecOver": "Grabar sobre este",
+  "shareWhoCanOpen": "Quién puede abrirla",
+  "sharePublic": "Pública",
+  "sharePublicDetail": "Cualquiera puede encontrarla, en el diccionario de tabs.cam y en los buscadores, y abrirla. Haz pública solo lo que tengas derecho a compartir.",
+  "shareUnlisted": "No listada",
+  "shareUnlistedDetail": "Cualquiera con el enlace puede abrirla.",
+  "sharePrivate": "Privada",
+  "sharePrivateDetail": "Solo tú puedes abrirla, aunque tengan el enlace.",
+  "shareDone": "Listo",
+  "linkPrivate": "Esta captura es privada: solo su dueño puede abrirla.",
+  "dictionaryPublic": "Públicas en tabs.cam",
+  "dictionaryPublicOpen": "Abrir en tabs.cam"
 }

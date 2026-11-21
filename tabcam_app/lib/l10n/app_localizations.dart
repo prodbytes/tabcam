@@ -4839,6 +4839,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rec over this'**
   String get videoEditRecOver;
+
+  /// Share's sheet, for the capture's owner: its heading, over the choice of who may open the capture by its link (as on YouTube)
+  ///
+  /// In en, this message translates to:
+  /// **'Who can open it'**
+  String get shareWhoCanOpen;
+
+  /// Share's sheet: anyone may find and open the capture (YouTube's Public)
+  ///
+  /// In en, this message translates to:
+  /// **'Public'**
+  String get sharePublic;
+
+  /// Share's sheet: what Public means
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone can find it, in tabs.cam\'s dictionary and on search engines, and open it. Make public only what you have the right to share.'**
+  String get sharePublicDetail;
+
+  /// Share's sheet: anyone holding the link may open the capture (YouTube's Unlisted)
+  ///
+  /// In en, this message translates to:
+  /// **'Unlisted'**
+  String get shareUnlisted;
+
+  /// Share's sheet: what Unlisted means
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone with the link can open it.'**
+  String get shareUnlistedDetail;
+
+  /// Share's sheet: only the owner may open the capture (YouTube's Private)
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get sharePrivate;
+
+  /// Share's sheet: what Private means
+  ///
+  /// In en, this message translates to:
+  /// **'Only you can open it, even with the link.'**
+  String get sharePrivateDetail;
+
+  /// Share's sheet: closes it (a choice applies at once)
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get shareDone;
+
+  /// A capture's link, opened by someone else while its owner made it private
+  ///
+  /// In en, this message translates to:
+  /// **'This capture is private: only its owner can open it.'**
+  String get linkPrivate;
+
+  /// Dictionary: the heading of the public tabs.cam captures found for what was typed, over YouTube's results
+  ///
+  /// In en, this message translates to:
+  /// **'Public on tabs.cam'**
+  String get dictionaryPublic;
+
+  /// Dictionary: tooltip of a public capture found, which opens it
+  ///
+  /// In en, this message translates to:
+  /// **'Open in tabs.cam'**
+  String get dictionaryPublicOpen;
 }
 
 class _AppLocalizationsDelegate

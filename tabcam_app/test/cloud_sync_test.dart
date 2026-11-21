@@ -656,6 +656,93 @@ void main() {
       return julio.library.byId(event.id)!;
     }
 
+    test('Private takes it from whoever joined by its link; Unlisted gives '
+        'it back, with the same link', () async {
+      final event = await julio.library.create([
+        bytes([1, 2]),
+      ]);
+      final key = newLinkKey();
+      await julio.library.patch(event.id, (e) => e.copyWith(linkKey: key));
+      await julio.sync.publishLink(julio.library.byId(event.id)!);
+      await julio.sync.syncNow();
+      expect(await anaPhone.sync.joinLink(event.id, key), isTrue);
+      expect(anaPhone.library.byId(event.id)!.readOnly, isTrue);
+
+      Future<void> make(CaptureVisibility v) async {
+        julio.now = julio.now.add(const Duration(minutes: 1));
+        await julio.library.patch(event.id, (e) => e.copyWith(visibility: v));
+        await julio.sync.publishLink(julio.library.byId(event.id)!);
+        await julio.sync.syncNow();
+        await anaPhone.sync.syncNow();
+      }
+
+      await make(CaptureVisibility.private);
+      expect(
+        FakeShareApi.visibilities['$owner/${event.id}'],
+        CaptureVisibility.private,
+      );
+      expect(anaPhone.library.byId(event.id), isNull);
+      // The event says so on the owner's devices; the key stays.
+      final json = bucket.json('$owner/events/${event.id}/event.json');
+      expect(json['visibility'], 'private');
+      expect(json['linkKey'], key);
+      // Joining again is refused.
+      await expectLater(
+        anaPhone.sync.joinLink(event.id, key),
+        throwsA(
+          isA<ShareApiException>().having((e) => e.private, 'private', true),
+        ),
+      );
+
+      await make(CaptureVisibility.unlisted);
+      expect(anaPhone.library.byId(event.id)?.readOnly, isTrue);
+    });
+
+    test('a public capture renamed is found by its new name; in the trash, '
+        'by nobody', () async {
+      final event = await julio.library.create([
+        bytes([1, 2]),
+      ]);
+      await julio.library.patch(
+        event.id,
+        (e) => e.copyWith(
+          title: 'Riff in E',
+          linkKey: newLinkKey(),
+          visibility: CaptureVisibility.public,
+        ),
+      );
+      await julio.sync.publishLink(julio.library.byId(event.id)!);
+      final capture = '$owner/${event.id}';
+      expect(FakeShareApi.public[capture]?.title, 'Riff in E');
+
+      await julio.sync.syncNow();
+      julio.now = julio.now.add(const Duration(minutes: 1));
+      await julio.library.patch(
+        event.id,
+        (e) => e.copyWith(title: 'Slow blues riff', artist: 'The Made-Ups'),
+      );
+      await julio.sync.syncNow();
+      expect(FakeShareApi.public[capture]?.title, 'Slow blues riff');
+      expect(FakeShareApi.public[capture]?.artist, 'The Made-Ups');
+
+      julio.now = julio.now.add(const Duration(minutes: 1));
+      await julio.library.patch(
+        event.id,
+        (e) => e.copyWith(trashed: () => julio.now),
+      );
+      await julio.sync.syncNow();
+      expect(FakeShareApi.public[capture], isNull);
+      expect(FakeShareApi.visibilities[capture], CaptureVisibility.unlisted);
+
+      julio.now = julio.now.add(const Duration(minutes: 1));
+      await julio.library.patch(
+        event.id,
+        (e) => e.copyWith(trashed: () => null),
+      );
+      await julio.sync.syncNow();
+      expect(FakeShareApi.public[capture]?.title, 'Slow blues riff');
+    });
+
     test('the owner records the shares on the event, which syncs', () async {
       final created = await julio.library.create([
         bytes([1, 2]),

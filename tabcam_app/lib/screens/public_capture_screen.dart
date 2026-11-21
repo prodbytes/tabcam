@@ -129,6 +129,11 @@ class _PublicCaptureScreenState extends State<PublicCaptureScreen>
           );
         }
         final failed = snapshot.hasError;
+        // Its owner made it private: only they open it, so no Try again.
+        final private = switch (snapshot.error) {
+          LinkUnavailable(reason: ShareApiException(private: true)) => true,
+          _ => false,
+        };
         return Scaffold(
           key: const Key('link-capture'),
           appBar: AppBar(
@@ -142,19 +147,26 @@ class _PublicCaptureScreenState extends State<PublicCaptureScreen>
                   ? Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.link_off, size: 48),
-                        const SizedBox(height: 16),
-                        Text(l10n.linkUnavailable, textAlign: TextAlign.center),
-                        const SizedBox(height: 24),
-                        OutlinedButton(
-                          onPressed: () => setState(() {
-                            _opening = widget.captures.open(
-                              widget.link,
-                              _library,
-                            );
-                          }),
-                          child: Text(l10n.linkTryAgain),
+                        Icon(
+                          private ? Icons.lock_outline : Icons.link_off,
+                          size: 48,
                         ),
+                        const SizedBox(height: 16),
+                        Text(
+                          private ? l10n.linkPrivate : l10n.linkUnavailable,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        if (!private)
+                          OutlinedButton(
+                            onPressed: () => setState(() {
+                              _opening = widget.captures.open(
+                                widget.link,
+                                _library,
+                              );
+                            }),
+                            child: Text(l10n.linkTryAgain),
+                          ),
                         if (widget.onSignIn case final signIn?) ...[
                           const SizedBox(height: 8),
                           FilledButton(

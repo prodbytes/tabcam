@@ -2916,4 +2916,38 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoEditRecOver => 'Gravar sobre este';
+
+  @override
+  String get shareWhoCanOpen => 'Quem pode abrir';
+
+  @override
+  String get sharePublic => 'Pública';
+
+  @override
+  String get sharePublicDetail =>
+      'Qualquer pessoa pode encontrá-la, no dicionário do tabs.cam e nos buscadores, e abri-la. Torne pública só o que você tem o direito de compartilhar.';
+
+  @override
+  String get shareUnlisted => 'Não listada';
+
+  @override
+  String get shareUnlistedDetail => 'Qualquer pessoa com o link pode abri-la.';
+
+  @override
+  String get sharePrivate => 'Privada';
+
+  @override
+  String get sharePrivateDetail => 'Só você pode abri-la, mesmo com o link.';
+
+  @override
+  String get shareDone => 'Pronto';
+
+  @override
+  String get linkPrivate => 'Esta captura é privada: só o dono pode abri-la.';
+
+  @override
+  String get dictionaryPublic => 'Públicas no tabs.cam';
+
+  @override
+  String get dictionaryPublicOpen => 'Abrir no tabs.cam';
 }

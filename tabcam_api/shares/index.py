@@ -8,6 +8,14 @@ credentials for just that capture's folder: get and list. Grants made to
 edit before that are read only too. No email is sent. Someone signed in
 who opens the capture's link joins it (a read grant of their own).
 
+A capture's link is unlisted, private or public (as on YouTube), kept in
+the captures table (none: unlisted). Unlisted: anyone with the link (its
+key) opens it, read only. Private: only its owner; the key opens nothing
+for anyone else, nobody joins, and every grant of the capture (by link or
+by email) is suspended until it isn't private any more. Public: unlisted,
+and found too: by search (GET /public, its title and artist kept for
+that) and in the sitemap, and its preview page may be indexed.
+
 What a reader added before what they add went to their own copy of the
 capture (in their own folder) is a contribution, in its own folder beside
 the capture's, <owner>/contrib/<capture id>/<reader's identity>/: their
@@ -57,12 +65,17 @@ and TabCam's tokens):
   DELETE /account                                 delete my profile (its owner);
                                                   under /apple, {appleAuthorizationCode}
                                                   revokes my Apple tokens too
-  PUT    /links/{captureId}                       {key}: anyone with the link
-                                                  (…/app/?c=<id>&k=<key>) may
-                                                  read the capture (owner)
+  PUT    /links/{captureId}                       {key, visibility?, title?,
+                                                  artist?}: the capture's link
+                                                  (…/app/?c=<id>&k=<key>) and
+                                                  who it opens for: private,
+                                                  unlisted (the default) or
+                                                  public, with its title and
+                                                  artist (owner)
   POST   /links/{captureId}/join                  {key}: join the capture the
                                                   link opens, as a reader who
-                                                  adds files of their own
+                                                  adds files of their own (not
+                                                  a private one)
   POST   /keys/{owner}/{captureId}                the capture's content key
                                                   (its owner, or someone it's
                                                   shared with; keys.py)
@@ -71,7 +84,8 @@ And routes without a token (no authorizer): for anyone holding a link,
   POST   /public/{captureId}/credentials          {key}: read-only credentials
                                                   for that capture's folder,
                                                   and its content key when
-                                                  it's encrypted
+                                                  it's encrypted (403 for a
+                                                  private one)
   GET    /s/{key}?f=   (and HEAD)                 a short link (tabs.cam/s/<key>,
                                                   the site sends it here): a
                                                   redirect to the full one,
@@ -82,6 +96,14 @@ And routes without a token (no authorizer): for anyone holding a link,
                                                   apps' link previews (the
                                                   site sends their crawlers
                                                   here)
+for anyone at all,
+  GET    /public?q=<words>                        public captures whose title
+                                                  or artist has every word,
+                                                  newest first (20 at most)
+  GET    /sitemap.xml                             public captures' short links,
+                                                  for search engines (the site
+                                                  sends it here; production's
+                                                  only)
 for TabCam's sessions (the refresh token is the proof):
   POST   /session/refresh                         {refreshToken}: a new ID token
   POST   /session/end                             {refreshToken}: sign out
@@ -103,6 +125,7 @@ import json
 import os
 import re
 import time
+import unicodedata
 import urllib.parse
 
 import apple_revoke
@@ -127,7 +150,27 @@ PUBLIC_ROUTE = "POST /public/{captureId}/credentials"
 SHORT_ROUTE = "GET /s/{key}"
 SHORT_ROUTES = (SHORT_ROUTE, "HEAD /s/{key}")
 PREVIEW_ROUTE = "GET /preview/{captureId}/{key}"
+SEARCH_ROUTE = "GET /public"
+SITEMAP_ROUTE = "GET /sitemap.xml"
 APPLE_CALLBACK_ROUTE = "POST /apple/callback"
+# Who a capture's link opens for: its owner alone, anyone holding it (the
+# default, and every link from before), or anyone, found by search too.
+VISIBILITIES = ("private", "unlisted", "public")
+PRIVATE = "That capture is private"
+# The captures table's index of public captures: sparse (only they have its
+# key, listed = "public"), newest first (by updatedAt).
+PUBLIC_INDEX = "public"
+LISTED = "public"
+# A public capture's title and artist, as kept for search.
+TEXT_LENGTH = 200
+# Searches: the words that count, what an answer holds, and how many public
+# captures one reads at most (a search never reads them all).
+SEARCH_WORDS = 6
+SEARCH_RESULTS = 20
+SEARCH_READ = 2000
+# The sitemap: the protocol's 50,000 URLs, and Lambda's 6 MB answer.
+SITEMAP_URLS = 50000
+SITEMAP_BYTES = 5_000_000
 # What Apple posts back that the app reads (sign_in_with_apple's
 # callback); anything else is dropped.
 APPLE_CALLBACK_FIELDS = ("code", "id_token", "state", "user", "error")
@@ -192,6 +235,8 @@ def _clients():
                      else None),
         "signer": sess.Signer(kms),
         "links": dynamodb.Table(os.environ["LINKS_TABLE"]),
+        # Each capture's visibility, and public ones' title and artist.
+        "captures": dynamodb.Table(os.environ["CAPTURES_TABLE"]),
         # The cloud OCR service's identity -> address table, if it's set up.
         "accounts": dynamodb.Table(accounts) if accounts else None,
         "cognito": boto3.client("cognito-identity", region_name=region),
@@ -257,6 +302,10 @@ def _handle(event, clients, log):
             return preview(event, clients)
         if event.get("routeKey") in SHORT_ROUTES:
             return short_link(event, clients)
+        if event.get("routeKey") == SEARCH_ROUTE:
+            return search(event, clients)
+        if event.get("routeKey") == SITEMAP_ROUTE:
+            return sitemap(event, clients)
         if event.get("routeKey") == APPLE_CALLBACK_ROUTE:
             return apple_callback(event)
         if event.get("routeKey") in SESSION_ROUTES:
@@ -342,6 +391,48 @@ def _link_key(value):
     if not isinstance(value, str) or not LINK_KEY.match(value):
         raise ApiError(400, "Not a link key")
     return hashlib.sha256(value.encode()).hexdigest()
+
+
+def _visibility(value):
+    """A link's visibility as sent; none (older apps send only the key) is
+    unlisted."""
+    if value is None:
+        return "unlisted"
+    if value not in VISIBILITIES:
+        raise ApiError(400, "Not a visibility: private, unlisted or public")
+    return value
+
+
+def _text(value):
+    """A title or artist as sent: stripped, 200 characters at most."""
+    if value is None:
+        return ""
+    if not isinstance(value, str):
+        raise ApiError(400, "A title and an artist are text")
+    return value.strip()[:TEXT_LENGTH].strip()
+
+
+def normalized(text):
+    """Text as searches compare it: lowercased, accents dropped (NFKD),
+    anything but letters and digits a space, spaces collapsed: "Zoë's
+    Riff!" is "zoe s riff"."""
+    if not isinstance(text, str):
+        return ""
+    plain = unicodedata.normalize("NFKD", text).lower()
+    kept = "".join(c if c.isalnum() else " " for c in plain if not unicodedata.combining(c))
+    return " ".join(kept.split())
+
+
+def visibility_of(clients, owner, capture_id):
+    """The capture's visibility: its captures-table item's; unlisted without
+    one (every link from before visibilities)."""
+    item = clients["captures"].get_item(Key={"capture": _key(owner, capture_id)}).get("Item")
+    return (item or {}).get("visibility") or "unlisted"
+
+
+def _conflict(e):
+    """Whether [e] is DynamoDB refusing a conditional write."""
+    return type(e).__name__ == "ConditionalCheckFailedException" or "ConditionalCheckFailed" in str(e)
 
 
 def _body_of(event):
@@ -446,13 +537,15 @@ def folder_credentials(sts, owner, capture_id, role, contributor=None):
 def public_credentials(event, clients):
     """Anyone with a capture's link (its ID and key, no sign-in): read-only
     credentials for its folder, and whose folder it is. A wrong key and an
-    unknown one are the same 404."""
+    unknown one are the same 404; a private capture's key, a 403."""
     capture_id = _id((event.get("pathParameters") or {}).get("captureId"))
     digest = _link_key(_body_of(event).get("key"))
     item = clients["links"].get_item(Key={"keyHash": digest}).get("Item")
     if item is None or item.get("captureId") != capture_id:
         raise ApiError(404, "No such link")
     owner = item["owner"]
+    if visibility_of(clients, owner, capture_id) == "private":
+        raise ApiError(403, PRIVATE)
     creds = folder_credentials(clients["sts"], owner, capture_id, "read")
     body = with_cdn(clients, {"owner": owner, **creds})
     content_key = _content_key(clients, owner, capture_id, creds)
@@ -509,10 +602,13 @@ def short_link(event, clients):
     Location is relative), which the app opens as ever. The key alone finds
     the capture (links are kept by its hash). An unknown key goes to the
     app itself. CloudFront keeps the answer: a day for a link (it never
-    changes; a deleted capture says so in the app), a minute otherwise."""
+    changes; a deleted capture says so in the app), a minute otherwise.
+    Search engines may index a public capture's short link on production's
+    site (the sitemap lists them); every other one says noindex."""
     key = (event.get("pathParameters") or {}).get("key") or ""
     query = event.get("queryStringParameters") or {}
     item = None
+    indexed = False
     if LINK_KEY.match(key):
         item = clients["links"].get_item(Key={"keyHash": _link_key(key)}).get("Item")
     if item is None:
@@ -525,41 +621,49 @@ def short_link(event, clients):
             if query.get("e") == "1":
                 params["e"] = "1"
         location, max_age = "/app/?" + urllib.parse.urlencode(params), 86400
-    return {
-        "statusCode": 302,
-        "headers": {
-            "location": location,
-            "cache-control": f"public, max-age={max_age}",
-            "x-robots-tag": "noindex",
-        },
-        "body": "",
-    }
+        indexed = (_site_of(event) == SITES[0] and
+                   visibility_of(clients, item["owner"], item["captureId"]) == "public")
+    headers = {"location": location, "cache-control": f"public, max-age={max_age}"}
+    if not indexed:
+        headers["x-robots-tag"] = "noindex"
+    return {"statusCode": 302, "headers": headers, "body": ""}
+
+
+def _site_of(event):
+    """The site that asks, as its CloudFront names itself (x-tabcam-site),
+    when it's one of ours; else None."""
+    headers = {k.lower(): v for k, v in (event.get("headers") or {}).items()}
+    site = headers.get("x-tabcam-site")
+    return site if site in SITES else None
 
 
 def preview(event, clients):
     """The page a capture's link shows chat apps (WhatsApp, iMessage,
     Slack...), whose crawlers don't run the app: the capture's title and
-    what it holds, as Open Graph tags, for a key that opens it; else
-    TabCam's own. People who land here go on to the app."""
+    what it holds, as Open Graph tags, for a key that opens it (not a
+    private one's); else TabCam's own. People who land here go on to the
+    app. Search engines may index only a public capture's, on production's
+    site."""
     params = event.get("pathParameters") or {}
-    headers = {k.lower(): v for k, v in (event.get("headers") or {}).items()}
-    site = headers.get("x-tabcam-site")
-    site = site if site in SITES else SITES[0]
+    named = _site_of(event)
+    site = named or SITES[0]
     capture_id = params.get("captureId") or ""
     key = params.get("key") or ""
     valid = bool(ID.match(capture_id) and LINK_KEY.match(key))
     # The capture's short link, or the app's for a link that opens nothing.
     link = f"https://{site}/app/"
     title, description = "tabs.cam", "Scan and share guitar tabs."
+    indexed = False
     if valid:
         try:
-            capture = _linked_capture(clients, capture_id, key)
+            capture, visibility = _linked_capture(clients, capture_id, key)
         except Exception as e:  # a wrong key, a deleted capture, S3
             print(f"preview of {capture_id}: {e}")
-            capture = None
+            capture, visibility = None, None
         if capture is not None:
             title, description = _preview_text(capture)
             link = f"https://{site}/s/{key}"
+            indexed = visibility == "public" and named == SITES[0]
     page = PREVIEW_PAGE.format(
         title=html.escape(title),
         description=html.escape(description),
@@ -567,33 +671,35 @@ def preview(event, clients):
         image=html.escape(f"https://{site}/app/icons/Icon-512.png"),
         link_js=json.dumps(link),
     )
-    return {
-        "statusCode": 200,
-        "headers": {
-            "content-type": "text/html; charset=utf-8",
-            # A rename shows in new previews within minutes.
-            "cache-control": "public, max-age=300",
-            "x-robots-tag": "noindex",
-        },
-        "body": page,
+    headers = {
+        "content-type": "text/html; charset=utf-8",
+        # A rename shows in new previews within minutes.
+        "cache-control": "public, max-age=300",
     }
+    if not indexed:
+        headers["x-robots-tag"] = "noindex"
+    return {"statusCode": 200, "headers": headers, "body": page}
 
 
 def _linked_capture(clients, capture_id, key):
     """The capture's event.json, read with the link's own read-only
-    credentials; None for a key that doesn't open it, or a deleted one."""
+    credentials, and its visibility; no capture for a key that doesn't
+    open it, a private one, or a deleted one."""
     item = clients["links"].get_item(Key={"keyHash": _link_key(key)}).get("Item")
     if item is None or item.get("captureId") != capture_id:
-        return None
+        return None, None
     owner = item["owner"]
+    visibility = visibility_of(clients, owner, capture_id)
+    if visibility == "private":
+        return None, visibility
     creds = folder_credentials(clients["sts"], owner, capture_id, "read")
     capture = _read_event(clients, owner, capture_id, creds)
     if capture is None or capture.get("deleted"):
-        return None
+        return None, visibility
     if sealed.is_sealed_event(capture):
         key = _content_key_bytes(clients, owner, capture_id, capture)
         capture = sealed.open_event(capture, key)
-    return capture
+    return capture, visibility
 
 
 def _preview_text(capture):
@@ -638,10 +744,86 @@ PREVIEW_PAGE = """<!DOCTYPE html>
 </head>
 <body>
 <p><a href="{link}">{title}</a></p>
-<script>location.replace({link_js});</script>
+<script>if (!/bot|crawl|spider|preview|facebookexternalhit|whatsapp|slack/i.test(navigator.userAgent)) location.replace({link_js});</script>
 </body>
 </html>
 """
+
+
+def _public_captures(captures, most):
+    """The public captures (the captures table's public index), newest
+    first, page after page: [most] at most."""
+    kwargs = {
+        "IndexName": PUBLIC_INDEX,
+        "KeyConditionExpression": "#l = :l",
+        "ExpressionAttributeNames": {"#l": "listed"},
+        "ExpressionAttributeValues": {":l": LISTED},
+        "ScanIndexForward": False,
+    }
+    read = 0
+    while read < most:
+        page = captures.query(Limit=min(1000, most - read), **kwargs)
+        yield from page["Items"]
+        read += len(page["Items"])
+        if not page["Items"] or "LastEvaluatedKey" not in page:
+            return
+        kwargs["ExclusiveStartKey"] = page["LastEvaluatedKey"]
+
+
+def search(event, clients):
+    """GET /public?q=<words>: the public captures whose title or artist has
+    every word of q (the first 6), each the start of one of its words,
+    case and accents aside ("sun" finds "Sunday Riff", "zoe" finds "Zoë";
+    "day" doesn't), newest first, 20 at most. Nothing for under 2 characters. Only
+    public captures are ever here: their key is in the answer (public means
+    anyone may open them). It reads 2,000 public captures at most."""
+    query = event.get("queryStringParameters") or {}
+    words = normalized((query.get("q") or "")[:TEXT_LENGTH])
+    found = []
+    if len(words) >= 2:
+        words = words.split()[:SEARCH_WORDS]
+        for item in _public_captures(clients["captures"], SEARCH_READ):
+            terms = (item.get("search") or "").split()
+            if all(any(t.startswith(w) for t in terms) for w in words):
+                found.append({"captureId": item["captureId"], "key": item["key"],
+                              "title": item.get("title") or "",
+                              "artist": item.get("artist") or "",
+                              "updatedAt": int(item["updatedAt"])})
+                if len(found) == SEARCH_RESULTS:
+                    break
+    response = _json(200, {"captures": found})
+    response["headers"]["cache-control"] = "public, max-age=60"
+    return response
+
+
+def sitemap(event, clients):
+    """GET /sitemap.xml, for search engines (the site sends it here):
+    production's lists every public capture's short link, newest first,
+    with the day it last changed; any other site's (the RC's) is empty, as
+    is one that doesn't name the site."""
+    urls = []
+    if _site_of(event) == SITES[0]:
+        size = 0
+        for item in _public_captures(clients["captures"], SITEMAP_URLS):
+            key = item.get("key") or ""
+            if not LINK_KEY.match(key):
+                continue
+            day = time.strftime("%Y-%m-%d", time.gmtime(int(item["updatedAt"])))
+            url = (f"<url><loc>https://{SITES[0]}/s/{html.escape(key)}</loc>"
+                   f"<lastmod>{day}</lastmod></url>\n")
+            size += len(url)
+            if size > SITEMAP_BYTES:
+                break
+            urls.append(url)
+    body = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+            + "".join(urls) + "</urlset>\n")
+    return {
+        "statusCode": 200,
+        "headers": {"content-type": "application/xml",
+                    "cache-control": "public, max-age=3600"},
+        "body": body,
+    }
 
 
 def _sessions(clients):
@@ -936,20 +1118,49 @@ class Api:
     def _query(self, **kwargs):
         return query_all(self.table, **kwargs)
 
-    def _grants_of(self, owner, capture_id):
-        items = self._query(
+    def _grant_items(self, owner, capture_id):
+        """The capture's grants, as the table keeps them."""
+        return self._query(
             KeyConditionExpression="#c = :c",
             ExpressionAttributeNames={"#c": "capture"},
             ExpressionAttributeValues={":c": _key(owner, capture_id)},
         )
+
+    def _grants_of(self, owner, capture_id):
         return [
             {"email": i["email"], "role": "read", "grantedAt": int(i["grantedAt"]),
              # The reader's identity (their contribution's folder), once
-             # they've synced; and whether they joined by the link.
+             # they've synced; whether they joined by the link; and whether
+             # it's suspended (the capture is private).
              **({"identity": i["identity"]} if i.get("identity") else {}),
-             **({"via": i["via"]} if i.get("via") else {})}
-            for i in items
+             **({"via": i["via"]} if i.get("via") else {}),
+             **({"suspended": True} if i.get("suspended") else {})}
+            for i in self._grant_items(owner, capture_id)
         ]
+
+    def _suspend_grants(self, owner, capture_id, suspended):
+        """Suspends every grant of the capture (made private), or lifts
+        their suspension (not private any more): by the link or by email,
+        a suspended grant isn't listed and opens nothing. A grant gone
+        meanwhile (its reader left) isn't made again."""
+        for item in self._grant_items(owner, capture_id):
+            if bool(item.get("suspended")) == suspended:
+                continue
+            kwargs = {
+                "Key": {"capture": item["capture"], "email": item["email"]},
+                "ConditionExpression": "attribute_exists(#c)",
+                "ExpressionAttributeNames": {"#c": "capture", "#s": "suspended"},
+            }
+            if suspended:
+                kwargs.update(UpdateExpression="SET #s = :s",
+                              ExpressionAttributeValues={":s": True})
+            else:
+                kwargs["UpdateExpression"] = "REMOVE #s"
+            try:
+                self.table.update_item(**kwargs)
+            except Exception as e:
+                if not _conflict(e):
+                    raise
 
     def grants(self):
         capture_id = _id(self.params.get("captureId"))
@@ -971,6 +1182,7 @@ class Api:
             raise ApiError(400, f"A capture can be shared with {MAX_GRANTS} people")
         before = self.table.get_item(
             Key={"capture": _key(owner, capture_id), "email": email}).get("Item") or {}
+        private = visibility_of(self.clients, owner, capture_id) == "private"
         self.table.put_item(
             Item={
                 "capture": _key(owner, capture_id),
@@ -982,6 +1194,8 @@ class Api:
                 "grantedAt": int(time.time()),
                 # Who uses it stays known through a role change.
                 **({"identity": before["identity"]} if before.get("identity") else {}),
+                # A private capture's grants wait until it isn't.
+                **({"suspended": True} if private else {}),
             }
         )
         return {"grants": self._grants_of(owner, capture_id)}
@@ -1006,7 +1220,8 @@ class Api:
         return items
 
     def shared(self):
-        items = self._shared_with_me()
+        # Not a private capture's (its grants are suspended).
+        items = [i for i in self._shared_with_me() if not i.get("suspended")]
         return {
             "shared": [
                 {
@@ -1045,9 +1260,10 @@ class Api:
         """Credentials for a capture shared with the caller, read only
         (only its owner changes it; a grant made to edit before too): they
         include the reader's contribution's folder, and their grant records
-        whose it is (their identity), so the owner can tell who added what."""
+        whose it is (their identity), so the owner can tell who added what.
+        A suspended grant (a private capture's) gets nothing."""
         owner, capture_id, item = self._my_grant()
-        if item is None:
+        if item is None or item.get("suspended"):
             raise ApiError(404, "Not shared with you")
         contributor = self._me()
         if item.get("identity") != contributor:
@@ -1058,13 +1274,14 @@ class Api:
     def content_key(self):
         """An encrypted capture's content key, for its owner's profile or
         someone it's shared with: unwrapped from what its event.json holds
-        (read here, never taken from the caller). 404 for anyone else, and
-        for a capture that isn't there or isn't encrypted."""
+        (read here, never taken from the caller). 404 for anyone else (a
+        suspended grant too), and for a capture that isn't there or isn't
+        encrypted."""
         owner = _identity(self.params.get("owner"))
         capture_id = _id(self.params.get("captureId"))
         if owner != self._me():
             _, _, grant = self._my_grant()
-            if grant is None:
+            if grant is None or grant.get("suspended"):
                 raise ApiError(404, "Not shared with you")
         creds = folder_credentials(self.sts, owner, capture_id, "read")
         event = _read_event(self.clients, owner, capture_id, creds)
@@ -1074,11 +1291,18 @@ class Api:
         return {"contentKey": base64.b64encode(key).decode(), "algorithm": "A256GCM"}
 
     def publish_link(self):
-        """Lets anyone with the capture's link read it: the link's key (made
-        by the app, in the link) is kept, by its SHA-256, for this capture
-        of the caller's folder. Again with the same key does nothing new."""
+        """Records the capture's link and who it opens for: anyone holding
+        it (unlisted, the default, and all an older app sends), its owner
+        alone (private), or anyone, found by search too (public). The
+        link's key (made by the app, in the link) is kept, by its SHA-256,
+        for this capture of the caller's folder; again with the same key
+        does nothing new."""
         capture_id = _id(self.params.get("captureId"))
-        digest = _link_key(self._body().get("key"))
+        body = self._body()
+        key = body.get("key")
+        digest = _link_key(key)
+        visibility = _visibility(body.get("visibility"))
+        title, artist = _text(body.get("title")), _text(body.get("artist"))
         owner = self._me()
         item = self.links.get_item(Key={"keyHash": digest}).get("Item")
         if item is not None and (item["owner"], item["captureId"]) != (owner, capture_id):
@@ -1088,14 +1312,36 @@ class Api:
                                       "captureId": capture_id,
                                       "ownerEmail": self.email,
                                       "createdAt": int(time.time())})
-        return {"published": True}
+        self._set_visibility(owner, capture_id, visibility, key, title, artist)
+        return {"published": True, "visibility": visibility}
+
+    def _set_visibility(self, owner, capture_id, visibility, key, title, artist):
+        """Keeps the capture's visibility (its captures-table item). A public
+        one's also keeps its title and artist (and them normalized, for
+        search) and its key (public: anyone may have it), and is in the
+        public index; no other's ever leave its event.json. Made private,
+        every grant of the capture is suspended; no longer private, they're
+        back. The grants change first: if that fails, the table still has
+        the old visibility, so the app's next try changes them again."""
+        captures = self.clients["captures"]
+        before = visibility_of(self.clients, owner, capture_id)
+        if (before == "private") != (visibility == "private"):
+            self._suspend_grants(owner, capture_id, visibility == "private")
+        item = {"capture": _key(owner, capture_id), "owner": owner,
+                "captureId": capture_id, "visibility": visibility,
+                "updatedAt": int(time.time())}
+        if visibility == "public":
+            item.update(title=title, artist=artist, key=key, listed=LISTED,
+                        search=normalized(f"{title} {artist}"))
+        # The whole item: what only a public capture has goes otherwise.
+        captures.put_item(Item=item)
 
     def join_link(self):
         """Someone signed in opens a capture's link: they join it, with a
         read grant of their own (they see the owner's files; what they add
         goes to their own copy), so it's in their library from then on. The
         capture's owner, and whoever has a grant already, keep what they
-        have."""
+        have. Nobody else joins a private capture."""
         capture_id = _id(self.params.get("captureId"))
         digest = _link_key(self._body().get("key"))
         item = self.links.get_item(Key={"keyHash": digest}).get("Item")
@@ -1104,6 +1350,8 @@ class Api:
         owner = item["owner"]
         if owner == self._me():
             return {"owner": owner, "captureId": capture_id, "own": True}
+        if visibility_of(self.clients, owner, capture_id) == "private":
+            raise ApiError(403, PRIVATE)
         self.params = {**self.params, "owner": owner}
         _, _, grant = self._my_grant()
         if grant is None:
@@ -1133,7 +1381,8 @@ class Api:
 
     def delete_account(self):
         """Deletes the caller's profile: the grants of its captures, the
-        grants to its addresses, its record in the cloud OCR service's
+        grants to its addresses, its links and its captures' visibilities
+        (counted as captures), its record in the cloud OCR service's
         accounts table, its linked sign-ins, and last its Cognito identity,
         so a retry after a failure still finds the same identity. Only its
         owner may; its folder's objects are the app's to delete (with the
@@ -1174,6 +1423,18 @@ class Api:
         for item in links:
             if item["owner"] == owner:
                 self.links.delete_item(Key={"keyHash": item["keyHash"]})
+        # Its captures' visibilities (public ones' titles too).
+        captures = self.clients["captures"]
+        visibilities = query_all(
+            captures,
+            IndexName="byOwner",
+            KeyConditionExpression="#o = :o",
+            ExpressionAttributeNames={"#o": "owner"},
+            ExpressionAttributeValues={":o": owner},
+        )
+        visibilities = [i for i in visibilities if i["capture"].startswith(f"{owner}#")]
+        for item in visibilities:
+            captures.delete_item(Key={"capture": item["capture"]})
         if self.accounts is not None:
             self.accounts.delete_item(Key={"identityId": owner})
         # CloudFront's copies of the folder go too (the app has emptied it).
@@ -1193,7 +1454,8 @@ class Api:
         # the account is kept.
         self._delete_email_users([s["subject"] for s in linked] + [self.subject])
         return {"grantsMade": len(made), "grantsToMe": len(to_me), "links": len(links),
-                "contributions": contributions, "appleTokensRevoked": apple_revoked}
+                "captures": len(visibilities), "contributions": contributions,
+                "appleTokensRevoked": apple_revoked}
 
     def _delete_prefix(self, prefix):
         """Deletes every object under [prefix] (a contribution's folder);

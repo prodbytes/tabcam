@@ -30,8 +30,9 @@ others change too.
   types in the dictionary, when it's not a chord or a scale, goes from
   the device to Google's YouTube Data API (search), with the build's API
   key only, and to Cifra Club's search index (sscdn.co), with nothing
-  else, after two seconds without typing: no account, no ID. tabs.cam's
-  servers never see it, and nothing keeps it.
+  else, after two seconds without typing: no account, no ID. It also
+  goes to tabs.cam's share API, without a token, for public captures;
+  nothing keeps it.
 - **Cam's head gestures**: ML Kit face detection on the device; only the
   head's angles are used, nothing about the face is kept or sent.
 - **No** ads, crash reporting or tracking SDKs, and no analytics of
@@ -75,7 +76,7 @@ processed ephemerally).
 | Audio → Voice or sound recordings, Music files, Other audio files | Yes | App functionality | Recordings added to captures, and Cam's takes' sound (in their videos) |
 | Files and docs | Yes | App functionality | PDFs and files added to captures |
 | App activity → Other user-generated content | Yes | App functionality | Text tabs, titles, artists, links |
-| App activity → In-app search history | Yes (conservative), processed ephemerally | App functionality | The dictionary's searches that aren't a chord or a scale, sent from the device to YouTube's search API (Google) and Cifra Club's search index (sscdn.co) for their results; not linked to the account, not kept by tabs.cam |
+| App activity → In-app search history | Yes (conservative), processed ephemerally | App functionality | The dictionary's searches that aren't a chord or a scale, sent from the device to YouTube's search API (Google), Cifra Club's search index (sscdn.co) and tabs.cam's share API (public captures, no token) for their results; not linked to the account, not kept by tabs.cam |
 | App info and performance → Diagnostics | Yes, if ML Kit's disclosure says so | Analytics (by Google ML Kit) | Anonymous ML Kit metrics; collected also signed out; confirm against Google's ML Kit page |
 | Device or other IDs | Yes, if ML Kit's disclosure says so | Analytics (by Google ML Kit) | The installation identifier ML Kit's metrics carry; not linked to the account |
 
@@ -111,7 +112,7 @@ All six are in `PrivacyInfo.xcprivacy`, the same way.
 
 | Apple category → type | Notes |
 |---|---|
-| Search History | The dictionary's searches that aren't a chord or a scale, sent from the device to YouTube's search API (Google) and Cifra Club's search index (sscdn.co) for their results; no account or ID goes with them |
+| Search History | The dictionary's searches that aren't a chord or a scale, sent from the device to YouTube's search API (Google), Cifra Club's search index (sscdn.co) and tabs.cam's share API (public captures, no token) for their results; no account or ID goes with them |
 
 **Data not linked to the user**, for **Analytics** only (by Google's
 ML Kit, a third-party SDK; not used for tracking):
@@ -139,8 +140,9 @@ them App Review expects.
   alcohol, tobacco, gambling, simulated gambling: **No** to all.
 - **Users can interact or exchange content**: **Yes**: a user can copy
   a capture's link, which lets whoever they give it to see that capture,
-  read only (captures shared by email before stay shared); there's no chat, no public feed, no search for
-  other users' captures, no profile browsing. No user location is shared.
+  read only (captures shared by email before stay shared), and can make
+  a capture public, which the dictionary's search then finds by its title
+  and artist; there's no chat, no public feed, no profile browsing. No user location is shared.
 - **Digital purchases**: **No** (no in-app purchases; Premium is not sold
   in the app).
 - **Unrestricted web access**: **No**: links open in the external

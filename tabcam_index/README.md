@@ -19,8 +19,10 @@ Locally it also serves [site/status.json](site/status.json), the
 [maintenance mode](../specs/maintenance-mode.md) switch (off), so the
 local web app's status checks don't 404, and the
 [privacy policy](../specs/privacy.md). Deploys upload `index.html`,
-`img/`, the privacy policy and `.well-known/`, never `status.json`: the
-live sites' status files are set with `scripts/maintenance.sh`.
+`img/`, the privacy policy, `.well-known/` and
+[site/robots.txt](site/robots.txt) (everything allowed; it names
+production's sitemap, which the share API answers), never `status.json`:
+the live sites' status files are set with `scripts/maintenance.sh`.
 
 Only [site/](site) is served, so this README isn't.
 

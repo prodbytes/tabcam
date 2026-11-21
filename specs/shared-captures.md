@@ -2,7 +2,9 @@
 
 A capture (event) is shared with other people by its **link**: the
 owner's [Share](sharing.md) copies it, and someone signed in who opens it
-**joins** it, **read only**: they see the owner's files and get its
+**joins** it (unless the owner made it [private](sharing.md#who-can-open-it),
+which also takes it from everyone it was shared with until it's unlisted
+or public again), **read only**: they see the owner's files and get its
 updates, and can't change them. **Only the owner changes a capture.**
 What they add (Add, dropped files, Cam's takes) goes to **their own
 copy** of it instead: a [clone](library.md#events), made the first time
@@ -102,15 +104,17 @@ credentials:
 | `GET /shared` | anyone | the captures shared with them: owner, capture, owner's email, role (always `read`, a grant made to edit before too) |
 | `DELETE /shared/{owner}/{captureId}` | the grantee | leaves a share |
 | `POST /shared/{owner}/{captureId}/credentials` | the grantee | temporary credentials for that capture's folder |
-| `PUT /links/{captureId}` | the owner | records the capture's link key (`{key}`): anyone with the link may read it ([sharing](sharing.md)) |
-| `POST /links/{captureId}/join` | anyone signed in | `{key}`: joins the capture the link opens, with a read grant of their own ([contributions](contributions.md#joining-by-the-link)); the owner's own link answers `own`, and an existing grant stays |
-| `POST /public/{captureId}/credentials` | anyone, no token | `{key}`: read-only credentials for the capture's folder, and its owner; a wrong or unknown key is a 404 |
+| `PUT /links/{captureId}` | the owner | `{key, visibility, title, artist}`: records the capture's link key and [who can open it](sharing.md#who-can-open-it) by it (`private`, `unlisted`, `public`; `unlisted` when missing, as older apps send only the key); the title and artist are kept only for a public capture, for the search |
+| `POST /links/{captureId}/join` | anyone signed in | `{key}`: joins the capture the link opens, with a read grant of their own ([contributions](contributions.md#joining-by-the-link)); the owner's own link answers `own`, and an existing grant stays; a private capture is a 403 |
+| `POST /public/{captureId}/credentials` | anyone, no token | `{key}`: read-only credentials for the capture's folder, and its owner; a wrong or unknown key is a 404, a private capture a 403 ("That capture is private") |
+| `GET /public?q=` | anyone, no token | the public captures whose title or artist has every word of `q` (each the start of one of theirs; case and accents ignored), newest first, 20 at most: `{captures: [{captureId, key, title, artist, updatedAt}]}`; under 2 letters, none ([dictionary](dictionary.md#public-captures)) |
+| `GET /sitemap.xml` | anyone, no token (the site's CloudFront) | public captures' short links for search engines, on production's site only ([search engines](sharing.md#search-engines)) |
 | `DELETE /account` | anyone | [deletes their account](cloud-sync.md#deleting-the-account): what they contributed to others' captures, the grants of their captures, the grants to their address, their record in the cloud OCR service's accounts table, then their Cognito identity. Under `/apple`, with `{appleAuthorizationCode}`, it first revokes their Sign in with Apple tokens ([below](cloud-sync.md#revoking-apples-tokens)) |
 
 Each route is also under `/apple` (`GET /apple/shared`, …,
 `DELETE /apple/account`), for Sign in with Apple's tokens, except
-`POST /public/…`, which has no authorizer: the function answers it before
-reading any token, with nothing but the key to go on.
+`POST /public/…`, `GET /public` and `GET /sitemap.xml`, which have no
+authorizer: the function answers them before reading any token.
 
 - Every request carries the user's ID token, checked by the HTTP API's
   JWT authorizers. An HTTP API route has one authorizer, and a JWT
@@ -156,14 +160,28 @@ reading any token, with nothing but the key to go on.
   `events/` and `contrib/` folders, and only the function may assume it.
 - **Links**: the links table keeps each key's SHA-256 (never the key),
   with the owner's identity and the capture ID; one key is one capture's
-  (another's is a 409). A link's credentials are those of a read-only
+  (another's is a 409). **Who can open it** is in the captures table,
+  one item per capture (`<owner>#<capture id>`, its visibility and when
+  it was last recorded; none means unlisted, as every link before there
+  was a choice). A public one's item also has its title, artist, key
+  and a `search` text (title and artist, lowercased, accents and
+  punctuation dropped), and `listed`, which puts it in the table's
+  sparse `public` index (one partition, by when it was recorded): the
+  search reads it newest first (pages of up to 1000, 2000 items at
+  most) and the sitemap all of it. When a capture becomes private, each
+  of its grants is marked `suspended` (not listed by `GET /shared`, no
+  credentials, no content key), and when it stops being private the
+  mark goes: grants are touched only then, not when it's sent again
+  unchanged. A link's credentials are those of a read-only
   grant (get and list that capture's folder), for an hour. The public
   route is throttled harder (5 requests a second, bursts of 10); keys are
   192 random bits, so guessing one is hopeless anyway. `DELETE /account`
   deletes the caller's links too (an index by owner).
 - Inputs are checked: capture IDs `[a-z0-9]{1,32}`, owners
-  `<region>:<uuid>`, emails, roles, link keys (`[A-Za-z0-9_-]{32,64}`). The API is throttled (10 requests a
-  second, bursts of 20).
+  `<region>:<uuid>`, emails, roles, link keys (`[A-Za-z0-9_-]{12,64}`),
+  visibilities, titles and artists (text, cut to 200 characters). The
+  API is throttled (10 requests a second, bursts of 20); the search 5 a
+  second (bursts of 10) and the sitemap 1 (bursts of 5), for everyone.
 
 In the app ([lib/cloud/share_api.dart](../tabcam_app/lib/cloud/share_api.dart)),
 each sync pass, after the user's own folder: lists `GET /shared`, removes
@@ -177,12 +195,14 @@ skipped; the others go on.
 ## Infrastructure
 
 [tabcam_infra/share-api.yaml](../tabcam_infra/share-api.yaml), stack
-`tabcam-share-api`: the table, the function (its code uploaded by
+`tabcam-share-api`: the tables (grants, links, and captures with its
+`byOwner` and `public` indexes), the function (its code uploaded by
 `scripts/deploy-share-api.sh`), its role, the access role, the HTTP API
 (CORS for the web app's origins) and its log group (30 days). An
 administrator deploys it, after `tabcam-user-data` and
 `tabcam-identity`: see [tabcam_infra/README.md](../tabcam_infra/README.md).
-The function may get, put, delete and query grants, call `GetId` and
+The function may get, put, update, delete and query grants and
+captures (and their indexes), call `GetId` and
 `DeleteIdentities` on the identity pool, and, when the `tabcam-ocr`
 stack is deployed (the script finds its `AccountsTable`, the
 `AccountsTableName` parameter), delete items of the accounts table.
@@ -212,6 +232,19 @@ The script prints `TABCAM_SHARE_API_URL`.
   credentials (get only, that capture's folder) without a token, and only
   its hash is kept; publishing again is the same; a wrong key, another
   capture's ID, a bad key or body open nothing; a key is one capture's.
+  Who can open it: a key alone records it unlisted; a visibility is kept
+  and changed, a bad one refused; private refuses the link's credentials
+  and joining (the owner's own link still answers `own`), previews as
+  tabs.cam and suspends every grant (by the link and by email: not
+  listed, no credentials, no content key), and unlisted again lifts it;
+  grants aren't read when nothing changed; public keeps the title,
+  artist and key, unlisted drops them; the search finds by a word of
+  the title or the artist (accents and case ignored, a word's start),
+  newest first, 20 at most, reads 2000 items at most, nothing for a
+  letter, never unlisted or private ones; the sitemap lists public short
+  links on tabs.cam and nothing on the RC's; a public capture's preview
+  and short link aren't noindex on tabs.cam, everything else is;
+  deleting the account deletes its captures-table items.
 - The app's tests, two devices and a fake share API over the in-memory
   bucket: a capture shared to edit before is read only (her change
   uploads nothing, the owner's stays); read only uploads nothing; the
@@ -232,7 +265,15 @@ The script prints `TABCAM_SHARE_API_URL`.
   key opens it read only, signed out (instead of the welcome) and signed
   in when it isn't shared with the user, in a library apart; a wrong key
   says it can't be opened; Share makes the key once, on the tap, and a
-  link the API couldn't record is recorded at the next pass.
+  link the API couldn't record is recorded at the next pass. Share's
+  sheet shows unlisted for a link just made; Private, then Public, then
+  Unlisted keep the key and tell the API each (public with its title and
+  artist, found by the search, unlisted no longer); a build without
+  sharing shows no sheet. A private capture's link says so, signed out
+  and signed in (no Try again), and joining it is refused; made private,
+  a capture goes from the library of who joined it by its link, and
+  unlisted again, comes back; a public capture renamed is found by its
+  new name, in the trash by nobody, restored again.
 - The template passes `validate-template` and cfn-lint (the `/apple`
   routes and authorizer only with `AppleClientId`).
 - Not yet verified: the deployed API, which needs the Google OAuth
@@ -249,10 +290,19 @@ The script prints `TABCAM_SHARE_API_URL`.
   skipped.
 - People only find what's shared with them in the app; there's no email
   or notification.
-- A capture's link can't be revoked or changed yet: whoever has a link
-  with its key can see the capture, read only, until the capture is
-  deleted (or its owner deletes their account). A clone has no key, so
+- A capture's key can't be changed: making it [private](sharing.md#who-can-open-it)
+  stops its link opening it for anyone else, and unlisted or public
+  again, the same link works for whoever has it. A clone has no key, so
   cloning gives a capture with a new link.
+- Going private takes effect for credentials already handed out when
+  they expire (an hour), and for a preview CloudFront keeps after its 5
+  minutes.
+- Public captures are listed as their owners' apps name them: there's
+  no moderation and no way to report one yet. Any signed-in user can
+  record any capture ID of their own folder as public, with any title.
+- Every public capture is in one partition of the `public` index, and
+  the search is throttled to 5 requests a second for everyone: enough
+  for now, to change once there are many.
 - A copy's page whose file never came to the user's device before the
   owner's went (deleted, or the share removed, before a download
   finished) can't be copied, and has no file. Each of the user's devices
