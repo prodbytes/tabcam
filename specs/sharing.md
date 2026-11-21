@@ -2,12 +2,15 @@
 
 **Share** (the event screen's app bar, a link icon, or a library card's
 menu; the file screen's app bar and the video editor's too, for the
-file's link) copies the capture's link to the clipboard, nothing else: no
-choice of format, no text around it, the URL alone. Signed in (or in a
-build without sign-in) it copies on the tap itself, before anything else
+file's link) copies the capture's link to the clipboard: no choice of
+format, no text around it, the URL alone. Signed in (or in a build
+without sign-in) it copies on the tap itself, before anything else
 (browsers let a page write the clipboard only right after a tap; the sync
 pass comes after); "Link copied" says it's done. Signed out, it asks to
 sign in first ([signed out](cloud-sync.md#signed-out)), then copies.
+For the capture's owner, signed in, in a build with sharing, a sheet
+then shows **who can open it** by the link, to change: **Public**,
+**Unlisted** or **Private**, as on YouTube ([below](#who-can-open-it)).
 
 - A file's link adds `f=<file id>` (`CaptureLink.of(event, file:)`,
   the [file names](event-screen.md) in the list): it opens the capture
@@ -44,7 +47,8 @@ sign in first ([signed out](cloud-sync.md#signed-out)), then copies.
   site the app runs on (rc.tabs.cam on the RC's); in the phone apps, to
   production's, or the RC's for RC builds. A site that doesn't answer
   short links (a local build's) copies the full link instead.
-- The key is made the first time the owner copies the link: 12 random
+- The key is made the first time the owner copies the link (or chooses
+  [who can open it](#who-can-open-it)): 12 random
   letters and digits (about 71 bits; base62), kept on the capture
   (`linkKey`, synced, so every device of theirs copies the same link) and
   recorded by the share API (`PUT /links/{captureId}`, after the copy);
@@ -58,8 +62,61 @@ sign in first ([signed out](cloud-sync.md#signed-out)), then copies.
   which opens it only for its owner and the people it's shared with.
   Copying it starts a sync pass, so the capture is in the cloud.
 - It's the only way to share: there's no Share with people any more
-  ([shared captures](shared-captures.md)).
+  ([shared captures](shared-captures.md)). The link is the same whoever
+  may open it ([who can open it](#who-can-open-it)).
 - There's no PDF, text or zip export any more.
+
+## Who can open it
+
+The sheet after Share's copy (a bottom sheet, as tall as it needs, for
+the capture's owner only: not on a capture shared with them, nor one
+opened by its link, nor in a build without sharing), headed **Who can
+open it**, has three choices, each with an icon and what it means, the
+capture's own chosen ([`showVisibilitySheet`](../tabcam_app/lib/screens/share_sheet.dart)),
+and **Done**:
+
+| Choice | Icon | Says | Means |
+|---|---|---|---|
+| **Public** | a globe | Anyone can find it, in tabs.cam's dictionary and on search engines, and open it. Make public only what you have the right to share. | Unlisted, and also found: by the [dictionary's search](dictionary.md#public-captures) (its title and artist) and by search engines ([below](#search-engines)) |
+| **Unlisted** | a link | Anyone with the link can open it. | Whoever holds the link opens it, read only ([opening a link](#opening-a-link)); signed in, it joins it |
+| **Private** | a lock | Only you can open it, even with the link. | Only its owner (their [profile](profiles.md), on any of its sign-ins) |
+
+- **What it is until the owner chooses**: unlisted once the capture
+  has a link key (every link copied before there was a choice, and the
+  first copy, which makes the key), private before
+  (`CaptureEvent.shownVisibility`).
+- **A choice applies at once**, and the link stays the same: the
+  capture keeps its key (made then, if it has none), so the same link
+  works again once it's no longer private, as on YouTube. The choice is
+  saved on the capture (`visibility` in its
+  [event.json](cloud-sync.md#whats-synced-and-where), so every device
+  of the owner's shows it; a [clone](library.md#events) doesn't copy it)
+  and recorded by the share API (`PUT /links/{captureId}` with the key
+  and `visibility`; the title and artist only for a public one), which is
+  what counts. One capture's records go one at a time, each as the
+  capture is when its turn comes, so the API ends with the last choice;
+  one that fails (offline) is tried again at each sync pass.
+- **Private**: the link opens nothing for anyone but the owner: by its
+  link it says "This capture is private: only its owner can open it.",
+  with no Try again (**Sign in** stays, for its owner), and signed in,
+  joining it is refused with the same words. Everyone it was shared with
+  (who joined by the link, or was shared with by email before) no longer
+  has it: the share API stops listing it for them and gives them no
+  credentials or key for it, so it goes from their devices at their
+  next pass (their copies keep the files they showed, as when a share is
+  removed; [shared captures](shared-captures.md#shared-with-me)). Back
+  to unlisted or public, they have it again, and the same link opens it.
+  Credentials handed out before last their hour, and a preview CloudFront
+  keeps its 5 minutes.
+- **Public**: everything unlisted is, and the dictionary's search finds
+  it by its title and artist (the app sends them with the record, only
+  for a public capture), and search engines may index it. A rename or
+  any other change reaches the search when it syncs: each time a public
+  capture goes up, the app records it again as it is. In the
+  [trash](trash.md) it's found by nobody (recorded as unlisted), and
+  restored, it's found again.
+- **Home** is to list public captures too, once there are enough to
+  show there; it doesn't yet.
 
 Files are named from the title and artist (`My riff - Me.pdf`,
 `My riff - Me 1.png`, `My riff - Me 2.mov`), keeping only letters, digits, spaces, `.`, `_` and
@@ -76,10 +133,14 @@ the key's hash, so the key alone finds the capture: the answer is a 302
 to `/app/?c=<capture id>&k=<key>` (`&f=<file id>`, and `&e=1` with it,
 kept when well formed) on the same site, which the app opens as below;
 an unknown or
-malformed key goes to `/app/`. CloudFront keeps the answer, by path,
+malformed key goes to `/app/`. It redirects whoever may open the
+capture (a private one's too: its owner opens their own link; anyone
+else is told it's private). CloudFront keeps the answer, by path,
 `f` and `e`: a day for a link (it never changes; a deleted capture says so in
 the app), a minute for an unknown one. Guessing keys gets 10 tries a
-second for everyone, and 2⁷¹ keys.
+second for everyone, and 2⁷¹ keys. The answer says `x-robots-tag:
+noindex`, but for a public capture's link on production's site
+([search engines](#search-engines)).
 
 In the browser the redirect brings the web app the full link itself. On
 Android the app is handed the short link ([App Links](#android-app-links)):
@@ -140,9 +201,11 @@ it fails) has **Sign in**, which goes to the welcome; the link stays
 waiting, so once signed in Home opens it (the user's, shared with them,
 or by its link again). A wrong key, a deleted capture, one not in the
 cloud yet, or no connection: "This capture can't be opened…", with **Try
-again**.
+again**. A private one: "This capture is private: only its owner can
+open it.", a lock, and no Try again.
 
-So the link is what gives access: whoever holds a link with its key can
+So the link is what gives access, unless its owner made the capture
+[private](#who-can-open-it): whoever holds a link with its key can
 see the capture's own files (never change them, nor see what people
 [contributed](contributions.md) until the owner publishes it); signed in,
 it also lets them add files of their own. Edit access is only for the
@@ -169,9 +232,12 @@ So a capture's link previews as the capture, not as "tabs.cam":
   a small page: the title ("<title> – <artist>"), a description of what
   it holds ("<artist> · 2 pages, 1 PDF, 1 link, a text tab. Shared with
   tabs.cam."; images left out when hidden), the short link as `og:url`
-  and the app's icon as the image. A wrong key, a deleted capture or a
-  malformed link: tabs.cam's own title and description. Someone who lands
-  on the page goes on to the app (a script; crawlers don't run it).
+  and the app's icon as the image. A wrong key, a deleted capture, a
+  [private](#who-can-open-it) one or a malformed link: tabs.cam's own
+  title and description. Someone who lands on the page goes on to the
+  app (a script, which skips crawlers by their user agent, so one that
+  runs scripts stays on the page). It says `x-robots-tag: noindex`, but
+  for a public capture on production's site.
 - The site names itself to the API (`x-tabcam-site`, the RC's or
   production's), so the preview links back to the same site. It's on when
   the site is deployed with the share API's domain (`ShareApiDomain`,
@@ -179,6 +245,26 @@ So a capture's link previews as the capture, not as "tabs.cam":
 
 A rename shows in new previews within 5 minutes (chat apps keep their
 own copy of a preview already shown).
+
+## Search engines
+
+Search engines may index **public** captures on production's site
+(https://tabs.cam), and nothing else:
+
+- The site's `/robots.txt` ([tabcam_index/site/robots.txt](../tabcam_index/site/robots.txt),
+  uploaded by every deploy, both sites) allows everything and names
+  `https://tabs.cam/sitemap.xml`.
+- `/sitemap.xml` comes from the share API (`GET /sitemap.xml`, no
+  sign-in), through the site's CloudFront (a behavior like `/preview/*`'s,
+  with previews on), cached for an hour: on production's site, every
+  public capture's short link, newest first, with the day it last
+  changed; on the RC's (or anything not naming production), none.
+- A crawler following one goes, like a chat app's, from the short link
+  to its [preview page](#link-previews) (the CloudFront function sends
+  known crawlers, Google's and Bing's among them, there), which, like
+  the short link's redirect, has no `noindex` for a public capture on
+  production's site. Unlisted and private captures, and everything on
+  the RC's site, keep `noindex`.
 
 ## Android App Links
 

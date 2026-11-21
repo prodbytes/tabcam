@@ -122,8 +122,10 @@ older events count their creation), its pages, and the text tab once read.
 Once it has synced it also has an `owner`, the Cognito identity it syncs
 with, and one shared with the user has `sharedBy` (the owner's email) and
 `readOnly` (all kept on the device only). Once its link has been copied
-it has a `linkKey` ([sharing](sharing.md)), synced; a clone has none,
-and has `clonedFrom` (the ID of the capture it's a copy of), synced. A page has an ID, a kind (**image**,
+it has a `linkKey` ([sharing](sharing.md)), synced, and once its owner
+chooses who can open it, a `visibility` (`public`, `unlisted` or
+`private`; [who can open it](sharing.md#who-can-open-it)), synced; a
+clone has neither, and has `clonedFrom` (the ID of the capture it's a copy of), synced. A page has an ID, a kind (**image**,
 **video**, **audio**, **pdf** or **link**), its file's extension, and a
 [filter](page-filters.md) (used for images only). A video Cam recorded is
 marked `take` ([Cam](cam.md)), kept when it's renamed, edited, cloned or
