@@ -419,8 +419,7 @@ class WebVideoEditor implements VideoEditing {
     final song = plan.song;
     if (ownSound == null && songSound == null) return null;
     final channels =
-        (own != null && !own.asRecorded) ||
-            (song != null && !song.asRecorded)
+        (own != null && !own.asRecorded) || (song != null && !song.asRecorded)
         ? 2
         : [
             ?ownSound?.buffer.numberOfChannels,
