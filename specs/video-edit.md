@@ -8,7 +8,9 @@ it**, and the two sound lanes are mixed: trim the video's start and
 end, set its own sound's level, and place the song along it at a level
 of its own, each lane with its **channels** (a take recorded on
 the left only can play on both sides) and **balance**
-([stereo](#a-lanes-channels-and-balance)), both through a **master**
+([stereo](#a-lanes-channels-and-balance)), and **split into its
+instruments** if the user likes, each at a level of its own
+([instruments](stems.md)), both through a **master**
 volume (up to 200%); and,
 **on the video**, a take's tab drawn over it as
 it showed while recording (its **size**, **background** and **colours**
@@ -566,6 +568,15 @@ metronome's buttons do theirs; its ✕ hides it too.
       `video-edit-<lane>-stereo`, `-left`, `-right`, `-mono`),
       `-balance`, `-balance-level` and `-stereo-note`. The segments
       shrink to fit the popup at large text sizes.
+  - <a id="a-lanes-instruments"></a>**A lane's instruments** (in its
+    volume's popup, under its channels and balance; `LaneStems` in
+    [`page_edit.dart`](../tabcam_app/lib/library/page_edit.dart)):
+    **Split into instruments**, a switch; on, a row for each of
+    **Vocals**, **Drums**, **Bass** and **Other**, each with its Mute
+    and a slider from 0% to 100%, and a note, once one isn't at 100%,
+    that only Download has them (the preview plays the lane whole, as it
+    does its channels). A rough split for now, on the device: see
+    [instruments](stems.md).
 - <a id="master"></a>**Master**: both lanes go through it, after their own levels
   ("Master · Both sounds together, up to 200%"): **Mute** (a speaker,
   "Mute (Master)"; muted, nothing is heard and the level is kept, as a
@@ -857,7 +868,10 @@ version 2 (`v: 2`):
   [channels](#a-lanes-channels-and-balance): `left`, `right` or `mono`;
   absent, or one this version doesn't know, `stereo`), `ownBalance` and
   `songBalance` (-1, the left only, to 1, the right only, to the
-  hundredth; absent or not a number, 0), and
+  hundredth; absent or not a number, 0), `ownStems` and `songStems`
+  (a lane [split into its instruments](stems.md#stored), written only
+  while it's split: each instrument not at 100%, e.g. `{"vocals":
+  {"muted": true}}`; `{}`, split, all at 100%), and
   `song`: `manual` (placed by hand), `off` (none; Remove) or, absent
   with a `trackId`, `auto`: a take's song [lined up by
   itself](#a-takes-song-lined-up) from its log, its track keys placing
@@ -1171,7 +1185,8 @@ never stored. It says:
   each by default), each at most half the kept part; the same in all
   three of Download's plans;
 - whether it's a **passthrough**: the whole video, its own sound at
-  100% and as recorded (its channels and balance), no song, nothing drawn over it, no fades, and the input already in the
+  100% and as recorded (its channels and balance, its instruments not
+  changed), no song, nothing drawn over it, no fades, and the input already in the
   format made (an MP4 or M4V anywhere; a WebM where WebM is made). Only
   then does Download save the file as it is; everything else is
   rendered.
@@ -1380,7 +1395,11 @@ channels and balance** reach every renderer as one 2×2 matrix, `mix`
 in the lane's channel arguments (`LaneStereo.matrix`: `[ll, lr, rl,
 rr]`, each side of the output from the sound's left and right; left out
 when it's as recorded), worked out in Dart, so the three apply the
-same thing.
+same thing. **A lane's instruments** reach them as `stems` (each
+instrument's gain and the crossover's frequencies; left out when the
+lane isn't split or its instruments are all at 100%), applied after the
+`mix` and before the lane's volume, each renderer a copy of
+`StemSplit.apply` ([instruments, Download](stems.md#download)).
 
 - **Android**: Media3 Transformer
   ([`VideoEdit.kt`](../tabcam_app/android/app/src/main/kotlin/com/nu01/tabcam/VideoEdit.kt),

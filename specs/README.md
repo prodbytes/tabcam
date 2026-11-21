@@ -127,6 +127,12 @@ review notes ([app stores](app-stores.md)).
   read its sound) and played as it says, no file made; Download makes
   one on the device: the video or the video without sound (MP4), or
   the sound only (M4A; WebM and WAV where a browser can't make those).
+- [Instruments (stem separation)](stems.md): in the video editor, each
+  sound lane can be split into its instruments (Vocals, Drums, Bass,
+  Other), each with a level and a Mute of its own, from the lane's
+  volume popup; a rough split for now (a crossover at 200 Hz and 4 kHz,
+  the middle band split by its place in the mix), on the device, which
+  Download applies (the preview plays the lane whole).
 - [Hidden images](hidden-images.md): the owner hides a capture's photos
   and scans, for everyone; it then shows only the text tab, videos and
   links, and exports leave the images out.
