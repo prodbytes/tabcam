@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show immutable;
 import 'package:flutter/services.dart';
 
 import '../cloud/ocr_api.dart';
@@ -275,7 +276,20 @@ TextEditingValue? insertBar(TextEditingValue value) {
   final (row, column) = _rowColumn(lines, value.selection.start);
   if (!_isStringLine(lines[row])) return null;
   final (first, last) = _staffAround(lines, row);
-  for (var i = first; i <= last; i++) {
+  _barInto(lines, [for (var i = first; i <= last; i++) i], column);
+  return TextEditingValue(
+    text: lines.join('\n'),
+    selection: TextSelection.collapsed(
+      offset: _offsetOf(lines, row, column + 1),
+    ),
+  );
+}
+
+/// A `|` into each of [rows] of [lines] at [column], pushing the rest of
+/// the line right by one; a line too short to reach the column is
+/// lengthened with dashes, and the bar becomes its closing bar.
+void _barInto(List<String> lines, Iterable<int> rows, int column) {
+  for (final i in rows) {
     final line = lines[i].trimRight();
     if (line.length <= column) {
       // A string that ends before the column: lengthened with dashes,
@@ -286,12 +300,6 @@ TextEditingValue? insertBar(TextEditingValue value) {
       lines[i] = '${line.substring(0, column)}|${line.substring(column)}';
     }
   }
-  return TextEditingValue(
-    text: lines.join('\n'),
-    selection: TextSelection.collapsed(
-      offset: _offsetOf(lines, row, column + 1),
-    ),
-  );
 }
 
 /// The bars that close [line] (`|` or `||`), or none.
@@ -316,8 +324,25 @@ TextEditingValue? insertSpacer(TextEditingValue value) {
   final (row, column) = _rowColumn(lines, value.selection.start);
   if (!_isStringLine(lines[row])) return null;
   final (first, last) = _staffAround(lines, row);
-  var cursorColumn = column + 1;
-  for (var i = first; i <= last; i++) {
+  final at = _spacerInto(lines, [
+    for (var i = first; i <= last; i++) i,
+  ], column);
+  return TextEditingValue(
+    text: lines.join('\n'),
+    selection: TextSelection.collapsed(
+      offset: _offsetOf(lines, row, (at[row] ?? column) + 1),
+    ),
+  );
+}
+
+/// A `-` into each of [rows] of [lines] at [column], pushing the rest of
+/// the line right by one: a line that ends before the column (or [column]
+/// in its closing bar) gets it at its end, before its closing bar, and
+/// none goes into a line's name or opening bar. Returns the column each
+/// row got its dash at.
+Map<int, int> _spacerInto(List<String> lines, Iterable<int> rows, int column) {
+  final put = <int, int>{};
+  for (final i in rows) {
     final line = lines[i].trimRight();
     final end = line.length - _closingBars(line).length;
     final opening = _opening.firstMatch(line)?.end ?? 0;
@@ -326,14 +351,9 @@ TextEditingValue? insertSpacer(TextEditingValue value) {
         ? line.length
         : math.max(math.min(column, end), opening);
     lines[i] = '${line.substring(0, at)}-${line.substring(at)}';
-    if (i == row) cursorColumn = at + 1;
+    put[i] = at;
   }
-  return TextEditingValue(
-    text: lines.join('\n'),
-    selection: TextSelection.collapsed(
-      offset: _offsetOf(lines, row, cursorColumn),
-    ),
-  );
+  return put;
 }
 
 /// |>: every phrase's lines end together, at the last end. In each phrase
@@ -343,9 +363,17 @@ TextEditingValue? insertSpacer(TextEditingValue value) {
 /// them), so the bars at the end line up. Trailing spaces go. The cursor
 /// stays where it was in its line (after the padding when it was at the
 /// line's end). Null when the text has no phrase.
-TextEditingValue? alignEnds(TextEditingValue value) => _endTogether(
+///
+/// With [lines] (a selection's, first to last), only those lines: each
+/// phrase's lines among them end together, the rest of the text as it
+/// was.
+TextEditingValue? alignEnds(
+  TextEditingValue value, {
+  ({int top, int bottom})? lines,
+}) => _endTogether(
   value,
   (bodies) => bodies.map((b) => b.length).reduce(math.max),
+  only: lines,
 );
 
 /// <|: every phrase's lines end together, at the first end. In each
@@ -355,41 +383,49 @@ TextEditingValue? alignEnds(TextEditingValue value) => _endTogether(
 /// together one dash after the last note instead (right after it when its
 /// line had no dash there). The cursor stays where it was in its line, or
 /// at the new end when what it was on was cut. Null when the text has no
-/// phrase.
-TextEditingValue? trimEnds(TextEditingValue value) =>
-    _endTogether(value, (bodies) {
-      final shortest = bodies.map((b) => b.length).reduce(math.min);
-      // How short each line can get and keep its notes, and a dash after
-      // the last one when it had one.
-      final kept = bodies
-          .map((b) {
-            final notes = b.replaceFirst(RegExp(r'-+$'), '').length;
-            return notes < b.length ? notes + 1 : notes;
-          })
-          .reduce(math.max);
-      return math.max(shortest, kept);
-    });
+/// phrase. With [lines], only those, as [alignEnds].
+TextEditingValue? trimEnds(
+  TextEditingValue value, {
+  ({int top, int bottom})? lines,
+}) => _endTogether(value, (bodies) {
+  final shortest = bodies.map((b) => b.length).reduce(math.min);
+  // How short each line can get and keep its notes, and a dash after
+  // the last one when it had one.
+  final kept = bodies
+      .map((b) {
+        final notes = b.replaceFirst(RegExp(r'-+$'), '').length;
+        return notes < b.length ? notes + 1 : notes;
+      })
+      .reduce(math.max);
+  return math.max(shortest, kept);
+}, only: lines);
 
 /// Every phrase's lines made [widthOf] their bodies (each line without
 /// its closing bar) wide, padded with dashes or cut, then given the
-/// phrase's closing bar: [alignEnds] and [trimEnds].
+/// phrase's closing bar: [alignEnds] and [trimEnds]. With [only], just
+/// the phrases' lines from its top to its bottom.
 TextEditingValue? _endTogether(
   TextEditingValue value,
-  int Function(List<String> bodies) widthOf,
-) {
+  int Function(List<String> bodies) widthOf, {
+  ({int top, int bottom})? only,
+}) {
   final lines = value.text.split('\n');
   final (row, column) = value.selection.isValid
       ? _rowColumn(lines, value.selection.start)
       : (-1, 0);
   var cursorColumn = column;
   var staves = 0;
-  var i = 0;
-  while (i < lines.length) {
+  final top = math.max(only?.top ?? 0, 0);
+  final bottom = math.min(only?.bottom ?? lines.length - 1, lines.length - 1);
+  var i = top;
+  while (i <= bottom) {
     if (!_isStringLine(lines[i])) {
       i++;
       continue;
     }
-    final (first, last) = _staffAround(lines, i);
+    final (around, end) = _staffAround(lines, i);
+    final first = math.max(around, top);
+    final last = math.min(end, bottom);
     i = last + 1;
     if (last == first) continue;
     staves++;
@@ -641,4 +677,416 @@ int nameAbove(
     cut++;
   }
   return (leftEnd: math.max(0, starts[end] - 1), rightStart: starts[cut]);
+}
+
+// Selections: with notes selected, the tools work on them alone.
+
+/// One line's part of a selection: on line [line], the columns from
+/// [start] up to [end] (not included).
+typedef LineSpan = ({int line, int start, int end});
+
+/// A vertical selection: on each line from [top] to [bottom], the columns
+/// from [left] up to [right] (not included). A line too short to reach
+/// them has the part of them it reaches, or none.
+@immutable
+class TextBlock {
+  const TextBlock({
+    required this.top,
+    required this.bottom,
+    required this.left,
+    required this.right,
+  });
+
+  /// The block a drag from [selection]'s base to its extent draws in
+  /// [text]: the two at opposite corners. One column wide at least: a
+  /// drag straight down takes the column right of where it started.
+  factory TextBlock.corners(String text, TextSelection selection) {
+    final lines = text.split('\n');
+    final (r1, c1) = _rowColumn(lines, selection.baseOffset);
+    final (r2, c2) = _rowColumn(lines, selection.extentOffset);
+    final left = math.min(c1, c2);
+    return TextBlock(
+      top: math.min(r1, r2),
+      bottom: math.max(r1, r2),
+      left: left,
+      right: math.max(math.max(c1, c2), left + 1),
+    );
+  }
+
+  /// Lines [top] to [bottom] of [lines], whole: every column the longest
+  /// of them has.
+  factory TextBlock.whole(List<String> lines, int top, int bottom) => TextBlock(
+    top: top,
+    bottom: bottom,
+    left: 0,
+    right: [for (var i = top; i <= bottom; i++) lines[i].length]
+        .reduce(math.max),
+  );
+
+  final int top;
+  final int bottom;
+  final int left;
+  final int right;
+
+  /// Its part of each of its lines in [lines].
+  List<LineSpan> spans(List<String> lines) => [
+    for (var i = top; i <= bottom && i < lines.length; i++)
+      (
+        line: i,
+        start: math.min(left, lines[i].length),
+        end: math.min(right, lines[i].length),
+      ),
+  ];
+
+  /// Its characters in [lines], as ranges of the text's offsets: one for
+  /// each line that reaches it.
+  List<(int, int)> ranges(List<String> lines) {
+    final out = <(int, int)>[];
+    var at = 0;
+    for (var i = 0; i < lines.length && i <= bottom; i++) {
+      if (i >= top) {
+        final start = math.min(left, lines[i].length);
+        final end = math.min(right, lines[i].length);
+        if (end > start) out.add((at + start, at + end));
+      }
+      at += lines[i].length + 1;
+    }
+    return out;
+  }
+
+  /// The text selection standing for it in [lines]: from its top left
+  /// corner to its bottom right, each kept within its line.
+  TextSelection selectionIn(List<String> lines) {
+    final last = math.min(bottom, lines.length - 1);
+    final first = math.min(top, last);
+    return TextSelection(
+      baseOffset: _offsetOf(lines, first, math.min(left, lines[first].length)),
+      extentOffset: _offsetOf(lines, last, math.min(right, lines[last].length)),
+    );
+  }
+
+  TextBlock copyWith({int? top, int? bottom, int? left, int? right}) =>
+      TextBlock(
+        top: top ?? this.top,
+        bottom: bottom ?? this.bottom,
+        left: left ?? this.left,
+        right: right ?? this.right,
+      );
+
+  @override
+  bool operator ==(Object other) =>
+      other is TextBlock &&
+      other.top == top &&
+      other.bottom == bottom &&
+      other.left == left &&
+      other.right == right;
+
+  @override
+  int get hashCode => Object.hash(top, bottom, left, right);
+
+  @override
+  String toString() => 'TextBlock(lines $top–$bottom, columns $left–$right)';
+}
+
+/// The line and column of [offset] in [text].
+(int, int) lineColumn(String text, int offset) =>
+    _rowColumn(text.split('\n'), offset);
+
+/// The offset of [line]'s [column] in [text], each kept within the text.
+int offsetAt(String text, int line, int column) {
+  final lines = text.split('\n');
+  final row = math.min(line, lines.length - 1);
+  return _offsetOf(lines, row, math.min(column, lines[row].length));
+}
+
+/// The lines and columns [selection] takes in [text]: its first line from
+/// the start's column, the lines in between whole, its last line up to
+/// the end's column. A first line it takes nothing of (it starts at the
+/// line's end) and a last one (it ends at its start) aren't in it. Empty
+/// for a cursor.
+List<LineSpan> selectionSpans(String text, TextSelection selection) {
+  if (!selection.isValid || selection.isCollapsed) return const [];
+  final lines = text.split('\n');
+  final (r1, c1) = _rowColumn(lines, selection.start);
+  final (r2, c2) = _rowColumn(lines, selection.end);
+  final spans = [
+    for (var i = r1; i <= r2; i++)
+      (line: i, start: i == r1 ? c1 : 0, end: i == r2 ? c2 : lines[i].length),
+  ];
+  return [
+    for (final (k, s) in spans.indexed)
+      if (s.end > s.start || (k > 0 && k < spans.length - 1)) s,
+  ];
+}
+
+/// What [spans] take of [lines], a line each: a vertical selection's text.
+String spansText(List<String> lines, List<LineSpan> spans) =>
+    spans.map((s) => lines[s.line].substring(s.start, s.end)).join('\n');
+
+/// Why the tools couldn't change a selection's notes.
+enum SelectionFailure {
+  /// No fret number on the selection's string lines.
+  noNotes,
+
+  /// + or − would take one of them below 0 or past 99.
+  outOfRange,
+
+  /// ++ or −−: one of them had no string with room for it.
+  noRoom,
+}
+
+/// The fret numbers (one or two digits) that [spans] take, whole or in
+/// part, on the string lines of [lines] ([tabLines]: only lines with
+/// dashes, [isTabLine]), each as its line and columns; left to right on
+/// each line, the lines top to bottom.
+List<LineSpan> _notesIn(
+  List<String> lines,
+  List<LineSpan> spans, {
+  bool tabLines = false,
+}) => [
+  for (final s in spans)
+    if (tabLines ? isTabLine(lines[s.line]) : _isStringLine(lines[s.line]))
+      for (final m in RegExp(r'\d+').allMatches(lines[s.line]))
+        if (m.end - m.start <= 2 && m.start < s.end && m.end > s.start)
+          (line: s.line, start: m.start, end: m.end),
+];
+
+/// + and − on a selection ([spans]): every fret number on its string
+/// lines, whole or in part, goes up or down by one, keeping the columns
+/// lined up as [bumpNumber] does. They change together: none does when
+/// there's none, or when one would go below 0 or past 99 (so a riff keeps
+/// its shape), and [failure] says which.
+({String? text, SelectionFailure? failure}) bumpSelected(
+  String text,
+  List<LineSpan> spans,
+  int delta,
+) {
+  final lines = text.split('\n');
+  final notes = _notesIn(lines, spans);
+  if (notes.isEmpty) return (text: null, failure: SelectionFailure.noNotes);
+  int fret(LineSpan n) =>
+      int.parse(lines[n.line].substring(n.start, n.end)) + delta;
+  if (notes.any((n) => fret(n) < 0 || fret(n) > 99)) {
+    return (text: null, failure: SelectionFailure.outOfRange);
+  }
+  // From the right, so one that grows doesn't move those still to change.
+  for (final n in notes.reversed) {
+    lines[n.line] = _put(lines[n.line], n.start, n.end - n.start, '${fret(n)}');
+  }
+  return (text: lines.join('\n'), failure: null);
+}
+
+/// ++ and −− on a selection ([spans]): every fret number on its string
+/// lines, whole or in part, moves to the string above ([delta] −1) or
+/// below (+1), in the same column, cycling within its phrase, as
+/// [moveNote] moves one: a string whose spot holds a note that isn't
+/// moving is skipped. They move together: none does when one has no
+/// string with room for it, or when there's none, and [failure] says
+/// which. [rows] are the lines they went to.
+({String? text, List<int>? rows, SelectionFailure? failure}) moveSelected(
+  String text,
+  List<LineSpan> spans,
+  int delta,
+) {
+  final lines = text.split('\n');
+  final notes = _notesIn(lines, spans, tabLines: true);
+  if (notes.isEmpty) {
+    return (text: null, rows: null, failure: SelectionFailure.noNotes);
+  }
+  // All of them lifted first, dashes in their place, so none stands in
+  // another's way; then each put down, those ahead first.
+  final lifted = [
+    for (final n in notes) (n, lines[n.line].substring(n.start, n.end)),
+  ];
+  for (final (n, _) in lifted) {
+    lines[n.line] = _put(lines[n.line], n.start, n.end - n.start, '');
+  }
+  lifted.sort(
+    (a, b) => delta < 0
+        ? a.$1.line.compareTo(b.$1.line)
+        : b.$1.line.compareTo(a.$1.line),
+  );
+  final rows = <int>[];
+  for (final (n, note) in lifted) {
+    final (first, last) = _staffAround(lines, n.line);
+    final strings = last - first + 1;
+    bool free(String line) {
+      for (var i = n.start; i < n.end; i++) {
+        if (i < line.length && line[i] != '-') return false;
+      }
+      return true;
+    }
+
+    int? to;
+    for (var step = 1; step < strings && to == null; step++) {
+      final row = first + (n.line - first + delta * step) % strings;
+      if (free(lines[row])) to = row;
+    }
+    if (to == null) {
+      return (text: null, rows: null, failure: SelectionFailure.noRoom);
+    }
+    // A short string line is lengthened with dashes to reach the column.
+    lines[to] = lines[to]
+        .padRight(n.end, '-')
+        .replaceRange(n.start, n.end, note);
+    rows.add(to);
+  }
+  return (text: lines.join('\n'), rows: rows, failure: null);
+}
+
+/// | on a selection: a bar into each string line among [rows] (the
+/// selection's lines), at [column] (its first column), as [insertBar]
+/// puts one into each string of a phrase; the other lines as they were.
+/// Null when none of [rows] is a string line.
+String? barOnLines(String text, Iterable<int> rows, int column) {
+  final lines = text.split('\n');
+  final strings = [
+    for (final r in rows)
+      if (r < lines.length && _isStringLine(lines[r])) r,
+  ];
+  if (strings.isEmpty) return null;
+  _barInto(lines, strings, column);
+  return lines.join('\n');
+}
+
+/// = on a selection: a dash into each line of a phrase among [rows] (the
+/// selection's lines), at [column] (its first column), as [insertSpacer]
+/// puts one down a phrase; the other lines as they were. Null when none of
+/// [rows] is a phrase's line.
+String? spacerOnLines(String text, Iterable<int> rows, int column) {
+  final lines = text.split('\n');
+  final strings = [
+    for (final r in rows)
+      if (r < lines.length && _isStringLine(lines[r])) r,
+  ];
+  if (strings.isEmpty) return null;
+  _spacerInto(lines, strings, column);
+  return lines.join('\n');
+}
+
+/// The phrases lines [top] to [bottom] of [lines] reach, whole: from the
+/// first line of the phrase of the first string line among them to the
+/// last line of the phrase of the last. Null when none is a string line.
+({int top, int bottom})? phrasesAround(
+  List<String> lines,
+  int top,
+  int bottom,
+) {
+  int? first, last;
+  for (var i = math.max(top, 0); i <= bottom && i < lines.length; i++) {
+    if (_isStringLine(lines[i])) {
+      first ??= i;
+      last = i;
+    }
+  }
+  if (first == null || last == null) return null;
+  return (
+    top: _staffAround(lines, first).$1,
+    bottom: _staffAround(lines, last).$2,
+  );
+}
+
+/// The first phrase below line [row] of [lines], or null.
+({int top, int bottom})? phraseBelow(List<String> lines, int row) {
+  for (var i = row + 1; i < lines.length; i++) {
+    if (_isStringLine(lines[i])) {
+      final (first, last) = _staffAround(lines, i);
+      return (top: first, bottom: last);
+    }
+  }
+  return null;
+}
+
+/// The last phrase above line [row] of [lines], or null.
+({int top, int bottom})? phraseAbove(List<String> lines, int row) {
+  for (var i = math.min(row, lines.length) - 1; i >= 0; i--) {
+    if (_isStringLine(lines[i])) {
+      final (first, last) = _staffAround(lines, i);
+      return (top: first, bottom: last);
+    }
+  }
+  return null;
+}
+
+/// Typing, pasting or deleting over a vertical selection ([block]): what's
+/// [typed] ('' to delete) goes on each of its lines in place of its
+/// columns, a line of it on each when it has several lines, else the same
+/// on all. With [overtype] the columns stay put: a shorter text is padded
+/// with dashes on a string line (spaces elsewhere), a longer one takes the
+/// dashes after it ([_put]); without, the rest of each line closes up or
+/// moves right. A line too short to reach the block is filled out to it,
+/// when there's something to put on it. Returns the text, and the cursor:
+/// after what went on the block's first line.
+({String text, int cursor}) replaceBlock(
+  String text,
+  TextBlock block, {
+  required String typed,
+  required bool overtype,
+}) {
+  final lines = text.split('\n');
+  final pieces = typed.split('\n');
+  for (var i = block.top; i <= block.bottom && i < lines.length; i++) {
+    final k = i - block.top;
+    final piece = pieces.length == 1
+        ? pieces.single
+        : (k < pieces.length ? pieces[k] : '');
+    var line = lines[i];
+    if (line.length < block.left) {
+      if (piece.isEmpty) continue;
+      line = line.padRight(block.left, _filler(line));
+    }
+    final end = math.min(block.right, line.length);
+    lines[i] = overtype
+        ? _put(line, block.left, end - block.left, piece)
+        : line.replaceRange(block.left, end, piece);
+  }
+  final top = math.min(block.top, lines.length - 1);
+  return (
+    text: lines.join('\n'),
+    cursor: _offsetOf(
+      lines,
+      top,
+      math.min(block.left + pieces.first.length, lines[top].length),
+    ),
+  );
+}
+
+/// Typing over a vertical selection: what's typed, pasted or deleted goes
+/// on every line of the [block] ([replaceBlock]), instead of in place of
+/// the text from its first corner to its last (the field's own selection,
+/// which stands for it).
+class BlockFormatter extends TextInputFormatter {
+  BlockFormatter(this.block, {required this.overtype});
+
+  /// The vertical selection, or null (none: typing as usual).
+  final TextBlock? Function() block;
+  final bool Function() overtype;
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final selected = block();
+    final s = oldValue.selection;
+    if (selected == null || !s.isValid || s.isCollapsed) return newValue;
+    final (old, now) = (oldValue.text, newValue.text);
+    final before = old.substring(0, s.start);
+    final after = old.substring(s.end);
+    final typedLength = now.length - before.length - after.length;
+    // Only the selection replaced: by what's typed, or nothing.
+    if (typedLength < 0 || !now.startsWith(before) || !now.endsWith(after)) {
+      return newValue;
+    }
+    final (:text, :cursor) = replaceBlock(
+      old,
+      selected,
+      typed: now.substring(s.start, s.start + typedLength),
+      overtype: overtype(),
+    );
+    return TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: cursor),
+    );
+  }
 }

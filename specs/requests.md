@@ -4881,3 +4881,39 @@ spec.
    [navigation](navigation.md#the-one-click-sign-in-top-right),
    [sharing](sharing.md#opening-a-link), [cloud sync](cloud-sync.md) and
    [sessions](sessions.md).
+
+4. **"For all the text view, let the user have another button to select
+   text vertically (besides the edit in place / insert mode). For all
+   buttons, if there is a selection, make the action only on the
+   selected notes. Let's have a select all shortcut (cmd+a) and select
+   next / phrase (cmd+l), with respective buttons."** The Text view's
+   editing tools gain three, after Overtype: **Vertical selection**, a
+   toggle (off by default) under which a drag, Shift and the arrows, or
+   a phone's handles select a block, the same columns on every line
+   (drawn by the text's controller, the field's own selection hidden);
+   **Select all** (⌘A, Ctrl+A off Apple's systems); and **Select
+   phrase** (⌘L / Ctrl+L): the cursor's phrase, and pressed again the
+   next one too. With notes selected, the tools work on them alone: −
+   and + change every selected fret together (none past 0 or 99), ++
+   and −− move every selected note a string together (all or none; a
+   block follows them), | and = go into the selected lines alone at the
+   selection's first column, |> and <| end only the selected lines
+   together, New phrase goes under the selection, and Copy copies the
+   selection (a block a line of it per line). Typing, pasting or
+   deleting over a block does it on each of its lines (Overtype keeping
+   the columns), and ⌘C / ⌘X copy and cut a block. The keys overlay
+   lists ⌘A and ⌘L under "In the Text view". Logic in
+   [`tab_editing.dart`](../tabcam_app/lib/screens/tab_editing.dart)
+   (`TextBlock`, `selectionSpans`, `bumpSelected`, `moveSelected`,
+   `barOnLines`, `spacerOnLines`, `replaceBlock`, `BlockFormatter`);
+   tested in `tab_selection_test.dart` and
+   `tab_text_selection_test.dart` (a mouse drag making a block, the
+   keys on Android and macOS, Copy, ⌘C, typing and Backspace over a
+   block), and in Chromium, WebKit and Firefox on a web build of the
+   Text view driven by Playwright (⌘L, ⌘A, a mouse drag making a block,
+   ⌘C copying it, + on it, a key and Backspace typed through the
+   browser's text input going on each of its lines, Select phrase, and
+   typing at a cursor as before once it's off). Not yet tried on a
+   phone. See
+   [tab recognition](tab-recognition.md#selecting) and
+   [keyboard shortcuts](keyboard-shortcuts.md).

@@ -73,7 +73,9 @@ void main() {
     expect(focused(tester), isTrue);
 
     await tester.tap(
-      find.byTooltip('Fret up (the number under the cursor)'),
+      find.byTooltip(
+        'Fret up (the selected notes, or the number under the cursor)',
+      ),
       kind: PointerDeviceKind.mouse,
     );
     await tester.pump();
@@ -88,9 +90,11 @@ void main() {
 
     for (final tool in [
       'Overtype: typing replaces characters, columns stay put',
-      'Note up a string (cycles round)',
-      'Note down a string (cycles round)',
-      'Fret down (the number under the cursor)',
+      'Note up a string (the selected notes, or the one under the cursor; '
+          'cycles round)',
+      'Note down a string (the selected notes, or the one under the '
+          'cursor; cycles round)',
+      'Fret down (the selected notes, or the number under the cursor)',
     ]) {
       await tester.tap(find.byTooltip(tool), kind: PointerDeviceKind.mouse);
       await tester.pump();
@@ -112,21 +116,27 @@ void main() {
       expect(focused(tester), isTrue, reason: '$tooltip keeps the focus');
     }
 
-    await press('Bar line: a | across every string, at the cursor');
+    await press(
+      'Bar line: a | across every string at the cursor, or on the '
+      'selected lines',
+    );
     expect(text.text, 'e|--3|--5--|\nB|-5-|-----|');
     expect(text.selection.baseOffset, 6);
 
     // The cursor two dashes before the 3: a dash down the phrase there.
     text.selection = const TextSelection.collapsed(offset: 3);
     await tester.pump();
-    await press('Spacer: a - on every line of the phrase, at the cursor');
+    await press(
+      'Spacer: a - on every line of the phrase at the cursor, or on the '
+      'selected lines',
+    );
     expect(text.text, 'e|---3|--5--|\nB|--5-|-----|');
     expect(text.selection.baseOffset, 4);
 
     // Ragged now: the first line one shorter.
     const lastEnd =
-        "End together at the last end: each phrase's lines padded to the "
-        'longest';
+        "End together at the last end: each phrase's lines (or the selected "
+        'ones) padded to the longest';
     text.value = const TextEditingValue(
       text: 'e|--3--5-|\nB|-5------|',
       selection: TextSelection.collapsed(offset: 0),
@@ -145,8 +155,8 @@ void main() {
     );
     await tester.pump();
     await press(
-      "End together at the first end: each phrase's lines cut to the "
-      'shortest, notes kept',
+      "End together at the first end: each phrase's lines (or the selected "
+      'ones) cut to the shortest, notes kept',
     );
     expect(text.text, 'e|--3--5--|\nB|-5------|');
 
