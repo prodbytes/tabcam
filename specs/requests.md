@@ -4824,6 +4824,7 @@ spec.
    the row has room, on the line under it on a phone, where the row's
    buttons leave the name about 80 px: neither cuts the other. Tested in
    `file_dates_test.dart`. See [event screen](event-screen.md#file-dates).
+
 2. **"When a download is made in the editor, keep a copy of the
    downloaded file and use that when the user plays from the file
    preview or file viewer or when shared."** The editor's Download of
