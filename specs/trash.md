@@ -17,7 +17,9 @@ app deletes the user's files.
 - **A file** deleted from a capture (the list's **Delete file**, the file
   screen's **Delete**, the play-along sidebar's Delete,
   [event screen](event-screen.md)) moves to the capture's
-  `deletedPages`, with its file and its [phrase passes](cam.md#phrase-passes).
+  `deletedPages`, with its file and its [phrase passes](cam.md#phrase-passes)
+  (a video with its [kept download](video-edit.md#the-kept-download),
+  whose file goes with it when it's purged).
 - **A file replaced**: Rotate (the image as it was) and an edited video
   put in a file's place ([video edit](video-edit.md)) keep the file it
   replaced in `deletedPages` too.

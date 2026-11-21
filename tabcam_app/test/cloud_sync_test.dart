@@ -282,6 +282,68 @@ void main() {
     expect(files.last, endsWith('.mp4'));
   });
 
+  /// A capture of [device]'s with a video (v1), synced up.
+  Future<CaptureEvent> withVideo(Device device) async {
+    var event = await device.library.create(const []);
+    const page = EventPage(id: 'v1', kind: PageKind.video, extension: 'mp4');
+    await device.library.putPageStream(
+      event.id,
+      page,
+      Stream.value(bytes([1, 2, 3])),
+    );
+    event = await device.library.update(event.copyWith(pages: [page]));
+    await device.sync.syncNow();
+    return event;
+  }
+
+  test('a video\'s kept render goes up beside its file and comes to the '
+      'other devices; once the edit changes, it goes from the folder and '
+      'from them', () async {
+    final phone = Device(bucket);
+    final tablet = Device(bucket);
+    await phone.start();
+    final event = await withVideo(phone);
+    await tablet.start();
+    final edit = PageEdit(
+      start: Duration.zero,
+      end: const Duration(seconds: 10),
+    );
+    phone.later();
+    await phone.library.setPageEdit(event.id, 'v1', edit);
+    await phone.library.keepRender(
+      event.id,
+      'v1',
+      XFile.fromData(bytes([9, 9])),
+      extension: 'mp4',
+      edit: edit,
+    );
+    await phone.sync.syncNow();
+    final render = phone.library.byId(event.id)!.pages.single.render!;
+    final key = '$folder/${event.id}/${render.file.fileName}';
+    expect(bucket.objects[key], [9, 9]);
+    expect(bucket.objects['$folder/${event.id}/v1.mp4'], [1, 2, 3]);
+
+    await tablet.sync.syncNow();
+    final there = tablet.library.byId(event.id)!;
+    expect(there.pages.single.render, render);
+    expect(await tablet.library.original(there, render.file), [9, 9]);
+
+    // The edit changed on the tablet: the render goes, everywhere.
+    tablet.now = phone.now.add(const Duration(minutes: 1));
+    await tablet.library.setPageEdit(
+      event.id,
+      'v1',
+      PageEdit(start: Duration.zero, end: const Duration(seconds: 8)),
+    );
+    expect(await tablet.library.hasPage(event.id, render.file), isFalse);
+    await tablet.sync.syncNow();
+    expect(bucket.objects.containsKey(key), isFalse);
+    expect(bucket.objects['$folder/${event.id}/v1.mp4'], [1, 2, 3]);
+    await phone.sync.syncNow();
+    expect(phone.library.byId(event.id)!.pages.single.render, isNull);
+    expect(await phone.library.hasPage(event.id, render.file), isFalse);
+  });
+
   test('a change on one device reaches the other', () async {
     final phone = Device(bucket);
     final tablet = Device(bucket);
@@ -656,6 +718,35 @@ void main() {
       await anaPhone.sync.syncNow();
       expect(bucket.requests.where((r) => r.startsWith('PUT')), isEmpty);
       expect(bucket.objects.keys, before.keys);
+    });
+
+    test('a video\'s kept render comes down to her too', () async {
+      var event = await julio.library.create(const []);
+      const page = EventPage(id: 'v1', kind: PageKind.video, extension: 'mp4');
+      await julio.library.putPageStream(
+        event.id,
+        page,
+        Stream.value(bytes([1, 2, 3])),
+      );
+      event = await julio.library.update(event.copyWith(pages: [page]));
+      await julio.library.keepRender(
+        event.id,
+        'v1',
+        XFile.fromData(bytes([9, 9])),
+        extension: 'mp4',
+      );
+      await julio.sync.syncNow();
+      await julio.sync.grant(
+        julio.library.byId(event.id)!,
+        'ana@example.com',
+        ShareRole.read,
+      );
+      await julio.sync.syncNow();
+      await anaPhone.sync.syncNow();
+      final shared = anaPhone.library.byId(event.id)!;
+      final render = shared.pages.single.render!;
+      expect(shared.readOnly, isTrue);
+      expect(await anaPhone.library.original(shared, render.file), [9, 9]);
     });
 
     test("Ana's own events don't go to Julio's folder", () async {

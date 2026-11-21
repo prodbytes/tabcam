@@ -71,11 +71,16 @@ would get in the way of watching and playing along); it finds the
 song's length as the editor does (its player's, or, where the player
 can't say, as for a take the browser recorded, the editor's), and when
 neither can say, takes the end the edit keeps for it (none: the song
-doesn't play); elsewhere (the file list's play buttons, Cam's play
-along, the list's Download and Download all) the video's file is used
-as it is: for a take, without its tab, which [Cam](cam.md#the-tab-with-the-take)
-keeps apart from its picture; the editor's Download makes the finished
-video. A cloned capture's video keeps its edit, naming the copy's
+doesn't play). **Once the editor's Download has made the video, the
+file it made is kept** ([the kept download](#the-kept-download)): while
+the edit is still the one it was made from, the file screen's player
+and the file list's play button play that file instead, as it was
+downloaded, on every device of the user's and for everyone the capture
+is shared with. Elsewhere (the file list's play buttons with no kept
+download, Cam's play along, the list's Download and Download all) the
+video's file is used as it is: for a take, without its tab, which
+[Cam](cam.md#the-tab-with-the-take) keeps apart from its picture; the
+editor's Download makes the finished video. A cloned capture's video keeps its edit, naming the copy's
 song. An edit's keys from a newer app (a newer editor's settings) are
 kept with it and written back with every change made here, even a
 Reset: the edit then stays, as the whole video with its own sound, which
@@ -828,7 +833,11 @@ metronome's buttons do theirs; its ✕ hides it too.
   failure says "Couldn't make the file" and why. With the watermark and
   the fades on by default, almost every Download now makes the file (on the web,
   as long as the kept part takes to play); the file list's Download and
-  Download all stay instant, the file as it is.
+  Download all stay instant, the file as it is. **The video made is
+  kept** with the page once it's saved, and plays in the video's place
+  until the edit changes ([the kept download](#the-kept-download)); the
+  video without sound, the sound only, a video downloaded as it is and
+  a download cancelled keep nothing.
 
 ### How the edit is stored
 
@@ -907,6 +916,65 @@ version 2 (`v: 2`):
 - Values that aren't numbers are read as the default; volumes out of
   range are brought within 0–1 (the master's within 0–2). `PageEdit` has one `copyWith`, and its
   `==`, `hashCode` and `toString` go by one list of its fields.
+
+### The kept download
+
+<a id="the-kept-download"></a>When **Download** makes **the video**
+(the menu's first item, or the button itself) and it's saved (the
+browser's download started, or the system's "save as" not cancelled),
+the file made is **kept with the video's page** as its **render**
+([`Library.keepRender`](../tabcam_app/lib/library/library.dart)), a
+file of the capture's own beside the video's:
+`<render id>.<extension>` (a new ID each time; `.mp4`, or `.webm` where
+that's made), on the device (in memory on the web) and, signed in,
+[synced](cloud-sync.md#whats-synced-and-where) to the capture's folder
+like a page's file. A change still waiting to be kept (the edit is kept
+a moment after it's made) is kept first, so the render says what it was
+made from. Nothing is kept for the video without sound, the sound only,
+a video downloaded as it is (its own file plays already) or a download
+cancelled.
+
+**It plays in the video's place**: the [file
+screen](event-screen.md#file-screen)'s player and the file list's play
+button ([`openPagePlayer`](../tabcam_app/lib/screens/video_page.dart))
+play the kept file, as downloaded, looping on the file screen, with
+nothing mixed or drawn over it (its sound, tab, title, watermark and
+fades are in the file already: the watermark as the downloader's
+Premium had it, and the fades at each turn of the loop, which the file
+screen's own playback leaves out). On the user's other devices, for
+people the capture is [shared with](shared-captures.md#shared-with-me)
+and for [link holders](sharing.md#opening-a-link), the same, once its
+file has come. It plays only while it's **still the edit's**
+(`currentRender`): the page's edit is the one it was made from (`==`),
+the title it shows is the one the video would show now (the capture
+renamed, a title from the capture's name would differ), and its file
+is on the device; otherwise the video plays as before, as its edit
+says (a render whose file hasn't come yet, or that won't open, too).
+
+**It goes** when it can't play any more:
+
+- the edit changes (any change kept in the editor, Reset included): the
+  render goes from the page, its file deleted, and sync deletes it from
+  the folder and, at their next pass, from the other devices;
+- a new Download of the video replaces it (the old file goes);
+- the video's page is purged from the trash, or its capture
+  ([trash](trash.md)). Deleted, it stays with its page in the trash,
+  and comes back with it.
+
+A rename of the capture doesn't delete it (a rename back brings it
+back). A [clone](library.md#events)'s video has no render (the copy's
+edit plays until it's downloaded there), nor does a published
+contribution's copy. Older apps keep the page's `render` key as they
+found it, but don't know its file: one that sends the capture deletes
+the file from the folder (devices that have it keep playing it; others
+play the edit).
+
+Stored on the page as `render` (`PageRender`, in
+[`capture_event.dart`](../tabcam_app/lib/library/capture_event.dart);
+video pages only): `{"id", "extension", "edit", "title"}`, `edit` the
+page's [edit](#how-the-edit-is-stored) it was made from (absent: none)
+and `title` the title's lines it shows, joined by a line break (absent:
+none). One whose ID or extension isn't well formed reads as none.
 
 ### A take's song, lined up
 

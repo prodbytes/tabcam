@@ -4825,7 +4825,42 @@ spec.
    buttons leave the name about 80 px: neither cuts the other. Tested in
    `file_dates_test.dart`. See [event screen](event-screen.md#file-dates).
 
-2. **"When the user is not signed in always offer the sign in 1-click
+2. **"When a download is made in the editor, keep a copy of the
+   downloaded file and use that when the user plays from the file
+   preview or file viewer or when shared."** The editor's Download of
+   **the video** (not the video without sound, the sound only, a video
+   downloaded as it is, nor a download cancelled) now keeps the file it
+   made with the video's page, as its **render** (`render` on the page:
+   the file's ID and extension, the edit it was made from and the title
+   it shows; `Library.keepRender`), a file of the capture's own beside
+   the video's, after keeping any change still waiting. The file list's
+   play button and the file screen's player play that file, as
+   downloaded (nothing mixed or drawn over it: its watermark and fades
+   are in it), while it's still the edit's: the same edit, the same
+   title, its file on the device (`currentRender`, `openPagePlayer` in
+   [`video_page.dart`](../tabcam_app/lib/screens/video_page.dart));
+   otherwise the video plays as its edit says, as before. Cloud sync
+   sends and brings it like a page's file, so it plays on the user's
+   other devices, for the people the capture is shared with, and for
+   link holders (who get it with the capture; one not up yet is left
+   out). A change of the edit (Reset too) drops it, its file deleted
+   on the device, in the cloud and on the other devices; a new Download
+   replaces it; it stays with a deleted video in the trash and goes
+   when that's purged. A clone's videos and a published contribution's
+   copy have none. Tests: `kept_render_test.dart` (the page's JSON, a
+   broken one, its files; keeping, replacing and dropping it; the trash
+   and a clone; when it's still the edit's; the editor keeping it, the
+   file list and file screen playing it until the edit changes, a
+   cancelled download, the sound only and a video as it is keeping
+   none, a change waiting kept first), `cloud_sync_test.dart` (up and to
+   another device, gone everywhere once the edit changes; to a reader
+   it's shared with) and `public_capture_test.dart` (with the link, one
+   not up yet left out). See [video edit](video-edit.md#the-kept-download),
+   [event screen](event-screen.md), [cloud sync](cloud-sync.md),
+   [sharing](sharing.md), [shared captures](shared-captures.md),
+   [library](library.md) and [trash](trash.md).
+
+3. **"When the user is not signed in always offer the sign in 1-click
    top right."** Signed out, every screen now has a one-click sign-in at
    its top right (`QuickSignIn`, in the new
    [`quick_sign_in.dart`](../tabcam_app/lib/screens/quick_sign_in.dart)):
