@@ -82,6 +82,24 @@ class MemoryKeeper implements SessionKeeper {
 }
 
 /// A provider sign-in whose user may have stopped using it (Apple).
+/// Notes when it signs out and when the one-click sign-in is offered.
+class LoggingAuth extends FakeAuth {
+  final List<String> log = [];
+
+  @override
+  Future<void> signOut() async {
+    await Future<void>.delayed(Duration.zero);
+    log.add('signed out');
+    await super.signOut();
+  }
+
+  @override
+  Future<void> offerQuickSignIn() async {
+    log.add('offered');
+    await super.offerQuickSignIn();
+  }
+}
+
 class RevokableAuth extends FakeAuth {
   bool valid = true;
 
@@ -268,6 +286,25 @@ void main() {
     expect(inner.user, isNull);
     expect(keeper.data, isNull);
     expect(api.ended, ['tcs1.refresh-1']);
+  });
+
+  test('signing out offers the one-click sign-in once the provider has '
+      'signed out too, not as the session ends', () async {
+    final provider = LoggingAuth();
+    final auth = make(provider: provider);
+    await auth.init();
+    provider.signInWith(_riff, 'google-token');
+    await settle();
+    final signingOut = auth.signOut();
+    final offered = auth.offerQuickSignIn();
+    await signingOut;
+    await offered;
+    expect(provider.log, ['signed out', 'offered']);
+    // Signed in, it isn't offered.
+    provider.signInWith(_riff, 'google-token-2');
+    await settle();
+    await auth.offerQuickSignIn();
+    expect(provider.offers, 1);
   });
 
   test("without sessions at the API, the provider's token is used as "

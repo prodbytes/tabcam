@@ -299,7 +299,8 @@ void main() {
     });
     await settle(tester);
     expect(find.text('Your tabs.cam account was deleted.'), findsOneWidget);
-    expect(find.text('Sign in with Google'), findsOneWidget);
+    expect(find.byKey(const Key('welcome')), findsOneWidget);
+    expect(find.byKey(const Key('sign-in-google')), findsOneWidget);
     expect(keysOf(me), isEmpty);
     phone.sync.dispose();
     olgaPhone.sync.dispose();

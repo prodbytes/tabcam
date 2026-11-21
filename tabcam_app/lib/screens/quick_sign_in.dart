@@ -68,7 +68,11 @@ class QuickSignIn extends StatelessWidget {
         return Padding(
           key: const Key('quick-sign-in'),
           padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Center(child: _button(context, auth, provider, icon: icon)),
+          // Centered up and down; only as wide as the button.
+          child: Center(
+            widthFactor: 1,
+            child: _button(context, auth, provider, icon: icon),
+          ),
         );
       },
     );

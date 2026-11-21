@@ -30,54 +30,54 @@ class WelcomeScreen extends StatelessWidget {
         child: Stack(
           children: [
             Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(32),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: ListenableBuilder(
-                listenable: auth,
-                builder: (context, _) => Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.queue_music_outlined,
-                      size: 72,
-                      color: theme.colorScheme.primary,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(32),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: ListenableBuilder(
+                    listenable: auth,
+                    builder: (context, _) => Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.queue_music_outlined,
+                          size: 72,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(height: 16),
+                        Text('tabs.cam', style: theme.textTheme.headlineMedium),
+                        const SizedBox(height: 8),
+                        Text(
+                          l10n.welcomeBody,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyLarge,
+                        ),
+                        const SizedBox(height: 32),
+                        // At launch, while a saved session is restored.
+                        if (auth.checking)
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: 16),
+                            child: LinearProgressIndicator(),
+                          ),
+                        SignInButtons(auth: auth),
+                        if (auth.error case final error?) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            error,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: theme.colorScheme.error),
+                          ),
+                        ],
+                        const SizedBox(height: 24),
+                        TextButton(
+                          onPressed: () => openPrivacyPolicy(context),
+                          child: Text(l10n.homePrivacyPolicy),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    Text('tabs.cam', style: theme.textTheme.headlineMedium),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.welcomeBody,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyLarge,
-                    ),
-                    const SizedBox(height: 32),
-                    // At launch, while a saved session is restored.
-                    if (auth.checking)
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 16),
-                        child: LinearProgressIndicator(),
-                      ),
-                    SignInButtons(auth: auth),
-                    if (auth.error case final error?) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        error,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: theme.colorScheme.error),
-                      ),
-                    ],
-                    const SizedBox(height: 24),
-                    TextButton(
-                      onPressed: () => openPrivacyPolicy(context),
-                      child: Text(l10n.homePrivacyPolicy),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ),
             ),
             // Where an app bar's last button would be.
             Align(

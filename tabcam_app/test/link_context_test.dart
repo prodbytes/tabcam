@@ -80,7 +80,11 @@ void main() {
 
   /// The capture's screen, opened as a link (or a reload) opens it: on
   /// [file], and with [edit] the editor over it.
-  Future<void> show(WidgetTester tester, {String? file, bool edit = false}) async {
+  Future<void> show(
+    WidgetTester tester, {
+    String? file,
+    bool edit = false,
+  }) async {
     tester.view.physicalSize = const Size(900, 1600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -134,9 +138,7 @@ void main() {
     final copy = library.copyOf(id);
     expect(copy, isNotNull);
     expect(find.byType(VideoEditScreen), findsOneWidget);
-    final editor = tester.widget<VideoEditScreen>(
-      find.byType(VideoEditScreen),
-    );
+    final editor = tester.widget<VideoEditScreen>(find.byType(VideoEditScreen));
     expect(editor.eventId, copy!.id);
     expect(editor.page.source, FileOrigin(id, 'k0'));
     expect(PlaceMemory.of(library).place.eventId, copy.id);
@@ -156,10 +158,7 @@ void main() {
     await show(tester, file: 'k0', edit: true);
     expect(find.byType(VideoEditScreen), findsNothing);
     expect(find.byType(FileScreen), findsOneWidget);
-    expect(
-      tester.widget<FileScreen>(find.byType(FileScreen)).eventId,
-      id,
-    );
+    expect(tester.widget<FileScreen>(find.byType(FileScreen)).eventId, id);
     expect(library.copyOf(id)!.id, had.id);
     expect(PlaceMemory.of(library).place.edit, isFalse);
   });

@@ -51,9 +51,7 @@ abstract final class CaptureLink {
     }
     return site.replace(
       path: '/s/$key',
-      queryParameters: file == null
-          ? null
-          : {'f': file.id, if (edit) 'e': '1'},
+      queryParameters: file == null ? null : {'f': file.id, if (edit) 'e': '1'},
     );
   }
 
