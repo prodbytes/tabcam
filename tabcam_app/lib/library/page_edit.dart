@@ -120,6 +120,158 @@ class LaneStereo {
   String toString() => 'LaneStereo(${channels.name}, $balance)';
 }
 
+/// An instrument a lane's sound can be split into ([LaneStems]), in the
+/// order the editor lists them.
+enum Stem {
+  /// The voice: the middle of the sound, in the middle of the mix.
+  vocals,
+
+  /// The drums: the highs (cymbals, hi-hats, the snare's crack).
+  drums,
+
+  /// The bass: the lows (the bass guitar, the kick drum).
+  bass,
+
+  /// The rest: the middle of the sound, at the sides of the mix (guitars,
+  /// keys).
+  other,
+}
+
+/// One instrument's level in a split lane: its [volume] (0 to 1, to the
+/// hundredth; 1, as it is, the default) and whether it's [muted] (the
+/// level kept).
+class StemLevel {
+  const StemLevel({this.volume = 1, this.muted = false});
+
+  /// As it is, heard.
+  static const full = StemLevel();
+
+  final double volume;
+  final bool muted;
+
+  /// How loud it plays: 0 muted, else its [volume].
+  double get gain => muted ? 0 : volume;
+
+  bool get isFull => volume == 1 && !muted;
+
+  /// Written with only what isn't the default: `{"volume": 0.5}`,
+  /// `{"muted": true}`.
+  Map<String, Object?> toJson() => {
+    if (volume != 1) 'volume': volume,
+    if (muted) 'muted': true,
+  };
+
+  /// [json] as a level: a volume that isn't a number is 1, one out of
+  /// range brought within 0–1.
+  static StemLevel fromJson(Object? json) => json is Map
+      ? StemLevel(
+          volume: PageEdit.volume(json['volume']),
+          muted: json['muted'] == true,
+        )
+      : full;
+
+  StemLevel copyWith({double? volume, bool? muted}) => StemLevel(
+    volume: volume == null ? this.volume : PageEdit.volume(volume),
+    muted: muted ?? this.muted,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      other is StemLevel && other.volume == volume && other.muted == muted;
+
+  @override
+  int get hashCode => Object.hash(volume, muted);
+
+  @override
+  String toString() => '${muted ? 'muted ' : ''}$volume';
+}
+
+/// A lane's sound split into its instruments ([Stem]), each at a level of
+/// its own, or not split ([none], the default). Split with every
+/// instrument as it is, the lane sounds as it does unsplit. How it's
+/// split is `StemSplit`'s (a rough split by pitch and place in the mix, to
+/// be bettered); the levels are the edit's, whatever splits it.
+class LaneStems {
+  const LaneStems({this.split = false, this.levels = const {}});
+
+  /// Not split.
+  static const none = LaneStems();
+
+  /// Split, every instrument as it is.
+  static const all = LaneStems(split: true);
+
+  final bool split;
+
+  /// Each instrument's level by its name, those as they are left out. A
+  /// name this version doesn't know (a newer app's instrument) is kept,
+  /// and written back.
+  final Map<String, StemLevel> levels;
+
+  /// [stem]'s level.
+  StemLevel of(Stem stem) => levels[stem.name] ?? StemLevel.full;
+
+  /// Whether it changes the sound: split, with an instrument this
+  /// version knows not as it is.
+  bool get changes => split && Stem.values.any((s) => !of(s).isFull);
+
+  /// What the renderers apply: each instrument's gain (0 when muted), by
+  /// its name; null when it doesn't [change] the sound (they then leave
+  /// it as it is).
+  Map<String, double>? get gains =>
+      changes ? {for (final s in Stem.values) s.name: of(s).gain} : null;
+
+  /// [stem] at [level].
+  LaneStems withLevel(Stem stem, StemLevel level) => LaneStems(
+    split: split,
+    levels: {
+      for (final MapEntry(:key, :value) in levels.entries)
+        if (key != stem.name) key: value,
+      if (!level.isFull) stem.name: level,
+    },
+  );
+
+  /// Written (`ownStems`, `songStems`) only when [split]: each instrument
+  /// not as it is, `{"vocals": {"muted": true}, "bass": {"volume": 0.5}}`
+  /// (`{}`: split, all as they are).
+  Map<String, Object?> toJson() => {
+    for (final MapEntry(:key, :value) in levels.entries)
+      if (!value.isFull) key: value.toJson(),
+  };
+
+  /// [json] as a lane's instruments: absent (or not a map), not split.
+  static LaneStems fromJson(Object? json) => json is Map
+      ? LaneStems(
+          split: true,
+          levels: {
+            for (final MapEntry(:key, :value) in json.entries)
+              if (key is String && value is Map)
+                if (StemLevel.fromJson(value) case final level
+                    when !level.isFull)
+                  key: level,
+          },
+        )
+      : none;
+
+  @override
+  bool operator ==(Object other) =>
+      other is LaneStems &&
+      other.split == split &&
+      other.levels.length == levels.length &&
+      levels.entries.every((e) => other.levels[e.key] == e.value);
+
+  @override
+  int get hashCode => Object.hash(
+    split,
+    Object.hashAllUnordered([
+      for (final MapEntry(:key, :value) in levels.entries)
+        Object.hash(key, value),
+    ]),
+  );
+
+  @override
+  String toString() => split ? 'LaneStems($levels)' : 'LaneStems.none';
+}
+
 /// [text] at most [max] characters long, as a person counts them and a
 /// text field's `maxLength` does (grapheme clusters: an emoji, even one
 /// made of several, is one), never cut inside one; the end trimmed when
@@ -366,6 +518,7 @@ class PageEdit {
     this.ownVolume = 1,
     this.ownMuted = false,
     this.ownStereo = LaneStereo.standard,
+    this.ownStems = LaneStems.none,
     this.song,
     this.songMuted = false,
     this.trackId,
@@ -374,6 +527,7 @@ class PageEdit {
     this.offset = Duration.zero,
     this.trackVolume = 1,
     this.songStereo = LaneStereo.standard,
+    this.songStems = LaneStems.none,
     this.masterVolume = 1,
     this.masterMuted = false,
     this.tab = true,
@@ -458,6 +612,8 @@ class PageEdit {
     'ownBalance',
     'songChannels',
     'songBalance',
+    'ownStems',
+    'songStems',
     'song',
     'tab',
     'tabStyle',
@@ -482,6 +638,14 @@ class PageEdit {
 
   /// The song lane's, as [ownStereo] (`songChannels`, `songBalance`).
   final LaneStereo songStereo;
+
+  /// The video's own sound split into its instruments, each at its own
+  /// level ([LaneStems]); written (`ownStems`) only when split. Older
+  /// apps keep it, and play the sound as it is.
+  final LaneStems ownStems;
+
+  /// The song lane's, as [ownStems] (`songStems`).
+  final LaneStems songStems;
 
   /// How the song lane is placed; null: the default ([songMode]).
   final SongMode? song;
@@ -635,6 +799,8 @@ class PageEdit {
     if (songStereo.channels != LaneChannels.stereo)
       'songChannels': songStereo.channels.name,
     if (songStereo.balance != 0) 'songBalance': songStereo.balance,
+    if (ownStems.split) 'ownStems': ownStems.toJson(),
+    if (songStems.split) 'songStems': songStems.toJson(),
     if (song != null) 'song': song!.name,
     if (!tab) 'tab': false,
     if (!tabStyle.isStandard) 'tabStyle': tabStyle.toJson(),
@@ -672,6 +838,8 @@ class PageEdit {
         channels: LaneChannels.byName(json['songChannels']),
         balance: LaneStereo.balanceOf(json['songBalance']),
       ),
+      ownStems: LaneStems.fromJson(json['ownStems']),
+      songStems: LaneStems.fromJson(json['songStems']),
       tab: json['tab'] != false,
       tabStyle: EditTabStyle.fromJson(json['tabStyle']),
       title: EditTitle.fromJson(json['title']),
@@ -709,6 +877,7 @@ class PageEdit {
     double? ownVolume,
     bool? ownMuted,
     LaneStereo? ownStereo,
+    LaneStems? ownStems,
     Object? song = _same,
     bool? songMuted,
     Object? trackId = _same,
@@ -717,6 +886,7 @@ class PageEdit {
     Duration? offset,
     double? trackVolume,
     LaneStereo? songStereo,
+    LaneStems? songStems,
     double? masterVolume,
     bool? masterMuted,
     bool? tab,
@@ -732,6 +902,7 @@ class PageEdit {
     ownVolume: ownVolume == null ? this.ownVolume : volume(ownVolume),
     ownMuted: ownMuted ?? this.ownMuted,
     ownStereo: ownStereo ?? this.ownStereo,
+    ownStems: ownStems ?? this.ownStems,
     song: identical(song, _same) ? this.song : song as SongMode?,
     songMuted: songMuted ?? this.songMuted,
     trackId: identical(trackId, _same) ? this.trackId : trackId as String?,
@@ -742,6 +913,7 @@ class PageEdit {
     offset: offset ?? this.offset,
     trackVolume: trackVolume == null ? this.trackVolume : volume(trackVolume),
     songStereo: songStereo ?? this.songStereo,
+    songStems: songStems ?? this.songStems,
     masterVolume: masterVolume == null
         ? this.masterVolume
         : master(masterVolume),
@@ -765,6 +937,7 @@ class PageEdit {
     ownVolume,
     ownMuted,
     ownStereo,
+    ownStems,
     song,
     songMuted,
     trackId,
@@ -773,6 +946,7 @@ class PageEdit {
     offset,
     trackVolume,
     songStereo,
+    songStems,
     masterVolume,
     masterMuted,
     tab,

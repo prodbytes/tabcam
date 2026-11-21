@@ -2631,6 +2631,29 @@ class AppLocalizationsEs extends AppLocalizations {
       'La descarga tiene los canales y el balance; la vista previa reproduce el sonido como se grabó.';
 
   @override
+  String get videoEditStemsSplit => 'Separar en instrumentos';
+
+  @override
+  String get videoEditStemsTip =>
+      'Una separación aproximada por ahora: el bajo por debajo de 200 Hz, la batería por encima de 4 kHz, la voz en el centro de la mezcla y el resto a los lados.';
+
+  @override
+  String get videoEditStemVocals => 'Voz';
+
+  @override
+  String get videoEditStemDrums => 'Batería';
+
+  @override
+  String get videoEditStemBass => 'Bajo';
+
+  @override
+  String get videoEditStemOther => 'Otros';
+
+  @override
+  String get videoEditStemsPreviewNote =>
+      'La descarga tiene los niveles de los instrumentos; la vista previa reproduce el sonido como se grabó.';
+
+  @override
   String videoEditBalanceLeft(int percent) {
     return 'I $percent';
   }

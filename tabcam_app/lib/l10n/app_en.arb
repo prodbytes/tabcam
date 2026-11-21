@@ -3555,6 +3555,34 @@
   "@videoEditStereoPreviewNote": {
     "description": "Video edit: under a lane's channels and balance, when they are changed: the preview can't play them"
   },
+  "videoEditStemsSplit": "Split into instruments",
+  "@videoEditStemsSplit": {
+    "description": "Video edit: a lane's switch (in its volume popup) that splits its sound into its instruments, each with a level of its own"
+  },
+  "videoEditStemsTip": "A rough split for now: the bass under 200 Hz, the drums over 4 kHz, the voice in the middle of the mix, the rest at its sides.",
+  "@videoEditStemsTip": {
+    "description": "Video edit: the tooltip of Split into instruments, saying how the sound is split"
+  },
+  "videoEditStemVocals": "Vocals",
+  "@videoEditStemVocals": {
+    "description": "Video edit: the instrument a split lane's voice is (a stem)"
+  },
+  "videoEditStemDrums": "Drums",
+  "@videoEditStemDrums": {
+    "description": "Video edit: the instrument a split lane's drums are (a stem)"
+  },
+  "videoEditStemBass": "Bass",
+  "@videoEditStemBass": {
+    "description": "Video edit: the instrument a split lane's bass is (a stem)"
+  },
+  "videoEditStemOther": "Other",
+  "@videoEditStemOther": {
+    "description": "Video edit: the rest of a split lane's sound: guitars, keys and the like (a stem)"
+  },
+  "videoEditStemsPreviewNote": "Download has the instruments' levels; the preview plays the sound as recorded.",
+  "@videoEditStemsPreviewNote": {
+    "description": "Video edit: note under a split lane's instruments once one isn't as it is"
+  },
   "videoEditBalanceLeft": "L {percent}",
   "@videoEditBalanceLeft": {
     "description": "Video edit: a lane's balance towards the left, percent 5 to 100",
