@@ -4881,3 +4881,31 @@ spec.
    [navigation](navigation.md#the-one-click-sign-in-top-right),
    [sharing](sharing.md#opening-a-link), [cloud sync](cloud-sync.md) and
    [sessions](sessions.md).
+
+4. **"In the share link button, let the share be public, unlisted or
+   private (same meanings as youtube)"**, and, asked where Public
+   captures are found: search engines and the dictionary; **"also in the
+   home in the future when we have enough public pages to show there"**.
+   Share still copies the link on the tap; for the capture's owner a
+   sheet then shows **Who can open it**: Public (anyone, also found by
+   the dictionary's search and search engines; "Make public only what
+   you have the right to share"), Unlisted (anyone with the link, what
+   every link was until now, and the default) or Private (only the
+   owner, even with the link). A choice applies at once and the link
+   stays the same (its key is kept), saved on the capture (`visibility`,
+   synced) and recorded by the share API, which keeps it in a new
+   captures table. Private refuses the link's credentials and joining
+   ("This capture is private: only its owner can open it.") and suspends
+   every grant of the capture, so it goes from the libraries of whoever
+   it was shared with, until it's unlisted or public again. Public keeps
+   the title and artist (re-sent each time the capture syncs, so renames
+   follow; in the trash it's unlisted) in a sparse index the new
+   `GET /public?q=` searches; the dictionary shows "Public on tabs.cam"
+   over YouTube's results when it finds some, a tap opening the capture
+   as its link does. For search engines: `/robots.txt`, a `/sitemap.xml`
+   of public short links (production's site only, from the share API
+   through CloudFront), and no `noindex` on a public capture's preview
+   and short link there. Home's list of public captures is left for
+   later. The privacy policy and the store notes say so. See
+   [sharing](sharing.md#who-can-open-it), [shared
+   captures](shared-captures.md), [dictionary](dictionary.md#public-captures).
