@@ -4,6 +4,7 @@ import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:url_launcher/link.dart';
 
 import '../capture/media.dart';
@@ -1018,11 +1019,38 @@ class _EventScreenState extends State<EventScreen> implements LinkAdder {
     );
   }
 
-  /// A file's name in the list, as a link (on the web, a real one: Cmd
-  /// or Ctrl-click, a middle click or the browser's menu opens it in a new
-  /// tab): the file's own link ([CaptureLink], with `f`), or a link file's
-  /// address. A plain tap opens it here, as the row does.
+  /// A file's name in the list, then the date it was made, smaller and
+  /// dimmer ([fileDate]; none for a file whose ID isn't a time): beside the
+  /// name where the row has room, else on the line under it (a phone),
+  /// so neither cuts the other short.
   Widget _fileName(CaptureEvent event, EventPage page) {
+    final name = _fileLink(event, page);
+    final made = timeOfId(page.id);
+    if (made == null) return name;
+    final theme = Theme.of(context);
+    return Wrap(
+      spacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.end,
+      children: [
+        name,
+        Text(
+          fileDate(context, made, DateTime.now()),
+          key: ValueKey('file-date-${page.id}'),
+          maxLines: 1,
+          softWrap: false,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// A file's name as a link (on the web, a real one: Cmd or Ctrl-click,
+  /// a middle click or the browser's menu opens it in a new tab): the
+  /// file's own link ([CaptureLink], with `f`), or a link file's address.
+  /// A plain tap opens it here, as the row does.
+  Widget _fileLink(CaptureEvent event, EventPage page) {
     final name = Text(
       fileLabel(context.l10n, event, page),
       maxLines: 1,
@@ -1636,5 +1664,20 @@ class _SharedBanner extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// The date a file was [made], after its name in the capture's list, as of
+/// [now]: in the app's language, the month and day ("Nov 21"), with the
+/// year when it isn't [now]'s ("Mar 4, 2025").
+String fileDate(BuildContext context, DateTime made, DateTime now) {
+  final locale = Localizations.localeOf(context).toString();
+  try {
+    return (made.year == now.year
+            ? DateFormat.MMMd(locale)
+            : DateFormat.yMMMd(locale))
+        .format(made);
+  } on Object {
+    return MaterialLocalizations.of(context).formatShortDate(made);
   }
 }
