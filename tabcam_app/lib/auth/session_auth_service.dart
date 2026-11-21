@@ -341,17 +341,37 @@ class SessionAuthService extends AuthService with WidgetsBindingObserver {
     return inner.signIn(provider);
   }
 
+  /// A [signOut] under way: [offerQuickSignIn] waits for it.
+  Future<void>? _signingOut;
+
   @override
   Future<void> signOut() async {
-    final session = _session;
-    _error = null;
-    if (session != null) {
-      await _end(session, force: true);
-      _endQuietly(session.refreshToken);
+    final done = Completer<void>();
+    final signingOut = _signingOut = done.future;
+    try {
+      final session = _session;
+      _error = null;
+      if (session != null) {
+        await _end(session, force: true);
+        _endQuietly(session.refreshToken);
+      }
+      _failed = null;
+      await inner.signOut();
+      notifyListeners();
+    } finally {
+      done.complete();
+      if (_signingOut == signingOut) _signingOut = null;
     }
-    _failed = null;
-    await inner.signOut();
-    notifyListeners();
+  }
+
+  /// [inner]'s, once a sign-out under way is done (the session ends before
+  /// the provider signs out: offered sooner, Google's One Tap would sign
+  /// the user straight back in).
+  @override
+  Future<void> offerQuickSignIn() async {
+    await _signingOut;
+    if (user != null) return;
+    await inner.offerQuickSignIn();
   }
 
   @override
@@ -364,6 +384,11 @@ class SessionAuthService extends AuthService with WidgetsBindingObserver {
   @override
   Widget? buildSignInButton([AuthProvider provider = AuthProvider.google]) =>
       inner.buildSignInButton(provider);
+
+  @override
+  Widget? buildIconSignInButton([
+    AuthProvider provider = AuthProvider.google,
+  ]) => inner.buildIconSignInButton(provider);
 
   /// Keeps the session on the device (none: forgets it). Unless [force]d,
   /// another session kept there since (another tab's) is left alone.

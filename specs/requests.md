@@ -4859,3 +4859,25 @@ spec.
    [event screen](event-screen.md), [cloud sync](cloud-sync.md),
    [sharing](sharing.md), [shared captures](shared-captures.md),
    [library](library.md) and [trash](trash.md).
+
+3. **"When the user is not signed in always offer the sign in 1-click
+   top right."** Signed out, every screen now has a one-click sign-in at
+   its top right (`QuickSignIn`, in the new
+   [`quick_sign_in.dart`](../tabcam_app/lib/screens/quick_sign_in.dart)):
+   the welcome, above its own buttons, and a capture or a file opened by
+   its link, as the app bar's last button (also while the capture opens
+   or can't), so someone reading a shared link signs in where they are
+   instead of going through the welcome. One tap signs in, with Google's
+   own button on the web, Google's sheet on Android and Sign in with
+   Apple on iOS; on a phone it's the icon alone, its name as a tooltip;
+   signed in, or with email alone, there's none. On the web, Google's
+   One Tap (FedCM, which Chrome shows at the top right on computers) was
+   offered at launch only: it's now offered again each time the user is
+   signed out (signing out, a session ending), once the providers have
+   signed out, so Google asks first instead of signing them straight back
+   in (`AuthService.offerQuickSignIn`, which waits for a sign-out under
+   way). No new strings. Tested in `quick_sign_in_test.dart`,
+   `public_capture_test.dart` and `session_sign_in_test.dart`. See
+   [navigation](navigation.md#the-one-click-sign-in-top-right),
+   [sharing](sharing.md#opening-a-link), [cloud sync](cloud-sync.md) and
+   [sessions](sessions.md).
