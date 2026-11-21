@@ -4809,3 +4809,18 @@ spec.
    on a phone. See [video edit](video-edit.md#rec-over-this),
    [Cam](cam.md), [navigation](navigation.md) and
    [tabs.cam Premium](cloud-ocr.md#in-the-app).
+
+## 2026-11-21
+
+1. **"In the files view, show create date after file name in smaller
+   darker font."** Each row of the capture's file list (the Files view,
+   contributions included) shows the date the file was made after its
+   name, in the theme's small text and a dimmed colour: "Nov 21" this
+   year, "Mar 4, 2025" before, in the app's language (`fileDate` in
+   [`event_screen.dart`](../tabcam_app/lib/screens/event_screen.dart)).
+   The date is the file's ID read as a time (`timeOfId`, as the
+   play-along sidebar groups takes by day), so every file has one, old
+   ones too; an ID that isn't a time shows none. Beside the name where
+   the row has room, on the line under it on a phone, where the row's
+   buttons leave the name about 80 px: neither cuts the other. Tested in
+   `file_dates_test.dart`. See [event screen](event-screen.md#file-dates).
