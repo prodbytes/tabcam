@@ -41,18 +41,23 @@ plays along.
   [dictionary](dictionary.md) in a resizable sidebar on the right (or,
   turned by its Rotate button, a panel under the screen), and
   **Metronome** (a stopwatch icon) right after it the
-  [metronome](metronome.md)'s.
+  [metronome](metronome.md)'s. These tools, and the keyboard shortcuts'
+  help ([keyboard shortcuts](keyboard-shortcuts.md)), are signed-in
+  users': a capture opened by its link signed out has none of them, nor
+  their sidebars ([sharing](sharing.md#opening-a-link)).
   In the Text view, with its tab shown, the Text view's **Two
   columns**, **Copy**, **Rescan** and **Verified** (and Fix, in a build that shows it) come
   first, right of the title ([tab recognition](tab-recognition.md#text-view)).
   On a screen narrower than 900 px they're icons; narrower than 600 px
   Dictionary and
-  Metronome (showing or hiding their sidebars), Play along, Rename, Clone, Download all and
+  Metronome (showing or hiding their sidebars; signed in only), Play along, Rename, Clone, Download all and
   Share go in a **More** menu (⋮) after them, so the title keeps its room.
 - **Shared with the user**: a line under the app bar, "Shared by <email>
   · Read only · What you add goes to your copy". Only its owner changes a
-  capture: Rename, reordering, Rotate, Delete and editing the text tab
-  are off (the view still changes what shows, without saving it). Add and
+  capture, and only the owner sees the buttons that change it: Rename,
+  the drag handles, Rotate, Edit, Delete and the text tab's editing tools
+  aren't there at all (not greyed out); the view still changes what
+  shows, without saving it. Add and
   dragging files add to the user's **own copy** of it instead
   ([library](library.md#events), `Library.copyToAdd`): their newest
   copy of it, or a new [clone](library.md#events) made then, whose files
@@ -120,7 +125,8 @@ plays along.
   [delete confirmations](delete-confirms.md)) and deletes the file (stopping it
   if it plays in the list) to the capture's trash, with "Deleted "<name>"…"
   and **Undo** ([Deleted and Purge](trash.md)); the capture's last file deletes the capture with it, once the user confirms ("Delete "<capture>"?", saying "<file>" is its only file, so the capture goes with it, to Deleted: the capture's own Delete confirmation, its Don't ask again included), to the trash as Home's Delete does, with Undo, and the app goes back to Home; on a capture shared with the user to edit, which only its owner deletes, the last file stays ("A shared capture keeps at least one file…"), and a failure shows "Couldn't
-  delete". Rename and Delete aren't there read only. The play-along
+  delete". Rename and Delete aren't there read only (only the owner sees
+  them). The play-along
   sidebar's Delete (beside the Text view, in Cam, on the file screen)
   is the same, from the same code, Don't ask again and all (one ticked
   in either place holds in both)
@@ -203,8 +209,9 @@ plays along.
 One file, opened from the list, on its own screen (the back button goes
 to the list). The app bar has the file's name ("Page 2", a link's title,
 or the name the user gave it); tapping it renames the file, as does the
-**Rename** tool beside Delete. **Dictionary** (a book icon, first of
-the app bar's buttons, for every kind of file) shows and hides the chord
+**Rename** tool beside Delete (the owner's only). **Dictionary** (a book
+icon, first of the app bar's buttons, for every kind of file; signed in
+only, as Metronome and the keyboard shortcuts' help) shows and hides the chord
 and scale [dictionary](dictionary.md) in a resizable sidebar on the
 right (or, turned by its Rotate button, a panel under the file), and
 **Metronome** (a stopwatch icon) after it the
@@ -312,9 +319,13 @@ Its tools, along the bottom:
   Cam it opens in Cam's own view instead,
   [editing a take from the sidebar](cam.md#editing-a-take-from-the-sidebar)).
 
-Edit, Rename and Delete are off while a tool works and on a capture
-shared read only. The tools share the bar equally, so all four (an
-image's) fit a narrow phone.
+Rotate, Edit, Rename and Delete are the owner's, and only the owner sees
+them: on a capture shared with the user or opened by its link, and on a
+file someone [contributed](contributions.md) (whose list has its own
+tools), they aren't there at all, not greyed out. An image then has only
+its view; a video, a PDF, a recording or a link, no bar. They're off while a tool
+works. The tools share the bar equally, so all four (an image's) fit a
+narrow phone.
 
 A reload or a restart with a file open reopens it, over its event's list
 ([navigation](navigation.md#coming-back-where-the-user-was)).

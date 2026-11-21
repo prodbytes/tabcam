@@ -43,10 +43,12 @@ own (**My captures**), with "shared by <their email>" on its card. Its
 event screen says **"Shared by <email> · Read only · What you add goes to
 your copy"** under the app bar.
 
-- **Read only**, whatever the grant says: Rename, Rotate, Delete (a page)
-  and editing the text tab are off (the view changes only what shows),
-  nothing reads it here, and nothing of it goes up; Share (its link) and
-  Clone work. The owner's changes come down.
+- **Read only**, whatever the grant says: Rename, reordering, Rotate,
+  Edit (a video), Delete (a file) and editing the text tab are the
+  owner's, and their buttons aren't there at all, not greyed out (the
+  view changes only what shows), nothing reads it here, and nothing of it
+  goes up; Share (its link) and Clone work. The owner's changes come
+  down.
 - **Adding** (Add, dragging files, a tab site's print) adds to the user's
   own copy of it, and **Cam** opens on that copy
   ([event screen](event-screen.md)): their newest capture `clonedFrom`
