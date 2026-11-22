@@ -1,8 +1,9 @@
 # tabcam_index
 
 The site root: the index page, [site/index.html](site/index.html), which
-presents tabs.cam (a header, and its three key features, each a picture
-with its text in a box over it) and links to the app at `/app/`. One
+presents tabs.cam (a header, its three key features, each a picture
+with its text in a box over it, and a box on its open source code) and
+links to the app at `/app/`. One
 static file with its pictures and the logo in [site/img/](site/img); no
 build. What's on it and how it's laid out:
 [specs/index-page.md](../specs/index-page.md).

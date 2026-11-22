@@ -384,7 +384,9 @@ metronome's buttons do theirs; its ✕ hides it too.
   Until it's read, and where it can't be (no reader on a desktop build,
   no sound in the file, a format not decoded), the bar shows without
   it, as before; it never holds anything back, and nothing is sent
-  anywhere.
+  anywhere. In Cam, its rows draw theirs too: the song's on the main
+  row, the take's own in the take's row's blocks
+  ([waveforms in Cam's rows](cam.md#waveforms-in-cams-rows)).
 - <a id="zoom"></a>**The timeline zooms**: **Zoom out** and **Zoom in**
   (magnifiers) sit in the corner left of the ruler, over the rows'
   headers, with the zoom between them once it isn't the whole video
@@ -503,7 +505,13 @@ metronome's buttons do theirs; its ✕ hides it too.
     level; its row comes under the video's, the dock growing by it, and
     its bar shows its used part (its name on it) where it plays
     along the video, what falls outside the kept part dimmed (it's cut
-    off). **Dragged, the song moves** along the video; **dragged by
+    off). On it, the song's [phrase passes](cam.md#phrase-passes) (the
+    song's own, at its own times, kept with the capture; not a take's)
+    are marked as the play-along player's bar marks them, a tick across
+    the bar at each in the primary colour (`PhraseMarks`), where the
+    song plays them along the video (`songPhrasesOnLane`: moved with
+    the song, lined up in clips with each clip, those in a part trimmed
+    off left out; zoomed and scrolled with the lanes). **Dragged, the song moves** along the video; **dragged by
     either end, it's trimmed** (a grip at each end; the start moves
     with what's cut, so the rest stays put; at least half a second
     stays). **Its name in the row's header**, with a ⋮, opens

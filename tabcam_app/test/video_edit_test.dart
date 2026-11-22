@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tabcam_app/capture/out_delays.dart';
+import 'package:tabcam_app/capture/play_along_sidebar.dart' show PhraseMarks;
 import 'package:tabcam_app/capture/song_sync.dart';
 import 'package:tabcam_app/capture/sound_reader.dart';
 import 'package:tabcam_app/capture/take_log.dart';
@@ -145,6 +146,30 @@ Future<void> _settle(WidgetTester tester) async {
 }
 
 void main() {
+  test('songPhrasesOnLane puts a song\'s passes where it plays along the '
+      'video: moved with it, those trimmed off left out', () {
+    final times = PhraseTimes.none
+        .add(s(3), PassDirection.next, 1)
+        .add(s(8), PassDirection.next, 2)
+        .add(s(20), PassDirection.next, 3)
+        .add(s(35), PassDirection.next, 4);
+    // Its 5th to 30th second, placed at 10 s in the video.
+    expect(songPhrasesOnLane([(at: s(10), end: s(35), from: s(5))], times), [
+      s(13),
+      s(25),
+    ]);
+    // Lined up in two clips: the song from 0 at 2 s, then from 18 s at
+    // 40 s (a part played again).
+    expect(
+      songPhrasesOnLane([
+        (at: s(2), end: s(12), from: Duration.zero),
+        (at: s(40), end: s(60), from: s(18)),
+      ], times),
+      [s(5), s(10), s(42), s(57)],
+    );
+    expect(songPhrasesOnLane(const [], times), isEmpty);
+  });
+
   group('trackSpan', () {
     test('a track starting with the clip, cut to the clip', () {
       expect(trackSpan(s(10), s(4), Duration.zero), (
@@ -2998,6 +3023,64 @@ void main() {
     expect(find.byKey(const Key('video-edit-zoom')), findsNothing);
     expect(rect('video-edit-take-bar'), whole);
     expect(find.byKey(const Key('video-edit-timeline-scroll')), findsNothing);
+  });
+
+  testWidgets('the song\'s phrase passes show on the Song lane where the '
+      'song plays along the video, as on the player\'s bar: moved and '
+      'trimmed with it, zoomed with the lanes', (tester) async {
+    VideoPlayerPlatform.instance = platform = ShortTrackPlatform(s(40));
+    tall(tester);
+    final (library, id) = await capture(tester);
+    await tester.runAsync(() async {
+      // The song's 5th to 30th second, 10 s into the video.
+      await library.setPageEdit(
+        id,
+        'k0',
+        PageEdit(
+          start: Duration.zero,
+          end: s(180),
+          trackId: 'k1',
+          trackStart: s(5),
+          trackEnd: s(30),
+          offset: s(10),
+        ),
+      );
+      await library.setPhrases(
+        id,
+        'k1',
+        PhraseTimes.none
+            .add(s(3), PassDirection.next, 1)
+            .add(s(8), PassDirection.next, 2)
+            .add(s(20), PassDirection.next, 3)
+            .add(s(35), PassDirection.next, 4),
+      );
+    });
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    final marks = find.byKey(const Key('video-edit-song-phrase-marks'));
+    PhraseMarks painter() =>
+        tester.widget<CustomPaint>(marks).painter! as PhraseMarks;
+    expect(painter().at, [s(13), s(25)]);
+    expect(painter().length, s(180));
+    final whole = tester.getRect(marks);
+    // Across the lane, on the Take lane's axis.
+    final take = tester.getRect(find.byKey(const Key('video-edit-take-bar')));
+    expect(whole.left, closeTo(take.left, 0.5));
+    expect(whole.width, closeTo(take.width, 0.5));
+
+    // Zoomed in: twice as wide, the passes at the same times on it.
+    await tester.tap(find.byKey(const Key('video-edit-zoom-in')));
+    await _settle(tester);
+    expect(tester.getRect(marks).width, closeTo(whole.width * 2, 1));
+    expect(painter().at, [s(13), s(25)]);
+
+    // A song with none: no marks.
+    await tester.runAsync(() => library.setPhrases(id, 'k1', null));
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    expect(marks, findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('each lane draws its sound: the video\'s own and the song\'s, '

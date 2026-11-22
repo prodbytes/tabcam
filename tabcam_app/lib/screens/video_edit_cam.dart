@@ -79,6 +79,22 @@ double _camPhraseHeight(TextScaler scaler, CamSession cam) {
 /// Cam's view of [_StudioViewState]: with the camera in the main row's
 /// place, the main row is what plays along ([PlayAlong.track]).
 extension _CamRows on _StudioViewState {
+  /// [page]'s sound as a waveform for one of Cam's rows, its first
+  /// [length], read on the device ([Waveform.read]); none where it can't
+  /// be (no reader here: the file isn't even fetched).
+  Future<Waveform?> _readWave(
+    CaptureEvent event,
+    EventPage page,
+    Duration length,
+  ) async {
+    if (!Waveform.canRead) return null;
+    return Waveform.read(await pageFile(_library, event, page), length);
+  }
+
+  /// The key a page's waveform is kept by ([WaveCache]).
+  static String _waveKey(String eventId, EventPage page) =>
+      '$eventId/${page.id}/${page.fileName}';
+
   /// The camera state's main row ("Song"): the file playing along (or
   /// the page Rec over this brings, [_StudioViewState._alongComing]), its
   /// play / pause in its header and its bar on the time axis
@@ -138,6 +154,13 @@ extension _CamRows on _StudioViewState {
             : fileLabel(l10n, event, page),
         label: l10n.videoEditMainBar,
         onSeek: _seekAxis,
+        // The song's sound over its bar, once it's read.
+        wave: event == null
+            ? null
+            : (
+                key: _CamRows._waveKey(event.id, page),
+                read: (length) => _readWave(event, page, length),
+              ),
       ),
     );
   }
@@ -199,6 +222,35 @@ extension _CamRows on _StudioViewState {
       (null, final recorded?) => [(from: 0, to: recorded.inMilliseconds)],
       (null, null) => const <({int from, int to})>[],
     };
+    // The take's own sound in its blocks: each part of the song it played
+    // along, the take's sound from when that part began, at the song's
+    // speed (a take of a song slowed down fits its sound into the song's
+    // shorter time); on the take's clock, the take itself.
+    Duration ms(num v) => Duration(milliseconds: v.round());
+    final (waveSpans, rates) = switch ((main, last.length)) {
+      (final main?, _) => () {
+        final parts = [
+          for (final s in take.takeLog?.song ?? const <SongSegment>[])
+            if (s.page == main && s.to > s.at && s.speed > 0) s,
+        ];
+        return (
+          <WaveSpan>[
+            for (final s in parts)
+              (
+                at: ms(s.from),
+                end: ms(s.from + (s.to - s.at) * s.speed),
+                from: ms(s.at),
+              ),
+          ],
+          <double>[for (final s in parts) 1 / s.speed],
+        );
+      }(),
+      (null, final recorded?) => (
+        <WaveSpan>[(at: Duration.zero, end: recorded, from: Duration.zero)],
+        null,
+      ),
+      (null, null) => (const <WaveSpan>[], null),
+    };
     final playing = cam.player != null || cam.opening;
     final canPlay =
         cam.take != null && !cam.recording && !cam.saving && !cam.nextTaking;
@@ -244,6 +296,21 @@ extension _CamRows on _StudioViewState {
               spans: spans,
               recording: false,
               label: l10n.videoEditRecTake,
+              wave: event == null || waveSpans.isEmpty
+                  ? null
+                  : _CamWave(
+                      paintKey: const Key('video-edit-rec-wave'),
+                      waveKey: _CamRows._waveKey(event.id, take),
+                      read: () => _readWave(
+                        event,
+                        take,
+                        last.length ?? Waveform.longest,
+                      ),
+                      length: length,
+                      spans: waveSpans,
+                      rates: rates,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
             ),
     );
   }
@@ -315,11 +382,15 @@ class _RecBar extends StatelessWidget {
     required this.spans,
     required this.recording,
     required this.label,
+    this.wave,
   });
 
   final Duration length;
   final List<({int from, int to})> spans;
   final bool recording;
+
+  /// The take's sound over its blocks ([_CamWave]), once it's a take.
+  final Widget? wave;
 
   /// What it shows, for screen readers.
   final String label;
@@ -369,6 +440,7 @@ class _RecBar extends StatelessWidget {
                           ),
                         ),
                       ),
+                  if (wave case final wave?) Positioned.fill(child: wave),
                 ],
               ),
             );
@@ -429,10 +501,15 @@ class _AlongBar extends StatefulWidget {
     required this.name,
     required this.label,
     required this.onSeek,
+    this.wave,
   });
 
   final BackingTrack track;
   final String name;
+
+  /// Where the song's waveform comes from: the key it's kept by, and its
+  /// reading, the song [length] long ([_CamWave]); none, no waveform.
+  final ({String key, Future<Waveform?> Function(Duration length) read})? wave;
 
   /// What it does, for screen readers.
   final String label;
@@ -530,6 +607,27 @@ class _AlongBarState extends State<_AlongBar> {
                             .withValues(alpha: 0.3),
                       ),
                     ),
+                    // The song's sound, brighter in the section where one
+                    // is set.
+                    if (widget.wave case final wave?)
+                      Positioned.fill(
+                        child: _CamWave(
+                          paintKey: const Key('video-edit-main-wave'),
+                          waveKey: wave.key,
+                          read: () => wave.read(length),
+                          length: length,
+                          spans: [
+                            (
+                              at: Duration.zero,
+                              end: length,
+                              from: Duration.zero,
+                            ),
+                          ],
+                          start: section?.start ?? Duration.zero,
+                          end: section?.end ?? length,
+                          color: scheme.onPrimaryContainer,
+                        ),
+                      ),
                     if (section != null)
                       Positioned(
                         key: const Key('video-edit-main-section'),
@@ -548,6 +646,22 @@ class _AlongBarState extends State<_AlongBar> {
                           ),
                         ),
                       ),
+                    // The song's phrase passes, as the player's bar marks
+                    // them, on the song's own time: the same ticks.
+                    if (track.phrases case final phrases
+                        when phrases.isNotEmpty)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: CustomPaint(
+                            key: const Key('video-edit-main-phrase-marks'),
+                            painter: PhraseMarks(
+                              [for (final p in phrases.passes) p.at],
+                              length,
+                              scheme.primary,
+                            ),
+                          ),
+                        ),
+                      ),
                     Positioned.fill(
                       child: IgnorePointer(
                         child: _name(scheme.onPrimaryContainer),
@@ -560,6 +674,94 @@ class _AlongBarState extends State<_AlongBar> {
           ),
         );
       },
+    );
+  }
+}
+
+/// A file's sound drawn over one of Cam's rows' bars, as the editor's
+/// lanes draw theirs ([WavePainter]): [length] of the time axis across
+/// its width, the sound where [spans] (and [rates]) put it, brighter from
+/// [start] to [end] (all of it by default). Read once per file and kept
+/// ([WaveCache], by [waveKey]), so a row built again draws at once;
+/// nothing until it's read, nor where it can't be. Takes no taps.
+class _CamWave extends StatefulWidget {
+  const _CamWave({
+    required this.paintKey,
+    required this.waveKey,
+    required this.read,
+    required this.length,
+    required this.spans,
+    this.rates,
+    this.start,
+    this.end,
+    required this.color,
+  });
+
+  /// The key of what's painted, once there's a waveform.
+  final Key paintKey;
+  final String waveKey;
+  final Future<Waveform?> Function() read;
+  final Duration length;
+  final List<WaveSpan> spans;
+  final List<double>? rates;
+  final Duration? start;
+  final Duration? end;
+  final Color color;
+
+  @override
+  State<_CamWave> createState() => _CamWaveState();
+}
+
+class _CamWaveState extends State<_CamWave> {
+  Waveform? _wave;
+
+  /// The file [_wave] is (or is being read) for.
+  String? _of;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(_CamWave old) {
+    super.didUpdateWidget(old);
+    if (old.waveKey != widget.waveKey) _load();
+  }
+
+  void _load() {
+    final key = _of = widget.waveKey;
+    _wave = WaveCache.ready(key);
+    if (_wave != null) return;
+    unawaited(
+      WaveCache.of(key, widget.read).then((wave) {
+        if (mounted && _of == key && wave != null) {
+          setState(() => _wave = wave);
+        }
+      }),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final wave = _wave;
+    if (wave == null || widget.length <= Duration.zero) {
+      return const SizedBox.shrink();
+    }
+    return IgnorePointer(
+      child: CustomPaint(
+        key: widget.paintKey,
+        painter: WavePainter(
+          wave: wave,
+          length: widget.length,
+          spans: widget.spans,
+          rates: widget.rates,
+          start: widget.start ?? Duration.zero,
+          end: widget.end ?? widget.length,
+          color: widget.color,
+        ),
+      ),
     );
   }
 }

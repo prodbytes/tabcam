@@ -78,13 +78,28 @@ class Waveform {
     return peak;
   }
 
+  /// The reader waveforms are read with: the platform's
+  /// ([SoundReader.open]). A test counting the readers opened, or the
+  /// calls on the sound's channel, for something else gives waveforms
+  /// none.
+  @visibleForTesting
+  static SoundReader? Function() opener = SoundReader.open;
+
+  /// Whether this platform has a reader for it ([SoundReader]): none on a
+  /// desktop build, where no file need be fetched for one.
+  static bool get canRead {
+    final reader = opener();
+    reader?.close();
+    return reader != null;
+  }
+
   /// [file]'s waveform, its first [length] (at most [longest]), read with
   /// the device's own decoders ([SoundReader]); null where it can't be
   /// read (no reader here, no sound in it, a format not decoded). Never
   /// throws.
   static Future<Waveform?> read(XFile file, Duration length) async {
     if (length <= Duration.zero) return null;
-    final reader = SoundReader.open();
+    final reader = opener();
     if (reader == null) return null;
     try {
       final samples = await reader.samples(
@@ -108,6 +123,54 @@ class Waveform {
 /// video's clock, its own sound from [from].
 typedef WaveSpan = ({Duration at, Duration end, Duration from});
 
+/// Waveforms read, kept by key (a file's) so a row built anew, or a file
+/// played along again, draws at once without reading it again: the last
+/// [size] asked for. One that couldn't be read is kept too (none).
+class WaveCache {
+  WaveCache._();
+
+  static const size = 6;
+
+  /// Most recently asked for last.
+  static final _kept = <String, Future<Waveform?>>{};
+  static final _read = <String, Waveform?>{};
+
+  /// [key]'s waveform: the one kept, or [read]'s.
+  static Future<Waveform?> of(String key, Future<Waveform?> Function() read) {
+    final future = _kept.remove(key) ?? _reading(key, read);
+    _kept[key] = future;
+    while (_kept.length > size) {
+      _read.remove(_kept.keys.first);
+      _kept.remove(_kept.keys.first);
+    }
+    return future;
+  }
+
+  static Future<Waveform?> _reading(
+    String key,
+    Future<Waveform?> Function() read,
+  ) async {
+    Waveform? wave;
+    try {
+      wave = await read();
+    } on Object catch (e) {
+      debugPrint('TabCam: waveform: not read: $e');
+    }
+    if (_kept.containsKey(key)) _read[key] = wave;
+    return wave;
+  }
+
+  /// [key]'s waveform if it's read already, so it's drawn from the first
+  /// frame.
+  static Waveform? ready(String key) => _read[key];
+
+  @visibleForTesting
+  static void clear() {
+    _kept.clear();
+    _read.clear();
+  }
+}
+
 /// Draws [wave] over a lane's bar, [length] of video across its width:
 /// each point's loudest, mirrored about the middle, where [spans] put the
 /// sound along the video; brighter in the part kept ([start] to [end]),
@@ -117,6 +180,7 @@ class WavePainter extends CustomPainter {
     required this.wave,
     required this.length,
     required this.spans,
+    this.rates,
     required this.start,
     required this.end,
     required this.color,
@@ -125,6 +189,11 @@ class WavePainter extends CustomPainter {
   final Waveform wave;
   final Duration length;
   final List<WaveSpan> spans;
+
+  /// How fast each of [spans]' sound goes along the axis, if not 1: the
+  /// wave's seconds in one of the axis's (a take that played along a song
+  /// slowed to 0.5×, drawn on the song's axis, goes 2 to 1).
+  final List<double>? rates;
   final Duration start;
   final Duration end;
   final Color color;
@@ -147,13 +216,17 @@ class WavePainter extends CustomPainter {
       final t0 = timeAt(x);
       final t1 = timeAt(x + 1);
       var peak = 0.0;
-      for (final span in spans) {
+      for (final (i, span) in spans.indexed) {
         if (t1 <= span.at || t0 >= span.end) continue;
         final a = t0 < span.at ? span.at : t0;
         final b = t1 > span.end ? span.end : t1;
+        final rate = rates?[i] ?? 1;
         peak = max(
           peak,
-          wave.peak(span.from + (a - span.at), span.from + (b - span.at)),
+          wave.peak(
+            span.from + (a - span.at) * rate,
+            span.from + (b - span.at) * rate,
+          ),
         );
       }
       if (peak <= 0) continue;
@@ -175,6 +248,7 @@ class WavePainter extends CustomPainter {
       old.wave != wave ||
       old.length != length ||
       !listEquals(old.spans, spans) ||
+      !listEquals(old.rates, rates) ||
       old.start != start ||
       old.end != end ||
       old.color != color;

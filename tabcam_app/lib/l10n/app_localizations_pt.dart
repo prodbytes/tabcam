@@ -792,6 +792,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get camAlongPause => 'Pausar (espaço)';
 
   @override
+  String get camAlongRestart => 'Voltar ao início (0)';
+
+  @override
   String get camAlongBack => 'Voltar 10 segundos';
 
   @override
@@ -1200,6 +1203,15 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get textViewColumnsOn => 'Voltar a uma coluna, para editar';
+
+  @override
+  String get textViewDragTip => 'Mover a tablatura arrastando';
+
+  @override
+  String get textViewDragOn => 'Parar de mover a tablatura';
+
+  @override
+  String get textViewZoomReset => 'Voltar ao tamanho normal';
 
   @override
   String get textViewFix => 'Corrigir';

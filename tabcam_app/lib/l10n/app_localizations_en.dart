@@ -770,6 +770,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camAlongPause => 'Pause (space)';
 
   @override
+  String get camAlongRestart => 'Back to the start (0)';
+
+  @override
   String get camAlongBack => 'Back 10 seconds';
 
   @override
@@ -1170,6 +1173,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get textViewColumnsOn => 'Back to one column, to edit';
+
+  @override
+  String get textViewDragTip => 'Move the tab by dragging it';
+
+  @override
+  String get textViewDragOn => 'Stop moving the tab';
+
+  @override
+  String get textViewZoomReset => 'Back to the usual size';
 
   @override
   String get textViewFix => 'Fix';
