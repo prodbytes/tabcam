@@ -17,8 +17,9 @@ Dark, in the brand's colours ([app icon](app-icon.md): `#1E1A15`, cream
 `#FBF7EF`, gold `#E0A030`), from top to bottom:
 
 - **Top bar**, kept at the top while scrolling: the
-  [logo](app-icon.md), links to the three features (Scan, Record, Share;
-  hidden on phones) and **Open the app** (`/app/`).
+  [logo](app-icon.md), links to the three features and the open source
+  box (Scan, Record, Share, Open; hidden on phones), each scrolling its
+  section to just below the bar, and **Open the app** (`/app/`).
 - **Header**: "For guitar and bass players", the title **A camera for
   your guitar tabs**, a sentence on what it does, **the way in** (below),
   "Runs in your browser, on your phone or your computer", and a faint
@@ -40,6 +41,13 @@ Dark, in the brand's colours ([app icon](app-icon.md): `#1E1A15`, cream
      friends, read only; playing a recording or video above the tab;
      what they record goes to their own copy. Its picture is yet to
      come: until then its box stands alone, centred.
+- **Open source and learnable** (`#open`, the top bar's **Open**): a
+  box like the features' (numbered 04, no picture, centred), saying the
+  code is open under the MIT License, to read, run and learn from, and
+  that the Production Bytes newsletter tells how it's built and shipped.
+  Its two points are links: **The code, on GitHub**
+  (https://github.com/prodbytes/tabcam) and **How it's made, on
+  Production Bytes** (https://prodbytes.substack.com/).
 - **The way in, again**: "Start with the tab on your music stand", that
   tabs.cam comes with no songs (everything is what the user scans or
   adds, in their own account), no ads, no tracking, and the way in

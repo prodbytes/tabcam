@@ -5026,3 +5026,17 @@ spec.
    once without reading again; none while recording, nor on a desktop
    build. `WavePainter` takes a rate per span for the fitting. Tested
    in `studio_test.dart` and `waveform_test.dart`. See [Cam](cam.md#waveforms-in-cams-rows).
+
+8. **"in the index page add an "open source and learnable" link pointing
+   to our github project and prodbytes substack"**, then **"make it
+   "Open" in the top menu"**. The index page's top bar has **Open**
+   after Scan, Record and Share, to a new box under the features
+   (`#open`, numbered 04, like Share's without a picture): **Open source
+   and learnable**, the code open under the MIT License to read, run
+   and learn from, and the Production Bytes newsletter on how it's built
+   and shipped, with links to the GitHub project
+   (https://github.com/prodbytes/tabcam) and the Substack
+   (https://prodbytes.substack.com/). The top bar's links now scroll
+   their section to just below the bar (`scroll-margin-top`), where the
+   pictureless boxes (Share, Open) used to land with their top under
+   it. See [index page](index-page.md#the-page).
