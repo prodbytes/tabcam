@@ -347,11 +347,11 @@ metronome's buttons do theirs; its ✕ hides it too.
   fit their half of the row by their names, measured at the text size).
   The buttons keep their 48-point size: where half the row is too little
   for the two trims, the time at the left gives them room and shrinks.
-  **To the start** goes to the kept
+  **To the start** ("To the start (Home)") goes to the kept
   part's start, or, there already, the video's, playing on if it
-  played; **To the end** pauses and goes to the kept part's end, or,
-  there already, the video's. Play / Pause's tooltip names the space
-  bar: **the space bar** plays and pauses the preview too, as a tap on
+  played; **To the end** ("To the end (End)") pauses and goes to the
+  kept part's end, or, there already, the video's. Play / Pause's
+  tooltip names the space bar: **the space bar** plays and pauses the preview too, as a tap on
   it does, wherever the editor is clicked. **Home** and **End** are To
   the start and To the end, and **←** / **→** move the preview a tenth
   of a second (with Shift, a second; held, a seek at most every

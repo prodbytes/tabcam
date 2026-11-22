@@ -5092,3 +5092,23 @@ spec.
    with a song, the song back at its start each time; the comma key).
    Not yet tried on a phone. See [Cam](cam.md#new-take-key) and
    [keyboard shortcuts](keyboard-shortcuts.md).
+
+10. **"In the cam view (record / editor) also have button for down and
+   up (pass phrase up and down), always tooltip the keyboard shortcut
+   on all buttons."** The arrows beside Cam's phrase, which pass it, are
+   now **↑** and **↓** (they were ‹ and ›), as the keys that pass it,
+   their tooltips "Previous phrase (↑)" and "Next phrase (↓)" (they
+   said "Previous line" and "Next line"). Every button in Cam and the
+   editor that has a key now names it in its tooltip: the player's «
+   and » ("Back 10 seconds (←)", "Forward 10 seconds (→)"), the
+   editor's "To the start (Home)" and "To the end (End)", Cam's main
+   row's "Play the song (space)" (only while the sidebar shows, where
+   the space bar is the song's), and Stop's "new take (/ or ,)"; Rec,
+   Redo, New take, |◀ (0), Play (space) and the keyboard button (H)
+   named theirs already. Kept as a rule: the design guidelines in
+   [CLAUDE.md](../CLAUDE.md) and [keyboard shortcuts](keyboard-shortcuts.md)
+   say every button with a key names it in its tooltip. Tested in
+   `play_along_test.dart` (the arrows' icons and every tooltip in Cam)
+   and `video_edit_frame_test.dart` (Home, End). Built on the Redo and
+   New take change before it. See [Cam](cam.md) and
+   [video edit](video-edit.md).
