@@ -5068,3 +5068,48 @@ spec.
    their section to just below the bar (`scroll-margin-top`), where the
    pictureless boxes (Share, Open) used to land with their top under
    it. See [index page](index-page.md#the-page).
+
+9. **"i dont see the download and settings tab (with watermark, title,
+   faders, etc) that are gone since merger of views, they should be a
+   tab of the sidebar now"**, then, asked: the tab replaces the panel
+   everywhere, and with the camera in the main row it offers Edit the
+   take. Since the merge, the Download settings showed only while a page
+   was edited, in a panel beside or under the viewer (on a phone, under
+   it), and never with the camera in Cam's main row. They're now the
+   **Download** tab of the editor's sidebar: in Cam's view the
+   play-along sidebar has tabs at its top (`SidebarTabs`,
+   [`sidebar_tabs.dart`](../tabcam_app/lib/screens/sidebar_tabs.dart)),
+   **Play along** (its files, kept loaded meanwhile) and **Download**,
+   and ✕ to hide it; in the editor alone (over the file screen) a
+   sidebar of its own with the Download tab alone
+   (`DownloadSidebarBeside`), as wide as the play-along sidebar (one
+   width, `SidebarWidths.playAlong`, at least 224 points on Download).
+   The panel beside and under the viewer is gone, and with it the
+   phone's fields in place of the chips and their Done buttons, the
+   Fades chip's tune button and the Tab chip's palette: the tab always
+   has the roomy layout (chips, then the title's fields, the Master,
+   the fades' sliders and the tab's style, then the song). A take's Edit
+   turns the sidebar to Download, the camera back to Play along. With
+   the camera in the main row, the Download tab says a take's download
+   is set while it's edited, over **Edit the take** (the take's row's
+   take, in the camera's place, the sidebar staying on Download, even
+   on a phone; greyed with no take, while one records or saves, or
+   during a download). The app bar's **Download settings** (tune) and
+   **Play along** (♫) show the sidebar on their tab, or hide it where
+   theirs shows. A phone opens the editor alone with the sidebar
+   hidden (the editor keeps its width), until asked; a tap on the
+   picture that opens a field (the title, a fade's badge, a long press
+   on the band) shows the sidebar at it. In a sidebar under 400 points
+   high (a phone on its side) there are no tabs, so the play-along
+   player keeps its room (the app bar's buttons switch). A take's Edit
+   on a phone on its side no longer hides the sidebar (the editor
+   keeps 360 points beside it). In English, Spanish and Portuguese
+   ("Play along", "Download", "Hide the sidebar"; the Done and "Change
+   the fades" strings, unused now, removed). Tests: the Download
+   settings suite rewritten for the sidebar (`download_settings_test`),
+   the phone tests of the tab's style, the fades and the title
+   (`tab_style_test`, `fades_test`, `title_watermark_test`), and in
+   `studio_test` the tabs through Edit and Back and the Download tab's
+   Edit the take with the camera (wide and on a phone). See
+   [video edit](video-edit.md#download-settings) and
+   [Cam](cam.md#the-sidebars-tabs).
