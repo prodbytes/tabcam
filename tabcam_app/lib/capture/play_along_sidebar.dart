@@ -602,6 +602,10 @@ class PlayAlongBeside extends StatelessWidget {
                       onUse?.call();
                       unawaited(along.track.toggle());
                     },
+                    onRestart: () {
+                      onUse?.call();
+                      unawaited(along.track.restart());
+                    },
                     onSkip: (by) {
                       onUse?.call();
                       unawaited(along.track.skip(by));
@@ -883,6 +887,7 @@ class _BackingFrame extends StatefulWidget {
     required this.onSectionHere,
     required this.onSectionClear,
     required this.onSpeed,
+    this.onRestart,
     this.onPhrasesClear,
     this.onCountIn,
   });
@@ -898,6 +903,7 @@ class _BackingFrame extends StatefulWidget {
   final void Function({required bool end}) onSectionHere;
   final VoidCallback onSectionClear;
   final void Function(double speed) onSpeed;
+  final VoidCallback? onRestart;
   final VoidCallback? onPhrasesClear;
   final VoidCallback? onCountIn;
 
@@ -924,6 +930,7 @@ class _BackingFrameState extends State<_BackingFrame> {
       :onSectionHere,
       :onSectionClear,
       :onSpeed,
+      :onRestart,
       :onPhrasesClear,
       :onCountIn,
     ) = widget;
@@ -1103,6 +1110,17 @@ class _BackingFrameState extends State<_BackingFrame> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             if (track.canToggle) ...[
+                              // Back to the start, as the 0 key.
+                              IconButton(
+                                key: const Key('cam-along-restart'),
+                                tooltip: l10n.camAlongRestart,
+                                visualDensity: compact,
+                                color: Colors.white,
+                                icon: const Icon(Icons.skip_previous),
+                                onPressed:
+                                    onRestart ??
+                                    () => unawaited(track.restart()),
+                              ),
                               IconButton(
                                 key: const Key('cam-along-back'),
                                 tooltip: l10n.camAlongBack,
@@ -1205,6 +1223,7 @@ class PlayAlongSidebar extends StatelessWidget {
     required this.onSectionHere,
     required this.onSectionClear,
     required this.onSpeed,
+    this.onRestart,
     this.onPhrasesClear,
     this.onCountIn,
     this.width,
@@ -1258,6 +1277,10 @@ class PlayAlongSidebar extends StatelessWidget {
   final void Function({required bool end}) onSectionHere;
   final VoidCallback onSectionClear;
   final void Function(double speed) onSpeed;
+
+  /// Back to the start of what plays (its section's), as the **0** key
+  /// ([BackingTrack.restart]); null: the track goes back itself.
+  final VoidCallback? onRestart;
 
   /// Forgets the phrase passes of what plays; null: the track forgets
   /// them itself.
@@ -1319,6 +1342,7 @@ class PlayAlongSidebar extends StatelessWidget {
                           onSectionHere: onSectionHere,
                           onSectionClear: onSectionClear,
                           onSpeed: onSpeed,
+                          onRestart: onRestart,
                           onPhrasesClear: onPhrasesClear,
                           onCountIn: onCountIn,
                         ),

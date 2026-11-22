@@ -139,7 +139,7 @@ review notes ([app stores](app-stores.md)).
   without Premium), for text tabs
   and typeset tab staves, never over the user's edits or a reading marked
   correct; the Text view, a tab editor (Copy, Rescan and Verified
-  in the app bar, the editing tools on their own line; overtype first, − and + on a fret, ++ and −− moving a note across strings, | a bar line and = a spacer dash down the phrase, |> and <| ending every phrase's lines together at the last or the first end, New phrase an empty six-line phrase) where a reading is marked
+  in the app bar, the editing tools on their own line; overtype first, − and + on a fret, ++ and −− moving a note across strings, | a bar line and = a spacer dash down the phrase, |> and <| ending every phrase's lines together at the last or the first end, New phrase an empty six-line phrase; Zoom in, Zoom out and Drag to move over its bottom right) where a reading is marked
   verified (the event then opens on it).
 - [Auto-correct](autocorrect.md): Fix, **hidden for now** (on only in a
   build with `TABCAM_FIX=true`): lines the tab up, and for Premium Claude
@@ -197,7 +197,8 @@ review notes ([app stores](app-stores.md)).
 - [Index page](index-page.md): the site's front page at
   https://tabs.cam/: a header with the way into the app, and the three
   key features (scan, record, share and play along), each a picture with
-  its text in a box over it.
+  its text in a box over it; for visitors not signed in, as anyone
+  signed in goes straight on to the app.
 - [Privacy](privacy.md): the privacy policy at
   https://tabs.cam/privacy (linked from the index page and About),
   what it says and what it's based on; the iOS privacy manifest and

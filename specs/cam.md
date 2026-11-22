@@ -811,7 +811,9 @@ view).
   its **red** while a take records; marked where its [phrase passes](#phrase-passes) are, with
   the button that clears them at the line's right end), the
   [count-in](#count-in) at the start of the progress bar's line; a recording only that line; under them its icon and
-  name in small type, then **«** (10 seconds back, not before the
+  name in small type, then **|◀** (back to the start, as the **0** key,
+  below: the file's or its section's, count-in included; "Back to the
+  start (0)"), **«** (10 seconds back, not before the
   start), **Play** / **Pause** (Pause while it counts in too), **Stop** (pauses it, back at its start),
   **»** (10 seconds forward) and **Repeat** (on by default, in the
   primary colour while on: at its end it starts over; a recording or
@@ -908,7 +910,8 @@ view).
   from the start. While it counts in, the count starts over. (A link in
   the frame, which has no count-in, goes back by Stop, then plays again
   if it played.) Like space, it doesn't turn the tab while the sidebar
-  shows. Ctrl / ⌘ + 0 is left to the browser (its zoom).
+  shows. Ctrl / ⌘ + 0 is left to the browser (its zoom). The frame's
+  **|◀** button does the same, the one `BackingTrack.restart` both call.
 - **← and →** go 10 seconds back and on in it, as « and » do (held,
   again and again), and don't turn the tab while the sidebar shows; the
   tab's phrases go by **↑** (the one before) and **↓** (the next). With
