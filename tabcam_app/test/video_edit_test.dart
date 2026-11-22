@@ -1901,6 +1901,69 @@ void main() {
     expect(edit()?.toJson().containsKey('ownChannels') ?? false, isFalse);
   });
 
+  testWidgets('a lane split into its instruments keeps each one\'s level '
+      'with the edit, and says only Download has them', (tester) async {
+    tall(tester);
+    final (library, id) = await capture(tester, editTake: true);
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    PageEdit? edit() => library.byId(id)!.pages.first.edit;
+    Finder key(String k) => find.byKey(Key('video-edit-take-$k'));
+
+    await tester.tap(key('volume'));
+    await _frames(tester);
+    expect(tester.widget<Switch>(key('stems')).value, isFalse);
+    expect(key('vocals-slider'), findsNothing);
+
+    // Split: each instrument at 100%, the sound as it is.
+    await tester.tap(key('stems'));
+    await _settle(tester);
+    expect(edit()!.ownStems, LaneStems.all);
+    expect(edit()!.toJson()['ownStems'], isEmpty);
+    for (final stem in ['vocals', 'drums', 'bass', 'other']) {
+      expect(key('$stem-slider'), findsOneWidget, reason: stem);
+    }
+    expect(find.text('Vocals'), findsOneWidget);
+    expect(key('stems-note'), findsNothing);
+
+    // The vocals muted, the bass at half.
+    await tester.tap(key('vocals-mute'));
+    await _settle(tester);
+    tester.widget<Slider>(key('bass-slider')).onChanged!(50);
+    await _settle(tester);
+    expect(edit()!.ownStems.of(Stem.vocals).muted, isTrue);
+    expect(edit()!.ownStems.of(Stem.bass).volume, 0.5);
+    expect(edit()!.toJson()['ownStems'], {
+      'vocals': {'muted': true},
+      'bass': {'volume': 0.5},
+    });
+    expect(tester.widget<Text>(key('bass-level')).data, '50%');
+    expect(key('stems-note'), findsOneWidget);
+
+    // Opened again: as it was left.
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(editScreen(library, id));
+    await _settle(tester);
+    await tester.tap(key('volume'));
+    await _frames(tester);
+    expect(tester.widget<Switch>(key('stems')).value, isTrue);
+    expect(tester.widget<Text>(key('bass-level')).data, '50%');
+    expect(
+      tester.widget<Text>(key('vocals-level')).style?.decoration,
+      TextDecoration.lineThrough,
+    );
+
+    // Heard again as loud as it was; then put back together, nothing kept.
+    await tester.tap(key('vocals-mute'));
+    await _settle(tester);
+    expect(edit()!.ownStems.of(Stem.vocals), StemLevel.full);
+    await tester.tap(key('stems'));
+    await _settle(tester);
+    expect(edit()?.ownStems ?? LaneStems.none, LaneStems.none);
+    expect(edit()?.toJson().containsKey('ownStems') ?? false, isFalse);
+    expect(key('vocals-slider'), findsNothing);
+  });
+
   testWidgets('the current time shows beside the preview\'s progress', (
     tester,
   ) async {

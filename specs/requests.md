@@ -4910,6 +4910,34 @@ spec.
    [sharing](sharing.md#who-can-open-it), [shared
    captures](shared-captures.md), [dictionary](dictionary.md#public-captures).
 
+5. **"Lets add a stem separation feature. In the editor, per track. When
+   activated, this feature 'splits' the sound into its instruments. No
+   need for a great algorithm for now, do the easy thing now we'll
+   improve it later."** Each of the video editor's sound lanes (the Take
+   row's and the Song row's) has **Split into instruments**, a switch in
+   its volume popup under Channels and Balance; on, the lane has four
+   instruments, **Vocals**, **Drums**, **Bass** and **Other**, each with
+   a Mute and a 0–100% slider of its own (muting keeps the level), kept
+   with the edit (`ownStems`, `songStems`, written only while split, with
+   the instruments not at 100%; older apps keep them and play the lanes
+   whole). The easy split, on the device: a Linkwitz-Riley crossover at
+   200 Hz (Bass) and 4 kHz (Drums), the band between split by its place in
+   the mix, its middle Vocals and its sides Other; at 100% throughout it
+   sounds as it did, and isn't processed. (Its middle band as "the sound
+   minus its lows and highs", simpler still, was ruled out: the low band's
+   phase would leave most of the bass in with Bass muted.) Download
+   applies it on all three platforms (Web Audio IIR filters in the web's
+   mix; a Media3 `StemsProcessor` on Android; the lane's processing tap on
+   iOS), each a copy of `StemSplit.apply` in Dart, the frequencies sent
+   from there; the preview and the file screen's player play the lane
+   whole, as they do its channels and balance, with a note saying so,
+   until the editor's Download is kept. Picking another song, Remove and
+   Reset put a lane back whole. Tested in `lane_stems_test.dart` (the
+   model, the plan and the split's levels at each pitch),
+   `video_edit_test.dart` (the popup), `web_lane_stems_test.dart` (Chrome)
+   and `RunnerTests` (iOS); the Kotlin compiled. See
+   [instruments](stems.md), [video edit](video-edit.md#a-lanes-instruments).
+
 ## 2026-11-22
 
 1. **"if a user is already logged in, in the index page, move to the

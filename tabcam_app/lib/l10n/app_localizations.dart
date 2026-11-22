@@ -4408,6 +4408,48 @@ abstract class AppLocalizations {
   /// **'Download has the channels and balance; the preview plays the sound as recorded.'**
   String get videoEditStereoPreviewNote;
 
+  /// Video edit: a lane's switch (in its volume popup) that splits its sound into its instruments, each with a level of its own
+  ///
+  /// In en, this message translates to:
+  /// **'Split into instruments'**
+  String get videoEditStemsSplit;
+
+  /// Video edit: the tooltip of Split into instruments, saying how the sound is split
+  ///
+  /// In en, this message translates to:
+  /// **'A rough split for now: the bass under 200 Hz, the drums over 4 kHz, the voice in the middle of the mix, the rest at its sides.'**
+  String get videoEditStemsTip;
+
+  /// Video edit: the instrument a split lane's voice is (a stem)
+  ///
+  /// In en, this message translates to:
+  /// **'Vocals'**
+  String get videoEditStemVocals;
+
+  /// Video edit: the instrument a split lane's drums are (a stem)
+  ///
+  /// In en, this message translates to:
+  /// **'Drums'**
+  String get videoEditStemDrums;
+
+  /// Video edit: the instrument a split lane's bass is (a stem)
+  ///
+  /// In en, this message translates to:
+  /// **'Bass'**
+  String get videoEditStemBass;
+
+  /// Video edit: the rest of a split lane's sound: guitars, keys and the like (a stem)
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get videoEditStemOther;
+
+  /// Video edit: note under a split lane's instruments once one isn't as it is
+  ///
+  /// In en, this message translates to:
+  /// **'Download has the instruments\' levels; the preview plays the sound as recorded.'**
+  String get videoEditStemsPreviewNote;
+
   /// Video edit: a lane's balance towards the left, percent 5 to 100
   ///
   /// In en, this message translates to:

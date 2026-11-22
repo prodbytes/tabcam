@@ -45,12 +45,14 @@ import java.util.concurrent.Executors
  * - `video`: false for the sound alone (AAC in MP4, an `.m4a`), true (the
  *   default) for the video (H.264 and AAC in MP4);
  * - `startMs`, `endMs`: the part of the video kept;
- * - `own`: the video's own sound, `{volume, mix}` (a gain from 0 to 2: its lane's
+ * - `own`: the video's own sound, `{volume, mix, stems}` (a gain from 0 to 2: its lane's
  *   level through the master's; `mix`, left out when it's as recorded, its
  *   channels and balance: each side of the output from the sound's two
- *   channels, `[ll, lr, rl, rr]`, a one-channel sound as both); left out,
- *   it's removed;
- * - `song`: the song lane, `{path, volume, mix, clips}` (volume and mix as
+ *   channels, `[ll, lr, rl, rr]`, a one-channel sound as both; `stems`, left
+ *   out when it isn't split or its instruments are as they are, each
+ *   instrument's gain, `{vocals, drums, bass, other, bassHz, drumsHz}`,
+ *   [StemsProcessor]); left out, it's removed;
+ * - `song`: the song lane, `{path, volume, mix, stems, clips}` (volume, mix and stems as
  *   `own`'s), each clip `{atMs, fromMs, toMs, speed}`: from `atMs` in the output (0 is the kept part's start),
  *   the song from `fromMs` to `toMs` (the app works the times out and cuts
  *   them to the output; only speed 1 for now);
@@ -143,7 +145,13 @@ data class SongClip(val atMs: Long, val fromMs: Long, val toMs: Long, val speed:
  * recorded), heard in [clips] (in output order).
  */
 @UnstableApi
-data class SongLane(val file: File, val volume: Float, val clips: List<SongClip>, val mix: StereoMix? = null)
+data class SongLane(
+    val file: File,
+    val volume: Float,
+    val clips: List<SongClip>,
+    val mix: StereoMix? = null,
+    val stems: StemGains? = null,
+)
 
 /**
  * A lane's channels and balance: each side of the output from the sound's
@@ -220,6 +228,8 @@ data class RenderPlan(
     val ownVolume: Float?,
     /** Its channels and balance; null: as recorded. */
     val ownMix: StereoMix? = null,
+    /** Its instruments' gains; null: as they are. */
+    val ownStems: StemGains? = null,
     val song: SongLane?,
     /** What's drawn over the picture, each naming one of [images] (PNGs). */
     val layers: List<PlanLayer> = emptyList(),
@@ -252,7 +262,7 @@ data class RenderPlan(
                         speed = (clip["speed"] as? Number)?.toDouble() ?: 1.0,
                     )
                 }
-                SongLane(File(path), volume(s), clips, StereoMix.fromArgs(s["mix"]))
+                SongLane(File(path), volume(s), clips, StereoMix.fromArgs(s["mix"]), StemGains.fromArgs(s["stems"]))
             }
             val images = (args["images"] as? List<*>).orEmpty().map {
                 it as? ByteArray ?: throw IllegalArgumentException("Bad layer image")
@@ -268,6 +278,7 @@ data class RenderPlan(
                 endMs = endMs,
                 ownVolume = own?.let { volume(it) },
                 ownMix = own?.let { StereoMix.fromArgs(it["mix"]) },
+                ownStems = own?.let { StemGains.fromArgs(it["stems"]) },
                 song = song,
                 layers = layers,
                 images = images,
@@ -392,7 +403,7 @@ class VideoRenderer(private val context: Context) {
         if (plan.video) {
             val video = EditedMediaItem.Builder(clipped(plan.input, plan.startMs, plan.endMs))
                 .setRemoveAudio(plan.ownVolume == null)
-            val audioEffects = plan.ownVolume?.let { laneEffects(it, plan.ownMix) }?.audioProcessors.orEmpty()
+            val audioEffects = plan.ownVolume?.let { laneEffects(it, plan.ownMix, plan.ownStems) }?.audioProcessors.orEmpty()
             val videoEffects = if (plan.layers.isEmpty() && !plan.fades.any) {
                 emptyList<Effect>()
             } else {
@@ -413,7 +424,7 @@ class VideoRenderer(private val context: Context) {
         plan.ownVolume?.let { volume ->
             val own = EditedMediaItem.Builder(clipped(plan.input, plan.startMs, plan.endMs))
                 .setRemoveVideo(true)
-            laneEffects(volume, plan.ownMix)?.let { own.setEffects(it) }
+            laneEffects(volume, plan.ownMix, plan.ownStems)?.let { own.setEffects(it) }
             sequences.add(EditedMediaItemSequence.Builder(own.build()).build())
         }
         songSequence?.let { sequences.add(it) }
@@ -445,7 +456,7 @@ class VideoRenderer(private val context: Context) {
             if (clip.atMs > cursorMs) builder.addGap((clip.atMs - cursorMs) * 1000)
             val item = EditedMediaItem.Builder(clipped(song.file, clip.fromMs, clip.toMs))
                 .setRemoveVideo(true)
-            laneEffects(song.volume, song.mix)?.let { item.setEffects(it) }
+            laneEffects(song.volume, song.mix, song.stems)?.let { item.setEffects(it) }
             builder.addItem(item.build())
             cursorMs = clip.atMs + (clip.toMs - clip.fromMs)
         }
@@ -457,15 +468,17 @@ class VideoRenderer(private val context: Context) {
     /**
      * A lane's audio effects: its channels and balance ([mix], unless as
      * recorded: a `ChannelMixingAudioProcessor`, which makes it stereo),
+     * its instruments ([stems], unless as they are: a [StemsProcessor]),
      * then a gain at [volume], unless 1: louder than it is, a [ClippingGain]
      * (a `GainProcessor` wraps 16-bit samples it lifts past their range).
      * Null when it has none.
      */
-    private fun laneEffects(volume: Float, mix: StereoMix?): Effects? {
+    private fun laneEffects(volume: Float, mix: StereoMix?, stems: StemGains?): Effects? {
         val processors = mutableListOf<AudioProcessor>()
         if (mix != null) {
             processors.add(ChannelMixingAudioProcessor().apply { mix.matrices().forEach { putChannelMixingMatrix(it) } })
         }
+        if (stems != null) processors.add(StemsProcessor(stems))
         when {
             volume == 1f -> {}
             volume > 1f -> processors.add(ClippingGain(volume))

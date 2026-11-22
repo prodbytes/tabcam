@@ -2594,6 +2594,29 @@ class AppLocalizationsEn extends AppLocalizations {
       'Download has the channels and balance; the preview plays the sound as recorded.';
 
   @override
+  String get videoEditStemsSplit => 'Split into instruments';
+
+  @override
+  String get videoEditStemsTip =>
+      'A rough split for now: the bass under 200 Hz, the drums over 4 kHz, the voice in the middle of the mix, the rest at its sides.';
+
+  @override
+  String get videoEditStemVocals => 'Vocals';
+
+  @override
+  String get videoEditStemDrums => 'Drums';
+
+  @override
+  String get videoEditStemBass => 'Bass';
+
+  @override
+  String get videoEditStemOther => 'Other';
+
+  @override
+  String get videoEditStemsPreviewNote =>
+      'Download has the instruments\' levels; the preview plays the sound as recorded.';
+
+  @override
   String videoEditBalanceLeft(int percent) {
     return 'L $percent';
   }
