@@ -4949,3 +4949,17 @@ spec.
    editor). The row of buttons still fits the narrowest sidebar (160
    px), scaled down as before. Tested in `backing_section_test.dart`.
    See [Cam](cam.md#playing-along-with-a-file).
+
+4. **"when spacepar is pressed to pause the mini player also stop the
+   recording"**. In Cam, the space bar pausing the play-along sidebar's
+   song (playing, or counting in) while a take records now stops the
+   take too, saved as Stop (Rec) saves it; until now the take recorded
+   on. **1**, the song's play / pause as the space bar (one key in the
+   request of 2026-11-17, one code path), does the same. Playing the
+   song with either never starts a take, and the frame's own Pause
+   button still only pauses the song. `PlayAlongKeys` tells a key's
+   pause (`onKeyPause`, through `PlayAlongBeside`), and Cam answers with
+   `CamSession.keyPaused`: Rec's Stop when a take records and Rec can
+   be pressed. The other screens with the sidebar have no take, so
+   nothing changes there. Tested in `play_along_test.dart`. See
+   [Cam](cam.md#space-stops-take).
