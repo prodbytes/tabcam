@@ -770,6 +770,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camAlongPause => 'Pause (space)';
 
   @override
+  String get camAlongRestart => 'Back to the start (0)';
+
+  @override
   String get camAlongBack => 'Back 10 seconds';
 
   @override

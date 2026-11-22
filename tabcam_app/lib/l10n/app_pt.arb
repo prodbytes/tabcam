@@ -205,6 +205,7 @@
   "camAlongTextHide": "Ocultar o texto",
   "camAlongPlay": "Tocar (espaço)",
   "camAlongPause": "Pausar (espaço)",
+  "camAlongRestart": "Voltar ao início (0)",
   "camAlongBack": "Voltar 10 segundos",
   "camAlongForward": "Avançar 10 segundos",
   "camAlongCountInOn": "Contagem ligada: 2 segundos de silêncio antes de tocar",
