@@ -105,14 +105,6 @@ void main() {
     expect(library.byId(id)!.pages.first.title, 'Verse');
   });
 
-  /// The file screen's Rename tool, beside Delete.
-  IconButton renameTool(WidgetTester tester) => tester.widget<IconButton>(
-    find.descendant(
-      of: find.byKey(const Key('rename-file')),
-      matching: find.byType(IconButton),
-    ),
-  );
-
   testWidgets('an opened file is renamed from the tool beside Delete', (
     tester,
   ) async {
@@ -173,13 +165,39 @@ void main() {
     final link = library.byId(id)!.pages.last;
     expect(find.byKey(ValueKey('rename-${link.id}')), findsNothing);
 
-    // Opened (Details: tapping a link's row opens the link), its Rename
-    // tool (like Delete) is off.
+    // Opened (Details: tapping a link's row opens the link), it has no
+    // Rename or Delete (only the owner sees them), so no tools at all.
     await tester.tap(find.byKey(ValueKey('details-${link.id}')));
     await frames(tester);
-    expect(renameTool(tester).onPressed, isNull);
-    await tester.tap(find.byKey(const Key('rename-file')));
+    expect(find.byKey(const Key('rename-file')), findsNothing);
+    expect(find.byType(EventTool), findsNothing);
+    // Nor does its name rename it.
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('example.com'),
+      ),
+    );
     await frames(tester);
     expect(find.byType(AlertDialog), findsNothing);
+  });
+
+  testWidgets("a photo shared read only has its view, not the owner's tools", (
+    tester,
+  ) async {
+    final id = await open(tester, readOnly: true);
+    final photo = library.byId(id)!.pages.first;
+    await tester.tap(find.byKey(ValueKey('file-${photo.id}')));
+    await frames(tester);
+    expect(find.byType(FileScreen), findsOneWidget);
+    expect(find.byKey(const Key('view')), findsOneWidget);
+    for (final gone in ['Rotate', 'Rename', 'Delete']) {
+      expect(
+        find.descendant(of: find.byType(EventTool), matching: find.text(gone)),
+        findsNothing,
+        reason: gone,
+      );
+    }
+    expect(find.byType(EventTool), findsOneWidget);
   });
 }

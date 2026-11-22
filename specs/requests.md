@@ -4938,6 +4938,38 @@ spec.
    and `RunnerTests` (iOS); the Kotlin compiled. See
    [instruments](stems.md), [video edit](video-edit.md#a-lanes-instruments).
 
+6. **"only show the tools (metronome, dictionary, help) to logged in
+   users. same for navigation (edit, rename, delete). only show edit
+   rename and delete for the same user that created (owns) the file.
+   other users are read only and must not see those buttons."** Signed
+   out, a capture opened by its link (the only screen a signed-out user
+   reaches besides the welcome) and a file opened from it have no
+   **Dictionary**, **Metronome** or **keyboard shortcuts' help**: not
+   their app bar buttons, not their items in a phone's Text view More
+   menu, not the H key, and not their sidebars, even left open
+   app-wide from before signing out (the metronome stops there, as on
+   a screen without it). Signed in, a link's capture has them as
+   before. On the file screen, **Rotate**, **Edit**, **Rename** and
+   **Delete** now show only to the capture's owner: on a capture shared
+   with the user or opened by its link, and on a contributed file,
+   they're gone instead of greyed out (an image keeps its Original /
+   Scan view, which only changes what shows; a reader's video, PDF,
+   recording or link has no bottom bar at all). The capture's own
+   screen, Home's cards and the play-along sidebar already left Rename,
+   Delete, reordering, a take's Edit and the text tab's editing tools
+   out for readers. Tests: `public_capture_test.dart` (signed out, with
+   the dictionary left open: no tools or sidebars on the capture, its
+   Text view, a phone's More menu or a file's screen, which has only
+   its view; signed in by its link: the tools, no Rename) and
+   `rename_files_test.dart` (a reader's link has no bar, its name
+   renames nothing; a reader's photo has only its view). See
+   [event screen](event-screen.md#file-screen),
+   [sharing](sharing.md#opening-a-link),
+   [shared captures](shared-captures.md),
+   [navigation](navigation.md#signed-out-the-welcome),
+   [dictionary](dictionary.md), [metronome](metronome.md) and
+   [keyboard shortcuts](keyboard-shortcuts.md).
+
 ## 2026-11-22
 
 1. **"if a user is already logged in, in the index page, move to the

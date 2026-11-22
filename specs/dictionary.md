@@ -5,7 +5,9 @@ of Cam and of Home, first in the app bar: the
 [event screen](event-screen.md) in all its views (Files, Text, and the
 locked previews), the [file screen](event-screen.md#file-screen) for any
 file, Cam ([cam.md](cam.md)) with or without Premium, a capture opened
-by its link, and Home's captures ([navigation](navigation.md); not the
+by its link signed in (signed out, it has neither the button nor the
+sidebar: the tools are signed-in users',
+[sharing](sharing.md#opening-a-link)), and Home's captures ([navigation](navigation.md); not the
 Capture and Profile tabs, where the sidebar doesn't show but stays
 open). In the [video editor](video-edit.md#the-edit-screen) it comes
 after Reset, Download and Download settings (on a phone, in its More

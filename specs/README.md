@@ -64,7 +64,8 @@ review notes ([app stores](app-stores.md)).
   recordings, PDFs and links) as a list with previews, Files, Text and
   Add and Cam (the list reorders in place by drag handles), plus Rename,
   Clone and one Share; a tap opens a file alone, with
-  its view (Original or Scan), Rotate and Delete, the play-along
+  its view (Original or Scan), Rotate, Edit, Rename and Delete (those
+  four shown to the owner only, never to readers), the play-along
   sidebar beside an image or a PDF, and a recording playing in it with
   the capture's pages and PDFs to follow beside. Text and Cam are
   Premium's: locked, each opens as a preview under the Premium card.
@@ -86,7 +87,8 @@ review notes ([app stores](app-stores.md)).
   average time), and **Auto-pass** turns the tab there the next time
   through.
 - [Dictionary](dictionary.md): a book icon at the top of every file
-  viewer, the video editor, Cam and Home opens a search in a sidebar on
+  viewer, the video editor, Cam and Home (signed in; a capture's link
+  opened signed out has no tools) opens a search in a sidebar on
   the right: a chord shows
   its notes and voicings as chord diagrams, a scale its notes on the
   fretboard (both worked out on the device); anything else is searched
@@ -95,7 +97,7 @@ review notes ([app stores](app-stores.md)).
   play-along player, the video editor's Download settings) is resizable
   by dragging its edge, the width kept on the device.
 - [Metronome](metronome.md): a stopwatch icon beside the dictionary's
-  opens a metronome in a sidebar: 80 BPM in 4/4 by default, the tempo set
+  (signed in) opens a metronome in a sidebar: 80 BPM in 4/4 by default, the tempo set
   with −, + and a slider (30–250), the common time signatures (2/4 to
   12/8), a light per beat, Start / Stop; clicks made on the device (Web
   Audio on the web, a looping WAV on the phones), accented on the bar.

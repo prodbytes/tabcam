@@ -8,6 +8,7 @@ import 'package:tabcam_app/auth/auth_service.dart';
 import 'package:tabcam_app/cloud/cloud_sync.dart';
 import 'package:tabcam_app/cloud/public_capture.dart';
 import 'package:tabcam_app/cloud/share_api.dart';
+import 'package:tabcam_app/dictionary/dictionary_sidebar.dart';
 import 'package:tabcam_app/export/capture_link.dart';
 import 'package:tabcam_app/export/incoming_links.dart';
 import 'package:tabcam_app/library/capture_event.dart';
@@ -16,8 +17,10 @@ import 'package:tabcam_app/library/library.dart';
 import 'package:tabcam_app/library/meta_names.dart';
 import 'package:tabcam_app/library/meta_storage.dart';
 import 'package:tabcam_app/main.dart';
+import 'package:tabcam_app/metronome/metronome.dart';
 import 'package:tabcam_app/screens/event_screen.dart';
 import 'package:tabcam_app/screens/file_screen.dart';
+import 'package:tabcam_app/screens/keys_help.dart';
 import 'package:tabcam_app/screens/public_capture_screen.dart';
 
 import 'fakes.dart';
@@ -40,6 +43,16 @@ Future<void> frames(WidgetTester tester) async {
   for (var i = 0; i < 20; i++) {
     await tester.pump(const Duration(milliseconds: 50));
   }
+}
+
+/// No Dictionary, Metronome or keys' help (the button, or its H key), nor
+/// their sidebars: signed out, a link's capture has none.
+void expectNoTools() {
+  expect(find.byType(DictionaryButton), findsNothing);
+  expect(find.byType(MetronomeButton), findsNothing);
+  expect(find.byType(KeysHelpButton), findsNothing);
+  expect(find.byType(DictionarySidebar), findsNothing);
+  expect(find.byType(MetronomeSidebar), findsNothing);
 }
 
 void main() {
@@ -223,6 +236,10 @@ void main() {
     await tester.runAsync(ownerShares);
     final mine = Library(PlatformEventStore());
     await tester.runAsync(mine.load);
+    // The dictionary left open (app-wide) before signing out: it doesn't
+    // show here.
+    DictionaryState.instance.toggle();
+    addTearDown(DictionaryState.instance.clear);
     await IncomingLinks.instance.didPushRouteInformation(
       RouteInformation(uri: link),
     );
@@ -253,12 +270,30 @@ void main() {
     expect(find.byTooltip('Rename'), findsNothing);
     expect(find.byTooltip('Clone'), findsNothing);
     expect(find.byTooltip('Share'), findsOneWidget);
+    // The tools are signed-in users'.
+    expectNoTools();
     await tester.tap(find.byKey(const Key('text')));
     await frames(tester);
     expect(
       find.textContaining('--3--5--7--', findRichText: true),
       findsWidgets,
     );
+    expectNoTools();
+    // A phone's Text view: none in its More menu either.
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await frames(tester);
+    expectNoTools();
+    await tester.tap(find.byKey(const Key('event-more')));
+    await frames(tester);
+    expect(find.byKey(const Key('more-share')), findsOneWidget);
+    expect(find.byKey(const Key('more-dictionary')), findsNothing);
+    expect(find.byKey(const Key('more-metronome')), findsNothing);
+    await tester.tapAt(Offset.zero);
+    await frames(tester);
+    tester.view.reset();
+    await frames(tester);
     // Nothing of it in the user's own library.
     expect(mine.all, isEmpty);
 
@@ -322,6 +357,12 @@ void main() {
     );
     await frames(tester);
     expect(find.byType(FileScreen), findsOneWidget);
+    // Signed out: no tools, and none of the owner's (Rotate, Rename,
+    // Delete); only the view, which changes what shows.
+    expectNoTools();
+    expect(find.byKey(const Key('view')), findsOneWidget);
+    expect(find.byKey(const Key('rename-file')), findsNothing);
+    expect(find.byType(EventTool), findsOneWidget);
     // The file's screen too has the one-click sign-in.
     expect(
       find.descendant(
@@ -466,6 +507,11 @@ void main() {
     expect(find.text('Sign in'), findsNothing);
     expect(find.byKey(const Key('quick-sign-in')), findsNothing);
     expect(mine.all, isEmpty);
+    // The tools are theirs; the owner's (Rename) aren't.
+    expect(find.byType(DictionaryButton), findsOneWidget);
+    expect(find.byType(MetronomeButton), findsOneWidget);
+    expect(find.byType(KeysHelpButton), findsOneWidget);
+    expect(find.byTooltip('Rename'), findsNothing);
     await tester.pageBack();
     await frames(tester);
     expect(find.byType(PublicCaptureScreen), findsNothing);
