@@ -26,6 +26,7 @@ import 'package:tabcam_app/capture/take_log.dart';
 import 'package:tabcam_app/capture/take_h264.dart';
 import 'package:tabcam_app/capture/take_priority.dart';
 import 'package:tabcam_app/capture/take_syncer.dart';
+import 'package:tabcam_app/capture/waveform.dart';
 import 'package:tabcam_app/capture/take_recorder.dart';
 import 'package:tabcam_app/capture/take_sound.dart';
 import 'package:tabcam_app/dictionary/dictionary_sidebar.dart';
@@ -1080,6 +1081,10 @@ B|--5--8--|
       final paths = PathProviderPlatform.instance;
       addTearDown(() => PathProviderPlatform.instance = paths);
       PathProviderPlatform.instance = _Paths(dir.path);
+      // No waveform for the take's row: its sound would be read on the
+      // same channel.
+      Waveform.opener = () => null;
+      addTearDown(() => Waveform.opener = SoundReader.open);
       final messenger = tester.binding.defaultBinaryMessenger;
       messenger.setMockMethodCallHandler(TakeAudio.channel, (_) async => null);
       messenger.setMockMethodCallHandler(TakeH264.channel, (call) async {
@@ -3317,6 +3322,9 @@ B|--5--8--|
     // (a reader is opened for it), once the take is saved.
     var readers = 0;
     TakeSyncer.reset();
+    // Only the syncer's: the rows' waveforms read with none.
+    Waveform.opener = () => null;
+    addTearDown(() => Waveform.opener = SoundReader.open);
     SoundReader.opener = () {
       readers++;
       return null;

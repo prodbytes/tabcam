@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:camera/camera.dart' show CameraController, CameraImage;
 import 'package:camera_platform_interface/camera_platform_interface.dart';
@@ -12,8 +14,10 @@ import 'package:tabcam_app/capture/media.dart';
 import 'package:tabcam_app/capture/play_along_screen.dart';
 import 'package:tabcam_app/capture/play_along_sidebar.dart' show PhraseMarks;
 import 'package:tabcam_app/capture/take_log.dart';
+import 'package:tabcam_app/capture/sound_reader.dart';
 import 'package:tabcam_app/capture/take_sound.dart';
 import 'package:tabcam_app/capture/video_edit.dart';
+import 'package:tabcam_app/capture/waveform.dart';
 import 'package:tabcam_app/cloud/cloud_ocr.dart';
 import 'package:tabcam_app/cloud/cloud_sync.dart';
 import 'package:tabcam_app/dictionary/dictionary_sidebar.dart';
@@ -1422,6 +1426,93 @@ void main() {
       });
     });
 
+    group('waveforms', () {
+      final mainWave = find.byKey(const Key('video-edit-main-wave'));
+      final takeWave = find.byKey(const Key('video-edit-rec-wave'));
+
+      /// Lets the files be fetched and their sound read.
+      Future<void> read(WidgetTester tester) async {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
+        await camFrames(tester);
+      }
+
+      testWidgets('the song\'s sound on the main row; once saved, the '
+          'take\'s own on its block; kept, so Cam opened again draws them '
+          'without reading them again', (tester) async {
+        wide(tester);
+        testClock(tester);
+        final files = <String>[];
+        WaveCache.clear();
+        SoundReader.opener = () => _SineReader(files);
+        addTearDown(() {
+          SoundReader.opener = null;
+          WaveCache.clear();
+        });
+        final (library, id, _, _) = await camCapture(tester);
+        await tester.pumpWidget(cam(library, id));
+        await camFrames(tester);
+        await read(tester);
+        expect(mainWave, findsOneWidget);
+        // Over the whole bar: the song's 3 minutes.
+        expect(
+          tester.getRect(mainWave).width,
+          closeTo(
+            tester.getRect(find.byKey(const Key('video-edit-main-bar'))).width,
+            1,
+          ),
+        );
+        expect(files, hasLength(1));
+
+        // While a take records there's no file to read yet.
+        video.position = s(30);
+        await tester.tap(play);
+        await playOn(tester, 0.5);
+        await pressRec(tester);
+        await playOn(tester, 5);
+        expect(recording, findsOneWidget);
+        expect(takeWave, findsNothing);
+        await stop(tester);
+        await read(tester);
+        expect(taken, findsOneWidget);
+        expect(takeWave, findsOneWidget);
+        // (Lining the song up in the take's sound reads them too.)
+        await read(tester);
+        final readSoFar = files.length;
+
+        // Cam closed and opened again: both drawn from what's kept, at
+        // once, nothing read again.
+        await tester.pumpWidget(const SizedBox());
+        await camFrames(tester);
+        await tester.pumpWidget(cam(library, id));
+        await tester.pump();
+        expect(mainWave, findsOneWidget);
+        expect(takeWave, findsOneWidget);
+        await read(tester);
+        expect(files, hasLength(readSoFar));
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('no reader (a desktop build): no waveforms, nothing '
+          'fetched for them, the rows as before', (tester) async {
+        wide(tester);
+        WaveCache.clear();
+        SoundReader.opener = () => null;
+        addTearDown(() {
+          SoundReader.opener = null;
+          WaveCache.clear();
+        });
+        final (library, id, _, _) = await camCapture(tester);
+        await tester.pumpWidget(cam(library, id));
+        await camFrames(tester);
+        await read(tester);
+        expect(find.byKey(const Key('video-edit-main-bar')), findsOneWidget);
+        expect(mainWave, findsNothing);
+        expect(tester.takeException(), isNull);
+      });
+    });
+
     group('Rec over this', () {
       final camButton = find.byKey(const Key('video-edit-cam'));
       final takeBar = find.byKey(const Key('video-edit-take-bar'));
@@ -1956,4 +2047,28 @@ void main() {
       });
     });
   });
+}
+
+/// A sound reader that hears a sine in every file (a second of it), and
+/// notes which files it read.
+class _SineReader implements SoundReader {
+  _SineReader(this.files);
+
+  final List<String> files;
+
+  @override
+  Future<Float32List?> samples(
+    XFile file, {
+    required Duration from,
+    required Duration length,
+    required int rate,
+  }) async {
+    files.add(file.name);
+    return Float32List.fromList([
+      for (var i = 0; i < rate; i++) sin(2 * pi * 220 * i / rate) / 2,
+    ]);
+  }
+
+  @override
+  void close() {}
 }

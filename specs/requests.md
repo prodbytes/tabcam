@@ -5014,3 +5014,15 @@ spec.
    song's passes are all of theirs merged, as recorded. See
    [cam](cam.md#phrase-passes), [Cam's main row](cam.md#the-main-row),
    [video edit](video-edit.md#the-song-row), [trash](trash.md).
+
+7. **"also the waveform preview would be great to work, seems not to be
+   appearing since merger with cam mode"**. The editor's lanes still
+   drew their waveforms (checked live), but Cam's rows, which came with
+   the merge, never had any: Cam's main row ("Song") now draws the
+   song's sound over its bar (brighter in the section), and the take's
+   row, once the take is saved, the take's own sound in its blocks,
+   fitted to the song's speed. Read on the device as the editor's, and
+   the last six kept (`WaveCache`), so Cam opened again draws them at
+   once without reading again; none while recording, nor on a desktop
+   build. `WavePainter` takes a rate per span for the fitting. Tested
+   in `studio_test.dart` and `waveform_test.dart`. See [Cam](cam.md#waveforms-in-cams-rows).
